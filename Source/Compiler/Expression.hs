@@ -862,8 +862,8 @@ unit Expression
                     {
                         long l;
                         float f;
-                            
-                        if (constantType.StartsWith("byte["))
+                        
+                        if (Types.IsByteArray(constantType))
                         {
                             CodeStream.AddString(constantType, value);
                             actualType = constantType;

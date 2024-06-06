@@ -6,7 +6,6 @@
 
 
 
-
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -44,7 +43,6 @@ Byte HopperVM_cspStart = 0;
 Bool HopperVM_cnp = false;
 UInt HopperVM_r0 = 0;
 Type HopperVM_r0Type = (Type)0;
-UInt HopperVM_messagePC = 0;
 Bool HopperVM_inDebugger = false;
 OpCode HopperVM_opCode = (OpCode)0;
 UInt HopperVM_jumpTable = 0;
@@ -433,7 +431,6 @@ void Runtime_DumpPage(Byte iPage)
                     {
                         flgs = (HopperFlags)(flgs | HopperFlags::eProgramLoaded);
                     }
-                    flgs = (HopperFlags)(flgs | HopperFlags::eCheckedBuild);
                     data = Byte(flgs);
                     break;
                 }
@@ -870,7 +867,6 @@ Bool HopperVM_Execute()
     HopperVM_inDebugger = true;
     for (;;)
     {
-        HopperVM_messagePC = HopperVM_pc;
         Bool doNext = HopperVM_ExecuteOpCode();
         if (Minimal_Error_Get() != 0x00)
         {
@@ -914,7 +910,6 @@ Bool HopperVM_ExecuteStepTo()
 {
     Bool restart = false;
     HopperVM_inDebugger = true;
-    HopperVM_messagePC = HopperVM_pc;
     Bool doNext = HopperVM_ExecuteOpCode();
     if (Minimal_Error_Get() != 0x00)
     {
@@ -1072,7 +1067,7 @@ Bool HopperVM_ExecuteOpCode()
 void HopperVM_WriteERROR()
 {
     IO_WriteLn();
-    IO_WriteHex(HopperVM_messagePC);
+    IO_WriteHex(HopperVM_PC_Get());
     IO_Write(' ');
     IO_Write('E');
     IO_Write('r');
@@ -1099,17 +1094,6 @@ void HopperVM_WriteBREAK()
 void GC_Release(UInt address)
 {
     Byte referenceCount = Memory_ReadByte(address + 0x01);
-    if (referenceCount == 0x00)
-    {
-        IO_WriteLn();
-        IO_WriteHex(address);
-        IO_Write(':');
-        IO_WriteHex(Memory_ReadWord(address));
-        IO_Write(' ');
-        Runtime_ErrorDump(0x4E);
-        Minimal_Error_Set(0x0B);
-        return;
-    }
     
     referenceCount--;
     Memory_WriteByte(address + 0x01, referenceCount);
@@ -1176,9 +1160,6 @@ void GC_Release(UInt address)
         }
         default:
         {
-            Runtime_Out4Hex(HopperVM_PC_Get());
-            Runtime_ErrorDump(0x0B);
-            Minimal_Error_Set(0x0A);
             break;
         }
         } // switch
@@ -2047,7 +2028,6 @@ Bool Instructions_Die()
 {
     Type atype = (Type)0;
     UInt err = HopperVM_Pop_R(atype);
-    HopperVM_AssertByte(atype, err);
     Runtime_ErrorDump(0x5E);
     Minimal_Error_Set(Byte(err));
     return false;
@@ -2069,347 +2049,382 @@ Bool Instructions_PopR0()
 
 Bool Instructions_Add()
 {
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(next + top, Type::eUInt);
+    
+    HopperVM_sp--;
+    UInt top = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08);
+    next = next + top;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, Byte(next & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, Byte(next >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
     return true;
 }
 
 Bool Instructions_Sub()
 {
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(next - top, Type::eUInt);
+    
+    HopperVM_sp--;
+    UInt top = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08);
+    next = next - top;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, Byte(next & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, Byte(next >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
     return true;
 }
 
 Bool Instructions_Div()
 {
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_AssertUInt(ntype, next);
+    
+    HopperVM_sp--;
+    UInt top = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08);
     if (top == 0x00)
     {
         Minimal_Error_Set(0x04);
         return false;
     }
-    else
-    {
-        HopperVM_Push(next / top, Type::eUInt);
-    }
+    next = next / top;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, Byte(next & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, Byte(next >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
     return true;
 }
 
 Bool Instructions_Mul()
 {
-    Type ttype = (Type)0;
-    Type ntype = (Type)0;
     UInt top = 0;
-    top = HopperVM_Pop_R(ttype);
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(next * top, Type::eUInt);
+    UInt next = 0;
+    UInt sp1 = 0;
+    
+    HopperVM_sp--;
+    top = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+    sp1 = HopperVM_sp - 0x01;
+    next = (Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08)) * top;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, Byte(next & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, Byte(next >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
     return true;
 }
 
 Bool Instructions_Mod()
 {
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_AssertUInt(ntype, next);
+    
+    HopperVM_sp--;
+    UInt top = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08);
     if (top == 0x00)
     {
         Minimal_Error_Set(0x04);
         return false;
     }
-    else
-    {
-        HopperVM_Push(next % top, Type::eUInt);
-    }
+    next = next % top;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, Byte(next & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, Byte(next >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
     return true;
 }
 
 Bool Instructions_EQ()
 {
-    HopperVM_Push(((HopperVM_Pop() == HopperVM_Pop())) ? (0x01) : (0x00), Type::eBool);
+    
+    HopperVM_sp--;
+    UInt top = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, ((next == top)) ? (0x01) : (0x00));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eBool));
     return true;
 }
 
 Bool Instructions_NE()
 {
-    HopperVM_Push(((HopperVM_Pop() != HopperVM_Pop())) ? (0x01) : (0x00), Type::eBool);
+    
+    HopperVM_sp--;
+    UInt top = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, ((next == top)) ? (0x00) : (0x01));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eBool));
     return true;
 }
 
 Bool Instructions_GT()
 {
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(((next > top)) ? (0x01) : (0x00), Type::eBool);
+    
+    HopperVM_sp--;
+    UInt top = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, ((next > top)) ? (0x01) : (0x00));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eBool));
     return true;
 }
 
 Bool Instructions_LT()
 {
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(((next < top)) ? (0x01) : (0x00), Type::eBool);
+    
+    HopperVM_sp--;
+    UInt top = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, ((next < top)) ? (0x01) : (0x00));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eBool));
     return true;
 }
 
 Bool Instructions_GE()
 {
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(((next >= top)) ? (0x01) : (0x00), Type::eBool);
+    
+    HopperVM_sp--;
+    UInt top = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, ((next >= top)) ? (0x01) : (0x00));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eBool));
     return true;
 }
 
 Bool Instructions_LE()
 {
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(((next <= top)) ? (0x01) : (0x00), Type::eBool);
+    
+    HopperVM_sp--;
+    UInt top = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, ((next <= top)) ? (0x01) : (0x00));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eBool));
     return true;
 }
 
 Bool Instructions_BoolOr()
 {
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertBool(ttype, top);
-    HopperVM_AssertBool(ntype, next);
-    HopperVM_Push((((next != 0x00) || (top != 0x00))) ? (0x01) : (0x00), Type::eBool);
+    
+    HopperVM_sp--;
+    UInt top = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, (((next != 0x00) || (top != 0x00))) ? (0x01) : (0x00));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eBool));
     return true;
 }
 
 Bool Instructions_BoolAnd()
 {
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertBool(ttype, top);
-    HopperVM_AssertBool(ntype, next);
-    HopperVM_Push((((next != 0x00) && (top != 0x00))) ? (0x01) : (0x00), Type::eBool);
+    
+    HopperVM_sp--;
+    UInt top = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, (((next != 0x00) && (top != 0x00))) ? (0x01) : (0x00));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eBool));
     return true;
 }
 
 Bool Instructions_BitOr()
 {
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(next | top, Type::eUInt);
+    
+    HopperVM_sp--;
+    UInt top = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08);
+    next = next | top;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, Byte(next & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, Byte(next >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
     return true;
 }
 
 Bool Instructions_BitAnd()
 {
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(next & top, Type::eUInt);
+    
+    HopperVM_sp--;
+    UInt top = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08);
+    next = next & top;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, Byte(next & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, Byte(next >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
     return true;
 }
 
 Bool Instructions_BitShl()
 {
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(next << top, Type::eUInt);
+    
+    HopperVM_sp--;
+    UInt top = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08);
+    next = next << top;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, Byte(next & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, Byte(next >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
     return true;
 }
 
 Bool Instructions_BitShr()
 {
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(next >> top, Type::eUInt);
+    
+    HopperVM_sp--;
+    UInt top = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08);
+    next = next >> top;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, Byte(next & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, Byte(next >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
     return true;
 }
 
 Bool Instructions_AddI()
 {
-    Type ttype = (Type)0;
-    Int top = HopperVM_PopI_R(ttype);
-    Type ntype = (Type)0;
-    Int next = HopperVM_PopI_R(ntype);
-    HopperVM_AssertInt(ttype);
-    HopperVM_AssertInt(ntype);
-    HopperVM_PushI(next + top);
+    
+    HopperVM_sp--;
+    Int topi = External_UIntToInt(Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08));
+    UInt sp1 = HopperVM_sp - 0x01;
+    Int nexti = External_UIntToInt(Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08));
+    nexti = nexti + topi;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, Byte(nexti & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, Byte(nexti >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
     return true;
 }
 
 Bool Instructions_SubI()
 {
-    Type ttype = (Type)0;
-    Int top = HopperVM_PopI_R(ttype);
-    Type ntype = (Type)0;
-    Int next = HopperVM_PopI_R(ntype);
-    HopperVM_AssertInt(ttype);
-    HopperVM_AssertInt(ntype);
-    HopperVM_PushI(next - top);
+    
+    HopperVM_sp--;
+    Int topi = External_UIntToInt(Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08));
+    UInt sp1 = HopperVM_sp - 0x01;
+    Int nexti = External_UIntToInt(Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08));
+    nexti = nexti - topi;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, Byte(nexti & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, Byte(nexti >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
     return true;
 }
 
 Bool Instructions_DivI()
 {
-    Type ttype = (Type)0;
-    Int top = HopperVM_PopI_R(ttype);
-    Type ntype = (Type)0;
-    Int next = HopperVM_PopI_R(ntype);
-    HopperVM_AssertInt(ttype);
-    HopperVM_AssertInt(ntype);
-    if (top == 0x00)
-    {
-        Minimal_Error_Set(0x04);
-        return false;
-    }
-    else
-    {
-        HopperVM_PushI(next / top);
-    }
+    Int top = HopperVM_PopI();
+    HopperVM_PushI(HopperVM_PopI() / top);
     return true;
 }
 
 Bool Instructions_MulI()
 {
-    Type ttype = (Type)0;
-    Int top = HopperVM_PopI_R(ttype);
-    Type ntype = (Type)0;
-    Int next = HopperVM_PopI_R(ntype);
-    HopperVM_AssertInt(ttype);
-    HopperVM_AssertInt(ntype);
-    HopperVM_PushI(next * top);
+    
+    HopperVM_sp--;
+    Int topi = External_UIntToInt(Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08));
+    UInt sp1 = HopperVM_sp - 0x01;
+    Int nexti = External_UIntToInt(Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08));
+    nexti = nexti * topi;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, Byte(nexti & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, Byte(nexti >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
     return true;
 }
 
 Bool Instructions_ModI()
 {
-    Type ttype = (Type)0;
-    Int top = HopperVM_PopI_R(ttype);
-    Type ntype = (Type)0;
-    Int next = HopperVM_PopI_R(ntype);
-    HopperVM_AssertInt(ttype);
-    HopperVM_AssertInt(ntype);
-    if (top == 0x00)
-    {
-        Minimal_Error_Set(0x04);
-        return false;
-    }
-    else
-    {
-        HopperVM_PushI(next % top);
-    }
+    Int top = HopperVM_PopI();
+    HopperVM_PushI(HopperVM_PopI() % top);
     return true;
 }
 
 Bool Instructions_GTI()
 {
-    Type ttype = (Type)0;
-    Int top = HopperVM_PopI_R(ttype);
-    Type ntype = (Type)0;
-    Int next = HopperVM_PopI_R(ntype);
-    HopperVM_AssertInt(ttype);
-    HopperVM_AssertInt(ntype);
-    HopperVM_Push(((next > top)) ? (0x01) : (0x00), Type::eBool);
+    
+    HopperVM_sp--;
+    Int topi = External_UIntToInt(Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08));
+    UInt sp1 = HopperVM_sp - 0x01;
+    Int nexti = External_UIntToInt(Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08));
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, ((nexti > topi)) ? (0x01) : (0x00));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eBool));
     return true;
 }
 
 Bool Instructions_LTI()
 {
-    Type ttype = (Type)0;
-    Int top = HopperVM_PopI_R(ttype);
-    Type ntype = (Type)0;
-    Int next = HopperVM_PopI_R(ntype);
-    HopperVM_AssertInt(ttype);
-    HopperVM_AssertInt(ntype);
-    HopperVM_Push(((next < top)) ? (0x01) : (0x00), Type::eBool);
+    
+    HopperVM_sp--;
+    Int topi = External_UIntToInt(Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08));
+    UInt sp1 = HopperVM_sp - 0x01;
+    Int nexti = External_UIntToInt(Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08));
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, ((nexti < topi)) ? (0x01) : (0x00));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eBool));
     return true;
 }
 
 Bool Instructions_GEI()
 {
-    Type ttype = (Type)0;
-    Int top = HopperVM_PopI_R(ttype);
-    Type ntype = (Type)0;
-    Int next = HopperVM_PopI_R(ntype);
-    HopperVM_AssertInt(ttype);
-    HopperVM_AssertInt(ntype);
-    HopperVM_Push(((next >= top)) ? (0x01) : (0x00), Type::eBool);
+    
+    HopperVM_sp--;
+    Int topi = External_UIntToInt(Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08));
+    UInt sp1 = HopperVM_sp - 0x01;
+    Int nexti = External_UIntToInt(Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08));
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, ((nexti >= topi)) ? (0x01) : (0x00));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eBool));
     return true;
 }
 
 Bool Instructions_LEI()
 {
-    Type ttype = (Type)0;
-    Int top = HopperVM_PopI_R(ttype);
-    Type ntype = (Type)0;
-    Int next = HopperVM_PopI_R(ntype);
-    HopperVM_AssertInt(ttype);
-    HopperVM_AssertInt(ntype);
-    HopperVM_Push(((next <= top)) ? (0x01) : (0x00), Type::eBool);
+    
+    HopperVM_sp--;
+    Int topi = External_UIntToInt(Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08));
+    UInt sp1 = HopperVM_sp - 0x01;
+    Int nexti = External_UIntToInt(Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08));
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, ((nexti <= topi)) ? (0x01) : (0x00));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eBool));
     return true;
 }
 
 Bool Instructions_PushIB()
 {
-    HopperVM_Push(HopperVM_ReadByteOperand(), Type::eByte);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + HopperVM_sp, Memory_ReadProgramByte(HopperVM_pc));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + HopperVM_sp, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + HopperVM_sp, Byte(Type::eByte));
+    
+    HopperVM_sp++;
+    
+    HopperVM_pc++;
     return true;
 }
 
 Bool Instructions_PushIBB()
 {
-    HopperVM_Push(HopperVM_ReadByteOperand(), Type::eByte);
-    HopperVM_Push(HopperVM_ReadByteOperand(), Type::eByte);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + HopperVM_sp, Memory_ReadProgramByte(HopperVM_pc));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + HopperVM_sp, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + HopperVM_sp, Byte(Type::eByte));
+    
+    HopperVM_sp++;
+    
+    HopperVM_pc++;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + HopperVM_sp, Memory_ReadProgramByte(HopperVM_pc));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + HopperVM_sp, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + HopperVM_sp, Byte(Type::eByte));
+    
+    HopperVM_sp++;
+    
+    HopperVM_pc++;
     return true;
 }
 
@@ -2439,13 +2454,26 @@ Bool Instructions_PopLocalB()
 
 Bool Instructions_PushLocalB()
 {
-    Int offset = HopperVM_ReadByteOffsetOperand();
-    Type htype = (Type)0;
-    UInt value = HopperVM_Get_R(Byte(Int(HopperVM_BP_Get()) + offset), htype);
-    HopperVM_Push(value, htype);
-    if (Types_IsReferenceType(htype))
+    Int offset = Int(Memory_ReadProgramByte(HopperVM_pc));
+    if (offset > 0x7F)
     {
-        GC_AddReference(value);
+        offset = offset - 0x0100;
+    }
+    
+    HopperVM_pc++;
+    Byte address = Byte(offset + HopperVM_bp);
+    UInt value = Memory_ReadByte(HopperVM_valueStackLSBPage + address) + (Memory_ReadByte(HopperVM_valueStackMSBPage + address) << 0x08);
+    Byte htype = Memory_ReadByte(HopperVM_typeStackPage + address);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + HopperVM_sp, Byte(value & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + HopperVM_sp, Byte(value >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + HopperVM_sp, htype);
+    
+    HopperVM_sp++;
+    if (htype >= 0x0D)
+    {
+        
+        value++;
+        Memory_WriteByte(value, Memory_ReadByte(value) + 0x01);
     }
     return true;
 }
@@ -2481,7 +2509,6 @@ Bool Instructions_PushRelB()
     Byte referenceAddress = Byte(Int(HopperVM_BP_Get()) + offset);
     Type rtype = (Type)0;
     Byte localAddress = Byte(HopperVM_Get_R(referenceAddress, rtype));
-    HopperVM_AssertReference(rtype, localAddress);
     UInt value = HopperVM_Get_R(localAddress, rtype);
     HopperVM_Push(value, rtype);
     if (Types_IsReferenceType(rtype))
@@ -2530,11 +2557,6 @@ Bool Instructions_PushGlobalB()
 Bool Instructions_PushStackAddrB()
 {
     Int offset = HopperVM_ReadByteOffsetOperand();
-    if ((Int(HopperVM_BP_Get()) + offset > 0xFF) || (Int(HopperVM_BP_Get()) + offset < 0x00))
-    {
-        Runtime_ErrorDump(0x0102);
-        Minimal_Error_Set(0x0B);
-    }
     Byte address = Byte(Int(HopperVM_BP_Get()) + offset);
     HopperVM_Push(address, Type::eReference);
     return true;
@@ -2550,36 +2572,37 @@ Bool Instructions_CallB()
 
 Bool Instructions_JZB()
 {
-    Int offset = HopperVM_ReadByteOffsetOperand();
-    Type htype = (Type)0;
-    UInt choice = HopperVM_Pop_R(htype);
-    if (Types_IsReferenceType(htype))
+    
+    HopperVM_sp--;
+    if ((Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08)) == 0x00)
     {
-        Runtime_ErrorDump(0x28);
-        Minimal_Error_Set(0x0B);
-        return false;
+        Int offset = Int(Memory_ReadProgramByte(HopperVM_pc));
+        
+        HopperVM_pc++;
+        if (offset > 0x7F)
+        {
+            offset = offset - 0x0100;
+        }
+        HopperVM_pc = UInt(offset + Int(HopperVM_pc - 0x02));
     }
-    if (choice == 0x00)
+    else
     {
-        HopperVM_PC_Set(UInt(Int(HopperVM_PC_Get() - 0x02) + offset));
+        
+        HopperVM_pc++;
     }
     return true;
 }
 
 Bool Instructions_JNZB()
 {
-    Int offset = HopperVM_ReadByteOffsetOperand();
-    Type htype = (Type)0;
-    UInt choice = HopperVM_Pop_R(htype);
-    if (Types_IsReferenceType(htype))
+    if (HopperVM_Pop() != 0x00)
     {
-        Runtime_ErrorDump(0x26);
-        Minimal_Error_Set(0x0B);
-        return false;
+        HopperVM_pc = UInt(HopperVM_ReadByteOffsetOperand() + Int(HopperVM_pc - 0x02));
     }
-    if (choice != 0x00)
+    else
     {
-        HopperVM_pc = UInt(Int(HopperVM_pc - 0x02) + offset);
+        
+        HopperVM_pc++;
     }
     return true;
 }
@@ -2592,27 +2615,39 @@ Bool Instructions_JB()
 
 Bool Instructions_Ret0()
 {
-    HopperVM_BP_Set(Byte(HopperVM_PopCS()));
-    if (HopperVM_CSP_Get() == HopperVM_CSPStart_Get())
+    
+    HopperVM_csp--;
+    HopperVM_bp = Memory_ReadByte(HopperVM_callStackLSBPage + HopperVM_csp);
+    if (HopperVM_csp == HopperVM_cspStart)
     {
-        HopperVM_PC_Set(0x00);
+        HopperVM_pc = 0x00;
     }
     else
     {
-        HopperVM_PC_Set(HopperVM_PopCS());
+        
+        HopperVM_csp--;
+        HopperVM_pc = Memory_ReadByte(HopperVM_callStackLSBPage + HopperVM_csp) + (Memory_ReadByte(HopperVM_callStackMSBPage + HopperVM_csp) << 0x08);
     }
-    return HopperVM_PC_Get() != 0x00;
+    return HopperVM_pc != 0x00;
 }
 
 Bool Instructions_PushI0()
 {
-    HopperVM_Push(0x00, Type::eByte);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + HopperVM_sp, 0x00);
+    Memory_WriteByte(HopperVM_valueStackMSBPage + HopperVM_sp, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + HopperVM_sp, Byte(Type::eByte));
+    
+    HopperVM_sp++;
     return true;
 }
 
 Bool Instructions_PushI1()
 {
-    HopperVM_Push(0x01, Type::eByte);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + HopperVM_sp, 0x01);
+    Memory_WriteByte(HopperVM_valueStackMSBPage + HopperVM_sp, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + HopperVM_sp, Byte(Type::eByte));
+    
+    HopperVM_sp++;
     return true;
 }
 
@@ -2662,24 +2697,38 @@ Bool Instructions_PopLocalB01()
 
 Bool Instructions_PushLocalB00()
 {
-    Type htype = (Type)0;
-    UInt value = HopperVM_Get_R(HopperVM_BP_Get(), htype);
-    HopperVM_Push(value, htype);
-    if (Types_IsReferenceType(htype))
+    Byte address = Byte(HopperVM_bp);
+    UInt value = Memory_ReadByte(HopperVM_valueStackLSBPage + address) + (Memory_ReadByte(HopperVM_valueStackMSBPage + address) << 0x08);
+    Byte htype = Memory_ReadByte(HopperVM_typeStackPage + address);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + HopperVM_sp, Byte(value & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + HopperVM_sp, Byte(value >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + HopperVM_sp, htype);
+    
+    HopperVM_sp++;
+    if (htype >= 0x0D)
     {
-        GC_AddReference(value);
+        
+        value++;
+        Memory_WriteByte(value, Memory_ReadByte(value) + 0x01);
     }
     return true;
 }
 
 Bool Instructions_PushLocalB01()
 {
-    Type htype = (Type)0;
-    UInt value = HopperVM_Get_R(HopperVM_BP_Get() + 0x01, htype);
-    HopperVM_Push(value, htype);
-    if (Types_IsReferenceType(htype))
+    Byte address = Byte(HopperVM_bp + 0x01);
+    UInt value = Memory_ReadByte(HopperVM_valueStackLSBPage + address) + (Memory_ReadByte(HopperVM_valueStackMSBPage + address) << 0x08);
+    Byte htype = Memory_ReadByte(HopperVM_typeStackPage + address);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + HopperVM_sp, Byte(value & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + HopperVM_sp, Byte(value >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + HopperVM_sp, htype);
+    
+    HopperVM_sp++;
+    if (htype >= 0x0D)
     {
-        GC_AddReference(value);
+        
+        value++;
+        Memory_WriteByte(value, Memory_ReadByte(value) + 0x01);
     }
     return true;
 }
@@ -2784,7 +2833,6 @@ Bool Instructions_PopCopyRelB()
     Byte referenceAddress = Byte(Int(HopperVM_BP_Get()) + offset);
     Type rtype = (Type)0;
     Byte localAddress = Byte(HopperVM_Get_R(referenceAddress, rtype));
-    HopperVM_AssertReference(rtype, localAddress);
     UInt oldvalue = HopperVM_Get_R(localAddress, rtype);
     if (Types_IsReferenceType(rtype))
     {
@@ -2871,19 +2919,31 @@ Bool Instructions_PopCopyLocalB01()
 
 Bool Instructions_Enter()
 {
-    HopperVM_PushCS(HopperVM_BP_Get());
-    HopperVM_BP_Set(HopperVM_SP_Get());
+    Memory_WriteByte(HopperVM_callStackLSBPage + HopperVM_csp, HopperVM_bp);
+    Memory_WriteByte(HopperVM_callStackMSBPage + HopperVM_csp, 0x00);
+    
+    HopperVM_csp++;
+    HopperVM_bp = HopperVM_sp;
     return true;
 }
 
 Bool Instructions_EnterB()
 {
-    HopperVM_PushCS(HopperVM_BP_Get());
-    HopperVM_BP_Set(HopperVM_SP_Get());
-    UInt zeros = HopperVM_ReadByteOperand();;
+    Memory_WriteByte(HopperVM_callStackLSBPage + HopperVM_csp, HopperVM_bp);
+    Memory_WriteByte(HopperVM_callStackMSBPage + HopperVM_csp, 0x00);
+    
+    HopperVM_csp++;
+    HopperVM_bp = HopperVM_sp;
+    Byte zeros = Memory_ReadProgramByte(HopperVM_pc);
+    
+    HopperVM_pc++;;
     for (UInt i = 0x00; i < zeros; i++)
     {
-        HopperVM_Push(0x00, Type::eByte);
+        Memory_WriteByte(HopperVM_valueStackLSBPage + HopperVM_sp, 0x00);
+        Memory_WriteByte(HopperVM_valueStackMSBPage + HopperVM_sp, 0x00);
+        Memory_WriteByte(HopperVM_typeStackPage + HopperVM_sp, Byte(Type::eByte));
+        
+        HopperVM_sp++;
     }
     return true;
 }
@@ -2918,30 +2978,37 @@ Bool Instructions_JIXB()
 
 Bool Instructions_PushILE()
 {
-    UInt top = HopperVM_ReadWordOperand();
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_Push(((next <= top)) ? (0x01) : (0x00), Type::eBool);
+    UInt top = Memory_ReadProgramByte(HopperVM_pc) + (Memory_ReadProgramByte(HopperVM_pc + 0x01) << 0x08);
+    HopperVM_pc = HopperVM_pc + 0x02;
+    UInt sp2 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp2) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp2) << 0x08);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp2, ((next <= top)) ? (0x01) : (0x00));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp2, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp2, Byte(Type::eBool));
     return true;
 }
 
 Bool Instructions_PushILT()
 {
-    UInt top = HopperVM_ReadWordOperand();
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(((next < top)) ? (0x01) : (0x00), Type::eBool);
+    UInt top = Memory_ReadProgramByte(HopperVM_pc) + (Memory_ReadProgramByte(HopperVM_pc + 0x01) << 0x08);
+    HopperVM_pc = HopperVM_pc + 0x02;
+    UInt sp2 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp2) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp2) << 0x08);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp2, ((next < top)) ? (0x01) : (0x00));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp2, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp2, Byte(Type::eBool));
     return true;
 }
 
 Bool Instructions_PushIBLE()
 {
-    UInt top = HopperVM_ReadByteOperand();
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(((next <= top)) ? (0x01) : (0x00), Type::eBool);
+    UInt sp2 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp2) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp2) << 0x08);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp2, ((next <= Memory_ReadProgramByte(HopperVM_pc))) ? (0x01) : (0x00));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp2, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp2, Byte(Type::eBool));
+    
+    HopperVM_pc++;
     return true;
 }
 
@@ -2952,78 +3019,103 @@ Bool Instructions_PushILEI()
     Int top = HopperVM_PopI_R(ttype);
     Type ntype = (Type)0;
     Int next = HopperVM_PopI_R(ntype);
-    HopperVM_AssertInt(ttype);
-    HopperVM_AssertInt(ntype);
     HopperVM_Push(((next <= top)) ? (0x01) : (0x00), Type::eBool);
     return true;
 }
 
 Bool Instructions_PushIBEQ()
 {
-    UInt top = HopperVM_ReadByteOperand();
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_Push(((next == top)) ? (0x01) : (0x00), Type::eBool);
+    UInt sp2 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp2) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp2) << 0x08);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp2, ((next == Memory_ReadProgramByte(HopperVM_pc))) ? (0x01) : (0x00));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp2, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp2, Byte(Type::eBool));
+    
+    HopperVM_pc++;
     return true;
 }
 
 Bool Instructions_AddB()
 {
-    UInt top = HopperVM_ReadByteOperand();
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(next + top, Type::eUInt);
+    UInt sp2 = HopperVM_sp - 0x01;
+    UInt lsb = HopperVM_valueStackLSBPage + sp2;
+    UInt msb = HopperVM_valueStackMSBPage + sp2;
+    UInt value = (Memory_ReadByte(lsb) + (Memory_ReadByte(msb) << 0x08)) + Memory_ReadProgramByte(HopperVM_pc);
+    Memory_WriteByte(lsb, Byte(value & 0xFF));
+    Memory_WriteByte(msb, Byte(value >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp2, Byte(Type::eUInt));
+    
+    HopperVM_pc++;
     return true;
 }
 
 Bool Instructions_SubB()
 {
-    UInt top = HopperVM_ReadByteOperand();
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(next - top, Type::eUInt);
+    UInt sp2 = HopperVM_sp - 0x01;
+    UInt lsb = HopperVM_valueStackLSBPage + sp2;
+    UInt msb = HopperVM_valueStackMSBPage + sp2;
+    UInt value = (Memory_ReadByte(lsb) + (Memory_ReadByte(msb) << 0x08)) - Memory_ReadProgramByte(HopperVM_pc);
+    Memory_WriteByte(lsb, Byte(value & 0xFF));
+    Memory_WriteByte(msb, Byte(value >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp2, Byte(Type::eUInt));
+    
+    HopperVM_pc++;
     return true;
 }
 
 Bool Instructions_BitShlB()
 {
-    UInt top = HopperVM_ReadByteOperand();
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(next << top, Type::eUInt);
+    UInt sp2 = HopperVM_sp - 0x01;
+    UInt lsb = HopperVM_valueStackLSBPage + sp2;
+    UInt msb = HopperVM_valueStackMSBPage + sp2;
+    UInt value = (Memory_ReadByte(lsb) + (Memory_ReadByte(msb) << 0x08)) << Memory_ReadProgramByte(HopperVM_pc);
+    Memory_WriteByte(lsb, Byte(value & 0xFF));
+    Memory_WriteByte(msb, Byte(value >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp2, Byte(Type::eUInt));
+    
+    HopperVM_pc++;
     return true;
 }
 
 Bool Instructions_BitShrB()
 {
-    UInt top = HopperVM_ReadByteOperand();
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(next >> top, Type::eUInt);
+    UInt sp2 = HopperVM_sp - 0x01;
+    UInt lsb = HopperVM_valueStackLSBPage + sp2;
+    UInt msb = HopperVM_valueStackMSBPage + sp2;
+    UInt value = (Memory_ReadByte(lsb) + (Memory_ReadByte(msb) << 0x08)) >> Memory_ReadProgramByte(HopperVM_pc);
+    Memory_WriteByte(lsb, Byte(value & 0xFF));
+    Memory_WriteByte(msb, Byte(value >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp2, Byte(Type::eUInt));
+    
+    HopperVM_pc++;
     return true;
 }
 
 Bool Instructions_BitAndB()
 {
-    UInt top = HopperVM_ReadByteOperand();
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(next & top, Type::eByte);
+    UInt sp2 = HopperVM_sp - 0x01;
+    UInt lsb = HopperVM_valueStackLSBPage + sp2;
+    UInt msb = HopperVM_valueStackMSBPage + sp2;
+    UInt value = (Memory_ReadByte(lsb) + (Memory_ReadByte(msb) << 0x08)) & Memory_ReadProgramByte(HopperVM_pc);
+    Memory_WriteByte(lsb, Byte(value & 0xFF));
+    Memory_WriteByte(msb, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp2, Byte(Type::eByte));
+    
+    HopperVM_pc++;
     return true;
 }
 
 Bool Instructions_BitOrB()
 {
-    UInt top = HopperVM_ReadByteOperand();
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push(next | top, Type::eUInt);
+    UInt sp2 = HopperVM_sp - 0x01;
+    UInt lsb = HopperVM_valueStackLSBPage + sp2;
+    UInt msb = HopperVM_valueStackMSBPage + sp2;
+    UInt value = (Memory_ReadByte(lsb) + (Memory_ReadByte(msb) << 0x08)) | Memory_ReadProgramByte(HopperVM_pc);
+    Memory_WriteByte(lsb, Byte(value & 0xFF));
+    Memory_WriteByte(msb, Byte(value >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp2, Byte(Type::eUInt));
+    
+    HopperVM_pc++;
     return true;
 }
 
@@ -3055,31 +3147,45 @@ Bool Instructions_RetB()
 
 Bool Instructions_RetResB()
 {
-    Type rtype = (Type)0;
-    UInt value = HopperVM_Pop_R(rtype);
-    UInt popBytes = HopperVM_ReadByteOperand();
+    
+    HopperVM_sp--;
+    UInt value = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+    Byte rtype = Memory_ReadByte(HopperVM_typeStackPage + HopperVM_sp);
+    Byte popBytes = Memory_ReadProgramByte(HopperVM_pc);
+    
+    HopperVM_pc++;
     while (popBytes != 0x00)
     {
-        Type htype = (Type)0;
-        UInt address = HopperVM_Pop_R(htype);
-        if (Types_IsReferenceType(htype))
+        
+        HopperVM_sp--;
+        UInt address = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+        Byte htype = Memory_ReadByte(HopperVM_typeStackPage + HopperVM_sp);
+        if (htype >= 0x0D)
         {
             GC_Release(address);
         }
         
         popBytes--;
     }
-    HopperVM_Push(value, rtype);
-    HopperVM_BP_Set(Byte(HopperVM_PopCS()));
-    if (HopperVM_CSP_Get() == HopperVM_CSPStart_Get())
+    Memory_WriteByte(HopperVM_valueStackLSBPage + HopperVM_sp, Byte(value & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + HopperVM_sp, Byte(value >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + HopperVM_sp, rtype);
+    
+    HopperVM_sp++;
+    
+    HopperVM_csp--;
+    HopperVM_bp = Memory_ReadByte(HopperVM_callStackLSBPage + HopperVM_csp);
+    if (HopperVM_csp == HopperVM_cspStart)
     {
-        HopperVM_PC_Set(0x00);
+        HopperVM_pc = 0x00;
     }
     else
     {
-        HopperVM_PC_Set(HopperVM_PopCS());
+        
+        HopperVM_csp--;
+        HopperVM_pc = Memory_ReadByte(HopperVM_callStackLSBPage + HopperVM_csp) + (Memory_ReadByte(HopperVM_callStackMSBPage + HopperVM_csp) << 0x08);
     }
-    return HopperVM_PC_Get() != 0x00;
+    return HopperVM_pc != 0x00;
 }
 
 Bool Instructions_RetFast()
@@ -3156,7 +3262,6 @@ Bool Instructions_PushRel()
     Byte referenceAddress = Byte(Int(HopperVM_BP_Get()) + offset);
     Type rtype = (Type)0;
     Byte localAddress = Byte(HopperVM_Get_R(referenceAddress, rtype));
-    HopperVM_AssertReference(rtype, localAddress);
     UInt value = HopperVM_Get_R(localAddress, rtype);
     HopperVM_Push(value, rtype);
     if (Types_IsReferenceType(rtype))
@@ -3205,11 +3310,6 @@ Bool Instructions_PushGlobal()
 Bool Instructions_PushStackAddr()
 {
     Int offset = HopperVM_ReadWordOffsetOperand();
-    if ((Int(HopperVM_BP_Get()) + offset > 0xFF) || (Int(HopperVM_BP_Get()) + offset < 0x00))
-    {
-        Runtime_ErrorDump(0x0103);
-        Minimal_Error_Set(0x0B);
-    }
     Byte address = Byte(Int(HopperVM_BP_Get()) + offset);
     HopperVM_Push(address, Type::eReference);
     return true;
@@ -3333,36 +3433,26 @@ Bool Instructions_Exit()
 
 Bool Instructions_JZ()
 {
-    Int offset = HopperVM_ReadWordOffsetOperand();
-    Type htype = (Type)0;
-    UInt choice = HopperVM_Pop_R(htype);
-    if (Types_IsReferenceType(htype))
+    if (HopperVM_Pop() == 0x00)
     {
-        Runtime_ErrorDump(0x27);
-        Minimal_Error_Set(0x0B);
-        return false;
+        HopperVM_pc = UInt(HopperVM_ReadWordOffsetOperand() + Int(HopperVM_pc - 0x03));
     }
-    if (choice == 0x00)
+    else
     {
-        HopperVM_pc = UInt(Int(HopperVM_pc - 0x03) + offset);
+        HopperVM_pc = HopperVM_pc + 0x02;
     }
     return true;
 }
 
 Bool Instructions_JNZ()
 {
-    Int offset = HopperVM_ReadWordOffsetOperand();
-    Type htype = (Type)0;
-    UInt choice = HopperVM_Pop_R(htype);
-    if (Types_IsReferenceType(htype))
+    if (HopperVM_Pop() != 0x00)
     {
-        Runtime_ErrorDump(0x29);
-        Minimal_Error_Set(0x0B);
-        return false;
+        HopperVM_PC_Set(UInt(HopperVM_ReadWordOffsetOperand() + Int(HopperVM_PC_Get() - 0x03)));
     }
-    if (choice != 0x00)
+    else
     {
-        HopperVM_PC_Set(UInt(Int(HopperVM_PC_Get() - 0x03) + offset));
+        HopperVM_PC_Set(HopperVM_PC_Get() + 0x02);
     }
     return true;
 }
@@ -3381,46 +3471,50 @@ Bool Instructions_PushIW()
 
 Bool Instructions_BoolNot()
 {
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    HopperVM_AssertBool(ttype, top);
-    HopperVM_Push(((top == 0x00)) ? (0x01) : (0x00), Type::eBool);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt top = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, ((top == 0x00)) ? (0x01) : (0x00));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eBool));
     return true;
 }
 
 Bool Instructions_BitNot()
 {
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_Push(~top, Type::eUInt);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt top = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08);
+    top = ~top;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, Byte(top & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, Byte(top >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
     return true;
 }
 
 Bool Instructions_BitShl8()
 {
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_Push((top & 0xFF) << 0x08, Type::eUInt);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt lsb = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, 0x00);
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, Byte(lsb));
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
     return true;
 }
 
 Bool Instructions_BitShr8()
 {
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_Push(top >> 0x08, Type::eByte);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt msb = Memory_ReadByte(HopperVM_valueStackMSBPage + sp1);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, Byte(msb));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eByte));
     return true;
 }
 
 Bool Instructions_BitAndFF()
 {
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_Push(top & 0xFF, Type::eByte);
+    UInt sp1 = HopperVM_sp - 0x01;
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, 0x00);
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eByte));
     return true;
 }
 
@@ -3437,7 +3531,11 @@ Bool Instructions_Swap()
 
 Bool Instructions_PushIM1()
 {
-    HopperVM_PushI(-0x01);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + HopperVM_sp, 0xFF);
+    Memory_WriteByte(HopperVM_valueStackMSBPage + HopperVM_sp, 0xFF);
+    Memory_WriteByte(HopperVM_typeStackPage + HopperVM_sp, Byte(Type::eInt));
+    
+    HopperVM_sp++;
     return true;
 }
 
@@ -3460,19 +3558,23 @@ Bool Instructions_NOP()
 
 Bool Instructions_Cast()
 {
-    HopperVM_Put(HopperVM_SP_Get() - 0x01, HopperVM_Get(HopperVM_SP_Get() - 0x01), Type(HopperVM_ReadByteOperand()));
+    Memory_WriteByte(HopperVM_typeStackPage + HopperVM_sp - 0x01, Memory_ReadProgramByte(HopperVM_pc));
+    
+    HopperVM_pc++;
     return true;
 }
 
 Bool Instructions_BitXor()
 {
-    Type ttype = (Type)0;
-    UInt top = HopperVM_Pop_R(ttype);
-    Type ntype = (Type)0;
-    UInt next = HopperVM_Pop_R(ntype);
-    HopperVM_AssertUInt(ttype, top);
-    HopperVM_AssertUInt(ntype, next);
-    HopperVM_Push((next | top) & (~(next & top)), Type::eUInt);
+    
+    HopperVM_sp--;
+    UInt top = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+    UInt sp1 = HopperVM_sp - 0x01;
+    UInt next = Memory_ReadByte(HopperVM_valueStackLSBPage + sp1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + sp1) << 0x08);
+    next = (next | top) & (~(next & top));
+    Memory_WriteByte(HopperVM_valueStackLSBPage + sp1, Byte(next & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + sp1, Byte(next >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + sp1, Byte(Type::eUInt));
     return true;
 }
 
@@ -3524,22 +3626,19 @@ Bool Instructions_Call()
 
 Bool Instructions_CallI()
 {
-    UInt methodAddress = HopperVM_ReadWordOperand();
-    HopperVM_PushCS(HopperVM_PC_Get());
-    HopperVM_PC_Set(methodAddress);
+    UInt methodAddress = Memory_ReadProgramByte(HopperVM_pc) + (Memory_ReadProgramByte(HopperVM_pc + 0x01) << 0x08);
+    UInt pc2 = HopperVM_pc + 0x02;
+    Memory_WriteByte(HopperVM_callStackLSBPage + HopperVM_csp, Byte(pc2 & 0xFF));
+    Memory_WriteByte(HopperVM_callStackMSBPage + HopperVM_csp, Byte(pc2 >> 0x08));
+    
+    HopperVM_csp++;
+    HopperVM_pc = methodAddress;
     return true;
 }
 
 Bool Instructions_CallRel()
 {
-    Type rtype = (Type)0;
-    UInt methodIndex = HopperVM_Pop_R(rtype);
-    HopperVM_AssertUInt(rtype, methodIndex);
-    if (methodIndex == 0x00)
-    {
-        Minimal_Error_Set(0x0F);
-        return false;
-    }
+    UInt methodIndex = HopperVM_Pop();
     HopperVM_PushCS(HopperVM_PC_Get());
     HopperVM_PC_Set(HopperVM_LookupMethod(methodIndex));
     return true;
@@ -3576,23 +3675,61 @@ Bool Instructions_LibCall()
 
 Bool Instructions_IncLocalBB()
 {
-    Int offset0 = HopperVM_ReadByteOffsetOperand();
-    Int offset1 = HopperVM_ReadByteOffsetOperand();
-    Byte address0 = Byte(Int(HopperVM_BP_Get()) + offset0);
-    Byte address1 = Byte(Int(HopperVM_BP_Get()) + offset1);
-    Type htype = (Type)0;
-    HopperVM_Put(address0, HopperVM_Get_R(address0, htype) + HopperVM_Get(address1), htype);
+    Int offset0 = 0;
+    Int offset1 = 0;
+    Byte address0 = 0;
+    Byte address1 = 0;
+    Byte htype = 0;
+    UInt value = 0;
+    offset0 = Int(Memory_ReadProgramByte(HopperVM_pc));
+    
+    HopperVM_pc++;
+    if (offset0 > 0x7F)
+    {
+        offset0 = offset0 - 0x0100;
+    }
+    offset1 = Int(Memory_ReadProgramByte(HopperVM_pc));
+    
+    HopperVM_pc++;
+    if (offset1 > 0x7F)
+    {
+        offset1 = offset1 - 0x0100;
+    }
+    address0 = Byte(Int(HopperVM_bp) + offset0);
+    address1 = Byte(Int(HopperVM_bp) + offset1);
+    htype = Memory_ReadByte(HopperVM_typeStackPage + address0);
+    value = Memory_ReadByte(HopperVM_valueStackLSBPage + address0) + (Memory_ReadByte(HopperVM_valueStackMSBPage + address0) << 0x08) + Memory_ReadByte(HopperVM_valueStackLSBPage + address1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + address1) << 0x08);
+    Memory_WriteByte(HopperVM_valueStackLSBPage + address0, Byte(value & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + address0, Byte(value >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + address0, htype);
     return true;
 }
 
 Bool Instructions_IncLocalIBB()
 {
-    Int offset0 = HopperVM_ReadByteOffsetOperand();
-    Int offset1 = HopperVM_ReadByteOffsetOperand();
-    Byte address0 = Byte(Int(HopperVM_BP_Get()) + offset0);
-    Byte address1 = Byte(Int(HopperVM_BP_Get()) + offset1);
-    Type htype = (Type)0;
-    HopperVM_Put(address0, External_IntToUInt(External_UIntToInt(HopperVM_Get_R(address0, htype)) + External_UIntToInt(HopperVM_Get(address1))), htype);
+    Int offset0 = Int(Memory_ReadProgramByte(HopperVM_pc));
+    
+    HopperVM_pc++;
+    if (offset0 > 0x7F)
+    {
+        offset0 = offset0 - 0x0100;
+    }
+    Int offset1 = Int(Memory_ReadProgramByte(HopperVM_pc));
+    
+    HopperVM_pc++;
+    if (offset1 > 0x7F)
+    {
+        offset1 = offset1 - 0x0100;
+    }
+    Byte address0 = Byte(Int(HopperVM_bp) + offset0);
+    Byte address1 = Byte(Int(HopperVM_bp) + offset1);
+    Byte htype = Memory_ReadByte(HopperVM_typeStackPage + address0);
+    Int value0 = External_UIntToInt(Memory_ReadByte(HopperVM_valueStackLSBPage + address0) + (Memory_ReadByte(HopperVM_valueStackMSBPage + address0) << 0x08));
+    Int value1 = External_UIntToInt(Memory_ReadByte(HopperVM_valueStackLSBPage + address1) + (Memory_ReadByte(HopperVM_valueStackMSBPage + address1) << 0x08));
+    value0 = value0 + value1;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + address0, Byte(value0 & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + address0, Byte(value0 >> 0x08));
+    Memory_WriteByte(HopperVM_typeStackPage + address0, htype);
     return true;
 }
 
@@ -3610,85 +3747,126 @@ Bool Instructions_IncGlobalBB()
 
 Bool Instructions_IncLocalB()
 {
-    Int offset = HopperVM_ReadByteOffsetOperand();
-    Type itype = (Type)0;
-    Byte address = Byte(Int(HopperVM_bp) + offset);
-    UInt value = HopperVM_Get_R(address, itype);
-    if (itype == Type::eByte)
+    Int offset = Int(Memory_ReadProgramByte(HopperVM_pc));
+    
+    HopperVM_pc++;
+    if (offset > 0x7F)
     {
-        itype = Type::eUInt;
+        offset = offset - 0x0100;
     }
-    HopperVM_Put(address, value + 0x01, itype);
+    Byte address = Byte(Int(HopperVM_bp) + offset);
+    Byte itype = Memory_ReadByte(HopperVM_typeStackPage + address);
+    if (itype == Byte(Type::eByte))
+    {
+        Memory_WriteByte(HopperVM_typeStackPage + address, Byte(Type::eUInt));
+    }
+    UInt value = Memory_ReadByte(HopperVM_valueStackLSBPage + address) + (Memory_ReadByte(HopperVM_valueStackMSBPage + address) << 0x08) + 0x01;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + address, Byte(value & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + address, Byte(value >> 0x08));
     return true;
 }
 
 Bool Instructions_DecLocalB()
 {
-    Int offset = HopperVM_ReadByteOffsetOperand();
-    Type itype = (Type)0;
-    Byte address = Byte(Int(HopperVM_BP_Get()) + offset);
-    UInt value = HopperVM_Get_R(address, itype);
-    HopperVM_Put(address, value - 0x01, itype);
+    Int offset = Int(Memory_ReadProgramByte(HopperVM_pc));
+    
+    HopperVM_pc++;
+    if (offset > 0x7F)
+    {
+        offset = offset - 0x0100;
+    }
+    Byte address = Byte(Int(HopperVM_bp) + offset);
+    UInt value = (Memory_ReadByte(HopperVM_valueStackLSBPage + address) + (Memory_ReadByte(HopperVM_valueStackMSBPage + address) << 0x08)) - 0x01;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + address, Byte(value & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + address, Byte(value >> 0x08));
     return true;
 }
 
 Bool Instructions_IncGlobalB()
 {
-    Byte address = Byte(HopperVM_ReadByteOperand() + HopperVM_GP_Get());
-    Type itype = (Type)0;
-    UInt value = HopperVM_Get_R(address, itype);
-    if (itype == Type::eByte)
+    Byte address = Byte(Memory_ReadProgramByte(HopperVM_pc) + HopperVM_gp);
+    
+    HopperVM_pc++;
+    Byte itype = Memory_ReadByte(HopperVM_typeStackPage + address);
+    if (itype == Byte(Type::eByte))
     {
-        itype = Type::eUInt;
+        Memory_WriteByte(HopperVM_typeStackPage + address, Byte(Type::eUInt));
     }
-    HopperVM_Put(address, value + 0x01, itype);
+    UInt value = Memory_ReadByte(HopperVM_valueStackLSBPage + address) + (Memory_ReadByte(HopperVM_valueStackMSBPage + address) << 0x08) + 0x01;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + address, Byte(value & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + address, Byte(value >> 0x08));
     return true;
 }
 
 Bool Instructions_DecGlobalB()
 {
-    Byte address = Byte(HopperVM_ReadByteOperand() + HopperVM_GP_Get());
-    Type itype = (Type)0;
-    UInt value = HopperVM_Get_R(address, itype);
-    if (itype == Type::eByte)
+    Byte address = Byte(Memory_ReadProgramByte(HopperVM_pc) + HopperVM_gp);
+    
+    HopperVM_pc++;
+    Byte itype = Memory_ReadByte(HopperVM_typeStackPage + address);
+    if (itype == Byte(Type::eByte))
     {
-        itype = Type::eUInt;
+        Memory_WriteByte(HopperVM_typeStackPage + address, Byte(Type::eUInt));
     }
-    HopperVM_Put(address, value - 0x01, itype);
+    UInt value = (Memory_ReadByte(HopperVM_valueStackLSBPage + address) + (Memory_ReadByte(HopperVM_valueStackMSBPage + address) << 0x08)) - 0x01;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + address, Byte(value & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + address, Byte(value >> 0x08));
     return true;
 }
 
 Bool Instructions_IncLocalIB()
 {
-    Int offset = HopperVM_ReadByteOffsetOperand();
-    Byte address = Byte(Int(HopperVM_BP_Get()) + offset);
-    Int value = HopperVM_GetI(address);
-    HopperVM_PutI(address, value + 0x01);
+    Int offset = Int(Memory_ReadProgramByte(HopperVM_pc));
+    
+    HopperVM_pc++;
+    if (offset > 0x7F)
+    {
+        offset = offset - 0x0100;
+    }
+    Byte address = Byte(Int(HopperVM_bp) + offset);
+    Int value = External_UIntToInt(Memory_ReadByte(HopperVM_valueStackLSBPage + address) + (Memory_ReadByte(HopperVM_valueStackMSBPage + address) << 0x08)) + 0x01;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + address, Byte(value & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + address, Byte(value >> 0x08));
     return true;
 }
 
 Bool Instructions_DecLocalIB()
 {
-    Int offset = HopperVM_ReadByteOffsetOperand();
-    Byte address = Byte(Int(HopperVM_BP_Get()) + offset);
-    Int value = HopperVM_GetI(address);
-    HopperVM_PutI(address, value - 0x01);
+    Int offset = Int(Memory_ReadProgramByte(HopperVM_pc));
+    
+    HopperVM_pc++;
+    if (offset > 0x7F)
+    {
+        offset = offset - 0x0100;
+    }
+    Byte address = Byte(Int(HopperVM_bp) + offset);
+    Int value = External_UIntToInt(Memory_ReadByte(HopperVM_valueStackLSBPage + address) + (Memory_ReadByte(HopperVM_valueStackMSBPage + address) << 0x08)) - 0x01;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + address, Byte(value & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + address, Byte(value >> 0x08));
     return true;
 }
 
 Bool Instructions_IncGlobalIB()
 {
-    Byte address = (HopperVM_ReadByteOperand() + HopperVM_GP_Get());
-    Int value = HopperVM_GetI(address);
-    HopperVM_PutI(address, value + 0x01);
+    Byte address = (Memory_ReadProgramByte(HopperVM_pc) + HopperVM_gp);
+    
+    HopperVM_pc++;
+    Int value = External_UIntToInt(Memory_ReadByte(HopperVM_valueStackLSBPage + address) + (Memory_ReadByte(HopperVM_valueStackMSBPage + address) << 0x08)) + 0x01;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + address, Byte(value & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + address, Byte(value >> 0x08));
     return true;
 }
 
 Bool Instructions_DecGlobalIB()
 {
-    Byte address = Byte(HopperVM_ReadByteOperand() + HopperVM_GP_Get());
-    Int value = HopperVM_GetI(address);
-    HopperVM_PutI(address, value - 0x01);
+    Byte address = 0;
+    Int value = 0;
+    address = (Memory_ReadProgramByte(HopperVM_pc) + HopperVM_gp);
+    
+    HopperVM_pc++;
+    value = External_UIntToInt(Memory_ReadByte(HopperVM_valueStackLSBPage + address) + (Memory_ReadByte(HopperVM_valueStackMSBPage + address) << 0x08)) - 0x01;
+    Memory_WriteByte(HopperVM_valueStackLSBPage + address, Byte(value & 0xFF));
+    Memory_WriteByte(HopperVM_valueStackMSBPage + address, Byte(value >> 0x08));
     return true;
 }
 
@@ -3727,7 +3905,6 @@ Bool Instructions_PopCopyRel()
     offset = HopperVM_ReadWordOffsetOperand();
     referenceAddress = Byte(Int(HopperVM_BP_Get()) + offset);
     localAddress = Byte(HopperVM_Get_R(referenceAddress, rtype));
-    HopperVM_AssertReference(rtype, localAddress);
     oldvalue = HopperVM_Get_R(localAddress, rtype);
     if (Types_IsReferenceType(rtype))
     {
@@ -3768,38 +3945,6 @@ Bool Instructions_PopCopyGlobal()
     return true;
 }
 
-void Runtime_ErrorDump(UInt number)
-{
-    IO_Write('D');
-    IO_Write('A');
-    IO_Write('N');
-    IO_Write('G');
-    IO_Write('!');
-    IO_WriteUInt(number);
-}
-
-void Runtime_Out4Hex(UInt value)
-{
-    Byte b = 0;
-    b = Byte(value >> 0x0C);
-    Runtime_SerialWriteChar(HRByte_ToHex(b));
-    b = Byte((value >> 0x08) & 0x0F);
-    Runtime_SerialWriteChar(HRByte_ToHex(b));
-    b = Byte((value >> 0x04) & 0x0F);
-    Runtime_SerialWriteChar(HRByte_ToHex(b));
-    b = Byte(value & 0x0F);
-    Runtime_SerialWriteChar(HRByte_ToHex(b));
-}
-
-void Runtime_Out2Hex(Byte value)
-{
-    Byte b = 0;
-    b = Byte((value >> 0x04) & 0x0F);
-    Runtime_SerialWriteChar(HRByte_ToHex(b));
-    b = Byte(value & 0x0F);
-    Runtime_SerialWriteChar(HRByte_ToHex(b));
-}
-
 void HRList_Clear(UInt _this)
 {
     Type etype = Type(Memory_ReadByte(_this + 4));
@@ -3823,7 +3968,7 @@ void HRList_clearAllItems(UInt pCurrent, Type etype)
         {
             break;;
         }
-        pNext = Memory_ReadWord(pCurrent + 4);
+        pNext = Memory_ReadWord(pCurrent + 2);
         HRList_clearItem(pCurrent, etype);
         pCurrent = pNext;
     }
@@ -3831,14 +3976,7 @@ void HRList_clearAllItems(UInt pCurrent, Type etype)
 
 void HRList_clearItem(UInt pCurrent, Type etype)
 {
-    UInt pData = Memory_ReadWord(pCurrent + 2);
-    Byte referenceCount = Memory_ReadByte(pCurrent + 0x01);
-    if (referenceCount == 0x00)
-    {
-        Runtime_ErrorDump(0x010E);
-        Minimal_Error_Set(0x0B);
-        return;
-    }
+    UInt pData = Memory_ReadWord(pCurrent + 0);
     Memory_Free(pCurrent);
     if (Types_IsReferenceType(etype))
     {
@@ -3985,12 +4123,6 @@ UInt GC_New(UInt size, Type htype)
 void GC_AddReference(UInt address)
 {
     Byte referenceCount = Memory_ReadByte(address + 0x01);
-    if (referenceCount == 0xFF)
-    {
-        Runtime_ErrorDump(0x03);
-        Minimal_Error_Set(0x0B);
-        return;
-    }
     
     referenceCount++;
     Memory_WriteByte(address + 0x01, referenceCount);
@@ -4053,14 +4185,6 @@ UInt GC_Clone(UInt original)
     }
     default:
     {
-        Runtime_Out4Hex(HopperVM_PC_Get());
-        IO_WriteHex(HopperVM_PC_Get());
-        IO_Write(':');
-        IO_WriteHex(original);
-        IO_Write('-');
-        IO_WriteHex(Byte(htype));
-        Runtime_ErrorDump(0x56);
-        Minimal_Error_Set(0x0A);
         break;
     }
     } // switch
@@ -4095,6 +4219,38 @@ UInt HRLong_Clone(UInt original)
     return address;
 }
 
+void Runtime_ErrorDump(UInt number)
+{
+    IO_Write('D');
+    IO_Write('A');
+    IO_Write('N');
+    IO_Write('G');
+    IO_Write('!');
+    IO_WriteUInt(number);
+}
+
+void Runtime_Out4Hex(UInt value)
+{
+    Byte b = 0;
+    b = Byte(value >> 0x0C);
+    Runtime_SerialWriteChar(HRByte_ToHex(b));
+    b = Byte((value >> 0x08) & 0x0F);
+    Runtime_SerialWriteChar(HRByte_ToHex(b));
+    b = Byte((value >> 0x04) & 0x0F);
+    Runtime_SerialWriteChar(HRByte_ToHex(b));
+    b = Byte(value & 0x0F);
+    Runtime_SerialWriteChar(HRByte_ToHex(b));
+}
+
+void Runtime_Out2Hex(Byte value)
+{
+    Byte b = 0;
+    b = Byte((value >> 0x04) & 0x0F);
+    Runtime_SerialWriteChar(HRByte_ToHex(b));
+    b = Byte(value & 0x0F);
+    Runtime_SerialWriteChar(HRByte_ToHex(b));
+}
+
 OpCode HopperVM_CurrentOpCode_Get()
 {
     return HopperVM_opCode;
@@ -4102,30 +4258,11 @@ OpCode HopperVM_CurrentOpCode_Get()
 
 UInt HopperVM_Pop_R(Type & htype)
 {
-    if (HopperVM_sp == 0x00)
-    {
-        Runtime_ErrorDump(0x05);
-        Minimal_Error_Set(0x07);
-        return 0x00;
-    }
     
     HopperVM_sp--;
     UInt value = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
     htype = Type(Memory_ReadByte(HopperVM_typeStackPage + HopperVM_sp));
     return value;
-}
-
-void HopperVM_AssertByte(Type htype, UInt value)
-{
-    if (htype != Type::eByte)
-    {
-        HopperVM_AssertUInt(htype, value);
-    }
-    if (value > 0xFF)
-    {
-        Runtime_ErrorDump(0x81);
-        Minimal_Error_Set(0x0B);
-    }
 }
 
 UInt HopperVM_R0_Get()
@@ -4140,12 +4277,6 @@ Type HopperVM_R0Type_Get()
 
 void HopperVM_Push(UInt value, Type htype)
 {
-    if (HopperVM_sp == 0x0100)
-    {
-        Runtime_ErrorDump(0x04);
-        Minimal_Error_Set(0x07);
-        return;
-    }
     Memory_WriteByte(HopperVM_valueStackLSBPage + HopperVM_sp, Byte(value & 0xFF));
     Memory_WriteByte(HopperVM_valueStackMSBPage + HopperVM_sp, Byte(value >> 0x08));
     Memory_WriteByte(HopperVM_typeStackPage + HopperVM_sp, Byte(htype));
@@ -4163,108 +4294,22 @@ void HopperVM_R0Type_Set(Type value)
     HopperVM_r0Type = value;
 }
 
-void HopperVM_AssertUInt(Type htype, UInt value)
+Int HopperVM_PopI()
 {
-    switch (htype)
-    {
-    case Type::eByte:
-    case Type::eChar:
-    case Type::eBool:
-    case Type::eUInt:
-    case Type::eType:
-    {
-        break;
-    }
-    case Type::eInt:
-    {
-        if (value > 0x7FFF)
-        {
-            Runtime_ErrorDump(0x23);
-            Minimal_Error_Set(0x0D);
-        }
-        break;
-    }
-    default:
-    {
-        IO_Write(' ');
-        IO_WriteHex(Byte(htype));
-        IO_Write(' ');
-        Runtime_ErrorDump(0x22);
-        Minimal_Error_Set(0x0B);
-        break;
-    }
-    } // switch
-}
-
-UInt HopperVM_Pop()
-{
-    if (HopperVM_sp == 0x00)
-    {
-        Runtime_ErrorDump(0x0100);
-        Minimal_Error_Set(0x07);
-        return 0x00;
-    }
-    
-    HopperVM_sp--;
-    return Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
-}
-
-void HopperVM_AssertBool(Type htype, UInt value)
-{
-    if (htype != Type::eBool)
-    {
-        HopperVM_AssertUInt(htype, value);
-    }
-    if (value > 0x01)
-    {
-        Runtime_ErrorDump(0x24);
-        Minimal_Error_Set(0x0B);
-    }
-}
-
-Int HopperVM_PopI_R(Type & htype)
-{
-    if (HopperVM_sp == 0x00)
-    {
-        Runtime_ErrorDump(0x02);
-        Minimal_Error_Set(0x07);
-        return 0x00;
-    }
     
     HopperVM_sp--;
     UInt value = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
-    htype = Type(Memory_ReadByte(HopperVM_typeStackPage + HopperVM_sp));
     return External_UIntToInt(value);
-}
-
-void HopperVM_AssertInt(Type htype)
-{
-    HopperVM_AssertInt(htype, 0x00);
 }
 
 void HopperVM_PushI(Int ivalue)
 {
     UInt value = External_IntToUInt(ivalue);
-    if (HopperVM_sp == 0x0100)
-    {
-        Runtime_ErrorDump(0x07);
-        Runtime_ErrorDump(0x01);
-        Minimal_Error_Set(0x07);
-        return;
-    }
     Memory_WriteByte(HopperVM_valueStackLSBPage + HopperVM_sp, Byte(value & 0xFF));
     Memory_WriteByte(HopperVM_valueStackMSBPage + HopperVM_sp, Byte(value >> 0x08));
     Memory_WriteByte(HopperVM_typeStackPage + HopperVM_sp, Byte(Type::eInt));
     
     HopperVM_sp++;
-}
-
-Byte HopperVM_ReadByteOperand()
-{
-    Byte operand = Memory_ReadProgramByte(HopperVM_pc);
-    
-    HopperVM_pc++;
-    return operand;
 }
 
 void HopperVM_CNP_Set(Bool value)
@@ -4296,23 +4341,12 @@ void HopperVM_Put(Byte address, UInt value, Type htype)
     Memory_WriteByte(HopperVM_typeStackPage + address, Byte(htype));
 }
 
-void HopperVM_AssertReference(Type htype, UInt value)
+Byte HopperVM_ReadByteOperand()
 {
-    switch (htype)
-    {
-    case Type::eByte:
-    case Type::eUInt:
-    case Type::eReference:
-    {
-        break;
-    }
-    default:
-    {
-        Runtime_ErrorDump(0x20);
-        Minimal_Error_Set(0x0B);
-        break;
-    }
-    } // switch
+    Byte operand = Memory_ReadProgramByte(HopperVM_pc);
+    
+    HopperVM_pc++;
+    return operand;
 }
 
 Byte HopperVM_GP_Get()
@@ -4322,12 +4356,6 @@ Byte HopperVM_GP_Get()
 
 void HopperVM_PushCS(UInt value)
 {
-    if (HopperVM_csp == 0x0100)
-    {
-        Runtime_ErrorDump(0x08);
-        Minimal_Error_Set(0x06);
-        return;
-    }
     Memory_WriteByte(HopperVM_callStackLSBPage + HopperVM_csp, Byte(value & 0xFF));
     Memory_WriteByte(HopperVM_callStackMSBPage + HopperVM_csp, Byte(value >> 0x08));
     
@@ -4356,27 +4384,11 @@ UInt HopperVM_LookupMethod(UInt methodIndex)
     return address;
 }
 
-void HopperVM_BP_Set(Byte value)
+UInt HopperVM_Pop()
 {
-    HopperVM_bp = value;
-}
-
-UInt HopperVM_PopCS()
-{
-    if (HopperVM_csp == 0x00)
-    {
-        Runtime_ErrorDump(0x09);
-        Minimal_Error_Set(0x06);
-        return 0x00;
-    }
     
-    HopperVM_csp--;
-    return Memory_ReadByte(HopperVM_callStackLSBPage + HopperVM_csp) + (Memory_ReadByte(HopperVM_callStackMSBPage + HopperVM_csp) << 0x08);
-}
-
-Byte HopperVM_CSPStart_Get()
-{
-    return HopperVM_cspStart;
+    HopperVM_sp--;
+    return Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
 }
 
 Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
@@ -4405,16 +4417,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt args = HopperVM_Pop_R(ltype);
         Type stype = (Type)0;
         UInt path = HopperVM_Pop_R(stype);
-        if (ltype != Type::eList)
-        {
-            Runtime_ErrorDump(0x65);
-            Minimal_Error_Set(0x0B);
-        }
-        if (stype != Type::eString)
-        {
-            Runtime_ErrorDump(0x65);
-            Minimal_Error_Set(0x0B);
-        }
         UInt result = HopperVM_RuntimeExecute(path, args);
         GC_Release(args);
         GC_Release(path);
@@ -4454,7 +4456,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type atype = (Type)0;
         UInt size = HopperVM_Pop_R(atype);
-        HopperVM_AssertUInt(atype, size);
         UInt address = Memory_Allocate(size);
         HopperVM_Push(address, Type::eUInt);
         break;
@@ -4463,7 +4464,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type atype = (Type)0;
         UInt address = HopperVM_Pop_R(atype);
-        HopperVM_AssertUInt(atype, address);
         Memory_Free(address);
         break;
     }
@@ -4473,8 +4473,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt index = HopperVM_Pop_R(itype);
         Type atype = (Type)0;
         UInt address = HopperVM_Pop_R(atype);
-        HopperVM_AssertUInt(itype, index);
-        HopperVM_AssertUInt(atype, address);
         address = address + (index >> 0x03);
         Byte mask = (0x01 << (index & 0x07));
         Byte value = Memory_ReadByte(address) & mask;
@@ -4489,9 +4487,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt index = HopperVM_Pop_R(itype);
         Type atype = (Type)0;
         UInt address = HopperVM_Pop_R(atype);
-        HopperVM_AssertByte(btype, data);
-        HopperVM_AssertUInt(itype, index);
-        HopperVM_AssertUInt(atype, address);
         address = address + (index >> 0x03);
         Byte mask = (0x01 << (index & 0x07));
         Byte current = Memory_ReadByte(address);
@@ -4509,7 +4504,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type atype = (Type)0;
         UInt address = HopperVM_Pop_R(atype);
-        HopperVM_AssertUInt(atype, address);
         Byte b = Memory_ReadByte(address);
         HopperVM_Push(b, Type::eByte);
         break;
@@ -4520,8 +4514,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt b = HopperVM_Pop_R(btype);
         Type atype = (Type)0;
         UInt address = HopperVM_Pop_R(atype);
-        HopperVM_AssertByte(btype, b);
-        HopperVM_AssertUInt(atype, address);
         Memory_WriteByte(address, Byte(b));
         break;
     }
@@ -4529,7 +4521,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type atype = (Type)0;
         UInt address = HopperVM_Pop_R(atype);
-        HopperVM_AssertUInt(atype, address);
         UInt w = Memory_ReadWord(address);
         HopperVM_Push(w, Type::eUInt);
         break;
@@ -4540,8 +4531,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt w = HopperVM_Pop_R(btype);
         Type atype = (Type)0;
         UInt address = HopperVM_Pop_R(atype);
-        HopperVM_AssertUInt(btype, w);
-        HopperVM_AssertUInt(atype, address);
         Memory_WriteWord(address, w);
         break;
     }
@@ -4567,11 +4556,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
-        if (stype != Type::eString)
-        {
-            Runtime_ErrorDump(0x65);
-            Minimal_Error_Set(0x0B);
-        }
         if (0x00 != HopperVM_currentDirectory)
         {
             GC_Release(HopperVM_currentDirectory);
@@ -4590,11 +4574,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
-        if (stype != Type::eString)
-        {
-            Runtime_ErrorDump(0x66);
-            Minimal_Error_Set(0x0B);
-        }
         Bool result = HRFile_Exists(str);
         HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
         GC_Release(str);
@@ -4604,11 +4583,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         UInt hrfile = HopperVM_Pop_R(stype);
-        if (stype != Type::eFile)
-        {
-            Runtime_ErrorDump(0x67);
-            Minimal_Error_Set(0x0B);
-        }
         Bool result = HRFile_IsValid(hrfile);
         HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
         GC_Release(hrfile);
@@ -4618,11 +4592,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         UInt hrfile = HopperVM_Pop_R(stype);
-        if (stype != Type::eFile)
-        {
-            Runtime_ErrorDump(0x68);
-            Minimal_Error_Set(0x0B);
-        }
         HRFile_Flush(hrfile);
         GC_Release(hrfile);
         break;
@@ -4631,11 +4600,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         UInt hrfile = HopperVM_Pop_R(stype);
-        if (stype != Type::eFile)
-        {
-            Runtime_ErrorDump(0x69);
-            Minimal_Error_Set(0x0B);
-        }
         UInt str = HRFile_ReadLine(hrfile);
         GC_Release(hrfile);
         HopperVM_Push(str, Type::eString);
@@ -4649,11 +4613,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         {
             Type stype = (Type)0;
             UInt hrfile = HopperVM_Pop_R(stype);
-            if (stype != Type::eFile)
-            {
-                Runtime_ErrorDump(0x6A);
-                Minimal_Error_Set(0x0B);
-            }
             UInt b = HRFile_Read(hrfile);
             GC_Release(hrfile);
             HopperVM_Push(b, Type::eByte);
@@ -4665,16 +4624,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt hrlong = HopperVM_Pop_R(ltype);
             Type stype = (Type)0;
             UInt hrfile = HopperVM_Pop_R(stype);
-            if (ltype != Type::eLong)
-            {
-                Runtime_ErrorDump(0x6B);
-                Minimal_Error_Set(0x0B);
-            }
-            if (stype != Type::eFile)
-            {
-                Runtime_ErrorDump(0x6C);
-                Minimal_Error_Set(0x0B);
-            }
             UInt b = HRFile_Read(hrfile, hrlong);
             GC_Release(hrfile);
             GC_Release(hrlong);
@@ -4689,17 +4638,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt hrarray = HopperVM_Pop_R(atype);
             Type stype = (Type)0;
             UInt hrfile = HopperVM_Pop_R(stype);
-            HopperVM_AssertUInt(ltype, bufferSize);
-            if (atype != Type::eArray)
-            {
-                Runtime_ErrorDump(0x6C);
-                Minimal_Error_Set(0x0B);
-            }
-            if (stype != Type::eFile)
-            {
-                Runtime_ErrorDump(0x6C);
-                Minimal_Error_Set(0x0B);
-            }
             UInt bytesRead = HRFile_Read(hrfile, hrarray, bufferSize);
             GC_Release(hrfile);
             GC_Release(hrarray);
@@ -4718,11 +4656,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt top = HopperVM_Pop();
             Type stype = (Type)0;
             UInt hrfile = HopperVM_Pop_R(stype);
-            if (stype != Type::eFile)
-            {
-                Runtime_ErrorDump(0x6D);
-                Minimal_Error_Set(0x0B);
-            }
             HRFile_Append(hrfile, Byte(top));
             GC_Release(hrfile);
             break;
@@ -4733,16 +4666,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt str = HopperVM_Pop_R(stype);
             Type ftype = (Type)0;
             UInt hrfile = HopperVM_Pop_R(ftype);
-            if (stype != Type::eString)
-            {
-                Runtime_ErrorDump(0x6E);
-                Minimal_Error_Set(0x0B);
-            }
-            if (ftype != Type::eFile)
-            {
-                Runtime_ErrorDump(0x6F);
-                Minimal_Error_Set(0x0B);
-            }
             HRFile_Append(hrfile, str);
             GC_Release(str);
             GC_Release(hrfile);
@@ -4755,11 +4678,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
-        if (stype != Type::eString)
-        {
-            Runtime_ErrorDump(0x70);
-            Minimal_Error_Set(0x0B);
-        }
         UInt result = HRFile_Create(str);
         HopperVM_Push(result, Type::eFile);
         GC_Release(str);
@@ -4769,11 +4687,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
-        if (stype != Type::eString)
-        {
-            Runtime_ErrorDump(0x71);
-            Minimal_Error_Set(0x0B);
-        }
         UInt result = HRFile_Open(str);
         HopperVM_Push(result, Type::eFile);
         GC_Release(str);
@@ -4783,11 +4696,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
-        if (stype != Type::eString)
-        {
-            Runtime_ErrorDump(0x72);
-            Minimal_Error_Set(0x0B);
-        }
         HRFile_Delete(str);
         GC_Release(str);
         break;
@@ -4796,11 +4704,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
-        if (stype != Type::eString)
-        {
-            Runtime_ErrorDump(0x73);
-            Minimal_Error_Set(0x0B);
-        }
         UInt result = HRFile_GetTimeStamp(str);
         HopperVM_Push(result, Type::eLong);
         GC_Release(str);
@@ -4810,11 +4713,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
-        if (stype != Type::eString)
-        {
-            Runtime_ErrorDump(0x73);
-            Minimal_Error_Set(0x0B);
-        }
         UInt result = HRFile_GetTime(str);
         HopperVM_Push(result, Type::eString);
         GC_Release(str);
@@ -4824,11 +4722,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
-        if (stype != Type::eString)
-        {
-            Runtime_ErrorDump(0x73);
-            Minimal_Error_Set(0x0B);
-        }
         UInt result = HRFile_GetDate(str);
         HopperVM_Push(result, Type::eString);
         GC_Release(str);
@@ -4838,11 +4731,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
-        if (stype != Type::eString)
-        {
-            Runtime_ErrorDump(0x73);
-            Minimal_Error_Set(0x0B);
-        }
         UInt result = HRDirectory_GetTime(str);
         HopperVM_Push(result, Type::eString);
         GC_Release(str);
@@ -4852,11 +4740,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
-        if (stype != Type::eString)
-        {
-            Runtime_ErrorDump(0x73);
-            Minimal_Error_Set(0x0B);
-        }
         UInt result = HRDirectory_GetDate(str);
         HopperVM_Push(result, Type::eString);
         GC_Release(str);
@@ -4866,11 +4749,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
-        if (stype != Type::eString)
-        {
-            Runtime_ErrorDump(0x74);
-            Minimal_Error_Set(0x0B);
-        }
         UInt result = HRFile_GetSize(str);
         HopperVM_Push(result, Type::eLong);
         GC_Release(str);
@@ -4886,11 +4764,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
-        if (stype != Type::eString)
-        {
-            Runtime_ErrorDump(0x75);
-            Minimal_Error_Set(0x0B);
-        }
         Bool result = HRDirectory_Exists(str);
         HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
         GC_Release(str);
@@ -4900,11 +4773,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
-        if (stype != Type::eString)
-        {
-            Runtime_ErrorDump(0x76);
-            Minimal_Error_Set(0x0B);
-        }
         UInt result = HRDirectory_Open(str);
         HopperVM_Push(result, Type::eDirectory);
         GC_Release(str);
@@ -4914,11 +4782,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         UInt hrdir = HopperVM_Pop_R(stype);
-        if (stype != Type::eDirectory)
-        {
-            Runtime_ErrorDump(0x77);
-            Minimal_Error_Set(0x0B);
-        }
         Bool result = HRDirectory_IsValid(hrdir);
         HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
         GC_Release(hrdir);
@@ -4932,11 +4795,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         {
             Type stype = (Type)0;
             UInt hrdir = HopperVM_Pop_R(stype);
-            if (stype != Type::eDirectory)
-            {
-                Runtime_ErrorDump(0x78);
-                Minimal_Error_Set(0x0B);
-            }
             UInt result = HRDirectory_GetFileCount(hrdir);
             HopperVM_Push(result, Type::eUInt);
             GC_Release(hrdir);
@@ -4949,11 +4807,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt skipped = HopperVM_Get_R(address, utype);
             Type stype = (Type)0;
             UInt hrdir = HopperVM_Pop_R(stype);
-            if (stype != Type::eDirectory)
-            {
-                Runtime_ErrorDump(0x78);
-                Minimal_Error_Set(0x0B);
-            }
             UInt result = HRDirectory_GetFileCount_R(hrdir, skipped);
             HopperVM_Push(result, Type::eUInt);
             HopperVM_Put(address, skipped, Type::eUInt);
@@ -4971,11 +4824,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         {
             Type stype = (Type)0;
             UInt hrdir = HopperVM_Pop_R(stype);
-            if (stype != Type::eDirectory)
-            {
-                Runtime_ErrorDump(0x79);
-                Minimal_Error_Set(0x0B);
-            }
             UInt result = HRDirectory_GetDirectoryCount(hrdir);
             HopperVM_Push(result, Type::eUInt);
             GC_Release(hrdir);
@@ -4988,11 +4836,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt skipped = HopperVM_Get_R(address, utype);
             Type stype = (Type)0;
             UInt hrdir = HopperVM_Pop_R(stype);
-            if (stype != Type::eDirectory)
-            {
-                Runtime_ErrorDump(0x79);
-                Minimal_Error_Set(0x0B);
-            }
             UInt result = HRDirectory_GetDirectoryCount_R(hrdir, skipped);
             HopperVM_Push(result, Type::eUInt);
             HopperVM_Put(address, skipped, Type::eUInt);
@@ -5008,12 +4851,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt index = HopperVM_Pop_R(itype);
         Type stype = (Type)0;
         UInt hrdir = HopperVM_Pop_R(stype);
-        HopperVM_AssertUInt(itype, index);
-        if (stype != Type::eDirectory)
-        {
-            Runtime_ErrorDump(0x7A);
-            Minimal_Error_Set(0x0B);
-        }
         UInt result = HRDirectory_GetFile(hrdir, index);
         HopperVM_Push(result, Type::eString);
         GC_Release(hrdir);
@@ -5025,12 +4862,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt index = HopperVM_Pop_R(itype);
         Type stype = (Type)0;
         UInt hrdir = HopperVM_Pop_R(stype);
-        HopperVM_AssertUInt(itype, index);
-        if (stype != Type::eDirectory)
-        {
-            Runtime_ErrorDump(0x7B);
-            Minimal_Error_Set(0x0B);
-        }
         UInt result = HRDirectory_GetDirectory(hrdir, index);
         HopperVM_Push(result, Type::eString);
         GC_Release(hrdir);
@@ -5040,11 +4871,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
-        if (stype != Type::eString)
-        {
-            Runtime_ErrorDump(0x7C);
-            Minimal_Error_Set(0x0B);
-        }
         HRDirectory_Delete(str);
         GC_Release(str);
         break;
@@ -5053,11 +4879,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
-        if (stype != Type::eString)
-        {
-            Runtime_ErrorDump(0x7D);
-            Minimal_Error_Set(0x0B);
-        }
         HRDirectory_Create(str);
         GC_Release(str);
         break;
@@ -5078,7 +4899,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type atype = (Type)0;
         UInt ch = HopperVM_Pop_R(atype);
-        HopperVM_AssertChar(atype, ch);
         Runtime_SerialWriteChar(Char(ch));
         break;
     }
@@ -5086,11 +4906,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         UInt str = HopperVM_Pop_R(stype);
-        if (stype != Type::eString)
-        {
-            Runtime_ErrorDump(0xD3);
-            Minimal_Error_Set(0x0B);
-        }
         External_SerialWriteString(str);
         break;
     }
@@ -5098,7 +4913,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type atype = (Type)0;
         UInt location = HopperVM_Pop_R(atype);
-        HopperVM_AssertUInt(atype, location);
         UInt address = HRLong_NewFromConstant(HopperVM_constAddress + location);
         HopperVM_Push(address, Type::eLong);
         break;
@@ -5107,7 +4921,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type atype = (Type)0;
         UInt location = HopperVM_Pop_R(atype);
-        HopperVM_AssertUInt(atype, location);
         UInt address = HRFloat_NewFromConstant(HopperVM_constAddress + location);
         HopperVM_Push(address, Type::eFloat);
         break;
@@ -5122,8 +4935,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt length = HopperVM_Pop_R(ltype);
             Type atype = (Type)0;
             UInt location = HopperVM_Pop_R(atype);
-            HopperVM_AssertUInt(ltype, length);
-            HopperVM_AssertUInt(atype, location);
             UInt address = HRString_NewFromConstant0(HopperVM_constAddress + location, length);
             HopperVM_Push(address, Type::eString);
             break;
@@ -5132,7 +4943,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         {
             Type utype = (Type)0;
             UInt doubleChar = HopperVM_Pop_R(utype);
-            HopperVM_AssertUInt(utype, doubleChar);
             UInt address = HRString_NewFromConstant1(doubleChar);
             HopperVM_Push(address, Type::eString);
             break;
@@ -5153,7 +4963,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         {
             Type utype = (Type)0;
             UInt content = HopperVM_Pop_R(utype);
-            HopperVM_AssertUInt(utype, content);
             Byte lsb = Byte(content & 0xFF);
             Byte msb = Byte(content >> 0x08);
             if (lsb == 0x00)
@@ -5180,13 +4989,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        if (ttype != Type::eString)
-        {
-            IO_WriteLn();
-            IO_WriteHex(Byte(ttype));
-            Runtime_ErrorDump(0x1E);
-            Minimal_Error_Set(0x0B);
-        }
         UInt length = HRString_GetLength(_this);
         GC_Release(_this);
         HopperVM_Push(length, Type::eUInt);
@@ -5198,12 +5000,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt index = HopperVM_Pop_R(atype);
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        HopperVM_AssertUInt(atype, index);
-        if (ttype != Type::eString)
-        {
-            Runtime_ErrorDump(0x1D);
-            Minimal_Error_Set(0x0B);
-        }
         Char ch = HRString_GetChar(_this, index);
         GC_Release(_this);
         HopperVM_Push(UInt(ch), Type::eChar);
@@ -5217,13 +5013,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt index = HopperVM_Pop_R(itype);
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        HopperVM_AssertChar(atype, ch);
-        HopperVM_AssertUInt(itype, index);
-        if (ttype != Type::eString)
-        {
-            Runtime_ErrorDump(0x1C);
-            Minimal_Error_Set(0x0B);
-        }
         UInt result = HRString_InsertChar(_this, index, Char(ch));
         GC_Release(_this);
         HopperVM_Push(result, Type::eString);
@@ -5237,11 +5026,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         {
             Type ttype = (Type)0;
             UInt _this = HopperVM_Pop_R(ttype);
-            if (ttype != Type::eString)
-            {
-                Runtime_ErrorDump(0x1B);
-                Minimal_Error_Set(0x0B);
-            }
             UInt result = HRString_ToUpper(_this);
             GC_Release(_this);
             HopperVM_Push(result, Type::eString);
@@ -5252,11 +5036,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             Type htype = (Type)0;
             Byte address = Byte(HopperVM_Pop_R(htype));
             UInt str = HopperVM_Get_R(address, htype);
-            if (htype != Type::eString)
-            {
-                Runtime_ErrorDump(0x13);
-                Minimal_Error_Set(0x0B);
-            }
             HRString_ToUpper_R(str);
             HopperVM_Put(address, str, Type::eString);
             break;
@@ -5272,11 +5051,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         {
             Type ttype = (Type)0;
             UInt _this = HopperVM_Pop_R(ttype);
-            if (ttype != Type::eString)
-            {
-                Runtime_ErrorDump(0x1B);
-                Minimal_Error_Set(0x0B);
-            }
             UInt result = HRString_ToLower(_this);
             GC_Release(_this);
             HopperVM_Push(result, Type::eString);
@@ -5287,11 +5061,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             Type htype = (Type)0;
             Byte address = Byte(HopperVM_Pop_R(htype));
             UInt str = HopperVM_Get_R(address, htype);
-            if (htype != Type::eString)
-            {
-                Runtime_ErrorDump(0x13);
-                Minimal_Error_Set(0x0B);
-            }
             HRString_ToLower_R(str);
             HopperVM_Put(address, str, Type::eString);
             break;
@@ -5309,12 +5078,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt with = HopperVM_Pop_R(atype);
             Type ttype = (Type)0;
             UInt _this = HopperVM_Pop_R(ttype);
-            HopperVM_AssertChar(atype, with);
-            if (ttype != Type::eString)
-            {
-                Runtime_ErrorDump(0x1B);
-                Minimal_Error_Set(0x0B);
-            }
             Bool result = HRString_StartsWith(_this, Char(with));
             GC_Release(_this);
             HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
@@ -5326,11 +5089,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt with = HopperVM_Pop_R(atype);
             Type ttype = (Type)0;
             UInt _this = HopperVM_Pop_R(ttype);
-            if ((atype != Type::eString) || (ttype != Type::eString))
-            {
-                Runtime_ErrorDump(0x1A);
-                Minimal_Error_Set(0x0B);
-            }
             Bool result = HRString_StartsWith(_this, with);
             GC_Release(_this);
             GC_Release(with);
@@ -5356,12 +5114,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt with = HopperVM_Pop_R(atype);
             Type ttype = (Type)0;
             UInt _this = HopperVM_Pop_R(ttype);
-            HopperVM_AssertChar(atype, with);
-            if (ttype != Type::eString)
-            {
-                Runtime_ErrorDump(0x1B);
-                Minimal_Error_Set(0x0B);
-            }
             Bool result = HRString_Contains(_this, Char(with));
             GC_Release(_this);
             HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
@@ -5389,13 +5141,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt with = HopperVM_Pop_R(atype);
             Type ttype = (Type)0;
             UInt _this = HopperVM_Pop_R(ttype);
-            HopperVM_AssertUInt(htype, index);
-            HopperVM_AssertChar(atype, with);
-            if (ttype != Type::eString)
-            {
-                Runtime_ErrorDump(0x1B);
-                Minimal_Error_Set(0x0B);
-            }
             Bool result = HRString_IndexOf_R(_this, Char(with), index);
             if (result)
             {
@@ -5416,14 +5161,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt with = HopperVM_Pop_R(atype);
             Type ttype = (Type)0;
             UInt _this = HopperVM_Pop_R(ttype);
-            HopperVM_AssertUInt(htype, index);
-            HopperVM_AssertUInt(itype, searchIndex);
-            HopperVM_AssertChar(atype, with);
-            if (ttype != Type::eString)
-            {
-                Runtime_ErrorDump(0x1A);
-                Minimal_Error_Set(0x0B);
-            }
             Bool result = HRString_IndexOf_R(_this, Char(with), searchIndex, index);
             if (result)
             {
@@ -5452,12 +5189,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt with = HopperVM_Pop_R(atype);
             Type ttype = (Type)0;
             UInt _this = HopperVM_Pop_R(ttype);
-            HopperVM_AssertChar(atype, with);
-            if (ttype != Type::eString)
-            {
-                Runtime_ErrorDump(0x1B);
-                Minimal_Error_Set(0x0B);
-            }
             Bool result = HRString_EndsWith(_this, Char(with));
             GC_Release(_this);
             HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
@@ -5469,11 +5200,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt with = HopperVM_Pop_R(atype);
             Type ttype = (Type)0;
             UInt _this = HopperVM_Pop_R(ttype);
-            if ((atype != Type::eString) || (ttype != Type::eString))
-            {
-                Runtime_ErrorDump(0x1A);
-                Minimal_Error_Set(0x0B);
-            }
             Bool result = HRString_EndsWith(_this, with);
             GC_Release(_this);
             GC_Release(with);
@@ -5489,15 +5215,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt right = HopperVM_Pop_R(atype);
         Type btype = (Type)0;
         UInt left = HopperVM_Pop_R(btype);
-        if ((atype != Type::eString) || (btype != Type::eString))
-        {
-            IO_WriteLn();
-            IO_WriteHex(Byte(btype));
-            IO_Write('=');
-            IO_WriteHex(Byte(atype));
-            Runtime_ErrorDump(0x4D);
-            Minimal_Error_Set(0x0B);
-        }
         Int result = HRString_Compare(left, right);
         GC_Release(right);
         GC_Release(left);
@@ -5516,11 +5233,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt from = HopperVM_Pop_R(btype);
             Type ttype = (Type)0;
             UInt _this = HopperVM_Pop_R(ttype);
-            if ((atype != Type::eString) || (btype != Type::eString) || (ttype != Type::eString))
-            {
-                Runtime_ErrorDump(0x19);
-                Minimal_Error_Set(0x0B);
-            }
             UInt result = HRString_Replace(_this, from, to);
             GC_Release(_this);
             GC_Release(to);
@@ -5536,13 +5248,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt from = HopperVM_Pop_R(btype);
             Type ttype = (Type)0;
             UInt _this = HopperVM_Pop_R(ttype);
-            HopperVM_AssertChar(atype, to);
-            HopperVM_AssertChar(btype, from);
-            if (ttype != Type::eString)
-            {
-                Runtime_ErrorDump(0x18);
-                Minimal_Error_Set(0x0B);
-            }
             UInt result = HRString_Replace(_this, Char(from), Char(to));
             GC_Release(_this);
             HopperVM_Push(result, Type::eString);
@@ -5561,11 +5266,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt append = HopperVM_Pop_R(atype);
             Type ttype = (Type)0;
             UInt _this = HopperVM_Pop_R(ttype);
-            if ((atype != Type::eString) || (ttype != Type::eString))
-            {
-                Runtime_ErrorDump(0x17);
-                Minimal_Error_Set(0x0B);
-            }
             UInt result = HRString_Append(_this, append);
             GC_Release(_this);
             GC_Release(append);
@@ -5578,12 +5278,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt append = HopperVM_Pop_R(atype);
             Type ttype = (Type)0;
             UInt _this = HopperVM_Pop_R(ttype);
-            HopperVM_AssertChar(atype, append);
-            if (ttype != Type::eString)
-            {
-                Runtime_ErrorDump(0x16);
-                Minimal_Error_Set(0x0B);
-            }
             UInt result = HRString_Append(_this, Char(append));
             GC_Release(_this);
             HopperVM_Push(result, Type::eString);
@@ -5602,12 +5296,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt start = HopperVM_Pop_R(stype);
             Type ttype = (Type)0;
             UInt _this = HopperVM_Pop_R(ttype);
-            HopperVM_AssertUInt(stype, start);
-            if (ttype != Type::eString)
-            {
-                Runtime_ErrorDump(0x15);
-                Minimal_Error_Set(0x0B);
-            }
             UInt result = HRString_Substring(_this, start);
             GC_Release(_this);
             HopperVM_Push(result, Type::eString);
@@ -5621,13 +5309,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             UInt start = HopperVM_Pop_R(stype);
             Type ttype = (Type)0;
             UInt _this = HopperVM_Pop_R(ttype);
-            HopperVM_AssertUInt(ltype, limit);
-            HopperVM_AssertUInt(stype, start);
-            if (ttype != Type::eString)
-            {
-                Runtime_ErrorDump(0x14);
-                Minimal_Error_Set(0x0B);
-            }
             UInt result = HRString_Substring(_this, start, limit);
             GC_Release(_this);
             HopperVM_Push(result, Type::eString);
@@ -5640,12 +5321,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             Type htype = (Type)0;
             Byte address = Byte(HopperVM_Pop_R(htype));
             UInt str = HopperVM_Get_R(address, htype);
-            HopperVM_AssertUInt(stype, start);
-            if (htype != Type::eString)
-            {
-                Runtime_ErrorDump(0x13);
-                Minimal_Error_Set(0x0B);
-            }
             HRString_Substring_R(str, start);
             HopperVM_Put(address, str, Type::eString);
             break;
@@ -5667,19 +5342,9 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         {
             Type atype = (Type)0;
             UInt append = HopperVM_Pop_R(atype);
-            if (atype != Type::eString)
-            {
-                Runtime_ErrorDump(0x2B);
-                Minimal_Error_Set(0x0B);
-            }
             Type htype = (Type)0;
             Byte address = Byte(HopperVM_Pop_R(htype));
             UInt str = HopperVM_Get_R(address, htype);
-            if (htype != Type::eString)
-            {
-                Runtime_ErrorDump(0x010F);
-                Minimal_Error_Set(0x0B);
-            }
             HRString_BuildString_R(str, append);
             HopperVM_Put(address, str, Type::eString);
             GC_Release(append);
@@ -5689,14 +5354,8 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         {
             Type htype = (Type)0;
             Char ch = Char(HopperVM_Pop_R(htype));
-            HopperVM_AssertChar(htype, Byte(ch));
             Byte address = Byte(HopperVM_Pop_R(htype));
             UInt str = HopperVM_Get_R(address, htype);
-            if (htype != Type::eString)
-            {
-                Runtime_ErrorDump(0x0110);
-                Minimal_Error_Set(0x0B);
-            }
             HRString_BuildChar_R(str, ch);
             HopperVM_Put(address, str, Type::eString);
             break;
@@ -5706,11 +5365,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             Type htype = (Type)0;
             Byte address = Byte(HopperVM_Pop_R(htype));
             UInt str = HopperVM_Get_R(address, htype);
-            if (htype != Type::eString)
-            {
-                Runtime_ErrorDump(0x0111);
-                Minimal_Error_Set(0x0B);
-            }
             HRString_BuildClear_R(str);
             HopperVM_Put(address, str, Type::eString);
             break;
@@ -5728,14 +5382,8 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type htype = (Type)0;
         Char ch = Char(HopperVM_Pop_R(htype));
-        HopperVM_AssertChar(htype, Byte(ch));
         Byte address = Byte(HopperVM_Pop_R(htype));
         UInt str = HopperVM_Get_R(address, htype);
-        if (htype != Type::eString)
-        {
-            Runtime_ErrorDump(0x0101);
-            Minimal_Error_Set(0x0B);
-        }
         HRString_BuildFront_R(str, ch);
         HopperVM_Put(address, str, Type::eString);
         break;
@@ -5748,11 +5396,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         {
             Type htype = (Type)0;
             UInt _this = HopperVM_Pop_R(htype);
-            if (htype != Type::eString)
-            {
-                Runtime_ErrorDump(0x0E);
-                Minimal_Error_Set(0x0B);
-            }
             UInt result = HRString_Trim(_this);
             GC_Release(_this);
             HopperVM_Push(result, Type::eString);
@@ -5763,11 +5406,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             Type htype = (Type)0;
             Byte address = Byte(HopperVM_Pop_R(htype));
             UInt str = HopperVM_Get_R(address, htype);
-            if (htype != Type::eString)
-            {
-                Runtime_ErrorDump(0x0F);
-                Minimal_Error_Set(0x0B);
-            }
             HRString_TrimRight_R(str);
             HRString_TrimLeft_R(str);
             HopperVM_Put(address, str, Type::eString);
@@ -5790,11 +5428,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         {
             Type htype = (Type)0;
             UInt _this = HopperVM_Pop_R(htype);
-            if (htype != Type::eString)
-            {
-                Runtime_ErrorDump(0x0E);
-                Minimal_Error_Set(0x0B);
-            }
             UInt result = HRString_TrimLeft(_this);
             GC_Release(_this);
             HopperVM_Push(result, Type::eString);
@@ -5805,11 +5438,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
             Type htype = (Type)0;
             Byte address = Byte(HopperVM_Pop_R(htype));
             UInt str = HopperVM_Get_R(address, htype);
-            if (htype != Type::eString)
-            {
-                Runtime_ErrorDump(0x0E);
-                Minimal_Error_Set(0x0B);
-            }
             HRString_TrimLeft_R(str);
             HopperVM_Put(address, str, Type::eString);
             break;
@@ -5828,11 +5456,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         Type htype = (Type)0;
         Byte address = Byte(HopperVM_Pop_R(htype));
         UInt str = HopperVM_Get_R(address, htype);
-        if (htype != Type::eString)
-        {
-            Runtime_ErrorDump(0x44);
-            Minimal_Error_Set(0x0B);
-        }
         HRString_TrimRight_R(str);
         HopperVM_Put(address, str, Type::eString);
         break;
@@ -5843,11 +5466,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt password = HopperVM_Pop_R(ptype);
         Type stype = (Type)0;
         UInt ssid = HopperVM_Pop_R(stype);
-        if ((stype != Type::eString) || (ptype != Type::eString))
-        {
-            Runtime_ErrorDump(0x0102);
-            Minimal_Error_Set(0x0B);
-        }
         Bool success = External_WiFiConnect(ssid, password);
         GC_Release(ssid);
         GC_Release(password);
@@ -5875,13 +5493,7 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type stype = (Type)0;
         Type htype = Type(HopperVM_Pop_R(stype));
-        if (Types_IsReferenceType(htype))
-        {
-            Runtime_ErrorDump(0x0C);
-            Minimal_Error_Set(0x0B);
-        }
         UInt count = HopperVM_Pop_R(stype);
-        HopperVM_AssertUInt(htype, count);
         UInt address = HRArray_New(htype, count);
         HopperVM_Push(address, Type::eArray);
         break;
@@ -5932,15 +5544,8 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         Type stype = (Type)0;
         Type ltype = (Type)0;
         Type htype = Type(HopperVM_Pop_R(stype));
-        if (Types_IsReferenceType(htype))
-        {
-            Runtime_ErrorDump(0x0C);
-            Minimal_Error_Set(0x0B);
-        }
         UInt length = HopperVM_Pop_R(stype);
         UInt location = HopperVM_Pop_R(ltype);
-        HopperVM_AssertUInt(stype, length);
-        HopperVM_AssertUInt(ltype, location);
         UInt address = HRArray_NewFromConstant(HopperVM_constAddress + location, htype, length);
         HopperVM_Push(address, Type::eArray);
         break;
@@ -5951,12 +5556,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt index = HopperVM_Pop_R(atype);
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        HopperVM_AssertUInt(atype, index);
-        if (ttype != Type::eArray)
-        {
-            Runtime_ErrorDump(0x0B);
-            Minimal_Error_Set(0x0B);
-        }
         Type etype = (Type)0;
         UInt item = HRArray_GetItem_R(_this, index, etype);
         GC_Release(_this);
@@ -5971,18 +5570,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt index = HopperVM_Pop_R(atype);
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        HopperVM_AssertUInt(atype, index);
-        if ((ttype != Type::eArray) || Types_IsReferenceType(itype))
-        {
-            IO_WriteHex(_this);
-            IO_Write(' ');
-            IO_WriteHex(Byte(ttype));
-            IO_Write(' ');
-            IO_WriteHex(Byte(itype));
-            IO_Write(' ');
-            Runtime_ErrorDump(0xA4);
-            Minimal_Error_Set(0x0B);
-        }
         HRArray_SetItem(_this, index, item);
         GC_Release(_this);
         break;
@@ -5991,11 +5578,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        if (ttype != Type::eArray)
-        {
-            Runtime_ErrorDump(0x35);
-            Minimal_Error_Set(0x0B);
-        }
         UInt length = HRArray_GetCount(_this);
         GC_Release(_this);
         HopperVM_Push(length, Type::eUInt);
@@ -6005,11 +5587,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        if (ttype != Type::eArray)
-        {
-            Runtime_ErrorDump(0x35);
-            Minimal_Error_Set(0x0B);
-        }
         UInt tp = HRArray_GetItemType(_this);
         GC_Release(_this);
         HopperVM_Push(tp, Type::eType);
@@ -6027,11 +5604,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        if (ttype != Type::eList)
-        {
-            Runtime_ErrorDump(0x35);
-            Minimal_Error_Set(0x0B);
-        }
         UInt count = HRList_GetCount(_this);
         GC_Release(_this);
         HopperVM_Push(count, Type::eUInt);
@@ -6043,11 +5615,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt item = HopperVM_Pop_R(itype);
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        if (ttype != Type::eList)
-        {
-            Runtime_ErrorDump(0x36);
-            Minimal_Error_Set(0x0B);
-        }
         HRList_Append(_this, item, itype);
         if (Types_IsReferenceType(itype))
         {
@@ -6064,12 +5631,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt index = HopperVM_Pop_R(atype);
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        HopperVM_AssertUInt(atype, index);
-        if (ttype != Type::eList)
-        {
-            Runtime_ErrorDump(0x39);
-            Minimal_Error_Set(0x0B);
-        }
         HRList_SetItem(_this, index, item, itype);
         if (Types_IsReferenceType(itype))
         {
@@ -6086,12 +5647,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt index = HopperVM_Pop_R(atype);
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        HopperVM_AssertUInt(atype, index);
-        if (ttype != Type::eList)
-        {
-            Runtime_ErrorDump(0x37);
-            Minimal_Error_Set(0x0B);
-        }
         HRList_Insert(_this, index, item, itype);
         if (Types_IsReferenceType(itype))
         {
@@ -6106,12 +5661,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt index = HopperVM_Pop_R(atype);
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        HopperVM_AssertUInt(atype, index);
-        if (ttype != Type::eList)
-        {
-            Runtime_ErrorDump(0x38);
-            Minimal_Error_Set(0x0B);
-        }
         Type itype = (Type)0;
         UInt item = HRList_GetItem_R(_this, index, itype);
         GC_Release(_this);
@@ -6124,12 +5673,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt index = HopperVM_Pop_R(atype);
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        HopperVM_AssertUInt(atype, index);
-        if (ttype != Type::eList)
-        {
-            Runtime_ErrorDump(0x7F);
-            Minimal_Error_Set(0x0B);
-        }
         Type itype = (Type)0;
         UInt item = HRList_GetItem_R(_this, index, itype);
         if (!Types_IsReferenceType(itype))
@@ -6145,11 +5688,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        if (ttype != Type::eList)
-        {
-            Runtime_ErrorDump(0x3A);
-            Minimal_Error_Set(0x0B);
-        }
         HRList_Clear(_this);
         GC_Release(_this);
         break;
@@ -6160,12 +5698,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt index = HopperVM_Pop_R(atype);
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        HopperVM_AssertUInt(atype, index);
-        if (ttype != Type::eList)
-        {
-            Runtime_ErrorDump(0x48);
-            Minimal_Error_Set(0x0B);
-        }
         HRList_Remove(_this, index);
         GC_Release(_this);
         break;
@@ -6176,11 +5708,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt item = HopperVM_Pop_R(itype);
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        if (ttype != Type::eList)
-        {
-            Runtime_ErrorDump(0x3C);
-            Minimal_Error_Set(0x0B);
-        }
         Bool contains = HRList_Contains(_this, item, itype);
         if (Types_IsReferenceType(itype))
         {
@@ -6196,11 +5723,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt value = HopperVM_Pop_R(vtype);
         Type ktype = (Type)0;
         UInt key = HopperVM_Pop_R(ktype);
-        if (Types_IsReferenceType(ktype) && (ktype != Type::eString))
-        {
-            Runtime_ErrorDump(0x55);
-            Minimal_Error_Set(0x0B);
-        }
         UInt address = HRPair_New(ktype, key, vtype, value);
         HopperVM_Push(address, Type::ePair);
         break;
@@ -6219,11 +5741,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type vType = (Type)0;
         UInt _this = HopperVM_Pop_R(vType);
-        if (vType != Type::eVariant)
-        {
-            Runtime_ErrorDump(0x51);
-            Minimal_Error_Set(0x0B);
-        }
         Type mType = (Type)0;
         UInt member = HRVariant_UnBox_R(_this, mType);
         HopperVM_Push(member, mType);
@@ -6234,11 +5751,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        if (ttype != Type::ePair)
-        {
-            Runtime_ErrorDump(0x51);
-            Minimal_Error_Set(0x0B);
-        }
         Type vtype = (Type)0;
         UInt value = HRPair_GetValue_R(_this, vtype);
         GC_Release(_this);
@@ -6249,11 +5761,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        if (ttype != Type::ePair)
-        {
-            Runtime_ErrorDump(0x51);
-            Minimal_Error_Set(0x0B);
-        }
         Type ktype = (Type)0;
         UInt key = HRPair_GetKey_R(_this, ktype);
         GC_Release(_this);
@@ -6426,11 +5933,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         Type stype = (Type)0;
         Type vtype = Type(HopperVM_Pop_R(stype));
         Type ktype = Type(HopperVM_Pop_R(stype));
-        if (Types_IsReferenceType(ktype) && (ktype != Type::eString))
-        {
-            Runtime_ErrorDump(0x09);
-            Minimal_Error_Set(0x0B);
-        }
         UInt address = HRDictionary_New(ktype, vtype);
         HopperVM_Push(address, Type::eDictionary);
         break;
@@ -6439,11 +5941,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        if (ttype != Type::eDictionary)
-        {
-            Runtime_ErrorDump(0x51);
-            Minimal_Error_Set(0x0B);
-        }
         UInt count = HRDictionary_GetCount(_this);
         GC_Release(_this);
         HopperVM_Push(count, Type::eUInt);
@@ -6457,12 +5954,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt key = HopperVM_Pop_R(ktype);
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        if (ttype != Type::eDictionary)
-        {
-            Runtime_ErrorDump(0x52);
-            Minimal_Error_Set(0x0B);
-            return false;
-        }
         HRDictionary_Set(_this, key, ktype, value, vtype);
         if (Types_IsReferenceType(ktype))
         {
@@ -6481,12 +5972,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt iterator = HopperVM_Pop_R(htype);
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        HopperVM_AssertUInt(htype, iterator);
-        if (ttype != Type::eDictionary)
-        {
-            Runtime_ErrorDump(0x59);
-            Minimal_Error_Set(0x0B);
-        }
         UInt hrpair = 0;
         UInt found = (HRDictionary_Next_R(_this, iterator, hrpair)) ? (0x01) : (0x00);
         GC_Release(_this);
@@ -6501,15 +5986,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt key = HopperVM_Pop_R(ktype);
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        if (ktype != Type::eString)
-        {
-            HopperVM_AssertUInt(ktype, key);
-        }
-        if (ttype != Type::eDictionary)
-        {
-            Runtime_ErrorDump(0x57);
-            Minimal_Error_Set(0x0B);
-        }
         UInt found = (HRDictionary_Contains(_this, key)) ? (0x01) : (0x00);
         if (ktype == Type::eString)
         {
@@ -6525,15 +6001,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt key = HopperVM_Pop_R(ktype);
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        if (ktype != Type::eString)
-        {
-            HopperVM_AssertUInt(ktype, key);
-        }
-        if (ttype != Type::eDictionary)
-        {
-            Runtime_ErrorDump(0x58);
-            Minimal_Error_Set(0x0B);
-        }
         Type vtype = (Type)0;
         UInt result = HRDictionary_Get_R(_this, key, vtype);
         if (ktype == Type::eString)
@@ -6548,11 +6015,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type ttype = (Type)0;
         UInt _this = HopperVM_Pop_R(ttype);
-        if (ttype != Type::eDictionary)
-        {
-            Runtime_ErrorDump(0x5A);
-            Minimal_Error_Set(0x0B);
-        }
         HRDictionary_Clear(_this);
         GC_Release(_this);
         break;
@@ -6561,7 +6023,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type utype = (Type)0;
         UInt singleChar = HopperVM_Pop_R(utype);
-        HopperVM_AssertChar(utype, singleChar);
         UInt address = HRString_NewFromConstant1(singleChar);
         HopperVM_Push(address, Type::eString);
         break;
@@ -6570,7 +6031,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type utype = (Type)0;
         UInt ch = HopperVM_Pop_R(utype);
-        HopperVM_AssertChar(utype, ch);
         HopperVM_Push(Byte(HRChar_ToUpper(Char(ch))), Type::eChar);
         break;
     }
@@ -6578,7 +6038,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type utype = (Type)0;
         UInt ch = HopperVM_Pop_R(utype);
-        HopperVM_AssertChar(utype, ch);
         HopperVM_Push(Byte(HRChar_ToLower(Char(ch))), Type::eChar);
         break;
     }
@@ -6586,7 +6045,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type utype = (Type)0;
         UInt ch = HopperVM_Pop_R(utype);
-        HopperVM_AssertChar(utype, ch);
         HopperVM_Push(Byte(HRChar_IsUpper(Char(ch))), Type::eBool);
         break;
     }
@@ -6594,7 +6052,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type utype = (Type)0;
         UInt ch = HopperVM_Pop_R(utype);
-        HopperVM_AssertChar(utype, ch);
         HopperVM_Push(Byte(HRChar_IsLower(Char(ch))), Type::eBool);
         break;
     }
@@ -6602,7 +6059,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type utype = (Type)0;
         UInt ch = HopperVM_Pop_R(utype);
-        HopperVM_AssertChar(utype, ch);
         HopperVM_Push(Byte(HRChar_IsDigit(Char(ch))), Type::eBool);
         break;
     }
@@ -6610,7 +6066,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type utype = (Type)0;
         UInt ch = HopperVM_Pop_R(utype);
-        HopperVM_AssertChar(utype, ch);
         HopperVM_Push(Byte(HRChar_IsLetterOrDigit(Char(ch))), Type::eBool);
         break;
     }
@@ -6618,7 +6073,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type utype = (Type)0;
         UInt ch = HopperVM_Pop_R(utype);
-        HopperVM_AssertChar(utype, ch);
         HopperVM_Push(Byte(HRChar_IsHexDigit(Char(ch))), Type::eBool);
         break;
     }
@@ -6626,11 +6080,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type htype = (Type)0;
         UInt b = Byte(HopperVM_Pop_R(htype));
-        if (b > 0x09)
-        {
-            Runtime_ErrorDump(0x08);
-            Minimal_Error_Set(0x0B);
-        }
         HopperVM_Push(Byte(HRByte_ToDigit(Byte(b))), Type::eChar);
         break;
     }
@@ -6638,11 +6087,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type htype = (Type)0;
         UInt b = Byte(HopperVM_Pop_R(htype));
-        if (b > 0x0F)
-        {
-            Runtime_ErrorDump(0x08);
-            Minimal_Error_Set(0x0B);
-        }
         HopperVM_Push(Byte(HRByte_ToHex(Byte(b))), Type::eChar);
         break;
     }
@@ -6650,7 +6094,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type htype = (Type)0;
         UInt value = HopperVM_Pop_R(htype);
-        HopperVM_AssertUInt(htype, value);
         UInt lng = HRUInt_ToLong(value);
         HopperVM_Push(lng, Type::eLong);
         break;
@@ -6659,12 +6102,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type htype = (Type)0;
         UInt value = HopperVM_Pop_R(htype);
-        HopperVM_AssertUInt(htype, value);
-        if (value > 0x7FFF)
-        {
-            Runtime_ErrorDump(0x83);
-            Minimal_Error_Set(0x0D);
-        }
         HopperVM_PushI(Int(value));
         break;
     }
@@ -6672,7 +6109,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type htype = (Type)0;
         UInt ichunk = HopperVM_Pop_R(htype);
-        HopperVM_AssertInt(htype, ichunk);
         UInt lng = HRInt_ToLong(ichunk);
         HopperVM_Push(lng, Type::eLong);
         break;
@@ -6689,7 +6125,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type htype = (Type)0;
         UInt ichunk = HopperVM_Pop_R(htype);
-        HopperVM_AssertUInt(htype, ichunk);
         UInt f = External_UIntToFloat(ichunk);
         HopperVM_Push(f, Type::eFloat);
         break;
@@ -6698,7 +6133,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type htype = (Type)0;
         UInt _this = HopperVM_Pop_R(htype);
-        HopperVM_AssertFloat(htype);
         UInt lng = External_FloatToLong(_this);
         HopperVM_Push(lng, Type::eLong);
         GC_Release(_this);
@@ -6708,7 +6142,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type htype = (Type)0;
         UInt _this = HopperVM_Pop_R(htype);
-        HopperVM_AssertFloat(htype);
         UInt ui = External_FloatToUInt(_this);
         HopperVM_Push(ui, Type::eUInt);
         GC_Release(_this);
@@ -6719,7 +6152,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt index = HopperVM_Pop();
         Type htype = (Type)0;
         UInt _this = HopperVM_Pop_R(htype);
-        HopperVM_AssertLong(htype);
         Byte b = HRLong_GetByte(_this, index);
         HopperVM_Push(b, Type::eByte);
         GC_Release(_this);
@@ -6756,7 +6188,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type htype = (Type)0;
         UInt _this = HopperVM_Pop_R(htype);
-        HopperVM_AssertFloat(htype);
         UInt str = External_FloatToString(_this);
         HopperVM_Push(str, Type::eString);
         GC_Release(_this);
@@ -6766,7 +6197,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type htype = (Type)0;
         UInt _this = HopperVM_Pop_R(htype);
-        HopperVM_AssertLong(htype);
         UInt str = External_LongToString(_this);
         HopperVM_Push(str, Type::eString);
         GC_Release(_this);
@@ -6777,7 +6207,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt index = HopperVM_Pop();
         Type htype = (Type)0;
         UInt _this = HopperVM_Pop_R(htype);
-        HopperVM_AssertFloat(htype);
         Byte b = HRFloat_GetByte(_this, index);
         HopperVM_Push(b, Type::eByte);
         GC_Release(_this);
@@ -6797,11 +6226,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type htype = (Type)0;
         UInt _this = HopperVM_Pop_R(htype);
-        if (htype != Type::eLong)
-        {
-            Runtime_ErrorDump(0x07);
-            Minimal_Error_Set(0x0B);
-        }
         UInt ui = HRLong_ToUInt(_this);
         HopperVM_Push(ui, Type::eUInt);
         GC_Release(_this);
@@ -6811,11 +6235,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type htype = (Type)0;
         UInt _this = HopperVM_Pop_R(htype);
-        if (htype != Type::eLong)
-        {
-            Runtime_ErrorDump(0x07);
-            Minimal_Error_Set(0x0B);
-        }
         Int i = External_LongToInt(_this);
         HopperVM_PushI(i);
         GC_Release(_this);
@@ -6825,11 +6244,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type htype = (Type)0;
         UInt _this = HopperVM_Pop_R(htype);
-        if (htype != Type::eLong)
-        {
-            Runtime_ErrorDump(0x07);
-            Minimal_Error_Set(0x0B);
-        }
         UInt f = External_LongToFloat(_this);
         HopperVM_Push(f, Type::eFloat);
         GC_Release(_this);
@@ -6839,11 +6253,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type ttype = (Type)0;
         UInt top = HopperVM_Pop_R(ttype);
-        if (ttype != Type::eLong)
-        {
-            Runtime_ErrorDump(0x40);
-            Minimal_Error_Set(0x0B);
-        }
         UInt result = 0;
         Type rtype = Type::eLong;
         result = HRLong_LongNegate(top);
@@ -6866,16 +6275,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt top = HopperVM_Pop_R(ttype);
         Type ntype = (Type)0;
         UInt next = HopperVM_Pop_R(ntype);
-        if (ttype != Type::eLong)
-        {
-            Runtime_ErrorDump(0xFA);
-            Minimal_Error_Set(0x0B);
-        }
-        if (ntype != Type::eLong)
-        {
-            Runtime_ErrorDump(0xFF);
-            Minimal_Error_Set(0x0B);
-        }
         UInt result = 0;
         Type rtype = Type::eLong;
         switch (SysCalls(iSysCall))
@@ -6947,11 +6346,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt top = HopperVM_Pop_R(ttype);
         Type ntype = (Type)0;
         UInt next = HopperVM_Pop_R(ntype);
-        if (ntype != Type::eLong)
-        {
-            Runtime_ErrorDump(0xFB);
-            Minimal_Error_Set(0x0B);
-        }
         UInt result = 0;
         Type rtype = Type::eLong;
         result = HRLong_LongAddB(next, top);
@@ -6965,11 +6359,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt top = HopperVM_Pop_R(ttype);
         Type ntype = (Type)0;
         UInt next = HopperVM_Pop_R(ntype);
-        if (ntype != Type::eLong)
-        {
-            Runtime_ErrorDump(0xFC);
-            Minimal_Error_Set(0x0B);
-        }
         UInt result = 0;
         Type rtype = Type::eLong;
         result = HRLong_LongSubB(next, top);
@@ -6992,11 +6381,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         UInt top = HopperVM_Pop_R(ttype);
         Type ntype = (Type)0;
         UInt next = HopperVM_Pop_R(ntype);
-        if ((ttype != Type::eFloat) || (ntype != Type::eFloat))
-        {
-            Runtime_ErrorDump(0xFD);
-            Minimal_Error_Set(0x0B);
-        }
         UInt result = 0;
         Type rtype = Type::eFloat;
         switch (SysCalls(iSysCall))
@@ -7068,11 +6452,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         Type ttype = (Type)0;
         UInt top = HopperVM_Pop_R(ttype);
-        if (ttype != Type::eFloat)
-        {
-            Runtime_ErrorDump(0xFE);
-            Minimal_Error_Set(0x0B);
-        }
         UInt result = 0;
         Type rtype = Type::eFloat;
         switch (SysCalls(iSysCall))
@@ -7256,6 +6635,32 @@ UInt HopperVM_ReadWordOperand()
     return operand;
 }
 
+Int HopperVM_PopI_R(Type & htype)
+{
+    
+    HopperVM_sp--;
+    UInt value = Memory_ReadByte(HopperVM_valueStackLSBPage + HopperVM_sp) + (Memory_ReadByte(HopperVM_valueStackMSBPage + HopperVM_sp) << 0x08);
+    htype = Type(Memory_ReadByte(HopperVM_typeStackPage + HopperVM_sp));
+    return External_UIntToInt(value);
+}
+
+void HopperVM_BP_Set(Byte value)
+{
+    HopperVM_bp = value;
+}
+
+UInt HopperVM_PopCS()
+{
+    
+    HopperVM_csp--;
+    return Memory_ReadByte(HopperVM_callStackLSBPage + HopperVM_csp) + (Memory_ReadByte(HopperVM_callStackMSBPage + HopperVM_csp) << 0x08);
+}
+
+Byte HopperVM_CSPStart_Get()
+{
+    return HopperVM_cspStart;
+}
+
 Int HopperVM_ReadWordOffsetOperand()
 {
     Int offset = External_UIntToInt(Memory_ReadProgramWord(HopperVM_pc));
@@ -7273,63 +6678,12 @@ Bool HopperVM_ExitInline()
     return true;
 }
 
-Int HopperVM_GetI(Byte address)
-{
-    UInt value = Memory_ReadByte(HopperVM_valueStackLSBPage + address) + (Memory_ReadByte(HopperVM_valueStackMSBPage + address) << 0x08);
-    return External_UIntToInt(value);
-}
-
-void HopperVM_PutI(Byte address, Int ivalue)
-{
-    UInt value = External_IntToUInt(ivalue);
-    Memory_WriteByte(HopperVM_valueStackLSBPage + address, Byte(value & 0xFF));
-    Memory_WriteByte(HopperVM_valueStackMSBPage + address, Byte(value >> 0x08));
-    Memory_WriteByte(HopperVM_typeStackPage + address, Byte(Type::eInt));
-}
-
-void HopperVM_AssertInt(Type htype, UInt value)
-{
-    switch (htype)
-    {
-    case Type::eByte:
-    case Type::eChar:
-    case Type::eBool:
-    case Type::eUInt:
-    {
-        if (value > 0x7FFF)
-        {
-            Runtime_ErrorDump(0x3D);
-            Minimal_Error_Set(0x0D);
-        }
-        break;
-    }
-    case Type::eInt:
-    {
-        break;
-    }
-    default:
-    {
-        IO_WriteHex(Byte(htype));
-        IO_Write(' ');
-        Runtime_ErrorDump(0x21);
-        Minimal_Error_Set(0x0B);
-        break;
-    }
-    } // switch
-}
-
 Bool HopperVM_RunInline()
 {
     Type stype = (Type)0;
     UInt startIndex = HopperVM_Pop_R(stype);
     Type ttype = (Type)0;
     UInt inlineCodeArray = HopperVM_Pop_R(ttype);
-    HopperVM_AssertUInt(stype, startIndex);
-    if (ttype != Type::eArray)
-    {
-        Runtime_ErrorDump(0xA7);
-        Minimal_Error_Set(0x0B);
-    }
     HopperVM_pcStore = HopperVM_pc;
     UInt inlineLocation = HopperVM_binaryAddress + HopperVM_programSize;
     HopperVM_pc = inlineLocation + startIndex - HopperVM_programOffset;
@@ -7426,49 +6780,6 @@ UInt HopperVM_RuntimeDateTime()
     return hrstring;
 }
 
-void HopperVM_AssertChar(Type htype, UInt value)
-{
-    switch (htype)
-    {
-    case Type::eByte:
-    case Type::eUInt:
-    case Type::eInt:
-    case Type::eChar:
-    {
-        if (value > 0xFF)
-        {
-            Runtime_ErrorDump(0x26);
-            Minimal_Error_Set(0x0B);
-        }
-        break;
-    }
-    default:
-    {
-        Runtime_ErrorDump(0x25);
-        Minimal_Error_Set(0x0B);
-        break;
-    }
-    } // switch
-}
-
-void HopperVM_AssertFloat(Type htype)
-{
-    if (htype != Type::eFloat)
-    {
-        Runtime_ErrorDump(0x63);
-        Minimal_Error_Set(0x0B);
-    }
-}
-
-void HopperVM_AssertLong(Type htype)
-{
-    if (htype != Type::eLong)
-    {
-        Runtime_ErrorDump(0x4A);
-        Minimal_Error_Set(0x0B);
-    }
-}
-
 Bool Types_IsReferenceType(Type htype)
 {
     return (Byte(htype) >= 0x0D);
@@ -7486,7 +6797,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         {
             Type ctype = (Type)0;
             controller = HopperVM_Pop_R(ctype);
-            HopperVM_AssertByte(ctype, controller);
         }
         Bool result = HRWire_Begin(Byte(controller));
         HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
@@ -7496,13 +6806,11 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
         Type atype = (Type)0;
         UInt address = HopperVM_Pop_R(atype);
-        HopperVM_AssertByte(atype, address);
         UInt controller = 0;
         if (iOverload == 0x01)
         {
             Type ctype = (Type)0;
             controller = HopperVM_Pop_R(ctype);
-            HopperVM_AssertByte(ctype, controller);
         }
         HRWire_BeginTx(Byte(controller), Byte(address));
         break;
@@ -7515,7 +6823,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         {
             Type atype = (Type)0;
             UInt b = HopperVM_Pop_R(atype);
-            HopperVM_AssertByte(atype, b);
             HRWire_Write(0x00, Byte(b));
             break;
         }
@@ -7525,8 +6832,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
             UInt b = HopperVM_Pop_R(atype);
             Type ctype = (Type)0;
             UInt controller = HopperVM_Pop_R(ctype);
-            HopperVM_AssertByte(atype, b);
-            HopperVM_AssertByte(ctype, controller);
             HRWire_Write(Byte(controller), Byte(b));
             break;
         }
@@ -7540,14 +6845,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
             UInt hrarray = HopperVM_Pop_R(atype);
             Type ctype = (Type)0;
             UInt controller = HopperVM_Pop_R(ctype);
-            HopperVM_AssertByte(ctype, controller);
-            HopperVM_AssertUInt(stype, startIndex);
-            HopperVM_AssertUInt(ltype, length);
-            if (atype != Type::eArray)
-            {
-                Runtime_ErrorDump(0x0B);
-                Minimal_Error_Set(0x0B);
-            }
             HRWire_Write(Byte(controller), hrarray, startIndex, length);
             GC_Release(hrarray);
             break;
@@ -7562,7 +6859,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         {
             Type freqtype = (Type)0;
             freqkHz = HopperVM_Pop_R(freqtype);
-            HopperVM_AssertUInt(freqtype, freqkHz);
         }
         Type cltype = (Type)0;
         UInt sclPin = HopperVM_Pop_R(cltype);
@@ -7570,9 +6866,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         UInt sdaPin = HopperVM_Pop_R(datype);
         Type ctype = (Type)0;
         UInt controller = HopperVM_Pop_R(ctype);
-        HopperVM_AssertByte(ctype, controller);
-        HopperVM_AssertByte(cltype, sclPin);
-        HopperVM_AssertByte(datype, sdaPin);
         HRWire_Configure(Byte(controller), Byte(sdaPin), Byte(sclPin), freqkHz);
         break;
     }
@@ -7582,14 +6875,11 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         UInt bytes = HopperVM_Pop_R(btype);
         Type atype = (Type)0;
         UInt address = HopperVM_Pop_R(atype);
-        HopperVM_AssertByte(atype, address);
-        HopperVM_AssertByte(btype, bytes);
         UInt controller = 0;
         if (iOverload == 0x01)
         {
             Type ctype = (Type)0;
             controller = HopperVM_Pop_R(ctype);
-            HopperVM_AssertByte(ctype, controller);
         }
         bytes = HRWire_RequestFrom(Byte(controller), Byte(address), Byte(bytes));
         HopperVM_Push(bytes, Type::eUInt);
@@ -7602,7 +6892,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         {
             Type ctype = (Type)0;
             controller = HopperVM_Pop_R(ctype);
-            HopperVM_AssertByte(ctype, controller);
         }
         Byte data = HRWire_Read(Byte(controller));
         HopperVM_Push(data, Type::eByte);
@@ -7615,7 +6904,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         {
             Type ctype = (Type)0;
             controller = HopperVM_Pop_R(ctype);
-            HopperVM_AssertByte(ctype, controller);
         }
         Byte result = HRWire_EndTx(Byte(controller));
         HopperVM_Push(result, Type::eByte);
@@ -7693,15 +6981,9 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         UInt interval = HopperVM_Pop_R(itype);
         if (iOverload == 0x00)
         {
-            HopperVM_AssertUInt(itype, interval);
         }
         else
         {
-            if (itype != Type::eLong)
-            {
-                Runtime_ErrorDump(0x0105);
-                Minimal_Error_Set(0x0B);
-            }
         }
         UInt timerID = 0;
         if (itype == Type::eLong)
@@ -7724,15 +7006,9 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         UInt interval = HopperVM_Pop_R(itype);
         if (iOverload == 0x00)
         {
-            HopperVM_AssertUInt(itype, interval);
         }
         else
         {
-            if (itype != Type::eLong)
-            {
-                Runtime_ErrorDump(0x0104);
-                Minimal_Error_Set(0x0B);
-            }
         }
         UInt alarmID = 0;
         if (itype == Type::eLong)
@@ -7752,7 +7028,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
         Type itype = (Type)0;
         UInt timerID = HopperVM_Pop_R(itype);
-        HopperVM_AssertUInt(itype, timerID);
         External_TimerStop(timerID);
         break;
     }
@@ -7760,7 +7035,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
         Type itype = (Type)0;
         UInt alarmID = HopperVM_Pop_R(itype);
-        HopperVM_AssertUInt(itype, alarmID);
         External_TimerCancel(alarmID);
         break;
     }
@@ -7774,7 +7048,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
         Type ptype = (Type)0;
         UInt value = HopperVM_Pop_R(ptype);
-        HopperVM_AssertBool(ptype, value);
         External_MCUInterruptsEnabledSet(value != 0x00);
         break;
     }
@@ -7788,7 +7061,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
         Type ptype = (Type)0;
         UInt value = HopperVM_Pop_R(ptype);
-        HopperVM_AssertUInt(ptype, value);
         External_MCUClockSpeedSet(value);
         break;
     }
@@ -7796,7 +7068,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
         Type ptype = (Type)0;
         UInt value = HopperVM_Pop_R(ptype);
-        HopperVM_AssertBool(ptype, value);
         External_MCUReboot(value != 0x00);
         doNext = false;
         break;
@@ -7823,7 +7094,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
         Type ctype = (Type)0;
         UInt spiController = HopperVM_Pop_R(ctype);
-        HopperVM_AssertByte(ctype, spiController);
         External_SDSPIControllerSet(Byte(spiController));
         break;
     }
@@ -7837,7 +7107,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
         Type ctype = (Type)0;
         UInt pin = HopperVM_Pop_R(ctype);
-        HopperVM_AssertByte(ctype, pin);
         External_SDCSPinSet(Byte(pin));
         break;
     }
@@ -7851,7 +7120,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
         Type ctype = (Type)0;
         UInt pin = HopperVM_Pop_R(ctype);
-        HopperVM_AssertByte(ctype, pin);
         External_SDClkPinSet(Byte(pin));
         break;
     }
@@ -7865,7 +7133,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
         Type ctype = (Type)0;
         UInt pin = HopperVM_Pop_R(ctype);
-        HopperVM_AssertByte(ctype, pin);
         External_SDTxPinSet(Byte(pin));
         break;
     }
@@ -7879,7 +7146,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
         Type ctype = (Type)0;
         UInt pin = HopperVM_Pop_R(ctype);
-        HopperVM_AssertByte(ctype, pin);
         External_SDRxPinSet(Byte(pin));
         break;
     }
@@ -7901,7 +7167,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         {
             Type ctype = (Type)0;
             spiController = HopperVM_Pop_R(ctype);
-            HopperVM_AssertByte(ctype, spiController);
         }
         Bool result = HRSPI_Begin(Byte(spiController));
         HopperVM_Push((result) ? (0x01) : (0x00), Type::eBool);
@@ -7914,7 +7179,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         {
             Type ctype = (Type)0;
             spiController = HopperVM_Pop_R(ctype);
-            HopperVM_AssertByte(ctype, spiController);
         }
         HRSPI_BeginTransaction(Byte(spiController));
         break;
@@ -7926,7 +7190,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         {
             Type ctype = (Type)0;
             spiController = HopperVM_Pop_R(ctype);
-            HopperVM_AssertByte(ctype, spiController);
         }
         HRSPI_EndTransaction(Byte(spiController));
         break;
@@ -7937,8 +7200,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         UInt pin = HopperVM_Pop_R(ptype);
         Type ctype = (Type)0;
         UInt spiController = HopperVM_Pop_R(ctype);
-        HopperVM_AssertByte(ptype, pin);
-        HopperVM_AssertByte(ctype, spiController);
         HRSPI_SetCSPin(Byte(spiController), Byte(pin));
         break;
     }
@@ -7946,7 +7207,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
         Type ctype = (Type)0;
         UInt spiController = HopperVM_Pop_R(ctype);
-        HopperVM_AssertByte(ctype, spiController);
         Byte pin = HRSPI_GetCSPin(Byte(spiController));
         HopperVM_Push(pin, Type::eByte);
         break;
@@ -7957,8 +7217,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         UInt pin = HopperVM_Pop_R(ptype);
         Type ctype = (Type)0;
         UInt spiController = HopperVM_Pop_R(ctype);
-        HopperVM_AssertByte(ptype, pin);
-        HopperVM_AssertByte(ctype, spiController);
         HRSPI_SetClkPin(Byte(spiController), Byte(pin));
         break;
     }
@@ -7968,8 +7226,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         UInt pin = HopperVM_Pop_R(ptype);
         Type ctype = (Type)0;
         UInt spiController = HopperVM_Pop_R(ctype);
-        HopperVM_AssertByte(ptype, pin);
-        HopperVM_AssertByte(ctype, spiController);
         HRSPI_SetTxPin(Byte(spiController), Byte(pin));
         break;
     }
@@ -7979,8 +7235,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         UInt pin = HopperVM_Pop_R(ptype);
         Type ctype = (Type)0;
         UInt spiController = HopperVM_Pop_R(ctype);
-        HopperVM_AssertByte(ptype, pin);
-        HopperVM_AssertByte(ctype, spiController);
         HRSPI_SetRxPin(Byte(spiController), Byte(pin));
         break;
     }
@@ -7994,7 +7248,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
         Type ptype = (Type)0;
         UInt pin = HopperVM_Pop_R(ptype);
-        HopperVM_AssertByte(ptype, pin);
         HRSPI_SetCSPin(0x00, Byte(pin));
         break;
     }
@@ -8002,7 +7255,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
         Type ptype = (Type)0;
         UInt pin = HopperVM_Pop_R(ptype);
-        HopperVM_AssertByte(ptype, pin);
         HRSPI_SetClkPin(0x00, Byte(pin));
         break;
     }
@@ -8010,7 +7262,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
         Type ptype = (Type)0;
         UInt pin = HopperVM_Pop_R(ptype);
-        HopperVM_AssertByte(ptype, pin);
         HRSPI_SetTxPin(0x00, Byte(pin));
         break;
     }
@@ -8018,7 +7269,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
         Type ptype = (Type)0;
         UInt pin = HopperVM_Pop_R(ptype);
-        HopperVM_AssertByte(ptype, pin);
         HRSPI_SetRxPin(0x00, Byte(pin));
         break;
     }
@@ -8029,7 +7279,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         {
             Type ctype = (Type)0;
             spiController = HopperVM_Pop_R(ctype);
-            HopperVM_AssertByte(ctype, spiController);
         }
         Byte data = HRSPI_ReadByte(Byte(spiController));
         HopperVM_Push(data, Type::eByte);
@@ -8039,13 +7288,11 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
         Type dtype = (Type)0;
         UInt data = HopperVM_Pop_R(dtype);
-        HopperVM_AssertByte(dtype, data);
         UInt spiController = 0x00;
         if (iOverload == 0x01)
         {
             Type ctype = (Type)0;
             spiController = HopperVM_Pop_R(ctype);
-            HopperVM_AssertByte(ctype, spiController);
         }
         HRSPI_WriteByte(Byte(spiController), Byte(data));
         break;
@@ -8056,14 +7303,11 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         UInt count = HopperVM_Pop_R(ltype);
         Type dtype = (Type)0;
         UInt data = HopperVM_Pop_R(dtype);
-        HopperVM_AssertUInt(ltype, count);
-        HopperVM_AssertByte(dtype, data);
         UInt spiController = 0x00;
         if (iOverload == 0x01)
         {
             Type ctype = (Type)0;
             spiController = HopperVM_Pop_R(ctype);
-            HopperVM_AssertByte(ctype, spiController);
         }
         HRSPI_WriteBytes(Byte(spiController), Byte(data), count);
         break;
@@ -8075,7 +7319,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         {
             Type ctype = (Type)0;
             spiController = HopperVM_Pop_R(ctype);
-            HopperVM_AssertByte(ctype, spiController);
         }
         UInt data = HRSPI_ReadWord(Byte(spiController));
         HopperVM_Push(data, Type::eUInt);
@@ -8085,13 +7328,11 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
         Type dtype = (Type)0;
         UInt data = HopperVM_Pop_R(dtype);
-        HopperVM_AssertUInt(dtype, data);
         UInt spiController = 0x00;
         if (iOverload == 0x01)
         {
             Type ctype = (Type)0;
             spiController = HopperVM_Pop_R(ctype);
-            HopperVM_AssertByte(ctype, spiController);
         }
         HRSPI_WriteWord(Byte(spiController), data);
         break;
@@ -8102,14 +7343,11 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         UInt count = HopperVM_Pop_R(ltype);
         Type dtype = (Type)0;
         UInt data = HopperVM_Pop_R(dtype);
-        HopperVM_AssertUInt(ltype, count);
-        HopperVM_AssertUInt(dtype, data);
         UInt spiController = 0x00;
         if (iOverload == 0x01)
         {
             Type ctype = (Type)0;
             spiController = HopperVM_Pop_R(ctype);
-            HopperVM_AssertByte(ctype, spiController);
         }
         HRSPI_WriteWords(Byte(spiController), data, count);
         break;
@@ -8122,19 +7360,11 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         UInt startIndex = HopperVM_Pop_R(stype);
         Type dtype = (Type)0;
         UInt hrdata = HopperVM_Pop_R(dtype);
-        HopperVM_AssertUInt(ltype, length);
-        HopperVM_AssertUInt(stype, startIndex);
-        if (dtype != Type::eArray)
-        {
-            Runtime_ErrorDump(0xA5);
-            Minimal_Error_Set(0x0B);
-        }
         UInt spiController = 0x00;
         if (iOverload == 0x01)
         {
             Type ctype = (Type)0;
             spiController = HopperVM_Pop_R(ctype);
-            HopperVM_AssertByte(ctype, spiController);
         }
         HRSPI_ReadBuffer(Byte(spiController), hrdata, startIndex, length);
         GC_Release(hrdata);
@@ -8148,19 +7378,11 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         UInt startIndex = HopperVM_Pop_R(stype);
         Type dtype = (Type)0;
         UInt hrdata = HopperVM_Pop_R(dtype);
-        HopperVM_AssertUInt(ltype, length);
-        HopperVM_AssertUInt(stype, startIndex);
-        if (dtype != Type::eArray)
-        {
-            Runtime_ErrorDump(0xA5);
-            Minimal_Error_Set(0x0B);
-        }
         UInt spiController = 0x00;
         if ((iOverload == 0x02) || (iOverload == 0x03))
         {
             Type ctype = (Type)0;
             spiController = HopperVM_Pop_R(ctype);
-            HopperVM_AssertByte(ctype, spiController);
         }
         HRSPI_WriteBuffer(Byte(spiController), hrdata, startIndex, length);
         GC_Release(hrdata);
@@ -8174,19 +7396,11 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         DataOrder dataOrder = DataOrder(HopperVM_Pop_R(otype));
         Type stype = (Type)0;
         UInt hrspeed = HopperVM_Pop_R(stype);
-        HopperVM_AssertByte(mtype, UInt(dataMode));
-        HopperVM_AssertByte(otype, UInt(dataOrder));
-        if (stype != Type::eLong)
-        {
-            Runtime_ErrorDump(0xAF);
-            Minimal_Error_Set(0x0B);
-        }
         UInt spiController = 0x00;
         if (iOverload == 0x01)
         {
             Type ctype = (Type)0;
             spiController = HopperVM_Pop_R(ctype);
-            HopperVM_AssertByte(ctype, spiController);
         }
         HRSPI_Settings(Byte(spiController), hrspeed, dataOrder, dataMode);
         GC_Release(hrspeed);
@@ -8200,14 +7414,11 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         if (iOverload == 0x02)
         {
             pixelType = HopperVM_Pop_R(ptype);
-            HopperVM_AssertUInt(ptype, pixelType);
         }
         UInt pin = HopperVM_Pop_R(ptype);
-        HopperVM_AssertByte(ptype, pin);
         if (iOverload != 0x00)
         {
             length = HopperVM_Pop_R(ptype);
-            HopperVM_AssertUInt(ptype, length);
         }
         HRNeoPixel_Begin(length, Byte(pin), pixelType);
         break;
@@ -8216,7 +7427,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     {
         Type ptype = (Type)0;
         UInt brightness = HopperVM_Pop_R(ptype);
-        HopperVM_AssertByte(ptype, brightness);
         HRNeoPixel_SetBrightness(Byte(brightness));
         break;
     }
@@ -8233,16 +7443,11 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         if (iOverload == 0x01)
         {
             w = HopperVM_Pop_R(ptype);
-            HopperVM_AssertByte(ptype, w);
         }
         UInt b = HopperVM_Pop_R(ptype);
-        HopperVM_AssertByte(ptype, b);
         UInt g = HopperVM_Pop_R(ptype);
-        HopperVM_AssertByte(ptype, g);
         UInt r = HopperVM_Pop_R(ptype);
-        HopperVM_AssertByte(ptype, r);
         UInt pixel = HopperVM_Pop_R(ptype);
-        HopperVM_AssertUInt(ptype, pixel);
         HRNeoPixel_SetColor(pixel, Byte(r), Byte(g), Byte(b), Byte(w));
         break;
     }
@@ -8264,11 +7469,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         UInt content = HopperVM_Get_R(address, htype);
         Type utype = (Type)0;
         UInt url = HopperVM_Pop_R(utype);
-        if ((htype != Type::eString) || (utype != Type::eString))
-        {
-            Runtime_ErrorDump(0x0108);
-            Minimal_Error_Set(0x0B);
-        }
         Bool success = External_WebClientGetRequest_R(url, content);
         HopperVM_Put(address, content, Type::eString);
         GC_Release(url);
@@ -8283,7 +7483,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         {
             Type ptype = (Type)0;
             port = HopperVM_Pop_R(ptype);
-            HopperVM_AssertUInt(ptype, port);
         }
         External_WebServerBegin(port);
         doNext = false;
@@ -8294,11 +7493,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         HandlerDelegate handlerDelegate = HandlerDelegate(HopperVM_Pop());
         Type utype = (Type)0;
         UInt url = HopperVM_Pop_R(utype);
-        if (utype != Type::eString)
-        {
-            Runtime_ErrorDump(0x0106);
-            Minimal_Error_Set(0x0B);
-        }
         External_WebServerOn(url, handlerDelegate);
         GC_Release(url);
         break;
@@ -8329,12 +7523,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         UInt headerContent = HopperVM_Pop_R(ttype);
         Type htype = (Type)0;
         UInt httpCode = HopperVM_Pop_R(htype);
-        HopperVM_AssertUInt(htype, httpCode);
-        if ((ctype != Type::eString) || (ttype != Type::eDictionary))
-        {
-            Runtime_ErrorDump(0x0107);
-            Minimal_Error_Set(0x0B);
-        }
         External_WebServerSend(httpCode, headerContent, content);
         GC_Release(headerContent);
         GC_Release(content);
@@ -8356,25 +7544,6 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
     }
     } // switch
     return doNext && (Minimal_Error_Get() == 0x00);
-}
-
-void IO_WriteUInt(UInt _this)
-{
-    IO_writeDigit(_this);
-}
-
-void IO_writeDigit(UInt uthis)
-{
-    Char c = 0;
-    UInt digit = 0;
-    digit = uthis % 0x0A;
-    c = HRByte_ToDigit(Byte(digit));
-    uthis = uthis / 0x0A;
-    if (uthis != 0x00)
-    {
-        IO_writeDigit(uthis);
-    }
-    IO_Write(c);
 }
 
 UInt HRDirectory_Clone(UInt original)
@@ -8640,14 +7809,14 @@ UInt HRList_Clone(UInt original)
         {
             break;;
         }
-        UInt itemData = Memory_ReadWord(pCurrentItem + 2);
+        UInt itemData = Memory_ReadWord(pCurrentItem + 0);
         Type itype = etype;
         if (Types_IsReferenceType(etype))
         {
             itype = Type(Memory_ReadByte(itemData));
         }
         HRList_Append(clone, itemData, itype);
-        pCurrentItem = Memory_ReadWord(pCurrentItem + 4);
+        pCurrentItem = Memory_ReadWord(pCurrentItem + 2);
     }
     return clone;
 }
@@ -8687,14 +7856,14 @@ void HRList_Append(UInt _this, UInt item, Type itype)
         }
         for (;;)
         {
-            UInt pNextItem = Memory_ReadWord(pCurrentItem + 4);
+            UInt pNextItem = Memory_ReadWord(pCurrentItem + 2);
             if (pNextItem == 0x00)
             {
                 break;;
             }
             pCurrentItem = pNextItem;
         }
-        Memory_WriteWord(pCurrentItem + 4, pNewItem);
+        Memory_WriteWord(pCurrentItem + 2, pNewItem);
     }
     UInt count = Memory_ReadWord(_this + 2) + 0x01;
     Memory_WriteWord(_this + 2, count);
@@ -8706,12 +7875,6 @@ void HRList_SetItem(UInt _this, UInt index, UInt item, Type itype)
 {
     Type etype = Type(Memory_ReadByte(_this + 4));
     UInt count = Memory_ReadWord(_this + 2);
-    if (index >= count)
-    {
-        Runtime_ErrorDump(0x46);
-        Minimal_Error_Set(0x01);
-        return;
-    }
     UInt pData = item;
     if (Types_IsReferenceType(etype))
     {
@@ -8721,12 +7884,6 @@ void HRList_SetItem(UInt _this, UInt index, UInt item, Type itype)
         }
         else
         {
-            if (etype != Type::eVariant)
-            {
-                Runtime_ErrorDump(0x47);
-                Minimal_Error_Set(0x0B);
-                return;
-            }
             pData = HRVariant_CreateValueVariant(item, itype);
         }
     }
@@ -8748,16 +7905,16 @@ void HRList_SetItem(UInt _this, UInt index, UInt item, Type itype)
         {
             break;;
         }
-        pCurrent = Memory_ReadWord(pCurrent + 4);
+        pCurrent = Memory_ReadWord(pCurrent + 2);
         
         i++;
     }
-    UInt oldData = Memory_ReadWord(pCurrent + 2);
+    UInt oldData = Memory_ReadWord(pCurrent + 0);
     if (Types_IsReferenceType(etype))
     {
         GC_Release(oldData);
     }
-    Memory_WriteWord(pCurrent + 2, pData);
+    Memory_WriteWord(pCurrent + 0, pData);
     Memory_WriteWord(_this + 7, pCurrent);
     Memory_WriteWord(_this + 7 + 0x02, index);
 }
@@ -8774,7 +7931,7 @@ void HRList_Insert(UInt _this, UInt index, UInt item, Type itype)
     else if (index == 0x00)
     {
         UInt pItem = HRList_createItem(item, etype, itype);
-        Memory_WriteWord(pItem + 4, pFirst);
+        Memory_WriteWord(pItem + 2, pFirst);
         Memory_WriteWord(_this + 5, pItem);
         Memory_WriteWord(_this + 2, count + 0x01);
         Memory_WriteWord(_this + 7, 0x00);
@@ -8797,15 +7954,15 @@ void HRList_Insert(UInt _this, UInt index, UInt item, Type itype)
         {
             if (index == count)
             {
-                Memory_WriteWord(pItem + 4, pCurrent);
-                Memory_WriteWord(pPrevious + 4, pItem);
+                Memory_WriteWord(pItem + 2, pCurrent);
+                Memory_WriteWord(pPrevious + 2, pItem);
                 Memory_WriteWord(_this + 7, pItem);
                 Memory_WriteWord(_this + 7 + 0x02, count);
                 Memory_WriteWord(_this + 2, count + 0x01);
                 break;;
             }
             pPrevious = pCurrent;
-            pCurrent = Memory_ReadWord(pCurrent + 4);
+            pCurrent = Memory_ReadWord(pCurrent + 2);
             
             count++;
         }
@@ -8818,7 +7975,6 @@ UInt HRList_GetItem_R(UInt _this, UInt index, Type & itype)
     UInt count = Memory_ReadWord(_this + 2);
     if (index >= count)
     {
-        Runtime_ErrorDump(0x44);
         Minimal_Error_Set(0x01);
         return 0x00;
     }
@@ -8840,11 +7996,11 @@ UInt HRList_GetItem_R(UInt _this, UInt index, Type & itype)
         {
             break;;
         }
-        pCurrent = Memory_ReadWord(pCurrent + 4);
+        pCurrent = Memory_ReadWord(pCurrent + 2);
         
         i++;
     }
-    UInt pData = Memory_ReadWord(pCurrent + 2);
+    UInt pData = Memory_ReadWord(pCurrent + 0);
     if (itype == Type::eVariant)
     {
         itype = Type(Memory_ReadByte(pData));
@@ -8867,31 +8023,26 @@ void HRList_Remove(UInt _this, UInt index)
 {
     Type etype = Type(Memory_ReadByte(_this + 4));
     UInt count = Memory_ReadWord(_this + 2);
-    if (index >= count)
-    {
-        Runtime_ErrorDump(0x49);
-        Minimal_Error_Set(0x01);
-    }
     UInt pCurrent = Memory_ReadWord(_this + 5);
     if (index == 0x00)
     {
-        UInt pNext = Memory_ReadWord(pCurrent + 4);
+        UInt pNext = Memory_ReadWord(pCurrent + 2);
         HRList_clearItem(pCurrent, etype);
         Memory_WriteWord(_this + 5, pNext);
     }
     else
     {
         UInt pPrevious = pCurrent;
-        pCurrent = Memory_ReadWord(pCurrent + 4);
+        pCurrent = Memory_ReadWord(pCurrent + 2);
         count = 0x01;
         while (count < index)
         {
             pPrevious = pCurrent;
-            pCurrent = Memory_ReadWord(pCurrent + 4);
+            pCurrent = Memory_ReadWord(pCurrent + 2);
             
             count++;
         }
-        Memory_WriteWord(pPrevious + 4, Memory_ReadWord(pCurrent + 4));
+        Memory_WriteWord(pPrevious + 2, Memory_ReadWord(pCurrent + 2));
         HRList_clearItem(pCurrent, etype);
     }
     count = Memory_ReadWord(_this + 2) - 0x01;
@@ -8911,7 +8062,7 @@ Bool HRList_Contains(UInt _this, UInt item, Type itype)
             break;;
         }
         Type dtype = etype;
-        UInt pData = Memory_ReadWord(pCurrent + 2);
+        UInt pData = Memory_ReadWord(pCurrent + 0);
         if (Types_IsReferenceType(dtype))
         {
             dtype = Type(Memory_ReadByte(pData));
@@ -8920,7 +8071,7 @@ Bool HRList_Contains(UInt _this, UInt item, Type itype)
         {
             return true;
         }
-        pCurrent = Memory_ReadWord(pCurrent + 4);
+        pCurrent = Memory_ReadWord(pCurrent + 2);
     }
     return false;
 }
@@ -8941,22 +8092,12 @@ UInt HRList_createItem(UInt itemData, Type etype, Type itype)
         }
         else
         {
-            if (etype != Type::eVariant)
-            {
-                IO_Write('e');
-                IO_WriteHex(Byte(etype));
-                IO_Write('i');
-                IO_WriteHex(Byte(itype));
-                Runtime_ErrorDump(0x42);
-                Minimal_Error_Set(0x0B);
-                return 0x00;
-            }
             pData = HRVariant_CreateValueVariant(itemData, itype);
         }
     }
-    UInt pitem = GC_New(0x04, Type::eListItem);
-    Memory_WriteWord(pitem + 2, pData);
-    Memory_WriteWord(pitem + 4, 0x00);
+    UInt pitem = Memory_Allocate(0x04);
+    Memory_WriteWord(pitem + 0, pData);
+    Memory_WriteWord(pitem + 2, 0x00);
     return pitem;
 }
 
@@ -9204,14 +8345,6 @@ void HRDictionary_Set(UInt _this, UInt key, Type ktype, UInt value, Type vtype)
 {
     Type dkType = Type(Memory_ReadByte(_this + 2));
     Type dvType = Type(Memory_ReadByte(_this + 3));
-    if (!HRDictionary_verifyKey(_this, ktype, key))
-    {
-        return;
-    }
-    if (!HRDictionary_verifyValue(_this, vtype, value))
-    {
-        return;
-    }
     UInt count = Memory_ReadWord(_this + 4);
     UInt capacity = Memory_ReadWord(_this + 6);
     Bool valueKeys = (dkType != Type::eString);
@@ -9307,7 +8440,6 @@ UInt HRDictionary_Get_R(UInt _this, UInt key, Type & vtype)
     UInt pEntry = HRDictionary_findEntry(pEntries, capacity, key, hash, valueKeys);
     if (!HRDictionary_validEntry(pEntry, valueKeys))
     {
-        Runtime_ErrorDump(0x59);
         Minimal_Error_Set(0x03);
         return 0x00;
     }
@@ -9331,172 +8463,6 @@ UInt HRDictionary_Get_R(UInt _this, UInt key, Type & vtype)
         }
     }
     return value;
-}
-
-Bool HRDictionary_verifyKey(UInt _this, Type ktype, UInt key)
-{
-    Bool ok = true;
-    for (;;)
-    {
-        Type dkType = Type(Memory_ReadByte(_this + 2));
-        if (dkType == Type::eString)
-        {
-            if (ktype != Type::eString)
-            {
-                ok = false;
-                break;;
-            }
-            Type stype = Type(Memory_ReadByte(key));
-            if (stype != Type::eString)
-            {
-                ok = false;
-                break;;
-            }
-        }
-        else if (Types_IsReferenceType(ktype))
-        {
-            ok = false;
-            break;;
-        }
-        else
-        {
-            switch (dkType)
-            {
-            case Type::eChar:
-            case Type::eByte:
-            {
-                if ((ktype == Type::eChar) || (ktype == Type::eByte) || (ktype == Type::eUInt) || (ktype == Type::eInt))
-                {
-                    ok = (key & 0xFF00) == 0x00;
-                }
-                else
-                {
-                    ok = false;
-                }
-                break;
-            }
-            case Type::eUInt:
-            {
-                if ((ktype == Type::eChar) || (ktype == Type::eByte) || (ktype == Type::eUInt))
-                {
-                }
-                else if (ktype == Type::eInt)
-                {
-                    ok = (key & 0x8000) == 0x00;
-                }
-                else
-                {
-                    ok = false;
-                }
-                break;
-            }
-            case Type::eInt:
-            {
-                if ((ktype == Type::eByte) || (ktype == Type::eUInt))
-                {
-                    ok = (key & 0x8000) == 0x00;
-                }
-                else if (ktype == Type::eInt)
-                {
-                }
-                else
-                {
-                    ok = false;
-                }
-                break;
-            }
-            } // switch
-        }
-        break;;
-    }
-    if (!ok)
-    {
-        Runtime_ErrorDump(0x53);
-        Minimal_Error_Set(0x0B);
-    }
-    return ok;
-}
-
-Bool HRDictionary_verifyValue(UInt _this, Type vtype, UInt value)
-{
-    Bool ok = true;
-    Type dvType = Type(Memory_ReadByte(_this + 3));
-    for (;;)
-    {
-        if (Types_IsReferenceType(dvType))
-        {
-            if (dvType == Type::eVariant)
-            {
-            }
-            else if (dvType != vtype)
-            {
-                ok = false;
-            }
-        }
-        else if (Types_IsReferenceType(vtype))
-        {
-            ok = false;
-        }
-        else
-        {
-            switch (dvType)
-            {
-            case Type::eChar:
-            case Type::eByte:
-            {
-                if ((vtype == Type::eChar) || (vtype == Type::eByte) || (vtype == Type::eUInt) || (vtype == Type::eInt))
-                {
-                    ok = (value & 0xFF00) == 0x00;
-                }
-                else
-                {
-                    ok = false;
-                }
-                break;
-            }
-            case Type::eUInt:
-            {
-                if ((vtype == Type::eChar) || (vtype == Type::eByte) || (vtype == Type::eUInt))
-                {
-                }
-                else if (vtype == Type::eInt)
-                {
-                    ok = (value & 0x8000) == 0x00;
-                }
-                else
-                {
-                    ok = false;
-                }
-                break;
-            }
-            case Type::eInt:
-            {
-                if ((vtype == Type::eByte) || (vtype == Type::eUInt))
-                {
-                    ok = (value & 0x8000) == 0x00;
-                }
-                else if (vtype == Type::eInt)
-                {
-                }
-                else
-                {
-                    ok = false;
-                }
-                break;
-            }
-            } // switch
-        }
-        break;;
-    }
-    if (!ok)
-    {
-        IO_WriteHex(Byte(dvType));
-        IO_Write(':');
-        IO_WriteHex(Byte(vtype));
-        Runtime_ErrorDump(0x54);
-        Minimal_Error_Set(0x0B);
-    }
-    return ok;
 }
 
 void HRDictionary_adjustCapacity(UInt _this, UInt newCapacity)
@@ -9704,11 +8670,6 @@ UInt HRVariant_Clone(UInt original)
 
 UInt HRVariant_CreateValueVariant(UInt value, Type vtype)
 {
-    if (Types_IsReferenceType(vtype))
-    {
-        Runtime_ErrorDump(0x43);
-        Minimal_Error_Set(0x0B);
-    }
     UInt address = GC_New(0x03, Type::eVariant);
     Memory_WriteByte(address + 2, Byte(vtype));
     Memory_WriteWord(address + 3, value);
@@ -9850,6 +8811,25 @@ Bool HRVariant_IsEqual(UInt left, Type ltype, UInt right, Type rtype)
         }
     }
     return false;
+}
+
+void IO_WriteUInt(UInt _this)
+{
+    IO_writeDigit(_this);
+}
+
+void IO_writeDigit(UInt uthis)
+{
+    Char c = 0;
+    UInt digit = 0;
+    digit = uthis % 0x0A;
+    c = HRByte_ToDigit(Byte(digit));
+    uthis = uthis / 0x0A;
+    if (uthis != 0x00)
+    {
+        IO_writeDigit(uthis);
+    }
+    IO_Write(c);
 }
 
 UInt Memory_Available()
@@ -10472,11 +9452,6 @@ UInt HRLong_NewFromConstant(UInt location)
 UInt HRLong_ToUInt(UInt _this)
 {
     UInt value = Memory_ReadWord(_this + 0x04);
-    if (value != 0x00)
-    {
-        Runtime_ErrorDump(0x3E);
-        Minimal_Error_Set(0x0D);
-    }
     return Memory_ReadWord(_this + 0x02);
 }
 

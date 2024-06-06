@@ -5,8 +5,7 @@ program Runtime
 #define SERIAL_CONSOLE // Source/System/IO uses serial only (for MCU's etc)
 #define RUNTIME        // keyboard buffer to make IO.IsBreak() work cannot be a 'string'
 
- 
-#define CHECKED      // mainly stack checks, range checks and division by zero
+//#define CHECKED      // mainly stack checks, range checks and division by zero (munts debug info for ListItems)
 //#define MEMORYLEAKS
 
 //#define LOCALDEBUGGER  // for debugging portable runtime locally

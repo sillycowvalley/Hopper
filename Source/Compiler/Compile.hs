@@ -2008,7 +2008,7 @@ program Compile
                             Parser.ErrorAt(leftToken, "type mismatch in assignment, expect '" + variableType + "', was '" + expressionType + "'");       
                             break;
                         }
-                    }
+                    } // !isVerified
                 }
             }
             

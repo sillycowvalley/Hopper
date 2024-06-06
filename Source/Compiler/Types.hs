@@ -386,6 +386,29 @@ unit Types
         }
         return isEquality;
     }
+    bool IsByteArray(string typeString)
+    {
+        string rangeLessArray = typeString;
+        uint index;
+        if (!rangeLessArray.EndsWith("[]") && rangeLessArray.EndsWith("]") && rangeLessArray.IndexOf("[", ref index))
+        {
+             rangeLessArray = rangeLessArray.Substring(0, index+1) + "]";   
+        }
+        return IsInferredByteArray(rangeLessArray);
+    }
+    bool IsInferredByteArray(string typeString)
+    {
+        if (typeString.EndsWith("[]"))
+        {
+            string typeName = typeString.Replace("[]", "");
+            byte upperBound;
+            if (Types.IsByteRange(typeName, ref upperBound) && (upperBound != 0))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
     bool IsByteRange(string typeString, ref byte upperBound)
     {
         upperBound = 0;
@@ -642,7 +665,7 @@ unit Types
                     // like bool[8000]
                     if (!IsValueType(typeString) && (typeString != "V"))
                     {
-                        Parser.ErrorAtCurrent("arrays can only contain value types");
+                        Parser.ErrorAtCurrent("arrays can only contain value types C");
                         success = false;
                         break;
                     }

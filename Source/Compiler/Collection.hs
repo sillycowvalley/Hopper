@@ -12,7 +12,7 @@ unit Collection
             {
                 // simple
             }
-            else if (typeExpected == "byte[]")
+            else if (Types.IsInferredByteArray(typeExpected))
             {
                 // constant array
             }
@@ -71,13 +71,10 @@ unit Collection
             }
             else
             {
-                actualType = "byte[" + sz.ToString() + "]";
+                actualType = typeExpected.Replace("[]", "[" + sz.ToString() + "]");
             }
             break;
         } // loop
         return value;
     }
-    
-    
-    
 }

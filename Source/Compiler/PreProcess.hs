@@ -153,16 +153,21 @@ program PreProcess
                             break;   
                         }
                     }
-                    else if (  ((CurrentNamespace == "System") 
+                    else if (   (CurrentNamespace == "System") 
                              || (CurrentNamespace == "Runtime") 
                              || (CurrentNamespace == "Wire") 
                              || (CurrentNamespace == "SPI")
                              || allowEmptyConstArrays
                                ) 
-                            && (typeString == "byte"))
                     {
-                        systemByteArray = true;
+                        byte upperBound;
+                        systemByteArray = Types.IsByteRange(typeString, ref upperBound);
+                        if (upperBound != 0)
+                        {
+                            deferred = false; // enum or flags is already defined
+                        }
                     }
+                    
                     Parser.Advance(); // [
                     typeString = typeString + "[";
                     string value;
@@ -337,7 +342,7 @@ program PreProcess
                 Parser.ErrorAtCurrent("simple type expected");
                 break;
             }
-            if (   (!IsValueType(typeString) && (typeString != "float") && (typeString != "long") && (typeString != "string")&& !typeString.StartsWith("byte["))
+            if (   (!IsValueType(typeString) && (typeString != "float") && (typeString != "long") && (typeString != "string") && !IsInferredByteArray(typeString))
                 || (typeString == "delegate")) 
             {
                 Parser.ErrorAtCurrent("simple type expected");
