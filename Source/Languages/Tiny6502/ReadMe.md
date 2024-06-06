@@ -2,9 +2,7 @@
 
 ## Introduction
 
-Tiny6502 is a minimal programming language designed for a specific 6502 system configuration like the Hopper 6502 SBC, including a VIA, an ACIA, and a serial I2C EEPROM.
-It combines the simplicity and performance of low-level programming with higher code density and type safety, tailored for embedded systems.
-The language syntax is familiar to C programmers, making it easy to learn and use.
+Tiny6502 is a minimal programming language designed for a specific 6502 system configuration like the Hopper 6502 SBC, including a VIA, an ACIA, and a serial I2C EEPROM. It combines the simplicity and performance of low-level programming with higher code density and type safety, tailored for embedded systems. The language syntax is familiar to C programmers, making it easy to learn and use.
 
 ## Key Features
 
@@ -35,7 +33,7 @@ The language syntax is familiar to C programmers, making it easy to learn and us
    - Access to timers for millisecond system tick and delay operations.
 
 7. **Const Strings:**
-   - Use `const char[]` for defining string literals for use with WriteString.
+   - Use `const char[]` for defining string literals for use with writeString.
 
 8. **Boolean Arrays:**
    - `bool[]` for efficient bit arrays (8 `bool` values per byte).
@@ -116,24 +114,24 @@ value = flag as byte; // Cast boolean to byte
 ### Serial Communication
 
 ```c
-func Write(byte data);
-func byte Read();
-func WriteString(const char[] str);
+func write(byte data);
+func byte read();
+func writeString(const char[] str);
 ```
 
 ### EEPROM
 
 ```c
-func WritePage(word address, const byte[] data);
-func ReadPage(word address, byte[] buffer);
+func writePage(word address, const byte[] data);
+func readPage(word address, byte[] buffer);
 ```
 
 ### GPIO (Pin) Control
 
 ```c
-func PinSet(byte pin, bool value);
-func bool PinRead(byte pin);
-func PinMode(byte pin, byte mode);
+func pinSet(byte pin, bool value);
+func bool pinRead(byte pin);
+func pinMode(byte pin, byte mode);
 ```
 
 ### I2C
@@ -146,8 +144,8 @@ func byte I2CRead(byte address);
 ### Timing
 
 ```c
-func word Millis();
-func Delay(word milliseconds);
+func word millis();
+func delay(word milliseconds);
 ```
 
 ### Memory Management
@@ -180,26 +178,26 @@ const byte OUTPUT = 1;
 const byte INPUT_PULLUP = 2;
 
 // Serial Communication
-func Write(byte data);
-func byte Read();
-func WriteString(const char[] str);
+func write(byte data);
+func byte read();
+func writeString(const char[] str);
 
 // EEPROM
-func WritePage(word address, const byte[] data);
-func ReadPage(word address, byte[] buffer);
+func writePage(word address, const byte[] data);
+func readPage(word address, byte[] buffer);
 
 // GPIO (Pin) Control
-func PinSet(byte pin, bool value);
-func bool PinRead(byte pin);
-func PinMode(byte pin, byte mode);
+func pinSet(byte pin, bool value);
+func bool pinRead(byte pin);
+func pinMode(byte pin, byte mode);
 
 // I2C
 func I2CWrite(byte address, byte data);
 func byte I2CRead(byte address);
 
 // Timing
-func word Millis();
-func Delay(word milliseconds);
+func word millis();
+func delay(word milliseconds);
 
 // Memory Management
 func byte[] malloc(word size);
@@ -219,9 +217,9 @@ func main() {
     const char[] welcome_message = "Hello, 6502!";
     bool led_on = false;
     
-    PinMode(pin, OUTPUT); // Set pin mode to output
-    PinSet(pin, false); // Ensure LED is off
-    WriteString(welcome_message); // Send welcome message
+    pinMode(pin, OUTPUT); // Set pin mode to output
+    pinSet(pin, false); // Ensure LED is off
+    writeString(welcome_message); // Send welcome message
 
     // Allocate memory for a boolean array
     bool[] flags = malloc(1); // 8 boolean flags
@@ -232,13 +230,13 @@ func main() {
     // Main loop
     while (true) {
         if (led_on) {
-            PinSet(pin, false); // Turn LED off
+            pinSet(pin, false); // Turn LED off
             led_on = false;
         } else {
-            PinSet(pin, true); // Turn LED on
+            pinSet(pin, true); // Turn LED on
             led_on = true;
         }
-        Delay(1000); // Delay for 1 second
+        delay(1000); // Delay for 1 second
     }
 }
 ```
@@ -257,20 +255,19 @@ func main() {
     }
     
     // Write a page to EEPROM
-    WritePage(eeprom_address, data_to_write);
+    writePage(eeprom_address, data_to_write);
     
     // Read a page from EEPROM
-    ReadPage(eeprom_address, read_buffer);
+    readPage(eeprom_address, read_buffer);
     
     // Verify the read data
     for (byte i = 0; i < 16; i++) {
         if (read_buffer[i] != i) {
-            WriteString("Read verification failed.");
+            writeString("Read verification failed.");
             return;
         }
     }
     
-    WriteString("Read verification successful.");
+    writeString("Read verification successful.");
 }
 ```
-

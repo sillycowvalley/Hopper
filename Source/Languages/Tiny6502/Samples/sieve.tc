@@ -1,0 +1,60 @@
+import "system.tc"
+
+const word SIZEPL = 8191;
+bool flagsGlobal[SIZEPL];
+
+func word subtractMillis(word[] start, word[] end) {
+    // Function to subtract two 32-bit time values (end - start)
+    word low_res;
+    // word high_res; // High part of the result, currently unused
+
+    if (end[0] >= start[0]) {
+        low_res = end[0] - start[0];
+        // high_res = end[1] - start[1];
+    } else {
+        low_res = (0xFFFF - start[0] + 1) + end[0];
+        // high_res = end[1] - start[1] - 1;
+    }
+    
+    return low_res; // We only return low_res as required
+}
+
+func main() {
+    word i; 
+    word prime;
+    word k;
+    word count;
+    word iter;
+
+    writeString("10 iterations\n");
+
+    word[] start = millis();
+    
+    for (iter = 1; iter <= 10; iter++) {
+        count = 0; 
+        for (i = 0; i < SIZEPL; i++) {
+            flagsGlobal[i] = true;
+        }
+        for (i = 0; i < SIZEPL; i++) { 
+            if (flagsGlobal[i]) {
+                prime = i + i + 3; 
+                k = i + prime; 
+                while (k < SIZEPL) { 
+                    flagsGlobal[k] = false; 
+                    k = k + prime; 
+                }
+                count = count + 1;
+            }
+        }
+    }
+
+    writeString("Done.\n");
+    writeWord(count);
+    writeString(" primes\n");
+
+    word[] end = millis();
+    word low_diff = subtractMillis(start, end);
+
+    writeWord(low_diff / 10); // Divide by 10 to get average time in milliseconds
+    writeString(" ms\n");
+}
