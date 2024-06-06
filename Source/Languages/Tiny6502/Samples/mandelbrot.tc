@@ -1,4 +1,4 @@
-import "system.tc"
+#include "system.tc"
 
 func word subtractMillis(word[] start, word[] end) {
     // Function to subtract two 32-bit time values (end - start)

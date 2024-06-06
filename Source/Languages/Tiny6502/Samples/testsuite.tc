@@ -1,0 +1,165 @@
+#include "system.tc"
+
+// Test function declarations and basic arithmetic
+func testFunctionDeclarations() {
+    byte a = 10;
+    byte b = 20;
+    byte sum = a + b;
+    writeString("Test Function Declarations: ");
+    writeWord(sum);
+    writeString(" (Expected: 30)\n");
+}
+
+// Test control structures: if, while, for, switch
+func testControlStructures() {
+    // If-else test
+    byte x = 10;
+    if (x == 10) {
+        writeString("If Test Passed\n");
+    } else {
+        writeString("If Test Failed\n");
+    }
+
+    // While loop test
+    byte count = 5;
+    while (count > 0) {
+        writeChar('*');
+        count--;
+    }
+    writeString(" (Expected: ***** )\n");
+
+    // For loop test
+    for (byte i = 0; i < 5; i++) {
+        writeChar('#');
+    }
+    writeString(" (Expected: ##### )\n");
+
+    // Switch case test
+    byte value = 2;
+    switch (value) {
+        case 1:
+            writeString("Switch Test Failed\n");
+            done;
+        case 2:
+            writeString("Switch Test Passed\n");
+            done;
+        default:
+            writeString("Switch Test Failed\n");
+            done;
+    }
+}
+
+// Test memory management: malloc, free
+func testMemoryManagement() {
+    byte[] memory = malloc(10);
+    if (memory != null) {
+        writeString("Memory Allocation Test Passed\n");
+    } else {
+        writeString("Memory Allocation Test Failed\n");
+    }
+    free(memory);
+    writeString("Memory Deallocation Test Passed\n");
+}
+
+// Test arrays and type casting
+func testArraysAndTypeCasting() {
+    const word SIZE = 5;
+    byte[SIZE] byteArray;
+    word[SIZE] wordArray;
+    
+    // Initialize and print byteArray
+    for (byte i = 0; i < SIZE; i++) {
+        byteArray[i] = i * 2;
+        writeWord(byteArray[i]);
+        writeChar(' ');
+    }
+    writeString("(Expected: 0 2 4 6 8)\n");
+
+    // Initialize and print wordArray
+    for (byte i = 0; i < SIZE; i++) {
+        wordArray[i] = i * 100;
+        writeWord(wordArray[i]);
+        writeChar(' ');
+    }
+    writeString("(Expected: 0 100 200 300 400)\n");
+
+    // Type casting test
+    word w = 0x1234;
+    byte b = w as byte;
+    writeString("Type Casting Test: ");
+    writeWord(b);
+    writeString(" (Expected: 52)\n");
+}
+
+// Test function pointers
+func testFunctionPointers() {
+    func testFunc = testFunctionDeclarations;
+    testFunc(); // Expected to call testFunctionDeclarations
+}
+
+// Test system calls
+func testSystemCalls() {
+    // Test writeChar, writeString, writeWord
+    writeChar('A');
+    writeString(" (Expected: A)\n");
+    
+    const char[] testMessage = "System Call Test";
+    writeString(testMessage);
+    writeString(" (Expected: System Call Test)\n");
+    
+    writeWord(12345);
+    writeString(" (Expected: 12345)\n");
+    
+    // Test timing functions
+    word[] start = millis();
+    delay(1000);
+    word[] end = millis();
+    word elapsed = subtractMillis(start, end);
+    writeString("Delay Test: ");
+    writeWord(elapsed);
+    writeString(" (Expected: ~1 second in ms)\n");
+}
+
+func subtractMillis(word[] start, word[] end) -> word {
+    word low_res;
+    if (end[1] >= start[1]) {
+        low_res = end[1] - start[1];
+    } else {
+        low_res = (0xFFFF - start[1] + 1) + end[1];
+        end[0] -= 1;
+    }
+    word high_res = end[0] - start[0];
+
+    // Calculate total milliseconds without overflow
+    word totalSecondsHigh = high_res * 66;  // High part in seconds (65536 / 1000 = 65.536)
+    word totalSecondsLow = low_res / 1000;  // Low part in seconds
+
+    // Add the high and low parts to get the total milliseconds
+    word totalMillis = totalSecondsHigh + totalSecondsLow;
+    return totalMillis;
+}
+
+// Main test runner
+func main() {
+    writeString("Starting Tiny6502 Test Suite\n\n");
+
+    writeString("Running Function Declarations Test\n");
+    testFunctionDeclarations();
+    
+    writeString("\nRunning Control Structures Test\n");
+    testControlStructures();
+
+    writeString("\nRunning Memory Management Test\n");
+    testMemoryManagement();
+
+    writeString("\nRunning Arrays and Type Casting Test\n");
+    testArraysAndTypeCasting();
+
+    writeString("\nRunning Function Pointers Test\n");
+    testFunctionPointers();
+
+    writeString("\nRunning System Calls Test\n");
+    testSystemCalls();
+
+    writeString("\nTiny6502 Test Suite Completed\n");
+}

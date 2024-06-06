@@ -48,7 +48,37 @@ Tiny6502 is a minimal programming language designed for a specific 6502 system c
 10. **Function Pointers:**
    - Use the `func` keyword to define function pointers, assign functions to them, and invoke them.
 
+11. **Preprocessor Support:**
+   - `#include "filename"` for including other source files.
+   - `#define` for defining constants and macros.
+   - `#ifdef`, `#ifndef`, `#else`, `#endif` for conditional compilation.
+   - `#if`, `#elif`, `#else`, `#endif` for more complex conditional compilation.
+   - Logical operators `||`, `&&`, `!` and parentheses `()` in preprocessor directives.
+   - `#undef` for undefining macros.
+   - `#pragma` for compiler-specific directives.
+
 ## Syntax and Semantics
+
+### Preprocessor Directives
+
+```c
+#include "file.tc"                // Include another source file
+#define MAX_SIZE 10               // Define a constant
+#undef MAX_SIZE                   // Undefine a constant
+#ifdef DEBUG                      // Conditional compilation if DEBUG is defined
+    // Debug code
+#else
+    // Non-debug code
+#endif
+#if defined(DEBUG) || defined(TEST) // More complex conditional compilation
+    // Code for DEBUG or TEST build
+#elif defined(RELEASE) && !defined(FAST)
+    // Code for RELEASE build without FAST
+#else
+    // Default code
+#endif
+#pragma optimize(on)              // Compiler-specific directive
+```
 
 ### Variable Declarations
 
@@ -264,14 +294,16 @@ func free(byte[] ptr);
 ### Constants for Pin Modes
 
 ```c
-const byte INPUT = 0;
+const byte INPUT
+
+ = 0;
 const byte OUTPUT = 1;
 const byte INPUT_PULLUP = 2;
 ```
 
 ## Including Other Source Files
 
-Use the `import` keyword to include other source files. This allows modular organization and reuse of common definitions and functions.
+Use the `#include` preprocessor directive to include other source files. This allows modular organization and reuse of common definitions and functions.
 
 ### Example System API File
 
@@ -345,7 +377,7 @@ func free(byte[] ptr);
 **main.tc**
 
 ```c
-import "system.tc"
+#include "system.tc"
 
 func main() {
     const char[] welcome_message = "Hello, 6502!";

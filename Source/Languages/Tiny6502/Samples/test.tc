@@ -1,0 +1,7 @@
+func main() 
+{
+    const byte x = 10;
+    if (x > 10)
+    {
+    }
+}
