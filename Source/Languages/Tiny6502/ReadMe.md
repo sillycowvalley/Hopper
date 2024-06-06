@@ -34,7 +34,7 @@ Tiny6502 is a minimal programming language designed for a specific 6502 system c
    - Access to timers for millisecond system tick and delay operations.
 
 7. **Const Strings:**
-   - Use `const char[]` for defining string literals for use with `writeString`.
+   - Use `const char[]` for defining string literals for use with `writeString`. Note: This syntax is essentially a read-only fixed-size array declaration.
 
 8. **Boolean Arrays:**
    - `bool[]` for efficient bit arrays (8 `bool` values per byte).
@@ -56,7 +56,7 @@ bool flag = true;    // Boolean value
 ### Const Strings
 
 ```c
-const char[] message = "Hello, 6502!";
+const char[] message = "Hello, 6502!"; // Read-only fixed-size array
 ```
 
 ### Memory Access
@@ -183,7 +183,6 @@ func writeWord(word num) {
     while (i > 0) {
         writeChar(digits[--i]);
     }
-
 }
 ```
 
@@ -319,10 +318,12 @@ func main() {
 ### Example EEPROM Page Read/Write Program
 
 ```c
-func main() {
+func
+
+ main() {
     word eeprom_address = 0x100;
     byte[16] write;
-    byte[16] read
+    byte[16] read;
 
     // Initialize data to write
     for (byte i = 0; i < 16; i++) {
@@ -333,7 +334,7 @@ func main() {
     writePage(eeprom_address, write);
     
     // Read a page from EEPROM
-    readPage(eeprom_address, read_buffer);
+    readPage(eeprom_address, read);
     
     // Verify the read data
     for (byte i = 0; i < 16; i++) {
