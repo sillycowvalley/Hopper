@@ -42,6 +42,9 @@ Tiny6502 is a minimal programming language designed for a specific 6502 system c
 9. **Type Casting:**
    - No explicit casting required between types of the same size (e.g., `char` and `byte`).
 
+10. **Function Pointers:**
+   - Use the `func` keyword to define function pointers, assign functions to them, and invoke them.
+
 ## Syntax and Semantics
 
 ### Variable Declarations
@@ -149,6 +152,34 @@ char[] dynamicDigits = malloc(5);      // Dynamic array, manually managed
 1. **Memory Management**: The compiler is responsible for allocating and deallocating memory for these arrays.
 2. **Range Checking**: The compiler can enforce range checking since it knows the size of the array.
 3. **Assignment Restrictions**: These arrays cannot be reassigned or freed manually to prevent memory management issues.
+
+### Function Pointers
+
+**Defining a Function Pointer**:
+- Use the `func` keyword as the type for function pointers.
+
+**Syntax**:
+```c
+func functionPointerName = functionName;
+```
+
+**Example**:
+```c
+func fiboDelegate = Fibo;
+```
+
+**Calling a Function via a Function Pointer**:
+- Invoke the function pointer directly by using it as a function.
+
+**Syntax**:
+```c
+returnType result = functionPointerName(arguments);
+```
+
+**Example**:
+```c
+uint result = fiboDelegate(arg);
+```
 
 ### Built-in Functions and Constants
 
@@ -318,9 +349,7 @@ func main() {
 ### Example EEPROM Page Read/Write Program
 
 ```c
-func
-
- main() {
+func main() {
     word eeprom_address = 0x100;
     byte[16] write;
     byte[16] read;
