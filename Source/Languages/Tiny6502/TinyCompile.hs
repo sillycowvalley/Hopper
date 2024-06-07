@@ -13,7 +13,7 @@ unit TinyCompile
     
     bool parseProgram()
     {
-        bool success;
+        bool success = true;
         Token token;
         
         loop
@@ -21,12 +21,15 @@ unit TinyCompile
             token = TinyScanner.Current();
             if (token.Type == TokenType.EOF)
             {
-                break;
+                break; // exit the loop when reaching EOF
             }
             
             switch (token.Type)
             {
-                case TokenType.KW_CONST: { success = parseConst(); }
+                case TokenType.KW_CONST:
+                {
+                    success = parseConst();
+                }
                 case TokenType.KW_BYTE:
                 case TokenType.KW_WORD:
                 case TokenType.KW_CHAR:
@@ -36,19 +39,23 @@ unit TinyCompile
                 {
                     success = parseGlobalVar();
                 }
-                case TokenType.KW_FUNC: { success = parseFunction(); }
+                case TokenType.KW_FUNC:
+                {
+                    success = parseFunction();
+                }
                 default:
                 {
-                    Error(token.SourcePath, token.Line, "unexpected token: " + TinyToken.ToString(token.Type));
+                    Error(token.SourcePath, token.Line, "unexpected token: " + TinyToken.ToString(token.Type) + "('" + token.Lexeme + "')");
                     success = false;
-                    break;
                 }
             }
             
             if (!success)
             {
-                break;
+                break; // exit the loop on error
             }
+            
+            //TinyScanner.Advance();
         }
         
         return success;
@@ -162,59 +169,74 @@ unit TinyCompile
     {
         TinyScanner.Advance(); // Skip 'func'
         Token token = TinyScanner.Current();
-        
+    
         if (token.Type != TokenType.IDENTIFIER)
         {
             Error(token.SourcePath, token.Line, "expected identifier after 'func'");
             return false;
         }
-        
+    
         string name = token.Lexeme;
         TinyScanner.Advance(); // Skip identifier
-        
+    
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_LPAREN)
         {
             Error(token.SourcePath, token.Line, "expected '(' after function name");
             return false;
         }
-        
+    
         TinyScanner.Advance(); // Skip '('
-        parseParameterList();
-        
+        if (!parseParameterList())
+        {
+            return false;
+        }
+    
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_RPAREN)
         {
             Error(token.SourcePath, token.Line, "expected ')' after parameter list");
             return false;
         }
-        
+    
         TinyScanner.Advance(); // Skip ')'
-        
+    
         token = TinyScanner.Current();
-        if (token.Type != TokenType.SYM_LBRACE)
+        if (token.Type == TokenType.SYM_SEMICOLON)
         {
-            Error(token.SourcePath, token.Line, "expected '{' to start function body");
+            // This is a forward declaration
+            TinyScanner.Advance(); // Skip ';'
+            //TinyCode.DefineForwardFunction(name);
+            return true;
+        }
+        else if (token.Type == TokenType.SYM_LBRACE)
+        {
+            // This is an actual function definition
+            TinyScanner.Advance(); // Skip '{'
+            parseFunctionBody();
+    
+            token = TinyScanner.Current();
+            if (token.Type != TokenType.SYM_RBRACE)
+            {
+                Error(token.SourcePath, token.Line, "expected '}' to end function body");
+                return false;
+            }
+    
+            TinyScanner.Advance(); // Skip '}'
+            TinyCode.DefineFunction(name);
+            return true;
+        }
+        else
+        {
+            Error(token.SourcePath, token.Line, "expected '{' to start function body or ';' for forward declaration");
             return false;
         }
-        
-        TinyScanner.Advance(); // Skip '{'
-        parseFunctionBody();
-        
-        token = TinyScanner.Current();
-        if (token.Type != TokenType.SYM_RBRACE)
-        {
-            Error(token.SourcePath, token.Line, "expected '}' to end function body");
-            return false;
-        }
-        
-        TinyScanner.Advance(); // Skip '}'
-        
-        TinyCode.DefineFunction(name);
-        return true;
     }
     
-    parseParameterList()
+    
+    
+    
+    bool parseParameterList()
     {
         Token token;
         loop
@@ -222,13 +244,13 @@ unit TinyCompile
             token = TinyScanner.Current();
             if (token.Type == TokenType.SYM_RPAREN)
             {
-                break;
+                break; // exit the loop when reaching ')'
             }
             
             if ((token.Type != TokenType.KW_BYTE) && (token.Type != TokenType.KW_WORD) && (token.Type != TokenType.KW_CHAR) && (token.Type != TokenType.KW_BOOL) && (token.Type != TokenType.KW_INT) && (token.Type != TokenType.KW_UINT))
             {
-                Error(token.SourcePath, token.Line, "expected parameter type");
-                break;
+                Error(token.SourcePath, token.Line, "expected parameter type ('" + token.Lexeme + "')");
+                return false;
             }
             
             string tp = token.Lexeme;
@@ -238,7 +260,7 @@ unit TinyCompile
             if (token.Type != TokenType.IDENTIFIER)
             {
                 Error(token.SourcePath, token.Line, "expected parameter name");
-                break;
+                return false;
             }
             
             string name = token.Lexeme;
@@ -254,9 +276,10 @@ unit TinyCompile
             else if (token.Type != TokenType.SYM_RPAREN)
             {
                 Error(token.SourcePath, token.Line, "expected ',' or ')' after parameter");
-                break;
+                return false;
             }
         }
+        return true; // success;
     }
     
     parseFunctionBody()
@@ -267,7 +290,7 @@ unit TinyCompile
             token = TinyScanner.Current();
             if (token.Type == TokenType.SYM_RBRACE)
             {
-                break;
+                break; // exit the loop when reaching '}'
             }
             
             // Parse statements
@@ -280,11 +303,26 @@ unit TinyCompile
         Token token = TinyScanner.Current();
         switch (token.Type)
         {
-            case TokenType.KW_IF: { parseIfStatement(); }
-            case TokenType.KW_WHILE: { parseWhileStatement(); }
-            case TokenType.KW_FOR: { parseForStatement(); }
-            case TokenType.KW_RETURN: { parseReturnStatement(); }
-            case TokenType.IDENTIFIER: { parseExpressionStatement(); }
+            case TokenType.KW_IF:
+            {
+                parseIfStatement();
+            }
+            case TokenType.KW_WHILE:
+            {
+                parseWhileStatement();
+            }
+            case TokenType.KW_FOR:
+            {
+                parseForStatement();
+            }
+            case TokenType.KW_RETURN:
+            {
+                parseReturnStatement();
+            }
+            case TokenType.IDENTIFIER:
+            {
+                parseExpressionStatement();
+            }
             default:
             {
                 Error(token.SourcePath, token.Line, "unexpected token in statement: " + TinyToken.ToString(token.Type));
@@ -432,7 +470,7 @@ unit TinyCompile
             token = TinyScanner.Current();
             if (token.Type == TokenType.SYM_RBRACE)
             {
-                break;
+                break; // exit the loop when reaching '}'
             }
             
             parseStatement();
