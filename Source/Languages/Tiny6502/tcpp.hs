@@ -9,28 +9,24 @@ program TCPreprocess
     bool isExperimental;
     bool IsExperimental { get { return isExperimental; } set { isExperimental = value; } }
     
-    <string, bool> includesParsed;
-    <string> includesQueue;
-    <string,bool> definedSymbols;
+    <string, bool>   includesDone;
+    <string,bool>    definedSymbols;
     
-    AddInclude(string path)
+    string projectPath;
+    
+    bool AddInclude(string path)
     {
         string lowerPath = path.ToLower();
-        if (!includesParsed.Contains(lowerPath))
+        if (!includesDone.Contains(lowerPath))
         {
-            includesQueue.Append(lowerPath);
-            includesParsed[lowerPath] = false;
+            includesDone[lowerPath] = false;
         }
+        return !includesDone[lowerPath]; // not included yet?
     }
     IncludeDone(string path)
     {
         string lowerPath = path.ToLower();
-        if (includesQueue[0] != lowerPath)
-        {
-            Die(0x0B);
-        }
-        includesQueue.Remove(0);
-        includesParsed[lowerPath] = true;
+        includesDone[lowerPath] = true;
     }
     
     Error(string path, uint line, string message)
@@ -113,12 +109,6 @@ program TCPreprocess
                     includePath = "/" + includePath;
                 }
             }
-            
-            includePathLower = includePath.ToLower();
-            if (!includesParsed.Contains(includePathLower))
-            {
-                includesParsed[includePathLower] = false; // false means we're aware of it but we haven't parsed it yet
-            }
             break;
         }
         return includePath;
@@ -131,6 +121,34 @@ program TCPreprocess
         PrintLn("    -x          : use experimental features");
         PrintLn("    -d <symbol> : define conditional compilation symbols");
     }
+    
+    bool IsValidPreprocessorSymbol(string symbol)
+    {
+        // Check if the symbol is empty
+        if (symbol.Length == 0)
+        {
+            return false;
+        }
+    
+        // Check if the first character is a letter or underscore
+        char firstChar = symbol[0];
+        if (!Char.IsLetter(firstChar) && (firstChar != '_'))
+        {
+            return false;
+        }
+    
+        // Check the rest of the characters
+        for (uint i = 1; i < symbol.Length; i++)
+        {
+            char c = symbol[i];
+            if (!Char.IsLetterOrDigit(c) && (c != '_'))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    
     
     bool processFile(string sourcePath, file preFile)
     {
@@ -145,23 +163,28 @@ program TCPreprocess
         }
         IncludeDone(sourcePath);
         
+        
+    
         success = true;
         uint line = 1;
         bool inComment;
-        
+    
         loop
         {
             string content = sourceFile.ReadLine();
             if (!sourceFile.IsValid()) { break; }
-            
+    
             string result;
             bool inString;
             char stringChar;
-            
+    
+            content = content.Replace(Char.Tab, ' ');
+    
+            // Process comments first
             for (uint i = 0; i < content.Length; i++)
             {
                 char c = content[i];
-                
+    
                 if (inString)
                 {
                     result += c;
@@ -203,16 +226,103 @@ program TCPreprocess
                 }
             }
     
-            if (!inComment) // Only add line if not within a multi-line comment
+            // If still in comment, skip the rest of the processing
+            if (inComment)
             {
-                result = result.TrimRight();
-                preFile.Append(sourcePath + ":" + line.ToString() + Char.Tab + result + Char.EOL);
+                line++;
+                continue;
             }
+    
+            // Trim leading whitespace after comment processing
+            string trimmedContent = result.TrimLeft();
+    
+            // Process preprocessor directives
+            if (trimmedContent.StartsWith("#"))
+            {
+                // Split the line by whitespace to isolate the directive name
+                <string> parts = trimmedContent.Split(' ');
+                if (parts.Count != 0)
+                {
+                    string directiveName = (parts[0]).Substring(1); // Remove the leading '#'
+                    string directiveContent = parts.Count > 1 ? trimmedContent.Substring(parts[0].Length).Trim() : "";
+    
+                    switch (directiveName)
+                    {
+                        case "include":
+                        {
+                            // Process #include directive
+                            string includePath = directiveContent.Trim();
+                            if (!includePath.StartsWith('"') || !includePath.EndsWith('"'))
+                            {
+                                Error(sourcePath, line, "syntax error");
+                                success = false;
+                                break; // exit the method loop on error
+                            }
+                            includePath = includePath.Substring(1, includePath.Length-2); // trim quotes
+                            includePath = ResolvePath(sourcePath, line, includePath);
+                            if (includePath.Length == 0)
+                            {
+                                success = false;
+                                break; // exit the method loop on error (there was an error resolving the path)
+                            }
+                            if (AddInclude(includePath))
+                            {
+                                // file has not been included yet (only inline once, the first time seen)
+                                
+                                // inline the include file
+                                if (!processFile(includePath, preFile))
+                                {
+                                    success = false;
+                                    break; // exit the method loop on error 
+                                }
+                            }
+                            
+                        }
+    
+                        // Add more cases for other directives as needed
+                        
+                        case "define":
+                        case "undef":
+                        {
+                            // Process #define directive
+                            string defineSymbol = directiveContent.Trim();
+                            if (!IsValidPreprocessorSymbol(defineSymbol))
+                            {
+                                Error(sourcePath, line, "invalid preprocessor symbol");
+                                success = false;
+                                break; // exit the method loop on error
+                            }
+                            definedSymbols[defineSymbol] = (directiveName == "define");
+                        }
+                        
+                        default:
+                        {
+                            Error(sourcePath, line, "unknown preprocessor directive: " + directiveName);
+                            success = false;
+                            break; // exit the method loop on error
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (!inComment) // Only add line if not within a multi-line comment
+                {
+                    result = result.TrimRight();
+                    if (result.Length > 0) // Only append if there is content after trimming
+                    {
+                        preFile.Append(sourcePath + ":" + line.ToString() + Char.Tab + result + Char.EOL);
+                    }
+                }
+            }
+    
             line++;
         }
     
         return success;
     }
+    
+    
     
     
     
@@ -227,17 +337,9 @@ program TCPreprocess
                 Parser.EmitError("failed to create '" + prePath + "'");
                 break;
             }
-            AddInclude(projectPath);
+            _ = AddInclude(projectPath);
             
-            success = true;
-            while (includesQueue.Count != 0)
-            {
-                if (!processFile(includesQueue[0], preFile))
-                {
-                    success = false;
-                    break;
-                }
-            }
+            success = processFile(projectPath, preFile);
             
             preFile.Flush();
             break;
@@ -303,7 +405,7 @@ program TCPreprocess
               break;
           }
           bool sourceFound;
-          string projectPath = args[0];
+          projectPath = args[0];
           string ext = ".tc";
           string codePath = args[0];
           

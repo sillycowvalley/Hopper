@@ -1,3 +1,7 @@
+#include "../system"
+
+#define DEBUG
+
 func main() 
 {
     byte y = 0;
@@ -22,12 +26,28 @@ func main()
     /*
     Multi-line comment
     // containing single line comment marker
-    and string "/* not a comment */" inside comment
+    and string "not a comment" inside comment
     */
-    
+
+    // Conditional compilation based on DEBUG symbol
+    #ifdef DEBUG
+        writeString("Debug mode enabled\n");
+    #else
+        writeString("Debug mode disabled\n");
+    #endif
+
     // Mixed comment and string example
     writeString("Example /* not a real comment */ and // in the string\n");
-    
+
     byte z = 5; /* Inline comment */ z = z + 1;
     writeString("Final string\n"); // End of main function
+
+    // Test #undef and #ifndef
+    #undef DEBUG
+
+    #ifndef DEBUG
+        writeString("Debug mode is now undefined\n");
+    #else
+        writeString("Debug mode is still defined\n");
+    #endif
 }
