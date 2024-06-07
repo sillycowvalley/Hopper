@@ -99,6 +99,7 @@ unit AST
         StmtReturn ReturnStmt;
         StmtBlock BlockStmt;
         StmtVar VarDecl;
+        StmtIf IfStmt;
     }
 
     enum StmtType
@@ -106,7 +107,8 @@ unit AST
         EXPR_STMT,
         RETURN_STMT,
         BLOCK_STMT,
-        VAR_DECL
+        VAR_DECL,
+        IF_STMT
     }
 
     record StmtExpr
@@ -127,7 +129,15 @@ unit AST
     record StmtVar
     {
         string Name;
+        string Type;
         Expr Initializer;
+    }
+
+    record StmtIf
+    {
+        Expr Condition;
+        Stmt ThenBranch;
+        Stmt ElseBranch;
     }
 
     // Declarations

@@ -20,7 +20,7 @@ unit Parser
     
     string ToString(ParserError error)
     {
-        string result = "";
+        string result = "Undefined error";
         switch (error.Type)
         {
             case ParserErrorType.NONE: { result = "No error"; }
@@ -184,6 +184,10 @@ unit Parser
         {
             return parseFunctionDeclaration(ref parser, ref decl);
         }
+        else if (match(ref parser, TokenType.KW_CONST))
+        {
+            return parseConstantDeclaration(ref parser, ref decl);
+        }
         else
         {
             return parseVariableDeclaration(ref parser, ref decl);
@@ -193,17 +197,15 @@ unit Parser
     ParserError parseVariableDeclaration(ref Parser parser, ref Decl decl)
     {
         StmtVar varStmt;
-        uint line = (peek(parser)).Line;
-        
         if (!match(ref parser, TokenType.IDENTIFIER))
         {
             ParserError error;
             error.Type = ParserErrorType.UNEXPECTED_TOKEN;
-            error.Line = line;
+            error.Line = (peek(parser)).Line;
             return error;
         }
         varStmt.Name = (previous(parser)).Lexeme;
-        line = (previous(parser)).Line;
+        uint line = (previous(parser)).Line;
     
         Expr initializer;
         if (match(ref parser, TokenType.SYM_EQ))
@@ -239,6 +241,57 @@ unit Parser
         success.Line = line;
         return success;
     }
+    
+    ParserError parseConstantDeclaration(ref Parser parser, ref Decl decl)
+    {
+        StmtVar constStmt;
+        uint line = (peek(parser)).Line;
+    
+        if (!match(ref parser, TokenType.IDENTIFIER))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            error.Line = line;
+            return error;
+        }
+        constStmt.Name = (previous(parser)).Lexeme;
+        line = (previous(parser)).Line;
+    
+        if (!match(ref parser, TokenType.SYM_EQ))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            error.Line = line;
+            return error;
+        }
+    
+        Expr initializer;
+        ParserError initError = parseExpression(ref parser, ref initializer);
+        if (initError.Type != ParserErrorType.NONE)
+        {
+            return initError;
+        }
+        constStmt.Initializer = initializer;
+    
+        if (!match(ref parser, TokenType.SYM_SEMICOLON))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            error.Line = line;
+            return error;
+        }
+    
+        Decl result;
+        result.Line = line;
+        result.Type = DeclType.VAR_DECL; // Assuming const and var share the same struct, if not create a new type
+        result.VarDecl = constStmt;
+        decl = result;
+    
+        ParserError success;
+        success.Type = ParserErrorType.NONE;
+        success.Line = line;
+        return success;
+    }
         
     ParserError parseFunctionDeclaration(ref Parser parser, ref Decl decl)
     {
@@ -247,7 +300,7 @@ unit Parser
         {
             ParserError error;
             error.Type = ParserErrorType.UNEXPECTED_TOKEN;
-            error.Line = (previous(parser)).Line;
+            error.Line = (peek(parser)).Line;
             return error;
         }
         funcDecl.Name = (previous(parser)).Lexeme;
@@ -257,7 +310,7 @@ unit Parser
         {
             ParserError error;
             error.Type = ParserErrorType.UNEXPECTED_TOKEN;
-            error.Line = (previous(parser)).Line;
+            error.Line = (peek(parser)).Line;
             return error;
         }
     
@@ -270,7 +323,7 @@ unit Parser
                 {
                     ParserError error;
                     error.Type = ParserErrorType.UNEXPECTED_TOKEN;
-                    error.Line = (previous(parser)).Line;
+                    error.Line = (peek(parser)).Line;
                     return error;
                 }
                 parameters.Append((previous(parser)).Lexeme);
@@ -280,7 +333,7 @@ unit Parser
                     {
                         ParserError error;
                         error.Type = ParserErrorType.UNEXPECTED_TOKEN;
-                        error.Line = (previous(parser)).Line;
+                        error.Line = (peek(parser)).Line;
                         return error;
                     }
                     break;
@@ -295,7 +348,7 @@ unit Parser
         {
             ParserError error;
             error.Type = ParserErrorType.UNEXPECTED_TOKEN;
-            error.Line = (previous(parser)).Line;
+            error.Line = (peek(parser)).Line;
             return error;
         }
         while (!match(ref parser, TokenType.SYM_RBRACE) && !isAtEnd(parser))
@@ -371,27 +424,28 @@ unit Parser
         else if (match(ref parser, TokenType.SYM_LBRACE)) 
         {
             return parseBlockStatement(ref parser, ref stmt);
-        } 
-        else if (match(ref parser, TokenType.KW_CONST) || match(ref parser, TokenType.KW_BYTE) || match(ref parser, TokenType.KW_WORD) || match(ref parser, TokenType.KW_CHAR) || match(ref parser, TokenType.KW_BOOL) || match(ref parser, TokenType.KW_INT) || match(ref parser, TokenType.KW_UINT))
-        {
-            return parseLocalVariableDeclaration(ref parser, ref stmt);
         }
-        else
+        else 
         {
-            return parseExpressionStatement(ref parser, ref stmt);
+            Token token = peek(parser);
+            if (token.Type == TokenType.KW_CONST)
+            {
+                return parseLocalConstDeclaration(ref parser, ref stmt);
+            }
+            else if ((token.Type == TokenType.KW_BYTE) || (token.Type == TokenType.KW_WORD) ||
+                     (token.Type == TokenType.KW_INT) || (token.Type == TokenType.KW_UINT) ||
+                     (token.Type == TokenType.KW_BOOL) || (token.Type == TokenType.KW_CHAR))
+            {
+                return parseLocalVariableDeclaration(ref parser, ref stmt);
+            }
+            else
+            {
+                return parseExpressionStatement(ref parser, ref stmt);
+            }
         }
     }
     
-    ParserError parseIfStatement(ref Parser parser, ref Stmt stmt)
-    {
-        // Implement this function as needed
-        Diagnostics.Die(0x0A);
-        ParserError result;
-        result.Type = ParserErrorType.NONE;
-        result.Line = 0;
-        return result;
-    }
-    
+        
     ParserError parseWhileStatement(ref Parser parser, ref Stmt stmt)
     {
         // Implement this function as needed
@@ -516,9 +570,22 @@ unit Parser
     ParserError parseLocalVariableDeclaration(ref Parser parser, ref Stmt stmt)
     {
         uint line = (peek(parser)).Line;
-        StmtVar varStmt;
-        varStmt.Name = "";
+    
+        if (!match(ref parser, TokenType.KW_BYTE) && !match(ref parser, TokenType.KW_WORD) &&
+            !match(ref parser, TokenType.KW_INT) && !match(ref parser, TokenType.KW_UINT) &&
+            !match(ref parser, TokenType.KW_BOOL) && !match(ref parser, TokenType.KW_CHAR))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            error.Line = line;
+            return error;
+        }
         
+        // Assuming we need to store the type as well, extending the StmtVar to have Type field
+        string varType = (previous(parser)).Lexeme;
+        
+        StmtVar varStmt;
+        varStmt.Type = varType;
         if (!match(ref parser, TokenType.IDENTIFIER))
         {
             ParserError error;
@@ -533,9 +600,9 @@ unit Parser
         if (match(ref parser, TokenType.SYM_EQ))
         {
             ParserError error = parseExpression(ref parser, ref initializer);
-            if (error.Type != ParserErrorType.NONE)
+            if (error.Type != ParserErrorType.NONE) 
             { 
-                return error;
+                return error; 
             }
         }
         else
@@ -552,16 +619,162 @@ unit Parser
             return error;
         }
     
-        Stmt resultStmt;
-        resultStmt.Line = line;
-        resultStmt.Type = StmtType.VAR_DECL;
-        resultStmt.VarDecl = varStmt;
-        stmt = resultStmt;
+        Stmt result;
+        result.Line = line;
+        result.Type = StmtType.VAR_DECL; // Assuming const and var share the same struct, if not create a new type
+        result.VarDecl = varStmt;
+        stmt = result;
     
         ParserError success;
         success.Type = ParserErrorType.NONE;
         success.Line = line;
         return success;
     }
+    
+    
+    ParserError parseLocalConstDeclaration(ref Parser parser, ref Stmt stmt)
+    {
+        uint line = (peek(parser)).Line;
+    
+        if (!match(ref parser, TokenType.KW_CONST))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            error.Line = line;
+            return error;
+        }
+    
+        if (!match(ref parser, TokenType.KW_BYTE) && !match(ref parser, TokenType.KW_WORD) &&
+            !match(ref parser, TokenType.KW_INT) && !match(ref parser, TokenType.KW_UINT) &&
+            !match(ref parser, TokenType.KW_BOOL) && !match(ref parser, TokenType.KW_CHAR))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            error.Line = line;
+            return error;
+        }
+        
+        // Assuming we need to store the type as well, extending the StmtVar to have Type field
+        string varType = (previous(parser)).Lexeme;
+        
+        StmtVar constStmt;
+        constStmt.Type = varType;
+        if (!match(ref parser, TokenType.IDENTIFIER))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            error.Line = line;
+            return error;
+        }
+        constStmt.Name = (previous(parser)).Lexeme;
+        line = (previous(parser)).Line;
+    
+        if (!match(ref parser, TokenType.SYM_EQ))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            error.Line = line;
+            return error;
+        }
+    
+        Expr initializer;
+        ParserError initError = parseExpression(ref parser, ref initializer);
+        if (initError.Type != ParserErrorType.NONE)
+        {
+            return initError;
+        }
+        constStmt.Initializer = initializer;
+    
+        if (!match(ref parser, TokenType.SYM_SEMICOLON))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            error.Line = line;
+            return error;
+        }
+    
+        Stmt result;
+        result.Line = line;
+        result.Type = StmtType.VAR_DECL; // Assuming const and var share the same struct, if not create a new type
+        result.VarDecl = constStmt;
+        stmt = result;
+    
+        ParserError success;
+        success.Type = ParserErrorType.NONE;
+        success.Line = line;
+        return success;
+    }
+
+    ParserError parseIfStatement(ref Parser parser, ref Stmt stmt)
+{
+    uint line = (previous(parser)).Line;
+
+    if (!match(ref parser, TokenType.SYM_LPAREN))
+    {
+        ParserError error;
+        error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+        error.Line = line;
+        return error;
+    }
+
+    Expr condition;
+    ParserError conditionError = parseExpression(ref parser, ref condition);
+    if (conditionError.Type != ParserErrorType.NONE)
+    {
+        return conditionError;
+    }
+
+    if (!match(ref parser, TokenType.SYM_RPAREN))
+    {
+        ParserError error;
+        error.Type = ParserErrorType.EXPECTED_CLOSING_PAREN;
+        error.Line = line;
+        return error;
+    }
+
+    Stmt thenBranch;
+    ParserError thenError = parseStatement(ref parser, ref thenBranch);
+    if (thenError.Type != ParserErrorType.NONE)
+    {
+        return thenError;
+    }
+
+    Stmt elseBranch;
+    if (match(ref parser, TokenType.KW_ELSE))
+    {
+        ParserError elseError = parseStatement(ref parser, ref elseBranch);
+        if (elseError.Type != ParserErrorType.NONE)
+        {
+            return elseError;
+        }
+    }
+    else
+    {
+        // Create a minimal no-op statement for the else branch
+        Stmt resultStmt;
+        resultStmt.Line = line;
+        resultStmt.Type = StmtType.EXPR_STMT;
+        StmtExpr exprStmt;
+        exprStmt.Expression = AST.ExprLiteral(line, "0"); // Using "0" as a no-op placeholder expression
+        resultStmt.ExprStmt = exprStmt;
+        elseBranch = resultStmt;
+    }
+
+    StmtIf ifStmt;
+    ifStmt.Condition = condition;
+    ifStmt.ThenBranch = thenBranch;
+    ifStmt.ElseBranch = elseBranch;
+
+    Stmt result;
+    result.Line = line;
+    result.Type = StmtType.IF_STMT;
+    result.IfStmt = ifStmt;
+    stmt = result;
+
+    ParserError success;
+    success.Type = ParserErrorType.NONE;
+    success.Line = line;
+    return success;
 }
 
+}
