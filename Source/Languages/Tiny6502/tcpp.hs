@@ -150,20 +150,18 @@ program TCPreprocess
         return true;
     }
     
-    skipWhitespace(string expression, ref uint index)
-    {
-        while ((index < expression.Length) && Char.IsWhitespace(expression[index]))
-        {
-            index++;
-        }
-    }
-    
     bool evaluateSymbol(string sourcePath, uint line, string symbol, ref bool value)
     {
         symbol = symbol.Trim();
-        if (symbol.StartsWith("defined(") && symbol.EndsWith(")"))
+        if (symbol.StartsWith("defined("))
         {
-            string symbolName = (symbol.Substring(8, symbol.Length - 9)).Trim();
+            if (!symbol.EndsWith(")"))
+            {
+                Error(sourcePath, line, "invalid expression: missing closing parenthesis in " + symbol);
+                return false;
+            }
+        
+            string symbolName = symbol.Substring(8, symbol.Length - 9).Trim();
             if (!isValidPreprocessorSymbol(symbolName))
             {
                 Error(sourcePath, line, "invalid symbol name in #if expression");
@@ -174,99 +172,9 @@ program TCPreprocess
         }
         else
         {
-            PrintLn(symbol, Ocean, Black);
             Error(sourcePath, line, "invalid expression: " + symbol);
             return false;
         }
-    }
-    
-    bool parseFactor(string sourcePath, uint line, string expression, ref uint index, ref bool value)
-    {
-        skipWhitespace(expression, ref index);
-    
-        if ((index < expression.Length) && (expression[index] == '!'))
-        {
-            index++;
-            bool factorValue = false;
-            if (!parseFactor(sourcePath, line, expression, ref index, ref factorValue))
-            {
-                return false;
-            }
-            value = !factorValue;
-            return true;
-        }
-        else if ((index < expression.Length) && (expression[index] == '('))
-        {
-            index++;
-            if (!parseExpression(sourcePath, line, expression, ref index, ref value))
-            {
-                return false;
-            }
-            skipWhitespace(expression, ref index);
-            if ((index >= expression.Length) || (expression[index] != ')'))
-            {
-                Error(sourcePath, line, "mismatched parentheses in #if expression");
-                return false;
-            }
-            index++;
-            return true;
-        }
-        else
-        {
-            uint startIndex = index;
-            while ((index < expression.Length) && !Char.IsWhitespace(expression[index]) && (expression[index] != ')') && (expression[index] != '|') && (expression[index] != '&'))
-            {
-                index++;
-            }
-            string symbol = expression.Substring(startIndex, index - startIndex);
-            return evaluateSymbol(sourcePath, line, symbol, ref value);
-        }
-    }
-    
-    bool parseTerm(string sourcePath, uint line, string expression, ref uint index, ref bool value)
-    {
-        if (!parseFactor(sourcePath, line, expression, ref index, ref value))
-        {
-            return false;
-        }
-    
-        skipWhitespace(expression, ref index);
-    
-        while ((index + 1 < expression.Length) && (expression.Substring(index, 2) == "&&"))
-        {
-            index += 2;
-            bool factorValue = false;
-            if (!parseFactor(sourcePath, line, expression, ref index, ref factorValue))
-            {
-                return false;
-            }
-            value = (value && factorValue);
-            skipWhitespace(expression, ref index);
-        }
-        return true;
-    }
-    
-    bool parseExpression(string sourcePath, uint line, string expression, ref uint index, ref bool value)
-    {
-        if (!parseTerm(sourcePath, line, expression, ref index, ref value))
-        {
-            return false;
-        }
-    
-        skipWhitespace(expression, ref index);
-    
-        while ((index + 1 < expression.Length) && (expression.Substring(index, 2) == "||"))
-        {
-            index += 2;
-            bool termValue = false;
-            if (!parseTerm(sourcePath, line, expression, ref index, ref termValue))
-            {
-                return false;
-            }
-            value = (value || termValue);
-            skipWhitespace(expression, ref index);
-        }
-        return true;
     }
     
     bool evaluateExpression(string sourcePath, uint line, string expression, ref bool isDefined)
@@ -297,6 +205,116 @@ program TCPreprocess
         return success;
     }
     
+    skipWhitespace(string expression, ref uint index)
+    {
+        while (index < expression.Length && Char.IsWhitespace(expression[index]))
+        {
+            index++;
+        }
+    }
+    
+    // Parse a factor: "defined(SYMBOL)" | "(" expression ")" | "!" factor
+    bool parseFactor(string sourcePath, uint line, string expression, ref uint index, ref bool value)
+    {
+        skipWhitespace(expression, ref index);
+    
+        if ((index < expression.Length) && (expression[index] == '!'))
+        {
+            // "!" factor
+            index++;
+            bool factorValue = false;
+            if (!parseFactor(sourcePath, line, expression, ref index, ref factorValue))
+            {
+                return false;
+            }
+            value = !factorValue;
+            return true;
+        }
+        else if ((index < expression.Length) && (expression[index] == '('))
+        {
+            // "(" expression ")"
+            index++;
+            if (!parseExpression(sourcePath, line, expression, ref index, ref value))
+            {
+                return false;
+            }
+            skipWhitespace(expression, ref index);
+            if ((index >= expression.Length) || (expression[index] != ')'))
+            {
+                Error(sourcePath, line, "mismatched parentheses in #if expression");
+                return false;
+            }
+            index++;
+            return true;
+        }
+        else
+        {
+            // "defined(SYMBOL)"
+            uint startIndex = index;
+            bool parenSeen;
+            while ((index < expression.Length) && !Char.IsWhitespace(expression[index]) && (expression[index] != '|') && (expression[index] != '&'))
+            {
+                if (expression[index] == ')')
+                {
+                    if (parenSeen) { break; }
+                    // include the first ')' seen in the symbol
+                    parenSeen = true;
+                }
+                index++;
+            }
+            string symbol = expression.Substring(startIndex, index - startIndex);
+            return evaluateSymbol(sourcePath, line, symbol, ref value);
+        }
+    }
+    
+    // Parse a term: factor { "&&" factor }
+    bool parseTerm(string sourcePath, uint line, string expression, ref uint index, ref bool value)
+    {
+        if (!parseFactor(sourcePath, line, expression, ref index, ref value))
+        {
+            return false;
+        }
+    
+        skipWhitespace(expression, ref index);
+    
+        while ((index + 1 < expression.Length) && (expression.Substring(index, 2) == "&&"))
+        {
+            index += 2;
+            bool factorValue = false;
+            if (!parseFactor(sourcePath, line, expression, ref index, ref factorValue))
+            {
+                return false;
+            }
+            value = (value && factorValue);
+            skipWhitespace(expression, ref index);
+        }
+        return true;
+    }
+    
+    // Parse an expression: term { "||" term }
+    bool parseExpression(string sourcePath, uint line, string expression, ref uint index, ref bool value)
+    {
+        if (!parseTerm(sourcePath, line, expression, ref index, ref value))
+        {
+            return false;
+        }
+    
+        skipWhitespace(expression, ref index);
+    
+        while ((index + 1 < expression.Length) && (expression.Substring(index, 2) == "||"))
+        {
+            index += 2;
+            bool termValue = false;
+            if (!parseTerm(sourcePath, line, expression, ref index, ref termValue))
+            {
+                return false;
+            }
+            value = (value || termValue);
+            skipWhitespace(expression, ref index);
+        }
+        return true;
+    }
+        
     
 
     bool processFile(string sourcePath, file preFile)
