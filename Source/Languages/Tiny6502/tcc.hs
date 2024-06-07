@@ -5,6 +5,7 @@ program TCCompile
     
     uses "TinyToken"
     uses "TinyScanner"
+    uses "TinyCompile"
     
     uses "/Source/Compiler/Tokens/Parser" // for SetInteractive
     
@@ -99,26 +100,24 @@ program TCCompile
           long startTime = Millis;
           loop
           {
+              if (!projectPath.Contains('.'))
+              {
+                  projectPath = projectPath + ".tc";
+              }
               string extension = Path.GetExtension(projectPath);
-              projectPath  = projectPath.Replace(extension, ".tc");
+              projectPath = projectPath.Replace(extension, ".tc");
               projectPath = Path.GetFileName(projectPath);
               projectPath = Path.Combine("/Debug/Obj/", projectPath);
-              
-              PrintLn(projectPath);
               TinyToken.Initialize();
               TinyScanner.Restart(projectPath);
+              TinyCode.Initialize(projectPath);
               
-              Token token;
-              loop
+              if (!TinyCompile.Compile())
               {
-                  token = TinyScanner.Current();    
-                  Print(" " + TinyToken.ToString(token.Type) + "('" + token.Lexeme + "')");
-                  if (token.Type == TokenType.EOF)
-                  {
-                      break;
-                  }
-                  TinyScanner.Advance();
+                  break;
               }
+              
+              TinyCode.Flush();
               
               if (!Parser.IsInteractive())
               {

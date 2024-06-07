@@ -51,7 +51,7 @@ unit TinyScanner
     advanceLine()
     {
         string line = sourceFile.ReadLine();
-        if (sourceFile.IsValid())// after ReadLine implies that we got good content
+        if (sourceFile.IsValid()) // after ReadLine implies that we got good content
         {
             if (line.Length == 0) 
             {
@@ -114,6 +114,14 @@ unit TinyScanner
         {
             currentToken = tokenizeNumber();
         }
+        else if (c == '"')
+        {
+            currentToken = tokenizeString();
+        }
+        else if (c == '\'')
+        {
+            currentToken = tokenizeChar();
+        }
         else
         {
             currentToken = tokenizeSymbol();
@@ -152,6 +160,50 @@ unit TinyScanner
         return createToken(TokenType.LIT_NUMBER, lexeme);
     }
     
+    Token tokenizeString()
+    {
+        uint start = lineIndex;
+        lineIndex++; // Skip opening quote
+        while ((lineIndex < currentLineContent.Length) && (currentLineContent[lineIndex] != '"'))
+        {
+            lineIndex++;
+        }
+        
+        if (lineIndex < currentLineContent.Length)
+        {
+            lineIndex++; // Skip closing quote
+            string lexeme = currentLineContent.Substring(start, lineIndex - start);
+            return createToken(TokenType.LIT_STRING, lexeme);
+        }
+        else
+        {
+            Error(currentSourcePath, currentLine, "unterminated string literal");
+            return createToken(TokenType.EOF, "");
+        }
+    }
+
+    Token tokenizeChar()
+    {
+        uint start = lineIndex;
+        lineIndex++; // Skip opening quote
+        while ((lineIndex < currentLineContent.Length) && (currentLineContent[lineIndex] != '\''))
+        {
+            lineIndex++;
+        }
+        
+        if (lineIndex < currentLineContent.Length)
+        {
+            lineIndex++; // Skip closing quote
+            string lexeme = currentLineContent.Substring(start, lineIndex - start);
+            return createToken(TokenType.LIT_CHAR, lexeme);
+        }
+        else
+        {
+            Error(currentSourcePath, currentLine, "unterminated char literal");
+            return createToken(TokenType.EOF, "");
+        }
+    }
+    
     Token tokenizeSymbol()
     {
         char c = currentLineContent[lineIndex];
@@ -159,16 +211,16 @@ unit TinyScanner
         
         switch (c)
         {
-            case '(': { return createToken(TokenType.SYM_LPAREN, "("); }
-            case ')': { return createToken(TokenType.SYM_RPAREN, ")"); }
-            case '{': { return createToken(TokenType.SYM_LBRACE, "{"); }
-            case '}': { return createToken(TokenType.SYM_RBRACE, "}"); }
-            case '[': { return createToken(TokenType.SYM_LBRACKET, "["); }
-            case ']': { return createToken(TokenType.SYM_RBRACKET, "]"); }
-            case ';': { return createToken(TokenType.SYM_SEMICOLON, ";"); }
-            case ':': { return createToken(TokenType.SYM_COLON, ":"); }
+            case '(': { return createToken(TokenType.SYM_LPAREN, "(");}
+            case ')': { return createToken(TokenType.SYM_RPAREN, ")");}
+            case '{': { return createToken(TokenType.SYM_LBRACE, "{");}
+            case '}': { return createToken(TokenType.SYM_RBRACE, "}");}
+            case '[': { return createToken(TokenType.SYM_LBRACKET, "[");}
+            case ']': { return createToken(TokenType.SYM_RBRACKET, "]");}
+            case ';': { return createToken(TokenType.SYM_SEMICOLON, ";");}
+            case ':': { return createToken(TokenType.SYM_COLON, ":");}
             case ',': { return createToken(TokenType.SYM_COMMA, ","); }
-            case '.': { return createToken(TokenType.SYM_DOT, "."); }
+            case '.': { return createToken(TokenType.SYM_DOT, ".");}
             case '+':
             {
                 if ((lineIndex < currentLineContent.Length) && (currentLineContent[lineIndex] == '+'))
@@ -285,7 +337,6 @@ unit TinyScanner
                 }
                 return createToken(TokenType.SYM_GT, ">");
             }
-            // Add more symbol cases here as needed
         }
         Error(currentSourcePath, currentLine, "unsupported token '" + c + "'");
         return createToken(TokenType.EOF, "");
@@ -309,3 +360,4 @@ unit TinyScanner
         }
     }
 }
+
