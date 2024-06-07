@@ -1,22 +1,6 @@
 unit AST
 {
-    enum ExprType
-    {
-        BINARY,
-        UNARY,
-        LITERAL,
-        VARIABLE
-    }
-
-    enum StmtType
-    {
-        EXPR_STMT,
-        PRINT_STMT,
-        VAR_STMT,
-        RETURN_STMT,
-        BLOCK_STMT
-    }
-
+    // Expressions
     record Expr
     {
         uint Line;
@@ -25,6 +9,14 @@ unit AST
         ExprUnary UnaryExpr;
         ExprLiteral LiteralExpr;
         ExprVariable VariableExpr;
+    }
+
+    enum ExprType
+    {
+        BINARY,
+        UNARY,
+        LITERAL,
+        VARIABLE
     }
 
     record ExprBinary
@@ -48,69 +40,6 @@ unit AST
     record ExprVariable
     {
         string Name;
-    }
-
-    record Stmt
-    {
-        uint Line;
-        StmtType Type;
-        StmtExpr ExprStmt;
-        StmtPrint PrintStmt;
-        StmtVar VarStmt;
-        StmtReturn ReturnStmt;
-        StmtBlock BlockStmt;
-    }
-
-    record StmtExpr
-    {
-        Expr Expression;
-    }
-
-    record StmtPrint
-    {
-        Expr Expression;
-    }
-
-    record StmtVar
-    {
-        string Name;
-        Expr Initializer;
-    }
-
-    record StmtReturn
-    {
-        Expr Expression;
-    }
-
-    record StmtBlock
-    {
-        <Stmt> Statements;
-    }
-
-    enum DeclType
-    {
-        FUNC_DECL,
-        VAR_DECL
-    }
-
-    record Decl
-    {
-        uint Line;
-        DeclType Type;
-        DeclFunc FuncDecl;
-        StmtVar VarDecl;
-    }
-
-    record DeclFunc
-    {
-        string Name;
-        <string> Params;
-        <Stmt> Body;
-    }
-
-    record Program
-    {
-        <Decl> Declarations;
     }
 
     Expr ExprBinary(uint line, Expr left, string operator, Expr right)
@@ -158,6 +87,75 @@ unit AST
         variableExpr.Name = name;
         expr.VariableExpr = variableExpr;
         return expr;
+    }
+
+    // Statements
+    record Stmt
+    {
+        uint Line;
+        StmtType Type;
+        
+        StmtExpr ExprStmt;
+        StmtReturn ReturnStmt;
+        StmtBlock BlockStmt;
+        StmtVar VarDecl;
+    }
+
+    enum StmtType
+    {
+        EXPR_STMT,
+        RETURN_STMT,
+        BLOCK_STMT,
+        VAR_DECL
+    }
+
+    record StmtExpr
+    {
+        Expr Expression;
+    }
+
+    record StmtReturn
+    {
+        Expr Expression;
+    }
+
+    record StmtBlock
+    {
+        <Stmt> Statements;
+    }
+
+    record StmtVar
+    {
+        string Name;
+        Expr Initializer;
+    }
+
+    // Declarations
+    record Decl
+    {
+        uint Line;
+        DeclType Type;
+        
+        DeclFunc FuncDecl;
+        StmtVar VarDecl;
+    }
+
+    enum DeclType
+    {
+        FUNC_DECL,
+        VAR_DECL
+    }
+
+    record DeclFunc
+    {
+        string Name;
+        <string> Params;
+        <Stmt> Body;
+    }
+
+    record Program
+    {
+        <Decl> Declarations;
     }
 }
 

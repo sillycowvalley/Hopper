@@ -79,7 +79,6 @@ unit Parser
     
     ParserError parseExpression(ref Parser parser, ref Expr expr)
     {
-        uint line = (peek(parser)).Line;
         expr = parseEquality(ref parser);
     
         ParserError success;
@@ -195,167 +194,6 @@ unit Parser
     {
         StmtVar varStmt;
         uint line = (peek(parser)).Line;
-    
-        if (!match(ref parser, TokenType.IDENTIFIER))
-        {
-            ParserError error;
-            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
-            error.Line = line;
-            return error;
-        }
-        varStmt.Name = (previous(parser)).Lexeme;
-        line = (previous(parser)).Line;
-    
-        Expr initializer;
-        if (match(ref parser, TokenType.SYM_EQ))
-        {
-            ParserError error = parseExpression(ref parser, ref initializer);
-            if (error.Type != ParserErrorType.NONE) 
-            { 
-                return error; 
-            }
-        }
-        else
-        {
-            initializer = AST.ExprLiteral(line, "0"); // Using "0" as the default value
-        }
-        varStmt.Initializer = initializer;
-    
-        if (!match(ref parser, TokenType.SYM_SEMICOLON))
-        {
-            ParserError error;
-            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
-            error.Line = (peek(parser)).Line;
-            return error;
-        }
-    
-        Decl result;
-        result.Line = line;
-        result.Type = DeclType.VAR_DECL;
-        result.VarDecl = varStmt;
-        decl = result;
-    
-        ParserError success;
-        success.Type = ParserErrorType.NONE;
-        success.Line = line;
-        return success;
-    }
-    
-    ParserError parseFunctionDeclaration(ref Parser parser, ref Decl decl)
-    {
-        DeclFunc funcDecl;
-        uint line = (peek(parser)).Line;
-    
-        if (!match(ref parser, TokenType.IDENTIFIER))
-        {
-            ParserError error;
-            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
-            error.Line = line;
-            return error;
-        }
-        funcDecl.Name = (previous(parser)).Lexeme;
-        line = (previous(parser)).Line;
-    
-        if (!match(ref parser, TokenType.SYM_LPAREN))
-        {
-            ParserError error;
-            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
-            error.Line = line;
-            return error;
-        }
-    
-        <string> parameters;
-        if (!match(ref parser, TokenType.SYM_RPAREN))
-        {
-            loop
-            {
-                if (!match(ref parser, TokenType.IDENTIFIER))
-                {
-                    ParserError error;
-                    error.Type = ParserErrorType.UNEXPECTED_TOKEN;
-                    error.Line = (peek(parser)).Line;
-                    return error;
-                }
-                parameters.Append((previous(parser)).Lexeme);
-                if (!match(ref parser, TokenType.SYM_COMMA))
-                {
-                    if (!match(ref parser, TokenType.SYM_RPAREN))
-                    {
-                        ParserError error;
-                        error.Type = ParserErrorType.UNEXPECTED_TOKEN;
-                        error.Line = (peek(parser)).Line;
-                        return error;
-                    }
-                    break;
-                }
-            }
-        }
-    
-        funcDecl.Params = parameters;
-    
-        <Stmt> body;
-        if (!match(ref parser, TokenType.SYM_LBRACE))
-        {
-            ParserError error;
-            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
-            error.Line = line;
-            return error;
-        }
-        while (!match(ref parser, TokenType.SYM_RBRACE) && !isAtEnd(parser))
-        {
-            Stmt statement;
-            ParserError error = parseStatement(ref parser, ref statement);
-            if (error.Type != ParserErrorType.NONE) 
-            { 
-                return error; 
-            }
-            body.Append(statement);
-        }
-    
-        funcDecl.Body = body;
-        Decl result;
-        result.Line = line;
-        result.Type = DeclType.FUNC_DECL;
-        result.FuncDecl = funcDecl;
-        decl = result;
-    
-        ParserError success;
-        success.Type = ParserErrorType.NONE;
-        success.Line = line;
-        return success;
-    }
-    
-    ParserError ParseProgram(ref Parser parser, ref Program prog)
-    {
-        <Decl> declarations;
-        ParserError error;
-        loop
-        {
-            Decl decl;
-            error = parseDeclaration(ref parser, ref decl);
-            if (error.Type != ParserErrorType.NONE) 
-            { 
-                return error; 
-            }
-            declarations.Append(decl);
-            if (isAtEnd(parser)) 
-            { 
-                break; 
-            }
-        }
-        prog.Declarations = declarations;
-    
-        ParserError result;
-        result.Type = ParserErrorType.NONE;
-        result.Line = 0;
-        return result;
-    }
-    
-    ParserError parseLocalVariableDeclaration(ref Parser parser, ref Stmt stmt)
-    {
-        uint line = (peek(parser)).Line;
-        StmtVar varStmt;
-        varStmt.Name = "";
         
         if (!match(ref parser, TokenType.IDENTIFIER))
         {
@@ -390,18 +228,128 @@ unit Parser
             return error;
         }
     
-        Stmt result;
+        Decl result;
         result.Line = line;
-        result.Type = StmtType.VAR_DECL;
+        result.Type = DeclType.VAR_DECL;
         result.VarDecl = varStmt;
-        stmt = result;
+        decl = result;
     
         ParserError success;
         success.Type = ParserErrorType.NONE;
         success.Line = line;
         return success;
     }
-
+        
+    ParserError parseFunctionDeclaration(ref Parser parser, ref Decl decl)
+    {
+        DeclFunc funcDecl;
+        if (!match(ref parser, TokenType.IDENTIFIER))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            error.Line = (previous(parser)).Line;
+            return error;
+        }
+        funcDecl.Name = (previous(parser)).Lexeme;
+        uint line = (previous(parser)).Line;
+    
+        if (!match(ref parser, TokenType.SYM_LPAREN))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            error.Line = (previous(parser)).Line;
+            return error;
+        }
+    
+        <string> parameters;
+        if (!match(ref parser, TokenType.SYM_RPAREN))
+        {
+            loop
+            {
+                if (!match(ref parser, TokenType.IDENTIFIER))
+                {
+                    ParserError error;
+                    error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+                    error.Line = (previous(parser)).Line;
+                    return error;
+                }
+                parameters.Append((previous(parser)).Lexeme);
+                if (!match(ref parser, TokenType.SYM_COMMA))
+                {
+                    if (!match(ref parser, TokenType.SYM_RPAREN))
+                    {
+                        ParserError error;
+                        error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+                        error.Line = (previous(parser)).Line;
+                        return error;
+                    }
+                    break;
+                }
+            }
+        }
+    
+        funcDecl.Params = parameters;
+    
+        <Stmt> body;
+        if (!match(ref parser, TokenType.SYM_LBRACE))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            error.Line = (previous(parser)).Line;
+            return error;
+        }
+        while (!match(ref parser, TokenType.SYM_RBRACE) && !isAtEnd(parser))
+        {
+            Stmt statement;
+            ParserError error = parseStatement(ref parser, ref statement);
+            if (error.Type != ParserErrorType.NONE) 
+            { 
+                return error; 
+            }
+            body.Append(statement);
+        }
+    
+        funcDecl.Body = body;
+        Decl result;
+        result.Line = line;
+        result.Type = DeclType.FUNC_DECL;
+        result.FuncDecl = funcDecl;
+        decl = result;
+    
+        ParserError success;
+        success.Type = ParserErrorType.NONE;
+        success.Line = line;
+        return success;
+    }
+    
+    
+    ParserError ParseProgram(ref Parser parser, ref Program prog)
+    {
+        <Decl> declarations;
+        ParserError error;
+        loop
+        {
+            Decl decl;
+            error = parseDeclaration(ref parser, ref decl);
+            if (error.Type != ParserErrorType.NONE) 
+            { 
+                return error; 
+            }
+            declarations.Append(decl);
+            if (isAtEnd(parser)) 
+            { 
+                break; 
+            }
+        }
+        prog.Declarations = declarations;
+    
+        ParserError result;
+        result.Type = ParserErrorType.NONE;
+        result.Line = 0;
+        return result;
+    }
+    
+    
     ParserError parseStatement(ref Parser parser, ref Stmt stmt)
     {
         if (match(ref parser, TokenType.KW_IF)) 
@@ -433,7 +381,6 @@ unit Parser
             return parseExpressionStatement(ref parser, ref stmt);
         }
     }
-    
     
     ParserError parseIfStatement(ref Parser parser, ref Stmt stmt)
     {
@@ -563,6 +510,57 @@ unit Parser
         ParserError success;
         success.Type = ParserErrorType.NONE;
         success.Line = expression.Line;
+        return success;
+    }
+    
+    ParserError parseLocalVariableDeclaration(ref Parser parser, ref Stmt stmt)
+    {
+        uint line = (peek(parser)).Line;
+        StmtVar varStmt;
+        varStmt.Name = "";
+        
+        if (!match(ref parser, TokenType.IDENTIFIER))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            error.Line = line;
+            return error;
+        }
+        varStmt.Name = (previous(parser)).Lexeme;
+        line = (previous(parser)).Line;
+    
+        Expr initializer;
+        if (match(ref parser, TokenType.SYM_EQ))
+        {
+            ParserError error = parseExpression(ref parser, ref initializer);
+            if (error.Type != ParserErrorType.NONE)
+            { 
+                return error;
+            }
+        }
+        else
+        {
+            initializer = AST.ExprLiteral(line, "0"); // Using "0" as the default value
+        }
+        varStmt.Initializer = initializer;
+    
+        if (!match(ref parser, TokenType.SYM_SEMICOLON))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            error.Line = line;
+            return error;
+        }
+    
+        Stmt resultStmt;
+        resultStmt.Line = line;
+        resultStmt.Type = StmtType.VAR_DECL;
+        resultStmt.VarDecl = varStmt;
+        stmt = resultStmt;
+    
+        ParserError success;
+        success.Type = ParserErrorType.NONE;
+        success.Line = line;
         return success;
     }
 }
