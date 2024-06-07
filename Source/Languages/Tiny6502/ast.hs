@@ -11,7 +11,6 @@ unit AST
         ExprVariable VariableExpr;
         ExprCall CallExpr;
     }
-
     enum ExprType
     {
         BINARY,
@@ -20,36 +19,30 @@ unit AST
         VARIABLE,
         CALL
     }
-
     record ExprBinary
     {
         Expr Left;
         string Operator;
         Expr Right;
     }
-
     record ExprUnary
     {
         string Operator;
         Expr Operand;
     }
-
     record ExprLiteral
     {
         string Value;
     }
-
     record ExprVariable
     {
         string Name;
     }
-
     record ExprCall
     {
         Expr Callee;
         <Expr> Arguments;
     }
-
     Expr ExprBinary(uint line, Expr left, string operator, Expr right)
     {
         Expr expr;
@@ -62,7 +55,6 @@ unit AST
         expr.BinaryExpr = binaryExpr;
         return expr;
     }
-
     Expr ExprUnary(uint line, string operator, Expr operand)
     {
         Expr expr;
@@ -74,7 +66,6 @@ unit AST
         expr.UnaryExpr = unaryExpr;
         return expr;
     }
-
     Expr ExprLiteral(uint line, string value)
     {
         Expr expr;
@@ -85,7 +76,6 @@ unit AST
         expr.LiteralExpr = literalExpr;
         return expr;
     }
-
     Expr ExprVariable(uint line, string name)
     {
         Expr expr;
@@ -96,7 +86,6 @@ unit AST
         expr.VariableExpr = variableExpr;
         return expr;
     }
-
     Expr ExprCall(uint line, Expr callee, <Expr> arguments)
     {
         Expr expr;
@@ -108,81 +97,90 @@ unit AST
         expr.CallExpr = callExpr;
         return expr;
     }
-
     // Statements
     record Stmt
     {
         uint Line;
         StmtType Type;
-
         StmtExpr ExprStmt;
         StmtReturn ReturnStmt;
         StmtBlock BlockStmt;
         StmtVar VarDecl;
         StmtIf IfStmt;
+        StmtWhile WhileStmt;
+        StmtFor ForStmt;
+        StmtNoOp NoOpStmt;
     }
-
     enum StmtType
     {
         EXPR_STMT,
         RETURN_STMT,
         BLOCK_STMT,
         VAR_DECL,
-        IF_STMT
+        IF_STMT,
+        WHILE_STMT,
+        FOR_STMT,
+        NO_OP_STMT
     }
-
+    record StmtNoOp
+    {
+    }
     record StmtExpr
     {
         Expr Expression;
     }
-
     record StmtReturn
     {
         Expr Expression;
     }
-
     record StmtBlock
     {
         <Stmt> Statements;
     }
-
     record StmtVar
     {
         string Name;
         string Type;
         Expr Initializer;
     }
-
     record StmtIf
     {
         Expr Condition;
         Stmt ThenBranch;
         Stmt ElseBranch;
     }
-
+    record StmtWhile
+    {
+        Expr Condition;
+        Stmt Body;
+    }
+    record StmtFor
+    {
+        Stmt Initializer;
+        Expr Condition;
+        Expr Increment;
+        Stmt Body;
+    }
+    
     // Declarations
     record Decl
     {
         uint Line;
         DeclType Type;
-
         DeclFunc FuncDecl;
         StmtVar VarDecl;
     }
-
     enum DeclType
     {
         FUNC_DECL,
         VAR_DECL
     }
-
     record DeclFunc
     {
         string Name;
         <string> Params;
         <Stmt> Body;
     }
-
     record Program
     {
         <Decl> Declarations;

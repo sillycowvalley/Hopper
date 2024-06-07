@@ -148,67 +148,67 @@ unit Parser
     }
     
     Expr parsePrimary(ref Parser parser)
-{
-    if (match(ref parser, TokenType.LIT_NUMBER))
     {
-        return AST.ExprLiteral((previous(parser)).Line, (previous(parser)).Lexeme);
-    }
-    if (match(ref parser, TokenType.LIT_CHAR))
-    {
-        return AST.ExprLiteral((previous(parser)).Line, (previous(parser)).Lexeme);
-    }
-    if (match(ref parser, TokenType.LIT_STRING))
-    {
-        return AST.ExprLiteral((previous(parser)).Line, (previous(parser)).Lexeme);
-    }
-    if (match(ref parser, TokenType.IDENTIFIER))
-    {
-        Expr varExpr = AST.ExprVariable((previous(parser)).Line, (previous(parser)).Lexeme);
-        if ((peek(parser)).Type == TokenType.SYM_LPAREN)
+        if (match(ref parser, TokenType.LIT_NUMBER))
         {
-            _ = advance(ref parser); // Consume the '('
-            <Expr> arguments;
-            if (!match(ref parser, TokenType.SYM_RPAREN))
+            return AST.ExprLiteral((previous(parser)).Line, (previous(parser)).Lexeme);
+        }
+        if (match(ref parser, TokenType.LIT_CHAR))
+        {
+            return AST.ExprLiteral((previous(parser)).Line, (previous(parser)).Lexeme);
+        }
+        if (match(ref parser, TokenType.LIT_STRING))
+        {
+            return AST.ExprLiteral((previous(parser)).Line, (previous(parser)).Lexeme);
+        }
+        if (match(ref parser, TokenType.IDENTIFIER))
+        {
+            Expr varExpr = AST.ExprVariable((previous(parser)).Line, (previous(parser)).Lexeme);
+            if ((peek(parser)).Type == TokenType.SYM_LPAREN)
             {
-                loop
+                _ = advance(ref parser); // Consume the '('
+                <Expr> arguments;
+                if (!match(ref parser, TokenType.SYM_RPAREN))
                 {
-                    Expr arg;
-                    ParserError error = parseExpression(ref parser, ref arg);
-                    if (error.Type != ParserErrorType.NONE)
+                    loop
                     {
-                        return AST.ExprLiteral(0, "0");  // Using "0" as the default placeholder value
-                    }
-                    arguments.Append(arg);
-                    if (!match(ref parser, TokenType.SYM_COMMA))
-                    {
-                        if (!match(ref parser, TokenType.SYM_RPAREN))
+                        Expr arg;
+                        ParserError error = parseExpression(ref parser, ref arg);
+                        if (error.Type != ParserErrorType.NONE)
                         {
                             return AST.ExprLiteral(0, "0");  // Using "0" as the default placeholder value
                         }
-                        break;
+                        arguments.Append(arg);
+                        if (!match(ref parser, TokenType.SYM_COMMA))
+                        {
+                            if (!match(ref parser, TokenType.SYM_RPAREN))
+                            {
+                                return AST.ExprLiteral(0, "0");  // Using "0" as the default placeholder value
+                            }
+                            break;
+                        }
                     }
                 }
+                return AST.ExprCall(varExpr.Line, varExpr, arguments);
             }
-            return AST.ExprCall(varExpr.Line, varExpr, arguments);
+            return varExpr;
         }
-        return varExpr;
-    }
-    if (match(ref parser, TokenType.SYM_LPAREN))
-    {
-        Expr expr;
-        ParserError error = parseExpression(ref parser, ref expr);
-        if (error.Type != ParserErrorType.NONE)
+        if (match(ref parser, TokenType.SYM_LPAREN))
         {
-            return AST.ExprLiteral(0, "0");  // Using "0" as the default placeholder value
+            Expr expr;
+            ParserError error = parseExpression(ref parser, ref expr);
+            if (error.Type != ParserErrorType.NONE)
+            {
+                return AST.ExprLiteral(0, "0");  // Using "0" as the default placeholder value
+            }
+            if (!match(ref parser, TokenType.SYM_RPAREN))
+            {
+                return AST.ExprLiteral(0, "0");  // Using "0" as the default placeholder value
+            }
+            return expr;
         }
-        if (!match(ref parser, TokenType.SYM_RPAREN))
-        {
-            return AST.ExprLiteral(0, "0");  // Using "0" as the default placeholder value
-        }
-        return expr;
+        return AST.ExprLiteral(0, "0");  // Using "0" as the default placeholder value
     }
-    return AST.ExprLiteral(0, "0");  // Using "0" as the default placeholder value
-}
     
     ParserError parseDeclaration(ref Parser parser, ref Decl decl)
     {
@@ -477,25 +477,133 @@ unit Parser
         }
     }
     
-        
     ParserError parseWhileStatement(ref Parser parser, ref Stmt stmt)
     {
-        // Implement this function as needed
-        Diagnostics.Die(0x0A);
-        ParserError result;
-        result.Type = ParserErrorType.NONE;
-        result.Line = 0;
-        return result;
+        uint line = (previous(parser)).Line;
+        if (!match(ref parser, TokenType.SYM_LPAREN))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            error.Line = line;
+            return error;
+        }
+        Expr condition;
+        ParserError conditionError = parseExpression(ref parser, ref condition);
+        if (conditionError.Type != ParserErrorType.NONE)
+        {
+            return conditionError;
+        }
+        if (!match(ref parser, TokenType.SYM_RPAREN))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.EXPECTED_CLOSING_PAREN;
+            error.Line = line;
+            return error;
+        }
+        Stmt body;
+        ParserError bodyError = parseStatement(ref parser, ref body);
+        if (bodyError.Type != ParserErrorType.NONE)
+        {
+            return bodyError;
+        }
+        StmtWhile whileStmt;
+        whileStmt.Condition = condition;
+        whileStmt.Body = body;
+        Stmt result;
+        result.Line = line;
+        result.Type = StmtType.WHILE_STMT;
+        result.WhileStmt = whileStmt;
+        stmt = result;
+        ParserError success;
+        success.Type = ParserErrorType.NONE;
+        success.Line = line;
+        return success;
     }
-    
+
     ParserError parseForStatement(ref Parser parser, ref Stmt stmt)
     {
-        // Implement this function as needed
-        Diagnostics.Die(0x0A);
-        ParserError result;
-        result.Type = ParserErrorType.NONE;
-        result.Line = 0;
-        return result;
+        uint line = (previous(parser)).Line;
+        if (!match(ref parser, TokenType.SYM_LPAREN))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            error.Line = line;
+            return error;
+        }
+        Stmt initializer;
+        if (!match(ref parser, TokenType.SYM_SEMICOLON))
+        {
+            ParserError initError = parseLocalVariableDeclaration(ref parser, ref initializer);
+            if (initError.Type != ParserErrorType.NONE)
+            {
+                return initError;
+            }
+        }
+        else
+        {
+            initializer.Line = line;
+            initializer.Type = StmtType.NO_OP_STMT;
+        }
+        Expr condition;
+        if (!match(ref parser, TokenType.SYM_SEMICOLON))
+        {
+            ParserError condError = parseExpression(ref parser, ref condition);
+            if (condError.Type != ParserErrorType.NONE)
+            {
+                return condError;
+            }
+            if (!match(ref parser, TokenType.SYM_SEMICOLON))
+            {
+                ParserError error;
+                error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+                error.Line = line;
+                return error;
+            }
+        }
+        else
+        {
+            condition = AST.ExprLiteral(line, "1"); // Default condition to true
+        }
+        Expr increment;
+        if (!match(ref parser, TokenType.SYM_RPAREN))
+        {
+            ParserError incrError = parseExpression(ref parser, ref increment);
+            if (incrError.Type != ParserErrorType.NONE)
+            {
+                return incrError;
+            }
+            if (!match(ref parser, TokenType.SYM_RPAREN))
+            {
+                ParserError error;
+                error.Type = ParserErrorType.EXPECTED_CLOSING_PAREN;
+                error.Line = line;
+                return error;
+            }
+        }
+        else
+        {
+            increment = AST.ExprLiteral(line, "0"); // Default increment to no-op
+        }
+        Stmt body;
+        ParserError bodyError = parseStatement(ref parser, ref body);
+        if (bodyError.Type != ParserErrorType.NONE)
+        {
+            return bodyError;
+        }
+        StmtFor forStmt;
+        forStmt.Initializer = initializer;
+        forStmt.Condition = condition;
+        forStmt.Increment = increment;
+        forStmt.Body = body;
+        Stmt result;
+        result.Line = line;
+        result.Type = StmtType.FOR_STMT;
+        result.ForStmt = forStmt;
+        stmt = result;
+        ParserError success;
+        success.Type = ParserErrorType.NONE;
+        success.Line = line;
+        return success;
     }
     
     ParserError parseReturnStatement(ref Parser parser, ref Stmt stmt)
@@ -736,77 +844,62 @@ unit Parser
         success.Line = line;
         return success;
     }
-
     ParserError parseIfStatement(ref Parser parser, ref Stmt stmt)
-{
-    uint line = (previous(parser)).Line;
-
-    if (!match(ref parser, TokenType.SYM_LPAREN))
     {
-        ParserError error;
-        error.Type = ParserErrorType.UNEXPECTED_TOKEN;
-        error.Line = line;
-        return error;
-    }
-
-    Expr condition;
-    ParserError conditionError = parseExpression(ref parser, ref condition);
-    if (conditionError.Type != ParserErrorType.NONE)
-    {
-        return conditionError;
-    }
-
-    if (!match(ref parser, TokenType.SYM_RPAREN))
-    {
-        ParserError error;
-        error.Type = ParserErrorType.EXPECTED_CLOSING_PAREN;
-        error.Line = line;
-        return error;
-    }
-
-    Stmt thenBranch;
-    ParserError thenError = parseStatement(ref parser, ref thenBranch);
-    if (thenError.Type != ParserErrorType.NONE)
-    {
-        return thenError;
-    }
-
-    Stmt elseBranch;
-    if (match(ref parser, TokenType.KW_ELSE))
-    {
-        ParserError elseError = parseStatement(ref parser, ref elseBranch);
-        if (elseError.Type != ParserErrorType.NONE)
+        uint line = (previous(parser)).Line;
+        if (!match(ref parser, TokenType.SYM_LPAREN))
         {
-            return elseError;
+            ParserError error;
+            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            error.Line = line;
+            return error;
         }
+        Expr condition;
+        ParserError conditionError = parseExpression(ref parser, ref condition);
+        if (conditionError.Type != ParserErrorType.NONE)
+        {
+            return conditionError;
+        }
+        if (!match(ref parser, TokenType.SYM_RPAREN))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.EXPECTED_CLOSING_PAREN;
+            error.Line = line;
+            return error;
+        }
+        Stmt thenBranch;
+        ParserError thenError = parseStatement(ref parser, ref thenBranch);
+        if (thenError.Type != ParserErrorType.NONE)
+        {
+            return thenError;
+        }
+        Stmt elseBranch;
+        if (match(ref parser, TokenType.KW_ELSE))
+        {
+            ParserError elseError = parseStatement(ref parser, ref elseBranch);
+            if (elseError.Type != ParserErrorType.NONE)
+            {
+                return elseError;
+            }
+        }
+        else
+        {
+            elseBranch.Line = line;
+            elseBranch.Type = StmtType.NO_OP_STMT;
+        }
+        StmtIf ifStmt;
+        ifStmt.Condition = condition;
+        ifStmt.ThenBranch = thenBranch;
+        ifStmt.ElseBranch = elseBranch;
+        Stmt result;
+        result.Line = line;
+        result.Type = StmtType.IF_STMT;
+        result.IfStmt = ifStmt;
+        stmt = result;
+        ParserError success;
+        success.Type = ParserErrorType.NONE;
+        success.Line = line;
+        return success;
     }
-    else
-    {
-        // Create a minimal no-op statement for the else branch
-        Stmt resultStmt;
-        resultStmt.Line = line;
-        resultStmt.Type = StmtType.EXPR_STMT;
-        StmtExpr exprStmt;
-        exprStmt.Expression = AST.ExprLiteral(line, "0"); // Using "0" as a no-op placeholder expression
-        resultStmt.ExprStmt = exprStmt;
-        elseBranch = resultStmt;
-    }
-
-    StmtIf ifStmt;
-    ifStmt.Condition = condition;
-    ifStmt.ThenBranch = thenBranch;
-    ifStmt.ElseBranch = elseBranch;
-
-    Stmt result;
-    result.Line = line;
-    result.Type = StmtType.IF_STMT;
-    result.IfStmt = ifStmt;
-    stmt = result;
-
-    ParserError success;
-    success.Type = ParserErrorType.NONE;
-    success.Line = line;
-    return success;
 }
 
-}

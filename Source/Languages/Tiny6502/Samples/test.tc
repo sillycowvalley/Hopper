@@ -1,8 +1,13 @@
 func main() 
 {
-    const byte x = 10;
-    if (x > 10)
+    byte y = 0;
+    while (y < 10)
     {
-        writeString(" (Expected: 30)\n");
+        y = y + 1;
+    }
+
+    for (byte i = 0; i < 5; i = i + 1)
+    {
+        writeString("In for loop\n");
     }
 }
