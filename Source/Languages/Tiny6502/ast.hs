@@ -9,6 +9,7 @@ unit AST
         ExprUnary UnaryExpr;
         ExprLiteral LiteralExpr;
         ExprVariable VariableExpr;
+        ExprCall CallExpr;
     }
 
     enum ExprType
@@ -16,7 +17,8 @@ unit AST
         BINARY,
         UNARY,
         LITERAL,
-        VARIABLE
+        VARIABLE,
+        CALL
     }
 
     record ExprBinary
@@ -40,6 +42,12 @@ unit AST
     record ExprVariable
     {
         string Name;
+    }
+
+    record ExprCall
+    {
+        Expr Callee;
+        <Expr> Arguments;
     }
 
     Expr ExprBinary(uint line, Expr left, string operator, Expr right)
@@ -89,12 +97,24 @@ unit AST
         return expr;
     }
 
+    Expr ExprCall(uint line, Expr callee, <Expr> arguments)
+    {
+        Expr expr;
+        expr.Line = line;
+        expr.Type = ExprType.CALL;
+        ExprCall callExpr;
+        callExpr.Callee = callee;
+        callExpr.Arguments = arguments;
+        expr.CallExpr = callExpr;
+        return expr;
+    }
+
     // Statements
     record Stmt
     {
         uint Line;
         StmtType Type;
-        
+
         StmtExpr ExprStmt;
         StmtReturn ReturnStmt;
         StmtBlock BlockStmt;
@@ -145,7 +165,7 @@ unit AST
     {
         uint Line;
         DeclType Type;
-        
+
         DeclFunc FuncDecl;
         StmtVar VarDecl;
     }
