@@ -68,6 +68,18 @@ unit Parser
         Token result = (parser.Tokens).GetItem(parser.Current - 1);
         return result;
     }
+
+    Token peekNext(Parser parser)
+    {
+        Token result;
+        if (parser.Current + 1 >= (parser.Tokens).Count)
+        {
+            result = (parser.Tokens).GetItem(parser.Current);
+            return result;
+        }
+        result = (parser.Tokens).GetItem(parser.Current + 1);
+        return result;
+    }
     
     bool match(ref Parser parser, TokenType tokenType)
     {
@@ -147,7 +159,69 @@ unit Parser
         return parsePrimary(ref parser);
     }
     
-      
+    Expr parsePrimary(ref Parser parser)
+    {
+        if (match(ref parser, TokenType.LIT_NUMBER))
+        {
+            return AST.ExprLiteral((previous(parser)).Line, (previous(parser)).Lexeme);
+        }
+        if (match(ref parser, TokenType.LIT_CHAR))
+        {
+            return AST.ExprLiteral((previous(parser)).Line, (previous(parser)).Lexeme);
+        }
+        if (match(ref parser, TokenType.LIT_STRING))
+        {
+            return AST.ExprLiteral((previous(parser)).Line, (previous(parser)).Lexeme);
+        }
+        if (match(ref parser, TokenType.IDENTIFIER))
+        {
+            Expr varExpr = AST.ExprVariable((previous(parser)).Line, (previous(parser)).Lexeme);
+            if ((peek(parser)).Type == TokenType.SYM_LPAREN)
+            {
+                _ = advance(ref parser); // Consume the '('
+                <Expr> arguments;
+                if (!match(ref parser, TokenType.SYM_RPAREN))
+                {
+                    loop
+                    {
+                        Expr arg;
+                        ParserError error = parseExpression(ref parser, ref arg);
+                        if (error.Type != ParserErrorType.NONE)
+                        {
+                            return AST.ExprLiteral(0, "0");  // Using "0" as the default placeholder value
+                        }
+                        arguments.Append(arg);
+                        if (!match(ref parser, TokenType.SYM_COMMA))
+                        {
+                            if (!match(ref parser, TokenType.SYM_RPAREN))
+                            {
+                                return AST.ExprLiteral(0, "0");  // Using "0" as the default placeholder value
+                            }
+                            break;
+                        }
+                    }
+                }
+                return AST.ExprCall(varExpr.Line, varExpr, arguments);
+            }
+            return varExpr;
+        }
+        if (match(ref parser, TokenType.SYM_LPAREN))
+        {
+            Expr expr;
+            ParserError error = parseExpression(ref parser, ref expr);
+            if (error.Type != ParserErrorType.NONE)
+            {
+                return AST.ExprLiteral(0, "0");  // Using "0" as the default placeholder value
+            }
+            if (!match(ref parser, TokenType.SYM_RPAREN))
+            {
+                return AST.ExprLiteral(0, "0");  // Using "0" as the default placeholder value
+            }
+            return expr;
+        }
+        return AST.ExprLiteral(0, "0");  // Using "0" as the default placeholder value
+    }
+    
     ParserError parseDeclaration(ref Parser parser, ref Decl decl)
     {
         if (match(ref parser, TokenType.KW_FUNC))
@@ -345,7 +419,6 @@ unit Parser
         return success;
     }
     
-    
     ParserError ParseProgram(ref Parser parser, ref Program prog)
     {
         <Decl> declarations;
@@ -371,7 +444,6 @@ unit Parser
         result.Line = 0;
         return result;
     }
-    
     
     ParserError parseStatement(ref Parser parser, ref Stmt stmt)
     {
@@ -408,11 +480,66 @@ unit Parser
             {
                 return parseLocalVariableDeclaration(ref parser, ref stmt);
             }
+            else if ((token.Type == TokenType.IDENTIFIER) && ((peekNext(parser)).Type == TokenType.SYM_EQ))
+            {
+                return parseAssignmentStatement(ref parser, ref stmt);
+            }
             else
             {
                 return parseExpressionStatement(ref parser, ref stmt);
             }
         }
+    }
+
+    ParserError parseAssignmentStatement(ref Parser parser, ref Stmt stmt)
+    {
+        if (!match(ref parser, TokenType.IDENTIFIER))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            error.Line = (peek(parser)).Line;
+            return error;
+        }
+
+        uint line = (previous(parser)).Line;
+        string varName = (previous(parser)).Lexeme;
+
+        if (!match(ref parser, TokenType.SYM_EQ))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            error.Line = line;
+            return error;
+        }
+
+        Expr value;
+        ParserError valueError = parseExpression(ref parser, ref value);
+        if (valueError.Type != ParserErrorType.NONE)
+        {
+            return valueError;
+        }
+
+        if (!match(ref parser, TokenType.SYM_SEMICOLON))
+        {
+            ParserError error;
+            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            error.Line = line;
+            return error;
+        }
+
+        StmtExpr exprStmt;
+        exprStmt.Expression = AST.ExprBinary(line, AST.ExprVariable(line, varName), "=", value);
+
+        Stmt resultStmt;
+        resultStmt.Line = line;
+        resultStmt.Type = StmtType.EXPR_STMT;
+        resultStmt.ExprStmt = exprStmt;
+        stmt = resultStmt;
+
+        ParserError success;
+        success.Type = ParserErrorType.NONE;
+        success.Line = line;
+        return success;
     }
     
     ParserError parseWhileStatement(ref Parser parser, ref Stmt stmt)
@@ -457,7 +584,7 @@ unit Parser
         success.Line = line;
         return success;
     }
-
+    
     ParserError parseForStatement(ref Parser parser, ref Stmt stmt)
     {
         uint line = (previous(parser)).Line;
@@ -468,27 +595,29 @@ unit Parser
             error.Line = line;
             return error;
         }
+    
         Stmt initializer;
-        if (!match(ref parser, TokenType.SYM_SEMICOLON))
+        if (match(ref parser, TokenType.SYM_SEMICOLON))
         {
-            ParserError initError = parseLocalVariableDeclaration(ref parser, ref initializer);
+            initializer.Line = line;
+            initializer.Type = StmtType.NO_OP_STMT;
+        }
+        else
+        {
+            ParserError initError = parseAssignmentStatement(ref parser, ref initializer);
             if (initError.Type != ParserErrorType.NONE)
             {
                 return initError;
             }
         }
-        else
-        {
-            initializer.Line = line;
-            initializer.Type = StmtType.NO_OP_STMT;
-        }
+    
         Expr condition;
         if (!match(ref parser, TokenType.SYM_SEMICOLON))
         {
-            ParserError condError = parseExpression(ref parser, ref condition);
-            if (condError.Type != ParserErrorType.NONE)
+            ParserError conditionError = parseExpression(ref parser, ref condition);
+            if (conditionError.Type != ParserErrorType.NONE)
             {
-                return condError;
+                return conditionError;
             }
             if (!match(ref parser, TokenType.SYM_SEMICOLON))
             {
@@ -500,15 +629,16 @@ unit Parser
         }
         else
         {
-            condition = AST.ExprLiteral(line, "1"); // Default condition to true
+            condition = AST.ExprLiteral(line, "1");
         }
+    
         Expr increment;
         if (!match(ref parser, TokenType.SYM_RPAREN))
         {
-            ParserError incrError = parseExpression(ref parser, ref increment);
-            if (incrError.Type != ParserErrorType.NONE)
+            ParserError incrementError = parseExpression(ref parser, ref increment);
+            if (incrementError.Type != ParserErrorType.NONE)
             {
-                return incrError;
+                return incrementError;
             }
             if (!match(ref parser, TokenType.SYM_RPAREN))
             {
@@ -520,24 +650,28 @@ unit Parser
         }
         else
         {
-            increment = AST.ExprLiteral(line, "0"); // Default increment to no-op
+            increment = AST.ExprLiteral(line, "1");
         }
+    
         Stmt body;
         ParserError bodyError = parseStatement(ref parser, ref body);
         if (bodyError.Type != ParserErrorType.NONE)
         {
             return bodyError;
         }
+    
         StmtFor forStmt;
         forStmt.Initializer = initializer;
         forStmt.Condition = condition;
         forStmt.Increment = increment;
         forStmt.Body = body;
+    
         Stmt result;
         result.Line = line;
         result.Type = StmtType.FOR_STMT;
         result.ForStmt = forStmt;
         stmt = result;
+    
         ParserError success;
         success.Type = ParserErrorType.NONE;
         success.Line = line;
@@ -709,7 +843,6 @@ unit Parser
         return success;
     }
     
-    
     ParserError parseLocalConstDeclaration(ref Parser parser, ref Stmt stmt)
     {
         uint line = (peek(parser)).Line;
@@ -782,6 +915,7 @@ unit Parser
         success.Line = line;
         return success;
     }
+    
     ParserError parseIfStatement(ref Parser parser, ref Stmt stmt)
     {
         uint line = (previous(parser)).Line;
@@ -822,8 +956,14 @@ unit Parser
         }
         else
         {
-            elseBranch.Line = line;
-            elseBranch.Type = StmtType.NO_OP_STMT;
+            // Create a minimal no-op statement for the else branch
+            Stmt resultStmt;
+            resultStmt.Line = line;
+            resultStmt.Type = StmtType.EXPR_STMT;
+            StmtExpr exprStmt;
+            exprStmt.Expression = AST.ExprLiteral(line, "0"); // Using "0" as a no-op placeholder expression
+            resultStmt.ExprStmt = exprStmt;
+            elseBranch = resultStmt;
         }
         StmtIf ifStmt;
         ifStmt.Condition = condition;
@@ -839,78 +979,5 @@ unit Parser
         success.Line = line;
         return success;
     }
-Expr parsePrimary(ref Parser parser)
-{
-    if (match(ref parser, TokenType.LIT_NUMBER))
-    {
-        return AST.ExprLiteral((previous(parser)).Line, (previous(parser)).Lexeme);
-    }
-    if (match(ref parser, TokenType.LIT_CHAR))
-    {
-        return AST.ExprLiteral((previous(parser)).Line, (previous(parser)).Lexeme);
-    }
-    if (match(ref parser, TokenType.LIT_STRING))
-    {
-        return AST.ExprLiteral((previous(parser)).Line, (previous(parser)).Lexeme);
-    }
-    if (match(ref parser, TokenType.IDENTIFIER))
-    {
-        Expr varExpr = AST.ExprVariable((previous(parser)).Line, (previous(parser)).Lexeme);
-        if ((peek(parser)).Type == TokenType.SYM_LPAREN)
-        {
-            _ = advance(ref parser); // Consume the '('
-            <Expr> arguments;
-            if (!match(ref parser, TokenType.SYM_RPAREN))
-            {
-                loop
-                {
-                    Expr arg;
-                    ParserError error = parseExpression(ref parser, ref arg);
-                    if (error.Type != ParserErrorType.NONE)
-                    {
-                        return AST.ExprLiteral(0, "0");  // Using "0" as the default placeholder value
-                    }
-                    arguments.Append(arg);
-                    if (!match(ref parser, TokenType.SYM_COMMA))
-                    {
-                        if (!match(ref parser, TokenType.SYM_RPAREN))
-                        {
-                            return AST.ExprLiteral(0, "0");  // Using "0" as the default placeholder value
-                        }
-                        break;
-                    }
-                }
-            }
-            return AST.ExprCall(varExpr.Line, varExpr, arguments);
-        }
-        else if ((peek(parser)).Type == TokenType.SYM_EQ)
-        {
-            _ = advance(ref parser); // Consume the '='
-            Expr value;
-            ParserError error = parseExpression(ref parser, ref value);
-            if (error.Type != ParserErrorType.NONE)
-            {
-                return AST.ExprLiteral(0, "0");  // Using "0" as the default placeholder value
-            }
-            return AST.ExprAssign(varExpr.Line, varExpr, value);
-        }
-        return varExpr;
-    }
-    if (match(ref parser, TokenType.SYM_LPAREN))
-    {
-        Expr expr;
-        ParserError error = parseExpression(ref parser, ref expr);
-        if (error.Type != ParserErrorType.NONE)
-        {
-            return AST.ExprLiteral(0, "0");  // Using "0" as the default placeholder value
-        }
-        if (!match(ref parser, TokenType.SYM_RPAREN))
-        {
-            return AST.ExprLiteral(0, "0");  // Using "0" as the default placeholder value
-        }
-        return expr;
-    }
-    return AST.ExprLiteral(0, "0");  // Using "0" as the default placeholder value
 }
 
-}
