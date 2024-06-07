@@ -2,7 +2,6 @@ program TCPreprocess
 {
     uses "/Source/System/System"
     uses "/Source/System/Diagnostics"
-    uses "/Source/Compiler/Tokens/Token"
     
     uses "/Source/Compiler/Tokens/Parser" // for SetInteractive
     
@@ -673,8 +672,6 @@ program TCPreprocess
                   // delete previous so no output on error
                   File.Delete(prePath); 
               }
-              
-              Token.InitializeTinyC();
               
               if (!preProcess(projectPath, prePath))
               {

@@ -22,18 +22,55 @@ unit TinyToken
         // Identifiers
         IDENTIFIER,
 
-        // Preprocessor Directives
-        PRE_INCLUDE, PRE_DEFINE, PRE_UNDEF, PRE_IFDEF, PRE_IFNDEF, PRE_IF, PRE_ELIF, PRE_ELSE, PRE_ENDIF, PRE_PRAGMA, PRE_UNKNOWN,
-
         // End of File
         EOF
     }
-
+    
     record Token
     {
         TokenType Type;
-        string Lexeme;
-        uint Line;
+        string    Lexeme;
+        uint      Line;
+        string    SourcePath;
+    } 
+    
+    <string,TokenType> keywords;
+    
+    Initialize()
+    {
+        // in case Initialize is called more than once
+        keywords.Clear();
+        keywords["func"] = TokenType.KW_FUNC;
+        keywords["if"] = TokenType.KW_IF;
+        keywords["else"] = TokenType.KW_ELSE;
+        keywords["while"] = TokenType.KW_WHILE;
+        keywords["for"] = TokenType.KW_FOR;
+        keywords["break"] = TokenType.KW_BREAK;
+        keywords["continue"] = TokenType.KW_CONTINUE;
+        keywords["switch"] = TokenType.KW_SWITCH;
+        keywords["case"] = TokenType.KW_CASE;
+        keywords["default"] = TokenType.KW_DEFAULT;
+        keywords["const"] = TokenType.KW_CONST;
+        keywords["true"] = TokenType.KW_TRUE;
+        keywords["false"] = TokenType.KW_FALSE;
+        keywords["null"] = TokenType.KW_NULL;
+        keywords["import"] = TokenType.KW_IMPORT;
+        keywords["byte"] = TokenType.KW_BYTE;
+        keywords["word"] = TokenType.KW_WORD;
+        keywords["char"] = TokenType.KW_CHAR;
+        keywords["bool"] = TokenType.KW_BOOL;
+        keywords["int"] = TokenType.KW_INT;
+        keywords["uint"] = TokenType.KW_UINT;
+        keywords["return"] = TokenType.KW_RETURN;
+    }
+    bool IsKeyword(string candidate, ref TokenType kw)
+    {
+        if (keywords.Contains(candidate))
+        {
+            kw = keywords[candidate];
+            return true;
+        }
+        return false;
     }
 
     // ToString method for TokenType enum
@@ -103,17 +140,6 @@ unit TinyToken
             case TokenType.LIT_STRING: { return "LIT_STRING"; }
             case TokenType.LIT_CHAR: { return "LIT_CHAR"; }
             case TokenType.IDENTIFIER: { return "IDENTIFIER"; }
-            case TokenType.PRE_INCLUDE: { return "PRE_INCLUDE"; }
-            case TokenType.PRE_DEFINE: { return "PRE_DEFINE"; }
-            case TokenType.PRE_UNDEF: { return "PRE_UNDEF"; }
-            case TokenType.PRE_IFDEF: { return "PRE_IFDEF"; }
-            case TokenType.PRE_IFNDEF: { return "PRE_IFNDEF"; }
-            case TokenType.PRE_IF: { return "PRE_IF"; }
-            case TokenType.PRE_ELIF: { return "PRE_ELIF"; }
-            case TokenType.PRE_ELSE: { return "PRE_ELSE"; }
-            case TokenType.PRE_ENDIF: { return "PRE_ENDIF"; }
-            case TokenType.PRE_PRAGMA: { return "PRE_PRAGMA"; }
-            case TokenType.PRE_UNKNOWN: { return "PRE_UNKNOWN"; }
             case TokenType.EOF: { return "EOF"; }
         }
         return "UNDEFINED";

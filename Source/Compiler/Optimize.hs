@@ -800,7 +800,9 @@ program Optimize
                     if (Symbols.Import(symbolsPath, false))
                     {
                         CodeStream.InitializeSymbolShortcuts();
-                        IsValueTypeRuntime   = Symbols.DefineExists("VALUE_TYPE_RUNTIME");
+                        
+                        // only used by attempt to compile Portable Runtime for Z80
+                        IsValueTypeRuntime   = Symbols.DefineExists("VALUE_TYPE_RUNTIME"); 
                     }
                 }
                 if (argIsExperimental)
