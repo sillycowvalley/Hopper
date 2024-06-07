@@ -68,7 +68,6 @@ unit Parser
         Token result = (parser.Tokens).GetItem(parser.Current - 1);
         return result;
     }
-
     Token peekNext(Parser parser)
     {
         Token result;
@@ -490,7 +489,7 @@ unit Parser
             }
         }
     }
-
+    
     ParserError parseAssignmentStatement(ref Parser parser, ref Stmt stmt)
     {
         if (!match(ref parser, TokenType.IDENTIFIER))
@@ -500,10 +499,8 @@ unit Parser
             error.Line = (peek(parser)).Line;
             return error;
         }
-
         uint line = (previous(parser)).Line;
         string varName = (previous(parser)).Lexeme;
-
         if (!match(ref parser, TokenType.SYM_EQ))
         {
             ParserError error;
@@ -511,14 +508,12 @@ unit Parser
             error.Line = line;
             return error;
         }
-
         Expr value;
         ParserError valueError = parseExpression(ref parser, ref value);
         if (valueError.Type != ParserErrorType.NONE)
         {
             return valueError;
         }
-
         if (!match(ref parser, TokenType.SYM_SEMICOLON))
         {
             ParserError error;
@@ -526,16 +521,13 @@ unit Parser
             error.Line = line;
             return error;
         }
-
         StmtExpr exprStmt;
         exprStmt.Expression = AST.ExprBinary(line, AST.ExprVariable(line, varName), "=", value);
-
         Stmt resultStmt;
         resultStmt.Line = line;
         resultStmt.Type = StmtType.EXPR_STMT;
         resultStmt.ExprStmt = exprStmt;
         stmt = resultStmt;
-
         ParserError success;
         success.Type = ParserErrorType.NONE;
         success.Line = line;
@@ -887,117 +879,109 @@ unit Parser
         return success;
     }
     
-    
     ParserError parseForStatement(ref Parser parser, ref Stmt stmt)
-{
-    uint line = (previous(parser)).Line;
-    Stmt initializer;
-
-    if (!match(ref parser, TokenType.SYM_LPAREN))
     {
-        ParserError error;
-        error.Type = ParserErrorType.UNEXPECTED_TOKEN;
-        error.Line = line;
-        return error;
-    }
-
-    Token token = peek(parser);
-    if ((token.Type == TokenType.KW_BYTE) || (token.Type == TokenType.KW_WORD) ||
-        (token.Type == TokenType.KW_INT) || (token.Type == TokenType.KW_UINT) ||
-        (token.Type == TokenType.KW_BOOL) || (token.Type == TokenType.KW_CHAR))
-    {
-        ParserError initError = parseLocalVariableDeclaration(ref parser, ref initializer);
-        if (initError.Type != ParserErrorType.NONE)
-        {
-            return initError;
-        }
-    }
-    else if (token.Type == TokenType.IDENTIFIER)
-    {
-        ParserError initError = parseAssignmentStatement(ref parser, ref initializer);
-        if (initError.Type != ParserErrorType.NONE)
-        {
-            return initError;
-        }
-    }
-    else
-    {
-        if (!match(ref parser, TokenType.SYM_SEMICOLON))
+        uint line = (previous(parser)).Line;
+        Stmt initializer;
+        if (!match(ref parser, TokenType.SYM_LPAREN))
         {
             ParserError error;
             error.Type = ParserErrorType.UNEXPECTED_TOKEN;
             error.Line = line;
             return error;
         }
-        initializer.Line = line;
-        initializer.Type = StmtType.NO_OP_STMT;
-    }
-
-    Expr condition;
-    if (!match(ref parser, TokenType.SYM_SEMICOLON))
-    {
-        ParserError conditionError = parseExpression(ref parser, ref condition);
-        if (conditionError.Type != ParserErrorType.NONE)
+        Token token = peek(parser);
+        if ((token.Type == TokenType.KW_BYTE) || (token.Type == TokenType.KW_WORD) ||
+            (token.Type == TokenType.KW_INT) || (token.Type == TokenType.KW_UINT) ||
+            (token.Type == TokenType.KW_BOOL) || (token.Type == TokenType.KW_CHAR))
         {
-            return conditionError;
+            ParserError initError = parseLocalVariableDeclaration(ref parser, ref initializer);
+            if (initError.Type != ParserErrorType.NONE)
+            {
+                return initError;
+            }
         }
+        else if (token.Type == TokenType.IDENTIFIER)
+        {
+            ParserError initError = parseAssignmentStatement(ref parser, ref initializer);
+            if (initError.Type != ParserErrorType.NONE)
+            {
+                return initError;
+            }
+        }
+        else
+        {
+            if (!match(ref parser, TokenType.SYM_SEMICOLON))
+            {
+                ParserError error;
+                error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+                error.Line = line;
+                return error;
+            }
+            initializer.Line = line;
+            initializer.Type = StmtType.NO_OP_STMT;
+        }
+        Expr condition;
         if (!match(ref parser, TokenType.SYM_SEMICOLON))
         {
-            ParserError error;
-            error.Type = ParserErrorType.UNEXPECTED_TOKEN;
-            error.Line = line;
-            return error;
+            ParserError conditionError = parseExpression(ref parser, ref condition);
+            if (conditionError.Type != ParserErrorType.NONE)
+            {
+                return conditionError;
+            }
+            if (!match(ref parser, TokenType.SYM_SEMICOLON))
+            {
+                ParserError error;
+                error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+                error.Line = line;
+                return error;
+            }
         }
-    }
-    else
-    {
-        condition = AST.ExprLiteral(line, "1");
-    }
-
-    Stmt increment;
-    if (!match(ref parser, TokenType.SYM_RPAREN))
-    {
-        ParserError incrementError = parseStatement(ref parser, ref increment);
-        if (incrementError.Type != ParserErrorType.NONE)
+        else
         {
-            return incrementError;
+            condition = AST.ExprLiteral(line, "1");
         }
+        Stmt increment;
         if (!match(ref parser, TokenType.SYM_RPAREN))
         {
-            ParserError error;
-            error.Type = ParserErrorType.EXPECTED_CLOSING_PAREN;
-            error.Line = line;
-            return error;
+            ParserError incrementError = parseStatement(ref parser, ref increment);
+            if (incrementError.Type != ParserErrorType.NONE)
+            {
+                return incrementError;
+            }
+            if (!match(ref parser, TokenType.SYM_RPAREN))
+            {
+                ParserError error;
+                error.Type = ParserErrorType.EXPECTED_CLOSING_PAREN;
+                error.Line = line;
+                return error;
+            }
         }
+        else
+        {
+            increment.Line = line;
+            increment.Type = StmtType.NO_OP_STMT;
+        }
+        Stmt body;
+        ParserError bodyError = parseStatement(ref parser, ref body);
+        if (bodyError.Type != ParserErrorType.NONE)
+        {
+            return bodyError;
+        }
+        StmtFor forStmt;
+        forStmt.Initializer = initializer;
+        forStmt.Condition = condition;
+        forStmt.Increment = increment;
+        forStmt.Body = body;
+        Stmt result;
+        result.Line = line;
+        result.Type = StmtType.FOR_STMT;
+        result.ForStmt = forStmt;
+        stmt = result;
+        ParserError success;
+        success.Type = ParserErrorType.NONE;
+        success.Line = line;
+        return success;
     }
-    else
-    {
-        increment.Line = line;
-        increment.Type = StmtType.NO_OP_STMT;
-    }
-
-    Stmt body;
-    ParserError bodyError = parseStatement(ref parser, ref body);
-    if (bodyError.Type != ParserErrorType.NONE)
-    {
-        return bodyError;
-    }
-
-    StmtFor forStmt;
-    forStmt.Initializer = initializer;
-    forStmt.Condition = condition;
-    forStmt.Increment = increment;
-    forStmt.Body = body;
-
-    Stmt result;
-    result.Line = line;
-    result.Type = StmtType.FOR_STMT;
-    result.ForStmt = forStmt;
-    stmt = result;
-
-    ParserError success;
-    success.Type = ParserErrorType.NONE;
-    success.Line = line;
-    return success;
 }
-}
+
