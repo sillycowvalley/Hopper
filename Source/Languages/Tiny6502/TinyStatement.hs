@@ -103,7 +103,7 @@ unit TinyStatement
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_RPAREN)
         {
-            Error(token.SourcePath, token.Line, "expected ')' after condition");
+            Error(token.SourcePath, token.Line, "expected ')' after condition, ('" + token.Lexeme + "')");
             return false;
         }
         
