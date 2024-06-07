@@ -123,7 +123,7 @@ program TCPreprocess
         PrintLn("    -d <symbol> : define conditional compilation symbols");
     }
     
-    bool IsValidPreprocessorSymbol(string symbol)
+    bool isValidPreprocessorSymbol(string symbol)
     {
         // Check if the symbol is empty
         if (symbol.Length == 0)
@@ -150,21 +150,153 @@ program TCPreprocess
         return true;
     }
     
-    bool EvaluateExpression(string expression, ref bool isDefined)
+    skipWhitespace(string expression, ref uint index)
     {
-        // This is a placeholder function. You will need to implement the expression parsing and evaluation logic here.
-        // The function should return true if the expression is valid and set isDefined to the result of the evaluation.
-        // Return false if there is a syntax error in the expression.
-    
-        // Example pseudo-code to be replaced with actual implementation:
-        // 1. Parse the expression for logical operators and parentheses.
-        // 2. Evaluate sub-expressions.
-        // 3. Return the result of the entire expression in isDefined.
-        
-        // For now, we assume the expression is valid and simply check for "defined(SYMBOL)"
-        isDefined = definedSymbols.ContainsKey(expression);
-        return true; // No error in expression
+        while ((index < expression.Length) && Char.IsWhitespace(expression[index]))
+        {
+            index++;
+        }
     }
+    
+    bool evaluateSymbol(string sourcePath, uint line, string symbol, ref bool value)
+    {
+        symbol = symbol.Trim();
+        if (symbol.StartsWith("defined(") && symbol.EndsWith(")"))
+        {
+            string symbolName = (symbol.Substring(8, symbol.Length - 9)).Trim();
+            if (!isValidPreprocessorSymbol(symbolName))
+            {
+                Error(sourcePath, line, "invalid symbol name in #if expression");
+                return false;
+            }
+            value = definedSymbols.Contains(symbolName) && definedSymbols[symbolName];
+            return true;
+        }
+        else
+        {
+            PrintLn(symbol, Ocean, Black);
+            Error(sourcePath, line, "invalid expression: " + symbol);
+            return false;
+        }
+    }
+    
+    bool parseFactor(string sourcePath, uint line, string expression, ref uint index, ref bool value)
+    {
+        skipWhitespace(expression, ref index);
+    
+        if ((index < expression.Length) && (expression[index] == '!'))
+        {
+            index++;
+            bool factorValue = false;
+            if (!parseFactor(sourcePath, line, expression, ref index, ref factorValue))
+            {
+                return false;
+            }
+            value = !factorValue;
+            return true;
+        }
+        else if ((index < expression.Length) && (expression[index] == '('))
+        {
+            index++;
+            if (!parseExpression(sourcePath, line, expression, ref index, ref value))
+            {
+                return false;
+            }
+            skipWhitespace(expression, ref index);
+            if ((index >= expression.Length) || (expression[index] != ')'))
+            {
+                Error(sourcePath, line, "mismatched parentheses in #if expression");
+                return false;
+            }
+            index++;
+            return true;
+        }
+        else
+        {
+            uint startIndex = index;
+            while ((index < expression.Length) && !Char.IsWhitespace(expression[index]) && (expression[index] != ')') && (expression[index] != '|') && (expression[index] != '&'))
+            {
+                index++;
+            }
+            string symbol = expression.Substring(startIndex, index - startIndex);
+            return evaluateSymbol(sourcePath, line, symbol, ref value);
+        }
+    }
+    
+    bool parseTerm(string sourcePath, uint line, string expression, ref uint index, ref bool value)
+    {
+        if (!parseFactor(sourcePath, line, expression, ref index, ref value))
+        {
+            return false;
+        }
+    
+        skipWhitespace(expression, ref index);
+    
+        while ((index + 1 < expression.Length) && (expression.Substring(index, 2) == "&&"))
+        {
+            index += 2;
+            bool factorValue = false;
+            if (!parseFactor(sourcePath, line, expression, ref index, ref factorValue))
+            {
+                return false;
+            }
+            value = (value && factorValue);
+            skipWhitespace(expression, ref index);
+        }
+        return true;
+    }
+    
+    bool parseExpression(string sourcePath, uint line, string expression, ref uint index, ref bool value)
+    {
+        if (!parseTerm(sourcePath, line, expression, ref index, ref value))
+        {
+            return false;
+        }
+    
+        skipWhitespace(expression, ref index);
+    
+        while ((index + 1 < expression.Length) && (expression.Substring(index, 2) == "||"))
+        {
+            index += 2;
+            bool termValue = false;
+            if (!parseTerm(sourcePath, line, expression, ref index, ref termValue))
+            {
+                return false;
+            }
+            value = (value || termValue);
+            skipWhitespace(expression, ref index);
+        }
+        return true;
+    }
+    
+    bool evaluateExpression(string sourcePath, uint line, string expression, ref bool isDefined)
+    {
+        bool success = true;
+        uint index = 0;
+    
+        loop
+        {
+            if (!parseExpression(sourcePath, line, expression, ref index, ref isDefined))
+            {
+                success = false;
+                break;
+            }
+    
+            skipWhitespace(expression, ref index);
+    
+            if (index != expression.Length)
+            {
+                Error(sourcePath, line, "unexpected characters in #if expression");
+                success = false;
+                break;
+            }
+    
+            break;
+        }
+    
+        return success;
+    }
+    
     
 
     bool processFile(string sourcePath, file preFile)
@@ -302,7 +434,7 @@ program TCPreprocess
                                 // Process #define and #undef directives
                                 if (skipBlock) { break; }
                                 string symbol = directiveContent.Trim();
-                                if (!IsValidPreprocessorSymbol(symbol))
+                                if (!isValidPreprocessorSymbol(symbol))
                                 {
                                     Error(sourcePath, line, "invalid preprocessor symbol");
                                     success = false;
@@ -315,7 +447,7 @@ program TCPreprocess
                             {
                                 // Process #ifdef directive
                                 string symbol = directiveContent.Trim();
-                                if (!IsValidPreprocessorSymbol(symbol))
+                                if (!isValidPreprocessorSymbol(symbol))
                                 {
                                     Error(sourcePath, line, "invalid preprocessor symbol");
                                     success = false;
@@ -330,7 +462,7 @@ program TCPreprocess
                             {
                                 // Process #ifndef directive
                                 string symbol = directiveContent.Trim();
-                                if (!IsValidPreprocessorSymbol(symbol))
+                                if (!isValidPreprocessorSymbol(symbol))
                                 {
                                     Error(sourcePath, line, "invalid preprocessor symbol");
                                     success = false;
@@ -372,9 +504,8 @@ program TCPreprocess
                             {
                                 // Process #if directive
                                 bool isDefined;
-                                if (!EvaluateExpression(directiveContent, ref isDefined))
+                                if (!evaluateExpression(sourcePath, line, directiveContent, ref isDefined))
                                 {
-                                    Error(sourcePath, line, "syntax error in #if expression");
                                     success = false;
                                     break; // exit the method loop on error
                                 }

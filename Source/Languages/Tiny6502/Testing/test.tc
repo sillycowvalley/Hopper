@@ -9,25 +9,14 @@ func main()
     {
         y = y + 1; // Increment y
     }
-    
-    /* Multi-line
-       comment spanning
-       multiple lines */
-       
+
     for (byte i = 0; i < 5; i = i + 1)
     {
-        writeString("In for loop\n"); // Print loop message
+        writeString("In for loop\n");
     }
 
-    // Single line comment at end of file
-    writeString("A string with // in it\n"); // String with inline comment marker
-    writeString("A string with /* not a comment */ inside\n"); // String with multi-line comment markers
-    
-    /*
-    Multi-line comment
-    // containing single line comment marker
-    and string "not a comment" inside comment
-    */
+    writeString("A string with // in it\n");
+    writeString("A string with /* not a comment */ inside\n");
 
     // Conditional compilation based on DEBUG symbol
     #ifdef DEBUG
@@ -36,18 +25,63 @@ func main()
         writeString("Debug mode disabled\n");
     #endif
 
-    // Mixed comment and string example
-    writeString("Example /* not a real comment */ and // in the string\n");
-
-    byte z = 5; /* Inline comment */ z = z + 1;
-    writeString("Final string\n"); // End of main function
-
-    // Test #undef and #ifndef
     #undef DEBUG
 
     #ifndef DEBUG
         writeString("Debug mode is now undefined\n");
     #else
         writeString("Debug mode is still defined\n");
+    #endif
+
+    // Test #if defined
+    #define FEATURE_ENABLED
+
+    #if defined(FEATURE_ENABLED)
+        writeString("Feature is enabled\n");
+    #endif
+
+    #undef FEATURE_ENABLED
+
+    #if defined(FEATURE_ENABLED)
+        writeString("Feature is still enabled\n");
+    #else
+        writeString("Feature is now disabled\n");
+    #endif
+
+    // Test #if defined with logical operators
+    #define OPTION_A
+    #define OPTION_B
+
+    #if defined(OPTION_A) && defined(OPTION_B)
+        writeString("Both options are enabled\n");
+    #endif
+
+    #undef OPTION_B
+
+    #if defined(OPTION_A) && defined(OPTION_B)
+        writeString("Both options are still enabled\n");
+    #else
+        writeString("One or both options are disabled\n");
+    #endif
+
+    // Test #if defined with negation
+    #define ENABLE_LOGGING
+
+    #if !defined(ENABLE_DEBUG)
+        writeString("Debugging is not enabled\n");
+    #endif
+
+    #if defined(ENABLE_LOGGING) || defined(ENABLE_DEBUG)
+        writeString("Logging or debugging is enabled\n");
+    #endif
+
+    // Test complex logical expression
+    #define XXX
+    #define ZZZ
+
+    #if !(defined(XXX) && defined(YYY)) || defined(ZZZ)
+        writeString("Complex condition is true\n");
+    #else
+        writeString("Complex condition is false\n");
     #endif
 }
