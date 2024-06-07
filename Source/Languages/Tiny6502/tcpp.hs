@@ -11,6 +11,7 @@ program TCPreprocess
     
     <string, bool>   includesDone;
     <string,bool>    definedSymbols;
+    <bool>           ifdefStack;
     
     string projectPath;
     
@@ -73,7 +74,7 @@ program TCPreprocess
                 {
                     // first try relative to current source file:
                     string currentDirectory = Path.GetDirectoryName(sourcePath);
-                    while (removeLevels > 0)
+                    while (removeLevels != 0)
                     {
                         currentDirectory = Path.GetDirectoryName(currentDirectory);
                         removeLevels--;
@@ -149,7 +150,23 @@ program TCPreprocess
         return true;
     }
     
+    bool EvaluateExpression(string expression, ref bool isDefined)
+    {
+        // This is a placeholder function. You will need to implement the expression parsing and evaluation logic here.
+        // The function should return true if the expression is valid and set isDefined to the result of the evaluation.
+        // Return false if there is a syntax error in the expression.
     
+        // Example pseudo-code to be replaced with actual implementation:
+        // 1. Parse the expression for logical operators and parentheses.
+        // 2. Evaluate sub-expressions.
+        // 3. Return the result of the entire expression in isDefined.
+        
+        // For now, we assume the expression is valid and simply check for "defined(SYMBOL)"
+        isDefined = definedSymbols.ContainsKey(expression);
+        return true; // No error in expression
+    }
+    
+
     bool processFile(string sourcePath, file preFile)
     {
         bool success;
@@ -162,12 +179,12 @@ program TCPreprocess
             return success;
         }
         IncludeDone(sourcePath);
-        
-        
     
         success = true;
         uint line = 1;
         bool inComment;
+        
+        bool skipBlock = false; // Indicates if the current block should be skipped
     
         loop
         {
@@ -249,67 +266,137 @@ program TCPreprocess
                     switch (directiveName)
                     {
                         case "include":
-                        {
                             // Process #include directive
-                            string includePath = directiveContent.Trim();
-                            if (!includePath.StartsWith('"') || !includePath.EndsWith('"'))
                             {
-                                Error(sourcePath, line, "syntax error");
-                                success = false;
-                                break; // exit the method loop on error
-                            }
-                            includePath = includePath.Substring(1, includePath.Length-2); // trim quotes
-                            includePath = ResolvePath(sourcePath, line, includePath);
-                            if (includePath.Length == 0)
-                            {
-                                success = false;
-                                break; // exit the method loop on error (there was an error resolving the path)
-                            }
-                            if (AddInclude(includePath))
-                            {
-                                // file has not been included yet (only inline once, the first time seen)
-                                
-                                // inline the include file
-                                if (!processFile(includePath, preFile))
+                                if (skipBlock) { break; }
+                                string includePath = directiveContent.Trim();
+                                if (!includePath.StartsWith('"') || !includePath.EndsWith('"'))
+                                {
+                                    Error(sourcePath, line, "syntax error");
+                                    success = false;
+                                    break; // exit the method loop on error
+                                }
+                                includePath = includePath.Substring(1, includePath.Length - 2); // trim quotes
+                                includePath = ResolvePath(sourcePath, line, includePath);
+                                if (includePath.Length == 0)
                                 {
                                     success = false;
-                                    break; // exit the method loop on error 
+                                    break; // exit the method loop on error (there was an error resolving the path)
+                                }
+                                if (AddInclude(includePath))
+                                {
+                                    // file has not been included yet (only inline once, the first time seen)
+    
+                                    // inline the include file
+                                    if (!processFile(includePath, preFile))
+                                    {
+                                        success = false;
+                                        break; // exit the method loop on error
+                                    }
                                 }
                             }
-                            
-                        }
     
-                        // Add more cases for other directives as needed
-                        
                         case "define":
                         case "undef":
-                        {
-                            // Process #define directive
-                            string defineSymbol = directiveContent.Trim();
-                            if (!IsValidPreprocessorSymbol(defineSymbol))
                             {
-                                Error(sourcePath, line, "invalid preprocessor symbol");
+                                // Process #define and #undef directives
+                                if (skipBlock) { break; }
+                                string symbol = directiveContent.Trim();
+                                if (!IsValidPreprocessorSymbol(symbol))
+                                {
+                                    Error(sourcePath, line, "invalid preprocessor symbol");
+                                    success = false;
+                                    break; // exit the method loop on error
+                                }
+                                definedSymbols[symbol] = (directiveName == "define");
+                            }
+    
+                        case "ifdef":
+                            {
+                                // Process #ifdef directive
+                                string symbol = directiveContent.Trim();
+                                if (!IsValidPreprocessorSymbol(symbol))
+                                {
+                                    Error(sourcePath, line, "invalid preprocessor symbol");
+                                    success = false;
+                                    break; // exit the method loop on error
+                                }
+                                bool isDefined = definedSymbols.Contains(symbol) && definedSymbols[symbol];
+                                ifdefStack.Append(isDefined);
+                                skipBlock = !isDefined;
+                            }
+    
+                        case "ifndef":
+                            {
+                                // Process #ifndef directive
+                                string symbol = directiveContent.Trim();
+                                if (!IsValidPreprocessorSymbol(symbol))
+                                {
+                                    Error(sourcePath, line, "invalid preprocessor symbol");
+                                    success = false;
+                                    break; // exit the method loop on error
+                                }
+                                bool isNotDefined = !definedSymbols.Contains(symbol) || !definedSymbols[symbol];
+                                ifdefStack.Append(isNotDefined);
+                                skipBlock = !isNotDefined;
+                            }
+    
+                        case "else":
+                            {
+                                // Process #else directive
+                                if (ifdefStack.Count == 0)
+                                {
+                                    Error(sourcePath, line, "misplaced #else");
+                                    success = false;
+                                    break; // exit the method loop on error
+                                }
+                                // Toggle the current block's skip state
+                                skipBlock = !skipBlock;
+                            }
+    
+                        case "endif":
+                            {
+                                // Process #endif directive
+                                if (ifdefStack.Count == 0)
+                                {
+                                    Error(sourcePath, line, "misplaced #endif");
+                                    success = false;
+                                    break; // exit the method loop on error
+                                }
+                                ifdefStack.Remove(ifdefStack.Count-1); // Remove the top state
+                                // Set the skip state to the state of the current top of the stack (if any)
+                                skipBlock = ifdefStack.Count != 0 ? !ifdefStack[ifdefStack.Count-1] : false;
+                            }
+                            
+                        case "if":
+                            {
+                                // Process #if directive
+                                bool isDefined;
+                                if (!EvaluateExpression(directiveContent, ref isDefined))
+                                {
+                                    Error(sourcePath, line, "syntax error in #if expression");
+                                    success = false;
+                                    break; // exit the method loop on error
+                                }
+                                ifdefStack.Append(isDefined);
+                                skipBlock = !isDefined;
+                            }
+    
+                        default:
+                            {
+                                Error(sourcePath, line, "unknown preprocessor directive: " + directiveName);
                                 success = false;
                                 break; // exit the method loop on error
                             }
-                            definedSymbols[defineSymbol] = (directiveName == "define");
-                        }
-                        
-                        default:
-                        {
-                            Error(sourcePath, line, "unknown preprocessor directive: " + directiveName);
-                            success = false;
-                            break; // exit the method loop on error
-                        }
                     }
                 }
             }
             else
             {
-                if (!inComment) // Only add line if not within a multi-line comment
+                if (!inComment && !skipBlock) // Only add line if not within a multi-line comment and not skipping the block
                 {
                     result = result.TrimRight();
-                    if (result.Length > 0) // Only append if there is content after trimming
+                    if (result.Length != 0) // Only append if there is content after trimming
                     {
                         preFile.Append(sourcePath + ":" + line.ToString() + Char.Tab + result + Char.EOL);
                     }
@@ -321,10 +408,6 @@ program TCPreprocess
     
         return success;
     }
-    
-    
-    
-    
     
     bool preProcess(string projectPath, string prePath)
     {
