@@ -173,7 +173,7 @@ unit AST
     {
         Stmt Initializer;
         Expr Condition;
-        Expr Increment;
+        Stmt Increment;
         Stmt Body;
     }
     record StmtNoOp
