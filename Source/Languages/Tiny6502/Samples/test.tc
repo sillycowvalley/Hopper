@@ -1,4 +1,3 @@
-("test\n")
 func main() 
 {
     const byte x = 10;

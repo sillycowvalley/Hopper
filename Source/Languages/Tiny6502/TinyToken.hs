@@ -4,7 +4,7 @@ unit TinyToken
     {
         // Keywords
         KW_FUNC, KW_IF, KW_ELSE, KW_WHILE, KW_FOR, KW_BREAK, KW_CONTINUE, KW_SWITCH, KW_CASE, KW_DEFAULT,
-        KW_CONST, KW_TRUE, KW_FALSE, KW_NULL, KW_IMPORT,
+        KW_CONST, KW_TRUE, KW_FALSE, KW_NULL, KW_IMPORT, KW_RETURN,
         KW_BYTE, KW_WORD, KW_CHAR, KW_BOOL, KW_INT, KW_UINT,
 
         // Symbols
@@ -56,6 +56,7 @@ unit TinyToken
             case TokenType.KW_FALSE: { return "KW_FALSE"; }
             case TokenType.KW_NULL: { return "KW_NULL"; }
             case TokenType.KW_IMPORT: { return "KW_IMPORT"; }
+            case TokenType.KW_RETURN: { return "KW_RETURN"; }
             case TokenType.KW_BYTE: { return "KW_BYTE"; }
             case TokenType.KW_WORD: { return "KW_WORD"; }
             case TokenType.KW_CHAR: { return "KW_CHAR"; }

@@ -3,6 +3,30 @@ unit Lexer
     uses "TinyToken"
     uses "/Source/System/IO"
     uses "/Source/System/Char"
+    
+    enum LexerError
+    {
+        NONE,
+        UNTERMINATED_STRING,
+        UNTERMINATED_CHAR,
+        UNKNOWN_PREPROCESSOR_DIRECTIVE,
+        UNEXPECTED_CHARACTER
+    }
+    
+    string ToString(LexerError error)
+    {
+        switch (error)
+        {
+            case LexerError.NONE: { return "NONE"; }
+            case LexerError.UNTERMINATED_STRING: { return "UNTERMINATED_STRING"; }
+            case LexerError.UNTERMINATED_CHAR: { return "UNTERMINATED_CHAR"; }
+            case LexerError.UNKNOWN_PREPROCESSOR_DIRECTIVE: { return "UNKNOWN_PREPROCESSOR_DIRECTIVE"; }
+            case LexerError.UNEXPECTED_CHARACTER: { return "UNEXPECTED_CHARACTER"; }
+        }
+        return "UNKNOWN_ERROR";
+    }
+    
+    
 
     <string,TokenType> keywords;
     <string,TokenType> preprocessorDirectives;
@@ -223,7 +247,7 @@ unit Lexer
         Diagnostics.Die(1);
     }
 
-    Token ScanToken(ref Lexer lexer)
+    LexerError ScanToken(ref Lexer lexer, ref Token token)
     {
         loop
         {
@@ -234,7 +258,8 @@ unit Lexer
             {
                 if (isAtEnd(lexer)) 
                 {
-                    return addToken(lexer, TokenType.EOF);
+                    token = addToken(lexer, TokenType.EOF);
+                    return LexerError.NONE;
                 }
                 char c = peek(lexer);
                 if (!c.IsWhitespace()) 
@@ -249,26 +274,27 @@ unit Lexer
             
             if (isAtEnd(lexer)) 
             {
-                return addToken(lexer, TokenType.EOF);
+                token = addToken(lexer, TokenType.EOF);
+                return LexerError.NONE;
             }
     
             char c = advance(ref lexer);
     
             switch (c)
             {
-                case '(': { return addToken(lexer, TokenType.SYM_LPAREN); }
-                case ')': { return addToken(lexer, TokenType.SYM_RPAREN); }
-                case '{': { return addToken(lexer, TokenType.SYM_LBRACE); }
-                case '}': { return addToken(lexer, TokenType.SYM_RBRACE); }
-                case '[': { return addToken(lexer, TokenType.SYM_LBRACKET); }
-                case ']': { return addToken(lexer, TokenType.SYM_RBRACKET); }
-                case ';': { return addToken(lexer, TokenType.SYM_SEMICOLON); }
-                case ':': { return addToken(lexer, TokenType.SYM_COLON); }
-                case ',': { return addToken(lexer, TokenType.SYM_COMMA); }
-                case '.': { return addToken(lexer, TokenType.SYM_DOT); }
-                case '+': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_PLUSEQ : (match(ref lexer, '+') ? TokenType.SYM_PLUSPLUS : TokenType.SYM_PLUS)); }
-                case '-': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_MINUSEQ : (match(ref lexer, '-') ? TokenType.SYM_MINUSMINUS : TokenType.SYM_MINUS)); }
-                case '*': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_STAREQ : TokenType.SYM_STAR); }
+                case '(': { token = addToken(lexer, TokenType.SYM_LPAREN); return LexerError.NONE; }
+                case ')': { token = addToken(lexer, TokenType.SYM_RPAREN); return LexerError.NONE; }
+                case '{': { token = addToken(lexer, TokenType.SYM_LBRACE); return LexerError.NONE; }
+                case '}': { token = addToken(lexer, TokenType.SYM_RBRACE); return LexerError.NONE; }
+                case '[': { token = addToken(lexer, TokenType.SYM_LBRACKET); return LexerError.NONE; }
+                case ']': { token = addToken(lexer, TokenType.SYM_RBRACKET); return LexerError.NONE; }
+                case ';': { token = addToken(lexer, TokenType.SYM_SEMICOLON); return LexerError.NONE; }
+                case ':': { token = addToken(lexer, TokenType.SYM_COLON); return LexerError.NONE; }
+                case ',': { token = addToken(lexer, TokenType.SYM_COMMA); return LexerError.NONE; }
+                case '.': { token = addToken(lexer, TokenType.SYM_DOT); return LexerError.NONE; }
+                case '+': { token = addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_PLUSEQ : (match(ref lexer, '+') ? TokenType.SYM_PLUSPLUS : TokenType.SYM_PLUS)); return LexerError.NONE; }
+                case '-': { token = addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_MINUSEQ : (match(ref lexer, '-') ? TokenType.SYM_MINUSMINUS : TokenType.SYM_MINUS)); return LexerError.NONE; }
+                case '*': { token = addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_STAREQ : TokenType.SYM_STAR); return LexerError.NONE; }
                 case '/':
                 {
                     if (match(ref lexer, '/'))
@@ -283,39 +309,57 @@ unit Lexer
                     }
                     else
                     {
-                        return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_SLASHEQ : TokenType.SYM_SLASH);
+                        token = addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_SLASHEQ : TokenType.SYM_SLASH);
+                        return LexerError.NONE;
                     }
                 }
-                case '%': { return addToken(lexer, TokenType.SYM_PERCENT); }
-                case '&': { return addToken(lexer, match(ref lexer, '&') ? TokenType.SYM_AMPAMP : TokenType.SYM_AMP); }
-                case '|': { return addToken(lexer, match(ref lexer, '|') ? TokenType.SYM_PIPEPIPE : TokenType.SYM_PIPE); }
-                case '^': { return addToken(lexer, TokenType.SYM_CARET); }
-                case '~': { return addToken(lexer, TokenType.SYM_TILDE); }
-                case '!': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_NEQ : TokenType.SYM_BANG); }
-                case '=': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_EQEQ : TokenType.SYM_EQ); }
-                case '<': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_LTE : TokenType.SYM_LT); }
-                case '>': { return addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_GTE : TokenType.SYM_GT); }
-                case '"': { return stringToken(ref lexer); }
-                case '\'': { return charToken(ref lexer); }
-                case '#': { return preprocessorDirective(ref lexer); }
+                case '%': { token = addToken(lexer, TokenType.SYM_PERCENT); return LexerError.NONE; }
+                case '&': { token = addToken(lexer, match(ref lexer, '&') ? TokenType.SYM_AMPAMP : TokenType.SYM_AMP); return LexerError.NONE; }
+                case '|': { token = addToken(lexer, match(ref lexer, '|') ? TokenType.SYM_PIPEPIPE : TokenType.SYM_PIPE); return LexerError.NONE; }
+                case '^': { token = addToken(lexer, TokenType.SYM_CARET); return LexerError.NONE; }
+                case '~': { token = addToken(lexer, TokenType.SYM_TILDE); return LexerError.NONE; }
+                case '!': { token = addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_NEQ : TokenType.SYM_BANG); return LexerError.NONE; }
+                case '=': { token = addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_EQEQ : TokenType.SYM_EQ); return LexerError.NONE; }
+                case '<': { token = addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_LTE : TokenType.SYM_LT); return LexerError.NONE; }
+                case '>': { token = addToken(lexer, match(ref lexer, '=') ? TokenType.SYM_GTE : TokenType.SYM_GT); return LexerError.NONE; }
+                case '"': { token = stringToken(ref lexer); return LexerError.NONE; }
+                case '\'': 
+                { 
+                    if (isAtEnd(lexer)) 
+                    {
+                        return LexerError.UNTERMINATED_CHAR;
+                    }
+                
+                    char value = advance(ref lexer);
+                
+                    if (isAtEnd(lexer) || (advance(ref lexer) != '\'')) 
+                    {
+                        return LexerError.UNTERMINATED_CHAR;
+                    }
+                
+                    token = addToken(lexer, TokenType.LIT_CHAR);
+                    return LexerError.NONE;
+                }
+                case '#': { token = preprocessorDirective(ref lexer); return LexerError.NONE; }
                 default:
                 {
                     if (Char.IsDigit(c))
                     {
-                        return number(ref lexer);
+                        token = number(ref lexer);
+                        return LexerError.NONE;
                     }
                     if (Char.IsLetter(c))
                     {
-                        return identifier(ref lexer);
+                        token = identifier(ref lexer);
+                        return LexerError.NONE;
                     }
-                    IO.WriteLn("Unexpected character: 0x" + (byte(c)).ToHexString(2));
-                    Diagnostics.Die(1);
+                    return LexerError.UNEXPECTED_CHARACTER;
                 }
             } // switch
         } // loop
-        Token unreachable;
-        return unreachable;
+        return LexerError.NONE;
     }
+    
     
 }
 
