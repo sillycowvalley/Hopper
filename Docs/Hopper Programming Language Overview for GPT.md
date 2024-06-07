@@ -1,5 +1,3 @@
-Here is an improved and more detailed version of the Hopper Programming Language overview, which should help avoid mistakes in the future:
-
 ### Hopper Programming Language Overview for GPT
 
 #### Introduction
@@ -18,7 +16,7 @@ Here is an improved and more detailed version of the Hopper Programming Language
 - **Garbage Collection**: Stack-based determination of live objects.
 - **Boolean Expressions**: Only boolean expressions for conditionals.
 - **No Objects**: Direct array allocation syntax.
-- **Zero Initialization**: Variables zero-initialized.
+- **Zero Initialization**: Variables are zero-initialized automatically.
 - **Type Safety**: Strict type distinctions.
 - **Diagnostics.Die Method**: Handles critical failures with specific error codes.
 - **Scope Restrictions**: Methods, functions, enumerations, and constant declarations can only be made at the unit/program level. Function-local declarations of these are not supported.
