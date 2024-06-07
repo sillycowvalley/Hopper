@@ -23,7 +23,7 @@ unit TinyToken
         IDENTIFIER,
 
         // Preprocessor Directives
-        PRE_INCLUDE, PRE_DEFINE, PRE_UNDEF, PRE_IFDEF, PRE_IFNDEF, PRE_IF, PRE_ELIF, PRE_ELSE, PRE_ENDIF, PRE_PRAGMA,
+        PRE_INCLUDE, PRE_DEFINE, PRE_UNDEF, PRE_IFDEF, PRE_IFNDEF, PRE_IF, PRE_ELIF, PRE_ELSE, PRE_ENDIF, PRE_PRAGMA, PRE_UNKNOWN,
 
         // End of File
         EOF
@@ -113,6 +113,7 @@ unit TinyToken
             case TokenType.PRE_ELSE: { return "PRE_ELSE"; }
             case TokenType.PRE_ENDIF: { return "PRE_ENDIF"; }
             case TokenType.PRE_PRAGMA: { return "PRE_PRAGMA"; }
+            case TokenType.PRE_UNKNOWN: { return "PRE_UNKNOWN"; }
             case TokenType.EOF: { return "EOF"; }
         }
         return "UNDEFINED";
