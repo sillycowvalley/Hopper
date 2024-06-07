@@ -10,6 +10,7 @@ unit AST
         ExprLiteral LiteralExpr;
         ExprVariable VariableExpr;
         ExprCall CallExpr;
+        ExprAssign AssignExpr;
     }
     enum ExprType
     {
@@ -17,7 +18,8 @@ unit AST
         UNARY,
         LITERAL,
         VARIABLE,
-        CALL
+        CALL,
+        ASSIGN
     }
     record ExprBinary
     {
@@ -42,6 +44,11 @@ unit AST
     {
         Expr Callee;
         <Expr> Arguments;
+    }
+    record ExprAssign
+    {
+        Expr Variable;
+        Expr Value;
     }
     Expr ExprBinary(uint line, Expr left, string operator, Expr right)
     {
@@ -97,6 +104,17 @@ unit AST
         expr.CallExpr = callExpr;
         return expr;
     }
+    Expr ExprAssign(uint line, Expr variable, Expr value)
+    {
+        Expr expr;
+        expr.Line = line;
+        expr.Type = ExprType.ASSIGN;
+        ExprAssign assignExpr;
+        assignExpr.Variable = variable;
+        assignExpr.Value = value;
+        expr.AssignExpr = assignExpr;
+        return expr;
+    }
     // Statements
     record Stmt
     {
@@ -121,9 +139,6 @@ unit AST
         WHILE_STMT,
         FOR_STMT,
         NO_OP_STMT
-    }
-    record StmtNoOp
-    {
     }
     record StmtExpr
     {
@@ -161,7 +176,10 @@ unit AST
         Expr Increment;
         Stmt Body;
     }
-    
+    record StmtNoOp
+    {
+        // No additional fields required for a no-op statement
+    }
     // Declarations
     record Decl
     {
