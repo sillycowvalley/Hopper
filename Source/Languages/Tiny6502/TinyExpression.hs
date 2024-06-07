@@ -68,6 +68,24 @@ unit TinyExpression
                 }
                 TinyScanner.Advance(); // Skip ']'
             }
+            else if ((token.Type == TokenType.SYM_PLUSPLUS) || (token.Type == TokenType.SYM_MINUSMINUS))
+            {
+                TinyScanner.Advance(); // Skip '++' or '--'
+            }
+        }
+        else if ((token.Type == TokenType.SYM_PLUSPLUS) || (token.Type == TokenType.SYM_MINUSMINUS))
+        {
+            TinyScanner.Advance(); // Skip '++' or '--'
+            token = TinyScanner.Current();
+            if (token.Type == TokenType.IDENTIFIER)
+            {
+                TinyScanner.Advance(); // Skip identifier
+            }
+            else
+            {
+                Error(token.SourcePath, token.Line, "expected identifier after '++' or '--'");
+                return false;
+            }
         }
         else if ((token.Type == TokenType.LIT_NUMBER) || (token.Type == TokenType.LIT_STRING) || (token.Type == TokenType.LIT_CHAR))
         {
@@ -150,7 +168,7 @@ unit TinyExpression
                 return false;
             }
         }
-        return false;
+        return false; // unreachable but required by Hopper
     }
 }
 

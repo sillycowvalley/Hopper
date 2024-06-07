@@ -176,12 +176,19 @@ unit TinyStatement
     bool parseReturnStatement()
     {
         TinyScanner.Advance(); // Skip 'return'
-        if (!TinyExpression.parseExpression())
+        Token token = TinyScanner.Current();
+        
+        // Check for empty return statement
+        if (token.Type != TokenType.SYM_SEMICOLON)
         {
-            return false;
+            if (!TinyExpression.parseExpression())
+            {
+                return false;
+            }
+            
+            token = TinyScanner.Current();
         }
         
-        Token token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_SEMICOLON)
         {
             Error(token.SourcePath, token.Line, "expected ';' after return statement");
@@ -192,6 +199,7 @@ unit TinyStatement
         return true;
     }
     
+    
     bool parseLocalVarDeclaration()
     {
         string tp;
@@ -199,44 +207,40 @@ unit TinyStatement
         {
             return false;
         }
-        
+    
         Token token = TinyScanner.Current();
         if (token.Type != TokenType.IDENTIFIER)
         {
             Error(token.SourcePath, token.Line, "expected identifier after type");
             return false;
         }
-        
+    
         string name = token.Lexeme;
         TinyScanner.Advance(); // Skip identifier
-        
+    
         token = TinyScanner.Current();
-        if (token.Type != TokenType.SYM_EQ)
+        if (token.Type == TokenType.SYM_EQ)
         {
-            Error(token.SourcePath, token.Line, "expected '=' after identifier");
-            return false;
+            TinyScanner.Advance(); // Skip '='
+    
+            if (!TinyExpression.parseExpression())
+            {
+                return false;
+            }
         }
-        
-        TinyScanner.Advance(); // Skip '='
-        
-        if (!TinyExpression.parseExpression())
-        {
-            return false;
-        }
-        
+    
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_SEMICOLON)
         {
-            Error(token.SourcePath, token.Line, "expected ';' after variable declaration");
+            Error(token.SourcePath, token.Line, "expected ';' after variable declaration, ('" + token.Lexeme + "')");
             return false;
         }
-        
+    
         TinyScanner.Advance(); // Skip ';'
-        
-        TinyCode.DefineLocalVar(tp, name);
+        //TinyCode.DefineLocalVar(tp, name); // TODO: Implement in TinyCode
         return true;
     }
-
+        
     bool parseAssignmentOrExpression()
     {
         Token token = TinyScanner.Current();
@@ -278,7 +282,7 @@ unit TinyStatement
             token = TinyScanner.Current();
             if (token.Type != TokenType.SYM_SEMICOLON)
             {
-                Error(token.SourcePath, token.Line, "expected ';' after expression");
+                Error(token.SourcePath, token.Line, "expected ';' after expression, ('" + token.Lexeme + "')");
                 return false;
             }
             
@@ -297,7 +301,7 @@ unit TinyStatement
         Token token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_SEMICOLON)
         {
-            Error(token.SourcePath, token.Line, "expected ';' after expression");
+            Error(token.SourcePath, token.Line, "expected ';' after expression, ('" + token.Lexeme + "')");
             return false;
         }
         

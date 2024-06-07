@@ -281,22 +281,22 @@ unit TinyCompile
     bool parseType(ref string tp)
     {
         Token token = TinyScanner.Current();
-        
+    
         if (token.Type == TokenType.KW_CONST)
         {
             TinyScanner.Advance(); // Skip 'const': TODO
             token = TinyScanner.Current();
         }
-        
+    
         if ((token.Type != TokenType.KW_BYTE) && (token.Type != TokenType.KW_WORD) && (token.Type != TokenType.KW_CHAR) && (token.Type != TokenType.KW_BOOL) && (token.Type != TokenType.KW_INT) && (token.Type != TokenType.KW_UINT))
         {
             Error(token.SourcePath, token.Line, "expected type");
             return false;
         }
-        
+    
         tp = token.Lexeme;
         TinyScanner.Advance(); // Skip type
-        
+    
         token = TinyScanner.Current();
         if (token.Type == TokenType.SYM_LBRACKET)
         {
@@ -311,7 +311,7 @@ unit TinyCompile
             {
                 tp += "[]";
             }
-            
+    
             token = TinyScanner.Current();
             if (token.Type != TokenType.SYM_RBRACKET)
             {
