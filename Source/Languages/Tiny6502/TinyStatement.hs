@@ -14,19 +14,31 @@ unit TinyStatement
         {
             case TokenType.KW_IF:
             {
-                return parseIfStatement();
+                if (!parseIfStatement())
+                {
+                    return false;
+                }
             }
             case TokenType.KW_WHILE:
             {
-                return parseWhileStatement();
+                if (!parseWhileStatement())
+                {
+                    return false;
+                }
             }
             case TokenType.KW_FOR:
             {
-                return parseForStatement();
+                if (!parseForStatement())
+                {
+                    return false;
+                }
             }
             case TokenType.KW_RETURN:
             {
-                return parseReturnStatement();
+                if (!parseReturnStatement())
+                {
+                    return false;
+                }
             }
             case TokenType.KW_BYTE:
             case TokenType.KW_WORD:
@@ -35,11 +47,17 @@ unit TinyStatement
             case TokenType.KW_INT:
             case TokenType.KW_UINT:
             {
-                return parseLocalVarDeclaration();
+                if (!parseLocalVarDeclaration())
+                {
+                    return false;
+                }
             }
             case TokenType.IDENTIFIER:
             {
-                return parseAssignmentOrExpression();
+                if (!parseExpressionStatement())
+                {
+                    return false;
+                }
             }
             default:
             {
@@ -47,9 +65,9 @@ unit TinyStatement
                 return false;
             }
         }
-        Error(token.SourcePath, token.Line, "unexpected token in statement: " + TinyToken.ToString(token.Type));
-        return false;
+        return true;
     }
+    
 
     bool parseIfStatement()
     {

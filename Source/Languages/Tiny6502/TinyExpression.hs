@@ -8,8 +8,30 @@ unit TinyExpression
     
     bool parseExpression()
     {
-        return parseBinaryExpression();
+        return parseAssignmentExpression();
     }
+    
+    bool parseAssignmentExpression()
+    {
+        if (!parseBinaryExpression())
+        {
+            return false;
+        }
+    
+        Token token = TinyScanner.Current();
+        if (token.Type == TokenType.SYM_EQ)
+        {
+            TinyScanner.Advance(); // Skip '='
+    
+            if (!parseExpression())
+            {
+                return false;
+            }
+        }
+    
+        return true;
+    }
+    
 
     bool parseBinaryExpression()
     {
