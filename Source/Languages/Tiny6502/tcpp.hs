@@ -134,7 +134,7 @@ program TCPreprocess
     
     bool processFile(string sourcePath, file preFile)
     {
-        bool success = false;
+        bool success;
         Parser.ProgressTick("p"); // preprocess
     
         file sourceFile = File.Open(sourcePath);
@@ -147,7 +147,7 @@ program TCPreprocess
         
         success = true;
         uint line = 1;
-        bool inComment = false;
+        bool inComment;
         
         loop
         {
@@ -155,8 +155,8 @@ program TCPreprocess
             if (!sourceFile.IsValid()) { break; }
             
             string result;
-            bool inString = false;
-            char stringChar;// Hopper automatically zero-initializes all variables
+            bool inString;
+            char stringChar;
             
             for (uint i = 0; i < content.Length; i++)
             {
@@ -203,13 +203,17 @@ program TCPreprocess
                 }
             }
     
-            result = result.TrimRight();
-            preFile.Append(sourcePath + ":" + line.ToString() + Char.Tab + result + Char.EOL);
+            if (!inComment) // Only add line if not within a multi-line comment
+            {
+                result = result.TrimRight();
+                preFile.Append(sourcePath + ":" + line.ToString() + Char.Tab + result + Char.EOL);
+            }
             line++;
         }
     
         return success;
     }
+    
     
     
     bool preProcess(string projectPath, string prePath)
