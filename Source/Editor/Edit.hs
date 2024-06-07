@@ -20,6 +20,7 @@ program Edit
     
     bool NoPackedInstructions { get { return false; } } // to keep peephole code happy (even though it is not used)
     
+    Hopper()
     {
         <string> arguments = System.Arguments;
         

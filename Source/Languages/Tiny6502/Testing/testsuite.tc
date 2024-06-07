@@ -1,4 +1,4 @@
-#include "system.tc"
+#include "../system.tc"
 
 // Test function declarations and basic arithmetic
 func testFunctionDeclarations() {

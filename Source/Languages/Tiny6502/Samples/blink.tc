@@ -1,4 +1,4 @@
-#include "system.tc"
+#include "../system.tc"
 
 // Blink an LED on GPIO pin 0 every second and send a message over serial
 func main() {

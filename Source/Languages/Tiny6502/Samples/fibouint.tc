@@ -1,4 +1,4 @@
-#include "system.tc"
+#include "../system.tc"
 
 func word subtractMillis(word[] start, word[] end) {
     word low_res;

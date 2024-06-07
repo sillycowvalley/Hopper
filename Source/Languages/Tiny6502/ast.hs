@@ -187,11 +187,13 @@ unit AST
         DeclType Type;
         DeclFunc FuncDecl;
         StmtVar VarDecl;
+        StmtNoOp NoOpDecl;
     }
     enum DeclType
     {
         FUNC_DECL,
-        VAR_DECL
+        VAR_DECL,
+        PRE_DECL
     }
     record DeclFunc
     {

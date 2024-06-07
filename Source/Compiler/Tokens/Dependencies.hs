@@ -226,7 +226,7 @@ unit Dependencies
         usesPathsToParse[primaryPathLower] = true;
         usesPathsSource[primaryPathLower] = primaryPathLower;
         sources.Append(primaryPathLower);
-        string usesPrefix = "uses" + '"';
+        string usesPrefix = IncludeToken + '"';
         loop
         {
             string nextPath;

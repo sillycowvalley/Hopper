@@ -122,7 +122,7 @@ unit ClickStack
             // - allow 'uses' jumps to work even if .sym does not exist
             string clickLineFragment = beforeWord + contextWord + afterWord;
             clickLineFragment = clickLineFragment.Trim();
-            if (clickLineFragment.StartsWith("uses"))
+            if (clickLineFragment.StartsWith(IncludeToken))
             {
                 string candidate = contextWord.Replace("\"", "");
                 candidate = ResolveUsesPath(clickLineFragment, candidate);

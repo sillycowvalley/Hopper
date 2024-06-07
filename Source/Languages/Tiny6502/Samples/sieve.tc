@@ -1,4 +1,4 @@
-#include "system.tc"
+#include "../system.tc"
 
 const word SIZEPL = 8191;
 bool flagsGlobal[SIZEPL];

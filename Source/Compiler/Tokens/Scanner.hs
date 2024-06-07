@@ -31,6 +31,7 @@ unit Scanner
     {
         sourceLines.Clear();
         Token.Initialize();
+        Token.InitializeHopper();
     }
     
     long PosEOL { get { return currentPosEOL; } }

@@ -57,7 +57,7 @@ unit Parser
         errorFile.Flush();
     }
     
-    emitError(string errorMessage)
+    EmitError(string errorMessage)
     {
         if (IsInteractive())
         {
@@ -169,7 +169,7 @@ unit Parser
                 errorMessage = errorMessage + " Error at '" + lexeme + "':";
             }
             errorMessage = errorMessage + " " + message;
-            emitError(errorMessage);
+            EmitError(errorMessage);
         }
         hadError = true;
     }

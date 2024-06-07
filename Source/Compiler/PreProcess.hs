@@ -694,7 +694,7 @@ program PreProcess
             }
             break;
         }
-    }   
+    }
     
     mainMethodDeclaration()
     {
@@ -1569,6 +1569,7 @@ program PreProcess
         PrintLn("    -a          : preprocess assembly");
         PrintLn("    -z          : for Z80 compiler");
     }
+    Hopper()
     {  
         bool success = false;
         loop

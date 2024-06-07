@@ -18,6 +18,7 @@ program Show
     bool more;
     bool wide;
     bool isAssembly;
+    bool isTinyC;
     
     bool MorePrompt()
     {
@@ -202,15 +203,26 @@ program Show
             LinePrinter linePrinter = DefaultLinePrinter;
             string extension = Path.GetExtension(filePath);
             extension = extension.ToLower();
-            if ((extension == ".hs")  || (extension == ".asm")  || (extension == ".lst")  || (extension == ".json") ||
+            if ((extension == ".hs")  || (extension == ".asm")  || (extension == ".lst") || (extension == ".json") || (extension == ".tc") ||
                 (extension == ".sym") || (extension == ".code") || (extension == ".options"))
             {
                 isAssembly = ((extension == ".asm") || (extension == ".lst"));
+                isTinyC    = (extension == ".tc");
                 linePrinter = HopperLinePrinter;
-                Token.Initialize();// inialize the tokenizer
-                if (isAssembly)
+                Token.Initialize();// initialize the tokenizer
+                
+                
+                if (isTinyC)
+                {
+                    Token.InitializeTinyC();
+                }
+                else if (isAssembly)
                 {
                     Token.InitializeAssembler(CPUArchitecture.W65C02);
+                }
+                else
+                {
+                    Token.InitializeHopper();
                 }
             }
             else if (extension == ".hasm")

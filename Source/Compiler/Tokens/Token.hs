@@ -268,6 +268,12 @@ unit Token
         {
             hopperTokenNames[kv.value] = kv.key;
         }
+    }
+    InitializeHopper()
+    {
+        typeKeywords.Clear();
+        directiveKeywords.Clear();
+        statementKeywords.Clear();
         
         // actual 'type' keywords
         typeKeywords["array"] = true;
@@ -331,6 +337,46 @@ unit Token
         statementKeywords["while"] = true;
         statementKeywords["friend"] = true;
     }
+    InitializeTinyC()
+    {
+        typeKeywords.Clear();
+        directiveKeywords.Clear();
+        statementKeywords.Clear();
+        
+        // actual 'type' keywords
+        typeKeywords["bool"] = true;
+        typeKeywords["byte"] = true;
+        typeKeywords["char"] = true;
+        typeKeywords["int"] = true;
+        typeKeywords["word"] = true;
+        
+        typeKeywords["const"] = true;
+        
+        typeKeywords["false"] = true;
+        typeKeywords["true"] = true;
+        
+        directiveKeywords["#ifdef"] = true;
+        directiveKeywords["#ifndef"] = true;
+        directiveKeywords["#else"] = true;
+        directiveKeywords["#endif"] = true;
+        directiveKeywords["#define"] = true;
+        directiveKeywords["#if"] = true;
+        directiveKeywords["defined"] = true;
+        directiveKeywords["#include"] = true;
+        
+        statementKeywords["break"] = true;
+        statementKeywords["case"] = true;
+        statementKeywords["continue"] = true;
+        statementKeywords["default"] = true;
+        statementKeywords["else"] = true;
+        statementKeywords["for"] = true;
+        statementKeywords["if"] = true;
+        statementKeywords["return"] = true;
+        statementKeywords["switch"] = true;
+        statementKeywords["uses"] = true;
+        statementKeywords["while"] = true;
+        statementKeywords["func"] = true;
+    }
     
     ClearAssembler()
     {
@@ -340,10 +386,7 @@ unit Token
     }
     InitializeAssembler(CPUArchitecture architecture)
     {    
-        instructionKeywords.Clear();
-        registerKeywords.Clear();
-        conditionKeywords.Clear();
-        
+        ClearAssembler();
         
         if (architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
         {

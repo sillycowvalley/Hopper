@@ -71,6 +71,7 @@ unit Output
         currentX     = outputLeft;
         currentY     = outputTop;
         Token.Initialize();
+        Token.InitializeHopper();
     }
     byte Left   { get { return outputLeft; } }
     byte Top    { get { return outputTop; } }

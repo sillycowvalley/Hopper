@@ -52,6 +52,9 @@ unit Editor
     bool   isHopperSource;
     bool   isAssemblerSource;
     bool   isAssemblerListing;
+    bool   isTinyCSource;
+    
+    string IncludeToken { get { return (isTinyCSource ? "#include" : "uses"); } } 
     
     CPUArchitecture cpuArchitecture;
     
@@ -133,6 +136,8 @@ unit Editor
     New(<string, variant> sb, <string, variant> mb)
     {
         Token.Initialize();
+        Token.InitializeHopper();
+        
         //OutputDebug("Editor.New()");
         statusbar = sb;
         menubar = mb;
@@ -414,7 +419,7 @@ unit Editor
         if (firstLine == lastLine)
         {
             string selectionLine = (TextBuffer.GetLine(firstLine)).Trim();
-            if (selectionLine.StartsWith("uses"))
+            if (selectionLine.StartsWith(IncludeToken))
             {
                 usesLine = selectionLine;
             }
@@ -1579,6 +1584,10 @@ unit Editor
             {
                 hsPath = hsPath + ".asm";
             }
+            else if (isTinyCSource)
+            {
+                hsPath = hsPath + ".tc";
+            }
         }
         
         hsPath = Dependencies.ResolveRelativePath(hsPath, CurrentPath, ProjectPath);
@@ -1637,7 +1646,7 @@ unit Editor
         uint lineCount = TextBuffer.GetLineCount();
         
         bool isAssembly     = isAssemblerSource || isAssemblerListing;
-        bool isHighlighting = isAssembly || isHopperSource;
+        bool isHighlighting = isAssembly || isHopperSource || isTinyCSource;
         
         if (isHighlighting)
         {
@@ -1935,11 +1944,17 @@ unit Editor
         }
         if (isAssemblerSource || isAssemblerListing)
         {
+            Token.InitializeHopper();
             Token.InitializeAssembler(cpuArchitecture);
+        }
+        else if (isTinyCSource)
+        {
+            Token.InitializeTinyC();
         }
         else
         {
             Token.ClearAssembler();
+            Token.InitializeHopper();
         }
     }
     
@@ -2035,6 +2050,7 @@ unit Editor
         isHopperSource     = (extension == ".hs");
         isAssemblerSource  = (extension == ".asm");
         isAssemblerListing = (extension == ".lst");
+        isTinyCSource      = (extension == ".tc");
         
         string localProject = ProjectPath;
         if (localProject.Length == 0) // first load
@@ -2648,7 +2664,7 @@ unit Editor
         OutputDebug("UpdateYoungestFile:");
         youngestSourcePath = "";
         youngestSourceTime = 0;
-        if (isHopperSource || isAssemblerSource)
+        if (isHopperSource || isAssemblerSource || isTinyCSource)
         {
             <string> sources;
             _ = Dependencies.TryGetSources(ProjectPath, sources); // try even if there was a failure

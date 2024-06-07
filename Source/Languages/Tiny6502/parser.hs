@@ -224,7 +224,16 @@ unit Parser
     
     ParserError parseDeclaration(ref Parser parser, ref Decl decl)
     {
-        if (match(ref parser, TokenType.KW_FUNC))
+        if (match(ref parser, TokenType.PRE_INCLUDE) || match(ref parser, TokenType.PRE_DEFINE) ||
+            match(ref parser, TokenType.PRE_UNDEF) || match(ref parser, TokenType.PRE_IFDEF) ||
+            match(ref parser, TokenType.PRE_IFNDEF) || match(ref parser, TokenType.PRE_IF) ||
+            match(ref parser, TokenType.PRE_ELIF) || match(ref parser, TokenType.PRE_ELSE) ||
+            match(ref parser, TokenType.PRE_ENDIF) || match(ref parser, TokenType.PRE_PRAGMA) ||
+            match(ref parser, TokenType.PRE_UNKNOWN))
+        {
+            return parsePreprocessorDirective(ref parser, ref decl);
+        }
+        else if (match(ref parser, TokenType.KW_FUNC))
         {
             return parseFunctionDeclaration(ref parser, ref decl);
         }
@@ -988,6 +997,50 @@ unit Parser
         success.Type = ParserErrorType.NONE;
         success.Line = expression.Line;
         return success;
+    }
+    
+    ParserError parsePreprocessorDirective(ref Parser parser, ref Decl decl)
+    {
+        uint line = (previous(parser)).Line;
+    
+        if (match(ref parser, TokenType.PRE_INCLUDE))
+        {
+            // Handle #include directive
+            if (!match(ref parser, TokenType.LIT_STRING))
+            {
+                ParserError error;
+                error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+                error.Line = line;
+                return error;
+            }
+    
+            string includePath = (previous(parser)).Lexeme;
+    
+            // Treat preprocessor directives as no-op declarations
+            StmtNoOp noOpStmt;
+            
+            Decl resultDecl;
+            resultDecl.Line = line;
+            resultDecl.Type = DeclType.PRE_DECL; // Create a corresponding type in DeclType if necessary
+            resultDecl.NoOpDecl = noOpStmt;
+            decl = resultDecl;
+    
+            ParserError success;
+            success.Type = ParserErrorType.NONE;
+            success.Line = line;
+            return success;
+        }
+        else
+        {
+            // Handle other preprocessor directives here if necessary
+            // Example: PRE_DEFINE, PRE_UNDEF, PRE_IFDEF, PRE_IFNDEF, etc.
+            Die(0x0A);
+        }
+    
+        ParserError error;
+        error.Type = ParserErrorType.UNEXPECTED_TOKEN;
+        error.Line = line;
+        return error;
     }
 }
 

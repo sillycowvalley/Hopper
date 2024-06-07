@@ -1,7 +1,7 @@
 program TestLexer
 {
     #define EXPERIMENTAL
-    #define MCU
+    //#define MCU
 
     uses "TinyToken"
     uses "Lexer"
@@ -23,8 +23,12 @@ program TestLexer
         {
             Initialize();
             //<string> arguments = Arguments;
-            string sourcePath = "/data/test.tc"; // Path.GetFullPath(arguments[0]);
+            //string sourcePath = "/data/test.tc"; // Path.GetFullPath(arguments[0]);
             //string sourcePath = "/data/testsuite.tc"; // Path.GetFullPath(arguments[0]);
+            
+            //string sourcePath = "/Source/Languages/Tiny6502/Samples/test.tc";
+            string sourcePath = "/Source/Languages/Tiny6502/Samples/testsuite.tc";
+            
             WriteLn(sourcePath);
             string source;
             if (!File.TryReadAllText(sourcePath, ref source))

@@ -1,0 +1,33 @@
+func main() 
+{
+    byte y = 0;
+    while (y < 10)
+    {
+        y = y + 1; // Increment y
+    }
+    
+    /* Multi-line
+       comment spanning
+       multiple lines */
+       
+    for (byte i = 0; i < 5; i = i + 1)
+    {
+        writeString("In for loop\n"); // Print loop message
+    }
+
+    // Single line comment at end of file
+    writeString("A string with // in it\n"); // String with inline comment marker
+    writeString("A string with /* not a comment */ inside\n"); // String with multi-line comment markers
+    
+    /*
+    Multi-line comment
+    // containing single line comment marker
+    and string "/* not a comment */" inside comment
+    */
+    
+    // Mixed comment and string example
+    writeString("Example /* not a real comment */ and // in the string\n");
+    
+    byte z = 5; /* Inline comment */ z = z + 1;
+    writeString("Final string\n"); // End of main function
+}
