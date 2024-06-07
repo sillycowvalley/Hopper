@@ -380,21 +380,30 @@ unit Parser
     {
         // Implement this function as needed
         Diagnostics.Die(0x0A);
-        return { .Type = ParserErrorType.NONE, .Line = 0 };
+        ParserError result;
+        result.Type = ParserErrorType.NONE;
+        result.Line = 0;
+        return result;
     }
     
     ParserError parseWhileStatement(ref Parser parser, ref Stmt stmt)
     {
         // Implement this function as needed
         Diagnostics.Die(0x0A);
-        return { .Type = ParserErrorType.NONE, .Line = 0 };
+        ParserError result;
+        result.Type = ParserErrorType.NONE;
+        result.Line = 0;
+        return result;
     }
     
     ParserError parseForStatement(ref Parser parser, ref Stmt stmt)
     {
         // Implement this function as needed
         Diagnostics.Die(0x0A);
-        return { .Type = ParserErrorType.NONE, .Line = 0 };
+        ParserError result;
+        result.Type = ParserErrorType.NONE;
+        result.Line = 0;
+        return result;
     }
     
     ParserError parseReturnStatement(ref Parser parser, ref Stmt stmt)
@@ -416,16 +425,23 @@ unit Parser
     
             if (!match(ref parser, TokenType.SYM_SEMICOLON))
             {
-                return { .Type = ParserErrorType.UNEXPECTED_TOKEN, .Line = line };
+                ParserError result;
+                result.Type = ParserErrorType.UNEXPECTED_TOKEN;
+                result.Line = line;
+                return result;
             }
         }
     
-        Stmt result;
-        result.Line = line;
-        result.Type = StmtType.RETURN_STMT;
-        result.ReturnStmt = returnStmt;
-        stmt = result;
-        return { .Type = ParserErrorType.NONE, .Line = line };
+        Stmt resultStmt;
+        resultStmt.Line = line;
+        resultStmt.Type = StmtType.RETURN_STMT;
+        resultStmt.ReturnStmt = returnStmt;
+        stmt = resultStmt;
+    
+        ParserError success;
+        success.Type = ParserErrorType.NONE;
+        success.Line = line;
+        return success;
     }
     
     ParserError parseBlockStatement(ref Parser parser, ref Stmt stmt)
@@ -447,12 +463,16 @@ unit Parser
         StmtBlock blockStmt;
         blockStmt.Statements = statements;
     
-        Stmt result;
-        result.Line = line;
-        result.Type = StmtType.BLOCK_STMT;
-        result.BlockStmt = blockStmt;
-        stmt = result;
-        return { .Type = ParserErrorType.NONE, .Line = line };
+        Stmt resultStmt;
+        resultStmt.Line = line;
+        resultStmt.Type = StmtType.BLOCK_STMT;
+        resultStmt.BlockStmt = blockStmt;
+        stmt = resultStmt;
+    
+        ParserError success;
+        success.Type = ParserErrorType.NONE;
+        success.Line = line;
+        return success;
     }
     
     ParserError parseExpressionStatement(ref Parser parser, ref Stmt stmt)
@@ -466,18 +486,25 @@ unit Parser
     
         if (!match(ref parser, TokenType.SYM_SEMICOLON)) 
         {
-            return { .Type = ParserErrorType.UNEXPECTED_TOKEN, .Line = expression.Line };
+            ParserError result;
+            result.Type = ParserErrorType.UNEXPECTED_TOKEN;
+            result.Line = expression.Line;
+            return result;
         }
     
         StmtExpr exprStmt;
         exprStmt.Expression = expression;
     
-        Stmt result;
-        result.Line = expression.Line;
-        result.Type = StmtType.EXPR_STMT;
-        result.ExprStmt = exprStmt;
-        stmt = result;
-        return { .Type = ParserErrorType.NONE, .Line = expression.Line };
+        Stmt resultStmt;
+        resultStmt.Line = expression.Line;
+        resultStmt.Type = StmtType.EXPR_STMT;
+        resultStmt.ExprStmt = exprStmt;
+        stmt = resultStmt;
+    
+        ParserError success;
+        success.Type = ParserErrorType.NONE;
+        success.Line = expression.Line;
+        return success;
     }
-}
 
+}
