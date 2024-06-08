@@ -1,7 +1,6 @@
 unit TinyStatement
 {
     friend TinyCompile, TinyExpression;
-
     uses "TinyToken"
     uses "TinyScanner"
     uses "TinyCode"
@@ -52,6 +51,13 @@ unit TinyStatement
                     return false;
                 }
             }
+            case TokenType.KW_CONST:
+            {
+                if (!parseLocalConstDeclaration())
+                {
+                    return false;
+                }
+            }
             case TokenType.IDENTIFIER:
             {
                 if (!parseExpressionStatement())
@@ -68,7 +74,6 @@ unit TinyStatement
         return true;
     }
     
-
     bool parseIfStatement()
     {
         TinyScanner.Advance(); // Skip 'if'
@@ -217,7 +222,6 @@ unit TinyStatement
         return true;
     }
     
-    
     bool parseLocalVarDeclaration()
     {
         string tp;
@@ -258,12 +262,57 @@ unit TinyStatement
         //TinyCode.DefineLocalVar(tp, name); // TODO: Implement in TinyCode
         return true;
     }
+    
+    bool parseLocalConstDeclaration()
+    {
+        TinyScanner.Advance(); // Skip 'const'
         
+        string tp;
+        if (!TinyCompile.parseType(ref tp))
+        {
+            return false;
+        }
+    
+        Token token = TinyScanner.Current();
+        if (token.Type != TokenType.IDENTIFIER)
+        {
+            Error(token.SourcePath, token.Line, "expected identifier after type");
+            return false;
+        }
+    
+        string name = token.Lexeme;
+        TinyScanner.Advance(); // Skip identifier
+    
+        token = TinyScanner.Current();
+        if (token.Type != TokenType.SYM_EQ)
+        {
+            Error(token.SourcePath, token.Line, "expected '=' after identifier");
+            return false;
+        }
+    
+        TinyScanner.Advance(); // Skip '='
+    
+        if (!TinyExpression.parseExpression())
+        {
+            return false;
+        }
+    
+        token = TinyScanner.Current();
+        if (token.Type != TokenType.SYM_SEMICOLON)
+        {
+            Error(token.SourcePath, token.Line, "expected ';' after constant declaration, ('" + token.Lexeme + "')");
+            return false;
+        }
+    
+        TinyScanner.Advance(); // Skip ';'
+        //TinyCode.DefineLocalConst(tp, name); // TODO: Implement in TinyCode
+        return true;
+    }
+    
     bool parseAssignmentOrExpression()
     {
         Token token = TinyScanner.Current();
         Token nextToken = TinyScanner.Peek(); // Peek at the next token
-
         if (nextToken.Type == TokenType.SYM_EQ)
         {
             // It's an assignment
@@ -308,7 +357,6 @@ unit TinyStatement
             return true;
         }
     }
-
     bool parseExpressionStatement()
     {
         if (!TinyExpression.parseExpression())
@@ -355,7 +403,7 @@ unit TinyStatement
         TinyScanner.Advance(); // Skip '}'
         return true;
     }
-
+    
     bool parseFunctionBody()
     {
         Token token;
@@ -376,4 +424,3 @@ unit TinyStatement
         return true;
     }
 }
-

@@ -10,35 +10,44 @@ unit TinyExpression
     {
         return parseAssignmentExpression();
     }
-
+    
     bool parseAssignmentExpression()
     {
         if (!parseBinaryExpression())
         {
             return false;
         }
-
+    
         Token token = TinyScanner.Current();
-        if (isAssignmentOperator(token.Type))
+        if (token.Type == TokenType.SYM_EQ)
         {
-            TinyScanner.Advance(); // Skip the assignment operator
-
+            TinyScanner.Advance(); // Skip '='
+    
             if (!parseExpression())
             {
                 return false;
             }
         }
-
+        else if (isCompoundAssignmentOperator(token.Type))
+        {
+            TinyScanner.Advance(); // Skip compound assignment operator
+    
+            if (!parseExpression())
+            {
+                return false;
+            }
+        }
+    
         return true;
     }
-
+    
     bool parseBinaryExpression()
     {
         if (!parsePrimaryExpression())
         {
             return false;
         }
-
+        
         Token token = TinyScanner.Current();
         while (isBinaryOperator(token.Type))
         {
@@ -51,7 +60,7 @@ unit TinyExpression
         }
         return true;
     }
-
+    
     bool parsePrimaryExpression()
     {
         Token token = TinyScanner.Current();
@@ -134,7 +143,7 @@ unit TinyExpression
         }
         return true;
     }
-
+    
     bool parseArgumentList()
     {
         Token token;
@@ -162,7 +171,7 @@ unit TinyExpression
         }
         return true; // success
     }
-
+    
     bool isBinaryOperator(TokenType tp)
     {
         switch (tp)
@@ -191,17 +200,15 @@ unit TinyExpression
         }
         return false; // unreachable but required by Hopper
     }
-
-    bool isAssignmentOperator(TokenType tp)
+    
+    bool isCompoundAssignmentOperator(TokenType tp)
     {
         switch (tp)
         {
-            case TokenType.SYM_EQ:
             case TokenType.SYM_PLUSEQ:
             case TokenType.SYM_MINUSEQ:
             case TokenType.SYM_STAREQ:
             case TokenType.SYM_SLASHEQ:
-            case TokenType.SYM_PERCENTEQ:
             {
                 return true;
             }
@@ -213,4 +220,3 @@ unit TinyExpression
         return false; // unreachable but required by Hopper
     }
 }
-

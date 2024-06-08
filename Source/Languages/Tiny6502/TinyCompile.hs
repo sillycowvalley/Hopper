@@ -146,7 +146,7 @@ unit TinyCompile
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_SEMICOLON)
         {
-            Error(token.SourcePath, token.Line, "expected ';' after variable declaration");
+            Error(token.SourcePath, token.Line, "expected ';' after variable declaration, (" + token.Lexeme + "')");
             return false;
         }
         
@@ -160,45 +160,49 @@ unit TinyCompile
     {
         TinyScanner.Advance(); // Skip 'func'
         Token token = TinyScanner.Current();
-
-        string returnType;
-        if (!parseType(ref returnType))
-        {
-            return false;
-        }
-
-        token = TinyScanner.Current();
+    
+        // Optional return type
+        string returnType = "";
         if (token.Type != TokenType.IDENTIFIER)
         {
-            Error(token.SourcePath, token.Line, "expected identifier after 'func'");
+            if (!parseType(ref returnType))
+            {
+                return false;
+            }
+            token = TinyScanner.Current();
+        }
+    
+        if (token.Type != TokenType.IDENTIFIER)
+        {
+            Error(token.SourcePath, token.Line, "expected identifier after 'func', (" + token.Lexeme + "')");
             return false;
         }
-
+    
         string name = token.Lexeme;
         TinyScanner.Advance(); // Skip identifier
-
+    
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_LPAREN)
         {
-            Error(token.SourcePath, token.Line, "expected '(' after function name");
+            Error(token.SourcePath, token.Line, "expected '(' after function name, (" + token.Lexeme + "')");
             return false;
         }
-
+    
         TinyScanner.Advance(); // Skip '('
         if (!parseParameterList())
         {
             return false;
         }
-
+    
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_RPAREN)
         {
-            Error(token.SourcePath, token.Line, "expected ')' after parameter list");
+            Error(token.SourcePath, token.Line, "expected ')' after parameter list, (" + token.Lexeme + "')");
             return false;
         }
-
+    
         TinyScanner.Advance(); // Skip ')'
-
+    
         token = TinyScanner.Current();
         if (token.Type == TokenType.SYM_SEMICOLON)
         {
@@ -215,14 +219,12 @@ unit TinyCompile
             {
                 return false;
             }
-
             token = TinyScanner.Current();
             if (token.Type != TokenType.SYM_RBRACE)
             {
-                Error(token.SourcePath, token.Line, "expected '}' to end function body");
+                Error(token.SourcePath, token.Line, "expected '}' to end function body, (" + token.Lexeme + "')");
                 return false;
             }
-
             TinyScanner.Advance(); // Skip '}'
             TinyCode.DefineFunction(name);
             return true;
@@ -233,6 +235,7 @@ unit TinyCompile
             return false;
         }
     }
+    
     
     bool parseParameterList()
     {
