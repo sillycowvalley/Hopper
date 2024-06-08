@@ -26,7 +26,7 @@ func writeWord(word num) {
     char[5] digits; // Maximum 5 digits for a word
 
     while (num > 0) {
-        digits[i++] = (num % 10) + '0';
+        digits[i++] = ((num % 10) + '0') as char;
         num /= 10;
     }
 

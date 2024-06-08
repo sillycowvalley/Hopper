@@ -2,18 +2,18 @@ unit TinyType
 {
     bool IsIndexType(string typeName)
     {
-        typeName = typeName.Replace("const ", "");
-        return ("|byte|word|uint|+int|").Contains(typeName);
+        typeName = "|" + typeName.Replace("const ", "") + "|";
+        return ("|char|byte|word|+int|").Contains(typeName);
     }
     bool IsNumericType(string typeName)
     {
-        typeName = typeName.Replace("const ", "");
-        return ("|byte|word|uint|int|+int|").Contains(typeName);
+        typeName = "|" + typeName.Replace("const ", "") + "|";
+        return ("|char|byte|word|int|+int|").Contains(typeName);
     }
     bool IsBoolableType(string typeName)
     {
-        typeName = typeName.Replace("const ", "");
-        return ("|byte|word|uint|int|+int|bool|").Contains(typeName);
+        typeName = "|" + typeName.Replace("const ", "") + "|";
+        return ("|char|byte|word|int|+int|bool|").Contains(typeName);
     }
     string GetArrayMemberType(string arrayType)
     {
@@ -25,6 +25,30 @@ unit TinyType
             memberType = memberType.Replace("const ", "");
         }
         return memberType;
+    }
+    string WiderType(string leftType, string rightType)
+    {
+        if ((leftType == "word") || (rightType == "word"))
+        {
+            return "word";
+        }
+        if ((leftType == "int") || (rightType == "int"))
+        {
+            return "int";
+        }
+        if ((leftType == "+int") || (rightType == "+int"))
+        {
+            return "+int";
+        }
+        if ((leftType == "byte") || (rightType == "byte"))
+        {
+            return "byte";
+        }
+        if ((leftType == "char") || (rightType == "char"))
+        {
+            return "char";
+        }
+        return leftType; // bool?
     }
     
     bool IsAutomaticCast(string expectedType, string actualType)
@@ -57,6 +81,14 @@ unit TinyType
                     {
                         return true; // char as byte
                     }
+                    case "int":
+                    {
+                        return false; // int as byte requires cast
+                    }
+                    case "word":
+                    {
+                        return false; // word as byte requires cast
+                    }
                     default:
                     {
                         TypeError(expectedType, actualType);
@@ -72,6 +104,14 @@ unit TinyType
                     case "byte":
                     {
                         return true; // byte as char
+                    }
+                    case "int":
+                    {
+                        return false; // int as char requires cast
+                    }
+                    case "word":
+                    {
+                        return false; // word as char requires cast
                     }
                     default:
                     {

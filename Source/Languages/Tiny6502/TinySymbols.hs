@@ -43,8 +43,8 @@ unit TinySymbols
         Function function;
         function.ReturnType = returnType;
         functions[functionName] = function;
-        PrintLn();
-        Print("func: " + returnType + " " + functionName);
+        //PrintLn();
+        //Print("func: " + returnType + " " + functionName);
         return true;
     }
     
@@ -65,6 +65,7 @@ unit TinySymbols
         arguments[argumentName] = argument;
         function.Arguments = arguments;
         functions[functionName] = function;
+        /*
         if (arguments.Count == 1)
         {
             Print(" : ");
@@ -74,6 +75,7 @@ unit TinySymbols
             Print(", ");
         }
         Print(argumentType + " " + argumentName);
+        */
         return true;
     }
     

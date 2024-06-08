@@ -19,7 +19,7 @@ func word subtractMillis(word[] start, word[] end) {
     return totalSeconds;
 }
 
-uint Fibo(uint n) {
+func word Fibo(word n) {
     if (n <= 1) {
         return n;
     } else {
@@ -27,10 +27,10 @@ uint Fibo(uint n) {
     }
 }
 
-func Benchmark(const char[] name, func funcPtr, uint arg, uint loops) {
+func Benchmark(const char[] name, func funcPtr, word arg, word loops) {
     word[] start = millis(); // Start timing
-    uint result = 0;
-    for (uint count = 0; count < loops; count++) {
+    word result = 0;
+    for (word count = 0; count < loops; count++) {
         result = funcPtr(arg);
     }
     word[] end = millis(); // Stop timing

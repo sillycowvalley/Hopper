@@ -11,27 +11,41 @@ unit TinyExpression
     
     bool parseExpression(ref string actualType)
     {
-        return parseAssignmentExpression(ref actualType);
-    }
-    
-    bool parseAssignmentExpression(ref string actualType)
-    {
-        if (!parseBinaryExpression(ref actualType))
+        if (!parseAssignmentExpression(ref actualType))
         {
             return false;
         }
-    
+
+        Token token = TinyScanner.Current();        
+        if (token.Type == TokenType.KW_AS)
+        {
+            // cast
+            TinyScanner.Advance(); // Skip 'as'
+            if (!TinyCompile.parseType(ref actualType))
+            {
+                return false;
+            }
+        }
+        return true;   
+    }
+
+    bool parseAssignmentExpression(ref string actualType)
+    {
+        if (!parseLogicalOrExpression(ref actualType))
+        {
+            return false;
+        }
+
         Token token = TinyScanner.Current();
         if ((token.Type == TokenType.SYM_EQ) || IsCompoundAssignmentOperator(token.Type))
         {
             TinyScanner.Advance(); // Skip '=' or compound assignment operator
-    
+
             string rhsType;
             if (!parseExpression(ref rhsType))
             {
                 return false;
             }
-            
             if (!IsAutomaticCast(actualType, rhsType))
             {
                 TypeError(actualType, rhsType);
@@ -40,18 +54,266 @@ unit TinyExpression
         }
         return true;
     }
-    
-    bool parseBinaryExpression(ref string actualType)
+
+    bool parseLogicalOrExpression(ref string actualType)
+    {
+        if (!parseLogicalAndExpression(ref actualType))
+        {
+            return false;
+        }
+
+        Token token = TinyScanner.Current();
+        while (token.Type == TokenType.SYM_PIPEPIPE)
+        {
+            TinyScanner.Advance(); // Skip '||'
+            string rhsType;
+            if (!parseLogicalAndExpression(ref rhsType))
+            {
+                return false;
+            }
+            if (!IsBoolableType(actualType) || !IsBoolableType(rhsType))
+            {
+                TypeError(actualType, rhsType);
+                return false;
+            }
+            actualType = "bool";
+            token = TinyScanner.Current();
+        }
+        return true;
+    }
+
+    bool parseLogicalAndExpression(ref string actualType)
+    {
+        if (!parseBitwiseOrExpression(ref actualType))
+        {
+            return false;
+        }
+
+        Token token = TinyScanner.Current();
+        while (token.Type == TokenType.SYM_AMPAMP)
+        {
+            TinyScanner.Advance(); // Skip '&&'
+            string rhsType;
+            if (!parseBitwiseOrExpression(ref rhsType))
+            {
+                return false;
+            }
+            if (!IsBoolableType(actualType) || !IsBoolableType(rhsType))
+            {
+                TypeError(actualType, rhsType);
+                return false;
+            }
+            actualType = "bool";
+            token = TinyScanner.Current();
+        }
+        return true;
+    }
+
+    bool parseBitwiseOrExpression(ref string actualType)
+    {
+        if (!parseBitwiseXorExpression(ref actualType))
+        {
+            return false;
+        }
+
+        Token token = TinyScanner.Current();
+        while (token.Type == TokenType.SYM_PIPE)
+        {
+            TinyScanner.Advance(); // Skip '|'
+            string rhsType;
+            if (!parseBitwiseXorExpression(ref rhsType))
+            {
+                return false;
+            }
+            if (!IsNumericType(actualType) || !IsNumericType(rhsType))
+            {
+                TypeError(actualType, rhsType);
+                return false;
+            }
+            actualType = WiderType(actualType, rhsType);
+            token = TinyScanner.Current();
+        }
+        return true;
+    }
+
+    bool parseBitwiseXorExpression(ref string actualType)
+    {
+        if (!parseBitwiseAndExpression(ref actualType))
+        {
+            return false;
+        }
+
+        Token token = TinyScanner.Current();
+        while (token.Type == TokenType.SYM_CARET)
+        {
+            TinyScanner.Advance(); // Skip '^'
+            string rhsType;
+            if (!parseBitwiseAndExpression(ref rhsType))
+            {
+                return false;
+            }
+            if (!IsNumericType(actualType) || !IsNumericType(rhsType))
+            {
+                TypeError(actualType, rhsType);
+                return false;
+            }
+            actualType = WiderType(actualType, rhsType);
+            token = TinyScanner.Current();
+        }
+        return true;
+    }
+
+    bool parseBitwiseAndExpression(ref string actualType)
+    {
+        if (!parseEqualityExpression(ref actualType))
+        {
+            return false;
+        }
+
+        Token token = TinyScanner.Current();
+        while (token.Type == TokenType.SYM_AMP)
+        {
+            TinyScanner.Advance(); // Skip '&'
+            string rhsType;
+            if (!parseEqualityExpression(ref rhsType))
+            {
+                return false;
+            }
+            if (!IsNumericType(actualType) || !IsNumericType(rhsType))
+            {
+                TypeError(actualType, rhsType);
+                return false;
+            }
+            actualType = WiderType(actualType, rhsType);
+            token = TinyScanner.Current();
+        }
+        return true;
+    }
+
+    bool parseEqualityExpression(ref string actualType)
+    {
+        if (!parseRelationalExpression(ref actualType))
+        {
+            return false;
+        }
+
+        Token token = TinyScanner.Current();
+        while ((token.Type == TokenType.SYM_EQEQ) || (token.Type == TokenType.SYM_NEQ))
+        {
+            string op = token.Lexeme;
+            TinyScanner.Advance(); // Skip '==' or '!='
+            string rhsType;
+            if (!parseRelationalExpression(ref rhsType))
+            {
+                return false;
+            }
+            if (!IsNumericType(actualType) || !IsNumericType(rhsType))
+            {
+                TypeError(actualType, rhsType);
+                return false;
+            }
+            actualType = "bool";
+            token = TinyScanner.Current();
+        }
+        return true;
+    }
+
+    bool parseRelationalExpression(ref string actualType)
+    {
+        if (!parseShiftExpression(ref actualType))
+        {
+            return false;
+        }
+
+        Token token = TinyScanner.Current();
+        while ((token.Type == TokenType.SYM_LT) || (token.Type == TokenType.SYM_LTE) || (token.Type == TokenType.SYM_GT) || (token.Type == TokenType.SYM_GTE))
+        {
+            string op = token.Lexeme;
+            TinyScanner.Advance(); // Skip '<', '<=', '>', '>='
+            string rhsType;
+            if (!parseShiftExpression(ref rhsType))
+            {
+                return false;
+            }
+            if (!IsNumericType(actualType) || !IsNumericType(rhsType))
+            {
+                TypeError(actualType, rhsType);
+                return false;
+            }
+            actualType = "bool";
+            token = TinyScanner.Current();
+        }
+        return true;
+    }
+
+    bool parseShiftExpression(ref string actualType)
+    {
+        if (!parseAdditiveExpression(ref actualType))
+        {
+            return false;
+        }
+
+        Token token = TinyScanner.Current();
+        while ((token.Type == TokenType.SYM_LSHIFT) || (token.Type == TokenType.SYM_RSHIFT))
+        {
+            string op = token.Lexeme;
+            TinyScanner.Advance(); // Skip '<<' or '>>'
+            string rhsType;
+            if (!parseAdditiveExpression(ref rhsType))
+            {
+                return false;
+            }
+            if (!IsNumericType(actualType) || !IsNumericType(rhsType))
+            {
+                TypeError(actualType, rhsType);
+                return false;
+            }
+            actualType = WiderType(actualType, rhsType);
+            token = TinyScanner.Current();
+        }
+        return true;
+    }
+
+    bool parseAdditiveExpression(ref string actualType)
+    {
+        if (!parseMultiplicativeExpression(ref actualType))
+        {
+            return false;
+        }
+
+        Token token = TinyScanner.Current();
+        while ((token.Type == TokenType.SYM_PLUS) || (token.Type == TokenType.SYM_MINUS))
+        {
+            string op = token.Lexeme;
+            TinyScanner.Advance(); // Skip '+' or '-'
+            string rhsType;
+            if (!parseMultiplicativeExpression(ref rhsType))
+            {
+                return false;
+            }
+            if (!IsNumericType(actualType) || !IsNumericType(rhsType))
+            {
+                TypeError(actualType, rhsType);
+                return false;
+            }
+            actualType = WiderType(actualType, rhsType);
+            token = TinyScanner.Current();
+        }
+        return true;
+    }
+
+    bool parseMultiplicativeExpression(ref string actualType)
     {
         if (!parseUnaryExpression(ref actualType))
         {
             return false;
         }
-        
+
         Token token = TinyScanner.Current();
-        while (TinyToken.IsBinaryOperator(token.Type))
+        while ((token.Type == TokenType.SYM_STAR) || (token.Type == TokenType.SYM_SLASH) || (token.Type == TokenType.SYM_PERCENT))
         {
-            TinyScanner.Advance(); // Skip operator
+            string op = token.Lexeme;
+            TinyScanner.Advance(); // Skip '*', '/', '%'
             string rhsType;
             if (!parseUnaryExpression(ref rhsType))
             {
@@ -62,11 +324,12 @@ unit TinyExpression
                 TypeError(actualType, rhsType);
                 return false;
             }
+            actualType = WiderType(actualType, rhsType);
             token = TinyScanner.Current();
         }
         return true;
     }
-    
+
     bool parseUnaryExpression(ref string actualType)
     {
         Token token = TinyScanner.Current();
@@ -87,8 +350,7 @@ unit TinyExpression
         }
         return true;
     }
-    
-    
+
     bool parsePrimaryExpression(ref string actualType)
     {
         Token token = TinyScanner.Current();
@@ -104,30 +366,33 @@ unit TinyExpression
                 {
                     // const char[] palette = ".,'~=+:;*%&$OXB#@ ";
                     token = TinyScanner.Current();
-                    if (token.Type != TokenType.SYM_LBRACKET)
+                    if (token.Type == TokenType.SYM_LBRACKET)
                     {
-                        Error(token.SourcePath, token.Line, "'[' expected");
-                        return false;
+                        // pick out an array member
+                        TinyScanner.Advance(); // Skip '['
+                        string indexType;
+                        if (!parseExpression(ref indexType))
+                        {
+                            return false;
+                        }
+                        if (!IsIndexType(indexType))
+                        {
+                            Error(token.SourcePath, token.Line, "integral index type expected");
+                            return false;
+                        }
+                        actualType = GetArrayMemberType(actualType);
+                        token = TinyScanner.Current();
+                        if (token.Type != TokenType.SYM_RBRACKET)
+                        {
+                            Error(token.SourcePath, token.Line, "expected ']' after array index");
+                            return false;
+                        }
+                        TinyScanner.Advance(); // Skip ']'
                     }
-                    TinyScanner.Advance(); // Skip '['
-                    string indexType;
-                    if (!parseExpression(ref indexType))
+                    else
                     {
-                        return false;
+                        // return the entire array
                     }
-                    if (!IsIndexType(indexType))
-                    {
-                        Error(token.SourcePath, token.Line, "integral index type expected");
-                        return false;
-                    }
-                    actualType = GetArrayMemberType(actualType);
-                    token = TinyScanner.Current();
-                    if (token.Type != TokenType.SYM_RBRACKET)
-                    {
-                        Error(token.SourcePath, token.Line, "expected ']' after array index");
-                        return false;
-                    }
-                    TinyScanner.Advance(); // Skip ']'
                 }
                 return true;
             }
@@ -139,7 +404,16 @@ unit TinyExpression
                 // function call
                 if (!GetFunction(name, ref actualType))
                 {
-                    Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
+                    if (!GetVariable(name, ref actualType))
+                    {
+                        Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
+                    }
+                    if (actualType != "func")
+                    {
+                        Error(token.SourcePath, token.Line, "invalid use of '" + name + "'");
+                    }
+                    // untyped func pointer, arbitrarily pick "word" as return type
+                    actualType = "word";
                 }
                 
                 TinyScanner.Advance(); // Skip '('
@@ -184,16 +458,6 @@ unit TinyExpression
                 }
                 TinyScanner.Advance(); // Skip ']'
             }
-            else if (token.Type == TokenType.KW_AS)
-            {
-                // cast
-                TinyScanner.Advance(); // Skip 'as'
-                string castType;
-                if (!TinyCompile.parseType(ref castType))
-                {
-                    return false;
-                }
-            }
             else
             {
                 // variable
@@ -214,7 +478,13 @@ unit TinyExpression
             token = TinyScanner.Current();
             if (token.Type == TokenType.IDENTIFIER)
             {
+                string name = token.Lexeme;
                 TinyScanner.Advance(); // Skip identifier
+                if (!GetVariable(name, ref actualType))
+                {
+                    Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
+                    return false;
+                }
             }
             else
             {
@@ -230,9 +500,20 @@ unit TinyExpression
                 return false;
             }
         }
-        else if ((token.Type == TokenType.LIT_STRING) || (token.Type == TokenType.LIT_CHAR) || (token.Type == TokenType.KW_TRUE) || (token.Type == TokenType.KW_FALSE) || (token.Type == TokenType.KW_NULL))
+        else if (token.Type == TokenType.LIT_CHAR)
         {
-            TinyScanner.Advance(); // Skip literal or boolean literal
+            actualType = "char";
+            TinyScanner.Advance(); // Skip literal    
+        }
+        else if ((token.Type == TokenType.KW_FALSE) || (token.Type == TokenType.KW_TRUE))
+        {
+            actualType = "bool";
+            TinyScanner.Advance(); // Skip literal    
+        }
+        else if ((token.Type == TokenType.LIT_STRING) || (token.Type == TokenType.KW_NULL))
+        {
+            // TODO : actualType
+            TinyScanner.Advance(); // Skip literal
         }
         else if (token.Type == TokenType.SYM_LPAREN)
         {
@@ -271,7 +552,6 @@ unit TinyExpression
         return true;
     }
     
-    
     bool parseArgumentList(string functionName)
     {
         Token token;
@@ -301,4 +581,4 @@ unit TinyExpression
         return true; // success
     }
 }
-    
+
