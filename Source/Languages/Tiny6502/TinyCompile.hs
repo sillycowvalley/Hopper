@@ -215,18 +215,10 @@ unit TinyCompile
         else if (token.Type == TokenType.SYM_LBRACE)
         {
             // This is an actual function definition
-            TinyScanner.Advance(); // Skip '{'
-            if (!TinyStatement.parseFunctionBody()) // ... parseBlock?!
+            if (!TinyStatement.parseBlock())
             {
                 return false;
             }
-            token = TinyScanner.Current();
-            if (token.Type != TokenType.SYM_RBRACE)
-            {
-                Error(token.SourcePath, token.Line, "expected '}' to end function body, (" + token.Lexeme + "')");
-                return false;
-            }
-            TinyScanner.Advance(); // Skip '}'
             TinyCode.DefineFunction(name);
             return true;
         }

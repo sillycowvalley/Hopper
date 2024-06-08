@@ -350,14 +350,14 @@ unit TinyStatement
         TinyScanner.Advance(); // Skip ';'
         return true;
     }
-    uint nesting;
+    //uint nesting;
     
     bool parseBlock()
     {
         Token token = TinyScanner.Current();
         
-        PrintLn(("{").LeftPad(' ', nesting*4) + " " + nesting.ToString() + " " + token.SourcePath + ":" + (token.Line).ToString());
-        nesting++;
+        //PrintLn(("{").LeftPad(' ', nesting*4) + " " + nesting.ToString() + " " + token.SourcePath + ":" + (token.Line).ToString());
+        //nesting++;
         
         if (token.Type != TokenType.SYM_LBRACE)
         {
@@ -383,31 +383,11 @@ unit TinyStatement
         
         TinyScanner.Advance(); // Skip '}'
         
-        nesting--;
-        PrintLn(("}").LeftPad(' ', nesting*4) + " " + nesting.ToString());
+        //nesting--;
+        //PrintLn(("}").LeftPad(' ', nesting*4) + " " + nesting.ToString());
         return true;
     }
     
-    bool parseFunctionBody()
-    {
-        Token token;
-        loop
-        {
-            token = TinyScanner.Current();
-            if (token.Type == TokenType.SYM_RBRACE)
-            {
-                break; // exit the loop when reaching '}'
-            }
-            
-            // Parse statements
-            if (!parseStatement())
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
     bool parseStatement()
     {
         Token token = TinyScanner.Current();
