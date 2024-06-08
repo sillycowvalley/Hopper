@@ -321,6 +321,8 @@ unit TinyStatement
         }
     
         TinyScanner.Advance(); // Skip '='
+        
+        constantType = "const " + constantType;
     
         string expressionType;
         string value;

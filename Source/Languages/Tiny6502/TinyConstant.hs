@@ -45,6 +45,7 @@ unit TinyConstant
         constants[level] = scopeConstants;   
         return true;
     }
+    
     bool GetConst(string constantName, ref string constantType, ref string constantValue)
     {
         uint level = constants.Count -1;
@@ -107,11 +108,23 @@ unit TinyConstant
                 Error(token.SourcePath, token.Line, "undefined constant identifier in constant expression, ('" + token.Lexeme + "')");
                 return false;
             }
-            TinyScanner.Advance(); // Skip number or identifier
+            TinyScanner.Advance(); // Skip identifier
+        }
+        else if (token.Type == TokenType.LIT_STRING)
+        {
+            value = token.Lexeme;
+            actualType = "const char[]";
+            TinyScanner.Advance(); // Skip string literal
+        }
+        else if (token.Type == TokenType.LIT_CHAR)
+        {
+            value = token.Lexeme;
+            actualType = "char";
+            TinyScanner.Advance(); // Skip char literal
         }
         else
         {
-            Error(token.SourcePath, token.Line, "expected number or identifier in constant expression, ('" + token.Lexeme + "')");
+            Error(token.SourcePath, token.Line, "expected number, identifier, string, or char in constant expression, ('" + token.Lexeme + "')");
             return false;
         }
         return true;
@@ -122,3 +135,4 @@ unit TinyConstant
         return parseConstantPrimary(ref value, ref actualType);
     }
 }
+

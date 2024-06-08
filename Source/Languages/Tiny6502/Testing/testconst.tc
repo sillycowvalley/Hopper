@@ -1,0 +1,73 @@
+#include "../system.tc"
+
+// Global const declarations
+const byte GLOBAL_BYTE = 42;
+const word GLOBAL_WORD = 0x1234;
+const char[] GLOBAL_MESSAGE = "Global Hello, 6502!";
+const word SIZE = 5;
+
+// Test function to write a string to serial output
+func writeTestString(const char[] str) {
+    writeString(str);
+}
+
+func main() {
+    // Local const declarations
+    const byte LOCAL_BYTE = 10;
+    const word LOCAL_WORD = 0xABCD;
+    const char[] LOCAL_MESSAGE = "Local Hello, 6502!";
+    
+    // Const expressions to initialize consts
+    const word CONST_EXPRESSION = LOCAL_BYTE + 2;
+    const word CONST_EXPRESSION2 = LOCAL_WORD - 0xA0;
+
+    // Const expressions to initialize size of arrays
+    byte[SIZE] byteArray; // Using global const SIZE
+    byte[CONST_EXPRESSION] anotherByteArray; // Using const expression
+
+    // Display global consts
+    writeString("Testing global consts:\n");
+    writeChar('G'); writeChar('B'); writeChar('=');
+    writeWord(GLOBAL_BYTE);
+    writeChar('\n');
+    writeChar('G'); writeChar('W'); writeChar('=');
+    writeWord(GLOBAL_WORD);
+    writeChar('\n');
+    writeString(GLOBAL_MESSAGE);
+    writeChar('\n');
+
+    // Display local consts
+    writeString("Testing local consts:\n");
+    writeChar('L'); writeChar('B'); writeChar('=');
+    writeWord(LOCAL_BYTE);
+    writeChar('\n');
+    writeChar('L'); writeChar('W'); writeChar('=');
+    writeWord(LOCAL_WORD);
+    writeChar('\n');
+    writeString(LOCAL_MESSAGE);
+    writeChar('\n');
+    
+    // Display const expressions
+    writeString("Testing const expressions:\n");
+    writeChar('C'); writeChar('E'); writeChar('=');
+    writeWord(CONST_EXPRESSION);
+    writeChar('\n');
+    writeChar('C'); writeChar('E'); writeChar('2'); writeChar('=');
+    writeWord(CONST_EXPRESSION2);
+    writeChar('\n');
+
+    // Display array sizes
+    writeString("Testing array sizes:\n");
+    writeChar('S'); writeChar('I'); writeChar('Z'); writeChar('E'); writeChar('=');
+    writeWord(SIZE);
+    writeChar('\n');
+    writeChar('C'); writeChar('E'); writeChar('='); writeWord(CONST_EXPRESSION);
+    writeChar('\n');
+
+    // Test function with const string parameter
+    writeString("Testing function with const string:\n");
+    writeTestString(GLOBAL_MESSAGE);
+    writeChar('\n');
+    writeTestString(LOCAL_MESSAGE);
+    writeChar('\n');
+}

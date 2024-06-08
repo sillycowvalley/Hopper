@@ -103,6 +103,8 @@ unit TinyCompile
         
         TinyScanner.Advance(); // Skip '='
         
+        constantType = "const " + constantType;
+        
         string expressionType;
         string value;
         if (!TinyConstant.parseConstantExpression(ref value, ref expressionType))

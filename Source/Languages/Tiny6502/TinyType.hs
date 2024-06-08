@@ -2,6 +2,16 @@ unit TinyType
 {
     bool IsTypeCompatible(string expectedType, string actualType)
     {
+        if (expectedType.StartsWith("const ") && !actualType.StartsWith("const "))
+        {
+            expectedType = expectedType.Substring(6); // non-const -> const
+        }
+        if (expectedType.StartsWith("const ") && actualType.StartsWith("const "))
+        {
+            expectedType = expectedType.Substring(6); // const -> const
+            actualType   = actualType.Substring(6);
+        }
+        
         // Check for exact match
         if (expectedType == actualType)
         {

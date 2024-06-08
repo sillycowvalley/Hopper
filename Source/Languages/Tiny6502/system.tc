@@ -8,15 +8,18 @@ func writeChar(char c); // System function to write a single character
 
 func writeString(const char[] str) {
     // Function to write a null-terminated string to the serial output using writeChar
+    /*
     byte i = 0;
     while (str[i] != 0) {
         writeChar(str[i]);
         i++;
     }
+    */
 }
 
 func writeWord(word num) {
     // Function to write a word as a string to the serial output buffer using writeChar
+    /*
     if (num == 0) {
         writeChar('0');
         return;
@@ -34,6 +37,7 @@ func writeWord(word num) {
     while (i > 0) {
         writeChar(digits[--i]);
     }
+    */
 }
 
 // EEPROM
