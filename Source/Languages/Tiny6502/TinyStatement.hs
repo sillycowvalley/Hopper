@@ -175,7 +175,15 @@ unit TinyStatement
         }
         
         TinyScanner.Advance(); // Skip '('
-        if (!parseExpressionStatement())
+        token = TinyScanner.Current();
+        if (TinyToken.IsTypeKeyword(token.Type))
+        {
+            if (!parseLocalVarDeclaration())
+            {
+                return false;
+            }
+        }
+        else if (!parseExpressionStatement())
         {
             return false;
         }

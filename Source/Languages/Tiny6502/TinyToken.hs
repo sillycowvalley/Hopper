@@ -70,6 +70,27 @@ unit TinyToken
         return false;
     }
     
+    bool IsTypeKeyword(TokenType tp)
+    {
+        switch (tp)
+        {
+            case TokenType.KW_BYTE:
+            case TokenType.KW_WORD:
+            case TokenType.KW_CHAR:
+            case TokenType.KW_BOOL:
+            case TokenType.KW_INT:
+            case TokenType.KW_UINT:
+            {
+                return true;
+            }
+            default:
+            {
+                return false;
+            }
+        }
+        return false; // Unreachable but required by Hopper
+    }
+    
     // ToString method for TokenType enum
     string ToString(TokenType tp)
     {
