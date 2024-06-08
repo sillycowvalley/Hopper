@@ -5,6 +5,11 @@ unit TinyType
         typeName = typeName.Replace("const ", "");
         return ("|byte|word|uint|int|+int|").Contains(typeName);
     }
+    bool IsBoolableType(string typeName)
+    {
+        typeName = typeName.Replace("const ", "");
+        return ("|byte|word|uint|int|+int|bool|").Contains(typeName);
+    }
     
     bool IsAutomaticCast(string expectedType, string actualType)
     {
