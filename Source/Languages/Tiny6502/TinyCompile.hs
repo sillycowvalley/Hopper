@@ -7,6 +7,7 @@ unit TinyCompile
     uses "TinyCode"
     uses "TinyStatement"
     uses "TinyExpression"
+    uses "TinyConstant"
     
     bool Compile()
     {
@@ -286,7 +287,7 @@ unit TinyCompile
     
         if (token.Type == TokenType.KW_CONST)
         {
-            TinyScanner.Advance(); // Skip 'const': TODO
+            TinyScanner.Advance(); // Skip 'const'
             token = TinyScanner.Current();
         }
     
@@ -304,10 +305,16 @@ unit TinyCompile
         {
             TinyScanner.Advance(); // Skip '['
             token = TinyScanner.Current();
-            if (token.Type == TokenType.LIT_NUMBER)
+            
+            // Check for constant expression for array size
+            if (token.Type != TokenType.SYM_RBRACKET)
             {
-                tp += "[" + token.Lexeme + "]";
-                TinyScanner.Advance(); // Skip number
+                string sizeExpr = "";
+                if (!TinyConstant.parseConstantExpression(ref sizeExpr))
+                {
+                    return false;
+                }
+                tp += "[" + sizeExpr + "]";
             }
             else
             {
@@ -325,4 +332,3 @@ unit TinyCompile
         return true;
     }
 }
-

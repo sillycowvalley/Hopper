@@ -28,7 +28,7 @@ unit TinyExpression
                 return false;
             }
         }
-        else if (isCompoundAssignmentOperator(token.Type))
+        else if (TinyToken.IsCompoundAssignmentOperator(token.Type))
         {
             TinyScanner.Advance(); // Skip compound assignment operator
     
@@ -49,7 +49,7 @@ unit TinyExpression
         }
         
         Token token = TinyScanner.Current();
-        while (isBinaryOperator(token.Type))
+        while (TinyToken.IsBinaryOperator(token.Type))
         {
             TinyScanner.Advance(); // Skip operator
             if (!parseUnaryExpression())
@@ -192,53 +192,5 @@ unit TinyExpression
         }
         return true; // success
     }
-    
-    bool isBinaryOperator(TokenType tp)
-    {
-        switch (tp)
-        {
-            case TokenType.SYM_PLUS:
-            case TokenType.SYM_MINUS:
-            case TokenType.SYM_STAR:
-            case TokenType.SYM_SLASH:
-            case TokenType.SYM_PERCENT:
-            case TokenType.SYM_AMP:
-            case TokenType.SYM_PIPE:
-            case TokenType.SYM_CARET:
-            case TokenType.SYM_EQEQ:
-            case TokenType.SYM_NEQ:
-            case TokenType.SYM_LT:
-            case TokenType.SYM_LTE:
-            case TokenType.SYM_GT:
-            case TokenType.SYM_GTE:
-            {
-                return true;
-            }
-            default:
-            {
-                return false;
-            }
-        }
-        return false; // unreachable but required by Hopper
-    }
-    
-    bool isCompoundAssignmentOperator(TokenType tp)
-    {
-        switch (tp)
-        {
-            case TokenType.SYM_PLUSEQ:
-            case TokenType.SYM_MINUSEQ:
-            case TokenType.SYM_STAREQ:
-            case TokenType.SYM_SLASHEQ:
-            {
-                return true;
-            }
-            default:
-            {
-                return false;
-            }
-        }
-        return false; // unreachable but required by Hopper
-    }
 }
-
+    

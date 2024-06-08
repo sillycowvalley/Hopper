@@ -91,6 +91,55 @@ unit TinyToken
         return false; // Unreachable but required by Hopper
     }
     
+    
+    bool IsBinaryOperator(TokenType tp)
+    {
+        switch (tp)
+        {
+            case TokenType.SYM_PLUS:
+            case TokenType.SYM_MINUS:
+            case TokenType.SYM_STAR:
+            case TokenType.SYM_SLASH:
+            case TokenType.SYM_PERCENT:
+            case TokenType.SYM_AMP:
+            case TokenType.SYM_PIPE:
+            case TokenType.SYM_CARET:
+            case TokenType.SYM_EQEQ:
+            case TokenType.SYM_NEQ:
+            case TokenType.SYM_LT:
+            case TokenType.SYM_LTE:
+            case TokenType.SYM_GT:
+            case TokenType.SYM_GTE:
+            {
+                return true;
+            }
+            default:
+            {
+                return false;
+            }
+        }
+        return false; // unreachable but required by Hopper
+    }
+    
+    bool IsCompoundAssignmentOperator(TokenType tp)
+    {
+        switch (tp)
+        {
+            case TokenType.SYM_PLUSEQ:
+            case TokenType.SYM_MINUSEQ:
+            case TokenType.SYM_STAREQ:
+            case TokenType.SYM_SLASHEQ:
+            {
+                return true;
+            }
+            default:
+            {
+                return false;
+            }
+        }
+        return false; // unreachable but required by Hopper
+    }
+    
     // ToString method for TokenType enum
     string ToString(TokenType tp)
     {
