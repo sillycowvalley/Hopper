@@ -1,73 +1,119 @@
 #include "../system.tc"
 
-// Global const declarations
-const byte GLOBAL_BYTE = 42;
-const word GLOBAL_WORD = 0x1234;
-const char[] GLOBAL_MESSAGE = "Global Hello, 6502!";
-const word SIZE = 5;
+// Define constants for testing
+const byte CONST_BYTE = 10;
+const word CONST_WORD = 1000;
+const int CONST_INT = -50;
+const char CONST_CHAR = 'A';
+const bool CONST_BOOL_TRUE = true;
+const bool CONST_BOOL_FALSE = false;
 
-// Test function to write a string to serial output
-func writeTestString(const char[] str) {
-    writeString(str);
+func testConstExpressions() {
+    // Test arithmetic operations
+    const byte ARITH_BYTE = CONST_BYTE + 5;
+    const word ARITH_WORD = CONST_WORD - 500;
+    const int ARITH_INT = CONST_INT * -2;
+    const word ARITH_DIV = CONST_WORD / 2;
+    const byte ARITH_MOD = CONST_BYTE % 3;
+    
+    // Test bitwise operations
+    const byte BITWISE_AND = CONST_BYTE & 7;
+    const byte BITWISE_OR = CONST_BYTE | 3;
+    const byte BITWISE_XOR = CONST_BYTE ^ 2;
+    const word BITWISE_LSHIFT = CONST_WORD << 2;
+    const word BITWISE_RSHIFT = CONST_WORD >> 3;
+    
+    // Test comparison operations
+    const bool COMP_LT = CONST_BYTE < CONST_WORD;
+    const bool COMP_LTE = CONST_BYTE <= CONST_WORD;
+    const bool COMP_GT = CONST_WORD > CONST_INT;
+    const bool COMP_GTE = CONST_WORD >= CONST_INT;
+    const bool COMP_EQ = CONST_BYTE == 10;
+    const bool COMP_NEQ = CONST_BYTE != 5;
+
+    // Test boolean operations
+    const bool BOOL_AND = CONST_BOOL_TRUE && CONST_BOOL_FALSE;
+    const bool BOOL_OR = CONST_BOOL_TRUE || CONST_BOOL_FALSE;
+    const bool BOOL_NOT = !CONST_BOOL_TRUE;
+
+    // Output results for verification
+    writeString("ARITH_BYTE = ");
+    writeWord(ARITH_BYTE);
+    writeString("\n");
+
+    writeString("ARITH_WORD = ");
+    writeWord(ARITH_WORD);
+    writeString("\n");
+
+    writeString("ARITH_INT = ");
+    writeWord(ARITH_INT);
+    writeString("\n");
+
+    writeString("ARITH_DIV = ");
+    writeWord(ARITH_DIV);
+    writeString("\n");
+
+    writeString("ARITH_MOD = ");
+    writeWord(ARITH_MOD);
+    writeString("\n");
+
+    writeString("BITWISE_AND = ");
+    writeWord(BITWISE_AND);
+    writeString("\n");
+
+    writeString("BITWISE_OR = ");
+    writeWord(BITWISE_OR);
+    writeString("\n");
+
+    writeString("BITWISE_XOR = ");
+    writeWord(BITWISE_XOR);
+    writeString("\n");
+
+    writeString("BITWISE_LSHIFT = ");
+    writeWord(BITWISE_LSHIFT);
+    writeString("\n");
+
+    writeString("BITWISE_RSHIFT = ");
+    writeWord(BITWISE_RSHIFT);
+    writeString("\n");
+
+    writeString("COMP_LT = ");
+    writeWord(COMP_LT);
+    writeString("\n");
+
+    writeString("COMP_LTE = ");
+    writeWord(COMP_LTE);
+    writeString("\n");
+
+    writeString("COMP_GT = ");
+    writeWord(COMP_GT);
+    writeString("\n");
+
+    writeString("COMP_GTE = ");
+    writeWord(COMP_GTE);
+    writeString("\n");
+
+    writeString("COMP_EQ = ");
+    writeWord(COMP_EQ);
+    writeString("\n");
+
+    writeString("COMP_NEQ = ");
+    writeWord(COMP_NEQ);
+    writeString("\n");
+
+    writeString("BOOL_AND = ");
+    writeWord(BOOL_AND);
+    writeString("\n");
+
+    writeString("BOOL_OR = ");
+    writeWord(BOOL_OR);
+    writeString("\n");
+
+    writeString("BOOL_NOT = ");
+    writeWord(BOOL_NOT);
+    writeString("\n");
 }
 
 func main() {
-    // Local const declarations
-    const byte LOCAL_BYTE = 10;
-    const word LOCAL_WORD = 0xABCD;
-    const char[] LOCAL_MESSAGE = "Local Hello, 6502!";
-    
-    // Const expressions to initialize consts
-    const word CONST_EXPRESSION = LOCAL_BYTE + 2;
-    const word CONST_EXPRESSION2 = LOCAL_WORD - 0xA0;
-
-    // Const expressions to initialize size of arrays
-    byte[SIZE] byteArray; // Using global const SIZE
-    byte[CONST_EXPRESSION] anotherByteArray; // Using const expression
-
-    // Display global consts
-    writeString("Testing global consts:\n");
-    writeChar('G'); writeChar('B'); writeChar('=');
-    writeWord(GLOBAL_BYTE);
-    writeChar('\n');
-    writeChar('G'); writeChar('W'); writeChar('=');
-    writeWord(GLOBAL_WORD);
-    writeChar('\n');
-    writeString(GLOBAL_MESSAGE);
-    writeChar('\n');
-
-    // Display local consts
-    writeString("Testing local consts:\n");
-    writeChar('L'); writeChar('B'); writeChar('=');
-    writeWord(LOCAL_BYTE);
-    writeChar('\n');
-    writeChar('L'); writeChar('W'); writeChar('=');
-    writeWord(LOCAL_WORD);
-    writeChar('\n');
-    writeString(LOCAL_MESSAGE);
-    writeChar('\n');
-    
-    // Display const expressions
-    writeString("Testing const expressions:\n");
-    writeChar('C'); writeChar('E'); writeChar('=');
-    writeWord(CONST_EXPRESSION);
-    writeChar('\n');
-    writeChar('C'); writeChar('E'); writeChar('2'); writeChar('=');
-    writeWord(CONST_EXPRESSION2);
-    writeChar('\n');
-
-    // Display array sizes
-    writeString("Testing array sizes:\n");
-    writeChar('S'); writeChar('I'); writeChar('Z'); writeChar('E'); writeChar('=');
-    writeWord(SIZE);
-    writeChar('\n');
-    writeChar('C'); writeChar('E'); writeChar('='); writeWord(CONST_EXPRESSION);
-    writeChar('\n');
-
-    // Test function with const string parameter
-    writeString("Testing function with const string:\n");
-    writeTestString(GLOBAL_MESSAGE);
-    writeChar('\n');
-    writeTestString(LOCAL_MESSAGE);
-    writeChar('\n');
+    testConstExpressions();
 }

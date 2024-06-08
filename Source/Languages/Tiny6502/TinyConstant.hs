@@ -164,6 +164,14 @@ unit TinyConstant
             {
                 result = left ^ right;
             }
+            case "<<":
+            {
+                result = left << right;
+            }
+            case ">>":
+            {
+                result = left >> right;
+            }
             default:
             {
                 Error(token.SourcePath, token.Line, "unsupported bitwise operator in constant expression");
@@ -306,6 +314,18 @@ unit TinyConstant
         {
             value = token.Lexeme;
             actualType = "char";
+            TinyScanner.Advance(); // Skip char literal
+        }
+        else if (token.Type == TokenType.KW_TRUE)
+        {
+            value = "1";
+            actualType = "bool";
+            TinyScanner.Advance(); // Skip char literal
+        }
+        else if (token.Type == TokenType.KW_FALSE)
+        {
+            value = "0";
+            actualType = "bool";
             TinyScanner.Advance(); // Skip char literal
         }
         else
