@@ -8,6 +8,9 @@ unit TinyCompile
     uses "TinyStatement"
     uses "TinyExpression"
     uses "TinyConstant"
+    uses "TinyType"
+    
+    
     
     bool Compile()
     {
@@ -139,7 +142,8 @@ unit TinyCompile
         {
             TinyScanner.Advance(); // Skip '='
     
-            if (!TinyExpression.parseExpression())
+            string exprType;
+            if (!TinyExpression.parseExpression(ref exprType))
             {
                 return false;
             }
@@ -188,7 +192,9 @@ unit TinyCompile
         {
             // Handle function pointer assignment
             TinyScanner.Advance(); // Skip '='
-            if (!TinyExpression.parseExpression())
+            
+            string exprType;
+            if (!TinyExpression.parseExpression(ref exprType))
             {
                 return false;
             }
@@ -302,17 +308,22 @@ unit TinyCompile
     
         if (token.Type == TokenType.KW_CONST)
         {
+            tp = "const ";
             TinyScanner.Advance(); // Skip 'const'
             token = TinyScanner.Current();
+        }
+        else
+        {
+            tp = "";
         }
     
         if (!TinyToken.IsTypeKeyword(token.Type))
         {
-            Error(token.SourcePath, token.Line, "expected type, ('" + token.Lexeme + "')");
+            Error(token.SourcePath, token.Line, "expected type");
             return false;
         }
     
-        tp = token.Lexeme;
+        tp += token.Lexeme;
         TinyScanner.Advance(); // Skip type
     
         token = TinyScanner.Current();
@@ -320,11 +331,11 @@ unit TinyCompile
         {
             TinyScanner.Advance(); // Skip '['
             token = TinyScanner.Current();
-            
-            // Check for constant expression for array size
+    
+            // Check for number or identifier (constant)
             if (token.Type != TokenType.SYM_RBRACKET)
             {
-                string sizeExpr = "";
+                string sizeExpr;
                 if (!TinyConstant.parseConstantExpression(ref sizeExpr))
                 {
                     return false;

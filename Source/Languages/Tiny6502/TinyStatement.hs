@@ -18,7 +18,8 @@ unit TinyStatement
         }
         
         TinyScanner.Advance(); // Skip '('
-        if (!TinyExpression.parseExpression())
+        string booleanType;
+        if (!TinyExpression.parseExpression(ref booleanType))
         {
             return false;
         }
@@ -61,7 +62,8 @@ unit TinyStatement
         }
         
         TinyScanner.Advance(); // Skip '('
-        if (!TinyExpression.parseExpression())
+        string booleanType;
+        if (!TinyExpression.parseExpression(ref booleanType))
         {
             return false;
         }
@@ -92,6 +94,7 @@ unit TinyStatement
             return false;
         }
         
+        // for initialize clause
         TinyScanner.Advance(); // Skip '('
         token = TinyScanner.Current();
         if (TinyToken.IsTypeKeyword(token.Type))
@@ -106,7 +109,9 @@ unit TinyStatement
             return false;
         }
         
-        if (!TinyExpression.parseExpression())
+        // for condition clause
+        string booleanType;
+        if (!TinyExpression.parseExpression(ref booleanType))
         {
             return false;
         }
@@ -118,8 +123,10 @@ unit TinyStatement
             return false;
         }
         
+        // for increment clause
+        string incrementType;
         TinyScanner.Advance(); // Skip ';'
-        if (!TinyExpression.parseExpression())
+        if (!TinyExpression.parseExpression(ref incrementType))
         {
             return false;
         }
@@ -147,7 +154,8 @@ unit TinyStatement
         // Check for empty return statement
         if (token.Type != TokenType.SYM_SEMICOLON)
         {
-            if (!TinyExpression.parseExpression())
+            string actualType;
+            if (!TinyExpression.parseExpression(ref actualType))
             {
                 return false;
             }
@@ -244,8 +252,15 @@ unit TinyStatement
             }
             else
             {
-                if (!TinyExpression.parseExpression())
+                string exprType;
+                if (!TinyExpression.parseExpression(ref exprType))
                 {
+                    return false;
+                }
+                
+                if (!IsTypeCompatible(tp, exprType))
+                {
+                    Error(token.SourcePath, token.Line, "type mismatch: expected '" + tp + "', got '" + exprType + "'");
                     return false;
                 }
     
@@ -255,7 +270,7 @@ unit TinyStatement
                     Error(token.SourcePath, token.Line, "expected ';' after variable assignment, ('" + token.Lexeme + "')");
                     return false;
                 }
-               
+               
                 //TinyCode.DefineLocalVar(tp, name); // TODO: Implement in TinyCode
             }
         }
@@ -306,7 +321,8 @@ unit TinyStatement
     
         TinyScanner.Advance(); // Skip '='
     
-        if (!TinyExpression.parseExpression())
+        string rhsType;
+        if (!TinyExpression.parseExpression(ref rhsType))
         {
             return false;
         }
@@ -374,7 +390,8 @@ unit TinyStatement
     
     bool parseExpressionStatement()
     {
-        if (!TinyExpression.parseExpression())
+        string actualType;
+        if (!TinyExpression.parseExpression(ref actualType))
         {
             return false;
         }
@@ -529,7 +546,9 @@ unit TinyStatement
         }
         
         TinyScanner.Advance(); // Skip '('
-        if (!TinyExpression.parseExpression())
+        
+        string switchType;
+        if (!TinyExpression.parseExpression(ref switchType))
         {
             return false;
         }
@@ -560,7 +579,7 @@ unit TinyStatement
             
             if (token.Type == TokenType.KW_CASE)
             {
-                if (!parseCaseStatement())
+                if (!parseCaseStatement(switchType))
                 {
                     return false;
                 }
@@ -582,10 +601,12 @@ unit TinyStatement
         return true;
     }
 
-    bool parseCaseStatement()
+    bool parseCaseStatement(string switchType)
     {
         TinyScanner.Advance(); // Skip 'case'
-        if (!TinyExpression.parseExpression())
+        
+        string caseType;
+        if (!TinyExpression.parseExpression(ref caseType))
         {
             return false;
         }

@@ -6,44 +6,41 @@ unit TinyExpression
     uses "TinyScanner"
     uses "TinyCode"
     
-    bool parseExpression()
+    bool parseExpression(ref string actualType)
     {
-        return parseAssignmentExpression();
+        return parseAssignmentExpression(ref actualType);
     }
     
-    bool parseAssignmentExpression()
+    bool parseAssignmentExpression(ref string actualType)
     {
-        if (!parseBinaryExpression())
+        if (!parseBinaryExpression(ref actualType))
         {
             return false;
         }
     
         Token token = TinyScanner.Current();
-        if (token.Type == TokenType.SYM_EQ)
+        if ((token.Type == TokenType.SYM_EQ) || IsCompoundAssignmentOperator(token.Type))
         {
-            TinyScanner.Advance(); // Skip '='
+            TinyScanner.Advance(); // Skip '=' or compound assignment operator
     
-            if (!parseExpression())
+            string rhsType;
+            if (!parseExpression(ref rhsType))
             {
                 return false;
             }
-        }
-        else if (TinyToken.IsCompoundAssignmentOperator(token.Type))
-        {
-            TinyScanner.Advance(); // Skip compound assignment operator
-    
-            if (!parseExpression())
+            
+            if (!IsTypeCompatible(actualType, rhsType))
             {
+                TypeError(actualType, rhsType);
                 return false;
             }
         }
-    
         return true;
     }
     
-    bool parseBinaryExpression()
+    bool parseBinaryExpression(ref string actualType)
     {
-        if (!parseUnaryExpression())
+        if (!parseUnaryExpression(ref actualType))
         {
             return false;
         }
@@ -52,8 +49,14 @@ unit TinyExpression
         while (TinyToken.IsBinaryOperator(token.Type))
         {
             TinyScanner.Advance(); // Skip operator
-            if (!parseUnaryExpression())
+            string rhsType;
+            if (!parseUnaryExpression(ref rhsType))
             {
+                return false;
+            }
+            if (!IsTypeCompatible(actualType, rhsType))
+            {
+                TypeError(actualType, rhsType);
                 return false;
             }
             token = TinyScanner.Current();
@@ -61,20 +64,20 @@ unit TinyExpression
         return true;
     }
     
-    bool parseUnaryExpression()
+    bool parseUnaryExpression(ref string actualType)
     {
         Token token = TinyScanner.Current();
         if ((token.Type == TokenType.SYM_MINUS) || (token.Type == TokenType.SYM_BANG) || (token.Type == TokenType.SYM_TILDE))
         {
             TinyScanner.Advance(); // Skip unary operator
-            if (!parsePrimaryExpression())
+            if (!parsePrimaryExpression(ref actualType))
             {
                 return false;
             }
         }
         else
         {
-            if (!parsePrimaryExpression())
+            if (!parsePrimaryExpression(ref actualType))
             {
                 return false;
             }
@@ -83,7 +86,7 @@ unit TinyExpression
     }
     
     
-    bool parsePrimaryExpression()
+    bool parsePrimaryExpression(ref string actualType)
     {
         Token token = TinyScanner.Current();
         if (token.Type == TokenType.IDENTIFIER)
@@ -108,7 +111,7 @@ unit TinyExpression
             else if (token.Type == TokenType.SYM_LBRACKET)
             {
                 TinyScanner.Advance(); // Skip '['
-                if (!parseExpression())
+                if (!parseExpression(ref actualType))
                 {
                     return false;
                 }
@@ -155,7 +158,7 @@ unit TinyExpression
         else if (token.Type == TokenType.SYM_LPAREN)
         {
             TinyScanner.Advance(); // Skip '('
-            if (!parseExpression())
+            if (!parseExpression(ref actualType))
             {
                 return false;
             }
@@ -200,7 +203,8 @@ unit TinyExpression
             {
                 break; // exit the loop when reaching ')'
             }
-            if (!parseExpression())
+            string argType;
+            if (!parseExpression(ref argType))
             {
                 return false;
             }
