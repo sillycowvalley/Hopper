@@ -151,9 +151,44 @@ unit TinyScanner
     Token tokenizeNumber()
     {
         uint start = lineIndex;
-        while ((lineIndex < currentLineContent.Length) && Char.IsDigit(currentLineContent[lineIndex]))
+        bool isHex = false;
+        bool isBinary = false;
+
+        if ((currentLineContent[start] == '0') && (start + 1 < currentLineContent.Length))
         {
-            lineIndex++;
+            char nextChar = currentLineContent[start + 1];
+            if ((nextChar == 'x') || (nextChar == 'X'))
+            {
+                isHex = true;
+                lineIndex += 2; // Skip '0x'
+            }
+            else if ((nextChar == 'b') || (nextChar == 'B'))
+            {
+                isBinary = true;
+                lineIndex += 2; // Skip '0b'
+            }
+        }
+
+        if (isHex)
+        {
+            while ((lineIndex < currentLineContent.Length) && Char.IsHexDigit(currentLineContent[lineIndex]))
+            {
+                lineIndex++;
+            }
+        }
+        else if (isBinary)
+        {
+            while ((lineIndex < currentLineContent.Length) && ((currentLineContent[lineIndex] == '0') || (currentLineContent[lineIndex] == '1')))
+            {
+                lineIndex++;
+            }
+        }
+        else
+        {
+            while ((lineIndex < currentLineContent.Length) && Char.IsDigit(currentLineContent[lineIndex]))
+            {
+                lineIndex++;
+            }
         }
         
         string lexeme = currentLineContent.Substring(start, lineIndex - start);
@@ -211,16 +246,16 @@ unit TinyScanner
         
         switch (c)
         {
-            case '(': { return createToken(TokenType.SYM_LPAREN, "("); }
-            case ')': { return createToken(TokenType.SYM_RPAREN, ")"); }
-            case '{': { return createToken(TokenType.SYM_LBRACE, "{"); }
-            case '}': { return createToken(TokenType.SYM_RBRACE, "}"); }
-            case '[': { return createToken(TokenType.SYM_LBRACKET, "["); }
-            case ']': { return createToken(TokenType.SYM_RBRACKET, "]"); }
-            case ';': { return createToken(TokenType.SYM_SEMICOLON, ";"); }
-            case ':': { return createToken(TokenType.SYM_COLON, ":"); }
+            case '(': { return createToken(TokenType.SYM_LPAREN, "(");}
+            case ')': { return createToken(TokenType.SYM_RPAREN, ")");}
+            case '{': { return createToken(TokenType.SYM_LBRACE, "{");}
+            case '}': { return createToken(TokenType.SYM_RBRACE, "}");}
+            case '[': { return createToken(TokenType.SYM_LBRACKET, "[");}
+            case ']': { return createToken(TokenType.SYM_RBRACKET, "]");}
+            case ';': { return createToken(TokenType.SYM_SEMICOLON, ";");}
+            case ':': { return createToken(TokenType.SYM_COLON, ":");}
             case ',': { return createToken(TokenType.SYM_COMMA, ","); }
-            case '.': { return createToken(TokenType.SYM_DOT, "."); }
+            case '.': { return createToken(TokenType.SYM_DOT, ".");}
             case '+':
             {
                 if ((lineIndex < currentLineContent.Length) && (currentLineContent[lineIndex] == '+'))
@@ -269,11 +304,6 @@ unit TinyScanner
             }
             case '%':
             {
-                if ((lineIndex < currentLineContent.Length) && (currentLineContent[lineIndex] == '='))
-                {
-                    lineIndex++;
-                    return createToken(TokenType.SYM_PERCENTEQ, "%=");
-                }
                 return createToken(TokenType.SYM_PERCENT, "%");
             }
             case '&':
