@@ -6,88 +6,6 @@ unit TinyStatement
     uses "TinyCode"
     uses "TinyExpression"
     
-    bool parseStatement()
-    {
-        Token token = TinyScanner.Current();
-        switch (token.Type)
-        {
-            case TokenType.KW_IF:
-            {
-                if (!parseIfStatement())
-                {
-                    return false;
-                }
-            }
-            case TokenType.KW_WHILE:
-            {
-                if (!parseWhileStatement())
-                {
-                    return false;
-                }
-            }
-            case TokenType.KW_FOR:
-            {
-                if (!parseForStatement())
-                {
-                    return false;
-                }
-            }
-            case TokenType.KW_RETURN:
-            {
-                if (!parseReturnStatement())
-                {
-                    return false;
-                }
-            }
-            case TokenType.KW_BREAK:
-            {
-                if (!parseBreakStatement())
-                {
-                    return false;
-                }
-            }
-            case TokenType.KW_CONTINUE:
-            {
-                if (!parseContinueStatement())
-                {
-                    return false;
-                }
-            }
-            case TokenType.KW_BYTE:
-            case TokenType.KW_WORD:
-            case TokenType.KW_CHAR:
-            case TokenType.KW_BOOL:
-            case TokenType.KW_INT:
-            case TokenType.KW_UINT:
-            {
-                if (!parseLocalVarDeclaration())
-                {
-                    return false;
-                }
-            }
-            case TokenType.KW_CONST:
-            {
-                if (!parseLocalConstDeclaration())
-                {
-                    return false;
-                }
-            }
-            case TokenType.IDENTIFIER:
-            {
-                if (!parseExpressionStatement())
-                {
-                    return false;
-                }
-            }
-            default:
-            {
-                Error(token.SourcePath, token.Line, "unexpected token in statement: " + TinyToken.ToString(token.Type));
-                return false;
-            }
-        }
-        return true;
-    }
-    
     bool parseIfStatement()
     {
         TinyScanner.Advance(); // Skip 'if'
@@ -438,7 +356,7 @@ unit TinyStatement
         Token token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_LBRACE)
         {
-            Error(token.SourcePath, token.Line, "expected '{' to start block");
+            Error(token.SourcePath, token.Line, "expected '{' to start block, ('" + token.Lexeme + "')");
             return false;
         }
         
@@ -479,6 +397,193 @@ unit TinyStatement
                 return false;
             }
         }
+        return true;
+    }
+
+    bool parseStatement()
+    {
+        Token token = TinyScanner.Current();
+        switch (token.Type)
+        {
+            case TokenType.KW_IF:
+            {
+                if (!parseIfStatement())
+                {
+                    return false;
+                }
+            }
+            case TokenType.KW_WHILE:
+            {
+                if (!parseWhileStatement())
+                {
+                    return false;
+                }
+            }
+            case TokenType.KW_FOR:
+            {
+                if (!parseForStatement())
+                {
+                    return false;
+                }
+            }
+            case TokenType.KW_RETURN:
+            {
+                if (!parseReturnStatement())
+                {
+                    return false;
+                }
+            }
+            case TokenType.KW_BREAK:
+            {
+                if (!parseBreakStatement())
+                {
+                    return false;
+                }
+            }
+            case TokenType.KW_CONTINUE:
+            {
+                if (!parseContinueStatement())
+                {
+                    return false;
+                }
+            }
+            case TokenType.KW_SWITCH:
+            {
+                if (!parseSwitchStatement())
+                {
+                    return false;
+                }
+            }
+            case TokenType.KW_BYTE:
+            case TokenType.KW_WORD:
+            case TokenType.KW_CHAR:
+            case TokenType.KW_BOOL:
+            case TokenType.KW_INT:
+            case TokenType.KW_UINT:
+            {
+                if (!parseLocalVarDeclaration())
+                {
+                    return false;
+                }
+            }
+            case TokenType.KW_CONST:
+            {
+                if (!parseLocalConstDeclaration())
+                {
+                    return false;
+                }
+            }
+            case TokenType.IDENTIFIER:
+            {
+                if (!parseExpressionStatement())
+                {
+                    return false;
+                }
+            }
+            default:
+            {
+                Error(token.SourcePath, token.Line, "unexpected token in statement: " + TinyToken.ToString(token.Type));
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool parseSwitchStatement()
+    {
+        TinyScanner.Advance(); // Skip 'switch'
+        Token token = TinyScanner.Current();
+        
+        if (token.Type != TokenType.SYM_LPAREN)
+        {
+            Error(token.SourcePath, token.Line, "expected '(' after 'switch', ('" + token.Lexeme + "')");
+            return false;
+        }
+        
+        TinyScanner.Advance(); // Skip '('
+        if (!TinyExpression.parseExpression())
+        {
+            return false;
+        }
+        
+        token = TinyScanner.Current();
+        if (token.Type != TokenType.SYM_RPAREN)
+        {
+            Error(token.SourcePath, token.Line, "expected ')' after switch expression, ('" + token.Lexeme + "')");
+            return false;
+        }
+        
+        TinyScanner.Advance(); // Skip ')'
+        token = TinyScanner.Current();
+        if (token.Type != TokenType.SYM_LBRACE)
+        {
+            Error(token.SourcePath, token.Line, "expected '{' to start switch block, ('" + token.Lexeme + "')");
+            return false;
+        }
+        
+        TinyScanner.Advance(); // Skip '{'
+        loop
+        {
+            token = TinyScanner.Current();
+            if (token.Type == TokenType.SYM_RBRACE)
+            {
+                break; // exit the loop when reaching '}'
+            }
+            
+            if (token.Type == TokenType.KW_CASE)
+            {
+                if (!parseCaseStatement())
+                {
+                    return false;
+                }
+            }
+            else if (token.Type == TokenType.KW_DEFAULT)
+            {
+                if (!parseDefaultStatement())
+                {
+                    return false;
+                }
+            }
+            else if (!parseStatement())
+            {
+                return false;
+            }
+        }
+        
+        TinyScanner.Advance(); // Skip '}'
+        return true;
+    }
+
+    bool parseCaseStatement()
+    {
+        TinyScanner.Advance(); // Skip 'case'
+        if (!TinyExpression.parseExpression())
+        {
+            return false;
+        }
+        
+        Token token = TinyScanner.Current();
+        if (token.Type != TokenType.SYM_COLON)
+        {
+            Error(token.SourcePath, token.Line, "expected ':' after case value, ('" + token.Lexeme + "')");
+            return false;
+        }
+        
+        TinyScanner.Advance(); // Skip ':'
+        return true;
+    }
+
+    bool parseDefaultStatement()
+    {
+        TinyScanner.Advance(); // Skip 'default'
+        Token token = TinyScanner.Current();
+        if (token.Type != TokenType.SYM_COLON)
+        {
+            Error(token.SourcePath, token.Line, "expected ':' after default, ('" + token.Lexeme + "')");
+            return false;
+        }
+        
+        TinyScanner.Advance(); // Skip ':'
         return true;
     }
 }

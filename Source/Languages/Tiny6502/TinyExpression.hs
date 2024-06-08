@@ -114,7 +114,7 @@ unit TinyExpression
                 token = TinyScanner.Current();
                 if (token.Type != TokenType.SYM_RBRACKET)
                 {
-                    Error(token.SourcePath, token.Line, "expected ']' after array index");
+                    Error(token.SourcePath, token.Line, "expected ']' after array index, ('" + token.Lexeme + "')");
                     return false;
                 }
                 TinyScanner.Advance(); // Skip ']'
@@ -138,7 +138,7 @@ unit TinyExpression
                 return false;
             }
         }
-        else if ((token.Type == TokenType.LIT_NUMBER) || (token.Type == TokenType.LIT_STRING) || (token.Type == TokenType.LIT_CHAR) || (token.Type == TokenType.KW_TRUE) || (token.Type == TokenType.KW_FALSE))
+        else if ((token.Type == TokenType.LIT_NUMBER) || (token.Type == TokenType.LIT_STRING) || (token.Type == TokenType.LIT_CHAR) || (token.Type == TokenType.KW_TRUE) || (token.Type == TokenType.KW_FALSE) || (token.Type == TokenType.KW_NULL))
         {
             TinyScanner.Advance(); // Skip literal or boolean literal
         }

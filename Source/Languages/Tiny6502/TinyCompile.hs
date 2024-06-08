@@ -317,7 +317,7 @@ unit TinyCompile
             token = TinyScanner.Current();
             if (token.Type != TokenType.SYM_RBRACKET)
             {
-                Error(token.SourcePath, token.Line, "expected ']'");
+                Error(token.SourcePath, token.Line, "expected ']', ('" + token.Lexeme + "')");
                 return false;
             }
             TinyScanner.Advance(); // Skip ']'
