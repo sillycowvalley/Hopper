@@ -3,6 +3,7 @@ unit TinyConstant
     friend TinyStatement, TinyExpression, TinyCompile;
     
     uses "TinyToken"
+    uses "TinyType"
     
     record Constant
     {
@@ -63,37 +64,61 @@ unit TinyConstant
         return false; // not found
     }
     
-    bool parseConstantExpression(ref string value, ref string actualType)
+    bool parseConstantPrimary(ref string value, ref string actualType)
     {
         Token token = TinyScanner.Current();
-        if ((token.Type == TokenType.LIT_NUMBER) || (token.Type == TokenType.IDENTIFIER))
+        
+        if (token.Type == TokenType.LIT_NUMBER)
         {
-            value += token.Lexeme;
-            TinyScanner.Advance(); // Skip number or identifier
-    
-            token = TinyScanner.Current();
-            while (TinyToken.IsBinaryOperator(token.Type))
+            value = token.Lexeme;
+            long lv;
+            if (!Long.TryParse(value, ref lv))
             {
-                value += TinyToken.ToString(token.Type);
-                TinyScanner.Advance(); // Skip operator
-    
-                token = TinyScanner.Current();
-                if ((token.Type == TokenType.LIT_NUMBER) || (token.Type == TokenType.IDENTIFIER))
-                {
-                    value += token.Lexeme;
-                    TinyScanner.Advance(); // Skip number or identifier
-                }
-                else
-                {
-                    Error(token.SourcePath, token.Line, "expected number or identifier in constant expression, ('" + token.Lexeme + "')");
-                    return false;
-                }
-    
-                token = TinyScanner.Current();
+                Error(token.SourcePath, token.Line, "error in integral constant, ('" + token.Lexeme + "')");
+                return false;
             }
-            return true;
+            if ((lv >= -32768) && (lv < 0))
+            {
+                actualType = "int";
+            }
+            else if ((lv >= 0) && (lv < 256))
+            {
+                actualType = "byte";
+            }
+            else if ((lv >= 0) && (lv < 32768))
+            {
+                actualType = "+int";
+            }
+            else if ((lv >= 0) && (lv <= 65535))
+            {
+                actualType = "word";
+            }
+            else
+            {
+                Error(token.SourcePath, token.Line, "integral constant out of range, ('" + token.Lexeme + "')");
+                return false;
+            }
+            TinyScanner.Advance(); // Skip number or identifier
         }
-        Error(token.SourcePath, token.Line, "expected number or identifier in constant expression, ('" + token.Lexeme + "')");
-        return false;
+        else if (token.Type == TokenType.IDENTIFIER)
+        {
+            if (!GetConst(token.Lexeme, ref actualType, ref value))
+            {
+                Error(token.SourcePath, token.Line, "undefined constant identifier in constant expression, ('" + token.Lexeme + "')");
+                return false;
+            }
+            TinyScanner.Advance(); // Skip number or identifier
+        }
+        else
+        {
+            Error(token.SourcePath, token.Line, "expected number or identifier in constant expression, ('" + token.Lexeme + "')");
+            return false;
+        }
+        return true;
+    }
+    
+    bool parseConstantExpression(ref string value, ref string actualType)
+    {
+        return parseConstantPrimary(ref value, ref actualType);
     }
 }

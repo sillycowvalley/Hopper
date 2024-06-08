@@ -10,7 +10,63 @@ unit TinyType
     
         // Implement additional logic for type compatibility
         // For example, handle implicit conversions, array size checks, etc.
-    
+        switch (expectedType)
+        {
+            case "word":
+            {
+                switch (actualType)
+                {
+                    case "byte":
+                    {
+                        return true; // byte as word
+                    }
+                    case "+int":
+                    {
+                        return true; // positive int as word
+                    }
+                    case "int":
+                    {
+                        return false; // int as word requires cast
+                    }
+                    default:
+                    {
+                        TypeError(expectedType, actualType);
+                        PrintLn(actualType + " as " + expectedType);
+                        Die(0x0A); // not implemented
+                    }
+                }
+            }
+            case "int":
+            {
+                switch (actualType)
+                {
+                    case "byte":
+                    {
+                        return true; // byte as int
+                    }
+                    case "+int":
+                    {
+                        return true; // internal int ranges are int
+                    }
+                    case "word":
+                    {
+                        return false; // word as int requires cast
+                    }
+                    default:
+                    {
+                        TypeError(expectedType, actualType);
+                        PrintLn(actualType + " as " + expectedType);
+                        Die(0x0A); // not implemented
+                    }
+                }
+            }
+            default:
+            {
+                TypeError(expectedType, actualType);
+                PrintLn(actualType + " as " + expectedType);
+                Die(0x0A); // not implemented
+            }
+        }
         return false;
     }
     TypeError(string expected, string actual)

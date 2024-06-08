@@ -5,6 +5,7 @@ unit TinyExpression
     uses "TinyToken"
     uses "TinyScanner"
     uses "TinyCode"
+    uses "TinyConstant"
     
     bool parseExpression(ref string actualType)
     {
@@ -91,7 +92,15 @@ unit TinyExpression
         Token token = TinyScanner.Current();
         if (token.Type == TokenType.IDENTIFIER)
         {
+            string name = token.Lexeme;
             TinyScanner.Advance(); // Skip identifier
+            
+            string constantValue;
+            if (GetConst(name, ref actualType, ref constantValue))
+            {
+                return true;
+            }
+            
             token = TinyScanner.Current();
             if (token.Type == TokenType.SYM_LPAREN)
             {
@@ -151,7 +160,15 @@ unit TinyExpression
                 return false;
             }
         }
-        else if ((token.Type == TokenType.LIT_NUMBER) || (token.Type == TokenType.LIT_STRING) || (token.Type == TokenType.LIT_CHAR) || (token.Type == TokenType.KW_TRUE) || (token.Type == TokenType.KW_FALSE) || (token.Type == TokenType.KW_NULL))
+        else if (token.Type == TokenType.LIT_NUMBER)
+        {
+            string value;
+            if (!TinyConstant.parseConstantPrimary(ref value, ref actualType))
+            {
+                return false;
+            }
+        }
+        else if ((token.Type == TokenType.LIT_STRING) || (token.Type == TokenType.LIT_CHAR) || (token.Type == TokenType.KW_TRUE) || (token.Type == TokenType.KW_FALSE) || (token.Type == TokenType.KW_NULL))
         {
             TinyScanner.Advance(); // Skip literal or boolean literal
         }
