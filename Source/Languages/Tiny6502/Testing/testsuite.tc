@@ -120,7 +120,7 @@ func testSystemCalls() {
     writeString(" (Expected: ~1 second in ms)\n");
 }
 
-func subtractMillis(word[] start, word[] end) -> word {
+func word subtractMillis(word[] start, word[] end) {
     word low_res;
     if (end[1] >= start[1]) {
         low_res = end[1] - start[1];

@@ -115,6 +115,7 @@ unit TinyCompile
         return true;
     }
     
+ 
     bool parseGlobalVar()
     {
         string tp;
@@ -122,37 +123,37 @@ unit TinyCompile
         {
             return false;
         }
-        
+    
         Token token = TinyScanner.Current();
         if (token.Type != TokenType.IDENTIFIER)
         {
             Error(token.SourcePath, token.Line, "expected identifier after type");
             return false;
         }
-        
+    
         string name = token.Lexeme;
         TinyScanner.Advance(); // Skip identifier
-        
+    
         token = TinyScanner.Current();
         if (token.Type == TokenType.SYM_EQ)
         {
             TinyScanner.Advance(); // Skip '='
-            
+    
             if (!TinyExpression.parseExpression())
             {
                 return false;
             }
         }
-        
+    
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_SEMICOLON)
         {
             Error(token.SourcePath, token.Line, "expected ';' after variable declaration, (" + token.Lexeme + "')");
             return false;
         }
-        
+    
         TinyScanner.Advance(); // Skip ';'
-        
+    
         TinyCode.DefineGlobalVar(tp, name, "");
         return true;
     }
@@ -183,6 +184,27 @@ unit TinyCompile
         TinyScanner.Advance(); // Skip identifier
     
         token = TinyScanner.Current();
+        if (token.Type == TokenType.SYM_EQ)
+        {
+            // Handle function pointer assignment
+            TinyScanner.Advance(); // Skip '='
+            if (!TinyExpression.parseExpression())
+            {
+                return false;
+            }
+    
+            token = TinyScanner.Current();
+            if (token.Type != TokenType.SYM_SEMICOLON)
+            {
+                Error(token.SourcePath, token.Line, "expected ';' after function pointer assignment, (" + token.Lexeme + "')");
+                return false;
+            }
+    
+            TinyScanner.Advance(); // Skip ';'
+            //TinyCode.DefineFunctionPointer(name); // TODO: Implement in TinyCode
+            return true;
+        }
+    
         if (token.Type != TokenType.SYM_LPAREN)
         {
             Error(token.SourcePath, token.Line, "expected '(' after function name, (" + token.Lexeme + "')");
@@ -229,6 +251,7 @@ unit TinyCompile
         }
     }
     
+          
     
     bool parseParameterList()
     {

@@ -197,6 +197,7 @@ unit TinyStatement
         return true;
     }
     
+    
     bool parseLocalVarDeclaration()
     {
         string tp;
@@ -220,23 +221,61 @@ unit TinyStatement
         {
             TinyScanner.Advance(); // Skip '='
     
-            if (!TinyExpression.parseExpression())
+            if (tp == "func")
             {
-                return false;
+                token = TinyScanner.Current();
+                if (token.Type != TokenType.IDENTIFIER)
+                {
+                    Error(token.SourcePath, token.Line, "expected function name after '=', ('" + token.Lexeme + "')");
+                    return false;
+                }
+    
+                string functionName = token.Lexeme;
+                TinyScanner.Advance(); // Skip function name
+    
+                token = TinyScanner.Current();
+                if (token.Type != TokenType.SYM_SEMICOLON)
+                {
+                    Error(token.SourcePath, token.Line, "expected ';' after function pointer assignment, ('" + token.Lexeme + "')");
+                    return false;
+                }
+    
+                //TinyCode.DefineLocalFunctionPointer(tp, name, functionName); // TODO: Implement in TinyCode
+            }
+            else
+            {
+                if (!TinyExpression.parseExpression())
+                {
+                    return false;
+                }
+    
+                token = TinyScanner.Current();
+                if (token.Type != TokenType.SYM_SEMICOLON)
+                {
+                    Error(token.SourcePath, token.Line, "expected ';' after variable assignment, ('" + token.Lexeme + "')");
+                    return false;
+                }
+               
+                //TinyCode.DefineLocalVar(tp, name); // TODO: Implement in TinyCode
             }
         }
-    
-        token = TinyScanner.Current();
-        if (token.Type != TokenType.SYM_SEMICOLON)
+        else
         {
-            Error(token.SourcePath, token.Line, "expected ';' after variable declaration, ('" + token.Lexeme + "')");
-            return false;
-        }
+            token = TinyScanner.Current();
+            if (token.Type != TokenType.SYM_SEMICOLON)
+            {
+                Error(token.SourcePath, token.Line, "expected ';' after variable declaration, ('" + token.Lexeme + "')");
+                return false;
+            }
     
+            //TinyCode.DefineLocalVar(tp, name); // TODO: Implement in TinyCode
+        }
+        
         TinyScanner.Advance(); // Skip ';'
-        //TinyCode.DefineLocalVar(tp, name); // TODO: Implement in TinyCode
+    
         return true;
     }
+    
     
     bool parseLocalConstDeclaration()
     {
