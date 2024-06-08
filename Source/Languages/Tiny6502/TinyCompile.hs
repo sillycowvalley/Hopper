@@ -126,7 +126,7 @@ unit TinyCompile
         
         TinyScanner.Advance(); // Skip ';'
         
-        return TinyConstant.DefineLocalConst(constantType, name, value);
+        return TinyConstant.DefineConst(constantType, name, value);
     }
     
  

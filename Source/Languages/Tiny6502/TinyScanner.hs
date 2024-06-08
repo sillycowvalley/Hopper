@@ -361,6 +361,11 @@ unit TinyScanner
                     lineIndex++;
                     return createToken(TokenType.SYM_LTE, "<=");
                 }
+                else if ((lineIndex < currentLineContent.Length) && (currentLineContent[lineIndex] == '<'))
+                {
+                    lineIndex++;
+                    return createToken(TokenType.SYM_LSHIFT, "<<");
+                }
                 return createToken(TokenType.SYM_LT, "<");
             }
             case '>':
@@ -369,6 +374,11 @@ unit TinyScanner
                 {
                     lineIndex++;
                     return createToken(TokenType.SYM_GTE, ">=");
+                }
+                else if ((lineIndex < currentLineContent.Length) && (currentLineContent[lineIndex] == '>'))
+                {
+                    lineIndex++;
+                    return createToken(TokenType.SYM_RSHIFT, "<<");
                 }
                 return createToken(TokenType.SYM_GT, ">");
             }

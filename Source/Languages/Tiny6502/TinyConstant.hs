@@ -25,7 +25,7 @@ unit TinyConstant
         constants.Remove(constants.Count-1);
         blockLevel--;
     }
-    bool DefineLocalConst(string constantType, string constantName, string constantValue)
+    bool DefineConst(string constantType, string constantName, string constantValue)
     {
         uint level = constants.Count -1;
         <string, Constant> scopeConstants = constants[level];
@@ -67,7 +67,7 @@ unit TinyConstant
     }
     
     
-    bool evaluateBinaryOperation(string leftValue, string rightValue,  string op, ref string resultValue, ref string resultType)
+    bool evaluateArithmeticOperation(string leftValue, string rightValue,  string op, ref string resultValue, ref string resultType)
     {
         Token token = TinyScanner.Current();
         
@@ -141,6 +141,40 @@ unit TinyConstant
         return true;
     }
     
+    bool evaluateBitwiseOperation(string leftValue, string rightValue, string op, ref string resultValue, ref string resultType)
+    {
+        Token token = TinyScanner.Current();
+
+        uint left;
+        uint right;
+        _ = UInt.TryParse(rightValue, ref right);
+        _ = UInt.TryParse(leftValue, ref left);
+        uint result;
+        switch (op)
+        {
+            case "&":
+            {
+                result = left & right;
+            }
+            case "|":
+            {
+                result = left | right;
+            }
+            case "^":
+            {
+                result = left ^ right;
+            }
+            default:
+            {
+                Error(token.SourcePath, token.Line, "unsupported bitwise operator in constant expression");
+                return false;
+            }
+        }
+        resultType = (result < 256) ? "byte" : "word";
+        resultValue = result.ToString();
+        return true;
+    }
+    
     
     bool parseConstantPrimary(ref string value, ref string actualType)
     {
@@ -207,83 +241,275 @@ unit TinyConstant
         return true;
     }
     
+    
+    bool parseUnary(ref string value, ref string actualType)
+    {
+        Token token = TinyScanner.Current();
+        if ((token.Type == TokenType.SYM_MINUS) || (token.Type == TokenType.SYM_PLUS) || (token.Type == TokenType.SYM_BANG) || (token.Type == TokenType.SYM_TILDE))
+        {
+            string op = token.Lexeme;
+            TinyScanner.Advance(); // Skip operator
+            if (!parseConstantPrimary(ref value, ref actualType))
+            {
+                return false;
+            }
+            if (op == "-")
+            {
+                if (!IsNumericType(actualType))
+                {
+                    Error(token.SourcePath, token.Line, "numeric type expected in constant expression");
+                    return false;
+                }
+                long lv;
+                _ = Long.TryParse(value, ref lv);   
+                lv = -lv;
+                if ((lv >= -32768) && (lv < 0))
+                {
+                    actualType = "int";
+                }
+                else if ((lv >= 0) && (lv < 256))
+                {
+                    actualType = "byte";
+                }
+                else if ((lv >= 0) && (lv < 32768))
+                {
+                    actualType = "+int";
+                }
+                else if ((lv >= 0) && (lv <= 65535))
+                {
+                    actualType = "word";
+                }
+                else
+                {
+                    Error(token.SourcePath, token.Line, "integer constant out of range, ('" + token.Lexeme + "')");
+                    return false;
+                }
+            }
+            else
+            {
+                if (!IsNumericType(actualType))
+                {
+                    Error(token.SourcePath, token.Line, "numeric type expected in constant expression");
+                    return false;
+                }
+                uint ui;
+                _ = UInt.TryParse(value, ref ui);
+                switch (op)
+                {
+                    case "+":
+                    {
+                        // Do nothing
+                    }
+                    case "!":
+                    {
+                        ui = (ui == 0) ? 1 : 0;
+                    }
+                    case "~":
+                    {
+                        ui = ~ui;
+                    }
+                }
+                value = ui.ToString();
+            }
+        }
+        else
+        {
+            if (!parseConstantPrimary(ref value, ref actualType))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    
     bool parseFactor(ref string value, ref string actualType)
     {
-        if (!parseConstantPrimary(ref value, ref actualType))
+        if (!parseUnary(ref value, ref actualType))
         {
             return false;
         }
-
         Token token = TinyScanner.Current();
         while ((token.Type == TokenType.SYM_STAR) || (token.Type == TokenType.SYM_SLASH) || (token.Type == TokenType.SYM_PERCENT))
         {
             string op = token.Lexeme;
             TinyScanner.Advance(); // Skip operator
-
             string rightValue;
             string rightType;
-            if (!parseConstantPrimary(ref rightValue, ref rightType))
+            if (!parseUnary(ref rightValue, ref rightType))
             {
                 return false;
             }
-
             if (!IsNumericType(actualType) || !IsNumericType(rightType))
             {
                 Error(token.SourcePath, token.Line, "numeric types expected in constant expression");
                 return false;
             }
-
-            if (!evaluateBinaryOperation(value, rightValue, op, ref value, ref actualType))
+            if (!evaluateArithmeticOperation(value, rightValue, op, ref value, ref actualType))
             {
                 return false;
             }
-
             token = TinyScanner.Current();
         }
-
         return true;
     }
-
+    
     bool parseTerm(ref string value, ref string actualType)
     {
         if (!parseFactor(ref value, ref actualType))
         {
             return false;
         }
-
         Token token = TinyScanner.Current();
         while ((token.Type == TokenType.SYM_PLUS) || (token.Type == TokenType.SYM_MINUS))
         {
             string op = token.Lexeme;
             TinyScanner.Advance(); // Skip operator
-
             string rightValue;
             string rightType;
             if (!parseFactor(ref rightValue, ref rightType))
             {
                 return false;
             }
-
             if (!IsNumericType(actualType) || !IsNumericType(rightType))
             {
                 Error(token.SourcePath, token.Line, "numeric types expected in constant expression");
                 return false;
             }
-
-            if (!evaluateBinaryOperation(value, rightValue, op, ref value, ref actualType))
+            if (!evaluateArithmeticOperation(value, rightValue, op, ref value, ref actualType))
             {
                 return false;
             }
-
             token = TinyScanner.Current();
         }
+        return true;
+    }
 
+    bool parseBitwiseShift(ref string value, ref string actualType)
+    {
+        if (!parseTerm(ref value, ref actualType))
+        {
+            return false;
+        }
+        Token token = TinyScanner.Current();
+        while ((token.Type == TokenType.SYM_LSHIFT) || (token.Type == TokenType.SYM_RSHIFT))
+        {
+            string op = token.Lexeme;
+            TinyScanner.Advance(); // Skip operator
+            string rightValue;
+            string rightType;
+            if (!parseTerm(ref rightValue, ref rightType))
+            {
+                return false;
+            }
+            if (!IsNumericType(actualType) || !IsNumericType(rightType))
+            {
+                Error(token.SourcePath, token.Line, "numeric types expected in constant expression");
+                return false;
+            }
+            if (!evaluateBitwiseOperation(value, rightValue, op, ref value, ref actualType))
+            {
+                return false;
+            }
+            token = TinyScanner.Current();
+        }
+        return true;
+    }
+
+    bool parseBitwiseAnd(ref string value, ref string actualType)
+    {
+        if (!parseBitwiseShift(ref value, ref actualType))
+        {
+            return false;
+        }
+        Token token = TinyScanner.Current();
+        while (token.Type == TokenType.SYM_AMP)
+        {
+            string op = token.Lexeme;
+            TinyScanner.Advance(); // Skip operator
+            string rightValue;
+            string rightType;
+            if (!parseBitwiseShift(ref rightValue, ref rightType))
+            {
+                return false;
+            }
+            if (!IsNumericType(actualType) || !IsNumericType(rightType))
+            {
+                Error(token.SourcePath, token.Line, "numeric types expected in constant expression");
+                return false;
+            }
+            if (!evaluateBitwiseOperation(value, rightValue, op, ref value, ref actualType))
+            {
+                return false;
+            }
+            token = TinyScanner.Current();
+        }
+        return true;
+    }
+
+    bool parseBitwiseXor(ref string value, ref string actualType)
+    {
+        if (!parseBitwiseAnd(ref value, ref actualType))
+        {
+            return false;
+        }
+        Token token = TinyScanner.Current();
+        while (token.Type == TokenType.SYM_CARET)
+        {
+            string op = token.Lexeme;
+            TinyScanner.Advance(); // Skip operator
+            string rightValue;
+            string rightType;
+            if (!parseBitwiseAnd(ref rightValue, ref rightType))
+            {
+                return false;
+            }
+            if (!IsNumericType(actualType) || !IsNumericType(rightType))
+            {
+                Error(token.SourcePath, token.Line, "numeric types expected in constant expression");
+                return false;
+            }
+            if (!evaluateBitwiseOperation(value, rightValue, op, ref value, ref actualType))
+            {
+                return false;
+            }
+            token = TinyScanner.Current();
+        }
+        return true;
+    }
+
+    bool parseBitwiseOr(ref string value, ref string actualType)
+    {
+        if (!parseBitwiseXor(ref value, ref actualType))
+        {
+            return false;
+        }
+        Token token = TinyScanner.Current();
+        while (token.Type == TokenType.SYM_PIPE)
+        {
+            string op = token.Lexeme;
+            TinyScanner.Advance(); // Skip operator
+            string rightValue;
+            string rightType;
+            if (!parseBitwiseXor(ref rightValue, ref rightType))
+            {
+                return false;
+            }
+            if (!IsNumericType(actualType) || !IsNumericType(rightType))
+            {
+                Error(token.SourcePath, token.Line, "numeric types expected in constant expression");
+                return false;
+            }
+            if (!evaluateBitwiseOperation(value, rightValue, op, ref value, ref actualType))
+            {
+                return false;
+            }
+            token = TinyScanner.Current();
+        }
         return true;
     }
 
     bool parseConstantExpression(ref string value, ref string actualType)
     {
-        return parseTerm(ref value, ref actualType);
+        return parseBitwiseOr(ref value, ref actualType);
     }
 }
-
