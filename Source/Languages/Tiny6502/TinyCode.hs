@@ -34,20 +34,4 @@ unit TinyCode
     }
     
     
-    DefineFunction(string name)
-    {
-        functionIndex[name] = lastFunction;
-        lastFunction++;
-    }
-    
-    // Placeholder methods for code generation
-    DefineLocalVar(string tp, string name)
-    {
-        // TODO : Implement the code generation logic for local variables here
-    }
-
-    DefineAssignment(string name)
-    {
-        // TODO : Implement the code generation logic for assignments here
-    }
 }

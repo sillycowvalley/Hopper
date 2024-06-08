@@ -1,5 +1,10 @@
 unit TinyType
 {
+    bool IsIndexType(string typeName)
+    {
+        typeName = typeName.Replace("const ", "");
+        return ("|byte|word|uint|+int|").Contains(typeName);
+    }
     bool IsNumericType(string typeName)
     {
         typeName = typeName.Replace("const ", "");
@@ -9,6 +14,17 @@ unit TinyType
     {
         typeName = typeName.Replace("const ", "");
         return ("|byte|word|uint|int|+int|bool|").Contains(typeName);
+    }
+    string GetArrayMemberType(string arrayType)
+    {
+        string memberType = arrayType;
+        uint index;
+        if (memberType.IndexOf('[', ref index))
+        {
+            memberType = memberType.Substring(0, index);
+            memberType = memberType.Replace("const ", "");
+        }
+        return memberType;
     }
     
     bool IsAutomaticCast(string expectedType, string actualType)
@@ -33,6 +49,38 @@ unit TinyType
         // For example, handle implicit conversions, array size checks, etc.
         switch (expectedType)
         {
+            case "byte":
+            {
+                switch (actualType)
+                {
+                    case "char":
+                    {
+                        return true; // char as byte
+                    }
+                    default:
+                    {
+                        TypeError(expectedType, actualType);
+                        PrintLn(actualType + " as " + expectedType);
+                        Die(0x0A); // not implemented
+                    }
+                }
+            }
+            case "char":
+            {
+                switch (actualType)
+                {
+                    case "byte":
+                    {
+                        return true; // byte as char
+                    }
+                    default:
+                    {
+                        TypeError(expectedType, actualType);
+                        PrintLn(actualType + " as " + expectedType);
+                        Die(0x0A); // not implemented
+                    }
+                }
+            }
             case "word":
             {
                 switch (actualType)
@@ -40,6 +88,10 @@ unit TinyType
                     case "byte":
                     {
                         return true; // byte as word
+                    }
+                    case "char":
+                    {
+                        return true; // char as word
                     }
                     case "+int":
                     {
@@ -64,6 +116,10 @@ unit TinyType
                     case "byte":
                     {
                         return true; // byte as int
+                    }
+                    case "char":
+                    {
+                        return true; // char as int
                     }
                     case "+int":
                     {

@@ -205,9 +205,9 @@ unit TinyCompile
                 break;
             }
         
-            string name = token.Lexeme;
+            string functionName = token.Lexeme;
             TinyScanner.Advance(); // Skip identifier
-        
+            
             token = TinyScanner.Current();
             if (token.Type == TokenType.SYM_EQ)
             {
@@ -232,7 +232,12 @@ unit TinyCompile
                 success = true;
                 break;
             }
-    
+            
+            if (!DefineFunction(returnType, functionName))
+            {
+                break;
+            }
+            
             if (token.Type != TokenType.SYM_LPAREN)
             {
                 Error(token.SourcePath, token.Line, "expected '(' after function name, (" + token.Lexeme + "')");
@@ -240,7 +245,7 @@ unit TinyCompile
             }
         
             TinyScanner.Advance(); // Skip '('
-            if (!parseParameterList())
+            if (!parseParameterList(functionName))
             {
                 break;
             }
@@ -268,7 +273,6 @@ unit TinyCompile
                 {
                     break;
                 }
-                TinyCode.DefineFunction(name);
             }
             else
             {
@@ -284,9 +288,7 @@ unit TinyCompile
         return success;
     }
     
-          
-    
-    bool parseParameterList()
+    bool parseParameterList(string functionName)
     {
         Token token;
         loop
@@ -313,6 +315,10 @@ unit TinyCompile
             string variableName = token.Lexeme;
             
             if (!DefineVariable(variableType, variableName))
+            {
+                return false;
+            }
+            if (!DefineArgument(functionName, variableType, variableName))
             {
                 return false;
             }

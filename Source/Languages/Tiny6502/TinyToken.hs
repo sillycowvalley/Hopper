@@ -3,7 +3,7 @@ unit TinyToken
     enum TokenType
     {
         // Keywords
-        KW_FUNC, KW_IF, KW_ELSE, KW_WHILE, KW_FOR, KW_BREAK, KW_CONTINUE, KW_SWITCH, KW_CASE, KW_DEFAULT,
+        KW_FUNC, KW_IF, KW_ELSE, KW_WHILE, KW_FOR, KW_BREAK, KW_CONTINUE, KW_SWITCH, KW_CASE, KW_DONE, KW_DEFAULT,
         KW_CONST, KW_TRUE, KW_FALSE, KW_NULL, KW_IMPORT, KW_RETURN,
         KW_BYTE, KW_WORD, KW_CHAR, KW_BOOL, KW_INT, KW_UINT, KW_AS,
         // Symbols
@@ -60,6 +60,7 @@ unit TinyToken
         keywords["uint"] = TokenType.KW_UINT;
         keywords["return"] = TokenType.KW_RETURN;
         keywords["as"] = TokenType.KW_AS;
+        keywords["done"] = TokenType.KW_DONE;
     }
     
     bool IsKeyword(string candidate, ref TokenType kw)

@@ -9,9 +9,15 @@ unit TinySymbols
     {
         string Type;
     }
+    record Function
+    {
+        string ReturnType;
+        <string, Variable> Arguments;
+    }
     
     uint blockLevel;
     < <string, Variable> > variables;
+    <string, Function> functions;
     
     EnterBlock()
     {
@@ -25,9 +31,66 @@ unit TinySymbols
         blockLevel--;
     }
     
+    bool DefineFunction(string returnType, string functionName)
+    {
+        if (functions.Contains(functionName))
+        {
+            // exists already
+            Token token = TinyScanner.Current();
+            Error(token.SourcePath, token.Line, "function with name '" + functionName + "' already exists");
+            return false;
+        }
+        Function function;
+        function.ReturnType = returnType;
+        functions[functionName] = function;
+        PrintLn();
+        Print("func: " + returnType + " " + functionName);
+        return true;
+    }
+    
+    bool DefineArgument(string functionName, string argumentType, string argumentName)
+    {
+        Function function = functions[functionName];
+        
+        <string, Variable> arguments = function.Arguments;
+        if (arguments.Contains(argumentName))
+        {
+            // exists already
+            Token token = TinyScanner.Current();
+            Error(token.SourcePath, token.Line, "argument with name '" + argumentName + "' already exists");
+            return false;
+        }
+        Variable argument;
+        argument.Type = argumentType;
+        arguments[argumentName] = argument;
+        function.Arguments = arguments;
+        functions[functionName] = function;
+        if (arguments.Count == 1)
+        {
+            Print(" : ");
+        }
+        else
+        {
+            Print(", ");
+        }
+        Print(argumentType + " " + argumentName);
+        return true;
+    }
+    
+    bool GetFunction(string functionName, ref string returnType)
+    {
+        if (functions.Contains(functionName))
+        {
+            Function function = functions[functionName];
+            returnType  = function.ReturnType;
+            return true;
+        }
+        return false; // not found
+    }
+    
     bool DefineVariable(string variableType, string variableName)
     {
-        uint level = variables.Count -1;
+        uint level = variables.Count - 1;
         <string, Variable> scopeVariables = variables[level];
         if (scopeVariables.Contains(variableName))
         {
@@ -42,13 +105,14 @@ unit TinySymbols
         scopeVariables[variableName] = newVariable;
         
         variables[level] = scopeVariables;   
-        PrintLn(level.ToString() + ": " +variableType + " " + variableName);
+        //PrintLn();
+        //Print(level.ToString() + ": " +variableType + " " + variableName);
         return true;
     }
     
     bool GetVariable(string variableName, ref string variableType)
     {
-        uint level = variables.Count -1;
+        uint level = variables.Count - 1;
         loop
         {
             <string, Variable> scopeVariables = variables[level];

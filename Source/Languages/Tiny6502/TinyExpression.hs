@@ -100,14 +100,50 @@ unit TinyExpression
             string constantValue;
             if (GetConst(name, ref actualType, ref constantValue))
             {
+                if (actualType.EndsWith(']'))
+                {
+                    // const char[] palette = ".,'~=+:;*%&$OXB#@ ";
+                    token = TinyScanner.Current();
+                    if (token.Type != TokenType.SYM_LBRACKET)
+                    {
+                        Error(token.SourcePath, token.Line, "'[' expected");
+                        return false;
+                    }
+                    TinyScanner.Advance(); // Skip '['
+                    string indexType;
+                    if (!parseExpression(ref indexType))
+                    {
+                        return false;
+                    }
+                    if (!IsIndexType(indexType))
+                    {
+                        Error(token.SourcePath, token.Line, "integral index type expected");
+                        return false;
+                    }
+                    actualType = GetArrayMemberType(actualType);
+                    token = TinyScanner.Current();
+                    if (token.Type != TokenType.SYM_RBRACKET)
+                    {
+                        Error(token.SourcePath, token.Line, "expected ']' after array index");
+                        return false;
+                    }
+                    TinyScanner.Advance(); // Skip ']'
+                }
                 return true;
             }
+            
             
             token = TinyScanner.Current();
             if (token.Type == TokenType.SYM_LPAREN)
             {
+                // function call
+                if (!GetFunction(name, ref actualType))
+                {
+                    Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
+                }
+                
                 TinyScanner.Advance(); // Skip '('
-                if (!parseArgumentList())
+                if (!parseArgumentList(name))
                 {
                     return false;
                 }
@@ -121,11 +157,25 @@ unit TinyExpression
             }
             else if (token.Type == TokenType.SYM_LBRACKET)
             {
+                // array accessor
+                if (!GetVariable(name, ref actualType))
+                {
+                    Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
+                    return false;
+                }
+                
                 TinyScanner.Advance(); // Skip '['
-                if (!parseExpression(ref actualType))
+                string indexType;
+                if (!parseExpression(ref indexType))
                 {
                     return false;
                 }
+                if (!IsIndexType(indexType))
+                {
+                    Error(token.SourcePath, token.Line, "integral index type expected");
+                    return false;
+                }
+                actualType = GetArrayMemberType(actualType);
                 token = TinyScanner.Current();
                 if (token.Type != TokenType.SYM_RBRACKET)
                 {
@@ -136,6 +186,7 @@ unit TinyExpression
             }
             else if (token.Type == TokenType.KW_AS)
             {
+                // cast
                 TinyScanner.Advance(); // Skip 'as'
                 string castType;
                 if (!TinyCompile.parseType(ref castType))
@@ -143,9 +194,18 @@ unit TinyExpression
                     return false;
                 }
             }
-            else if ((token.Type == TokenType.SYM_PLUSPLUS) || (token.Type == TokenType.SYM_MINUSMINUS))
+            else
             {
-                TinyScanner.Advance(); // Skip '++' or '--'
+                // variable
+                if (!GetVariable(name, ref actualType))
+                {
+                    Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
+                    return false;
+                }
+                if ((token.Type == TokenType.SYM_PLUSPLUS) || (token.Type == TokenType.SYM_MINUSMINUS))
+                {
+                    TinyScanner.Advance(); // Skip '++' or '--'
+                }
             }
         }
         else if ((token.Type == TokenType.SYM_PLUSPLUS) || (token.Type == TokenType.SYM_MINUSMINUS))
@@ -212,7 +272,7 @@ unit TinyExpression
     }
     
     
-    bool parseArgumentList()
+    bool parseArgumentList(string functionName)
     {
         Token token;
         loop
@@ -234,7 +294,7 @@ unit TinyExpression
             }
             else if (token.Type != TokenType.SYM_RPAREN)
             {
-                Error(token.SourcePath, token.Line, "expected ',' or ')' in argument list");
+                Error(token.SourcePath, token.Line, "expected ',' or ')' in argument list, ('" + token.Lexeme + "')");
                 return false;
             }
         }
