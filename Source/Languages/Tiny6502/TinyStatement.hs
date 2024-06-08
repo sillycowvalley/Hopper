@@ -39,6 +39,20 @@ unit TinyStatement
                     return false;
                 }
             }
+            case TokenType.KW_BREAK:
+            {
+                if (!parseBreakStatement())
+                {
+                    return false;
+                }
+            }
+            case TokenType.KW_CONTINUE:
+            {
+                if (!parseContinueStatement())
+                {
+                    return false;
+                }
+            }
             case TokenType.KW_BYTE:
             case TokenType.KW_WORD:
             case TokenType.KW_CHAR:
@@ -94,7 +108,7 @@ unit TinyStatement
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_RPAREN)
         {
-            Error(token.SourcePath, token.Line, "expected ')' after condition, ('" + token.Lexeme + "')");
+            Error(token.SourcePath, token.Line, "expected ')' after condition");
             return false;
         }
         
@@ -116,7 +130,6 @@ unit TinyStatement
         
         return true;
     }
-    
     
     bool parseWhileStatement()
     {
@@ -223,6 +236,38 @@ unit TinyStatement
         }
         
         TinyScanner.Advance(); // Skip ';'
+        return true;
+    }
+    
+    bool parseBreakStatement()
+    {
+        TinyScanner.Advance(); // Skip 'break'
+        
+        Token token = TinyScanner.Current();
+        if (token.Type != TokenType.SYM_SEMICOLON)
+        {
+            Error(token.SourcePath, token.Line, "expected ';' after 'break'");
+            return false;
+        }
+        
+        TinyScanner.Advance(); // Skip ';'
+        //TinyCode.EmitBreak(); // TODO: Implement in TinyCode
+        return true;
+    }
+    
+    bool parseContinueStatement()
+    {
+        TinyScanner.Advance(); // Skip 'continue'
+        
+        Token token = TinyScanner.Current();
+        if (token.Type != TokenType.SYM_SEMICOLON)
+        {
+            Error(token.SourcePath, token.Line, "expected ';' after 'continue'");
+            return false;
+        }
+        
+        TinyScanner.Advance(); // Skip ';'
+        //TinyCode.EmitContinue(); // TODO: Implement in TinyCode
         return true;
     }
     
@@ -361,6 +406,7 @@ unit TinyStatement
             return true;
         }
     }
+    
     bool parseExpressionStatement()
     {
         if (!TinyExpression.parseExpression())
@@ -407,6 +453,7 @@ unit TinyStatement
         TinyScanner.Advance(); // Skip '}'
         return true;
     }
+    
     bool parseFunctionBody()
     {
         Token token;
@@ -427,5 +474,4 @@ unit TinyStatement
         return true;
     }
 }
-
 
