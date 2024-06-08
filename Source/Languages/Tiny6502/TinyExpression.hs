@@ -43,7 +43,7 @@ unit TinyExpression
     
     bool parseBinaryExpression()
     {
-        if (!parsePrimaryExpression())
+        if (!parseUnaryExpression())
         {
             return false;
         }
@@ -52,11 +52,32 @@ unit TinyExpression
         while (isBinaryOperator(token.Type))
         {
             TinyScanner.Advance(); // Skip operator
-            if (!parsePrimaryExpression())
+            if (!parseUnaryExpression())
             {
                 return false;
             }
             token = TinyScanner.Current();
+        }
+        return true;
+    }
+    
+    bool parseUnaryExpression()
+    {
+        Token token = TinyScanner.Current();
+        if ((token.Type == TokenType.SYM_MINUS) || (token.Type == TokenType.SYM_BANG) || (token.Type == TokenType.SYM_TILDE))
+        {
+            TinyScanner.Advance(); // Skip unary operator
+            if (!parsePrimaryExpression())
+            {
+                return false;
+            }
+        }
+        else
+        {
+            if (!parsePrimaryExpression())
+            {
+                return false;
+            }
         }
         return true;
     }

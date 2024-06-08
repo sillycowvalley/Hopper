@@ -104,7 +104,7 @@ unit TinyCompile
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_SEMICOLON)
         {
-            Error(token.SourcePath, token.Line, "expected ';' after constant declaration");
+            Error(token.SourcePath, token.Line, "expected ';' after constant declaration, ('" + token.Lexeme + "')");
             return false;
         }
         
