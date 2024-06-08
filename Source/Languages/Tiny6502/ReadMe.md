@@ -294,9 +294,7 @@ func free(byte[] ptr);
 ### Constants for Pin Modes
 
 ```c
-const byte INPUT
-
- = 0;
+const byte INPUT = 0;
 const byte OUTPUT = 1;
 const byte INPUT_PULLUP = 2;
 ```
@@ -416,3 +414,39 @@ func main() {
     writeString("Read verification successful.");
 }
 ```
+
+## Operator Precedence
+
+The following table shows the precedence and associativity of Tiny6502 operators, modeled after the C standard:
+
+| Precedence Level | Operator(s)     | Description                           | Associativity    |
+|------------------|-----------------|---------------------------------------|------------------|
+| 1                | `()`            | Parentheses (expression grouping)     | Left to right    |
+|                  | `[]`            | Array subscript                       | Left to right    |
+|                  | `.`             | Member access                         | Left to right    |
+| 2                | `!`             | Logical NOT                           | Right to left    |
+|                  | `~`             | Bitwise NOT                           | Right to left    |
+|                  | `-`             | Unary minus                           | Right to left    |
+|                  | `+`             | Unary plus                            | Right to left    |
+| 3                | `*`             | Multiplication                        | Left to right    |
+|                  | `/`             | Division                              | Left to right    |
+|                  | `%`             | Modulus                               | Left to right    |
+| 4                | `+`             | Addition                              | Left to right    |
+|                  | `-`             | Subtraction                           | Left to right    |
+| 5                | `<<`            | Bitwise left shift                    | Left to right    |
+|                  | `>>`            | Bitwise right shift                   | Left to right    |
+| 6                | `<`             | Less than                             | Left to right    |
+|                  | `<=`            | Less than or equal to                 | Left to right    |
+|                  | `>`             | Greater than                          | Left to right    |
+|                  | `>=`            | Greater than or equal to              | Left to right    |
+| 7                | `==`            | Equal to                              | Left to right    |
+|                  | `!=`            | Not equal to                          | Left to right    |
+| 8                | `&`             | Bitwise AND                           | Left to right    |
+| 9                | `^`             | Bitwise XOR                           | Left to right    |
+| 10               | `|`             | Bitwise OR                            | Left to right    |
+| 11               | `&&`            | Logical AND                           | Left to right    |
+| 12               | `||`            | Logical OR                            | Left to right    |
+| 13               | `=`             | Assignment                            | Right to left    |
+| 14               | `,`             | Comma (sequence operator)             | Left to right    |
+
+This table helps clarify the order in which operations are performed in Tiny6502, ensuring that expressions are evaluated as intended.
