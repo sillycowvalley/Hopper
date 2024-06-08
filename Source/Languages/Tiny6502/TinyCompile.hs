@@ -15,7 +15,15 @@ unit TinyCompile
     bool Compile()
     {
         bool success;
+        
+        // global scope
+        TinyConstant.EnterBlock();
+        
         success = parseProgram();
+        
+        // global scope
+        TinyConstant.LeaveBlock();
+        
         return success;
     }
     
@@ -72,8 +80,8 @@ unit TinyCompile
         TinyScanner.Advance(); // Skip 'const'
         Token token = TinyScanner.Current();
         
-        string tp;
-        if (!parseType(ref tp))
+        string constantType;
+        if (!parseType(ref constantType))
         {
             return false;
         }
@@ -95,15 +103,17 @@ unit TinyCompile
         
         TinyScanner.Advance(); // Skip '='
         
-        token = TinyScanner.Current();
-        if ((token.Type != TokenType.LIT_NUMBER) && (token.Type != TokenType.LIT_CHAR))
+        string expressionType;
+        string value;
+        if (!TinyConstant.parseConstantExpression(ref value, ref expressionType))
         {
-            Error(token.SourcePath, token.Line, "expected literal value after '='");
             return false;
         }
+        if (!IsTypeCompatible(constantType, expressionType))
+        {
+            TypeError(constantType, expressionType);
+        }
         
-        string value = token.Lexeme;
-        TinyScanner.Advance(); // Skip value
         
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_SEMICOLON)
@@ -114,8 +124,7 @@ unit TinyCompile
         
         TinyScanner.Advance(); // Skip ';'
         
-        //TinyCode.DefineConst(tp, name, value);
-        return true;
+        return TinyConstant.DefineLocalConst(constantType, name, value);
     }
     
  
@@ -335,12 +344,13 @@ unit TinyCompile
             // Check for number or identifier (constant)
             if (token.Type != TokenType.SYM_RBRACKET)
             {
-                string sizeExpr;
-                if (!TinyConstant.parseConstantExpression(ref sizeExpr))
+                string value;
+                string actualType;
+                if (!TinyConstant.parseConstantExpression(ref value, ref actualType))
                 {
                     return false;
                 }
-                tp += "[" + sizeExpr + "]";
+                tp += "[" + value + "]";
             }
             else
             {

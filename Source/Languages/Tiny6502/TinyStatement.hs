@@ -260,8 +260,9 @@ unit TinyStatement
                 
                 if (!IsTypeCompatible(tp, exprType))
                 {
-                    Error(token.SourcePath, token.Line, "type mismatch: expected '" + tp + "', got '" + exprType + "'");
-                    return false;
+                    // TODO
+                    //Error(token.SourcePath, token.Line, "type mismatch: expected '" + tp + "', got '" + exprType + "'");
+                    //return false;
                 }
     
                 token = TinyScanner.Current();
@@ -296,8 +297,8 @@ unit TinyStatement
     {
         TinyScanner.Advance(); // Skip 'const'
         
-        string tp;
-        if (!TinyCompile.parseType(ref tp))
+        string constantType;
+        if (!TinyCompile.parseType(ref constantType))
         {
             return false;
         }
@@ -321,10 +322,15 @@ unit TinyStatement
     
         TinyScanner.Advance(); // Skip '='
     
-        string rhsType;
-        if (!TinyExpression.parseExpression(ref rhsType))
+        string expressionType;
+        string value;
+        if (!TinyConstant.parseConstantExpression(ref value, ref expressionType))
         {
             return false;
+        }
+        if (!IsTypeCompatible(constantType, expressionType))
+        {
+            TypeError(constantType, expressionType);
         }
     
         token = TinyScanner.Current();
@@ -335,8 +341,7 @@ unit TinyStatement
         }
     
         TinyScanner.Advance(); // Skip ';'
-        //TinyCode.DefineLocalConst(tp, name); // TODO: Implement in TinyCode
-        return true;
+        return TinyConstant.DefineLocalConst(constantType, name, value);
     }
     
     bool parseAssignmentOrExpression()
@@ -406,14 +411,11 @@ unit TinyStatement
         TinyScanner.Advance(); // Skip ';'
         return true;
     }
-    //uint nesting;
-    
     bool parseBlock()
     {
-        Token token = TinyScanner.Current();
+        TinyConstant.EnterBlock();
         
-        //PrintLn(("{").LeftPad(' ', nesting*4) + " " + nesting.ToString() + " " + token.SourcePath + ":" + (token.Line).ToString());
-        //nesting++;
+        Token token = TinyScanner.Current();
         
         if (token.Type != TokenType.SYM_LBRACE)
         {
@@ -439,8 +441,7 @@ unit TinyStatement
         
         TinyScanner.Advance(); // Skip '}'
         
-        //nesting--;
-        //PrintLn(("}").LeftPad(' ', nesting*4) + " " + nesting.ToString());
+        TinyConstant.LeaveBlock();
         return true;
     }
     
