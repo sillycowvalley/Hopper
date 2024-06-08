@@ -30,7 +30,7 @@ unit TinyExpression
                 return false;
             }
             
-            if (!IsTypeCompatible(actualType, rhsType))
+            if (!IsAutomaticCast(actualType, rhsType))
             {
                 TypeError(actualType, rhsType);
                 return false;
@@ -55,7 +55,7 @@ unit TinyExpression
             {
                 return false;
             }
-            if (!IsTypeCompatible(actualType, rhsType))
+            if (!IsNumericType(actualType) || !IsNumericType(rhsType))
             {
                 TypeError(actualType, rhsType);
                 return false;

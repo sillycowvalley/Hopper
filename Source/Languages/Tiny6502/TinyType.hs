@@ -1,6 +1,12 @@
 unit TinyType
 {
-    bool IsTypeCompatible(string expectedType, string actualType)
+    bool IsNumericType(string typeName)
+    {
+        typeName = typeName.Replace("const ", "");
+        return ("|byte|word|uint|int|+int|").Contains(typeName);
+    }
+    
+    bool IsAutomaticCast(string expectedType, string actualType)
     {
         if (expectedType.StartsWith("const ") && !actualType.StartsWith("const "))
         {

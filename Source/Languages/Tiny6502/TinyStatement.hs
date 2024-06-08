@@ -258,7 +258,7 @@ unit TinyStatement
                     return false;
                 }
                 
-                if (!IsTypeCompatible(tp, exprType))
+                if (!IsAutomaticCast(tp, exprType))
                 {
                     // TODO
                     //Error(token.SourcePath, token.Line, "type mismatch: expected '" + tp + "', got '" + exprType + "'");
@@ -330,7 +330,7 @@ unit TinyStatement
         {
             return false;
         }
-        if (!IsTypeCompatible(constantType, expressionType))
+        if (!IsAutomaticCast(constantType, expressionType))
         {
             TypeError(constantType, expressionType);
         }

@@ -111,7 +111,7 @@ unit TinyCompile
         {
             return false;
         }
-        if (!IsTypeCompatible(constantType, expressionType))
+        if (!IsAutomaticCast(constantType, expressionType))
         {
             TypeError(constantType, expressionType);
         }
