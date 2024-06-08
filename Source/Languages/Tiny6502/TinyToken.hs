@@ -6,22 +6,18 @@ unit TinyToken
         KW_FUNC, KW_IF, KW_ELSE, KW_WHILE, KW_FOR, KW_BREAK, KW_CONTINUE, KW_SWITCH, KW_CASE, KW_DEFAULT,
         KW_CONST, KW_TRUE, KW_FALSE, KW_NULL, KW_IMPORT, KW_RETURN,
         KW_BYTE, KW_WORD, KW_CHAR, KW_BOOL, KW_INT, KW_UINT,
-
         // Symbols
         SYM_LPAREN, SYM_RPAREN, SYM_LBRACE, SYM_RBRACE, SYM_LBRACKET, SYM_RBRACKET,
         SYM_SEMICOLON, SYM_COLON, SYM_COMMA, SYM_DOT,
         SYM_PLUS, SYM_MINUS, SYM_STAR, SYM_SLASH, SYM_PERCENT,
         SYM_AMP, SYM_PIPE, SYM_CARET, SYM_TILDE, SYM_BANG, SYM_QUESTION,
         SYM_EQ, SYM_EQEQ, SYM_NEQ, SYM_LT, SYM_LTE, SYM_GT, SYM_GTE,
-        SYM_PLUSPLUS, SYM_MINUSMINUS, SYM_PLUSEQ, SYM_MINUSEQ, SYM_STAREQ, SYM_SLASHEQ,
+        SYM_PLUSPLUS, SYM_MINUSMINUS, SYM_PLUSEQ, SYM_MINUSEQ, SYM_STAREQ, SYM_SLASHEQ, SYM_PERCENTEQ,
         SYM_AMPAMP, SYM_PIPEPIPE,
-
         // Literals
         LIT_NUMBER, LIT_STRING, LIT_CHAR,
-
         // Identifiers
         IDENTIFIER,
-
         // End of File
         EOF
     }
@@ -63,6 +59,7 @@ unit TinyToken
         keywords["uint"] = TokenType.KW_UINT;
         keywords["return"] = TokenType.KW_RETURN;
     }
+    
     bool IsKeyword(string candidate, ref TokenType kw)
     {
         if (keywords.Contains(candidate))
@@ -72,7 +69,7 @@ unit TinyToken
         }
         return false;
     }
-
+    
     // ToString method for TokenType enum
     string ToString(TokenType tp)
     {
@@ -134,6 +131,7 @@ unit TinyToken
             case TokenType.SYM_MINUSEQ: { return "SYM_MINUSEQ"; }
             case TokenType.SYM_STAREQ: { return "SYM_STAREQ"; }
             case TokenType.SYM_SLASHEQ: { return "SYM_SLASHEQ"; }
+            case TokenType.SYM_PERCENTEQ: { return "SYM_PERCENTEQ"; }
             case TokenType.SYM_AMPAMP: { return "SYM_AMPAMP"; }
             case TokenType.SYM_PIPEPIPE: { return "SYM_PIPEPIPE"; }
             case TokenType.LIT_NUMBER: { return "LIT_NUMBER"; }

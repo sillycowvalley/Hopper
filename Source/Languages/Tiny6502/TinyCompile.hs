@@ -133,23 +133,15 @@ unit TinyCompile
         TinyScanner.Advance(); // Skip identifier
         
         token = TinyScanner.Current();
-        if (token.Type != TokenType.SYM_EQ)
+        if (token.Type == TokenType.SYM_EQ)
         {
-            Error(token.SourcePath, token.Line, "expected '=' after identifier");
-            return false;
+            TinyScanner.Advance(); // Skip '='
+            
+            if (!TinyExpression.parseExpression())
+            {
+                return false;
+            }
         }
-        
-        TinyScanner.Advance(); // Skip '='
-        
-        token = TinyScanner.Current();
-        if ((token.Type != TokenType.LIT_NUMBER) && (token.Type != TokenType.LIT_CHAR))
-        {
-            Error(token.SourcePath, token.Line, "expected literal value after '='");
-            return false;
-        }
-        
-        string value = token.Lexeme;
-        TinyScanner.Advance(); // Skip value
         
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_SEMICOLON)
@@ -160,7 +152,7 @@ unit TinyCompile
         
         TinyScanner.Advance(); // Skip ';'
         
-        TinyCode.DefineGlobalVar(tp, name, value);
+        TinyCode.DefineGlobalVar(tp, name, "");
         return true;
     }
     
@@ -168,38 +160,45 @@ unit TinyCompile
     {
         TinyScanner.Advance(); // Skip 'func'
         Token token = TinyScanner.Current();
-    
+
+        string returnType;
+        if (!parseType(ref returnType))
+        {
+            return false;
+        }
+
+        token = TinyScanner.Current();
         if (token.Type != TokenType.IDENTIFIER)
         {
             Error(token.SourcePath, token.Line, "expected identifier after 'func'");
             return false;
         }
-    
+
         string name = token.Lexeme;
         TinyScanner.Advance(); // Skip identifier
-    
+
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_LPAREN)
         {
             Error(token.SourcePath, token.Line, "expected '(' after function name");
             return false;
         }
-    
+
         TinyScanner.Advance(); // Skip '('
         if (!parseParameterList())
         {
             return false;
         }
-    
+
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_RPAREN)
         {
             Error(token.SourcePath, token.Line, "expected ')' after parameter list");
             return false;
         }
-    
+
         TinyScanner.Advance(); // Skip ')'
-    
+
         token = TinyScanner.Current();
         if (token.Type == TokenType.SYM_SEMICOLON)
         {
@@ -216,14 +215,14 @@ unit TinyCompile
             {
                 return false;
             }
-    
+
             token = TinyScanner.Current();
             if (token.Type != TokenType.SYM_RBRACE)
             {
                 Error(token.SourcePath, token.Line, "expected '}' to end function body");
                 return false;
             }
-    
+
             TinyScanner.Advance(); // Skip '}'
             TinyCode.DefineFunction(name);
             return true;

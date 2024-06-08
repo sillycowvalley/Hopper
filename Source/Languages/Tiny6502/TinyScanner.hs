@@ -181,7 +181,7 @@ unit TinyScanner
             return createToken(TokenType.EOF, "");
         }
     }
-
+    
     Token tokenizeChar()
     {
         uint start = lineIndex;
@@ -211,16 +211,16 @@ unit TinyScanner
         
         switch (c)
         {
-            case '(': { return createToken(TokenType.SYM_LPAREN, "(");}
-            case ')': { return createToken(TokenType.SYM_RPAREN, ")");}
-            case '{': { return createToken(TokenType.SYM_LBRACE, "{");}
-            case '}': { return createToken(TokenType.SYM_RBRACE, "}");}
-            case '[': { return createToken(TokenType.SYM_LBRACKET, "[");}
-            case ']': { return createToken(TokenType.SYM_RBRACKET, "]");}
-            case ';': { return createToken(TokenType.SYM_SEMICOLON, ";");}
-            case ':': { return createToken(TokenType.SYM_COLON, ":");}
+            case '(': { return createToken(TokenType.SYM_LPAREN, "("); }
+            case ')': { return createToken(TokenType.SYM_RPAREN, ")"); }
+            case '{': { return createToken(TokenType.SYM_LBRACE, "{"); }
+            case '}': { return createToken(TokenType.SYM_RBRACE, "}"); }
+            case '[': { return createToken(TokenType.SYM_LBRACKET, "["); }
+            case ']': { return createToken(TokenType.SYM_RBRACKET, "]"); }
+            case ';': { return createToken(TokenType.SYM_SEMICOLON, ";"); }
+            case ':': { return createToken(TokenType.SYM_COLON, ":"); }
             case ',': { return createToken(TokenType.SYM_COMMA, ","); }
-            case '.': { return createToken(TokenType.SYM_DOT, ".");}
+            case '.': { return createToken(TokenType.SYM_DOT, "."); }
             case '+':
             {
                 if ((lineIndex < currentLineContent.Length) && (currentLineContent[lineIndex] == '+'))
@@ -269,6 +269,11 @@ unit TinyScanner
             }
             case '%':
             {
+                if ((lineIndex < currentLineContent.Length) && (currentLineContent[lineIndex] == '='))
+                {
+                    lineIndex++;
+                    return createToken(TokenType.SYM_PERCENTEQ, "%=");
+                }
                 return createToken(TokenType.SYM_PERCENT, "%");
             }
             case '&':

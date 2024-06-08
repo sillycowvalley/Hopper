@@ -10,28 +10,27 @@ unit TinyExpression
     {
         return parseAssignmentExpression();
     }
-    
+
     bool parseAssignmentExpression()
     {
         if (!parseBinaryExpression())
         {
             return false;
         }
-    
+
         Token token = TinyScanner.Current();
-        if (token.Type == TokenType.SYM_EQ)
+        if (isAssignmentOperator(token.Type))
         {
-            TinyScanner.Advance(); // Skip '='
-    
+            TinyScanner.Advance(); // Skip the assignment operator
+
             if (!parseExpression())
             {
                 return false;
             }
         }
-    
+
         return true;
     }
-    
 
     bool parseBinaryExpression()
     {
@@ -39,7 +38,7 @@ unit TinyExpression
         {
             return false;
         }
-        
+
         Token token = TinyScanner.Current();
         while (isBinaryOperator(token.Type))
         {
@@ -182,6 +181,27 @@ unit TinyExpression
             case TokenType.SYM_LTE:
             case TokenType.SYM_GT:
             case TokenType.SYM_GTE:
+            {
+                return true;
+            }
+            default:
+            {
+                return false;
+            }
+        }
+        return false; // unreachable but required by Hopper
+    }
+
+    bool isAssignmentOperator(TokenType tp)
+    {
+        switch (tp)
+        {
+            case TokenType.SYM_EQ:
+            case TokenType.SYM_PLUSEQ:
+            case TokenType.SYM_MINUSEQ:
+            case TokenType.SYM_STAREQ:
+            case TokenType.SYM_SLASHEQ:
+            case TokenType.SYM_PERCENTEQ:
             {
                 return true;
             }
