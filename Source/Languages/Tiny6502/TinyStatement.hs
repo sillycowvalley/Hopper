@@ -94,7 +94,7 @@ unit TinyStatement
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_RPAREN)
         {
-            Error(token.SourcePath, token.Line, "expected ')' after condition");
+            Error(token.SourcePath, token.Line, "expected ')' after condition, ('" + token.Lexeme + "')");
             return false;
         }
         
@@ -103,8 +103,20 @@ unit TinyStatement
         {
             return false;
         }
+        
+        token = TinyScanner.Current();
+        if (token.Type == TokenType.KW_ELSE)
+        {
+            TinyScanner.Advance(); // Skip 'else'
+            if (!parseBlock())
+            {
+                return false;
+            }
+        }
+        
         return true;
     }
+    
     
     bool parseWhileStatement()
     {
@@ -184,7 +196,7 @@ unit TinyStatement
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_RPAREN)
         {
-            Error(token.SourcePath, token.Line, "expected ')' after increment");
+            Error(token.SourcePath, token.Line, "expected ')' after increment, ('" + token.Lexeme + "')");
             return false;
         }
         
@@ -403,7 +415,6 @@ unit TinyStatement
         TinyScanner.Advance(); // Skip '}'
         return true;
     }
-    
     bool parseFunctionBody()
     {
         Token token;
@@ -424,3 +435,5 @@ unit TinyStatement
         return true;
     }
 }
+
+

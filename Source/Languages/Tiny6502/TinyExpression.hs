@@ -78,7 +78,7 @@ unit TinyExpression
                 token = TinyScanner.Current();
                 if (token.Type != TokenType.SYM_RPAREN)
                 {
-                    Error(token.SourcePath, token.Line, "expected ')' after argument list");
+                    Error(token.SourcePath, token.Line, "expected ')' after argument list, ('" + token.Lexeme + "')");
                     return false;
                 }
                 TinyScanner.Advance(); // Skip ')'
@@ -117,9 +117,9 @@ unit TinyExpression
                 return false;
             }
         }
-        else if ((token.Type == TokenType.LIT_NUMBER) || (token.Type == TokenType.LIT_STRING) || (token.Type == TokenType.LIT_CHAR))
+        else if ((token.Type == TokenType.LIT_NUMBER) || (token.Type == TokenType.LIT_STRING) || (token.Type == TokenType.LIT_CHAR) || (token.Type == TokenType.KW_TRUE) || (token.Type == TokenType.KW_FALSE))
         {
-            TinyScanner.Advance(); // Skip literal
+            TinyScanner.Advance(); // Skip literal or boolean literal
         }
         else if (token.Type == TokenType.SYM_LPAREN)
         {
@@ -131,7 +131,7 @@ unit TinyExpression
             token = TinyScanner.Current();
             if (token.Type != TokenType.SYM_RPAREN)
             {
-                Error(token.SourcePath, token.Line, "expected ')' after expression");
+                Error(token.SourcePath, token.Line, "expected ')' after expression, ('" + token.Lexeme + "')");
                 return false;
             }
             TinyScanner.Advance(); // Skip ')'
@@ -220,3 +220,4 @@ unit TinyExpression
         return false; // unreachable but required by Hopper
     }
 }
+
