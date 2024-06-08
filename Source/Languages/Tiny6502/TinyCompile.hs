@@ -9,8 +9,7 @@ unit TinyCompile
     uses "TinyExpression"
     uses "TinyConstant"
     uses "TinyType"
-    
-    
+    uses "TinySymbols"
     
     bool Compile()
     {
@@ -18,10 +17,12 @@ unit TinyCompile
         
         // global scope
         TinyConstant.EnterBlock();
+        TinySymbols.EnterBlock();
         
         success = parseProgram();
         
         // global scope
+        TinySymbols.LeaveBlock();
         TinyConstant.LeaveBlock();
         
         return success;
@@ -146,6 +147,12 @@ unit TinyCompile
         }
     
         string name = token.Lexeme;
+        
+        if (!DefineVariable(tp, name))
+        {
+            return false;
+        }
+        
         TinyScanner.Advance(); // Skip identifier
     
         token = TinyScanner.Current();
@@ -169,103 +176,112 @@ unit TinyCompile
     
         TinyScanner.Advance(); // Skip ';'
     
-        TinyCode.DefineGlobalVar(tp, name, "");
         return true;
     }
     
     bool parseFunction()
     {
-        TinyScanner.Advance(); // Skip 'func'
-        Token token = TinyScanner.Current();
-    
-        // Optional return type
-        string returnType = "";
-        if (token.Type != TokenType.IDENTIFIER)
+        bool success;
+        TinySymbols.EnterBlock();
+        loop
         {
-            if (!parseType(ref returnType))
+            TinyScanner.Advance(); // Skip 'func'
+            Token token = TinyScanner.Current();
+        
+            // Optional return type
+            string returnType = "";
+            if (token.Type != TokenType.IDENTIFIER)
             {
-                return false;
+                if (!parseType(ref returnType))
+                {
+                    break;
+                }
+                token = TinyScanner.Current();
             }
+        
+            if (token.Type != TokenType.IDENTIFIER)
+            {
+                Error(token.SourcePath, token.Line, "expected identifier after 'func', (" + token.Lexeme + "')");
+                break;
+            }
+        
+            string name = token.Lexeme;
+            TinyScanner.Advance(); // Skip identifier
+        
             token = TinyScanner.Current();
-        }
+            if (token.Type == TokenType.SYM_EQ)
+            {
+                // Handle function pointer assignment
+                TinyScanner.Advance(); // Skip '='
+                
+                string exprType;
+                if (!TinyExpression.parseExpression(ref exprType))
+                {
+                    break;
+                }
+        
+                token = TinyScanner.Current();
+                if (token.Type != TokenType.SYM_SEMICOLON)
+                {
+                    Error(token.SourcePath, token.Line, "expected ';' after function pointer assignment, (" + token.Lexeme + "')");
+                    break;
+                }
+        
+                TinyScanner.Advance(); // Skip ';'
+                //TinyCode.DefineFunctionPointer(name); // TODO: Implement in TinyCode
+                success = true;
+                break;
+            }
     
-        if (token.Type != TokenType.IDENTIFIER)
-        {
-            Error(token.SourcePath, token.Line, "expected identifier after 'func', (" + token.Lexeme + "')");
-            return false;
-        }
-    
-        string name = token.Lexeme;
-        TinyScanner.Advance(); // Skip identifier
-    
-        token = TinyScanner.Current();
-        if (token.Type == TokenType.SYM_EQ)
-        {
-            // Handle function pointer assignment
-            TinyScanner.Advance(); // Skip '='
+            if (token.Type != TokenType.SYM_LPAREN)
+            {
+                Error(token.SourcePath, token.Line, "expected '(' after function name, (" + token.Lexeme + "')");
+                break;
+            }
+        
+            TinyScanner.Advance(); // Skip '('
+            if (!parseParameterList())
+            {
+                break;
+            }
+        
+            token = TinyScanner.Current();
+            if (token.Type != TokenType.SYM_RPAREN)
+            {
+                Error(token.SourcePath, token.Line, "expected ')' after parameter list, (" + token.Lexeme + "')");
+                break;
+            }
+        
+            TinyScanner.Advance(); // Skip ')'
+        
+            token = TinyScanner.Current();
+            if (token.Type == TokenType.SYM_SEMICOLON)
+            {
+                // This is a forward declaration
+                TinyScanner.Advance(); // Skip ';'
+                //TinyCode.DefineForwardFunction(name);
+            }
+            else if (token.Type == TokenType.SYM_LBRACE)
+            {
+                // This is an actual function definition
+                if (!TinyStatement.parseBlock())
+                {
+                    break;
+                }
+                TinyCode.DefineFunction(name);
+            }
+            else
+            {
+                Error(token.SourcePath, token.Line, "expected '{' to start function body or ';' for forward declaration");
+                break;
+            }
             
-            string exprType;
-            if (!TinyExpression.parseExpression(ref exprType))
-            {
-                return false;
-            }
-    
-            token = TinyScanner.Current();
-            if (token.Type != TokenType.SYM_SEMICOLON)
-            {
-                Error(token.SourcePath, token.Line, "expected ';' after function pointer assignment, (" + token.Lexeme + "')");
-                return false;
-            }
-    
-            TinyScanner.Advance(); // Skip ';'
-            //TinyCode.DefineFunctionPointer(name); // TODO: Implement in TinyCode
-            return true;
-        }
-    
-        if (token.Type != TokenType.SYM_LPAREN)
-        {
-            Error(token.SourcePath, token.Line, "expected '(' after function name, (" + token.Lexeme + "')");
-            return false;
-        }
-    
-        TinyScanner.Advance(); // Skip '('
-        if (!parseParameterList())
-        {
-            return false;
-        }
-    
-        token = TinyScanner.Current();
-        if (token.Type != TokenType.SYM_RPAREN)
-        {
-            Error(token.SourcePath, token.Line, "expected ')' after parameter list, (" + token.Lexeme + "')");
-            return false;
-        }
-    
-        TinyScanner.Advance(); // Skip ')'
-    
-        token = TinyScanner.Current();
-        if (token.Type == TokenType.SYM_SEMICOLON)
-        {
-            // This is a forward declaration
-            TinyScanner.Advance(); // Skip ';'
-            //TinyCode.DefineForwardFunction(name);
-            return true;
-        }
-        else if (token.Type == TokenType.SYM_LBRACE)
-        {
-            // This is an actual function definition
-            if (!TinyStatement.parseBlock())
-            {
-                return false;
-            }
-            TinyCode.DefineFunction(name);
-            return true;
-        }
-        else
-        {
-            Error(token.SourcePath, token.Line, "expected '{' to start function body or ';' for forward declaration");
-            return false;
-        }
+            success = true;
+            break;
+        } // loop
+        TinySymbols.LeaveBlock();
+        
+        return success;
     }
     
           
@@ -281,8 +297,8 @@ unit TinyCompile
                 break; // exit the loop when reaching ')'
             }
             
-            string tp;
-            if (!parseType(ref tp))
+            string variableType;
+            if (!parseType(ref variableType))
             {
                 return false;
             }
@@ -294,10 +310,14 @@ unit TinyCompile
                 return false;
             }
             
-            string name = token.Lexeme;
-            TinyScanner.Advance(); // Skip name
+            string variableName = token.Lexeme;
             
-            //TinyCode.DefineParameter(tp, name); // TODO
+            if (!DefineVariable(variableType, variableName))
+            {
+                return false;
+            }
+            
+            TinyScanner.Advance(); // Skip name
             
             token = TinyScanner.Current();
             if (token.Type == TokenType.SYM_COMMA)

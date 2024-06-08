@@ -33,7 +33,7 @@ unit TinyConstant
         {
             // exists already
             Token token = TinyScanner.Current();
-            Error(token.SourcePath, token.Line, "constant with name '" + constantName + "' already exists '");
+            Error(token.SourcePath, token.Line, "constant with name '" + constantName + "' already exists");
             return false;
         }
         Constant newConstant;

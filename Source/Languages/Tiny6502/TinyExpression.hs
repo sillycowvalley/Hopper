@@ -6,6 +6,8 @@ unit TinyExpression
     uses "TinyScanner"
     uses "TinyCode"
     uses "TinyConstant"
+    uses "TinyType"
+    uses "TinySymbols"
     
     bool parseExpression(ref string actualType)
     {

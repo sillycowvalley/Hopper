@@ -5,6 +5,8 @@ unit TinyStatement
     uses "TinyScanner"
     uses "TinyCode"
     uses "TinyExpression"
+    uses "TinyType"
+    uses "TinySymbols"
     
     bool parseIfStatement()
     {
@@ -223,6 +225,11 @@ unit TinyStatement
     
         string name = token.Lexeme;
         TinyScanner.Advance(); // Skip identifier
+        
+        if (!DefineVariable(tp, name))
+        {
+            return false;
+        }
     
         token = TinyScanner.Current();
         if (token.Type == TokenType.SYM_EQ)

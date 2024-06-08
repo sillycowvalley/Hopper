@@ -34,14 +34,6 @@ unit TinyCode
     }
     
     
-    DefineGlobalVar(string tp, string name, string value)
-    {
-        globalIndex[name] = lastGlobal;
-        globalType[name]  = tp;
-        globalValue[name] = value;
-        lastGlobal++;
-    }
-    
     DefineFunction(string name)
     {
         functionIndex[name] = lastFunction;
