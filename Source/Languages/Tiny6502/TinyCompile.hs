@@ -283,9 +283,9 @@ unit TinyCompile
             token = TinyScanner.Current();
         }
     
-        if ((token.Type != TokenType.KW_BYTE) && (token.Type != TokenType.KW_WORD) && (token.Type != TokenType.KW_CHAR) && (token.Type != TokenType.KW_BOOL) && (token.Type != TokenType.KW_INT) && (token.Type != TokenType.KW_UINT))
+        if (!TinyToken.IsTypeKeyword(token.Type))
         {
-            Error(token.SourcePath, token.Line, "expected type");
+            Error(token.SourcePath, token.Line, "expected type, ('" + token.Lexeme + "')");
             return false;
         }
     

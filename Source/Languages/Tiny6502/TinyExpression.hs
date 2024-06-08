@@ -167,6 +167,20 @@ unit TinyExpression
             }
             TinyScanner.Advance(); // Skip ')'
         }
+        else if (token.Type == TokenType.KW_FUNC)
+        {
+            TinyScanner.Advance(); // Skip 'func'
+            token = TinyScanner.Current();
+            if (token.Type == TokenType.IDENTIFIER)
+            {
+                TinyScanner.Advance(); // Skip identifier
+            }
+            else
+            {
+                Error(token.SourcePath, token.Line, "expected identifier after 'func'");
+                return false;
+            }
+        }
         else
         {
             Error(token.SourcePath, token.Line, "unexpected token in expression: " + TinyToken.ToString(token.Type));

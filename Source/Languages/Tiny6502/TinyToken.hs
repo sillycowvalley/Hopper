@@ -81,6 +81,7 @@ unit TinyToken
             case TokenType.KW_BOOL:
             case TokenType.KW_INT:
             case TokenType.KW_UINT:
+            case TokenType.KW_FUNC:
             {
                 return true;
             }
