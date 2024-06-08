@@ -5,7 +5,7 @@ unit TinyToken
         // Keywords
         KW_FUNC, KW_IF, KW_ELSE, KW_WHILE, KW_FOR, KW_BREAK, KW_CONTINUE, KW_SWITCH, KW_CASE, KW_DEFAULT,
         KW_CONST, KW_TRUE, KW_FALSE, KW_NULL, KW_IMPORT, KW_RETURN,
-        KW_BYTE, KW_WORD, KW_CHAR, KW_BOOL, KW_INT, KW_UINT,
+        KW_BYTE, KW_WORD, KW_CHAR, KW_BOOL, KW_INT, KW_UINT, KW_AS,
         // Symbols
         SYM_LPAREN, SYM_RPAREN, SYM_LBRACE, SYM_RBRACE, SYM_LBRACKET, SYM_RBRACKET,
         SYM_SEMICOLON, SYM_COLON, SYM_COMMA, SYM_DOT,
@@ -58,6 +58,7 @@ unit TinyToken
         keywords["int"] = TokenType.KW_INT;
         keywords["uint"] = TokenType.KW_UINT;
         keywords["return"] = TokenType.KW_RETURN;
+        keywords["as"] = TokenType.KW_AS;
     }
     
     bool IsKeyword(string candidate, ref TokenType kw)

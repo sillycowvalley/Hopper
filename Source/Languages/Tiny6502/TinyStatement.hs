@@ -350,10 +350,15 @@ unit TinyStatement
         TinyScanner.Advance(); // Skip ';'
         return true;
     }
+    uint nesting;
     
     bool parseBlock()
     {
         Token token = TinyScanner.Current();
+        
+        PrintLn(("{").LeftPad(' ', nesting*4) + " " + nesting.ToString() + " " + token.SourcePath + ":" + (token.Line).ToString());
+        nesting++;
+        
         if (token.Type != TokenType.SYM_LBRACE)
         {
             Error(token.SourcePath, token.Line, "expected '{' to start block, ('" + token.Lexeme + "')");
@@ -377,6 +382,9 @@ unit TinyStatement
         }
         
         TinyScanner.Advance(); // Skip '}'
+        
+        nesting--;
+        PrintLn(("}").LeftPad(' ', nesting*4) + " " + nesting.ToString());
         return true;
     }
     

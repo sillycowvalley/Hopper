@@ -82,6 +82,7 @@ unit TinyExpression
         return true;
     }
     
+    
     bool parsePrimaryExpression()
     {
         Token token = TinyScanner.Current();
@@ -114,10 +115,19 @@ unit TinyExpression
                 token = TinyScanner.Current();
                 if (token.Type != TokenType.SYM_RBRACKET)
                 {
-                    Error(token.SourcePath, token.Line, "expected ']' after array index, ('" + token.Lexeme + "')");
+                    Error(token.SourcePath, token.Line, "expected ']' after array index");
                     return false;
                 }
                 TinyScanner.Advance(); // Skip ']'
+            }
+            else if (token.Type == TokenType.KW_AS)
+            {
+                TinyScanner.Advance(); // Skip 'as'
+                string castType;
+                if (!TinyCompile.parseType(ref castType))
+                {
+                    return false;
+                }
             }
             else if ((token.Type == TokenType.SYM_PLUSPLUS) || (token.Type == TokenType.SYM_MINUSMINUS))
             {
@@ -164,6 +174,7 @@ unit TinyExpression
         }
         return true;
     }
+    
     
     bool parseArgumentList()
     {

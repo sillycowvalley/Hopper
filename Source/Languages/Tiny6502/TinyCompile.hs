@@ -216,7 +216,7 @@ unit TinyCompile
         {
             // This is an actual function definition
             TinyScanner.Advance(); // Skip '{'
-            if (!TinyStatement.parseFunctionBody())
+            if (!TinyStatement.parseFunctionBody()) // ... parseBlock?!
             {
                 return false;
             }
