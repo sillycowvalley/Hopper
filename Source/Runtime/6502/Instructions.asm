@@ -911,7 +911,7 @@ unit Instruction
     {
         Stacks.PopNext();
         
-        LDX #1 // NEXT < TOP   TODO do I have the results the wrong way around here? see Z80 version
+        LDX #1 // NEXT < TOP
         LDA ZP.NEXTH
         CMP ZP.TOPH
         if (Z)

@@ -19,6 +19,7 @@ unit TinyExpression
         Token token = TinyScanner.Current();        
         if (token.Type == TokenType.KW_AS)
         {
+            TinyCode.PadOut("// as TODO", 0);
             // cast
             TinyScanner.Advance(); // Skip 'as'
             if (!TinyCompile.parseType(ref actualType))
@@ -39,6 +40,12 @@ unit TinyExpression
         Token token = TinyScanner.Current();
         if ((token.Type == TokenType.SYM_EQ) || IsCompoundAssignmentOperator(token.Type))
         {
+            Token nameToken = TinyScanner.Previous();
+            string name = nameToken.Lexeme;
+            string op = token.Lexeme;
+            TinyCode.PadOut("// " + name + " " + op, 0);
+            
+        
             TinyScanner.Advance(); // Skip '=' or compound assignment operator
 
             string rhsType;
@@ -51,7 +58,18 @@ unit TinyExpression
                 TypeError(actualType, rhsType);
                 return false;
             }
+            
+            int    offset;
+            bool   isGlobal;
+            string variableType;
+            if (!GetVariable(name, ref variableType, ref offset, ref isGlobal))
+            {
+                Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
+            }
+            TinyCode.PopVariable(name, offset, IsByteType(variableType), isGlobal);
         }
+        
+        
         return true;
     }
 
@@ -78,6 +96,7 @@ unit TinyExpression
             }
             actualType = "bool";
             token = TinyScanner.Current();
+            TinyCode.PadOut("// || TODO", 0);
         }
         return true;
     }
@@ -105,6 +124,7 @@ unit TinyExpression
             }
             actualType = "bool";
             token = TinyScanner.Current();
+            TinyCode.PadOut("// && TODO", 0);
         }
         return true;
     }
@@ -131,6 +151,7 @@ unit TinyExpression
                 return false;
             }
             token = TinyScanner.Current();
+            TinyCode.PadOut("// | TODO", 0);
         }
         return true;
     }
@@ -157,6 +178,7 @@ unit TinyExpression
                 return false;
             }
             token = TinyScanner.Current();
+            TinyCode.PadOut("// ^ TODO", 0);
         }
         return true;
     }
@@ -183,6 +205,7 @@ unit TinyExpression
                 return false;
             }
             token = TinyScanner.Current();
+            TinyCode.PadOut("// & TODO", 0);
         }
         return true;
     }
@@ -211,6 +234,7 @@ unit TinyExpression
             }
             actualType = "bool";
             token = TinyScanner.Current();
+            TinyCode.PadOut("// " + op + " TODO", 0); 
         }
         return true;
     }
@@ -239,6 +263,7 @@ unit TinyExpression
             }
             actualType = "bool";
             token = TinyScanner.Current();
+            TinyCode.PadOut("// " + op + " TODO", 0); 
         }
         return true;
     }
@@ -266,6 +291,7 @@ unit TinyExpression
                 return false;
             }
             token = TinyScanner.Current();
+            TinyCode.PadOut("// " + op + " TODO", 0); 
         }
         return true;
     }
@@ -293,6 +319,7 @@ unit TinyExpression
                 return false;
             }
             token = TinyScanner.Current();
+            TinyCode.PadOut("// " + op + " TODO", 0); 
         }
         return true;
     }
@@ -320,6 +347,7 @@ unit TinyExpression
                 return false;
             }
             token = TinyScanner.Current();
+            TinyCode.PadOut("// " + op + " TODO", 0); 
         }
         return true;
     }
@@ -329,11 +357,13 @@ unit TinyExpression
         Token token = TinyScanner.Current();
         if ((token.Type == TokenType.SYM_MINUS) || (token.Type == TokenType.SYM_BANG) || (token.Type == TokenType.SYM_TILDE))
         {
+            string op = token.Lexeme;
             TinyScanner.Advance(); // Skip unary operator
             if (!parsePrimaryExpression(ref actualType))
             {
                 return false;
             }
+            TinyCode.PadOut("// " + op + " TODO", 0); 
         }
         else
         {

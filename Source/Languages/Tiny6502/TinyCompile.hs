@@ -229,6 +229,16 @@ unit TinyCompile
 
         TinyCode.PadOut("// initialize '" + name + "' (" + (GlobalOffset).ToString() + ")", 0);
         
+        // make a slot on the stack
+        if (TinyType.IsByteType(tp))
+        {
+            TinyCode.PushByte(0, "byte");
+        }
+        else
+        {
+            TinyCode.PushWord(0, tp);
+        }
+        
         GlobalOffset = GlobalOffset + (IsByteType(tp) ? 1 : 2);
             
         token = TinyScanner.Current();
@@ -240,17 +250,15 @@ unit TinyCompile
             {
                 return false;
             }
-        }
-        else
-        {
-            if (TinyType.IsByteType(tp))
+            
+            int    offset;
+            bool   isGlobal;
+            string variableType;
+            if (!GetVariable(name, ref variableType, ref offset, ref isGlobal))
             {
-                TinyCode.PushByte(0, "byte");
+                Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
             }
-            else
-            {
-                TinyCode.PushWord(0, tp);
-            }
+            TinyCode.PopVariable(name, offset, IsByteType(variableType), isGlobal);
         }
     
         token = TinyScanner.Current();

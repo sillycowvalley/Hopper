@@ -207,7 +207,10 @@ unit TinyCode
     {
         PadOut("LDA # 0x" + (word.GetByte(0)).ToHexString(2) + " // " + comment + " LSB", 0);
         PadOut("PHA", 0);
-        PadOut("LDA # 0x" + (word.GetByte(1)).ToHexString(2) + " // " + comment + " MSB", 0);
+        if (word.GetByte(0) != word.GetByte(1))
+        {
+            PadOut("LDA # 0x" + (word.GetByte(1)).ToHexString(2) + " // " + comment + " MSB", 0);
+        }
         PadOut("PHA", 0);
     }
     PushByte(byte value, string comment)

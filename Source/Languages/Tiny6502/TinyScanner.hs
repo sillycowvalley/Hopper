@@ -10,6 +10,7 @@ unit TinyScanner
     uint lineIndex;
     string currentLineContent;
     Token currentToken;
+    Token previousToken;
     
     Restart(string sourcePath)
     {
@@ -35,6 +36,7 @@ unit TinyScanner
     
     Advance()
     {
+        previousToken = currentToken;
         advanceToken();
     }
     
@@ -46,6 +48,10 @@ unit TinyScanner
     Token Current()
     {
         return currentToken;
+    }
+    Token Previous()
+    {
+        return previousToken;
     }
     
     advanceLine()

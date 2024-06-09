@@ -257,6 +257,15 @@ unit TinyStatement
         
         TinyCode.PadOut("// initialize '" + name + "' (BP+" + (LocalOffset).ToString() +")", 0);
         
+        if (TinyType.IsByteType(tp))
+        {
+            TinyCode.PushByte(0, tp);
+        }
+        else
+        {
+            TinyCode.PushWord(0, tp);
+        }
+        
         LocalOffset = LocalOffset + int(IsByteType(tp) ? 1 : 2);
     
         token = TinyScanner.Current();
@@ -306,6 +315,15 @@ unit TinyStatement
                     Error(token.SourcePath, token.Line, "expected ';' after variable assignment, ('" + token.Lexeme + "')");
                     return false;
                 }
+                
+                int    offset;
+                bool   isGlobal;
+                string variableType;
+                if (!GetVariable(name, ref variableType, ref offset, ref isGlobal))
+                {
+                    Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
+                }
+                TinyCode.PopVariable(name, offset, IsByteType(variableType), isGlobal);
             }
         }
         else
@@ -315,14 +333,6 @@ unit TinyStatement
             {
                 Error(token.SourcePath, token.Line, "expected ';' after variable declaration, ('" + token.Lexeme + "')");
                 return false;
-            }
-            if (TinyType.IsByteType(tp))
-            {
-                TinyCode.PushByte(0, tp);
-            }
-            else
-            {
-                TinyCode.PushWord(0, tp);
             }
         }
         
@@ -389,56 +399,6 @@ unit TinyStatement
         
         return TinyConstant.DefineConst(constantType, name, value);
     }
-    /*
-    bool parseAssignmentOrExpression()
-    {
-        Token token = TinyScanner.Current();
-        Token nextToken = TinyScanner.Peek(); // Peek at the next token
-        if (nextToken.Type == TokenType.SYM_EQ)
-        {
-            // It's an assignment
-            string name = token.Lexeme;
-            TinyScanner.Advance(); // Skip identifier
-            
-            TinyScanner.Advance(); // Skip '='
-            
-            if (!TinyExpression.parseExpression())
-            {
-                return false;
-            }
-            
-            token = TinyScanner.Current();
-            if (token.Type != TokenType.SYM_SEMICOLON)
-            {
-                Error(token.SourcePath, token.Line, "expected ';' after assignment, ('" + token.Lexeme + "')");
-                return false;
-            }
-            
-            TinyScanner.Advance(); // Skip ';'
-            
-            TinyCode.DefineAssignment(name);
-            return true;
-        }
-        else
-        {
-            // It's an expression
-            if (!TinyExpression.parseExpression())
-            {
-                return false;
-            }
-            
-            token = TinyScanner.Current();
-            if (token.Type != TokenType.SYM_SEMICOLON)
-            {
-                Error(token.SourcePath, token.Line, "expected ';' after expression, ('" + token.Lexeme + "')");
-                return false;
-            }
-            
-            TinyScanner.Advance(); // Skip ';'
-            return true;
-        }
-    }
-    */
     bool parseExpressionStatement()
     {
         string actualType;

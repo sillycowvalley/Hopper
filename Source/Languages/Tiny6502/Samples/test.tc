@@ -3,7 +3,7 @@
 
 func main()
 {
-    for (word i=0; i < 100; i++)
+    for (word i = 0; i < 100; i++)
     {
         byte a = 0;
         a++;
