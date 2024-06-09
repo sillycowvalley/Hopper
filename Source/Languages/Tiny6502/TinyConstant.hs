@@ -4,6 +4,7 @@ unit TinyConstant
     
     uses "TinyToken"
     uses "TinyType"
+    uses "TinyCode"
     
     record Constant
     {
@@ -293,6 +294,16 @@ unit TinyConstant
                 Error(token.SourcePath, token.Line, "integral constant out of range, ('" + token.Lexeme + "')");
                 return false;
             }
+            if (actualType == "byte")
+            {
+                TinyCode.PushByte(lv.GetByte(0), "byte");
+            }
+            else
+            {
+                uint ui = UInt.FromBytes(lv.GetByte(0), lv.GetByte(1));
+                TinyCode.PushWord(ui, actualType);
+            }
+            
             TinyScanner.Advance(); // Skip number or identifier
         }
         else if (token.Type == TokenType.IDENTIFIER)
@@ -314,19 +325,22 @@ unit TinyConstant
         {
             value = token.Lexeme;
             actualType = "char";
+            TinyCode.PushByte(byte(value[0]), "'" + value + "'");
             TinyScanner.Advance(); // Skip char literal
         }
         else if (token.Type == TokenType.KW_TRUE)
         {
             value = "1";
             actualType = "bool";
-            TinyScanner.Advance(); // Skip char literal
+            TinyCode.PushByte(1, "true");
+            TinyScanner.Advance(); // Skip bool literal
         }
         else if (token.Type == TokenType.KW_FALSE)
         {
             value = "0";
             actualType = "bool";
-            TinyScanner.Advance(); // Skip char literal
+            TinyCode.PushByte(0, "false");
+            TinyScanner.Advance(); // Skip bool literal
         }
         else
         {

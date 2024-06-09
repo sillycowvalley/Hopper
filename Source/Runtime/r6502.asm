@@ -21,6 +21,7 @@ program R6502
     #define INLINE_EXPANSIONS 
     
     #define W65C22_VIA
+    #define ACIA_6850
          
 #if defined(CPU_65C02S) && !defined(CHECKED) && !defined(FASTINTS) && !defined(INLINE_EXPANSIONS)
     #define ROM_8K // 240 bytes overrun with I2C but without FASTINTS

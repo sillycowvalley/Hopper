@@ -99,6 +99,8 @@ unit TinyStatement
         TinyScanner.Advance(); // Skip 'for'
         Token token = TinyScanner.Current();
         
+        TinyCode.Map(token);
+        
         if (token.Type != TokenType.SYM_LPAREN)
         {
             Error(token.SourcePath, token.Line, "expected '(' after 'for'");
@@ -242,14 +244,20 @@ unit TinyStatement
             Error(token.SourcePath, token.Line, "expected identifier after type, ('" + token.Lexeme + "')");
             return false;
         }
+        TinyCode.Map(token);
     
         string name = token.Lexeme;
         TinyScanner.Advance(); // Skip identifier
         
-        if (!DefineVariable(tp, name))
+        if (!DefineVariable(tp, name, LocalOffset, false))
         {
             return false;
         }
+        
+        
+        TinyCode.PadOut("// initialize '" + name + "' (BP+" + (LocalOffset).ToString() +")", 0);
+        
+        LocalOffset = LocalOffset + int(IsByteType(tp) ? 1 : 2);
     
         token = TinyScanner.Current();
         if (token.Type == TokenType.SYM_EQ)
@@ -298,8 +306,6 @@ unit TinyStatement
                     Error(token.SourcePath, token.Line, "expected ';' after variable assignment, ('" + token.Lexeme + "')");
                     return false;
                 }
-               
-                //TinyCode.DefineLocalVar(tp, name); // TODO: Implement in TinyCode
             }
         }
         else
@@ -310,8 +316,14 @@ unit TinyStatement
                 Error(token.SourcePath, token.Line, "expected ';' after variable declaration, ('" + token.Lexeme + "')");
                 return false;
             }
-    
-            //TinyCode.DefineLocalVar(tp, name); // TODO: Implement in TinyCode
+            if (TinyType.IsByteType(tp))
+            {
+                TinyCode.PushByte(0, tp);
+            }
+            else
+            {
+                TinyCode.PushWord(0, tp);
+            }
         }
         
         TinyScanner.Advance(); // Skip ';'
@@ -322,6 +334,8 @@ unit TinyStatement
     
     bool parseLocalConstDeclaration()
     {
+        TinyCode.Generating = false;
+        
         TinyScanner.Advance(); // Skip 'const'
         
         string constantType;
@@ -370,9 +384,12 @@ unit TinyStatement
         }
     
         TinyScanner.Advance(); // Skip ';'
+        
+        TinyCode.Generating = true;
+        
         return TinyConstant.DefineConst(constantType, name, value);
     }
-    
+    /*
     bool parseAssignmentOrExpression()
     {
         Token token = TinyScanner.Current();
@@ -421,7 +438,7 @@ unit TinyStatement
             return true;
         }
     }
-    
+    */
     bool parseExpressionStatement()
     {
         string actualType;
@@ -445,7 +462,7 @@ unit TinyStatement
         if (scope)
         {
             TinyConstant.EnterBlock();
-            TinySymbols.EnterBlock(true);
+            TinySymbols.EnterBlock(true, false);
         }
             
         
@@ -476,7 +493,7 @@ unit TinyStatement
         TinyScanner.Advance(); // Skip '}'
         if (scope)
         {
-            TinySymbols.LeaveBlock("", true);
+            TinySymbols.LeaveBlock("", true, false);
             TinyConstant.LeaveBlock();
         }
         return true;

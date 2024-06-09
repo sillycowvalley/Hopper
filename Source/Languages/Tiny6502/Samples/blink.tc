@@ -5,7 +5,7 @@
 
 // Blink an LED on GPIO pin 0 every second and send a message over serial
 func main() {
-    byte pin = 0;
+    byte pin;
     const char[] welcome_message = "Hello, 6502!";
     bool led_on = false;
     

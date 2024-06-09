@@ -11,6 +11,12 @@ unit TinyCompile
     uses "TinyType"
     uses "TinySymbols"
     
+    int localOffset;
+    int LocalOffset   { get { return localOffset; } set { localOffset = value; } }
+    uint globalOffset;
+    uint GlobalOffset { get { return globalOffset; } set { globalOffset = value; } }
+ 
+    
     bool Compile()
     {
         bool success;
@@ -18,7 +24,9 @@ unit TinyCompile
         {
             // global scope
             TinyConstant.EnterBlock();
-            TinySymbols.EnterBlock(true);
+            TinySymbols.EnterBlock(true, false);
+            
+            TinyCode.Uses();
             
             if (!parseProgram())
             {
@@ -26,7 +34,7 @@ unit TinyCompile
             }
         
             // global scope
-            TinySymbols.LeaveBlock("program", true);
+            TinySymbols.LeaveBlock("program", true, false);
             TinyConstant.LeaveBlock();
             
             Token token = TinyScanner.Current();
@@ -102,6 +110,8 @@ unit TinyCompile
     
     bool parseConst()
     {
+        TinyCode.Generating = false;
+        
         TinyScanner.Advance(); // Skip 'const'
         Token token = TinyScanner.Current();
         
@@ -151,6 +161,8 @@ unit TinyCompile
         
         TinyScanner.Advance(); // Skip ';'
         
+        TinyCode.Generating = true;
+        
         return TinyConstant.DefineConst(constantType, name, value);
     }
     
@@ -178,10 +190,22 @@ unit TinyCompile
         TinyScanner.Advance(); // Skip symbol
         return true;
     }
-    
  
+    <string> globalDefinitions;   
+    
+    EmitGlobals()
+    {
+        TinyCode.StartUp();
+        foreach (var global in globalDefinitions)
+        {
+            TinyCode.PadOut(global, 0);
+        }
+    }
+    
     bool parseGlobalVar()
     {
+        TinyCode.Capturing();        
+        
         string tp;
         if (!parseType(ref tp))
         {
@@ -196,23 +220,36 @@ unit TinyCompile
         }
     
         string name = token.Lexeme;
-        
-        if (!DefineVariable(tp, name))
+        if (!DefineVariable(tp, name, int(GlobalOffset), true))
         {
             return false;
         }
         
         TinyScanner.Advance(); // Skip identifier
-    
+
+        TinyCode.PadOut("// initialize '" + name + "' (" + (GlobalOffset).ToString() + ")", 0);
+        
+        GlobalOffset = GlobalOffset + (IsByteType(tp) ? 1 : 2);
+            
         token = TinyScanner.Current();
         if (token.Type == TokenType.SYM_EQ)
         {
             TinyScanner.Advance(); // Skip '='
-    
             string exprType;
             if (!TinyExpression.parseExpression(ref exprType))
             {
                 return false;
+            }
+        }
+        else
+        {
+            if (TinyType.IsByteType(tp))
+            {
+                TinyCode.PushByte(0, "byte");
+            }
+            else
+            {
+                TinyCode.PushWord(0, tp);
             }
         }
     
@@ -224,18 +261,25 @@ unit TinyCompile
         }
     
         TinyScanner.Advance(); // Skip ';'
-    
+        
+        string captured = TinyCode.Captured();
+        globalDefinitions.Append(captured);
         return true;
     }
+    
     
     bool parseFunction()
     {
         bool success;
         
+        LocalOffset = 0;
+        
         loop
         {
             TinyScanner.Advance(); // Skip 'func'
             Token token = TinyScanner.Current();
+            
+            TinyCode.Map(token);
         
             // Optional return type
             string returnType = "";
@@ -284,7 +328,7 @@ unit TinyCompile
             
             TinyCode.Function(functionName);
             TinyConstant.EnterBlock();
-            TinySymbols.EnterBlock(false); // for arguments
+            TinySymbols.EnterBlock(false, true); // for arguments
             
             if (!DefineFunction(returnType, functionName))
             {
@@ -301,6 +345,8 @@ unit TinyCompile
             {
                 break;
             }
+            TinySymbols.UpdateArgumentOffsets(functionName);
+            
             token = TinyScanner.Current();
             if (token.Type != TokenType.SYM_RPAREN)
             {
@@ -324,11 +370,19 @@ unit TinyCompile
                 generate = true;
                 TinyCode.EmitDeferred();
                 
+                if (functionName == "main")
+                {
+                    EmitGlobals();
+                }
+                TinyCode.Enter();
+                
                 // This is an actual function definition
                 if (!TinyStatement.parseBlock(false))
                 {
                     break;
                 }
+                
+                TinyCode.Leave();
             }
             else
             {
@@ -336,7 +390,7 @@ unit TinyCompile
                 break;
             }
             
-            TinySymbols.LeaveBlock(functionName, generate); // for arguments
+            TinySymbols.LeaveBlock(functionName, generate, true); // for arguments
             TinyConstant.LeaveBlock();
             
             success = true;
@@ -350,6 +404,7 @@ unit TinyCompile
     bool parseParameterList(string functionName)
     {
         Token token;
+        int offset;
         loop
         {
             token = TinyScanner.Current();
@@ -373,14 +428,15 @@ unit TinyCompile
             
             string variableName = token.Lexeme;
             
-            if (!DefineVariable(variableType, variableName))
+            if (!DefineVariable(variableType, variableName, offset, false))
             {
                 return false;
             }
-            if (!DefineArgument(functionName, variableType, variableName))
+            if (!DefineArgument(functionName, variableType, variableName, offset))
             {
                 return false;
             }
+            offset++;
             
             TinyScanner.Advance(); // Skip name
             

@@ -1423,8 +1423,8 @@ unit AsmPoints
                         else
                         {
                             // TODO
-                            PrintLn();
-                            Print("STZ:"); WalkVerbose(iIndex+1, WalkStats.WriteA, WalkStats.ReadA | WalkStats.CallRet | WalkStats.Exit, 10);
+                            //PrintLn();
+                            //Print("STZ:"); WalkVerbose(iIndex+1, WalkStats.WriteA, WalkStats.ReadA | WalkStats.CallRet | WalkStats.Exit, 10);
                         }
                     }
                     else

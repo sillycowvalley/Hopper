@@ -10,6 +10,11 @@ unit TinyType
         typeName = "|" + typeName.Replace("const ", "") + "|";
         return ("|byte|word|int|+int|").Contains(typeName);
     }
+    bool IsByteType(string typeName)
+    {
+        typeName = "|" + typeName.Replace("const ", "") + "|";
+        return ("|byte|char|bool|").Contains(typeName);
+    }
     string GetArrayMemberType(string arrayType)
     {
         string memberType = arrayType;
@@ -135,6 +140,7 @@ unit TinyType
                 {
                     case "byte":
                     {
+                        TinyCode.PushByte(0, "cast MSB");
                         return true; // byte as word
                     }
                     case "char":
@@ -163,6 +169,7 @@ unit TinyType
                 {
                     case "byte":
                     {
+                        TinyCode.PushByte(0, "cast MSB");
                         return true; // byte as int
                     }
                     case "char":
@@ -191,6 +198,7 @@ unit TinyType
                 {
                     case "byte":
                     {
+                        TinyCode.PushByte(0, "cast MSB");
                         return true; // byte as +int
                     }
                     case "char":

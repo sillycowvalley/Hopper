@@ -26,7 +26,7 @@ unit BuildCommand
     
     uint runtimeExecute(string path, <string> arguments)
     {
-        if (isTiny6502) // for CLI diagnostics
+        if (false) // for CLI diagnostics
         {
             PrintLn();
             Print(path + " ");
@@ -283,7 +283,8 @@ unit BuildCommand
                     Editor.SetStatusBarText("No Tiny6502 compiler: '" + binaryPath + "'");
                     break;
                 }
-                string tcPath = "/Debug/Obj/" + fileName + ".tc";
+                string tcPath    = "/Debug/Obj/" + fileName + ".tc";
+                string tcOutPath = "/Debug/Obj/" + fileName + ".asm";
                 arguments.Clear();
                 arguments.Append(tcPath);
                 
@@ -291,15 +292,39 @@ unit BuildCommand
                 arguments.Append(col.ToString());
                 arguments.Append(row.ToString());
                 
-                Editor.SetStatusBarText("Compiling '" + tcPath + "' -> '" + codePath);
+                Editor.SetStatusBarText("Compiling '" + tcPath + "' -> '" + tcOutPath);
                 error = runtimeExecute(binaryPath, arguments);
                 if (error != 0)
                 {
                     DisplayError("Compile", error);
                     break;
                 }
+                
+                // regular preprocessor
+                binaryPath ="/Bin/PreProcess" + HexeExtension;
+                if (!File.Exists(binaryPath))
+                {
+                    Editor.SetStatusBarText("No PreProcessor: '" + binaryPath + "'");
+                    break;
+                }
+                
+                arguments.Clear();
+                arguments.Append(tcOutPath);
+                arguments.Append("-g");
+                arguments.Append(col.ToString());
+                arguments.Append(row.ToString());
+                arguments.Append("-a");
+                
+                Editor.SetStatusBarText("Preprocessing '" + tcOutPath + "' -> '" + codePath);
+                error = runtimeExecute(binaryPath, arguments);
+                if (error != 0)
+                {
+                    DisplayError("Preprocess", error);
+                    break;
+                }
+                
             }
-            
+                       
             if (isAssembly || isTiny6502)
             {
                 hasmPath = "/Debug/" + fileName + ".asm";

@@ -1,0 +1,11 @@
+#define CPU_65C02S
+#define ROM_8K
+
+func main()
+{
+    for (word i=0; i < 100; i++)
+    {
+        byte a = 0;
+        a++;
+    }
+}

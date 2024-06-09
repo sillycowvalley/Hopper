@@ -1,3 +1,6 @@
+#define CPU_65C02S
+#define ROM_8K
+
 #include "../system.tc"
 
 const word SIZEPL = 8191;

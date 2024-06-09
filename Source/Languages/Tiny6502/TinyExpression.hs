@@ -398,7 +398,9 @@ unit TinyExpression
                 // function call
                 if (!GetFunction(name, ref actualType))
                 {
-                    if (!GetVariable(name, ref actualType))
+                    int  offset;
+                    bool isGlobal;
+                    if (!GetVariable(name, ref actualType, ref offset, ref isGlobal))
                     {
                         Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
                     }
@@ -426,7 +428,9 @@ unit TinyExpression
             else if (token.Type == TokenType.SYM_LBRACKET)
             {
                 // array accessor
-                if (!GetVariable(name, ref actualType))
+                int  offset;
+                bool isGlobal;
+                if (!GetVariable(name, ref actualType, ref offset, ref isGlobal))
                 {
                     Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
                     return false;
@@ -455,30 +459,45 @@ unit TinyExpression
             else
             {
                 // variable
-                if (!GetVariable(name, ref actualType))
+                int  offset;
+                bool isGlobal;
+                if (!GetVariable(name, ref actualType, ref offset, ref isGlobal))
                 {
                     Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
                     return false;
                 }
                 if ((token.Type == TokenType.SYM_PLUSPLUS) || (token.Type == TokenType.SYM_MINUSMINUS))
                 {
+                    // i++ or i-- : value before --/++ is used in the expression
+                    TinyCode.Map(token);
                     TinyScanner.Advance(); // Skip '++' or '--'
+                    TinyCode.PostIncrement(name, offset, IsByteType(actualType), token.Type == TokenType.SYM_PLUSPLUS, isGlobal);
+                }
+                else
+                {
+                    TinyCode.PushVariable(name, offset, IsByteType(actualType), isGlobal);
                 }
             }
         }
         else if ((token.Type == TokenType.SYM_PLUSPLUS) || (token.Type == TokenType.SYM_MINUSMINUS))
         {
+            // ++i or --i  : value after --/++ is used in the expression
+            bool inc = token.Type == TokenType.SYM_PLUSPLUS;
             TinyScanner.Advance(); // Skip '++' or '--'
             token = TinyScanner.Current();
             if (token.Type == TokenType.IDENTIFIER)
             {
                 string name = token.Lexeme;
+                TinyCode.Map(token);
                 TinyScanner.Advance(); // Skip identifier
-                if (!GetVariable(name, ref actualType))
+                int  offset;
+                bool isGlobal;
+                if (!GetVariable(name, ref actualType, ref offset, ref isGlobal))
                 {
                     Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
                     return false;
                 }
+                TinyCode.PreIncrement(name, offset, IsByteType(actualType), inc, isGlobal);
             }
             else
             {
@@ -486,7 +505,7 @@ unit TinyExpression
                 return false;
             }
         }
-        else if (token.Type == TokenType.LIT_NUMBER)
+        else if ((token.Type == TokenType.LIT_NUMBER) || (token.Type == TokenType.LIT_CHAR) || (token.Type == TokenType.KW_FALSE) || (token.Type == TokenType.KW_TRUE))
         {
             string value;
             if (!TinyConstant.parseConstantPrimary(ref value, ref actualType))
@@ -494,6 +513,7 @@ unit TinyExpression
                 return false;
             }
         }
+        /*
         else if (token.Type == TokenType.LIT_CHAR)
         {
             actualType = "char";
@@ -504,6 +524,7 @@ unit TinyExpression
             actualType = "bool";
             TinyScanner.Advance(); // Skip literal    
         }
+        */
         else if ((token.Type == TokenType.LIT_STRING) || (token.Type == TokenType.KW_NULL))
         {
             // TODO : actualType
