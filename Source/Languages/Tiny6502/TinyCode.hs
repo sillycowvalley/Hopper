@@ -160,9 +160,9 @@ unit TinyCode
     {
         PadOut("if (NZ) // " + comment, 0);
     }
-    IfExit(string comment)
+    IfExit(string comment, string condition)
     {
-        PadOut("if (Z) // " + comment, 0);
+        PadOut("if (" + condition +") // " + comment, 0);
         PadOut("{", 0);
         PadOut("break;", 1);
         PadOut("}", 0);
@@ -411,4 +411,159 @@ unit TinyCode
         PadOut("LDA 0x0100, X", 0);
         PadOut("PHA", 0); // A contains post-value
     }
+    CompareLT(bool isByte)
+    {
+        PadOut("LDX # 1 // NEXT < TOP", 0); 
+        if (!isByte)
+        {
+            PadOut("PLA", 0);
+            PadOut("STA ZP.TOPH", 0);
+        }
+        PadOut("PLA", 0);
+        PadOut("STA ZP.TOPL", 0);
+        if (!isByte)
+        {
+            PadOut("PLA", 0);
+            PadOut("STA ZP.NEXTH", 0);
+        }
+        PadOut("PLA", 0);
+        PadOut("STA ZP.NEXTL", 0);
+        if (!isByte)
+        {
+            PadOut("LDA ZP.NEXTH", 0);
+            PadOut("CMP ZP.TOPH", 0);
+            PadOut("if (Z)", 0);
+            PadOut("{", 0);
+            PadOut("LDA ZP.NEXTL", 1);
+            PadOut("CMP ZP.TOPL", 1);
+            PadOut("}", 0);
+        }
+        else
+        {
+            PadOut("LDA ZP.NEXTL", 0);
+            PadOut("CMP ZP.TOPL", 0);
+        }
+        PadOut("if (C) // NEXT < TOP", 0);
+        PadOut("{", 0);
+        PadOut("LDX # 0 // NEXT >= TOP", 1); 
+        PadOut("}", 0);
+        PadOut("PHX", 0);
+    }
+    CompareLE(bool isByte)
+    {
+        PadOut("LDX # 1 // NEXT <= TOP", 0);
+        if (!isByte)
+        {
+            PadOut("PLA", 0);
+            PadOut("STA ZP.TOPH", 0);
+        }
+        PadOut("PLA", 0);
+        PadOut("STA ZP.TOPL", 0);
+        if (!isByte)
+        {
+            PadOut("PLA", 0);
+            PadOut("STA ZP.NEXTH", 0);
+        }
+        PadOut("PLA", 0);
+        PadOut("STA ZP.NEXTL", 0);
+        if (!isByte)
+        {
+            PadOut("LDA ZP.NEXTH", 0);
+            PadOut("CMP ZP.TOPH", 0);
+            PadOut("if (Z)", 0);
+            PadOut("{", 0);
+            PadOut("LDA ZP.NEXTL", 1);
+            PadOut("CMP ZP.TOPL", 1);
+            PadOut("}", 0);
+        }
+        else
+        {
+            PadOut("LDA ZP.NEXTL", 0);
+            PadOut("CMP ZP.TOPL", 0);
+        }
+        PadOut("if (C) // NEXT <= TOP", 0);
+        PadOut("{", 0);
+        PadOut("LDX # 0 // NEXT > TOP", 1);
+        PadOut("}", 0);
+        PadOut("PHX", 0);
+    }
+    CompareGT(bool isByte)
+    {
+        PadOut("LDX # 0 // NEXT <= TOP", 0);
+        if (!isByte)
+        {
+            PadOut("PLA", 0);
+            PadOut("STA ZP.TOPH", 0);
+        }
+        PadOut("PLA", 0);
+        PadOut("STA ZP.TOPL", 0);
+        if (!isByte)
+        {
+            PadOut("PLA", 0);
+            PadOut("STA ZP.NEXTH", 0);
+        }
+        PadOut("PLA", 0);
+        PadOut("STA ZP.NEXTL", 0);
+        if (!isByte)
+        {
+            PadOut("LDA ZP.NEXTH", 0);
+            PadOut("CMP ZP.TOPH", 0);
+            PadOut("if (Z)", 0);
+            PadOut("{", 0);
+            PadOut("LDA ZP.NEXTL", 1);
+            PadOut("CMP ZP.TOPL", 1);
+            PadOut("}", 0);
+        }
+        else
+        {
+            PadOut("LDA ZP.NEXTL", 0);
+            PadOut("CMP ZP.TOPL", 0);
+        }
+        PadOut("if (C) // NEXT > TOP", 0);
+        PadOut("{", 0);
+        PadOut("LDX # 1 // NEXT > TOP", 1);
+        PadOut("}", 0);
+        PadOut("PHX", 0);
+    }
+    CompareGE(bool isByte)
+    {
+        PadOut("LDX # 0 // NEXT < TOP", 0);
+        if (!isByte)
+        {
+            PadOut("PLA", 0);
+            PadOut("STA ZP.TOPH", 0);
+        }
+        PadOut("PLA", 0);
+        PadOut("STA ZP.TOPL", 0);
+        if (!isByte)
+        {
+            PadOut("PLA", 0);
+            PadOut("STA ZP.NEXTH", 0);
+        }
+        PadOut("PLA", 0);
+        PadOut("STA ZP.NEXTL", 0);
+        if (!isByte)
+        {
+            PadOut("LDA ZP.NEXTH", 0);
+            PadOut("CMP ZP.TOPH", 0);
+            PadOut("if (Z)", 0);
+            PadOut("{", 0);
+            PadOut("LDA ZP.NEXTL", 1);
+            PadOut("CMP ZP.TOPL", 1);
+            PadOut("}", 0);
+        }
+        else
+        {
+            PadOut("LDA ZP.NEXTL", 0);
+            PadOut("CMP ZP.TOPL", 0);
+        }
+        PadOut("if (!C) // NEXT >= TOP", 0);
+        PadOut("{", 0);
+        PadOut("LDX # 1 // NEXT >= TOP", 1);
+        PadOut("}", 0);
+        PadOut("PHX", 0);
+    }
+    
+    
+    
 }

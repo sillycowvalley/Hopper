@@ -261,9 +261,28 @@ unit TinyExpression
                 TypeError(actualType, rhsType);
                 return false;
             }
-            actualType = "bool";
             token = TinyScanner.Current();
-            TinyCode.PadOut("// " + op + " TODO", 0); 
+            TinyCode.PadOut("// " + op, 0); 
+            switch (op)
+            {
+                case "<":
+                {
+                    TinyCode.CompareLT(IsByteType(actualType));
+                }
+                case "<=":
+                {
+                    TinyCode.CompareLE(IsByteType(actualType));
+                }
+                case ">":
+                {
+                    TinyCode.CompareGT(IsByteType(actualType));
+                }
+                case ">=":
+                {
+                    TinyCode.CompareGE(IsByteType(actualType));
+                }
+            }
+            actualType = "bool";
         }
         return true;
     }

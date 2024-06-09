@@ -76,7 +76,7 @@ unit TinyStatement
         }
         
         // TODO : conditional exit
-        TinyCode.IfExit("while exit");
+        TinyCode.IfExit("while exit", "Z");
         
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_RPAREN)
@@ -131,8 +131,9 @@ unit TinyStatement
             return false;
         }
         
-        // TODO : conditional exit
-        TinyCode.IfExit("for exit");
+        // conditional exit
+        TinyCode.PadOut("PLA", 0);
+        TinyCode.IfExit("for exit", "NZ");
         
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_SEMICOLON)
