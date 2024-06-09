@@ -18,7 +18,7 @@ unit TinyCompile
         {
             // global scope
             TinyConstant.EnterBlock();
-            TinySymbols.EnterBlock();
+            TinySymbols.EnterBlock(true);
             
             if (!parseProgram())
             {
@@ -26,7 +26,7 @@ unit TinyCompile
             }
         
             // global scope
-            TinySymbols.LeaveBlock("program");
+            TinySymbols.LeaveBlock("program", true);
             TinyConstant.LeaveBlock();
             
             Token token = TinyScanner.Current();
@@ -284,12 +284,12 @@ unit TinyCompile
             
             TinyCode.Function(functionName);
             TinyConstant.EnterBlock();
-            TinySymbols.EnterBlock(); // for arguments
+            TinySymbols.EnterBlock(false); // for arguments
+            
             if (!DefineFunction(returnType, functionName))
             {
                 break;
             }
-            
             if (token.Type != TokenType.SYM_LPAREN)
             {
                 Error(token.SourcePath, token.Line, "expected '(' after function name, (" + token.Lexeme + "')");
@@ -301,7 +301,6 @@ unit TinyCompile
             {
                 break;
             }
-        
             token = TinyScanner.Current();
             if (token.Type != TokenType.SYM_RPAREN)
             {
@@ -312,14 +311,19 @@ unit TinyCompile
             TinyScanner.Advance(); // Skip ')'
         
             token = TinyScanner.Current();
+            bool generate;
             if (token.Type == TokenType.SYM_SEMICOLON)
             {
-                // This is a forward declaration
+                // This is a forward declaration or a system method
                 TinyScanner.Advance(); // Skip ';'
-                //TinyCode.DefineForwardFunction(name);
+                
+                TinyCode.OfferSystemMethod(functionName);
             }
             else if (token.Type == TokenType.SYM_LBRACE)
             {
+                generate = true;
+                TinyCode.EmitDeferred();
+                
                 // This is an actual function definition
                 if (!TinyStatement.parseBlock(false))
                 {
@@ -332,7 +336,7 @@ unit TinyCompile
                 break;
             }
             
-            TinySymbols.LeaveBlock(functionName); // for arguments
+            TinySymbols.LeaveBlock(functionName, generate); // for arguments
             TinyConstant.LeaveBlock();
             
             success = true;

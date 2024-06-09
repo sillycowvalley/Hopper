@@ -445,7 +445,7 @@ unit TinyStatement
         if (scope)
         {
             TinyConstant.EnterBlock();
-            TinySymbols.EnterBlock();
+            TinySymbols.EnterBlock(true);
         }
             
         
@@ -476,7 +476,7 @@ unit TinyStatement
         TinyScanner.Advance(); // Skip '}'
         if (scope)
         {
-            TinySymbols.LeaveBlock("");
+            TinySymbols.LeaveBlock("", true);
             TinyConstant.LeaveBlock();
         }
         return true;

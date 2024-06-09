@@ -1916,7 +1916,7 @@ unit Editor
                     // "//", "#define"    is dealt with
                     if ((parts.Count >= 2) && (parts[0] == "#define")) 
                     {
-                        if (isAssemblerSource)
+                        if (isAssemblerSource || isTinyCSource)
                         {
                             if ((parts[1] == "CPU_6502") || (parts[1] == "CPU_65UINO"))
                             {

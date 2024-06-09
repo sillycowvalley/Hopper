@@ -17,6 +17,7 @@ unit BuildCommand
     
     bool isHopper;
     bool isAssembly;
+    bool isTiny6502;
     bool isZ80;
     bool generateIHex;
     bool launchIHex;
@@ -25,7 +26,7 @@ unit BuildCommand
     
     uint runtimeExecute(string path, <string> arguments)
     {
-        if (false) // for CLI diagnostics
+        if (isTiny6502) // for CLI diagnostics
         {
             PrintLn();
             Print(path + " ");
@@ -175,6 +176,10 @@ unit BuildCommand
             }
             
             string binaryPath ="/Bin/PreProcess" + HexeExtension;
+            if (isTiny6502)
+            {
+                binaryPath ="/Bin/tcpp" + HexeExtension;
+            }
             if (!File.Exists(binaryPath))
             {
                 Editor.SetStatusBarText("No PreProcessor: '" + binaryPath + "'");
@@ -230,12 +235,19 @@ unit BuildCommand
                     cpuArchitecture = CPUArchitecture.Hopper; // a good starting assumption
                 }
             }
-            if (isZ80 || isAssembly)
+            if (isZ80 || isAssembly || isTiny6502)
             {
                 ihexPath = hexePath.Replace(".hexe", ".hex");
             }
-            
-            if (isAssembly) // set by source being ".asm"
+            if (isTiny6502) // set by source being ".tc"
+            {
+                if ((cpuArchitecture != CPUArchitecture.W65C02) && (cpuArchitecture != CPUArchitecture.M6502))
+                {
+                    Editor.SetStatusBarText("#define CPU_6502 or CPU_65C02S for '.tc' projects");
+                    break;
+                }
+            }
+            else if (isAssembly) // set by source being ".asm"
             {
                 if ((cpuArchitecture != CPUArchitecture.W65C02) && (cpuArchitecture != CPUArchitecture.M6502))
                 {
@@ -256,14 +268,39 @@ unit BuildCommand
             {
                 arguments.Append("-z");
             }
-            
             error = runtimeExecute(binaryPath, arguments);
             if (error != 0)
             {
                 DisplayError("Preprocessor", error);
                 break;
             }
-            if (isAssembly)
+            
+            if (isTiny6502)
+            {
+                binaryPath ="/Bin/tcc" + HexeExtension;
+                if (!File.Exists(binaryPath))
+                {
+                    Editor.SetStatusBarText("No Tiny6502 compiler: '" + binaryPath + "'");
+                    break;
+                }
+                string tcPath = "/Debug/Obj/" + fileName + ".tc";
+                arguments.Clear();
+                arguments.Append(tcPath);
+                
+                arguments.Append("-g");
+                arguments.Append(col.ToString());
+                arguments.Append(row.ToString());
+                
+                Editor.SetStatusBarText("Compiling '" + tcPath + "' -> '" + codePath);
+                error = runtimeExecute(binaryPath, arguments);
+                if (error != 0)
+                {
+                    DisplayError("Compile", error);
+                    break;
+                }
+            }
+            
+            if (isAssembly || isTiny6502)
             {
                 hasmPath = "/Debug/" + fileName + ".asm";
                 binaryPath ="/Bin/65asm" + HexeExtension;
@@ -333,7 +370,7 @@ unit BuildCommand
             if (BuildOptions.IsOptimizeEnabled() || isZ80)
             {   
                 string optName = "Optimize";
-                if (isAssembly)
+                if (isAssembly || isTiny6502)
                 {
                     optName = "65opt";
                 }
@@ -361,7 +398,7 @@ unit BuildCommand
             
             string genName = "CODEGEN";
             string outputPath = hexePath;
-            if (isAssembly)
+            if (isAssembly || isTiny6502)
             {
                 genName = "65gen";
                 outputPath = ihexPath;
@@ -426,7 +463,7 @@ unit BuildCommand
             { 
                 string dasmName = "DASM";
                 string dasmInput = hexePath;
-                if (isAssembly)
+                if (isAssembly || isTiny6502)
                 {
                     dasmName = "65dasm";
                     dasmInput = ihexPath;
@@ -505,7 +542,8 @@ unit BuildCommand
         extension  = extension.ToLower();
         isHopper   = (extension == ".hs");
         isAssembly = (extension == ".asm");
-        return isHopper || isAssembly;
+        isTiny6502 = (extension == ".tc");
+        return isHopper || isAssembly || isTiny6502;
     }
     
     // Conditions for when we need to rebuild:

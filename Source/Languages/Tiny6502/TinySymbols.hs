@@ -22,24 +22,34 @@ unit TinySymbols
     
     uint BlockLevel { get { return blockLevel; } }
     
-    EnterBlock()
+    EnterBlock(bool generate)
     {
-        TinyCode.Append("{");
+        if (!generate)
+        {
+            TinyCode.Defer("{");
+        }
+        else
+        {
+            TinyCode.Append("{");
+        }
         <string, Variable> level;
         variables.Append(level);
         blockLevel++;
     }
-    LeaveBlock(string comment)
+    LeaveBlock(string comment, bool generate)
     {
         variables.Remove(variables.Count-1);
         blockLevel--;
-        if (comment.Length != 0)
+        if (generate)
         {
-            TinyCode.Append("} // " + comment);
-        }
-        else
-        {    
-            TinyCode.Append("}");
+            if (comment.Length != 0)
+            {
+                TinyCode.Append("} // " + comment);
+            }
+            else
+            {    
+                TinyCode.Append("}");
+            }
         }
     }
     

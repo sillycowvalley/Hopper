@@ -16,12 +16,12 @@ unit TinyCode
     uint line;
     uint extra;
     
-    PadOut(string text, uint delta)
+    PadOut(string text, int delta)
     {
         line++;
         if (text.Length != 0)
         {
-            text = ("").Pad(' ', (BlockLevel+extra+delta) * 4) + text;
+            text = ("").Pad(' ', uint((int(BlockLevel)+int(extra)+delta) * 4)) + text;
         }
         codeFile.Append(text + Char.EOL);
     }
@@ -47,13 +47,27 @@ unit TinyCode
     {
         codeFile.Flush();
     }
-    
+    <string> deferred;
+    Defer(string content)
+    {    
+        deferred.Append(content);
+    }
     Function(string functionName)
     {
-        TinyCode.PadOut("", 0);
         string name = "|" + functionName + "()";
         name = name.Replace("|main()", "Hopper()").Replace("|","");
-        TinyCode.PadOut(name, 0);
+        
+        deferred.Clear();   
+        deferred.Append("");
+        deferred.Append(name);
+    }
+    EmitDeferred()
+    {
+        foreach (var line in deferred)
+        {
+            PadOut(line, -1);
+        }
+        deferred.Clear();
     }
     If(string comment)
     {
@@ -74,11 +88,11 @@ unit TinyCode
     {
         PadOut("loop // " + comment, 0);
         TinyConstant.EnterBlock();
-        TinySymbols.EnterBlock();
+        TinySymbols.EnterBlock(true);
     }
     EndLoop(string comment)
     {
-        TinySymbols.LeaveBlock(comment);
+        TinySymbols.LeaveBlock(comment, true);
         TinyConstant.LeaveBlock();
     }
     Break(string comment)
@@ -95,5 +109,10 @@ unit TinyCode
     Continue()
     {
         PadOut("continue;", 0);
+    }
+    
+    OfferSystemMethod(string methodName)
+    {
+        PrintLn(methodName);
     }
 }

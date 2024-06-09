@@ -185,6 +185,34 @@ unit TinyType
                     }
                 }
             }
+            case "+int":
+            {
+                switch (actualType)
+                {
+                    case "byte":
+                    {
+                        return true; // byte as +int
+                    }
+                    case "char":
+                    {
+                        return false; // char as +int requires cast
+                    }
+                    case "int":
+                    {
+                        return false; // int as +int requires cast?!?!
+                    }
+                    case "word":
+                    {
+                        return false; // word as +int requires cast
+                    }
+                    default:
+                    {
+                        TypeError(expectedType, actualType);
+                        PrintLn(actualType + " as " + expectedType);
+                        Die(0x0A); // not implemented
+                    }
+                }
+            }
             default:
             {
                 TypeError(expectedType, actualType);
