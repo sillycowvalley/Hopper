@@ -26,6 +26,8 @@ unit TinyStatement
             return false;
         }
         
+        TinyCode.If("if");
+        
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_RPAREN)
         {
@@ -34,7 +36,7 @@ unit TinyStatement
         }
         
         TinyScanner.Advance(); // Skip ')'
-        if (!parseBlock())
+        if (!parseBlock(true))
         {
             return false;
         }
@@ -42,8 +44,9 @@ unit TinyStatement
         token = TinyScanner.Current();
         if (token.Type == TokenType.KW_ELSE)
         {
+            TinyCode.Else();
             TinyScanner.Advance(); // Skip 'else'
-            if (!parseBlock())
+            if (!parseBlock(true))
             {
                 return false;
             }
@@ -63,12 +66,17 @@ unit TinyStatement
             return false;
         }
         
+        TinyCode.Loop("while");
+        
         TinyScanner.Advance(); // Skip '('
         string booleanType;
         if (!TinyExpression.parseExpression(ref booleanType))
         {
             return false;
         }
+        
+        // TODO : conditional exit
+        TinyCode.IfExit("while exit");
         
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_RPAREN)
@@ -78,10 +86,11 @@ unit TinyStatement
         }
         
         TinyScanner.Advance(); // Skip ')'
-        if (!parseBlock())
+        if (!parseBlock(false))
         {
             return false;
         }
+        TinyCode.EndLoop("while");
         return true;
     }
     
@@ -111,12 +120,17 @@ unit TinyStatement
             return false;
         }
         
+        TinyCode.Loop("for");
+        
         // for condition clause
         string booleanType;
         if (!TinyExpression.parseExpression(ref booleanType))
         {
             return false;
         }
+        
+        // TODO : conditional exit
+        TinyCode.IfExit("for exit");
         
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_SEMICOLON)
@@ -141,10 +155,12 @@ unit TinyStatement
         }
         
         TinyScanner.Advance(); // Skip ')'
-        if (!parseBlock())
+        if (!parseBlock(false))
         {
             return false;
         }
+        
+        TinyCode.EndLoop("for");
         return true;
     }
     
@@ -161,6 +177,7 @@ unit TinyStatement
             {
                 return false;
             }
+            // TODO : return value
             
             token = TinyScanner.Current();
         }
@@ -172,6 +189,9 @@ unit TinyStatement
         }
         
         TinyScanner.Advance(); // Skip ';'
+        
+        TinyCode.Break("return");
+        
         return true;
     }
     
@@ -187,7 +207,7 @@ unit TinyStatement
         }
         
         TinyScanner.Advance(); // Skip ';'
-        //TinyCode.EmitBreak(); // TODO: Implement in TinyCode
+        TinyCode.Break("");
         return true;
     }
     
@@ -203,7 +223,7 @@ unit TinyStatement
         }
         
         TinyScanner.Advance(); // Skip ';'
-        //TinyCode.EmitContinue(); // TODO: Implement in TinyCode
+        TinyCode.Continue();
         return true;
     }
     
@@ -420,9 +440,14 @@ unit TinyStatement
         TinyScanner.Advance(); // Skip ';'
         return true;
     }
-    bool parseBlock()
+    bool parseBlock(bool scope)
     {
-        TinyConstant.EnterBlock();
+        if (scope)
+        {
+            TinyConstant.EnterBlock();
+            TinySymbols.EnterBlock();
+        }
+            
         
         Token token = TinyScanner.Current();
         
@@ -449,8 +474,11 @@ unit TinyStatement
         }
         
         TinyScanner.Advance(); // Skip '}'
-        
-        TinyConstant.LeaveBlock();
+        if (scope)
+        {
+            TinySymbols.LeaveBlock("");
+            TinyConstant.LeaveBlock();
+        }
         return true;
     }
     

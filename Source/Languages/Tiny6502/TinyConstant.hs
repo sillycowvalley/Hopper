@@ -232,9 +232,9 @@ unit TinyConstant
     bool evaluateBooleanOperation(string leftValue, string rightValue, string op, ref string resultValue, ref string resultType)
     {
         Token token = TinyScanner.Current();
-        
-        bool left = (leftValue != "0");
-        bool right = (rightValue != "0");
+        PrintLn(leftValue + " " + rightValue);
+        bool left = (leftValue == "true");
+        bool right = (rightValue == "true");
         bool result;
         switch (op)
         {
@@ -253,7 +253,7 @@ unit TinyConstant
             }
         }
         resultType = "bool";
-        resultValue = result ? "1" : "0";
+        resultValue = result ? "true" : "false";
         return true;
     }
     
@@ -382,14 +382,12 @@ unit TinyConstant
             }
             else if (op == "!")
             {
-                if (!IsBoolableType(actualType))
+                if ((actualType != "bool") && (actualType != "const bool"))
                 {
-                    Error(token.SourcePath, token.Line, "numeric type expected in constant expression");
+                    Error(token.SourcePath, token.Line, "type mismatch in in constant expression");
                     return false;
                 }
-                uint ui;
-                _ = UInt.TryParse(value, ref ui);
-                ui = (ui == 0) ? 1 : 0;
+                value = (value == "true") ? "false" : "true";
                 actualType = "bool";   
             }
             else
@@ -539,7 +537,7 @@ unit TinyConstant
             {
                 return false;
             }
-            if (!IsBoolableType(actualType) || !IsBoolableType(rightType))
+            if (!MatchNumericTypes(rightType, ref actualType))
             {
                 Error(token.SourcePath, token.Line, "numeric types expected in constant expression");
                 return false;
@@ -570,9 +568,9 @@ unit TinyConstant
             {
                 return false;
             }
-            if (!IsBoolableType(actualType) || !IsBoolableType(rightType))
+            if (!MatchTypes(rightType, ref actualType))
             {
-                Error(token.SourcePath, token.Line, "numeric types expected in constant expression");
+                Error(token.SourcePath, token.Line, "type mismatch constant expression");
                 return false;
             }
             if (!evaluateComparisonOperation(value, rightValue, op, ref value, ref actualType))
@@ -601,9 +599,9 @@ unit TinyConstant
             {
                 return false;
             }
-            if (!IsNumericType(actualType) || !IsNumericType(rightType))
+            if (!MatchNumericTypes(rightType, ref actualType))
             {
-                Error(token.SourcePath, token.Line, "numeric types expected in constant expression");
+                Error(token.SourcePath, token.Line, "type mismatch constant expression");
                 return false;
             }
             if (!evaluateBitwiseOperation(value, rightValue, op, ref value, ref actualType))
@@ -632,9 +630,9 @@ unit TinyConstant
             {
                 return false;
             }
-            if (!IsNumericType(actualType) || !IsNumericType(rightType))
+            if (!MatchNumericTypes(rightType, ref actualType))
             {
-                Error(token.SourcePath, token.Line, "numeric types expected in constant expression");
+                Error(token.SourcePath, token.Line, "type mismatch constant expression");
                 return false;
             }
             if (!evaluateBitwiseOperation(value, rightValue, op, ref value, ref actualType))
@@ -663,9 +661,9 @@ unit TinyConstant
             {
                 return false;
             }
-            if (!IsNumericType(actualType) || !IsNumericType(rightType))
+            if (!MatchNumericTypes(rightType, ref actualType))
             {
-                Error(token.SourcePath, token.Line, "numeric types expected in constant expression");
+                Error(token.SourcePath, token.Line, "type mismatch constant expression");
                 return false;
             }
             if (!evaluateBitwiseOperation(value, rightValue, op, ref value, ref actualType))
@@ -694,9 +692,9 @@ unit TinyConstant
             {
                 return false;
             }
-            if (!IsBoolableType(actualType) || !IsBoolableType(rightType))
+            if (!MatchBoolTypes(rightType, actualType))
             {
-                Error(token.SourcePath, token.Line, "boolean types expected in constant expression");
+                Error(token.SourcePath, token.Line, "type mismatch constant expression");
                 return false;
             }
             if (!evaluateBooleanOperation(value, rightValue, op, ref value, ref actualType))
@@ -725,9 +723,9 @@ unit TinyConstant
             {
                 return false;
             }
-            if (!IsBoolableType(actualType) || !IsBoolableType(rightType))
+            if (!MatchBoolTypes(rightType, actualType))
             {
-                Error(token.SourcePath, token.Line, "boolean types expected in constant expression");
+                Error(token.SourcePath, token.Line, "type mismatch constant expression");
                 return false;
             }
             if (!evaluateBooleanOperation(value, rightValue, op, ref value, ref actualType))

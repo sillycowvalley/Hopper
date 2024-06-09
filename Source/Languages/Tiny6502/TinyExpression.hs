@@ -71,7 +71,7 @@ unit TinyExpression
             {
                 return false;
             }
-            if (!IsBoolableType(actualType) || !IsBoolableType(rhsType))
+            if (!MatchBoolTypes(rhsType, actualType))
             {
                 TypeError(actualType, rhsType);
                 return false;
@@ -98,7 +98,7 @@ unit TinyExpression
             {
                 return false;
             }
-            if (!IsBoolableType(actualType) || !IsBoolableType(rhsType))
+            if (!MatchBoolTypes(rhsType, actualType))
             {
                 TypeError(actualType, rhsType);
                 return false;
@@ -125,12 +125,11 @@ unit TinyExpression
             {
                 return false;
             }
-            if (!IsNumericType(actualType) || !IsNumericType(rhsType))
+            if (!MatchNumericTypes(rhsType, ref actualType))
             {
                 TypeError(actualType, rhsType);
                 return false;
             }
-            actualType = WiderType(actualType, rhsType);
             token = TinyScanner.Current();
         }
         return true;
@@ -152,12 +151,11 @@ unit TinyExpression
             {
                 return false;
             }
-            if (!IsNumericType(actualType) || !IsNumericType(rhsType))
+            if (!MatchNumericTypes(rhsType, ref actualType))
             {
                 TypeError(actualType, rhsType);
                 return false;
             }
-            actualType = WiderType(actualType, rhsType);
             token = TinyScanner.Current();
         }
         return true;
@@ -179,12 +177,11 @@ unit TinyExpression
             {
                 return false;
             }
-            if (!IsNumericType(actualType) || !IsNumericType(rhsType))
+            if (!MatchNumericTypes(rhsType, ref actualType))
             {
                 TypeError(actualType, rhsType);
                 return false;
             }
-            actualType = WiderType(actualType, rhsType);
             token = TinyScanner.Current();
         }
         return true;
@@ -207,7 +204,7 @@ unit TinyExpression
             {
                 return false;
             }
-            if (!IsNumericType(actualType) || !IsNumericType(rhsType))
+            if (!MatchTypes(rhsType, ref actualType))
             {
                 TypeError(actualType, rhsType);
                 return false;
@@ -235,7 +232,7 @@ unit TinyExpression
             {
                 return false;
             }
-            if (!IsNumericType(actualType) || !IsNumericType(rhsType))
+            if (!MatchNumericTypes(rhsType, ref actualType))
             {
                 TypeError(actualType, rhsType);
                 return false;
@@ -263,12 +260,11 @@ unit TinyExpression
             {
                 return false;
             }
-            if (!IsNumericType(actualType) || !IsNumericType(rhsType))
+            if (!MatchNumericTypes(rhsType, ref actualType))
             {
                 TypeError(actualType, rhsType);
                 return false;
             }
-            actualType = WiderType(actualType, rhsType);
             token = TinyScanner.Current();
         }
         return true;
@@ -291,12 +287,11 @@ unit TinyExpression
             {
                 return false;
             }
-            if (!IsNumericType(actualType) || !IsNumericType(rhsType))
+            if (!MatchNumericTypes(rhsType, ref actualType))
             {
                 TypeError(actualType, rhsType);
                 return false;
             }
-            actualType = WiderType(actualType, rhsType);
             token = TinyScanner.Current();
         }
         return true;
@@ -319,12 +314,11 @@ unit TinyExpression
             {
                 return false;
             }
-            if (!IsNumericType(actualType) || !IsNumericType(rhsType))
+            if (!MatchNumericTypes(rhsType, ref actualType))
             {
                 TypeError(actualType, rhsType);
                 return false;
             }
-            actualType = WiderType(actualType, rhsType);
             token = TinyScanner.Current();
         }
         return true;

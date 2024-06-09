@@ -26,8 +26,8 @@ func testConstExpressions() {
     // Test comparison operations
     const bool COMP_LT = CONST_BYTE < CONST_WORD;
     const bool COMP_LTE = CONST_BYTE <= CONST_WORD;
-    const bool COMP_GT = CONST_WORD > CONST_INT;
-    const bool COMP_GTE = CONST_WORD >= CONST_INT;
+    //const bool COMP_GT = CONST_WORD > CONST_INT;
+    //const bool COMP_GTE = CONST_WORD >= CONST_INT;
     const bool COMP_EQ = CONST_BYTE == 10;
     const bool COMP_NEQ = CONST_BYTE != 5;
 
@@ -85,13 +85,13 @@ func testConstExpressions() {
     writeWord(COMP_LTE);
     writeString("\n");
 
-    writeString("COMP_GT = ");
-    writeWord(COMP_GT);
-    writeString("\n");
+    //writeString("COMP_GT = ");
+    //writeWord(COMP_GT);
+    //writeString("\n");
 
-    writeString("COMP_GTE = ");
-    writeWord(COMP_GTE);
-    writeString("\n");
+    //writeString("COMP_GTE = ");
+    //writeWord(COMP_GTE);
+    //writeString("\n");
 
     writeString("COMP_EQ = ");
     writeWord(COMP_EQ);

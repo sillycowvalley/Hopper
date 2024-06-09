@@ -458,6 +458,13 @@ program TCPreprocess
                                     break; // exit the method loop on error
                                 }
                                 definedSymbols[symbol] = (directiveName == "define");
+                                if (directiveName == "define")
+                                {
+                                    if (symbol.StartsWith("CPU_") || symbol.StartsWith("ROM_"))
+                                    {
+                                        preFile.Append(sourcePath + ":" + line.ToString() + Char.Tab + "#define " + symbol + Char.EOL);
+                                    }
+                                }
                             }
     
                         case "ifdef":

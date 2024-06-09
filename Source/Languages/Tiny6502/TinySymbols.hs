@@ -18,17 +18,39 @@ unit TinySymbols
     uint blockLevel;
     < <string, Variable> > variables;
     <string, Function> functions;
+    <string,bool> symbols;
+    
+    uint BlockLevel { get { return blockLevel; } }
     
     EnterBlock()
     {
+        TinyCode.Append("{");
         <string, Variable> level;
         variables.Append(level);
         blockLevel++;
     }
-    LeaveBlock()
+    LeaveBlock(string comment)
     {
         variables.Remove(variables.Count-1);
         blockLevel--;
+        if (comment.Length != 0)
+        {
+            TinyCode.Append("} // " + comment);
+        }
+        else
+        {    
+            TinyCode.Append("}");
+        }
+    }
+    
+    DefineSymbol(string name)
+    {
+        symbols[name] = true;
+        TinyCode.Append("#define " + name);
+    }
+    bool IsDefined(string name)
+    {
+        return symbols.Contains(name);
     }
     
     bool DefineFunction(string returnType, string functionName)

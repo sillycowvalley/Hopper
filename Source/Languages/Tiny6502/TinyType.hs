@@ -3,17 +3,12 @@ unit TinyType
     bool IsIndexType(string typeName)
     {
         typeName = "|" + typeName.Replace("const ", "") + "|";
-        return ("|char|byte|word|+int|").Contains(typeName);
+        return ("|byte|word|+int|").Contains(typeName);
     }
     bool IsNumericType(string typeName)
     {
         typeName = "|" + typeName.Replace("const ", "") + "|";
-        return ("|char|byte|word|int|+int|").Contains(typeName);
-    }
-    bool IsBoolableType(string typeName)
-    {
-        typeName = "|" + typeName.Replace("const ", "") + "|";
-        return ("|char|byte|word|int|+int|bool|").Contains(typeName);
+        return ("|byte|word|int|+int|").Contains(typeName);
     }
     string GetArrayMemberType(string arrayType)
     {
@@ -26,29 +21,38 @@ unit TinyType
         }
         return memberType;
     }
-    string WiderType(string leftType, string rightType)
+    
+    bool MatchBoolTypes(string otherType, string actualType)
     {
-        if ((leftType == "word") || (rightType == "word"))
+        return ((otherType == "bool") || (otherType == "const bool")) && ((actualType == "bool") || (actualType == "const bool"));
+    }
+    
+    bool MatchNumericTypes(string otherType, ref string actualType)
+    {
+        if ((otherType == "char") || (otherType == "bool") || (actualType == "char") || (actualType == "bool"))
         {
-            return "word";
+            return false;
         }
-        if ((leftType == "int") || (rightType == "int"))
+        if ((otherType == "const char") || (otherType == "const bool") || (actualType == "const char") || (actualType == "const bool"))
         {
-            return "int";
+            return false;
         }
-        if ((leftType == "+int") || (rightType == "+int"))
+        return MatchTypes(otherType, ref actualType);
+    }
+    bool MatchTypes(string otherType, ref string actualType)
+    {
+        if (otherType != actualType)
         {
-            return "+int";
+            if (IsAutomaticCast(otherType, actualType))
+            {
+                actualType = otherType;
+            }
+            else if (IsAutomaticCast(actualType, otherType))
+            {
+                otherType = actualType;
+            }
         }
-        if ((leftType == "byte") || (rightType == "byte"))
-        {
-            return "byte";
-        }
-        if ((leftType == "char") || (rightType == "char"))
-        {
-            return "char";
-        }
-        return leftType; // bool?
+        return otherType == actualType;
     }
     
     bool IsAutomaticCast(string expectedType, string actualType)
@@ -56,6 +60,10 @@ unit TinyType
         if (expectedType.StartsWith("const ") && !actualType.StartsWith("const "))
         {
             expectedType = expectedType.Substring(6); // non-const -> const
+        }
+        if (actualType.StartsWith("const ") && !expectedType.StartsWith("const "))
+        {
+            actualType = actualType.Substring(6); // non-const -> const
         }
         if (expectedType.StartsWith("const ") && actualType.StartsWith("const "))
         {
@@ -79,7 +87,7 @@ unit TinyType
                 {
                     case "char":
                     {
-                        return true; // char as byte
+                        return false; // char as byte requires cast
                     }
                     case "int":
                     {
@@ -103,7 +111,7 @@ unit TinyType
                 {
                     case "byte":
                     {
-                        return true; // byte as char
+                        return false; // byte as char requires cast
                     }
                     case "int":
                     {
@@ -131,7 +139,7 @@ unit TinyType
                     }
                     case "char":
                     {
-                        return true; // char as word
+                        return false; // char as word requires cast
                     }
                     case "+int":
                     {
@@ -159,7 +167,7 @@ unit TinyType
                     }
                     case "char":
                     {
-                        return true; // char as int
+                        return false; // char as int requires cast
                     }
                     case "+int":
                     {

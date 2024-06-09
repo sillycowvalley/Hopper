@@ -9,7 +9,7 @@ func writeChar(char c); // System function to write a single character
 func writeString(const char[] str) {
     // Function to write a null-terminated string to the serial output using writeChar
     byte i = 0;
-    while (str[i] != 0) {
+    while (str[i] != (0 as char)) {
         writeChar(str[i]);
         i++;
     }
@@ -26,7 +26,7 @@ func writeWord(word num) {
     char[5] digits; // Maximum 5 digits for a word
 
     while (num > 0) {
-        digits[i++] = ((num % 10) + '0') as char;
+        digits[i++] = ((num % 10) + 48) as char;
         num /= 10;
     }
 

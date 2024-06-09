@@ -14,16 +14,36 @@ unit TinyCompile
     bool Compile()
     {
         bool success;
+        loop
+        {
+            // global scope
+            TinyConstant.EnterBlock();
+            TinySymbols.EnterBlock();
+            
+            if (!parseProgram())
+            {
+                break;
+            }
         
-        // global scope
-        TinyConstant.EnterBlock();
-        TinySymbols.EnterBlock();
-        
-        success = parseProgram();
-        
-        // global scope
-        TinySymbols.LeaveBlock();
-        TinyConstant.LeaveBlock();
+            // global scope
+            TinySymbols.LeaveBlock("program");
+            TinyConstant.LeaveBlock();
+            
+            Token token = TinyScanner.Current();
+            string returnType;
+            if (!GetFunction("main", ref returnType))
+            {
+                Error(token.SourcePath, token.Line, "'main()' entrypoint missing");
+                break;
+            }
+            if (returnType != "")
+            {
+                Error(token.SourcePath, token.Line, "'main()' entrypoint should not have return type");
+                break;
+            }
+            success = true;
+            break;
+        }
         
         return success;
     }
@@ -59,6 +79,10 @@ unit TinyCompile
                 case TokenType.KW_FUNC:
                 {
                     success = parseFunction();
+                }
+                case TokenType.SYM_HASH:
+                {
+                    success = parseSymbol();
                 }
                 default:
                 {
@@ -130,6 +154,31 @@ unit TinyCompile
         return TinyConstant.DefineConst(constantType, name, value);
     }
     
+    bool parseSymbol()
+    {
+        TinyScanner.Advance(); // Skip #
+        
+        Token token = TinyScanner.Current();
+        if ((token.Type != TokenType.IDENTIFIER) || (token.Lexeme != "define"))
+        {
+            Error(token.SourcePath, token.Line, "'#define' expected");
+            return false;
+        }
+        
+        TinyScanner.Advance(); // Skip 'define'
+        
+        token = TinyScanner.Current();
+        if (token.Type != TokenType.IDENTIFIER)
+        {
+            Error(token.SourcePath, token.Line, "preprocessor symbol identifier expected");
+            return false;
+        }
+        DefineSymbol(token.Lexeme);
+        
+        TinyScanner.Advance(); // Skip symbol
+        return true;
+    }
+    
  
     bool parseGlobalVar()
     {
@@ -182,7 +231,7 @@ unit TinyCompile
     bool parseFunction()
     {
         bool success;
-        TinySymbols.EnterBlock();
+        
         loop
         {
             TinyScanner.Advance(); // Skip 'func'
@@ -233,6 +282,9 @@ unit TinyCompile
                 break;
             }
             
+            TinyCode.Function(functionName);
+            TinyConstant.EnterBlock();
+            TinySymbols.EnterBlock(); // for arguments
             if (!DefineFunction(returnType, functionName))
             {
                 break;
@@ -269,7 +321,7 @@ unit TinyCompile
             else if (token.Type == TokenType.SYM_LBRACE)
             {
                 // This is an actual function definition
-                if (!TinyStatement.parseBlock())
+                if (!TinyStatement.parseBlock(false))
                 {
                     break;
                 }
@@ -280,10 +332,13 @@ unit TinyCompile
                 break;
             }
             
+            TinySymbols.LeaveBlock(functionName); // for arguments
+            TinyConstant.LeaveBlock();
+            
             success = true;
             break;
         } // loop
-        TinySymbols.LeaveBlock();
+        
         
         return success;
     }

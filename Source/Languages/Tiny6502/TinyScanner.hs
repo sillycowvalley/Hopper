@@ -256,6 +256,7 @@ unit TinyScanner
             case ':': { return createToken(TokenType.SYM_COLON, ":");}
             case ',': { return createToken(TokenType.SYM_COMMA, ","); }
             case '.': { return createToken(TokenType.SYM_DOT, ".");}
+            case '#': { return createToken(TokenType.SYM_HASH, "#");}
             case '+':
             {
                 if ((lineIndex < currentLineContent.Length) && (currentLineContent[lineIndex] == '+'))
