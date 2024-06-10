@@ -75,8 +75,8 @@ unit TinyStatement
             return false;
         }
         
-        // TODO : conditional exit
-        TinyCode.IfExit("while exit", "Z");
+        // conditional exit
+        TinyCode.IfExit("while exit", "Z");  // X==0 -> false -> exit
         
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_RPAREN)
@@ -117,7 +117,7 @@ unit TinyStatement
                 return false;
             }
         }
-        else if (!parseExpressionStatement())
+        else if (!parseExpressionStatement(false))
         {
             return false;
         }
@@ -133,7 +133,7 @@ unit TinyStatement
         
         // conditional exit
         TinyCode.PadOut("PLA", 0);
-        TinyCode.IfExit("for exit", "NZ");
+        TinyCode.IfExit("for exit", "Z"); // X==0 -> false -> exit
         
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_SEMICOLON)
@@ -141,27 +141,22 @@ unit TinyStatement
             Error(token.SourcePath, token.Line, "expected ';' after condition, ('" + token.Lexeme + "')");
             return false;
         }
-        
-        // for increment clause
-        string incrementType;
         TinyScanner.Advance(); // Skip ';'
-        if (!TinyExpression.parseExpression(ref incrementType))
+        
+        TinyCode.Capturing();
+        // for increment clause
+        if (!parseExpressionStatement(true))
         {
             return false;
         }
-        
-        token = TinyScanner.Current();
-        if (token.Type != TokenType.SYM_RPAREN)
-        {
-            Error(token.SourcePath, token.Line, "expected ')' after increment, ('" + token.Lexeme + "')");
-            return false;
-        }
-        
-        TinyScanner.Advance(); // Skip ')'
+        string captured = TinyCode.Captured();
+               
         if (!parseBlock(false))
         {
             return false;
         }
+        
+        TinyCode.EmitCaptured(captured);
         
         TinyCode.EndLoop("for");
         return true;
@@ -404,7 +399,7 @@ unit TinyStatement
         
         return TinyConstant.DefineConst(constantType, name, value);
     }
-    bool parseExpressionStatement()
+    bool parseExpressionStatement(bool forIncrement)
     {
         string actualType;
         if (!TinyExpression.parseExpression(ref actualType))
@@ -413,14 +408,14 @@ unit TinyStatement
         }
         
         Token token = TinyScanner.Current();
-        if (token.Type != TokenType.SYM_SEMICOLON)
+        if (token.Type != (forIncrement ? TokenType.SYM_RPAREN : TokenType.SYM_SEMICOLON))
         {
-            Error(token.SourcePath, token.Line, "expected ';' after expression, ('" + token.Lexeme + "')");
+            Error(token.SourcePath, token.Line, "expected '" + (forIncrement ? ')' : ';') + "' after expression, ('" + token.Lexeme + "')");
             return false;
         }
         
-        TinyScanner.Advance(); // Skip ';'
-        
+        TinyScanner.Advance(); // Skip terminationToken
+               
         // discard unused return value
         if (actualType != "void")
         {
@@ -547,7 +542,7 @@ unit TinyStatement
             }
             case TokenType.IDENTIFIER:
             {
-                if (!parseExpressionStatement())
+                if (!parseExpressionStatement(false))
                 {
                     return false;
                 }

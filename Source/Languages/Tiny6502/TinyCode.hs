@@ -45,6 +45,10 @@ unit TinyCode
         capturing = false;
         return result;
     }
+    EmitCaptured(string content)
+    {
+        codeFile.Append(content);
+    }
     
     Map(Token token)
     {
@@ -74,6 +78,7 @@ unit TinyCode
             }
         }
     }
+    
     
     Initialize(string path)
     {
@@ -161,6 +166,8 @@ unit TinyCode
     }
     If(string comment)
     {
+        PadOut("", 0);
+        PadOut("PLA // bool", 0); // bool so one byte
         PadOut("if (NZ) // " + comment, 0);
     }
     IfExit(string comment, string condition)

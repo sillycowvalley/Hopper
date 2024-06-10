@@ -197,7 +197,7 @@ unit TinyCompile
         TinyCode.StartUp();
         foreach (var global in globalDefinitions)
         {
-            TinyCode.PadOut(global, 0);
+            TinyCode.EmitCaptured(global);
         }
     }
     

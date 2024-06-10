@@ -352,7 +352,17 @@ unit TinyExpression
                 return false;
             }
             token = TinyScanner.Current();
-            TinyCode.PadOut("// " + op + " TODO", 0); 
+            switch (op)
+            {
+                case "+":
+                {
+                    TinyOps.Add(IsByteType(actualType));
+                }
+                case "-":
+                {
+                    TinyOps.Sub(IsByteType(actualType));
+                }
+            } 
         }
         return true;
     }

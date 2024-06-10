@@ -15,12 +15,19 @@ unit TinyOps
         {
             PadOut("PLA", 0);
             PadOut("STA ZP.NEXTH", 0);
-            PadOut("PLA", 0);
-            PadOut("STA ZP.NEXTL", 0);
+            
         }
-        else
+        PadOut("PLA", 0);
+        PadOut("STA ZP.NEXTL", 0);
+    }
+    PushTop(bool isByte)
+    {
+        PadOut("LDA ZP.TOPL", 0);
+        PadOut("PHA", 0);
+        if (!isByte)
         {
-            PadOut("PLA", 0); // NEXTL
+            PadOut("LDA ZP.TOPH", 0);
+            PadOut("PHA", 0);
         }
     }
     CompareLT(bool isByte)
@@ -39,6 +46,7 @@ unit TinyOps
         else
         {
             PadOut("LDX # 1 // NEXT < TOP", 0); 
+            PadOut("LDA ZP.NEXTL", 0);
             PadOut("CMP ZP.TOPL", 0);
             PadOut("if (C) // NEXT < TOP", 0);
             PadOut("{", 0);
@@ -63,6 +71,7 @@ unit TinyOps
         else
         {
             PadOut("LDX # 1 // NEXT <= TOP", 0); 
+            PadOut("LDA ZP.NEXTL", 0);
             PadOut("CMP ZP.TOPL", 0);
             PadOut("if (NC) // NEXT <= TOP", 0);
             PadOut("{", 0);
@@ -87,6 +96,7 @@ unit TinyOps
         else
         {
             PadOut("LDX # 0 // NEXT <= TOP", 0); 
+            PadOut("LDA ZP.NEXTL", 0);
             PadOut("CMP ZP.TOPL", 0);
             PadOut("if (NC) // NEXT > TOP", 0);
             PadOut("{", 0);
@@ -112,6 +122,7 @@ unit TinyOps
         else
         {
             PadOut("LDX # 0 // NEXT < TOP", 0); 
+            PadOut("LDA ZP.NEXTL", 0);
             PadOut("CMP ZP.TOPL", 0);
             PadOut("if (C) // NEXT >= TOP", 0);
             PadOut("{", 0);
@@ -137,6 +148,7 @@ unit TinyOps
         else
         {
             PadOut("LDX # 0 // NEXT != TOP", 0); 
+            PadOut("LDA ZP.NEXTL", 0);
             PadOut("CMP ZP.TOPL", 0);
             PadOut("if (Z) // NEXT == TOP", 0);
             PadOut("{", 0);
@@ -161,6 +173,7 @@ unit TinyOps
         else
         {
             PadOut("LDX # 1 // NEXT != TOP", 0); 
+            PadOut("LDA ZP.NEXTL", 0);
             PadOut("CMP ZP.TOPL", 0);
             PadOut("if (Z) // NEXT == TOP", 0);
             PadOut("{", 0);
@@ -168,6 +181,52 @@ unit TinyOps
             PadOut("}", 0);
         }
         PadOut("PHX", 0);
+    }
+    
+    Add(bool isByte)
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// + " + Bitness(isByte), 0); 
+    
+        // arguments
+        PopTopNext(isByte);
+    
+        // operation
+        if (!isByte)
+        {
+            PadOut("TinyOps.Add16();", 0);
+        }
+        else
+        {
+            PadOut("CLC // Clear Carry Flag", 0);
+            PadOut("LDA ZP.NEXTL", 0);
+            PadOut("ADC ZP.TOPL // Add with Carry", 0);
+            PadOut("STA ZP.TOPL", 0);
+        }
+        PushTop(isByte);
+    }
+    
+    Sub(bool isByte)
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// - " + Bitness(isByte), 0); 
+    
+        // arguments
+        PopTopNext(isByte);
+    
+        // operation
+        if (!isByte)
+        {
+            PadOut("TinyOps.Sub16();", 0);
+        }
+        else
+        {
+            PadOut("SEC // Set Carry Flag for Subtraction", 0);
+            PadOut("LDA ZP.NEXTL", 0);
+            PadOut("SBC ZP.TOPL // Subtract with Carry", 0);
+            PadOut("STA ZP.TOPL", 0);
+        }
+        PushTop(isByte);
     }
     
     
