@@ -99,8 +99,8 @@ const char[] message = "Hello, 6502!"; // Read-only fixed-size array
 ### Memory Access
 
 ```c
-a = [0x2000];        // Load from memory
-[0x2000] = a;        // Store to memory
+byte b = mem[42];      // Load from memory
+mem[42] = b;           // Store to memory
 ```
 
 ### Memory Management
@@ -122,7 +122,7 @@ func add(byte x, byte y) -> byte {
 
 ```c
 if (flag) {
-    [0x2000] = 0xFF;
+    mem[0x2000] = 0xFF;
 }
 
 while (a != 0) {
@@ -130,7 +130,7 @@ while (a != 0) {
 }
 
 for (byte i = 0; i < 10; i++) {
-    [0x2000 + i] = i;
+    mem[0x2000 + i] = i;
 }
 
 switch (value) {

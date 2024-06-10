@@ -557,6 +557,7 @@ unit TinyStatement
                 }
             }
             case TokenType.IDENTIFIER:
+            case TokenType.KW_MEM:
             {
                 if (!parseExpressionStatement(false))
                 {

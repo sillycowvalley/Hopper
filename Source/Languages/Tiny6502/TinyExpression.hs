@@ -43,15 +43,42 @@ unit TinyExpression
     bool parseAssignmentExpression(ref string actualType)
     {
         Token token = TinyScanner.Current();
-        if (token.Type == TokenType.IDENTIFIER)
+        if ((token.Type == TokenType.IDENTIFIER) || (token.Type == TokenType.KW_MEM))
         {
+            string name = token.Lexeme;
+            bool hasIndex;
+            string indexType;
+            
             Token peek  = TinyScanner.Peek();
-            // TODO : deal with [..]
+            if (peek.Type == TokenType.SYM_LBRACKET)
+            {
+                TinyScanner.Advance(); // <name>
+                TinyScanner.Advance(); // '['
+                if (!parseExpression(ref indexType))
+                {
+                    return false;
+                }
+                if (!IsIndexType(indexType))
+                {
+                    Error(token.SourcePath, token.Line, "integral index type expected");
+                    return false;
+                }
+                token = TinyScanner.Current();
+                if (token.Type != TokenType.SYM_RBRACKET)
+                {
+                    Error(token.SourcePath, token.Line, "expected ']' after index expression");
+                    return false;
+                }
+                peek  = TinyScanner.Peek();
+                hasIndex = true;
+                PrintLn("Success:" + peek.Lexeme);
+            }
+            
             if ((peek.Type == TokenType.SYM_EQ) || IsCompoundAssignmentOperator(peek.Type))
             {
                 PrintLn(token.Lexeme + peek.Lexeme);
-                string name = token.Lexeme;
-                TinyScanner.Advance();
+                
+                TinyScanner.Advance(); // name or ']'
                 
                 token = TinyScanner.Current(); 
                 string op = token.Lexeme;
@@ -61,15 +88,31 @@ unit TinyExpression
                 
                 int    offset;
                 bool   isGlobal;
-                if (!GetVariable(name, ref actualType, ref offset, ref isGlobal))
+                if (name == "mem")
                 {
-                    Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
+                    actualType = "byte";
+                }
+                else
+                {
+                    if (!GetVariable(name, ref actualType, ref offset, ref isGlobal))
+                    {
+                        Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
+                        return false;
+                    }
                 }
                 bool isByte = IsByteType(actualType);
                 
                 if (op != "=")
                 {
-                    TinyCode.PushVariable(name, offset, isByte, isGlobal);    
+                    if (name == "mem")
+                    {
+                        TinyCode.Dup(IsByteType(indexType));
+                        TinyCode.ReadMemory(IsByteType(indexType));
+                    }
+                    else
+                    {
+                        TinyCode.PushVariable(name, offset, isByte, isGlobal);    
+                    }
                 }
                 
                 string rhsType;
@@ -102,9 +145,34 @@ unit TinyExpression
                         TinyCode.PadOut("// TODO " + op, 0);
                     }
                 }
-                TinyCode.Dup(isByte); // for the expression result
-                TinyCode.PopVariable(name, offset, isByte, isGlobal);
+                
+                if (name == "mem")
+                {
+                    TinyCode.WriteMemory(IsByteType(indexType));
+                    TinyCode.PadOut("PHA", 0); // for the expression result
+                }
+                else
+                {
+                    TinyCode.Dup(isByte); // for the expression result
+                    TinyCode.PopVariable(name, offset, isByte, isGlobal);
+                }
                 return true;
+            }
+            else if (hasIndex)
+            {
+                TinyScanner.Advance(); // ']'
+                if (name == "mem")
+                {
+                    actualType = "byte";
+                    TinyCode.ReadMemory(IsByteType(indexType));
+                    return true;
+                }
+                else
+                {
+                    // array or mem access
+                    Error(token.SourcePath, token.Line, "array or mem access for '" + name + "'");
+                    return false;
+                }
             }
         }
         
@@ -540,6 +608,7 @@ unit TinyExpression
             }
             else if (token.Type == TokenType.SYM_LBRACKET)
             {
+                Die(0x0B); // do we still get here?
                 // array accessor
                 int  offset;
                 bool isGlobal;
@@ -620,6 +689,42 @@ unit TinyExpression
                 return false;
             }
         }
+        else if (token.Type == TokenType.KW_MEM)
+        {
+            Die(0x0B); // do we still get here?
+            
+            TinyScanner.Advance(); // Skip 'func'
+            
+            token = TinyScanner.Current();
+            if (token.Type != TokenType.SYM_LBRACKET)
+            {
+                Error(token.SourcePath, token.Line, "expected '[' after address expression");
+                return false;
+            }
+            TinyScanner.Advance(); // Skip '['
+            
+            string indexType;
+            if (!parseExpression(ref indexType))
+            {
+                return false;
+            }
+            if (!IsIndexType(indexType))
+            {
+                Error(token.SourcePath, token.Line, "integral address type expected");
+                return false;
+            }
+            
+            token = TinyScanner.Current();
+            if (token.Type != TokenType.SYM_RBRACKET)
+            {
+                Error(token.SourcePath, token.Line, "expected ']' after address expression");
+                return false;
+            }
+            TinyScanner.Advance(); // Skip ']'
+            actualType = "byte";
+            
+            TinyCode.ReadMemory(IsByteType(indexType));
+        }
         else if ((token.Type == TokenType.LIT_NUMBER) || (token.Type == TokenType.LIT_CHAR) || (token.Type == TokenType.KW_FALSE) || (token.Type == TokenType.KW_TRUE))
         {
             string value;
@@ -628,18 +733,6 @@ unit TinyExpression
                 return false;
             }
         }
-        /*
-        else if (token.Type == TokenType.LIT_CHAR)
-        {
-            actualType = "char";
-            TinyScanner.Advance(); // Skip literal    
-        }
-        else if ((token.Type == TokenType.KW_FALSE) || (token.Type == TokenType.KW_TRUE))
-        {
-            actualType = "bool";
-            TinyScanner.Advance(); // Skip literal    
-        }
-        */
         else if ((token.Type == TokenType.LIT_STRING) || (token.Type == TokenType.KW_NULL))
         {
             // TODO : actualType

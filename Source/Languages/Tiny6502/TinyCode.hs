@@ -413,15 +413,23 @@ unit TinyCode
     }
     Dup(bool isByte)
     {
+        PadOut("", 0);
+        PadOut("// dup" +  Bitness(isByte), 0);
+        
         PadOut("PLA", 0);
         if (!isByte)
         {
             PadOut("PLX", 0);
             PadOut("PHX", 0);
+            PadOut("PHA", 0);
             PadOut("PHX", 0);
+            PadOut("PHA", 0);
         }
-        PadOut("PHA", 0);
-        PadOut("PHA", 0);
+        else
+        {
+            PadOut("PHA", 0);
+            PadOut("PHA", 0);
+        }
     }
     
     PostIncrement(string name, int offset, bool isByte, bool inc, bool isGlobal) // i++
@@ -523,7 +531,46 @@ unit TinyCode
         }
         PadOut(functionName + "();", 0);
     }
-    
-    
-    
+    ReadMemory(bool isByte)
+    {
+        PadOut("", 0);
+        PadOut("// read memory" +  Bitness(isByte), 0);
+        if (isByte)
+        {
+            PadOut("PLX", 0);
+            PadOut("LDA 0x00, X", 0);
+            PadOut("PHA", 0);    
+        } 
+        else
+        {
+            PadOut("PLA", 0);        
+            PadOut("STA TOPH", 0);        
+            PadOut("PLA", 0);        
+            PadOut("STA TOPL", 0);
+            PadOut("LDA [TOP]", 0);
+            PadOut("PHA", 0);
+        }
+    }
+    WriteMemory(bool isByte)
+    {
+        PadOut("", 0);
+        PadOut("// write memory" +  Bitness(isByte), 0);
+        if (isByte)
+        {
+            PadOut("PLA", 0); 
+            PadOut("PLX", 0);
+            PadOut("STA 0x00, X", 0);
+        } 
+        else
+        {
+            PadOut("PLA", 0); 
+            PadOut("STA ACCL", 0);        
+            PadOut("PLA", 0);        
+            PadOut("STA TOPH", 0);        
+            PadOut("PLA", 0);        
+            PadOut("STA TOPL", 0);
+            PadOut("LDA ACCL", 0);        
+            PadOut("STA [TOP]", 0);
+        }
+    }
 }
