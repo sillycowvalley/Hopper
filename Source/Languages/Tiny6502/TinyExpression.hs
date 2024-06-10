@@ -749,7 +749,16 @@ unit TinyExpression
         }
         else if ((token.Type == TokenType.LIT_STRING) || (token.Type == TokenType.KW_NULL))
         {
-            // TODO : actualType
+            actualType = "char[]";
+            uint index;
+            DefineStringConst(token.Lexeme, ref index);
+            TinyCode.PushConst(index);
+            TinyScanner.Advance(); // Skip literal
+        }
+        else if (token.Type == TokenType.KW_NULL)
+        {
+            actualType = "[]"; // any pointer
+            TinyCode.PushWord(0, "null");   
             TinyScanner.Advance(); // Skip literal
         }
         else if (token.Type == TokenType.SYM_LPAREN)

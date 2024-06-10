@@ -6,6 +6,7 @@ unit TinyCode
     file codeFile;
     file mapFile;
     string codePath;
+    string tempCodePath;
     
     uint lastGlobal;
     <string,uint> globalIndex;
@@ -93,7 +94,9 @@ unit TinyCode
         name = name.Replace(extension, "");
         name = name.ToUpper();
         
-        codeFile = File.Create(codePath);
+        tempCodePath = path.Replace(extension, ".tasm");
+                
+        codeFile = File.Create(tempCodePath);
         mapFile = File.Create(mapPath);
         
         PadOut("program " + name, 0);
@@ -104,7 +107,9 @@ unit TinyCode
         
         //PadOut("#define ACIA_6850", 0);
         PadOut("#define APPLE_I", 0);
-        
+        PadOut("",0);
+        PadOut("// PLACEHOLDER",0);
+        PadOut("",0);
         PadOut("uses \"/Source/Runtime/6502/ZeroPage\"", 0);
         PadOut("uses \"/Source/Runtime/6502/MemoryMap\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Utilities\"", 0);
@@ -141,6 +146,24 @@ unit TinyCode
     {
         codeFile.Flush();
         mapFile.Flush();
+        
+        file tfile = File.Open(tempCodePath);
+        file cfile = File.Create(codePath);
+        loop
+        {
+            string line = tfile.ReadLine();
+            if (!tfile.IsValid()) { break; }
+            if (line.Contains("// PLACEHOLDER"))
+            {
+                cfile.Append("    const string strConsts = \"" + GetStringConstants() + "\";" + Char.EOL);
+            }
+            else
+            {
+                cfile.Append(line + Char.EOL);
+            }
+        }
+        cfile.Flush();
+        File.Delete(tempCodePath);
     }
     <string> deferred;
     Defer(string content)
@@ -230,6 +253,14 @@ unit TinyCode
         PadOut("", 0);
         PadOut("// PUSH 0x" + value.ToHexString(2), 0);
         PadOut("LDA # 0x" + value.ToHexString(2) + " // " + comment, 0);
+        PadOut("PHA", 0);
+    }
+    PushConst(uint word)
+    {
+        PadOut("", 0);
+        PadOut("LDA # ((strConsts + 0x" + (word.GetByte(0)).ToHexString(2) + ") & 0xFF)", 0);
+        PadOut("PHA", 0);
+        PadOut("LDA # ((strConsts + 0x" + (word.GetByte(1)).ToHexString(2) + ") >> 8)", 0);
         PadOut("PHA", 0);
     }
     
