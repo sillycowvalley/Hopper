@@ -16,8 +16,6 @@ unit TinyConstant
     < <string, Constant> > constants;
     
     string stringConstants;
-    //bool stringsInitialized;
-    //uint romAddress;
     
     EnterBlock()
     {
@@ -32,36 +30,6 @@ unit TinyConstant
     }
     DefineStringConst(string constantValue, ref uint index)
     {
-        /*
-        if (!stringsInitialized)
-        {
-            stringsInitialized = true;
-            uint romSize = 0x8000;
-            if (IsDefined("ROM_32K"))
-            {
-                romSize = 0x8000;
-            }
-            if (IsDefined("ROM_16K"))
-            {
-                romSize = 0x4000;
-            }
-            if (IsDefined("ROM_8K"))
-            {
-                romSize = 0x2000;
-            }
-            if (IsDefined("ROM_4K"))
-            {
-                romSize = 0x1000;
-            }
-            if (IsDefined("ROM_1K"))
-            {
-                romSize = 0x0400;
-            }
-            long startAddress = 0x10000 - romSize; 
-            romAddress = uint(startAddress);
-        }
-        */
-        
         index = 0;
         if (!stringConstants.IndexOf(constantValue, ref index))
         {

@@ -578,6 +578,9 @@ unit TinyExpression
                     else
                     {
                         // return the entire array
+                        uint index;
+                        _ = UInt.TryParse(constantValue, ref index);
+                        TinyCode.PushConst(index);
                     }
                 }
                 return true;
@@ -749,7 +752,7 @@ unit TinyExpression
         }
         else if ((token.Type == TokenType.LIT_STRING) || (token.Type == TokenType.KW_NULL))
         {
-            actualType = "char[]";
+            actualType = "const char[]";
             uint index;
             DefineStringConst(token.Lexeme, ref index);
             TinyCode.PushConst(index);

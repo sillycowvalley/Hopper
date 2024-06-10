@@ -162,6 +162,13 @@ unit TinyCompile
         
         TinyCode.Generating = true;
         
+        if (constantType == "const char[]")
+        {
+            uint index;
+            DefineStringConst(value, ref index);
+            value = index.ToString();
+        }
+        
         return TinyConstant.DefineConst(constantType, name, value);
     }
     

@@ -397,11 +397,7 @@ unit TinyStatement
         {
             TypeError(constantType, expressionType);
         }
-        else
-        {
-            Print(" HERE1:" + token.SourcePath + ":" + (token.Line).ToString());
-        }
-    
+        
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_SEMICOLON)
         {
@@ -413,6 +409,12 @@ unit TinyStatement
         
         TinyCode.Generating = true;
         
+        if (constantType == "const char[]")
+        {
+            uint index;
+            DefineStringConst(value, ref index);
+            value = index.ToString();
+        }
         return TinyConstant.DefineConst(constantType, name, value);
     }
     bool parseExpressionStatement(bool forIncrement)
