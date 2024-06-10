@@ -149,7 +149,6 @@ unit TinyStatement
         }
         
         // conditional exit
-        TinyCode.PadOut("PLA", 0);
         TinyCode.IfExit("for exit", "Z"); // X==0 -> false -> exit
         
         token = TinyScanner.Current();

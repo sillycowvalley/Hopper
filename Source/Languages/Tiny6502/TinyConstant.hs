@@ -35,6 +35,7 @@ unit TinyConstant
         {
             index = stringConstants.Length /*+ romAddress*/;
             stringConstants += constantValue;
+            stringConstants += char(0);
         }
     }
     string GetStringConstants() { return stringConstants; }

@@ -50,10 +50,10 @@ unit TinyExpression
             string indexType;
             
             Token peek  = TinyScanner.Peek();
-            if (peek.Type == TokenType.SYM_LBRACKET)
+            if (peek.Type == TokenType.SYM_LLBRACKET)
             {
                 TinyScanner.Advance(); // <name>
-                TinyScanner.Advance(); // '['
+                TinyScanner.Advance(); // '[['
                 if (!parseExpression(ref indexType))
                 {
                     return false;
@@ -71,24 +71,22 @@ unit TinyExpression
                 }
                 peek  = TinyScanner.Peek();
                 hasIndex = true;
-                PrintLn("Success:" + peek.Lexeme);
             }
-            
-            if ((peek.Type == TokenType.SYM_EQ) || IsCompoundAssignmentOperator(peek.Type) || (peek.Type == TokenType.SYM_PLUSPLUS) || (peek.Type == TokenType.SYM_MINUSMINUS))
+           
+            if ((peek.Type == TokenType.SYM_EQ) || IsCompoundAssignmentOperator(peek.Type) || (hasIndex && (peek.Type == TokenType.SYM_PLUSPLUS)) || (hasIndex && (peek.Type == TokenType.SYM_MINUSMINUS)))
             {
-                PrintLn(token.Lexeme + peek.Lexeme);
-                
                 TinyScanner.Advance(); // name or ']'
-                
+                    
                 token = TinyScanner.Current(); 
                 string op = token.Lexeme;
                 
                 TinyCode.PadOut("// " + name + " " + op, 0);
                 TinyScanner.Advance(); // Skip '=' or compound assignment operator
                 
+                
                 int    offset;
                 bool   isGlobal;
-                if (name == "mem")
+                if (hasIndex && (name == "mem"))
                 {
                     actualType = "byte";
                 }
@@ -99,12 +97,16 @@ unit TinyExpression
                         Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
                         return false;
                     }
+                    if (hasIndex)
+                    {
+                        actualType = GetArrayMemberType(actualType);
+                    }
                 }
                 bool isByte = IsByteType(actualType);
                 
                 if (op != "=")
                 {
-                    if (name == "mem")
+                    if (hasIndex && (name == "mem"))
                     {
                         TinyCode.Dup(IsByteType(indexType));
                         TinyCode.ReadMemory(IsByteType(indexType));
@@ -114,7 +116,7 @@ unit TinyExpression
                         TinyCode.PushVariable(name, offset, isByte, isGlobal);    
                     }
                 }
-                if ((op == "++") || (op == "--"))
+                if (hasIndex && ((op == "++") || (op == "--")))
                 {
                     if (isByte)
                     {
@@ -132,6 +134,7 @@ unit TinyExpression
                     {
                         return false;
                     }
+                
                     if (!IsAutomaticCast(actualType, rhsType, false, false))
                     {
                         TypeError(actualType, rhsType);
@@ -160,7 +163,7 @@ unit TinyExpression
                     }
                 }
                 
-                if (name == "mem")
+                if (hasIndex && (name == "mem"))
                 {
                     TinyCode.WriteMemory(IsByteType(indexType));
                     TinyCode.PadOut("PHA", 0); // for the expression result
@@ -171,22 +174,6 @@ unit TinyExpression
                     TinyCode.PopVariable(name, offset, isByte, isGlobal);
                 }
                 return true;
-            }
-            else if (hasIndex)
-            {
-                TinyScanner.Advance(); // ']'
-                if (name == "mem")
-                {
-                    actualType = "byte";
-                    TinyCode.ReadMemory(IsByteType(indexType));
-                    return true;
-                }
-                else
-                {
-                    // array or mem access
-                    Error(token.SourcePath, token.Line, "array or mem access for '" + name + "'");
-                    return false;
-                }
             }
         }
         
@@ -357,17 +344,15 @@ unit TinyExpression
                 return false;
             }
             token = TinyScanner.Current();
-            switch (op)
+            if (op == "==")
             {
-                case "==":
-                {
-                    TinyOps.CompareEQ(IsByteType(actualType));
-                }
-                case "!=":
-                {
-                    TinyOps.CompareNE(IsByteType(actualType));
-                }
-            } 
+                TinyOps.CompareEQ(IsByteType(actualType));
+            }
+            else
+            {
+                // !=
+                TinyOps.CompareNE(IsByteType(actualType));
+            }
             actualType = "bool";
         }
         return true;
@@ -625,14 +610,20 @@ unit TinyExpression
             }
             else if (token.Type == TokenType.SYM_LBRACKET)
             {
-                Die(0x0B); // do we still get here?
                 // array accessor
                 int  offset;
                 bool isGlobal;
-                if (!GetVariable(name, ref actualType, ref offset, ref isGlobal))
+                if (name == "mem")
                 {
-                    Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
-                    return false;
+                    actualType = "byte";
+                }
+                else
+                {
+                    if (!GetVariable(name, ref actualType, ref offset, ref isGlobal))
+                    {
+                        Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
+                        return false;
+                    }
                 }
                 
                 TinyScanner.Advance(); // Skip '['
@@ -646,7 +637,6 @@ unit TinyExpression
                     Error(token.SourcePath, token.Line, "integral index type expected");
                     return false;
                 }
-                actualType = GetArrayMemberType(actualType);
                 token = TinyScanner.Current();
                 if (token.Type != TokenType.SYM_RBRACKET)
                 {
@@ -654,8 +644,23 @@ unit TinyExpression
                     return false;
                 }
                 TinyScanner.Advance(); // Skip ']'
-                
-                // TODO : push array member
+                if (name == "mem")
+                {
+                    actualType = "byte";
+                    TinyCode.ReadMemory(IsByteType(indexType));
+                }
+                else
+                {
+                    if (!actualType.Contains('['))
+                    {
+                        Error(token.SourcePath, token.Line, "array identifier expected");
+                        return false;
+                    }
+                    TinyCode.PushVariable(name, offset, false, isGlobal); // push the pointer
+                    TinyOps.Add(false);                                   // add the index to the pointer
+                    TinyCode.ReadMemory(false);  
+                    actualType = GetArrayMemberType(actualType) ;
+                }
             }
             else
             {
@@ -708,8 +713,6 @@ unit TinyExpression
         }
         else if (token.Type == TokenType.KW_MEM)
         {
-            Die(0x0B); // do we still get here?
-            
             TinyScanner.Advance(); // Skip 'func'
             
             token = TinyScanner.Current();
@@ -774,7 +777,7 @@ unit TinyExpression
             token = TinyScanner.Current();
             if (token.Type != TokenType.SYM_RPAREN)
             {
-                Error(token.SourcePath, token.Line, "expected ')' after expression, ('" + token.Lexeme + "')");
+                Error(token.SourcePath, token.Line, "expected ')' after expression, ('" + token.Lexeme + "') B");
                 return false;
             }
             TinyScanner.Advance(); // Skip ')'

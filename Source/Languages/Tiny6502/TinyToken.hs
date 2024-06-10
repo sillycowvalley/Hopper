@@ -7,7 +7,7 @@ unit TinyToken
         KW_CONST, KW_TRUE, KW_FALSE, KW_NULL, KW_IMPORT, KW_RETURN,
         KW_BYTE, KW_WORD, KW_CHAR, KW_BOOL, KW_INT, KW_UINT, KW_AS, KW_MEM,
         // Symbols
-        SYM_LPAREN, SYM_RPAREN, SYM_LBRACE, SYM_RBRACE, SYM_LBRACKET, SYM_RBRACKET,
+        SYM_LPAREN, SYM_RPAREN, SYM_LBRACE, SYM_RBRACE, SYM_LBRACKET, SYM_RBRACKET, SYM_LLBRACKET,
         SYM_SEMICOLON, SYM_COLON, SYM_COMMA, SYM_DOT, SYM_HASH,
         SYM_PLUS, SYM_MINUS, SYM_STAR, SYM_SLASH, SYM_PERCENT,
         SYM_AMP, SYM_PIPE, SYM_CARET, SYM_TILDE, SYM_BANG, SYM_QUESTION,
@@ -180,6 +180,7 @@ unit TinyToken
             case TokenType.SYM_LBRACE: { return "SYM_LBRACE"; }
             case TokenType.SYM_RBRACE: { return "SYM_RBRACE"; }
             case TokenType.SYM_LBRACKET: { return "SYM_LBRACKET"; }
+            case TokenType.SYM_LLBRACKET: { return "SYM_LLBRACKET"; }
             case TokenType.SYM_RBRACKET: { return "SYM_RBRACKET"; }
             case TokenType.SYM_SEMICOLON: { return "SYM_SEMICOLON"; }
             case TokenType.SYM_COLON: { return "SYM_COLON"; }

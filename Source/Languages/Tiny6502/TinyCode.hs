@@ -155,7 +155,13 @@ unit TinyCode
             if (!tfile.IsValid()) { break; }
             if (line.Contains("// PLACEHOLDER"))
             {
-                cfile.Append("    const string strConsts = \"" + GetStringConstants() + "\";" + Char.EOL);
+                cfile.Append("    const string strConsts = {");
+                string cstr = GetStringConstants(); 
+                foreach (var c in cstr)
+                {
+                    cfile.Append("0x" + (byte(c)).ToHexString(2) +", ");
+                }
+                cfile.Append("};" + Char.EOL);
             }
             else
             {
@@ -195,6 +201,7 @@ unit TinyCode
     }
     IfExit(string comment, string condition)
     {
+        PadOut("PLA", 0);
         PadOut("if (" + condition +") // " + comment, 0);
         PadOut("{", 0);
         PadOut("break;", 1);
@@ -285,6 +292,16 @@ unit TinyCode
             PadOut("LDA # 0x00" + " // cast MSB", 0);
             PadOut("PHA", 0);
         }
+    }
+    WordToByte(bool doUnder, string byteType)
+    {
+        if (doUnder)
+        {
+            Die(0x0A);
+        }
+        PadOut("", 0);
+        PadOut("// 16 bit as '" + byteType + "'", 0);
+        PadOut("PLA // MSB", 0);       
     }
     ToBool(bool isByte, bool doUnder)
     {
@@ -388,7 +405,7 @@ unit TinyCode
         {
             // arguments
             offset = -offset;
-            offset++;
+            offset += 3; // BP (1 byte) and return address (2 bytes)
             PadOut("CLC", 0);
             PadOut("ADC # 0x" + (offset.GetByte(0)).ToHexString(2), 0);
         }

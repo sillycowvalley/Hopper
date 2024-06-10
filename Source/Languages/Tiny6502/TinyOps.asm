@@ -108,32 +108,30 @@ unit TinyOps
     
     Add16()
     {
-        TinyCode.PadOut("", 0); 
-        TinyCode.PadOut("// + 16-bit", 0);
+        // + 16-bit
 
-        PadOut("CLC // Clear Carry Flag", 0);
-        PadOut("LDA ZP.NEXTL", 0);
-        PadOut("ADC ZP.TOPL", 0);
-        PadOut("STA ZP.TOPL", 0);
+        CLC // Clear Carry Flag
+        LDA ZP.NEXTL
+        ADC ZP.TOPL
+        STA ZP.TOPL
 
-        PadOut("LDA ZP.NEXTH", 0);
-        PadOut("ADC ZP.TOPH", 0);
-        PadOut("STA ZP.TOPH", 0);
+        LDA ZP.NEXTH
+        ADC ZP.TOPH
+        STA ZP.TOPH
     }
     
     Sub16()
     {
-        TinyCode.PadOut("", 0); 
-        TinyCode.PadOut("// - 16-bit", 0);
+        // - 16-bit
 
-        PadOut("SEC // Set Carry Flag for Subtraction", 0);
-        PadOut("LDA ZP.NEXTL", 0);
-        PadOut("SBC ZP.TOPL", 0);
-        PadOut("STA ZP.TOPL", 0);
+        SEC // Set Carry Flag for Subtraction
+        LDA ZP.NEXTL
+        SBC ZP.TOPL
+        STA ZP.TOPL
 
-        PadOut("LDA ZP.NEXTH", 0);
-        PadOut("SBC ZP.TOPH", 0);
-        PadOut("STA ZP.TOPH", 0);
+        LDA ZP.NEXTH
+        SBC ZP.TOPH
+        STA ZP.TOPH
     }
 
 

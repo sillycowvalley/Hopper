@@ -157,7 +157,11 @@ unit TinyType
                     }
                     case "word":
                     {
-                        return false; // word as byte requires cast
+                        if (asCast)
+                        {
+                            TinyCode.WordToByte(doUnder, "byte");
+                        }
+                        return asCast; // word as byte requires cast
                     }
                     case "bool":
                     {
@@ -189,7 +193,11 @@ unit TinyType
                     }
                     case "word":
                     {
-                        return false; // word as char requires cast
+                        if (asCast)
+                        {
+                            TinyCode.WordToByte(doUnder, "char");
+                        }
+                        return asCast; // word as char requires cast
                     }
                     case "bool":
                     {
@@ -330,7 +338,7 @@ unit TinyType
             {
                 TypeError(expectedType, actualType);
                 PrintLn(actualType + " as " + expectedType);
-                Die(0x0A); // not implemented
+                //Die(0x0A); // not implemented
             }
         }
         return false;
