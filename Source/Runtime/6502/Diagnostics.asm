@@ -1,9 +1,9 @@
 unit Diagnostics
 {
-    uses "6502/ZeroPage"
-    uses "6502/Array"
-    uses "6502/String"
-    uses "6502/List"
+    uses "ZeroPage"
+    uses "Array"
+    uses "String"
+    uses "List"
     
     friend GC, Free, Allocate, Variant, String, Array, List, Instruction, SysCall, IntMath, Type;
     

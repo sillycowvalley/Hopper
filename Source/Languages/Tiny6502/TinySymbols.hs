@@ -62,6 +62,7 @@ unit TinySymbols
         
         if (name == "main")
         {
+            // TODO : free automatic allocations
             TinyCode.PopBytes(byte(GlobalOffset), "global variable");
         }
         

@@ -59,7 +59,7 @@ unit Memory
     Allocate()
     {
         Stacks.PopACC();      // only care about ACCL and ACCH (not ACCT)
-        Allocate.allocate();
+        Allocate.Allocate();
         
         // Push IDX:
         LDY ZP.SP
@@ -74,7 +74,7 @@ unit Memory
     Free()
     {
         Stacks.PopIDX();
-        Free.free();
+        Free.Free();
     }
     ReadByte()
     {

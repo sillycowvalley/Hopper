@@ -401,7 +401,7 @@ unit List
         STA ACCH
         // size is in ACC
         // return address in IDX
-        Allocate.allocate();
+        Allocate.Allocate();
         
         LDA IDXH
         STA FITEMH
@@ -440,7 +440,7 @@ unit List
         STA IDXL
         LDA IDYH
         STA IDXH
-        Free.free();
+        Free.Free();
         
         PLA
         STA IDXH
@@ -834,7 +834,7 @@ unit List
             STA ACCH
             // size is in ACC
             // return address in IDX
-            Allocate.allocate();
+            Allocate.Allocate();
             
             LDY # 0
             LDA IDXL

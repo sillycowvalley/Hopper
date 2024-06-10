@@ -324,7 +324,7 @@ unit String
         STA IDXL
         LDA IDYH
         STA IDXH
-        Free.free(); // free the original from under the nose of the GC
+        Free.Free(); // free the original from under the nose of the GC
         
         PLA
         STA IDXH

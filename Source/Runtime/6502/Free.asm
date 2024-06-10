@@ -58,7 +58,7 @@ unit Free
 
     const byte mfOFFSET = M15; // used in releaseSP, no need to preserve
            
-    free()
+    Free()
     {
         // address is in IDX
         // uses mfCURRENT

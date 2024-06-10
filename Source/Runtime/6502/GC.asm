@@ -34,7 +34,7 @@ unit GC
         
         // size is in ACC
         // return address in IDX
-        Allocate.allocate();
+        Allocate.Allocate();
         
         LDY # 0
         TXA
@@ -133,7 +133,7 @@ unit GC
 #endif
                 }
             }
-            Free.free();
+            Free.Free();
         }
 #ifdef CPU_65C02S
         PLX PLY
@@ -265,7 +265,7 @@ unit GC
         
         // size is in ACC
         // return address in IDX
-        Allocate.allocate();
+        Allocate.Allocate();
         
         // initialized from destination at IDX
         LDA IDXL

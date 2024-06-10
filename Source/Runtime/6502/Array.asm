@@ -2,7 +2,7 @@ unit Array
 {
     friend GC, Diagnostics;
     
-    uses "6502/GC"
+    uses "GC"
     
     // Array memory map:
     //   0000 heap allocator size

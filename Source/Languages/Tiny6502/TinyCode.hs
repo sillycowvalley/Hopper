@@ -113,11 +113,14 @@ unit TinyCode
         PadOut("// PLACEHOLDER",0);
         PadOut("",0);
         PadOut("uses \"/Source/Runtime/6502/ZeroPage\"", 0);
+        PadOut("uses \"/Source/Runtime/6502/Diagnostics\"", 0);
         PadOut("uses \"/Source/Runtime/6502/MemoryMap\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Utilities\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Types\"", 0);
         PadOut("uses \"/Source/Runtime/6502/IntMath\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Memory\"", 0);
+        PadOut("uses \"/Source/Runtime/6502/Allocate\"", 0);
+        PadOut("uses \"/Source/Runtime/6502/Free\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Serial\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Time\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Devices/W65C22\"", 0);
@@ -369,6 +372,7 @@ unit TinyCode
         extra--;
         PadOut("}", 0); 
             
+        // TODO : free automatic allocations
         TinyCode.PopBytes("local variable");
         
         PadOut("", 0);
@@ -592,6 +596,14 @@ unit TinyCode
             case "delay":
             {
                  functionName = "TinySys.Delay";
+            }
+            case "malloc":
+            {
+                 functionName = "TinySys.Malloc";
+            }
+            case "free":
+            {
+                 functionName = "TinySys.Free";
             }
         }
         PadOut(functionName + "();", 0);
