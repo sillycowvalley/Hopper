@@ -103,7 +103,9 @@ unit TinyCode
     }
     Uses()
     {
+        PadOut("#define TINY6502", 0);
         PadOut("#define W65C22_VIA", 0);
+        
         
         //PadOut("#define ACIA_6850", 0);
         PadOut("#define APPLE_I", 0);
@@ -113,6 +115,8 @@ unit TinyCode
         PadOut("uses \"/Source/Runtime/6502/ZeroPage\"", 0);
         PadOut("uses \"/Source/Runtime/6502/MemoryMap\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Utilities\"", 0);
+        PadOut("uses \"/Source/Runtime/6502/Types\"", 0);
+        PadOut("uses \"/Source/Runtime/6502/IntMath\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Memory\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Serial\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Devices/W65C22\"", 0);

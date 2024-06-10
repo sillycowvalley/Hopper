@@ -15,6 +15,11 @@ unit TinyType
         typeName = "|" + typeName.Replace("const ", "") + "|";
         return ("|byte|char|bool|").Contains(typeName);
     }
+    bool IsSignedType(string typeName)
+    {
+        typeName = "|" + typeName.Replace("const ", "") + "|";
+        return ("|int|+int|").Contains(typeName);
+    }
     string GetArrayMemberType(string arrayType)
     {
         string memberType = arrayType;

@@ -2,7 +2,7 @@ unit IntMath
 {
     // FASTINTS
     
-    mulShared()
+    MulShared()
     {
         // TOP = NEXT * TOP
         
@@ -267,7 +267,7 @@ unit IntMath
         STA    NEXTL
     }
     
-    utilityDiv()
+    UtilityDiv()
     {
         // NEXT = NEXT (dividend=result) / TOP (divisor)
 #ifdef FASTINTS        
@@ -320,9 +320,9 @@ unit IntMath
             }
         }
 #endif        
-        divmod();
+        DivMod();
     }
-    divmod()
+    DivMod()
     {
         // NEXT = NEXT (dividend=result) / TOP (divisor)
         // ACC (remainder)
@@ -356,7 +356,7 @@ unit IntMath
             if (Z) { break; }
         }
     }
-    negateTop()
+    NegateTop()
     {
         // TOP = 0 - TOP
         SEC
@@ -367,7 +367,7 @@ unit IntMath
         SBC ZP.TOPH
         STA ZP.TOPH        
     }
-    negateNext()
+    NegateNext()
     {
         // NEXT = 0 - NEXT
         SEC
@@ -389,14 +389,14 @@ unit IntMath
         if (C)
         {
             INX // count the -ve
-            negateNext(); // NEXT = -NEXT
+            NegateNext(); // NEXT = -NEXT
         }
         LDA ZP.TOPH
         ASL // sign bit into carry
         if (C)
         {
             INX // count the -ve
-            negateTop(); // TOP = -TOP
+            NegateTop(); // TOP = -TOP
         }
         STX ZP.FSIGN // store the sign count
     }
@@ -404,19 +404,19 @@ unit IntMath
     Mul()
     {
         Stacks.PopTopNext();
-        mulShared();
+        MulShared();
         LDA ZP.TOPT
         Stacks.PushTop();
     }
     MulI()
     {
         popTopNextandDoSigns(); // munts X
-        mulShared();
+        MulShared();
         LDA ZP.FSIGN     // load the sign count
         CMP #1
         if (Z)           // 1 negative (not 0 or 2)
         {
-            negateTop(); // TOP = -TOP
+            NegateTop(); // TOP = -TOP
         }
         LDA #Types.Int
         Stacks.PushTop();
@@ -425,7 +425,7 @@ unit IntMath
     {
         Stacks.PopTopNext();
         // NEXT = NEXT / TOP
-        utilityDiv();
+        UtilityDiv();
         LDA #Types.UInt
         Stacks.PushNext();
     }
@@ -433,7 +433,7 @@ unit IntMath
     {
         Stacks.PopTopNext();
         // ACC = NEXT % TOP
-        divmod();
+        DivMod();
         LDA #Types.UInt
         STA ZP.ACCT
         Stacks.PushACC(); // munts Y, A
@@ -441,13 +441,13 @@ unit IntMath
     DivI()
     {
         popTopNextandDoSigns(); // munts X
-        utilityDiv();
+        UtilityDiv();
         
         LDA ZP.FSIGN     // load the sign count
         CMP #1
         if (Z)           // 1 negative (not 0 or 2)
         {
-            negateNext(); // NEXT = -NEXT
+            NegateNext(); // NEXT = -NEXT
         }
         LDA #Types.Int
         Stacks.PushNext();
@@ -463,7 +463,7 @@ unit IntMath
         //    10 / -3 = q -3, r -11 ?!
         
         popTopNextandDoSigns(); // munts X
-        divmod();
+        DivMod();
     
         // always leave remainder ACC as positive
         LDA #Types.Int

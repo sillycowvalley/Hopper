@@ -155,11 +155,11 @@ unit TinyExpression
                     }
                     case "/=":
                     {
-                        TinyCode.PadOut("// TODO " + op, 0);
+                        TinyOps.Div(IsByteType(actualType), IsSignedType(actualType));
                     }
                     case "*=":
                     {
-                        TinyCode.PadOut("// TODO " + op, 0);
+                        TinyOps.Mul(IsByteType(actualType), IsSignedType(actualType));
                     }
                 }
                 
@@ -494,7 +494,21 @@ unit TinyExpression
                 return false;
             }
             token = TinyScanner.Current();
-            TinyCode.PadOut("// " + op + " TODO", 0); 
+            switch (op)
+            {
+                case "*":
+                {
+                    TinyOps.Mul(IsByteType(actualType), IsSignedType(actualType));
+                }
+                case "/":
+                {
+                    TinyOps.Div(IsByteType(actualType), IsSignedType(actualType));
+                }
+                case "%":
+                {
+                    TinyOps.Mod(IsByteType(actualType), IsSignedType(actualType));
+                }
+            } 
         }
         return true;
     }
@@ -551,6 +565,11 @@ unit TinyExpression
                             Error(token.SourcePath, token.Line, "integral index type expected");
                             return false;
                         }
+                        if (!actualType.Contains('['))
+                        {
+                            Error(token.SourcePath, token.Line, "array identifier expected");
+                            return false;
+                        }
                         actualType = GetArrayMemberType(actualType);
                         token = TinyScanner.Current();
                         if (token.Type != TokenType.SYM_RBRACKET)
@@ -559,13 +578,25 @@ unit TinyExpression
                             return false;
                         }
                         TinyScanner.Advance(); // Skip ']'
+                        
+                        if (IsByteType(indexType))
+                        {
+                            CastPad(false);
+                        }
+                        
+                        uint address;
+                        _ = UInt.TryParse(constantValue, ref address);
+                        TinyCode.PushConst(address);
+                        
+                        TinyOps.Add(false);            // add the index to the address
+                        TinyCode.ReadMemory(false); 
                     }
                     else
                     {
                         // return the entire array
-                        uint index;
-                        _ = UInt.TryParse(constantValue, ref index);
-                        TinyCode.PushConst(index);
+                        uint address;
+                        _ = UInt.TryParse(constantValue, ref address);
+                        TinyCode.PushConst(address);
                     }
                 }
                 return true;
@@ -651,6 +682,10 @@ unit TinyExpression
                 }
                 else
                 {
+                    if (IsByteType(indexType))
+                    {
+                        CastPad(false);
+                    }
                     if (!actualType.Contains('['))
                     {
                         Error(token.SourcePath, token.Line, "array identifier expected");

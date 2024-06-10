@@ -229,6 +229,66 @@ unit TinyOps
         PushTop(isByte);
     }
     
+    Mul(bool isByte, bool isSigned)
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// + " + Bitness(isByte), 0); 
+    
+        // arguments
+        PopTopNext(isByte);
+    
+        // operation
+        if (!isByte)
+        {
+            PadOut("TinyOps.Mul16();", 0);
+        }
+        else
+        {
+            PadOut("TinyOps.Mul8();", 0);
+        }
+        PushTop(isByte);
+    }
+    
+    Div(bool isByte, bool isSigned)
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// + " + Bitness(isByte), 0); 
+    
+        // arguments
+        PopTopNext(isByte);
+    
+        // operation
+        if (!isByte)
+        {
+            PadOut("TinyOps.Div16();", 0);
+        }
+        else
+        {
+            PadOut("TinyOps.Div8();", 0);
+        }
+        PushTop(isByte);
+    }
+    
+    Mod(bool isByte, bool isSigned)
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// + " + Bitness(isByte), 0); 
+    
+        // arguments
+        PopTopNext(isByte);
+    
+        // operation
+        if (!isByte)
+        {
+            PadOut("TinyOps.Mod16();", 0);
+        }
+        else
+        {
+            PadOut("TinyOps.Mod8();", 0);
+        }
+        PushTop(isByte);
+    }
+    
     
     
     

@@ -133,9 +133,52 @@ unit TinyOps
         SBC ZP.TOPH
         STA ZP.TOPH
     }
-
-
-
-
-
+    
+    Mul16()
+    {
+        MulShared();
+    }
+    
+    Mul8()
+    {
+        STZ TOPH
+        STZ TOPL
+        MulShared();
+    }
+    
+    Div16()
+    {
+        UtilityDiv();
+        LDA NEXTL
+        STA TOPL
+        LDA NEXTH
+        STA TOPH
+    }
+    
+    Div8()
+    {
+        STZ TOPH
+        STZ TOPL
+        UtilityDiv();
+        LDA NEXTL
+        STA TOPL
+    }
+    
+    Mod16()
+    {
+        UtilityDiv();
+        LDA ACCL
+        STA TOPL
+        LDA ACCH
+        STA TOPH
+    }
+    
+    Mod8()
+    {
+        STZ TOPH
+        STZ TOPL
+        UtilityDiv();
+        LDA ACCL
+        STA TOPL
+    }
 }

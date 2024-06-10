@@ -3,6 +3,12 @@ const byte INPUT = 0;
 const byte OUTPUT = 1;
 const byte INPUT_PULLUP = 2;
 
+// assuming the W65C22 VIA for now:
+const byte PORTB                = 0xF0;
+const byte PORTA                = 0xF1;
+const byte DDRB                 = 0xF2;
+const byte DDRA                 = 0xF3;
+
 // Serial Communication
 func writeChar(char c); // System function to write a single character
 
@@ -43,9 +49,44 @@ func writePage(word address, const byte[] data); // System function to write a p
 func readPage(word address, byte[] buffer);      // System function to read a page of data from EEPROM
 
 // GPIO (Pin) Control
-func pinSet(byte pin, bool value); // System function to set the value of a pin
-func bool pinRead(byte pin);       // System function to read the value of a pin
-func pinMode(byte pin, byte mode); // System function to set the mode of a pin
+func pinSet(byte pin, bool value)  // System function to set the value of a pin
+{
+    byte port;
+    if (pin <= 7) { port = PORTA; } else { port = PORTB; }
+    pin = 1 << (pin & 0x07);
+    if (value)
+    {
+        mem[[port] = (mem[port] | pin);
+    }
+    else
+    {
+        mem[[port] = (mem[port] & ~pin);
+    }
+}
+func bool pinRead(byte pin)        // System function to read the value of a pin
+{
+    byte port;
+    if (pin <= 7) { port = PORTA; } else { port = PORTB; }
+    pin = 1 << (pin & 0x07);
+    return ((mem[port] & pin) != 0);
+}
+func pinMode(byte pin, byte mode)  // System function to set the mode of a pin
+{
+    byte ddr;
+    if (pin <= 7) { ddr = DDRA; } else { ddr = DDRB; }
+    pin = pin & 0x07;
+    pin = 1 << pin;
+    byte currentValue = mem[ddr];
+    if (mode == INPUT)
+    {
+        currentValue = currentValue & ~pin;
+    }
+    else
+    {
+        currentValue = currentValue | pin;
+    }
+    mem[[ddr] = currentValue;
+}
 
 // I2C
 func I2CWrite(byte address, byte data); // System function to write data via I2C
