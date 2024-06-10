@@ -98,13 +98,13 @@
   ```
 
 ### Language Comparison
-- **Type System**: Value types (int, uint, char), reference types (list, string, dictionary).
-- **Method Definition**: Code block with no 'system' keyword.
-- **Variable Declaration**: Explicit type name, `var` for loop iterators.
-- **Loop Statements**: Curly braces required.
-- **Switch Statements**: No fall-through, no `break` needed.
-- **Expression vs Statement**: Cannot use expressions where statements are expected.
-- **Scope Restrictions**: Methods, functions, enumerations, and constants can only be declared at the unit/program level.
+- **Type System**: Value types (int, uint, char), reference types (list, string, dictionary). Hopper enforces strict type distinctions.
+- **Method Definition**: Code blocks are defined without a `void` keyword. Omit return type for methods that do not return a value.
+- **Variable Declaration**: Explicit type name required for all variables, except for loop iterators where `var` is used.
+- **Loop Statements**: Curly braces are mandatory for all control structures, including single-statement blocks, ensuring clear and structured code.
+- **Switch Statements**: No fall-through, no `break` needed, eliminating the common fall-through bug in C/C++/C#.
+- **Expression vs Statement**: Hopper differentiates strictly between expressions and statements; expressions cannot be used where statements are expected.
+- **Scope Restrictions**: Methods, functions, enumerations, and constants can only be declared at the unit/program level, not within other methods or functions.
 
 ### Best Practices and Common Mistakes
 - **Constants**: Declare constants at the program or unit level, not within functions.
