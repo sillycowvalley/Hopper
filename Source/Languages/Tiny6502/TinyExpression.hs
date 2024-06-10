@@ -74,7 +74,7 @@ unit TinyExpression
                 PrintLn("Success:" + peek.Lexeme);
             }
             
-            if ((peek.Type == TokenType.SYM_EQ) || IsCompoundAssignmentOperator(peek.Type))
+            if ((peek.Type == TokenType.SYM_EQ) || IsCompoundAssignmentOperator(peek.Type) || (peek.Type == TokenType.SYM_PLUSPLUS) || (peek.Type == TokenType.SYM_MINUSMINUS))
             {
                 PrintLn(token.Lexeme + peek.Lexeme);
                 
@@ -114,24 +114,38 @@ unit TinyExpression
                         TinyCode.PushVariable(name, offset, isByte, isGlobal);    
                     }
                 }
-                
-                string rhsType;
-                if (!parseExpression(ref rhsType))
+                if ((op == "++") || (op == "--"))
                 {
-                    return false;
+                    if (isByte)
+                    {
+                        TinyCode.PushByte(1, "");
+                    }
+                    else
+                    {
+                        TinyCode.PushWord(1, "");
+                    }
                 }
-                if (!IsAutomaticCast(actualType, rhsType, false, false))
-                {
-                    TypeError(actualType, rhsType);
-                    return false;
+                else
+                {  
+                    string rhsType;
+                    if (!parseExpression(ref rhsType))
+                    {
+                        return false;
+                    }
+                    if (!IsAutomaticCast(actualType, rhsType, false, false))
+                    {
+                        TypeError(actualType, rhsType);
+                        return false;
+                    }
                 }
-                
                 switch (op)
                 {
                     case "+=":
+                    case "++":
                     {
                         TinyOps.Add(IsByteType(actualType));
                     }
+                    case "--":
                     case "-=":
                     {
                         TinyOps.Sub(IsByteType(actualType));
