@@ -255,6 +255,44 @@ unit TinyCode
             PadOut("PHA", 0);
         }
     }
+    ToBool(bool isByte, bool doUnder)
+    {
+        if (doUnder)
+        {
+            Die(0x0A);
+        }
+        if (isByte)
+        {
+            PadOut("", 0);
+            PadOut("// 8 bit as 'bool'", 0);
+            PadOut("PLA", 0);
+            PadOut("if (NZ)", 0);
+            PadOut("{", 0);
+            PadOut("LDA # 1 // true", 1);
+            PadOut("}", 0);
+            PadOut("PHA", 0);
+        }
+        else
+        {
+            PadOut("", 0);
+            PadOut("// 16 bit as 'bool'", 0);
+            PadOut("PLA // MSB", 0);
+            PadOut("if (NZ)", 0);
+            PadOut("{", 0);
+            PadOut("PLA // LSB", 1);
+            PadOut("LDA # 1 // true", 1);
+            PadOut("}", 0);
+            PadOut("else", 0);
+            PadOut("{", 0);
+            PadOut("PLA // LSB", 1);
+            PadOut("if (NZ)", 1);
+            PadOut("{", 1);
+            PadOut("LDA # 1 // true", 2);
+            PadOut("}", 1);
+            PadOut("}", 0);
+            PadOut("PHA", 0);
+        }
+    }
     
     Enter()
     {
@@ -373,6 +411,18 @@ unit TinyCode
         PadOut("PLA", 0);
         PadOut("STA 0x0100, X", 0);  
     }
+    Dup(bool isByte)
+    {
+        PadOut("PLA", 0);
+        if (!isByte)
+        {
+            PadOut("PLX", 0);
+            PadOut("PHX", 0);
+            PadOut("PHX", 0);
+        }
+        PadOut("PHA", 0);
+        PadOut("PHA", 0);
+    }
     
     PostIncrement(string name, int offset, bool isByte, bool inc, bool isGlobal) // i++
     {
@@ -421,7 +471,7 @@ unit TinyCode
     PreIncrement(string name, int offset, bool isByte, bool inc, bool isGlobal) // ++i
     {
         PadOut("", 0);
-        PadOut("// " + name + (inc ? "++" : "--") + Bitness(isByte), 0);
+        PadOut("// " + (inc ? "++" : "--") + name + Bitness(isByte), 0);
         offsetToX(offset, isGlobal);
         if (inc)
         {
@@ -454,10 +504,13 @@ unit TinyCode
             }
         }
         PadOut("LDA 0x0100, X", 0);
-        PadOut("PHA", 0); // A contains post-value
-        PadOut("INX", 1);
-        PadOut("LDA 0x0100, X", 0);
-        PadOut("PHA", 0); // A contains post-value
+        PadOut("PHA", 0);
+        if (!isByte)
+        {
+            PadOut("INX", 0);
+            PadOut("LDA 0x0100, X", 0);
+            PadOut("PHA", 0);
+        }
     }
     Call(string functionName)
     {

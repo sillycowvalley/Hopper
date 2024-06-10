@@ -25,6 +25,12 @@ unit TinyStatement
         {
             return false;
         }
+        if (!IsAutomaticCast("bool", booleanType, false, false))
+        {
+            PrintLn("HERE");
+            TypeError("bool", booleanType);
+            return false;    
+        }
         
         TinyCode.If("if");
         
@@ -73,6 +79,11 @@ unit TinyStatement
         if (!TinyExpression.parseExpression(ref booleanType))
         {
             return false;
+        }
+        if (!IsAutomaticCast("bool", booleanType, false, false))
+        {
+            TypeError("bool", booleanType);
+            return false;    
         }
         
         // conditional exit
@@ -129,6 +140,12 @@ unit TinyStatement
         if (!TinyExpression.parseExpression(ref booleanType))
         {
             return false;
+        }
+        
+        if (!IsAutomaticCast("bool", booleanType, false, false))
+        {
+            TypeError("bool", booleanType);
+            return false;    
         }
         
         // conditional exit
@@ -298,11 +315,10 @@ unit TinyStatement
                     return false;
                 }
                 
-                if (!IsAutomaticCast(tp, exprType, false))
+                if (!IsAutomaticCast(tp, exprType, false, false))
                 {
-                    // TODO
-                    //Error(token.SourcePath, token.Line, "type mismatch: expected '" + tp + "', got '" + exprType + "'");
-                    //return false;
+                    Error(token.SourcePath, token.Line, "type mismatch: expected '" + tp + "', was '" + exprType + "'");
+                    return false;
                 }
     
                 token = TinyScanner.Current();
@@ -377,13 +393,13 @@ unit TinyStatement
         {
             return false;
         }
-        if (!IsAutomaticCast(constantType, expressionType, false))
+        if (!IsAutomaticCast(constantType, expressionType, false, false))
         {
             TypeError(constantType, expressionType);
         }
         else
         {
-            Print(" HERE4");
+            Print(" HERE1:" + token.SourcePath + ":" + (token.Line).ToString());
         }
     
         token = TinyScanner.Current();

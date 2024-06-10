@@ -48,11 +48,11 @@ unit TinyType
     {
         if (otherType != actualType)
         {
-            if (IsAutomaticCast(otherType, actualType, true))
+            if (IsAutomaticCast(otherType, actualType, true, false))
             {
                 actualType = otherType; // PrintLn(" true:" + actualType);
             }
-            else if (IsAutomaticCast(actualType, otherType, false))
+            else if (IsAutomaticCast(actualType, otherType, false, false))
             {
                 otherType = actualType; // PrintLn(" false:" + actualType);
             }
@@ -61,7 +61,7 @@ unit TinyType
     }
     
     
-    bool IsAutomaticCast(string expectedType, string actualType, bool doUnder)
+    bool IsAutomaticCast(string expectedType, string actualType, bool doUnder, bool asCast)
     {
         if (expectedType.StartsWith("const ") && !actualType.StartsWith("const "))
         {
@@ -87,13 +87,65 @@ unit TinyType
         // For example, handle implicit conversions, array size checks, etc.
         switch (expectedType)
         {
+            case "bool":
+            {
+                switch (actualType)
+                {
+                    case "byte":
+                    {
+                        if (asCast)
+                        {
+                            TinyCode.ToBool(true, doUnder);
+                        }
+                        return asCast; // byte as bool requires cast
+                    }
+                    case "char":
+                    {
+                        if (asCast)
+                        {
+                            TinyCode.ToBool(true, doUnder);
+                        }
+                        return asCast; // char as bool requires cast
+                    }
+                    case "word":
+                    {
+                        if (asCast)
+                        {
+                            TinyCode.ToBool(false, doUnder);
+                        }
+                        return asCast; // word as bool requires cast
+                    }
+                    case "int":
+                    {
+                        if (asCast)
+                        {
+                            TinyCode.ToBool(false, doUnder);
+                        }
+                        return asCast; // word as int requires cast
+                    }
+                    case "+int":
+                    {
+                        if (asCast)
+                        {
+                            TinyCode.ToBool(false, doUnder);
+                        }
+                        return asCast; // word as +int requires cast
+                    }
+                    default:
+                    {
+                        TypeError(expectedType, actualType);
+                        PrintLn(actualType + " as " + expectedType);
+                        Die(0x0A); // not implemented
+                    }
+                }
+            }
             case "byte":
             {
                 switch (actualType)
                 {
                     case "char":
                     {
-                        return false; // char as byte requires cast
+                        return asCast; // char as byte requires cast
                     }
                     case "int":
                     {
@@ -106,6 +158,10 @@ unit TinyType
                     case "word":
                     {
                         return false; // word as byte requires cast
+                    }
+                    case "bool":
+                    {
+                        return asCast; // bool as byte requires cast
                     }
                     default:
                     {
@@ -121,7 +177,7 @@ unit TinyType
                 {
                     case "byte":
                     {
-                        return false; // byte as char requires cast
+                        return asCast; // byte as char requires cast
                     }
                     case "int":
                     {
@@ -134,6 +190,10 @@ unit TinyType
                     case "word":
                     {
                         return false; // word as char requires cast
+                    }
+                    case "bool":
+                    {
+                        return asCast; // bool as char requires cast
                     }
                     default:
                     {
@@ -154,7 +214,11 @@ unit TinyType
                     }
                     case "char":
                     {
-                        return false; // char as word requires cast
+                        if (asCast)
+                        {
+                            TinyCode.CastPad(doUnder);
+                        }
+                        return asCast; // char as word requires cast
                     }
                     case "+int":
                     {
@@ -163,6 +227,14 @@ unit TinyType
                     case "int":
                     {
                         return false; // int as word requires cast
+                    }
+                    case "bool":
+                    {
+                        if (asCast)
+                        {
+                            TinyCode.CastPad(doUnder);
+                        }
+                        return asCast; // bool as word requires cast
                     }
                     default:
                     {
@@ -183,7 +255,11 @@ unit TinyType
                     }
                     case "char":
                     {
-                        return false; // char as int requires cast
+                        if (asCast)
+                        {
+                            TinyCode.CastPad(doUnder);
+                        }
+                        return asCast; // char as int requires cast
                     }
                     case "+int":
                     {
@@ -192,6 +268,14 @@ unit TinyType
                     case "word":
                     {
                         return false; // word as int requires cast
+                    }
+                    case "bool":
+                    {
+                        if (asCast)
+                        {
+                            TinyCode.CastPad(doUnder);
+                        }
+                        return asCast; // bool as int requires cast
                     }
                     default:
                     {
@@ -212,7 +296,11 @@ unit TinyType
                     }
                     case "char":
                     {
-                        return false; // char as +int requires cast
+                        if (asCast)
+                        {
+                            TinyCode.CastPad(doUnder);
+                        }
+                        return asCast; // char as +int requires cast
                     }
                     case "int":
                     {
@@ -221,6 +309,14 @@ unit TinyType
                     case "word":
                     {
                         return false; // word as +int requires cast
+                    }
+                    case "bool":
+                    {
+                        if (asCast)
+                        {
+                            TinyCode.CastPad(doUnder);
+                        }
+                        return asCast; // bool as +int requires cast
                     }
                     default:
                     {
@@ -242,7 +338,7 @@ unit TinyType
     TypeError(string expected, string actual)
     {
         Token token = TinyScanner.Current();
-        Error(token.SourcePath, token.Line, "type mismatch: expected '" + expected +"', got '" + actual + "'");
+        Error(token.SourcePath, token.Line, "type mismatch: expected '" + expected +"', was '" + actual + "'");
     }
                 
 }

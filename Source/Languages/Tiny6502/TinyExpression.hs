@@ -20,11 +20,20 @@ unit TinyExpression
         Token token = TinyScanner.Current();        
         if (token.Type == TokenType.KW_AS)
         {
-            TinyCode.PadOut("// as TODO", 0);
-            // cast
+            string asType;
             TinyScanner.Advance(); // Skip 'as'
-            if (!TinyCompile.parseType(ref actualType))
+            if (!TinyCompile.parseType(ref asType))
             {
+                return false;
+            }
+            bool doUnder;
+            if (IsAutomaticCast(asType, actualType, false, true))
+            {
+                actualType = asType;
+            }
+            else
+            {
+                Error(token.SourcePath, token.Line, "'" + actualType + "' as '" + asType + "' failed");
                 return false;
             }
         }
@@ -33,48 +42,76 @@ unit TinyExpression
 
     bool parseAssignmentExpression(ref string actualType)
     {
+        Token token = TinyScanner.Current();
+        if (token.Type == TokenType.IDENTIFIER)
+        {
+            Token peek  = TinyScanner.Peek();
+            // TODO : deal with [..]
+            if ((peek.Type == TokenType.SYM_EQ) || IsCompoundAssignmentOperator(peek.Type))
+            {
+                PrintLn(token.Lexeme + peek.Lexeme);
+                string name = token.Lexeme;
+                TinyScanner.Advance();
+                
+                token = TinyScanner.Current(); 
+                string op = token.Lexeme;
+                
+                TinyCode.PadOut("// " + name + " " + op, 0);
+                TinyScanner.Advance(); // Skip '=' or compound assignment operator
+                
+                int    offset;
+                bool   isGlobal;
+                if (!GetVariable(name, ref actualType, ref offset, ref isGlobal))
+                {
+                    Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
+                }
+                bool isByte = IsByteType(actualType);
+                
+                if (op != "=")
+                {
+                    TinyCode.PushVariable(name, offset, isByte, isGlobal);    
+                }
+                
+                string rhsType;
+                if (!parseExpression(ref rhsType))
+                {
+                    return false;
+                }
+                if (!IsAutomaticCast(actualType, rhsType, false, false))
+                {
+                    TypeError(actualType, rhsType);
+                    return false;
+                }
+                
+                switch (op)
+                {
+                    case "+=":
+                    {
+                        TinyOps.Add(IsByteType(actualType));
+                    }
+                    case "-=":
+                    {
+                        TinyOps.Sub(IsByteType(actualType));
+                    }
+                    case "/=":
+                    {
+                        TinyCode.PadOut("// TODO " + op, 0);
+                    }
+                    case "*=":
+                    {
+                        TinyCode.PadOut("// TODO " + op, 0);
+                    }
+                }
+                TinyCode.Dup(isByte); // for the expression result
+                TinyCode.PopVariable(name, offset, isByte, isGlobal);
+                return true;
+            }
+        }
+        
         if (!parseLogicalOrExpression(ref actualType))
         {
             return false;
         }
-
-        Token token = TinyScanner.Current();
-        if ((token.Type == TokenType.SYM_EQ) || IsCompoundAssignmentOperator(token.Type))
-        {
-            Token nameToken = TinyScanner.Previous();
-            string name = nameToken.Lexeme;
-            string op = token.Lexeme;
-            TinyCode.PadOut("// " + name + " " + op, 0);
-            
-        
-            TinyScanner.Advance(); // Skip '=' or compound assignment operator
-
-            string rhsType;
-            if (!parseExpression(ref rhsType))
-            {
-                return false;
-            }
-            if (!IsAutomaticCast(actualType, rhsType, false))
-            {
-                TypeError(actualType, rhsType);
-                return false;
-            }
-            else
-            {
-                Print(" HERE2");
-            }
-            
-            int    offset;
-            bool   isGlobal;
-            string variableType;
-            if (!GetVariable(name, ref variableType, ref offset, ref isGlobal))
-            {
-                Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
-            }
-            TinyCode.PopVariable(name, offset, IsByteType(variableType), isGlobal);
-        }
-        
-        
         return true;
     }
 
@@ -531,6 +568,8 @@ unit TinyExpression
                     return false;
                 }
                 TinyScanner.Advance(); // Skip ']'
+                
+                // TODO : push array member
             }
             else
             {

@@ -9,8 +9,41 @@ unit TinyScanner
     uint currentLine;
     uint lineIndex;
     string currentLineContent;
+    
     Token currentToken;
-    Token previousToken;
+    Token peekedToken;
+    bool peeked;
+    
+    Advance()
+    {
+        if (peeked)
+        {
+            currentToken = peekedToken;
+            peeked = false;
+        }
+        else
+        {
+            advanceToken();
+        }
+    }
+    
+    Token Peek()
+    {
+        if (!peeked)
+        {
+            Token stored = currentToken;
+            advanceToken();
+            peekedToken = currentToken;
+            peeked = true;
+            currentToken = stored;
+        }
+        return peekedToken;
+    }
+    
+    Token Current()
+    {
+        return currentToken;
+    }
     
     Restart(string sourcePath)
     {
@@ -34,26 +67,7 @@ unit TinyScanner
         advanceToken();
     }
     
-    Advance()
-    {
-        previousToken = currentToken;
-        advanceToken();
-    }
-    
-    Token Peek()
-    {
-        return currentToken;
-    }
-    
-    Token Current()
-    {
-        return currentToken;
-    }
-    Token Previous()
-    {
-        return previousToken;
-    }
-    
+       
     advanceLine()
     {
         string line = sourceFile.ReadLine();
