@@ -24,7 +24,7 @@ unit TinyCompile
         {
             // global scope
             TinyConstant.EnterBlock();
-            TinySymbols.EnterBlock(true, false);
+            TinySymbols.EnterBlock(true);
             
             TinyCode.Uses();
             
@@ -34,7 +34,7 @@ unit TinyCompile
             }
         
             // global scope
-            TinySymbols.LeaveBlock("program", true, false);
+            TinySymbols.LeaveBlock("program", true);
             TinyConstant.LeaveBlock();
             
             Token token = TinyScanner.Current();
@@ -44,7 +44,7 @@ unit TinyCompile
                 Error(token.SourcePath, token.Line, "'main()' entrypoint missing");
                 break;
             }
-            if (returnType != "")
+            if (returnType != "void")
             {
                 Error(token.SourcePath, token.Line, "'main()' entrypoint should not have return type");
                 break;
@@ -146,11 +146,10 @@ unit TinyCompile
         {
             return false;
         }
-        if (!IsAutomaticCast(constantType, expressionType))
+        if (!IsAutomaticCast(constantType, expressionType, false))
         {
             TypeError(constantType, expressionType);
         }
-        
         
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_SEMICOLON)
@@ -227,6 +226,7 @@ unit TinyCompile
         
         TinyScanner.Advance(); // Skip identifier
 
+        TinyCode.PadOut("", 0);
         TinyCode.PadOut("// initialize '" + name + "' (" + (GlobalOffset).ToString() + ")", 0);
         
         // make a slot on the stack
@@ -290,7 +290,7 @@ unit TinyCompile
             TinyCode.Map(token);
         
             // Optional return type
-            string returnType = "";
+            string returnType = "void";
             if (token.Type != TokenType.IDENTIFIER)
             {
                 if (!parseType(ref returnType))
@@ -336,7 +336,7 @@ unit TinyCompile
             
             TinyCode.Function(functionName);
             TinyConstant.EnterBlock();
-            TinySymbols.EnterBlock(false, true); // for arguments
+            TinySymbols.EnterBlock(false); // for arguments
             
             if (!DefineFunction(returnType, functionName))
             {
@@ -398,7 +398,7 @@ unit TinyCompile
                 break;
             }
             
-            TinySymbols.LeaveBlock(functionName, generate, true); // for arguments
+            TinySymbols.LeaveBlock(functionName, generate); // for arguments
             TinyConstant.LeaveBlock();
             
             success = true;

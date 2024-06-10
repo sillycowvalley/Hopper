@@ -255,7 +255,7 @@ unit TinyStatement
             return false;
         }
         
-        
+        TinyCode.PadOut("", 0);
         TinyCode.PadOut("// initialize '" + name + "' (BP+" + (LocalOffset).ToString() +")", 0);
         
         if (TinyType.IsByteType(tp))
@@ -303,7 +303,7 @@ unit TinyStatement
                     return false;
                 }
                 
-                if (!IsAutomaticCast(tp, exprType))
+                if (!IsAutomaticCast(tp, exprType, false))
                 {
                     // TODO
                     //Error(token.SourcePath, token.Line, "type mismatch: expected '" + tp + "', got '" + exprType + "'");
@@ -382,9 +382,13 @@ unit TinyStatement
         {
             return false;
         }
-        if (!IsAutomaticCast(constantType, expressionType))
+        if (!IsAutomaticCast(constantType, expressionType, false))
         {
             TypeError(constantType, expressionType);
+        }
+        else
+        {
+            Print(" HERE4");
         }
     
         token = TinyScanner.Current();
@@ -416,6 +420,13 @@ unit TinyStatement
         }
         
         TinyScanner.Advance(); // Skip ';'
+        
+        // discard unused return value
+        if (actualType != "void")
+        {
+            TinyCode.PopBytes(IsByteType(actualType) ? 1 : 2, "expression statement");
+        }
+        
         return true;
     }
     bool parseBlock(bool scope)
@@ -423,7 +434,7 @@ unit TinyStatement
         if (scope)
         {
             TinyConstant.EnterBlock();
-            TinySymbols.EnterBlock(true, false);
+            TinySymbols.EnterBlock(true);
         }
             
         
@@ -454,7 +465,7 @@ unit TinyStatement
         TinyScanner.Advance(); // Skip '}'
         if (scope)
         {
-            TinySymbols.LeaveBlock("", true, false);
+            TinySymbols.LeaveBlock("", true);
             TinyConstant.LeaveBlock();
         }
         return true;

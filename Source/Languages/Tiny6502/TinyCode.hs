@@ -1,6 +1,7 @@
 unit TinyCode
 {
     uses "TinySymbols"
+    uses "TinyOps"
     
     file codeFile;
     file mapFile;
@@ -105,6 +106,8 @@ unit TinyCode
         PadOut("uses \"/Source/Runtime/6502/Memory\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Serial\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Devices/W65C22\"", 0);
+        PadOut("uses \"/Source/Languages/Tiny6502/TinyOps\"", 0);
+        PadOut("uses \"/Source/Languages/Tiny6502/TinySys\"", 0);
         PadOut("",0);
         PadOut("IRQ()",0);
         PadOut("{",0);
@@ -175,11 +178,11 @@ unit TinyCode
     {
         PadOut("loop // " + comment, 0);
         TinyConstant.EnterBlock();
-        TinySymbols.EnterBlock(true, false);
+        TinySymbols.EnterBlock(true);
     }
     EndLoop(string comment)
     {
-        TinySymbols.LeaveBlock(comment, true, false);
+        TinySymbols.LeaveBlock(comment, true);
         TinyConstant.LeaveBlock();
     }
     Break(string comment)
@@ -205,6 +208,8 @@ unit TinyCode
     
     PushWord(uint word, string comment)
     {
+        PadOut("", 0);
+        PadOut("// PUSH 0x" + word.ToHexString(4), 0);
         PadOut("LDA # 0x" + (word.GetByte(0)).ToHexString(2) + " // " + comment + " LSB", 0);
         PadOut("PHA", 0);
         if (word.GetByte(0) != word.GetByte(1))
@@ -215,9 +220,35 @@ unit TinyCode
     }
     PushByte(byte value, string comment)
     {
+        PadOut("", 0);
+        PadOut("// PUSH 0x" + value.ToHexString(2), 0);
         PadOut("LDA # 0x" + value.ToHexString(2) + " // " + comment, 0);
         PadOut("PHA", 0);
     }
+    
+    CastPad(bool doUnder)
+    {
+        if (doUnder)
+        {
+            PadOut("", 0);
+            PadOut("PLA // cast MSB (doUnder)", 0);
+            PadOut("STA ZP.TOPH", 0);
+            PadOut("PLA", 0);
+            PadOut("STA ZP.TOPL", 0);
+            PadOut("LDA # 0x00", 0);
+            PadOut("PHA", 0);
+            PadOut("LDA ZP.TOPL", 0);
+            PadOut("PHA", 0);
+            PadOut("LDA ZP.TOPH", 0);
+            PadOut("PHA", 0);
+        }
+        else
+        {
+            PadOut("LDA # 0x00" + " // cast MSB", 0);
+            PadOut("PHA", 0);
+        }
+    }
+    
     Enter()
     {
         PadOut("// PUSH BP", 0);
@@ -240,20 +271,24 @@ unit TinyCode
         extra--;
         PadOut("}", 0); 
             
-        TinyCode.PopBytes();
+        TinyCode.PopBytes("local variable");
         
         PadOut("", 0);
         PadOut("// POP BP", 0);
         PadOut("PLX", 0);
         PadOut("STX ZP.BP", 0);
     }
-    PopBytes()
+    PopBytes(string comment)
     {
         byte bytes = GetCurrentLevelBytes();
+        PopBytes(bytes, comment);
+    }
+    PopBytes(byte bytes, string comment)
+    {
         if (bytes > 0)
         {
             PadOut("", 0);
-            PadOut("// bytes to pop: " + bytes.ToString(), 0);
+            PadOut("// " + comment + " bytes to pop: " + bytes.ToString(), 0);
             for (byte i=0; i < bytes; i++)
             {
                 PadOut("PLY", 0); // leaving A and X for potential return values
@@ -296,10 +331,16 @@ unit TinyCode
         }
         return name + " [0x0100 - BP -" + offset.ToString() + "]";
     }
+    
+    string Bitness(bool isByte)
+    {
+        return " (" + (isByte ? "8 bit)" : "16 bit)");
+    }
+    
     PushVariable(string name, int offset, bool isByte, bool isGlobal)
     {
         PadOut("", 0);
-        PadOut("// push " + nameWithOffset(name, offset, isGlobal), 0);
+        PadOut("// PUSH " + nameWithOffset(name, offset, isGlobal) + Bitness(isByte), 0);
         offsetToX(offset, isGlobal);  
         PadOut("LDA 0x0100, X", 0);  
         PadOut("PHA", 0);
@@ -313,7 +354,7 @@ unit TinyCode
     PopVariable(string name, int offset, bool isByte, bool isGlobal)
     {
         PadOut("", 0);
-        PadOut("// pop " + nameWithOffset(name, offset, isGlobal), 0);
+        PadOut("// POP " + nameWithOffset(name, offset, isGlobal) + Bitness(isByte), 0);
         offsetToX(offset, isGlobal);  
         if (!isByte)
         {
@@ -329,16 +370,16 @@ unit TinyCode
     PostIncrement(string name, int offset, bool isByte, bool inc, bool isGlobal) // i++
     {
         PadOut("", 0);
-        PadOut("// " + name + (inc ? "++" : "--"), 0);
+        PadOut("// " + name + (inc ? "++" : "--") + Bitness(isByte), 0);
         offsetToX(offset, isGlobal);
         PadOut("LDA 0x0100, X", 0);
         PadOut("PHA", 0); // A contains pre-value
         if (!isByte)
         {
-            PadOut("INX", 1);
+            PadOut("INX", 0);
             PadOut("LDA 0x0100, X", 0);
             PadOut("PHA", 0); // A contains pre-value
-            PadOut("DEX", 1);
+            PadOut("DEX", 0);
         }
         if (inc)
         {
@@ -373,7 +414,7 @@ unit TinyCode
     PreIncrement(string name, int offset, bool isByte, bool inc, bool isGlobal) // ++i
     {
         PadOut("", 0);
-        PadOut("// " + name + (inc ? "++" : "--"), 0);
+        PadOut("// " + name + (inc ? "++" : "--") + Bitness(isByte), 0);
         offsetToX(offset, isGlobal);
         if (inc)
         {
@@ -411,157 +452,16 @@ unit TinyCode
         PadOut("LDA 0x0100, X", 0);
         PadOut("PHA", 0); // A contains post-value
     }
-    CompareLT(bool isByte)
+    Call(string functionName)
     {
-        PadOut("LDX # 1 // NEXT < TOP", 0); 
-        if (!isByte)
+        switch (functionName)
         {
-            PadOut("PLA", 0);
-            PadOut("STA ZP.TOPH", 0);
+            case "writeChar":
+            {
+                functionName = "TinySys.WriteChar";
+            }
         }
-        PadOut("PLA", 0);
-        PadOut("STA ZP.TOPL", 0);
-        if (!isByte)
-        {
-            PadOut("PLA", 0);
-            PadOut("STA ZP.NEXTH", 0);
-        }
-        PadOut("PLA", 0);
-        PadOut("STA ZP.NEXTL", 0);
-        if (!isByte)
-        {
-            PadOut("LDA ZP.NEXTH", 0);
-            PadOut("CMP ZP.TOPH", 0);
-            PadOut("if (Z)", 0);
-            PadOut("{", 0);
-            PadOut("LDA ZP.NEXTL", 1);
-            PadOut("CMP ZP.TOPL", 1);
-            PadOut("}", 0);
-        }
-        else
-        {
-            PadOut("LDA ZP.NEXTL", 0);
-            PadOut("CMP ZP.TOPL", 0);
-        }
-        PadOut("if (C) // NEXT < TOP", 0);
-        PadOut("{", 0);
-        PadOut("LDX # 0 // NEXT >= TOP", 1); 
-        PadOut("}", 0);
-        PadOut("PHX", 0);
-    }
-    CompareLE(bool isByte)
-    {
-        PadOut("LDX # 1 // NEXT <= TOP", 0);
-        if (!isByte)
-        {
-            PadOut("PLA", 0);
-            PadOut("STA ZP.TOPH", 0);
-        }
-        PadOut("PLA", 0);
-        PadOut("STA ZP.TOPL", 0);
-        if (!isByte)
-        {
-            PadOut("PLA", 0);
-            PadOut("STA ZP.NEXTH", 0);
-        }
-        PadOut("PLA", 0);
-        PadOut("STA ZP.NEXTL", 0);
-        if (!isByte)
-        {
-            PadOut("LDA ZP.NEXTH", 0);
-            PadOut("CMP ZP.TOPH", 0);
-            PadOut("if (Z)", 0);
-            PadOut("{", 0);
-            PadOut("LDA ZP.NEXTL", 1);
-            PadOut("CMP ZP.TOPL", 1);
-            PadOut("}", 0);
-        }
-        else
-        {
-            PadOut("LDA ZP.NEXTL", 0);
-            PadOut("CMP ZP.TOPL", 0);
-        }
-        PadOut("if (C) // NEXT <= TOP", 0);
-        PadOut("{", 0);
-        PadOut("LDX # 0 // NEXT > TOP", 1);
-        PadOut("}", 0);
-        PadOut("PHX", 0);
-    }
-    CompareGT(bool isByte)
-    {
-        PadOut("LDX # 0 // NEXT <= TOP", 0);
-        if (!isByte)
-        {
-            PadOut("PLA", 0);
-            PadOut("STA ZP.TOPH", 0);
-        }
-        PadOut("PLA", 0);
-        PadOut("STA ZP.TOPL", 0);
-        if (!isByte)
-        {
-            PadOut("PLA", 0);
-            PadOut("STA ZP.NEXTH", 0);
-        }
-        PadOut("PLA", 0);
-        PadOut("STA ZP.NEXTL", 0);
-        if (!isByte)
-        {
-            PadOut("LDA ZP.NEXTH", 0);
-            PadOut("CMP ZP.TOPH", 0);
-            PadOut("if (Z)", 0);
-            PadOut("{", 0);
-            PadOut("LDA ZP.NEXTL", 1);
-            PadOut("CMP ZP.TOPL", 1);
-            PadOut("}", 0);
-        }
-        else
-        {
-            PadOut("LDA ZP.NEXTL", 0);
-            PadOut("CMP ZP.TOPL", 0);
-        }
-        PadOut("if (C) // NEXT > TOP", 0);
-        PadOut("{", 0);
-        PadOut("LDX # 1 // NEXT > TOP", 1);
-        PadOut("}", 0);
-        PadOut("PHX", 0);
-    }
-    CompareGE(bool isByte)
-    {
-        PadOut("LDX # 0 // NEXT < TOP", 0);
-        if (!isByte)
-        {
-            PadOut("PLA", 0);
-            PadOut("STA ZP.TOPH", 0);
-        }
-        PadOut("PLA", 0);
-        PadOut("STA ZP.TOPL", 0);
-        if (!isByte)
-        {
-            PadOut("PLA", 0);
-            PadOut("STA ZP.NEXTH", 0);
-        }
-        PadOut("PLA", 0);
-        PadOut("STA ZP.NEXTL", 0);
-        if (!isByte)
-        {
-            PadOut("LDA ZP.NEXTH", 0);
-            PadOut("CMP ZP.TOPH", 0);
-            PadOut("if (Z)", 0);
-            PadOut("{", 0);
-            PadOut("LDA ZP.NEXTL", 1);
-            PadOut("CMP ZP.TOPL", 1);
-            PadOut("}", 0);
-        }
-        else
-        {
-            PadOut("LDA ZP.NEXTL", 0);
-            PadOut("CMP ZP.TOPL", 0);
-        }
-        PadOut("if (!C) // NEXT >= TOP", 0);
-        PadOut("{", 0);
-        PadOut("LDX # 1 // NEXT >= TOP", 1);
-        PadOut("}", 0);
-        PadOut("PHX", 0);
+        PadOut(functionName + "();", 0);
     }
     
     

@@ -213,7 +213,7 @@ unit TinyScanner
         if (lineIndex < currentLineContent.Length)
         {
             lineIndex++; // Skip closing quote
-            string lexeme = currentLineContent.Substring(start, lineIndex - start);
+            string lexeme = currentLineContent.Substring(start + 1, lineIndex - start - 2);
             return createToken(TokenType.LIT_STRING, lexeme);
         }
         else
@@ -235,7 +235,7 @@ unit TinyScanner
         if (lineIndex < currentLineContent.Length)
         {
             lineIndex++; // Skip closing quote
-            string lexeme = currentLineContent.Substring(start, lineIndex - start);
+            string lexeme = currentLineContent.Substring(start + 1, lineIndex - start - 2);
             return createToken(TokenType.LIT_CHAR, lexeme);
         }
         else

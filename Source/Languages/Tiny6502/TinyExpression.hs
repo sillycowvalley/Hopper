@@ -5,6 +5,7 @@ unit TinyExpression
     uses "TinyToken"
     uses "TinyScanner"
     uses "TinyCode"
+    uses "TinyOps"
     uses "TinyConstant"
     uses "TinyType"
     uses "TinySymbols"
@@ -53,10 +54,14 @@ unit TinyExpression
             {
                 return false;
             }
-            if (!IsAutomaticCast(actualType, rhsType))
+            if (!IsAutomaticCast(actualType, rhsType, false))
             {
                 TypeError(actualType, rhsType);
                 return false;
+            }
+            else
+            {
+                Print(" HERE2");
             }
             
             int    offset;
@@ -94,9 +99,9 @@ unit TinyExpression
                 TypeError(actualType, rhsType);
                 return false;
             }
-            actualType = "bool";
             token = TinyScanner.Current();
             TinyCode.PadOut("// || TODO", 0);
+            actualType = "bool";
         }
         return true;
     }
@@ -122,9 +127,9 @@ unit TinyExpression
                 TypeError(actualType, rhsType);
                 return false;
             }
-            actualType = "bool";
             token = TinyScanner.Current();
             TinyCode.PadOut("// && TODO", 0);
+            actualType = "bool";
         }
         return true;
     }
@@ -232,9 +237,19 @@ unit TinyExpression
                 TypeError(actualType, rhsType);
                 return false;
             }
-            actualType = "bool";
             token = TinyScanner.Current();
-            TinyCode.PadOut("// " + op + " TODO", 0); 
+            switch (op)
+            {
+                case "==":
+                {
+                    TinyOps.CompareEQ(IsByteType(actualType));
+                }
+                case "!=":
+                {
+                    TinyOps.CompareNE(IsByteType(actualType));
+                }
+            } 
+            actualType = "bool";
         }
         return true;
     }
@@ -262,24 +277,23 @@ unit TinyExpression
                 return false;
             }
             token = TinyScanner.Current();
-            TinyCode.PadOut("// " + op, 0); 
             switch (op)
             {
                 case "<":
                 {
-                    TinyCode.CompareLT(IsByteType(actualType));
+                    TinyOps.CompareLT(IsByteType(actualType));
                 }
                 case "<=":
                 {
-                    TinyCode.CompareLE(IsByteType(actualType));
+                    TinyOps.CompareLE(IsByteType(actualType));
                 }
                 case ">":
                 {
-                    TinyCode.CompareGT(IsByteType(actualType));
+                    TinyOps.CompareGT(IsByteType(actualType));
                 }
                 case ">=":
                 {
-                    TinyCode.CompareGE(IsByteType(actualType));
+                    TinyOps.CompareGE(IsByteType(actualType));
                 }
             }
             actualType = "bool";
@@ -462,7 +476,8 @@ unit TinyExpression
                 }
                 
                 TinyScanner.Advance(); // Skip '('
-                if (!parseArgumentList(name))
+                byte bytes;
+                if (!parseArgumentList(name, ref bytes))
                 {
                     return false;
                 }
@@ -473,6 +488,8 @@ unit TinyExpression
                     return false;
                 }
                 TinyScanner.Advance(); // Skip ')'
+                TinyCode.Call(name);
+                TinyCode.PopBytes(bytes, name + " arguments");
             }
             else if (token.Type == TokenType.SYM_LBRACKET)
             {
@@ -616,7 +633,7 @@ unit TinyExpression
         return true;
     }
     
-    bool parseArgumentList(string functionName)
+    bool parseArgumentList(string functionName, ref byte bytes)
     {
         Token token;
         loop
@@ -631,6 +648,7 @@ unit TinyExpression
             {
                 return false;
             }
+            bytes += (IsByteType(argType) ? 1 : 2);
             token = TinyScanner.Current();
             if (token.Type == TokenType.SYM_COMMA)
             {

@@ -48,19 +48,20 @@ unit TinyType
     {
         if (otherType != actualType)
         {
-            if (IsAutomaticCast(otherType, actualType))
+            if (IsAutomaticCast(otherType, actualType, true))
             {
-                actualType = otherType;
+                actualType = otherType; // PrintLn(" true:" + actualType);
             }
-            else if (IsAutomaticCast(actualType, otherType))
+            else if (IsAutomaticCast(actualType, otherType, false))
             {
-                otherType = actualType;
+                otherType = actualType; // PrintLn(" false:" + actualType);
             }
         }
         return otherType == actualType;
     }
     
-    bool IsAutomaticCast(string expectedType, string actualType)
+    
+    bool IsAutomaticCast(string expectedType, string actualType, bool doUnder)
     {
         if (expectedType.StartsWith("const ") && !actualType.StartsWith("const "))
         {
@@ -98,6 +99,10 @@ unit TinyType
                     {
                         return false; // int as byte requires cast
                     }
+                    case "+int":
+                    {
+                        return false; // +int as byte requires cast
+                    }
                     case "word":
                     {
                         return false; // word as byte requires cast
@@ -122,6 +127,10 @@ unit TinyType
                     {
                         return false; // int as char requires cast
                     }
+                    case "+int":
+                    {
+                        return false; // +int as char requires cast
+                    }
                     case "word":
                     {
                         return false; // word as char requires cast
@@ -140,7 +149,7 @@ unit TinyType
                 {
                     case "byte":
                     {
-                        TinyCode.PushByte(0, "cast MSB");
+                        TinyCode.CastPad(doUnder);
                         return true; // byte as word
                     }
                     case "char":
@@ -169,7 +178,7 @@ unit TinyType
                 {
                     case "byte":
                     {
-                        TinyCode.PushByte(0, "cast MSB");
+                        TinyCode.CastPad(doUnder);
                         return true; // byte as int
                     }
                     case "char":
@@ -198,7 +207,7 @@ unit TinyType
                 {
                     case "byte":
                     {
-                        TinyCode.PushByte(0, "cast MSB");
+                        TinyCode.CastPad(doUnder);
                         return true; // byte as +int
                     }
                     case "char":

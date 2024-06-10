@@ -42,7 +42,7 @@ unit TinySymbols
         return bytes;
     }
     
-    EnterBlock(bool generate, bool func)
+    EnterBlock(bool generate)
     {
         if (!generate)
         {
@@ -56,7 +56,7 @@ unit TinySymbols
         variables.Append(level);
         blockLevel++;
     }
-    LeaveBlock(string name, bool generate, bool func)
+    LeaveBlock(string name, bool generate)
     {
         variables.Remove(variables.Count-1);
         blockLevel--;

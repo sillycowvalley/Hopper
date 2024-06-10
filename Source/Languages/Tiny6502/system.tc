@@ -16,6 +16,7 @@ func writeString(const char[] str) {
 }
 
 func writeWord(word num) {
+/*
     // Function to write a word as a string to the serial output buffer using writeChar
     if (num == 0) {
         writeChar('0');
@@ -34,6 +35,7 @@ func writeWord(word num) {
     while (i > 0) {
         writeChar(digits[--i]);
     }
+    */
 }
 
 // EEPROM
