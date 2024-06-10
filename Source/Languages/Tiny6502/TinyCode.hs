@@ -119,6 +119,7 @@ unit TinyCode
         PadOut("uses \"/Source/Runtime/6502/IntMath\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Memory\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Serial\"", 0);
+        PadOut("uses \"/Source/Runtime/6502/Time\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Devices/W65C22\"", 0);
         PadOut("uses \"/Source/Languages/Tiny6502/TinyOps\"", 0);
         PadOut("uses \"/Source/Languages/Tiny6502/TinySys\"", 0);
@@ -394,39 +395,43 @@ unit TinyCode
     }
     offsetToX(int offset, bool isGlobal)
     {
-        PadOut("LDA ZP.BP", 0);
         if (isGlobal)
         {
-            Die(0x0B); // TODO
+            offset = 255 - offset;
+            PadOut("LDX # 0x"+ (offset.GetByte(0)).ToHexString(2), 0);
         }
-        if (offset > 0)
+        else
         {
-            // locals
-            PadOut("SEC", 0);
-            PadOut("SBC # 0x" + (offset.GetByte(0)).ToHexString(2), 0);
+            PadOut("LDA ZP.BP", 0);
+            if (offset > 0)
+            {
+                // locals
+                PadOut("SEC", 0);
+                PadOut("SBC # 0x" + (offset.GetByte(0)).ToHexString(2), 0);
+            }
+            else if (offset < 0)
+            {
+                // arguments
+                offset = -offset;
+                offset += 3; // BP (1 byte) and return address (2 bytes)
+                PadOut("CLC", 0);
+                PadOut("ADC # 0x" + (offset.GetByte(0)).ToHexString(2), 0);
+            }
+            PadOut("TAX", 0);
         }
-        else if (offset < 0)
-        {
-            // arguments
-            offset = -offset;
-            offset += 3; // BP (1 byte) and return address (2 bytes)
-            PadOut("CLC", 0);
-            PadOut("ADC # 0x" + (offset.GetByte(0)).ToHexString(2), 0);
-        }
-        PadOut("TAX", 0);
     }
     string nameWithOffset(string name, int offset, bool isGlobal)
     {
         if (isGlobal)
         {
-            return name + " [0x0100 - " + offset.ToString() + "]";
+            return name + " [0x01FF - " + offset.ToString() + "]";
         }
         if (offset < 0) // argument
         {
             offset = -offset;
-            return name + " [0x0100 - BP + 1 + " + offset.ToString() + "]";
+            return name + " [0x01FF - BP + 1 + " + offset.ToString() + "]";
         }
-        return name + " [0x0100 - BP -" + offset.ToString() + "]";
+        return name + " [0x01FF - BP -" + offset.ToString() + "]";
     }
     
     string Bitness(bool isByte)
@@ -579,6 +584,14 @@ unit TinyCode
             case "writeChar":
             {
                 functionName = "TinySys.WriteChar";
+            }
+            case "millis":
+            {
+                 functionName = "TinySys.Millis";
+            }
+            case "delay":
+            {
+                 functionName = "TinySys.Delay";
             }
         }
         PadOut(functionName + "();", 0);

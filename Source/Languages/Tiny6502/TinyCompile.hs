@@ -258,6 +258,12 @@ unit TinyCompile
                 return false;
             }
             
+            if (!IsAutomaticCast(tp, exprType, false, false))
+            {
+                Error(token.SourcePath, token.Line, "type mismatch: expected '" + tp + "', was '" + exprType + "'");
+                return false;
+            }
+            
             int    offset;
             bool   isGlobal;
             string variableType;

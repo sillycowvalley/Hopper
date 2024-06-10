@@ -638,6 +638,10 @@ unit TinyExpression
                 TinyScanner.Advance(); // Skip ')'
                 TinyCode.Call(name);
                 TinyCode.PopBytes(bytes, name + " arguments");
+                if (actualType != "void")
+                {
+                    TinyOps.PushTop(IsByteType(actualType));
+                }
             }
             else if (token.Type == TokenType.SYM_LBRACKET)
             {

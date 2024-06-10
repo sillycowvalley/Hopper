@@ -59,6 +59,12 @@ unit TinySymbols
     LeaveBlock(string name, bool generate)
     {
         variables.Remove(variables.Count-1);
+        
+        if (name == "main")
+        {
+            TinyCode.PopBytes(byte(GlobalOffset), "global variable");
+        }
+        
         blockLevel--;
         if (generate)
         {

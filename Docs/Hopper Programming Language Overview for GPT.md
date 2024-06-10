@@ -4,7 +4,7 @@
 - **Purpose**: Hopper is a modern programming language optimized for small devices like microcontrollers and 8-bit microprocessors. It provides a structured alternative to Python.
 - **Execution**: Single-threaded, stack-based virtual machine with garbage collection.
 
-#### Key Features
+#### Key Hopper Language Features
 - **Switch Statements**: No fall-through, automatic case termination.
 - **Loop Keyword**: `loop` creates an infinite loop.
 - **No `void` Keyword**: Omit return type for void methods.

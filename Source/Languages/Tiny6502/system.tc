@@ -93,7 +93,7 @@ func I2CWrite(byte address, byte data); // System function to write data via I2C
 func byte I2CRead(byte address);        // System function to read data via I2C
 
 // Timing
-func word[] millis(); // System function to return the address of the zero-page location where the 4-byte millis count is stored as an array of two words
+func word[] millis();           // System function to return the address of the zero-page location where the 4-byte millis count is stored as an array of two words
 func delay(word milliseconds); // System function to delay execution for a specified time
 
 // Memory Management

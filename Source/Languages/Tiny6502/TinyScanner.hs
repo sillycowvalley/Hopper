@@ -219,23 +219,44 @@ unit TinyScanner
     {
         uint start = lineIndex;
         lineIndex++; // Skip opening quote
-        while ((lineIndex < currentLineContent.Length) && (currentLineContent[lineIndex] != '"'))
+        string lexeme = "";
+        while (lineIndex < currentLineContent.Length)
         {
+            char c = currentLineContent[lineIndex];
+            if (c == '"')
+            {
+                lineIndex++; // Skip closing quote
+                return createToken(TokenType.LIT_STRING, lexeme);
+            }
+            else if (c == '\\')
+            {
+                lineIndex++; // Skip backslash
+                if (lineIndex >= currentLineContent.Length)
+                {
+                    break;
+                }
+                c = currentLineContent[lineIndex];
+                switch (c)
+                {
+                    case '"':  { lexeme += '"'; }
+                    case '\\': { lexeme += '\\'; }
+                    case 'n':  { lexeme += Char.EOL; }
+                    case 't':  { lexeme += Char.Tab; }
+                    case 'r':  { lexeme += char(0x0D); }
+                    default:   { lexeme += '\\' + c; } // Keep unrecognized escape sequences as is
+                }
+            }
+            else
+            {
+                lexeme += c;
+            }
             lineIndex++;
         }
         
-        if (lineIndex < currentLineContent.Length)
-        {
-            lineIndex++; // Skip closing quote
-            string lexeme = currentLineContent.Substring(start + 1, lineIndex - start - 2);
-            return createToken(TokenType.LIT_STRING, lexeme);
-        }
-        else
-        {
-            Error(currentSourcePath, currentLine, "unterminated string literal");
-            return createToken(TokenType.EOF, "");
-        }
+        Error(currentSourcePath, currentLine, "unterminated string literal");
+        return createToken(TokenType.EOF, "");
     }
+    
     
     Token tokenizeChar()
     {
