@@ -153,6 +153,25 @@ unit ZP
     const byte U6                   = 0x86;
     const byte U7                   = 0x87;
 
+#ifdef NONZERO_IO
+    // 6551 ACIA
+    const uint ACIADATA             = 0x9F10;
+    const uint ACIASTATUS           = 0x9F11;
+    const uint ACIACOMMAND          = 0x9F12;
+    const uint ACIACONTROL          = 0x9F13;
+    
+    // W65C22 VIA
+    const uint PORTB                = 0x9F20;
+    const uint PORTA                = 0x9F21;
+    const uint DDRB                 = 0x9F22;
+    const uint DDRA                 = 0x9F23;
+    const uint T1CL                 = 0x9F24; // Timer 1 counter low
+    const uint T1CH                 = 0x9F25; // Timer 1 counter high
+    const uint ACR                  = 0x9F2B; // Auxiliary Control Register
+    const uint PCR                  = 0x9F2C; // Peripheral Control Register
+    const uint IFR                  = 0x9F2D; // Interrupt Flag Register
+    const uint IER                  = 0x9F2E; // Interrupt Enable Register
+#else
      
     // Motorola 6850 ACIA
     const byte ACIACONTROL          = 0xEC; //0x1E;
@@ -172,7 +191,7 @@ unit ZP
     const byte IFR                  = 0xFD; // Interrupt Flag Register
     const byte IER                  = 0xFE; // Interrupt Enable Register
 
-    
+#endif    
     
     // used for UInt library
     const byte UWIDE0               = U0;

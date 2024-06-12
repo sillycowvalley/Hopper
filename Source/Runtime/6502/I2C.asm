@@ -54,7 +54,7 @@ unit I2C
     }
     Start()
     {
-#ifdef CPU_65C02S
+#if defined(CPU_65C02S) && !defined(NONZERO_IO)
         RMB0 ZP.DDRB     // Start with SCL as input HIGH - that way we can inc/dec from here
         SMB1 ZP.DDRB     // Ensure SDA is output low before SCL is LOW
         RMB1 ZP.PORTB
@@ -82,7 +82,7 @@ unit I2C
     
     Stop()
     {
-#ifdef CPU_65C02S
+#if defined(CPU_65C02S) && !defined(NONZERO_IO)
         SMB1 ZP.DDRB // SDA low
         RMB0 ZP.DDRB // SCL high
         RMB1 ZP.DDRB // SDA high after SCL == Stop condition
@@ -131,7 +131,7 @@ unit I2C
         // (SDA is bit 1, SCL is bit 0)
          
         // initialize the I2C buffer
-#ifdef CPU_65C02S
+#if defined(CPU_65C02S) && !defined(NONZERO_IO)
         STZ ZP.I2CInWritePtr
         STZ ZP.I2CInReadPtr
         LDX ZP.TOPL
@@ -319,7 +319,7 @@ unit I2C
         //LDA ZP.OutB
         //Serial.HexOut();
         PHA        
-#ifdef CPU_65C02S
+#if defined(CPU_65C02S) && !defined(NONZERO_IO)
         PHX
         
         RMB1 ZP.PORTB // in case this is a data byte we set SDA low

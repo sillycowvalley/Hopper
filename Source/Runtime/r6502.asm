@@ -19,9 +19,13 @@ program R6502
     // Speed vs Size:
     #define FASTINTS
     #define INLINE_EXPANSIONS 
+
+    //#define EXPORT_BIN // export as .bin (in addition to .hex (Intel IHex) - 65dasm needs the .hex)    
+    //#define NONZERO_IO
     
     #define W65C22_VIA
     #define ACIA_6850
+    //#define ACIA_6551
          
 #if defined(CPU_65C02S) && !defined(CHECKED) && !defined(FASTINTS) && !defined(INLINE_EXPANSIONS)
     #define ROM_8K // 240 bytes overrun with I2C but without FASTINTS
@@ -35,7 +39,7 @@ program R6502
     #define ROM_16K
 #endif
 
-    #define EXPORT_BIN // export as .bin (in addition to .hex (Intel IHex) - 65dasm needs the .hex)
+    
     
     // HopperMon commands to support:
     //
@@ -535,10 +539,20 @@ program R6502
         // zeroes mean faster debug protocol
         
         // clear the Zero Page
+#ifdef NONZERO_IO  
+        LDA #0
         LDX #0
         loop
         {
-            CPX # ACIADATA // don't write to ACIA data register (on Zero Page right now)
+            STA 0x00, X
+            DEX
+            if (Z) { break; }
+        }
+#else
+        LDX #0
+        loop
+        {
+            CPX # ZP.ACIADATA // don't write to ACIA data register (on Zero Page right now)
             if (NZ) 
             {
 #ifdef CPU_65C02S
@@ -551,6 +565,7 @@ program R6502
             DEX
             if (Z) { break; }
         }  
+#endif        
         LDA #0
         STA IDXL
         LDA # (SerialInBuffer >> 8)
@@ -798,7 +813,8 @@ program R6502
     {
 #ifdef W65C22_VIA        
         // is the User button held low?
-  #ifdef CPU_65C02S
+        
+  #if defined(CPU_65C02S) && !defined(NONZERO_IO)
        if (BBR1, ZP.PORTA)
        {
            return;
@@ -811,6 +827,7 @@ program R6502
            return;
        }
   #endif        
+
 #endif
         // BeginTx
         LDA # (I2C.SerialEEPROMAddress << 1)

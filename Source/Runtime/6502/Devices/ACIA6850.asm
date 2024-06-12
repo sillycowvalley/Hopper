@@ -11,7 +11,6 @@ unit SerialDevice
     const byte DataRegister       = ZP.ACIADATA;
     const byte StatusRegister     = ZP.ACIASTATUS;
     
-    
     friend Serial;
      
     initialize()
@@ -20,8 +19,11 @@ unit SerialDevice
         STA ControlRegister
         
         // LDA #0b00010101     // 8-N-1, 115200 baud (/16 for  1.8432 mHz), no rx interrupt
-        // LDA #0b00010110     // 8-N-1,  28800 baud (/64 for  1.8432 mHz), no rx interrupt
+#ifdef HAS_SERIAL_ISR        
         LDA #0b10010110        // 8-N-1,  28800 baud (/64 for  1.8432 mHz), rx interrupt
+#else        
+        LDA #0b00010110        // 8-N-1,  28800 baud (/64 for  1.8432 mHz), no rx interrupt
+#endif
         STA ControlRegister
     }
     
@@ -106,10 +108,10 @@ unit SerialDevice
     pollRead()
     {
         PHA
-        LDA StatusRegister 
-        AND # 0b10000000
-        if (NZ) // interrupt request by 6850
-        {
+        //LDA StatusRegister 
+        //AND # 0b10000000
+        //if (NZ) // interrupt request by 6850
+        //{
             LDA StatusRegister 
             AND # 0b00000001
             if (NZ) // RDRF : receive data register full
@@ -129,7 +131,7 @@ unit SerialDevice
                 }
                 PLA TAX // can't use XREG in ISR
             }
-        }
+        //}
         PLA        
     }
 #endif    

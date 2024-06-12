@@ -101,6 +101,7 @@ unit AsmPoints
                 
                 // Write:
                 case OpCode.LDA_n:
+                case OpCode.LDA_nn:
                 case OpCode.PLA:
                 case OpCode.LDA_z:
                 {

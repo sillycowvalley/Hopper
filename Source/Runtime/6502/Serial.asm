@@ -17,6 +17,9 @@ unit Serial
 #ifdef ACIA_6850    
     uses "Devices/ACIA6850"
 #endif
+#ifdef ACIA_6551
+    uses "Devices/ACIA6551"
+#endif
     //uses "Devices/PIA6821"
 #ifdef APPLE_I
     uses "Devices/AppleI"

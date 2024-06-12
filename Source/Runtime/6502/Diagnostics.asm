@@ -66,7 +66,8 @@ unit Diagnostics
             LDY #0
             loop
             {
-                // avoid ever reading the ACIA status register
+#ifndef NONZERO_IO
+                // avoid ever reading the ACIA status register on the zero page
                 LDA ZP.IDXH
                 if (Z) // Zero Page?
                 {
@@ -79,7 +80,7 @@ unit Diagnostics
                         continue;
                     }
                 }
-                
+#endif                
                 LDA [ZP.IDX], Y
                 if (Z)
                 {
@@ -101,7 +102,8 @@ unit Diagnostics
         {
             DEY
             
-            // avoid ever reading the ACIA status register
+#ifndef NONZERO_IO            
+            // avoid ever reading the ACIA status register on the zero page
             LDA ZP.IDXH
             if (Z) // Zero Page?
             {
@@ -111,7 +113,7 @@ unit Diagnostics
                     continue;
                 }
             }
-            
+#endif
             
             LDA [ZP.IDX], Y
             if (NZ) { break; } // [ZP.IDX], Y is first non-zero from the end
@@ -130,7 +132,8 @@ unit Diagnostics
         TAX // Y -> X
         loop
         {
-            // avoid ever reading the ACIA status or data register
+#ifndef NONZERO_IO
+            // avoid ever reading the ACIA status or data register on the zero page
             LDA ZP.IDXH
             if (Z) // Zero Page?
             {
@@ -143,6 +146,7 @@ unit Diagnostics
                     continue;
                 }
             }
+#endif
             
             LDA [ZP.IDX], Y
             if (Z)
