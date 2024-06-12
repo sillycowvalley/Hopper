@@ -281,6 +281,7 @@ program Generate
         srcFile.Append("};" + Char.EOL);
         srcFile.Flush();
     }
+    
     writeBin(file binFile, uint romAddress, <byte> output, <byte> vectors)
     {
         uint address = romAddress;
@@ -303,7 +304,6 @@ program Generate
             address++;
             index++;
         }
-        binFile.Append("};" + Char.EOL);
         binFile.Flush();
     }
     

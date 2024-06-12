@@ -32,11 +32,9 @@ program R6502
 #endif
 
 #ifndef ROM_8K
-    //#define ROM_16K
+    #define ROM_16K
 #endif
-    #define ROM_32K
-
-    // HopperMon commands to support:
+     // HopperMon commands to support:
     //
     // General:
     //   Fxx    - memory dump
