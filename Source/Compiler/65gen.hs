@@ -33,6 +33,7 @@ program Generate
         PrintLn("Invalid arguments for 65GEN:");
         PrintLn("  65GEN <code file>");
         PrintLn("    -g <c> <r> : called from GUI, not console");
+        PrintLn("    -b export as .bin rather than .hex");
     }
     
     writeMethod(uint methodIndex, <byte> code, uint romAddress)
@@ -289,7 +290,7 @@ program Generate
         uint index   = 0;
         loop
         {
-            byte b = 0;
+            byte b = 0xEA;
             if (address >= 0xFFFA)
             {
                 index = address - 0xFFFA;
@@ -308,6 +309,7 @@ program Generate
     }
     
     {
+        bool exportBin;
         bool success = false;
         loop
         {
@@ -334,6 +336,10 @@ program Generate
                             {
                             }
                             Parser.SetInteractive(byte(col), byte(row));
+                        }
+                        case "-b":
+                        {
+                            exportBin = true;
                         }
                         default:
                         {
@@ -411,6 +417,10 @@ program Generate
                 if (DefineExists("ROM_1K"))
                 {
                     romSize = 0x0400;
+                }
+                if (DefineExists("EXPORT_BIN"))
+                {
+                    exportBin = true;
                 }
                 
                 long startAddress = 0x10000 - romSize; 
@@ -510,14 +520,17 @@ program Generate
                 */
                 
                 // export .bin file for Dave:
-                string binPath = ihexPath.Replace(".hex", ".bin");
-                file binFile = File.Create(binPath);
-                if (!binFile.IsValid())
+                if (exportBin)
                 {
-                    PrintLn("Failed to create '" + binPath + "'");
-                    break;
+                    string binPath = ihexPath.Replace(".hex", ".bin");
+                    file binFile = File.Create(binPath);
+                    if (!binFile.IsValid())
+                    {
+                        PrintLn("Failed to create '" + binPath + "'");
+                        break;
+                    }
+                    writeBin(binFile, romAddress, output, vectors);
                 }
-                writeBin(binFile, romAddress, output, vectors);
                 
                 if (!Parser.IsInteractive())
                 {

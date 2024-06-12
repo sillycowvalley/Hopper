@@ -34,7 +34,10 @@ program R6502
 #ifndef ROM_8K
     #define ROM_16K
 #endif
-     // HopperMon commands to support:
+
+    #define EXPORT_BIN // export as .bin (in addition to .hex (Intel IHex) - 65dasm needs the .hex)
+    
+    // HopperMon commands to support:
     //
     // General:
     //   Fxx    - memory dump
