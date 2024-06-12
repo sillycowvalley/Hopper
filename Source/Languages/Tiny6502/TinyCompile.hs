@@ -24,7 +24,7 @@ unit TinyCompile
         {
             // global scope
             TinyConstant.EnterBlock();
-            TinySymbols.EnterBlock(true);
+            TinySymbols.EnterBlock(true, "program");
             
             TinyCode.Uses();
             
@@ -349,7 +349,7 @@ unit TinyCompile
             
             TinyCode.Function(functionName);
             TinyConstant.EnterBlock();
-            TinySymbols.EnterBlock(false); // for arguments
+            TinySymbols.EnterBlock(false, functionName + " arguments"); // for arguments
             
             if (!DefineFunction(returnType, functionName))
             {
@@ -398,7 +398,7 @@ unit TinyCompile
                 TinyCode.Enter();
                 
                 // This is an actual function definition
-                if (!TinyStatement.parseBlock(false))
+                if (!TinyStatement.parseBlock(false, "function " + functionName)) // method scope block
                 {
                     break;
                 }

@@ -27,7 +27,6 @@ unit TinyStatement
         }
         if (!IsAutomaticCast("bool", booleanType, false, false))
         {
-            PrintLn("HERE");
             TypeError("bool", booleanType);
             return false;    
         }
@@ -42,7 +41,7 @@ unit TinyStatement
         }
         
         TinyScanner.Advance(); // Skip ')'
-        if (!parseBlock(true))
+        if (!parseBlock(true, "if")) // if scope block
         {
             return false;
         }
@@ -52,7 +51,7 @@ unit TinyStatement
         {
             TinyCode.Else();
             TinyScanner.Advance(); // Skip 'else'
-            if (!parseBlock(true))
+            if (!parseBlock(true, "else")) // else scope block
             {
                 return false;
             }
@@ -97,7 +96,7 @@ unit TinyStatement
         }
         
         TinyScanner.Advance(); // Skip ')'
-        if (!parseBlock(false))
+        if (!parseBlock(false, "while")) // while scope block
         {
             return false;
         }
@@ -136,20 +135,28 @@ unit TinyStatement
         TinyCode.Loop("for");
         
         // for condition clause
-        string booleanType;
-        if (!TinyExpression.parseExpression(ref booleanType))
+        token = TinyScanner.Current();
+        if (token.Type == TokenType.SYM_SEMICOLON)
         {
-            return false;
+            // empty expression is ok - no exit condition or exit jump
         }
-        
-        if (!IsAutomaticCast("bool", booleanType, false, false))
+        else
         {
-            TypeError("bool", booleanType);
-            return false;    
+            string booleanType;
+            if (!TinyExpression.parseExpression(ref booleanType))
+            {
+                return false;
+            }
+            
+            if (!IsAutomaticCast("bool", booleanType, false, false))
+            {
+                TypeError("bool", booleanType);
+                return false;    
+            }
+            
+            // conditional exit
+            TinyCode.IfExit("for exit", "Z"); // X==0 -> false -> exit
         }
-        
-        // conditional exit
-        TinyCode.IfExit("for exit", "Z"); // X==0 -> false -> exit
         
         token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_SEMICOLON)
@@ -167,7 +174,7 @@ unit TinyStatement
         }
         string captured = TinyCode.Captured();
                
-        if (!parseBlock(false))
+        if (!parseBlock(false, "for")) // for scope block
         {
             return false;
         }
@@ -418,35 +425,43 @@ unit TinyStatement
     }
     bool parseExpressionStatement(bool forIncrement)
     {
+        Token token = TinyScanner.Current();
+        if ((forIncrement && (token.Type == TokenType.SYM_RPAREN)) || (!forIncrement && (token.Type == TokenType.SYM_SEMICOLON)))
+        {
+            // empty statement is ok
+            TinyScanner.Advance(); // Skip termination Token
+            return true;
+        }
+        
         string actualType;
         if (!TinyExpression.parseExpression(ref actualType))
         {
             return false;
         }
         
-        Token token = TinyScanner.Current();
+        token = TinyScanner.Current();
         if (token.Type != (forIncrement ? TokenType.SYM_RPAREN : TokenType.SYM_SEMICOLON))
         {
             Error(token.SourcePath, token.Line, "expected '" + (forIncrement ? ')' : ';') + "' after expression, ('" + token.Lexeme + "')");
             return false;
         }
         
-        TinyScanner.Advance(); // Skip terminationToken
+        TinyScanner.Advance(); // Skip termination Token
                
         // discard unused return value
         if (actualType != "void")
         {
-            TinyCode.PopBytes(IsByteType(actualType) ? 1 : 2, "expression statement");
+            TinyCode.PopBytes(IsByteType(actualType) ? 1 : 2, "expression statement"); // after expression
         }
         
         return true;
     }
-    bool parseBlock(bool scope)
+    bool parseBlock(bool scope, string comment)
     {
         if (scope)
         {
             TinyConstant.EnterBlock();
-            TinySymbols.EnterBlock(true);
+            TinySymbols.EnterBlock(true, comment);
         }
             
         
@@ -477,7 +492,7 @@ unit TinyStatement
         TinyScanner.Advance(); // Skip '}'
         if (scope)
         {
-            TinySymbols.LeaveBlock("", true);
+            TinySymbols.LeaveBlock(comment, true); // generic scope block
             TinyConstant.LeaveBlock();
         }
         return true;
@@ -564,6 +579,11 @@ unit TinyStatement
                 {
                     return false;
                 }
+            }
+            case TokenType.SYM_SEMICOLON:
+            {            
+                // empty statement is ok
+                TinyScanner.Advance(); // Skip ';'
             }
             default:
             {

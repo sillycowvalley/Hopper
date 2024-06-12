@@ -47,13 +47,14 @@ unit TinyExpression
         {
             string name = token.Lexeme;
             bool hasIndex;
-            string indexType;
+            bool isByteIndex;
             
             Token peek  = TinyScanner.Peek();
             if (peek.Type == TokenType.SYM_LLBRACKET)
             {
                 TinyScanner.Advance(); // <name>
                 TinyScanner.Advance(); // '[['
+                string indexType;
                 if (!parseExpression(ref indexType))
                 {
                     return false;
@@ -71,6 +72,7 @@ unit TinyExpression
                 }
                 peek  = TinyScanner.Peek();
                 hasIndex = true;
+                isByteIndex = IsByteType(indexType);
             }
            
             if ((peek.Type == TokenType.SYM_EQ) || IsCompoundAssignmentOperator(peek.Type) || (hasIndex && (peek.Type == TokenType.SYM_PLUSPLUS)) || (hasIndex && (peek.Type == TokenType.SYM_MINUSMINUS)))
@@ -89,6 +91,7 @@ unit TinyExpression
                 if (hasIndex && (name == "mem"))
                 {
                     actualType = "byte";
+                    TinyCode.Dup(isByteIndex);
                 }
                 else
                 {
@@ -104,16 +107,46 @@ unit TinyExpression
                 }
                 bool isByte = IsByteType(actualType);
                 
+                if (hasIndex && (name != "mem"))
+                {
+                    // calculate the address we want to access
+                    if (isByteIndex)
+                    {
+                        // for simplicity, cast the index to a word
+                        TinyCode.CastPad(false);
+                    }
+                    if (!isByte)
+                    {
+                        // index *= 2;
+                        TinyCode.Dup(false);
+                        TinyOps.Add(false);
+                    }
+                    TinyCode.PushVariable(name, offset, false, isGlobal);
+                    TinyOps.Add(false);
+                    TinyCode.Dup(false);
+                }
+                
                 if (op != "=")
                 {
                     if (hasIndex && (name == "mem"))
                     {
-                        TinyCode.Dup(IsByteType(indexType));
-                        TinyCode.ReadMemory(IsByteType(indexType));
+                        TinyCode.Dup(isByteIndex);
+                        TinyCode.ReadMemory(isByteIndex, isByte);
                     }
                     else
                     {
-                        TinyCode.PushVariable(name, offset, isByte, isGlobal);    
+                        if (hasIndex)
+                        {
+                            // push member based on address
+                            PadOut("", 0);
+                            PadOut("// array assignment operator '" + op + "' getitem", 0);
+                            TinyCode.Dup(false);
+                            TinyCode.ReadMemory(false, isByte);
+                        }
+                        else
+                        {
+                            TinyCode.PushVariable(name, offset, isByte, isGlobal);
+                        }
                     }
                 }
                 if (hasIndex && ((op == "++") || (op == "--")))
@@ -165,13 +198,25 @@ unit TinyExpression
                 
                 if (hasIndex && (name == "mem"))
                 {
-                    TinyCode.WriteMemory(IsByteType(indexType));
-                    TinyCode.PadOut("PHA", 0); // for the expression result
+                    TinyCode.WriteMemory(isByteIndex, isByte);
+                    TinyCode.ReadMemory(isByteIndex, isByte); // for the expression result
                 }
                 else
                 {
-                    TinyCode.Dup(isByte); // for the expression result
-                    TinyCode.PopVariable(name, offset, isByte, isGlobal);
+                    
+                    if (hasIndex)
+                    {
+                        // pop member based on address
+                        PadOut("", 0);
+                        PadOut("// array assignment operator '" + op + "' setitem", 0);
+                        TinyCode.WriteMemory(false, isByte);
+                        TinyCode.ReadMemory(false, isByte); // for the expression result
+                    }
+                    else
+                    {
+                        TinyCode.Dup(isByte); // for the expression result
+                        TinyCode.PopVariable(name, offset, isByte, isGlobal);
+                    }
                 }
                 return true;
             }
@@ -588,8 +633,8 @@ unit TinyExpression
                         _ = UInt.TryParse(constantValue, ref address);
                         TinyCode.PushConst(address);
                         
-                        TinyOps.Add(false);            // add the index to the address
-                        TinyCode.ReadMemory(false); 
+                        TinyOps.Add(false);  // const [] access in parsePrimaryExpression : add the index to the address (assumes char/byte array)
+                        TinyCode.ReadMemory(false, true); 
                     }
                     else
                     {
@@ -637,7 +682,7 @@ unit TinyExpression
                 }
                 TinyScanner.Advance(); // Skip ')'
                 TinyCode.Call(name);
-                TinyCode.PopBytes(bytes, name + " arguments");
+                TinyCode.PopBytes(bytes, name + " arguments"); // arguments after returning from method call
                 if (actualType != "void")
                 {
                     TinyOps.PushTop(IsByteType(actualType));
@@ -682,12 +727,16 @@ unit TinyExpression
                 if (name == "mem")
                 {
                     actualType = "byte";
-                    TinyCode.ReadMemory(IsByteType(indexType));
+                    TinyCode.ReadMemory(IsByteType(indexType), true);
                 }
                 else
                 {
+                    PadOut("", 0);
+                    PadOut("// array getitem", 0); 
+                    // calculate the address we want to access
                     if (IsByteType(indexType))
                     {
+                        // for simplicity, cast the index to a word
                         CastPad(false);
                     }
                     if (!actualType.Contains('['))
@@ -695,10 +744,17 @@ unit TinyExpression
                         Error(token.SourcePath, token.Line, "array identifier expected");
                         return false;
                     }
-                    TinyCode.PushVariable(name, offset, false, isGlobal); // push the pointer
-                    TinyOps.Add(false);                                   // add the index to the pointer
-                    TinyCode.ReadMemory(false);  
-                    actualType = GetArrayMemberType(actualType) ;
+                    actualType = GetArrayMemberType(actualType);
+                    if (!IsByteType(actualType))
+                    {
+                        // index *= 2;
+                        TinyCode.Dup(false);
+                        TinyOps.Add(false);
+                    }
+                    TinyCode.PushVariable(name, offset, false, isGlobal);
+                    TinyOps.Add(false);
+                    
+                    TinyCode.ReadMemory(false, IsByteType(actualType));  
                 }
             }
             else
@@ -782,7 +838,7 @@ unit TinyExpression
             TinyScanner.Advance(); // Skip ']'
             actualType = "byte";
             
-            TinyCode.ReadMemory(IsByteType(indexType));
+            TinyCode.ReadMemory(IsByteType(indexType), true);
         }
         else if ((token.Type == TokenType.LIT_NUMBER) || (token.Type == TokenType.LIT_CHAR) || (token.Type == TokenType.KW_FALSE) || (token.Type == TokenType.KW_TRUE))
         {

@@ -221,13 +221,13 @@ unit TinyCode
     }
     Loop(string comment)
     {
-        PadOut("loop // " + comment, 0);
+        PadOut("loop", 0);
         TinyConstant.EnterBlock();
-        TinySymbols.EnterBlock(true);
+        TinySymbols.EnterBlock(true, comment);
     }
     EndLoop(string comment)
     {
-        TinySymbols.LeaveBlock(comment, true);
+        TinySymbols.LeaveBlock(comment, true); // end loop
         TinyConstant.LeaveBlock();
     }
     Break(string comment)
@@ -373,7 +373,7 @@ unit TinyCode
         PadOut("}", 0); 
             
         // TODO : free automatic allocations
-        TinyCode.PopBytes("local variable");
+        TinyCode.PopBytes("local variable"); // method single exit loop
         
         PadOut("", 0);
         PadOut("// POP BP", 0);
@@ -608,15 +608,21 @@ unit TinyCode
         }
         PadOut(functionName + "();", 0);
     }
-    ReadMemory(bool isByte)
+    ReadMemory(bool indexIsByte, bool dataIsByte)
     {
         PadOut("", 0);
-        PadOut("// read memory" +  Bitness(isByte), 0);
-        if (isByte)
+        PadOut("// read memory" +  Bitness(dataIsByte), 0);
+        if (indexIsByte)
         {
             PadOut("PLX", 0);
             PadOut("LDA 0x00, X", 0);
             PadOut("PHA", 0);    
+            if (!dataIsByte)
+            {
+                PadOut("INX", 0);
+                PadOut("LDA 0x00, X", 0);
+                PadOut("PHA", 0);    
+            }
         } 
         else
         {
@@ -626,28 +632,56 @@ unit TinyCode
             PadOut("STA TOPL", 0);
             PadOut("LDA [TOP]", 0);
             PadOut("PHA", 0);
+            if (!dataIsByte)
+            {
+                PadOut("LDX # 1", 0); 
+                PadOut("LDA [TOP], X", 0);
+                PadOut("PHA", 0);
+            }
         }
     }
-    WriteMemory(bool isByte)
+    WriteMemory(bool indexIsByte, bool dataIsByte)
     {
         PadOut("", 0);
-        PadOut("// write memory" +  Bitness(isByte), 0);
-        if (isByte)
+        PadOut("// write memory" +  Bitness(dataIsByte), 0);
+        if (indexIsByte)
         {
+            if (!dataIsByte)
+            {
+                PadOut("PLA", 0); 
+                PadOut("STA ACCH", 0);     
+            }   
             PadOut("PLA", 0); 
             PadOut("PLX", 0);
             PadOut("STA 0x00, X", 0);
+            if (!dataIsByte)
+            {
+                PadOut("INX", 0); 
+                PadOut("LDA ACCH", 0);     
+                PadOut("STA 0x00, X", 0);
+            }   
         } 
         else
         {
+            if (!dataIsByte)
+            {
+                PadOut("PLA", 0); 
+                PadOut("STA ACCH", 0);     
+            }   
             PadOut("PLA", 0); 
-            PadOut("STA ACCL", 0);        
+            PadOut("STA ACCL", 0);     
             PadOut("PLA", 0);        
             PadOut("STA TOPH", 0);        
             PadOut("PLA", 0);        
             PadOut("STA TOPL", 0);
             PadOut("LDA ACCL", 0);        
             PadOut("STA [TOP]", 0);
+            if (!dataIsByte)
+            {
+                PadOut("LDA ACCH", 0);     
+                PadOut("LDX # 1", 0); 
+                PadOut("LDA [TOP], X", 0);
+            }
         }
     }
 }

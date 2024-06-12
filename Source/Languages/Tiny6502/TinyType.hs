@@ -68,6 +68,10 @@ unit TinyType
     
     bool IsAutomaticCast(string expectedType, string actualType, bool doUnder, bool asCast)
     {
+        if (expectedType.Contains("[") && actualType.Contains("[") && asCast)
+        {
+            return true; // any pointer type can be deliberately cast to any other pointer type
+        }
         if (expectedType.StartsWith("const ") && !actualType.StartsWith("const "))
         {
             expectedType = expectedType.Substring(6); // non-const -> const
@@ -342,7 +346,7 @@ unit TinyType
             default:
             {
                 TypeError(expectedType, actualType);
-                PrintLn(actualType + " as " + expectedType);
+                PrintLn(actualType + " as " + expectedType + " not implemented");
                 //Die(0x0A); // not implemented
             }
         }

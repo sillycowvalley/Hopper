@@ -42,15 +42,15 @@ unit TinySymbols
         return bytes;
     }
     
-    EnterBlock(bool generate)
+    EnterBlock(bool generate, string comment)
     {
         if (!generate)
         {
-            TinyCode.Defer("{");
+            TinyCode.Defer("{ // " + comment);
         }
         else
         {
-            TinyCode.Append("{");
+            TinyCode.Append("{ // " + comment);
         }
         <string, Variable> level;
         variables.Append(level);
@@ -58,6 +58,10 @@ unit TinySymbols
     }
     LeaveBlock(string name, bool generate)
     {
+        if ((name == "if") || (name == "else") || (name == "for") || (name == "while"))
+        {
+            TinyCode.PopBytes(name + " locals");
+        }
         variables.Remove(variables.Count-1);
         
         if (name == "main")
