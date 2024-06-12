@@ -116,7 +116,8 @@ unit TinyCompile
         Token token = TinyScanner.Current();
         
         string constantType;
-        if (!parseType(ref constantType))
+        uint size;
+        if (!parseType(ref constantType, ref size))
         {
             return false;
         }
@@ -213,7 +214,8 @@ unit TinyCompile
         TinyCode.Capturing();        
         
         string tp;
-        if (!parseType(ref tp))
+        uint size;
+        if (!parseType(ref tp, ref size))
         {
             return false;
         }
@@ -233,6 +235,8 @@ unit TinyCompile
         
         TinyScanner.Advance(); // Skip identifier
 
+        BlockLevel++;
+        
         TinyCode.PadOut("", 0);
         TinyCode.PadOut("// initialize '" + name + "' (" + (GlobalOffset).ToString() + ")", 0);
         
@@ -245,6 +249,26 @@ unit TinyCompile
         {
             TinyCode.PushWord(0, tp);
         }
+        
+        string memberType;
+        if (IsArrayType(tp, ref memberType))
+        {
+            if (!IsByteType(memberType))
+            {
+                size *= 2;
+            }
+            TinyCode.PushWord(size, "array size");
+            TinyCode.PadOut("TinySys.Malloc();", 0);
+            TinyCode.PadOut("PLY", 0);
+            TinyCode.PadOut("PLY", 0);
+            TinyCode.PadOut("LDA ZP.TOPL", 0);
+            TinyCode.PadOut("PHA", 0);
+            TinyCode.PadOut("LDA ZP.TOPH", 0);
+            TinyCode.PadOut("PHA", 0);
+            TinyCode.PopVariable(name, int(GlobalOffset), false, true);
+        }
+        
+        BlockLevel--;
         
         GlobalOffset = GlobalOffset + (IsByteType(tp) ? 1 : 2);
             
@@ -304,9 +328,10 @@ unit TinyCompile
         
             // Optional return type
             string returnType = "void";
+            uint size;
             if (token.Type != TokenType.IDENTIFIER)
             {
-                if (!parseType(ref returnType))
+                if (!parseType(ref returnType, ref size))
                 {
                     break;
                 }
@@ -435,7 +460,8 @@ unit TinyCompile
             }
             
             string variableType;
-            if (!parseType(ref variableType))
+            uint size;
+            if (!parseType(ref variableType, ref size))
             {
                 return false;
             }
@@ -475,7 +501,7 @@ unit TinyCompile
         return true; // success
     }
     
-    bool parseType(ref string tp)
+    bool parseType(ref string tp, ref uint size)
     {
         Token token = TinyScanner.Current();
     
@@ -513,6 +539,10 @@ unit TinyCompile
                 if (!TinyConstant.parseConstantExpression(ref value, ref actualType))
                 {
                     return false;
+                }
+                if (!UInt.TryParse(value, ref size))
+                {
+                    Die(0x0B);
                 }
                 tp += "[" + value + "]";
             }

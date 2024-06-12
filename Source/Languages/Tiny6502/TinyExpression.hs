@@ -22,7 +22,8 @@ unit TinyExpression
         {
             string asType;
             TinyScanner.Advance(); // Skip 'as'
-            if (!TinyCompile.parseType(ref asType))
+            uint size;
+            if (!TinyCompile.parseType(ref asType, ref size))
             {
                 return false;
             }
@@ -564,12 +565,35 @@ unit TinyExpression
         if ((token.Type == TokenType.SYM_MINUS) || (token.Type == TokenType.SYM_BANG) || (token.Type == TokenType.SYM_TILDE))
         {
             string op = token.Lexeme;
+            if (op == "-")
+            {
+                TinyCode.PushWord(0, "// 0 -");
+            }
             TinyScanner.Advance(); // Skip unary operator
             if (!parsePrimaryExpression(ref actualType))
             {
                 return false;
             }
-            TinyCode.PadOut("// " + op + " TODO", 0); 
+            
+            if (op == "-")
+            {
+                if (!IsNumericType(actualType))
+                {
+                    Error(token.SourcePath, token.Line, "numeric expression expected");
+                    return false;
+                }
+                if (!IsAutomaticCast("int", actualType, true, true))
+                {
+                    TypeError("int", actualType);
+                    return false;
+                }
+                actualType = "int";
+                TinyOps.Sub(IsByteType(actualType));
+            }
+            else
+            {
+                TinyCode.PadOut("// " + op + " TODO", 0); 
+            }
         }
         else
         {
@@ -847,6 +871,43 @@ unit TinyExpression
             {
                 return false;
             }
+            switch (actualType)
+            {
+                case "char":
+                {
+                    TinyCode.PushByte(byte(value[0]), "'" + value + "'");
+                }
+                case "bool":
+                {
+                    TinyCode.PushByte(1, (value == "1") ? "true" : "false");
+                }
+                case "int":
+                {
+                    int i;
+                    if (!Int.TryParse(value, ref i))
+                    {
+                        Die(0x0B);
+                    }
+                    uint ui = UInt.FromBytes(i.GetByte(0), i.GetByte(1));
+                    TinyCode.PushWord(ui, "constant");
+                }
+                default:
+                {
+                    uint ui;
+                    if (!UInt.TryParse(value, ref ui))
+                    {
+                        Die(0x0B);
+                    }
+                    if (IsByteType(actualType))
+                    {
+                        TinyCode.PushByte(byte(ui), "constant");
+                    }
+                    else
+                    {
+                        TinyCode.PushWord(ui, "constant");
+                    }
+                }
+            }
         }
         else if ((token.Type == TokenType.LIT_STRING) || (token.Type == TokenType.KW_NULL))
         {
@@ -902,6 +963,9 @@ unit TinyExpression
     bool parseArgumentList(string functionName, ref byte bytes)
     {
         Token token;
+        <string> argumentNames;
+        <string,Variable> arguments = GetArguments(functionName, ref argumentNames);
+        uint currentArgument = 0;
         loop
         {
             token = TinyScanner.Current();
@@ -909,12 +973,25 @@ unit TinyExpression
             {
                 break; // exit the loop when reaching ')'
             }
+            if (currentArgument == argumentNames.Count)
+            {
+                Error(token.SourcePath, token.Line, "too many arguments for '" + functionName  + "'");
+                return false;
+            }
             string argType;
             if (!parseExpression(ref argType))
             {
                 return false;
             }
-            bytes += (IsByteType(argType) ? 1 : 2);
+            string argName = argumentNames[currentArgument];
+            Variable argument = arguments[argName];
+            if (!IsAutomaticCast(argument.Type, argType, false, false))
+            {
+                 Error(token.SourcePath, token.Line, "expected '" + argument.Type + "' for argument '" + argName  + "', was '" + argType + "'");
+                 return false;
+            }
+            
+            bytes += (IsByteType(argument.Type) ? 1 : 2);
             token = TinyScanner.Current();
             if (token.Type == TokenType.SYM_COMMA)
             {
@@ -925,6 +1002,12 @@ unit TinyExpression
                 Error(token.SourcePath, token.Line, "expected ',' or ')' in argument list, ('" + token.Lexeme + "')");
                 return false;
             }
+            currentArgument++;
+        }
+        if (currentArgument < argumentNames.Count)
+        {
+            Error(token.SourcePath, token.Line, "too few arguments for '" + functionName  + "'");
+            return false;
         }
         return true; // success
     }

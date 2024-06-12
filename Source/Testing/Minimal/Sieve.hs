@@ -53,10 +53,13 @@ program Sieve
         IO.WriteLn();
         IO.WriteLn((uint(iterations)).ToString() + " iterations");
         
-        long start  = Time.Millis;
+        //long start  = Time.Millis;
+        uint start = Time.Seconds;
         uint result = Sieve();
-        long elapsed = Time.Millis - start;
-        float seconds = elapsed / 1000.0;
+        //long elapsed = Time.Millis - start;
+        //float seconds = elapsed / 1000.0;
+        uint seconds = Time.Seconds - start;
+        
         
         IO.WriteLn("Done.");
         IO.WriteLn(result.ToString() + " primes");

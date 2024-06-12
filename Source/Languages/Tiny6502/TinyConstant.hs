@@ -247,7 +247,6 @@ unit TinyConstant
     bool evaluateBooleanOperation(string leftValue, string rightValue, string op, ref string resultValue, ref string resultType)
     {
         Token token = TinyScanner.Current();
-        PrintLn(leftValue + " " + rightValue);
         bool left = (leftValue == "true");
         bool right = (rightValue == "true");
         bool result;
@@ -308,16 +307,6 @@ unit TinyConstant
                 Error(token.SourcePath, token.Line, "integral constant out of range, ('" + token.Lexeme + "')");
                 return false;
             }
-            if (actualType == "byte")
-            {
-                TinyCode.PushByte(lv.GetByte(0), "byte");
-            }
-            else
-            {
-                uint ui = UInt.FromBytes(lv.GetByte(0), lv.GetByte(1));
-                TinyCode.PushWord(ui, actualType);
-            }
-            
             TinyScanner.Advance(); // Skip number or identifier
         }
         else if (token.Type == TokenType.IDENTIFIER)
@@ -339,21 +328,18 @@ unit TinyConstant
         {
             value = token.Lexeme;
             actualType = "char";
-            TinyCode.PushByte(byte(value[0]), "'" + value + "'");
             TinyScanner.Advance(); // Skip char literal
         }
         else if (token.Type == TokenType.KW_TRUE)
         {
             value = "1";
             actualType = "bool";
-            TinyCode.PushByte(1, "true");
             TinyScanner.Advance(); // Skip bool literal
         }
         else if (token.Type == TokenType.KW_FALSE)
         {
             value = "0";
             actualType = "bool";
-            TinyCode.PushByte(0, "false");
             TinyScanner.Advance(); // Skip bool literal
         }
         else
@@ -365,7 +351,7 @@ unit TinyConstant
     }
     
     
-    bool parseUnary(ref string value, ref string actualType)
+    bool parseConstantUnary(ref string value, ref string actualType)
     {
         Token token = TinyScanner.Current();
         if ((token.Type == TokenType.SYM_MINUS) || (token.Type == TokenType.SYM_PLUS) || (token.Type == TokenType.SYM_BANG) || (token.Type == TokenType.SYM_TILDE))
@@ -455,9 +441,9 @@ unit TinyConstant
         return true;
     }
     
-    bool parseFactor(ref string value, ref string actualType)
+    bool parseConstantFactor(ref string value, ref string actualType)
     {
-        if (!parseUnary(ref value, ref actualType))
+        if (!parseConstantUnary(ref value, ref actualType))
         {
             return false;
         }
@@ -468,7 +454,7 @@ unit TinyConstant
             TinyScanner.Advance(); // Skip operator
             string rightValue;
             string rightType;
-            if (!parseUnary(ref rightValue, ref rightType))
+            if (!parseConstantUnary(ref rightValue, ref rightType))
             {
                 return false;
             }
@@ -486,9 +472,9 @@ unit TinyConstant
         return true;
     }
     
-    bool parseTerm(ref string value, ref string actualType)
+    bool parseConstantTerm(ref string value, ref string actualType)
     {
-        if (!parseFactor(ref value, ref actualType))
+        if (!parseConstantFactor(ref value, ref actualType))
         {
             return false;
         }
@@ -499,7 +485,7 @@ unit TinyConstant
             TinyScanner.Advance(); // Skip operator
             string rightValue;
             string rightType;
-            if (!parseFactor(ref rightValue, ref rightType))
+            if (!parseConstantFactor(ref rightValue, ref rightType))
             {
                 return false;
             }
@@ -517,9 +503,9 @@ unit TinyConstant
         return true;
     }
 
-    bool parseBitwiseShift(ref string value, ref string actualType)
+    bool parseConstantBitwiseShift(ref string value, ref string actualType)
     {
-        if (!parseTerm(ref value, ref actualType))
+        if (!parseConstantTerm(ref value, ref actualType))
         {
             return false;
         }
@@ -530,7 +516,7 @@ unit TinyConstant
             TinyScanner.Advance(); // Skip operator
             string rightValue;
             string rightType;
-            if (!parseTerm(ref rightValue, ref rightType))
+            if (!parseConstantTerm(ref rightValue, ref rightType))
             {
                 return false;
             }
@@ -548,9 +534,9 @@ unit TinyConstant
         return true;
     }
     
-    bool parseComparison(ref string value, ref string actualType)
+    bool parseConstantComparison(ref string value, ref string actualType)
     {
-        if (!parseBitwiseShift(ref value, ref actualType))
+        if (!parseConstantBitwiseShift(ref value, ref actualType))
         {
             return false;
         }
@@ -561,7 +547,7 @@ unit TinyConstant
             TinyScanner.Advance(); // Skip operator
             string rightValue;
             string rightType;
-            if (!parseBitwiseShift(ref rightValue, ref rightType))
+            if (!parseConstantBitwiseShift(ref rightValue, ref rightType))
             {
                 return false;
             }
@@ -579,9 +565,9 @@ unit TinyConstant
         return true;
     }
     
-    bool parseEquality(ref string value, ref string actualType)
+    bool parseConstantEquality(ref string value, ref string actualType)
     {
-        if (!parseComparison(ref value, ref actualType))
+        if (!parseConstantComparison(ref value, ref actualType))
         {
             return false;
         }
@@ -592,7 +578,7 @@ unit TinyConstant
             TinyScanner.Advance(); // Skip operator
             string rightValue;
             string rightType;
-            if (!parseComparison(ref rightValue, ref rightType))
+            if (!parseConstantComparison(ref rightValue, ref rightType))
             {
                 return false;
             }
@@ -610,9 +596,9 @@ unit TinyConstant
         return true;
     }
 
-    bool parseBitwiseAnd(ref string value, ref string actualType)
+    bool parseConstantBitwiseAnd(ref string value, ref string actualType)
     {
-        if (!parseEquality(ref value, ref actualType))
+        if (!parseConstantEquality(ref value, ref actualType))
         {
             return false;
         }
@@ -623,7 +609,7 @@ unit TinyConstant
             TinyScanner.Advance(); // Skip operator
             string rightValue;
             string rightType;
-            if (!parseEquality(ref rightValue, ref rightType))
+            if (!parseConstantEquality(ref rightValue, ref rightType))
             {
                 return false;
             }
@@ -641,9 +627,9 @@ unit TinyConstant
         return true;
     }
 
-    bool parseBitwiseXor(ref string value, ref string actualType)
+    bool parseConstantBitwiseXor(ref string value, ref string actualType)
     {
-        if (!parseBitwiseAnd(ref value, ref actualType))
+        if (!parseConstantBitwiseAnd(ref value, ref actualType))
         {
             return false;
         }
@@ -654,7 +640,7 @@ unit TinyConstant
             TinyScanner.Advance(); // Skip operator
             string rightValue;
             string rightType;
-            if (!parseBitwiseAnd(ref rightValue, ref rightType))
+            if (!parseConstantBitwiseAnd(ref rightValue, ref rightType))
             {
                 return false;
             }
@@ -672,9 +658,9 @@ unit TinyConstant
         return true;
     }
 
-    bool parseBitwiseOr(ref string value, ref string actualType)
+    bool parseConstantBitwiseOr(ref string value, ref string actualType)
     {
-        if (!parseBitwiseXor(ref value, ref actualType))
+        if (!parseConstantBitwiseXor(ref value, ref actualType))
         {
             return false;
         }
@@ -685,7 +671,7 @@ unit TinyConstant
             TinyScanner.Advance(); // Skip operator
             string rightValue;
             string rightType;
-            if (!parseBitwiseXor(ref rightValue, ref rightType))
+            if (!parseConstantBitwiseXor(ref rightValue, ref rightType))
             {
                 return false;
             }
@@ -703,9 +689,9 @@ unit TinyConstant
         return true;
     }
     
-    bool parseLogicalAnd(ref string value, ref string actualType)
+    bool parseConstantLogicalAnd(ref string value, ref string actualType)
     {
-        if (!parseBitwiseOr(ref value, ref actualType))
+        if (!parseConstantBitwiseOr(ref value, ref actualType))
         {
             return false;
         }
@@ -716,7 +702,7 @@ unit TinyConstant
             TinyScanner.Advance(); // Skip operator
             string rightValue;
             string rightType;
-            if (!parseBitwiseOr(ref rightValue, ref rightType))
+            if (!parseConstantBitwiseOr(ref rightValue, ref rightType))
             {
                 return false;
             }
@@ -734,9 +720,9 @@ unit TinyConstant
         return true;
     }
 
-    bool parseLogicalOr(ref string value, ref string actualType)
+    bool parseConstantLogicalOr(ref string value, ref string actualType)
     {
-        if (!parseLogicalAnd(ref value, ref actualType))
+        if (!parseConstantLogicalAnd(ref value, ref actualType))
         {
             return false;
         }
@@ -747,7 +733,7 @@ unit TinyConstant
             TinyScanner.Advance(); // Skip operator
             string rightValue;
             string rightType;
-            if (!parseLogicalAnd(ref rightValue, ref rightType))
+            if (!parseConstantLogicalAnd(ref rightValue, ref rightType))
             {
                 return false;
             }
@@ -767,7 +753,7 @@ unit TinyConstant
 
     bool parseConstantExpression(ref string value, ref string actualType)
     {
-        if (!parseLogicalOr(ref value, ref actualType))
+        if (!parseConstantLogicalOr(ref value, ref actualType))
         {
             return false;
         }

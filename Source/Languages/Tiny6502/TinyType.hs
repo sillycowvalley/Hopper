@@ -31,6 +31,15 @@ unit TinyType
         }
         return memberType;
     }
+    bool IsArrayType(string arrayType, ref string memberType)
+    {
+        if (arrayType.Contains('['))
+        {
+            memberType = GetArrayMemberType(arrayType);
+            return true;
+        }
+        return false;
+    }
     
     bool MatchBoolTypes(string otherType, string actualType)
     {
@@ -91,7 +100,7 @@ unit TinyType
         {
             return true;
         }
-    
+        
         // Implement additional logic for type compatibility
         // For example, handle implicit conversions, array size checks, etc.
         switch (expectedType)

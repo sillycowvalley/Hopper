@@ -190,17 +190,40 @@ unit TinyStatement
         TinyScanner.Advance(); // Skip 'return'
         Token token = TinyScanner.Current();
         
+        string returnType;
+        if (!GetFunction(CurrentFunction, ref returnType))
+        {
+            Die(0x0B);
+        }
+        
         // Check for empty return statement
         if (token.Type != TokenType.SYM_SEMICOLON)
         {
+            if (returnType == "void")
+            {
+                Error(token.SourcePath, token.Line, "';' expected");
+                return false;
+            }
+            
             string actualType;
             if (!TinyExpression.parseExpression(ref actualType))
             {
                 return false;
             }
-            // TODO : return value
+            // validate return type
+            if (!IsAutomaticCast(returnType, actualType, false, false))
+            {
+                TypeError(returnType, actualType);
+                return false;
+            }
+            
             
             token = TinyScanner.Current();
+        }
+        else if (returnType != "void")
+        {
+            Error(token.SourcePath, token.Line, "'" + returnType + "' expression expected");
+            return false;
         }
         
         if (token.Type != TokenType.SYM_SEMICOLON)
@@ -210,6 +233,8 @@ unit TinyStatement
         }
         
         TinyScanner.Advance(); // Skip ';'
+        
+        TinyCode.Ret(IsByteType(returnType));
         
         TinyCode.Break("return");
         
@@ -252,7 +277,8 @@ unit TinyStatement
     bool parseLocalVarDeclaration()
     {
         string tp;
-        if (!TinyCompile.parseType(ref tp))
+        uint size;
+        if (!TinyCompile.parseType(ref tp, ref size))
         {
             return false;
         }
@@ -283,6 +309,24 @@ unit TinyStatement
         else
         {
             TinyCode.PushWord(0, tp);
+        }
+        
+        string memberType;
+        if (IsArrayType(tp, ref memberType))
+        {
+            if (!IsByteType(memberType))
+            {
+                size *= 2;
+            }
+            TinyCode.PushWord(size, "array size");
+            TinyCode.PadOut("TinySys.Malloc();", 0);
+            TinyCode.PadOut("PLY", 0);
+            TinyCode.PadOut("PLY", 0);
+            TinyCode.PadOut("LDA ZP.TOPL", 0);
+            TinyCode.PadOut("PHA", 0);
+            TinyCode.PadOut("LDA ZP.TOPH", 0);
+            TinyCode.PadOut("PHA", 0);
+            TinyCode.PopVariable(name, LocalOffset, false, false);
         }
         
         LocalOffset = LocalOffset + int(IsByteType(tp) ? 1 : 2);
@@ -367,7 +411,8 @@ unit TinyStatement
         TinyScanner.Advance(); // Skip 'const'
         
         string constantType;
-        if (!TinyCompile.parseType(ref constantType))
+        uint size;
+        if (!TinyCompile.parseType(ref constantType, ref size))
         {
             return false;
         }

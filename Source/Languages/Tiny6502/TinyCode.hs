@@ -372,7 +372,7 @@ unit TinyCode
         extra--;
         PadOut("}", 0); 
             
-        // TODO : free automatic allocations
+        TinySymbols.FreeAutomaticAllocations();
         TinyCode.PopBytes("local variable"); // method single exit loop
         
         PadOut("", 0);
@@ -491,6 +491,18 @@ unit TinyCode
             PadOut("PHA", 0);
             PadOut("PHA", 0);
         }
+    }
+    Ret(bool isByte)
+    {
+        PadOut("", 0);
+        PadOut("// return" +  Bitness(isByte), 0);
+        if (!isByte)
+        {
+            PadOut("PLA", 0);
+            PadOut("STA TOPH", 0);
+        }
+        PadOut("PLA", 0);
+        PadOut("STA TOPL", 0);
     }
     
     PostIncrement(string name, int offset, bool isByte, bool inc, bool isGlobal) // i++

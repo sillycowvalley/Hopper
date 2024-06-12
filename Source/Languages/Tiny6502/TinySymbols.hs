@@ -4,6 +4,8 @@ unit TinySymbols
     
     uses "TinyToken"
     uses "TinyType"
+    uses "TinyCode"
+    
     
     record Variable
     {
@@ -15,6 +17,7 @@ unit TinySymbols
     {
         string ReturnType;
         <string, Variable> Arguments;
+        <string> ArgumentNames;
     }
     
     uint blockLevel;
@@ -22,7 +25,10 @@ unit TinySymbols
     <string, Function> functions;
     <string,bool> symbols;
     
-    uint BlockLevel { get { return blockLevel; } }
+    string currentFunction;
+    string CurrentFunction { get { return currentFunction; } }
+    
+    uint BlockLevel { get { return blockLevel; } set { blockLevel = value; } }
     
     byte GetCurrentLevelBytes()
     {
@@ -56,17 +62,37 @@ unit TinySymbols
         variables.Append(level);
         blockLevel++;
     }
+    FreeAutomaticAllocations()
+    {
+        <string, Variable> level = variables[variables.Count-1];
+        foreach (var kv in level)
+        {
+            Variable v = kv.value;
+            string memberType;
+            if (IsArrayType(v.Type, ref memberType))
+            {
+                string arrayType = v.Type;
+                if (!arrayType.Contains("[]"))
+                {
+                    TinyCode.PushVariable(kv.key, v.Offset, false, v.IsGlobal);
+                    TinyCode.PadOut("TinySys.Free();", 0);
+                    TinyCode.PadOut("PLY", 0);
+                    TinyCode.PadOut("PLY", 0);
+                }
+            }
+        }
+    }
     LeaveBlock(string name, bool generate)
     {
         if ((name == "if") || (name == "else") || (name == "for") || (name == "while"))
         {
+            FreeAutomaticAllocations();
             TinyCode.PopBytes(name + " locals");
         }
         variables.Remove(variables.Count-1);
-        
         if (name == "main")
         {
-            // TODO : free automatic allocations
+            FreeAutomaticAllocations();
             TinyCode.PopBytes(byte(GlobalOffset), "global variable");
         }
         
@@ -108,6 +134,7 @@ unit TinySymbols
         functions[functionName] = function;
         //PrintLn();
         //Print("func: " + returnType + " " + functionName);
+        currentFunction = functionName;
         return true;
     }
     UpdateArgumentOffsets(string functionName)
@@ -149,6 +176,7 @@ unit TinySymbols
     {
         Function function = functions[functionName];
         
+        <string> argumentNames = function.ArgumentNames;
         <string, Variable> arguments = function.Arguments;
         if (arguments.Contains(argumentName))
         {
@@ -162,7 +190,9 @@ unit TinySymbols
         argument.Offset = offset;
         argument.IsGlobal = false;
         arguments[argumentName] = argument;
+        argumentNames.Append(argumentName);
         function.Arguments = arguments;
+        function.ArgumentNames = argumentNames;
         functions[functionName] = function;
         /*
         if (arguments.Count == 1)
@@ -187,6 +217,11 @@ unit TinySymbols
             return true;
         }
         return false; // not found
+    }
+    <string,Variable> GetArguments(string functionName, ref <string> argumentNames)
+    {
+        argumentNames = (functions[functionName]).ArgumentNames;
+        return (functions[functionName]).Arguments;
     }
     
     bool DefineVariable(string variableType, string variableName, int offset, bool isGlobal)
