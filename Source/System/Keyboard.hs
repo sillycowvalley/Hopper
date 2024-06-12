@@ -575,6 +575,10 @@ unit Keyboard
     }
     Key FromSerial(char ch, char maker)
     {
+        if (ch == Char.EOL)
+        {
+            ch = char(0x0D);
+        }
         uint keyCode = (byte(ch) + (byte(maker) << 8)); 
         Key key = Key(keyCode);
         return key;

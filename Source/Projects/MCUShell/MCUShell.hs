@@ -196,6 +196,12 @@ program MCUShell
             char maker;
             char ch2;
             char ch = IO.Read();
+            if (ch == char(0x03))
+            {
+                // <ctrl><C> : brutal way to exit but allows the monitor to connect on startup
+                break;
+            }
+            
             if (ch == char(0xE0))
             {
                 ch2 = IO.Read();
