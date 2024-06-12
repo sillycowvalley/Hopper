@@ -229,6 +229,46 @@ unit TinyOps
         PushTop(isByte);
     }
     
+    BitNot(bool isByte)
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// ~ " + Bitness(isByte), 0); 
+    
+        // operation
+        if (isByte)
+        {
+            PadOut("PLA", 0);
+            PadOut("EOR # 0xFF", 0);
+            PadOut("PHA", 0);
+        }
+        else
+        {
+            PadOut("PLX", 0);
+            PadOut("PLA", 0);
+            PadOut("EOR # 0xFF", 0);
+            PadOut("PHA", 0);
+            PadOut("TXA", 0);
+            PadOut("EOR # 0xFF", 0);
+            PadOut("PHA", 0);
+        }
+    }
+    BoolNot()
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// ! ", 0); 
+    
+        PadOut("PLA", 0);
+        PadOut("if (Z)", 0);
+        PadOut("{", 0);
+        PadOut("LDA # 1", 1);
+        PadOut("}", 0);
+        PadOut("else", 0);
+        PadOut("{", 0);
+        PadOut("LDA # 0", 1);
+        PadOut("}", 0);
+        PadOut("PHA", 0);
+    }
+    
     Mul(bool isByte, bool isSigned)
     {
         TinyCode.PadOut("", 0); 

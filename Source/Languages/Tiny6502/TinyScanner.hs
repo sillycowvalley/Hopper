@@ -262,23 +262,51 @@ unit TinyScanner
     {
         uint start = lineIndex;
         lineIndex++; // Skip opening quote
-        while ((lineIndex < currentLineContent.Length) && (currentLineContent[lineIndex] != '\''))
-        {
-            lineIndex++;
-        }
-        
-        if (lineIndex < currentLineContent.Length)
-        {
-            lineIndex++; // Skip closing quote
-            string lexeme = currentLineContent.Substring(start + 1, lineIndex - start - 2);
-            return createToken(TokenType.LIT_CHAR, lexeme);
-        }
-        else
+        string lexeme = "";
+    
+        if (lineIndex >= currentLineContent.Length)
         {
             Error(currentSourcePath, currentLine, "unterminated char literal");
             return createToken(TokenType.EOF, "");
         }
+    
+        char c = currentLineContent[lineIndex];
+        if (c == '\\')
+        {
+            lineIndex++; // Skip backslash
+            if (lineIndex >= currentLineContent.Length)
+            {
+                Error(currentSourcePath, currentLine, "unterminated char literal");
+                return createToken(TokenType.EOF, "");
+            }
+            c = currentLineContent[lineIndex];
+            switch (c)
+            {
+                case '\'': { lexeme += '\'';  }
+                case '\\': { lexeme += '\\';  }
+                case 'n':  { lexeme += Char.EOL;  }
+                case 't':  { lexeme += Char.Tab;  }
+                case 'r':  { lexeme += char(0x0D);  }
+                default:   { lexeme += '\\' + c;  } // Keep unrecognized escape sequences as is
+            }
+        }
+        else
+        {
+            lexeme += c;
+        }
+    
+        lineIndex++; // Move past the character or escape sequence
+    
+        if ((lineIndex >= currentLineContent.Length) || (currentLineContent[lineIndex] != '\''))
+        {
+            Error(currentSourcePath, currentLine, "unterminated char literal");
+            return createToken(TokenType.EOF, "");
+        }
+    
+        lineIndex++; // Skip closing quote
+        return createToken(TokenType.LIT_CHAR, lexeme);
     }
+    
     
     Token tokenizeSymbol()
     {

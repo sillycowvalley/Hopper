@@ -1,3 +1,5 @@
+Here is the updated Tiny6502 language documentation with the ternary operator and the correct precedence in the table.
+
 # Tiny6502 Language Documentation
 
 ## Introduction
@@ -16,7 +18,7 @@ Tiny6502 is a minimal programming language designed for a specific 6502 system c
 - **Preprocessor Symbols:** Preprocessor symbols can only be defined or undefined with `#define` and `#undef`. They cannot have values or macro content associated with them.
 - **Initialization:** All variables and memory allocation blocks are zero-initialized.
 - **Boolean Expressions:** `if`, `while`, and `for` require their boolean expressions to be of `bool` type.
-- **Include Directive:** `#include` directive inline source into one large source file in the preprocessor. A second `#include` directive for the same source file is ignored. There are no header files, only source files with the `.tc` extension.
+- **Include Directive:** The `#include` directive inlines source into one large source file for the preprocessor. A second `#include` directive for the same source file is ignored. There are no header files, only source files with the `.tc` extension.
 
 ## Key Features
 
@@ -433,34 +435,35 @@ func main() {
 
 The following table shows the precedence and associativity of Tiny6502 operators, modeled after the C standard:
 
-| Precedence Level | Operator(s)     | Description                           | Associativity    |
-|------------------|-----------------|---------------------------------------|------------------|
-| 1                | `()`            | Parentheses (expression grouping)     | Left to right    |
-|                  | `[]`            | Array subscript                       | Left to right    |
-|                  | `.`             | Member access                         | Left to right    |
-| 2                | `!`             | Logical NOT                           | Right to left    |
-|                  | `~`             | Bitwise NOT                           | Right to left    |
-|                  | `-`             | Unary minus                           | Right to left    |
-|                  | `+`             | Unary plus                            | Right to left    |
-| 3                | `*`             | Multiplication                        | Left to right    |
-|                  | `/`             | Division                              | Left to right    |
-|                  | `%`             | Modulus                               | Left to right    |
-| 4                | `+`             | Addition                              | Left to right    |
-|                  | `-`             | Subtraction                           | Left to right    |
-| 5                | `<<`            | Bitwise left shift                    | Left to right    |
-|                  | `>>`            | Bitwise right shift                   | Left to right    |
-| 6                | `<`             | Less than                             | Left to right    |
-|                  | `<=`            | Less than or equal to                 | Left to right    |
-|                  | `>`             | Greater than                          | Left to right    |
-|                  | `>=`            | Greater than or equal to              | Left to right    |
-| 7                | `==`            | Equal to                              | Left to right    |
-|                  | `!=`            | Not equal to                          | Left to right    |
-| 8                | `&`             | Bitwise AND                           | Left to right    |
-| 9                | `^`             | Bitwise XOR                           | Left to right    |
-| 10               | `|`             | Bitwise OR                            | Left to right    |
-| 11               | `&&`            | Logical AND                           | Left to right    |
-| 12               | `||`            | Logical OR                            | Left to right    |
-| 13               | `=`             | Assignment                            | Right to left    |
-| 14               | `,`             | Comma (sequence operator)             | Left to right    |
+| Precedence Level | Operator(s)       | Description                           | Associativity    |
+|------------------|-------------------|---------------------------------------|------------------|
+| 1                | `()`              | Parentheses (expression grouping)     | Left to right    |
+|                  | `[]`              | Array subscript                       | Left to right    |
+|                  | `.`               | Member access                         | Left to right    |
+| 2                | `!`               | Logical NOT                           | Right to left    |
+|                  | `~`               | Bitwise NOT                           | Right to left    |
+|                  | `-`               | Unary minus                           | Right to left    |
+|                  | `+`               | Unary plus                            | Right to left    |
+| 3                | `*`               | Multiplication                        | Left to right    |
+|                  | `/`               | Division                              | Left to right    |
+|                  | `%`               | Modulus                               | Left to right    |
+| 4                | `+`               | Addition                              | Left to right    |
+|                  | `-`               | Subtraction                           | Left to right    |
+| 5                | `<<`              | Bitwise left shift                    | Left to right    |
+|                  | `>>`              | Bitwise right shift                   | Left to right    |
+| 6                | `<`               | Less than                             | Left to right    |
+|                  | `<=`              | Less than or equal to                 | Left to right    |
+|                  | `>`               | Greater than                          | Left to right    |
+|                  | `>=`              | Greater than or equal to              | Left to right    |
+| 7                | `==`              | Equal to                              | Left to right    |
+|                  | `!=`              | Not equal to                          | Left to right    |
+| 8                | `&`               | Bitwise AND                           | Left to right    |
+| 9                | `^`               | Bitwise XOR                           | Left to right    |
+| 10               | `|`               | Bitwise OR                            | Left to right    |
+| 11               | `&&`              | Logical AND                           | Left to right    |
+| 12               | `||`              | Logical OR                            | Left to right    |
+| 13               | `? :`             | Ternary conditional                   | Right to left    |
+| 14               | `=`               | Assignment                            | Right to left    |
+| 15               | `,`               | Comma (sequence operator)             | Left to right    |
 
 This table helps clarify the order in which operations are performed in Tiny6502, ensuring that expressions are evaluated as intended.

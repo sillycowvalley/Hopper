@@ -265,6 +265,8 @@ unit TinyCode
     }
     PushByte(byte value, string comment)
     {
+        comment = comment.Replace(char(0x0D), ' ');
+        comment = comment.Replace(char(0x0A), ' ');
         PadOut("", 0);
         PadOut("// PUSH 0x" + value.ToHexString(2), 0);
         PadOut("LDA # 0x" + value.ToHexString(2) + " // " + comment, 0);

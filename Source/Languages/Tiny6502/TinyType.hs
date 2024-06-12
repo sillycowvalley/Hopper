@@ -248,11 +248,11 @@ unit TinyType
                     }
                     case "+int":
                     {
-                        return true; // positive int as word
+                        return asCast; // positive int as word
                     }
                     case "int":
                     {
-                        return false; // int as word requires cast
+                        return asCast; // int as word requires cast
                     }
                     case "bool":
                     {
@@ -293,7 +293,7 @@ unit TinyType
                     }
                     case "word":
                     {
-                        return false; // word as int requires cast
+                        return asCast; // word as int requires cast
                     }
                     case "bool":
                     {

@@ -223,12 +223,62 @@ unit TinyExpression
             }
         }
         
-        if (!parseLogicalOrExpression(ref actualType))
+        if (!parseConditionalExpression(ref actualType))
         {
             return false;
         }
         return true;
     }
+    
+    bool parseConditionalExpression(ref string actualType)
+    {
+        if (!parseLogicalOrExpression(ref actualType))
+        {
+            return false;
+        }
+        Token token = TinyScanner.Current();
+        if (token.Type == TokenType.SYM_QUESTION)
+        {
+            if (actualType != "bool")
+            {
+                Error(token.SourcePath, token.Line, "boolean expression expected");
+                return false;
+            }
+            TinyCode.If("if");
+            TinyCode.PadOut("{", 0);
+            TinyScanner.Advance(); // Skip '?'
+            string trueType;
+            if (!parseExpression(ref trueType))
+            {
+                return false;
+            }
+            TinyCode.PadOut("}", 0);
+            TinyCode.Else();
+            TinyCode.PadOut("{", 0);
+            token = TinyScanner.Current();
+            if (token.Type != TokenType.SYM_COLON)
+            {
+                Error(token.SourcePath, token.Line, "expected ':' in conditional expression");
+                return false;
+            }
+            TinyScanner.Advance(); // Skip ':'
+            string falseType;
+            if (!parseConditionalExpression(ref falseType))
+            {
+                return false;
+            }
+            TinyCode.PadOut("}", 0);
+            if (!MatchTypes(trueType, ref falseType))
+            {
+                TypeError(trueType, falseType);
+                return false;
+            }
+            actualType = falseType;
+        }
+        return true;
+    }
+    
+    
 
     bool parseLogicalOrExpression(ref string actualType)
     {
@@ -590,9 +640,27 @@ unit TinyExpression
                 actualType = "int";
                 TinyOps.Sub(IsByteType(actualType));
             }
-            else
+            else if (op == "~")
             {
-                TinyCode.PadOut("// " + op + " TODO", 0); 
+                if (!IsNumericType(actualType))
+                {
+                    Error(token.SourcePath, token.Line, "numeric expression expected");
+                    return false;
+                }
+                TinyOps.BitNot(IsByteType(actualType));
+            }
+            else if (op == "!")
+            {
+                if (actualType != "bool")
+                {
+                    Error(token.SourcePath, token.Line, "boolean expression expected");
+                    return false;
+                }
+                TinyOps.BoolNot();
+            }
+            else
+            { 
+                Die(0x0B);
             }
         }
         else
