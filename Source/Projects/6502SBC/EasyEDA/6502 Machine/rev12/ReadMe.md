@@ -3,6 +3,9 @@
 ## Overview
 The Hopper 65C02S Single Board Computer (SBC) is designed around the 65C02S microprocessor, providing a robust platform for educational Hopper development. This SBC incorporates essential components such as memory, I/O interfaces, and peripheral controllers to create a complete, standalone computing environment.
 
+![6b77147d-3645-4c71-a7c9-a2f34844debd](https://github.com/sillycowvalley/Hopper/assets/89331909/2724f2ed-a58a-49ef-ba6e-063c8c85b00d)
+
+
 ## Major Components
 
 ### 65C02S Microprocessor
