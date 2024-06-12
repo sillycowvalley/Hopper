@@ -281,6 +281,31 @@ program Generate
         srcFile.Append("};" + Char.EOL);
         srcFile.Flush();
     }
+    writeBin(file binFile, uint romAddress, <byte> output, <byte> vectors)
+    {
+        uint address = romAddress;
+        uint length  = output.Count;
+        uint index   = 0;
+        loop
+        {
+            byte b = 0;
+            if (address >= 0xFFFA)
+            {
+                index = address - 0xFFFA;
+                b = vectors[index];
+            }
+            else if (index < length)
+            {
+                b = output[index];
+            }
+            binFile.Append(b);    
+            if (address == 0xFFFF) { break; } 
+            address++;
+            index++;
+        }
+        binFile.Append("};" + Char.EOL);
+        binFile.Flush();
+    }
     
     {
         bool success = false;
@@ -484,6 +509,15 @@ program Generate
                 writeSrc(srcFile, romAddress, output, vectors);
                 */
                 
+                // export .bin file for Dave:
+                string binPath = ihexPath.Replace(".hex", ".bin");
+                file binFile = File.Create(binPath);
+                if (!binFile.IsValid())
+                {
+                    PrintLn("Failed to create '" + binPath + "'");
+                    break;
+                }
+                writeBin(binFile, romAddress, output, vectors);
                 
                 if (!Parser.IsInteractive())
                 {
