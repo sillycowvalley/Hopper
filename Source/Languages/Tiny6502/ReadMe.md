@@ -4,6 +4,20 @@
 
 Tiny6502 is a minimal programming language designed for a specific 6502 system configuration like the Hopper 6502 SBC, including a VIA, an ACIA, and a serial I2C EEPROM. It combines the simplicity and performance of low-level programming with higher code density and type safety, tailored for embedded systems. The language syntax is familiar to C programmers, making it easy to learn and use.
 
+### Key Differences Between Tiny6502 and C
+
+- **Pointers:** Pointers in Tiny6502 can only originate from the `malloc()` API, which defaults to returning a byte array pointer written as `byte[]`.
+- **Local Arrays:** Local arrays can be declared without calling `malloc` by giving them a dimension, e.g., `byte[100] hundredBytes;`. These arrays are automatically freed when the scope exits.
+- **Stricter Type Safety:** Tiny6502 requires explicit casts between incompatible types. Implicit castless conversions are only allowed from narrower numeric types to wider ones. Casting between `char` and any other type, `bool` and any other type, and between `int` and `word` is required. However, `byte` can be converted to `int` or `word` without a cast.
+- **Pointer Casting:** Explicit casting for pointers is required, e.g., `char[] = malloc(10) as char[]`.
+- **Function Declarations:** Use the `func` keyword for function declarations.
+- **No `void` Keyword:** There is no `void` keyword in Tiny6502.
+- **Switch Case:** The `done` keyword is used to prevent fall-through in switch cases, instead of `break`, which is only used for exiting loops.
+- **Preprocessor Symbols:** Preprocessor symbols can only be defined or undefined with `#define` and `#undef`. They cannot have values or macro content associated with them.
+- **Initialization:** All variables and memory allocation blocks are zero-initialized.
+- **Boolean Expressions:** `if`, `while`, and `for` require their boolean expressions to be of `bool` type.
+- **Include Directive:** `#include` directive inline source into one large source file in the preprocessor. A second `#include` directive for the same source file is ignored. There are no header files, only source files with the `.tc` extension.
+
 ## Key Features
 
 1. **Low-Level Access:**
