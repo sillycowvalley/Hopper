@@ -1,6 +1,8 @@
 unit LibCall
 {
+#ifdef I2C
     uses "6502/I2C"
+#endif
     
     enum LibCalls
     {
@@ -28,23 +30,43 @@ unit LibCall
         {
             case LibCalls.WireBeginTx:
             {
+#ifdef I2C
                 I2C.BeginTx();
+#else
+                missing();
+#endif
             }
             case LibCalls.WireEndTx:
             {
+#ifdef I2C
                 I2C.EndTx();
+#else
+                missing();
+#endif
             }
             case LibCalls.WireWrite:
             {
+#ifdef I2C
                 I2C.Write();
+#else
+                missing();
+#endif
             }
             case LibCalls.WireRead:
             {
+#ifdef I2C
                 I2C.Read();
+#else
+                missing();
+#endif
             }
             case LibCalls.WireRequestFrom:
             {
+#ifdef I2C
                 I2C.RequestFrom();
+#else
+                missing();
+#endif
             }
         default:
             {

@@ -27,6 +27,10 @@ program R6502
     #define ACIA_6850
     //#define ACIA_6551
          
+#ifdef W65C22_VIA
+    #define I2C
+#endif         
+
 #if defined(CPU_65C02S) && !defined(CHECKED) && !defined(FASTINTS) && !defined(INLINE_EXPANSIONS)
     #define ROM_8K // 240 bytes overrun with I2C but without FASTINTS
 #endif
@@ -153,6 +157,7 @@ program R6502
         
         loop
         {
+#ifdef I2C            
             LDA ZP.PLUGNPLAY
             AND # 0b00000010
             if (NZ) // EEPROM?
@@ -192,6 +197,7 @@ program R6502
                     break;
                 }
             }
+#endif
             // return zero CRC
             LDA #0
             Serial.HexOut();
@@ -296,6 +302,7 @@ program R6502
     {
         Utilities.WaitForEnter();     // consume <enter>
         
+#ifdef I2C        
         LDA ZP.PLUGNPLAY
         AND # 0b00000010
         if (NZ) // EEPROM?
@@ -316,9 +323,11 @@ program R6502
             STA ZP.OutB
             I2C.ByteOut();
         }
+#endif
         
         // CRC: 4 hex characters and <enter>
         Serial.HexIn();
+#ifdef I2C
         STA ZP.OutB
         LDA ZP.PLUGNPLAY
         AND # 0b00000010
@@ -326,7 +335,9 @@ program R6502
         {
             I2C.ByteOut(); // CRC byte
         }
+#endif
         Serial.HexIn();
+#ifdef I2C
         STA ZP.OutB
         LDA ZP.PLUGNPLAY
         AND # 0b00000010
@@ -342,6 +353,7 @@ program R6502
             STA ZP.TOPH
             Time.DelayTOP();
         }
+#endif
         Serial.WaitForChar(); // <enter>
         
         // Y is zero now
@@ -427,6 +439,7 @@ program R6502
         Serial.WriteChar();         // success or failure ('*' or '!')?
         Utilities.SendSlash();      // confirm the data
         
+#ifdef I2C
         LDA ZP.PLUGNPLAY
         AND # 0b00000010
         if (NZ) // EEPROM?
@@ -468,6 +481,7 @@ program R6502
                 SaveToEEPROM();
             }
         }
+#endif
     }
        
     warmRestart()
@@ -589,7 +603,7 @@ program R6502
         // scan for I2C devices
 #ifdef CPU_65C02S        
         STZ ZP.PLUGNPLAY
-        
+    #ifdef I2C        
         LDA # I2C.SSD1306Address // SSD1306 OLED
         I2C.Scan();
         if (Z)
@@ -603,10 +617,11 @@ program R6502
         {
             SMB1 ZP.PLUGNPLAY
         }
+    #endif        
 #else
         LDA # 0
         STA ZP.PLUGNPLAY
-        
+    #ifdef I2C        
         LDA # I2C.SSD1306Address // SSD1306 OLED
         I2C.Scan();
         if (Z)
@@ -624,6 +639,7 @@ program R6502
             ORA # 0b00000010
             STA ZP.PLUGNPLAY
         }
+    #endif
 #endif        
            
         hopperInit();
@@ -811,7 +827,6 @@ program R6502
     
     loadAuto()
     {
-#ifdef W65C22_VIA        
         // is the User button held low?
         
   #if defined(CPU_65C02S) && !defined(NONZERO_IO)
@@ -828,7 +843,6 @@ program R6502
        }
   #endif        
 
-#endif
         // BeginTx
         LDA # (I2C.SerialEEPROMAddress << 1)
         STA ZP.OutB
@@ -874,19 +888,21 @@ program R6502
     {
         resetVector();
         
-#ifdef CPU_65C02S
+#ifdef I2C
+    #ifdef CPU_65C02S
         if (BBS1, ZP.PLUGNPLAY) // EEPROM?
         {
             loadAuto();
         }
-#else
+    #else
         LDA ZP.PLUGNPLAY
         AND # 0b00000010
         if (NZ) // EEPROM?
         {
             loadAuto();
         }
-#endif        
+    #endif        
+#endif
         Utilities.SendSlash(); // ready
         
         loop
