@@ -30,19 +30,29 @@ unit TinySymbols
     
     uint BlockLevel { get { return blockLevel; } set { blockLevel = value; } }
     
-    byte GetCurrentLevelBytes()
+    string VariableComment()
+    {
+        return "(level=" + (GetCurrentVariableLevel()).ToString() + ", levelBytes=" + (GetLevelBytes(GetCurrentVariableLevel())).ToString() + ")";
+    }
+    uint GetCurrentVariableLevel()
+    {
+        if (variables.Count == 0)
+        {
+            Die(0x0B);
+        }
+        return variables.Count-1;
+    }
+    
+    byte GetLevelBytes(uint level)
     {
         byte bytes;
-        if (variables.Count > 0)
+        <string, Variable> scopeVariables = variables[level];
+        foreach (var kv in scopeVariables)
         {
-            <string, Variable> scopeVariables = variables[variables.Count - 1];
-            foreach (var kv in scopeVariables)
+            Variable variable = kv.value;
+            if (variable.Offset >= 0) // not arguments)
             {
-                Variable variable = kv.value;
-                if (variable.Offset >= 0) // not arguments)
-                {
-                    bytes += IsByteType(variable.Type) ? 1 : 2;
-                }
+                bytes += IsByteType(variable.Type) ? 1 : 2;
             }
         }
         return bytes;
@@ -62,9 +72,10 @@ unit TinySymbols
         variables.Append(level);
         blockLevel++;
     }
-    FreeAutomaticAllocations()
+    FreeAutomaticAllocations(uint variableLevel)
     {
-        <string, Variable> level = variables[variables.Count-1];
+        bool commented;
+        <string, Variable> level = variables[variableLevel];
         foreach (var kv in level)
         {
             Variable v = kv.value;
@@ -74,6 +85,13 @@ unit TinySymbols
                 string arrayType = v.Type;
                 if (!arrayType.Contains("[]"))
                 {
+                    if (!commented)
+                    {
+                        TinyCode.PadOut("", 0);
+                        TinyCode.PadOut("// free automatic allocations " + VariableComment(), 0);
+                        commented = true;
+                    }
+        
                     TinyCode.PushVariable(kv.key, v.Offset, false, v.IsGlobal);
                     TinyCode.PadOut("TinySys.Free();", 0);
                     TinyCode.PadOut("PLY", 0);
@@ -86,14 +104,15 @@ unit TinySymbols
     {
         if ((name == "if") || (name == "else") || (name == "for") || (name == "while"))
         {
-            FreeAutomaticAllocations();
+            FreeAutomaticAllocations(GetCurrentVariableLevel());
             TinyCode.PopBytes(name + " locals");
+            LocalOffset -= GetLevelBytes(GetCurrentVariableLevel());
         }
         variables.Remove(variables.Count-1);
         if (name == "main")
         {
-            FreeAutomaticAllocations();
-            TinyCode.PopBytes(byte(GlobalOffset), "global variable");
+            FreeAutomaticAllocations(GetCurrentVariableLevel());
+            TinyCode.PopBytes(byte(GlobalOffset), "global variable " + VariableComment());
         }
         
         blockLevel--;

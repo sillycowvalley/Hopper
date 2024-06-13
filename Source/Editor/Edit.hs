@@ -93,6 +93,18 @@ program Edit
                             filePath = fullPathExt;
                             break;
                         }
+                        filePathExt = filePath + ".tc";
+                        if (File.Exists(filePathExt))
+                        {
+                            filePath = filePathExt;
+                            break;
+                        }
+                        fullPathExt = Path.Combine(System.CurrentDirectory, filePathExt);
+                        if (File.Exists(fullPathExt))
+                        {
+                            filePath = fullPathExt;
+                            break;
+                        }
                     }
                     if (!File.Exists(fullPath))
                     {

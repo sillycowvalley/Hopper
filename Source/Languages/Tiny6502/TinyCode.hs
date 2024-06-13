@@ -241,6 +241,17 @@ unit TinyCode
             PadOut("break;", 0);
         }
     }
+    Return(string comment)
+    {
+        if (comment.Length != 0)
+        {
+            PadOut("return; // " + comment, 0);
+        }
+        else
+        {
+            PadOut("return;", 0);
+        }
+    }
     Continue()
     {
         PadOut("continue;", 0);
@@ -361,21 +372,17 @@ unit TinyCode
         PadOut("TSX", 0);
         PadOut("STX ZP.BP", 0);
         PadOut("", 0);
-        PadOut("loop", 0);
-        PadOut("{", 0);
-        extra++;
-        PadOut("// single exit loop", 0);
+        PadOut("// locals scope", 0);
         PadOut("", 0);
     }
     Leave()
     {
         PadOut("", 0);
-        PadOut("break; // single exit loop", 0);
-        extra--;
-        PadOut("}", 0); 
+        PadOut("// end of locals scope", 0);
+        PadOut("", 0); 
             
-        TinySymbols.FreeAutomaticAllocations();
-        TinyCode.PopBytes("local variable"); // method single exit loop
+        TinySymbols.FreeAutomaticAllocations(GetCurrentVariableLevel());
+        TinyCode.PopBytes(GetLevelBytes(GetCurrentVariableLevel()), "local variable " + VariableComment()); // method single exit loop
         
         PadOut("", 0);
         PadOut("// POP BP", 0);
@@ -384,7 +391,7 @@ unit TinyCode
     }
     PopBytes(string comment)
     {
-        byte bytes = GetCurrentLevelBytes();
+        byte bytes = GetLevelBytes(GetCurrentVariableLevel());
         PopBytes(bytes, comment);
     }
     PopBytes(byte bytes, string comment)

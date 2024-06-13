@@ -234,9 +234,23 @@ unit TinyStatement
         
         TinyScanner.Advance(); // Skip ';'
         
-        TinyCode.Ret(IsByteType(returnType));
+        if (returnType != "void")
+        {
+            TinyCode.Ret(IsByteType(returnType));
+        }
         
-        TinyCode.Break("return");
+        byte bytes;
+        uint level = GetCurrentVariableLevel();
+        loop
+        {
+            FreeAutomaticAllocations(level);
+            bytes += GetLevelBytes(level);
+            if (level == 1) { break; }
+            level--;
+        }
+        TinyCode.PopBytes(bytes, CurrentFunction + " locals");
+        
+        TinyCode.Return("exit " + CurrentFunction + " " + VariableComment());
         
         return true;
     }
