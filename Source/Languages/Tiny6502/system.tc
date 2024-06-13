@@ -14,7 +14,7 @@ func writeChar(char c); // System function to write a single character
 
 func writeString(const char[] str) {
     // Function to write a null-terminated string to the serial output using writeChar
-    word i = 0;
+    word i;
     while (str[i] != (0 as char)) {
         writeChar(str[i]);
         i++;
@@ -27,21 +27,19 @@ func writeWord(word num) {
         writeChar('0');
         return;
     }
-
     byte i;
     char[5] digits; // Maximum 5 digits for a word
-
-    while (num > 0) {
+    while (num != 0) {
         digits[[i++] = ((num % 10) + 48) as char;
         num /= 10;
     }
-
     // Write the digits in reverse order
-    while (i > 0) {
+    while (i != 0) {
         writeChar(digits[--i]);
     }
 }
 
+/*
 func writeInt(int num) {
 
     if (num < 0)
@@ -52,6 +50,7 @@ func writeInt(int num) {
     word w = num as word;
     writeWord(w);
 }
+*/
 
 // EEPROM
 func writePage(word address, const byte[] data); // System function to write a page of data to EEPROM

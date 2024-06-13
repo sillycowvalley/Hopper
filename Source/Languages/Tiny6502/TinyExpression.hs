@@ -302,7 +302,8 @@ unit TinyExpression
                 return false;
             }
             token = TinyScanner.Current();
-            TinyCode.PadOut("// || TODO", 0);
+            // assuming both arguments are either 0 or 1
+            TinyOps.Or("||", true);
             actualType = "bool";
         }
         return true;
@@ -330,7 +331,8 @@ unit TinyExpression
                 return false;
             }
             token = TinyScanner.Current();
-            TinyCode.PadOut("// && TODO", 0);
+            // assuming both arguments are either 0 or 1
+            TinyOps.And("&&", true);
             actualType = "bool";
         }
         return true;
@@ -358,7 +360,7 @@ unit TinyExpression
                 return false;
             }
             token = TinyScanner.Current();
-            TinyCode.PadOut("// | TODO", 0);
+            TinyOps.Or("|", IsByteType(actualType));
         }
         return true;
     }
@@ -385,7 +387,7 @@ unit TinyExpression
                 return false;
             }
             token = TinyScanner.Current();
-            TinyCode.PadOut("// ^ TODO", 0);
+            TinyOps.Xor("^", IsByteType(actualType));
         }
         return true;
     }
@@ -412,7 +414,7 @@ unit TinyExpression
                 return false;
             }
             token = TinyScanner.Current();
-            TinyCode.PadOut("// & TODO", 0);
+            TinyOps.And("&", IsByteType(actualType));
         }
         return true;
     }
@@ -481,19 +483,19 @@ unit TinyExpression
             {
                 case "<":
                 {
-                    TinyOps.CompareLT(IsByteType(actualType));
+                    TinyOps.CompareLT(IsByteType(actualType), IsSignedType(actualType));
                 }
                 case "<=":
                 {
-                    TinyOps.CompareLE(IsByteType(actualType));
+                    TinyOps.CompareLE(IsByteType(actualType), IsSignedType(actualType));
                 }
                 case ">":
                 {
-                    TinyOps.CompareGT(IsByteType(actualType));
+                    TinyOps.CompareGT(IsByteType(actualType), IsSignedType(actualType));
                 }
                 case ">=":
                 {
-                    TinyOps.CompareGE(IsByteType(actualType));
+                    TinyOps.CompareGE(IsByteType(actualType), IsSignedType(actualType));
                 }
             }
             actualType = "bool";
@@ -524,7 +526,14 @@ unit TinyExpression
                 return false;
             }
             token = TinyScanner.Current();
-            TinyCode.PadOut("// " + op + " TODO", 0); 
+            if (op == "<<")
+            {
+                TinyOps.Shl(IsByteType(actualType)); // assumes [top] is <= 255
+            }
+            else
+            {
+                TinyOps.Shr(IsByteType(actualType)); // assumes [top] is <= 255
+            }
         }
         return true;
     }
@@ -751,10 +760,12 @@ unit TinyExpression
                     if (!GetVariable(name, ref actualType, ref offset, ref isGlobal))
                     {
                         Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
+                        return false;
                     }
                     if (actualType != "func")
                     {
                         Error(token.SourcePath, token.Line, "invalid use of '" + name + "'");
+                        return false;
                     }
                     // untyped func pointer, arbitrarily pick "word" as return type
                     actualType = "word";

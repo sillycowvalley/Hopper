@@ -38,17 +38,17 @@ unit TinyOps
     CompareGT()
     {
         // arguments in NEXT and TOP
-        LDX # 0 // NEXT <= TOP
-        LDA ZP.NEXTH
-        CMP ZP.TOPH
+        LDX # 1 // NEXT > TOP
+        LDA ZP.TOPH
+        CMP ZP.NEXTH
         if (Z)
         {
-            LDA ZP.NEXTL
-            CMP ZP.TOPL
+            LDA ZP.TOPL
+            CMP ZP.NEXTL
         }
-        if (NC) // NEXT > TOP
+        if (C) // TOP >= NEXT ?
         {
-            LDX # 1 // NEXT > TOP
+            LDX # 0 // TOP >= NEXT
         }
         // result in X
     }
