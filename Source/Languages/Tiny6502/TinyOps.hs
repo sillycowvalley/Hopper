@@ -40,16 +40,11 @@ unit TinyOps
             PadOut("PHA", 0);
         }
     }
-    CompareLT(bool isByte, bool isSigned)
+    CompareLT(bool isByte)
     {
-        if (isSigned)
-        {
-            Die(0x0A);
-        }
-        
         TinyCode.PadOut("", 0); 
         TinyCode.PadOut("// <" + Bitness(isByte), 0); 
-            
+        
         // arguments
         PopTopNext(isByte);
         
@@ -63,50 +58,15 @@ unit TinyOps
             PadOut("LDX # 1 // NEXT < TOP", 0); 
             PadOut("LDA ZP.NEXTL", 0);
             PadOut("CMP ZP.TOPL", 0);
-            PadOut("if (C) // NEXT < TOP", 0);
+            PadOut("if (C) // TOP <= NEXT ?", 0);
             PadOut("{", 0);
-            PadOut("LDX # 0 // NEXT >= TOP", 1); 
+            PadOut("LDX # 0 // TOP <= NEXT", 1); 
             PadOut("}", 0);
         }
         PadOut("PHX", 0);
     }
-    CompareLE(bool isByte, bool isSigned)
+    CompareGT(bool isByte)
     {
-        if (isSigned)
-        {
-            Die(0x0A);
-        }
-        
-        TinyCode.PadOut("", 0); 
-        TinyCode.PadOut("// <=" + Bitness(isByte), 0); 
-        
-        // arguments
-        PopTopNext(isByte);
-        
-        // operation
-        if (!isByte)
-        {
-            PadOut("TinyOps.CompareLE();", 0);
-        }
-        else
-        {
-            PadOut("LDX # 1 // NEXT <= TOP", 0); 
-            PadOut("LDA ZP.NEXTL", 0);
-            PadOut("CMP ZP.TOPL", 0);
-            PadOut("if (NC) // NEXT <= TOP", 0);
-            PadOut("{", 0);
-            PadOut("LDX # 0 // NEXT > TOP", 1); 
-            PadOut("}", 0);
-        }
-        PadOut("PHX", 0);
-    }
-    CompareGT(bool isByte, bool isSigned)
-    {
-        if (isSigned)
-        {
-            Die(0x0A);
-        }
-        
         TinyCode.PadOut("", 0); 
         TinyCode.PadOut("// >" + Bitness(isByte), 0); 
         
@@ -130,38 +90,7 @@ unit TinyOps
         }
         PadOut("PHX", 0);
     }
-    
-    CompareGE(bool isByte, bool isSigned)
-    {
-        if (isSigned)
-        {
-            Die(0x0A);
-        }
-        
-        TinyCode.PadOut("", 0); 
-        TinyCode.PadOut("// >=" + Bitness(isByte), 0); 
-        
-        // arguments
-        PopTopNext(isByte);
-        
-        // operation
-        if (!isByte)
-        {
-            PadOut("TinyOps.CompareGE();", 0);
-        }
-        else
-        {
-            PadOut("LDX # 0 // NEXT < TOP", 0); 
-            PadOut("LDA ZP.NEXTL", 0);
-            PadOut("CMP ZP.TOPL", 0);
-            PadOut("if (C) // NEXT >= TOP", 0);
-            PadOut("{", 0);
-            PadOut("LDX # 1 // NEXT >= TOP", 1); 
-            PadOut("}", 0);
-        }
-        PadOut("PHX", 0);
-    }
-    
+       
     CompareEQ(bool isByte)
     {
         TinyCode.PadOut("", 0); 
@@ -211,6 +140,43 @@ unit TinyOps
             PadOut("}", 0);
         }
         PadOut("PHX", 0);
+    }
+    
+    CompareLTI()
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// <" + Bitness(false), 0); 
+        
+        PopTopNext(false);
+        PadOut("TinyOps.CompareLTI();", 0);    
+        PadOut("PHX", 0);    
+    }
+    CompareLEI()
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// <=" + Bitness(false), 0); 
+        
+        PopTopNext(false);
+        PadOut("TinyOps.CompareLEI();", 0);    
+        PadOut("PHX", 0);    
+    }
+    CompareGTI()
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// >" + Bitness(false), 0); 
+        
+        PopTopNext(false);
+        PadOut("TinyOps.CompareGTI();", 0);    
+        PadOut("PHX", 0);    
+    }
+    CompareGEI()
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// >=" + Bitness(false), 0); 
+        
+        PopTopNext(false);
+        PadOut("TinyOps.CompareGEI();", 0);    
+        PadOut("PHX", 0);    
     }
     
     Add(bool isByte)
@@ -472,5 +438,56 @@ unit TinyOps
             TinyCode.PadOut("}", 0);
         }
         PushNext(isByte);   
+    }
+    CompareLE(bool isByte)
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// <=" + Bitness(isByte), 0); 
+        
+        // arguments
+        PopTopNext(isByte);
+        
+        // operation
+        if (!isByte)
+        {
+            PadOut("TinyOps.CompareLE();", 0);
+        }
+        else
+        {
+            PadOut("LDX # 0 // TOP < NEXT", 0); 
+            PadOut("LDA ZP.TOPL", 0);
+            PadOut("CMP ZP.NEXTL", 0);
+            PadOut("if (C) // TOP >= NEXT", 0);
+            PadOut("{", 0);
+            PadOut("LDX # 1 // TOP >= NEXT", 1); 
+            PadOut("}", 0);
+        }
+        PadOut("PHX", 0);
+    }
+    
+    CompareGE(bool isByte)
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// >=" + Bitness(isByte), 0); 
+        
+        // arguments
+        PopTopNext(isByte);
+        
+        // operation
+        if (!isByte)
+        {
+            PadOut("TinyOps.CompareGE();", 0);
+        }
+        else
+        {
+            PadOut("LDX # 0 // NEXT < TOP", 0); 
+            PadOut("LDA ZP.NEXTL", 0);
+            PadOut("CMP ZP.TOPL", 0);
+            PadOut("if (C) // NEXT >= TOP", 0);
+            PadOut("{", 0);
+            PadOut("LDX # 1 // NEXT >= TOP", 1); 
+            PadOut("}", 0);
+        }
+        PadOut("PHX", 0);
     }
 }

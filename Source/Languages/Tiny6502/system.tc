@@ -39,7 +39,6 @@ func writeWord(word num) {
     }
 }
 
-/*
 func writeInt(int num) {
 
     if (num < 0)
@@ -50,7 +49,6 @@ func writeInt(int num) {
     word w = num as word;
     writeWord(w);
 }
-*/
 
 // EEPROM
 func writePage(word address, const byte[] data); // System function to write a page of data to EEPROM

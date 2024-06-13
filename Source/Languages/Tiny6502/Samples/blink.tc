@@ -22,6 +22,6 @@ func main() {
             pinSet(pin, true); // Turn LED on
             led_on = true;
         }
-        delay(1000); // Delay for 1 second
+        delay(1000 as word); // Delay for 1 second
     }
 }

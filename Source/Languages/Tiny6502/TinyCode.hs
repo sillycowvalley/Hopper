@@ -288,7 +288,7 @@ unit TinyCode
         PadOut("", 0);
         PadOut("LDA # ((strConsts + 0x" + (word.GetByte(0)).ToHexString(2) + ") & 0xFF)", 0);
         PadOut("PHA", 0);
-        PadOut("LDA # ((strConsts + 0x" + (word.GetByte(1)).ToHexString(2) + ") >> 8)", 0);
+        PadOut("LDA # ((strConsts + 0x" + (word.GetByte(1)).ToHexString(2) + "00) >> 8)", 0);
         PadOut("PHA", 0);
     }
     

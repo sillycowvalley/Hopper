@@ -246,15 +246,18 @@ unit TinyExpression
             }
             TinyCode.If("if");
             TinyCode.PadOut("{", 0);
+            BlockLevel++;
             TinyScanner.Advance(); // Skip '?'
             string trueType;
             if (!parseExpression(ref trueType))
             {
                 return false;
             }
+            BlockLevel--;
             TinyCode.PadOut("}", 0);
             TinyCode.Else();
             TinyCode.PadOut("{", 0);
+            BlockLevel++;
             token = TinyScanner.Current();
             if (token.Type != TokenType.SYM_COLON)
             {
@@ -267,6 +270,7 @@ unit TinyExpression
             {
                 return false;
             }
+            BlockLevel--;
             TinyCode.PadOut("}", 0);
             if (!MatchTypes(trueType, ref falseType))
             {
@@ -483,19 +487,47 @@ unit TinyExpression
             {
                 case "<":
                 {
-                    TinyOps.CompareLT(IsByteType(actualType), IsSignedType(actualType));
+                    if (IsSignedType(actualType))
+                    {
+                        TinyOps.CompareLTI();
+                    }
+                    else
+                    {
+                        TinyOps.CompareLT(IsByteType(actualType));
+                    }
                 }
                 case "<=":
                 {
-                    TinyOps.CompareLE(IsByteType(actualType), IsSignedType(actualType));
+                    if (IsSignedType(actualType))
+                    {
+                        TinyOps.CompareLEI();
+                    }
+                    else
+                    {
+                        TinyOps.CompareLE(IsByteType(actualType));
+                    }
                 }
                 case ">":
                 {
-                    TinyOps.CompareGT(IsByteType(actualType), IsSignedType(actualType));
+                    if (IsSignedType(actualType))
+                    {
+                        TinyOps.CompareGTI();
+                    }
+                    else
+                    {
+                        TinyOps.CompareGT(IsByteType(actualType));
+                    }
                 }
                 case ">=":
                 {
-                    TinyOps.CompareGE(IsByteType(actualType), IsSignedType(actualType));
+                    if (IsSignedType(actualType))
+                    {
+                        TinyOps.CompareGEI();
+                    }
+                    else
+                    {
+                        TinyOps.CompareGE(IsByteType(actualType));
+                    }
                 }
             }
             actualType = "bool";
@@ -958,7 +990,7 @@ unit TinyExpression
                 }
                 case "bool":
                 {
-                    TinyCode.PushByte(1, (value == "1") ? "true" : "false");
+                    TinyCode.PushByte((value == "0") ? 0 : 1, (value == "0") ? "false" : "true");
                 }
                 case "int":
                 {

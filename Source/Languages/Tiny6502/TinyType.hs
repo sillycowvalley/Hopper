@@ -248,7 +248,7 @@ unit TinyType
                     }
                     case "+int":
                     {
-                        return asCast; // positive int as word
+                        return true; // positive int as word
                     }
                     case "int":
                     {
