@@ -1577,6 +1577,38 @@ unit AsmPoints
         }
         return modified;
     }
+    bool OptimizePeep()
+    {
+        if (iCodes.Count < 2)
+        {
+            return false;
+        }
+        bool modified = false;
+        uint iIndex = 1;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            if (!IsTargetOfJumps(iIndex) )
+            {
+                OpCode opCode1 = iCodes[iIndex-1];
+                OpCode opCode0 = iCodes[iIndex];
+                if ((opCode1 == OpCode.PHA) && (opCode0 == OpCode.PLA))
+                {
+                    Print("x");
+                    iCodes  [iIndex-1] = OpCode.NOP;
+                    iLengths[iIndex-1] = 1;
+                    iCodes  [iIndex-0] = OpCode.NOP;
+                    iLengths[iIndex-0] = 1;
+                    modified = true;
+                }
+            }
+            iIndex++;
+        } // loop
+        return modified;
+    }
     
     // 2. CMP #0 after LDA, LDX, LDY, INC, INX, INY, DEC, DEX, DEY, INA, DEA, AND, ORA, EOR, ASL, LSR, ROL, 
     //              ROR, PLA, PLX, PLY, SBC, ADC, TAX, TXA, TAY, TYA, and TSX

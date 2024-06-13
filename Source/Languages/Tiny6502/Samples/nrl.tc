@@ -1,0 +1,29 @@
+#define CPU_65C02S
+#define ROM_8K
+
+#include "../system.tc"
+
+func main() {
+    word i;
+    word j;
+    word s;
+
+    // start timing
+    word[] start = millis();
+
+    for (i = 1; i <= 10; i++) {
+        s = 0;
+        for (j = 1; j <= 1000; j++) {
+            s = s + j;
+        }
+        writeChar('.');
+    }
+    
+    writeWord(s);
+
+    // stop timing
+    word[] end = millis();
+    word ms = end[0] - start[0]; // LSW only
+    writeWord(ms);
+    writeString("ms\n");
+}

@@ -31,11 +31,11 @@ unit TinyConstant
     DefineStringConst(string constantValue, ref uint index)
     {
         index = 0;
-        if (!stringConstants.IndexOf(constantValue, ref index))
+        string constantValuePlus = constantValue + char(0);
+        if (!stringConstants.IndexOf(constantValuePlus, ref index))
         {
             index = stringConstants.Length /*+ romAddress*/;
-            stringConstants += constantValue;
-            stringConstants += char(0);
+            stringConstants += constantValuePlus;
         }
     }
     string GetStringConstants() { return stringConstants; }

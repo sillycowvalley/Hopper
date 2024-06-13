@@ -243,6 +243,11 @@ unit TinyCode
     }
     Return(string comment)
     {
+        PadOut("", 0);
+        PadOut("// POP BP", 0);
+        PadOut("PLX", 0);
+        PadOut("STX ZP.BP", 0);
+        
         if (comment.Length != 0)
         {
             PadOut("return; // " + comment, 0);
@@ -537,8 +542,9 @@ unit TinyCode
                 PadOut("CMP 0x0100, X", 0);
                 PadOut("if (Z)", 0);
                 PadOut("{", 0);
-                PadOut("INX", 1);
+                PadOut("DEX", 1);
                 PadOut("INC 0x0100, X", 1);
+                PadOut("INX", 1);
                 PadOut("}", 0);
             }
         }
@@ -551,8 +557,9 @@ unit TinyCode
                 PadOut("CMP 0x0100, X", 0);
                 PadOut("if (Z)", 0);
                 PadOut("{", 0);
-                PadOut("INX", 1);
+                PadOut("DEX", 1);
                 PadOut("DEC 0x0100, X", 1);
+                PadOut("INX", 1);
                 PadOut("}", 0);
             }
         }
@@ -572,9 +579,9 @@ unit TinyCode
                 PadOut("CMP 0x0100, X", 0);
                 PadOut("if (Z)", 0);
                 PadOut("{", 0);
-                PadOut("INX", 1);
-                PadOut("INC 0x0100, X", 1);
                 PadOut("DEX", 1);
+                PadOut("INC 0x0100, X", 1);
+                PadOut("INX", 1);
                 PadOut("}", 0);
             }
         }
@@ -587,9 +594,9 @@ unit TinyCode
                 PadOut("CMP 0x0100, X", 0);
                 PadOut("if (Z)", 0);
                 PadOut("{", 0);
-                PadOut("INX", 1);
-                PadOut("DEC 0x0100, X", 1);
                 PadOut("DEX", 1);
+                PadOut("DEC 0x0100, X", 1);
+                PadOut("INX", 1);
                 PadOut("}", 0);
             }
         }

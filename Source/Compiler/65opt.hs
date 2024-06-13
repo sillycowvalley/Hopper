@@ -21,7 +21,9 @@ program Optimize
     bool verbose;
     bool showSizes;
     bool isExperimental;
+    bool isTiny6502;
     bool IsExperimental { get { return isExperimental; }}
+    bool IsTiny6502 { get { return isTiny6502; }}
     
     <string,variant> symbols;
     <uint,bool> methodsCalled;
@@ -94,6 +96,14 @@ program Optimize
                 if (pdValues.Contains("ROM_1K"))
                 {
                     romSize = 0x0400;
+                }
+                if (pdValues.Contains("TINY6502"))
+                {
+                    isTiny6502 = true;
+                }
+                if (pdValues.Contains("EXPERIMENTAL"))
+                {
+                    isExperimental = true;
                 }
                 break;
             }
@@ -258,6 +268,7 @@ program Optimize
                     modified = true;
                 }   
             }
+            
             // BRA|JMP to RTS - > RTS
             if (AsmPoints.OptimizeJMPRTS())
             {
@@ -289,6 +300,16 @@ program Optimize
             {
                 modified = true;
             }
+            
+            if (IsTiny6502)
+            {
+                // start with peephole style optimizations
+                if (AsmPoints.OptimizePeep())
+                {
+                    modified = true;
+                }
+            }
+            
             if (!modified)
             {
                 // remove NOPs even if there were no other optimizations
