@@ -157,7 +157,7 @@ unit TinyOps
     {
         // arguments in NEXT and TOP
         
-        UtilityDiv();
+        DivMod();
         LDA ACCL
         STA TOPL
         LDA ACCH
@@ -172,9 +172,93 @@ unit TinyOps
         
         STZ TOPH
         STZ NEXTH
-        UtilityDiv();
+        DivMod();
         LDA ACCL
         STA TOPL
+        
+        // result in TOP
+    }
+    
+    DoSigns()
+    {
+        LDX #0 
+        LDA ZP.NEXTH
+        ASL // sign bit into carry
+        if (C)
+        {
+            INX // count the -ve
+            NegateNext(); // NEXT = -NEXT
+        }
+        LDA ZP.TOPH
+        ASL // sign bit into carry
+        if (C)
+        {
+            INX // count the -ve
+            NegateTop(); // TOP = -TOP
+        }
+        STX ZP.FSIGN // store the sign count
+    }
+    
+    MulI()
+    {
+        // arguments in NEXT and TOP
+        
+        DoSigns();
+        
+        MulShared();
+        LDA ZP.FSIGN     // load the sign count
+        CMP #1
+        if (Z)           // 1 negative (not 0 or 2)
+        {
+            NegateTop(); // TOP = -TOP
+        }
+        
+        // result in TOP
+    }
+    
+    DivI()
+    {
+        // arguments in NEXT and TOP
+        
+        DoSigns();
+        
+        UtilityDiv();
+        
+        LDA NEXTL
+        STA TOPL
+        LDA NEXTH
+        STA TOPH
+        
+        LDA ZP.FSIGN     // load the sign count
+        CMP #1
+        if (Z)           // 1 negative (not 0 or 2)
+        {
+            NegateTop(); // TOP = -TOP
+        }
+        
+        // result in TOP
+    }
+    
+    ModI()
+    {
+        // supporting floored division remainder is always positive
+        //
+        //   dividend = divisor * quotient + remainder
+        //    10 /  3 = q  3, r  1
+        //   -10 / -3 = q  3, r -1
+        //   -10 /  3 = q -3, r -1
+        //    10 / -3 = q -3, r -11 ?!
+        
+        // arguments in NEXT and TOP
+        
+        DoSigns();
+        
+        DivMod();
+        
+        LDA ACCL
+        STA TOPL
+        LDA ACCH
+        STA TOPH
         
         // result in TOP
     }

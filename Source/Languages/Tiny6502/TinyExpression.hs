@@ -189,11 +189,25 @@ unit TinyExpression
                     }
                     case "/=":
                     {
-                        TinyOps.Div(IsByteType(actualType));
+                        if (IsSignedType(actualType))
+                        {
+                            TinyOps.DivI();
+                        }
+                        else
+                        {
+                            TinyOps.Div(IsByteType(actualType));
+                        }
                     }
                     case "*=":
                     {
-                        TinyOps.Mul(IsByteType(actualType));
+                        if (IsSignedType(actualType))
+                        {
+                            TinyOps.MulI();
+                        }
+                        else
+                        {
+                            TinyOps.Mul(IsByteType(actualType));
+                        }
                     }
                 }
                 
@@ -635,15 +649,36 @@ unit TinyExpression
             {
                 case "*":
                 {
-                    TinyOps.Mul(IsByteType(actualType));
+                    if (IsSignedType(actualType))
+                    {
+                        TinyOps.MulI();
+                    }
+                    else
+                    {
+                        TinyOps.Mul(IsByteType(actualType));
+                    }
                 }
                 case "/":
                 {
-                    TinyOps.Div(IsByteType(actualType));
+                    if (IsSignedType(actualType))
+                    {
+                        TinyOps.DivI();
+                    }
+                    else
+                    {
+                        TinyOps.Div(IsByteType(actualType));
+                    }
                 }
                 case "%":
                 {
-                    TinyOps.Mod(IsByteType(actualType));
+                    if (IsSignedType(actualType))
+                    {
+                        TinyOps.ModI();
+                    }
+                    else
+                    {
+                        TinyOps.Mod(IsByteType(actualType));
+                    }
                 }
             } 
         }
@@ -673,7 +708,7 @@ unit TinyExpression
                     Error(token.SourcePath, token.Line, "numeric expression expected");
                     return false;
                 }
-                if (!IsAutomaticCast("int", actualType, true, true))
+                if (!IsAutomaticCast("int", actualType, false, true))
                 {
                     TypeError("int", actualType);
                     return false;

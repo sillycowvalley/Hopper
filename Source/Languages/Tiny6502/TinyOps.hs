@@ -268,7 +268,7 @@ unit TinyOps
     Mul(bool isByte)
     {
         TinyCode.PadOut("", 0); 
-        TinyCode.PadOut("// + " + Bitness(isByte), 0); 
+        TinyCode.PadOut("// * " + Bitness(isByte), 0); 
     
         // arguments
         PopTopNext(isByte);
@@ -288,7 +288,7 @@ unit TinyOps
     Div(bool isByte)
     {
         TinyCode.PadOut("", 0); 
-        TinyCode.PadOut("// + " + Bitness(isByte), 0); 
+        TinyCode.PadOut("// / " + Bitness(isByte), 0); 
     
         // arguments
         PopTopNext(isByte);
@@ -308,7 +308,7 @@ unit TinyOps
     Mod(bool isByte)
     {
         TinyCode.PadOut("", 0); 
-        TinyCode.PadOut("// + " + Bitness(isByte), 0); 
+        TinyCode.PadOut("// % " + Bitness(isByte), 0); 
     
         // arguments
         PopTopNext(isByte);
@@ -324,6 +324,48 @@ unit TinyOps
         }
         PushTop(isByte);
     }
+    
+    
+    MulI()
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// * " + Bitness(false), 0); 
+    
+        // arguments
+        PopTopNext(false);
+    
+        // operation
+        PadOut("TinyOps.MulI();", 0);
+        PushTop(false);
+    }
+    
+    DivI()
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// / " + Bitness(false), 0); 
+    
+        // arguments
+        PopTopNext(false);
+    
+        // operation
+        PadOut("TinyOps.DivI();", 0);
+        PushTop(false);
+    }
+    
+    ModI()
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// % " + Bitness(false), 0); 
+    
+        // arguments
+        PopTopNext(false);
+    
+        // operation
+        PadOut("TinyOps.ModI();", 0);
+        PushTop(false);
+    }
+    
+    
     Or(string comment, bool isByte)
     {
         TinyCode.PadOut("", 0);
