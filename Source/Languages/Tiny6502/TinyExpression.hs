@@ -189,11 +189,11 @@ unit TinyExpression
                     }
                     case "/=":
                     {
-                        TinyOps.Div(IsByteType(actualType), IsSignedType(actualType));
+                        TinyOps.Div(IsByteType(actualType));
                     }
                     case "*=":
                     {
-                        TinyOps.Mul(IsByteType(actualType), IsSignedType(actualType));
+                        TinyOps.Mul(IsByteType(actualType));
                     }
                 }
                 
@@ -635,15 +635,15 @@ unit TinyExpression
             {
                 case "*":
                 {
-                    TinyOps.Mul(IsByteType(actualType), IsSignedType(actualType));
+                    TinyOps.Mul(IsByteType(actualType));
                 }
                 case "/":
                 {
-                    TinyOps.Div(IsByteType(actualType), IsSignedType(actualType));
+                    TinyOps.Div(IsByteType(actualType));
                 }
                 case "%":
                 {
-                    TinyOps.Mod(IsByteType(actualType), IsSignedType(actualType));
+                    TinyOps.Mod(IsByteType(actualType));
                 }
             } 
         }

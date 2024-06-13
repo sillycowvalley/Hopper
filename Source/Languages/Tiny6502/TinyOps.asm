@@ -121,7 +121,7 @@ unit TinyOps
         // arguments in NEXT and TOP
         
         STZ TOPH
-        STZ TOPL
+        STZ NEXTH
         MulShared();
         
         // result in TOP
@@ -145,7 +145,7 @@ unit TinyOps
         // arguments in NEXT and TOP
         
         STZ TOPH
-        STZ TOPL
+        STZ NEXTH
         UtilityDiv();
         LDA NEXTL
         STA TOPL
@@ -171,7 +171,7 @@ unit TinyOps
         // arguments in NEXT and TOP
         
         STZ TOPH
-        STZ TOPL
+        STZ NEXTH
         UtilityDiv();
         LDA ACCL
         STA TOPL

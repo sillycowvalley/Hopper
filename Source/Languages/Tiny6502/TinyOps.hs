@@ -265,13 +265,8 @@ unit TinyOps
         PadOut("PHA", 0);
     }
     
-    Mul(bool isByte, bool isSigned)
+    Mul(bool isByte)
     {
-        if (isSigned)
-        {
-            Die(0x0A);
-        }
-        
         TinyCode.PadOut("", 0); 
         TinyCode.PadOut("// + " + Bitness(isByte), 0); 
     
@@ -290,12 +285,8 @@ unit TinyOps
         PushTop(isByte);
     }
     
-    Div(bool isByte, bool isSigned)
+    Div(bool isByte)
     {
-        if (isSigned)
-        {
-            Die(0x0A);
-        }
         TinyCode.PadOut("", 0); 
         TinyCode.PadOut("// + " + Bitness(isByte), 0); 
     
@@ -314,13 +305,8 @@ unit TinyOps
         PushTop(isByte);
     }
     
-    Mod(bool isByte, bool isSigned)
+    Mod(bool isByte)
     {
-        if (isSigned)
-        {
-            Die(0x0A);
-        }
-        
         TinyCode.PadOut("", 0); 
         TinyCode.PadOut("// + " + Bitness(isByte), 0); 
     
