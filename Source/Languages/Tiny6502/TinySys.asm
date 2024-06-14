@@ -17,10 +17,30 @@ unit TinySys
     }
     Millis()
     {
+        LDA # 4
+        STA ACCL
+        STZ ACCH
+        Allocate.Allocate();
+        
         // return the 16 bit address of the start of the 4 timer tick bytes -> word[2]
-        LDA # ZP.TICK0
+        
+        LDY # 3
+        LDA ZP.TICK3 // all 4 get updated when you read TICK3 (on the emulator)
+        STA [IDX], Y
+        DEY
+        LDA ZP.TICK2
+        STA [IDX], Y
+        DEY
+        LDA ZP.TICK1
+        STA [IDX], Y
+        DEY
+        LDA ZP.TICK0
+        STA [IDX], Y
+        
+        LDA IDXL
         STA ZP.TOPL
-        STZ ZP.TOPH
+        LDA IDXH
+        STA ZP.TOPH
     }
     Delay()
     {

@@ -12,33 +12,38 @@ unit TinyExpression
     
     bool parseExpression(ref string actualType)
     {
-        if (!parseAssignmentExpression(ref actualType))
+        bool success;
+        loop
         {
-            return false;
+            if (!parseAssignmentExpression(ref actualType))
+            {
+                break;
+            }
+    
+            Token token = TinyScanner.Current();        
+            if (token.Type == TokenType.KW_AS)
+            {
+                string asType;
+                TinyScanner.Advance(); // Skip 'as'
+                uint size;
+                if (!TinyCompile.parseType(ref asType, ref size))
+                {
+                    break;
+                }
+                if (IsAutomaticCast(asType, actualType, false, true))
+                {
+                    actualType = asType;
+                }
+                else
+                {
+                    Error(token.SourcePath, token.Line, "'" + actualType + "' as '" + asType + "' failed");
+                    break;
+                }
+            }
+            success = true;
+            break;
         }
-
-        Token token = TinyScanner.Current();        
-        if (token.Type == TokenType.KW_AS)
-        {
-            string asType;
-            TinyScanner.Advance(); // Skip 'as'
-            uint size;
-            if (!TinyCompile.parseType(ref asType, ref size))
-            {
-                return false;
-            }
-            bool doUnder;
-            if (IsAutomaticCast(asType, actualType, false, true))
-            {
-                actualType = asType;
-            }
-            else
-            {
-                Error(token.SourcePath, token.Line, "'" + actualType + "' as '" + asType + "' failed");
-                return false;
-            }
-        }
-        return true;   
+        return success;   
     }
 
     bool parseAssignmentExpression(ref string actualType)
@@ -751,359 +756,368 @@ unit TinyExpression
 
     bool parsePrimaryExpression(ref string actualType)
     {
-        Token token = TinyScanner.Current();
-        if (token.Type == TokenType.IDENTIFIER)
+        bool success;
+        loop
         {
-            string name = token.Lexeme;
-            TinyScanner.Advance(); // Skip identifier
-            
-            string constantValue;
-            if (GetConst(name, ref actualType, ref constantValue))
+            Token token = TinyScanner.Current();
+            if (token.Type == TokenType.IDENTIFIER)
             {
-                if (actualType.EndsWith(']'))
+                string name = token.Lexeme;
+                TinyScanner.Advance(); // Skip identifier
+                
+                string constantValue;
+                if (GetConst(name, ref actualType, ref constantValue))
                 {
-                    // const char[] palette = ".,'~=+:;*%&$OXB#@ ";
-                    token = TinyScanner.Current();
-                    if (token.Type == TokenType.SYM_LBRACKET)
+                    if (actualType.EndsWith(']'))
                     {
-                        // pick out an array member
-                        TinyScanner.Advance(); // Skip '['
-                        string indexType;
-                        if (!parseExpression(ref indexType))
+                        // const char[] palette = ".,'~=+:;*%&$OXB#@ ";
+                        token = TinyScanner.Current();
+                        if (token.Type == TokenType.SYM_LBRACKET)
                         {
-                            return false;
+                            // pick out an array member
+                            TinyScanner.Advance(); // Skip '['
+                            string indexType;
+                            if (!parseExpression(ref indexType))
+                            {
+                                break;
+                            }
+                            if (!IsIndexType(indexType))
+                            {
+                                Error(token.SourcePath, token.Line, "integral index type expected");
+                                break;
+                            }
+                            if (!actualType.Contains('['))
+                            {
+                                Error(token.SourcePath, token.Line, "array identifier expected");
+                                break;
+                            }
+                            actualType = GetArrayMemberType(actualType);
+                            token = TinyScanner.Current();
+                            if (token.Type != TokenType.SYM_RBRACKET)
+                            {
+                                Error(token.SourcePath, token.Line, "expected ']' after array index");
+                                break;
+                            }
+                            TinyScanner.Advance(); // Skip ']'
+                            
+                            if (IsByteType(indexType))
+                            {
+                                CastPad(false);
+                            }
+                            
+                            uint address;
+                            _ = UInt.TryParse(constantValue, ref address);
+                            TinyCode.PushConst(address);
+                            
+                            TinyOps.Add(false);  // const [] access in parsePrimaryExpression : add the index to the address (assumes char/byte array)
+                            TinyCode.ReadMemory(false, true); 
                         }
-                        if (!IsIndexType(indexType))
+                        else
                         {
-                            Error(token.SourcePath, token.Line, "integral index type expected");
-                            return false;
+                            // return the entire array
+                            uint address;
+                            _ = UInt.TryParse(constantValue, ref address);
+                            TinyCode.PushConst(address);
+                        }
+                    }
+                    success = true;
+                    break;
+                }
+            
+            
+                token = TinyScanner.Current();
+                if (token.Type == TokenType.SYM_LPAREN)
+                {
+                    // function call
+                    if (!GetFunction(name, ref actualType))
+                    {
+                        int  offset;
+                        bool isGlobal;
+                        if (!GetVariable(name, ref actualType, ref offset, ref isGlobal))
+                        {
+                            Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
+                            break;
+                        }
+                        if (actualType != "func")
+                        {
+                            Error(token.SourcePath, token.Line, "invalid use of '" + name + "'");
+                            break;
+                        }
+                        // untyped func pointer, arbitrarily pick "word" as return type
+                        actualType = "word";
+                    }
+                    
+                    TinyScanner.Advance(); // Skip '('
+                    byte bytes;
+                    if (!parseArgumentList(name, ref bytes))
+                    {
+                        break;
+                    }
+                    token = TinyScanner.Current();
+                    if (token.Type != TokenType.SYM_RPAREN)
+                    {
+                        Error(token.SourcePath, token.Line, "expected ')' after argument list, ('" + token.Lexeme + "')");
+                        break;
+                    }
+                    TinyScanner.Advance(); // Skip ')'
+                    TinyCode.Call(name);
+                    TinyCode.PopBytes(bytes, name + " arguments"); // arguments after returning from method call
+                    if (actualType != "void")
+                    {
+                        TinyOps.PushTop(IsByteType(actualType));
+                    }
+                }
+                else if (token.Type == TokenType.SYM_LBRACKET)
+                {
+                    // array accessor
+                    int  offset;
+                    bool isGlobal;
+                    if (name == "mem")
+                    {
+                        actualType = "byte";
+                    }
+                    else
+                    {
+                        if (!GetVariable(name, ref actualType, ref offset, ref isGlobal))
+                        {
+                            Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
+                            break;
+                        }
+                    }
+                    
+                    TinyScanner.Advance(); // Skip '['
+                    string indexType;
+                    if (!parseExpression(ref indexType))
+                    {
+                        break;
+                    }
+                    if (!IsIndexType(indexType))
+                    {
+                        Error(token.SourcePath, token.Line, "integral index type expected");
+                        break;
+                    }
+                    token = TinyScanner.Current();
+                    if (token.Type != TokenType.SYM_RBRACKET)
+                    {
+                        Error(token.SourcePath, token.Line, "expected ']' after array index");
+                        break;
+                    }
+                    TinyScanner.Advance(); // Skip ']'
+                    if (name == "mem")
+                    {
+                        actualType = "byte";
+                        TinyCode.ReadMemory(IsByteType(indexType), true);
+                    }
+                    else
+                    {
+                        PadOut("", 0);
+                        PadOut("// array getitem", 0); 
+                        // calculate the address we want to access
+                        if (IsByteType(indexType))
+                        {
+                            // for simplicity, cast the index to a word
+                            CastPad(false);
                         }
                         if (!actualType.Contains('['))
                         {
                             Error(token.SourcePath, token.Line, "array identifier expected");
-                            return false;
+                            break;
                         }
                         actualType = GetArrayMemberType(actualType);
-                        token = TinyScanner.Current();
-                        if (token.Type != TokenType.SYM_RBRACKET)
+                        if (!IsByteType(actualType))
                         {
-                            Error(token.SourcePath, token.Line, "expected ']' after array index");
-                            return false;
+                            // index *= 2;
+                            TinyCode.Dup(false);
+                            TinyOps.Add(false);
                         }
-                        TinyScanner.Advance(); // Skip ']'
+                        TinyCode.PushVariable(name, offset, false, isGlobal);
+                        TinyOps.Add(false);
                         
-                        if (IsByteType(indexType))
-                        {
-                            CastPad(false);
-                        }
-                        
-                        uint address;
-                        _ = UInt.TryParse(constantValue, ref address);
-                        TinyCode.PushConst(address);
-                        
-                        TinyOps.Add(false);  // const [] access in parsePrimaryExpression : add the index to the address (assumes char/byte array)
-                        TinyCode.ReadMemory(false, true); 
-                    }
-                    else
-                    {
-                        // return the entire array
-                        uint address;
-                        _ = UInt.TryParse(constantValue, ref address);
-                        TinyCode.PushConst(address);
+                        TinyCode.ReadMemory(false, IsByteType(actualType));  
                     }
                 }
-                return true;
-            }
-            
-            
-            token = TinyScanner.Current();
-            if (token.Type == TokenType.SYM_LPAREN)
-            {
-                // function call
-                if (!GetFunction(name, ref actualType))
+                else
                 {
+                    // variable
                     int  offset;
                     bool isGlobal;
                     if (!GetVariable(name, ref actualType, ref offset, ref isGlobal))
                     {
                         Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
-                        return false;
+                        break;
                     }
-                    if (actualType != "func")
+                    if ((token.Type == TokenType.SYM_PLUSPLUS) || (token.Type == TokenType.SYM_MINUSMINUS))
                     {
-                        Error(token.SourcePath, token.Line, "invalid use of '" + name + "'");
-                        return false;
+                        // i++ or i-- : value before --/++ is used in the expression
+                        TinyCode.Map(token);
+                        TinyScanner.Advance(); // Skip '++' or '--'
+                        TinyCode.PostIncrement(name, offset, IsByteType(actualType), token.Type == TokenType.SYM_PLUSPLUS, isGlobal);
                     }
-                    // untyped func pointer, arbitrarily pick "word" as return type
-                    actualType = "word";
+                    else
+                    {
+                        TinyCode.PushVariable(name, offset, IsByteType(actualType), isGlobal);
+                    }
+                }
+            }
+            else if ((token.Type == TokenType.SYM_PLUSPLUS) || (token.Type == TokenType.SYM_MINUSMINUS))
+            {
+                // ++i or --i  : value after --/++ is used in the expression
+                bool inc = token.Type == TokenType.SYM_PLUSPLUS;
+                TinyScanner.Advance(); // Skip '++' or '--'
+                token = TinyScanner.Current();
+                if (token.Type == TokenType.IDENTIFIER)
+                {
+                    string name = token.Lexeme;
+                    TinyCode.Map(token);
+                    TinyScanner.Advance(); // Skip identifier
+                    int  offset;
+                    bool isGlobal;
+                    if (!GetVariable(name, ref actualType, ref offset, ref isGlobal))
+                    {
+                        Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
+                        break;
+                    }
+                    TinyCode.PreIncrement(name, offset, IsByteType(actualType), inc, isGlobal);
+                }
+                else
+                {
+                    Error(token.SourcePath, token.Line, "expected identifier after '++' or '--'");
+                    break;
+                }
+            }
+            else if (token.Type == TokenType.KW_MEM)
+            {
+                TinyScanner.Advance(); // Skip 'func'
+                
+                token = TinyScanner.Current();
+                if (token.Type != TokenType.SYM_LBRACKET)
+                {
+                    Error(token.SourcePath, token.Line, "expected '[' after address expression");
+                    break;
+                }
+                TinyScanner.Advance(); // Skip '['
+                
+                string indexType;
+                if (!parseExpression(ref indexType))
+                {
+                    break;
+                }
+                if (!IsIndexType(indexType))
+                {
+                    Error(token.SourcePath, token.Line, "integral address type expected");
+                    break;
                 }
                 
-                TinyScanner.Advance(); // Skip '('
-                byte bytes;
-                if (!parseArgumentList(name, ref bytes))
+                token = TinyScanner.Current();
+                if (token.Type != TokenType.SYM_RBRACKET)
                 {
-                    return false;
+                    Error(token.SourcePath, token.Line, "expected ']' after address expression");
+                    break;
+                }
+                TinyScanner.Advance(); // Skip ']'
+                actualType = "byte";
+                
+                TinyCode.ReadMemory(IsByteType(indexType), true);
+            }
+            else if ((token.Type == TokenType.LIT_NUMBER) || (token.Type == TokenType.LIT_CHAR) || (token.Type == TokenType.KW_FALSE) || (token.Type == TokenType.KW_TRUE))
+            {
+                string value;
+                if (!TinyConstant.parseConstantPrimary(ref value, ref actualType))
+                {
+                    break;
+                }
+                switch (actualType)
+                {
+                    case "char":
+                    {
+                        TinyCode.PushByte(byte(value[0]), "'" + value + "'");
+                    }
+                    case "bool":
+                    {
+                        TinyCode.PushByte((value == "0") ? 0 : 1, (value == "0") ? "false" : "true");
+                    }
+                    case "int":
+                    {
+                        int i;
+                        if (!Int.TryParse(value, ref i))
+                        {
+                            Die(0x0B);
+                            break;
+                        }
+                        uint ui = UInt.FromBytes(i.GetByte(0), i.GetByte(1));
+                        TinyCode.PushWord(ui, "constant");
+                    }
+                    default:
+                    {
+                        uint ui;
+                        if (!UInt.TryParse(value, ref ui))
+                        {
+                            Die(0x0B);
+                            break;
+                        }
+                        if (IsByteType(actualType))
+                        {
+                            TinyCode.PushByte(byte(ui), "constant");
+                        }
+                        else
+                        {
+                            TinyCode.PushWord(ui, "constant");
+                        }
+                    }
+                }
+            }
+            else if ((token.Type == TokenType.LIT_STRING) || (token.Type == TokenType.KW_NULL))
+            {
+                actualType = "const char[]";
+                uint index;
+                DefineStringConst(token.Lexeme, ref index);
+                TinyCode.PushConst(index);
+                TinyScanner.Advance(); // Skip literal
+            }
+            else if (token.Type == TokenType.KW_NULL)
+            {
+                actualType = "[]"; // any pointer
+                TinyCode.PushWord(0, "null");   
+                TinyScanner.Advance(); // Skip literal
+            }
+            else if (token.Type == TokenType.SYM_LPAREN)
+            {
+                TinyScanner.Advance(); // Skip '('
+                if (!parseExpression(ref actualType))
+                {
+                    break;
                 }
                 token = TinyScanner.Current();
                 if (token.Type != TokenType.SYM_RPAREN)
                 {
-                    Error(token.SourcePath, token.Line, "expected ')' after argument list, ('" + token.Lexeme + "')");
-                    return false;
+                    Error(token.SourcePath, token.Line, "expected ')' after expression, ('" + token.Lexeme + "') B");
+                    break;
                 }
                 TinyScanner.Advance(); // Skip ')'
-                TinyCode.Call(name);
-                TinyCode.PopBytes(bytes, name + " arguments"); // arguments after returning from method call
-                if (actualType != "void")
-                {
-                    TinyOps.PushTop(IsByteType(actualType));
-                }
             }
-            else if (token.Type == TokenType.SYM_LBRACKET)
+            else if (token.Type == TokenType.KW_FUNC)
             {
-                // array accessor
-                int  offset;
-                bool isGlobal;
-                if (name == "mem")
-                {
-                    actualType = "byte";
-                }
-                else
-                {
-                    if (!GetVariable(name, ref actualType, ref offset, ref isGlobal))
-                    {
-                        Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
-                        return false;
-                    }
-                }
-                
-                TinyScanner.Advance(); // Skip '['
-                string indexType;
-                if (!parseExpression(ref indexType))
-                {
-                    return false;
-                }
-                if (!IsIndexType(indexType))
-                {
-                    Error(token.SourcePath, token.Line, "integral index type expected");
-                    return false;
-                }
+                TinyScanner.Advance(); // Skip 'func'
                 token = TinyScanner.Current();
-                if (token.Type != TokenType.SYM_RBRACKET)
+                if (token.Type == TokenType.IDENTIFIER)
                 {
-                    Error(token.SourcePath, token.Line, "expected ']' after array index");
-                    return false;
-                }
-                TinyScanner.Advance(); // Skip ']'
-                if (name == "mem")
-                {
-                    actualType = "byte";
-                    TinyCode.ReadMemory(IsByteType(indexType), true);
+                    TinyScanner.Advance(); // Skip identifier
                 }
                 else
                 {
-                    PadOut("", 0);
-                    PadOut("// array getitem", 0); 
-                    // calculate the address we want to access
-                    if (IsByteType(indexType))
-                    {
-                        // for simplicity, cast the index to a word
-                        CastPad(false);
-                    }
-                    if (!actualType.Contains('['))
-                    {
-                        Error(token.SourcePath, token.Line, "array identifier expected");
-                        return false;
-                    }
-                    actualType = GetArrayMemberType(actualType);
-                    if (!IsByteType(actualType))
-                    {
-                        // index *= 2;
-                        TinyCode.Dup(false);
-                        TinyOps.Add(false);
-                    }
-                    TinyCode.PushVariable(name, offset, false, isGlobal);
-                    TinyOps.Add(false);
-                    
-                    TinyCode.ReadMemory(false, IsByteType(actualType));  
+                    Error(token.SourcePath, token.Line, "expected identifier after 'func'");
+                    break;
                 }
             }
             else
             {
-                // variable
-                int  offset;
-                bool isGlobal;
-                if (!GetVariable(name, ref actualType, ref offset, ref isGlobal))
-                {
-                    Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
-                    return false;
-                }
-                if ((token.Type == TokenType.SYM_PLUSPLUS) || (token.Type == TokenType.SYM_MINUSMINUS))
-                {
-                    // i++ or i-- : value before --/++ is used in the expression
-                    TinyCode.Map(token);
-                    TinyScanner.Advance(); // Skip '++' or '--'
-                    TinyCode.PostIncrement(name, offset, IsByteType(actualType), token.Type == TokenType.SYM_PLUSPLUS, isGlobal);
-                }
-                else
-                {
-                    TinyCode.PushVariable(name, offset, IsByteType(actualType), isGlobal);
-                }
+                Error(token.SourcePath, token.Line, "unexpected token in expression: " + TinyToken.ToString(token.Type));
+                break;
             }
+            success = true;
+            break;
         }
-        else if ((token.Type == TokenType.SYM_PLUSPLUS) || (token.Type == TokenType.SYM_MINUSMINUS))
-        {
-            // ++i or --i  : value after --/++ is used in the expression
-            bool inc = token.Type == TokenType.SYM_PLUSPLUS;
-            TinyScanner.Advance(); // Skip '++' or '--'
-            token = TinyScanner.Current();
-            if (token.Type == TokenType.IDENTIFIER)
-            {
-                string name = token.Lexeme;
-                TinyCode.Map(token);
-                TinyScanner.Advance(); // Skip identifier
-                int  offset;
-                bool isGlobal;
-                if (!GetVariable(name, ref actualType, ref offset, ref isGlobal))
-                {
-                    Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
-                    return false;
-                }
-                TinyCode.PreIncrement(name, offset, IsByteType(actualType), inc, isGlobal);
-            }
-            else
-            {
-                Error(token.SourcePath, token.Line, "expected identifier after '++' or '--'");
-                return false;
-            }
-        }
-        else if (token.Type == TokenType.KW_MEM)
-        {
-            TinyScanner.Advance(); // Skip 'func'
-            
-            token = TinyScanner.Current();
-            if (token.Type != TokenType.SYM_LBRACKET)
-            {
-                Error(token.SourcePath, token.Line, "expected '[' after address expression");
-                return false;
-            }
-            TinyScanner.Advance(); // Skip '['
-            
-            string indexType;
-            if (!parseExpression(ref indexType))
-            {
-                return false;
-            }
-            if (!IsIndexType(indexType))
-            {
-                Error(token.SourcePath, token.Line, "integral address type expected");
-                return false;
-            }
-            
-            token = TinyScanner.Current();
-            if (token.Type != TokenType.SYM_RBRACKET)
-            {
-                Error(token.SourcePath, token.Line, "expected ']' after address expression");
-                return false;
-            }
-            TinyScanner.Advance(); // Skip ']'
-            actualType = "byte";
-            
-            TinyCode.ReadMemory(IsByteType(indexType), true);
-        }
-        else if ((token.Type == TokenType.LIT_NUMBER) || (token.Type == TokenType.LIT_CHAR) || (token.Type == TokenType.KW_FALSE) || (token.Type == TokenType.KW_TRUE))
-        {
-            string value;
-            if (!TinyConstant.parseConstantPrimary(ref value, ref actualType))
-            {
-                return false;
-            }
-            switch (actualType)
-            {
-                case "char":
-                {
-                    TinyCode.PushByte(byte(value[0]), "'" + value + "'");
-                }
-                case "bool":
-                {
-                    TinyCode.PushByte((value == "0") ? 0 : 1, (value == "0") ? "false" : "true");
-                }
-                case "int":
-                {
-                    int i;
-                    if (!Int.TryParse(value, ref i))
-                    {
-                        Die(0x0B);
-                    }
-                    uint ui = UInt.FromBytes(i.GetByte(0), i.GetByte(1));
-                    TinyCode.PushWord(ui, "constant");
-                }
-                default:
-                {
-                    uint ui;
-                    if (!UInt.TryParse(value, ref ui))
-                    {
-                        Die(0x0B);
-                    }
-                    if (IsByteType(actualType))
-                    {
-                        TinyCode.PushByte(byte(ui), "constant");
-                    }
-                    else
-                    {
-                        TinyCode.PushWord(ui, "constant");
-                    }
-                }
-            }
-        }
-        else if ((token.Type == TokenType.LIT_STRING) || (token.Type == TokenType.KW_NULL))
-        {
-            actualType = "const char[]";
-            uint index;
-            DefineStringConst(token.Lexeme, ref index);
-            TinyCode.PushConst(index);
-            TinyScanner.Advance(); // Skip literal
-        }
-        else if (token.Type == TokenType.KW_NULL)
-        {
-            actualType = "[]"; // any pointer
-            TinyCode.PushWord(0, "null");   
-            TinyScanner.Advance(); // Skip literal
-        }
-        else if (token.Type == TokenType.SYM_LPAREN)
-        {
-            TinyScanner.Advance(); // Skip '('
-            if (!parseExpression(ref actualType))
-            {
-                return false;
-            }
-            token = TinyScanner.Current();
-            if (token.Type != TokenType.SYM_RPAREN)
-            {
-                Error(token.SourcePath, token.Line, "expected ')' after expression, ('" + token.Lexeme + "') B");
-                return false;
-            }
-            TinyScanner.Advance(); // Skip ')'
-        }
-        else if (token.Type == TokenType.KW_FUNC)
-        {
-            TinyScanner.Advance(); // Skip 'func'
-            token = TinyScanner.Current();
-            if (token.Type == TokenType.IDENTIFIER)
-            {
-                TinyScanner.Advance(); // Skip identifier
-            }
-            else
-            {
-                Error(token.SourcePath, token.Line, "expected identifier after 'func'");
-                return false;
-            }
-        }
-        else
-        {
-            Error(token.SourcePath, token.Line, "unexpected token in expression: " + TinyToken.ToString(token.Type));
-            return false;
-        }
-        return true;
+        return success;
     }
     
     bool parseArgumentList(string functionName, ref byte bytes)

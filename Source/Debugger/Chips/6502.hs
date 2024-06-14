@@ -787,7 +787,7 @@ unit CPU // 6502
     byte GetMemory(uint address)
     {
         byte value;
-        if (!EmulateAppleI && ((address >= ZT0) && (address <= ZT3)))
+        if (/*!EmulateAppleI &&*/ ((address >= ZT0) && (address <= ZT3)))
         {
             if (address == ZT3)
             {

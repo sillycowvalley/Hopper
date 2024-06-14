@@ -10,7 +10,7 @@ namespace HopperNET
 {
     public class Diagnostics
     {
-#if DEBUG
+//#if DEBUG
         static public void ASSERT(bool assertion, string message)
         {
             if (!assertion)
@@ -26,7 +26,7 @@ namespace HopperNET
                 Die(0x0B, runtime);
             }
         }
-#endif
+//#endif
 
         // lastError codes:
         //   0x00 - ok

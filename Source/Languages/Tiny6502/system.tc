@@ -98,10 +98,63 @@ func pinMode(byte pin, byte mode)  // System function to set the mode of a pin
 func I2CWrite(byte address, byte data); // System function to write data via I2C
 func byte I2CRead(byte address);        // System function to read data via I2C
 
-// Timing
-func word[] millis();           // System function to return the address of the zero-page location where the 4-byte millis count is stored as an array of two words
-func delay(word milliseconds); // System function to delay execution for a specified time
 
 // Memory Management
 func byte[] malloc(word size); // System function to allocate memory
 func free(byte[] ptr);         // System function to free allocated memory
+
+// Timing
+func byte[] millis();          // System function to return a 4-byte array of the current millis count
+func delay(word milliseconds); // System function to delay execution for a specified time
+
+func byte[] subLong(byte[] a, byte[] b) {
+    
+    byte[] result = malloc(4);
+    
+    int borrow;
+    
+    // Perform subtraction byte-by-byte with borrow
+    int temp = (a[0] as int) - (b[0] as int) - borrow;
+    result[[0] = (temp & 0xFF) as byte;
+    borrow = (temp < 0) ? 1 : 0;
+    
+    temp = (a[1] as int) - (b[1] as int) - borrow;
+    result[[1] = (temp & 0xFF) as byte;
+    borrow = (temp < 0) ? 1 : 0;
+    
+    temp = (a[2] as int) - (b[2] as int) - borrow;
+    result[[2] = (temp & 0xFF) as byte;
+    borrow = (temp < 0) ? 1 : 0;
+    
+    temp = (a[3] as int) - (b[3] as int) - borrow;
+    result[[3] = (temp & 0xFF) as byte;
+    borrow = (temp < 0) ? 1 : 0;
+    
+    return result;
+}
+func word elapsedMillis(byte[] start)
+{
+    byte[] end = millis();
+    byte[] elapsed = subLong(end, start);
+    word msLow = elapsed[0] + ((elapsed[1] as word) << 8);
+    free(elapsed);
+    free(end);
+    return msLow;
+}
+func word elapsedSeconds(byte[] start)
+{
+    byte[] end = millis();
+    byte[] elapsed = subLong(end, start);
+    word msLow  = elapsed[0] + ((elapsed[1] as word) << 8);
+    word msHigh = elapsed[2] + ((elapsed[3] as word) << 8);
+    free(elapsed);
+    free(end);
+    
+    word secondsLow  = msLow / 1000;
+    word secondsHigh = msHigh / 65; // (65536 / 1000)
+    
+    word seconds = secondsLow + secondsHigh;
+    
+    return seconds;
+}
+

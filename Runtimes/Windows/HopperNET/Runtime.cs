@@ -2825,9 +2825,9 @@ namespace HopperNET
                             pc++;
 
                             ushort bpExpected = (ushort)(sp - operand);
-#if DEBUG
+//#if DEBUG
                             Diagnostics.ASSERTDIE(bpExpected == bp, "stack mismatch on return", this);
-#endif
+//#endif
                         }
                         break;
 

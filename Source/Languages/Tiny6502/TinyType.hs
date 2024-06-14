@@ -167,11 +167,19 @@ unit TinyType
                     }
                     case "int":
                     {
-                        return false; // int as byte requires cast
+                        if (asCast)
+                        {
+                            TinyCode.WordToByte(doUnder, "byte");
+                        }
+                        return asCast; // int as byte requires cast
                     }
                     case "+int":
                     {
-                        return false; // +int as byte requires cast
+                        if (asCast)
+                        {
+                            TinyCode.WordToByte(doUnder, "byte");
+                        }
+                        return asCast; // +int as byte requires cast
                     }
                     case "word":
                     {

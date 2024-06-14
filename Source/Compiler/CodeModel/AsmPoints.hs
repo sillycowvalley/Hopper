@@ -1597,7 +1597,6 @@ unit AsmPoints
                 OpCode opCode0 = iCodes[iIndex];
                 if ((opCode1 == OpCode.PHA) && (opCode0 == OpCode.PLA))
                 {
-                    Print("x");
                     iCodes  [iIndex-1] = OpCode.NOP;
                     iLengths[iIndex-1] = 1;
                     iCodes  [iIndex-0] = OpCode.NOP;

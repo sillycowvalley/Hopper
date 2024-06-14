@@ -251,7 +251,7 @@ unit TinyCompile
         }
         
         string memberType;
-        if (IsArrayType(tp, ref memberType))
+        if (IsArrayType(tp, ref memberType) && (size != 0))
         {
             if (!IsByteType(memberType))
             {
