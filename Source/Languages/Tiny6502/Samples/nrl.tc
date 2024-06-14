@@ -7,6 +7,8 @@ func main() {
     word i;
     word j;
     word s;
+    
+    writeString("\nNRL:\n"); 
 
     // start timing
     byte[] start = millis();
@@ -20,15 +22,13 @@ func main() {
     }
     
     writeWord(s);
-
+    
     // stop timing
-    writeString("\n"); 
-    
     word ms = elapsedMillis(start);
-    writeWord(ms);writeString(" ms\n");        
-    
     word sec = elapsedSeconds(start);
-    writeWord(sec);writeString(" s\n");        
-    
     free(start);
+    
+    writeString("\n"); 
+    writeWord(ms);writeString(" ms\n");        
+    writeWord(sec);writeString(" s\n");        
 }

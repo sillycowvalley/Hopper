@@ -63,8 +63,8 @@ func writeHex(byte value) {
 }
 
 // EEPROM
-func writePage(word address, const byte[] data); // System function to write a page of data to EEPROM
-func readPage(word address, byte[] buffer);      // System function to read a page of data from EEPROM
+func writePage(word address, const byte[] data); // System function to write a page of data to serial EEPROM
+func readPage(word address, byte[] buffer);      // System function to read a page of data from serial EEPROM
 
 // GPIO (Pin) Control
 func pinSet(byte pin, bool value) { // System function to set the value of a pin

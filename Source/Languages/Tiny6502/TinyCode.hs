@@ -6,7 +6,6 @@ unit TinyCode
     file codeFile;
     file mapFile;
     string codePath;
-    string tempCodePath;
     
     uint lastGlobal;
     <string,uint> globalIndex;
@@ -94,9 +93,7 @@ unit TinyCode
         name = name.Replace(extension, "");
         name = name.ToUpper();
         
-        tempCodePath = path.Replace(extension, ".tasm");
-                
-        codeFile = File.Create(tempCodePath);
+        codeFile = File.Create(codePath);
         mapFile = File.Create(mapPath);
         
         PadOut("program " + name, 0);
@@ -110,7 +107,8 @@ unit TinyCode
         PadOut("#define ACIA_6850", 0);
         //PadOut("#define APPLE_I", 0);
         PadOut("",0);
-        PadOut("// PLACEHOLDER",0);
+        //PadOut("// PLACEHOLDER",0);
+        PadOut("uses \"resources.asm\"",0);
         PadOut("",0);
         PadOut("uses \"/Source/Runtime/6502/ZeroPage\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Diagnostics\"", 0);
@@ -155,29 +153,21 @@ unit TinyCode
         codeFile.Flush();
         mapFile.Flush();
         
-        file tfile = File.Open(tempCodePath);
-        file cfile = File.Create(codePath);
-        loop
+        string resourcesPath = "/Debug/Obj/resources.asm";
+        File.Delete(resourcesPath);
+        
+        file cfile = File.Create(resourcesPath);
+        cfile.Append("unit Resources"+ Char.EOL);
+        cfile.Append("{" + Char.EOL);
+        cfile.Append("    const string StrConsts = {");
+        string cstr = GetStringConstants(); 
+        foreach (var c in cstr)
         {
-            string line = tfile.ReadLine();
-            if (!tfile.IsValid()) { break; }
-            if (line.Contains("// PLACEHOLDER"))
-            {
-                cfile.Append("    const string strConsts = {");
-                string cstr = GetStringConstants(); 
-                foreach (var c in cstr)
-                {
-                    cfile.Append("0x" + (byte(c)).ToHexString(2) +", ");
-                }
-                cfile.Append("};" + Char.EOL);
-            }
-            else
-            {
-                cfile.Append(line + Char.EOL);
-            }
+            cfile.Append("0x" + (byte(c)).ToHexString(2) +", ");
         }
+        cfile.Append("};" + Char.EOL);
+        cfile.Append("}" + Char.EOL);
         cfile.Flush();
-        File.Delete(tempCodePath);
     }
     <string> deferred;
     Defer(string content)
@@ -291,9 +281,9 @@ unit TinyCode
     PushConst(uint word)
     {
         PadOut("", 0);
-        PadOut("LDA # ((strConsts + 0x" + (word.GetByte(0)).ToHexString(2) + ") & 0xFF)", 0);
+        PadOut("LDA # ((Resources.StrConsts + 0x" + (word.GetByte(0)).ToHexString(2) + ") & 0xFF)", 0);
         PadOut("PHA", 0);
-        PadOut("LDA # ((strConsts + 0x" + (word.GetByte(1)).ToHexString(2) + "00) >> 8)", 0);
+        PadOut("LDA # ((Resources.StrConsts + 0x" + (word.GetByte(1)).ToHexString(2) + "00) >> 8)", 0);
         PadOut("PHA", 0);
     }
     

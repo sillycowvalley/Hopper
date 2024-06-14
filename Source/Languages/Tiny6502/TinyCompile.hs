@@ -353,12 +353,21 @@ unit TinyCompile
                 // Handle function pointer assignment
                 TinyScanner.Advance(); // Skip '='
                 
-                string exprType;
-                if (!TinyExpression.parseExpression(ref exprType))
+                token = TinyScanner.Current();
+                if (token.Type != TokenType.IDENTIFIER)
                 {
-                    break;
+                    Error(token.SourcePath, token.Line, "expected function name after '=', ('" + token.Lexeme + "')");
+                    return false;
                 }
-        
+    
+                string toFunctionName = token.Lexeme;
+                TinyScanner.Advance(); // Skip function name
+                
+                // TODO : global func pointer
+                // - create global variable of type 'func'
+                // - assign it the word value of the constant Resoures.FunctionName
+                // - add FunctionName to the list of constants to emit to 'resources.asm'
+                
                 token = TinyScanner.Current();
                 if (token.Type != TokenType.SYM_SEMICOLON)
                 {
@@ -367,7 +376,8 @@ unit TinyCompile
                 }
         
                 TinyScanner.Advance(); // Skip ';'
-                //TinyCode.DefineFunctionPointer(name); // TODO: Implement in TinyCode
+                
+                
                 success = true;
                 break;
             }

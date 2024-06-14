@@ -359,8 +359,13 @@ unit TinyStatement
                     return false;
                 }
     
-                string functionName = token.Lexeme;
+                string toFunctionName = token.Lexeme;
                 TinyScanner.Advance(); // Skip function name
+                
+                // TODO : local func pointer
+                // - create local variable of type 'func'
+                // - assign it the word value of the constant Resoures.FunctionName (PopVariable(name, LocalOffset, false, false);)
+                // - add FunctionName to the list of constants to emit to 'resources.asm'
     
                 token = TinyScanner.Current();
                 if (token.Type != TokenType.SYM_SEMICOLON)
@@ -368,8 +373,6 @@ unit TinyStatement
                     Error(token.SourcePath, token.Line, "expected ';' after function pointer assignment, ('" + token.Lexeme + "')");
                     return false;
                 }
-    
-                //TinyCode.DefineLocalFunctionPointer(tp, name, functionName); // TODO: Implement in TinyCode
             }
             else
             {

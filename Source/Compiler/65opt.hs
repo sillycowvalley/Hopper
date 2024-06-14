@@ -312,7 +312,15 @@ program Optimize
                 {
                     modified = true;
                 }
+                if (AsmPoints.OptimizeTrip())
+                {
+                    modified = true;
+                }
                 if (AsmPoints.OptimizeQuad())
+                {
+                    modified = true;
+                }
+                if (AsmPoints.OptimizeSextet())
                 {
                     modified = true;
                 }
