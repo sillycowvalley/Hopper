@@ -4,10 +4,12 @@ const byte OUTPUT = 1;
 const byte INPUT_PULLUP = 2;
 
 // assuming the W65C22 VIA for now:
-const byte PORTB                = 0xF0;
-const byte PORTA                = 0xF1;
-const byte DDRB                 = 0xF2;
-const byte DDRA                 = 0xF3;
+const byte PORTB = 0xF0;
+const byte PORTA = 0xF1;
+const byte DDRB = 0xF2;
+const byte DDRA = 0xF3;
+
+const char[] hexChars = "0123456789ABCDEF";
 
 // Serial Communication
 func writeChar(char c); // System function to write a single character
@@ -40,9 +42,7 @@ func writeWord(word num) {
 }
 
 func writeInt(int num) {
-
-    if (num < 0)
-    {
+    if (num < 0) {
         num = -num;
         writeChar('-');
     }
@@ -50,45 +50,62 @@ func writeInt(int num) {
     writeWord(w);
 }
 
+func writeHex(byte value) {
+    // Function to write a byte as two hexadecimal characters
+    
+    // Write the high nibble
+    byte highNibble = (value >> 4) & 0x0F;
+    writeChar(hexChars[highNibble]);
+    
+    // Write the low nibble
+    byte lowNibble = value & 0x0F;
+    writeChar(hexChars[lowNibble]);
+}
+
 // EEPROM
 func writePage(word address, const byte[] data); // System function to write a page of data to EEPROM
 func readPage(word address, byte[] buffer);      // System function to read a page of data from EEPROM
 
 // GPIO (Pin) Control
-func pinSet(byte pin, bool value)  // System function to set the value of a pin
-{
+func pinSet(byte pin, bool value) { // System function to set the value of a pin
     byte port;
-    if (pin <= 7) { port = PORTA; } else { port = PORTB; }
-    pin = 1 << (pin & 0x07);
-    if (value)
-    {
-        mem[[port] = (mem[port] | pin);
+    if (pin <= 7) {
+        port = PORTA;
+    } else {
+        port = PORTB;
     }
-    else
-    {
+    pin = 1 << (pin & 0x07);
+    if (value) {
+        mem[[port] = (mem[port] | pin);
+    } else {
         mem[[port] = (mem[port] & ~pin);
     }
 }
-func bool pinRead(byte pin)        // System function to read the value of a pin
-{
+
+func bool pinRead(byte pin) { // System function to read the value of a pin
     byte port;
-    if (pin <= 7) { port = PORTA; } else { port = PORTB; }
+    if (pin <= 7) {
+        port = PORTA;
+    } else {
+        port = PORTB;
+    }
     pin = 1 << (pin & 0x07);
     return ((mem[port] & pin) != 0);
 }
-func pinMode(byte pin, byte mode)  // System function to set the mode of a pin
-{
+
+func pinMode(byte pin, byte mode) { // System function to set the mode of a pin
     byte ddr;
-    if (pin <= 7) { ddr = DDRA; } else { ddr = DDRB; }
+    if (pin <= 7) {
+        ddr = DDRA;
+    } else {
+        ddr = DDRB;
+    }
     pin = pin & 0x07;
     pin = 1 << pin;
     byte currentValue = mem[ddr];
-    if (mode == INPUT)
-    {
+    if (mode == INPUT) {
         currentValue = currentValue & ~pin;
-    }
-    else
-    {
+    } else {
         currentValue = currentValue | pin;
     }
     mem[[ddr] = currentValue;
@@ -98,7 +115,6 @@ func pinMode(byte pin, byte mode)  // System function to set the mode of a pin
 func I2CWrite(byte address, byte data); // System function to write data via I2C
 func byte I2CRead(byte address);        // System function to read data via I2C
 
-
 // Memory Management
 func byte[] malloc(word size); // System function to allocate memory
 func free(byte[] ptr);         // System function to free allocated memory
@@ -107,33 +123,32 @@ func free(byte[] ptr);         // System function to free allocated memory
 func byte[] millis();          // System function to return a 4-byte array of the current millis count
 func delay(word milliseconds); // System function to delay execution for a specified time
 
+// Subtraction function for two byte arrays representing longs
 func byte[] subLong(byte[] a, byte[] b) {
-    
     byte[] result = malloc(4);
-    
-    int borrow;
-    
+    int borrow = 0;
+
     // Perform subtraction byte-by-byte with borrow
     int temp = (a[0] as int) - (b[0] as int) - borrow;
     result[[0] = (temp & 0xFF) as byte;
     borrow = (temp < 0) ? 1 : 0;
-    
+
     temp = (a[1] as int) - (b[1] as int) - borrow;
     result[[1] = (temp & 0xFF) as byte;
     borrow = (temp < 0) ? 1 : 0;
-    
+
     temp = (a[2] as int) - (b[2] as int) - borrow;
     result[[2] = (temp & 0xFF) as byte;
     borrow = (temp < 0) ? 1 : 0;
-    
+
     temp = (a[3] as int) - (b[3] as int) - borrow;
     result[[3] = (temp & 0xFF) as byte;
     borrow = (temp < 0) ? 1 : 0;
-    
+
     return result;
 }
-func word elapsedMillis(byte[] start)
-{
+
+func word elapsedMillis(byte[] start) {
     byte[] end = millis();
     byte[] elapsed = subLong(end, start);
     word msLow = elapsed[0] + ((elapsed[1] as word) << 8);
@@ -141,20 +156,21 @@ func word elapsedMillis(byte[] start)
     free(end);
     return msLow;
 }
-func word elapsedSeconds(byte[] start)
-{
+
+func word elapsedSeconds(byte[] start) {
     byte[] end = millis();
     byte[] elapsed = subLong(end, start);
     word msLow  = elapsed[0] + ((elapsed[1] as word) << 8);
     word msHigh = elapsed[2] + ((elapsed[3] as word) << 8);
     free(elapsed);
     free(end);
-    
+
+    // Convert msHigh to seconds and add to msLow converted to seconds
+    word secondsHigh = msHigh / 1000;
     word secondsLow  = msLow / 1000;
-    word secondsHigh = msHigh / 65; // (65536 / 1000)
-    
+
     word seconds = secondsLow + secondsHigh;
-    
+
     return seconds;
 }
 

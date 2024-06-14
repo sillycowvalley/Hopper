@@ -9,7 +9,7 @@ func main() {
     word s;
 
     // start timing
-    word[] start = millis();
+    byte[] start = millis();
 
     for (i = 1; i <= 10; i++) {
         s = 0;
@@ -22,8 +22,13 @@ func main() {
     writeWord(s);
 
     // stop timing
-    word[] end = millis();
-    word ms = end[0] - start[0]; // LSW only
-    writeWord(ms);
-    writeString("ms\n");
+    writeString("\n"); 
+    
+    word ms = elapsedMillis(start);
+    writeWord(ms);writeString(" ms\n");        
+    
+    word sec = elapsedSeconds(start);
+    writeWord(sec);writeString(" s\n");        
+    
+    free(start);
 }
