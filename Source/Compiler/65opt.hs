@@ -301,10 +301,18 @@ program Optimize
                 modified = true;
             }
             
-            if (IsTiny6502)
+            if (IsTiny6502 && (pass > 1))
             {
                 // start with peephole style optimizations
                 if (AsmPoints.OptimizePeep())
+                {
+                    modified = true;
+                }
+                if (AsmPoints.OptimizeOver())
+                {
+                    modified = true;
+                }
+                if (AsmPoints.OptimizeQuad())
                 {
                     modified = true;
                 }
@@ -325,9 +333,6 @@ program Optimize
             // 2. CMP #0 after LDA, LDX, LDY, INC, INX, INY, DEC, DEX, DEY, INA, DEA, AND, ORA, EOR, ASL, LSR, ROL, 
             //              ROR, PLA, PLX, PLY, SBC, ADC, TAX, TXA, TAY, TYA, and TSX
             // is redundant if checking Z or V. They all set the Z and V flags. C is a different story.
-            
-            
-            
             
             if (pass > 0) // allow inlining to happen first
             {

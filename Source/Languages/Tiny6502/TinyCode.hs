@@ -513,10 +513,10 @@ unit TinyCode
         if (!isByte)
         {
             PadOut("PLA", 0);
-            PadOut("STA TOPH", 0);
+            PadOut("STA ZP.TOPH", 0);
         }
         PadOut("PLA", 0);
-        PadOut("STA TOPL", 0);
+        PadOut("STA ZP.TOPL", 0);
     }
     
     PostIncrement(string name, int offset, bool isByte, bool inc, bool isGlobal) // i++
@@ -655,15 +655,15 @@ unit TinyCode
         else
         {
             PadOut("PLA", 0);        
-            PadOut("STA TOPH", 0);        
+            PadOut("STA ZP.TOPH", 0);        
             PadOut("PLA", 0);        
-            PadOut("STA TOPL", 0);
-            PadOut("LDA [TOP]", 0);
+            PadOut("STA ZP.TOPL", 0);
+            PadOut("LDA [ZP.TOP]", 0);
             PadOut("PHA", 0);
             if (!dataIsByte)
             {
                 PadOut("LDX # 1", 0); 
-                PadOut("LDA [TOP], X", 0);
+                PadOut("LDA [ZP.TOP], X", 0);
                 PadOut("PHA", 0);
             }
         }
@@ -677,7 +677,7 @@ unit TinyCode
             if (!dataIsByte)
             {
                 PadOut("PLA", 0); 
-                PadOut("STA ACCH", 0);     
+                PadOut("STA ZP.ACCH", 0);     
             }   
             PadOut("PLA", 0); 
             PadOut("PLX", 0);
@@ -685,7 +685,7 @@ unit TinyCode
             if (!dataIsByte)
             {
                 PadOut("INX", 0); 
-                PadOut("LDA ACCH", 0);     
+                PadOut("LDA ZP.ACCH", 0);     
                 PadOut("STA 0x00, X", 0);
             }   
         } 
@@ -694,21 +694,21 @@ unit TinyCode
             if (!dataIsByte)
             {
                 PadOut("PLA", 0); 
-                PadOut("STA ACCH", 0);     
+                PadOut("STA ZP.ACCH", 0);     
             }   
             PadOut("PLA", 0); 
-            PadOut("STA ACCL", 0);     
+            PadOut("STA ZP.ACCL", 0);     
             PadOut("PLA", 0);        
-            PadOut("STA TOPH", 0);        
+            PadOut("STA ZP.TOPH", 0);        
             PadOut("PLA", 0);        
-            PadOut("STA TOPL", 0);
-            PadOut("LDA ACCL", 0);        
-            PadOut("STA [TOP]", 0);
+            PadOut("STA ZP.TOPL", 0);
+            PadOut("LDA ZP.ACCL", 0);        
+            PadOut("STA [ZP.TOP]", 0);
             if (!dataIsByte)
             {
-                PadOut("LDA ACCH", 0);     
+                PadOut("LDA ZP.ACCH", 0);     
                 PadOut("LDX # 1", 0); 
-                PadOut("LDA [TOP], X", 0);
+                PadOut("LDA [ZP.TOP], X", 0);
             }
         }
     }

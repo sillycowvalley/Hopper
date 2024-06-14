@@ -371,13 +371,13 @@ unit TinyOps
         TinyCode.PadOut("", 0);
         TinyCode.PadOut("// " + comment, 0);
         PopTopNext(isByte);
-        TinyCode.PadOut("LDA NEXTL", 0);
-        TinyCode.PadOut("ORA TOPL", 0);
+        TinyCode.PadOut("LDA ZP.NEXTL", 0);
+        TinyCode.PadOut("ORA ZP.TOPL", 0);
         TinyCode.PadOut("PHA", 0);
         if (!isByte)
         {
-            TinyCode.PadOut("LDA NEXTH", 0);
-            TinyCode.PadOut("ORA TOPH", 0);
+            TinyCode.PadOut("LDA ZP.NEXTH", 0);
+            TinyCode.PadOut("ORA ZP.TOPH", 0);
             TinyCode.PadOut("PHA", 0);
         }
     }        
@@ -386,13 +386,13 @@ unit TinyOps
         TinyCode.PadOut("", 0);
         TinyCode.PadOut("// " + comment, 0);
         PopTopNext(isByte);
-        TinyCode.PadOut("LDA NEXTL", 0);
-        TinyCode.PadOut("AND TOPL", 0);
+        TinyCode.PadOut("LDA ZP.NEXTL", 0);
+        TinyCode.PadOut("AND ZP.TOPL", 0);
         TinyCode.PadOut("PHA", 0);
         if (!isByte)
         {
-            TinyCode.PadOut("LDA NEXTH", 0);
-            TinyCode.PadOut("AND TOPH", 0);
+            TinyCode.PadOut("LDA ZP.NEXTH", 0);
+            TinyCode.PadOut("AND ZP.TOPH", 0);
             TinyCode.PadOut("PHA", 0);
         }
     }
@@ -401,13 +401,13 @@ unit TinyOps
         TinyCode.PadOut("", 0);
         TinyCode.PadOut("// " + comment, 0);
         PopTopNext(isByte);
-        TinyCode.PadOut("LDA NEXTL", 0);
-        TinyCode.PadOut("EOR TOPL", 0);
+        TinyCode.PadOut("LDA ZP.NEXTL", 0);
+        TinyCode.PadOut("EOR ZP.TOPL", 0);
         TinyCode.PadOut("PHA", 0);
         if (!isByte)
         {
-            TinyCode.PadOut("LDA NEXTH", 0);
-            TinyCode.PadOut("EOR TOPH", 0);
+            TinyCode.PadOut("LDA ZP.NEXTH", 0);
+            TinyCode.PadOut("EOR ZP.TOPH", 0);
             TinyCode.PadOut("PHA", 0);
         }
     }

@@ -37,14 +37,13 @@ func main() {
         }
     }
 
+    word ms = elapsedMillis(start);
+    word sec = elapsedSeconds(start);
+    free(start);
+    
     writeString("Done.\n");
     writeWord(count);
-    writeString(" primes\n");
-
-    writeString("\n"); 
-    word ms = elapsedMillis(start);
+    writeString(" primes\n\n");
     writeWord(ms);writeString(" ms\n");        
-    word sec = elapsedSeconds(start);
     writeWord(sec);writeString(" s\n");        
-    free(start);
 }

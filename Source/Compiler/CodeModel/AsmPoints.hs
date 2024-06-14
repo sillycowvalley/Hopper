@@ -104,6 +104,7 @@ unit AsmPoints
                 case OpCode.LDA_nn:
                 case OpCode.PLA:
                 case OpCode.LDA_z:
+                case OpCode.LDA_iz:
                 {
                     walkStats |= WalkStats.WriteA;
                 }
@@ -375,6 +376,10 @@ unit AsmPoints
         }
         return success;
     }       
+    bool WithinShortJumpLimit(long offset)
+    {
+        return (offset >= -126) && (offset <= 125);
+    }
     
     uint GetInstructionAddress(uint seekIndex)
     {
@@ -685,7 +690,7 @@ unit AsmPoints
                         long offset = jumpAddress - currentAddress - instructionLength;
                         if ((offset < -128) || (offset > 127))
                         {
-                            PrintLn("Bad Jump:  " + offset.ToString());
+                            PrintLn("Bad Jump:  " + offset.ToString() + ", currentMethod=" + currentMethod.ToHexString(4) + ", address=" + (code.Count).ToString());
                             Die(0x0B);
                         }
                         if (offset < 0)
@@ -949,7 +954,7 @@ unit AsmPoints
                 long myAddress     = GetInstructionAddress(iIndex);
                 long targetAddress = GetInstructionAddress(iOperands[iIndex]);
                 long offset = myAddress - targetAddress;
-                if ((offset >= -127) && (offset <= 127))
+                if (WithinShortJumpLimit(offset))
                 {
                     opCode = opcodeBRA;
                     iCodes.SetItem(iIndex, opCode);
@@ -1176,7 +1181,7 @@ unit AsmPoints
                         uint addressJ = indexToAddress[iOperands[iIndex-0]];
                         
                         long distance = long(addressJ) - long(address0);
-                        if ((distance > -128) && (distance < 127)) 
+                        if (WithinShortJumpLimit(distance))
                         {
                             // even if all the instructions inbetween are 3 bytes long,
                             // this is still within range for the conditional relative offset
@@ -1307,7 +1312,7 @@ unit AsmPoints
                         // also allow conditional for the second branch: same conditions for both?
                         uint instructionLength = Asm6502.GetInstructionLength(opCode0);
                         long offset = targetAddress - (myAddress+instructionLength);
-                        if ((offset >= -128) && (offset <= 127))
+                        if (WithinShortJumpLimit(offset))
                         {
                             iOperands.SetItem(iIndex, iTarget1);
                             modified = true;
@@ -1609,6 +1614,14 @@ unit AsmPoints
                     iLengths[iIndex-0] = 1;
                     modified = true;
                 }
+                if ((opCode1 == OpCode.PHA) && (opCode0 == OpCode.PLY))
+                {
+                    iCodes  [iIndex-1] = OpCode.TAY;
+                    iLengths[iIndex-1] = 1;
+                    iCodes  [iIndex-0] = OpCode.NOP;
+                    iLengths[iIndex-0] = 1;
+                    modified = true;
+                }
                 if ((opCode1 == OpCode.LDA_z) && (opCode0 == OpCode.TAX))
                 {
                     if (WalkAhead(iIndex+1, WalkStats.WriteA | WalkStats.Exit | WalkStats.CallRet, WalkStats.ReadA, 20))
@@ -1618,9 +1631,99 @@ unit AsmPoints
                         iLengths[iIndex-0] = 1;
                         modified = true;
                     }
-                    else
+                }
+                if ((opCode1 == OpCode.LDA_z) && (opCode0 == OpCode.STA_z) && (iOperands[iIndex-1] == iOperands[iIndex-0]))
+                {
+                    if (WalkAhead(iIndex+1, WalkStats.WriteA | WalkStats.Exit | WalkStats.CallRet, WalkStats.ReadA, 20))
                     {
-                        WalkVerbose(iIndex+1, WalkStats.WriteA | WalkStats.Exit | WalkStats.CallRet, WalkStats.ReadA, 20);
+                        iCodes  [iIndex-1] = OpCode.NOP;
+                        iLengths[iIndex-1] = 1;
+                        iCodes  [iIndex-0] = OpCode.NOP;
+                        iLengths[iIndex-0] = 1;
+                        modified = true;
+                    }
+                }
+            }
+            iIndex++;
+        } // loop
+        return modified;
+    }
+    bool OptimizeOver()
+    {
+        if (iCodes.Count < 5)
+        {
+            return false;
+        }
+        bool modified = false;
+        uint iIndex = 4;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            if (!IsTargetOfJumps(iIndex-3) && !IsTargetOfJumps(iIndex-2) && !IsTargetOfJumps(iIndex-1) && !IsTargetOfJumps(iIndex))
+            {
+                OpCode opCode4 = iCodes[iIndex-4];
+                OpCode opCode3 = iCodes[iIndex-3];
+                OpCode opCode2 = iCodes[iIndex-2];
+                OpCode opCode1 = iCodes[iIndex-1];
+                OpCode opCode0 = iCodes[iIndex];
+                
+                // 5 instructions
+                if ((opCode4 == OpCode.PHA) && (opCode3 == OpCode.LDA_n) && (opCode2 == OpCode.STA_z) && (opCode1 == OpCode.PLA) && (opCode0 == OpCode.STA_z))
+                {
+                    iCodes   [iIndex-4] = OpCode.STA_z;
+                    iOperands[iIndex-4] = iOperands[iIndex-0];
+                    iLengths [iIndex-4] = 2;
+                    
+                    iCodes  [iIndex-1] = OpCode.NOP;
+                    iLengths[iIndex-1] = 1;
+                    iCodes  [iIndex-0] = OpCode.NOP;
+                    iLengths[iIndex-0] = 1;
+                    modified = true;
+                }
+            }
+            iIndex++;
+        } // loop
+        return modified;
+    }
+    bool OptimizeQuad()
+    {
+        if (iCodes.Count < 4)
+        {
+            return false;
+        }
+        bool modified = false;
+        uint iIndex = 3;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            if (!IsTargetOfJumps(iIndex-2) && !IsTargetOfJumps(iIndex-1) && !IsTargetOfJumps(iIndex))
+            {
+                OpCode opCode3 = iCodes[iIndex-3];
+                OpCode opCode2 = iCodes[iIndex-2];
+                OpCode opCode1 = iCodes[iIndex-1];
+                OpCode opCode0 = iCodes[iIndex];
+                
+                // 4 instructions
+                if ((opCode3 == OpCode.LDA_z) && (opCode2 == OpCode.SEC) && (opCode1 == OpCode.SBC_n) && (opCode0 == OpCode.TAX)
+                                                                         && (iOperands[iIndex-1] == 0x02)
+                   )
+                {
+                    if (WalkAhead(iIndex+1, WalkStats.WriteA | WalkStats.Exit | WalkStats.CallRet, WalkStats.ReadA, 20))
+                    {
+                        iCodes   [iIndex-3] = OpCode.LDX_z;
+                        iCodes  [iIndex-2] = OpCode.DEX;
+                        iLengths[iIndex-2] = 1;
+                        iCodes  [iIndex-1] = OpCode.DEX;
+                        iLengths[iIndex-1] = 1;
+                        iCodes  [iIndex-0] = OpCode.NOP;
+                        iLengths[iIndex-0] = 1;
+                        modified = true;
                     }
                 }
             }
