@@ -26,8 +26,6 @@ unit TinyCompile
             TinyConstant.EnterBlock();
             TinySymbols.EnterBlock(true, "program");
             
-            TinyCode.Uses();
-            
             if (!parseProgram())
             {
                 break;
@@ -60,6 +58,7 @@ unit TinyCompile
     {
         bool success = true;
         Token token;
+        bool usesDone;
         
         loop
         {
@@ -82,10 +81,20 @@ unit TinyCompile
                 case TokenType.KW_INT:
                 case TokenType.KW_UINT:
                 {
+                    if (!usesDone)
+                    {
+                        TinyCode.Uses();
+                        usesDone = true;
+                    }
                     success = parseGlobalVar();
                 }
                 case TokenType.KW_FUNC:
                 {
+                    if (!usesDone)
+                    {
+                        TinyCode.Uses();
+                        usesDone = true;
+                    }
                     success = parseFunction();
                 }
                 case TokenType.SYM_HASH:
@@ -190,6 +199,11 @@ unit TinyCompile
         if (token.Type != TokenType.IDENTIFIER)
         {
             Error(token.SourcePath, token.Line, "preprocessor symbol identifier expected");
+            return false;
+        }
+        if ((token.Lexeme == "CPU_6502") || (token.Lexeme == "CPU_65UINO"))
+        {
+            Error(token.SourcePath, token.Line, "Tiny6502 only supports CPU_65C02S");
             return false;
         }
         DefineSymbol(token.Lexeme);

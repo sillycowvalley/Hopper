@@ -241,11 +241,16 @@ unit BuildCommand
             }
             if (isTiny6502) // set by source being ".tc"
             {
-                if ((cpuArchitecture != CPUArchitecture.W65C02) && (cpuArchitecture != CPUArchitecture.M6502))
+                if (cpuArchitecture == CPUArchitecture.M6502)
                 {
-                    Editor.SetStatusBarText("#define CPU_6502 or CPU_65C02S for '.tc' projects");
+                    Editor.SetStatusBarText("'.tc' projects only support CPU_65C02S, not CPU_65UINO or CPU_6502");
                     break;
                 }
+                //if ((cpuArchitecture != CPUArchitecture.W65C02) && (cpuArchitecture != CPUArchitecture.M6502))
+                //{
+                //    Editor.SetStatusBarText("#define CPU_6502 or CPU_65C02S for '.tc' projects");
+                //    break;
+                //}
             }
             else if (isAssembly) // set by source being ".asm"
             {

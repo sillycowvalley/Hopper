@@ -822,13 +822,15 @@ unit TinyExpression
                     } // []
                     else
                     {
+                        uint   literalValue;
+                        string literalComment = "const " + name;
                         if (actualType == "const bool")
                         {
-                            PushByte((constantValue == "true" ? 1 : 0), "const " + name);
+                            literalValue = (constantValue == "true" ? 1 : 0);
                         }
                         else if (actualType == "const char")
                         {
-                            PushByte(byte(constantValue[0]), "const " + name);
+                            literalValue = byte(constantValue[0]);
                         }
                         else if (actualType == "const int")
                         {
@@ -837,23 +839,23 @@ unit TinyExpression
                             {
                                 Die(0x0B);
                             }
-                            PushWord(UInt.FromBytes(value.GetByte(0), value.GetByte(1)), "const " + name);
+                            literalValue = UInt.FromBytes(value.GetByte(0), value.GetByte(1));
                         }
                         else
                         {
-                            uint value;
-                            if (!UInt.TryParse(constantValue, ref value))
+                            if (!UInt.TryParse(constantValue, ref literalValue))
                             {
                                 Die(0x0B);
                             }
-                            if (IsByteType(actualType))
-                            {
-                                PushByte(value.GetByte(0), "const " + name);
-                            }
-                            else
-                            {
-                                PushWord(value, "const " + name);
-                            }
+                        }
+                        
+                        if (IsByteType(actualType))
+                        {
+                            PushByte(literalValue.GetByte(0), literalComment);
+                        }
+                        else
+                        {
+                            PushWord(literalValue, literalComment);
                         }
                     }
                     success = true;

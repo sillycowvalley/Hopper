@@ -101,13 +101,21 @@ unit TinyCode
     Uses()
     {
         PadOut("#define TINY6502", 0);
+        if (!IsDefined("CPU_65C02S"))
+        {
+            PadOut("#define CPU_65C02S", 0);
+        }
+        if (!IsDefined("ROM_32K") && !IsDefined("ROM_16K") && !IsDefined("ROM_8K") && !IsDefined("ROM_4K") && !IsDefined("ROM_1K"))
+        {
+            PadOut("#define ROM_32K", 0);
+        }
         PadOut("#define W65C22_VIA", 0);
+        if (!IsDefined("ACIA_6850") && !IsDefined("APPLE_I"))
+        {
+            PadOut("#define ACIA_6850", 0);
+        }
         
-        
-        PadOut("#define ACIA_6850", 0);
-        //PadOut("#define APPLE_I", 0);
         PadOut("",0);
-        //PadOut("// PLACEHOLDER",0);
         PadOut("uses \"resources.asm\"",0);
         PadOut("",0);
         PadOut("uses \"/Source/Runtime/6502/ZeroPage\"", 0);
