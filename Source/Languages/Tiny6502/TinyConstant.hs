@@ -393,6 +393,7 @@ unit TinyConstant
                     Error(token.SourcePath, token.Line, "integer constant out of range, ('" + token.Lexeme + "')");
                     return false;
                 }
+                value = "-" + value;
             }
             else if (op == "!")
             {

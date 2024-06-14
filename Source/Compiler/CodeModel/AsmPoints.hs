@@ -118,6 +118,11 @@ unit AsmPoints
                 {
                     walkStats |= WalkStats.WriteY;
                 }
+                case OpCode.LDA_nnX:
+                {
+                    walkStats |= WalkStats.WriteA;
+                    walkStats |= WalkStats.ReadX;
+                }
                 
                 // Read:
                 case OpCode.STA_nn:
@@ -144,6 +149,7 @@ unit AsmPoints
                 case OpCode.STX_z:
                 case OpCode.PHX:
                 case OpCode.CPX_n:
+                case OpCode.DEC_nnX:
                 {
                     walkStats |= WalkStats.ReadX;
                 }
@@ -1602,6 +1608,20 @@ unit AsmPoints
                     iCodes  [iIndex-0] = OpCode.NOP;
                     iLengths[iIndex-0] = 1;
                     modified = true;
+                }
+                if ((opCode1 == OpCode.LDA_z) && (opCode0 == OpCode.TAX))
+                {
+                    if (WalkAhead(iIndex+1, WalkStats.WriteA | WalkStats.Exit | WalkStats.CallRet, WalkStats.ReadA, 20))
+                    {
+                        iCodes  [iIndex-1] = OpCode.LDX_z;
+                        iCodes  [iIndex-0] = OpCode.NOP;
+                        iLengths[iIndex-0] = 1;
+                        modified = true;
+                    }
+                    else
+                    {
+                        WalkVerbose(iIndex+1, WalkStats.WriteA | WalkStats.Exit | WalkStats.CallRet, WalkStats.ReadA, 20);
+                    }
                 }
             }
             iIndex++;

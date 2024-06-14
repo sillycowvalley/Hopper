@@ -3,7 +3,7 @@
 
 #include "../system.tc"
 
-const word SIZEPL = 200; // 8191;
+const word SIZEPL = 8191;
 bool[SIZEPL] flagsGlobal;
 
 
@@ -13,12 +13,12 @@ func main() {
     word k;
     word count;
     word iter;
-
-    writeString("1 iterations\n");
+    
+    writeString("\n10 iterations\n");
 
     byte[] start = millis();
     
-    for (iter = 1; iter <= 1; iter++) {
+    for (iter = 1; iter <= 10; iter++) {
         count = 0; 
         
         for (i = 0; i < SIZEPL; i++) {

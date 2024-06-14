@@ -107,8 +107,8 @@ unit TinyCode
         PadOut("#define W65C22_VIA", 0);
         
         
-        //PadOut("#define ACIA_6850", 0);
-        PadOut("#define APPLE_I", 0);
+        PadOut("#define ACIA_6850", 0);
+        //PadOut("#define APPLE_I", 0);
         PadOut("",0);
         PadOut("// PLACEHOLDER",0);
         PadOut("",0);

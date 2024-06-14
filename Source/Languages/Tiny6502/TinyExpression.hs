@@ -819,6 +819,42 @@ unit TinyExpression
                             _ = UInt.TryParse(constantValue, ref address);
                             TinyCode.PushConst(address);
                         }
+                    } // []
+                    else
+                    {
+                        if (actualType == "const bool")
+                        {
+                            PushByte((constantValue == "true" ? 1 : 0), "const " + name);
+                        }
+                        else if (actualType == "const char")
+                        {
+                            PushByte(byte(constantValue[0]), "const " + name);
+                        }
+                        else if (actualType == "const int")
+                        {
+                            int value;
+                            if (!Int.TryParse(constantValue, ref value))
+                            {
+                                Die(0x0B);
+                            }
+                            PushWord(UInt.FromBytes(value.GetByte(0), value.GetByte(1)), "const " + name);
+                        }
+                        else
+                        {
+                            uint value;
+                            if (!UInt.TryParse(constantValue, ref value))
+                            {
+                                Die(0x0B);
+                            }
+                            if (IsByteType(actualType))
+                            {
+                                PushByte(value.GetByte(0), "const " + name);
+                            }
+                            else
+                            {
+                                PushWord(value, "const " + name);
+                            }
+                        }
                     }
                     success = true;
                     break;
