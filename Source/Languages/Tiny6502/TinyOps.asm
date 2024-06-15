@@ -71,24 +71,6 @@ unit TinyOps
         // result in X
     }
     
-    Add16()
-    {
-        // arguments in NEXT and TOP
-        
-        // + 16-bit
-
-        CLC // Clear Carry Flag
-        LDA ZP.NEXTL
-        ADC ZP.TOPL
-        STA ZP.TOPL
-
-        LDA ZP.NEXTH
-        ADC ZP.TOPH
-        STA ZP.TOPH
-        
-        // result in TOP
-    }
-    
     Sub16()
     {
         // arguments in NEXT and TOP

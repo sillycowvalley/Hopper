@@ -14,13 +14,18 @@ program Sieve
     
     bool[size] flagsGlobal;
     
-    uint Sieve()
+    Hopper()
     {
+        IO.WriteLn();
+        IO.WriteLn((uint(iterations)).ToString() + " iterations");
+        
         uint i; 
         uint k;
         uint prime;
         uint count;
         uint iter = iterations;
+        
+        uint start = Time.Seconds;
         
         for (iter = 1; iter <= iterations; iter ++)
         {
@@ -45,24 +50,11 @@ program Sieve
                 }
             }
         }
-        return count;
-    }
-    
-    Hopper()
-    {
-        IO.WriteLn();
-        IO.WriteLn((uint(iterations)).ToString() + " iterations");
         
-        //long start  = Time.Millis;
-        uint start = Time.Seconds;
-        uint result = Sieve();
-        //long elapsed = Time.Millis - start;
-        //float seconds = elapsed / 1000.0;
-        uint seconds = Time.Seconds - start;
-        
+        uint elapsed = Time.Seconds - start;
         
         IO.WriteLn("Done.");
-        IO.WriteLn(result.ToString() + " primes");
-        IO.WriteLn(seconds.ToString() + " " + " seconds");
+        IO.WriteLn(count.ToString() + " primes");
+        IO.WriteLn(elapsed.ToString() + " " + " seconds");
     }
 }

@@ -1772,6 +1772,73 @@ unit AsmPoints
         } // loop
         return modified;
     }
+    
+    bool OptimizeDozen()
+    {
+        if (iCodes.Count < 12)
+        {
+            return false;
+        }
+        bool modified = false;
+        uint iIndex = 11;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            
+            // 'i++' optimization
+            if (!IsTargetOfJumps(iIndex-10) && !IsTargetOfJumps(iIndex-9) && !IsTargetOfJumps(iIndex-8))
+            {
+                OpCode opCode11 = iCodes[iIndex-11];
+                OpCode opCode10 = iCodes[iIndex-10];
+                OpCode opCode9 = iCodes[iIndex-9];
+                OpCode opCode8 = iCodes[iIndex-8];
+                if (!IsTargetOfJumps(iIndex-7) && !IsTargetOfJumps(iIndex-6) && !IsTargetOfJumps(iIndex-5) && !IsTargetOfJumps(iIndex-4) &&
+                    (opCode11 == OpCode.LDA_nnX) && (opCode10 == OpCode.PHA) && (opCode9 == OpCode.INX) && (opCode8 == OpCode.LDA_nnX)
+                   )
+                {
+                    OpCode opCode7 = iCodes[iIndex-7];
+                    OpCode opCode6 = iCodes[iIndex-6];
+                    OpCode opCode5 = iCodes[iIndex-5];
+                    OpCode opCode4 = iCodes[iIndex-4];
+                    if (!IsTargetOfJumps(iIndex-3) && !IsTargetOfJumps(iIndex-2) /* && !IsTargetOfJumps(iIndex-1) */ && !IsTargetOfJumps(iIndex-0)  &&
+                        (opCode7 == OpCode.PHA) && (opCode6 == OpCode.DEX) && (opCode5 == OpCode.INC_nnX) && (opCode4 == OpCode.BNE_e)
+                       )
+                    {
+                        OpCode opCode3 = iCodes[iIndex-3];
+                        OpCode opCode2 = iCodes[iIndex-2];
+                        OpCode opCode1 = iCodes[iIndex-1];
+                        OpCode opCode0 = iCodes[iIndex];
+                        if ((opCode3 == OpCode.DEX) && (opCode2 == OpCode.INC_nnX) && (opCode1 == OpCode.PLY) && (opCode0 == OpCode.PLY))
+                        {
+                            iCodes  [iIndex-11] = OpCode.NOP;
+                            iLengths[iIndex-11] = 1;
+                            iCodes  [iIndex-10] = OpCode.NOP;
+                            iLengths[iIndex-10] = 1;
+                            iCodes  [iIndex-9] = OpCode.NOP;
+                            iLengths[iIndex-9] = 1;
+                            iCodes  [iIndex-8] = OpCode.NOP;
+                            iLengths[iIndex-8] = 1;
+                            iCodes  [iIndex-7] = OpCode.NOP;
+                            iLengths[iIndex-7] = 1;
+                            iCodes  [iIndex-6] = OpCode.NOP;
+                            iLengths[iIndex-6] = 1;
+                            
+                            iCodes  [iIndex-1] = OpCode.NOP;
+                            iLengths[iIndex-1] = 1;
+                            iCodes  [iIndex-0] = OpCode.NOP;
+                            iLengths[iIndex-0] = 1;
+                            modified = true;
+                        }
+                    }
+                }
+            }
+            iIndex++;
+        } // loop
+        return modified;
+    }
     bool OptimizeQuad()
     {
         if (iCodes.Count < 4)

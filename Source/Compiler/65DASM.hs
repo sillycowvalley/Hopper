@@ -114,11 +114,13 @@ program DASM
         PrintLn("    -g <c> <r> : called from GUI, not console");
         PrintLn("    -p         : include profile hits");
         PrintLn("    -og        : traditional syntax to keep the OG's happy");
+        PrintLn("    -c         : clean (no comments)");
     }
     
     {
         bool success = false;
         bool includeHits;
+        bool noComments;
         loop
         {
             <string> rawArgs = System.Arguments;
@@ -148,6 +150,10 @@ program DASM
                         case "-p":
                         {
                             includeHits = true;
+                        }
+                        case "-c":
+                        {
+                            noComments = true;
                         }
                         case "-og":
                         {
@@ -460,7 +466,11 @@ program DASM
                         }
                         disassembly = hits + disassembly;
                     }
-                    if (comment.Length > 0)
+                    if (noComments)
+                    {
+                        comment = "";
+                    }
+                    if (comment.Length != 0)
                     {
                         comment = comment.Replace("//", "  ");
                         comment = commentPrefix + comment;

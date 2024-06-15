@@ -586,45 +586,48 @@ unit TinyCode
         PadOut("", 0);
         PadOut("// " + name + (inc ? "++" : "--") + Bitness(isByte), 0);
         offsetToX(offset, isGlobal);
+        
         PadOut("LDA 0x0100, X", 0);
         PadOut("PHA", 0); // A contains pre-value
-        if (!isByte)
+        
+        loop
         {
-            PadOut("INX", 0);
-            PadOut("LDA 0x0100, X", 0);
-            PadOut("PHA", 0); // A contains pre-value
-            PadOut("DEX", 0);
-        }
-        if (inc)
-        {
-            PadOut("INC 0x0100, X", 0);
             if (!isByte)
             {
-                PadOut("LDA # 0", 0);
-                PadOut("CMP 0x0100, X", 0);
-                PadOut("if (Z)", 0);
-                PadOut("{", 0);
-                PadOut("DEX", 1);
-                PadOut("INC 0x0100, X", 1);
-                PadOut("INX", 1);
-                PadOut("}", 0);
+                PadOut("INX", 0);
+                PadOut("LDA 0x0100, X", 0);
+                PadOut("PHA", 0); // A contains pre-value
+                PadOut("DEX", 0);
             }
-        }
-        else
-        {
-            PadOut("DEC 0x0100, X", 0);
-            if (!isByte)
+            
+            if (inc)
             {
-                PadOut("LDA # 0xFF", 0);
-                PadOut("CMP 0x0100, X", 0);
-                PadOut("if (Z)", 0);
-                PadOut("{", 0);
-                PadOut("DEX", 1);
-                PadOut("DEC 0x0100, X", 1);
-                PadOut("INX", 1);
-                PadOut("}", 0);
+                PadOut("INC 0x0100, X", 0);
+                if (!isByte)
+                {
+                    PadOut("if (Z)", 0);
+                    PadOut("{", 0);
+                    PadOut("DEX", 1);
+                    PadOut("INC 0x0100, X", 1);
+                    PadOut("}", 0);
+                }
             }
-        }
+            else
+            {
+                PadOut("DEC 0x0100, X", 0);
+                if (!isByte)
+                {
+                    PadOut("LDA # 0xFF", 0);
+                    PadOut("CMP 0x0100, X", 0);
+                    PadOut("if (Z)", 0);
+                    PadOut("{", 0);
+                    PadOut("DEX", 1);
+                    PadOut("DEC 0x0100, X", 1);
+                    PadOut("}", 0);
+                }
+            }
+            break;
+        } // loop
         
     }
     PreIncrement(string name, int offset, bool isByte, bool inc, bool isGlobal) // ++i

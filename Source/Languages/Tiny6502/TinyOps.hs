@@ -147,7 +147,14 @@ unit TinyOps
         // operation
         if (!isByte)
         {
-            PadOut("TinyOps.Add16();", 0);
+            PadOut("CLC // Clear Carry Flag", 0);
+            PadOut("LDA ZP.NEXTL", 0);
+            PadOut("ADC ZP.TOPL", 0);
+            PadOut("STA ZP.TOPL", 0);
+
+            PadOut("LDA ZP.NEXTH", 0);
+            PadOut("ADC ZP.TOPH", 0);
+            PadOut("STA ZP.TOPH", 0);
         }
         else
         {
@@ -158,7 +165,6 @@ unit TinyOps
         }
         PushTop(isByte);
     }
-    
        
     Sub(bool isByte)
     {

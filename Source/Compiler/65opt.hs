@@ -324,6 +324,10 @@ program Optimize
                 {
                     modified = true;
                 }
+                if (AsmPoints.OptimizeDozen())
+                {
+                    modified = true;
+                }
             }
             
             if (!modified)
