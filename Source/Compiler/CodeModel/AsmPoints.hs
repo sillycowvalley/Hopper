@@ -130,6 +130,7 @@ unit AsmPoints
                 case OpCode.STA_z:
                 case OpCode.STA_iz:
                 case OpCode.PHA:
+                case OpCode.CMP_n:
                 {
                     walkStats |= WalkStats.ReadA;
                 }
@@ -151,6 +152,7 @@ unit AsmPoints
                 case OpCode.PHX:
                 case OpCode.CPX_n:
                 case OpCode.DEC_nnX:
+                case OpCode.INC_nnX:
                 {
                     walkStats |= WalkStats.ReadX;
                 }
@@ -191,6 +193,7 @@ unit AsmPoints
                 case OpCode.ROR:
                 case OpCode.AND_n:
                 case OpCode.ORA_n:
+                case OpCode.ASL:
                 {
                     walkStats |= WalkStats.ReadA;
                     walkStats |= WalkStats.WriteA;
@@ -206,6 +209,11 @@ unit AsmPoints
                     walkStats |= WalkStats.ReadX;
                     walkStats |= WalkStats.ReadA;
                     walkStats |= WalkStats.WriteA;
+                }
+                case OpCode.CMP_nnX:
+                {
+                    walkStats |= WalkStats.ReadX;
+                    walkStats |= WalkStats.ReadA;
                 }
                 case OpCode.ADC_nnY:
                 case OpCode.ADC_izY:
@@ -275,6 +283,7 @@ unit AsmPoints
                 case OpCode.LSR_z:
                 case OpCode.NOP:
                 case OpCode.ROR_z:
+                case OpCode.ROL_z:
                 case OpCode.ASL_z:
                 
                 case OpCode.CLC:
@@ -1651,6 +1660,29 @@ unit AsmPoints
                         modified = true;
                     }
                 }
+                if ((opCode1 == OpCode.LDA_n) && (opCode0 == OpCode.BNE_e) &&
+                    (iOperands[iIndex-1] == 1)
+                    )
+                {
+                    iCodes  [iIndex-1] = OpCode.NOP;
+                    iLengths[iIndex-1] = 1;
+                    iCodes  [iIndex-0] = OpCode.BRA_e;
+                    modified = true;
+                }
+                if (opCode0 == OpCode.TAY)
+                {
+                    if (WalkAhead(iIndex+1, WalkStats.WriteY | WalkStats.Exit | WalkStats.CallRet, WalkStats.ReadY, 100))
+                    {
+                        iCodes  [iIndex-0] = OpCode.NOP;
+                        modified = true;
+                    }
+                }
+                if ((opCode1 == OpCode.LDA_iz) && (opCode0 == OpCode.LDA_z))
+                {
+                    iCodes  [iIndex-1] = OpCode.NOP;
+                    iLengths[iIndex-1] = 1;
+                    modified = true;
+                }
             }
             iIndex++;
         } // loop
@@ -1777,6 +1809,14 @@ unit AsmPoints
                         iLengths[iIndex-0] = 1;
                         modified = true;
                     }
+                }
+                if ((opCode3 == OpCode.STA_z) && (opCode2 == OpCode.LDX_n) && (opCode1 == OpCode.LDA_z) && (opCode0 == OpCode.CMP_n) &&
+                    (iOperands[iIndex-3] == iOperands[iIndex-1])
+                   )
+                {
+                    iCodes  [iIndex-1] = OpCode.NOP;
+                    iLengths[iIndex-1] = 1;
+                    modified = true;    
                 }
             }
             iIndex++;

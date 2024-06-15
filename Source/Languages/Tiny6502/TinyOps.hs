@@ -98,57 +98,7 @@ unit TinyOps
         PadOut("PHX", 0);
     }
        
-    CompareEQ(bool isByte)
-    {
-        TinyCode.PadOut("", 0); 
-        TinyCode.PadOut("// == " + Bitness(isByte), 0); 
         
-        // arguments
-        PopTopNext(isByte);
-        
-        // operation
-        if (!isByte)
-        {
-            PadOut("TinyOps.CompareEQ();", 0);
-        }
-        else
-        {
-            PadOut("LDX # 0 // NEXT != TOP", 0); 
-            PadOut("LDA ZP.NEXTL", 0);
-            PadOut("CMP ZP.TOPL", 0);
-            PadOut("if (Z) // NEXT == TOP", 0);
-            PadOut("{", 0);
-            PadOut("LDX # 1 // NEXT == TOP", 1); 
-            PadOut("}", 0);
-        }
-        PadOut("PHX", 0);
-    }
-    CompareNE(bool isByte)
-    {
-        TinyCode.PadOut("", 0); 
-        TinyCode.PadOut("// !=" + Bitness(isByte), 0); 
-        
-        // arguments
-        PopTopNext(isByte);
-        
-        // operation
-        if (!isByte)
-        {
-            PadOut("TinyOps.CompareNE();", 0);
-        }
-        else
-        {
-            PadOut("LDX # 1 // NEXT != TOP", 0); 
-            PadOut("LDA ZP.NEXTL", 0);
-            PadOut("CMP ZP.TOPL", 0);
-            PadOut("if (Z) // NEXT == TOP", 0);
-            PadOut("{", 0);
-            PadOut("LDX # 0 // NEXT == TOP", 1); 
-            PadOut("}", 0);
-        }
-        PadOut("PHX", 0);
-    }
-    
     CompareLTI()
     {
         TinyCode.PadOut("", 0); 
@@ -847,6 +797,135 @@ unit TinyOps
         PadOut("}", 0); 
         
         PadOut("PHX", 0);    
+    }
+    
+    CompareEQ(bool isByte)
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// == " + Bitness(isByte), 0); 
+        
+        // arguments
+        PopTopNext(isByte);
+        
+        // operation
+        if (!isByte)
+        {
+            PadOut("TinyOps.CompareEQ();", 0);
+        }
+        else
+        {
+            PadOut("LDX # 0 // NEXT != TOP", 0); 
+            PadOut("LDA ZP.NEXTL", 0);
+            PadOut("CMP ZP.TOPL", 0);
+            PadOut("if (Z) // NEXT == TOP", 0);
+            PadOut("{", 0);
+            PadOut("LDX # 1 // NEXT == TOP", 1); 
+            PadOut("}", 0);
+        }
+        PadOut("PHX", 0);
+    }
+    CompareNE(bool isByte)
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// !=" + Bitness(isByte), 0); 
+        
+        // arguments
+        PopTopNext(isByte);
+        
+        // operation
+        if (!isByte)
+        {
+            PadOut("TinyOps.CompareNE();", 0);
+        }
+        else
+        {
+            PadOut("LDX # 1 // NEXT != TOP", 0); 
+            PadOut("LDA ZP.NEXTL", 0);
+            PadOut("CMP ZP.TOPL", 0);
+            PadOut("if (Z) // NEXT == TOP", 0);
+            PadOut("{", 0);
+            PadOut("LDX # 0 // NEXT == TOP", 1); 
+            PadOut("}", 0);
+        }
+        PadOut("PHX", 0);
+    }
+    
+    CompareEQLiteral(bool isByte, uint literalValue)
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// == " + literalValue.ToString() + Bitness(isByte), 0); 
+        
+        // arguments
+        PopNext(isByte);
+        byte topl = literalValue.GetByte(0);
+        byte toph = literalValue.GetByte(1);
+        
+        PadOut("LDX # 0 // NEXT != TOP", 0); 
+        PadOut("LDA ZP.NEXTL", 0);
+        if (topl != 0)
+        {
+            PadOut("CMP # 0x" + topl.ToHexString(2), 0);
+        }
+        PadOut("if (Z) // NEXT == TOP", 0);
+        PadOut("{", 0);
+        if (!isByte)
+        {
+            PadOut("LDA ZP.NEXTH", 1);
+            if (toph != 0)
+            {
+                PadOut("CMP # 0x" + toph.ToHexString(2), 1);
+            }
+            PadOut("if (Z)", 1);
+            PadOut("{", 1);
+            PadOut("LDX # 1 // NEXT == TOP", 2);
+            PadOut("}", 1);
+        }
+        else
+        {
+            PadOut("LDX # 1 // NEXT == TOP", 1); 
+        }
+        PadOut("}", 0);
+    
+        PadOut("PHX", 0);
+    }
+    CompareNELiteral(bool isByte, uint literalValue)
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// != " + literalValue.ToString() + Bitness(isByte), 0); 
+        
+        // arguments
+        PopNext(isByte);
+        byte topl = literalValue.GetByte(0);
+        byte toph = literalValue.GetByte(1);
+        
+       
+        PadOut("LDX # 1 // NEXT != TOP", 0); 
+        PadOut("LDA ZP.NEXTL", 0);
+        if (topl != 0)
+        {
+            PadOut("CMP # 0x" + topl.ToHexString(2), 0);
+        }
+        PadOut("if (Z) // NEXT == TOP", 0);
+        PadOut("{", 0);
+        if (!isByte)
+        {
+            PadOut("LDA ZP.NEXTH", 1);
+            if (toph != 0)
+            {
+                PadOut("CMP # 0x" + toph.ToHexString(2), 1);
+            }
+            PadOut("if (Z)", 1);
+            PadOut("{", 1);
+            PadOut("LDX # 0 // NEXT == TOP", 2);
+            PadOut("}", 1);
+        }
+        else
+        {
+            PadOut("LDX # 0 // NEXT == TOP", 1); 
+        }
+        PadOut("}", 0);
+   
+        PadOut("PHX", 0);
     }
     
 }
