@@ -54,6 +54,7 @@ unit TinyExpression
             string name = token.Lexeme;
             bool hasIndex;
             bool isByteIndex;
+            bool isIncDecIndexed;
             
             Token peek  = TinyScanner.Peek();
             if (peek.Type == TokenType.SYM_LLBRACKET)
@@ -79,9 +80,10 @@ unit TinyExpression
                 peek  = TinyScanner.Peek();
                 hasIndex = true;
                 isByteIndex = IsByteType(indexType);
+                isIncDecIndexed = (peek.Type == TokenType.SYM_PLUSPLUS) || (peek.Type == TokenType.SYM_MINUSMINUS);
             }
            
-            if ((peek.Type == TokenType.SYM_EQ) || IsCompoundAssignmentOperator(peek.Type) || (hasIndex && (peek.Type == TokenType.SYM_PLUSPLUS)) || (hasIndex && (peek.Type == TokenType.SYM_MINUSMINUS)))
+            if ((peek.Type == TokenType.SYM_EQ) || IsCompoundAssignmentOperator(peek.Type) || isIncDecIndexed)
             {
                 TinyScanner.Advance(); // name or ']'
                     
@@ -97,7 +99,11 @@ unit TinyExpression
                 if (hasIndex && (name == "mem"))
                 {
                     actualType = "byte";
-                    TinyCode.Dup(isByteIndex);
+                    if (isIncDecIndexed)
+                    {
+                        TinyCode.Dup(isByteIndex);
+                    }
+                    // memory address is TOS, twice
                 }
                 else
                 {
@@ -129,7 +135,11 @@ unit TinyExpression
                     }
                     TinyCode.PushVariable(name, offset, false, isGlobal);
                     TinyOps.Add(false);
-                    TinyCode.Dup(false);
+                    if (isIncDecIndexed)
+                    {
+                        TinyCode.Dup(false);
+                    }
+                    // array member address is TOS
                 }
                 
                 if (op != "=")
@@ -157,7 +167,7 @@ unit TinyExpression
                 }
                 bool useLiteral;
                 uint literalValue;
-                if (hasIndex && ((op == "++") || (op == "--")))
+                if (isIncDecIndexed)
                 {
                     if (isByte)
                     {
@@ -245,7 +255,10 @@ unit TinyExpression
                 if (hasIndex && (name == "mem"))
                 {
                     TinyCode.WriteMemory(isByteIndex, isByte);
-                    TinyCode.ReadMemory(isByteIndex, isByte); // for the expression result
+                    if (isIncDecIndexed)
+                    {
+                        TinyCode.ReadMemory(isByteIndex, isByte); // for the expression result
+                    }
                 }
                 else
                 {
@@ -256,13 +269,20 @@ unit TinyExpression
                         PadOut("", 0);
                         PadOut("// array assignment operator '" + op + "' setitem", 0);
                         TinyCode.WriteMemory(false, isByte);
-                        TinyCode.ReadMemory(false, isByte); // for the expression result
+                        if (isIncDecIndexed)
+                        {
+                            TinyCode.ReadMemory(false, isByte); // for the expression result
+                        }
                     }
                     else
                     {
-                        TinyCode.Dup(isByte); // for the expression result
+                        //TinyCode.Dup(isByte); // for the expression result
                         TinyCode.PopVariable(name, offset, isByte, isGlobal);
                     }
+                }
+                if (!isIncDecIndexed)
+                {
+                    actualType = "void"; // no expression result to pop
                 }
                 return true;
             }
