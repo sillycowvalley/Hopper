@@ -2,7 +2,7 @@ unit TinyOps
 {
     uses "TinyCode"
     
-    PopTopNext(bool isByte)
+    PopTop(bool isByte)
     {
         if (!isByte)
         {
@@ -11,6 +11,10 @@ unit TinyOps
         }
         PadOut("PLA", 0);
         PadOut("STA ZP.TOPL", 0);
+    }
+    PopTopNext(bool isByte)
+    {
+        PopTop(isByte);
         if (!isByte)
         {
             PadOut("PLA", 0);
@@ -202,6 +206,7 @@ unit TinyOps
         PushTop(isByte);
     }
     
+       
     Sub(bool isByte)
     {
         TinyCode.PadOut("", 0); 
@@ -221,6 +226,49 @@ unit TinyOps
             PadOut("LDA ZP.NEXTL", 0);
             PadOut("SBC ZP.TOPL // Subtract with Carry", 0);
             PadOut("STA ZP.TOPL", 0);
+        }
+        PushTop(isByte);
+    }
+    
+    AddLiteral(bool isByte, uint literal)
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// + " + literal.ToString() + Bitness(isByte), 0); 
+    
+        PopTop(isByte);
+    
+        // operation
+        PadOut("CLC // Clear Carry Flag", 0);
+        PadOut("LDA ZP.TOPL", 0);
+        PadOut("ADC # 0x" + (literal.GetByte(0)).ToHexString(2), 0);
+        PadOut("STA ZP.TOPL", 0);
+        if (!isByte)
+        {
+            PadOut("LDA ZP.TOPH", 0);
+            PadOut("ADC # 0x" + (literal.GetByte(1)).ToHexString(2), 0);
+            PadOut("STA ZP.TOPH", 0);
+        }
+        PushTop(isByte);
+    }
+    
+    SubLiteral(bool isByte, uint literal)
+    {
+        TinyCode.PadOut("", 0); 
+        TinyCode.PadOut("// - " + literal.ToString() + Bitness(isByte), 0); 
+    
+        PopTop(isByte);
+    
+        // operation
+        PadOut("SEC // Set Carry Flag for Subtraction", 0);
+        PadOut("LDA ZP.TOPL", 0);
+        PadOut("SBC # 0x" + (literal.GetByte(0)).ToHexString(2), 0);
+        PadOut("STA ZP.TOPL", 0);
+        
+        if (!isByte)
+        {
+            PadOut("LDA ZP.TOPH", 0);
+            PadOut("SBC # 0x" + (literal.GetByte(1)).ToHexString(2), 0);
+            PadOut("STA ZP.TOPH", 0);
         }
         PushTop(isByte);
     }

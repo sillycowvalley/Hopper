@@ -459,6 +459,10 @@ unit TinyExpression
             {
                 return false;
             }
+            if (TinyCode.BufferedLiteral)
+            {
+                Print(" " + op, MatrixBlue, Black);
+            }
             if (!MatchTypes(rhsType, ref actualType))
             {
                 TypeError(actualType, rhsType);
@@ -495,6 +499,10 @@ unit TinyExpression
             if (!parseShiftExpression(ref rhsType))
             {
                 return false;
+            }
+            if (TinyCode.BufferedLiteral)
+            {
+                Print(" " + op, MatrixBlue, Black);
             }
             if (!MatchNumericTypes(rhsType, ref actualType))
             {
@@ -606,23 +614,39 @@ unit TinyExpression
             {
                 return false;
             }
-            if (!MatchNumericTypes(rhsType, ref actualType))
+            token = TinyScanner.Current(); // we fail if we don't call this?!
+            if (TinyCode.BufferedLiteral && MatchNumericLiteral(actualType, rhsType))
             {
-                TypeError(actualType, rhsType);
-                return false;
+                string literalType;
+                uint literalValue = GetBufferedLiteral(ref literalType);
+                BufferedLiteral = false; // consumed
+                if (op == "+")
+                {
+                    Print(" +" + literalValue.ToString());
+                    TinyOps.AddLiteral(IsByteType(actualType), literalValue);
+                }
+                else
+                {
+                    Print(" -" + literalValue.ToString());
+                    TinyOps.SubLiteral(IsByteType(actualType), literalValue);
+                }
             }
-            token = TinyScanner.Current();
-            switch (op)
+            else 
             {
-                case "+":
+                if (!MatchNumericTypes(rhsType, ref actualType))
+                {
+                    TypeError(actualType, rhsType);
+                    return false;
+                }
+                if (op == "+")
                 {
                     TinyOps.Add(IsByteType(actualType));
-                }
-                case "-":
+                } 
+                else
                 {
                     TinyOps.Sub(IsByteType(actualType));
                 }
-            } 
+            }
         }
         return true;
     }
@@ -643,6 +667,10 @@ unit TinyExpression
             if (!parseUnaryExpression(ref rhsType))
             {
                 return false;
+            }
+            if (TinyCode.BufferedLiteral)
+            {
+                Print(" " + op, MatrixBlue, Black);
             }
             if (!MatchNumericTypes(rhsType, ref actualType))
             {
@@ -848,15 +876,7 @@ unit TinyExpression
                                 Die(0x0B);
                             }
                         }
-                        
-                        if (IsByteType(actualType))
-                        {
-                            PushByte(literalValue.GetByte(0), literalComment);
-                        }
-                        else
-                        {
-                            PushWord(literalValue, literalComment);
-                        }
+                        TinyCode.BufferLiteral(actualType, literalValue, literalComment);
                     }
                     success = true;
                     break;
@@ -1064,15 +1084,21 @@ unit TinyExpression
                 {
                     break;
                 }
+                
+                uint   literalValue;
+                string literalComment= "literal";
+                
                 switch (actualType)
                 {
                     case "char":
                     {
-                        TinyCode.PushByte(byte(value[0]), "'" + value + "'");
+                        literalValue   = byte(value[0]);
+                        literalComment = "literal '" + value + "'";
                     }
                     case "bool":
                     {
-                        TinyCode.PushByte((value == "0") ? 0 : 1, (value == "0") ? "false" : "true");
+                        literalValue   = (value == "0") ? 0 : 1;
+                        literalComment = "literal '" + ((value == "0") ? "false" : "true") + "'";
                     }
                     case "int":
                     {
@@ -1082,27 +1108,18 @@ unit TinyExpression
                             Die(0x0B);
                             break;
                         }
-                        uint ui = UInt.FromBytes(i.GetByte(0), i.GetByte(1));
-                        TinyCode.PushWord(ui, "constant");
+                        literalValue   = UInt.FromBytes(i.GetByte(0), i.GetByte(1));
                     }
                     default:
                     {
-                        uint ui;
-                        if (!UInt.TryParse(value, ref ui))
+                        if (!UInt.TryParse(value, ref literalValue))
                         {
                             Die(0x0B);
                             break;
                         }
-                        if (IsByteType(actualType))
-                        {
-                            TinyCode.PushByte(byte(ui), "constant");
-                        }
-                        else
-                        {
-                            TinyCode.PushWord(ui, "constant");
-                        }
                     }
                 }
+                TinyCode.BufferLiteral(actualType, literalValue, literalComment);
             }
             else if ((token.Type == TokenType.LIT_STRING) || (token.Type == TokenType.KW_NULL))
             {

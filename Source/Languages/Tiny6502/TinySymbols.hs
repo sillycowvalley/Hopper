@@ -66,7 +66,7 @@ unit TinySymbols
         }
         else
         {
-            TinyCode.Append("{ // " + comment);
+            TinyCode.PadOut("{ // " + comment, 0);
         }
         <string, Variable> level;
         variables.Append(level);
@@ -120,11 +120,11 @@ unit TinySymbols
         {
             if (name.Length != 0)
             {
-                TinyCode.Append("} // " + name);
+                TinyCode.PadOut("} // " + name, 0);
             }
             else
             {   
-                TinyCode.Append("}");
+                TinyCode.PadOut("}", 0);
             }
         }
     }
@@ -132,7 +132,7 @@ unit TinySymbols
     DefineSymbol(string name)
     {
         symbols[name] = true;
-        TinyCode.Append("#define " + name);
+        TinyCode.PadOut("#define " + name, 0);
     }
     bool IsDefined(string name)
     {

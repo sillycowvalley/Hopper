@@ -45,6 +45,44 @@ unit TinyType
     {
         return ((otherType == "bool") || (otherType == "const bool")) && ((actualType == "bool") || (actualType == "const bool"));
     }
+    bool MatchNumericLiteral(string actualType, string literalType)
+    {
+        if (IsNumericType(actualType) && IsNumericType(literalType))
+        {
+            if (IsByteType(actualType))
+            {
+                return IsByteType(literalType); // if target is byte then literal must be byte
+            }
+            if (IsByteType(literalType))
+            {
+                return true; // byte is compatible with uint, int, int+ or byte
+            }
+            switch (literalType)
+            {
+                case "byte":
+                {
+                    return true; // byte is compatible with any numeric type
+                }
+                case "+int":
+                {
+                    return (actualType == "word") || (actualType == "+int") || (actualType == "int");
+                }
+                case "int":
+                {
+                    return (actualType == "+int") || (actualType == "int");
+                }
+                case "word":
+                {
+                    return (actualType == "+int") || (actualType == "word");
+                }
+                default:
+                {
+                    Die(0x0A); // ?
+                }
+            }
+        }
+        return false;
+    }
     
     bool MatchNumericTypes(string otherType, ref string actualType)
     {

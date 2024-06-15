@@ -321,8 +321,11 @@ unit TinyCompile
     
         TinyScanner.Advance(); // Skip ';'
         
-        string captured = TinyCode.Captured();
-        globalDefinitions.Append(captured);
+        <string> captured = TinyCode.Captured();
+        foreach (var capturedLine in captured)
+        {
+            globalDefinitions.Append(capturedLine);
+        }
         return true;
     }
     

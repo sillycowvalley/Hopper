@@ -21,35 +21,83 @@ unit TinyCode
     uint extra;
     
     bool capturing;
-    string captured;
+    <string> captured;
     bool generating;
-    
     bool Generating { get { return generating; } set { generating = value; } }
+    
+    bool bufferedLiteral;
+    bool BufferedLiteral { get { return bufferedLiteral; } set { bufferedLiteral = value; } }
+    
+    string literalType;
+    uint literalValue;
+    string literalComment;
     
     Capturing()
     {
-        if (capturing || (captured.Length != 0))
+        if (capturing)
         {
             Die(0x0B);
         }
+        captured.Clear();
         capturing = true;
     }
-    string Captured()
+    <string> Captured()
     {
         if (!capturing)
         {
             Die(0x0B);
         }
-        string result = captured;
-        String.Build(ref captured);
         capturing = false;
-        return result;
+        return captured;
     }
     EmitCaptured(string content)
     {
-        codeFile.Append(content);
+        if (BufferedLiteral)
+        {
+            Die(0x0B);
+        }
+        line++;
+        codeFile.Append(content + Char.EOL);
     }
     
+    uint GetBufferedLiteral(ref string lt)
+    {
+        if (!BufferedLiteral)
+        {
+            Die(0x0B);
+        }
+        lt = literalType;
+        return literalValue;
+    }
+    
+    BufferLiteral(string tp, uint value, string comment)
+    {
+        if (BufferedLiteral)
+        {
+            FlustLiteral();
+        }
+        literalType = tp;
+        literalValue = value;
+        literalComment = comment;
+        BufferedLiteral = true;
+    }
+    FlustLiteral()
+    {
+        if (!BufferedLiteral)
+        {
+            Die(0x0B);
+        }
+        BufferedLiteral = false;
+        if (IsByteType(literalType))
+        {
+            PushByte(literalValue.GetByte(0), literalComment);
+        }
+        else
+        {
+            PushWord(literalValue, literalComment);
+        }
+    }
+       
     Map(Token token)
     {
         string location = token.SourcePath + ":" + (token.Line).ToString();
@@ -61,19 +109,27 @@ unit TinyCode
     }
     PadOut(string text, int delta)
     {
+        if (BufferedLiteral)
+        {
+            if (!generating)
+            {
+                Die(0x0B);
+            }
+            FlustLiteral();
+        }
         if (generating)
         {
-            line++;
             if (text.Length != 0)
             {
                 text = ("").Pad(' ', uint((int(BlockLevel)+int(extra)+delta) * 4)) + text;
             }
             if (capturing)
             {     
-                String.Build(ref captured, text + Char.EOL);
+                captured.Append(text);
             }
             else
             {
+                line++;
                 codeFile.Append(text + Char.EOL);
             }
         }
@@ -152,10 +208,6 @@ unit TinyCode
         PadOut("W65C22.Initialize();", 0);
         PadOut("",0);
     }
-    Append(string line)
-    {
-        PadOut(line, 0);
-    }
     Flush()
     {
         codeFile.Flush();
@@ -164,26 +216,34 @@ unit TinyCode
         string resourcesPath = "/Debug/Obj/resources.asm";
         File.Delete(resourcesPath);
         
-        file cfile = File.Create(resourcesPath);
-        cfile.Append("unit Resources"+ Char.EOL);
-        cfile.Append("{" + Char.EOL);
-        cfile.Append("    const string StrConsts = {");
+        file rfile = File.Create(resourcesPath);
+        rfile.Append("unit Resources"+ Char.EOL);
+        rfile.Append("{" + Char.EOL);
+        rfile.Append("    const string StrConsts = {");
         string cstr = GetStringConstants(); 
         foreach (var c in cstr)
         {
-            cfile.Append("0x" + (byte(c)).ToHexString(2) +", ");
+            rfile.Append("0x" + (byte(c)).ToHexString(2) +", ");
         }
-        cfile.Append("};" + Char.EOL);
-        cfile.Append("}" + Char.EOL);
-        cfile.Flush();
+        rfile.Append("};" + Char.EOL);
+        rfile.Append("}" + Char.EOL);
+        rfile.Flush();
     }
     <string> deferred;
     Defer(string content)
     {    
+        if (BufferedLiteral)
+        {
+            Die(0x0B);
+        }
         deferred.Append(content);
     }
     Function(string functionName)
     {
+        if (BufferedLiteral)
+        {
+            Die(0x0B);
+        }
         string name = "|" + functionName + "()";
         name = name.Replace("|main()", "Hopper()").Replace("|","");
         
@@ -193,6 +253,10 @@ unit TinyCode
     }
     EmitDeferred()
     {
+        if (BufferedLiteral)
+        {
+            Die(0x0B);
+        }
         foreach (var line in deferred)
         {
             PadOut(line, -1);

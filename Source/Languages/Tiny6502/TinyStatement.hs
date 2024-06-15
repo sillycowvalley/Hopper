@@ -172,14 +172,16 @@ unit TinyStatement
         {
             return false;
         }
-        string captured = TinyCode.Captured();
+        <string> captured = TinyCode.Captured();
                
         if (!parseBlock(false, "for")) // for scope block
         {
             return false;
         }
-        
-        TinyCode.EmitCaptured(captured);
+        foreach (var capturedLine in captured)
+        {
+            TinyCode.EmitCaptured(capturedLine);
+        }
         
         TinyCode.EndLoop("for");
         return true;
