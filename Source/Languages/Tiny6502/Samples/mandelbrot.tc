@@ -1,6 +1,4 @@
-#define CPU_65C02S
-#define ROM_8K
-    
+#define APPLE_I // rather than the default ACIA_6850 for E6502    
 #include "../system.tc"
 
 func main() {

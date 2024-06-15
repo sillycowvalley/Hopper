@@ -1871,7 +1871,7 @@ unit AsmPoints
                         case "TYA":
                         case "TSX":
                         {
-                            // TODO
+                            // TODO : this only works if we only care about Z and V (not C)
                             Print(" " + name + "->" + "CMP #0");
                         }
                     }

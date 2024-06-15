@@ -296,10 +296,10 @@ program Optimize
                     modified = true;
                 }
             }
-            if (AsmPoints.OptimizeCMP())
-            {
-                modified = true;
-            }
+            //if (AsmPoints.OptimizeCMP())
+            //{
+            //    modified = true;
+            //}
             
             if (IsTiny6502 && (pass > 1))
             {

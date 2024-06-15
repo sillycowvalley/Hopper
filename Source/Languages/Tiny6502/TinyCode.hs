@@ -385,7 +385,7 @@ unit TinyCode
     {
         if (doUnder)
         {
-            Die(0x0A);
+            Die(0x0A); // WordToByte doUnder
         }
         PadOut("", 0);
         PadOut("// 16 bit as '" + byteType + "'", 0);
@@ -395,7 +395,7 @@ unit TinyCode
     {
         if (doUnder)
         {
-            Die(0x0A);
+            Die(0x0A); // ToBool doUnder
         }
         if (isByte)
         {

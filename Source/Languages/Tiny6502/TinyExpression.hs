@@ -500,60 +500,113 @@ unit TinyExpression
             {
                 return false;
             }
-            if (TinyCode.BufferedLiteral)
+            token = TinyScanner.Current(); // we fail if we don't call this?!
+            if (TinyCode.BufferedLiteral && MatchNumericLiteral(actualType, rhsType))
             {
-                Print(" " + op, MatrixBlue, Black);
+                string literalType;
+                uint literalValue = GetBufferedLiteral(ref literalType);
+                BufferedLiteral = false; // consumed
+                
+                switch (op)
+                {
+                    case "<":
+                    {
+                        if (IsSignedType(actualType))
+                        {
+                            TinyOps.CompareLTILiteral(literalValue);
+                        }
+                        else
+                        {
+                            TinyOps.CompareLTLiteral(IsByteType(actualType), literalValue);
+                        }
+                    }
+                    case "<=":
+                    {
+                        if (IsSignedType(actualType))
+                        {
+                            TinyOps.CompareLEILiteral(literalValue);
+                        }
+                        else
+                        {
+                            TinyOps.CompareLELiteral(IsByteType(actualType), literalValue);
+                        }
+                    }
+                    case ">":
+                    {
+                        if (IsSignedType(actualType))
+                        {
+                            TinyOps.CompareGTILiteral(literalValue);
+                        }
+                        else
+                        {
+                            TinyOps.CompareGTLiteral(IsByteType(actualType), literalValue);
+                        }
+                    }
+                    case ">=":
+                    {
+                        if (IsSignedType(actualType))
+                        {
+                            TinyOps.CompareGEILiteral(literalValue);
+                        }
+                        else
+                        {
+                            TinyOps.CompareGELiteral(IsByteType(actualType), literalValue);
+                        }
+                    }
+                }
             }
-            if (!MatchNumericTypes(rhsType, ref actualType))
+            else
             {
-                TypeError(actualType, rhsType);
-                return false;
-            }
-            token = TinyScanner.Current();
-            switch (op)
-            {
-                case "<":
+                if (!MatchNumericTypes(rhsType, ref actualType))
                 {
-                    if (IsSignedType(actualType))
-                    {
-                        TinyOps.CompareLTI();
-                    }
-                    else
-                    {
-                        TinyOps.CompareLT(IsByteType(actualType));
-                    }
+                    TypeError(actualType, rhsType);
+                    return false;
                 }
-                case "<=":
+                switch (op)
                 {
-                    if (IsSignedType(actualType))
+                    case "<":
                     {
-                        TinyOps.CompareLEI();
+                        if (IsSignedType(actualType))
+                        {
+                            TinyOps.CompareLTI();
+                        }
+                        else
+                        {
+                            TinyOps.CompareLT(IsByteType(actualType));
+                        }
                     }
-                    else
+                    case "<=":
                     {
-                        TinyOps.CompareLE(IsByteType(actualType));
+                        if (IsSignedType(actualType))
+                        {
+                            TinyOps.CompareLEI();
+                        }
+                        else
+                        {
+                            TinyOps.CompareLE(IsByteType(actualType));
+                        }
                     }
-                }
-                case ">":
-                {
-                    if (IsSignedType(actualType))
+                    case ">":
                     {
-                        TinyOps.CompareGTI();
+                        if (IsSignedType(actualType))
+                        {
+                            TinyOps.CompareGTI();
+                        }
+                        else
+                        {
+                            TinyOps.CompareGT(IsByteType(actualType));
+                        }
                     }
-                    else
+                    case ">=":
                     {
-                        TinyOps.CompareGT(IsByteType(actualType));
-                    }
-                }
-                case ">=":
-                {
-                    if (IsSignedType(actualType))
-                    {
-                        TinyOps.CompareGEI();
-                    }
-                    else
-                    {
-                        TinyOps.CompareGE(IsByteType(actualType));
+                        if (IsSignedType(actualType))
+                        {
+                            TinyOps.CompareGEI();
+                        }
+                        else
+                        {
+                            TinyOps.CompareGE(IsByteType(actualType));
+                        }
                     }
                 }
             }

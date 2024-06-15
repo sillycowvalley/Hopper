@@ -59,24 +59,29 @@ unit TinyType
             }
             switch (literalType)
             {
+                case "const byte":
                 case "byte":
                 {
                     return true; // byte is compatible with any numeric type
                 }
+                case "const +int":
                 case "+int":
                 {
                     return (actualType == "word") || (actualType == "+int") || (actualType == "int");
                 }
+                case "const int":
                 case "int":
                 {
                     return (actualType == "+int") || (actualType == "int");
                 }
+                case "const word":
                 case "word":
                 {
                     return (actualType == "+int") || (actualType == "word");
                 }
                 default:
                 {
+                    Print("literalType="+ literalType);
                     Die(0x0A); // ?
                 }
             }
@@ -191,7 +196,7 @@ unit TinyType
                     {
                         TypeError(expectedType, actualType);
                         PrintLn(actualType + " as " + expectedType);
-                        Die(0x0A); // not implemented
+                        Die(0x0A); // not implemented?
                     }
                 }
             }
@@ -235,7 +240,7 @@ unit TinyType
                     {
                         TypeError(expectedType, actualType);
                         PrintLn(actualType + " as " + expectedType);
-                        Die(0x0A); // not implemented
+                        Die(0x0A); // not implemented?
                     }
                 }
             }
@@ -271,7 +276,7 @@ unit TinyType
                     {
                         TypeError(expectedType, actualType);
                         PrintLn(actualType + " as " + expectedType);
-                        Die(0x0A); // not implemented
+                        Die(0x0A); // not implemented?
                     }
                 }
             }
@@ -312,7 +317,7 @@ unit TinyType
                     {
                         TypeError(expectedType, actualType);
                         PrintLn(actualType + " as " + expectedType);
-                        Die(0x0A); // not implemented
+                        Die(0x0A); // not implemented?
                     }
                 }
             }
@@ -394,7 +399,7 @@ unit TinyType
                     {
                         TypeError(expectedType, actualType);
                         PrintLn(actualType + " as " + expectedType);
-                        Die(0x0A); // not implemented
+                        Die(0x0A); // not implemented?
                     }
                 }
             }
@@ -402,7 +407,7 @@ unit TinyType
             {
                 TypeError(expectedType, actualType);
                 PrintLn(actualType + " as " + expectedType + " not implemented");
-                //Die(0x0A); // not implemented
+                //Die(0x0A); // not implemented?
             }
         }
         return false;
