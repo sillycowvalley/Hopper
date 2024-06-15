@@ -1,7 +1,5 @@
 unit TinyExpression
 {
-    friend TinyCompile, TinyStatement;
-    
     uses "TinyToken"
     uses "TinyScanner"
     uses "TinyCode"
@@ -1331,6 +1329,11 @@ unit TinyExpression
             return false;
         }
         return true; // success
+    }
+    
+    bool Expression(ref string actualType)
+    {
+        return parseExpression(ref actualType);
     }
 }
 

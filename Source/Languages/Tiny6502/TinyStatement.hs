@@ -21,7 +21,7 @@ unit TinyStatement
         
         TinyScanner.Advance(); // Skip '('
         string booleanType;
-        if (!TinyExpression.parseExpression(ref booleanType))
+        if (!TinyExpression.Expression(ref booleanType)) // if statement bool expression
         {
             return false;
         }
@@ -75,7 +75,7 @@ unit TinyStatement
         
         TinyScanner.Advance(); // Skip '('
         string booleanType;
-        if (!TinyExpression.parseExpression(ref booleanType))
+        if (!TinyExpression.Expression(ref booleanType)) // while statement bool expression
         {
             return false;
         }
@@ -143,7 +143,7 @@ unit TinyStatement
         else
         {
             string booleanType;
-            if (!TinyExpression.parseExpression(ref booleanType))
+            if (!TinyExpression.Expression(ref booleanType)) // for statement condition clause expression
             {
                 return false;
             }
@@ -208,7 +208,7 @@ unit TinyStatement
             }
             
             string actualType;
-            if (!TinyExpression.parseExpression(ref actualType))
+            if (!TinyExpression.Expression(ref actualType)) // return statement expression
             {
                 return false;
             }
@@ -379,7 +379,7 @@ unit TinyStatement
             else
             {
                 string exprType;
-                if (!TinyExpression.parseExpression(ref exprType))
+                if (!TinyExpression.Expression(ref exprType)) // local variable initializer expression
                 {
                     return false;
                 }
@@ -498,7 +498,7 @@ unit TinyStatement
         }
         
         string actualType;
-        if (!TinyExpression.parseExpression(ref actualType))
+        if (!TinyExpression.Expression(ref actualType)) // expression statement
         {
             return false;
         }
@@ -660,6 +660,7 @@ unit TinyStatement
 
     bool parseSwitchStatement()
     {
+        // TODO : code generation
         TinyScanner.Advance(); // Skip 'switch'
         Token token = TinyScanner.Current();
         
@@ -672,7 +673,7 @@ unit TinyStatement
         TinyScanner.Advance(); // Skip '('
         
         string switchType;
-        if (!TinyExpression.parseExpression(ref switchType))
+        if (!TinyExpression.Expression(ref switchType)) // switch statement expression
         {
             return false;
         }
@@ -730,10 +731,13 @@ unit TinyStatement
         TinyScanner.Advance(); // Skip 'case'
         
         string caseType;
-        if (!TinyExpression.parseExpression(ref caseType))
+        
+        // TODO : should call parseConstantExpression
+        if (!TinyExpression.Expression(ref caseType))
         {
             return false;
         }
+        // TODO: verify caseType against switchType
         
         Token token = TinyScanner.Current();
         if (token.Type != TokenType.SYM_COLON)

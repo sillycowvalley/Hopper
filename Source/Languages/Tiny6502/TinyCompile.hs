@@ -291,7 +291,7 @@ unit TinyCompile
         {
             TinyScanner.Advance(); // Skip '='
             string exprType;
-            if (!TinyExpression.parseExpression(ref exprType))
+            if (!TinyExpression.Expression(ref exprType)) // global initializer expression
             {
                 return false;
             }
