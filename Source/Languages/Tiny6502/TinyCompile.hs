@@ -5,6 +5,7 @@ unit TinyCompile
     uses "TinyToken"
     uses "TinyScanner"
     uses "TinyCode"
+    uses "TinyGen"
     uses "TinyStatement"
     uses "TinyExpression"
     uses "TinyConstant"

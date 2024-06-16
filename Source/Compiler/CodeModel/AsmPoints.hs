@@ -1623,14 +1623,6 @@ unit AsmPoints
                     iLengths[iIndex-0] = 1;
                     modified = true;
                 }
-                if ((opCode1 == OpCode.PHA) && (opCode0 == OpCode.PLY))
-                {
-                    iCodes  [iIndex-1] = OpCode.TAY;
-                    iLengths[iIndex-1] = 1;
-                    iCodes  [iIndex-0] = OpCode.NOP;
-                    iLengths[iIndex-0] = 1;
-                    modified = true;
-                }
                 if ((opCode1 == OpCode.PHX) && (opCode0 == OpCode.PLA))
                 {
                     iCodes  [iIndex-1] = OpCode.TXA;
@@ -1667,20 +1659,6 @@ unit AsmPoints
                     iCodes  [iIndex-1] = OpCode.NOP;
                     iLengths[iIndex-1] = 1;
                     iCodes  [iIndex-0] = OpCode.BRA_e;
-                    modified = true;
-                }
-                if (opCode0 == OpCode.TAY)
-                {
-                    if (WalkAhead(iIndex+1, WalkStats.WriteY | WalkStats.Exit | WalkStats.CallRet, WalkStats.ReadY, 100))
-                    {
-                        iCodes  [iIndex-0] = OpCode.NOP;
-                        modified = true;
-                    }
-                }
-                if ((opCode1 == OpCode.LDA_iz) && (opCode0 == OpCode.LDA_z))
-                {
-                    iCodes  [iIndex-1] = OpCode.NOP;
-                    iLengths[iIndex-1] = 1;
                     modified = true;
                 }
             }
@@ -1876,14 +1854,6 @@ unit AsmPoints
                         iLengths[iIndex-0] = 1;
                         modified = true;
                     }
-                }
-                if ((opCode3 == OpCode.STA_z) && (opCode2 == OpCode.LDX_n) && (opCode1 == OpCode.LDA_z) && (opCode0 == OpCode.CMP_n) &&
-                    (iOperands[iIndex-3] == iOperands[iIndex-1])
-                   )
-                {
-                    iCodes  [iIndex-1] = OpCode.NOP;
-                    iLengths[iIndex-1] = 1;
-                    modified = true;    
                 }
             }
             iIndex++;

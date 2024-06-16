@@ -4,6 +4,7 @@ unit TinyStatement
     uses "TinyToken"
     uses "TinyScanner"
     uses "TinyCode"
+    uses "TinyGen"
     uses "TinyExpression"
     uses "TinyType"
     uses "TinySymbols"

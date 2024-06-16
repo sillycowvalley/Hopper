@@ -25,13 +25,6 @@ unit TinyCode
     bool generating;
     bool Generating { get { return generating; } set { generating = value; } }
     
-    bool bufferedLiteral;
-    bool BufferedLiteral { get { return bufferedLiteral; } set { bufferedLiteral = value; } }
-    
-    string literalType;
-    uint literalValue;
-    string literalComment;
-    
     Capturing()
     {
         if (capturing)
@@ -52,52 +45,10 @@ unit TinyCode
     }
     EmitCaptured(string content)
     {
-        if (BufferedLiteral)
-        {
-            Die(0x0B);
-        }
         line++;
         codeFile.Append(content + Char.EOL);
     }
-    
-    uint GetBufferedLiteral(ref string lt)
-    {
-        if (!BufferedLiteral)
-        {
-            Die(0x0B);
-        }
-        lt = literalType;
-        return literalValue;
-    }
-    
-    BufferLiteral(string tp, uint value, string comment)
-    {
-        if (BufferedLiteral)
-        {
-            FlustLiteral();
-        }
-        literalType = tp;
-        literalValue = value;
-        literalComment = comment;
-        BufferedLiteral = true;
-    }
-    FlustLiteral()
-    {
-        if (!BufferedLiteral)
-        {
-            Die(0x0B);
-        }
-        BufferedLiteral = false;
-        if (IsByteType(literalType))
-        {
-            PushByte(literalValue.GetByte(0), literalComment);
-        }
-        else
-        {
-            PushWord(literalValue, literalComment);
-        }
-    }
-       
+         
     Map(Token token)
     {
         string location = token.SourcePath + ":" + (token.Line).ToString();
@@ -109,14 +60,6 @@ unit TinyCode
     }
     PadOut(string text, int delta)
     {
-        if (BufferedLiteral)
-        {
-            if (!generating)
-            {
-                Die(0x0B);
-            }
-            FlustLiteral();
-        }
         if (generating)
         {
             if (text.Length != 0)
@@ -232,18 +175,10 @@ unit TinyCode
     <string> deferred;
     Defer(string content)
     {    
-        if (BufferedLiteral)
-        {
-            Die(0x0B);
-        }
         deferred.Append(content);
     }
     Function(string functionName)
     {
-        if (BufferedLiteral)
-        {
-            Die(0x0B);
-        }
         string name = "|" + functionName + "()";
         name = name.Replace("|main()", "Hopper()").Replace("|","");
         
@@ -253,10 +188,6 @@ unit TinyCode
     }
     EmitDeferred()
     {
-        if (BufferedLiteral)
-        {
-            Die(0x0B);
-        }
         foreach (var line in deferred)
         {
             PadOut(line, -1);
