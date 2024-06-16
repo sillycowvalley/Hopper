@@ -18,8 +18,8 @@ unit TinySys
     Millis()
     {
         LDA # 4
-        STA ACCL
-        STZ ACCH
+        STA ZP.ACCL
+        STZ ZP.ACCH
         Allocate.Allocate();
         
         // return the 16 bit address of the start of the 4 timer tick bytes -> word[2]

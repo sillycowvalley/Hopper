@@ -2,9 +2,9 @@ unit TinyCode
 {
     uses "TinySymbols"
     uses "TinyOps"
+    uses "TinyGen"
     
     file codeFile;
-    file mapFile;
     string codePath;
     
     uint lastGlobal;
@@ -15,8 +15,6 @@ unit TinyCode
     uint lastFunction;
     <string,uint> functionIndex;
     
-    <string,bool> mapUsed;
-    
     uint line;
     uint extra;
     
@@ -24,6 +22,9 @@ unit TinyCode
     <string> captured;
     bool generating;
     bool Generating { get { return generating; } set { generating = value; } }
+    
+    bool inStreamMode;
+    bool InStreamMode { get { return inStreamMode; } set { inStreamMode = value; } }
     
     Capturing()
     {
@@ -45,21 +46,21 @@ unit TinyCode
     }
     EmitCaptured(string content)
     {
+        if (InStreamMode)
+        {
+            Die(0x0B);
+        }
         line++;
         codeFile.Append(content + Char.EOL);
     }
          
-    Map(Token token)
-    {
-        string location = token.SourcePath + ":" + (token.Line).ToString();
-        if (!mapUsed.Contains(location))
-        {
-            mapUsed[location] = true;
-            mapFile.Append(location + Char.Tab + (line+1).ToString() + Char.EOL);
-        }
-    }
     PadOut(string text, int delta)
     {
+        if (InStreamMode)
+        {
+            Die(0x0B);
+        }
+        
         if (generating)
         {
             if (text.Length != 0)
@@ -78,22 +79,18 @@ unit TinyCode
         }
     }
     
-    
     Initialize(string path)
     {
         generating = true;
         string extension = Path.GetExtension(path);
         codePath = path.Replace(extension, ".asm");
         File.Delete(codePath);
-        string mapPath = path.Replace(extension, ".map");
-        File.Delete(mapPath);
         
         string name = Path.GetFileName(path);
         name = name.Replace(extension, "");
         name = name.ToUpper();
         
         codeFile = File.Create(codePath);
-        mapFile = File.Create(mapPath);
         
         PadOut("program " + name, 0);
     }
@@ -154,7 +151,6 @@ unit TinyCode
     Flush()
     {
         codeFile.Flush();
-        mapFile.Flush();
         
         string resourcesPath = "/Debug/Obj/resources.asm";
         File.Delete(resourcesPath);
@@ -260,30 +256,23 @@ unit TinyCode
         //PrintLn(methodName);
     }
     
-    PushWord(uint word, string comment)
+    PushWord(uint word)
     {
-        PadOut("", 0);
-        PadOut("// PUSH 0x" + word.ToHexString(4), 0);
-        PadOut("LDA # 0x" + (word.GetByte(0)).ToHexString(2) + " // " + comment + " LSB", 0);
+        PadOut("LDA # 0x" + (word.GetByte(0)).ToHexString(2), 0);
         PadOut("PHA", 0);
         if (word.GetByte(0) != word.GetByte(1))
         {
-            PadOut("LDA # 0x" + (word.GetByte(1)).ToHexString(2) + " // " + comment + " MSB", 0);
+            PadOut("LDA # 0x" + (word.GetByte(1)).ToHexString(2), 0);
         }
         PadOut("PHA", 0);
     }
-    PushByte(byte value, string comment)
+    PushByte(byte value)
     {
-        comment = comment.Replace(char(0x0D), ' ');
-        comment = comment.Replace(char(0x0A), ' ');
-        PadOut("", 0);
-        PadOut("// PUSH 0x" + value.ToHexString(2), 0);
-        PadOut("LDA # 0x" + value.ToHexString(2) + " // " + comment, 0);
+        PadOut("LDA # 0x" + value.ToHexString(2), 0);
         PadOut("PHA", 0);
     }
     PushConst(uint word)
     {
-        PadOut("", 0);
         PadOut("LDA # ((Resources.StrConsts + 0x" + (word.GetByte(0)).ToHexString(2) + ") & 0xFF)", 0);
         PadOut("PHA", 0);
         PadOut("LDA # ((Resources.StrConsts + 0x" + (word.GetByte(1)).ToHexString(2) + "00) >> 8)", 0);
@@ -292,24 +281,39 @@ unit TinyCode
     
     CastPad(bool doUnder)
     {
-        if (doUnder)
+        if (InStreamMode)
         {
-            PadOut("", 0);
-            PadOut("PLA // cast MSB (doUnder)", 0);
-            PadOut("STA ZP.TOPH", 0);
-            PadOut("PLA", 0);
-            PadOut("STA ZP.TOPL", 0);
-            PadOut("LDA # 0x00", 0);
-            PadOut("PHA", 0);
-            PadOut("LDA ZP.TOPL", 0);
-            PadOut("PHA", 0);
-            PadOut("LDA ZP.TOPH", 0);
-            PadOut("PHA", 0);
+            if (doUnder)
+            {
+                TinyGen.Comment("cast MSB (doUnder)");
+                TinyGen.PadUnder();
+            }
+            else
+            {
+                TinyGen.Comment("cast MSB");
+                TinyGen.PushImmediate(true, 0);
+            }
         }
         else
         {
-            PadOut("LDA # 0x00" + " // cast MSB", 0);
-            PadOut("PHA", 0);
+            if (doUnder)
+            {
+                PadOut("PLA // cast MSB (doUnder)", 0);
+                PadOut("STA ZP.TOPH", 0);
+                PadOut("PLA", 0);
+                PadOut("STA ZP.TOPL", 0);
+                PadOut("LDA # 0x00", 0);
+                PadOut("PHA", 0);
+                PadOut("LDA ZP.TOPL", 0);
+                PadOut("PHA", 0);
+                PadOut("LDA ZP.TOPH", 0);
+                PadOut("PHA", 0);
+            }
+            else
+            {
+                PadOut("LDA # 0x00" + " // cast MSB", 0);
+                PadOut("PHA", 0);
+            }
         }
     }
     WordToByte(bool doUnder, string byteType)
@@ -318,9 +322,17 @@ unit TinyCode
         {
             Die(0x0A); // WordToByte doUnder
         }
-        PadOut("", 0);
-        PadOut("// 16 bit as '" + byteType + "'", 0);
-        PadOut("PLA // MSB", 0);       
+        if (InStreamMode)
+        {
+            TinyGen.Comment("16 bit as '" + byteType + "'");
+            TinyGen.DecSP(1);
+        }
+        else
+        {
+            PadOut("", 0);
+            PadOut("// 16 bit as '" + byteType + "'", 0);
+            PadOut("PLA // MSB", 0);       
+        }
     }
     ToBool(bool isByte, bool doUnder)
     {
@@ -452,7 +464,6 @@ unit TinyCode
     
     PushVariable(string name, int offset, bool isByte, bool isGlobal)
     {
-        PadOut("", 0);
         PadOut("// PUSH " + nameWithOffset(name, offset, isGlobal) + Bitness(isByte), 0);
         offsetToX(offset, isGlobal);  
         PadOut("LDA 0x0100, X", 0);  
@@ -466,7 +477,6 @@ unit TinyCode
     }
     PopVariable(string name, int offset, bool isByte, bool isGlobal)
     {
-        PadOut("", 0);
         PadOut("// POP " + nameWithOffset(name, offset, isGlobal) + Bitness(isByte), 0);
         offsetToX(offset, isGlobal);  
         if (!isByte)
@@ -634,7 +644,6 @@ unit TinyCode
     }
     ReadMemory(bool indexIsByte, bool dataIsByte)
     {
-        PadOut("", 0);
         PadOut("// read memory" +  Bitness(dataIsByte), 0);
         if (indexIsByte)
         {

@@ -128,12 +128,6 @@ program E6502
                 break;
             }
             
-            string mapPath = filePath.Replace(".asm", ".map");
-            if (File.Exists(mapPath))
-            {
-                LoadTCMap(mapPath);
-            }
-            
             Display.Initialize();
                         
             // Load the ROM

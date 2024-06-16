@@ -89,7 +89,7 @@ unit TinyExpression
                 token = TinyScanner.Current(); 
                 string op = token.Lexeme;
                 
-                TinyCode.PadOut("// " + name + " " + op, 0);
+                TinyGen.Comment(name + " " + op);
                 TinyScanner.Advance(); // Skip '=' or compound assignment operator
                 
                 
@@ -100,7 +100,7 @@ unit TinyExpression
                     actualType = "byte";
                     if (isIncDecIndexed)
                     {
-                        TinyCode.Dup(isByteIndex);
+                        TinyGen.Dup(isByteIndex);
                     }
                     // memory address is TOS, twice
                 }
@@ -129,14 +129,14 @@ unit TinyExpression
                     if (!isByte)
                     {
                         // index *= 2;
-                        TinyCode.Dup(false);
-                        TinyOps.Add(false);
+                        TinyGen.Dup(false);
+                        TinyGen.Add(false);
                     }
-                    TinyCode.PushVariable(name, offset, false, isGlobal);
-                    TinyOps.Add(false);
+                    TinyGen.PushVariable(offset, false, isGlobal);
+                    TinyGen.Add(false);
                     if (isIncDecIndexed)
                     {
-                        TinyCode.Dup(false);
+                        TinyGen.Dup(false);
                     }
                     // array member address is TOS
                 }
@@ -145,35 +145,27 @@ unit TinyExpression
                 {
                     if (hasIndex && (name == "mem"))
                     {
-                        TinyCode.Dup(isByteIndex);
-                        TinyCode.ReadMemory(isByteIndex, isByte);
+                        TinyGen.Dup(isByteIndex);
+                        TinyGen.PushMemory(isByteIndex, isByte); // TinyCode.ReadMemory(isByteIndex, isByte);
                     }
                     else
                     {
                         if (hasIndex)
                         {
                             // push member based on address
-                            PadOut("", 0);
-                            PadOut("// array assignment operator '" + op + "' getitem", 0);
-                            TinyCode.Dup(false);
-                            TinyCode.ReadMemory(false, isByte);
+                            TinyGen.Comment("array assignment operator '" + op + "' getitem");
+                            TinyGen.Dup(false);
+                            TinyGen.PushMemory(false, isByte); // TinyCode.ReadMemory(false, isByte);
                         }
                         else
                         {
-                            TinyCode.PushVariable(name, offset, isByte, isGlobal);
+                            TinyGen.PushVariable(offset, isByte, isGlobal);
                         }
                     }
                 }
                 if (isIncDecIndexed)
                 {
-                    if (isByte)
-                    {
-                        TinyCode.PushByte(1, "");
-                    }
-                    else
-                    {
-                        TinyCode.PushWord(1, "");
-                    }
+                    TinyGen.PushImmediate(isByte, 1);
                 }
                 else
                 {  
@@ -195,43 +187,43 @@ unit TinyExpression
                     case "+=":
                     case "++":
                     {
-                        TinyOps.Add(IsByteType(actualType));
+                        TinyGen.Add(IsByteType(actualType));
                     }
                     case "--":
                     case "-=":
                     {
-                        TinyOps.Sub(IsByteType(actualType));
+                        TinyGen.Sub(IsByteType(actualType));
                     }
                     case "/=":
                     {
                         if (IsSignedType(actualType))
                         {
-                            TinyOps.DivI();
+                            TinyGen.DivI();
                         }
                         else
                         {
-                            TinyOps.Div(IsByteType(actualType));
+                            TinyGen.Div(IsByteType(actualType));
                         }
                     }
                     case "*=":
                     {
                         if (IsSignedType(actualType))
                         {
-                            TinyOps.MulI();
+                            TinyGen.MulI();
                         }
                         else
                         {
-                            TinyOps.Mul(IsByteType(actualType));
+                            TinyGen.Mul(IsByteType(actualType));
                         }
                     }
                 }
                 
                 if (hasIndex && (name == "mem"))
                 {
-                    TinyCode.WriteMemory(isByteIndex, isByte);
+                    TinyGen.PopMemory(isByteIndex, isByte); // TinyCode.WriteMemory(isByteIndex, isByte);
                     if (isIncDecIndexed)
                     {
-                        TinyCode.ReadMemory(isByteIndex, isByte); // for the expression result
+                        TinyGen.PushMemory(isByteIndex, isByte); // TinyCode.ReadMemory(isByteIndex, isByte); // for the expression result
                     }
                 }
                 else
@@ -239,18 +231,16 @@ unit TinyExpression
                     if (hasIndex)
                     {
                         // pop member based on address
-                        PadOut("", 0);
-                        PadOut("// array assignment operator '" + op + "' setitem", 0);
-                        TinyCode.WriteMemory(false, isByte);
+                        TinyGen.Comment("array assignment operator '" + op + "' setitem");
+                        TinyGen.PopMemory(false, isByte); // TinyCode.WriteMemory(false, isByte);
                         if (isIncDecIndexed)
                         {
-                            TinyCode.ReadMemory(false, isByte); // for the expression result
+                            TinyGen.PushMemory(false, isByte); // TinyCode.ReadMemory(false, isByte); // for the expression result
                         }
                     }
                     else
                     {
-                        //TinyCode.Dup(isByte); // for the expression result
-                        TinyCode.PopVariable(name, offset, isByte, isGlobal);
+                        TinyGen.PopVariable(offset, isByte, isGlobal);
                     }
                 }
                 if (!isIncDecIndexed)
@@ -281,21 +271,26 @@ unit TinyExpression
             {
                 Error(token.SourcePath, token.Line, "boolean expression expected");
                 return false;
-            }
-            TinyCode.If("if");
-            TinyCode.PadOut("{", 0);
-            BlockLevel++;
+            }    
+            
+            //TinyCode.If("if");
+            //TinyCode.PadOut("{", 0);
+            
+            TinyGen.IF();
+            
             TinyScanner.Advance(); // Skip '?'
             string trueType;
             if (!parseExpression(ref trueType))
             {
                 return false;
             }
-            BlockLevel--;
-            TinyCode.PadOut("}", 0);
-            TinyCode.Else();
-            TinyCode.PadOut("{", 0);
-            BlockLevel++;
+            
+            //TinyCode.PadOut("}", 0);
+            //TinyCode.Else();
+            //TinyCode.PadOut("{", 0);
+            
+            TinyGen.ELSE();
+            
             token = TinyScanner.Current();
             if (token.Type != TokenType.SYM_COLON)
             {
@@ -308,8 +303,10 @@ unit TinyExpression
             {
                 return false;
             }
-            BlockLevel--;
-            TinyCode.PadOut("}", 0);
+            
+            //TinyCode.PadOut("}", 0);
+            TinyGen.ENDIF();
+          
             if (!MatchTypes(trueType, ref falseType))
             {
                 TypeError(trueType, falseType);
@@ -345,7 +342,7 @@ unit TinyExpression
             }
             token = TinyScanner.Current();
             // assuming both arguments are either 0 or 1
-            TinyOps.Or("||", true);
+            TinyGen.Or(true);
             actualType = "bool";
         }
         return true;
@@ -374,7 +371,7 @@ unit TinyExpression
             }
             token = TinyScanner.Current();
             // assuming both arguments are either 0 or 1
-            TinyOps.And("&&", true);
+            TinyGen.And(true);
             actualType = "bool";
         }
         return true;
@@ -402,7 +399,7 @@ unit TinyExpression
                 return false;
             }
             token = TinyScanner.Current();
-            TinyOps.Or("|", IsByteType(actualType));
+            TinyGen.Or(IsByteType(actualType));
         }
         return true;
     }
@@ -429,7 +426,7 @@ unit TinyExpression
                 return false;
             }
             token = TinyScanner.Current();
-            TinyOps.Xor("^", IsByteType(actualType));
+            TinyGen.Xor(IsByteType(actualType));
         }
         return true;
     }
@@ -456,7 +453,7 @@ unit TinyExpression
                 return false;
             }
             token = TinyScanner.Current();
-            TinyOps.And("&", IsByteType(actualType));
+            TinyGen.And(IsByteType(actualType));
         }
         return true;
     }
@@ -487,12 +484,12 @@ unit TinyExpression
             }
             if (op == "==")
             {
-                TinyOps.CompareEQ(IsByteType(actualType));
+                TinyGen.EQ(IsByteType(actualType));
             }
             else
             {
                 // !=
-                TinyOps.CompareNE(IsByteType(actualType));
+                TinyGen.NE(IsByteType(actualType));
             }
         
             actualType = "bool";
@@ -531,44 +528,44 @@ unit TinyExpression
                 {
                     if (IsSignedType(actualType))
                     {
-                        TinyOps.CompareLTI();
+                        TinyGen.LTI();
                     }
                     else
                     {
-                        TinyOps.CompareLT(IsByteType(actualType));
+                        TinyGen.LT(IsByteType(actualType));
                     }
                 }
                 case "<=":
                 {
                     if (IsSignedType(actualType))
                     {
-                        TinyOps.CompareLEI();
+                        TinyGen.LEI();
                     }
                     else
                     {
-                        TinyOps.CompareLE(IsByteType(actualType));
+                        TinyGen.LE(IsByteType(actualType));
                     }
                 }
                 case ">":
                 {
                     if (IsSignedType(actualType))
                     {
-                        TinyOps.CompareGTI();
+                        TinyGen.GTI();
                     }
                     else
                     {
-                        TinyOps.CompareGT(IsByteType(actualType));
+                        TinyGen.GT(IsByteType(actualType));
                     }
                 }
                 case ">=":
                 {
                     if (IsSignedType(actualType))
                     {
-                        TinyOps.CompareGEI();
+                        TinyGen.GEI();
                     }
                     else
                     {
-                        TinyOps.CompareGE(IsByteType(actualType));
+                        TinyGen.GE(IsByteType(actualType));
                     }
                 }
             }
@@ -602,11 +599,11 @@ unit TinyExpression
             token = TinyScanner.Current();
             if (op == "<<")
             {
-                TinyOps.Shl(IsByteType(actualType)); // assumes [top] is <= 255
+                TinyGen.Shl(IsByteType(actualType)); // assumes [top] is <= 255
             }
             else
             {
-                TinyOps.Shr(IsByteType(actualType)); // assumes [top] is <= 255
+                TinyGen.Shr(IsByteType(actualType)); // assumes [top] is <= 255
             }
         }
         return true;
@@ -638,11 +635,11 @@ unit TinyExpression
             }
             if (op == "+")
             {
-                TinyOps.Add(IsByteType(actualType));
+                TinyGen.Add(IsByteType(actualType));
             } 
             else
             {
-                TinyOps.Sub(IsByteType(actualType));
+                TinyGen.Sub(IsByteType(actualType));
             }
         }
         return true;
@@ -675,33 +672,33 @@ unit TinyExpression
             {
                 if (IsSignedType(actualType))
                 {
-                    TinyOps.MulI();
+                    TinyGen.MulI();
                 }
                 else
                 {
-                    TinyOps.Mul(IsByteType(actualType));
+                    TinyGen.Mul(IsByteType(actualType));
                 }
             }
             else if (op == "/")
             {
                 if (IsSignedType(actualType))
                 {
-                    TinyOps.DivI();
+                    TinyGen.DivI();
                 }
                 else
                 {
-                    TinyOps.Div(IsByteType(actualType));
+                    TinyGen.Div(IsByteType(actualType));
                 }
             }
             else if (op == "%")
             {
                 if (IsSignedType(actualType))
                 {
-                    TinyOps.ModI();
+                    TinyGen.ModI();
                 }
                 else
                 {
-                    TinyOps.Mod(IsByteType(actualType));
+                    TinyGen.Mod(IsByteType(actualType));
                 }
             }
             else
@@ -720,7 +717,8 @@ unit TinyExpression
             string op = token.Lexeme;
             if (op == "-")
             {
-                TinyCode.PushWord(0, "// 0 -");
+                TinyGen.Comment("0 -");
+                TinyGen.PushImmediate(false, 0);
             }
             TinyScanner.Advance(); // Skip unary operator
             if (!parsePrimaryExpression(ref actualType))
@@ -740,7 +738,7 @@ unit TinyExpression
                     return false;
                 }
                 actualType = "int";
-                TinyOps.Sub(IsByteType(actualType));
+                TinyGen.Sub(IsByteType(actualType));
             }
             else if (op == "~")
             {
@@ -749,7 +747,7 @@ unit TinyExpression
                     Error(token.SourcePath, token.Line, "numeric expression expected");
                     return false;
                 }
-                TinyOps.BitNot(IsByteType(actualType));
+                TinyGen.Not(IsByteType(actualType));
             }
             else if (op == "!")
             {
@@ -758,7 +756,7 @@ unit TinyExpression
                     Error(token.SourcePath, token.Line, "boolean expression expected");
                     return false;
                 }
-                TinyOps.BoolNot();
+                TinyGen.Not(true);
             }
             else
             { 
@@ -828,10 +826,10 @@ unit TinyExpression
                             
                             uint address;
                             _ = UInt.TryParse(constantValue, ref address);
-                            TinyCode.PushConst(address);
+                            TinyGen.PushConst(address);
                             
-                            TinyOps.Add(false);  // const [] access in parsePrimaryExpression : add the index to the address (assumes char/byte array)
-                            TinyCode.ReadMemory(false, true); 
+                            TinyGen.Add(false);  // const [] access in parsePrimaryExpression : add the index to the address (assumes char/byte array)
+                            TinyGen.PushMemory(false, true); // TinyCode.ReadMemory(false, true); 
                         }
                         else
                         {
@@ -869,14 +867,8 @@ unit TinyExpression
                                 Die(0x0B);
                             }
                         }
-                        if (IsByteType(actualType))
-                        {
-                            TinyCode.PushByte(literalValue.GetByte(0), literalComment);
-                        }
-                        else
-                        {
-                            TinyCode.PushWord(literalValue, literalComment);
-                        }
+                        TinyGen.Comment(literalComment);
+                        TinyGen.PushImmediate(IsByteType(actualType), literalValue);
                     }
                     success = true;
                     break;
@@ -918,12 +910,12 @@ unit TinyExpression
                         break;
                     }
                     TinyScanner.Advance(); // Skip ')'
-                    TinyCode.Call(name);
-                    TinyCode.PopBytes(bytes, name + " arguments"); // arguments after returning from method call
-                    if (actualType != "void")
-                    {
-                        TinyOps.PushTop(IsByteType(actualType));
-                    }
+                    TinyGen.Call(name, IsByteType(actualType), actualType != "void", bytes);
+                    //TinyGen.DecSP(bytes); // TinyCode.PopBytes(bytes, name + " arguments"); // arguments after returning from method call
+                    //if (actualType != "void")
+                    //{
+                    //    TinyGen.PushTOP(IsByteType(actualType)); // TinyOps.PushTop(IsByteType(actualType));
+                    //}
                 }
                 else if (token.Type == TokenType.SYM_LBRACKET)
                 {
@@ -964,12 +956,11 @@ unit TinyExpression
                     if (name == "mem")
                     {
                         actualType = "byte";
-                        TinyCode.ReadMemory(IsByteType(indexType), true);
+                        TinyGen.PushMemory(IsByteType(indexType), true); // TinyCode.ReadMemory(IsByteType(indexType), true);
                     }
                     else
                     {
-                        PadOut("", 0);
-                        PadOut("// array getitem", 0); 
+                        TinyGen.Comment("array getitem"); 
                         // calculate the address we want to access
                         if (IsByteType(indexType))
                         {
@@ -985,13 +976,12 @@ unit TinyExpression
                         if (!IsByteType(actualType))
                         {
                             // index *= 2;
-                            TinyCode.Dup(false);
-                            TinyOps.Add(false);
+                            TinyGen.Dup(false);
+                            TinyGen.Add(false);
                         }
-                        TinyCode.PushVariable(name, offset, false, isGlobal);
-                        TinyOps.Add(false);
-                        
-                        TinyCode.ReadMemory(false, IsByteType(actualType));  
+                        TinyGen.PushVariable(offset, false, isGlobal);
+                        TinyGen.Add(false);
+                        TinyGen.PushMemory(false, IsByteType(actualType)); //TinyCode.ReadMemory(false, IsByteType(actualType));  
                     }
                 }
                 else
@@ -1006,27 +996,40 @@ unit TinyExpression
                     }
                     if ((token.Type == TokenType.SYM_PLUSPLUS) || (token.Type == TokenType.SYM_MINUSMINUS))
                     {
-                        // i++ or i-- : value before --/++ is used in the expression
-                        TinyCode.Map(token);
+                        
                         TinyScanner.Advance(); // Skip '++' or '--'
-                        TinyCode.PostIncrement(name, offset, IsByteType(actualType), token.Type == TokenType.SYM_PLUSPLUS, isGlobal);
+                        // TinyCode.PostIncrement(name, offset, IsByteType(actualType), token.Type == TokenType.SYM_PLUSPLUS, isGlobal);
+                        
+                        // i++ or i-- : value before --/++ is used in the expression
+                        TinyGen.PushVariable(offset, IsByteType(actualType), isGlobal);
+                        
+                        TinyGen.PushVariable(offset, IsByteType(actualType), isGlobal);
+                        TinyGen.PushImmediate(IsByteType(actualType), 1);
+                        if (token.Type == TokenType.SYM_PLUSPLUS)
+                        {
+                            TinyGen.Add(IsByteType(actualType));
+                        }
+                        else
+                        {
+                            TinyGen.Sub(IsByteType(actualType));
+                        }
+                        TinyGen.PopVariable(offset, IsByteType(actualType), isGlobal);
                     }
                     else
                     {
-                        TinyCode.PushVariable(name, offset, IsByteType(actualType), isGlobal);
+                        TinyGen.PushVariable(offset, IsByteType(actualType), isGlobal);
                     }
                 }
             }
             else if ((token.Type == TokenType.SYM_PLUSPLUS) || (token.Type == TokenType.SYM_MINUSMINUS))
             {
-                // ++i or --i  : value after --/++ is used in the expression
+                
                 bool inc = token.Type == TokenType.SYM_PLUSPLUS;
                 TinyScanner.Advance(); // Skip '++' or '--'
                 token = TinyScanner.Current();
                 if (token.Type == TokenType.IDENTIFIER)
                 {
                     string name = token.Lexeme;
-                    TinyCode.Map(token);
                     TinyScanner.Advance(); // Skip identifier
                     int  offset;
                     bool isGlobal;
@@ -1035,7 +1038,22 @@ unit TinyExpression
                         Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
                         break;
                     }
-                    TinyCode.PreIncrement(name, offset, IsByteType(actualType), inc, isGlobal);
+                    //TinyCode.PreIncrement(name, offset, IsByteType(actualType), inc, isGlobal);
+                    
+                    TinyGen.PushVariable(offset, IsByteType(actualType), isGlobal);
+                    TinyGen.PushImmediate(IsByteType(actualType), 1);
+                    if (token.Type == TokenType.SYM_PLUSPLUS)
+                    {
+                        TinyGen.Add(IsByteType(actualType));
+                    }
+                    else
+                    {
+                        TinyGen.Sub(IsByteType(actualType));
+                    }
+                    TinyGen.PopVariable(offset, IsByteType(actualType), isGlobal);
+                    
+                    // ++i or --i  : value after --/++ is used in the expression
+                    TinyGen.PushVariable(offset, IsByteType(actualType), isGlobal);
                 }
                 else
                 {
@@ -1075,7 +1093,7 @@ unit TinyExpression
                 TinyScanner.Advance(); // Skip ']'
                 actualType = "byte";
                 
-                TinyCode.ReadMemory(IsByteType(indexType), true);
+                TinyGen.PushMemory(IsByteType(indexType), true); // TinyCode.ReadMemory(IsByteType(indexType), true);
             }
             else if ((token.Type == TokenType.LIT_NUMBER) || (token.Type == TokenType.LIT_CHAR) || (token.Type == TokenType.KW_FALSE) || (token.Type == TokenType.KW_TRUE))
             {
@@ -1119,27 +1137,22 @@ unit TinyExpression
                         }
                     }
                 }
-                if (IsByteType(actualType))
-                {
-                    TinyCode.PushByte(literalValue.GetByte(0), literalComment);
-                }
-                else
-                {
-                    TinyCode.PushWord(literalValue, literalComment);
-                }
+                TinyGen.Comment(literalComment);
+                TinyGen.PushImmediate(IsByteType(actualType), literalValue);
             }
             else if ((token.Type == TokenType.LIT_STRING) || (token.Type == TokenType.KW_NULL))
             {
                 actualType = "const char[]";
                 uint index;
                 DefineStringConst(token.Lexeme, ref index);
-                TinyCode.PushConst(index);
+                TinyGen.PushConst(index);
                 TinyScanner.Advance(); // Skip literal
             }
             else if (token.Type == TokenType.KW_NULL)
             {
                 actualType = "[]"; // any pointer
-                TinyCode.PushWord(0, "null");   
+                TinyGen.Comment("null");
+                TinyGen.PushImmediate(false, 0);
                 TinyScanner.Advance(); // Skip literal
             }
             else if (token.Type == TokenType.SYM_LPAREN)
@@ -1236,7 +1249,14 @@ unit TinyExpression
     
     bool Expression(ref string actualType)
     {
-        return parseExpression(ref actualType);
+        TinyGen.BeginStream();
+        
+        bool success = parseExpression(ref actualType);
+        if (success)
+        {
+            TinyGen.FlushStream();
+        }
+        return success;
     }
 }
 

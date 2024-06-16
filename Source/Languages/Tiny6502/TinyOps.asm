@@ -140,10 +140,10 @@ unit TinyOps
         // arguments in NEXT and TOP
         
         DivMod();
-        LDA ACCL
-        STA TOPL
-        LDA ACCH
-        STA TOPH
+        LDA ZP.ACCL
+        STA ZP.TOPL
+        LDA ZP.ACCH
+        STA ZP.TOPH
         
         // result in TOP
     }
@@ -152,11 +152,11 @@ unit TinyOps
     {
         // arguments in NEXT and TOP
         
-        STZ TOPH
-        STZ NEXTH
+        STZ ZP.TOPH
+        STZ ZP.NEXTH
         DivMod();
-        LDA ACCL
-        STA TOPL
+        LDA ZP.ACCL
+        STA ZP.TOPL
         
         // result in TOP
     }
@@ -237,10 +237,10 @@ unit TinyOps
         
         DivMod();
         
-        LDA ACCL
-        STA TOPL
-        LDA ACCH
-        STA TOPH
+        LDA ZP.ACCL
+        STA ZP.TOPL
+        LDA ZP.ACCH
+        STA ZP.TOPH
         
         // result in TOP
     }

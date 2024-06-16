@@ -460,7 +460,7 @@ program TCPreprocess
                                 definedSymbols[symbol] = (directiveName == "define");
                                 if (directiveName == "define")
                                 {
-                                    if (symbol.StartsWith("CPU_") || symbol.StartsWith("ROM_") || symbol.StartsWith("ACIA_") || symbol.StartsWith("APPLE_"))
+                                    if (symbol.StartsWith("CPU_") || symbol.StartsWith("ROM_") || symbol.StartsWith("ACIA_") || symbol.StartsWith("APPLE_") || (symbol == "EXPERIMENTAL"))
                                     {
                                         preFile.Append(sourcePath + ":" + line.ToString() + Char.Tab + "#define " + symbol + Char.EOL);
                                     }

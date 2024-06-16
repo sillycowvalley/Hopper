@@ -281,16 +281,6 @@ unit Display
         }
 //#endif      
 
-        // <uint,string> tcMap;  
-        <uint,bool> mapUsed;
-        if (tcMap.Count != 0)
-        {
-            foreach (var kv in tcMap)
-            {
-                mapUsed[kv.key] = false;
-            }
-        }
-        
         bool firstLine = true;
         loop
         {
@@ -364,32 +354,6 @@ unit Display
                 uint asmln;
                 _ = UInt.TryParse(debugLine, ref asmln);
                 //PrintLn(asmln.ToString());
-                
-                if (mapUsed.Count != 0)
-                {
-                    foreach (var kv in mapUsed)
-                    {
-                        if (!kv.value)
-                        {
-                            if (asmln >= kv.key)
-                            {
-                                uint delta = asmln - kv.key;
-                                if (delta <= 2)
-                                {
-                                    mapUsed[kv.key] = true;
-                                    //PrintLn("  " + (kv.key).ToString() + " " + tcMap[kv.key]);
-                                    <string> parts = (tcMap[kv.key]).Split(':');
-                                    string name = Path.GetFileName(parts[0]);
-                                    string tcSourceLine = getSourceLine(parts[0], parts[1]);
-                                    
-                                    PrintLn();
-                                    PrintLn("      // " + tcSourceLine.Pad(' ', 81) + " " + name + ":" + parts[1] + " " + delta.ToString());
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
             }
             uint colour = Colour.MatrixBlue;
             if (firstLine)
@@ -427,22 +391,6 @@ unit Display
         }
     }
     
-    <uint,string> tcMap;
-    LoadTCMap(string mapPath)
-    {
-        tcMap.Clear();
-        file mapFile = File.Open(mapPath);
-        loop
-        {
-            string line = (mapFile.ReadLine()).Trim();
-            if (!mapFile.IsValid()) { break; }
-            if (line.Length == 0) { break; }
-            <string> parts = line.Split(Char.Tab);
-            uint ln;
-            _ = UInt.TryParse(parts[1], ref ln);
-            tcMap[ln] = parts[0];
-        }
-    }
     ShowCurrentInstruction(uint instructions)
     {
         ShowDisassembly(CPU.PC, instructions);

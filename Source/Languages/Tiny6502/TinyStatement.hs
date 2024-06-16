@@ -110,8 +110,6 @@ unit TinyStatement
         TinyScanner.Advance(); // Skip 'for'
         Token token = TinyScanner.Current();
         
-        TinyCode.Map(token);
-        
         if (token.Type != TokenType.SYM_LPAREN)
         {
             Error(token.SourcePath, token.Line, "expected '(' after 'for'");
@@ -123,14 +121,21 @@ unit TinyStatement
         token = TinyScanner.Current();
         if (TinyToken.IsTypeKeyword(token.Type))
         {
+            TinyGen.BeginStream();
             if (!parseLocalVarDeclaration())
             {
                 return false;
             }
+            TinyGen.FlushStream();
         }
-        else if (!parseExpressionStatement(false))
+        else 
         {
-            return false;
+            TinyGen.BeginStream();
+            if (!parseExpressionStatement(false)) // 'for' initialize clause
+            {
+                return false;
+            }
+            TinyGen.FlushStream();
         }
         
         TinyCode.Loop("for");
@@ -169,7 +174,7 @@ unit TinyStatement
         
         TinyCode.Capturing();
         // for increment clause
-        if (!parseExpressionStatement(true))
+        if (!parseExpressionStatement(true)) // 'for' increment clause
         {
             return false;
         }
@@ -306,8 +311,6 @@ unit TinyStatement
             Error(token.SourcePath, token.Line, "expected identifier after type, ('" + token.Lexeme + "')");
             return false;
         }
-        TinyCode.Map(token);
-    
         string name = token.Lexeme;
         TinyScanner.Advance(); // Skip identifier
         
@@ -316,17 +319,8 @@ unit TinyStatement
             return false;
         }
         
-        TinyCode.PadOut("", 0);
-        TinyCode.PadOut("// initialize '" + name + "' (BP+" + (LocalOffset).ToString() +")", 0);
-        
-        if (TinyType.IsByteType(tp))
-        {
-            TinyCode.PushByte(0, tp);
-        }
-        else
-        {
-            TinyCode.PushWord(0, tp);
-        }
+        TinyGen.Comment("initialize '" + name + "' (BP+" + (LocalOffset).ToString() +")");
+        TinyGen.PushImmediate(TinyType.IsByteType(tp), 0);
         
         string memberType;
         if (IsArrayType(tp, ref memberType) && (size != 0))
@@ -335,6 +329,7 @@ unit TinyStatement
             {
                 size *= 2;
             }
+            /*
             TinyCode.PushWord(size, "array size");
             TinyCode.PadOut("TinySys.Malloc();", 0);
             TinyCode.PadOut("PLY", 0);
@@ -344,6 +339,10 @@ unit TinyStatement
             TinyCode.PadOut("LDA ZP.TOPH", 0);
             TinyCode.PadOut("PHA", 0);
             TinyCode.PopVariable(name, LocalOffset, false, false);
+            */
+            TinyGen.PushImmediate(false, size);
+            TinyGen.Call("malloc", false, true, 2);
+            TinyGen.PopVariable(LocalOffset, false, false);
         }
         
         LocalOffset = LocalOffset + int(IsByteType(tp) ? 1 : 2);
@@ -405,7 +404,7 @@ unit TinyStatement
                 {
                     Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
                 }
-                TinyCode.PopVariable(name, offset, IsByteType(variableType), isGlobal);
+                TinyGen.PopVariable(offset, IsByteType(variableType), isGlobal);
             }
         }
         else
@@ -516,7 +515,14 @@ unit TinyStatement
         // discard unused return value
         if (actualType != "void")
         {
-            TinyCode.PopBytes(IsByteType(actualType) ? 1 : 2, "expression statement"); // after expression
+            if (InStreamMode)
+            {
+                TinyGen.DecSP(IsByteType(actualType) ? 1 : 2);
+            }
+            else
+            {
+                TinyCode.PopBytes(IsByteType(actualType) ? 1 : 2, "expression statement"); // after expression
+            }
         }
         
         return true;
@@ -625,10 +631,12 @@ unit TinyStatement
             case TokenType.KW_UINT:
             case TokenType.KW_FUNC:
             {
+                TinyGen.BeginStream();
                 if (!parseLocalVarDeclaration())
                 {
                     return false;
                 }
+                TinyGen.FlushStream();
             }
             case TokenType.KW_CONST:
             {
@@ -640,10 +648,12 @@ unit TinyStatement
             case TokenType.IDENTIFIER:
             case TokenType.KW_MEM:
             {
-                if (!parseExpressionStatement(false))
+                TinyGen.BeginStream();
+                if (!parseExpressionStatement(false)) // assignment
                 {
                     return false;
                 }
+                TinyGen.FlushStream();
             }
             case TokenType.SYM_SEMICOLON:
             {            

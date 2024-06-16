@@ -207,6 +207,10 @@ unit TinyCompile
             Error(token.SourcePath, token.Line, "Tiny6502 only supports CPU_65C02S");
             return false;
         }
+        if (token.Lexeme == "EXPERIMENTAL")
+        {
+            IsExperimental = true;
+        }
         DefineSymbol(token.Lexeme);
         
         TinyScanner.Advance(); // Skip symbol
@@ -258,11 +262,11 @@ unit TinyCompile
         // make a slot on the stack
         if (TinyType.IsByteType(tp))
         {
-            TinyCode.PushByte(0, "byte");
+            TinyCode.PushByte(0);
         }
         else
         {
-            TinyCode.PushWord(0, tp);
+            TinyCode.PushWord(0);
         }
         
         string memberType;
@@ -272,7 +276,7 @@ unit TinyCompile
             {
                 size *= 2;
             }
-            TinyCode.PushWord(size, "array size");
+            TinyCode.PushWord(size);
             TinyCode.PadOut("TinySys.Malloc();", 0);
             TinyCode.PadOut("PLY", 0);
             TinyCode.PadOut("PLY", 0);
@@ -342,8 +346,6 @@ unit TinyCompile
             TinyScanner.Advance(); // Skip 'func'
             Token token = TinyScanner.Current();
             
-            TinyCode.Map(token);
-        
             // Optional return type
             string returnType = "void";
             uint size;
