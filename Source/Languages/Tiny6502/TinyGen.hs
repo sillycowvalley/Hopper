@@ -12,7 +12,9 @@ unit TinyGen
         int    Offset; // used by CALL, PUSHM, POPM as bool
         string Data;
     }
-    int nestedStreamMode;
+    int  nestedStreamMode;
+    bool capturingMode;
+    bool enablePeephole;
     
     // Instructions:
     //
@@ -72,13 +74,22 @@ unit TinyGen
      
     <Instruction> currentStream;
     
+    Append(Instruction instruction)
+    {
+        currentStream.Append(instruction);
+        if (enablePeephole)
+        {
+            // peephole optimizer
+        }
+    }
+        
     Append(string name, bool isByte, uint operand)
     {
         Instruction instruction;
         instruction.Name = name;
         instruction.IsByte = isByte;
         instruction.Operand = operand;
-        currentStream.Append(instruction);
+        Append(instruction);
     }
     Append(string name, bool isByte, int offset)
     {
@@ -86,27 +97,27 @@ unit TinyGen
         instruction.Name = name;
         instruction.IsByte = isByte;
         instruction.Offset = offset;
-        currentStream.Append(instruction);
+        Append(instruction);
     }
     Append(string name, bool isByte)
     {
         Instruction instruction;
         instruction.Name = name;
         instruction.IsByte = isByte;
-        currentStream.Append(instruction);
+        Append(instruction);
     }
     Append(string name)
     {
         Instruction instruction;
         instruction.Name = name;
-        currentStream.Append(instruction);
+        Append(instruction);
     }
     Append(string name, string data)
     {
         Instruction instruction;
         instruction.Name = name;
         instruction.Data = data;
-        currentStream.Append(instruction);
+        Append(instruction);
     }
     Call(string functionName, bool isReturnByte, bool notVoid, uint argumentBytesToPop)
     {
@@ -116,9 +127,16 @@ unit TinyGen
         instruction.IsByte = isReturnByte; // used by PushTop
         instruction.Operand = argumentBytesToPop;
         instruction.Offset  = (notVoid ? 1 : 0); // returnType != "void"
-        currentStream.Append(instruction);
+        Append(instruction);
         
-        Generate(); // reset peephole
+        if (!capturingMode)
+        {
+            Generate(); // reset peephole
+        }
+        else
+        {
+            enablePeephole = false; // no more peephole for the remainder of this stream
+        }
     }
     
     PushVariable(int offset, bool isByte, bool isGlobal)
@@ -217,7 +235,6 @@ unit TinyGen
         Append("MODI");
     }
     
-    
     EQ(bool isByte)
     {
         Append("EQ", isByte);
@@ -267,20 +284,41 @@ unit TinyGen
     IF()
     {
         Append("IF");
-        Generate(); // reset peephole
+        if (!capturingMode)
+        {
+            Generate(); // reset peephole
+        }
+        else
+        {
+            enablePeephole = false; // no more peephole for the remainder of this stream
+        }
     }
     ELSE()
     {
         Append("ELSE");
-        Generate(); // reset peephole
+        if (!capturingMode)
+        {
+            Generate(); // reset peephole
+        }
+        else
+        {
+            enablePeephole = false; // no more peephole for the remainder of this stream
+        }
     }
     ENDIF()
     {
         Append("ENDIF");
-        Generate(); // reset peephole
+        if (!capturingMode)
+        {
+            Generate(); // reset peephole
+        }
+        else
+        {
+            enablePeephole = false; // no more peephole for the remainder of this stream
+        }
     }
     
-    BeginStream()
+    BeginStream(bool capturing)
     {
         nestedStreamMode++;
         if (nestedStreamMode != 1)
@@ -291,9 +329,72 @@ unit TinyGen
         {
             Die(0x0B);
         }
+        capturingMode = capturing;
+        enablePeephole = true;
         InStreamMode = true;
         currentStream.Clear();
     }
+    
+    <Instruction> CaptureStream()
+    {
+        if (!InStreamMode)
+        {
+            Die(0x0B);
+        }
+        nestedStreamMode--;
+        if (nestedStreamMode != 0)
+        {
+            Die(0x0B);
+        }
+        InStreamMode = false;
+        <Instruction> captured = currentStream;
+        currentStream.Clear();
+        return captured;
+    }
+    EmitStream(<Instruction> captured)
+    {
+        if (InStreamMode)
+        {
+            Die(0x0B);
+        }
+        if (nestedStreamMode != 0)
+        {
+            Die(0x0B);
+        }
+        nestedStreamMode++;
+        InStreamMode = true;
+        currentStream = captured;
+        FlushStream();
+    }
+    FlushStream()
+    {
+        if (!InStreamMode)
+        {
+            Die(0x0B);
+        }
+        nestedStreamMode--;
+        if (nestedStreamMode != 0)
+        {
+            return;
+        }
+        Generate();
+        InStreamMode = false;
+    }
+    
+    string ToString(<Instruction> instructions)
+    {
+        string content;
+        string comma;
+        foreach (var vi in instructions)
+        {
+            Instruction instruction = vi;    
+            if (instruction.Name == "REM") { continue; }
+            content += comma + " " + ToString(instruction);
+            comma = ",";
+        }
+        return content;
+    }
+    
     string ToString(Instruction instruction)
     {
         string content;
@@ -407,20 +508,6 @@ unit TinyGen
         }
         return content;
     }
-    FlushStream()
-    {
-        if (!InStreamMode)
-        {
-            Die(0x0B);
-        }
-        nestedStreamMode--;
-        if (nestedStreamMode != 0)
-        {
-            return;
-        }
-        Generate();
-        InStreamMode = false;
-    }
     Generate()
     {   
         if (currentStream.Count == 0) { return; }
@@ -430,15 +517,7 @@ unit TinyGen
         
         if (IsExperimental)
         {
-            string content;
-            string comma;
-            foreach (var vi in currentStream)
-            {
-                Instruction instruction = vi;    
-                if (instruction.Name == "REM") { continue; }
-                content += comma + " " + ToString(instruction);
-                comma = ",";
-            }
+            string content = ToString(currentStream);
             PadOut("", 0);
             PadOut("// ### " + content, 0);
         }

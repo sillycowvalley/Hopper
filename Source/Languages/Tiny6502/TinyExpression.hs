@@ -1249,7 +1249,7 @@ unit TinyExpression
     
     bool Expression(ref string actualType)
     {
-        TinyGen.BeginStream();
+        TinyGen.BeginStream(false);
         
         bool success = parseExpression(ref actualType);
         if (success)

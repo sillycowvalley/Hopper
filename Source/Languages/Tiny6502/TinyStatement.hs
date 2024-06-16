@@ -121,7 +121,7 @@ unit TinyStatement
         token = TinyScanner.Current();
         if (TinyToken.IsTypeKeyword(token.Type))
         {
-            TinyGen.BeginStream();
+            TinyGen.BeginStream(false);
             if (!parseLocalVarDeclaration())
             {
                 return false;
@@ -130,7 +130,7 @@ unit TinyStatement
         }
         else 
         {
-            TinyGen.BeginStream();
+            TinyGen.BeginStream(false);
             if (!parseExpressionStatement(false)) // 'for' initialize clause
             {
                 return false;
@@ -172,22 +172,21 @@ unit TinyStatement
         }
         TinyScanner.Advance(); // Skip ';'
         
-        TinyCode.Capturing();
+        TinyGen.BeginStream(true);
+        
         // for increment clause
         if (!parseExpressionStatement(true)) // 'for' increment clause
         {
             return false;
         }
-        <string> captured = TinyCode.Captured();
+        <Instruction> captured = TinyGen.CaptureStream();
                
         if (!parseBlock(false, "for")) // for scope block
         {
             return false;
         }
-        foreach (var capturedLine in captured)
-        {
-            TinyCode.EmitCaptured(capturedLine);
-        }
+        
+        TinyGen.EmitStream(captured);
         
         TinyCode.EndLoop("for");
         return true;
@@ -631,7 +630,7 @@ unit TinyStatement
             case TokenType.KW_UINT:
             case TokenType.KW_FUNC:
             {
-                TinyGen.BeginStream();
+                TinyGen.BeginStream(false);
                 if (!parseLocalVarDeclaration())
                 {
                     return false;
@@ -648,7 +647,7 @@ unit TinyStatement
             case TokenType.IDENTIFIER:
             case TokenType.KW_MEM:
             {
-                TinyGen.BeginStream();
+                TinyGen.BeginStream(false);
                 if (!parseExpressionStatement(false)) // assignment
                 {
                     return false;

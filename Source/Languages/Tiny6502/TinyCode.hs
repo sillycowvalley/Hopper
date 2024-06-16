@@ -18,42 +18,12 @@ unit TinyCode
     uint line;
     uint extra;
     
-    bool capturing;
-    <string> captured;
     bool generating;
     bool Generating { get { return generating; } set { generating = value; } }
     
     bool inStreamMode;
     bool InStreamMode { get { return inStreamMode; } set { inStreamMode = value; } }
     
-    Capturing()
-    {
-        if (capturing)
-        {
-            Die(0x0B);
-        }
-        captured.Clear();
-        capturing = true;
-    }
-    <string> Captured()
-    {
-        if (!capturing)
-        {
-            Die(0x0B);
-        }
-        capturing = false;
-        return captured;
-    }
-    EmitCaptured(string content)
-    {
-        if (InStreamMode)
-        {
-            Die(0x0B);
-        }
-        line++;
-        codeFile.Append(content + Char.EOL);
-    }
-         
     PadOut(string text, int delta)
     {
         if (InStreamMode)
@@ -67,15 +37,8 @@ unit TinyCode
             {
                 text = ("").Pad(' ', uint((int(BlockLevel)+int(extra)+delta) * 4)) + text;
             }
-            if (capturing)
-            {     
-                captured.Append(text);
-            }
-            else
-            {
-                line++;
-                codeFile.Append(text + Char.EOL);
-            }
+            line++;
+            codeFile.Append(text + Char.EOL);
         }
     }
     
@@ -177,7 +140,6 @@ unit TinyCode
     {
         string name = "|" + functionName + "()";
         name = name.Replace("|main()", "Hopper()").Replace("|","");
-        
         deferred.Clear();   
         deferred.Append("");
         deferred.Append(name);

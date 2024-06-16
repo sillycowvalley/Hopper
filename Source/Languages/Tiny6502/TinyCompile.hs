@@ -16,7 +16,8 @@ unit TinyCompile
     int LocalOffset   { get { return localOffset; } set { localOffset = value; } }
     uint globalOffset;
     uint GlobalOffset { get { return globalOffset; } set { globalOffset = value; } }
- 
+    
+    < <Instruction> > globalDefinitions;   
     
     bool Compile()
     {
@@ -217,20 +218,19 @@ unit TinyCompile
         return true;
     }
  
-    <string> globalDefinitions;   
-    
     EmitGlobals()
     {
         TinyCode.StartUp();
         foreach (var global in globalDefinitions)
         {
-            TinyCode.EmitCaptured(global);
+            <Instruction> captured = global;
+            TinyGen.EmitStream(captured);
         }
     }
     
     bool parseGlobalVar()
     {
-        TinyCode.Capturing();        
+        TinyGen.BeginStream(true);
         
         string tp;
         uint size;
@@ -255,19 +255,10 @@ unit TinyCompile
         TinyScanner.Advance(); // Skip identifier
 
         BlockLevel++;
-        
-        TinyCode.PadOut("", 0);
-        TinyCode.PadOut("// initialize '" + name + "' (" + (GlobalOffset).ToString() + ")", 0);
+        TinyGen.Comment("initialize '" + name + "' (" + (GlobalOffset).ToString() + ") A");
         
         // make a slot on the stack
-        if (TinyType.IsByteType(tp))
-        {
-            TinyCode.PushByte(0);
-        }
-        else
-        {
-            TinyCode.PushWord(0);
-        }
+        TinyGen.PushImmediate(TinyType.IsByteType(tp), 0);
         
         string memberType;
         if (IsArrayType(tp, ref memberType) && (size != 0))
@@ -276,6 +267,7 @@ unit TinyCompile
             {
                 size *= 2;
             }
+            /*
             TinyCode.PushWord(size);
             TinyCode.PadOut("TinySys.Malloc();", 0);
             TinyCode.PadOut("PLY", 0);
@@ -285,6 +277,10 @@ unit TinyCompile
             TinyCode.PadOut("LDA ZP.TOPH", 0);
             TinyCode.PadOut("PHA", 0);
             TinyCode.PopVariable(name, int(GlobalOffset), false, true);
+            */
+            TinyGen.PushImmediate(false, size);
+            TinyGen.Call("malloc", false, true, 2);
+            TinyGen.PopVariable(int(GlobalOffset), false, true);
         }
         
         BlockLevel--;
@@ -314,7 +310,7 @@ unit TinyCompile
             {
                 Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
             }
-            TinyCode.PopVariable(name, offset, IsByteType(variableType), isGlobal);
+            TinyGen.PopVariable(offset, IsByteType(variableType), isGlobal);
         }
     
         token = TinyScanner.Current();
@@ -326,11 +322,9 @@ unit TinyCompile
     
         TinyScanner.Advance(); // Skip ';'
         
-        <string> captured = TinyCode.Captured();
-        foreach (var capturedLine in captured)
-        {
-            globalDefinitions.Append(capturedLine);
-        }
+        <Instruction> captured = TinyGen.CaptureStream();
+        globalDefinitions.Append(captured);
+        
         return true;
     }
     
