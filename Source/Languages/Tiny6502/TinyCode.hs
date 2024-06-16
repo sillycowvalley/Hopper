@@ -378,12 +378,12 @@ unit TinyCode
             }
         }
     }
-    offsetToX(int offset, bool isGlobal)
+    OffsetTo(int offset, bool isGlobal, string register)
     {
         if (isGlobal)
         {
             offset = 255 - offset;
-            PadOut("LDX # 0x"+ (offset.GetByte(0)).ToHexString(2), 0);
+            PadOut("LD" + register + " # 0x"+ (offset.GetByte(0)).ToHexString(2), 0);
         }
         else
         {
@@ -402,7 +402,7 @@ unit TinyCode
                 PadOut("CLC", 0);
                 PadOut("ADC # 0x" + (offset.GetByte(0)).ToHexString(2), 0);
             }
-            PadOut("TAX", 0);
+            PadOut("TA" + register, 0);
         }
     }
     string nameWithOffset(string name, int offset, bool isGlobal)
@@ -427,7 +427,7 @@ unit TinyCode
     PushVariable(string name, int offset, bool isByte, bool isGlobal)
     {
         PadOut("// PUSH " + nameWithOffset(name, offset, isGlobal) + Bitness(isByte), 0);
-        offsetToX(offset, isGlobal);  
+        OffsetTo(offset, isGlobal, "X");  
         PadOut("LDA 0x0100, X", 0);  
         PadOut("PHA", 0);
         if (!isByte)
@@ -440,7 +440,7 @@ unit TinyCode
     PopVariable(string name, int offset, bool isByte, bool isGlobal)
     {
         PadOut("// POP " + nameWithOffset(name, offset, isGlobal) + Bitness(isByte), 0);
-        offsetToX(offset, isGlobal);  
+        OffsetTo(offset, isGlobal, "X");
         if (!isByte)
         {
             PadOut("DEX", 0);

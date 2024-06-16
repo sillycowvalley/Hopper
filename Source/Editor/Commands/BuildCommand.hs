@@ -296,8 +296,17 @@ unit BuildCommand
                 arguments.Append("-g");
                 arguments.Append(col.ToString());
                 arguments.Append(row.ToString());
+                string checkedBuild;
+                if (BuildOptions.IsCheckedEnabled())
+                {
+                    checkedBuild = " (checked build)";
+                }
+                else
+                {
+                    arguments.Append("-o"); // 'o'ptimized, not checked build (release)
+                }
                 
-                Editor.SetStatusBarText("Compiling '" + tcPath + "' -> '" + tcOutPath);
+                Editor.SetStatusBarText("Compiling '" + tcPath + "' -> '" + tcOutPath + "'" + checkedBuild);
                 error = runtimeExecute(binaryPath, arguments);
                 if (error != 0)
                 {

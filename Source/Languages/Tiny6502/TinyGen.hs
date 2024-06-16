@@ -70,16 +70,205 @@ unit TinyGen
     // Instructions that block/reset the peephole optimizer:
     //    IF, ELSE, ENDIF, CALL
     //
+    // Optimization opcodes:
+    //
+    //    INCLI
+    //    ADDLL
+    //    STLI
     
      
     <Instruction> currentStream;
     
+    DeleteInstruction(uint index)
+    {
+        currentStream.Remove(index);
+    }
+    
+    bool OptimizeTwo()
+    {
+        bool modified;
+        Instruction instruction1 = currentStream[currentStream.Count-2];
+        Instruction instruction0 = currentStream[currentStream.Count-1];
+        
+        loop
+        {
+            if (instruction0.Name == "PUSHI")
+            {
+                if (instruction0.IsByte)
+                { 
+                    if (instruction1.Name == "PUSHI") 
+                    {
+                        if (instruction1.IsByte)
+                        {
+                            instruction0.Operand = (instruction0.Operand << 8) + instruction1.Operand;
+                            instruction0.IsByte = false;
+                            currentStream[currentStream.Count-2] = instruction0;
+                            DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (instruction0.Name == "POPL")
+            {
+                if (instruction1.Name == "PUSHI") 
+                {
+                    if (instruction0.IsByte && (instruction0.IsByte == instruction1.IsByte))
+                    {
+                        instruction0.Operand = instruction1.Operand;
+                        instruction0.Name = "STLI";
+                        currentStream[currentStream.Count-1] = instruction0;
+                        DeleteInstruction(currentStream.Count-2);
+                        modified = true;
+                        break;
+                    }
+                    if (!instruction0.IsByte && (instruction0.IsByte == instruction1.IsByte))
+                    {
+                        instruction0.Operand = instruction1.Operand;
+                        instruction0.Name = "STLI";
+                        currentStream[currentStream.Count-1] = instruction0;
+                        DeleteInstruction(currentStream.Count-2);
+                        modified = true;
+                        break;
+                    }
+                }
+            }
+            break;
+        } // loop
+        return modified;
+    }
+    
+    bool OptimizeThree()
+    {
+        bool modified;
+        Instruction instruction2 = currentStream[currentStream.Count-3];
+        Instruction instruction1 = currentStream[currentStream.Count-2];
+        Instruction instruction0 = currentStream[currentStream.Count-1];
+        loop
+        {
+            if ((instruction2.Name == "PUSHL") && (instruction1.Name == "INCLI") && (instruction0.Name == "DECSP"))
+            { 
+                if (instruction2.IsByte && instruction1.IsByte && (instruction0.Operand == 1))
+                {          
+                    DeleteInstruction(currentStream.Count-3);
+                    DeleteInstruction(currentStream.Count-1);
+                    modified = true;
+                    break;
+                }
+                if (!instruction2.IsByte && !instruction1.IsByte && (instruction0.Operand == 2))
+                {
+                    DeleteInstruction(currentStream.Count-3);
+                    DeleteInstruction(currentStream.Count-1);
+                    modified = true;
+                    break;
+                }
+            }
+            break;
+        } // loop
+        return modified;
+    }
+    
+    bool OptimizeFour()
+    {
+        bool modified;
+        Instruction instruction3 = currentStream[currentStream.Count-4];
+        Instruction instruction2 = currentStream[currentStream.Count-3];
+        Instruction instruction1 = currentStream[currentStream.Count-2];
+        Instruction instruction0 = currentStream[currentStream.Count-1];
+        loop
+        {
+            if (instruction3.Offset == instruction0.Offset)
+            {
+                if (instruction3.IsByte && instruction2.IsByte && instruction1.IsByte && instruction0.IsByte)
+                {
+                    if ((instruction3.Name == "PUSHL") && (instruction2.Name == "PUSHI") && (instruction1.Name == "ADD") && (instruction0.Name == "POPL"))
+                    {
+                        instruction3.Operand = instruction2.Operand;
+                        instruction3.IsByte  = true;
+                        instruction3.Name    = "INCLI";
+                        currentStream[currentStream.Count-4] = instruction3;
+                        DeleteInstruction(currentStream.Count-1);
+                        DeleteInstruction(currentStream.Count-1);
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
+                    if (false && (instruction3.Name == "PUSHL") && (instruction2.Name == "PUSHL") && (instruction1.Name == "ADD") && (instruction0.Name == "POPL")) // UNUSED OPT 6                   
+                    {   
+                        Print(" A1");
+                        instruction3.Operand = UInt.FromBytes((instruction2.Offset).GetByte(0), (instruction2.Offset).GetByte(1));
+                        instruction3.IsByte  = true;
+                        instruction3.Name    = "ADDLL";
+                        currentStream[currentStream.Count-4] = instruction3;
+                        DeleteInstruction(currentStream.Count-1);
+                        DeleteInstruction(currentStream.Count-1);
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
+                }
+                if (!instruction3.IsByte && !instruction2.IsByte && !instruction1.IsByte && !instruction0.IsByte)
+                {
+                    if ((instruction3.Name == "PUSHL") && (instruction2.Name == "PUSHI") && (instruction1.Name == "ADD") && (instruction0.Name == "POPL"))
+                    {
+                        instruction3.Operand = instruction2.Operand;                   
+                        instruction3.IsByte  = false;
+                        instruction3.Name    = "INCLI";
+                        currentStream[currentStream.Count-4] = instruction3;
+                        DeleteInstruction(currentStream.Count-1);
+                        DeleteInstruction(currentStream.Count-1);
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
+                    if ((instruction3.Name == "PUSHL") && (instruction2.Name == "PUSHL") && (instruction1.Name == "ADD") && (instruction0.Name == "POPL"))
+                    {
+                        instruction3.Operand = UInt.FromBytes((instruction2.Offset).GetByte(0), (instruction2.Offset).GetByte(1));
+                        instruction3.IsByte  = false;
+                        instruction3.Name    = "ADDLL";
+                        currentStream[currentStream.Count-4] = instruction3;
+                        DeleteInstruction(currentStream.Count-1);
+                        DeleteInstruction(currentStream.Count-1);
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
+                }
+                
+            }
+            
+            break;
+        } // loop
+        return modified;
+    }
+    
     Append(Instruction instruction)
     {
         currentStream.Append(instruction);
-        if (enablePeephole)
+        if (IsOptimized)
         {
-            // peephole optimizer
+            if (enablePeephole)
+            {
+                // peephole optimizer
+                loop
+                {
+                    bool modified;
+                    if (currentStream.Count >= 2)
+                    {
+                        modified = OptimizeTwo();
+                    }
+                    if (currentStream.Count >= 3)
+                    {
+                        modified = OptimizeThree();
+                    }
+                    if (currentStream.Count >= 4)
+                    {
+                        modified = OptimizeFour();
+                    }
+                    if (!modified) { break;}
+                }
+            }
         }
     }
         
@@ -138,7 +327,7 @@ unit TinyGen
             enablePeephole = false; // no more peephole for the remainder of this stream
         }
     }
-    
+       
     PushVariable(int offset, bool isByte, bool isGlobal)
     {
         Append((isGlobal ? "PUSHG" : "PUSHL"), isByte, offset);
@@ -169,7 +358,10 @@ unit TinyGen
     }
     Comment(string comment)
     {
-        Append("REM", comment);
+        if (!IsOptimized)
+        {
+            Append("REM", comment);
+        }
     }
     Dup(bool isByte)
     {
@@ -388,11 +580,22 @@ unit TinyGen
         foreach (var vi in instructions)
         {
             Instruction instruction = vi;    
-            if (instruction.Name == "REM") { continue; }
-            content += comma + " " + ToString(instruction);
-            comma = ",";
+            if (instruction.Name == "REM") 
+            {
+                content += comma + " REM"; 
+            }
+            else
+            {
+                content += comma + " " + ToString(instruction);
+            }           
+            comma = ",";   
         }
         return content;
+    }
+    string OffsetToHex(int offset)
+    {
+        byte b = offset.GetByte(0);
+        return "0x" + b.ToHexString(2);
     }
     
     string ToString(Instruction instruction)
@@ -415,19 +618,19 @@ unit TinyGen
             }
             case "PUSHL":
             {
-                content = "PUSHL"+width+" [BP+0x" + (instruction.Offset).ToHexString(2) + "]";
+                content = "PUSHL"+width+" [BP+" + OffsetToHex(instruction.Offset) + "]";
             }
             case "POPL":
             {
-                content = "POPL"+width+" [BP+0x" + (instruction.Offset).ToHexString(2) + "]";
+                content = "POPL"+width+" [BP+" + OffsetToHex(instruction.Offset) + "]";
             }
             case "PUSHG":
             {
-                content = "PUSHG"+width+" [0x0100 + 0x" + (instruction.Offset).ToHexString(2) + "]";
+                content = "PUSHG"+width+" [0x0100 + " + OffsetToHex(instruction.Offset) + "]";
             }
             case "POPG":
             {
-                content = "POPG"+width+" [0x0100 + 0x" + (instruction.Offset).ToHexString(2) + "]";
+                content = "POPG"+width+" [0x0100 + " + OffsetToHex(instruction.Offset) + "]";
             }
             case "PUSHM":
             {
@@ -500,6 +703,19 @@ unit TinyGen
                 content = instruction.Name;
             }
             
+            case "INCLI":
+            {
+                content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] 0x" + (instruction.Operand).ToHexString(instruction.IsByte ? 2 : 4);
+            }
+            case "ADDLL":
+            {
+                content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] [BP+0x" + (instruction.Operand).ToHexString(2) + "]";
+            }
+            case "STLI":
+            {
+                content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] 0x" + (instruction.Operand).ToHexString(instruction.IsByte ? 2 : 4);
+            }
+            
             default:
             {
                 Print(" TODO : " + instruction.Name);
@@ -528,7 +744,7 @@ unit TinyGen
             
             if (!wasRem) { PadOut("", 0); }
             wasRem = false;
-            PadOut("// " + ToString(instruction), 0);
+            TinyCode.PadOut("// " + ToString(instruction), 0);
             string name = instruction.Name;
             if (instruction.IsByte && (name != "CALL"))
             {
@@ -737,6 +953,75 @@ unit TinyGen
                     TinyCode.PadOut("}", 0);
                 }
                 
+                case "INCLI":
+                case "INCLIB":
+                {
+                    if (instruction.Operand != 0)
+                    {
+                        TinyCode.OffsetTo(instruction.Offset, false, "X"); 
+                        if (instruction.Operand == 1)
+                        {
+                            TinyCode.PadOut("INC 0x0100, X", 0);
+                            if (!instruction.IsByte)
+                            {
+                                TinyCode.PadOut("if (Z)", 0);
+                                TinyCode.PadOut("{", 0);
+                                TinyCode.PadOut("DEX", 1);
+                                TinyCode.PadOut("INC 0x0100, X", 1);
+                                TinyCode.PadOut("}", 0);
+                            }
+                        }
+                        else
+                        {
+                            TinyCode.PadOut("CLC", 0);
+                            TinyCode.PadOut("LDA 0x0100, X", 0);
+                            TinyCode.PadOut("ADC 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                            TinyCode.PadOut("STA 0x0100, X", 0);
+                            if (!instruction.IsByte)
+                            {
+                                TinyCode.PadOut("DEX", 0);
+                                TinyCode.PadOut("LDA 0x0100, X", 0);
+                                TinyCode.PadOut("ADC 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
+                                TinyCode.PadOut("STA 0x0100, X", 0);
+                            }
+                        }
+                    }               
+                }
+                case "STLI":
+                case "STLIB":
+                {
+                    TinyCode.OffsetTo(instruction.Offset, false, "X");
+                    TinyCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                    TinyCode.PadOut("STA 0x0100, X", 0);
+                    if (!instruction.IsByte)
+                    {
+                        TinyCode.PadOut("DEX", 0);
+                        if ((instruction.Operand).GetByte(1) != (instruction.Operand).GetByte(0))
+                        {
+                            TinyCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
+                        }
+                        TinyCode.PadOut("STA 0x0100, X", 0);
+                    }
+                }
+                case "ADDLL":
+                {
+                    int offset = Int.FromBytes((instruction.Operand).GetByte(0), (instruction.Operand).GetByte(1));
+                    TinyCode.OffsetTo(instruction.Offset, false, "X"); 
+                    TinyCode.OffsetTo(offset, false, "Y"); 
+                    TinyCode.PadOut("CLC", 0);
+                    TinyCode.PadOut("LDA 0x0100, X", 0);
+                    TinyCode.PadOut("ADC 0x0100, Y", 0);
+                    TinyCode.PadOut("STA 0x0100, X", 0);
+                    if (!instruction.IsByte)
+                    {
+                        TinyCode.PadOut("DEX", 0);
+                        TinyCode.PadOut("DEY", 0);
+                        TinyCode.PadOut("LDA 0x0100, X", 0);
+                        TinyCode.PadOut("ADC 0x0100, Y", 0);
+                        TinyCode.PadOut("STA 0x0100, X", 0);
+                    }
+                }
+                
                 default:
                 {
                     TinyCode.PadOut("TODO " + name, 0);        
@@ -746,6 +1031,4 @@ unit TinyGen
         currentStream.Clear();
         InStreamMode = true;
     }
-    
-    
 }

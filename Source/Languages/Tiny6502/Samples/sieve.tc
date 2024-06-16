@@ -10,7 +10,7 @@ func main() {
     word prime;
     word k;
     word count;
-    word iter;
+    byte iter;
     
     writeString("\n10 iterations\n");
 

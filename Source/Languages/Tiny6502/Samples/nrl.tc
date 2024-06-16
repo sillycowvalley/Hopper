@@ -2,7 +2,7 @@
 #include "../system.tc"
 
 func main() {
-    word i;
+    byte i;
     word j;
     word s;
     
