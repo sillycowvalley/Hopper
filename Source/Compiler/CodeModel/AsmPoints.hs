@@ -1651,7 +1651,6 @@ unit AsmPoints
                 {
                     if (WalkAhead(iIndex+1, WalkStats.WriteA | WalkStats.Exit | WalkStats.CallRet, WalkStats.ReadA, 20))
                     {
-                        Print(" Y");
                         iCodes  [iIndex-1] = OpCode.LDY_z;
                         iCodes  [iIndex-0] = OpCode.NOP;
                         iLengths[iIndex-0] = 1;

@@ -1,6 +1,3 @@
-#define CPU_65C02S
-#define ROM_8K
-
 #include "../system.tc"
 
 // Blink an LED on GPIO pin 0 every second and send a message over serial
@@ -22,6 +19,6 @@ func main() {
             pinSet(pin, true); // Turn LED on
             led_on = true;
         }
-        delay(1000 as word); // Delay for 1 second
+        delay(1000); // Delay for 1 second
     }
 }

@@ -56,6 +56,7 @@ unit TinyGen
     //    XOR isByte
     //
     //    NOT isByte
+    //    BOOLNOT
     //
     //    EQ isByte
     //    NE isByte
@@ -504,6 +505,10 @@ unit TinyGen
     {
         Append("NOT", isByte);
     }
+    BoolNot()
+    {
+        Append("BOOLNOT", true);
+    }
     
     Mul(bool isByte)
     {
@@ -785,6 +790,10 @@ unit TinyGen
             {
                 content = instruction.Name + width;
             }
+            case "BOOLNOT":
+            {
+                content = instruction.Name;
+            }
             
             case "MULI":
             case "DIVI":
@@ -1028,6 +1037,15 @@ unit TinyGen
                 case "XORB":
                 {
                     TinyOps.Xor(instruction.IsByte);
+                }
+                case "NOT":
+                case "NOTB":
+                {
+                    TinyOps.BitNot(instruction.IsByte);
+                }
+                case "BOOLNOTB":
+                {
+                    TinyOps.BoolNot();
                 }
                 
                 

@@ -756,7 +756,7 @@ unit TinyExpression
                     Error(token.SourcePath, token.Line, "boolean expression expected");
                     return false;
                 }
-                TinyGen.Not(true);
+                TinyGen.BoolNot();
             }
             else
             { 
@@ -836,7 +836,7 @@ unit TinyExpression
                             // return the entire array
                             uint address;
                             _ = UInt.TryParse(constantValue, ref address);
-                            TinyCode.PushConst(address);
+                            TinyGen.PushConst(address);
                         }
                     } // []
                     else

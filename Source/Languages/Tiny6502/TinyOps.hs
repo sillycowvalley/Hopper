@@ -210,11 +210,10 @@ unit TinyOps
             PadOut("PHA", 0);
         }
     }
+    
     BoolNot()
     {
-         
         TinyCode.PadOut("// ! ", 0); 
-    
         PadOut("PLA", 0);
         PadOut("if (Z)", 0);
         PadOut("{", 0);
@@ -366,6 +365,7 @@ unit TinyOps
             TinyCode.PadOut("PHA", 0);
         }
     }
+    
     Shr(bool isByte)
     {
         TinyCode.PadOut("// >>", 0);
