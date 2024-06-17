@@ -354,6 +354,7 @@ unit Token
         
         typeKeywords["false"] = true;
         typeKeywords["true"] = true;
+        typeKeywords["null"] = true;
         
         directiveKeywords["#ifdef"] = true;
         directiveKeywords["#ifndef"] = true;

@@ -20,6 +20,10 @@ unit TinyType
         typeName = "|" + typeName.Replace("const ", "") + "|";
         return ("|int|+int|").Contains(typeName);
     }
+    bool IsPointerType(string typeName)
+    {
+        return typeName.EndsWith("[]");
+    }
     string GetArrayMemberType(string arrayType)
     {
         string memberType = arrayType;
@@ -39,6 +43,60 @@ unit TinyType
             return true;
         }
         return false;
+    }
+    
+    bool MatchNumericTypesForAddition(string otherType, ref string actualType)
+    {
+        if ( ((otherType == "const char") || (otherType == "char")) && ((actualType == "const char") || (actualType == "char")) )
+        {
+            return true;
+        }
+        
+        bool leftPointer  = otherType.EndsWith("[]");
+        bool rightPointer = actualType.EndsWith("[]");
+        if (leftPointer || rightPointer)
+        {
+            string leftType  = otherType.Replace ("const ", "");
+            string rightType = actualType.Replace("const ", "");
+            if (leftPointer && rightPointer)
+            {
+                return leftType == rightType;
+            }
+            else if (leftPointer)
+            {
+                if (IsAutomaticCast("word", rightType, false, false))
+                {
+                    actualType = otherType;
+                    return true;
+                }
+                return false;
+            }
+            else // rightPointer
+            {
+                return IsAutomaticCast("word", otherType, false, false);
+            }
+        }
+        return MatchNumericTypes(otherType, ref actualType);
+    }
+    bool MatchNumericTypesForRelational(string otherType, ref string actualType)
+    {
+        if ( ((otherType == "const char") || (otherType == "char")) && ((actualType == "const char") || (actualType == "char")) )
+        {
+            return true;
+        }
+        return MatchTypes(otherType, ref actualType);
+    }
+    bool MatchNumericTypes(string otherType, ref string actualType)
+    {
+        if ((otherType == "char") || (otherType == "bool") || (actualType == "char") || (actualType == "bool"))
+        {
+            return false;
+        }
+        if ((otherType == "const char") || (otherType == "const bool") || (actualType == "const char") || (actualType == "const bool"))
+        {
+            return false;
+        }
+        return MatchTypes(otherType, ref actualType);
     }
     
     bool MatchBoolTypes(string otherType, string actualType)
@@ -89,18 +147,6 @@ unit TinyType
         return false;
     }
     
-    bool MatchNumericTypes(string otherType, ref string actualType)
-    {
-        if ((otherType == "char") || (otherType == "bool") || (actualType == "char") || (actualType == "bool"))
-        {
-            return false;
-        }
-        if ((otherType == "const char") || (otherType == "const bool") || (actualType == "const char") || (actualType == "const bool"))
-        {
-            return false;
-        }
-        return MatchTypes(otherType, ref actualType);
-    }
     bool MatchTypes(string otherType, ref string actualType)
     {
         if (otherType != actualType)
@@ -117,13 +163,13 @@ unit TinyType
         return otherType == actualType;
     }
     
-    
     bool IsAutomaticCast(string expectedType, string actualType, bool doUnder, bool asCast)
     {
         if (expectedType.Contains("[") && actualType.Contains("[") && asCast)
         {
             return true; // any pointer type can be deliberately cast to any other pointer type
         }
+        
         if (expectedType.StartsWith("const ") && !actualType.StartsWith("const "))
         {
             expectedType = expectedType.Substring(6); // non-const -> const
@@ -143,6 +189,18 @@ unit TinyType
         {
             return true;
         }
+        
+        if (expectedType.Contains("[") && actualType.Contains("["))
+        {
+            if (expectedType.EndsWith("[]"))
+            {
+                string memberType;
+                _ = IsArrayType(actualType, ref memberType);
+                // type[nn] -> type[] is fine
+                return (expectedType == memberType + "[]") || (expectedType == memberType + "[]");
+            }
+        }
+        
         
         // Implement additional logic for type compatibility
         // For example, handle implicit conversions, array size checks, etc.
@@ -194,6 +252,11 @@ unit TinyType
                     }
                     default:
                     {
+                        string memberType;
+                        if (IsArrayType(actualType, ref memberType))
+                        {
+                            return false;
+                        }
                         TypeError(expectedType, actualType);
                         PrintLn(actualType + " as " + expectedType);
                         Die(0x0A); // not implemented?
@@ -238,6 +301,11 @@ unit TinyType
                     }
                     default:
                     {
+                        string memberType;
+                        if (IsArrayType(actualType, ref memberType))
+                        {
+                            return false;
+                        }
                         TypeError(expectedType, actualType);
                         PrintLn(actualType + " as " + expectedType);
                         Die(0x0A); // not implemented?
@@ -274,6 +342,11 @@ unit TinyType
                     }
                     default:
                     {
+                        string memberType;
+                        if (IsArrayType(actualType, ref memberType))
+                        {
+                            return false;
+                        }
                         TypeError(expectedType, actualType);
                         PrintLn(actualType + " as " + expectedType);
                         Die(0x0A); // not implemented?
@@ -315,6 +388,11 @@ unit TinyType
                     }
                     default:
                     {
+                        string memberType;
+                        if (IsArrayType(actualType, ref memberType))
+                        {
+                            return asCast; // type[] as word requires cast
+                        }
                         TypeError(expectedType, actualType);
                         PrintLn(actualType + " as " + expectedType);
                         Die(0x0A); // not implemented?
@@ -356,6 +434,11 @@ unit TinyType
                     }
                     default:
                     {
+                        string memberType;
+                        if (IsArrayType(actualType, ref memberType))
+                        {
+                            return asCast; // type[] as int requires cast
+                        }
                         TypeError(expectedType, actualType);
                         PrintLn(actualType + " as " + expectedType);
                         Die(0x0A); // not implemented
@@ -397,6 +480,11 @@ unit TinyType
                     }
                     default:
                     {
+                        string memberType;
+                        if (IsArrayType(actualType, ref memberType))
+                        {
+                            return asCast; // type[] as +int requires cast
+                        }
                         TypeError(expectedType, actualType);
                         PrintLn(actualType + " as " + expectedType);
                         Die(0x0A); // not implemented?
@@ -405,6 +493,11 @@ unit TinyType
             }
             default:
             {
+                string memberType;
+                if (IsArrayType(expectedType, ref memberType))
+                {
+                    return false;
+                }
                 TypeError(expectedType, actualType);
                 PrintLn(actualType + " as " + expectedType + " not implemented");
                 //Die(0x0A); // not implemented?

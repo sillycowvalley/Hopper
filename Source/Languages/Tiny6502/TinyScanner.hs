@@ -286,8 +286,15 @@ unit TinyScanner
                 case '\\': { lexeme += '\\';  }
                 case 'n':  { lexeme += Char.EOL;  }
                 case 't':  { lexeme += Char.Tab;  }
+                case 'v':  { lexeme += char(0x0B);  }
+                case 'f':  { lexeme += char(0x0C);  }
                 case 'r':  { lexeme += char(0x0D);  }
-                default:   { lexeme += '\\' + c;  } // Keep unrecognized escape sequences as is
+                case '0':  { lexeme += char(0x00);  }
+                default:   
+                { 
+                    Error(currentSourcePath, currentLine, "unrecognized escape sequence '\\" + c + "'");
+                    return createToken(TokenType.EOF, "");
+                } 
             }
         }
         else

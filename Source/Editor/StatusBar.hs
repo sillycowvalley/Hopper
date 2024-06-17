@@ -120,7 +120,7 @@ unit StatusBar
                     DrawChar(x, y, c, Colour.StatusText, backColour);
                 }
                 x++;
-                if (c == '[')
+                if ((c == '[') && (clickPath.Length == 0))
                 {
                     foundPath = true;
                     area.Append(x+1);

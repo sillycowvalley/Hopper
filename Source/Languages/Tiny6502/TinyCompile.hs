@@ -430,10 +430,10 @@ unit TinyCompile
             bool generate;
             if (token.Type == TokenType.SYM_SEMICOLON)
             {
-                // This is a forward declaration or a system method
+                // This is a forward declaration or a system method or a prototype
                 TinyScanner.Advance(); // Skip ';'
                 
-                TinyCode.OfferSystemMethod(functionName);
+                SetFunctionPrototype(functionName);
             }
             else if (token.Type == TokenType.SYM_LBRACE)
             {

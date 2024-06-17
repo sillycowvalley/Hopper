@@ -517,7 +517,7 @@ unit TinyExpression
             token = TinyScanner.Current(); // we fail if we don't call this?!
             
             
-            if (!MatchNumericTypes(rhsType, ref actualType))
+            if (!MatchNumericTypesForRelational(rhsType, ref actualType))
             {
                 TypeError(actualType, rhsType);
                 return false;
@@ -628,7 +628,7 @@ unit TinyExpression
             }
             token = TinyScanner.Current(); // we fail if we don't call this?!
             
-            if (!MatchNumericTypes(rhsType, ref actualType))
+            if (!MatchNumericTypesForAddition(rhsType, ref actualType))
             {
                 TypeError(actualType, rhsType);
                 return false;

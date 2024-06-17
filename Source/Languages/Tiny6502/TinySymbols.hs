@@ -16,6 +16,7 @@ unit TinySymbols
     record Function
     {
         string ReturnType;
+        bool   Prototype;
         <string, Variable> Arguments;
         <string> ArgumentNames;
     }
@@ -139,22 +140,47 @@ unit TinySymbols
         return symbols.Contains(name);
     }
     
+    SetFunctionPrototype(string functionName)
+    {
+        Function function = functions[functionName];
+        function.Prototype = true;
+        functions[functionName] = function;
+    }
     bool DefineFunction(string returnType, string functionName)
     {
-        if (functions.Contains(functionName))
+        bool success;
+        loop
         {
-            // exists already
-            Token token = TinyScanner.Current();
-            Error(token.SourcePath, token.Line, "function with name '" + functionName + "' already exists");
-            return false;
-        }
-        Function function;
-        function.ReturnType = returnType;
-        functions[functionName] = function;
-        //PrintLn();
-        //Print("func: " + returnType + " " + functionName);
-        currentFunction = functionName;
-        return true;
+            if (functions.Contains(functionName))
+            {
+                Token token = TinyScanner.Current();
+                Function proto = functions[functionName];
+                if (!proto.Prototype)
+                {
+                    // second definition can only follow prototype
+                    Error(token.SourcePath, token.Line, "function with name '" + functionName + "' already exists");
+                    break;
+                }
+                // 2nd definition following a prototype
+                if (returnType != proto.ReturnType)
+                {
+                    Error(token.SourcePath, token.Line, "return type does not match protype definition for '" + functionName + "'");
+                    break;
+                }
+                // fall through and redefine
+                // TODO : validate arguments against prototype
+                // TODO : don't allow multiple prototypes before function definition (only one)
+            }
+            
+            Function function;
+            function.ReturnType = returnType;
+            functions[functionName] = function;
+            currentFunction = functionName;
+            success =  true;
+        
+            break;
+        } // loop
+        return success;
     }
     UpdateArgumentOffsets(string functionName)
     {

@@ -214,11 +214,6 @@ unit TinyCode
         PadOut("continue;", 0);
     }
     
-    OfferSystemMethod(string methodName)
-    {
-        //PrintLn(methodName);
-    }
-    
     PushWord(uint word)
     {
         PadOut("LDA # 0x" + (word.GetByte(0)).ToHexString(2), 0);
