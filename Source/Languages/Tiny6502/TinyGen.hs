@@ -10,6 +10,7 @@ unit TinyGen
         bool   IsByte;
         uint   Operand;
         int    Offset; // used by CALL, PUSHM, POPM as bool
+        int    Offset2;
         string Data;
     }
     int  nestedStreamMode;
@@ -74,6 +75,9 @@ unit TinyGen
     //
     //    ADDLL   : PUSHL offset0, PUSHL offset?, ADD
     //    ADDLG   : PUSHL offset0, PUSHG offset1, ADD
+    //    ADDLGM  : ADDLG PUSHMB
+    //    ADDLGI  : ADDLG PUSHIB
+    //    ADDLGIM : ADDLGI POPMB
     //    INCLI   : PUSHL offset0, PUSHI, ADD, POPL offset0
     //    ADDLLL  : PUSHL offset0, PUSHL offset?, ADD, POPL offset0
     //    STLI    : PUSHI, POPL offset0
@@ -130,8 +134,50 @@ unit TinyGen
                     }
                     if ((instruction1.Name == "ADDLL") && (instruction1.Offset == instruction0.Offset) && (instruction0.Name == "POPL"))
                     {   
-                        Print(" ADDLLL" + (instruction1.IsByte ? "B": ""));
                         instruction1.Name    = "ADDLLL";
+                        currentStream[currentStream.Count-2] = instruction1;
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
+                }
+            }
+            if (instruction0.Name == "PUSHM")
+            {
+                if (instruction0.IsByte && !instruction1.IsByte)
+                {
+                    if (instruction1.Name == "ADDLG")
+                    {
+                        instruction1.Name    = "ADDLGM";
+                        currentStream[currentStream.Count-2] = instruction1;
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
+                }
+            }
+            if (instruction0.Name == "PUSHI")
+            {
+                if (instruction0.IsByte && !instruction1.IsByte)
+                {
+                    if (instruction1.Name == "ADDLG")
+                    {
+                        instruction1.Name    = "ADDLGI";
+                        instruction1.Operand = instruction0.Operand;
+                        currentStream[currentStream.Count-2] = instruction1;
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
+                }
+            }
+            if (instruction0.Name == "POPM")
+            {
+                if (instruction0.IsByte && !instruction1.IsByte)
+                {
+                    if (instruction1.Name == "ADDLGI")
+                    {
+                        instruction1.Name    = "ADDLGIM";
                         currentStream[currentStream.Count-2] = instruction1;
                         DeleteInstruction(currentStream.Count-1);
                         modified = true;
@@ -174,8 +220,7 @@ unit TinyGen
             {
                 if ((instruction2.IsByte == instruction1.IsByte) && (instruction1.IsByte == instruction0.IsByte))
                 {
-                    Print(" ADDLL" + (instruction2.IsByte ? "B" : ""));
-                    instruction2.Operand = UInt.FromBytes((instruction1.Offset).GetByte(0), (instruction1.Offset).GetByte(1));
+                    instruction2.Offset2 = instruction1.Offset;
                     instruction2.Name    = "ADDLL";
                     currentStream[currentStream.Count-3] = instruction2;
                     DeleteInstruction(currentStream.Count-1);
@@ -188,8 +233,7 @@ unit TinyGen
             {
                 if ((instruction2.IsByte == instruction1.IsByte) && (instruction1.IsByte == instruction0.IsByte))
                 {
-                    Print(" ADDLG" + (instruction2.IsByte ? "B" : ""));
-                    instruction2.Operand = UInt.FromBytes((instruction1.Offset).GetByte(0), (instruction1.Offset).GetByte(1));
+                    instruction2.Offset2 = instruction1.Offset;
                     instruction2.Name    = "ADDLG";
                     currentStream[currentStream.Count-3] = instruction2;
                     DeleteInstruction(currentStream.Count-1);
@@ -256,8 +300,7 @@ unit TinyGen
                     }
                     if (/*false &&*/ (instruction3.Name == "PUSHL") && (instruction2.Name == "PUSHL") && (instruction1.Name == "ADD") && (instruction0.Name == "POPL")) // UNUSED OPT 6                   
                     {   
-                        Print(" ADDLLLB");
-                        instruction3.Operand = UInt.FromBytes((instruction2.Offset).GetByte(0), (instruction2.Offset).GetByte(1));
+                        instruction3.Offset2 = instruction2.Offset;
                         instruction3.IsByte  = true;
                         instruction3.Name    = "ADDLLL";
                         currentStream[currentStream.Count-4] = instruction3;
@@ -284,8 +327,7 @@ unit TinyGen
                     }
                     if ((instruction3.Name == "PUSHL") && (instruction2.Name == "PUSHL") && (instruction1.Name == "ADD") && (instruction0.Name == "POPL"))
                     {
-                        Print(" ADDLLL");
-                        instruction3.Operand = UInt.FromBytes((instruction2.Offset).GetByte(0), (instruction2.Offset).GetByte(1));
+                        instruction3.Offset2 = instruction2.Offset;
                         instruction3.IsByte  = false;
                         instruction3.Name    = "ADDLLL";
                         currentStream[currentStream.Count-4] = instruction3;
@@ -765,11 +807,20 @@ unit TinyGen
             }
             
             
-            case "ADDLL":
             case "ADDLG":
+            case "ADDLGM":
+            {
+                content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] [0x" + (instruction.Offset2).ToHexString(2) + "]";
+            }
+            case "ADDLGI":
+            case "ADDLGIM":
+            {
+                content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] [0x" + (instruction.Offset2).ToHexString(2) + "] # 0x" + (instruction.Operand).ToHexString(2);
+            }
+            case "ADDLL":
             case "ADDLLL":
             {
-                content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] [BP+0x" + (instruction.Operand).ToHexString(2) + "]";
+                content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] [BP+0x" + (instruction.Offset2).ToHexString(2) + "]";
             }
             case "INCLI":
             case "STLI":
@@ -1121,28 +1172,39 @@ unit TinyGen
                 case "STLIB":
                 {
                     TinyCode.OffsetTo(instruction.Offset, false, "X");
-                    TinyCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
-                    TinyCode.PadOut("STA 0x0100, X", 0);
-                    if (!instruction.IsByte)
+                    if (instruction.Operand == 0)
                     {
-                        TinyCode.PadOut("DEX", 0);
-                        if ((instruction.Operand).GetByte(1) != (instruction.Operand).GetByte(0))
+                        TinyCode.PadOut("STZ 0x0100, X", 0);
+                        if (!instruction.IsByte)
                         {
-                            TinyCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
+                            TinyCode.PadOut("DEX", 0);
+                            TinyCode.PadOut("STZ 0x0100, X", 0);
                         }
+                    }
+                    else
+                    {
+                        TinyCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
                         TinyCode.PadOut("STA 0x0100, X", 0);
+                        if (!instruction.IsByte)
+                        {
+                            TinyCode.PadOut("DEX", 0);
+                            if ((instruction.Operand).GetByte(1) != (instruction.Operand).GetByte(0))
+                            {
+                                TinyCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
+                            }
+                            TinyCode.PadOut("STA 0x0100, X", 0);
+                        }
                     }
                 }
                 case "ADDLL":
                 case "ADDLLB":
                 {
-                    int offset = Int.FromBytes((instruction.Operand).GetByte(0), (instruction.Operand).GetByte(1));
                     TinyCode.OffsetTo(instruction.Offset, false, "X");
-                    bool sameL = (offset ==  instruction.Offset);
+                    bool sameL = (instruction.Offset2 ==  instruction.Offset);
                     string y = "X";
                     if (!sameL)
                     {
-                        TinyCode.OffsetTo(offset, false, "Y"); 
+                        TinyCode.OffsetTo(instruction.Offset2, false, "Y"); 
                         y = "Y";
                     }
                     TinyCode.PadOut("CLC", 0);
@@ -1161,12 +1223,65 @@ unit TinyGen
                         TinyCode.PadOut("PHA", 0);
                     }
                 }
+                case "ADDLGM":
+                {
+                    TinyCode.OffsetTo(instruction.Offset, false, "X"); 
+                    TinyCode.PadOut("LDY # 0x" + (instruction.Offset2).ToHexString(2), 0);
+                    TinyCode.PadOut("CLC", 0);
+                    TinyCode.PadOut("LDA 0x0100, X", 0);
+                    TinyCode.PadOut("ADC 0x0100, Y", 0);
+                    TinyCode.PadOut("STA ZP.TOPL", 0);
+                    
+                    TinyCode.PadOut("DEX", 0);
+                    TinyCode.PadOut("DEY", 0);
+                    TinyCode.PadOut("LDA 0x0100, X", 0);
+                    TinyCode.PadOut("ADC 0x0100, Y", 0);
+                    TinyCode.PadOut("STA ZP.TOPH", 0);
+                    
+                    TinyCode.PadOut("LDA [ZP.TOP]", 0);
+                    TinyCode.PadOut("PHA", 0);
+                
+                }
+                case "ADDLGIM":
+                {
+                    TinyCode.OffsetTo(instruction.Offset, false, "X"); 
+                    TinyCode.PadOut("LDY # 0x" + (instruction.Offset2).ToHexString(2), 0);
+                    TinyCode.PadOut("CLC", 0);
+                    TinyCode.PadOut("LDA 0x0100, X", 0);
+                    TinyCode.PadOut("ADC 0x0100, Y", 0);
+                    TinyCode.PadOut("STA ZP.TOPL", 0);
+                    
+                    TinyCode.PadOut("DEX", 0);
+                    TinyCode.PadOut("DEY", 0);
+                    TinyCode.PadOut("LDA 0x0100, X", 0);
+                    TinyCode.PadOut("ADC 0x0100, Y", 0);
+                    TinyCode.PadOut("STA ZP.TOPH", 0);
+                    TinyCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                    TinyCode.PadOut("STA [ZP.TOP]", 0);
+                }
+                case "ADDLGI":
+                {
+                    TinyCode.OffsetTo(instruction.Offset, false, "X"); 
+                    TinyCode.PadOut("LDY # 0x" + (instruction.Offset2).ToHexString(2), 0);
+                    TinyCode.PadOut("CLC", 0);
+                    TinyCode.PadOut("LDA 0x0100, X", 0);
+                    TinyCode.PadOut("ADC 0x0100, Y", 0);
+                    TinyCode.PadOut("PHA", 0);
+                    
+                    TinyCode.PadOut("DEX", 0);
+                    TinyCode.PadOut("DEY", 0);
+                    TinyCode.PadOut("LDA 0x0100, X", 0);
+                    TinyCode.PadOut("ADC 0x0100, Y", 0);
+                    TinyCode.PadOut("PHA", 0);
+                    TinyCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                    TinyCode.PadOut("PHA", 0);
+                }
+                
                 case "ADDLG":
                 case "ADDLGB":
                 {
-                    int offset = Int.FromBytes((instruction.Operand).GetByte(0), (instruction.Operand).GetByte(1));
                     TinyCode.OffsetTo(instruction.Offset, false, "X"); 
-                    TinyCode.PadOut("LDY # 0x" + offset.ToHexString(2), 0);
+                    TinyCode.PadOut("LDY # 0x" + (instruction.Offset2).ToHexString(2), 0);
                     TinyCode.PadOut("CLC", 0);
                     TinyCode.PadOut("LDA 0x0100, X", 0);
                     TinyCode.PadOut("ADC 0x0100, Y", 0);
@@ -1183,9 +1298,8 @@ unit TinyGen
                 case "ADDLLL":
                 case "ADDLLLB":
                 {
-                    int offset = Int.FromBytes((instruction.Operand).GetByte(0), (instruction.Operand).GetByte(1));
                     TinyCode.OffsetTo(instruction.Offset, false, "X"); 
-                    TinyCode.OffsetTo(offset, false, "Y"); 
+                    TinyCode.OffsetTo(instruction.Offset2, false, "Y"); 
                     TinyCode.PadOut("CLC", 0);
                     TinyCode.PadOut("LDA 0x0100, X", 0);
                     TinyCode.PadOut("ADC 0x0100, Y", 0);

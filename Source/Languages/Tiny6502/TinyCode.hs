@@ -73,6 +73,7 @@ unit TinyCode
         {
             PadOut("#define ACIA_6850", 0);
         }
+        PadOut("#define FASTINTS", 0);
         
         PadOut("",0);
         PadOut("uses \"resources.asm\"",0);
