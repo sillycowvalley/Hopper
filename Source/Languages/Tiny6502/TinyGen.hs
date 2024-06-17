@@ -72,11 +72,13 @@ unit TinyGen
     //
     // 'Packed' peephole optimization opcodes:
     //
-    //    INCLI : PUSHL offset0, PUSHI, ADD, POPL offset0
-    //    ADDLL : PUSHL offset0, PUSHL offset?, ADD, POPL offset0
-    //    STLI  : PUSHI, POPL offset0
-    //    LILE  : PUSHL offset, PUSHI, LE
-    //    LILT  : PUSHL offset, PUSHI, LT
+    //    ADDLL   : PUSHL offset0, PUSHL offset?, ADD
+    //    ADDLG   : PUSHL offset0, PUSHG offset1, ADD
+    //    INCLI   : PUSHL offset0, PUSHI, ADD, POPL offset0
+    //    ADDLLL  : PUSHL offset0, PUSHL offset?, ADD, POPL offset0
+    //    STLI    : PUSHI, POPL offset0
+    //    LILE    : PUSHL offset, PUSHI, LE
+    //    LILT    : PUSHL offset, PUSHI, LT
     //
     
      
@@ -115,9 +117,9 @@ unit TinyGen
             }
             if (instruction0.Name == "POPL")
             {
-                if (instruction1.Name == "PUSHI") 
+                if (instruction0.IsByte == instruction1.IsByte)
                 {
-                    if (instruction0.IsByte && (instruction0.IsByte == instruction1.IsByte))
+                    if (instruction1.Name == "PUSHI") 
                     {
                         instruction0.Operand = instruction1.Operand;
                         instruction0.Name = "STLI";
@@ -126,17 +128,18 @@ unit TinyGen
                         modified = true;
                         break;
                     }
-                    if (!instruction0.IsByte && (instruction0.IsByte == instruction1.IsByte))
-                    {
-                        instruction0.Operand = instruction1.Operand;
-                        instruction0.Name = "STLI";
-                        currentStream[currentStream.Count-1] = instruction0;
-                        DeleteInstruction(currentStream.Count-2);
+                    if ((instruction1.Name == "ADDLL") && (instruction1.Offset == instruction0.Offset) && (instruction0.Name == "POPL"))
+                    {   
+                        Print(" ADDLLL" + (instruction1.IsByte ? "B": ""));
+                        instruction1.Name    = "ADDLLL";
+                        currentStream[currentStream.Count-2] = instruction1;
+                        DeleteInstruction(currentStream.Count-1);
                         modified = true;
                         break;
                     }
                 }
             }
+                    
             break;
         } // loop
         return modified;
@@ -171,25 +174,34 @@ unit TinyGen
             {
                 if ((instruction2.IsByte == instruction1.IsByte) && (instruction1.IsByte == instruction0.IsByte))
                 {
-                    Print(" AL");
-                    if (instruction2.Offset == instruction1.Offset)
-                    {
-                        Print("=");    
-                    }
+                    Print(" ADDLL" + (instruction2.IsByte ? "B" : ""));
+                    instruction2.Operand = UInt.FromBytes((instruction1.Offset).GetByte(0), (instruction1.Offset).GetByte(1));
+                    instruction2.Name    = "ADDLL";
+                    currentStream[currentStream.Count-3] = instruction2;
+                    DeleteInstruction(currentStream.Count-1);
+                    DeleteInstruction(currentStream.Count-1);
+                    modified = true;
+                    break;
                 }
             }
             if ((instruction2.Name == "PUSHL") && (instruction1.Name == "PUSHG") && (instruction0.Name == "ADD"))
             {
                 if ((instruction2.IsByte == instruction1.IsByte) && (instruction1.IsByte == instruction0.IsByte))
                 {
-                    Print(" AG");
+                    Print(" ADDLG" + (instruction2.IsByte ? "B" : ""));
+                    instruction2.Operand = UInt.FromBytes((instruction1.Offset).GetByte(0), (instruction1.Offset).GetByte(1));
+                    instruction2.Name    = "ADDLG";
+                    currentStream[currentStream.Count-3] = instruction2;
+                    DeleteInstruction(currentStream.Count-1);
+                    DeleteInstruction(currentStream.Count-1);
+                    modified = true;
+                    break;
                 }
             }
             if ((instruction2.Name == "PUSHL") && (instruction1.Name == "PUSHI") && (instruction0.Name == "LT"))
             {
                 if ((instruction2.IsByte == instruction1.IsByte) && (instruction1.IsByte == instruction0.IsByte))
                 {
-                    Print(" LILT" + (instruction2.IsByte ? "B" : ""));
                     instruction2.Operand = instruction1.Operand;
                     instruction2.Name = "LILT";
                     currentStream[currentStream.Count-3] = instruction2;
@@ -203,7 +215,6 @@ unit TinyGen
             {
                 if ((instruction2.IsByte == instruction1.IsByte) && (instruction1.IsByte == instruction0.IsByte))
                 {
-                    Print(" LILE" + (instruction2.IsByte ? "B" : ""));
                     instruction2.Operand = instruction1.Operand;
                     instruction2.Name = "LILE";
                     currentStream[currentStream.Count-3] = instruction2;
@@ -243,12 +254,12 @@ unit TinyGen
                         modified = true;
                         break;
                     }
-                    if (false && (instruction3.Name == "PUSHL") && (instruction2.Name == "PUSHL") && (instruction1.Name == "ADD") && (instruction0.Name == "POPL")) // UNUSED OPT 6                   
+                    if (/*false &&*/ (instruction3.Name == "PUSHL") && (instruction2.Name == "PUSHL") && (instruction1.Name == "ADD") && (instruction0.Name == "POPL")) // UNUSED OPT 6                   
                     {   
-                        Print(" A1");
+                        Print(" ADDLLLB");
                         instruction3.Operand = UInt.FromBytes((instruction2.Offset).GetByte(0), (instruction2.Offset).GetByte(1));
                         instruction3.IsByte  = true;
-                        instruction3.Name    = "ADDLL";
+                        instruction3.Name    = "ADDLLL";
                         currentStream[currentStream.Count-4] = instruction3;
                         DeleteInstruction(currentStream.Count-1);
                         DeleteInstruction(currentStream.Count-1);
@@ -273,9 +284,10 @@ unit TinyGen
                     }
                     if ((instruction3.Name == "PUSHL") && (instruction2.Name == "PUSHL") && (instruction1.Name == "ADD") && (instruction0.Name == "POPL"))
                     {
+                        Print(" ADDLLL");
                         instruction3.Operand = UInt.FromBytes((instruction2.Offset).GetByte(0), (instruction2.Offset).GetByte(1));
                         instruction3.IsByte  = false;
-                        instruction3.Name    = "ADDLL";
+                        instruction3.Name    = "ADDLLL";
                         currentStream[currentStream.Count-4] = instruction3;
                         DeleteInstruction(currentStream.Count-1);
                         DeleteInstruction(currentStream.Count-1);
@@ -754,6 +766,8 @@ unit TinyGen
             
             
             case "ADDLL":
+            case "ADDLG":
+            case "ADDLLL":
             {
                 content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] [BP+0x" + (instruction.Operand).ToHexString(2) + "]";
             }
@@ -780,7 +794,7 @@ unit TinyGen
         InStreamMode = false;
         bool wasRem;
         
-        if (IsExperimental)
+        if (IsExperimental && (currentStream.Count != 1))
         {
             string content = ToString(currentStream);
             PadOut("", 0);
@@ -1120,6 +1134,54 @@ unit TinyGen
                     }
                 }
                 case "ADDLL":
+                case "ADDLLB":
+                {
+                    int offset = Int.FromBytes((instruction.Operand).GetByte(0), (instruction.Operand).GetByte(1));
+                    TinyCode.OffsetTo(instruction.Offset, false, "X");
+                    bool sameL = (offset ==  instruction.Offset);
+                    string y = "X";
+                    if (!sameL)
+                    {
+                        TinyCode.OffsetTo(offset, false, "Y"); 
+                        y = "Y";
+                    }
+                    TinyCode.PadOut("CLC", 0);
+                    TinyCode.PadOut("LDA 0x0100, X", 0);
+                    TinyCode.PadOut("ADC 0x0100, " + y, 0);
+                    TinyCode.PadOut("PHA", 0);
+                    if (!instruction.IsByte)
+                    {
+                        TinyCode.PadOut("DEX", 0);
+                        if (!sameL)
+                        {
+                            TinyCode.PadOut("DEY", 0);
+                        }
+                        TinyCode.PadOut("LDA 0x0100, X", 0);
+                        TinyCode.PadOut("ADC 0x0100, " + y, 0);
+                        TinyCode.PadOut("PHA", 0);
+                    }
+                }
+                case "ADDLG":
+                case "ADDLGB":
+                {
+                    int offset = Int.FromBytes((instruction.Operand).GetByte(0), (instruction.Operand).GetByte(1));
+                    TinyCode.OffsetTo(instruction.Offset, false, "X"); 
+                    TinyCode.PadOut("LDY # 0x" + offset.ToHexString(2), 0);
+                    TinyCode.PadOut("CLC", 0);
+                    TinyCode.PadOut("LDA 0x0100, X", 0);
+                    TinyCode.PadOut("ADC 0x0100, Y", 0);
+                    TinyCode.PadOut("PHA", 0);
+                    if (!instruction.IsByte)
+                    {
+                        TinyCode.PadOut("DEX", 0);
+                        TinyCode.PadOut("DEY", 0);
+                        TinyCode.PadOut("LDA 0x0100, X", 0);
+                        TinyCode.PadOut("ADC 0x0100, Y", 0);
+                        TinyCode.PadOut("PHA", 0);
+                    }
+                }
+                case "ADDLLL":
+                case "ADDLLLB":
                 {
                     int offset = Int.FromBytes((instruction.Operand).GetByte(0), (instruction.Operand).GetByte(1));
                     TinyCode.OffsetTo(instruction.Offset, false, "X"); 
