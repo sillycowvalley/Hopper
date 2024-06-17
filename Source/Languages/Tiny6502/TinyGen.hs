@@ -1226,7 +1226,7 @@ unit TinyGen
                 case "ADDLGM":
                 {
                     TinyCode.OffsetTo(instruction.Offset, false, "X"); 
-                    TinyCode.PadOut("LDY # 0x" + (instruction.Offset2).ToHexString(2), 0);
+                    TinyCode.OffsetTo(instruction.Offset2, true, "Y"); 
                     TinyCode.PadOut("CLC", 0);
                     TinyCode.PadOut("LDA 0x0100, X", 0);
                     TinyCode.PadOut("ADC 0x0100, Y", 0);
@@ -1245,7 +1245,7 @@ unit TinyGen
                 case "ADDLGIM":
                 {
                     TinyCode.OffsetTo(instruction.Offset, false, "X"); 
-                    TinyCode.PadOut("LDY # 0x" + (instruction.Offset2).ToHexString(2), 0);
+                    TinyCode.OffsetTo(instruction.Offset2, true, "Y"); 
                     TinyCode.PadOut("CLC", 0);
                     TinyCode.PadOut("LDA 0x0100, X", 0);
                     TinyCode.PadOut("ADC 0x0100, Y", 0);
@@ -1262,7 +1262,7 @@ unit TinyGen
                 case "ADDLGI":
                 {
                     TinyCode.OffsetTo(instruction.Offset, false, "X"); 
-                    TinyCode.PadOut("LDY # 0x" + (instruction.Offset2).ToHexString(2), 0);
+                    TinyCode.OffsetTo(instruction.Offset2, true, "Y"); 
                     TinyCode.PadOut("CLC", 0);
                     TinyCode.PadOut("LDA 0x0100, X", 0);
                     TinyCode.PadOut("ADC 0x0100, Y", 0);
@@ -1281,7 +1281,7 @@ unit TinyGen
                 case "ADDLGB":
                 {
                     TinyCode.OffsetTo(instruction.Offset, false, "X"); 
-                    TinyCode.PadOut("LDY # 0x" + (instruction.Offset2).ToHexString(2), 0);
+                    TinyCode.OffsetTo(instruction.Offset2, true, "Y"); 
                     TinyCode.PadOut("CLC", 0);
                     TinyCode.PadOut("LDA 0x0100, X", 0);
                     TinyCode.PadOut("ADC 0x0100, Y", 0);

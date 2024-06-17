@@ -324,7 +324,11 @@ program Optimize
                 {
                     modified = true;
                 }
-                if (AsmPoints.OptimizeDozen())
+                if (AsmPoints.OptimizeOctet())
+                {
+                    modified = true;
+                }
+                if (AsmPoints.OptimizeTen())
                 {
                     modified = true;
                 }

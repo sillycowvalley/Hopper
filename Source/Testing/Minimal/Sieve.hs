@@ -10,7 +10,7 @@ program Sieve
     uses "/Source/Minimal/IO"
     
     const uint size = 8191;  // 200 -> 78
-    const uint iterations = 1;
+    const byte iterations = 1;
     
     bool[size] flagsGlobal;
     
@@ -23,7 +23,7 @@ program Sieve
         uint k;
         uint prime;
         uint count;
-        uint iter = iterations;
+        byte iter = iterations;
         
         uint start = Time.Seconds;
         
