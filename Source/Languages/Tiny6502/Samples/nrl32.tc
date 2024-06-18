@@ -1,0 +1,33 @@
+//#define APPLE_I // rather than the default ACIA_6850 for E6502
+#define EXPERIMENTAL
+#include "../system.tc"
+
+func main() {
+    byte i;
+    word j;
+    byte[4] s;
+    
+    writeString("\nNRL32:\n"); 
+
+    // start timing
+    byte[] start = millis();
+
+    for (i = 1; i <= 10; i++) {
+        zeroLong(s);
+        for (j = 1; j <= 1000; j++) {
+            addWordToLong(s, j);
+        }
+        writeChar('.');
+    }
+    
+    writeChar('\n');writeHex(s[3]);writeHex(s[2]);writeHex(s[1]);writeHex(s[0]);
+    
+    // stop timing
+    word ms = elapsedMillis(start);
+    word sec = elapsedSeconds(start);
+    free(start);
+    
+    writeString("\n");
+    writeWord(ms);writeString(" ms\n");        
+    writeWord(sec);writeString(" s\n");        
+}

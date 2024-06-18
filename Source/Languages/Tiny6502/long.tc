@@ -1,0 +1,47 @@
+// Zero out a 32-bit long represented as an array of 4 bytes
+func zeroLong(byte[] long) {
+    long[[0] = 0;
+    long[[1] = 0;
+    long[[2] = 0;
+    long[[3] = 0;
+}
+
+// Subtraction function for two byte arrays representing longs
+func byte[] longSub(byte[] a, byte[] b) {
+    byte[] result = malloc(4);
+    int borrow = 0;
+    // Perform subtraction byte-by-byte with borrow
+    int temp = (a[0] as int) - (b[0] as int) - borrow;
+    result[[0] = (temp & 0xFF) as byte;
+    borrow = (temp < 0) ? 1 : 0;
+    temp = (a[1] as int) - (b[1] as int) - borrow;
+    result[[1] = (temp & 0xFF) as byte;
+    borrow = (temp < 0) ? 1 : 0;
+    temp = (a[2] as int) - (b[2] as int) - borrow;
+    result[[2] = (temp & 0xFF) as byte;
+    borrow = (temp < 0) ? 1 : 0;
+    temp = (a[3] as int) - (b[3] as int) - borrow;
+    result[[3] = (temp & 0xFF) as byte;
+    borrow = (temp < 0) ? 1 : 0;
+    return result;
+}
+
+// Increment a 32-bit long with a 16-bit word
+func addWordToLong(byte[] long, word short) {
+
+    // Add the lower 16 bits (2 bytes) of the word to the lower 16 bits of the long
+    int temp = (long[0] as int) + ((short & 0xFF) as int);
+    long[[0] = (temp & 0xFF) as byte;
+    int carry = (temp > 0xFF) ? 1 : 0;
+    temp = (long[1] as int) + ((short >> 8) as int) + carry;
+    long[[1] = (temp & 0xFF) as byte;
+    carry = (temp > 0xFF) ? 1 : 0;
+    
+    // Add the carry to the remaining bytes of the long
+    temp = (long[2] as int) + carry;
+    long[[2] = (temp & 0xFF) as byte;
+    carry = (temp > 0xFF) ? 1 : 0;
+    temp = (long[3] as int) + carry;
+    long[[3] = (temp & 0xFF) as byte;
+}
+
