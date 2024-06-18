@@ -1,6 +1,6 @@
-unit TinyScanner
+unit TCScanner
 {
-    uses "TinyToken"
+    uses "TCToken"
     uses "/Source/System/File"
     
     // Scanner state
@@ -158,7 +158,7 @@ unit TinyScanner
         
         string lexeme = currentLineContent.Substring(start, lineIndex - start);
         TokenType tp;
-        if (TinyToken.IsKeyword(lexeme, ref tp))
+        if (TCToken.IsKeyword(lexeme, ref tp))
         {
             return createToken(tp, lexeme);
         }

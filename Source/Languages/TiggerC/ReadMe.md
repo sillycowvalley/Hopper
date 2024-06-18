@@ -1,10 +1,10 @@
-# Tiny6502 Language Documentation
+# TiggerC Language Documentation
 
 ## Introduction
 
-Tiny6502 is a minimal programming language designed for the Hopper 6502 SBC, including a VIA, an ACIA, and a serial I2C EEPROM. It combines the simplicity and performance of low-level programming with higher code density and type safety, tailored for embedded systems. The language syntax is familiar to C programmers, making it easy to learn and use.
+TiggerC is a minimal programming language designed for the Hopper 6502 SBC, including a VIA, an ACIA, and a serial I2C EEPROM. It combines the simplicity and performance of low-level programming with higher code density and type safety, tailored for embedded systems. The language syntax is familiar to C programmers, making it easy to learn and use.
 
-### Key Differences Between Tiny6502 and C
+### Key Differences Between TiggerC and C
 
 - **Pointers:** Only originate from the `malloc()` API, returning a byte array pointer (`byte[]`).
 - **Local Arrays:** Declared with dimensions, e.g., `byte[100] hundredBytes;`, and automatically freed when the scope exits.
@@ -581,7 +581,7 @@ func main() {
 
 func main() {
     writeString("\n Mandelbrot - ported from Gordon's TinyBasic - Integers\n");
-    writeString("    Ported to Tiny6502.\n\n");
+    writeString("    Ported to TiggerC.\n\n");
     writeChar(' ');
 
     byte[] start = millis();
@@ -631,7 +631,7 @@ func main() {
 
 ## Operator Precedence
 
-The following table shows the precedence and associativity of Tiny6502 operators, modeled after the C standard:
+The following table shows the precedence and associativity of TiggerC operators, modeled after the C standard:
 
 | Precedence Level | Operator(s)       | Description                           | Associativity    |
 |------------------|-------------------|---------------------------------------|------------------|
@@ -664,7 +664,7 @@ The following table shows the precedence and associativity of Tiny6502 operators
 | 14               | `=`               | Assignment                            | Right to left    |
 | 15               | `,`               | Comma (sequence operator)             | Left to right    |
 
-This table helps clarify the order in which operations are performed in Tiny6502, ensuring that expressions are evaluated as intended.
+This table helps clarify the order in which operations are performed in TiggerC, ensuring that expressions are evaluated as intended.
 
 ## Bugs and Tasks
 

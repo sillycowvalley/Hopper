@@ -21,9 +21,9 @@ program Optimize
     bool verbose;
     bool showSizes;
     bool isExperimental;
-    bool isTiny6502;
+    bool isTiggerC;
     bool IsExperimental { get { return isExperimental; }}
-    bool IsTiny6502 { get { return isTiny6502; }}
+    bool IsTiggerC { get { return isTiggerC; }}
     
     <string,variant> symbols;
     <uint,bool> methodsCalled;
@@ -97,9 +97,9 @@ program Optimize
                 {
                     romSize = 0x0400;
                 }
-                if (pdValues.Contains("TINY6502"))
+                if (pdValues.Contains("TIGGERC"))
                 {
-                    isTiny6502 = true;
+                    isTiggerC = true;
                 }
                 if (pdValues.Contains("EXPERIMENTAL"))
                 {
@@ -301,7 +301,7 @@ program Optimize
             //    modified = true;
             //}
             
-            if (IsTiny6502 && (pass > 1))
+            if (IsTiggerC && (pass > 1))
             {
                 // start with peephole style optimizations
                 if (AsmPoints.OptimizePeep())

@@ -1,13 +1,13 @@
-unit TinyExpression
+unit TCExpression
 {
-    uses "TinyToken"
-    uses "TinyScanner"
-    uses "TinyCode"
-    uses "TinyGen"
-    uses "TinyOps"
-    uses "TinyConstant"
-    uses "TinyType"
-    uses "TinySymbols"
+    uses "TCToken"
+    uses "TCScanner"
+    uses "TCCode"
+    uses "TCGen"
+    uses "TCOps"
+    uses "TCConstant"
+    uses "TCType"
+    uses "TCSymbols"
     
     bool parseExpression(ref string actualType)
     {
@@ -19,13 +19,13 @@ unit TinyExpression
                 break;
             }
     
-            Token token = TinyScanner.Current();        
+            Token token = TCScanner.Current();        
             if (token.Type == TokenType.KW_AS)
             {
                 string asType;
-                TinyScanner.Advance(); // Skip 'as'
+                TCScanner.Advance(); // Skip 'as'
                 uint size;
-                if (!TinyCompile.parseType(ref asType, ref size))
+                if (!TCCompile.parseType(ref asType, ref size))
                 {
                     break;
                 }
@@ -47,7 +47,7 @@ unit TinyExpression
 
     bool parseAssignmentExpression(ref string actualType)
     {
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         if ((token.Type == TokenType.IDENTIFIER) || (token.Type == TokenType.KW_MEM))
         {
             string name = token.Lexeme;
@@ -55,11 +55,11 @@ unit TinyExpression
             bool isByteIndex;
             bool isIncDecIndexed;
             
-            Token peek  = TinyScanner.Peek();
+            Token peek  = TCScanner.Peek();
             if (peek.Type == TokenType.SYM_LLBRACKET)
             {
-                TinyScanner.Advance(); // <name>
-                TinyScanner.Advance(); // '[['
+                TCScanner.Advance(); // <name>
+                TCScanner.Advance(); // '[['
                 string indexType;
                 if (!parseExpression(ref indexType))
                 {
@@ -70,13 +70,13 @@ unit TinyExpression
                     Error(token.SourcePath, token.Line, "integral index type expected");
                     return false;
                 }
-                token = TinyScanner.Current();
+                token = TCScanner.Current();
                 if (token.Type != TokenType.SYM_RBRACKET)
                 {
                     Error(token.SourcePath, token.Line, "expected ']' after index expression");
                     return false;
                 }
-                peek  = TinyScanner.Peek();
+                peek  = TCScanner.Peek();
                 hasIndex = true;
                 isByteIndex = IsByteType(indexType);
                 isIncDecIndexed = (peek.Type == TokenType.SYM_PLUSPLUS) || (peek.Type == TokenType.SYM_MINUSMINUS);
@@ -84,13 +84,13 @@ unit TinyExpression
            
             if ((peek.Type == TokenType.SYM_EQ) || IsCompoundAssignmentOperator(peek.Type) || isIncDecIndexed)
             {
-                TinyScanner.Advance(); // name or ']'
+                TCScanner.Advance(); // name or ']'
                     
-                token = TinyScanner.Current(); 
+                token = TCScanner.Current(); 
                 string op = token.Lexeme;
                 
-                TinyGen.Comment(name + " " + op);
-                TinyScanner.Advance(); // Skip '=' or compound assignment operator
+                TCGen.Comment(name + " " + op);
+                TCScanner.Advance(); // Skip '=' or compound assignment operator
                 
                 
                 int    offset;
@@ -100,7 +100,7 @@ unit TinyExpression
                     actualType = "byte";
                     if (isIncDecIndexed)
                     {
-                        TinyGen.Dup(isByteIndex);
+                        TCGen.Dup(isByteIndex);
                     }
                     // memory address is TOS, twice
                 }
@@ -124,19 +124,19 @@ unit TinyExpression
                     if (isByteIndex)
                     {
                         // for simplicity, cast the index to a word
-                        TinyCode.CastPad(false);
+                        TCCode.CastPad(false);
                     }
                     if (!isByte)
                     {
                         // index *= 2;
-                        TinyGen.Dup(false);
-                        TinyGen.Add(false);
+                        TCGen.Dup(false);
+                        TCGen.Add(false);
                     }
-                    TinyGen.PushVariable(offset, false, isGlobal);
-                    TinyGen.Add(false);
+                    TCGen.PushVariable(offset, false, isGlobal);
+                    TCGen.Add(false);
                     if (isIncDecIndexed)
                     {
-                        TinyGen.Dup(false);
+                        TCGen.Dup(false);
                     }
                     // array member address is TOS
                 }
@@ -145,27 +145,27 @@ unit TinyExpression
                 {
                     if (hasIndex && (name == "mem"))
                     {
-                        TinyGen.Dup(isByteIndex);
-                        TinyGen.PushMemory(isByteIndex, isByte); // TinyCode.ReadMemory(isByteIndex, isByte);
+                        TCGen.Dup(isByteIndex);
+                        TCGen.PushMemory(isByteIndex, isByte); // TCCode.ReadMemory(isByteIndex, isByte);
                     }
                     else
                     {
                         if (hasIndex)
                         {
                             // push member based on address
-                            TinyGen.Comment("array assignment operator '" + op + "' getitem");
-                            TinyGen.Dup(false);
-                            TinyGen.PushMemory(false, isByte); // TinyCode.ReadMemory(false, isByte);
+                            TCGen.Comment("array assignment operator '" + op + "' getitem");
+                            TCGen.Dup(false);
+                            TCGen.PushMemory(false, isByte); // TCCode.ReadMemory(false, isByte);
                         }
                         else
                         {
-                            TinyGen.PushVariable(offset, isByte, isGlobal);
+                            TCGen.PushVariable(offset, isByte, isGlobal);
                         }
                     }
                 }
                 if (isIncDecIndexed)
                 {
-                    TinyGen.PushImmediate(isByte, 1);
+                    TCGen.PushImmediate(isByte, 1);
                 }
                 else
                 {  
@@ -187,43 +187,43 @@ unit TinyExpression
                     case "+=":
                     case "++":
                     {
-                        TinyGen.Add(IsByteType(actualType));
+                        TCGen.Add(IsByteType(actualType));
                     }
                     case "--":
                     case "-=":
                     {
-                        TinyGen.Sub(IsByteType(actualType));
+                        TCGen.Sub(IsByteType(actualType));
                     }
                     case "/=":
                     {
                         if (IsSignedType(actualType))
                         {
-                            TinyGen.DivI();
+                            TCGen.DivI();
                         }
                         else
                         {
-                            TinyGen.Div(IsByteType(actualType));
+                            TCGen.Div(IsByteType(actualType));
                         }
                     }
                     case "*=":
                     {
                         if (IsSignedType(actualType))
                         {
-                            TinyGen.MulI();
+                            TCGen.MulI();
                         }
                         else
                         {
-                            TinyGen.Mul(IsByteType(actualType));
+                            TCGen.Mul(IsByteType(actualType));
                         }
                     }
                 }
                 
                 if (hasIndex && (name == "mem"))
                 {
-                    TinyGen.PopMemory(isByteIndex, isByte); // TinyCode.WriteMemory(isByteIndex, isByte);
+                    TCGen.PopMemory(isByteIndex, isByte); // TCCode.WriteMemory(isByteIndex, isByte);
                     if (isIncDecIndexed)
                     {
-                        TinyGen.PushMemory(isByteIndex, isByte); // TinyCode.ReadMemory(isByteIndex, isByte); // for the expression result
+                        TCGen.PushMemory(isByteIndex, isByte); // TCCode.ReadMemory(isByteIndex, isByte); // for the expression result
                     }
                 }
                 else
@@ -231,16 +231,16 @@ unit TinyExpression
                     if (hasIndex)
                     {
                         // pop member based on address
-                        TinyGen.Comment("array assignment operator '" + op + "' setitem");
-                        TinyGen.PopMemory(false, isByte); // TinyCode.WriteMemory(false, isByte);
+                        TCGen.Comment("array assignment operator '" + op + "' setitem");
+                        TCGen.PopMemory(false, isByte); // TCCode.WriteMemory(false, isByte);
                         if (isIncDecIndexed)
                         {
-                            TinyGen.PushMemory(false, isByte); // TinyCode.ReadMemory(false, isByte); // for the expression result
+                            TCGen.PushMemory(false, isByte); // TCCode.ReadMemory(false, isByte); // for the expression result
                         }
                     }
                     else
                     {
-                        TinyGen.PopVariable(offset, isByte, isGlobal);
+                        TCGen.PopVariable(offset, isByte, isGlobal);
                     }
                 }
                 if (!isIncDecIndexed)
@@ -264,7 +264,7 @@ unit TinyExpression
         {
             return false;
         }
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         if (token.Type == TokenType.SYM_QUESTION)
         {
             if (actualType != "bool")
@@ -273,39 +273,39 @@ unit TinyExpression
                 return false;
             }    
             
-            //TinyCode.If("if");
-            //TinyCode.PadOut("{", 0);
+            //TCCode.If("if");
+            //TCCode.PadOut("{", 0);
             
-            TinyGen.IF();
+            TCGen.IF();
             
-            TinyScanner.Advance(); // Skip '?'
+            TCScanner.Advance(); // Skip '?'
             string trueType;
             if (!parseExpression(ref trueType))
             {
                 return false;
             }
             
-            //TinyCode.PadOut("}", 0);
-            //TinyCode.Else();
-            //TinyCode.PadOut("{", 0);
+            //TCCode.PadOut("}", 0);
+            //TCCode.Else();
+            //TCCode.PadOut("{", 0);
             
-            TinyGen.ELSE();
+            TCGen.ELSE();
             
-            token = TinyScanner.Current();
+            token = TCScanner.Current();
             if (token.Type != TokenType.SYM_COLON)
             {
                 Error(token.SourcePath, token.Line, "expected ':' in conditional expression");
                 return false;
             }
-            TinyScanner.Advance(); // Skip ':'
+            TCScanner.Advance(); // Skip ':'
             string falseType;
             if (!parseConditionalExpression(ref falseType))
             {
                 return false;
             }
             
-            //TinyCode.PadOut("}", 0);
-            TinyGen.ENDIF();
+            //TCCode.PadOut("}", 0);
+            TCGen.ENDIF();
           
             if (!MatchTypes(trueType, ref falseType))
             {
@@ -326,10 +326,10 @@ unit TinyExpression
             return false;
         }
 
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         while (token.Type == TokenType.SYM_PIPEPIPE)
         {
-            TinyScanner.Advance(); // Skip '||'
+            TCScanner.Advance(); // Skip '||'
             string rhsType;
             if (!parseLogicalAndExpression(ref rhsType))
             {
@@ -340,9 +340,9 @@ unit TinyExpression
                 TypeError(actualType, rhsType);
                 return false;
             }
-            token = TinyScanner.Current();
+            token = TCScanner.Current();
             // assuming both arguments are either 0 or 1
-            TinyGen.Or(true);
+            TCGen.Or(true);
             actualType = "bool";
         }
         return true;
@@ -355,10 +355,10 @@ unit TinyExpression
             return false;
         }
 
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         while (token.Type == TokenType.SYM_AMPAMP)
         {
-            TinyScanner.Advance(); // Skip '&&'
+            TCScanner.Advance(); // Skip '&&'
             string rhsType;
             if (!parseBitwiseOrExpression(ref rhsType))
             {
@@ -369,9 +369,9 @@ unit TinyExpression
                 TypeError(actualType, rhsType);
                 return false;
             }
-            token = TinyScanner.Current();
+            token = TCScanner.Current();
             // assuming both arguments are either 0 or 1
-            TinyGen.And(true);
+            TCGen.And(true);
             actualType = "bool";
         }
         return true;
@@ -384,10 +384,10 @@ unit TinyExpression
             return false;
         }
 
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         while (token.Type == TokenType.SYM_PIPE)
         {
-            TinyScanner.Advance(); // Skip '|'
+            TCScanner.Advance(); // Skip '|'
             string rhsType;
             if (!parseBitwiseXorExpression(ref rhsType))
             {
@@ -398,8 +398,8 @@ unit TinyExpression
                 TypeError(actualType, rhsType);
                 return false;
             }
-            token = TinyScanner.Current();
-            TinyGen.Or(IsByteType(actualType));
+            token = TCScanner.Current();
+            TCGen.Or(IsByteType(actualType));
         }
         return true;
     }
@@ -411,10 +411,10 @@ unit TinyExpression
             return false;
         }
 
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         while (token.Type == TokenType.SYM_CARET)
         {
-            TinyScanner.Advance(); // Skip '^'
+            TCScanner.Advance(); // Skip '^'
             string rhsType;
             if (!parseBitwiseAndExpression(ref rhsType))
             {
@@ -425,8 +425,8 @@ unit TinyExpression
                 TypeError(actualType, rhsType);
                 return false;
             }
-            token = TinyScanner.Current();
-            TinyGen.Xor(IsByteType(actualType));
+            token = TCScanner.Current();
+            TCGen.Xor(IsByteType(actualType));
         }
         return true;
     }
@@ -438,10 +438,10 @@ unit TinyExpression
             return false;
         }
 
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         while (token.Type == TokenType.SYM_AMP)
         {
-            TinyScanner.Advance(); // Skip '&'
+            TCScanner.Advance(); // Skip '&'
             string rhsType;
             if (!parseEqualityExpression(ref rhsType))
             {
@@ -452,8 +452,8 @@ unit TinyExpression
                 TypeError(actualType, rhsType);
                 return false;
             }
-            token = TinyScanner.Current();
-            TinyGen.And(IsByteType(actualType));
+            token = TCScanner.Current();
+            TCGen.And(IsByteType(actualType));
         }
         return true;
     }
@@ -465,17 +465,17 @@ unit TinyExpression
             return false;
         }
 
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         while ((token.Type == TokenType.SYM_EQEQ) || (token.Type == TokenType.SYM_NEQ))
         {
             string op = token.Lexeme;
-            TinyScanner.Advance(); // Skip '==' or '!='
+            TCScanner.Advance(); // Skip '==' or '!='
             string rhsType;
             if (!parseRelationalExpression(ref rhsType))
             {
                 return false;
             }
-            token = TinyScanner.Current();
+            token = TCScanner.Current();
             
             if (!MatchTypes(rhsType, ref actualType))
             {
@@ -484,12 +484,12 @@ unit TinyExpression
             }
             if (op == "==")
             {
-                TinyGen.EQ(IsByteType(actualType));
+                TCGen.EQ(IsByteType(actualType));
             }
             else
             {
                 // !=
-                TinyGen.NE(IsByteType(actualType));
+                TCGen.NE(IsByteType(actualType));
             }
         
             actualType = "bool";
@@ -504,17 +504,17 @@ unit TinyExpression
             return false;
         }
 
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         while ((token.Type == TokenType.SYM_LT) || (token.Type == TokenType.SYM_LTE) || (token.Type == TokenType.SYM_GT) || (token.Type == TokenType.SYM_GTE))
         {
             string op = token.Lexeme;
-            TinyScanner.Advance(); // Skip '<', '<=', '>', '>='
+            TCScanner.Advance(); // Skip '<', '<=', '>', '>='
             string rhsType;
             if (!parseShiftExpression(ref rhsType))
             {
                 return false;
             }
-            token = TinyScanner.Current(); // we fail if we don't call this?!
+            token = TCScanner.Current(); // we fail if we don't call this?!
             
             
             if (!MatchNumericTypesForRelational(rhsType, ref actualType))
@@ -528,44 +528,44 @@ unit TinyExpression
                 {
                     if (IsSignedType(actualType))
                     {
-                        TinyGen.LTI();
+                        TCGen.LTI();
                     }
                     else
                     {
-                        TinyGen.LT(IsByteType(actualType));
+                        TCGen.LT(IsByteType(actualType));
                     }
                 }
                 case "<=":
                 {
                     if (IsSignedType(actualType))
                     {
-                        TinyGen.LEI();
+                        TCGen.LEI();
                     }
                     else
                     {
-                        TinyGen.LE(IsByteType(actualType));
+                        TCGen.LE(IsByteType(actualType));
                     }
                 }
                 case ">":
                 {
                     if (IsSignedType(actualType))
                     {
-                        TinyGen.GTI();
+                        TCGen.GTI();
                     }
                     else
                     {
-                        TinyGen.GT(IsByteType(actualType));
+                        TCGen.GT(IsByteType(actualType));
                     }
                 }
                 case ">=":
                 {
                     if (IsSignedType(actualType))
                     {
-                        TinyGen.GEI();
+                        TCGen.GEI();
                     }
                     else
                     {
-                        TinyGen.GE(IsByteType(actualType));
+                        TCGen.GE(IsByteType(actualType));
                     }
                 }
             }
@@ -581,11 +581,11 @@ unit TinyExpression
             return false;
         }
 
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         while ((token.Type == TokenType.SYM_LSHIFT) || (token.Type == TokenType.SYM_RSHIFT))
         {
             string op = token.Lexeme;
-            TinyScanner.Advance(); // Skip '<<' or '>>'
+            TCScanner.Advance(); // Skip '<<' or '>>'
             string rhsType;
             if (!parseAdditiveExpression(ref rhsType))
             {
@@ -596,14 +596,14 @@ unit TinyExpression
                 TypeError(actualType, rhsType);
                 return false;
             }
-            token = TinyScanner.Current();
+            token = TCScanner.Current();
             if (op == "<<")
             {
-                TinyGen.Shl(IsByteType(actualType)); // assumes [top] is <= 255
+                TCGen.Shl(IsByteType(actualType)); // assumes [top] is <= 255
             }
             else
             {
-                TinyGen.Shr(IsByteType(actualType)); // assumes [top] is <= 255
+                TCGen.Shr(IsByteType(actualType)); // assumes [top] is <= 255
             }
         }
         return true;
@@ -616,17 +616,17 @@ unit TinyExpression
             return false;
         }
 
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         while ((token.Type == TokenType.SYM_PLUS) || (token.Type == TokenType.SYM_MINUS))
         {
             string op = token.Lexeme;
-            TinyScanner.Advance(); // Skip '+' or '-'
+            TCScanner.Advance(); // Skip '+' or '-'
             string rhsType;
             if (!parseMultiplicativeExpression(ref rhsType))
             {
                 return false;
             }
-            token = TinyScanner.Current(); // we fail if we don't call this?!
+            token = TCScanner.Current(); // we fail if we don't call this?!
             
             if (!MatchNumericTypesForAddition(rhsType, ref actualType))
             {
@@ -635,11 +635,11 @@ unit TinyExpression
             }
             if (op == "+")
             {
-                TinyGen.Add(IsByteType(actualType));
+                TCGen.Add(IsByteType(actualType));
             } 
             else
             {
-                TinyGen.Sub(IsByteType(actualType));
+                TCGen.Sub(IsByteType(actualType));
             }
         }
         return true;
@@ -652,11 +652,11 @@ unit TinyExpression
             return false;
         }
 
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         while ((token.Type == TokenType.SYM_STAR) || (token.Type == TokenType.SYM_SLASH) || (token.Type == TokenType.SYM_PERCENT))
         {
             string op = token.Lexeme;
-            TinyScanner.Advance(); // Skip '*', '/', '%'
+            TCScanner.Advance(); // Skip '*', '/', '%'
             string rhsType;
             if (!parseUnaryExpression(ref rhsType))
             {
@@ -667,38 +667,38 @@ unit TinyExpression
                 TypeError(actualType, rhsType);
                 return false;
             }
-            token = TinyScanner.Current();
+            token = TCScanner.Current();
             if (op == "*")
             {
                 if (IsSignedType(actualType))
                 {
-                    TinyGen.MulI();
+                    TCGen.MulI();
                 }
                 else
                 {
-                    TinyGen.Mul(IsByteType(actualType));
+                    TCGen.Mul(IsByteType(actualType));
                 }
             }
             else if (op == "/")
             {
                 if (IsSignedType(actualType))
                 {
-                    TinyGen.DivI();
+                    TCGen.DivI();
                 }
                 else
                 {
-                    TinyGen.Div(IsByteType(actualType));
+                    TCGen.Div(IsByteType(actualType));
                 }
             }
             else if (op == "%")
             {
                 if (IsSignedType(actualType))
                 {
-                    TinyGen.ModI();
+                    TCGen.ModI();
                 }
                 else
                 {
-                    TinyGen.Mod(IsByteType(actualType));
+                    TCGen.Mod(IsByteType(actualType));
                 }
             }
             else
@@ -711,16 +711,16 @@ unit TinyExpression
 
     bool parseUnaryExpression(ref string actualType)
     {
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         if ((token.Type == TokenType.SYM_MINUS) || (token.Type == TokenType.SYM_BANG) || (token.Type == TokenType.SYM_TILDE))
         {
             string op = token.Lexeme;
             if (op == "-")
             {
-                TinyGen.Comment("0 -");
-                TinyGen.PushImmediate(false, 0);
+                TCGen.Comment("0 -");
+                TCGen.PushImmediate(false, 0);
             }
-            TinyScanner.Advance(); // Skip unary operator
+            TCScanner.Advance(); // Skip unary operator
             if (!parsePrimaryExpression(ref actualType))
             {
                 return false;
@@ -738,7 +738,7 @@ unit TinyExpression
                     return false;
                 }
                 actualType = "int";
-                TinyGen.Sub(IsByteType(actualType));
+                TCGen.Sub(IsByteType(actualType));
             }
             else if (op == "~")
             {
@@ -747,7 +747,7 @@ unit TinyExpression
                     Error(token.SourcePath, token.Line, "numeric expression expected");
                     return false;
                 }
-                TinyGen.Not(IsByteType(actualType));
+                TCGen.Not(IsByteType(actualType));
             }
             else if (op == "!")
             {
@@ -756,7 +756,7 @@ unit TinyExpression
                     Error(token.SourcePath, token.Line, "boolean expression expected");
                     return false;
                 }
-                TinyGen.BoolNot();
+                TCGen.BoolNot();
             }
             else
             { 
@@ -778,11 +778,11 @@ unit TinyExpression
         bool success;
         loop
         {
-            Token token = TinyScanner.Current();
+            Token token = TCScanner.Current();
             if (token.Type == TokenType.IDENTIFIER)
             {
                 string name = token.Lexeme;
-                TinyScanner.Advance(); // Skip identifier
+                TCScanner.Advance(); // Skip identifier
                 
                 string constantValue;
                 if (GetConst(name, ref actualType, ref constantValue))
@@ -790,11 +790,11 @@ unit TinyExpression
                     if (actualType.EndsWith(']'))
                     {
                         // const char[] palette = ".,'~=+:;*%&$OXB#@ ";
-                        token = TinyScanner.Current();
+                        token = TCScanner.Current();
                         if (token.Type == TokenType.SYM_LBRACKET)
                         {
                             // pick out an array member
-                            TinyScanner.Advance(); // Skip '['
+                            TCScanner.Advance(); // Skip '['
                             string indexType;
                             if (!parseExpression(ref indexType))
                             {
@@ -811,13 +811,13 @@ unit TinyExpression
                                 break;
                             }
                             actualType = GetArrayMemberType(actualType);
-                            token = TinyScanner.Current();
+                            token = TCScanner.Current();
                             if (token.Type != TokenType.SYM_RBRACKET)
                             {
                                 Error(token.SourcePath, token.Line, "expected ']' after array index");
                                 break;
                             }
-                            TinyScanner.Advance(); // Skip ']'
+                            TCScanner.Advance(); // Skip ']'
                             
                             if (IsByteType(indexType))
                             {
@@ -826,17 +826,17 @@ unit TinyExpression
                             
                             uint address;
                             _ = UInt.TryParse(constantValue, ref address);
-                            TinyGen.PushConst(address);
+                            TCGen.PushConst(address);
                             
-                            TinyGen.Add(false);  // const [] access in parsePrimaryExpression : add the index to the address (assumes char/byte array)
-                            TinyGen.PushMemory(false, true); // TinyCode.ReadMemory(false, true); 
+                            TCGen.Add(false);  // const [] access in parsePrimaryExpression : add the index to the address (assumes char/byte array)
+                            TCGen.PushMemory(false, true); // TCCode.ReadMemory(false, true); 
                         }
                         else
                         {
                             // return the entire array
                             uint address;
                             _ = UInt.TryParse(constantValue, ref address);
-                            TinyGen.PushConst(address);
+                            TCGen.PushConst(address);
                         }
                     } // []
                     else
@@ -867,15 +867,15 @@ unit TinyExpression
                                 Die(0x0B);
                             }
                         }
-                        TinyGen.Comment(literalComment);
-                        TinyGen.PushImmediate(IsByteType(actualType), literalValue);
+                        TCGen.Comment(literalComment);
+                        TCGen.PushImmediate(IsByteType(actualType), literalValue);
                     }
                     success = true;
                     break;
                 }
             
             
-                token = TinyScanner.Current();
+                token = TCScanner.Current();
                 if (token.Type == TokenType.SYM_LPAREN)
                 {
                     // function call
@@ -897,24 +897,24 @@ unit TinyExpression
                         actualType = "word";
                     }
                     
-                    TinyScanner.Advance(); // Skip '('
+                    TCScanner.Advance(); // Skip '('
                     byte bytes;
                     if (!parseArgumentList(name, ref bytes))
                     {
                         break;
                     }
-                    token = TinyScanner.Current();
+                    token = TCScanner.Current();
                     if (token.Type != TokenType.SYM_RPAREN)
                     {
                         Error(token.SourcePath, token.Line, "expected ')' after argument list, ('" + token.Lexeme + "')");
                         break;
                     }
-                    TinyScanner.Advance(); // Skip ')'
-                    TinyGen.Call(name, IsByteType(actualType), actualType != "void", bytes);
-                    //TinyGen.DecSP(bytes); // TinyCode.PopBytes(bytes, name + " arguments"); // arguments after returning from method call
+                    TCScanner.Advance(); // Skip ')'
+                    TCGen.Call(name, IsByteType(actualType), actualType != "void", bytes);
+                    //TCGen.DecSP(bytes); // TCCode.PopBytes(bytes, name + " arguments"); // arguments after returning from method call
                     //if (actualType != "void")
                     //{
-                    //    TinyGen.PushTOP(IsByteType(actualType)); // TinyOps.PushTop(IsByteType(actualType));
+                    //    TCGen.PushTOP(IsByteType(actualType)); // TCOps.PushTop(IsByteType(actualType));
                     //}
                 }
                 else if (token.Type == TokenType.SYM_LBRACKET)
@@ -935,7 +935,7 @@ unit TinyExpression
                         }
                     }
                     
-                    TinyScanner.Advance(); // Skip '['
+                    TCScanner.Advance(); // Skip '['
                     string indexType;
                     if (!parseExpression(ref indexType))
                     {
@@ -946,21 +946,21 @@ unit TinyExpression
                         Error(token.SourcePath, token.Line, "integral index type expected");
                         break;
                     }
-                    token = TinyScanner.Current();
+                    token = TCScanner.Current();
                     if (token.Type != TokenType.SYM_RBRACKET)
                     {
                         Error(token.SourcePath, token.Line, "expected ']' after array index");
                         break;
                     }
-                    TinyScanner.Advance(); // Skip ']'
+                    TCScanner.Advance(); // Skip ']'
                     if (name == "mem")
                     {
                         actualType = "byte";
-                        TinyGen.PushMemory(IsByteType(indexType), true); // TinyCode.ReadMemory(IsByteType(indexType), true);
+                        TCGen.PushMemory(IsByteType(indexType), true); // TCCode.ReadMemory(IsByteType(indexType), true);
                     }
                     else
                     {
-                        TinyGen.Comment("array getitem"); 
+                        TCGen.Comment("array getitem"); 
                         // calculate the address we want to access
                         if (IsByteType(indexType))
                         {
@@ -976,12 +976,12 @@ unit TinyExpression
                         if (!IsByteType(actualType))
                         {
                             // index *= 2;
-                            TinyGen.Dup(false);
-                            TinyGen.Add(false);
+                            TCGen.Dup(false);
+                            TCGen.Add(false);
                         }
-                        TinyGen.PushVariable(offset, false, isGlobal);
-                        TinyGen.Add(false);
-                        TinyGen.PushMemory(false, IsByteType(actualType)); //TinyCode.ReadMemory(false, IsByteType(actualType));  
+                        TCGen.PushVariable(offset, false, isGlobal);
+                        TCGen.Add(false);
+                        TCGen.PushMemory(false, IsByteType(actualType)); //TCCode.ReadMemory(false, IsByteType(actualType));  
                     }
                 }
                 else
@@ -997,27 +997,27 @@ unit TinyExpression
                     if ((token.Type == TokenType.SYM_PLUSPLUS) || (token.Type == TokenType.SYM_MINUSMINUS))
                     {
                         
-                        TinyScanner.Advance(); // Skip '++' or '--'
-                        // TinyCode.PostIncrement(name, offset, IsByteType(actualType), token.Type == TokenType.SYM_PLUSPLUS, isGlobal);
+                        TCScanner.Advance(); // Skip '++' or '--'
+                        // TCCode.PostIncrement(name, offset, IsByteType(actualType), token.Type == TokenType.SYM_PLUSPLUS, isGlobal);
                         
                         // i++ or i-- : value before --/++ is used in the expression
-                        TinyGen.PushVariable(offset, IsByteType(actualType), isGlobal);
+                        TCGen.PushVariable(offset, IsByteType(actualType), isGlobal);
                         
-                        TinyGen.PushVariable(offset, IsByteType(actualType), isGlobal);
-                        TinyGen.PushImmediate(IsByteType(actualType), 1);
+                        TCGen.PushVariable(offset, IsByteType(actualType), isGlobal);
+                        TCGen.PushImmediate(IsByteType(actualType), 1);
                         if (token.Type == TokenType.SYM_PLUSPLUS)
                         {
-                            TinyGen.Add(IsByteType(actualType));
+                            TCGen.Add(IsByteType(actualType));
                         }
                         else
                         {
-                            TinyGen.Sub(IsByteType(actualType));
+                            TCGen.Sub(IsByteType(actualType));
                         }
-                        TinyGen.PopVariable(offset, IsByteType(actualType), isGlobal);
+                        TCGen.PopVariable(offset, IsByteType(actualType), isGlobal);
                     }
                     else
                     {
-                        TinyGen.PushVariable(offset, IsByteType(actualType), isGlobal);
+                        TCGen.PushVariable(offset, IsByteType(actualType), isGlobal);
                     }
                 }
             }
@@ -1025,12 +1025,12 @@ unit TinyExpression
             {
                 
                 bool inc = token.Type == TokenType.SYM_PLUSPLUS;
-                TinyScanner.Advance(); // Skip '++' or '--'
-                token = TinyScanner.Current();
+                TCScanner.Advance(); // Skip '++' or '--'
+                token = TCScanner.Current();
                 if (token.Type == TokenType.IDENTIFIER)
                 {
                     string name = token.Lexeme;
-                    TinyScanner.Advance(); // Skip identifier
+                    TCScanner.Advance(); // Skip identifier
                     int  offset;
                     bool isGlobal;
                     if (!GetVariable(name, ref actualType, ref offset, ref isGlobal))
@@ -1038,22 +1038,22 @@ unit TinyExpression
                         Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
                         break;
                     }
-                    //TinyCode.PreIncrement(name, offset, IsByteType(actualType), inc, isGlobal);
+                    //TCCode.PreIncrement(name, offset, IsByteType(actualType), inc, isGlobal);
                     
-                    TinyGen.PushVariable(offset, IsByteType(actualType), isGlobal);
-                    TinyGen.PushImmediate(IsByteType(actualType), 1);
+                    TCGen.PushVariable(offset, IsByteType(actualType), isGlobal);
+                    TCGen.PushImmediate(IsByteType(actualType), 1);
                     if (token.Type == TokenType.SYM_PLUSPLUS)
                     {
-                        TinyGen.Add(IsByteType(actualType));
+                        TCGen.Add(IsByteType(actualType));
                     }
                     else
                     {
-                        TinyGen.Sub(IsByteType(actualType));
+                        TCGen.Sub(IsByteType(actualType));
                     }
-                    TinyGen.PopVariable(offset, IsByteType(actualType), isGlobal);
+                    TCGen.PopVariable(offset, IsByteType(actualType), isGlobal);
                     
                     // ++i or --i  : value after --/++ is used in the expression
-                    TinyGen.PushVariable(offset, IsByteType(actualType), isGlobal);
+                    TCGen.PushVariable(offset, IsByteType(actualType), isGlobal);
                 }
                 else
                 {
@@ -1063,15 +1063,15 @@ unit TinyExpression
             }
             else if (token.Type == TokenType.KW_MEM)
             {
-                TinyScanner.Advance(); // Skip 'func'
+                TCScanner.Advance(); // Skip 'func'
                 
-                token = TinyScanner.Current();
+                token = TCScanner.Current();
                 if (token.Type != TokenType.SYM_LBRACKET)
                 {
                     Error(token.SourcePath, token.Line, "expected '[' after address expression");
                     break;
                 }
-                TinyScanner.Advance(); // Skip '['
+                TCScanner.Advance(); // Skip '['
                 
                 string indexType;
                 if (!parseExpression(ref indexType))
@@ -1084,21 +1084,21 @@ unit TinyExpression
                     break;
                 }
                 
-                token = TinyScanner.Current();
+                token = TCScanner.Current();
                 if (token.Type != TokenType.SYM_RBRACKET)
                 {
                     Error(token.SourcePath, token.Line, "expected ']' after address expression");
                     break;
                 }
-                TinyScanner.Advance(); // Skip ']'
+                TCScanner.Advance(); // Skip ']'
                 actualType = "byte";
                 
-                TinyGen.PushMemory(IsByteType(indexType), true); // TinyCode.ReadMemory(IsByteType(indexType), true);
+                TCGen.PushMemory(IsByteType(indexType), true); // TCCode.ReadMemory(IsByteType(indexType), true);
             }
             else if ((token.Type == TokenType.LIT_NUMBER) || (token.Type == TokenType.LIT_CHAR) || (token.Type == TokenType.KW_FALSE) || (token.Type == TokenType.KW_TRUE))
             {
                 string value;
-                if (!TinyConstant.parseConstantPrimary(ref value, ref actualType))
+                if (!TCConstant.parseConstantPrimary(ref value, ref actualType))
                 {
                     break;
                 }
@@ -1137,46 +1137,46 @@ unit TinyExpression
                         }
                     }
                 }
-                TinyGen.Comment(literalComment);
-                TinyGen.PushImmediate(IsByteType(actualType), literalValue);
+                TCGen.Comment(literalComment);
+                TCGen.PushImmediate(IsByteType(actualType), literalValue);
             }
             else if ((token.Type == TokenType.LIT_STRING) || (token.Type == TokenType.KW_NULL))
             {
                 actualType = "const char[]";
                 uint index;
                 DefineStringConst(token.Lexeme, ref index);
-                TinyGen.PushConst(index);
-                TinyScanner.Advance(); // Skip literal
+                TCGen.PushConst(index);
+                TCScanner.Advance(); // Skip literal
             }
             else if (token.Type == TokenType.KW_NULL)
             {
                 actualType = "[]"; // any pointer
-                TinyGen.Comment("null");
-                TinyGen.PushImmediate(false, 0);
-                TinyScanner.Advance(); // Skip literal
+                TCGen.Comment("null");
+                TCGen.PushImmediate(false, 0);
+                TCScanner.Advance(); // Skip literal
             }
             else if (token.Type == TokenType.SYM_LPAREN)
             {
-                TinyScanner.Advance(); // Skip '('
+                TCScanner.Advance(); // Skip '('
                 if (!parseExpression(ref actualType))
                 {
                     break;
                 }
-                token = TinyScanner.Current();
+                token = TCScanner.Current();
                 if (token.Type != TokenType.SYM_RPAREN)
                 {
                     Error(token.SourcePath, token.Line, "expected ')' after expression, ('" + token.Lexeme + "')");
                     break;
                 }
-                TinyScanner.Advance(); // Skip ')'
+                TCScanner.Advance(); // Skip ')'
             }
             else if (token.Type == TokenType.KW_FUNC)
             {
-                TinyScanner.Advance(); // Skip 'func'
-                token = TinyScanner.Current();
+                TCScanner.Advance(); // Skip 'func'
+                token = TCScanner.Current();
                 if (token.Type == TokenType.IDENTIFIER)
                 {
-                    TinyScanner.Advance(); // Skip identifier
+                    TCScanner.Advance(); // Skip identifier
                 }
                 else
                 {
@@ -1186,7 +1186,7 @@ unit TinyExpression
             }
             else
             {
-                Error(token.SourcePath, token.Line, "unexpected token in expression: " + TinyToken.ToString(token.Type));
+                Error(token.SourcePath, token.Line, "unexpected token in expression: " + TCToken.ToString(token.Type));
                 break;
             }
             success = true;
@@ -1203,7 +1203,7 @@ unit TinyExpression
         uint currentArgument = 0;
         loop
         {
-            token = TinyScanner.Current();
+            token = TCScanner.Current();
             if (token.Type == TokenType.SYM_RPAREN)
             {
                 break; // exit the loop when reaching ')'
@@ -1227,10 +1227,10 @@ unit TinyExpression
             }
             
             bytes += (IsByteType(argument.Type) ? 1 : 2);
-            token = TinyScanner.Current();
+            token = TCScanner.Current();
             if (token.Type == TokenType.SYM_COMMA)
             {
-                TinyScanner.Advance(); // Skip ','
+                TCScanner.Advance(); // Skip ','
             }
             else if (token.Type != TokenType.SYM_RPAREN)
             {
@@ -1249,12 +1249,12 @@ unit TinyExpression
     
     bool Expression(ref string actualType)
     {
-        TinyGen.BeginStream(false);
+        TCGen.BeginStream(false);
         
         bool success = parseExpression(ref actualType);
         if (success)
         {
-            TinyGen.FlushStream();
+            TCGen.FlushStream();
         }
         return success;
     }

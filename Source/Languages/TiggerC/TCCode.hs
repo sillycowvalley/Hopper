@@ -1,8 +1,8 @@
-unit TinyCode
+unit TCCode
 {
-    uses "TinySymbols"
-    uses "TinyOps"
-    uses "TinyGen"
+    uses "TCSymbols"
+    uses "TCOps"
+    uses "TCGen"
     
     file codeFile;
     string codePath;
@@ -59,7 +59,7 @@ unit TinyCode
     }
     Uses()
     {
-        PadOut("#define TINY6502", 0);
+        PadOut("#define TIGGERC", 0);
         if (!IsDefined("CPU_65C02S"))
         {
             PadOut("#define CPU_65C02S", 0);
@@ -90,8 +90,8 @@ unit TinyCode
         PadOut("uses \"/Source/Runtime/6502/Serial\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Time\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Devices/W65C22\"", 0);
-        PadOut("uses \"/Source/Languages/Tiny6502/TinyOps\"", 0);
-        PadOut("uses \"/Source/Languages/Tiny6502/TinySys\"", 0);
+        PadOut("uses \"/Source/Languages/TiggerC/TCOps\"", 0);
+        PadOut("uses \"/Source/Languages/TiggerC/TCSys\"", 0);
         PadOut("",0);
         PadOut("IRQ()",0);
         PadOut("{",0);
@@ -174,13 +174,13 @@ unit TinyCode
     Loop(string comment)
     {
         PadOut("loop", 0);
-        TinyConstant.EnterBlock();
-        TinySymbols.EnterBlock(true, comment);
+        TCConstant.EnterBlock();
+        TCSymbols.EnterBlock(true, comment);
     }
     EndLoop(string comment)
     {
-        TinySymbols.LeaveBlock(comment, true); // end loop
-        TinyConstant.LeaveBlock();
+        TCSymbols.LeaveBlock(comment, true); // end loop
+        TCConstant.LeaveBlock();
     }
     Break(string comment)
     {
@@ -243,13 +243,13 @@ unit TinyCode
         {
             if (doUnder)
             {
-                TinyGen.Comment("cast MSB (doUnder)");
-                TinyGen.PadUnder();
+                TCGen.Comment("cast MSB (doUnder)");
+                TCGen.PadUnder();
             }
             else
             {
-                TinyGen.Comment("cast MSB");
-                TinyGen.PushImmediate(true, 0);
+                TCGen.Comment("cast MSB");
+                TCGen.PushImmediate(true, 0);
             }
         }
         else
@@ -282,8 +282,8 @@ unit TinyCode
         }
         if (InStreamMode)
         {
-            TinyGen.Comment("16 bit as '" + byteType + "'");
-            TinyGen.DecSP(1);
+            TCGen.Comment("16 bit as '" + byteType + "'");
+            TCGen.DecSP(1);
         }
         else
         {
@@ -349,8 +349,8 @@ unit TinyCode
         PadOut("// end of locals scope", 0);
         PadOut("", 0); 
             
-        TinySymbols.FreeAutomaticAllocations(GetCurrentVariableLevel());
-        TinyCode.PopBytes(GetLevelBytes(GetCurrentVariableLevel()), "local variable " + VariableComment()); // method single exit loop
+        TCSymbols.FreeAutomaticAllocations(GetCurrentVariableLevel());
+        TCCode.PopBytes(GetLevelBytes(GetCurrentVariableLevel()), "local variable " + VariableComment()); // method single exit loop
         
         PadOut("", 0);
         PadOut("// POP BP", 0);
@@ -579,23 +579,23 @@ unit TinyCode
         {
             case "writeChar":
             {
-                functionName = "TinySys.WriteChar";
+                functionName = "TCSys.WriteChar";
             }
             case "millis":
             {
-                 functionName = "TinySys.Millis";
+                 functionName = "TCSys.Millis";
             }
             case "delay":
             {
-                 functionName = "TinySys.Delay";
+                 functionName = "TCSys.Delay";
             }
             case "malloc":
             {
-                 functionName = "TinySys.Malloc";
+                 functionName = "TCSys.Malloc";
             }
             case "free":
             {
-                 functionName = "TinySys.Free";
+                 functionName = "TCSys.Free";
             }
         }
         PadOut(functionName + "();", 0);

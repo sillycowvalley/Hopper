@@ -17,7 +17,7 @@ unit BuildCommand
     
     bool isHopper;
     bool isAssembly;
-    bool isTiny6502;
+    bool isTiggerC;
     bool isZ80;
     bool generateIHex;
     bool launchIHex;
@@ -176,7 +176,7 @@ unit BuildCommand
             }
             
             string binaryPath ="/Bin/PreProcess" + HexeExtension;
-            if (isTiny6502)
+            if (isTiggerC)
             {
                 binaryPath ="/Bin/tcpp" + HexeExtension;
             }
@@ -235,11 +235,11 @@ unit BuildCommand
                     cpuArchitecture = CPUArchitecture.Hopper; // a good starting assumption
                 }
             }
-            if (isZ80 || isAssembly || isTiny6502)
+            if (isZ80 || isAssembly || isTiggerC)
             {
                 ihexPath = hexePath.Replace(".hexe", ".hex");
             }
-            if (isTiny6502) // set by source being ".tc"
+            if (isTiggerC) // set by source being ".tc"
             {
                 if (cpuArchitecture == CPUArchitecture.M6502)
                 {
@@ -280,12 +280,12 @@ unit BuildCommand
                 break;
             }
             
-            if (isTiny6502)
+            if (isTiggerC)
             {
                 binaryPath ="/Bin/tcc" + HexeExtension;
                 if (!File.Exists(binaryPath))
                 {
-                    Editor.SetStatusBarText("No Tiny6502 compiler: '" + binaryPath + "'");
+                    Editor.SetStatusBarText("No TiggerC compiler: '" + binaryPath + "'");
                     break;
                 }
                 string tcPath    = "/Debug/Obj/" + fileName + ".tc";
@@ -339,7 +339,7 @@ unit BuildCommand
                 
             }
                        
-            if (isAssembly || isTiny6502)
+            if (isAssembly || isTiggerC)
             {
                 hasmPath = "/Debug/" + fileName + ".asm";
                 binaryPath ="/Bin/65asm" + HexeExtension;
@@ -409,7 +409,7 @@ unit BuildCommand
             if (BuildOptions.IsOptimizeEnabled() || isZ80)
             {   
                 string optName = "Optimize";
-                if (isAssembly || isTiny6502)
+                if (isAssembly || isTiggerC)
                 {
                     optName = "65opt";
                 }
@@ -437,7 +437,7 @@ unit BuildCommand
             
             string genName = "CODEGEN";
             string outputPath = hexePath;
-            if (isAssembly || isTiny6502)
+            if (isAssembly || isTiggerC)
             {
                 genName = "65gen";
                 outputPath = ihexPath;
@@ -502,7 +502,7 @@ unit BuildCommand
             { 
                 string dasmName = "DASM";
                 string dasmInput = hexePath;
-                if (isAssembly || isTiny6502)
+                if (isAssembly || isTiggerC)
                 {
                     dasmName = "65dasm";
                     dasmInput = ihexPath;
@@ -581,8 +581,8 @@ unit BuildCommand
         extension  = extension.ToLower();
         isHopper   = (extension == ".hs");
         isAssembly = (extension == ".asm");
-        isTiny6502 = (extension == ".tc");
-        return isHopper || isAssembly || isTiny6502;
+        isTiggerC = (extension == ".tc");
+        return isHopper || isAssembly || isTiggerC;
     }
     
     // Conditions for when we need to rebuild:

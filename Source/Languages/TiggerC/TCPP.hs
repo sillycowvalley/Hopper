@@ -649,9 +649,9 @@ program TCPreprocess
           
           <string> sourceFolders;
           sourceFolders.Append(System.CurrentDirectory);
-          sourceFolders.Append("/Source/Languages/Tiny6502");
-          sourceFolders.Append("/Source/Languages/Tiny6502/Samples");
-          sourceFolders.Append("/Source/Languages/Tiny6502/Testing");
+          sourceFolders.Append("/Source/Languages/TiggerC");
+          sourceFolders.Append("/Source/Languages/TiggerC/Samples");
+          sourceFolders.Append("/Source/Languages/TiggerC/Testing");
           foreach (var sourceFolder in sourceFolders)
           {
               if (File.Exists(ref projectPath, ref ext, sourceFolder))

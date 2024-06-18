@@ -7,6 +7,8 @@ preprocess /source/compiler/Z80Opt
 preprocess /source/compiler/Z80DASM
 preprocess /source/debugger/e6502
 preprocess /source/debugger/eZ80
+preprocess /source/languages/tiggerc/tcpp
+preprocess /source/languages/tiggerc/tcc
 
 compile 65asm -o
 compile 65gen -o
@@ -17,6 +19,8 @@ compile Z80Opt -o
 compile Z80DASM -o
 compile e6502 -o
 compile eZ80 -o
+compile tcpp -o
+compile tcc -o
 
 optimize 65asm
 optimize 65gen
@@ -27,6 +31,8 @@ optimize Z80Opt
 optimize Z80DASM
 optimize e6502
 optimize eZ80
+optimize tcpp
+optimize tcc
 
 codegen 65asm
 codegen 65gen
@@ -37,6 +43,8 @@ codegen Z80Opt
 codegen Z80DASM
 codegen e6502
 codegen eZ80
+codegen tcpp
+codegen tcc
 
 dasm 65asm
 dasm 65gen
@@ -47,6 +55,8 @@ dasm Z80Opt
 dasm Z80DASM
 dasm e6502
 dasm eZ80
+dasm tcpp
+dasm tcc
 
 preprocess /source/runtime/r6502.asm -a
 65asm r6502

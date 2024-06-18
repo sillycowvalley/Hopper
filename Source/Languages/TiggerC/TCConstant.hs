@@ -1,10 +1,10 @@
-unit TinyConstant
+unit TCConstant
 {
-    friend TinyStatement, TinyExpression, TinyCompile;
+    friend TCStatement, TCExpression, TCCompile;
     
-    uses "TinyToken"
-    uses "TinyType"
-    uses "TinyCode"
+    uses "TCToken"
+    uses "TCType"
+    uses "TCCode"
     
     record Constant
     {
@@ -47,7 +47,7 @@ unit TinyConstant
         if (scopeConstants.Contains(constantName))
         {
             // exists already
-            Token token = TinyScanner.Current();
+            Token token = TCScanner.Current();
             Error(token.SourcePath, token.Line, "constant with name '" + constantName + "' already exists");
             return false;
         }
@@ -84,7 +84,7 @@ unit TinyConstant
     
     bool evaluateArithmeticOperation(string leftValue, string rightValue,  string op, ref string resultValue, ref string resultType)
     {
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         
         long left;
         long right;
@@ -158,7 +158,7 @@ unit TinyConstant
     
     bool evaluateBitwiseOperation(string leftValue, string rightValue, string op, ref string resultValue, ref string resultType)
     {
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
 
         uint left;
         uint right;
@@ -200,7 +200,7 @@ unit TinyConstant
     
     bool evaluateComparisonOperation(string leftValue, string rightValue, string op, ref string resultValue, ref string resultType)
     {
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         
         long left;
         long right;
@@ -246,7 +246,7 @@ unit TinyConstant
     
     bool evaluateBooleanOperation(string leftValue, string rightValue, string op, ref string resultValue, ref string resultType)
     {
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         bool left = (leftValue == "true");
         bool right = (rightValue == "true");
         bool result;
@@ -275,7 +275,7 @@ unit TinyConstant
     
     bool parseConstantPrimary(ref string value, ref string actualType)
     {
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         
         if (token.Type == TokenType.LIT_NUMBER)
         {
@@ -307,7 +307,7 @@ unit TinyConstant
                 Error(token.SourcePath, token.Line, "integral constant out of range, ('" + token.Lexeme + "')");
                 return false;
             }
-            TinyScanner.Advance(); // Skip number or identifier
+            TCScanner.Advance(); // Skip number or identifier
         }
         else if (token.Type == TokenType.IDENTIFIER)
         {
@@ -316,31 +316,31 @@ unit TinyConstant
                 Error(token.SourcePath, token.Line, "undefined constant identifier in constant expression, ('" + token.Lexeme + "')");
                 return false;
             }
-            TinyScanner.Advance(); // Skip identifier
+            TCScanner.Advance(); // Skip identifier
         }
         else if (token.Type == TokenType.LIT_STRING)
         {
             value = token.Lexeme;
             actualType = "const char[]";
-            TinyScanner.Advance(); // Skip string literal
+            TCScanner.Advance(); // Skip string literal
         }
         else if (token.Type == TokenType.LIT_CHAR)
         {
             value = token.Lexeme;
             actualType = "char";
-            TinyScanner.Advance(); // Skip char literal
+            TCScanner.Advance(); // Skip char literal
         }
         else if (token.Type == TokenType.KW_TRUE)
         {
             value = "1";
             actualType = "bool";
-            TinyScanner.Advance(); // Skip bool literal
+            TCScanner.Advance(); // Skip bool literal
         }
         else if (token.Type == TokenType.KW_FALSE)
         {
             value = "0";
             actualType = "bool";
-            TinyScanner.Advance(); // Skip bool literal
+            TCScanner.Advance(); // Skip bool literal
         }
         else
         {
@@ -353,11 +353,11 @@ unit TinyConstant
     
     bool parseConstantUnary(ref string value, ref string actualType)
     {
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         if ((token.Type == TokenType.SYM_MINUS) || (token.Type == TokenType.SYM_PLUS) || (token.Type == TokenType.SYM_BANG) || (token.Type == TokenType.SYM_TILDE))
         {
             string op = token.Lexeme;
-            TinyScanner.Advance(); // Skip operator
+            TCScanner.Advance(); // Skip operator
             if (!parseConstantPrimary(ref value, ref actualType))
             {
                 return false;
@@ -448,11 +448,11 @@ unit TinyConstant
         {
             return false;
         }
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         while ((token.Type == TokenType.SYM_STAR) || (token.Type == TokenType.SYM_SLASH) || (token.Type == TokenType.SYM_PERCENT))
         {
             string op = token.Lexeme;
-            TinyScanner.Advance(); // Skip operator
+            TCScanner.Advance(); // Skip operator
             string rightValue;
             string rightType;
             if (!parseConstantUnary(ref rightValue, ref rightType))
@@ -468,7 +468,7 @@ unit TinyConstant
             {
                 return false;
             }
-            token = TinyScanner.Current();
+            token = TCScanner.Current();
         }
         return true;
     }
@@ -479,11 +479,11 @@ unit TinyConstant
         {
             return false;
         }
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         while ((token.Type == TokenType.SYM_PLUS) || (token.Type == TokenType.SYM_MINUS))
         {
             string op = token.Lexeme;
-            TinyScanner.Advance(); // Skip operator
+            TCScanner.Advance(); // Skip operator
             string rightValue;
             string rightType;
             if (!parseConstantFactor(ref rightValue, ref rightType))
@@ -499,7 +499,7 @@ unit TinyConstant
             {
                 return false;
             }
-            token = TinyScanner.Current();
+            token = TCScanner.Current();
         }
         return true;
     }
@@ -510,11 +510,11 @@ unit TinyConstant
         {
             return false;
         }
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         while ((token.Type == TokenType.SYM_LSHIFT) || (token.Type == TokenType.SYM_RSHIFT))
         {
             string op = token.Lexeme;
-            TinyScanner.Advance(); // Skip operator
+            TCScanner.Advance(); // Skip operator
             string rightValue;
             string rightType;
             if (!parseConstantTerm(ref rightValue, ref rightType))
@@ -530,7 +530,7 @@ unit TinyConstant
             {
                 return false;
             }
-            token = TinyScanner.Current();
+            token = TCScanner.Current();
         }
         return true;
     }
@@ -541,11 +541,11 @@ unit TinyConstant
         {
             return false;
         }
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         while ((token.Type == TokenType.SYM_LT) || (token.Type == TokenType.SYM_LTE) || (token.Type == TokenType.SYM_GT) || (token.Type == TokenType.SYM_GTE))
         {
             string op = token.Lexeme;
-            TinyScanner.Advance(); // Skip operator
+            TCScanner.Advance(); // Skip operator
             string rightValue;
             string rightType;
             if (!parseConstantBitwiseShift(ref rightValue, ref rightType))
@@ -561,7 +561,7 @@ unit TinyConstant
             {
                 return false;
             }
-            token = TinyScanner.Current();
+            token = TCScanner.Current();
         }
         return true;
     }
@@ -572,11 +572,11 @@ unit TinyConstant
         {
             return false;
         }
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         while ((token.Type == TokenType.SYM_EQEQ) || (token.Type == TokenType.SYM_NEQ))
         {
             string op = token.Lexeme;
-            TinyScanner.Advance(); // Skip operator
+            TCScanner.Advance(); // Skip operator
             string rightValue;
             string rightType;
             if (!parseConstantComparison(ref rightValue, ref rightType))
@@ -592,7 +592,7 @@ unit TinyConstant
             {
                 return false;
             }
-            token = TinyScanner.Current();
+            token = TCScanner.Current();
         }
         return true;
     }
@@ -603,11 +603,11 @@ unit TinyConstant
         {
             return false;
         }
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         while (token.Type == TokenType.SYM_AMP)
         {
             string op = token.Lexeme;
-            TinyScanner.Advance(); // Skip operator
+            TCScanner.Advance(); // Skip operator
             string rightValue;
             string rightType;
             if (!parseConstantEquality(ref rightValue, ref rightType))
@@ -623,7 +623,7 @@ unit TinyConstant
             {
                 return false;
             }
-            token = TinyScanner.Current();
+            token = TCScanner.Current();
         }
         return true;
     }
@@ -634,11 +634,11 @@ unit TinyConstant
         {
             return false;
         }
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         while (token.Type == TokenType.SYM_CARET)
         {
             string op = token.Lexeme;
-            TinyScanner.Advance(); // Skip operator
+            TCScanner.Advance(); // Skip operator
             string rightValue;
             string rightType;
             if (!parseConstantBitwiseAnd(ref rightValue, ref rightType))
@@ -654,7 +654,7 @@ unit TinyConstant
             {
                 return false;
             }
-            token = TinyScanner.Current();
+            token = TCScanner.Current();
         }
         return true;
     }
@@ -665,11 +665,11 @@ unit TinyConstant
         {
             return false;
         }
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         while (token.Type == TokenType.SYM_PIPE)
         {
             string op = token.Lexeme;
-            TinyScanner.Advance(); // Skip operator
+            TCScanner.Advance(); // Skip operator
             string rightValue;
             string rightType;
             if (!parseConstantBitwiseXor(ref rightValue, ref rightType))
@@ -685,7 +685,7 @@ unit TinyConstant
             {
                 return false;
             }
-            token = TinyScanner.Current();
+            token = TCScanner.Current();
         }
         return true;
     }
@@ -696,11 +696,11 @@ unit TinyConstant
         {
             return false;
         }
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         while (token.Type == TokenType.SYM_AMPAMP)
         {
             string op = token.Lexeme;
-            TinyScanner.Advance(); // Skip operator
+            TCScanner.Advance(); // Skip operator
             string rightValue;
             string rightType;
             if (!parseConstantBitwiseOr(ref rightValue, ref rightType))
@@ -716,7 +716,7 @@ unit TinyConstant
             {
                 return false;
             }
-            token = TinyScanner.Current();
+            token = TCScanner.Current();
         }
         return true;
     }
@@ -727,11 +727,11 @@ unit TinyConstant
         {
             return false;
         }
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         while (token.Type == TokenType.SYM_PIPEPIPE)
         {
             string op = token.Lexeme;
-            TinyScanner.Advance(); // Skip operator
+            TCScanner.Advance(); // Skip operator
             string rightValue;
             string rightType;
             if (!parseConstantLogicalAnd(ref rightValue, ref rightType))
@@ -747,7 +747,7 @@ unit TinyConstant
             {
                 return false;
             }
-            token = TinyScanner.Current();
+            token = TCScanner.Current();
         }
         return true;
     }

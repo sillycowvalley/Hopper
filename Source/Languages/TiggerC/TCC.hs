@@ -3,9 +3,9 @@ program TCCompile
     uses "/Source/System/System"
     uses "/Source/System/Diagnostics"
     
-    uses "TinyToken"
-    uses "TinyScanner"
-    uses "TinyCompile"
+    uses "TCToken"
+    uses "TCScanner"
+    uses "TCCompile"
     
     uses "/Source/Compiler/Tokens/Parser" // for SetInteractive
     
@@ -108,16 +108,16 @@ program TCCompile
               projectPath = projectPath.Replace(extension, ".tc");
               projectPath = Path.GetFileName(projectPath);
               projectPath = Path.Combine("/Debug/Obj/", projectPath);
-              TinyToken.Initialize();
-              TinyScanner.Restart(projectPath);
-              TinyCode.Initialize(projectPath);
+              TCToken.Initialize();
+              TCScanner.Restart(projectPath);
+              TCCode.Initialize(projectPath);
               
-              if (!TinyCompile.Compile())
+              if (!TCCompile.Compile())
               {
                   break;
               }
               
-              TinyCode.Flush();
+              TCCode.Flush();
               
               if (!Parser.IsInteractive())
               {

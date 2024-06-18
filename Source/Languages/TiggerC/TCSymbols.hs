@@ -1,10 +1,10 @@
-unit TinySymbols
+unit TCSymbols
 {
-    friend TinyStatement, TinyExpression, TinyCompile;
+    friend TCStatement, TCExpression, TCCompile;
     
-    uses "TinyToken"
-    uses "TinyType"
-    uses "TinyCode"
+    uses "TCToken"
+    uses "TCType"
+    uses "TCCode"
     
     
     record Variable
@@ -63,11 +63,11 @@ unit TinySymbols
     {
         if (!generate)
         {
-            TinyCode.Defer("{ // " + comment);
+            TCCode.Defer("{ // " + comment);
         }
         else
         {
-            TinyCode.PadOut("{ // " + comment, 0);
+            TCCode.PadOut("{ // " + comment, 0);
         }
         <string, Variable> level;
         variables.Append(level);
@@ -88,15 +88,15 @@ unit TinySymbols
                 {
                     if (!commented)
                     {
-                        TinyCode.PadOut("", 0);
-                        TinyCode.PadOut("// free automatic allocations " + VariableComment(), 0);
+                        TCCode.PadOut("", 0);
+                        TCCode.PadOut("// free automatic allocations " + VariableComment(), 0);
                         commented = true;
                     }
         
-                    TinyCode.PushVariable(kv.key, v.Offset, false, v.IsGlobal);
-                    TinyCode.PadOut("TinySys.Free();", 0);
-                    TinyCode.PadOut("PLY", 0);
-                    TinyCode.PadOut("PLY", 0);
+                    TCCode.PushVariable(kv.key, v.Offset, false, v.IsGlobal);
+                    TCCode.PadOut("TCSys.Free();", 0);
+                    TCCode.PadOut("PLY", 0);
+                    TCCode.PadOut("PLY", 0);
                 }
             }
         }
@@ -106,14 +106,14 @@ unit TinySymbols
         if ((name == "if") || (name == "else") || (name == "for") || (name == "while"))
         {
             FreeAutomaticAllocations(GetCurrentVariableLevel());
-            TinyCode.PopBytes(name + " locals");
+            TCCode.PopBytes(name + " locals");
             LocalOffset -= GetLevelBytes(GetCurrentVariableLevel());
         }
         variables.Remove(variables.Count-1);
         if (name == "main")
         {
             FreeAutomaticAllocations(GetCurrentVariableLevel());
-            TinyCode.PopBytes(byte(GlobalOffset), "global variable " + VariableComment());
+            TCCode.PopBytes(byte(GlobalOffset), "global variable " + VariableComment());
         }
         
         blockLevel--;
@@ -121,11 +121,11 @@ unit TinySymbols
         {
             if (name.Length != 0)
             {
-                TinyCode.PadOut("} // " + name, 0);
+                TCCode.PadOut("} // " + name, 0);
             }
             else
             {   
-                TinyCode.PadOut("}", 0);
+                TCCode.PadOut("}", 0);
             }
         }
     }
@@ -133,7 +133,7 @@ unit TinySymbols
     DefineSymbol(string name)
     {
         symbols[name] = true;
-        TinyCode.PadOut("#define " + name, 0);
+        TCCode.PadOut("#define " + name, 0);
     }
     bool IsDefined(string name)
     {
@@ -153,7 +153,7 @@ unit TinySymbols
         {
             if (functions.Contains(functionName))
             {
-                Token token = TinyScanner.Current();
+                Token token = TCScanner.Current();
                 Function proto = functions[functionName];
                 if (!proto.Prototype)
                 {
@@ -226,7 +226,7 @@ unit TinySymbols
         if (arguments.Contains(argumentName))
         {
             // exists already
-            Token token = TinyScanner.Current();
+            Token token = TCScanner.Current();
             Error(token.SourcePath, token.Line, "argument with name '" + argumentName + "' already exists");
             return false;
         }
@@ -276,7 +276,7 @@ unit TinySymbols
         if (scopeVariables.Contains(variableName))
         {
             // exists already
-            Token token = TinyScanner.Current();
+            Token token = TCScanner.Current();
             Error(token.SourcePath, token.Line, "variable with name '" + variableName + "' already exists");
             return false;
         }

@@ -1,4 +1,4 @@
-unit TinyType
+unit TCType
 {
     bool IsIndexType(string typeName)
     {
@@ -214,7 +214,7 @@ unit TinyType
                     {
                         if (asCast)
                         {
-                            TinyCode.ToBool(true, doUnder);
+                            TCCode.ToBool(true, doUnder);
                         }
                         return asCast; // byte as bool requires cast
                     }
@@ -222,7 +222,7 @@ unit TinyType
                     {
                         if (asCast)
                         {
-                            TinyCode.ToBool(true, doUnder);
+                            TCCode.ToBool(true, doUnder);
                         }
                         return asCast; // char as bool requires cast
                     }
@@ -230,7 +230,7 @@ unit TinyType
                     {
                         if (asCast)
                         {
-                            TinyCode.ToBool(false, doUnder);
+                            TCCode.ToBool(false, doUnder);
                         }
                         return asCast; // word as bool requires cast
                     }
@@ -238,7 +238,7 @@ unit TinyType
                     {
                         if (asCast)
                         {
-                            TinyCode.ToBool(false, doUnder);
+                            TCCode.ToBool(false, doUnder);
                         }
                         return asCast; // word as int requires cast
                     }
@@ -246,7 +246,7 @@ unit TinyType
                     {
                         if (asCast)
                         {
-                            TinyCode.ToBool(false, doUnder);
+                            TCCode.ToBool(false, doUnder);
                         }
                         return asCast; // word as +int requires cast
                     }
@@ -275,7 +275,7 @@ unit TinyType
                     {
                         if (asCast)
                         {
-                            TinyCode.WordToByte(doUnder, "byte");
+                            TCCode.WordToByte(doUnder, "byte");
                         }
                         return asCast; // int as byte requires cast
                     }
@@ -283,7 +283,7 @@ unit TinyType
                     {
                         if (asCast)
                         {
-                            TinyCode.WordToByte(doUnder, "byte");
+                            TCCode.WordToByte(doUnder, "byte");
                         }
                         return asCast; // +int as byte requires cast
                     }
@@ -291,7 +291,7 @@ unit TinyType
                     {
                         if (asCast)
                         {
-                            TinyCode.WordToByte(doUnder, "byte");
+                            TCCode.WordToByte(doUnder, "byte");
                         }
                         return asCast; // word as byte requires cast
                     }
@@ -332,7 +332,7 @@ unit TinyType
                     {
                         if (asCast)
                         {
-                            TinyCode.WordToByte(doUnder, "char");
+                            TCCode.WordToByte(doUnder, "char");
                         }
                         return asCast; // word as char requires cast
                     }
@@ -359,14 +359,14 @@ unit TinyType
                 {
                     case "byte":
                     {
-                        TinyCode.CastPad(doUnder);
+                        TCCode.CastPad(doUnder);
                         return true; // byte as word
                     }
                     case "char":
                     {
                         if (asCast)
                         {
-                            TinyCode.CastPad(doUnder);
+                            TCCode.CastPad(doUnder);
                         }
                         return asCast; // char as word requires cast
                     }
@@ -382,7 +382,7 @@ unit TinyType
                     {
                         if (asCast)
                         {
-                            TinyCode.CastPad(doUnder);
+                            TCCode.CastPad(doUnder);
                         }
                         return asCast; // bool as word requires cast
                     }
@@ -405,14 +405,14 @@ unit TinyType
                 {
                     case "byte":
                     {
-                        TinyCode.CastPad(doUnder);
+                        TCCode.CastPad(doUnder);
                         return true; // byte as int
                     }
                     case "char":
                     {
                         if (asCast)
                         {
-                            TinyCode.CastPad(doUnder);
+                            TCCode.CastPad(doUnder);
                         }
                         return asCast; // char as int requires cast
                     }
@@ -428,7 +428,7 @@ unit TinyType
                     {
                         if (asCast)
                         {
-                            TinyCode.CastPad(doUnder);
+                            TCCode.CastPad(doUnder);
                         }
                         return asCast; // bool as int requires cast
                     }
@@ -451,14 +451,14 @@ unit TinyType
                 {
                     case "byte":
                     {
-                        TinyCode.CastPad(doUnder);
+                        TCCode.CastPad(doUnder);
                         return true; // byte as +int
                     }
                     case "char":
                     {
                         if (asCast)
                         {
-                            TinyCode.CastPad(doUnder);
+                            TCCode.CastPad(doUnder);
                         }
                         return asCast; // char as +int requires cast
                     }
@@ -474,7 +474,7 @@ unit TinyType
                     {
                         if (asCast)
                         {
-                            TinyCode.CastPad(doUnder);
+                            TCCode.CastPad(doUnder);
                         }
                         return asCast; // bool as +int requires cast
                     }
@@ -507,7 +507,7 @@ unit TinyType
     }
     TypeError(string expected, string actual)
     {
-        Token token = TinyScanner.Current();
+        Token token = TCScanner.Current();
         Error(token.SourcePath, token.Line, "type mismatch: expected '" + expected +"', was '" + actual + "'");
     }
                 

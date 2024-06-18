@@ -1,4 +1,4 @@
-unit TinySys
+unit TCSys
 {
     WriteChar()
     {

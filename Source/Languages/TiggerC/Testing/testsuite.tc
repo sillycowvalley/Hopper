@@ -141,7 +141,7 @@ func word subtractMillis(word[] start, word[] end) {
 
 // Main test runner
 func main() {
-    writeString("Starting Tiny6502 Test Suite\n\n");
+    writeString("Starting TiggerC Test Suite\n\n");
 
     writeString("Running Function Declarations Test\n");
     testFunctionDeclarations();
@@ -161,5 +161,5 @@ func main() {
     writeString("\nRunning System Calls Test\n");
     testSystemCalls();
 
-    writeString("\nTiny6502 Test Suite Completed\n");
+    writeString("\nTiggerC Test Suite Completed\n");
 }

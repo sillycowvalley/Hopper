@@ -1,4 +1,4 @@
-unit TinyToken
+unit TCToken
 {
     enum TokenType
     {

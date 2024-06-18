@@ -1,7 +1,7 @@
-unit TinyOps
+unit TCOps
 {
-    uses "TinyCode"
-    uses "TinyGen"
+    uses "TCCode"
+    uses "TCGen"
     
     PopTop(bool isByte)
     {
@@ -51,7 +51,7 @@ unit TinyOps
     CompareLT(bool isByte)
     {
          
-        TinyCode.PadOut("// <" + Bitness(isByte), 0); 
+        TCCode.PadOut("// <" + Bitness(isByte), 0); 
         
         // arguments
         PopTopNext(isByte);
@@ -59,7 +59,7 @@ unit TinyOps
         // operation
         if (!isByte)
         {
-            PadOut("TinyOps.CompareLT();", 0);
+            PadOut("TCOps.CompareLT();", 0);
         }
         else
         {
@@ -76,7 +76,7 @@ unit TinyOps
     CompareGT(bool isByte)
     {
          
-        TinyCode.PadOut("// >" + Bitness(isByte), 0); 
+        TCCode.PadOut("// >" + Bitness(isByte), 0); 
         
         // arguments
         PopTopNext(isByte);
@@ -84,7 +84,7 @@ unit TinyOps
         // operation
         if (!isByte)
         {
-            PadOut("TinyOps.CompareGT();", 0);
+            PadOut("TCOps.CompareGT();", 0);
         }
         else
         {
@@ -103,37 +103,37 @@ unit TinyOps
     CompareLTI()
     {
          
-        TinyCode.PadOut("// <" + Bitness(false), 0); 
+        TCCode.PadOut("// <" + Bitness(false), 0); 
         
         PopTopNext(false);
-        PadOut("TinyOps.CompareLTI();", 0);    
+        PadOut("TCOps.CompareLTI();", 0);    
         PadOut("PHX", 0);    
     }
     CompareLEI()
     {
          
-        TinyCode.PadOut("// <=" + Bitness(false), 0); 
+        TCCode.PadOut("// <=" + Bitness(false), 0); 
         
         PopTopNext(false);
-        PadOut("TinyOps.CompareLEI();", 0);    
+        PadOut("TCOps.CompareLEI();", 0);    
         PadOut("PHX", 0);    
     }
     CompareGTI()
     {
          
-        TinyCode.PadOut("// >" + Bitness(false), 0); 
+        TCCode.PadOut("// >" + Bitness(false), 0); 
         
         PopTopNext(false);
-        PadOut("TinyOps.CompareGTI();", 0);    
+        PadOut("TCOps.CompareGTI();", 0);    
         PadOut("PHX", 0);    
     }
     CompareGEI()
     {
          
-        TinyCode.PadOut("// >=" + Bitness(false), 0); 
+        TCCode.PadOut("// >=" + Bitness(false), 0); 
         
         PopTopNext(false);
-        PadOut("TinyOps.CompareGEI();", 0);    
+        PadOut("TCOps.CompareGEI();", 0);    
         PadOut("PHX", 0);    
     }
     
@@ -167,7 +167,7 @@ unit TinyOps
     Sub(bool isByte)
     {
          
-        TinyCode.PadOut("// - " + Bitness(isByte), 0); 
+        TCCode.PadOut("// - " + Bitness(isByte), 0); 
     
         // arguments
         PopTopNext(isByte);
@@ -175,7 +175,7 @@ unit TinyOps
         // operation
         if (!isByte)
         {
-            PadOut("TinyOps.Sub16();", 0);
+            PadOut("TCOps.Sub16();", 0);
         }
         else
         {
@@ -190,7 +190,7 @@ unit TinyOps
     BitNot(bool isByte)
     {
          
-        TinyCode.PadOut("// ~ " + Bitness(isByte), 0); 
+        TCCode.PadOut("// ~ " + Bitness(isByte), 0); 
     
         // operation
         if (isByte)
@@ -213,7 +213,7 @@ unit TinyOps
     
     BoolNot()
     {
-        TinyCode.PadOut("// ! ", 0); 
+        TCCode.PadOut("// ! ", 0); 
         PadOut("PLA", 0);
         PadOut("if (Z)", 0);
         PadOut("{", 0);
@@ -229,7 +229,7 @@ unit TinyOps
     Mul(bool isByte)
     {
          
-        TinyCode.PadOut("// * " + Bitness(isByte), 0); 
+        TCCode.PadOut("// * " + Bitness(isByte), 0); 
     
         // arguments
         PopTopNext(isByte);
@@ -237,11 +237,11 @@ unit TinyOps
         // operation
         if (!isByte)
         {
-            PadOut("TinyOps.Mul16();", 0);
+            PadOut("TCOps.Mul16();", 0);
         }
         else
         {
-            PadOut("TinyOps.Mul8();", 0);
+            PadOut("TCOps.Mul8();", 0);
         }
         PushTop(isByte);
     }
@@ -249,7 +249,7 @@ unit TinyOps
     Div(bool isByte)
     {
          
-        TinyCode.PadOut("// / " + Bitness(isByte), 0); 
+        TCCode.PadOut("// / " + Bitness(isByte), 0); 
     
         // arguments
         PopTopNext(isByte);
@@ -257,11 +257,11 @@ unit TinyOps
         // operation
         if (!isByte)
         {
-            PadOut("TinyOps.Div16();", 0);
+            PadOut("TCOps.Div16();", 0);
         }
         else
         {
-            PadOut("TinyOps.Div8();", 0);
+            PadOut("TCOps.Div8();", 0);
         }
         PushTop(isByte);
     }
@@ -269,7 +269,7 @@ unit TinyOps
     Mod(bool isByte)
     {
          
-        TinyCode.PadOut("// % " + Bitness(isByte), 0); 
+        TCCode.PadOut("// % " + Bitness(isByte), 0); 
     
         // arguments
         PopTopNext(isByte);
@@ -277,11 +277,11 @@ unit TinyOps
         // operation
         if (!isByte)
         {
-            PadOut("TinyOps.Mod16();", 0);
+            PadOut("TCOps.Mod16();", 0);
         }
         else
         {
-            PadOut("TinyOps.Mod8();", 0);
+            PadOut("TCOps.Mod8();", 0);
         }
         PushTop(isByte);
     }
@@ -290,38 +290,38 @@ unit TinyOps
     MulI()
     {
          
-        TinyCode.PadOut("// * " + Bitness(false), 0); 
+        TCCode.PadOut("// * " + Bitness(false), 0); 
     
         // arguments
         PopTopNext(false);
     
         // operation
-        PadOut("TinyOps.MulI();", 0);
+        PadOut("TCOps.MulI();", 0);
         PushTop(false);
     }
     
     DivI()
     {
          
-        TinyCode.PadOut("// / " + Bitness(false), 0); 
+        TCCode.PadOut("// / " + Bitness(false), 0); 
     
         // arguments
         PopTopNext(false);
     
         // operation
-        PadOut("TinyOps.DivI();", 0);
+        PadOut("TCOps.DivI();", 0);
         PushTop(false);
     }
     
     ModI()
     {
-        TinyCode.PadOut("// % " + Bitness(false), 0); 
+        TCCode.PadOut("// % " + Bitness(false), 0); 
     
         // arguments
         PopTopNext(false);
     
         // operation
-        PadOut("TinyOps.ModI();", 0);
+        PadOut("TCOps.ModI();", 0);
         PushTop(false);
     }
     
@@ -329,100 +329,100 @@ unit TinyOps
     Or(bool isByte)
     {
         PopTopNext(isByte);
-        TinyCode.PadOut("LDA ZP.NEXTL", 0);
-        TinyCode.PadOut("ORA ZP.TOPL", 0);
-        TinyCode.PadOut("PHA", 0);
+        TCCode.PadOut("LDA ZP.NEXTL", 0);
+        TCCode.PadOut("ORA ZP.TOPL", 0);
+        TCCode.PadOut("PHA", 0);
         if (!isByte)
         {
-            TinyCode.PadOut("LDA ZP.NEXTH", 0);
-            TinyCode.PadOut("ORA ZP.TOPH", 0);
-            TinyCode.PadOut("PHA", 0);
+            TCCode.PadOut("LDA ZP.NEXTH", 0);
+            TCCode.PadOut("ORA ZP.TOPH", 0);
+            TCCode.PadOut("PHA", 0);
         }
     }        
     And(bool isByte)
     {
         PopTopNext(isByte);
-        TinyCode.PadOut("LDA ZP.NEXTL", 0);
-        TinyCode.PadOut("AND ZP.TOPL", 0);
-        TinyCode.PadOut("PHA", 0);
+        TCCode.PadOut("LDA ZP.NEXTL", 0);
+        TCCode.PadOut("AND ZP.TOPL", 0);
+        TCCode.PadOut("PHA", 0);
         if (!isByte)
         {
-            TinyCode.PadOut("LDA ZP.NEXTH", 0);
-            TinyCode.PadOut("AND ZP.TOPH", 0);
-            TinyCode.PadOut("PHA", 0);
+            TCCode.PadOut("LDA ZP.NEXTH", 0);
+            TCCode.PadOut("AND ZP.TOPH", 0);
+            TCCode.PadOut("PHA", 0);
         }
     }
     Xor(bool isByte)
     {
         PopTopNext(isByte);
-        TinyCode.PadOut("LDA ZP.NEXTL", 0);
-        TinyCode.PadOut("EOR ZP.TOPL", 0);
-        TinyCode.PadOut("PHA", 0);
+        TCCode.PadOut("LDA ZP.NEXTL", 0);
+        TCCode.PadOut("EOR ZP.TOPL", 0);
+        TCCode.PadOut("PHA", 0);
         if (!isByte)
         {
-            TinyCode.PadOut("LDA ZP.NEXTH", 0);
-            TinyCode.PadOut("EOR ZP.TOPH", 0);
-            TinyCode.PadOut("PHA", 0);
+            TCCode.PadOut("LDA ZP.NEXTH", 0);
+            TCCode.PadOut("EOR ZP.TOPH", 0);
+            TCCode.PadOut("PHA", 0);
         }
     }
     
     Shr(bool isByte)
     {
-        TinyCode.PadOut("// >>", 0);
+        TCCode.PadOut("// >>", 0);
         PopTopNext(isByte);
         if (isByte)
         {
-            TinyCode.PadOut("loop", 0);
-            TinyCode.PadOut("{", 0);
-            TinyCode.PadOut("LDA ZP.TOPL", 1);
-            TinyCode.PadOut("if (Z) { break; }", 1);
-            TinyCode.PadOut("LSR ZP.NEXTL", 1);
-            TinyCode.PadOut("DEC ZP.TOPL", 1);
-            TinyCode.PadOut("}", 0);
+            TCCode.PadOut("loop", 0);
+            TCCode.PadOut("{", 0);
+            TCCode.PadOut("LDA ZP.TOPL", 1);
+            TCCode.PadOut("if (Z) { break; }", 1);
+            TCCode.PadOut("LSR ZP.NEXTL", 1);
+            TCCode.PadOut("DEC ZP.TOPL", 1);
+            TCCode.PadOut("}", 0);
         }
         else
         {
-            TinyCode.PadOut("loop", 0);
-            TinyCode.PadOut("{", 0);
-            TinyCode.PadOut("LDA ZP.TOPL", 1);
-            TinyCode.PadOut("if (Z) { break; }", 1);
-            TinyCode.PadOut("LSR ZP.NEXTH", 1);
-            TinyCode.PadOut("ROR ZP.NEXTL", 1);
-            TinyCode.PadOut("DEC ZP.TOPL", 1);
-            TinyCode.PadOut("}", 0);
+            TCCode.PadOut("loop", 0);
+            TCCode.PadOut("{", 0);
+            TCCode.PadOut("LDA ZP.TOPL", 1);
+            TCCode.PadOut("if (Z) { break; }", 1);
+            TCCode.PadOut("LSR ZP.NEXTH", 1);
+            TCCode.PadOut("ROR ZP.NEXTL", 1);
+            TCCode.PadOut("DEC ZP.TOPL", 1);
+            TCCode.PadOut("}", 0);
         }
         PushNext(isByte);
     }
     Shl(bool isByte)
     {
-        TinyCode.PadOut("// >>", 0);
+        TCCode.PadOut("// >>", 0);
         PopTopNext(isByte);
         if (isByte)
         {
-            TinyCode.PadOut("loop", 0);
-            TinyCode.PadOut("{", 0);
-            TinyCode.PadOut("LDA ZP.TOPL", 1);
-            TinyCode.PadOut("if (Z) { break; }", 1);
-            TinyCode.PadOut("ASL ZP.NEXTL", 1);
-            TinyCode.PadOut("DEC ZP.TOPL", 1);
-            TinyCode.PadOut("}", 0);
+            TCCode.PadOut("loop", 0);
+            TCCode.PadOut("{", 0);
+            TCCode.PadOut("LDA ZP.TOPL", 1);
+            TCCode.PadOut("if (Z) { break; }", 1);
+            TCCode.PadOut("ASL ZP.NEXTL", 1);
+            TCCode.PadOut("DEC ZP.TOPL", 1);
+            TCCode.PadOut("}", 0);
         }
         else
         {
-            TinyCode.PadOut("loop", 0);
-            TinyCode.PadOut("{", 0);
-            TinyCode.PadOut("LDA ZP.TOPL", 1);
-            TinyCode.PadOut("if (Z) { break; }", 1);
-            TinyCode.PadOut("ASL ZP.NEXTL", 1);
-            TinyCode.PadOut("ROL ZP.NEXTH", 1);
-            TinyCode.PadOut("DEC ZP.TOPL", 1);
-            TinyCode.PadOut("}", 0);
+            TCCode.PadOut("loop", 0);
+            TCCode.PadOut("{", 0);
+            TCCode.PadOut("LDA ZP.TOPL", 1);
+            TCCode.PadOut("if (Z) { break; }", 1);
+            TCCode.PadOut("ASL ZP.NEXTL", 1);
+            TCCode.PadOut("ROL ZP.NEXTH", 1);
+            TCCode.PadOut("DEC ZP.TOPL", 1);
+            TCCode.PadOut("}", 0);
         }
         PushNext(isByte);   
     }
     CompareLE(bool isByte)
     {
-        TinyCode.PadOut("// <=" + Bitness(isByte), 0); 
+        TCCode.PadOut("// <=" + Bitness(isByte), 0); 
         
         // arguments
         PopTopNext(isByte);
@@ -430,7 +430,7 @@ unit TinyOps
         // operation
         if (!isByte)
         {
-            PadOut("TinyOps.CompareLE();", 0);
+            PadOut("TCOps.CompareLE();", 0);
         }
         else
         {
@@ -451,7 +451,7 @@ unit TinyOps
     CompareGE(bool isByte)
     {
          
-        TinyCode.PadOut("// >=" + Bitness(isByte), 0); 
+        TCCode.PadOut("// >=" + Bitness(isByte), 0); 
         
         // arguments
         PopTopNext(isByte);
@@ -459,7 +459,7 @@ unit TinyOps
         // operation
         if (!isByte)
         {
-            PadOut("TinyOps.CompareGE();", 0);
+            PadOut("TCOps.CompareGE();", 0);
         }
         else
         {
@@ -477,7 +477,7 @@ unit TinyOps
     CompareEQ(bool isByte)
     {
          
-        TinyCode.PadOut("// == " + Bitness(isByte), 0); 
+        TCCode.PadOut("// == " + Bitness(isByte), 0); 
         
         // arguments
         PopTopNext(isByte);
@@ -485,7 +485,7 @@ unit TinyOps
         // operation
         if (!isByte)
         {
-            PadOut("TinyOps.CompareEQ();", 0);
+            PadOut("TCOps.CompareEQ();", 0);
         }
         else
         {
@@ -502,7 +502,7 @@ unit TinyOps
     CompareNE(bool isByte)
     {
          
-        TinyCode.PadOut("// !=" + Bitness(isByte), 0); 
+        TCCode.PadOut("// !=" + Bitness(isByte), 0); 
         
         // arguments
         PopTopNext(isByte);
@@ -510,7 +510,7 @@ unit TinyOps
         // operation
         if (!isByte)
         {
-            PadOut("TinyOps.CompareNE();", 0);
+            PadOut("TCOps.CompareNE();", 0);
         }
         else
         {

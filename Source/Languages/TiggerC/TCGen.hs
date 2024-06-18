@@ -1,8 +1,8 @@
-unit TinyGen
+unit TCGen
 {
-    uses "TinyCode"
-    uses "TinyType"
-    uses "TinyExpression"
+    uses "TCCode"
+    uses "TCType"
+    uses "TCExpression"
     
     record Instruction
     {
@@ -996,7 +996,7 @@ unit TinyGen
             
             if (!wasRem) { PadOut("", 0); }
             wasRem = false;
-            TinyCode.PadOut("// " + ToString(instruction), 0);
+            TCCode.PadOut("// " + ToString(instruction), 0);
             string name = instruction.Name;
             if (instruction.IsByte && (name != "CALL"))
             {
@@ -1009,31 +1009,31 @@ unit TinyGen
                 
                 case "PUSHI":   
                 { 
-                    TinyCode.PushWord(operand);
+                    TCCode.PushWord(operand);
                 }
                 case "PUSHIB":  
                 { 
-                    TinyCode.PushByte(operand.GetByte(0));
+                    TCCode.PushByte(operand.GetByte(0));
                 }
                 case "POPL":
                 case "POPLB":
                 {
-                    TinyCode.PopVariable(instruction.Data, instruction.Offset, instruction.IsByte, false);
+                    TCCode.PopVariable(instruction.Data, instruction.Offset, instruction.IsByte, false);
                 }
                 case "POPG":
                 case "POPGB":
                 {
-                    TinyCode.PopVariable(instruction.Data, instruction.Offset, instruction.IsByte, true);
+                    TCCode.PopVariable(instruction.Data, instruction.Offset, instruction.IsByte, true);
                 }
                 case "PUSHL":
                 case "PUSHLB":
                 {
-                    TinyCode.PushVariable(instruction.Data, instruction.Offset, instruction.IsByte, false);
+                    TCCode.PushVariable(instruction.Data, instruction.Offset, instruction.IsByte, false);
                 }
                 case "PUSHG":
                 case "PUSHGB":
                 {
-                    TinyCode.PushVariable(instruction.Data, instruction.Offset, instruction.IsByte, true);
+                    TCCode.PushVariable(instruction.Data, instruction.Offset, instruction.IsByte, true);
                 }
                 case "PUSHM":
                 case "PUSHMB":
@@ -1048,169 +1048,169 @@ unit TinyGen
                 
                 case "PUSHC":
                 {
-                    TinyCode.PushConst(instruction.Operand);
+                    TCCode.PushConst(instruction.Operand);
                 }
                 
                 case "ADD":
                 case "ADDB":
                 {
-                    TinyOps.Add(instruction.IsByte);
+                    TCOps.Add(instruction.IsByte);
                 }
                 case "SUB":
                 case "SUBB":
                 {
-                    TinyOps.Sub(instruction.IsByte);
+                    TCOps.Sub(instruction.IsByte);
                 }
                 case "MUL":
                 case "MULB":
                 {
-                    TinyOps.Mul(instruction.IsByte);
+                    TCOps.Mul(instruction.IsByte);
                 }
                 case "DIV":
                 case "DIVB":
                 {
-                    TinyOps.Div(instruction.IsByte);
+                    TCOps.Div(instruction.IsByte);
                 }
                 case "MOD":
                 case "MODB":
                 {
-                    TinyOps.Mod(instruction.IsByte);
+                    TCOps.Mod(instruction.IsByte);
                 }
                 
                 case "MULI":
                 {
-                    TinyOps.MulI();
+                    TCOps.MulI();
                 }
                 case "DIVI":
                 {
-                    TinyOps.DivI();
+                    TCOps.DivI();
                 }
                 case "MODI":
                 {
-                    TinyOps.ModI();
+                    TCOps.ModI();
                 }
                 
                 case "EQ":
                 case "EQB":
                 {
-                    TinyOps.CompareEQ(instruction.IsByte);
+                    TCOps.CompareEQ(instruction.IsByte);
                 }
                 case "NE":
                 case "NEB":
                 {
-                    TinyOps.CompareNE(instruction.IsByte);
+                    TCOps.CompareNE(instruction.IsByte);
                 }
                 case "LT":
                 case "LTB":
                 {
-                    TinyOps.CompareLT(instruction.IsByte);
+                    TCOps.CompareLT(instruction.IsByte);
                 }
                 case "LE":
                 case "LEB":
                 {
-                    TinyOps.CompareLE(instruction.IsByte);
+                    TCOps.CompareLE(instruction.IsByte);
                 }
                 case "GT":
                 case "GTB":
                 {
-                    TinyOps.CompareGT(instruction.IsByte);
+                    TCOps.CompareGT(instruction.IsByte);
                 }
                 case "GE":
                 case "GEB":
                 {
-                    TinyOps.CompareGE(instruction.IsByte);
+                    TCOps.CompareGE(instruction.IsByte);
                 }
                 
                 case "LTI":
                 case "LTIB":
                 {
-                    TinyOps.CompareLTI();
+                    TCOps.CompareLTI();
                 }
                 case "LEI":
                 case "LEIB":
                 {
-                    TinyOps.CompareLEI();
+                    TCOps.CompareLEI();
                 }
                 case "GTI":
                 case "GTIB":
                 {
-                    TinyOps.CompareGTI();
+                    TCOps.CompareGTI();
                 }
                 case "GEI":
                 case "GEIB":
                 {
-                    TinyOps.CompareGEI();
+                    TCOps.CompareGEI();
                 }
                 case "SHL":
                 case "SHLB":
                 {
-                    TinyOps.Shl(instruction.IsByte);
+                    TCOps.Shl(instruction.IsByte);
                 }
                 case "SHR":
                 case "SHRB":
                 {
-                    TinyOps.Shr(instruction.IsByte);
+                    TCOps.Shr(instruction.IsByte);
                 }
                 case "AND":
                 case "ANDB":
                 {
-                    TinyOps.And(instruction.IsByte);
+                    TCOps.And(instruction.IsByte);
                 }
                 case "OR":
                 case "ORB":
                 {
-                    TinyOps.Or(instruction.IsByte);
+                    TCOps.Or(instruction.IsByte);
                 }
                 case "XOR":
                 case "XORB":
                 {
-                    TinyOps.Xor(instruction.IsByte);
+                    TCOps.Xor(instruction.IsByte);
                 }
                 case "NOT":
                 case "NOTB":
                 {
-                    TinyOps.BitNot(instruction.IsByte);
+                    TCOps.BitNot(instruction.IsByte);
                 }
                 case "BOOLNOTB":
                 {
-                    TinyOps.BoolNot();
+                    TCOps.BoolNot();
                 }
                 
                 
                 case "PADUNDER":
                 {
-                    TinyCode.CastPad(true);
+                    TCCode.CastPad(true);
                 }
                 case "DECSP":
                 {
-                    TinyCode.PopBytes(operand.GetByte(0), "");
+                    TCCode.PopBytes(operand.GetByte(0), "");
                 }
                 case "CALL":
                 {
-                    TinyCode.Call(instruction.Data);
+                    TCCode.Call(instruction.Data);
                     if (instruction.Operand != 0)
                     {
-                        TinyCode.PopBytes(operand.GetByte(0), "");
+                        TCCode.PopBytes(operand.GetByte(0), "");
                     }
                     if (instruction.Offset != 0)
                     {
-                        TinyOps.PushTop(instruction.IsByte);
+                        TCOps.PushTop(instruction.IsByte);
                     }
                 }
                 case "IF":
                 {
-                    TinyCode.If("if");
-                    TinyCode.PadOut("{", 0);
+                    TCCode.If("if");
+                    TCCode.PadOut("{", 0);
                 }
                 case "ELSE":
                 {
-                    TinyCode.PadOut("}", 0);
-                    TinyCode.Else();
-                    TinyCode.PadOut("{", 0);
+                    TCCode.PadOut("}", 0);
+                    TCCode.Else();
+                    TCCode.PadOut("{", 0);
                 }
                 case "ENDIF":
                 {
-                    TinyCode.PadOut("}", 0);
+                    TCCode.PadOut("}", 0);
                 }
                 
                 case "INCLI":
@@ -1218,31 +1218,31 @@ unit TinyGen
                 {
                     if (instruction.Operand != 0)
                     {
-                        TinyCode.OffsetTo(instruction.Offset, false, "X"); 
+                        TCCode.OffsetTo(instruction.Offset, false, "X"); 
                         if (instruction.Operand == 1)
                         {
-                            TinyCode.PadOut("INC 0x0100, X", 0);
+                            TCCode.PadOut("INC 0x0100, X", 0);
                             if (!instruction.IsByte)
                             {
-                                TinyCode.PadOut("if (Z)", 0);
-                                TinyCode.PadOut("{", 0);
-                                TinyCode.PadOut("DEX", 1);
-                                TinyCode.PadOut("INC 0x0100, X", 1);
-                                TinyCode.PadOut("}", 0);
+                                TCCode.PadOut("if (Z)", 0);
+                                TCCode.PadOut("{", 0);
+                                TCCode.PadOut("DEX", 1);
+                                TCCode.PadOut("INC 0x0100, X", 1);
+                                TCCode.PadOut("}", 0);
                             }
                         }
                         else
                         {
-                            TinyCode.PadOut("CLC", 0);
-                            TinyCode.PadOut("LDA 0x0100, X", 0);
-                            TinyCode.PadOut("ADC # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
-                            TinyCode.PadOut("STA 0x0100, X", 0);
+                            TCCode.PadOut("CLC", 0);
+                            TCCode.PadOut("LDA 0x0100, X", 0);
+                            TCCode.PadOut("ADC # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                            TCCode.PadOut("STA 0x0100, X", 0);
                             if (!instruction.IsByte)
                             {
-                                TinyCode.PadOut("DEX", 0);
-                                TinyCode.PadOut("LDA 0x0100, X", 0);
-                                TinyCode.PadOut("ADC # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
-                                TinyCode.PadOut("STA 0x0100, X", 0);
+                                TCCode.PadOut("DEX", 0);
+                                TCCode.PadOut("LDA 0x0100, X", 0);
+                                TCCode.PadOut("ADC # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
+                                TCCode.PadOut("STA 0x0100, X", 0);
                             }
                         }
                     }               
@@ -1250,254 +1250,254 @@ unit TinyGen
                 case "LILE":
                 case "LILEB":
                 {
-                    TinyCode.OffsetTo(instruction.Offset, false, "Y");
+                    TCCode.OffsetTo(instruction.Offset, false, "Y");
                     // arguments in NEXT and TOP
                     string top = (instruction.IsByte ? ("# 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2)) :  ("# 0x" + (instruction.Operand).ToHexString(4)));
                     string next = "[BP+" + OffsetToHex(instruction.Offset) + "]";
-                    TinyCode.PadOut("LDX #1 // " + next + " <= " + top, 0);
+                    TCCode.PadOut("LDX #1 // " + next + " <= " + top, 0);
                     if (instruction.IsByte)
                     {
-                        TinyCode.PadOut("LDA 0x0100, Y", 0); // NEXTL
-                        TinyCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0); // TOPL
+                        TCCode.PadOut("LDA 0x0100, Y", 0); // NEXTL
+                        TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0); // TOPL
                     }
                     else
                     {
-                        TinyCode.PadOut("DEY", 0);
-                        TinyCode.PadOut("LDA 0x0100, Y", 0); // NEXTH
-                        TinyCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0); // TOPH
-                        TinyCode.PadOut("if (Z)", 0);
-                        TinyCode.PadOut("{", 0);
-                        TinyCode.PadOut("INY", 1);
-                        TinyCode.PadOut("LDA 0x0100, Y", 1); // NEXTL
-                        TinyCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 1); // TOPL
-                        TinyCode.PadOut("}", 0);
+                        TCCode.PadOut("DEY", 0);
+                        TCCode.PadOut("LDA 0x0100, Y", 0); // NEXTH
+                        TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0); // TOPH
+                        TCCode.PadOut("if (Z)", 0);
+                        TCCode.PadOut("{", 0);
+                        TCCode.PadOut("INY", 1);
+                        TCCode.PadOut("LDA 0x0100, Y", 1); // NEXTL
+                        TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 1); // TOPL
+                        TCCode.PadOut("}", 0);
                     }
-                    TinyCode.PadOut("if (NZ) // " + next + " == " + top + " (not >)?", 0);
-                    TinyCode.PadOut("{", 0);
-                    TinyCode.PadOut("if (C) // " + next + " <  " + top + " (not >)?", 1);
-                    TinyCode.PadOut("{", 1);
-                    TinyCode.PadOut("LDX #0  // " + next + " > " + top + "", 2);
-                    TinyCode.PadOut("}", 1);
-                    TinyCode.PadOut("}", 0);
-                    TinyCode.PadOut("// result in X", 0);
-                    TinyCode.PadOut("PHX", 0);
+                    TCCode.PadOut("if (NZ) // " + next + " == " + top + " (not >)?", 0);
+                    TCCode.PadOut("{", 0);
+                    TCCode.PadOut("if (C) // " + next + " <  " + top + " (not >)?", 1);
+                    TCCode.PadOut("{", 1);
+                    TCCode.PadOut("LDX #0  // " + next + " > " + top + "", 2);
+                    TCCode.PadOut("}", 1);
+                    TCCode.PadOut("}", 0);
+                    TCCode.PadOut("// result in X", 0);
+                    TCCode.PadOut("PHX", 0);
                 }
                 case "LILT":
                 case "LILTB":
                 {
-                    TinyCode.OffsetTo(instruction.Offset, false, "Y");
+                    TCCode.OffsetTo(instruction.Offset, false, "Y");
                     // arguments in NEXT and TOP
                     string top = (instruction.IsByte ? ("# 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2)) :  ("# 0x" + (instruction.Operand).ToHexString(4)));
                     string next = "[BP+" + OffsetToHex(instruction.Offset) + "]";
-                    TinyCode.PadOut("LDX #1 // " + next + " < " + top, 0);
+                    TCCode.PadOut("LDX #1 // " + next + " < " + top, 0);
                     if (instruction.IsByte)
                     {
-                        TinyCode.PadOut("LDA 0x0100, Y", 0); // NEXTL
-                        TinyCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0); // TOPL
+                        TCCode.PadOut("LDA 0x0100, Y", 0); // NEXTL
+                        TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0); // TOPL
                     }
                     else
                     {
-                        TinyCode.PadOut("DEY", 0);
-                        TinyCode.PadOut("LDA 0x0100, Y", 0); // NEXTH
-                        TinyCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0); // TOPH
-                        TinyCode.PadOut("if (Z)", 0);
-                        TinyCode.PadOut("{", 0);
-                        TinyCode.PadOut("INY", 1);
-                        TinyCode.PadOut("LDA 0x0100, Y", 1); // NEXTL
-                        TinyCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 1); // TOPL
-                        TinyCode.PadOut("}", 0);
+                        TCCode.PadOut("DEY", 0);
+                        TCCode.PadOut("LDA 0x0100, Y", 0); // NEXTH
+                        TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0); // TOPH
+                        TCCode.PadOut("if (Z)", 0);
+                        TCCode.PadOut("{", 0);
+                        TCCode.PadOut("INY", 1);
+                        TCCode.PadOut("LDA 0x0100, Y", 1); // NEXTL
+                        TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 1); // TOPL
+                        TCCode.PadOut("}", 0);
                     }
-                    TinyCode.PadOut("if (C) // " + top + " <= " + next + " ?", 0);
-                    TinyCode.PadOut("{", 0);
-                    TinyCode.PadOut("LDX #0  // " + top + " <= " + next + "", 1);
-                    TinyCode.PadOut("}", 0);
-                    TinyCode.PadOut("// result in X", 0);
-                    TinyCode.PadOut("PHX", 0);
+                    TCCode.PadOut("if (C) // " + top + " <= " + next + " ?", 0);
+                    TCCode.PadOut("{", 0);
+                    TCCode.PadOut("LDX #0  // " + top + " <= " + next + "", 1);
+                    TCCode.PadOut("}", 0);
+                    TCCode.PadOut("// result in X", 0);
+                    TCCode.PadOut("PHX", 0);
                 }
                 case "STLI":
                 case "STLIB":
                 {
-                    TinyCode.OffsetTo(instruction.Offset, false, "X");
+                    TCCode.OffsetTo(instruction.Offset, false, "X");
                     if (instruction.Operand == 0)
                     {
-                        TinyCode.PadOut("STZ 0x0100, X", 0);
+                        TCCode.PadOut("STZ 0x0100, X", 0);
                         if (!instruction.IsByte)
                         {
-                            TinyCode.PadOut("DEX", 0);
-                            TinyCode.PadOut("STZ 0x0100, X", 0);
+                            TCCode.PadOut("DEX", 0);
+                            TCCode.PadOut("STZ 0x0100, X", 0);
                         }
                     }
                     else
                     {
-                        TinyCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
-                        TinyCode.PadOut("STA 0x0100, X", 0);
+                        TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                        TCCode.PadOut("STA 0x0100, X", 0);
                         if (!instruction.IsByte)
                         {
-                            TinyCode.PadOut("DEX", 0);
+                            TCCode.PadOut("DEX", 0);
                             if ((instruction.Operand).GetByte(1) != (instruction.Operand).GetByte(0))
                             {
-                                TinyCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
+                                TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
                             }
-                            TinyCode.PadOut("STA 0x0100, X", 0);
+                            TCCode.PadOut("STA 0x0100, X", 0);
                         }
                     }
                 }
                 case "ADDLL":
                 case "ADDLLB":
                 {
-                    TinyCode.OffsetTo(instruction.Offset, false, "X");
+                    TCCode.OffsetTo(instruction.Offset, false, "X");
                     bool sameL = (instruction.Offset2 ==  instruction.Offset);
                     string y = "X";
                     if (!sameL)
                     {
-                        TinyCode.OffsetTo(instruction.Offset2, false, "Y"); 
+                        TCCode.OffsetTo(instruction.Offset2, false, "Y"); 
                         y = "Y";
                     }
-                    TinyCode.PadOut("CLC", 0);
-                    TinyCode.PadOut("LDA 0x0100, X", 0);
-                    TinyCode.PadOut("ADC 0x0100, " + y, 0);
-                    TinyCode.PadOut("PHA", 0);
+                    TCCode.PadOut("CLC", 0);
+                    TCCode.PadOut("LDA 0x0100, X", 0);
+                    TCCode.PadOut("ADC 0x0100, " + y, 0);
+                    TCCode.PadOut("PHA", 0);
                     if (!instruction.IsByte)
                     {
-                        TinyCode.PadOut("DEX", 0);
+                        TCCode.PadOut("DEX", 0);
                         if (!sameL)
                         {
-                            TinyCode.PadOut("DEY", 0);
+                            TCCode.PadOut("DEY", 0);
                         }
-                        TinyCode.PadOut("LDA 0x0100, X", 0);
-                        TinyCode.PadOut("ADC 0x0100, " + y, 0);
-                        TinyCode.PadOut("PHA", 0);
+                        TCCode.PadOut("LDA 0x0100, X", 0);
+                        TCCode.PadOut("ADC 0x0100, " + y, 0);
+                        TCCode.PadOut("PHA", 0);
                     }
                 }
                 case "ADDLGM":
                 {
-                    TinyCode.OffsetTo(instruction.Offset, false, "X"); 
-                    TinyCode.OffsetTo(instruction.Offset2, true, "Y"); 
-                    TinyCode.PadOut("CLC", 0);
-                    TinyCode.PadOut("LDA 0x0100, X", 0);
-                    TinyCode.PadOut("ADC 0x0100, Y", 0);
-                    TinyCode.PadOut("STA ZP.TOPL", 0);
+                    TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                    TCCode.OffsetTo(instruction.Offset2, true, "Y"); 
+                    TCCode.PadOut("CLC", 0);
+                    TCCode.PadOut("LDA 0x0100, X", 0);
+                    TCCode.PadOut("ADC 0x0100, Y", 0);
+                    TCCode.PadOut("STA ZP.TOPL", 0);
                     
-                    TinyCode.PadOut("DEX", 0);
-                    TinyCode.PadOut("DEY", 0);
-                    TinyCode.PadOut("LDA 0x0100, X", 0);
-                    TinyCode.PadOut("ADC 0x0100, Y", 0);
-                    TinyCode.PadOut("STA ZP.TOPH", 0);
+                    TCCode.PadOut("DEX", 0);
+                    TCCode.PadOut("DEY", 0);
+                    TCCode.PadOut("LDA 0x0100, X", 0);
+                    TCCode.PadOut("ADC 0x0100, Y", 0);
+                    TCCode.PadOut("STA ZP.TOPH", 0);
                     
-                    TinyCode.PadOut("LDA [ZP.TOP]", 0);
-                    TinyCode.PadOut("PHA", 0);
+                    TCCode.PadOut("LDA [ZP.TOP]", 0);
+                    TCCode.PadOut("PHA", 0);
                 
                 }
                 case "ADDLGIM":
                 {
-                    TinyCode.OffsetTo(instruction.Offset, false, "X"); 
-                    TinyCode.OffsetTo(instruction.Offset2, true, "Y"); 
-                    TinyCode.PadOut("CLC", 0);
-                    TinyCode.PadOut("LDA 0x0100, X", 0);
-                    TinyCode.PadOut("ADC 0x0100, Y", 0);
-                    TinyCode.PadOut("STA ZP.TOPL", 0);
+                    TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                    TCCode.OffsetTo(instruction.Offset2, true, "Y"); 
+                    TCCode.PadOut("CLC", 0);
+                    TCCode.PadOut("LDA 0x0100, X", 0);
+                    TCCode.PadOut("ADC 0x0100, Y", 0);
+                    TCCode.PadOut("STA ZP.TOPL", 0);
                     
-                    TinyCode.PadOut("DEX", 0);
-                    TinyCode.PadOut("DEY", 0);
-                    TinyCode.PadOut("LDA 0x0100, X", 0);
-                    TinyCode.PadOut("ADC 0x0100, Y", 0);
-                    TinyCode.PadOut("STA ZP.TOPH", 0);
-                    TinyCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
-                    TinyCode.PadOut("STA [ZP.TOP]", 0);
+                    TCCode.PadOut("DEX", 0);
+                    TCCode.PadOut("DEY", 0);
+                    TCCode.PadOut("LDA 0x0100, X", 0);
+                    TCCode.PadOut("ADC 0x0100, Y", 0);
+                    TCCode.PadOut("STA ZP.TOPH", 0);
+                    TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                    TCCode.PadOut("STA [ZP.TOP]", 0);
                 }
                 case "ADDLGI":
                 {
-                    TinyCode.OffsetTo(instruction.Offset, false, "X"); 
-                    TinyCode.OffsetTo(instruction.Offset2, true, "Y"); 
-                    TinyCode.PadOut("CLC", 0);
-                    TinyCode.PadOut("LDA 0x0100, X", 0);
-                    TinyCode.PadOut("ADC 0x0100, Y", 0);
-                    TinyCode.PadOut("PHA", 0);
+                    TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                    TCCode.OffsetTo(instruction.Offset2, true, "Y"); 
+                    TCCode.PadOut("CLC", 0);
+                    TCCode.PadOut("LDA 0x0100, X", 0);
+                    TCCode.PadOut("ADC 0x0100, Y", 0);
+                    TCCode.PadOut("PHA", 0);
                     
-                    TinyCode.PadOut("DEX", 0);
-                    TinyCode.PadOut("DEY", 0);
-                    TinyCode.PadOut("LDA 0x0100, X", 0);
-                    TinyCode.PadOut("ADC 0x0100, Y", 0);
-                    TinyCode.PadOut("PHA", 0);
-                    TinyCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
-                    TinyCode.PadOut("PHA", 0);
+                    TCCode.PadOut("DEX", 0);
+                    TCCode.PadOut("DEY", 0);
+                    TCCode.PadOut("LDA 0x0100, X", 0);
+                    TCCode.PadOut("ADC 0x0100, Y", 0);
+                    TCCode.PadOut("PHA", 0);
+                    TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                    TCCode.PadOut("PHA", 0);
                 }
                 
                 case "ADDLG":
                 case "ADDLGB":
                 {
-                    TinyCode.OffsetTo(instruction.Offset, false, "X"); 
-                    TinyCode.OffsetTo(instruction.Offset2, true, "Y"); 
-                    TinyCode.PadOut("CLC", 0);
-                    TinyCode.PadOut("LDA 0x0100, X", 0);
-                    TinyCode.PadOut("ADC 0x0100, Y", 0);
-                    TinyCode.PadOut("PHA", 0);
+                    TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                    TCCode.OffsetTo(instruction.Offset2, true, "Y"); 
+                    TCCode.PadOut("CLC", 0);
+                    TCCode.PadOut("LDA 0x0100, X", 0);
+                    TCCode.PadOut("ADC 0x0100, Y", 0);
+                    TCCode.PadOut("PHA", 0);
                     if (!instruction.IsByte)
                     {
-                        TinyCode.PadOut("DEX", 0);
-                        TinyCode.PadOut("DEY", 0);
-                        TinyCode.PadOut("LDA 0x0100, X", 0);
-                        TinyCode.PadOut("ADC 0x0100, Y", 0);
-                        TinyCode.PadOut("PHA", 0);
+                        TCCode.PadOut("DEX", 0);
+                        TCCode.PadOut("DEY", 0);
+                        TCCode.PadOut("LDA 0x0100, X", 0);
+                        TCCode.PadOut("ADC 0x0100, Y", 0);
+                        TCCode.PadOut("PHA", 0);
                     }
                 }
                 case "ADDLLL":
                 case "ADDLLLB":
                 {
-                    TinyCode.OffsetTo(instruction.Offset, false, "X"); 
-                    TinyCode.OffsetTo(instruction.Offset2, false, "Y"); 
-                    TinyCode.PadOut("CLC", 0);
-                    TinyCode.PadOut("LDA 0x0100, X", 0);
-                    TinyCode.PadOut("ADC 0x0100, Y", 0);
-                    TinyCode.PadOut("STA 0x0100, X", 0);
+                    TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                    TCCode.OffsetTo(instruction.Offset2, false, "Y"); 
+                    TCCode.PadOut("CLC", 0);
+                    TCCode.PadOut("LDA 0x0100, X", 0);
+                    TCCode.PadOut("ADC 0x0100, Y", 0);
+                    TCCode.PadOut("STA 0x0100, X", 0);
                     if (!instruction.IsByte)
                     {
-                        TinyCode.PadOut("DEX", 0);
-                        TinyCode.PadOut("DEY", 0);
-                        TinyCode.PadOut("LDA 0x0100, X", 0);
-                        TinyCode.PadOut("ADC 0x0100, Y", 0);
-                        TinyCode.PadOut("STA 0x0100, X", 0);
+                        TCCode.PadOut("DEX", 0);
+                        TCCode.PadOut("DEY", 0);
+                        TCCode.PadOut("LDA 0x0100, X", 0);
+                        TCCode.PadOut("ADC 0x0100, Y", 0);
+                        TCCode.PadOut("STA 0x0100, X", 0);
                     }
                 }
                 case "LIAND":
                 case "LIANDB":
                 {
-                    TinyCode.OffsetTo(instruction.Offset, false, "X"); 
+                    TCCode.OffsetTo(instruction.Offset, false, "X"); 
                     if ((instruction.Operand).GetByte(0) == 0)
                     {
-                        TinyCode.PadOut("LDA # 0x00", 0);
+                        TCCode.PadOut("LDA # 0x00", 0);
                     }
                     else
                     {
-                        TinyCode.PadOut("LDA 0x0100, X", 0);
-                        TinyCode.PadOut("AND # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                        TCCode.PadOut("LDA 0x0100, X", 0);
+                        TCCode.PadOut("AND # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
                     }
-                    TinyCode.PadOut("PHA", 0);
+                    TCCode.PadOut("PHA", 0);
                     if (!instruction.IsByte)
                     {
                         if ((instruction.Operand).GetByte(1) == 0)
                         {
-                            TinyCode.PadOut("LDA # 0x00", 0);
+                            TCCode.PadOut("LDA # 0x00", 0);
                         }
                         else
                         {
-                            TinyCode.PadOut("DEX", 0);
-                            TinyCode.PadOut("LDA 0x0100, X", 0);
-                            TinyCode.PadOut("AND # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
+                            TCCode.PadOut("DEX", 0);
+                            TCCode.PadOut("LDA 0x0100, X", 0);
+                            TCCode.PadOut("AND # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
                         }
-                        TinyCode.PadOut("PHA", 0);
+                        TCCode.PadOut("PHA", 0);
                     }
                 }
                 case "LIANDFF":
                 case "LIANDFFB":
                 {
-                    TinyCode.OffsetTo(instruction.Offset, false, "X"); 
-                    TinyCode.PadOut("LDA 0x0100, X", 0);
-                    TinyCode.PadOut("PHA", 0);
+                    TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                    TCCode.PadOut("LDA 0x0100, X", 0);
+                    TCCode.PadOut("PHA", 0);
                     if (!instruction.IsByte)
                     {
-                        TinyCode.PadOut("LDA # 0x00", 0);
-                        TinyCode.PadOut("PHA", 0);
+                        TCCode.PadOut("LDA # 0x00", 0);
+                        TCCode.PadOut("PHA", 0);
                     }
                 }
                 case "LISHL8":
@@ -1505,16 +1505,16 @@ unit TinyGen
                 {
                     if (instruction.IsByte)
                     {
-                        TinyCode.PadOut("LDA # 0x00", 0);
-                        TinyCode.PadOut("PHA", 0);
+                        TCCode.PadOut("LDA # 0x00", 0);
+                        TCCode.PadOut("PHA", 0);
                     }
                     else
                     {
-                        TinyCode.PadOut("LDA # 0x00", 0);
-                        TinyCode.PadOut("PHA", 0);
-                        TinyCode.OffsetTo(instruction.Offset, false, "X"); 
-                        TinyCode.PadOut("LDA 0x0100, X", 0);
-                        TinyCode.PadOut("PHA", 0);
+                        TCCode.PadOut("LDA # 0x00", 0);
+                        TCCode.PadOut("PHA", 0);
+                        TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                        TCCode.PadOut("LDA 0x0100, X", 0);
+                        TCCode.PadOut("PHA", 0);
                     }
                 }
                 case "LISHR8":
@@ -1522,33 +1522,33 @@ unit TinyGen
                 {
                     if (instruction.IsByte)
                     {
-                        TinyCode.PadOut("LDA # 0x00", 0);
-                        TinyCode.PadOut("PHA", 0);
+                        TCCode.PadOut("LDA # 0x00", 0);
+                        TCCode.PadOut("PHA", 0);
                     }
                     else
                     {
-                        TinyCode.OffsetTo(instruction.Offset, false, "X"); 
-                        TinyCode.PadOut("DEX", 0);
-                        TinyCode.PadOut("LDA 0x0100, X", 0);
-                        TinyCode.PadOut("PHA", 0);
-                        TinyCode.PadOut("LDA # 0x00", 0);
-                        TinyCode.PadOut("PHA", 0);
+                        TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                        TCCode.PadOut("DEX", 0);
+                        TCCode.PadOut("LDA 0x0100, X", 0);
+                        TCCode.PadOut("PHA", 0);
+                        TCCode.PadOut("LDA # 0x00", 0);
+                        TCCode.PadOut("PHA", 0);
                     }
                 }
                 case "ILADD":
                 case "ILADDB":
                 {
-                    TinyCode.OffsetTo(instruction.Offset, false, "X"); 
-                    TinyCode.PadOut("CLC", 0);
-                    TinyCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
-                    TinyCode.PadOut("ADC 0x0100, X", 0);
-                    TinyCode.PadOut("PHA", 0);
+                    TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                    TCCode.PadOut("CLC", 0);
+                    TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                    TCCode.PadOut("ADC 0x0100, X", 0);
+                    TCCode.PadOut("PHA", 0);
                     if (!instruction.IsByte)
                     {
-                        TinyCode.PadOut("DEX", 0);
-                        TinyCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
-                        TinyCode.PadOut("ADC 0x0100, X", 0);
-                        TinyCode.PadOut("PHA", 0);
+                        TCCode.PadOut("DEX", 0);
+                        TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
+                        TCCode.PadOut("ADC 0x0100, X", 0);
+                        TCCode.PadOut("PHA", 0);
                     }
                 }
                 
@@ -1559,59 +1559,59 @@ unit TinyGen
                     byte shift = (instruction.Operand).GetByte(0);
                     if (instruction.IsByte && (shift >= 8))
                     {
-                        TinyCode.PadOut("LDA # 0x00", 0);
-                        TinyCode.PadOut("PHA", 0);
+                        TCCode.PadOut("LDA # 0x00", 0);
+                        TCCode.PadOut("PHA", 0);
                     }
                     else if (!instruction.IsByte && (shift >= 16))
                     {
-                        TinyCode.PadOut("LDA # 0x00", 0);
-                        TinyCode.PadOut("PHA", 0);
-                        TinyCode.PadOut("PHA", 0);
+                        TCCode.PadOut("LDA # 0x00", 0);
+                        TCCode.PadOut("PHA", 0);
+                        TCCode.PadOut("PHA", 0);
                     }
                     else if (shift == 0)
                     {
-                        TinyCode.OffsetTo(instruction.Offset, false, "X"); 
-                        TinyCode.PadOut("LDA 0x0100, X", 0);
-                        TinyCode.PadOut("PHA", 0);
+                        TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                        TCCode.PadOut("LDA 0x0100, X", 0);
+                        TCCode.PadOut("PHA", 0);
                         if (!instruction.IsByte)
                         {
-                            TinyCode.PadOut("DEX", 0);
-                            TinyCode.PadOut("LDA 0x0100, X", 0);
-                            TinyCode.PadOut("PHA", 0);
+                            TCCode.PadOut("DEX", 0);
+                            TCCode.PadOut("LDA 0x0100, X", 0);
+                            TCCode.PadOut("PHA", 0);
                         }   
                     }
                     else
                     {
-                        TinyCode.OffsetTo(instruction.Offset, false, "Y"); 
-                        TinyCode.PadOut("LDA 0x0100, Y", 0);
-                        TinyCode.PadOut("STA ZP.NEXTL", 0);
+                        TCCode.OffsetTo(instruction.Offset, false, "Y"); 
+                        TCCode.PadOut("LDA 0x0100, Y", 0);
+                        TCCode.PadOut("STA ZP.NEXTL", 0);
                         if (!instruction.IsByte)
                         {
-                            TinyCode.PadOut("DEY", 0);
-                            TinyCode.PadOut("LDA 0x0100, Y", 0);
-                            TinyCode.PadOut("STA ZP.NEXTH", 0);
+                            TCCode.PadOut("DEY", 0);
+                            TCCode.PadOut("LDA 0x0100, Y", 0);
+                            TCCode.PadOut("STA ZP.NEXTH", 0);
                         }
-                        TinyCode.PadOut("LDX # 0x" + shift.ToHexString(2), 0);
-                        TinyCode.PadOut("loop", 0);
-                        TinyCode.PadOut("{", 0);
-                        TinyCode.PadOut("if (Z) { break; }", 1);
+                        TCCode.PadOut("LDX # 0x" + shift.ToHexString(2), 0);
+                        TCCode.PadOut("loop", 0);
+                        TCCode.PadOut("{", 0);
+                        TCCode.PadOut("if (Z) { break; }", 1);
                         if (instruction.IsByte)
                         {
-                            TinyCode.PadOut("LSR ZP.NEXTL", 1);
+                            TCCode.PadOut("LSR ZP.NEXTL", 1);
                         }
                         else
                         {
-                            TinyCode.PadOut("LSR ZP.NEXTH", 1);
-                            TinyCode.PadOut("ROR ZP.NEXTL", 1);
+                            TCCode.PadOut("LSR ZP.NEXTH", 1);
+                            TCCode.PadOut("ROR ZP.NEXTL", 1);
                         }
-                        TinyCode.PadOut("DEX", 1);
-                        TinyCode.PadOut("}", 0);
-                        TinyCode.PadOut("LDA ZP.NEXTL", 0);
-                        TinyCode.PadOut("PHA", 0);
+                        TCCode.PadOut("DEX", 1);
+                        TCCode.PadOut("}", 0);
+                        TCCode.PadOut("LDA ZP.NEXTL", 0);
+                        TCCode.PadOut("PHA", 0);
                         if (!instruction.IsByte)
                         {
-                            TinyCode.PadOut("LDA ZP.NEXTH", 0);
-                            TinyCode.PadOut("PHA", 0);
+                            TCCode.PadOut("LDA ZP.NEXTH", 0);
+                            TCCode.PadOut("PHA", 0);
                         }
                     }
                 }
@@ -1621,95 +1621,95 @@ unit TinyGen
                     byte shift = (instruction.Operand).GetByte(0);
                     if (instruction.IsByte && (shift >= 8))
                     {
-                        TinyCode.PadOut("LDA # 0x00", 0);
-                        TinyCode.PadOut("PHA", 0);
+                        TCCode.PadOut("LDA # 0x00", 0);
+                        TCCode.PadOut("PHA", 0);
                     }
                     else if (!instruction.IsByte && (shift >= 16))
                     {
-                        TinyCode.PadOut("LDA # 0x00", 0);
-                        TinyCode.PadOut("PHA", 0);
-                        TinyCode.PadOut("PHA", 0);
+                        TCCode.PadOut("LDA # 0x00", 0);
+                        TCCode.PadOut("PHA", 0);
+                        TCCode.PadOut("PHA", 0);
                     }
                     else if (shift == 0)
                     {
-                        TinyCode.OffsetTo(instruction.Offset, false, "X"); 
-                        TinyCode.PadOut("LDA 0x0100, X", 0);
-                        TinyCode.PadOut("PHA", 0);
+                        TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                        TCCode.PadOut("LDA 0x0100, X", 0);
+                        TCCode.PadOut("PHA", 0);
                         if (!instruction.IsByte)
                         {
-                            TinyCode.PadOut("DEX", 0);
-                            TinyCode.PadOut("LDA 0x0100, X", 0);
-                            TinyCode.PadOut("PHA", 0);
+                            TCCode.PadOut("DEX", 0);
+                            TCCode.PadOut("LDA 0x0100, X", 0);
+                            TCCode.PadOut("PHA", 0);
                         }   
                     }
                     else
                     {
-                        TinyCode.OffsetTo(instruction.Offset, false, "Y"); 
-                        TinyCode.PadOut("LDA 0x0100, Y", 0);
-                        TinyCode.PadOut("STA ZP.NEXTL", 0);
+                        TCCode.OffsetTo(instruction.Offset, false, "Y"); 
+                        TCCode.PadOut("LDA 0x0100, Y", 0);
+                        TCCode.PadOut("STA ZP.NEXTL", 0);
                         if (!instruction.IsByte)
                         {
-                            TinyCode.PadOut("DEY", 0);
-                            TinyCode.PadOut("LDA 0x0100, Y", 0);
-                            TinyCode.PadOut("STA ZP.NEXTH", 0);
+                            TCCode.PadOut("DEY", 0);
+                            TCCode.PadOut("LDA 0x0100, Y", 0);
+                            TCCode.PadOut("STA ZP.NEXTH", 0);
                         }
-                        TinyCode.PadOut("LDX # 0x" + shift.ToHexString(2), 0);
-                        TinyCode.PadOut("loop", 0);
-                        TinyCode.PadOut("{", 0);
-                        TinyCode.PadOut("if (Z) { break; }", 1);
+                        TCCode.PadOut("LDX # 0x" + shift.ToHexString(2), 0);
+                        TCCode.PadOut("loop", 0);
+                        TCCode.PadOut("{", 0);
+                        TCCode.PadOut("if (Z) { break; }", 1);
                         if (instruction.IsByte)
                         {
-                            TinyCode.PadOut("ASL ZP.NEXTL", 1);
+                            TCCode.PadOut("ASL ZP.NEXTL", 1);
                         }
                         else
                         {
-                            TinyCode.PadOut("ASL ZP.NEXTL", 1);
-                            TinyCode.PadOut("ROL ZP.NEXTH", 1);
+                            TCCode.PadOut("ASL ZP.NEXTL", 1);
+                            TCCode.PadOut("ROL ZP.NEXTH", 1);
                         }
-                        TinyCode.PadOut("DEX", 1);
-                        TinyCode.PadOut("}", 0);
-                        TinyCode.PadOut("LDA ZP.NEXTL", 0);
-                        TinyCode.PadOut("PHA", 0);
+                        TCCode.PadOut("DEX", 1);
+                        TCCode.PadOut("}", 0);
+                        TCCode.PadOut("LDA ZP.NEXTL", 0);
+                        TCCode.PadOut("PHA", 0);
                         if (!instruction.IsByte)
                         {
-                            TinyCode.PadOut("LDA ZP.NEXTH", 0);
-                            TinyCode.PadOut("PHA", 0);
+                            TCCode.PadOut("LDA ZP.NEXTH", 0);
+                            TCCode.PadOut("PHA", 0);
                         }
                     }
                 }
                 case "LIGTI":
                 {
-                    TinyCode.OffsetTo(instruction.Offset, false, "Y"); 
-                    TinyCode.PadOut("SEC", 0);
-                    TinyCode.PadOut("LDA 0x0100, Y", 0);
-                    TinyCode.PadOut("SBC # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
-                    TinyCode.PadOut("STA ZP.TOPL", 0);
-                    TinyCode.PadOut("DEY", 0);
-                    TinyCode.PadOut("LDA 0x0100, Y", 0);
-                    TinyCode.PadOut("SBC # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
-                    TinyCode.PadOut("STA ZP.TOPH", 0);
-                    TinyCode.PadOut("ASL // sign bit into carry", 0);           
-                    TinyCode.PadOut("LDX #0  // TOP <= 0", 0);
-                    TinyCode.PadOut("loop", 0);
-                    TinyCode.PadOut("{", 0);
-                    TinyCode.PadOut("if (C) { break; }", 1);
-                    TinyCode.PadOut("//  0 or positive", 1);
-                    TinyCode.PadOut("LDA ZP.TOPL", 1);
-                    TinyCode.PadOut("if (Z)", 1);
-                    TinyCode.PadOut("{", 1);
-                    TinyCode.PadOut("LDA ZP.TOPH", 2);
-                    TinyCode.PadOut("if (Z) { break; }", 2);
-                    TinyCode.PadOut("}", 1);
-                    TinyCode.PadOut("LDX #1", 1);
-                    TinyCode.PadOut("break;", 1);
-                    TinyCode.PadOut("}", 0);
+                    TCCode.OffsetTo(instruction.Offset, false, "Y"); 
+                    TCCode.PadOut("SEC", 0);
+                    TCCode.PadOut("LDA 0x0100, Y", 0);
+                    TCCode.PadOut("SBC # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                    TCCode.PadOut("STA ZP.TOPL", 0);
+                    TCCode.PadOut("DEY", 0);
+                    TCCode.PadOut("LDA 0x0100, Y", 0);
+                    TCCode.PadOut("SBC # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
+                    TCCode.PadOut("STA ZP.TOPH", 0);
+                    TCCode.PadOut("ASL // sign bit into carry", 0);           
+                    TCCode.PadOut("LDX #0  // TOP <= 0", 0);
+                    TCCode.PadOut("loop", 0);
+                    TCCode.PadOut("{", 0);
+                    TCCode.PadOut("if (C) { break; }", 1);
+                    TCCode.PadOut("//  0 or positive", 1);
+                    TCCode.PadOut("LDA ZP.TOPL", 1);
+                    TCCode.PadOut("if (Z)", 1);
+                    TCCode.PadOut("{", 1);
+                    TCCode.PadOut("LDA ZP.TOPH", 2);
+                    TCCode.PadOut("if (Z) { break; }", 2);
+                    TCCode.PadOut("}", 1);
+                    TCCode.PadOut("LDX #1", 1);
+                    TCCode.PadOut("break;", 1);
+                    TCCode.PadOut("}", 0);
 
-                    TinyCode.PadOut("PHX", 0); // result in X
+                    TCCode.PadOut("PHX", 0); // result in X
                 }
                 
                 default:
                 {
-                    TinyCode.PadOut("TODO " + name, 0);        
+                    TCCode.PadOut("TODO " + name, 0);        
                 }
             }
         }

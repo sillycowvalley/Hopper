@@ -1,4 +1,5 @@
 //#define APPLE_I // rather than the default ACIA_6850 for E6502
+#define EXPERIMENTAL
 #include "../system.tc"
 
 func main() {

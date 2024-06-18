@@ -1,1 +1,1 @@
-cd /source/languages/tiny6502/samples
+cd /source/languages/TiggerC/samples

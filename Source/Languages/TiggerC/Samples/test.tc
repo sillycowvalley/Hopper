@@ -1,0 +1,117 @@
+#define APPLE_I // rather than the default ACIA_6850 for E6502
+#define EXPERIMENTAL
+#include "../system.tc"
+
+// Helper function to print test results
+func printShiftResult(const char[] operation, word operand, word shiftCount, word result, word expected) {
+    writeString(operation);
+    writeString(": Operand: ");
+    writeWord(operand);
+    writeString(", Shift Count: ");
+    writeWord(shiftCount);
+    writeString(", Result: ");
+    writeWord(result);
+    writeString(", Expected: ");
+    writeWord(expected);
+    if (result == expected) {
+        writeString(" - PASS\n");
+    } else {
+        writeString(" - FAIL\n");
+    }
+}
+
+func main() {
+    word shift;
+    byte bshift;
+
+    // Test case for word shift left by 8 (constant)
+    word w1 = 0x1234;
+    word w1_shifted = w1 << 8;
+    printShiftResult("Word << 8 (constant)", w1, 8, w1_shifted, 0x3400);
+
+    // Test case for word shift left by 8 (variable)
+    shift = 8;
+    word w2_shifted = w1 << shift;
+    printShiftResult("Word << 8 (variable)", w1, shift, w2_shifted, 0x3400);
+
+    // Test case for word shift right by 8 (constant)
+    word w3_shifted = w1 >> 8;
+    printShiftResult("Word >> 8 (constant)", w1, 8, w3_shifted, 0x12);
+
+    // Test case for word shift right by 8 (variable)
+    shift = 8;
+    word w4_shifted = w1 >> shift;
+    printShiftResult("Word >> 8 (variable)", w1, shift, w4_shifted, 0x12);
+
+    // Test case for word shift left by 16 (constant)
+    word w5_shifted = w1 << 16;
+    printShiftResult("Word << 16 (constant)", w1, 16, w5_shifted, 0x0000);
+
+    // Test case for word shift right by 16 (constant)
+    word w6_shifted = w1 >> 16;
+    printShiftResult("Word >> 16 (constant)", w1, 16, w6_shifted, 0x0000);
+
+    // Test case for byte shift left by 8 (constant)
+    byte b1 = 0x12;
+    word b1_shifted = b1 << 8;
+    printShiftResult("Byte << 8 (constant)", b1 as word, 8, b1_shifted, 0x0000);
+
+    // Test case for byte shift left by 8 (variable)
+    bshift = 8;
+    word b2_shifted = b1 << bshift;
+    printShiftResult("Byte << 8 (variable)", b1 as word, bshift, b2_shifted, 0x0000);
+
+    // Test case for byte shift right by 8 (constant)
+    word b3_shifted = b1 >> 8;
+    printShiftResult("Byte >> 8 (constant)", b1 as word, 8, b3_shifted, 0x0000);
+
+    // Test case for byte shift right by 8 (variable)
+    bshift = 8;
+    word b4_shifted = b1 >> bshift;
+    printShiftResult("Byte >> 8 (variable)", b1 as word, bshift, b4_shifted, 0x0000);
+
+    // Corner cases
+    // Shift by 0
+    word w7 = 0x1234;
+    word w7_shifted_left = w7 << 0;
+    word w7_shifted_right = w7 >> 0;
+    printShiftResult("Word << 0 (constant)", w7, 0, w7_shifted_left, 0x1234);
+    printShiftResult("Word >> 0 (constant)", w7, 0, w7_shifted_right, 0x1234);
+
+    // Shift by 0 for byte
+    byte b5 = 0x12;
+    word b5_shifted_left = b5 << 0;
+    word b5_shifted_right = b5 >> 0;
+    printShiftResult("Byte << 0 (constant)", b5 as word, 0, b5_shifted_left, 0x0012);
+    printShiftResult("Byte >> 0 (constant)", b5 as word, 0, b5_shifted_right, 0x0012);
+
+    // Shift word by 17 (left and right)
+    word w8 = 0x1234;
+    word w8_shifted_left = w8 << 17;
+    word w8_shifted_right = w8 >> 17;
+    printShiftResult("Word << 17 (constant)", w8, 17, w8_shifted_left, 0x0000);
+    printShiftResult("Word >> 17 (constant)", w8, 17, w8_shifted_right, 0x0000);
+
+    // Shift byte by 9 (left and right)
+    byte b6 = 0x12;
+    word b6_shifted_left = b6 << 9;
+    word b6_shifted_right = b6 >> 9;
+    printShiftResult("Byte << 9 (constant)", b6 as word, 9, b6_shifted_left, 0x0000);
+    printShiftResult("Byte >> 9 (constant)", b6 as word, 9, b6_shifted_right, 0x0000);
+
+    // Non-corner cases
+    // Shift word by 4 (left and right)
+    word w9 = 0x1234;
+    word w9_shifted_left = w9 << 4;
+    word w9_shifted_right = w9 >> 4;
+    printShiftResult("Word << 4 (constant)", w9, 4, w9_shifted_left, 0x2340);
+    printShiftResult("Word >> 4 (constant)", w9, 4, w9_shifted_right, 0x0123);
+
+    // Shift byte by 4 (left and right)
+    byte b7 = 0x12;
+    word b7_shifted_left = b7 << 4;
+    word b7_shifted_right = b7 >> 4;
+    printShiftResult("Byte << 4 (constant)", b7 as word, 4, b7_shifted_left, 0x0020);
+    printShiftResult("Byte >> 4 (constant)", b7 as word, 4, b7_shifted_right, 0x0001);
+}
+
