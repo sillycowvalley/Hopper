@@ -1,5 +1,7 @@
 program TCCompile
 {
+    #define EXPERIMENTAL
+    
     uses "/Source/System/System"
     uses "/Source/System/Diagnostics"
     

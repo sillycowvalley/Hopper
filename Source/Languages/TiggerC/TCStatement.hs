@@ -351,60 +351,33 @@ unit TCStatement
         {
             TCScanner.Advance(); // Skip '='
     
-            if (tp == "func")
+            string exprType;
+            if (!TCExpression.Expression(ref exprType)) // local variable initializer expression
             {
-                token = TCScanner.Current();
-                if (token.Type != TokenType.IDENTIFIER)
-                {
-                    Error(token.SourcePath, token.Line, "expected function name after '=', ('" + token.Lexeme + "')");
-                    return false;
-                }
-    
-                string toFunctionName = token.Lexeme;
-                TCScanner.Advance(); // Skip function name
-                
-                // TODO : local func pointer
-                // - create local variable of type 'func'
-                // - assign it the word value of the constant Resoures.FunctionName (PopVariable(name, LocalOffset, false, false);)
-                // - add FunctionName to the list of constants to emit to 'resources.asm'
-    
-                token = TCScanner.Current();
-                if (token.Type != TokenType.SYM_SEMICOLON)
-                {
-                    Error(token.SourcePath, token.Line, "expected ';' after function pointer assignment, ('" + token.Lexeme + "')");
-                    return false;
-                }
+                return false;
             }
-            else
+            
+            if (!IsAutomaticCast(tp, exprType, false, false))
             {
-                string exprType;
-                if (!TCExpression.Expression(ref exprType)) // local variable initializer expression
-                {
-                    return false;
-                }
-                
-                if (!IsAutomaticCast(tp, exprType, false, false))
-                {
-                    Error(token.SourcePath, token.Line, "type mismatch: expected '" + tp + "', was '" + exprType + "'");
-                    return false;
-                }
-    
-                token = TCScanner.Current();
-                if (token.Type != TokenType.SYM_SEMICOLON)
-                {
-                    Error(token.SourcePath, token.Line, "expected ';' after variable assignment, ('" + token.Lexeme + "')");
-                    return false;
-                }
-                
-                int    offset;
-                bool   isGlobal;
-                string variableType;
-                if (!GetVariable(name, ref variableType, ref offset, ref isGlobal))
-                {
-                    Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
-                }
-                TCGen.PopVariable(offset, IsByteType(variableType), isGlobal);
+                Error(token.SourcePath, token.Line, "type mismatch: expected '" + tp + "', was '" + exprType + "'");
+                return false;
             }
+
+            token = TCScanner.Current();
+            if (token.Type != TokenType.SYM_SEMICOLON)
+            {
+                Error(token.SourcePath, token.Line, "expected ';' after variable assignment, ('" + token.Lexeme + "')");
+                return false;
+            }
+            
+            int    offset;
+            bool   isGlobal;
+            string variableType;
+            if (!GetVariable(name, ref variableType, ref offset, ref isGlobal))
+            {
+                Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
+            }
+            TCGen.PopVariable(offset, IsByteType(variableType), isGlobal);
         }
         else
         {
@@ -628,7 +601,6 @@ unit TCStatement
             case TokenType.KW_BOOL:
             case TokenType.KW_INT:
             case TokenType.KW_UINT:
-            case TokenType.KW_FUNC:
             {
                 TCGen.BeginStream(false);
                 if (!parseLocalVarDeclaration())

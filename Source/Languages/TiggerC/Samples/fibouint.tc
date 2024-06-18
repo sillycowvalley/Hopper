@@ -1,9 +1,10 @@
-#define CPU_65C02S
-#define ROM_8K
+//#define APPLE_I // rather than the default ACIA_6850 for E6502    
+#define EXPERIMENTAL
 
 #include "../system.tc"
 
 func word Fibo(word n) {
+    
     if (n <= 1) {
         return n;
     } else {
@@ -11,14 +12,16 @@ func word Fibo(word n) {
     }
 }
 
-func Benchmark(const char[] name, func funcPtr, word arg, word loops) {
+func Benchmark(const char[] name, word arg, word loops) {
 
+    writeChar('\n');
+    
     // Start timing
     byte[] start = millis(); 
     
     word result = 0;
     for (word count = 0; count < loops; count++) {
-        result = funcPtr(arg);
+        result = Fibo(arg);
     }
     
     // Stop timing
@@ -27,7 +30,7 @@ func Benchmark(const char[] name, func funcPtr, word arg, word loops) {
     free(start);
     
     writeString(name);
-    writeString("(");
+    writeChar('(');
     writeWord(arg);
     writeString(") = ");
     writeWord(result);
@@ -39,6 +42,5 @@ func Benchmark(const char[] name, func funcPtr, word arg, word loops) {
 }
 
 func main() {
-    func testFunction = Fibo;
-    Benchmark("Fibo", testFunction, 24, 1); // Fibo(24) = 46368
+    Benchmark("Fibo", 24, 1); // Fibo(24) = 46368
 }

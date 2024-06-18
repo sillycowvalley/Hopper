@@ -38,6 +38,7 @@ TiggerC is a minimal programming language designed for the Hopper 6502 SBC, incl
 4. **Function Calls:**
    - Support for basic functions with fixed parameters.
    - Limited stack-based function call mechanism.
+   - No nested/local functions.
 
 5. **Memory Management:**
    - Manual memory management using `malloc` and `free`.
@@ -59,10 +60,7 @@ TiggerC is a minimal programming language designed for the Hopper 6502 SBC, incl
    - Automatic zero extension for narrower to wider unsigned types.
    - Warnings for potentially unsafe casts unless explicitly cast.
 
-10. **Function Pointers:**
-    - Use `func` keyword to define and invoke function pointers.
-
-11. **Preprocessor Support:**
+10. **Preprocessor Support:**
     - `#include "filename"` for including files.
     - `#define` for constants and macros.
     - Conditional compilation with `#ifdef`, `#ifndef`, `#else`, `#endif`.
@@ -216,33 +214,6 @@ char[] dynamicDigits = malloc(5);      // Dynamic array, manually managed
 2. **Range Checking**: The compiler enforces range checking since it knows the array size.
 3. **Assignment Restrictions**: These arrays cannot be reassigned or freed manually.
 
-### Function Pointers
-
-**Defining a Function Pointer**:
-- Use the `func` keyword as the type for function pointers.
-
-**Syntax**:
-```c
-func functionPointerName = functionName;
-```
-
-**Example**:
-```c
-func fiboDelegate = Fibo;
-```
-
-**Calling a Function via a Function Pointer**:
-- Invoke the function pointer directly.
-
-**Syntax**:
-```c
-returnType result = functionPointerName(arguments);
-```
-
-**Example**:
-```c
-uint result = fiboDelegate(arg);
-```
 
 ## System/Library Functions
 
@@ -959,9 +930,3 @@ The following table shows the precedence and associativity of TiggerC operators,
 | 15               | `,`               | Comma (sequence operator)             | Left to right    |
 
 This table helps clarify the order in which operations are performed in TiggerC, ensuring that expressions are evaluated as intended.
-
-## Bugs and Tasks
-
-### Function Pointers
-
-`func` pointers have not yet been implemented.

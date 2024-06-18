@@ -881,20 +881,8 @@ unit TCExpression
                     // function call
                     if (!GetFunction(name, ref actualType))
                     {
-                        int  offset;
-                        bool isGlobal;
-                        if (!GetVariable(name, ref actualType, ref offset, ref isGlobal))
-                        {
-                            Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
-                            break;
-                        }
-                        if (actualType != "func")
-                        {
-                            Error(token.SourcePath, token.Line, "invalid use of '" + name + "'");
-                            break;
-                        }
-                        // untyped func pointer, arbitrarily pick "word" as return type
-                        actualType = "word";
+                        Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
+                        break;
                     }
                     
                     TCScanner.Advance(); // Skip '('
@@ -1208,16 +1196,19 @@ unit TCExpression
             {
                 break; // exit the loop when reaching ')'
             }
+            
             if (currentArgument == argumentNames.Count)
             {
                 Error(token.SourcePath, token.Line, "too many arguments for '" + functionName  + "'");
                 return false;
             }
+        
             string argType;
             if (!parseExpression(ref argType))
             {
                 return false;
             }
+            
             string argName = argumentNames[currentArgument];
             Variable argument = arguments[argName];
             if (!IsAutomaticCast(argument.Type, argType, false, false))
@@ -1225,8 +1216,8 @@ unit TCExpression
                  Error(token.SourcePath, token.Line, "expected '" + argument.Type + "' for argument '" + argName  + "', was '" + argType + "'");
                  return false;
             }
-            
             bytes += (IsByteType(argument.Type) ? 1 : 2);
+        
             token = TCScanner.Current();
             if (token.Type == TokenType.SYM_COMMA)
             {

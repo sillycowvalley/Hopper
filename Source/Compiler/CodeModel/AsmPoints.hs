@@ -1668,6 +1668,15 @@ unit AsmPoints
                         modified = true;
                     }
                 }
+                if ((opCode1 == OpCode.STX_z) && (opCode0 == OpCode.LDA_z))
+                {
+                    if (iOperands[iIndex-1] == iOperands[iIndex-0])
+                    {
+                        iCodes  [iIndex-0] = OpCode.TXA;
+                        iLengths[iIndex-0] = 1;
+                        modified = true;
+                    }
+                }
             }
             iIndex++;
         } // loop
@@ -1970,6 +1979,15 @@ unit AsmPoints
                     iCodes  [iIndex-0] = OpCode.NOP;
                     iLengths[iIndex-0] = 1;
                     modified = true;
+                }
+                if ((opCode2 == OpCode.STA_z) && (opCode1 == OpCode.CLC) && (opCode0 == OpCode.LDA_z))
+                {
+                    if (iOperands[iIndex-2] == iOperands[iIndex-0])
+                    {
+                        iCodes  [iIndex-0] = OpCode.NOP;
+                        iLengths[iIndex-0] = 1;
+                        modified = true;
+                    }
                 }
             }
             iIndex++;
