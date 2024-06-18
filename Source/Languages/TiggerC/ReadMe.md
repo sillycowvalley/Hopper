@@ -244,268 +244,285 @@ returnType result = functionPointerName(arguments);
 uint result = fiboDelegate(arg);
 ```
 
-### Built-in Functions and Constants
+## System/Library Functions
 
-#### Pin Modes
-
-```c
-const byte INPUT = 0;
-const byte OUTPUT = 1;
-const byte INPUT_PULLUP = 2;
-```
-
-#### VIA (Versatile Interface Adapter) Constants
-
-```c
-const byte PORTB = 0xF0;
-const byte PORTA = 0xF1;
-const byte DDRB = 0xF2;
-const byte DDRA = 0xF3;
-```
-
-#### Hexadecimal Characters
-
-```c
-const char[] hexChars = "0123456789ABCDEF";
-```
+This section describes the available system/library functions in TiggerC, including their arguments and return values.
 
 ### Serial Communication
 
+#### `writeChar`
+
+**Description**: Writes a single character to the serial output.
+
+**Prototype**: 
 ```c
-func writeChar(char c);       // System function to write a single character
-
-func writeString(const char[] str) {
-    // Function to write a null-terminated string to the serial output using writeChar
-    word
-
- i;
-    while (str[i] != (0 as char)) {
-        writeChar(str[i]);
-        i++;
-    }
-}
-
-func writeWord(word num) {
-    // Function to write a word as a string to the serial output buffer using writeChar
-    if (num == 0) {
-        writeChar('0');
-        return;
-    }
-
-    byte i;
-    char[5] digits; // Maximum 5 digits for a word
-    while (num != 0) {
-        digits[i++] = ((num % 10) + 48) as char;
-        num /= 10;
-    }
-    // Write the digits in reverse order
-    while (i != 0) {
-        writeChar(digits[--i]);
-    }
-}
-
-func writeInt(int num) {
-    if (num < 0) {
-        num = -num;
-        writeChar('-');
-    }
-    word w = num as word;
-    writeWord(w);
-}
-
-func writeHex(byte value) {
-    // Function to write a byte as two hexadecimal characters
-    // Write the high nibble
-    byte highNibble = (value >> 4) & 0x0F;
-    writeChar(hexChars[highNibble]);
-    // Write the low nibble
-    byte lowNibble = value & 0x0F;
-    writeChar(hexChars[lowNibble]);
-}
+func writeChar(char c);
 ```
+
+**Arguments**:
+- `c`: Character to be written.
+
+**Return Value**: None.
+
+#### `writeString`
+
+**Description**: Writes a null-terminated string to the serial output.
+
+**Prototype**: 
+```c
+func writeString(const char[] str);
+```
+
+**Arguments**:
+- `str`: Null-terminated string to be written.
+
+**Return Value**: None.
+
+#### `writeWord`
+
+**Description**: Writes a 
+
+16-bit word as a string to the serial output.
+
+**Prototype**: 
+```c
+func writeWord(word num);
+```
+
+**Arguments**:
+- `num`: 16-bit word to be written.
+
+**Return Value**: None.
+
+#### `writeInt`
+
+**Description**: Writes a 16-bit signed integer as a string to the serial output.
+
+**Prototype**: 
+```c
+func writeInt(int num);
+```
+
+**Arguments**:
+- `num`: 16-bit signed integer to be written.
+
+**Return Value**: None.
+
+#### `writeHex`
+
+**Description**: Writes a byte as two hexadecimal characters to the serial output.
+
+**Prototype**: 
+```c
+func writeHex(byte value);
+```
+
+**Arguments**:
+- `value`: Byte to be written as hexadecimal.
+
+**Return Value**: None.
 
 ### EEPROM
 
+#### `writePage`
+
+**Description**: Writes a page of data to serial EEPROM.
+
+**Prototype**: 
 ```c
-func writePage(word address, const byte[] data); // System function to write a page of data to serial EEPROM
-func readPage(word address, byte[] buffer);      // System function to read a page of data from serial EEPROM
+func writePage(word address, const byte[] data);
 ```
+
+**Arguments**:
+- `address`: EEPROM address to write to.
+- `data`: Data to be written.
+
+**Return Value**: None.
+
+#### `readPage`
+
+**Description**: Reads a page of data from serial EEPROM.
+
+**Prototype**: 
+```c
+func readPage(word address, byte[] buffer);
+```
+
+**Arguments**:
+- `address`: EEPROM address to read from.
+- `buffer`: Buffer to store the read data.
+
+**Return Value**: None.
 
 ### GPIO (Pin) Control
 
+#### `pinSet`
+
+**Description**: Sets the value of a pin.
+
+**Prototype**: 
 ```c
-func pinSet(byte pin, bool value) { // System function to set the value of a pin
-    byte port;
-    if (pin <= 7) {
-        port = PORTA;
-    } else {
-        port = PORTB;
-    }
-    pin = 1 << (pin & 0x07); // Mask lower 3 bits
-    if (value) {
-        mem[port] |= pin; // Set the pin high
-    } else {
-        mem[port] &= ~pin; // Set the pin low
-    }
-}
-
-func bool pinRead(byte pin) { // System function to read the value of a pin
-    byte port;
-    if (pin <= 7) {
-        port = PORTA;
-    } else {
-        port = PORTB;
-    }
-    pin = 1 << (pin & 0x07); // Mask lower 3 bits
-    return (mem[port] & pin) != 0;
-}
-
-func pinMode(byte pin, byte mode) { // System function to set the mode of a pin
-    byte port;
-    if (pin <= 7) {
-        port = DDRA;
-    } else {
-        port = DDRB;
-    }
-    pin = 1 << (pin & 0x07); // Mask lower 3 bits
-    if (mode == OUTPUT) {
-        mem[port] |= pin; // Set the pin as output
-    } else {
-        mem[port] &= ~pin; // Set the pin as input
-    }
-}
+func pinSet(byte pin, bool value);
 ```
+
+**Arguments**:
+- `pin`: Pin number to set.
+- `value`: Value to set (true for high, false for low).
+
+**Return Value**: None.
+
+#### `pinRead`
+
+**Description**: Reads the value of a pin.
+
+**Prototype**: 
+```c
+func bool pinRead(byte pin);
+```
+
+**Arguments**:
+- `pin`: Pin number to read.
+
+**Return Value**: Boolean value of the pin (true for high, false for low).
+
+#### `pinMode`
+
+**Description**: Sets the mode of a pin.
+
+**Prototype**: 
+```c
+func pinMode(byte pin, byte mode);
+```
+
+**Arguments**:
+- `pin`: Pin number to set the mode for.
+- `mode`: Mode to set (INPUT, OUTPUT, INPUT_PULLUP).
+
+**Return Value**: None.
 
 ### I2C
 
+#### `I2CWrite`
+
+**Description**: Writes data to an I2C device.
+
+**Prototype**: 
 ```c
 func I2CWrite(byte address, byte data);
+```
+
+**Arguments**:
+- `address`: I2C address of the device.
+- `data`: Data to be written.
+
+**Return Value**: None.
+
+#### `I2CRead`
+
+**Description**: Reads data from an I2C device.
+
+**Prototype**: 
+```c
 func byte I2CRead(byte address);
 ```
 
+**Arguments**:
+- `address`: I2C address of the device.
+
+**Return Value**: Data read from the device.
+
 ### Timing
 
+#### `millis`
+
+**Description**: Gets the current system tick count.
+
+**Prototype**: 
 ```c
-func byte[] millis(); // System function to get the current system tick count
+func byte[] millis();
+```
 
-func word elapsedMillis(byte[] start) {
-    // Calculate elapsed milliseconds since the start
-    byte[] now = millis();
-    word elapsed = (now[0] - start[0]) + ((now[1] - start[1]) << 8);
-    return elapsed;
-}
+**Arguments**: None.
 
-func word elapsedSeconds(byte[] start) {
-    // Calculate elapsed seconds since the start
-    word ms = elapsedMillis(start);
-    return ms / 1000;
-}
+**Return Value**: Byte array containing the current tick count.
 
+#### `elapsedMillis`
+
+**Description**: Calculates the elapsed milliseconds since the start.
+
+**Prototype**: 
+```c
+func word elapsedMillis(byte[] start);
+```
+
+**Arguments**:
+- `start`: Byte array containing the start tick count.
+
+**Return Value**: Elapsed milliseconds since the start.
+
+#### `elapsedSeconds`
+
+**Description**: Calculates the elapsed seconds since the start.
+
+**Prototype**: 
+```c
+func word elapsedSeconds(byte[] start);
+```
+
+**Arguments**:
+- `start`: Byte array containing the start tick count.
+
+**Return Value**: Elapsed seconds since the start.
+
+#### `delay`
+
+**Description**: Delays execution for a specified number of milliseconds.
+
+**Prototype**: 
+```c
 func delay(word milliseconds);
 ```
 
+**Arguments**:
+- `milliseconds`: Number of milliseconds to delay.
+
+**Return Value**: None.
+
 ### Memory Management
 
+#### `malloc`
+
+**Description**: Allocates memory and returns a pointer to the allocated memory.
+
+**Prototype**: 
 ```c
 func byte[] malloc(word size);
+```
+
+**Arguments**:
+- `size`: Number of bytes to allocate.
+
+**Return Value**: Pointer to the allocated memory.
+
+#### `free`
+
+**Description**: Frees previously allocated memory.
+
+**Prototype**: 
+```c
 func free(byte[] ptr);
 ```
+
+**Arguments**:
+- `ptr`: Pointer to the memory to be freed.
+
+**Return Value**: None.
 
 ## Example Programs
 
 ### Including Other Source Files
 
 Use the `#include` preprocessor directive to include other source files. This allows modular organization and reuse of common definitions and functions.
-
-### Example System API File
-
-**system.tc**
-
-```c
-// Pin Modes
-const byte INPUT = 0;
-const byte OUTPUT = 1;
-const byte INPUT_PULLUP = 2;
-
-// VIA Constants
-const byte PORTB = 0xF0;
-const byte PORTA = 0xF1;
-const byte DDRB = 0xF2;
-const byte DDRA = 0xF3;
-
-const char[] hexChars = "0123456789ABCDEF";
-
-// Serial Communication
-func writeChar(char c); // System function to write a single character
-
-func writeString(const char[] str) {
-    // Function to write a null-terminated string to the serial output using writeChar
-    word i;
-    while (str[i] != (0 as char)) {
-        writeChar(str[i]);
-        i++;
-    }
-}
-
-func writeWord(word num) {
-    // Function to write a word as a string to the serial output buffer using writeChar
-    if (num == 0) {
-        writeChar('0');
-        return;
-    }
-    byte i;
-    char[5] digits; // Maximum 5 digits for a word
-    while (num != 0) {
-        digits[i++] = ((num % 10) + 48) as char;
-        num /= 10;
-    }
-    // Write the digits in reverse order
-    while (i != 0) {
-        writeChar(digits[--i]);
-    }
-    free(digits); // Free allocated memory
-}
-
-func writeInt(int num) {
-    if (num < 0) {
-        num = -num;
-        writeChar('-');
-    }
-    word w = num as word;
-    writeWord(w);
-}
-
-func writeHex(byte value) {
-    // Function to write a byte as two hexadecimal characters
-    byte highNibble = (value >> 4) & 0x0F;
-    writeChar(hexChars[highNibble]);
-    byte lowNibble = value & 0x0F;
-    writeChar(hexChars[lowNibble]);
-}
-
-// EEPROM
-func writePage(word address, const byte[] data);
-func readPage(word address, byte[] buffer);
-
-// GPIO (Pin) Control
-func pinSet(byte pin, bool value);
-func bool pinRead(byte pin);
-func pinMode(byte pin, byte mode);
-
-// I2C
-func I2CWrite(byte address, byte data);
-func byte I2CRead(byte address);
-
-// Timing
-func byte[] millis(); // System function to get the current system tick count
-func word elapsedMillis(byte[] start);
-func word elapsedSeconds(byte[] start);
-func delay(word milliseconds);
-
-// Memory Management
-func byte[] malloc(word size);
-func free(byte[] ptr);
-```
 
 ### Example Main Program File
 
@@ -586,7 +603,6 @@ func main() {
 ### Example Mandelbrot Program
 
 ```c
-//#define APPLE_I // rather than the default ACIA_6850 for E6502    
 #define EXPERIMENTAL
 #include "system.tc"
 
@@ -604,9 +620,7 @@ func main() {
 
     for (y = -12; y <= 12; y++) {
         for (x = -49; x <= 29; x++) {
-            c = x * 229 / 
-
-100;
+            c = x * 229 / 100;
             d = y * 416 / 100;
             a = c; b = d; i = 0;
             while (true) {
@@ -682,4 +696,3 @@ This table helps clarify the order in which operations are performed in TiggerC,
 ### Function Pointers
 
 `func` pointers have not yet been implemented.
-
