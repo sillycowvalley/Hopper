@@ -43,6 +43,7 @@ Tiny6502 is a minimal programming language designed for the Hopper 6502 SBC, inc
 5. **Memory Management:**
    - Manual memory management using `malloc` and `free`.
    - No garbage collection.
+   - `malloc` zeroes memory.
 
 6. **I/O Operations:**
    - Built-in functions for serial communication, EEPROM read/write, GPIO, and I2C.
@@ -656,9 +657,9 @@ The following table shows the precedence and associativity of Tiny6502 operators
 |                  | `!=`              | Not equal to                          | Left to right    |
 | 8                | `&`               | Bitwise AND                           | Left to right    |
 | 9                | `^`               | Bitwise XOR                           | Left to right    |
-| 10               | `|`               | Bitwise OR                            | Left to right    |
+| 10               | `\|`               | Bitwise OR                            | Left to right    |
 | 11               | `&&`              | Logical AND                           | Left to right    |
-| 12               | `||`              | Logical OR                            | Left to right    |
+| 12               | `\|\|`              | Logical OR                            | Left to right    |
 | 13               | `? :`             | Ternary conditional                   | Right to left    |
 | 14               | `=`               | Assignment                            | Right to left    |
 | 15               | `,`               | Comma (sequence operator)             | Left to right    |
