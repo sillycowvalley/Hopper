@@ -21,7 +21,6 @@ program Z80Opt
     
     bool isExperimental;
     bool IsExperimental { get { return isExperimental; }}
-
     
     const uint progressSteps = 256;
     uint progressInstructions;

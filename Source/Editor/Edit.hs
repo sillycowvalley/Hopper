@@ -18,8 +18,6 @@ program Edit
     string optionsPath;
     string OptionsPath { get { return optionsPath; } }
     
-    bool NoPackedInstructions { get { return false; } } // to keep peephole code happy (even though it is not used)
-    
     Hopper()
     {
         <string> arguments = System.Arguments;

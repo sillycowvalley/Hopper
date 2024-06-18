@@ -126,7 +126,7 @@ unit TCScanner
         
         char c = currentLineContent[lineIndex];
         
-        if (Char.IsLetter(c))
+        if (Char.IsLetter(c) || (c == '_'))
         {
             currentToken = tokenizeIdentifier();
         }

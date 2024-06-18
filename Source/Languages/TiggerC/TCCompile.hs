@@ -359,41 +359,13 @@ unit TCCompile
             }
         
             string functionName = token.Lexeme;
+            CurrentIsNaked = functionName[0] == '_';
             TCScanner.Advance(); // Skip identifier
             
-            token = TCScanner.Current();
-            if (token.Type == TokenType.SYM_EQ)
+            if (CurrentIsNaked && (returnType != "void"))
             {
-                // Handle function pointer assignment
-                TCScanner.Advance(); // Skip '='
-                
-                token = TCScanner.Current();
-                if (token.Type != TokenType.IDENTIFIER)
-                {
-                    Error(token.SourcePath, token.Line, "expected function name after '=', ('" + token.Lexeme + "')");
-                    return false;
-                }
-    
-                string toFunctionName = token.Lexeme;
-                TCScanner.Advance(); // Skip function name
-                
-                // TODO : global func pointer
-                // - create global variable of type 'func'
-                // - assign it the word value of the constant Resoures.FunctionName
-                // - add FunctionName to the list of constants to emit to 'resources.asm'
-                
-                token = TCScanner.Current();
-                if (token.Type != TokenType.SYM_SEMICOLON)
-                {
-                    Error(token.SourcePath, token.Line, "expected ';' after function pointer assignment, (" + token.Lexeme + "')");
-                    break;
-                }
-        
-                TCScanner.Advance(); // Skip ';'
-                
-                
-                success = true;
-                break;
+                Error(token.SourcePath, token.Line, "naked functions should have no return type");
+                break;        
             }
             
             TCCode.Function(functionName);
@@ -404,6 +376,8 @@ unit TCCompile
             {
                 break;
             }
+            
+            token = TCScanner.Current();
             if (token.Type != TokenType.SYM_LPAREN)
             {
                 Error(token.SourcePath, token.Line, "expected '(' after function name, (" + token.Lexeme + "')");
@@ -411,6 +385,17 @@ unit TCCompile
             }
         
             TCScanner.Advance(); // Skip '('
+            
+            if (CurrentIsNaked)
+            {
+                token = TCScanner.Current();
+                if (token.Type != TokenType.SYM_RPAREN)
+                {
+                    Error(token.SourcePath, token.Line, "naked functions should have no arguments");
+                    break;        
+                }
+            }
+            
             if (!parseParameterList(functionName))
             {
                 break;
@@ -444,15 +429,20 @@ unit TCCompile
                 {
                     EmitGlobals();
                 }
-                TCCode.Enter();
+                if (!CurrentIsNaked)
+                {
+                    TCCode.Enter();
+                }
                 
                 // This is an actual function definition
                 if (!TCStatement.parseBlock(false, "function " + functionName)) // method scope block
                 {
                     break;
                 }
-                
-                TCCode.Leave();
+                if (!CurrentIsNaked)
+                {
+                    TCCode.Leave();
+                }
             }
             else
             {
@@ -462,6 +452,8 @@ unit TCCompile
             
             TCSymbols.LeaveBlock(functionName, generate); // for arguments
             TCConstant.LeaveBlock();
+            
+            CurrentIsNaked = false;
             
             success = true;
             break;

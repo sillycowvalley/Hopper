@@ -110,10 +110,58 @@ const char[] message = "Hello, 6502!"; // Read-only fixed-size array
 
 ### Memory Access
 
+Direct access to all 64K of memory is provided via a pseudo `byte[]` called `mem`.
+
 ```c
 byte b = mem[42];      // Load from memory
 mem[42] = b;           // Store to memory
 ```
+
+### Inline Assembly
+
+TiggerC supports inline assembly, allowing direct 6502 assembly instructions within your code. An underscore before a function name indicates a "naked" function, meaning it has no entry or exit code (beyond RTS).
+This means no stack frame (local variables) and no arguments. Inline assembly can be inserted anywhere in any method.
+
+#### Sample Program: Inline 6502 Assembly
+
+This sample program illustrates how to use inline 6502 assembly to control an LED on GPIO pin 0.
+
+```c
+#include "../system.tc"
+
+func Setup() {
+    asm("SMB0 0xF3 // DDRA");
+    writeString("Initialized.");
+}
+
+func _LEDOn() {
+    asm("SMB0 0xF1 // PORTA");
+}
+
+func _LEDOff() {
+    asm("RMB0 0xF1 // PORTA");
+}
+
+// Blink an LED on GPIO pin 0 every second
+func main() {
+    bool ledState;
+
+    Setup();
+    _LEDOff();
+
+    while (true) {
+        if (ledState) {
+            _LEDOff();
+            ledState = false;
+        } else {
+            _LEDOn();
+            ledState = true;
+        }
+        delay(1000); // Delay for 1 second
+    }
+}
+```
+
 
 ### Memory Management
 

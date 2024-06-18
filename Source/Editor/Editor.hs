@@ -22,7 +22,8 @@ unit Editor
     bool IsDebugger { get { return false; } }
     bool IsInteractive { get { return true; } }
 #endif    
-
+    bool NoPackedInstructions { get { return false; } } // to keep peephole code happy (even though it is not used)
+    
     // '/' excluded  on purpose to make path selection easier
     string wordDelimiters = ";,.:?(){}[]<>=!&|~^+-*% '\""; 
     

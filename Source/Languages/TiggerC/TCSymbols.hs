@@ -27,7 +27,9 @@ unit TCSymbols
     <string,bool> symbols;
     
     string currentFunction;
+    bool isNaked;
     string CurrentFunction { get { return currentFunction; } }
+    bool   CurrentIsNaked  { get { return isNaked; } set { isNaked = value; } }
     
     uint BlockLevel { get { return blockLevel; } set { blockLevel = value; } }
     

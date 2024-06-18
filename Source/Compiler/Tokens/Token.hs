@@ -379,6 +379,7 @@ unit Token
         statementKeywords["func"] = true;
         statementKeywords["mem"] = true;
         statementKeywords["as"] = true;
+        statementKeywords["asm"] = true;
         
     }
     

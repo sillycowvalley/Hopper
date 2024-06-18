@@ -21,7 +21,7 @@ program DASM
     uses "Symbols"
     
     bool ogMode;
-    bool OGMode { get { return ogMode; } }
+    bool OGMode    { get { return ogMode; } }
     
     uint instructionCount = 0;
     

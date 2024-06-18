@@ -9,6 +9,46 @@ unit TCStatement
     uses "TCType"
     uses "TCSymbols"
     
+    bool parseAssembler()
+    {
+        TCScanner.Advance(); // Skip 'asm'
+        
+        Token token = TCScanner.Current();
+        if (token.Type != TokenType.SYM_LPAREN)
+        {
+            Error(token.SourcePath, token.Line, "expected '(' after 'if'");
+            return false;
+        }
+        TCScanner.Advance(); // Skip '('
+        
+        token = TCScanner.Current();
+        if (token.Type != TokenType.LIT_STRING)
+        {
+            Error(token.SourcePath, token.Line, "assembly string expected");
+            return false;
+        }
+        TCCode.PadOut(token.Lexeme, 0);
+        
+        TCScanner.Advance(); // Skip string
+        
+        token = TCScanner.Current();
+        if (token.Type != TokenType.SYM_RPAREN)
+        {
+            Error(token.SourcePath, token.Line, "expected ')' after condition");
+            return false;
+        }
+        TCScanner.Advance(); // Skip ')'
+        
+        token = TCScanner.Current();
+        if (token.Type != TokenType.SYM_SEMICOLON)
+        {
+            Error(token.SourcePath, token.Line, "expected ';' after 'break'");
+            return false;
+        }
+        TCScanner.Advance(); // Skip ';'
+        return true;
+    }
+    
     bool parseIfStatement()
     {
         TCScanner.Advance(); // Skip 'if'
@@ -261,7 +301,7 @@ unit TCStatement
         
         return true;
     }
-    
+       
     bool parseBreakStatement()
     {
         TCScanner.Advance(); // Skip 'break'
@@ -303,8 +343,13 @@ unit TCStatement
         {
             return false;
         }
-    
+        
         Token token = TCScanner.Current();
+        if (CurrentIsNaked)
+        {
+            Error(token.SourcePath, token.Line, "'" + token.Lexeme + "': no local variables in naked function");
+            return false;
+        }
         if (token.Type != TokenType.IDENTIFIER)
         {
             Error(token.SourcePath, token.Line, "expected identifier after type, ('" + token.Lexeme + "')");
@@ -630,6 +675,13 @@ unit TCStatement
             {            
                 // empty statement is ok
                 TCScanner.Advance(); // Skip ';'
+            }
+            case TokenType.KW_ASM:
+            {
+                if (!parseAssembler())
+                {
+                    return false;
+                }
             }
             default:
             {

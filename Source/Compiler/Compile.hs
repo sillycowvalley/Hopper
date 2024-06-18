@@ -27,7 +27,7 @@ program Compile
     uses "CodeGen/Peephole"
     uses "CodeGen/Block"
     
-    bool IsDebugger  { get { return false; } }
+    bool IsDebugger { get { return false; } }
     
     uint iCurrentOverload;
     

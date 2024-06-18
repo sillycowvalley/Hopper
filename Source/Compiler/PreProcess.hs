@@ -1611,7 +1611,8 @@ program PreProcess
                       }
                       case "-a":
                       {
-                          isAssembly = true;   
+                          isAssembly = true;
+                          IsTiggerC = true;
                       }
                       case "-z":
                       {

@@ -5,7 +5,7 @@ unit TCToken
         // Keywords
         KW_FUNC, KW_IF, KW_ELSE, KW_WHILE, KW_FOR, KW_BREAK, KW_CONTINUE, KW_SWITCH, KW_CASE, KW_DEFAULT,
         KW_CONST, KW_TRUE, KW_FALSE, KW_NULL, KW_IMPORT, KW_RETURN,
-        KW_BYTE, KW_WORD, KW_CHAR, KW_BOOL, KW_INT, KW_UINT, KW_AS, KW_MEM,
+        KW_BYTE, KW_WORD, KW_CHAR, KW_BOOL, KW_INT, KW_UINT, KW_AS, KW_MEM, KW_ASM,
         // Symbols
         SYM_LPAREN, SYM_RPAREN, SYM_LBRACE, SYM_RBRACE, SYM_LBRACKET, SYM_RBRACKET, SYM_LLBRACKET,
         SYM_SEMICOLON, SYM_COLON, SYM_COMMA, SYM_DOT, SYM_HASH,
@@ -61,6 +61,7 @@ unit TCToken
         keywords["return"] = TokenType.KW_RETURN;
         keywords["as"] = TokenType.KW_AS;
         keywords["mem"] = TokenType.KW_MEM;
+        keywords["asm"] = TokenType.KW_ASM;
     }
     
     bool IsKeyword(string candidate, ref TokenType kw)
@@ -173,6 +174,7 @@ unit TCToken
             case TokenType.KW_UINT: { return "KW_UINT"; }
             case TokenType.KW_AS: { return "KW_AS"; }
             case TokenType.KW_MEM: { return "KW_MEM"; }
+            case TokenType.KW_ASM: { return "KW_ASM"; }
             case TokenType.SYM_LPAREN: { return "SYM_LPAREN"; }
             case TokenType.SYM_RPAREN: { return "SYM_RPAREN"; }
             case TokenType.SYM_LBRACE: { return "SYM_LBRACE"; }

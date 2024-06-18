@@ -34,6 +34,9 @@ unit Scanner
         Token.InitializeHopper();
     }
     
+    bool isTiggerC;
+    bool IsTiggerC { get { return isTiggerC; } set { isTiggerC = value; } }
+    
     long PosEOL { get { return currentPosEOL; } }
     
     Load(string sourcePath)
@@ -631,7 +634,18 @@ unit Scanner
                     case '~': { htoken = HopperToken.BitNot; }
                     case '^': { htoken = HopperToken.BitXor; }
                     case '?': { htoken = HopperToken.Question; }
-                    case '_': { htoken = HopperToken.Discarder; }
+                    case '_': 
+                    { 
+                        c = sourceGetFromPos(currentPos, true); // peek
+                        if (IsTiggerC && (c.IsLower() || c.IsUpper()))
+                        {
+                            token = scanIdentifier('_');
+                        }
+                        else
+                        {
+                            htoken = HopperToken.Discarder; 
+                        }
+                    }
                     
                     case '*':
                     {

@@ -25,7 +25,7 @@ program Assemble
     <string,uint> labelLocations;
     <uint,string> labelBranches;
     
-    bool IsDebugger  { get { return false; } }
+    bool IsDebugger           { get { return false; } }
     bool NoPackedInstructions { get { return false; } }
     
     bool isExperimental;
@@ -1684,6 +1684,7 @@ program Assemble
                 }
                 isExperimental       = isExperimental || Symbols.DefineExists("EXPERIMENTAL");
                 Architecture = CPUArchitecture.M6502; 
+                IsTiggerC = Symbols.DefineExists("TIGGERC");
                 if (Symbols.DefineExists("CPU_65C02S"))
                 {
                     Architecture = CPUArchitecture.W65C02;

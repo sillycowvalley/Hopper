@@ -1,0 +1,34 @@
+#include "../system.tc"
+
+func Setup()
+{
+    asm("SMB0 0xF3 // DDRA");
+    writeString("Initialized.");
+}
+func _LEDOn()
+{
+    asm("SMB0 0xF1 // PORTA");
+}
+func _LEDOff()
+{
+    asm("RMB0 0xF1 // PORTA");
+}
+
+// Blink an LED on GPIO pin 0 every second
+func main() {
+    bool ledState;
+    
+    Setup();
+    _LEDOff();
+    
+    while (true) {
+        if (ledState) {
+            _LEDOff();
+            ledState = false;
+        } else {
+            _LEDOn();
+            ledState = true;
+        }
+        delay(1000); // Delay for 1 second
+    }
+}

@@ -23,7 +23,7 @@ program Optimize
     bool isExperimental;
     bool isTiggerC;
     bool IsExperimental { get { return isExperimental; }}
-    bool IsTiggerC { get { return isTiggerC; }}
+    bool IsTiggerC      { get { return isTiggerC; }}
     
     <string,variant> symbols;
     <uint,bool> methodsCalled;
