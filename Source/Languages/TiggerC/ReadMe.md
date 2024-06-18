@@ -280,9 +280,7 @@ func writeString(const char[] str);
 
 #### `writeWord`
 
-**Description**: Writes a 
-
-16-bit word as a string to the serial output.
+**Description**: Writes a 16-bit word as a string to the serial output.
 
 **Prototype**: 
 ```c
@@ -517,6 +515,277 @@ func free(byte[] ptr);
 - `ptr`: Pointer to the memory to be freed.
 
 **Return Value**: None.
+
+### String Functions
+
+#### `strlen`
+
+**Description**: Calculates the length of a null-terminated string.
+
+**Prototype**:
+```c
+func word strlen(const char[] str);
+```
+
+**Arguments**:
+- `str`: Null-terminated string.
+
+**Return Value**: Length of the string.
+
+#### `strcpy`
+
+**Description**: Copies a null-terminated string from source to destination.
+
+**Prototype**:
+```c
+func char[] strcpy(char[] dest, const char[] src);
+```
+
+**Arguments**:
+- `dest`: Destination array.
+- `src`: Source string.
+
+**Return Value**: Destination array.
+
+#### `strncpy`
+
+**Description**: Copies up to `n` characters from source to destination.
+
+**Prototype**:
+```c
+func char[] strncpy(char[] dest, const char[] src, word n);
+```
+
+**Arguments**:
+- `dest`: Destination array.
+- `src`: Source string.
+- `n`: Maximum number of characters to copy.
+
+**Return Value**: Destination array.
+
+#### `strcat`
+
+**Description**: Concatenates source string to the destination string.
+
+**Prototype**:
+```c
+func char[] strcat(char[] dest, const char[] src);
+```
+
+**Arguments**:
+- `dest`: Destination array.
+- `src`: Source string.
+
+**Return Value**: Destination array.
+
+#### `strncat`
+
+**Description**: Concatenates up to `n` characters from source string to the destination string.
+
+**Prototype**:
+```c
+func char[] strncat(char[] dest, const char[] src, word n);
+```
+
+**Arguments**:
+- `dest`: Destination array.
+- `src`: Source string.
+- `n`: Maximum number of characters to concatenate.
+
+**Return Value**: Destination array.
+
+#### `strcmp`
+
+**Description**: Compares two strings lexicographically.
+
+**Prototype**:
+```c
+func int strcmp(const char[] str1, const char[] str2);
+```
+
+**Arguments**:
+- `str1`: First string.
+- `str2`: Second string.
+
+**Return Value**: Integer indicating the result of the comparison.
+
+#### `strncmp`
+
+**Description**: Compares up to `n` characters of two strings lexicographically.
+
+**Prototype**:
+```c
+func int strncmp(const char[] str1, const char[] str2, word n);
+```
+
+**Arguments**:
+- `str1`: First string.
+- `str2`: Second string.
+- `n`: Maximum number of characters to compare.
+
+**Return Value**: Integer indicating the result of the comparison.
+
+#### `strchr`
+
+**Description**: Finds the first occurrence of a character in a string.
+
+**Prototype**:
+```c
+func char[] strchr(const char[] str, char c);
+```
+
+**Arguments**:
+- `str`: String to search.
+- `c`: Character to find.
+
+**Return Value**: Pointer to the first occurrence of the character or null if not found.
+
+#### `strrchr`
+
+**Description**: Finds the last occurrence of a character in a string.
+
+**Prototype**:
+```c
+func char[] strrchr(const char[] str, char c);
+```
+
+**Arguments**:
+- `str`: String to search.
+- `c`: Character to find.
+
+**Return Value**: Pointer to the last occurrence of the character or null if not found.
+
+#### `strstr`
+
+**Description**: Finds the first occurrence of a substring in a string.
+
+**Prototype**:
+```c
+func char[] strstr(const char[] haystack, const char[] needle);
+```
+
+**Arguments**:
+- `haystack`: String to search in.
+- `needle`: Substring to find.
+
+**Return Value**: Pointer to the first occurrence of the substring or null if not found.
+
+#### `strdup`
+
+**Description**: Duplicates a string.
+
+**Prototype**:
+```c
+func char[] strdup(const char[] str);
+```
+
+**Arguments**:
+- `str`: String to duplicate.
+
+**Return Value**: Pointer to the duplicated string.
+
+#### `strtok`
+
+**Description**: Tokenizes a string.
+
+**Prototype**:
+```c
+func char[] strtok(char[] str, const char[] delimiters);
+```
+
+**Arguments**:
+- `str`: String to tokenize.
+- `delimiters`: Delimiters to use for tokenizing.
+
+**Return Value**: Pointer to the next token or null if no more tokens.
+
+### Character Functions
+
+#### `isdigit`
+
+**Description**: Checks if a character is a digit.
+
+**Prototype**:
+```c
+func bool isdigit(char c);
+```
+
+**Arguments**:
+- `c`: Character to check.
+
+**Return Value**: Boolean value indicating if the character is a digit.
+
+#### `isalpha`
+
+**Description**: Checks if a character is alphabetic.
+
+**Prototype**:
+```c
+func bool isalpha(char c);
+```
+
+**Arguments**:
+- `c`: Character to check.
+
+**Return Value**: Boolean value indicating if the character is alphabet
+
+ic.
+
+#### `isalnum`
+
+**Description**: Checks if a character is alphanumeric.
+
+**Prototype**:
+```c
+func bool isalnum(char c);
+```
+
+**Arguments**:
+- `c`: Character to check.
+
+**Return Value**: Boolean value indicating if the character is alphanumeric.
+
+#### `isspace`
+
+**Description**: Checks if a character is whitespace.
+
+**Prototype**:
+```c
+func bool isspace(char c);
+```
+
+**Arguments**:
+- `c`: Character to check.
+
+**Return Value**: Boolean value indicating if the character is whitespace.
+
+#### `toupper`
+
+**Description**: Converts a character to uppercase.
+
+**Prototype**:
+```c
+func char toupper(char c);
+```
+
+**Arguments**:
+- `c`: Character to convert.
+
+**Return Value**: Uppercase character.
+
+#### `tolower`
+
+**Description**: Converts a character to lowercase.
+
+**Prototype**:
+```c
+func char tolower(char c);
+```
+
+**Arguments**:
+- `c`: Character to convert.
+
+**Return Value**: Lowercase character.
 
 ## Example Programs
 

@@ -337,7 +337,7 @@ unit Token
         statementKeywords["while"] = true;
         statementKeywords["friend"] = true;
     }
-    InitializeTinyC()
+    InitializeTiggerC()
     {
         typeKeywords.Clear();
         directiveKeywords.Clear();

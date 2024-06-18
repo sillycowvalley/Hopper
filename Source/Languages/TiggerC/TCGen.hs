@@ -970,7 +970,7 @@ unit TCGen
             
             default:
             {
-                Print(" TODO : " + instruction.Name);
+                Print(" Not Implemented: " + instruction.Name);
                 Die(0x0A);
             }
         }
@@ -1709,7 +1709,7 @@ unit TCGen
                 
                 default:
                 {
-                    TCCode.PadOut("TODO " + name, 0);        
+                    TCCode.PadOut("Not Implemented: " + name, 0);        
                 }
             }
         }

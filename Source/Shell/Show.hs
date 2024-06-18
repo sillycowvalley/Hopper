@@ -18,7 +18,7 @@ program Show
     bool more;
     bool wide;
     bool isAssembly;
-    bool isTinyC;
+    bool isTiggerC;
     
     bool MorePrompt()
     {
@@ -207,14 +207,14 @@ program Show
                 (extension == ".sym") || (extension == ".code") || (extension == ".options"))
             {
                 isAssembly = ((extension == ".asm") || (extension == ".lst"));
-                isTinyC    = (extension == ".tc");
+                isTiggerC    = (extension == ".tc");
                 linePrinter = HopperLinePrinter;
                 Token.Initialize();// initialize the tokenizer
                 
                 
-                if (isTinyC)
+                if (isTiggerC)
                 {
-                    Token.InitializeTinyC();
+                    Token.InitializeTiggerC();
                 }
                 else if (isAssembly)
                 {
