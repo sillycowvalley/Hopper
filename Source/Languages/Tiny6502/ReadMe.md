@@ -665,3 +665,13 @@ The following table shows the precedence and associativity of Tiny6502 operators
 | 15               | `,`               | Comma (sequence operator)             | Left to right    |
 
 This table helps clarify the order in which operations are performed in Tiny6502, ensuring that expressions are evaluated as intended.
+
+## Bugs and Tasks
+
+### Function Pointers
+
+`func` pointers have not yet been implemented.
+
+### Switch Statement
+
+`switch` statement has not yet been implemented.
