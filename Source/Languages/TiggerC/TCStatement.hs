@@ -670,7 +670,6 @@ unit TCStatement
 
     bool parseSwitchStatement()
     {
-        // TODO : code generation
         TCScanner.Advance(); // Skip 'switch'
         Token token = TCScanner.Current();
         
@@ -682,19 +681,27 @@ unit TCStatement
         
         TCScanner.Advance(); // Skip '('
         
+        
         string switchType;
         if (!TCExpression.Expression(ref switchType)) // switch statement expression
         {
             return false;
         }
-        
+        if (!IsByteType(switchType))
+        {
+            Error(token.SourcePath, token.Line, "switch expression should be single byte type");
+            return false;
+        }
+        switchType = switchType.Replace("const ", "");
         token = TCScanner.Current();
         if (token.Type != TokenType.SYM_RPAREN)
         {
             Error(token.SourcePath, token.Line, "expected ')' after switch expression, ('" + token.Lexeme + "')");
             return false;
         }
-        
+        TCCode.PadOut("PLX", 0);
+        TCCode.PadOut("switch (X)", 0);
+        TCCode.PadOut("{", 0);
         TCScanner.Advance(); // Skip ')'
         token = TCScanner.Current();
         if (token.Type != TokenType.SYM_LBRACE)
@@ -704,6 +711,7 @@ unit TCStatement
         }
         
         TCScanner.Advance(); // Skip '{'
+        bool defaultSeen;
         loop
         {
             token = TCScanner.Current();
@@ -714,6 +722,11 @@ unit TCStatement
             
             if (token.Type == TokenType.KW_CASE)
             {
+                if (defaultSeen)
+                {
+                    Error(token.SourcePath, token.Line, "no more 'case's allowed after 'default'");
+                    return false;
+                }
                 if (!parseCaseStatement(switchType))
                 {
                     return false;
@@ -725,13 +738,15 @@ unit TCStatement
                 {
                     return false;
                 }
+                defaultSeen = true;
             }
-            else if (!parseStatement())
+            else 
             {
+                Error(token.SourcePath, token.Line, "'case' or 'default' expected");
                 return false;
             }
         }
-        
+        TCCode.PadOut("}", 0);
         TCScanner.Advance(); // Skip '}'
         return true;
     }
@@ -742,14 +757,19 @@ unit TCStatement
         
         string caseType;
         
-        // TODO : should call parseConstantExpression
-        if (!TCExpression.Expression(ref caseType))
+        string expressionType;
+        string value;
+        if (!TCConstant.parseConstantExpression(ref value, ref expressionType))
         {
             return false;
         }
-        // TODO: verify caseType against switchType
         
         Token token = TCScanner.Current();
+        if (expressionType != switchType)
+        {
+            Error(token.SourcePath, token.Line, "'" + switchType + "' constant expected");
+            return false;    
+        }
         if (token.Type != TokenType.SYM_COLON)
         {
             Error(token.SourcePath, token.Line, "expected ':' after case value, ('" + token.Lexeme + "')");
@@ -757,6 +777,30 @@ unit TCStatement
         }
         
         TCScanner.Advance(); // Skip ':'
+        switch (expressionType)
+        {
+            case "byte":
+            {
+                TCCode.PadOut("case " + value + ":", 0);
+            }
+            case "bool":
+            {
+                TCCode.PadOut("case " + (value == "false" ? "0" : "1") + ":", 0);
+            }
+            case "char":
+            {
+                TCCode.PadOut("case '" + value + "':", 0);    
+            }
+            default:
+            {
+                Die(0x0B);
+            }
+        }
+        
+        if (!parseBlock(true, "case")) // case scope block
+        {
+            return false;
+        }
         return true;
     }
 
@@ -771,6 +815,13 @@ unit TCStatement
         }
         
         TCScanner.Advance(); // Skip ':'
+        
+        TCCode.PadOut("default:", 0);
+        
+        if (!parseBlock(true, "case")) // case scope block
+        {
+            return false;
+        }
         return true;
     }
 }

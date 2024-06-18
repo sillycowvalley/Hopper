@@ -12,7 +12,7 @@ TiggerC is a minimal programming language designed for the Hopper 6502 SBC, incl
 - **Pointer Casting:** Explicit casting required, e.g., `char[] = malloc(10) as char[]`.
 - **Function Declarations:** Use the `func` keyword.
 - **No `void` Keyword:** `void` keyword is not used.
-- **Switch Case:** Use `done` to prevent fall-through, `break` is only for loops.
+- **Switch Case:** Like Hopper, switch cases never fall through, so `break` is only for loops.
 - **Preprocessor Symbols:** Can only be defined or undefined with `#define` and `#undef`.
 - **Initialization:** All variables and memory blocks are zero-initialized.
 - **Boolean Expressions:** `if`, `while`, and `for` require `bool` type expressions.
@@ -33,7 +33,6 @@ TiggerC is a minimal programming language designed for the Hopper 6502 SBC, incl
 
 3. **Control Structures:**
    - C-like control structures: `if`, `while`, `for`, and `switch`.
-   - Distinct keywords for breaking loops and preventing fall-through (`break` and `done`).
    - Minimal syntactic sugar.
 
 4. **Function Calls:**
@@ -135,6 +134,8 @@ func add(byte x, byte y) -> byte {
 
 ### Control Structures
 
+#### `if`, `while`, and `for`
+
 ```c
 if (flag) {
     mem[0x2000] = 0xFF;
@@ -147,17 +148,26 @@ while (a != 0) {
 for (byte i = 0; i < 10; i++) {
     mem[0x2000 + i] = i;
 }
+```
 
+#### `switch`
+
+In TiggerC, the `switch` statement has two key differences from C:
+
+1. **No Fall-Through**: Cases in TiggerC's `switch` statements do not fall through to the next case. There is no need for a `break` statement to prevent fall-through.
+2. **Single Statement Blocks**: Even single statement blocks in `switch` cases require curly braces.
+
+```c
 switch (value) {
-    case 1:
+    case 1: {
         // Code for case 1
-        done; // Prevents fall-through
-    case 2:
+    }
+    case 2: {
         // Code for case 2
-        done; // Prevents fall-through
-    default:
+    }
+    default: {
         // Code for default case
-        done; // Prevents fall-through
+    }
 }
 ```
 
@@ -266,7 +276,9 @@ func writeChar(char c);       // System function to write a single character
 
 func writeString(const char[] str) {
     // Function to write a null-terminated string to the serial output using writeChar
-    word i;
+    word
+
+ i;
     while (str[i] != (0 as char)) {
         writeChar(str[i]);
         i++;
@@ -279,7 +291,6 @@ func writeWord(word num) {
         writeChar('0');
         return;
     }
-
 
     byte i;
     char[5] digits; // Maximum 5 digits for a word
@@ -593,15 +604,15 @@ func main() {
 
     for (y = -12; y <= 12; y++) {
         for (x = -49; x <= 29; x++) {
-            c = x * 229 / 100;
+            c = x * 229 / 
+
+100;
             d = y * 416 / 100;
             a = c; b = d; i = 0;
             while (true) {
                 q = b / f; s = b - (q * f);
                 t = ((a * a) - (b * b)) / f + c;
-                b = 2
-
- * ((a * q) + (a * s / f)) + d;
+                b = 2 * ((a * q) + (a * s / f)) + d;
                 a = t; p = a / f; q = b / f;
                 if (((p * p) + (q * q)) >= 5) {
                     writeChar(palette[i]);
@@ -672,6 +683,3 @@ This table helps clarify the order in which operations are performed in TiggerC,
 
 `func` pointers have not yet been implemented.
 
-### Switch Statement
-
-`switch` statement has not yet been implemented.

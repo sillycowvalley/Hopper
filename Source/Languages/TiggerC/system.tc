@@ -19,6 +19,7 @@ func free(byte[] ptr);         // System function to free allocated memory
 func writeChar(char c); // System function to write a single character
 
 #include "long.tc"
+#include "string.tc"
 
 func writeString(const char[] str) {
     // Function to write a null-terminated string to the serial output using writeChar

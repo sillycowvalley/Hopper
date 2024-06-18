@@ -103,7 +103,7 @@ unit TCSymbols
     }
     LeaveBlock(string name, bool generate)
     {
-        if ((name == "if") || (name == "else") || (name == "for") || (name == "while"))
+        if ((name == "if") || (name == "else") || (name == "for") || (name == "while") || (name == "case"))
         {
             FreeAutomaticAllocations(GetCurrentVariableLevel());
             TCCode.PopBytes(name + " locals");

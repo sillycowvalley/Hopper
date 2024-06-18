@@ -377,7 +377,6 @@ unit Token
         statementKeywords["uses"] = true;
         statementKeywords["while"] = true;
         statementKeywords["func"] = true;
-        statementKeywords["done"] = true;
         statementKeywords["mem"] = true;
         statementKeywords["as"] = true;
         
