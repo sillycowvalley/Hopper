@@ -1782,6 +1782,16 @@ unit AsmPoints
                         }
                     }
                 }
+                if ((opCode5 == OpCode.LDA_n) && (opCode4 == OpCode.PHA) && (opCode3 == OpCode.PHA) && (opCode2 == OpCode.PHA) && (opCode1 == OpCode.PHA) && (opCode0 == OpCode.LDA_n))
+                {
+                    if (iOperands[iIndex-5] == iOperands[iIndex-0])    
+                    {
+                        Print(" W");
+                        iCodes  [iIndex-0] = OpCode.NOP;
+                        iLengths[iIndex-0] = 1;
+                        modified = true;
+                    }
+                }
             }
             iIndex++;
         } // loop
@@ -1839,6 +1849,37 @@ unit AsmPoints
                         iCodes   [iIndex-0] = OpCode.LDA_z;
                         iOperands[iIndex-0] = iOperands[iIndex-6];
                         iLengths [iIndex-0] = 2;
+                        modified = true;
+                    }
+                }
+                if ((opCode6 == OpCode.PHA) && (opCode5 == OpCode.DEX) && (opCode4 == OpCode.LDA_n) && (opCode3 == OpCode.ADC_nnX) && (opCode2 == OpCode.STA_z) && (opCode1 == OpCode.PLA) && (opCode0 == OpCode.STA_z))
+                {
+                    if (WalkAhead(iIndex+1, WalkStats.WriteA | WalkStats.Exit | WalkStats.CallRet, WalkStats.ReadA, 20))
+                    {
+                        Print(" X");
+                        iCodes   [iIndex-6] = OpCode.STA_z;
+                        iLengths [iIndex-6] = 2;
+                        iOperands[iIndex-6] = iOperands[iIndex-0];
+                        iCodes   [iIndex-1] = OpCode.NOP;
+                        iLengths [iIndex-1] = 1;
+                        iCodes   [iIndex-0] = OpCode.NOP;
+                        iLengths [iIndex-0] = 1;
+                        modified = true;
+                    }
+                }
+                if ((opCode7 == OpCode.CLC) && (opCode6 == OpCode.LDA_n) && (opCode5 == OpCode.ADC_nnX) && (opCode4 == OpCode.STA_z) && (opCode3 == OpCode.DEX) && (opCode2 == OpCode.LDA_n) && (opCode1 == OpCode.ADC_nnX) && (opCode0 == OpCode.STA_z))
+                {
+                    if ((iOperands[iIndex-6] == 0) && (iOperands[iIndex-2] == 0))
+                    {
+                        Print(" Y");
+                        iCodes   [iIndex-7] = OpCode.NOP;
+                        iLengths [iIndex-7] = 1;
+                        iCodes   [iIndex-6] = OpCode.NOP;
+                        iLengths [iIndex-6] = 1;
+                        iCodes   [iIndex-5] = OpCode.LDA_nnX;
+                        iCodes   [iIndex-2] = OpCode.NOP;
+                        iLengths [iIndex-2] = 1;
+                        iCodes   [iIndex-1] = OpCode.LDA_nnX;
                         modified = true;
                     }
                 }
@@ -1946,6 +1987,16 @@ unit AsmPoints
                         iLengths[iIndex-2] = 1;
                         iCodes  [iIndex-1] = (iOperands[iIndex-1] == 0x02) ? OpCode.DEY : OpCode.NOP;
                         iLengths[iIndex-1] = 1;
+                        iCodes  [iIndex-0] = OpCode.NOP;
+                        iLengths[iIndex-0] = 1;
+                        modified = true;
+                    }
+                }
+                if ((opCode3 == OpCode.LDA_n) && (opCode2 == OpCode.PHA) && (opCode1 == OpCode.PHA) && (opCode0 == OpCode.LDA_n))
+                {
+                    if (iOperands[iIndex-3] == iOperands[iIndex-0])    
+                    {
+                        Print(" Z");
                         iCodes  [iIndex-0] = OpCode.NOP;
                         iLengths[iIndex-0] = 1;
                         modified = true;

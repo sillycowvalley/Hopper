@@ -257,10 +257,6 @@ unit TCGen
                         break;
                     }
                 }
-                if (instruction0.Name == "CALL")
-                {
-                    Print(" LLC");
-                }
             }
             if ((instruction2.Name == "PUSHL") && (instruction1.Name == "PUSHG") && (instruction0.Name == "ADD"))
             {
