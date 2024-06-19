@@ -130,6 +130,7 @@ unit Instruction
         RETRESB      = 0x2B,
         JZB          = 0x2E,
         JNZB         = 0x2F,
+        PUSHILE      = 0x40,
         JB           = 0x30,
         PUSHILT      = 0x55,
         ENTERB       = 0x5F,
@@ -342,6 +343,7 @@ unit Instruction
             case Instructions.SYSCALL10:
             case Instructions.PUSHIBB:
             case Instructions.PUSHILT:
+            case Instructions.PUSHILE:
             case Instructions.PUSHILEI:
             //case Instructions.JIXB:
             {
@@ -939,7 +941,7 @@ unit Instruction
         STA ZP.TOPH
         LDA #Types.UInt
         STA ZP.TOPT
-        leShared();
+        ltShared();
     }
     leShared()
     {
@@ -974,6 +976,17 @@ unit Instruction
         LDA # 0 
         STA ZP.TOPH
         LDA #Types.Byte
+        STA ZP.TOPT
+        leShared();
+    }
+    pushILE()
+    {
+        ConsumeOperand();
+        LDA ZP.IDXL
+        STA ZP.TOPL
+        LDA ZP.IDXH
+        STA ZP.TOPH
+        LDA #Types.UInt
         STA ZP.TOPT
         leShared();
     }
@@ -3240,6 +3253,14 @@ unit Instruction
             {
 #ifdef PACKED_INSTRUCTIONS
                 pushILT();
+#else
+                missing();
+#endif
+            }
+            case Instructions.PUSHILE:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                pushILE();
 #else
                 missing();
 #endif

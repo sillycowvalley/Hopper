@@ -1,11 +1,11 @@
-//#define APPLE_I // rather than the default ACIA_6850 for E6502    
+#define APPLE_I // rather than the default ACIA_6850 for E6502    
 #define EXPERIMENTAL
 #include "../system.tc"
 
 func main() {
     
-    writeString("\n Mandelbrot - ported from Gordon's TCBasic - Integers\n");
-    writeString("    Ported to TiggerC.\n\n");
+    writeString("\n Mandelbrot - ported from Gordon's TinyBasic - Integers\n");
+    writeString("    Ported to Tigger C.\n\n");
     writeChar(' ');
     
     byte[] start = millis();

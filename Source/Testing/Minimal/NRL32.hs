@@ -1,14 +1,13 @@
 program NRL
 {
 //#define CPU_Z80
-
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/IO"
     
     {
         uint i;
         uint j;
-        uint s;
+        long s;
         
         IO.WriteLn();
         

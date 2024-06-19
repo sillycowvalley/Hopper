@@ -1099,7 +1099,14 @@ unit TCExpression
                     case "char":
                     {
                         literalValue   = byte(value[0]);
-                        literalComment = "literal '" + value + "'";
+                        if (literalValue >= 32)
+                        {
+                            literalComment = "literal '" + value + "'";
+                        }
+                        else
+                        {
+                            literalComment = "literal char";
+                        }
                     }
                     case "bool":
                     {
