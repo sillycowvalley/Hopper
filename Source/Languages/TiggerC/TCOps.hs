@@ -441,7 +441,7 @@ unit TCOps
             PadOut("{", 0);
             PadOut("if (C) // NEXT <  TOP (not >)?", 1);
             PadOut("{", 1);
-            PadOut("LDX # 0 // NEXT > TOP", 1); 
+            PadOut("LDX # 0 // NEXT > TOP", 2); 
             PadOut("}", 1);
             PadOut("}", 0);
         }

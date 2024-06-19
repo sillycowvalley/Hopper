@@ -527,6 +527,10 @@ unit BuildCommand
                 arguments.Append("-g");
                 arguments.Append(col.ToString());
                 arguments.Append(row.ToString());
+                if (isTiggerC)
+                {
+                    arguments.Append("-c");
+                }
                 error = runtimeExecute(binaryPath, arguments);
                 if (error != 0)
                 {

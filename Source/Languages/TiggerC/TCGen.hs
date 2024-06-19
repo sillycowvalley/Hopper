@@ -128,6 +128,18 @@ unit TCGen
                             break;
                         }
                     }
+                    if (!instruction1.IsByte)
+                    {
+                        if (instruction1.Name == "ADDLG")
+                        {
+                            instruction1.Name    = "ADDLGI";
+                            instruction1.Operand = instruction0.Operand;
+                            currentStream[currentStream.Count-2] = instruction1;
+                            DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
+                    }
                 }
             }
             if (instruction0.Name == "POPL")
@@ -185,21 +197,7 @@ unit TCGen
                     }
                 }
             }
-            if (instruction0.Name == "PUSHI")
-            {
-                if (instruction0.IsByte && !instruction1.IsByte)
-                {
-                    if (instruction1.Name == "ADDLG")
-                    {
-                        instruction1.Name    = "ADDLGI";
-                        instruction1.Operand = instruction0.Operand;
-                        currentStream[currentStream.Count-2] = instruction1;
-                        DeleteInstruction(currentStream.Count-1);
-                        modified = true;
-                        break;
-                    }
-                }
-            }
+            
             if (instruction0.Name == "POPM")
             {
                 if (instruction0.IsByte && !instruction1.IsByte)
@@ -214,7 +212,6 @@ unit TCGen
                     }
                 }
             }
-                    
             break;
         } // loop
         return modified;
@@ -245,17 +242,24 @@ unit TCGen
                     break;
                 }
             }
-            if ((instruction2.Name == "PUSHL") && (instruction1.Name == "PUSHL") && (instruction0.Name == "ADD"))
+            if ((instruction2.Name == "PUSHL") && (instruction1.Name == "PUSHL"))
             {
-                if ((instruction2.IsByte == instruction1.IsByte) && (instruction1.IsByte == instruction0.IsByte))
+                if (instruction0.Name == "ADD")
                 {
-                    instruction2.Offset2 = instruction1.Offset;
-                    instruction2.Name    = "ADDLL";
-                    currentStream[currentStream.Count-3] = instruction2;
-                    DeleteInstruction(currentStream.Count-1);
-                    DeleteInstruction(currentStream.Count-1);
-                    modified = true;
-                    break;
+                    if ((instruction2.IsByte == instruction1.IsByte) && (instruction1.IsByte == instruction0.IsByte))
+                    {
+                        instruction2.Offset2 = instruction1.Offset;
+                        instruction2.Name    = "ADDLL";
+                        currentStream[currentStream.Count-3] = instruction2;
+                        DeleteInstruction(currentStream.Count-1);
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
+                }
+                if (instruction0.Name == "CALL")
+                {
+                    Print(" LLC");
                 }
             }
             if ((instruction2.Name == "PUSHL") && (instruction1.Name == "PUSHG") && (instruction0.Name == "ADD"))
@@ -271,101 +275,133 @@ unit TCGen
                     break;
                 }
             }
-            if ((instruction2.Name == "PUSHL") && (instruction1.Name == "PUSHI") && (instruction0.Name == "LT"))
-            {
-                if ((instruction2.IsByte == instruction1.IsByte) && (instruction1.IsByte == instruction0.IsByte))
-                {
-                    instruction2.Operand = instruction1.Operand;
-                    instruction2.Name = "LILT";
-                    currentStream[currentStream.Count-3] = instruction2;
-                    DeleteInstruction(currentStream.Count-2);
-                    DeleteInstruction(currentStream.Count-1);
-                    modified = true;
-                    break;
-                }
-            }
-            if ((instruction2.Name == "PUSHL") && (instruction1.Name == "PUSHI") && (instruction0.Name == "LE"))
-            {
-                if ((instruction2.IsByte == instruction1.IsByte) && (instruction1.IsByte == instruction0.IsByte))
-                {
-                    instruction2.Operand = instruction1.Operand;
-                    instruction2.Name = "LILE";
-                    currentStream[currentStream.Count-3] = instruction2;
-                    DeleteInstruction(currentStream.Count-2);
-                    DeleteInstruction(currentStream.Count-1);
-                    modified = true;
-                    break;
-                }
-            }
-            if ((instruction2.Name == "PUSHL") && (instruction1.Name == "PUSHI") && (instruction0.Name == "AND"))
+            
+            if ((instruction2.Name == "PUSHL") && (instruction1.Name == "PUSHI"))
             {
                 if (instruction2.IsByte == instruction1.IsByte)
                 {
-                    if (instruction1.Operand == 0x00FF)
+                    if (instruction1.IsByte == instruction0.IsByte)
                     {
-                        instruction2.Name = "LIANDFF";
-                        currentStream[currentStream.Count-3] = instruction2;
-                        DeleteInstruction(currentStream.Count-2);
-                        DeleteInstruction(currentStream.Count-1);
+                        if (instruction0.Name == "LT")
+                        {
+                            instruction2.Operand = instruction1.Operand;
+                            instruction2.Name = "LILT";
+                            currentStream[currentStream.Count-3] = instruction2;
+                            DeleteInstruction(currentStream.Count-2);
+                            DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
+                        if (instruction0.Name == "LE")
+                        {
+                            instruction2.Operand = instruction1.Operand;
+                            instruction2.Name = "LILE";
+                            currentStream[currentStream.Count-3] = instruction2;
+                            DeleteInstruction(currentStream.Count-2);
+                            DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
                     }
-                    else
+                    if (instruction0.Name == "AND")
                     {
-                        instruction2.Operand = instruction1.Operand;
-                        instruction2.Name = "LIAND";
-                        currentStream[currentStream.Count-3] = instruction2;
-                        DeleteInstruction(currentStream.Count-2);
-                        DeleteInstruction(currentStream.Count-1);
+                        if (instruction1.Operand == 0x00FF)
+                        {
+                            instruction2.Name = "LIANDFF";
+                            currentStream[currentStream.Count-3] = instruction2;
+                            DeleteInstruction(currentStream.Count-2);
+                            DeleteInstruction(currentStream.Count-1);
+                        }
+                        else
+                        {
+                            instruction2.Operand = instruction1.Operand;
+                            instruction2.Name = "LIAND";
+                            currentStream[currentStream.Count-3] = instruction2;
+                            DeleteInstruction(currentStream.Count-2);
+                            DeleteInstruction(currentStream.Count-1);
+                        }
+                        modified = true;
+                        break;
                     }
-                    modified = true;
-                    break;
+                    if (instruction0.Name == "SHR")
+                    {
+                        if (instruction1.Operand == 0x0008)
+                        {
+                            instruction2.Name = "LISHR8";
+                            currentStream[currentStream.Count-3] = instruction2;
+                            DeleteInstruction(currentStream.Count-2);
+                            DeleteInstruction(currentStream.Count-1);
+                        }
+                        else
+                        {
+                            instruction2.Operand = instruction1.Operand;
+                            instruction2.Name = "LISHR";
+                            currentStream[currentStream.Count-3] = instruction2;
+                            DeleteInstruction(currentStream.Count-2);
+                            DeleteInstruction(currentStream.Count-1);
+                        }
+                        modified = true;
+                        break;
+                    }
+                    if (instruction0.Name == "SHL")
+                    {    
+                        if (instruction1.Operand == 0x0008)
+                        {
+                            instruction2.Name = "LISHL8";
+                            currentStream[currentStream.Count-3] = instruction2;
+                            DeleteInstruction(currentStream.Count-2);
+                            DeleteInstruction(currentStream.Count-1);
+                        }
+                        else
+                        {
+                            instruction2.Operand = instruction1.Operand;
+                            instruction2.Name = "LISHL";
+                            currentStream[currentStream.Count-3] = instruction2;
+                            DeleteInstruction(currentStream.Count-2);
+                            DeleteInstruction(currentStream.Count-1);
+                        }
+                        modified = true;
+                        break;
+                    }
+                    if (instruction1.IsByte == instruction0.IsByte)
+                    {
+                        if ((instruction0.Name == "ADD"))
+                        {
+                            instruction2.Operand = instruction1.Operand;
+                            instruction2.Name = "ILADD";
+                            currentStream[currentStream.Count-3] = instruction2;
+                            DeleteInstruction(currentStream.Count-2);
+                            DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
+                        if (instruction0.Name == "SUB")
+                        {
+                            instruction2.Operand = instruction1.Operand;
+                            instruction2.Name = "LISUB";
+                            currentStream[currentStream.Count-3] = instruction2;
+                            DeleteInstruction(currentStream.Count-2);
+                            DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
+                    }
+                    if (instruction0.Name == "GTI")
+                    {
+                        if (!instruction2.IsByte && (instruction2.IsByte == instruction1.IsByte) && (instruction1.IsByte == instruction0.IsByte))
+                        {
+                            instruction2.Operand = instruction1.Operand;
+                            instruction2.Name = "LIGTI";
+                            currentStream[currentStream.Count-3] = instruction2;
+                            DeleteInstruction(currentStream.Count-2);
+                            DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
+                    }
                 }
             }
-            if ((instruction2.Name == "PUSHL") && (instruction1.Name == "PUSHI") && (instruction0.Name == "SHR"))
-            {
-                if ((instruction2.IsByte == instruction1.IsByte))
-                {
-                    if (instruction1.Operand == 0x0008)
-                    {
-                        instruction2.Name = "LISHR8";
-                        currentStream[currentStream.Count-3] = instruction2;
-                        DeleteInstruction(currentStream.Count-2);
-                        DeleteInstruction(currentStream.Count-1);
-                    }
-                    else
-                    {
-                        instruction2.Operand = instruction1.Operand;
-                        instruction2.Name = "LISHR";
-                        currentStream[currentStream.Count-3] = instruction2;
-                        DeleteInstruction(currentStream.Count-2);
-                        DeleteInstruction(currentStream.Count-1);
-                    }
-                    modified = true;
-                    break;
-                }
-            }
-            if ((instruction2.Name == "PUSHL") && (instruction1.Name == "PUSHI") && (instruction0.Name == "SHL"))
-            {
-                if (instruction2.IsByte == instruction1.IsByte)
-                {
-                    if (instruction1.Operand == 0x0008)
-                    {
-                        instruction2.Name = "LISHL8";
-                        currentStream[currentStream.Count-3] = instruction2;
-                        DeleteInstruction(currentStream.Count-2);
-                        DeleteInstruction(currentStream.Count-1);
-                    }
-                    else
-                    {
-                        instruction2.Operand = instruction1.Operand;
-                        instruction2.Name = "LISHL";
-                        currentStream[currentStream.Count-3] = instruction2;
-                        DeleteInstruction(currentStream.Count-2);
-                        DeleteInstruction(currentStream.Count-1);
-                    }
-                    modified = true;
-                    break;
-                }
-            }
+            
             if ((instruction2.Name == "PUSHI") && (instruction1.Name == "PUSHL"))
             {
                 if ((instruction2.IsByte == instruction1.IsByte) && (instruction1.IsByte == instruction0.IsByte))
@@ -391,14 +427,11 @@ unit TCGen
                         break;
                     }
                 }
-            }
-            if ((instruction2.Name == "PUSHL") && (instruction1.Name == "PUSHI"))
-            {
-                if ((instruction2.IsByte == instruction1.IsByte) && (instruction1.IsByte == instruction0.IsByte))
+                if (instruction1.IsByte == instruction0.IsByte)
                 {
-                    if ((instruction0.Name == "ADD"))
+                    if (instruction0.Name == "ADD")
                     {
-                        instruction2.Operand = instruction1.Operand;
+                        instruction2.Offset = instruction1.Offset;
                         instruction2.Name = "ILADD";
                         currentStream[currentStream.Count-3] = instruction2;
                         DeleteInstruction(currentStream.Count-2);
@@ -408,8 +441,8 @@ unit TCGen
                     }
                     if (instruction0.Name == "SUB")
                     {
-                        instruction2.Operand = instruction1.Operand;
-                        instruction2.Name = "LISUB";
+                        instruction2.Offset = instruction1.Offset;
+                        instruction2.Name = "ILSUB";
                         currentStream[currentStream.Count-3] = instruction2;
                         DeleteInstruction(currentStream.Count-2);
                         DeleteInstruction(currentStream.Count-1);
@@ -418,19 +451,7 @@ unit TCGen
                     }
                 }
             }
-            if ((instruction2.Name == "PUSHL") && (instruction1.Name == "PUSHI") && (instruction0.Name == "GTI"))
-            {
-                if (!instruction2.IsByte && (instruction2.IsByte == instruction1.IsByte) && (instruction1.IsByte == instruction0.IsByte))
-                {
-                    instruction2.Operand = instruction1.Operand;
-                    instruction2.Name = "LIGTI";
-                    currentStream[currentStream.Count-3] = instruction2;
-                    DeleteInstruction(currentStream.Count-2);
-                    DeleteInstruction(currentStream.Count-1);
-                    modified = true;
-                    break;
-                }
-            }
+            
             break;
         } // loop
         return modified;

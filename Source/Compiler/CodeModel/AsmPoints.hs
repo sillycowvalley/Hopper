@@ -1707,15 +1707,18 @@ unit AsmPoints
                 // 5 instructions
                 if ((opCode4 == OpCode.PHA) && (opCode3 == OpCode.LDA_n) && (opCode2 == OpCode.STA_z) && (opCode1 == OpCode.PLA) && (opCode0 == OpCode.STA_z))
                 {
-                    iCodes   [iIndex-4] = OpCode.STA_z;
-                    iOperands[iIndex-4] = iOperands[iIndex-0];
-                    iLengths [iIndex-4] = 2;
-                    
-                    iCodes  [iIndex-1] = OpCode.NOP;
-                    iLengths[iIndex-1] = 1;
-                    iCodes  [iIndex-0] = OpCode.NOP;
-                    iLengths[iIndex-0] = 1;
-                    modified = true;
+                    if (WalkAhead(iIndex+1, WalkStats.WriteA | WalkStats.Exit | WalkStats.CallRet, WalkStats.ReadA, 20))
+                    {
+                        iCodes   [iIndex-4] = OpCode.STA_z;
+                        iOperands[iIndex-4] = iOperands[iIndex-0];
+                        iLengths [iIndex-4] = 2;
+                        
+                        iCodes  [iIndex-1] = OpCode.NOP;
+                        iLengths[iIndex-1] = 1;
+                        iCodes  [iIndex-0] = OpCode.NOP;
+                        iLengths[iIndex-0] = 1;
+                        modified = true;
+                    }
                 }
             }
             iIndex++;
@@ -1765,15 +1768,18 @@ unit AsmPoints
                 {
                     if ( (iOperands[iIndex-3] != iOperands[iIndex-0]) && (iOperands[iIndex-2] != iOperands[iIndex-0]) )
                     {
-                        iCodes   [iIndex-5] = OpCode.STA_z;
-                        iOperands[iIndex-5] = iOperands[iIndex-0];
-                        iLengths [iIndex-5] = 2;
-                        
-                        iCodes  [iIndex-1] = OpCode.NOP;
-                        iLengths[iIndex-1] = 1;
-                        iCodes  [iIndex-0] = OpCode.NOP;
-                        iLengths[iIndex-0] = 1;
-                        modified = true;
+                        if (WalkAhead(iIndex+1, WalkStats.WriteA | WalkStats.Exit | WalkStats.CallRet, WalkStats.ReadA, 20))
+                        {
+                            iCodes   [iIndex-5] = OpCode.STA_z;
+                            iOperands[iIndex-5] = iOperands[iIndex-0];
+                            iLengths [iIndex-5] = 2;
+                            
+                            iCodes  [iIndex-1] = OpCode.NOP;
+                            iLengths[iIndex-1] = 1;
+                            iCodes  [iIndex-0] = OpCode.NOP;
+                            iLengths[iIndex-0] = 1;
+                            modified = true;
+                        }
                     }
                 }
             }
