@@ -1266,7 +1266,7 @@ unit TCGen
                 {
                     if (instruction.Operand != 0)
                     {
-                        TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                        TCCode.OffsetTo(instruction.Offset, "X"); 
                         if (instruction.Operand == 1)
                         {
                             TCCode.PadOut("INC 0x0100, X", 0);
@@ -1298,7 +1298,7 @@ unit TCGen
                 case "LILE":
                 case "LILEB":
                 {
-                    TCCode.OffsetTo(instruction.Offset, false, "Y");
+                    TCCode.OffsetTo(instruction.Offset, "Y");
                     // arguments in NEXT and TOP
                     string top = (instruction.IsByte ? ("# 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2)) :  ("# 0x" + (instruction.Operand).ToHexString(4)));
                     string next = "[BP+" + OffsetToHex(instruction.Offset) + "]";
@@ -1333,7 +1333,7 @@ unit TCGen
                 case "LILT":
                 case "LILTB":
                 {
-                    TCCode.OffsetTo(instruction.Offset, false, "Y");
+                    TCCode.OffsetTo(instruction.Offset, "Y");
                     // arguments in NEXT and TOP
                     string top = (instruction.IsByte ? ("# 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2)) :  ("# 0x" + (instruction.Operand).ToHexString(4)));
                     string next = "[BP+" + OffsetToHex(instruction.Offset) + "]";
@@ -1365,7 +1365,7 @@ unit TCGen
                 case "STLI":
                 case "STLIB":
                 {
-                    TCCode.OffsetTo(instruction.Offset, false, "X");
+                    TCCode.OffsetTo(instruction.Offset, "X");
                     if (instruction.Operand == 0)
                     {
                         TCCode.PadOut("STZ 0x0100, X", 0);
@@ -1393,12 +1393,12 @@ unit TCGen
                 case "ADDLL":
                 case "ADDLLB":
                 {
-                    TCCode.OffsetTo(instruction.Offset, false, "X");
+                    TCCode.OffsetTo(instruction.Offset, "X");
                     bool sameL = (instruction.Offset2 ==  instruction.Offset);
                     string y = "X";
                     if (!sameL)
                     {
-                        TCCode.OffsetTo(instruction.Offset2, false, "Y"); 
+                        TCCode.OffsetTo(instruction.Offset2, "Y"); 
                         y = "Y";
                     }
                     TCCode.PadOut("CLC", 0);
@@ -1419,17 +1419,17 @@ unit TCGen
                 }
                 case "ADDLGM":
                 {
-                    TCCode.OffsetTo(instruction.Offset, false, "X"); 
-                    TCCode.OffsetTo(instruction.Offset2, true, "Y"); 
+                    TCCode.OffsetTo(instruction.Offset, "X"); 
+                    int goffset = 255 - instruction.Offset2;
                     TCCode.PadOut("CLC", 0);
                     TCCode.PadOut("LDA 0x0100, X", 0);
-                    TCCode.PadOut("ADC 0x0100, Y", 0);
+                    TCCode.PadOut("ADC 0x01" + (goffset.GetByte(0)).ToHexString(2), 0);
                     TCCode.PadOut("STA ZP.TOPL", 0);
                     
                     TCCode.PadOut("DEX", 0);
-                    TCCode.PadOut("DEY", 0);
+                    goffset--;
                     TCCode.PadOut("LDA 0x0100, X", 0);
-                    TCCode.PadOut("ADC 0x0100, Y", 0);
+                    TCCode.PadOut("ADC 0x01" + (goffset.GetByte(0)).ToHexString(2), 0);
                     TCCode.PadOut("STA ZP.TOPH", 0);
                     
                     TCCode.PadOut("LDA [ZP.TOP]", 0);
@@ -1438,34 +1438,34 @@ unit TCGen
                 }
                 case "ADDLGIM":
                 {
-                    TCCode.OffsetTo(instruction.Offset, false, "X"); 
-                    TCCode.OffsetTo(instruction.Offset2, true, "Y"); 
+                    TCCode.OffsetTo(instruction.Offset, "X"); 
+                    int goffset = 255 - instruction.Offset2; 
                     TCCode.PadOut("CLC", 0);
                     TCCode.PadOut("LDA 0x0100, X", 0);
-                    TCCode.PadOut("ADC 0x0100, Y", 0);
+                    TCCode.PadOut("ADC 0x01" + (goffset.GetByte(0)).ToHexString(2), 0);
                     TCCode.PadOut("STA ZP.TOPL", 0);
                     
                     TCCode.PadOut("DEX", 0);
-                    TCCode.PadOut("DEY", 0);
+                    goffset--;
                     TCCode.PadOut("LDA 0x0100, X", 0);
-                    TCCode.PadOut("ADC 0x0100, Y", 0);
+                    TCCode.PadOut("ADC 0x01" + (goffset.GetByte(0)).ToHexString(2), 0);
                     TCCode.PadOut("STA ZP.TOPH", 0);
                     TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
                     TCCode.PadOut("STA [ZP.TOP]", 0);
                 }
                 case "ADDLGI":
                 {
-                    TCCode.OffsetTo(instruction.Offset, false, "X"); 
-                    TCCode.OffsetTo(instruction.Offset2, true, "Y"); 
+                    TCCode.OffsetTo(instruction.Offset, "X"); 
+                    int goffset = 255 - instruction.Offset2;
                     TCCode.PadOut("CLC", 0);
                     TCCode.PadOut("LDA 0x0100, X", 0);
-                    TCCode.PadOut("ADC 0x0100, Y", 0);
+                    TCCode.PadOut("ADC 0x01" + (goffset.GetByte(0)).ToHexString(2), 0);
                     TCCode.PadOut("PHA", 0);
                     
                     TCCode.PadOut("DEX", 0);
-                    TCCode.PadOut("DEY", 0);
+                    goffset--;
                     TCCode.PadOut("LDA 0x0100, X", 0);
-                    TCCode.PadOut("ADC 0x0100, Y", 0);
+                    TCCode.PadOut("ADC 0x01" + (goffset.GetByte(0)).ToHexString(2), 0);
                     TCCode.PadOut("PHA", 0);
                     TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
                     TCCode.PadOut("PHA", 0);
@@ -1474,26 +1474,59 @@ unit TCGen
                 case "ADDLG":
                 case "ADDLGB":
                 {
-                    TCCode.OffsetTo(instruction.Offset, false, "X"); 
-                    TCCode.OffsetTo(instruction.Offset2, true, "Y"); 
+                    TCCode.OffsetTo(instruction.Offset, "X"); 
+                    int goffset = 255 - instruction.Offset2;
                     TCCode.PadOut("CLC", 0);
                     TCCode.PadOut("LDA 0x0100, X", 0);
-                    TCCode.PadOut("ADC 0x0100, Y", 0);
+                    TCCode.PadOut("ADC 0x01" + (goffset.GetByte(0)).ToHexString(2), 0);
                     TCCode.PadOut("PHA", 0);
                     if (!instruction.IsByte)
                     {
                         TCCode.PadOut("DEX", 0);
-                        TCCode.PadOut("DEY", 0);
+                        goffset--;
                         TCCode.PadOut("LDA 0x0100, X", 0);
-                        TCCode.PadOut("ADC 0x0100, Y", 0);
+                        TCCode.PadOut("ADC 0x01" + (goffset.GetByte(0)).ToHexString(2), 0);
                         TCCode.PadOut("PHA", 0);
                     }
                 }
                 case "ADDLLL":
                 case "ADDLLLB":
                 {
-                    TCCode.OffsetTo(instruction.Offset, false, "X"); 
-                    TCCode.OffsetTo(instruction.Offset2, false, "Y"); 
+                    if ((instruction.Offset + 2 == instruction.Offset2) && (instruction.Offset >= 0))
+                    {
+                        TCCode.OffsetTo(instruction.Offset,  "X");    
+                        if (instruction.Offset == 0)
+                        {
+                            TCCode.PadOut("PHX", 0);
+                            TCCode.PadOut("PLY", 0);
+                        }
+                        else
+                        {
+                            TCCode.PadOut("TAY", 0);
+                        }
+                        TCCode.PadOut("DEY", 0);
+                        TCCode.PadOut("DEY", 0);
+                    }
+                    else if ((instruction.Offset2 + 2 == instruction.Offset) && (instruction.Offset2 >= 0))
+                    {
+                        TCCode.OffsetTo(instruction.Offset2, "Y");
+                        if (instruction.Offset == 0)
+                        {
+                            TCCode.PadOut("PHY", 0);
+                            TCCode.PadOut("PLX", 0);
+                        }
+                        else
+                        {
+                            TCCode.PadOut("TAX", 0);
+                        }
+                        TCCode.PadOut("DEX", 0);
+                        TCCode.PadOut("DEX", 0);
+                    }
+                    else
+                    {
+                        TCCode.OffsetTo(instruction.Offset,  "X");
+                        TCCode.OffsetTo(instruction.Offset2, "Y");
+                    }
                     TCCode.PadOut("CLC", 0);
                     TCCode.PadOut("LDA 0x0100, X", 0);
                     TCCode.PadOut("ADC 0x0100, Y", 0);
@@ -1510,7 +1543,7 @@ unit TCGen
                 case "LIAND":
                 case "LIANDB":
                 {
-                    TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                    TCCode.OffsetTo(instruction.Offset, "X"); 
                     if ((instruction.Operand).GetByte(0) == 0)
                     {
                         TCCode.PadOut("LDA # 0x00", 0);
@@ -1539,7 +1572,7 @@ unit TCGen
                 case "LIANDFF":
                 case "LIANDFFB":
                 {
-                    TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                    TCCode.OffsetTo(instruction.Offset, "X"); 
                     TCCode.PadOut("LDA 0x0100, X", 0);
                     TCCode.PadOut("PHA", 0);
                     if (!instruction.IsByte)
@@ -1560,7 +1593,7 @@ unit TCGen
                     {
                         TCCode.PadOut("LDA # 0x00", 0);
                         TCCode.PadOut("PHA", 0);
-                        TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                        TCCode.OffsetTo(instruction.Offset, "X"); 
                         TCCode.PadOut("LDA 0x0100, X", 0);
                         TCCode.PadOut("PHA", 0);
                     }
@@ -1575,7 +1608,7 @@ unit TCGen
                     }
                     else
                     {
-                        TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                        TCCode.OffsetTo(instruction.Offset, "X"); 
                         TCCode.PadOut("DEX", 0);
                         TCCode.PadOut("LDA 0x0100, X", 0);
                         TCCode.PadOut("PHA", 0);
@@ -1588,7 +1621,7 @@ unit TCGen
                 case "LIADD":
                 case "LIADDB":
                 {
-                    TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                    TCCode.OffsetTo(instruction.Offset, "X"); 
                     TCCode.PadOut("CLC", 0);
                     TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
                     TCCode.PadOut("ADC 0x0100, X", 0);
@@ -1604,7 +1637,7 @@ unit TCGen
                 case "ILSUB":
                 case "ILSUBB":
                 {
-                    TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                    TCCode.OffsetTo(instruction.Offset, "X"); 
                     TCCode.PadOut("SEC", 0);
                     TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
                     TCCode.PadOut("SBC 0x0100, X", 0);
@@ -1620,7 +1653,7 @@ unit TCGen
                 case "LISUB":
                 case "LISUBB":
                 {
-                    TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                    TCCode.OffsetTo(instruction.Offset, "X"); 
                     TCCode.PadOut("SEC", 0);
                     TCCode.PadOut("LDA 0x0100, X", 0);
                     TCCode.PadOut("SBC # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
@@ -1652,7 +1685,7 @@ unit TCGen
                     }
                     else if (shift == 0)
                     {
-                        TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                        TCCode.OffsetTo(instruction.Offset, "X"); 
                         TCCode.PadOut("LDA 0x0100, X", 0);
                         TCCode.PadOut("PHA", 0);
                         if (!instruction.IsByte)
@@ -1664,7 +1697,7 @@ unit TCGen
                     }
                     else
                     {
-                        TCCode.OffsetTo(instruction.Offset, false, "Y"); 
+                        TCCode.OffsetTo(instruction.Offset, "Y"); 
                         TCCode.PadOut("LDA 0x0100, Y", 0);
                         TCCode.PadOut("STA ZP.NEXTL", 0);
                         if (!instruction.IsByte)
@@ -1714,7 +1747,7 @@ unit TCGen
                     }
                     else if (shift == 0)
                     {
-                        TCCode.OffsetTo(instruction.Offset, false, "X"); 
+                        TCCode.OffsetTo(instruction.Offset, "X"); 
                         TCCode.PadOut("LDA 0x0100, X", 0);
                         TCCode.PadOut("PHA", 0);
                         if (!instruction.IsByte)
@@ -1726,7 +1759,7 @@ unit TCGen
                     }
                     else
                     {
-                        TCCode.OffsetTo(instruction.Offset, false, "Y"); 
+                        TCCode.OffsetTo(instruction.Offset, "Y"); 
                         TCCode.PadOut("LDA 0x0100, Y", 0);
                         TCCode.PadOut("STA ZP.NEXTL", 0);
                         if (!instruction.IsByte)
@@ -1761,7 +1794,7 @@ unit TCGen
                 }
                 case "LIGTI":
                 {
-                    TCCode.OffsetTo(instruction.Offset, false, "Y"); 
+                    TCCode.OffsetTo(instruction.Offset, "Y"); 
                     TCCode.PadOut("SEC", 0);
                     TCCode.PadOut("LDA 0x0100, Y", 0);
                     TCCode.PadOut("SBC # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);

@@ -374,12 +374,11 @@ unit TCCode
             }
         }
     }
-    OffsetTo(int offset, bool isGlobal, string register)
+    OffsetTo(int offset, string register)
     {
-        if (isGlobal)
+        if (offset == 0)
         {
-            offset = 255 - offset;
-            PadOut("LD" + register + " # 0x"+ (offset.GetByte(0)).ToHexString(2), 0);
+            PadOut("LD" + register + " ZP.BP", 0);
         }
         else
         {
@@ -423,29 +422,60 @@ unit TCCode
     PushVariable(string name, int offset, bool isByte, bool isGlobal)
     {
         PadOut("// PUSH " + nameWithOffset(name, offset, isGlobal) + Bitness(isByte), 0);
-        OffsetTo(offset, isGlobal, "X");  
-        PadOut("LDA 0x0100, X", 0);  
-        PadOut("PHA", 0);
-        if (!isByte)
+        if (isGlobal)
         {
-            PadOut("DEX", 0);
+            offset = 255 - offset;
+            PadOut("LDA 0x01"+ (offset.GetByte(0)).ToHexString(2), 0);  
+            PadOut("PHA", 0);
+            if (!isByte)
+            {
+                offset--;
+                PadOut("LDA 0x01"+ (offset.GetByte(0)).ToHexString(2), 0);  
+                PadOut("PHA", 0);
+            }
+        }
+        else
+        {
+            OffsetTo(offset, "X");  
             PadOut("LDA 0x0100, X", 0);  
             PadOut("PHA", 0);
+            if (!isByte)
+            {
+                PadOut("DEX", 0);
+                PadOut("LDA 0x0100, X", 0);  
+                PadOut("PHA", 0);
+            }
         }
     }
     PopVariable(string name, int offset, bool isByte, bool isGlobal)
     {
         PadOut("// POP " + nameWithOffset(name, offset, isGlobal) + Bitness(isByte), 0);
-        OffsetTo(offset, isGlobal, "X");
-        if (!isByte)
+        if (isGlobal)
         {
-            PadOut("DEX", 0);
+            offset = 255 - offset;
+            if (!isByte)
+            {
+                offset--;
+                PadOut("PLA", 0);
+                PadOut("STA 0x01"+ (offset.GetByte(0)).ToHexString(2), 0);  
+                offset++;
+            }
+            PadOut("PLA", 0);
+            PadOut("STA 0x01"+ (offset.GetByte(0)).ToHexString(2), 0);  
+        }
+        else
+        {
+            OffsetTo(offset, "X");
+            if (!isByte)
+            {
+                PadOut("DEX", 0);
+                PadOut("PLA", 0);
+                PadOut("STA 0x0100, X", 0);  
+                PadOut("INX", 0);
+            }
             PadOut("PLA", 0);
             PadOut("STA 0x0100, X", 0);  
-            PadOut("INX", 0);
         }
-        PadOut("PLA", 0);
-        PadOut("STA 0x0100, X", 0);  
     }
     Dup(bool isByte)
     {

@@ -1637,6 +1637,18 @@ unit AsmPoints
                     iLengths[iIndex-0] = 1;
                     modified = true;
                 }
+                if ((opCode1 == OpCode.LDX_z) && (opCode0 == OpCode.LDA_z) && (iOperands[iIndex-1] == iOperands[iIndex-0]))
+                {
+                    iCodes  [iIndex-0] = OpCode.TXA;
+                    iLengths[iIndex-0] = 1;
+                    modified = true;
+                }
+                if ((opCode1 == OpCode.LDY_z) && (opCode0 == OpCode.LDA_z) && (iOperands[iIndex-1] == iOperands[iIndex-0]))
+                {
+                    iCodes  [iIndex-0] = OpCode.TYA;
+                    iLengths[iIndex-0] = 1;
+                    modified = true;
+                }
                 if ((opCode1 == OpCode.LDA_z) && (opCode0 == OpCode.TAX))
                 {
                     if (WalkAhead(iIndex+1, WalkStats.WriteA | WalkStats.Exit | WalkStats.CallRet, WalkStats.ReadA, 20))
@@ -1786,7 +1798,6 @@ unit AsmPoints
                 {
                     if (iOperands[iIndex-5] == iOperands[iIndex-0])    
                     {
-                        Print(" W");
                         iCodes  [iIndex-0] = OpCode.NOP;
                         iLengths[iIndex-0] = 1;
                         modified = true;
@@ -1856,7 +1867,6 @@ unit AsmPoints
                 {
                     if (WalkAhead(iIndex+1, WalkStats.WriteA | WalkStats.Exit | WalkStats.CallRet, WalkStats.ReadA, 20))
                     {
-                        Print(" X");
                         iCodes   [iIndex-6] = OpCode.STA_z;
                         iLengths [iIndex-6] = 2;
                         iOperands[iIndex-6] = iOperands[iIndex-0];
@@ -1871,7 +1881,6 @@ unit AsmPoints
                 {
                     if ((iOperands[iIndex-6] == 0) && (iOperands[iIndex-2] == 0))
                     {
-                        Print(" Y");
                         iCodes   [iIndex-7] = OpCode.NOP;
                         iLengths [iIndex-7] = 1;
                         iCodes   [iIndex-6] = OpCode.NOP;
@@ -1996,7 +2005,6 @@ unit AsmPoints
                 {
                     if (iOperands[iIndex-3] == iOperands[iIndex-0])    
                     {
-                        Print(" Z");
                         iCodes  [iIndex-0] = OpCode.NOP;
                         iLengths[iIndex-0] = 1;
                         modified = true;
