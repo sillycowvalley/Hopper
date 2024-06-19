@@ -427,31 +427,7 @@ unit TCGen
                         break;
                     }
                 }
-                if (instruction1.IsByte == instruction0.IsByte)
-                {
-                    if (instruction0.Name == "ADD")
-                    {
-                        instruction2.Offset = instruction1.Offset;
-                        instruction2.Name = "ILADD";
-                        currentStream[currentStream.Count-3] = instruction2;
-                        DeleteInstruction(currentStream.Count-2);
-                        DeleteInstruction(currentStream.Count-1);
-                        modified = true;
-                        break;
-                    }
-                    if (instruction0.Name == "SUB")
-                    {
-                        instruction2.Offset = instruction1.Offset;
-                        instruction2.Name = "ILSUB";
-                        currentStream[currentStream.Count-3] = instruction2;
-                        DeleteInstruction(currentStream.Count-2);
-                        DeleteInstruction(currentStream.Count-1);
-                        modified = true;
-                        break;
-                    }
-                }
             }
-            
             break;
         } // loop
         return modified;
