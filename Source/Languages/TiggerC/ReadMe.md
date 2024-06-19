@@ -1,10 +1,10 @@
-# TiggerC Language Documentation
+# Tigger C Language Documentation
 
 ## Introduction
 
-TiggerC is a minimal programming language designed for the Hopper 6502 SBC, including a VIA, an ACIA, and a serial I2C EEPROM. It combines the simplicity and performance of low-level programming with higher code density and type safety, tailored for embedded systems. The language syntax is familiar to C programmers, making it easy to learn and use.
+Tigger C is a minimal programming language designed for the Hopper 6502 SBC, including a VIA, an ACIA, and a serial I2C EEPROM. It combines the simplicity and performance of low-level programming with higher code density and type safety, tailored for embedded systems. The language syntax is familiar to C programmers, making it easy to learn and use.
 
-### Key Differences Between TiggerC and C
+### Key Differences Between Tigger C and C
 
 - **Pointers:** Only originate from the `malloc()` API, returning a byte array pointer (`byte[]`).
 - **Local Arrays:** Declared with dimensions, e.g., `byte[100] hundredBytes;`, and automatically freed when the scope exits.
@@ -119,7 +119,7 @@ mem[42] = b;           // Store to memory
 
 ### Inline Assembly
 
-TiggerC supports inline assembly, allowing direct 6502 assembly instructions within your code. An underscore before a function name indicates a "naked" function, meaning it has no entry or exit code (beyond RTS).
+Tigger C supports inline assembly, allowing direct 6502 assembly instructions within your code. An underscore before a function name indicates a "naked" function, meaning it has no entry or exit code (beyond RTS).
 This means no stack frame (local variables) and no arguments. Inline assembly can be inserted anywhere in any method.
 
 #### Sample Program: Inline 6502 Assembly
@@ -198,9 +198,9 @@ for (byte i = 0; i < 10; i++) {
 
 #### `switch`
 
-In TiggerC, the `switch` statement has two key differences from C:
+In Tigger C, the `switch` statement has two key differences from C:
 
-1. **No Fall-Through**: Cases in TiggerC's `switch` statements do not fall through to the next case. There is no need for a `break` statement to prevent fall-through.
+1. **No Fall-Through**: Cases in Tigger C's `switch` statements do not fall through to the next case. There is no need for a `break` statement to prevent fall-through.
 2. **Single Statement Blocks**: Even single statement blocks in `switch` cases require curly braces.
 
 ```c
@@ -265,7 +265,7 @@ char[] dynamicDigits = malloc(5);      // Dynamic array, manually managed
 
 ## System/Library Functions
 
-This section describes the available system/library functions in TiggerC, including their arguments and return values.
+This section describes the available system/library functions in Tigger C, including their arguments and return values.
 
 ### Serial Communication
 
@@ -896,7 +896,7 @@ func main() {
 
 func main() {
     writeString("\n Mandelbrot - ported from Gordon's TinyBasic - Integers\n");
-    writeString("    Ported to TiggerC.\n\n");
+    writeString("    Ported to Tigger C.\n\n");
     writeChar(' ');
 
     byte[] start = millis();
@@ -944,7 +944,7 @@ func main() {
 
 ## Operator Precedence
 
-The following table shows the precedence and associativity of TiggerC operators, modeled after the C standard:
+The following table shows the precedence and associativity of Tigger C operators, modeled after the C standard:
 
 | Precedence Level | Operator(s)       | Description                           | Associativity    |
 |------------------|-------------------|---------------------------------------|------------------|
@@ -977,4 +977,4 @@ The following table shows the precedence and associativity of TiggerC operators,
 | 14               | `=`               | Assignment                            | Right to left    |
 | 15               | `,`               | Comma (sequence operator)             | Left to right    |
 
-This table helps clarify the order in which operations are performed in TiggerC, ensuring that expressions are evaluated as intended.
+This table helps clarify the order in which operations are performed in Tigger C, ensuring that expressions are evaluated as intended.
