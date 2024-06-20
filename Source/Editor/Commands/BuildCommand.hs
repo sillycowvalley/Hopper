@@ -19,6 +19,7 @@ unit BuildCommand
     bool isAssembly;
     bool isTiggerC;
     bool isZ80;
+    bool is6809;
     bool generateIHex;
     bool launchIHex;
     
@@ -195,6 +196,7 @@ unit BuildCommand
             string hexePath = "/Bin/" + fileName + HexeExtension;
             string ihexPath = hexePath.Replace(".hexe", ".ihex");
             string hasmPath = "/Debug/" + fileName + HasmExtension;
+            string asmPrefix;
             
             string target = "";
             uint error;
@@ -218,17 +220,26 @@ unit BuildCommand
                 {
                     target = " for 65C02S"; 
                     cpuArchitecture = Architecture;
+                    asmPrefix = "65";
                 }
                 case CPUArchitecture.M6502:
                 {
                     target = " for 6502";
                     cpuArchitecture = Architecture;
+                    asmPrefix = "65";
                 }
                 case CPUArchitecture.Z80:
                 {
                     target = " for Z80";
                     cpuArchitecture = Architecture;
                     isZ80 = true;
+                }
+                case CPUArchitecture.M6809:
+                {
+                    target = " for 6809";
+                    cpuArchitecture = Architecture;
+                    asmPrefix = "68";
+                    is6809 = true;
                 }
                 default: // includes None
                 {
@@ -254,18 +265,18 @@ unit BuildCommand
             }
             else if (isAssembly) // set by source being ".asm"
             {
-                if ((cpuArchitecture != CPUArchitecture.W65C02) && (cpuArchitecture != CPUArchitecture.M6502))
+                if ((cpuArchitecture != CPUArchitecture.W65C02) && (cpuArchitecture != CPUArchitecture.M6502) && (cpuArchitecture != CPUArchitecture.M6809))
                 {
-                    Editor.SetStatusBarText("#define CPU_6502, CPU_65C02S or CPU_65UINO for '.asm' projects");
+                    Editor.SetStatusBarText("#define CPU_6502, CPU_65C02S, CPU_65UINO or CPU_6809 for '.asm' projects");
                     break;
                 }
                 arguments.Append("-a");
             }
             else
             {
-                if ((cpuArchitecture == CPUArchitecture.W65C02) || (cpuArchitecture == CPUArchitecture.M6502))
+                if ((cpuArchitecture == CPUArchitecture.W65C02) || (cpuArchitecture == CPUArchitecture.M6502) || (cpuArchitecture == CPUArchitecture.M6809))
                 {
-                    Editor.SetStatusBarText("#define CPU_6502, CPU_65C02S and CPU_65UINO only valid for '.asm' projects");
+                    Editor.SetStatusBarText("#define CPU_6502, CPU_65C02S, CPU_65UINO and CPU_6809 only valid for '.asm' projects");
                     break;
                 }
             }
@@ -342,7 +353,7 @@ unit BuildCommand
             if (isAssembly || isTiggerC)
             {
                 hasmPath = "/Debug/" + fileName + ".asm";
-                binaryPath ="/Bin/65asm" + HexeExtension;
+                binaryPath ="/Bin/" + asmPrefix + "asm" + HexeExtension;
                 if (!File.Exists(binaryPath))
                 {
                     Editor.SetStatusBarText("No Assembler: '" + binaryPath + "'");
@@ -411,7 +422,7 @@ unit BuildCommand
                 string optName = "Optimize";
                 if (isAssembly || isTiggerC)
                 {
-                    optName = "65opt";
+                    optName = asmPrefix + "opt";
                 }
                      
                 binaryPath ="/Bin/" + optName + HexeExtension;
@@ -439,7 +450,7 @@ unit BuildCommand
             string outputPath = hexePath;
             if (isAssembly || isTiggerC)
             {
-                genName = "65gen";
+                genName = asmPrefix + "gen";
                 outputPath = ihexPath;
             }
             if (isZ80)
@@ -504,7 +515,7 @@ unit BuildCommand
                 string dasmInput = hexePath;
                 if (isAssembly || isTiggerC)
                 {
-                    dasmName = "65dasm";
+                    dasmName = asmPrefix + "dasm";
                     dasmInput = ihexPath;
                 }
                 if (isZ80)

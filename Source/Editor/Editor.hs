@@ -1929,6 +1929,11 @@ unit Editor
                                 cpuArchitecture = CPUArchitecture.W65C02;
                                 break;
                             }
+                            if (parts[1] == "CPU_6809")
+                            {
+                                cpuArchitecture = CPUArchitecture.M6809;
+                                break;
+                            }
                         }
                         else
                         {

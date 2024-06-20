@@ -129,6 +129,7 @@ unit Token
         M6502   = 0x0010, // original MOS instruction set
         W65C02  = 0x0030, // MOS set plus WDC / Rockwell set
         Z80     = 0x0100,
+        M6809   = 0x1000,
     }
     
     string HopperTokenToString(HopperToken tokenType)
@@ -476,18 +477,16 @@ unit Token
             //registerKeywords["SP"] = true;
             
             // 6502 flags / 'conditions':
-            conditionKeywords["C"] = true;
-            conditionKeywords["Z"] = true;
-            conditionKeywords["I"] = true; // ?
-            conditionKeywords["N"] = true;
-            conditionKeywords["V"] = true; // ?
+            conditionKeywords["C"] = true;  // Carry (BCS)
+            conditionKeywords["Z"] = true;  // Zero (BEQ)
+            conditionKeywords["V"] = true;  // Overflow (BVS)
             
             // 6502 'conditions':
-            conditionKeywords["NC"] = true;
-            conditionKeywords["NZ"] = true;
-            conditionKeywords["NV"] = true; // ?
-            conditionKeywords["PL"] = true;
-            conditionKeywords["MI"] = true;
+            conditionKeywords["NC"] = true; // No Carry (BCC)
+            conditionKeywords["NZ"] = true; // Not Zero (BNE)
+            conditionKeywords["NV"] = true; // No Overflow (BVC)
+            conditionKeywords["PL"] = true; // Positive (BPL)
+            conditionKeywords["MI"] = true; // Minus (BMI)
         }
         if (architecture & CPUArchitecture.W65C02 != CPUArchitecture.None)
         {
@@ -501,8 +500,6 @@ unit Token
             instructionKeywords["PHY"] = true;
             instructionKeywords["PLY"] = true;
             
-            
-            
             for (byte i=0; i < 8; i++)
             {
                 instructionKeywords["RMB" + i.ToString()] = true;
@@ -511,6 +508,132 @@ unit Token
                 instructionKeywords["BBS" + i.ToString()] = true;
             }
         }
+       
+       if (architecture & CPUArchitecture.M6809 != CPUArchitecture.None)
+{
+    // 6809 instructions:
+    instructionKeywords["LDA"] = true;
+    instructionKeywords["LDB"] = true;
+    instructionKeywords["LDD"] = true;
+    instructionKeywords["LDS"] = true;
+    instructionKeywords["LDU"] = true;
+    instructionKeywords["LDX"] = true;
+    instructionKeywords["LDY"] = true;
+    
+    instructionKeywords["STA"] = true;
+    instructionKeywords["STB"] = true;
+    instructionKeywords["STD"] = true;
+    instructionKeywords["STS"] = true;
+    instructionKeywords["STU"] = true;
+    instructionKeywords["STX"] = true;
+    instructionKeywords["STY"] = true;
+
+    instructionKeywords["ADCA"] = true;
+    instructionKeywords["ADCB"] = true;
+    instructionKeywords["ADDA"] = true;
+    instructionKeywords["ADDB"] = true;
+    instructionKeywords["ADDD"] = true;
+    instructionKeywords["SUBA"] = true;
+    instructionKeywords["SUBB"] = true;
+    instructionKeywords["SUBD"] = true;
+    instructionKeywords["ANDA"] = true;
+    instructionKeywords["ANDB"] = true;
+    instructionKeywords["ORA"] = true;
+    instructionKeywords["ORB"] = true;
+    instructionKeywords["EORA"] = true;
+    instructionKeywords["EORB"] = true;
+    instructionKeywords["CMPA"] = true;
+    instructionKeywords["CMPB"] = true;
+    instructionKeywords["CMPD"] = true;
+    instructionKeywords["CMPX"] = true;
+    instructionKeywords["CMPY"] = true;
+    instructionKeywords["CMPU"] = true;
+    instructionKeywords["CMPS"] = true;
+
+    instructionKeywords["INC"] = true;
+    instructionKeywords["DEC"] = true;
+    instructionKeywords["INCA"] = true;
+    instructionKeywords["DECA"] = true;
+    instructionKeywords["INCB"] = true;
+    instructionKeywords["DECB"] = true;
+
+    instructionKeywords["JMP"] = true;
+    instructionKeywords["JSR"] = true;
+    instructionKeywords["RTS"] = true;
+    instructionKeywords["RTI"] = true;
+
+    instructionKeywords["BRA"] = true;
+    instructionKeywords["BSR"] = true;
+    instructionKeywords["BEQ"] = true;
+    instructionKeywords["BNE"] = true;
+    instructionKeywords["BCC"] = true;
+    instructionKeywords["BCS"] = true;
+    instructionKeywords["BPL"] = true;
+    instructionKeywords["BMI"] = true;
+    instructionKeywords["BVC"] = true;
+    instructionKeywords["BVS"] = true;
+    instructionKeywords["BLT"] = true;
+    instructionKeywords["BGT"] = true;
+    instructionKeywords["BLE"] = true;
+    instructionKeywords["BGE"] = true;
+
+    instructionKeywords["PSHS"] = true;
+    instructionKeywords["PULS"] = true;
+    instructionKeywords["PSHU"] = true;
+    instructionKeywords["PULU"] = true;
+    instructionKeywords["SWI"] = true;
+    instructionKeywords["CWAI"] = true;
+    instructionKeywords["MUL"] = true;
+    instructionKeywords["NOP"] = true;
+
+    instructionKeywords["ASL"] = true;
+    instructionKeywords["ASR"] = true;
+    instructionKeywords["LSL"] = true;
+    instructionKeywords["LSR"] = true;
+    instructionKeywords["ROL"] = true;
+    instructionKeywords["ROR"] = true;
+
+    instructionKeywords["TFR"] = true;
+    instructionKeywords["EXG"] = true;
+    instructionKeywords["NEG"] = true;
+    instructionKeywords["COM"] = true;
+    instructionKeywords["CLR"] = true;
+
+    instructionKeywords["ANDCC"] = true;
+    instructionKeywords["ORCC"] = true;
+
+    // 6809 registers:
+    registerKeywords["A"] = true;
+    registerKeywords["B"] = true;
+    registerKeywords["D"] = true;
+    registerKeywords["X"] = true;
+    registerKeywords["Y"] = true;
+    registerKeywords["U"] = true;
+    registerKeywords["S"] = true;
+    registerKeywords["PC"] = true;
+    registerKeywords["DP"] = true;
+    registerKeywords["CC"] = true;
+
+    // 6809 flags / 'conditions' for 'if':
+    conditionKeywords["C"] = true;  // Carry (uses BCC)
+    conditionKeywords["Z"] = true;  // Zero (uses BNE)
+    conditionKeywords["V"] = true;  // Overflow (uses BVC)
+    conditionKeywords["NC"] = true; // No Carry (uses BCS)
+    conditionKeywords["NZ"] = true; // Not Zero (uses BEQ)
+    conditionKeywords["NV"] = true; // No Overflow (uses BVS)
+    conditionKeywords["PL"] = true; // Not Negative (uses BMI)
+    conditionKeywords["MI"] = true; // Negative (uses BPL)
+    conditionKeywords["GE"] = true; // Greater or Equal (uses BLT) - signed
+    conditionKeywords["LT"] = true; // Less Than (uses BGE) - signed
+    conditionKeywords["GT"] = true; // Greater Than (uses BLE) - signed
+    conditionKeywords["LE"] = true; // Less or Equal (uses BGT) - signed
+    conditionKeywords["LO"] = true; // Less Than (uses BHS) - unsigned
+    conditionKeywords["HS"] = true; // Greater or Equal (uses BLO) - unsigned
+}
+
+        
+         
+               
     }
     
     bool IsInstructionKeyword(string candidate)
