@@ -159,14 +159,6 @@ unit TCCode
         PadOut("PLA // bool", 0); // bool so one byte
         PadOut("if (NZ) // " + comment, 0);
     }
-    IfExit(string comment, string condition)
-    {
-        PadOut("PLA", 0);
-        PadOut("if (" + condition +") // " + comment, 0);
-        PadOut("{", 0);
-        PadOut("break;", 1);
-        PadOut("}", 0);
-    }
     Else()
     {
         PadOut("else", 0);

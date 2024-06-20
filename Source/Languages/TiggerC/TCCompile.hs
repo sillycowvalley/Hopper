@@ -255,7 +255,7 @@ unit TCCompile
         TCScanner.Advance(); // Skip identifier
 
         BlockLevel++;
-        TCGen.Comment("initialize '" + name + "' (" + (GlobalOffset).ToString() + ") A");
+        TCGen.Comment("initialize '" + name + "' (" + (GlobalOffset).ToString() + ")");
         
         // make a slot on the stack
         TCGen.PushImmediate(TCType.IsByteType(tp), 0);
@@ -267,17 +267,6 @@ unit TCCompile
             {
                 size *= 2;
             }
-            /*
-            TCCode.PushWord(size);
-            TCCode.PadOut("TCSys.Malloc();", 0);
-            TCCode.PadOut("PLY", 0);
-            TCCode.PadOut("PLY", 0);
-            TCCode.PadOut("LDA ZP.TOPL", 0);
-            TCCode.PadOut("PHA", 0);
-            TCCode.PadOut("LDA ZP.TOPH", 0);
-            TCCode.PadOut("PHA", 0);
-            TCCode.PopVariable(name, int(GlobalOffset), false, true);
-            */
             TCGen.PushImmediate(false, size);
             TCGen.Call("malloc", false, true, 2);
             TCGen.PopVariable(int(GlobalOffset), false, true);

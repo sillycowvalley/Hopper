@@ -114,6 +114,8 @@ unit TCStatement
         
         TCCode.Loop("while");
         
+        TCGen.BeginStream(false);
+        
         TCScanner.Advance(); // Skip '('
         string booleanType;
         if (!TCExpression.Expression(ref booleanType)) // while statement bool expression
@@ -127,7 +129,9 @@ unit TCStatement
         }
         
         // conditional exit
-        TCCode.IfExit("while exit", "Z");  // X==0 -> false -> exit
+        TCGen.LoopExit("while exit");  // X==0 -> false -> exit
+        
+        TCGen.FlushStream();
         
         token = TCScanner.Current();
         if (token.Type != TokenType.SYM_RPAREN)
@@ -188,6 +192,8 @@ unit TCStatement
         }
         else
         {
+            TCGen.BeginStream(false);
+            
             string booleanType;
             if (!TCExpression.Expression(ref booleanType)) // for statement condition clause expression
             {
@@ -201,7 +207,9 @@ unit TCStatement
             }
             
             // conditional exit
-            TCCode.IfExit("for exit", "Z"); // X==0 -> false -> exit
+            TCGen.LoopExit("for exit"); // X==0 -> false -> exit
+            
+            TCGen.FlushStream();
         }
         
         token = TCScanner.Current();
