@@ -2054,6 +2054,26 @@ unit AsmPoints
                         modified = true;
                     }
                 }
+                if ((opCode2 == OpCode.SBC_n) && (opCode1 == OpCode.TAX) && (opCode0 == OpCode.DEX))
+                {
+                    if (iOperands[iIndex-2] < 255)
+                    {
+                        iOperands[iIndex-2] = iOperands[iIndex-2] + 1;
+                        iCodes   [iIndex-0] = OpCode.NOP;
+                        iLengths [iIndex-0] = 1;
+                        modified = true;
+                    }
+                }
+                if ((opCode2 == OpCode.SBC_n) && (opCode1 == OpCode.TAY) && (opCode0 == OpCode.DEY))
+                {
+                    if (iOperands[iIndex-2] < 255)
+                    {
+                        iOperands[iIndex-2] = iOperands[iIndex-2] + 1;
+                        iCodes   [iIndex-0] = OpCode.NOP;
+                        iLengths [iIndex-0] = 1;
+                        modified = true;
+                    }
+                }
             }
             iIndex++;
         } // loop

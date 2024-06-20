@@ -30,6 +30,15 @@ unit TCCode
         {
             Die(0x0B);
         }
+        switch (text)
+        {
+            case "INX": { xOffset++; text = text + offsetComment("X"); }
+            case "DEX": { xOffset--; text = text + offsetComment("X"); }
+            case "INY": { yOffset++; text = text + offsetComment("Y"); }
+            case "DEY": { yOffset--; text = text + offsetComment("Y"); }
+        }
+        if (text.EndsWith(", X")) { text = text + offsetComment("X"); }
+        if (text.EndsWith(", Y")) { text = text + offsetComment("Y"); }
         
         if (generating)
         {
@@ -189,7 +198,7 @@ unit TCCode
     {
         PadOut("", 0);
         PadOut("// POP BP", 0);
-        PadOut("PLX", 0);
+        PadOut("PLX", 0); OffsetReset("X");
         PadOut("STX ZP.BP", 0);
         
         if (comment.Length != 0)
@@ -346,7 +355,7 @@ unit TCCode
         
         PadOut("", 0);
         PadOut("// POP BP", 0);
-        PadOut("PLX", 0);
+        PadOut("PLX", 0); OffsetReset("X");
         PadOut("STX ZP.BP", 0);
     }
     PopBytes(string comment)
@@ -362,35 +371,222 @@ unit TCCode
             PadOut("// " + comment + " bytes to pop: " + bytes.ToString(), 0);
             for (byte i=0; i < bytes; i++)
             {
-                PadOut("PLY", 0); // leaving A and X for potential return values
+                PadOut("PLY", 0); OffsetReset("Y");// leaving A and X for potential return values
             }
         }
     }
-    OffsetTo(int offset, string register)
+    bool yOffsetGood;
+    bool xOffsetGood;
+    int xOffset;
+    int yOffset;
+    
+    string offsetComment(string register)
     {
-        if (offset == 0)
+        if (InStreamMode)
         {
-            PadOut("LD" + register + " ZP.BP", 0);
+            Die(0x0B);
+        }
+        if (register == "X")
+        {
+            if (!xOffsetGood)
+            {
+                return " // X invalid";    
+            }
+            if (xOffset < 0)
+            {
+                return " //  X = BP" + xOffset.ToString();
+            }
+            return " //  X = BP+" + xOffset.ToString();
+        }
+        if (!yOffsetGood)
+        {
+            return " // Y invalid";    
+        }
+        if (yOffset < 0)
+        {
+            return " //  Y = BP" + yOffset.ToString();
+        }
+        return " //  Y = BP+" + yOffset.ToString();
+    }
+    OffsetReset(string register)
+    {
+        if (register == "X")
+        {
+            xOffsetGood = false;
         }
         else
         {
-            PadOut("LDA ZP.BP", 0);
-            if (offset > 0)
-            {
-                // locals
-                PadOut("SEC", 0);
-                PadOut("SBC # 0x" + (offset.GetByte(0)).ToHexString(2), 0);
-            }
-            else if (offset < 0)
-            {
-                // arguments
-                offset = -offset;
-                offset += 3; // BP (1 byte) and return address (2 bytes)
-                PadOut("CLC", 0);
-                PadOut("ADC # 0x" + (offset.GetByte(0)).ToHexString(2), 0);
-            }
-            PadOut("TA" + register, 0);
+            yOffsetGood = false;
         }
+    }
+    
+    
+    OffsetSet(string toRegister, string fromRegister)
+    {
+        if (InStreamMode)
+        {
+            Die(0x0B);
+        }
+        if ((toRegister == "X") && (fromRegister == "Y"))
+        {
+            if (!yOffsetGood)
+            {
+                Die(0x0B);
+            }
+            xOffset = yOffset;
+            xOffsetGood = true;
+        }
+        else if ((toRegister == "Y") && (fromRegister == "X"))
+        {
+            if (!xOffsetGood)
+            {
+                Die(0x0B);
+            }
+            yOffset = xOffset;
+            yOffsetGood = true;
+        }
+        else
+        {
+            Die(0x0B);
+        }
+    }
+    BPOffset(int offset, string register)
+    {
+        if (InStreamMode)
+        {
+            Die(0x0B);
+        }
+        
+        int desired = offset;
+        if (offset > 0)
+        {
+            // locals
+            desired = -offset;
+        }
+        else if (offset < 0)
+        {
+            // arguments
+            desired = -offset;
+            desired += 3; // BP (1 byte) and return address (2 bytes)
+        }
+        loop
+        {
+            if ((xOffsetGood && (register == "X"))  || (yOffsetGood && (register == "Y")))
+            {
+                
+                
+                int actual;
+                if (register == "X")
+                {
+                    actual = xOffset;
+                }
+                if (register == "Y")
+                {
+                    actual = yOffset;
+                }
+                
+                string comment = "// Before: BP";
+                if (actual < 0)
+                {
+                    comment += actual.ToString();    
+                }
+                else
+                {
+                    comment += "+" + actual.ToString();
+                }
+                comment += "  Desired: BP";
+                if (desired < 0)
+                {
+                    comment += desired.ToString();    
+                }
+                else
+                {
+                    comment += "+" + desired.ToString();    
+                }
+                PadOut(comment, 0);
+#ifdef XY_TRACKING                
+                int delta = desired - actual;
+                if (delta == 0)
+                {
+                    //PrintLn();
+                    //Print(comment + "   ->  " + delta.ToString());
+                    break;
+                }
+                else if (delta == -1)
+                {
+                    //PrintLn();
+                    //Print(comment + "   ->  " + delta.ToString());
+                    PadOut("DE" + register, 0);
+                    break;
+                }
+                else if (delta == +1)
+                {
+                    //PrintLn();
+                    //Print(comment + "   ->  " + delta.ToString());
+                    PadOut("IN" + register, 0);
+                    break;
+                }
+                else if (delta == -3)
+                {
+                    //PrintLn();
+                    //Print(comment + "   ->  " + delta.ToString());
+                    PadOut("DE" + register, 0);
+                    PadOut("DE" + register, 0);
+                    PadOut("DE" + register, 0);
+                    break;
+                }
+                else if (delta == +3)
+                {
+                    //PrintLn();
+                    //Print(comment + "   ->  " + delta.ToString());
+                    PadOut("DE" + register, 0);
+                    PadOut("DE" + register, 0);
+                    PadOut("DE" + register, 0);
+                    break;
+                }
+                else
+                {
+                    //PrintLn();
+                    //Print(comment + "   ->  " + delta.ToString());
+                }
+#endif
+            }
+            
+            if (register == "X")
+            {
+                xOffset = desired;
+                xOffsetGood = true;   
+            }
+            else
+            {
+                yOffset = desired;
+                yOffsetGood = true;
+            }
+            
+            if (desired == 0)
+            {
+                PadOut("LD" + register + " ZP.BP" + offsetComment(register), 0);
+            }
+            else
+            {
+                PadOut("LDA ZP.BP", 0);
+                if (desired < 0)
+                {
+                    // locals
+                    int negDesired = -desired;
+                    PadOut("SEC", 0);
+                    PadOut("SBC # 0x" + (negDesired.GetByte(0)).ToHexString(2), 0);
+                }
+                else if (desired > 0)
+                {
+                    // arguments
+                    PadOut("CLC", 0);
+                    PadOut("ADC # 0x" + (desired.GetByte(0)).ToHexString(2), 0);
+                }
+                PadOut("TA" + register + offsetComment(register), 0);
+            }
+            break;
+        } // loop
     }
     string nameWithOffset(string name, int offset, bool isGlobal)
     {
@@ -428,7 +624,7 @@ unit TCCode
         }
         else
         {
-            OffsetTo(offset, "X");  
+            BPOffset(offset, "X");  
             PadOut("LDA 0x0100, X", 0);  
             PadOut("PHA", 0);
             if (!isByte)
@@ -457,7 +653,7 @@ unit TCCode
         }
         else
         {
-            OffsetTo(offset, "X");
+            BPOffset(offset, "X");
             if (!isByte)
             {
                 PadOut("DEX", 0);
@@ -477,7 +673,7 @@ unit TCCode
         PadOut("PLA", 0);
         if (!isByte)
         {
-            PadOut("PLX", 0);
+            PadOut("PLX", 0); OffsetReset("X");
             PadOut("PHX", 0);
             PadOut("PHA", 0);
             PadOut("PHX", 0);
@@ -627,7 +823,7 @@ unit TCCode
         PadOut("// read memory" +  Bitness(dataIsByte), 0);
         if (indexIsByte)
         {
-            PadOut("PLX", 0);
+            PadOut("PLX", 0); OffsetReset("X");
             PadOut("LDA 0x00, X", 0);
             PadOut("PHA", 0);    
             if (!dataIsByte)
@@ -647,7 +843,7 @@ unit TCCode
             PadOut("PHA", 0);
             if (!dataIsByte)
             {
-                PadOut("LDX # 1", 0); 
+                PadOut("LDX # 1", 0); OffsetReset("X");
                 PadOut("LDA [ZP.TOP], X", 0);
                 PadOut("PHA", 0);
             }
@@ -665,7 +861,7 @@ unit TCCode
                 PadOut("STA ZP.ACCH", 0);     
             }   
             PadOut("PLA", 0); 
-            PadOut("PLX", 0);
+            PadOut("PLX", 0); OffsetReset("X");
             PadOut("STA 0x00, X", 0);
             if (!dataIsByte)
             {
@@ -692,7 +888,7 @@ unit TCCode
             if (!dataIsByte)
             {
                 PadOut("LDA ZP.ACCH", 0);     
-                PadOut("LDX # 1", 0); 
+                PadOut("LDX # 1", 0); OffsetReset("X");
                 PadOut("LDA [ZP.TOP], X", 0);
             }
         }

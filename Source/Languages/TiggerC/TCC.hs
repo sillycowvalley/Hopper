@@ -1,5 +1,7 @@
 program TCCompile
 {
+    //#define XY_TRACKING
+    
     uses "/Source/System/System"
     uses "/Source/System/Diagnostics"
     

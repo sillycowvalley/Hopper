@@ -1,6 +1,8 @@
 //#define APPLE_I // rather than the default ACIA_6850 for E6502
 #define EXPERIMENTAL
-#include "../system.tc"
+
+#include "../system.tc"  // for writeString, writeWord, writeHex
+#include "../time.tc"    // for millis, elapsedMillis
 
 func NRL() {
     byte i;

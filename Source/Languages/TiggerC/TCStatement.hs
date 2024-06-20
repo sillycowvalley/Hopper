@@ -673,9 +673,17 @@ unit TCStatement
             case TokenType.KW_MEM:
             {
                 TCGen.BeginStream(false);
-                if (!parseExpressionStatement(false)) // assignment
+                loop
                 {
-                    return false;
+                    if (!parseExpressionStatement(false)) // assignment
+                    {
+                        return false;
+                    }
+                    token = TCScanner.Current();
+                    if ((token.Type != TokenType.IDENTIFIER) && (token.Type != TokenType.KW_MEM))
+                    {
+                        break;    
+                    }
                 }
                 TCGen.FlushStream();
             }
