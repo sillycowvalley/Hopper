@@ -50,7 +50,6 @@ unit TCOps
     }
     CompareLT(bool isByte)
     {
-         
         TCCode.PadOut("// <" + Bitness(isByte), 0); 
         
         // arguments

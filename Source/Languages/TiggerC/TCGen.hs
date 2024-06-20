@@ -75,13 +75,14 @@ unit TCGen
     //
     // 'Packed' peephole optimization opcodes:
     //
-    //    ADDLL   : PUSHL offset0, PUSHL offset?, ADD
-    //    ADDLG   : PUSHL offset0, PUSHG offset1, ADD
-    //    ADDLGM  : ADDLG PUSHMB
-    //    ADDLGI  : ADDLG PUSHIB
-    //    ADDLGIM : ADDLGI POPMB
+    //    LLADD   : PUSHL offset0, PUSHL offset1, ADD  (offset0 may be the same as offset1)
+    //    2L:     : PUSHL offset0, PUSHL offset1, ADD  (offset0 == offset1)
+    //    LGADD   : PUSHL offset0, PUSHG offset1, ADD
+    //    LGADDM  : PUSHL offset0, PUSHG offset1, ADD PUSHMB
+    //    LGADDI  : PUSHL offset0, PUSHG offset1, ADD PUSHIB
+    //    LGADDIM : PUSHL offset0, PUSHG offset1, ADD PUSHIB POPMB
+    //    LLADDL  : PUSHL offset0, PUSHL offset1, ADD, POPL offset0 (offset0 may be the same as offset1)
     //    INCLI   : PUSHL offset0, PUSHI, ADD, POPL offset0
-    //    ADDLLL  : PUSHL offset0, PUSHL offset?, ADD, POPL offset0
     //    STLI    : PUSHI, POPL offset0
     //    LISHR   : PUSHL offset, PUSHI, SHR
     //    LISHR8  : PUSHL offset, PUSHI 0x0008, SHR
@@ -90,6 +91,8 @@ unit TCGen
     //    LIANDFF : PUSHL offset, PUSHI 0x00FF, AND
     //    ILADD   : PUSHI, PUSHL offset, ADD
     //    ILSUB   : PUSHI, PUSHL offset, SUB
+    //    IADD    : PUSHI, ADD
+    //    IADDL   : PUSHI, ADD, POPL offset0
     //    LIADD   : PUSHL offset, PUSHI, ADD
     //    LISUB   : PUSHL offset, PUSHI, SUB
     //    LTX     : LT, LOOPEXIT
@@ -121,15 +124,24 @@ unit TCGen
             {
                 if (instruction1.Name == "LE") 
                 {
-                    Print(" LEX");    
+                    instruction1.Name    = "LEX";
+                    instruction1.Data = instruction0.Data;
+                    currentStream[currentStream.Count-2] = instruction1;
+                    DeleteInstruction(currentStream.Count-1);
+                    modified = true;
+                    break;
                 }
                 if (instruction1.Name == "LT") 
                 {
-                    Print(" LTX");    
+                    instruction1.Name    = "LTX";
+                    instruction1.Data = instruction0.Data;
+                    currentStream[currentStream.Count-2] = instruction1;
+                    DeleteInstruction(currentStream.Count-1);
+                    modified = true;
+                    break;
                 }
                 if (instruction1.Name == "LILE") 
                 {
-                    Print(" LILEX");
                     instruction1.Name    = "LILEX";
                     instruction1.Data = instruction0.Data;
                     currentStream[currentStream.Count-2] = instruction1;
@@ -139,7 +151,6 @@ unit TCGen
                 }    
                 if (instruction1.Name == "LILT")
                 {
-                    Print(" LILTX");
                     instruction1.Name    = "LILTX";
                     instruction1.Data = instruction0.Data;
                     currentStream[currentStream.Count-2] = instruction1;
@@ -148,11 +159,55 @@ unit TCGen
                     break;
                 }
             }
+            if (instruction0.Name == "ADD")
+            {
+                if (instruction1.IsByte == instruction0.IsByte)
+                {
+                    if (instruction1.Name == "PUSHI")
+                    {
+                        instruction1.Name    = "IADD";
+                        currentStream[currentStream.Count-2] = instruction1;
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }    
+                }
+            }
+            if (instruction0.Name == "IADD")
+            {
+                if (instruction1.IsByte == instruction0.IsByte)
+                {
+                    if (instruction1.Name == "PUSHL")
+                    {
+                        instruction1.Name    = "LIADD";
+                        instruction1.Operand = instruction0.Operand;
+                        currentStream[currentStream.Count-2] = instruction1;
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }    
+                }
+            }
+            if (instruction0.Name == "POPL")
+            {
+                if (instruction1.IsByte == instruction0.IsByte)
+                {
+                    if (instruction1.Name == "IADD")
+                    {
+                        instruction1.Name    = "IADDL";
+                        instruction1.Offset = instruction0.Offset;
+                        currentStream[currentStream.Count-2] = instruction1;
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }    
+                }
+            }
             if (instruction0.Name == "PUSHI")
             {
                 if (instruction0.IsByte)
                 { 
-                    if (instruction1.Name == "PUSHI") 
+                    if (instruction1.Name == "PUSHI")
                     {
                         if (instruction1.IsByte)
                         {
@@ -166,9 +221,9 @@ unit TCGen
                     }
                     if (!instruction1.IsByte)
                     {
-                        if (instruction1.Name == "ADDLG")
+                        if (instruction1.Name == "LGADD")
                         {
-                            instruction1.Name    = "ADDLGI";
+                            instruction1.Name    = "LGADDI";
                             instruction1.Operand = instruction0.Operand;
                             currentStream[currentStream.Count-2] = instruction1;
                             DeleteInstruction(currentStream.Count-1);
@@ -191,9 +246,9 @@ unit TCGen
                         modified = true;
                         break;
                     }
-                    if ((instruction1.Name == "ADDLL") && (instruction1.Offset == instruction0.Offset))
+                    if ((instruction1.Name == "LLADD") && (instruction1.Offset == instruction0.Offset))
                     {   
-                        instruction1.Name    = "ADDLLL";
+                        instruction1.Name    = "LLADDL";
                         currentStream[currentStream.Count-2] = instruction1;
                         DeleteInstruction(currentStream.Count-1);
                         modified = true;
@@ -209,7 +264,6 @@ unit TCGen
                     }
                     if ((instruction1.Name == "LIADD") && (instruction1.Offset == instruction0.Offset))
                     {   
-                        Print(" INCLI(2)");
                         instruction1.Name    = "INCLI";
                         currentStream[currentStream.Count-2] = instruction1;
                         DeleteInstruction(currentStream.Count-1);
@@ -223,9 +277,9 @@ unit TCGen
             {
                 if (instruction0.IsByte && !instruction1.IsByte)
                 {
-                    if (instruction1.Name == "ADDLG")
+                    if (instruction1.Name == "LGADD")
                     {
-                        instruction1.Name    = "ADDLGM";
+                        instruction1.Name    = "LGADDM";
                         currentStream[currentStream.Count-2] = instruction1;
                         DeleteInstruction(currentStream.Count-1);
                         modified = true;
@@ -238,9 +292,9 @@ unit TCGen
             {
                 if (instruction0.IsByte && !instruction1.IsByte)
                 {
-                    if (instruction1.Name == "ADDLGI")
+                    if (instruction1.Name == "LGADDI")
                     {
-                        instruction1.Name    = "ADDLGIM";
+                        instruction1.Name    = "LGADDIM";
                         currentStream[currentStream.Count-2] = instruction1;
                         DeleteInstruction(currentStream.Count-1);
                         modified = true;
@@ -284,13 +338,25 @@ unit TCGen
                 {
                     if ((instruction2.IsByte == instruction1.IsByte) && (instruction1.IsByte == instruction0.IsByte))
                     {
-                        instruction2.Offset2 = instruction1.Offset;
-                        instruction2.Name    = "ADDLL";
-                        currentStream[currentStream.Count-3] = instruction2;
-                        DeleteInstruction(currentStream.Count-1);
-                        DeleteInstruction(currentStream.Count-1);
-                        modified = true;
-                        break;
+                        if (instruction2.Offset2 == instruction1.Offset)
+                        {
+                            instruction2.Name    = "2L";
+                            currentStream[currentStream.Count-3] = instruction2;
+                            DeleteInstruction(currentStream.Count-1);
+                            DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
+                        else
+                        {
+                            instruction2.Offset2 = instruction1.Offset;
+                            instruction2.Name    = "LLADD";
+                            currentStream[currentStream.Count-3] = instruction2;
+                            DeleteInstruction(currentStream.Count-1);
+                            DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
                     }
                 }
             }
@@ -299,7 +365,7 @@ unit TCGen
                 if ((instruction2.IsByte == instruction1.IsByte) && (instruction1.IsByte == instruction0.IsByte))
                 {
                     instruction2.Offset2 = instruction1.Offset;
-                    instruction2.Name    = "ADDLG";
+                    instruction2.Name    = "LGADD";
                     currentStream[currentStream.Count-3] = instruction2;
                     DeleteInstruction(currentStream.Count-1);
                     DeleteInstruction(currentStream.Count-1);
@@ -480,7 +546,6 @@ unit TCGen
                 {
                     if ((instruction3.Name == "PUSHL") && (instruction2.Name == "PUSHI") && (instruction1.Name == "ADD") && (instruction0.Name == "POPL"))
                     {
-                        Print(" INCLI(OLD1)");
                         instruction3.Operand = instruction2.Operand;
                         instruction3.IsByte  = true;
                         instruction3.Name    = "INCLI";
@@ -495,7 +560,7 @@ unit TCGen
                     {   
                         instruction3.Offset2 = instruction2.Offset;
                         instruction3.IsByte  = true;
-                        instruction3.Name    = "ADDLLL";
+                        instruction3.Name    = "LLADDL";
                         currentStream[currentStream.Count-4] = instruction3;
                         DeleteInstruction(currentStream.Count-1);
                         DeleteInstruction(currentStream.Count-1);
@@ -508,7 +573,6 @@ unit TCGen
                 {
                     if ((instruction3.Name == "PUSHL") && (instruction2.Name == "PUSHI") && (instruction1.Name == "ADD") && (instruction0.Name == "POPL"))
                     {
-                        Print(" INCLI(OLD2)");
                         instruction3.Operand = instruction2.Operand;                   
                         instruction3.IsByte  = false;
                         instruction3.Name    = "INCLI";
@@ -523,7 +587,7 @@ unit TCGen
                     {
                         instruction3.Offset2 = instruction2.Offset;
                         instruction3.IsByte  = false;
-                        instruction3.Name    = "ADDLLL";
+                        instruction3.Name    = "LLADDL";
                         currentStream[currentStream.Count-4] = instruction3;
                         DeleteInstruction(currentStream.Count-1);
                         DeleteInstruction(currentStream.Count-1);
@@ -550,20 +614,19 @@ unit TCGen
                 // peephole optimizer
                 loop
                 {
-                    bool modified;
                     if (currentStream.Count >= 2)
                     {
-                        modified = OptimizeTwo();
+                        if (OptimizeTwo())   { continue; } // modified, loop again
                     }
                     if (currentStream.Count >= 3)
                     {
-                        modified = OptimizeThree();
+                        if (OptimizeThree()) { continue; } // modified, loop again
                     }
                     if (currentStream.Count >= 4)
                     {
-                        modified = OptimizeFour();
+                        if (OptimizeFour())  { continue; } // modified, loop again
                     }
-                    if (!modified) { break;}
+                    break; // made it here with no modifications, exit
                 }
             }
         }
@@ -1019,18 +1082,22 @@ unit TCGen
             }
             
             
-            case "ADDLG":
-            case "ADDLGM":
+            case "LGADD":
+            case "LGADDM":
             {
                 content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] [0x" + (instruction.Offset2).ToHexString(2) + "]";
             }
-            case "ADDLGI":
-            case "ADDLGIM":
+            case "LGADDI":
+            case "LGADDIM":
             {
                 content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] [0x" + (instruction.Offset2).ToHexString(2) + "] # 0x" + (instruction.Operand).ToHexString(2);
             }
-            case "ADDLL":
-            case "ADDLLL":
+            case "2L":
+            {
+                content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] [BP+0x" + (instruction.Offset).ToHexString(2) + "]";
+            }
+            case "LLADD":
+            case "LLADDL":
             {
                 content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] [BP+0x" + (instruction.Offset2).ToHexString(2) + "]";
             }
@@ -1046,6 +1113,14 @@ unit TCGen
             case "LISUB":
             {
                 content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] # 0x" + (instruction.Operand).ToHexString(instruction.IsByte ? 2 : 4);
+            }
+            case "IADD":
+            {
+                content = instruction.Name + width + " # 0x" + (instruction.Operand).ToHexString(instruction.IsByte ? 2 : 4);
+            }
+            case "IADDL":
+            {
+                content = instruction.Name + width + " # 0x" + (instruction.Operand).ToHexString(instruction.IsByte ? 2 : 4) + " [BP+" + OffsetToHex(instruction.Offset) + "]";
             }
             case "LTX":
             case "LEX":
@@ -1075,7 +1150,7 @@ unit TCGen
             
             default:
             {
-                Print(" Not Implemented: " + instruction.Name);
+                Print(" ToString() Not Implemented: '" + instruction.Name + "'");
                 Die(0x0A);
             }
         }
@@ -1359,20 +1434,22 @@ unit TCGen
                 {
                     TCOps.CompareLE(instruction.IsByte);
                 }
-                case "LTX":
-                case "LTXB":
+                case "LEX":
+                case "LEXB":
                 {
-                    TCOps.CompareLT(instruction.IsByte);
+                    // TODO : optimize
+                    TCOps.CompareLE(instruction.IsByte);
                     TCCode.PadOut("PLA", 0);
                     TCCode.PadOut("if (Z) // " + instruction.Data, 0);
                     TCCode.PadOut("{", 0);
                     TCCode.PadOut("break;", 1);
                     TCCode.PadOut("}", 0);
                 }
-                case "LEX":
-                case "LEXB":
+                case "LTX":
+                case "LTXB":
                 {
-                    TCOps.CompareLE(instruction.IsByte);
+                    // TODO : optimize
+                    TCOps.CompareLT(instruction.IsByte);
                     TCCode.PadOut("PLA", 0);
                     TCCode.PadOut("if (Z) // " + instruction.Data, 0);
                     TCCode.PadOut("{", 0);
@@ -1415,6 +1492,7 @@ unit TCGen
                     TCCode.PadOut("// result in X", 0);
                     TCCode.PadOut("PHX", 0);
                 }
+                
                 case "LILEX":
                 case "LILEXB":
                 {
@@ -1479,6 +1557,7 @@ unit TCGen
                     TCCode.PadOut("// result in X", 0);
                     TCCode.PadOut("PHX", 0);
                 }
+                
                 case "LILTX":
                 case "LILTXB":
                 {
@@ -1536,8 +1615,23 @@ unit TCGen
                         }
                     }
                 }
-                case "ADDLL":
-                case "ADDLLB":
+                case "2L":
+                case "2LB":
+                {
+                    TCCode.OffsetTo(instruction.Offset, "X");
+                    TCCode.PadOut("LDA 0x0100, X", 0);
+                    TCCode.PadOut("ASL", 0);
+                    TCCode.PadOut("PHA", 0);
+                    if (!instruction.IsByte)
+                    {
+                        TCCode.PadOut("DEX", 0);
+                        TCCode.PadOut("LDA 0x0100, X", 0);
+                        TCCode.PadOut("ROL", 0);
+                        TCCode.PadOut("PHA", 0);
+                    }
+                }
+                case "LLADD":
+                case "LLADDB":
                 {
                     TCCode.OffsetTo(instruction.Offset, "X");
                     bool sameL = (instruction.Offset2 ==  instruction.Offset);
@@ -1563,7 +1657,7 @@ unit TCGen
                         TCCode.PadOut("PHA", 0);
                     }
                 }
-                case "ADDLGM":
+                case "LGADDM":
                 {
                     TCCode.OffsetTo(instruction.Offset, "X"); 
                     int goffset = 255 - instruction.Offset2;
@@ -1582,7 +1676,7 @@ unit TCGen
                     TCCode.PadOut("PHA", 0);
                 
                 }
-                case "ADDLGIM":
+                case "LGADDIM":
                 {
                     TCCode.OffsetTo(instruction.Offset, "X"); 
                     int goffset = 255 - instruction.Offset2; 
@@ -1599,7 +1693,7 @@ unit TCGen
                     TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
                     TCCode.PadOut("STA [ZP.TOP]", 0);
                 }
-                case "ADDLGI":
+                case "LGADDI":
                 {
                     TCCode.OffsetTo(instruction.Offset, "X"); 
                     int goffset = 255 - instruction.Offset2;
@@ -1617,8 +1711,8 @@ unit TCGen
                     TCCode.PadOut("PHA", 0);
                 }
                 
-                case "ADDLG":
-                case "ADDLGB":
+                case "LGADD":
+                case "LGADDB":
                 {
                     TCCode.OffsetTo(instruction.Offset, "X"); 
                     int goffset = 255 - instruction.Offset2;
@@ -1635,8 +1729,8 @@ unit TCGen
                         TCCode.PadOut("PHA", 0);
                     }
                 }
-                case "ADDLLL":
-                case "ADDLLLB":
+                case "LLADDL":
+                case "LLADDLB":
                 {
                     if ((instruction.Offset + 2 == instruction.Offset2) && (instruction.Offset >= 0))
                     {
@@ -1762,6 +1856,45 @@ unit TCGen
                         TCCode.PadOut("PHA", 0);
                     }
                 }
+                case "IADD":
+                case "IADDB":
+                {
+                    if (!instruction.IsByte)
+                    {
+                        TCCode.PadOut("PLX", 0);
+                    }
+                    TCCode.PadOut("CLC", 0);
+                    TCCode.PadOut("PLA", 0);
+                    TCCode.PadOut("ADC # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                    TCCode.PadOut("PHA", 0);
+                    if (!instruction.IsByte)
+                    {
+                        TCCode.PadOut("TXA", 0);
+                        TCCode.PadOut("ADC # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
+                        TCCode.PadOut("PHA", 0);
+                    }
+                }
+                case "IADDL":
+                case "IADDLB":
+                {
+                    TCCode.OffsetTo(instruction.Offset, "X"); 
+                    if (!instruction.IsByte)
+                    {
+                        TCCode.PadOut("PLY", 0);
+                    }
+                    TCCode.PadOut("CLC", 0);
+                    TCCode.PadOut("PLA", 0);
+                    TCCode.PadOut("ADC # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                    TCCode.PadOut("STA 0x0100, X", 0);
+                    if (!instruction.IsByte)
+                    {
+                        TCCode.PadOut("TYA", 0);
+                        TCCode.PadOut("ADC # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
+                        TCCode.PadOut("DEX", 0);
+                        TCCode.PadOut("STA 0x0100, X", 0);
+                    }
+                }
+                
                 case "ILADD":
                 case "ILADDB":
                 case "LIADD":
@@ -1971,7 +2104,7 @@ unit TCGen
                 
                 default:
                 {
-                    TCCode.PadOut("Not Implemented: " + name, 0);        
+                    TCCode.PadOut("Generate() Not Implemented: " + name, 0);        
                 }
             }
         }

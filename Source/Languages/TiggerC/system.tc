@@ -18,9 +18,6 @@ func free(byte[] ptr);         // System function to free allocated memory
 // Serial Communication
 func writeChar(char c); // System function to write a single character
 
-#include "long.tc"
-#include "string.tc"
-
 func writeString(const char[] str) {
     // Function to write a null-terminated string to the serial output using writeChar
     word i;
@@ -122,34 +119,4 @@ func pinMode(byte pin, byte mode) { // System function to set the mode of a pin
 func I2CWrite(byte address, byte data); // System function to write data via I2C
 func byte I2CRead(byte address);        // System function to read data via I2C
 
-
-// Timing
-func byte[] millis();          // System function to return a 4-byte array of the current millis count
-func delay(word milliseconds); // System function to delay execution for a specified time
-
-func word elapsedMillis(byte[] start) {
-    byte[] end = millis();
-    byte[] elapsed = longSub(end, start);
-    word msLow = elapsed[0] + ((elapsed[1] as word) << 8);
-    free(elapsed);
-    free(end);
-    return msLow;
-}
-
-func word elapsedSeconds(byte[] start) {
-    byte[] end = millis();
-    byte[] elapsed = longSub(end, start);
-    word msLow  = elapsed[0] + ((elapsed[1] as word) << 8);
-    word msHigh = elapsed[2] + ((elapsed[3] as word) << 8);
-    free(elapsed);
-    free(end);
-
-    // Convert msHigh to seconds and add to msLow converted to seconds
-    word secondsHigh = msHigh / 1000;
-    word secondsLow  = msLow / 1000;
-
-    word seconds = secondsLow + secondsHigh;
-
-    return seconds;
-}
 

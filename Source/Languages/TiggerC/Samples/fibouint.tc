@@ -2,7 +2,8 @@
 #define EXPERIMENTAL
 #define ROM_8K
 
-#include "../system.tc"
+#include "../system.tc"  // for writeString, writeWord, writeChar
+#include "../time.tc"    // for millis, elapsedMillis
 
 func word Fibo(word n) {
     
