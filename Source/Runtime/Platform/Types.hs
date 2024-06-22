@@ -22,7 +22,6 @@ unit Types
         File       = 0x15,
         Directory  = 0x16,
         List       = 0x19,
-        ListItem   = 0x1A, /// testing only
     }
     
     bool IsReferenceType(Type htype)

@@ -45,39 +45,143 @@ unit Asm6809
         }
         return name;
     }
+    
+    enum OpCodePage
+    {
+        Page1 = 0b00000000, // single byte opcode
+        Page2 = 0b01000000, // has leading 0x10 byte
+        Page3 = 0b10000000, // has leading 0x11 byte
+    }
+    
+    enum OffsetMode
+    {
+        // Direct Indexed with Register
+        XIndexRegister          = 0b000000, // ,X (no offset)
+        YIndexRegister          = 0b010000, // ,Y (no offset)
+        UIndexRegister          = 0b100000, // ,U (no offset)
+        SIndexRegister          = 0b110000, // ,S (no offset)
                     
+        // Indexed with Offset
+        XOffset                 = 0b001000, // oooo,X (offset in operand)
+        YOffset                 = 0b011000, // oooo,X (offset in operand)
+        UOffset                 = 0b101000, // oooo,X (offset in operand)
+        SOffset                 = 0b111000, // oooo,X (offset in operand)
+        
+        // Indexed with Register Offset
+        AAccumulatorOffset      = 0b000001, // ,A (accumulator A offset)
+        BAccumulatorOffset      = 0b000010, // ,B (accumulator B offset)
+        DAccumulatorOffset      = 0b000011, // ,D (accumulator D offset)
+    
+        // Auto Increment/Decrement
+        XPostOne                = 0b000100, // ,X+ (post-increment by 1)
+        XPostTwo                = 0b000101, // ,X++ (post-increment by 2)
+        XPreOne                 = 0b000110, // ,-X (pre-decrement by 1)
+        XPreTwo                 = 0b000111, // ,--X (pre-decrement by 2)
+        YPostOne                = 0b010100, // ,Y+ (post-increment by 1)
+        YPostTwo                = 0b010101, // ,Y++ (post-increment by 2)
+        YPreOne                 = 0b010110, // ,-Y (pre-decrement by 1)
+        YPreTwo                 = 0b010111, // ,--Y (pre-decrement by 2)
+        UPostOne                = 0b100100, // ,U+ (post-increment by 1)
+        UPostTwo                = 0b100101, // ,U++ (post-increment by 2)
+        UPreOne                 = 0b100110, // ,-U (pre-decrement by 1)
+        UPreTwo                 = 0b100111, // ,--U (pre-decrement by 2)
+        SPostOne                = 0b110100, // ,S+ (post-increment by 1)
+        SPostTwo                = 0b110101, // ,S++ (post-increment by 2)
+        SPreOne                 = 0b110110, // ,-S (pre-decrement by 1)
+        SPreTwo                 = 0b110111, // ,--S (pre-decrement by 2)
+        
+        // Indirect Indexed with Register
+        XIndirectIndex          = 0b001100, // [oooo,X] (offset in operand)
+        YIndirectIndex          = 0b011100, // [oooo,Y] (offset in operand)
+        UIndirectIndex          = 0b101100, // [oooo,U] (offset in operand)
+        SIndirectIndex          = 0b111100, // [oooo,S] (offset in operand)
+        
+        // Indirect Indexed with Accumulator Offset
+        AIndirectAccumulatorOffset = 0b001101, // [,A] (accumulator A offset)
+        BIndirectAccumulatorOffset = 0b001110, // [,B] (accumulator B offset)
+        DIndirectAccumulatorOffset = 0b001111, // [,D] (accumulator D offset)
+    }
+    
+    enum PCOffsetMode
+    {
+        PCRelativeOffset        = 0b000000, // offset in operand could be 8 or 16 bits
+        PCExtendedIndirect      = 0b000001, // extended indirect
+    }
+
+    
+    enum OpCodeByte
+    {
+        JMP_Direct   = 0x0E,
+        JMP_Indexed  = 0x6E,
+        JMP_Extended = 0x7E,
+        
+        LDA_Immediate   = 0x86,
+        LDA_Direct      = 0x96,
+        LDA_Indexed     = 0xA6,
+        LDA_Extended    = 0xB6,
+    }
     
     enum OpCode
     {
-        NEG_aa     = 0x0000, // 0 - [0xDPxx] -> [0xDPxx]   2 bytes, 6/5 cycles  
-        COM_aa     = 0x0003, // ~[0xDPxx]    -> [0xDPxx]   2 bytes, 6/5 cycles  
-        LSR_aa     = 0x0004, // 0 -> [0xDPxx] -> C         2 bytes, 6/5 cycles   
-        ROR_aa     = 0x0006, // C -> [0xDPxx] -> C         2 bytes, 6/5 cycles   
+        LDA_nn                = OpCodePage.Page1 | OpCodeByte.LDA_Immediate ,                             // LDA 0x34
+        LDA_aa                = OpCodePage.Page1 | OpCodeByte.LDA_Direct    ,                             // LDA [0x20]
+        LDA_aaaa              = OpCodePage.Page1 | OpCodeByte.LDA_Extended  ,                             // LDA [0x1234]
         
-        LBRA_oooo  = 0x0016, // PC + oooo -> PC            3 bytes 5/4 cycles
+        LDA_X                 = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.XIndexRegister , // LDA ,X
+        LDA_Y                 = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.YIndexRegister , // LDA ,Y
+        LDA_U                 = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.UIndexRegister , // LDA ,U
+        LDA_S                 = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.SIndexRegister , // LDA ,S
         
-        BRA_oo     = 0x0020, // PC + oo -> PC              2 bytes, 3 cycles
+        LDA_X_oooo            = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.XOffset ,        // LDA [X+1000]
+        LDA_Y_oooo            = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.YOffset ,        // LDA [Y+1000]
+        LDA_U_oooo            = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.UOffset ,        // LDA [U+1000]
+        LDA_S_oooo            = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.SOffset ,        // LDA [S+1000]
         
-        ABX        = 0x003A, // B + X -> X (unsigned)      1 byte, 3 cycles
+        LDA_A_X               = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.XIndexRegister | OffsetMode.AAccumulatorOffset , // LDA A,X
+        LDA_A_Y               = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.YIndexRegister | OffsetMode.AAccumulatorOffset , // LDA A,Y
+        LDA_A_U               = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.UIndexRegister | OffsetMode.AAccumulatorOffset , // LDA A,U
+        LDA_A_S               = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.SIndexRegister | OffsetMode.AAccumulatorOffset , // LDA A,S
+        LDA_B_X               = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.XIndexRegister | OffsetMode.BAccumulatorOffset , // LDA B,X
+        LDA_B_Y               = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.YIndexRegister | OffsetMode.BAccumulatorOffset , // LDA B,Y
+        LDA_B_U               = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.UIndexRegister | OffsetMode.BAccumulatorOffset , // LDA B,U
+        LDA_B_S               = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.SIndexRegister | OffsetMode.BAccumulatorOffset , // LDA B,S
         
-        ADCA_nn    = 0x0089, // A + 0xnn + C -> A          2 bytes, 2 cycles
+        LDA_A_Xi              = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.XIndexRegister | OffsetMode.AIndirectAccumulatorOffset , // LDA [A,X]
+        LDA_A_Yi              = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.YIndexRegister | OffsetMode.AIndirectAccumulatorOffset , // LDA [A,Y]
+        LDA_A_Ui              = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.UIndexRegister | OffsetMode.AIndirectAccumulatorOffset , // LDA [A,U]
+        LDA_A_Si              = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.SIndexRegister | OffsetMode.AIndirectAccumulatorOffset , // LDA [A,S]
+        LDA_B_Xi              = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.XIndexRegister | OffsetMode.BIndirectAccumulatorOffset , // LDA [B,X]
+        LDA_B_Yi              = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.YIndexRegister | OffsetMode.BIndirectAccumulatorOffset , // LDA [B,Y]
+        LDA_B_Ui              = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.UIndexRegister | OffsetMode.BIndirectAccumulatorOffset , // LDA [B,U]
+        LDA_B_Si              = OpCodePage.Page1 | OpCodeByte.LDA_Indexed   | OffsetMode.SIndexRegister | OffsetMode.BIndirectAccumulatorOffset , // LDA [B,S]
         
-        CMPX_nnnn  = 0x008E, // X - 0xnnnn -> flags        3 bytes 4/3 cycles
+        JMP_nni                = OpCodePage.Page1 | OpCodeByte.JMP_Direct   ,                             // JMP [0x80]
+        JMP_nnnn               = OpCodePage.Page1 | OpCodeByte.JMP_Extended ,                             // JMP 0x4000
+        JMP_nnnni              = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.XIndirectIndex,  // JMP [0x4000]
+        JMP_X                  = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.XIndexRegister , // JMP ,X
+        JMP_Y                  = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.YIndexRegister , // JMP ,Y
+        JMP_U                  = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.UIndexRegister , // JMP ,U
+        JMP_S                  = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.SIndexRegister , // JMP ,S
         
-        ADCA_aa    = 0x0099, // A + [0xDPaa] + C -> A      2 bytes, 4 cycles
+        JMP_A_X                = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.XIndexRegister | OffsetMode.AAccumulatorOffset , // JMP A,X
+        JMP_A_Y                = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.YIndexRegister | OffsetMode.AAccumulatorOffset , // JMP A,Y
+        JMP_A_U                = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.UIndexRegister | OffsetMode.AAccumulatorOffset , // JMP A,U
+        JMP_A_S                = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.SIndexRegister | OffsetMode.AAccumulatorOffset , // JMP A,S
+        JMP_B_X                = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.XIndexRegister | OffsetMode.BAccumulatorOffset , // JMP B,X
+        JMP_B_Y                = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.YIndexRegister | OffsetMode.BAccumulatorOffset , // JMP B,Y
+        JMP_B_U                = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.UIndexRegister | OffsetMode.BAccumulatorOffset , // JMP B,U
+        JMP_B_S                = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.SIndexRegister | OffsetMode.BAccumulatorOffset , // JMP B,S
         
-        ADCA_ioooo = 0x00A9, // A + [X+oooo] + C -> A      2+ bytes, 4+ cycles
-        
-        ADCA_aaaa  = 0x00B9, // A + [0xaaaa] + C -> A      3 bytes, 5/4 cycles
-        
-        ADCB_nn    = 0x00C9, // B + 0xnn + C -> B          2 bytes, 2 cycles
-        
-        ADCB_aa    = 0x00D9, // B + [0xDPaa] + C -> B      2 bytes, 4 cycles
-        
-        ADCB_ioooo = 0x00E9, // B + [X+oooo] + C -> B      2+ bytes, 4+ cycles
-        
-        ADCB_aaaa  = 0x00F9, // B + [0xaaaa] + C -> B      3 bytes, 5/4 cycles
+        JMP_A_Xi               = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.XIndexRegister | OffsetMode.AIndirectAccumulatorOffset , // JMP [A,X]
+        JMP_A_Yi               = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.YIndexRegister | OffsetMode.AIndirectAccumulatorOffset , // JMP [A,Y]
+        JMP_A_Ui               = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.UIndexRegister | OffsetMode.AIndirectAccumulatorOffset , // JMP [A,U]
+        JMP_A_Si               = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.SIndexRegister | OffsetMode.AIndirectAccumulatorOffset , // JMP [A,S]
+        JMP_B_Xi               = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.XIndexRegister | OffsetMode.BIndirectAccumulatorOffset , // JMP [B,X]
+        JMP_B_Yi               = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.YIndexRegister | OffsetMode.BIndirectAccumulatorOffset , // JMP [B,Y]
+        JMP_B_Ui               = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.UIndexRegister | OffsetMode.BIndirectAccumulatorOffset , // JMP [B,U]
+        JMP_B_Si               = OpCodePage.Page1 | OpCodeByte.JMP_Indexed  | OffsetMode.SIndexRegister | OffsetMode.BIndirectAccumulatorOffset , // JMP [B,S]
     }
+
     
     IE()
     {

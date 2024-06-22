@@ -23,13 +23,9 @@ unit HRList
     const uint lsFirst  = 5;
     const uint lsRecent = 7;
 
-#ifdef CHECKED
-    const uint liData = 2;
-    const uint liNext = 4;
-#else    
     const uint liData = 0;
     const uint liNext = 2;
-#endif   
+
     uint New(Type htype)
     {
         uint address = GC.New(9, Type.List);
@@ -71,16 +67,6 @@ unit HRList
     {
         uint pData    = ReadWord(pCurrent+liData);
 
-#ifdef CHECKED
-        // GC.Release
-        byte referenceCount = ReadByte(pCurrent+1);
-        if (referenceCount == 0)
-        {
-            ErrorDump(270);
-            Error = 0x0B;
-            return;
-        }
-#endif
         Memory.Free(pCurrent);
         if (IsReferenceType(etype))
         {
@@ -135,11 +121,7 @@ unit HRList
                 pData = HRVariant.CreateValueVariant(itemData, itype);
             }
         }
-#ifdef CHECKED
-        uint pitem = GC.New(4, Type.ListItem);
-#else        
         uint pitem = Memory.Allocate(4);
-#endif
         
         Memory.WriteWord(pitem+liData, pData); // pData
         Memory.WriteWord(pitem+liNext, 0);     // pNext
