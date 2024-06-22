@@ -17,10 +17,10 @@ This table organizes the 6809 instructions into logical groups and provides a cl
 | STAB        | -         | 0xD7   | 0xE7    | 0xF7     | 2-6    | 2-5   |
 | STD         | -         | 0xDD   | 0xED    | 0xFD     | 3-6    | 3-5   |
 | STX         | -         | 0x9F   | 0xAF    | 0xBF     | 3-6    | 3-5   |
-| STY         | -         | 0x10DF | 0x10EF | 0x10FF   | 4-7    | 4-6   |
-| STU         | -         | 0xDF   | 0xEF    | 0xFF     | 3-6    | 3-5   |
-| STS         | -         | 0x9F   | 0xAF    | 0xBF     | 3-6    | 3-5   |
-| CLR         | -         | 0x0F   | 0x6F    | 0x7F     | 6-7    | 2-4   |
+| STY         | -         | 0x10DF | 0x10EF  | 0x10FF   | 4-7    | 4-6   |
+| STU         | -         | 0xDF   | 0xEF   | 0xFF     | 3-6    | 3-5   |
+| STS         | -         | 0x9F   | 0xAF   | 0xBF     | 3-6    | 3-5   |
+| CLR         | -         | 0x0F   | 0x6F   | 0x7F     | 6-7    | 2-4   |
 
 ### Arithmetic Instructions
 
@@ -29,6 +29,10 @@ This table organizes the 6809 instructions into logical groups and provides a cl
 | ADDA        | 0x8B      | 0x9B   | 0xAB    | 0xBB     | 2-5    | 2-4   |
 | ADDB        | 0xCB      | 0xDB   | 0xEB    | 0xFB     | 2-5    | 2-4   |
 | ADDD        | 0xC3      | 0xD3   | 0xE3    | 0xF3     | 4-7    | 3-5   |
+| ADCA        | 0x89      | 0x99   | 0xA9    | 0xB9     | 2-5    | 2-4   |
+| ADCB        | 0xC9      | 0xD9   | 0xE9    | 0xF9     | 2-5    | 2-4   |
+| SBCA        | 0x82      | 0x92   | 0xA2    | 0xB2     | 2-5    | 2-4   |
+| SBCB        | 0xC2      | 0xD2   | 0xE2    | 0xF2     | 2-5    | 2-4   |
 | SUBA        | 0x80      | 0x90   | 0xA0    | 0xB0     | 2-5    | 2-4   |
 | SUBB        | 0xC0      | 0xD0   | 0xE0    | 0xF0     | 2-5    | 2-4   |
 | SUBD        | 0x83      | 0x93   | 0xA3    | 0xB3     | 4-7    | 3-5   |
@@ -39,10 +43,6 @@ This table organizes the 6809 instructions into logical groups and provides a cl
 | CMPY        | 0x108C    | 0x109C | 0x10AC  | 0x10BC   | 4-7    | 4-6   |
 | CMPU        | 0x1183    | 0x1193 | 0x11A3  | 0x11B3   | 5-8    | 4-6   |
 | CMPS        | 0x118C    | 0x119C | 0x11AC  | 0x11BC   | 5-8    | 4-6   |
-| ADCA        | 0x89      | 0x99   | 0xA9    | 0xB9     | 2-5    | 2-4   |
-| ADCB        | 0xC9      | 0xD9   | 0xE9    | 0xF9     | 2-5    | 2-4   |
-| SBCA        | 0x82      | 0x92   | 0xA2    | 0xB2     | 2-5    | 2-4   |
-| SBCB        | 0xC2      | 0xD2   | 0xE2    | 0xF2     | 2-5    | 2-4   |
 
 ### Logical Instructions
 
@@ -56,6 +56,7 @@ This table organizes the 6809 instructions into logical groups and provides a cl
 | EORB        | 0xC8      | 0xD8   | 0xE8    | 0xF8     | 2-5    | 2-4   |
 | BITA        | 0x85      | 0x95   | 0xA5    | 0xB5     | 2-5    | 2-4   |
 | BITB        | 0xC5      | 0xD5   | 0xE5    | 0xF5     | 2-5    | 2-4   |
+| ANDCC       | 0x1C      | -      | -       | -        | 3      | 2     |
 | COM         | -         | 0x03   | 0x63    | 0x73     | 6-7    | 2-4   |
 | CLR         | -         | 0x0F   | 0x6F    | 0x7F     | 6-7    | 2-4   |
 
@@ -124,6 +125,6 @@ This table organizes the 6809 instructions into logical groups and provides a cl
 | SWI         | 0x3F   | 19     | 1     |
 | CWAI        | 0x3C   | 20     | 1     |
 | MUL         | 0x3D   | 11     | 2     |
-| ABX         | 0x3A   | 3      | 1     |
 | CLRA        | 0x4F   | 2      | 1     |
 | CLRB        | 0x5F   | 2      | 1     |
+| ABX         | 0x3A   | 3      | 1     |
