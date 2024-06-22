@@ -115,7 +115,9 @@ unit TCSymbols
         if (name == "main")
         {
             FreeAutomaticAllocations(GetCurrentVariableLevel());
+#ifndef ZEROGLOBALS            
             TCCode.PopBytes(byte(GlobalOffset), "global variable " + VariableComment());
+#endif
         }
         
         blockLevel--;

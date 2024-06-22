@@ -257,6 +257,7 @@ unit BuildCommand
                     Editor.SetStatusBarText("'.tc' projects only support CPU_65C02S, not CPU_65UINO or CPU_6502");
                     break;
                 }
+                asmPrefix = "65";
                 //if ((cpuArchitecture != CPUArchitecture.W65C02) && (cpuArchitecture != CPUArchitecture.M6502))
                 //{
                 //    Editor.SetStatusBarText("#define CPU_6502 or CPU_65C02S for '.tc' projects");

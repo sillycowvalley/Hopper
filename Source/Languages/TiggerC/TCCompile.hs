@@ -256,9 +256,7 @@ unit TCCompile
 
         BlockLevel++;
         TCGen.Comment("initialize '" + name + "' (" + (GlobalOffset).ToString() + ")");
-        
-        // make a slot on the stack
-        TCGen.PushImmediate(TCType.IsByteType(tp), 0);
+        TCGen.ZeroGlobal(TCType.IsByteType(tp), GlobalOffset);
         
         string memberType;
         if (IsArrayType(tp, ref memberType) && (size != 0))

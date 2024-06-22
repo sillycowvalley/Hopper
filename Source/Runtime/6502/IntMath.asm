@@ -10,10 +10,10 @@ unit IntMath
         STA ZP.TOPT
         
 #ifdef FASTINTS
-        LDA TOPH
+        LDA ZP.TOPH
         if (Z)
         {
-            LDA TOPL
+            LDA ZP.TOPL
             if (Z)
             {
                 // TOP is zero
@@ -22,70 +22,70 @@ unit IntMath
             CMP #8
             if (Z)
             {
-                ASL NEXTL
-                ROL NEXTH
+                ASL ZP.NEXTL
+                ROL ZP.NEXTH
                 LSR
             }
             CMP #4
             if (Z)
             {
-                ASL NEXTL
-                ROL NEXTH
+                ASL vNEXTL
+                ROL ZP.NEXTH
                 LSR
             }
             CMP #2
             if (Z)
             {
-                ASL NEXTL
-                ROL NEXTH
+                ASL ZP.NEXTL
+                ROL ZP.NEXTH
                 LSR
             }
             CMP #1
             if (Z)
             {
-                LDA NEXTL
-                STA TOPL
-                LDA NEXTH
-                STA TOPH
+                LDA ZP.NEXTL
+                STA ZP.TOPL
+                LDA ZP.NEXTH
+                STA ZP.TOPH
                 return; // return TOP
             }
         }
-        LDA NEXTH
+        LDA ZP.NEXTH
         if (Z)
         {
-            LDA NEXTL
+            LDA ZP.NEXTL
             if (Z)
             {
                 // NEXT is zero
 #ifdef CPU_65C02S
-                STZ TOPL
-                STZ TOPH
+                STZ ZP.TOPL
+                STZ ZP.TOPH
 #else                
                 LDA #0
-                STA TOPL
-                STA TOPH
+                STA ZP.TOPL
+                STA ZP.TOPH
 #endif
                 return;
             }
             CMP #8
             if (Z)
             {
-                ASL TOPL
-                ROL TOPH
+                ASL ZP.TOPL
+                ROL ZP.TOPH
                 LSR
             }
             CMP #4
             if (Z)
             {
-                ASL TOPL
-                ROL TOPH
+                ASL ZP.TOPL
+                ROL ZP.TOPH
                 LSR
             }
             CMP #2
             if (Z)
             {
-                ASL TOPL
-                ROL TOPH
+                ASL ZP.TOPL
+                ROL ZP.TOPH
                 LSR
             }
             CMP #1
@@ -94,65 +94,65 @@ unit IntMath
                 return; // just return TOP
             }
                     
-            LDA TOPH // 8x8 since TOPH and NEXTH are zero
+            LDA ZP.TOPH // 8x8 since TOPH and NEXTH are zero
             if (Z)
             {
                 // https://codebase64.org/doku.php?id=base:8bit_multiplication_16bit_product_fast_no_tables
-                LDX TOPL
+                LDX ZP.TOPL
                 DEX          // decrement TOPL because we will be adding with carry set for speed (an extra one)
-                STX TOPL
-                ROR NEXTL
+                STX ZP.TOPL
+                ROR ZP.NEXTL
                 if (C)
                 {
-                    ADC TOPL
+                    ADC ZP.TOPL
                 }
                 ROR
-                ROR NEXTL
+                ROR ZP.NEXTL
                 if (C)
                 {
-                    ADC TOPL
+                    ADC ZP.TOPL
                 }
                 ROR
-                ROR NEXTL
+                ROR ZP.NEXTL
                 if (C)
                 {
-                    ADC TOPL
+                    ADC ZP.TOPL
                 }
                 ROR
-                ROR NEXTL
+                ROR ZP.NEXTL
                 if (C)
                 {
-                    ADC TOPL
+                    ADC ZP.TOPL
                 }
                 ROR
-                ROR NEXTL
+                ROR ZP.NEXTL
                 if (C)
                 {
-                    ADC TOPL
+                    ADC ZP.TOPL
                 }
                 ROR
-                ROR NEXTL
+                ROR ZP.NEXTL
                 if (C)
                 {
-                    ADC TOPL
+                    ADC ZP.TOPL
                 }
                 ROR
-                ROR NEXTL
+                ROR ZP.NEXTL
                 if (C)
                 {
-                    ADC TOPL
+                    ADC ZP.TOPL
                 }
                 ROR
-                ROR NEXTL
+                ROR ZP.NEXTL
                 if (C)
                 {
-                    ADC TOPL
+                    ADC ZP.TOPL
                 }
                 ROR
-                ROR NEXTL
-                STA TOPH
-                LDA NEXTL
-                STA TOPL                
+                ROR ZP.NEXTL
+                STA ZP.TOPH
+                LDA ZP.NEXTL
+                STA ZP.TOPL                
                 return;
             }
         }
@@ -198,56 +198,56 @@ unit IntMath
     utilityDiv10()
     {
         // NEXT = NEXT / 10
-        LDA NEXTL
-        STA TOPL
-        LDA NEXTH
-        STA TOPH
+        LDA ZP.NEXTL
+        STA ZP.TOPL
+        LDA ZP.NEXTH
+        STA ZP.TOPH
         
         //    UNSIGNED DIVIDE BY 10 (16 BIT)
         //    111 cycles (max), 96 bytes
         //    https://forums.atariage.com/blogs/entry/11044-16-bit-division-fast-divide-by-10/
         loop
         {
-            LDA    TOPH
-            STA    ACCL
+            LDA    ZP.TOPH
+            STA    ZP.ACCL
             LSR        
             ADC    #13 
-            ADC    ACCL
+            ADC    ZP.ACCL
             ROR        
             LSR        
             LSR        
-            ADC    ACCL
+            ADC    ZP.ACCL
             ROR        
-            ADC    ACCL
+            ADC    ZP.ACCL
             ROR        
             LSR        
             AND    # 0x7C                // AND'ing here...
-            STA    ACCL                  // and saving result as highTen (times 4)
+            STA    ZP.ACCL                  // and saving result as highTen (times 4)
             LSR        
             LSR        
-            STA    NEXTH
-            ADC    ACCL                  // highTen (times 5)
+            STA    ZP.NEXTH
+            ADC    ZP.ACCL                  // highTen (times 5)
             ASL                          // highTen (times 10)
-            SBC    TOPH
+            SBC    ZP.TOPH
             EOR    # 0xFF
             TAY                          // mod 10 result!
             LDA    tensRemaining, Y      // Fill the low byte with the tens it should
-            STA    NEXTL                 // have at this point from the high byte divide.
-            LDA    TOPL
+            STA    ZP.NEXTL                 // have at this point from the high byte divide.
+            LDA    ZP.TOPL
             ADC    modRemaining, Y       // 4  @69
             
             if (NC) 
             { 
-                STA    ACCL
+                STA    ZP.ACCL
                 LSR        
                 ADC    # 13 
-                ADC    ACCL
+                ADC    ZP.ACCL
                 ROR        
                 LSR        
                 LSR        
-                ADC    ACCL
+                ADC    ZP.ACCL
                 ROR        
-                ADC    ACCL
+                ADC    ZP.ACCL
                 ROR        
                 LSR        
                 LSR        
@@ -263,18 +263,18 @@ unit IntMath
                 break; 
             }
         }
-        ADC    NEXTL
-        STA    NEXTL
+        ADC    ZP.NEXTL
+        STA    ZP.NEXTL
     }
     
     UtilityDiv()
     {
         // NEXT = NEXT (dividend=result) / TOP (divisor)
 #ifdef FASTINTS        
-        LDA TOPH
+        LDA ZP.TOPH
         if (Z) // MSB zero?
         {
-            LDA TOPL
+            LDA ZP.TOPL
             CMP # 1
             if (Z)
             {
@@ -283,17 +283,17 @@ unit IntMath
             CMP # 2
             if (Z)
             {
-                LSR NEXTH //   / 2
-                ROR NEXTL
+                LSR ZP.NEXTH //   / 2
+                ROR ZP.NEXTL
                 return;
             }
             CMP # 4
             if (Z)
             {
-                LSR NEXTH //   / 2
-                ROR NEXTL
-                LSR NEXTH //   / 2
-                ROR NEXTL
+                LSR ZP.NEXTH //   / 2
+                ROR ZP.NEXTL
+                LSR ZP.NEXTH //   / 2
+                ROR ZP.NEXTL
                 return;
             }
             CMP # 10
@@ -313,8 +313,8 @@ unit IntMath
             if (Z)
             {
                 utilityDiv10(); //  / 10
-                ASL NEXTL       //  * 2
-                ROL NEXTH
+                ASL ZP.NEXTL       //  * 2
+                ROL ZP.NEXTH
                 utilityDiv10(); //  / 10
                 return;
             }

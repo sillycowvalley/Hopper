@@ -93,7 +93,7 @@ unit TCOps
     {
         // arguments in NEXT and TOP
         
-        MulShared();
+        IntMath.MulShared();
         
         // result in TOP
     }
@@ -104,7 +104,7 @@ unit TCOps
         
         STZ TOPH
         STZ NEXTH
-        MulShared();
+        IntMath.MulShared();
         
         // result in TOP
     }
@@ -113,7 +113,7 @@ unit TCOps
     {
         // arguments in NEXT and TOP
         
-        UtilityDiv();
+        IntMath.UtilityDiv();
         LDA NEXTL
         STA TOPL
         LDA NEXTH
@@ -128,7 +128,7 @@ unit TCOps
         
         STZ TOPH
         STZ NEXTH
-        UtilityDiv();
+        IntMath.UtilityDiv();
         LDA NEXTL
         STA TOPL
         
@@ -139,7 +139,7 @@ unit TCOps
     {
         // arguments in NEXT and TOP
         
-        DivMod();
+        IntMath.DivMod();
         LDA ZP.ACCL
         STA ZP.TOPL
         LDA ZP.ACCH
@@ -154,7 +154,7 @@ unit TCOps
         
         STZ ZP.TOPH
         STZ ZP.NEXTH
-        DivMod();
+        IntMath.DivMod();
         LDA ZP.ACCL
         STA ZP.TOPL
         
@@ -169,14 +169,14 @@ unit TCOps
         if (C)
         {
             INX // count the -ve
-            NegateNext(); // NEXT = -NEXT
+            IntMath.NegateNext(); // NEXT = -NEXT
         }
         LDA ZP.TOPH
         ASL // sign bit into carry
         if (C)
         {
             INX // count the -ve
-            NegateTop(); // TOP = -TOP
+            IntMath.NegateTop(); // TOP = -TOP
         }
         STX ZP.FSIGN // store the sign count
     }
@@ -187,12 +187,12 @@ unit TCOps
         
         DoSigns();
         
-        MulShared();
+        IntMath.MulShared();
         LDA ZP.FSIGN     // load the sign count
         CMP #1
         if (Z)           // 1 negative (not 0 or 2)
         {
-            NegateTop(); // TOP = -TOP
+            IntMath.NegateTop(); // TOP = -TOP
         }
         
         // result in TOP
@@ -204,7 +204,7 @@ unit TCOps
         
         DoSigns();
         
-        UtilityDiv();
+        IntMath.UtilityDiv();
         
         LDA NEXTL
         STA TOPL
@@ -215,7 +215,7 @@ unit TCOps
         CMP #1
         if (Z)           // 1 negative (not 0 or 2)
         {
-            NegateTop(); // TOP = -TOP
+            IntMath.NegateTop(); // TOP = -TOP
         }
         
         // result in TOP
@@ -235,7 +235,7 @@ unit TCOps
         
         DoSigns();
         
-        DivMod();
+        IntMath.DivMod();
         
         LDA ZP.ACCL
         STA ZP.TOPL

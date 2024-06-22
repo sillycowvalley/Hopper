@@ -70,10 +70,10 @@ unit TCSys
         // word size : SP - 1
         INX
         LDA 0x0100, X
-        STA ACCH
+        STA ZP.ACCH
         INX
         LDA 0x0100, X
-        STA ACCL
+        STA ZP.ACCL
         Allocate.Allocate();
         
         LDA ZP.IDXL
@@ -92,10 +92,10 @@ unit TCSys
         // word ptr : SP - 1
         INX
         LDA 0x0100, X
-        STA IDXH
+        STA ZP.IDXH
         INX
         LDA 0x0100, X
-        STA IDXL
+        STA ZP.IDXL
         Free.Free();
     }
 }

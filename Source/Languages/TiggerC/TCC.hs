@@ -2,6 +2,8 @@ program TCCompile
 {
     //#define XY_TRACKING
     
+    #define ZEROGLOBALS
+    
     uses "/Source/System/System"
     uses "/Source/System/Diagnostics"
     

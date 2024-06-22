@@ -4,6 +4,10 @@ unit TCCode
     uses "TCOps"
     uses "TCGen"
     
+#ifdef ZEROGLOBALS
+    const byte GlobalStart = 0x70;
+#endif    
+    
     file codeFile;
     string codePath;
     
@@ -80,7 +84,7 @@ unit TCCode
         PadOut("#define W65C22_VIA", 0);
         if (!IsDefined("ACIA_6850") && !IsDefined("APPLE_I"))
         {
-            PadOut("#define ACIA_6850", 0);
+            PadOut("#define ACIA_6850", 0);                            // ZP.ACIACONTROL, ZP.ACIADATA, ZP.ACIASTATUS
         }
         PadOut("#define FASTINTS", 0);
         
@@ -89,18 +93,18 @@ unit TCCode
         PadOut("",0);
         PadOut("uses \"/Source/Runtime/6502/ZeroPage\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Diagnostics\"", 0);
-        PadOut("uses \"/Source/Runtime/6502/MemoryMap\"", 0);
+        PadOut("uses \"/Source/Runtime/6502/MemoryMap\"", 0); 
         PadOut("uses \"/Source/Runtime/6502/Utilities\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Types\"", 0);
-        PadOut("uses \"/Source/Runtime/6502/IntMath\"", 0);
-        PadOut("uses \"/Source/Runtime/6502/Memory\"", 0);
-        PadOut("uses \"/Source/Runtime/6502/Allocate\"", 0);
-        PadOut("uses \"/Source/Runtime/6502/Free\"", 0);
-        PadOut("uses \"/Source/Runtime/6502/Serial\"", 0);
-        PadOut("uses \"/Source/Runtime/6502/Time\"", 0);
-        PadOut("uses \"/Source/Runtime/6502/Devices/W65C22\"", 0);
-        PadOut("uses \"/Source/Languages/TiggerC/TCOps\"", 0);
-        PadOut("uses \"/Source/Languages/TiggerC/TCSys\"", 0);
+        PadOut("uses \"/Source/Runtime/6502/IntMath\"", 0);            // FP.UWIDE0, FP.UWIDE1, FP.UWIDE2, FP.UWIDE3
+        PadOut("uses \"/Source/Runtime/6502/Memory\"", 0);             // ZP.FREELISTL, ZP.FREELISTH, ZP.HEAPSTART, ZP.HEAPSIZE, ZP.PROGSIZE
+        PadOut("uses \"/Source/Runtime/6502/Allocate\"", 0);           // ZP.M0 .. ZP.M13
+        PadOut("uses \"/Source/Runtime/6502/Free\"", 0);               // ZP.M0 .. ZP.M15, ZP.IDYL, ZP.IDYL
+        PadOut("uses \"/Source/Runtime/6502/Serial\"", 0);             // ZP.SerialInWritePointer, ZP.SerialInReadPointer, ZP.SerialBreakFlag, 
+        PadOut("uses \"/Source/Runtime/6502/Time\"", 0);               // ZP.TICK0, ZP.TICK1, ZP.TICK2, ZP.TICK3, ZP.TARGET0, ZP.TARGET1, ZP.TARGET2, ZP.TARGET3
+        PadOut("uses \"/Source/Runtime/6502/Devices/W65C22\"", 0);     // ZP.DDRA, ZP.DDRB, ZP.T1CL, ZP.T1CH, ZP.IER, ZP.ACR, ZP.IFR, ZF.PORTA, ZFPORTB
+        PadOut("uses \"/Source/Languages/TiggerC/TCOps\"", 0);         // ZP.TOPL, ZP.TOPH, ZP.TOPT, ZP.NEXTL, ZP.NEXTH, ZP.ACCL, ZP.ACCH, ZP.FSIGN
+        PadOut("uses \"/Source/Languages/TiggerC/TCSys\"", 0);         // ZP.IDXL, ZP.IDXH
         PadOut("",0);
         PadOut("IRQ()",0);
         PadOut("{",0);
@@ -334,6 +338,7 @@ unit TCCode
     
     Enter()
     {
+        PadOut("", 0);
         PadOut("// PUSH BP", 0);
         PadOut("LDX ZP.BP", 0);
         PadOut("PHX", 0);
@@ -612,6 +617,17 @@ unit TCCode
         PadOut("// PUSH " + nameWithOffset(name, offset, isGlobal) + Bitness(isByte), 0);
         if (isGlobal)
         {
+#ifdef ZEROGLOBALS
+            offset += GlobalStart;
+            PadOut("LDA 0x"+ (offset.GetByte(0)).ToHexString(2), 0);  
+            PadOut("PHA", 0);
+            if (!isByte)
+            {
+                offset++;
+                PadOut("LDA 0x"+ (offset.GetByte(0)).ToHexString(2), 0);  
+                PadOut("PHA", 0);
+            }
+#else
             offset = 255 - offset;
             PadOut("LDA 0x01"+ (offset.GetByte(0)).ToHexString(2), 0);  
             PadOut("PHA", 0);
@@ -621,6 +637,7 @@ unit TCCode
                 PadOut("LDA 0x01"+ (offset.GetByte(0)).ToHexString(2), 0);  
                 PadOut("PHA", 0);
             }
+#endif                        
         }
         else
         {
@@ -640,6 +657,18 @@ unit TCCode
         PadOut("// POP " + nameWithOffset(name, offset, isGlobal) + Bitness(isByte), 0);
         if (isGlobal)
         {
+#ifdef ZEROGLOBALS
+            offset += GlobalStart;
+            if (!isByte)
+            {
+                offset++;
+                PadOut("PLA", 0);
+                PadOut("STA 0x"+ (offset.GetByte(0)).ToHexString(2), 0);  
+                offset--;
+            }
+            PadOut("PLA", 0);
+            PadOut("STA 0x"+ (offset.GetByte(0)).ToHexString(2), 0);  
+#else
             offset = 255 - offset;
             if (!isByte)
             {
@@ -650,6 +679,7 @@ unit TCCode
             }
             PadOut("PLA", 0);
             PadOut("STA 0x01"+ (offset.GetByte(0)).ToHexString(2), 0);  
+#endif
         }
         else
         {

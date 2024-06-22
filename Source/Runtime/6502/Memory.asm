@@ -25,9 +25,9 @@ unit Memory
         LDA #0
         PHA PHA
         STA IDXL
-        LDA HEAPSTART
+        LDA ZP.HEAPSTART
         STA IDXH
-        LDX HEAPSIZE // number of 256 byte pages is same as MSB of size
+        LDX ZP.HEAPSIZE // number of 256 byte pages is same as MSB of size
         Utilities.ClearPages(); // munts A, X, Y
         
         // FreeList = Hopper heap start
@@ -113,24 +113,24 @@ unit Memory
         // uses IDXand ACC
         // pushes result to [top]
 #ifdef CPU_65C02S
-        STZ ACCL
-        STZ ACCH
+        STZ ZP.ACCL
+        STZ ZP.ACCH
 #else
         LDA # 0
-        STA ACCL
-        STA ACCH
+        STA ZP.ACCL
+        STA ZP.ACCH
 #endif
-        LDA FREELISTL
-        STA IDXL
-        LDA FREELISTH
-        STA IDXH
+        LDA ZP.FREELISTL
+        STA ZP.IDXL
+        LDA ZP.FREELISTH
+        STA ZP.IDXH
             
         loop
         {
-            LDA IDXL
+            LDA ZP.IDXL
             if (Z)
             {
-                LDA IDXH
+                LDA ZP.IDXH
                 if (Z)
                 {
                     break;
@@ -139,13 +139,13 @@ unit Memory
         
             LDY #0
             CLC
-            LDA [IDX], Y
-            ADC ACCL
-            STA ACCL
+            LDA [ZP.IDX], Y
+            ADC ZP.ACCL
+            STA ZP.ACCL
             INY
-            LDA [IDX], Y
-            ADC ACCH
-            STA ACCH
+            LDA [ZP.IDX], Y
+            ADC ZP.ACCH
+            STA ZP.ACCH
             
             // 2 byte cost for each allocated block:
             DecACCx2();
