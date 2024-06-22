@@ -800,15 +800,56 @@ unit Asm6809
             case OpCode.iJMP_iiii: { name = "iJMP"; }
             case OpCode.iJSR_iiii: { name = "iJSR"; }
             
-            // PAGE2 and PAGE3 instructions
-            // Add PAGE2 and PAGE3 instructions here as needed
+            // PAGE2 0x10_
+            case OpCode.LBRN:      { name = "LBRN"; }
+            case OpCode.LBHI:      { name = "LBHI"; }
+            case OpCode.LBLS:      { name = "LBLS"; }
+            case OpCode.LBHS:      { name = "LBHS"; }
+            case OpCode.LBCC:      { name = "LBCC"; }
+            case OpCode.LBCS:      { name = "LBCS"; }
+            case OpCode.LBLO:      { name = "LBLO"; }
+            case OpCode.LBNE:      { name = "LBNE"; }
+            case OpCode.LBEQ:      { name = "LBEQ"; }
+            case OpCode.LBVC:      { name = "LBVC"; }
+            case OpCode.LBVS:      { name = "LBVS"; }
+            case OpCode.LBPL:      { name = "LBPL"; }
+            case OpCode.LBMI:      { name = "LBMI"; }
+            case OpCode.LBGE:      { name = "LBGE"; }
+            case OpCode.LBGT:      { name = "LBGT"; }
+            case OpCode.LBLE:      { name = "LBLE"; }
+            case OpCode.SWI2:      { name = "SWI2"; }
+            case OpCode.CMPD_nn:   { name = "CMPD"; }
+            case OpCode.CMPY_nn:   { name = "CMPY"; }
+            case OpCode.LDY_nn:    { name = "LDY"; }
+            case OpCode.STY_nn:    { name = "STY"; }
+            case OpCode.CMPD_aa:   { name = "CMPD"; }
+            case OpCode.CMPY_aa:   { name = "CMPY"; }
+            case OpCode.LDY_aa:    { name = "LDY"; }
+            case OpCode.STY_aa:    { name = "STY"; }
+            case OpCode.CMPD_i:    { name = "CMPD"; }
+            case OpCode.CMPY_i:    { name = "CMPY"; }
+            case OpCode.LDY_i:     { name = "LDY"; }
+            case OpCode.STY_i:     { name = "STY"; }
+            case OpCode.CMPD_aaaa: { name = "CMPD"; }
+            case OpCode.CMPY_aaaa: { name = "CMPY"; }
+            case OpCode.LDY_aaaa:  { name = "LDY"; }
+            case OpCode.STY_aaaa:  { name = "STY"; }
+            
+            // PAGE3 0x11_
+            case OpCode.CMPU_nn:   { name = "CMPU"; }
+            case OpCode.CMPS_nn:   { name = "CMPS"; }
+            case OpCode.CMPU_aa:   { name = "CMPU"; }
+            case OpCode.CMPS_aa:   { name = "CMPS"; }
+            case OpCode.CMPU_i:    { name = "CMPU"; }
+            case OpCode.CMPS_i:    { name = "CMPS"; }
+            case OpCode.CMPU_aaaa: { name = "CMPU"; }
+            case OpCode.CMPS_aaaa: { name = "CMPS"; }
+            case OpCode.SWI3:      { name = "SWI3"; }
             
             default:               { Die(0x0A); }
         }
         return name;
     }
-    
-    
      
     // Direct support for a small subset of instructions that 
     // are used directly by the assembler:
@@ -823,14 +864,7 @@ unit Asm6809
     
     OpCode GetHALTInstruction()
     {
-        if (Is65uino)
-        {
-            return OpCode.HLT; // HLT (undocumented lock up)
-        }
-        else
-        {
-            return OpCode.STP; // STP (stop)
-        }
+        return OpCode.STP; // STP (stop)
     }
     
     OpCode GetJMPInstruction()
@@ -839,7 +873,7 @@ unit Asm6809
     }
     OpCode GetJMPIndexInstruction()
     {
-        return OpCode.sJMP_inn;
+        return OpCode.iJMP_iiii;
     }
     OpCode GetNOPInstruction()
     {
@@ -851,46 +885,48 @@ unit Asm6809
         OpCode code;
         switch (condition)
         {
-            case "Z":  { code = OpCode.BEQ_oo; }  // Zero
-            case "NZ": { code = OpCode.BNE_oo; }  // Not Zero
-            case "C":  { code = OpCode.BCS_oo; }  // Carry
-            case "NC": { code = OpCode.BCC_oo; }  // No Carry
-            case "V":  { code = OpCode.BVS_oo; }  // Overflow
-            case "NV": { code = OpCode.BVC_oo; }  // No Overflow
-            case "MI": { code = OpCode.BMI_oo; }  // Negative
-            case "PL": { code = OpCode.BPL_oo; }  // Not Negative
-            case "GE": { code = OpCode.BGE_oo; }  // Greater or Equal (signed)
-            case "LT": { code = OpCode.BLT_oo; }  // Less Than (signed)
-            case "GT": { code = OpCode.BGT_oo; }  // Greater Than (signed)
-            case "LE": { code = OpCode.BLE_oo; }  // Less or Equal (signed)
-            case "LO": { code = OpCode.BLO_oo; }  // Less Than (unsigned)
-            case "HS": { code = OpCode.BHS_oo; }  // Greater or Equal (unsigned)
-            case "":   { code = OpCode.BRA_oo; }  // Unconditional
+            case "Z":  { code = OpCode.LBEQ_oo; }  // Zero
+            case "NZ": { code = OpCode.LBNE_oo; }  // Not Zero
+            case "C":  { code = OpCode.LBCS_oo; }  // Carry
+            case "NC": { code = OpCode.LBCC_oo; }  // No Carry
+            case "V":  { code = OpCode.LBVS_oo; }  // Overflow
+            case "NV": { code = OpCode.LBVC_oo; }  // No Overflow
+            case "MI": { code = OpCode.LBMI_oo; }  // Negative
+            case "PL": { code = OpCode.LBPL_oo; }  // Not Negative
+            case "GE": { code = OpCode.LBGE_oo; }  // Greater or Equal (signed)
+            case "LT": { code = OpCode.LBLT_oo; }  // Less Than (signed)
+            case "GT": { code = OpCode.LBGT_oo; }  // Greater Than (signed)
+            case "LE": { code = OpCode.LBLE_oo; }  // Less or Equal (signed)
+            case "LO": { code = OpCode.LBLO_oo; }  // Less Than (unsigned)
+            case "HS": { code = OpCode.LBHS_oo; }  // Greater or Equal (unsigned)
+            case "":   { code = OpCode.LBRA_oo; }  // Unconditional
             default:   { NI(); }                  // Not Implemented
         }
         return code;
     }
     
-    
     OpCode GetJPInstruction(string condition)
     {
         switch (condition)
         {
-            case "Z":  { code = OpCode.BEQ_oo; }  // Zero
-            case "NZ": { code = OpCode.BNE_oo; }  // Not Zero
+            case "Z":  { code = OpCode.LBEQ_oo; }  // Zero
+            case "NZ": { code = OpCode.LBNE_oo; }  // Not Zero
             default:   { NI(); }
         }
         return OpCode.NOP;
     }
     
-    
     OpCode GetJSRInstruction()
     {
         return OpCode.JSR_aaaa; // JSR
     }
+    OpCode GetiJSRInstruction()
+    {
+        return OpCode.iJSR_iiii; // iJSR - fake internal instruction : JSR to an unresolved methodIndex
+    }
     OpCode GetiJMPInstruction()
     {
-        return OpCode.JMP_iiii; // iJMP - fake internal instruction : JMP to an unresolved methodIndex
+        return OpCode.iJMP_iiii; // iJMP - fake internal instruction : JMP to an unresolved methodIndex
     }
     
     bool IsMethodExitInstruction(OpCode opCode)
@@ -899,8 +935,6 @@ unit Asm6809
         {
             case OpCode.RTI:
             case OpCode.RTS:
-            case OpCode.STP:
-            case OpCode.HLT:
             case OpCode.iJMP_nn:
             case OpCode.sJMP_inn:
             {
@@ -968,8 +1002,6 @@ unit Asm6809
         }
         return false;
     }
-    
-    
     
     <byte> CurrentStream { get { return currentStream; } }
     <string,string> DebugInfo { get { return debugInfo; } }
@@ -1097,7 +1129,7 @@ unit Asm6809
             isRET = (last == Asm6502.GetRETInstruction()) || (last == Asm6502.GetRTIInstruction());
             if (!isRET && orHALT)
             {      
-                isRET = (last == Asm6502.GetHALTInstruction());
+                isRET = (last == Asm6809.GetHALTInstruction());
             }
         }    
         return isRET;
