@@ -347,10 +347,11 @@ unit TCGen
                         modified = true;
                         break;
                     }
-                    if ((instruction1.Name == "GGADD") && (instruction1.Offset == instruction0.Offset))
+                    if (instruction1.Name == "GGADD")
                     {   
-                        Print(" GGADDG");
+                        //Print(" GGADDG");
                         instruction1.Name    = "GGADDG";
+                        instruction1.Operand = UInt.FromBytes((instruction0.Offset).GetByte(0), (instruction0.Offset).GetByte(1));
                         currentStream[currentStream.Count-2] = instruction1;
                         DeleteInstruction(currentStream.Count-1);
                         modified = true;
@@ -1345,11 +1346,15 @@ unit TCGen
                 content = instruction.Name + width + " [" + OffsetToHex(GlobalStart + instruction.Offset) + "] [" +  OffsetToHex(GlobalStart + instruction.Offset2) + "]";
             }
             case "GGADD":
-            case "GGADDG":
             case "GGADDM":
             {
                 content = instruction.Name + width + " [" + OffsetToHex(GlobalStart + instruction.Offset) + "] [" +OffsetToHex(GlobalStart + instruction.Offset2) + "]";
             }
+            case "GGADDG":
+            {
+                content = instruction.Name + width + " [" + OffsetToHex(GlobalStart + instruction.Offset) + "] [" +OffsetToHex(GlobalStart + instruction.Offset2) + "] [" +OffsetToHex(GlobalStart + int(instruction.Operand)) + "]";
+            }
+            
             case "GGADDI":
             case "GGADDIM":
             {
@@ -2316,26 +2321,30 @@ unit TCGen
 #ifdef ZEROGLOBALS
                     int goffset  = instruction.Offset + GlobalStart;
                     int goffset2 = instruction.Offset2 + GlobalStart;
+                    int goffset3 = int(instruction.Operand) + GlobalStart;
 #else                    
                     int goffset = 255 - instruction.Offset;
                     int goffset2 = 255 - instruction.Offset2;
+                    int goffset3 = 255 - int(instruction.Operand);
 #endif
                     TCCode.PadOut("CLC", 0);
                     TCCode.PadOut("LDA " + GlobalToHex(goffset), 0);
                     TCCode.PadOut("ADC " + GlobalToHex(goffset2), 0);
-                    TCCode.PadOut("STA " + GlobalToHex(goffset), 0);
+                    TCCode.PadOut("STA " + GlobalToHex(goffset3), 0);
                     if (!instruction.IsByte)
                     {
 #ifdef ZEROGLOBALS
                         goffset++;
                         goffset2++;
+                        goffset3++;
 #else                    
                         goffset--;
                         goffset2--;
+                        goffset3--;
 #endif
                         TCCode.PadOut("LDA " + GlobalToHex(goffset), 0);
                         TCCode.PadOut("ADC " + GlobalToHex(goffset2), 0);
-                        TCCode.PadOut("STA " + GlobalToHex(goffset), 0);
+                        TCCode.PadOut("STA " + GlobalToHex(goffset3), 0);
                     }
                 }
                 case "LLADDL":
