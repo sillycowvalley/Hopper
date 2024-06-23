@@ -105,7 +105,7 @@ unit TCGen
     //    GIANDFF : PUSHG offset, PUSHI 0x00FF, AND
     //    GIANDFFC: PUSHG offset, PUSHI 0x00FF, AND, DECSP 1
     //    ILADD   : PUSHI, PUSHL offset, ADD
-    //    --
+    //    IGADD   : PUSHI, PUSHG offset, ADD
     //    ILSUB   : PUSHI, PUSHL offset, SUB
     //    --
     //    IADD    : PUSHI, ADD
@@ -390,7 +390,7 @@ unit TCGen
                     }
                     if ((instruction1.Name == "IGADD") && (instruction1.Offset == instruction0.Offset))
                     {   
-                        //Print(" INCGI");
+                        Print(" INCGI");
                         instruction1.Name    = "INCGI";
                         currentStream[currentStream.Count-2] = instruction1;
                         DeleteInstruction(currentStream.Count-1);
@@ -592,6 +592,38 @@ unit TCGen
                     DeleteInstruction(currentStream.Count-1);
                     modified = true;
                     break;
+                }
+            }
+                        
+            if ((instruction2.Name == "PUSHI") && (instruction1.Name == "PUSHG"))
+            {
+                if (instruction2.IsByte == instruction1.IsByte)
+                {
+                    if (instruction1.IsByte == instruction0.IsByte)
+                    {
+                        if ((instruction0.Name == "ADD"))
+                        {
+                            //Print(" IGADD3");
+                            instruction2.Offset = instruction1.Offset;
+                            instruction2.Name = "IGADD";
+                            currentStream[currentStream.Count-3] = instruction2;
+                            DeleteInstruction(currentStream.Count-2);
+                            DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
+                        if ((instruction0.Name == "SUB"))
+                        {
+                            Print(" IGSUB3");
+                            instruction2.Offset = instruction1.Offset;
+                            instruction2.Name = "IGSUB";
+                            currentStream[currentStream.Count-3] = instruction2;
+                            DeleteInstruction(currentStream.Count-2);
+                            DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
+                    }           
                 }
             }
             if ((instruction2.Name == "PUSHG") && (instruction1.Name == "PUSHI"))
@@ -801,7 +833,7 @@ unit TCGen
                     }
                     if (instruction0.Name == "SUB")
                     {
-                        //Print(" ILSUB3");
+                        Print(" ILSUB3");
                         instruction2.Offset = instruction1.Offset;
                         instruction2.Name = "ILSUB";
                         currentStream[currentStream.Count-3] = instruction2;
@@ -826,6 +858,27 @@ unit TCGen
         Instruction instruction0 = currentStream[currentStream.Count-1];
         loop
         {
+            if ((instruction3.Name == "PUSHI") && (instruction2.Name == "PUSHI") && (instruction1.Name == "PUSHL") && (instruction0.Name == "ADD"))
+            {
+                if (!instruction3.IsByte && instruction2.IsByte && !instruction1.IsByte && !instruction0.IsByte)    
+                {
+                    // PUSHI 0x0200, PUSHIB 0x00, PUSHL [BP+0xFE], ADD
+                    //Print(" PUSHI <-> PUSHIB");
+                    uint operand3 = instruction3.Operand;
+                    uint operand2 = instruction2.Operand;
+                    
+                    instruction3.Operand = (operand3 & 0xFF);
+                    instruction3.IsByte  = true;
+                    currentStream[currentStream.Count-4] = instruction3;
+                    
+                    instruction2.Operand = ((operand3 >> 8) & 0xFF) + (operand2 << 8);
+                    instruction2.IsByte  = false;
+                    currentStream[currentStream.Count-3] = instruction2;
+                        
+                    modified = true;
+                    break;
+                }
+            }
             if (instruction3.Offset == instruction0.Offset)
             {
                 if (instruction3.IsByte && instruction2.IsByte && instruction1.IsByte && instruction0.IsByte)
@@ -1486,6 +1539,11 @@ unit TCGen
             {
                 content = instruction.Name + width + " # 0x" + (instruction.Operand).ToHexString(instruction.IsByte ? 2 : 4) + " [BP+" + OffsetToHex(instruction.Offset) + "]";
             }
+            case "IGADD":
+            case "IGSUB":
+            {
+                content = instruction.Name + width + " # 0x" + (instruction.Operand).ToHexString(instruction.IsByte ? 2 : 4) + " [" + GlobalOperand(instruction.Offset) + "]";
+            }
             
             default:
             {
@@ -1815,15 +1873,11 @@ unit TCGen
                     }               
                 }
                 case "LT":
-                case "LTB":
-                {
-                    TCOps.CompareLT(instruction.IsByte);
-                }
+                case "LTB": { TCOps.CompareLT(instruction.IsByte); }
+                
                 case "LE":
-                case "LEB":
-                {
-                    TCOps.CompareLE(instruction.IsByte);
-                }
+                case "LEB": { TCOps.CompareLE(instruction.IsByte); }
+                    
                 case "LEX":
                 case "LEXB":
                 {
@@ -2149,7 +2203,7 @@ unit TCGen
                 case "2GB":
                 {
                     int goffset = instruction.Offset;
-                    TCCode.PadOut("LDA " + GlobalOperand(goffset), 0);                          
+                    TCCode.PadOut("LDA " + GlobalOperand(goffset), 0);
                     TCCode.PadOut("ASL", 0);
                     TCCode.PadOut("PHA", 0);
                     if (!instruction.IsByte)
@@ -2647,6 +2701,8 @@ unit TCGen
                         TCCode.PadOut("PHA", 0);
                     }
                 }
+                case "IGADD":
+                case "IGADDB":
                 case "GIADD":
                 case "GIADDB":
                 {
@@ -2659,6 +2715,28 @@ unit TCGen
                     {
                         TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
                         TCCode.PadOut("ADC " + GlobalOperand(goffset+1), 0);
+                        TCCode.PadOut("PHA", 0);
+                    }
+                }
+                case "IGSUB":
+                case "IGSUBB":
+                {
+                    int goffset = instruction.Offset;
+                    if (instruction.IsByte)
+                    {
+                        TCCode.PadOut("SEC", 0);
+                        TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                        TCCode.PadOut("SBC " + GlobalOperand(goffset), 0);
+                        TCCode.PadOut("PHA", 0);
+                    }
+                    else
+                    {
+                        TCCode.PadOut("SEC", 0);
+                        TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                        TCCode.PadOut("SBC " + GlobalOperand(goffset), 0);
+                        TCCode.PadOut("PHA", 0);
+                        TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
+                        TCCode.PadOut("SBC " + GlobalOperand(goffset+1), 0);
                         TCCode.PadOut("PHA", 0);
                     }
                 }
@@ -2677,7 +2755,7 @@ unit TCGen
                     {
                         TCCode.PadOut("SEC", 0);
                         TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
-                        TCCode.PadOut("SBC 0x0100, X // LSB", 0);
+                        TCCode.PadOut("SBC 0x0101, X // LSB", 0);
                         TCCode.PadOut("PHA", 0);
                         TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
                         TCCode.PadOut("SBC 0x0100, X // MSB", 0);
@@ -2707,175 +2785,12 @@ unit TCGen
                     }
                 }
                 case "LISHR":
-                case "LISHRB":
-                {
-                    byte shift = (instruction.Operand).GetByte(0);
-                    if (instruction.IsByte && (shift >= 8))
-                    {
-                        TCCode.PadOut("LDA # 0x00", 0);
-                        TCCode.PadOut("PHA", 0);
-                    }
-                    else if (!instruction.IsByte && (shift >= 16))
-                    {
-                        TCCode.PadOut("LDA # 0x00", 0);
-                        TCCode.PadOut("PHA", 0);
-                        TCCode.PadOut("PHA", 0);
-                    }
-                    else if (shift == 0)
-                    {
-                        TCCode.BPOffset(instruction.Offset, "X", instruction.IsByte); 
-                        if (instruction.IsByte)
-                        {
-                            TCCode.PadOut("LDA 0x0100, X", 0);
-                            TCCode.PadOut("PHA", 0);
-                        }
-                        else
-                        {
-                            TCCode.PadOut("LDA 0x0101, X // LSB", 0);
-                            TCCode.PadOut("PHA", 0);
-                            TCCode.PadOut("LDA 0x0100, X // MSB", 0);
-                            TCCode.PadOut("PHA", 0);
-                        }   
-                    }
-                    else
-                    {
-                        TCCode.BPOffset(instruction.Offset, "Y", instruction.IsByte); 
-                        if (instruction.IsByte)
-                        {
-                            TCCode.PadOut("LDA 0x0100, Y", 0);
-                            TCCode.PadOut("STA ZP.NEXTL", 0);
-                        }
-                        else
-                        {
-                            TCCode.PadOut("LDA 0x0101, Y // LSB", 0);
-                            TCCode.PadOut("STA ZP.NEXTL", 0);
-                            TCCode.PadOut("LDA 0x0100, Y // MSB", 0);
-                            TCCode.PadOut("STA ZP.NEXTH", 0);
-                        }
-                        TCCode.PadOut("LDX # 0x" + shift.ToHexString(2), 0);
-                        TCCode.PadOut("loop", 0);
-                        TCCode.PadOut("{", 0);
-                        TCCode.PadOut("if (Z) { break; }", 1);
-                        if (instruction.IsByte)
-                        {
-                            TCCode.PadOut("LSR ZP.NEXTL", 1);
-                        }
-                        else
-                        {
-                            TCCode.PadOut("LSR ZP.NEXTH", 1);
-                            TCCode.PadOut("ROR ZP.NEXTL", 1);
-                        }
-                        TCCode.PadOut("DEX", 1);
-                        TCCode.PadOut("}", 0);
-                        TCCode.PadOut("LDA ZP.NEXTL", 0);
-                        TCCode.PadOut("PHA", 0);
-                        if (!instruction.IsByte)
-                        {
-                            TCCode.PadOut("LDA ZP.NEXTH", 0);
-                            TCCode.PadOut("PHA", 0);
-                        }
-                    }
-                }
+                case "LISHRB": { generateLISHR(instruction); }
+                
                 case "LISHL":
-                case "LISHLB":
-                {
-                    byte shift = (instruction.Operand).GetByte(0);
-                    if (instruction.IsByte && (shift >= 8))
-                    {
-                        TCCode.PadOut("LDA # 0x00", 0);
-                        TCCode.PadOut("PHA", 0);
-                    }
-                    else if (!instruction.IsByte && (shift >= 16))
-                    {
-                        TCCode.PadOut("LDA # 0x00", 0);
-                        TCCode.PadOut("PHA", 0);
-                        TCCode.PadOut("PHA", 0);
-                    }
-                    else if (shift == 0)
-                    {
-                        TCCode.BPOffset(instruction.Offset, "X", instruction.IsByte); 
-                        if (instruction.IsByte)
-                        {
-                            TCCode.PadOut("LDA 0x0100, X", 0);
-                            TCCode.PadOut("PHA", 0);
-                        }
-                        else
-                        {
-                            TCCode.PadOut("LDA 0x0101, X, LSB", 0);
-                            TCCode.PadOut("PHA", 0);
-                            TCCode.PadOut("LDA 0x0100, X", 0);
-                            TCCode.PadOut("PHA", 0);
-                        }   
-                    }
-                    else
-                    {
-                        TCCode.BPOffset(instruction.Offset, "Y", instruction.IsByte); 
-                        
-                        if (instruction.IsByte)
-                        {
-                            TCCode.PadOut("LDA 0x0100, Y", 0);
-                            TCCode.PadOut("STA ZP.NEXTL", 0);
-                        }
-                        else
-                        {
-                            TCCode.PadOut("LDA 0x0101, Y // LSB", 0);
-                            TCCode.PadOut("STA ZP.NEXTL", 0);
-                            TCCode.PadOut("LDA 0x0100, Y // MSB", 0);
-                            TCCode.PadOut("STA ZP.NEXTH", 0);
-                        }
-                        TCCode.PadOut("LDX # 0x" + shift.ToHexString(2), 0);
-                        TCCode.PadOut("loop", 0);
-                        TCCode.PadOut("{", 0);
-                        TCCode.PadOut("if (Z) { break; }", 1);
-                        if (instruction.IsByte)
-                        {
-                            TCCode.PadOut("ASL ZP.NEXTL", 1);
-                        }
-                        else
-                        {
-                            TCCode.PadOut("ASL ZP.NEXTL", 1);
-                            TCCode.PadOut("ROL ZP.NEXTH", 1);
-                        }
-                        TCCode.PadOut("DEX", 1);
-                        TCCode.PadOut("}", 0);
-                        TCCode.PadOut("LDA ZP.NEXTL", 0);
-                        TCCode.PadOut("PHA", 0);
-                        if (!instruction.IsByte)
-                        {
-                            TCCode.PadOut("LDA ZP.NEXTH", 0);
-                            TCCode.PadOut("PHA", 0);
-                        }
-                    }
-                }
-                case "LIGTI":
-                {
-                    TCCode.BPOffset(instruction.Offset, "Y", false); 
-                    TCCode.PadOut("SEC", 0);
-                    TCCode.PadOut("LDA 0x0101, Y // LSB", 0);
-                    TCCode.PadOut("SBC # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
-                    TCCode.PadOut("STA ZP.TOPL", 0);
-                    TCCode.PadOut("LDA 0x0100, Y // MSB", 0);
-                    TCCode.PadOut("SBC # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
-                    TCCode.PadOut("STA ZP.TOPH", 0);
-                    TCCode.PadOut("ASL // sign bit into carry", 0); 
-                              
-                    TCCode.PadOut("LDX #0  // TOP <= 0", 0);
-                    TCCode.PadOut("loop", 0);
-                    TCCode.PadOut("{", 0);
-                    TCCode.PadOut("if (C) { break; }", 1);
-                    TCCode.PadOut("//  0 or positive", 1);
-                    TCCode.PadOut("LDA ZP.TOPL", 1);
-                    TCCode.PadOut("if (Z)", 1);
-                    TCCode.PadOut("{", 1);
-                    TCCode.PadOut("LDA ZP.TOPH", 2);
-                    TCCode.PadOut("if (Z) { break; }", 2);
-                    TCCode.PadOut("}", 1);
-                    TCCode.PadOut("LDX #1", 1);
-                    TCCode.PadOut("break;", 1);
-                    TCCode.PadOut("}", 0);
-
-                    TCCode.PadOut("PHX", 0); // result in X
-                }
+                case "LISHLB": { generateLISHL(instruction); }
+                
+                case "LIGTI":  { generateLIGTI(instruction); }
                 
                 default:
                 {
@@ -2885,5 +2800,174 @@ unit TCGen
         }
         currentStream.Clear();
         InStreamMode = true;
+    }
+    
+    generateLISHR(Instruction instruction)
+    {
+        byte shift = (instruction.Operand).GetByte(0);
+        if (instruction.IsByte && (shift >= 8))
+        {
+            TCCode.PadOut("LDA # 0x00", 0);
+            TCCode.PadOut("PHA", 0);
+        }
+        else if (!instruction.IsByte && (shift >= 16))
+        {
+            TCCode.PadOut("LDA # 0x00", 0);
+            TCCode.PadOut("PHA", 0);
+            TCCode.PadOut("PHA", 0);
+        }
+        else if (shift == 0)
+        {
+            TCCode.BPOffset(instruction.Offset, "X", instruction.IsByte); 
+            if (instruction.IsByte)
+            {
+                TCCode.PadOut("LDA 0x0100, X", 0);
+                TCCode.PadOut("PHA", 0);
+            }
+            else
+            {
+                TCCode.PadOut("LDA 0x0101, X // LSB", 0);
+                TCCode.PadOut("PHA", 0);
+                TCCode.PadOut("LDA 0x0100, X // MSB", 0);
+                TCCode.PadOut("PHA", 0);
+            }   
+        }
+        else
+        {
+            TCCode.BPOffset(instruction.Offset, "Y", instruction.IsByte); 
+            if (instruction.IsByte)
+            {
+                TCCode.PadOut("LDA 0x0100, Y", 0);
+                TCCode.PadOut("STA ZP.NEXTL", 0);
+            }
+            else
+            {
+                TCCode.PadOut("LDA 0x0101, Y // LSB", 0);
+                TCCode.PadOut("STA ZP.NEXTL", 0);
+                TCCode.PadOut("LDA 0x0100, Y // MSB", 0);
+                TCCode.PadOut("STA ZP.NEXTH", 0);
+            }
+            TCCode.PadOut("LDX # 0x" + shift.ToHexString(2), 0);
+            TCCode.PadOut("loop", 0);
+            TCCode.PadOut("{", 0);
+            TCCode.PadOut("if (Z) { break; }", 1);
+            if (instruction.IsByte)
+            {
+                TCCode.PadOut("LSR ZP.NEXTL", 1);
+            }
+            else
+            {
+                TCCode.PadOut("LSR ZP.NEXTH", 1);
+                TCCode.PadOut("ROR ZP.NEXTL", 1);
+            }
+            TCCode.PadOut("DEX", 1);
+            TCCode.PadOut("}", 0);
+            TCCode.PadOut("LDA ZP.NEXTL", 0);
+            TCCode.PadOut("PHA", 0);
+            if (!instruction.IsByte)
+            {
+                TCCode.PadOut("LDA ZP.NEXTH", 0);
+                TCCode.PadOut("PHA", 0);
+            }
+        }
+    }
+    generateLISHL(Instruction instruction)
+    {
+        byte shift = (instruction.Operand).GetByte(0);
+        if (instruction.IsByte && (shift >= 8))
+        {
+            TCCode.PadOut("LDA # 0x00", 0);
+            TCCode.PadOut("PHA", 0);
+        }
+        else if (!instruction.IsByte && (shift >= 16))
+        {
+            TCCode.PadOut("LDA # 0x00", 0);
+            TCCode.PadOut("PHA", 0);
+            TCCode.PadOut("PHA", 0);
+        }
+        else if (shift == 0)
+        {
+            TCCode.BPOffset(instruction.Offset, "X", instruction.IsByte); 
+            if (instruction.IsByte)
+            {
+                TCCode.PadOut("LDA 0x0100, X", 0);
+                TCCode.PadOut("PHA", 0);
+            }
+            else
+            {
+                TCCode.PadOut("LDA 0x0101, X, LSB", 0);
+                TCCode.PadOut("PHA", 0);
+                TCCode.PadOut("LDA 0x0100, X", 0);
+                TCCode.PadOut("PHA", 0);
+            }   
+        }
+        else
+        {
+            TCCode.BPOffset(instruction.Offset, "Y", instruction.IsByte); 
+            
+            if (instruction.IsByte)
+            {
+                TCCode.PadOut("LDA 0x0100, Y", 0);
+                TCCode.PadOut("STA ZP.NEXTL", 0);
+            }
+            else
+            {
+                TCCode.PadOut("LDA 0x0101, Y // LSB", 0);
+                TCCode.PadOut("STA ZP.NEXTL", 0);
+                TCCode.PadOut("LDA 0x0100, Y // MSB", 0);
+                TCCode.PadOut("STA ZP.NEXTH", 0);
+            }
+            TCCode.PadOut("LDX # 0x" + shift.ToHexString(2), 0);
+            TCCode.PadOut("loop", 0);
+            TCCode.PadOut("{", 0);
+            TCCode.PadOut("if (Z) { break; }", 1);
+            if (instruction.IsByte)
+            {
+                TCCode.PadOut("ASL ZP.NEXTL", 1);
+            }
+            else
+            {
+                TCCode.PadOut("ASL ZP.NEXTL", 1);
+                TCCode.PadOut("ROL ZP.NEXTH", 1);
+            }
+            TCCode.PadOut("DEX", 1);
+            TCCode.PadOut("}", 0);
+            TCCode.PadOut("LDA ZP.NEXTL", 0);
+            TCCode.PadOut("PHA", 0);
+            if (!instruction.IsByte)
+            {
+                TCCode.PadOut("LDA ZP.NEXTH", 0);
+                TCCode.PadOut("PHA", 0);
+            }
+        }
+    }
+    generateLIGTI(Instruction instruction)
+    {
+        TCCode.BPOffset(instruction.Offset, "Y", false); 
+        TCCode.PadOut("SEC", 0);
+        TCCode.PadOut("LDA 0x0101, Y // LSB", 0);
+        TCCode.PadOut("SBC # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+        TCCode.PadOut("STA ZP.TOPL", 0);
+        TCCode.PadOut("LDA 0x0100, Y // MSB", 0);
+        TCCode.PadOut("SBC # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
+        TCCode.PadOut("STA ZP.TOPH", 0);
+        TCCode.PadOut("ASL // sign bit into carry", 0); 
+                  
+        TCCode.PadOut("LDX #0  // TOP <= 0", 0);
+        TCCode.PadOut("loop", 0);
+        TCCode.PadOut("{", 0);
+        TCCode.PadOut("if (C) { break; }", 1);
+        TCCode.PadOut("//  0 or positive", 1);
+        TCCode.PadOut("LDA ZP.TOPL", 1);
+        TCCode.PadOut("if (Z)", 1);
+        TCCode.PadOut("{", 1);
+        TCCode.PadOut("LDA ZP.TOPH", 2);
+        TCCode.PadOut("if (Z) { break; }", 2);
+        TCCode.PadOut("}", 1);
+        TCCode.PadOut("LDX #1", 1);
+        TCCode.PadOut("break;", 1);
+        TCCode.PadOut("}", 0);
+
+        TCCode.PadOut("PHX", 0); // result in X
     }
 }

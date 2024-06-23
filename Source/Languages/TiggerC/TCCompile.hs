@@ -443,6 +443,11 @@ unit TCCompile
             }
             else if (token.Type == TokenType.SYM_LBRACE)
             {
+                if (FirstPass)
+                {
+                    TCSymbols.InitializeFunctionCalls(functionName);
+                }
+                
                 generate = true;
                 TCCode.EmitDeferred();
                 

@@ -118,9 +118,9 @@ unit TCSymbols
     
     ExportFunctionTable()
     {
-        int maxDepth = 5;
+        int maxDepth = 2;
         PadOut("/*", 0);
-        PadOut("  Function dependency graph:", 0);
+        PadOut("  Functions called:", 0);
         PadOut("", 0);
         functionsToCompile["main"] = false;
         string name;
@@ -316,13 +316,14 @@ unit TCSymbols
         } // loop
         return success;
     }
-    AddFunctionCall(string name, string callName)
+    InitializeFunctionCalls(string name)
     {
         <string, bool> calls;
-        if (functionCalls.Contains(name))
-        {
-            calls = functionCalls[name];
-        }
+        functionCalls[name] = calls;
+    }
+    AddFunctionCall(string name, string callName)
+    {
+        <string, bool> calls = functionCalls[name];
         if (!calls.Contains(callName))
         {
             calls[callName] = true;
