@@ -205,12 +205,21 @@ unit TCCompile
         }
         if ((token.Lexeme == "CPU_6502") || (token.Lexeme == "CPU_65UINO"))
         {
-            Error(token.SourcePath, token.Line, "TiggerC only supports CPU_65C02S");
+            Error(token.SourcePath, token.Line, "Tigger C only supports CPU_65C02S");
             return false;
         }
         if (token.Lexeme == "EXPERIMENTAL")
         {
             IsExperimental = true;
+        }
+        if (token.Lexeme == "ZEROPAGEGLOBALS")
+        {
+            if (globalDefinitions.Count != 0)
+            {
+                Error(token.SourcePath, token.Line, "Must be defined before the first global variable definition");
+                return false;
+            }
+            ZeroPageGlobals = true;
         }
         DefineSymbol(token.Lexeme);
         
@@ -238,6 +247,7 @@ unit TCCompile
         {
             return false;
         }
+        uint slotSize = (IsByteType(tp) ? 1 : 2);
     
         Token token = TCScanner.Current();
         if (token.Type != TokenType.IDENTIFIER)
@@ -245,8 +255,13 @@ unit TCCompile
             Error(token.SourcePath, token.Line, "expected identifier after type");
             return false;
         }
-    
         string name = token.Lexeme;
+        
+        if (GlobalOffset + slotSize > GlobalLimit)
+        {
+            Error(token.SourcePath, token.Line, "global space limit (" + (GlobalLimit).ToString() + " bytes) exceeded");
+            return false;
+        }
         if (!DefineVariable(tp, name, int(GlobalOffset), true))
         {
             return false;
@@ -272,7 +287,7 @@ unit TCCompile
         
         BlockLevel--;
         
-        GlobalOffset = GlobalOffset + (IsByteType(tp) ? 1 : 2);
+        GlobalOffset = GlobalOffset + slotSize;
             
         token = TCScanner.Current();
         if (token.Type == TokenType.SYM_EQ)

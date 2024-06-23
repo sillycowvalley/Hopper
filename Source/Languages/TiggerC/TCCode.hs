@@ -4,10 +4,6 @@ unit TCCode
     uses "TCOps"
     uses "TCGen"
     
-#ifdef ZEROGLOBALS
-    const byte GlobalStart = 0x70;
-#endif    
-    
     file codeFile;
     string codePath;
     
@@ -22,11 +18,52 @@ unit TCCode
     uint line;
     uint extra;
     
+    // This is where you define the location and limit of global variables:
+    
+    const uint globalZeroPageStart = 0x70;
+    const uint globalZeroPageLimit = (0xDF - 0x70 + 1);
+    
+    const uint globalAreaStart = 0x0300;
+    const uint globalAreaLimit = 256;
+    
+    bool useZeroPageGlobals = false; // #define ZEROPAGEGLOBALS in .tc source will also define this as true
+    
+    uint globalStart = globalAreaStart;
+    uint globalLimit = globalAreaLimit;
+    
+    
+    bool ZeroPageGlobals 
+    { 
+        get { return useZeroPageGlobals; } 
+        set 
+        { 
+            useZeroPageGlobals = value; 
+            globalStart = value ? globalZeroPageStart : globalAreaStart;
+            globalLimit = value ? globalZeroPageLimit : globalAreaLimit;
+        } 
+    }
+    uint GlobalLimit { get { return globalLimit; } }
+    
     bool generating;
     bool Generating { get { return generating; } set { generating = value; } }
     
     bool inStreamMode;
     bool InStreamMode { get { return inStreamMode; } set { inStreamMode = value; } }
+    
+    string GlobalOperand(int offset)
+    {
+        uint address = globalStart + UInt.FromBytes(offset.GetByte(0), offset.GetByte(1));
+        string operand;
+        if (ZeroPageGlobals)
+        {
+            operand = "0x" + address.ToHexString(2);
+        }
+        else
+        {
+            operand = "0x" + address.ToHexString(4);
+        }
+        return operand;
+    }
     
     PadOut(string text, int delta)
     {
@@ -34,16 +71,6 @@ unit TCCode
         {
             Die(0x0B);
         }
-        switch (text)
-        {
-            case "INX": { xOffset++; text = text + offsetComment("X"); }
-            case "DEX": { xOffset--; text = text + offsetComment("X"); }
-            case "INY": { yOffset++; text = text + offsetComment("Y"); }
-            case "DEY": { yOffset--; text = text + offsetComment("Y"); }
-        }
-        if (text.EndsWith(", X")) { text = text + offsetComment("X"); }
-        if (text.EndsWith(", Y")) { text = text + offsetComment("Y"); }
-        
         if (generating)
         {
             if (text.Length != 0)
@@ -202,7 +229,7 @@ unit TCCode
     {
         PadOut("", 0);
         PadOut("// POP BP", 0);
-        PadOut("PLX", 0); OffsetReset("X");
+        PadOut("PLX", 0);
         PadOut("STX ZP.BP", 0);
         
         if (comment.Length != 0)
@@ -360,7 +387,7 @@ unit TCCode
         
         PadOut("", 0);
         PadOut("// POP BP", 0);
-        PadOut("PLX", 0); OffsetReset("X");
+        PadOut("PLX", 0);
         PadOut("STX ZP.BP", 0);
     }
     PopBytes(string comment)
@@ -376,85 +403,11 @@ unit TCCode
             PadOut("// " + comment + " bytes to pop: " + bytes.ToString(), 0);
             for (byte i=0; i < bytes; i++)
             {
-                PadOut("PLY", 0); OffsetReset("Y");// leaving A and X for potential return values
+                PadOut("PLY", 0); // leaving A and X for potential return values
             }
         }
     }
-    bool yOffsetGood;
-    bool xOffsetGood;
-    int xOffset;
-    int yOffset;
-    
-    string offsetComment(string register)
-    {
-        if (InStreamMode)
-        {
-            Die(0x0B);
-        }
-        if (register == "X")
-        {
-            if (!xOffsetGood)
-            {
-                return " // X invalid";    
-            }
-            if (xOffset < 0)
-            {
-                return " //  X = BP" + xOffset.ToString();
-            }
-            return " //  X = BP+" + xOffset.ToString();
-        }
-        if (!yOffsetGood)
-        {
-            return " // Y invalid";    
-        }
-        if (yOffset < 0)
-        {
-            return " //  Y = BP" + yOffset.ToString();
-        }
-        return " //  Y = BP+" + yOffset.ToString();
-    }
-    OffsetReset(string register)
-    {
-        if (register == "X")
-        {
-            xOffsetGood = false;
-        }
-        else
-        {
-            yOffsetGood = false;
-        }
-    }
-    
-    
-    OffsetSet(string toRegister, string fromRegister)
-    {
-        if (InStreamMode)
-        {
-            Die(0x0B);
-        }
-        if ((toRegister == "X") && (fromRegister == "Y"))
-        {
-            if (!yOffsetGood)
-            {
-                Die(0x0B);
-            }
-            xOffset = yOffset;
-            xOffsetGood = true;
-        }
-        else if ((toRegister == "Y") && (fromRegister == "X"))
-        {
-            if (!xOffsetGood)
-            {
-                Die(0x0B);
-            }
-            yOffset = xOffset;
-            yOffsetGood = true;
-        }
-        else
-        {
-            Die(0x0B);
-        }
-    }
+
     BPOffset(int offset, string register)
     {
         if (InStreamMode)
@@ -474,124 +427,28 @@ unit TCCode
             desired = -offset;
             desired += 3; // BP (1 byte) and return address (2 bytes)
         }
-        loop
+        if (desired == 0)
         {
-            if ((xOffsetGood && (register == "X"))  || (yOffsetGood && (register == "Y")))
+            PadOut("LD" + register + " ZP.BP", 0);
+        }
+        else
+        {
+            PadOut("LDA ZP.BP", 0);
+            if (desired < 0)
             {
-                
-                
-                int actual;
-                if (register == "X")
-                {
-                    actual = xOffset;
-                }
-                if (register == "Y")
-                {
-                    actual = yOffset;
-                }
-                
-                string comment = "// Before: BP";
-                if (actual < 0)
-                {
-                    comment += actual.ToString();    
-                }
-                else
-                {
-                    comment += "+" + actual.ToString();
-                }
-                comment += "  Desired: BP";
-                if (desired < 0)
-                {
-                    comment += desired.ToString();    
-                }
-                else
-                {
-                    comment += "+" + desired.ToString();    
-                }
-                PadOut(comment, 0);
-#ifdef XY_TRACKING                
-                int delta = desired - actual;
-                if (delta == 0)
-                {
-                    //PrintLn();
-                    //Print(comment + "   ->  " + delta.ToString());
-                    break;
-                }
-                else if (delta == -1)
-                {
-                    //PrintLn();
-                    //Print(comment + "   ->  " + delta.ToString());
-                    PadOut("DE" + register, 0);
-                    break;
-                }
-                else if (delta == +1)
-                {
-                    //PrintLn();
-                    //Print(comment + "   ->  " + delta.ToString());
-                    PadOut("IN" + register, 0);
-                    break;
-                }
-                else if (delta == -3)
-                {
-                    //PrintLn();
-                    //Print(comment + "   ->  " + delta.ToString());
-                    PadOut("DE" + register, 0);
-                    PadOut("DE" + register, 0);
-                    PadOut("DE" + register, 0);
-                    break;
-                }
-                else if (delta == +3)
-                {
-                    //PrintLn();
-                    //Print(comment + "   ->  " + delta.ToString());
-                    PadOut("DE" + register, 0);
-                    PadOut("DE" + register, 0);
-                    PadOut("DE" + register, 0);
-                    break;
-                }
-                else
-                {
-                    //PrintLn();
-                    //Print(comment + "   ->  " + delta.ToString());
-                }
-#endif
+                // locals
+                int negDesired = -desired;
+                PadOut("SEC", 0);
+                PadOut("SBC # 0x" + (negDesired.GetByte(0)).ToHexString(2), 0);
             }
-            
-            if (register == "X")
+            else if (desired > 0)
             {
-                xOffset = desired;
-                xOffsetGood = true;   
+                // arguments
+                PadOut("CLC", 0);
+                PadOut("ADC # 0x" + (desired.GetByte(0)).ToHexString(2), 0);
             }
-            else
-            {
-                yOffset = desired;
-                yOffsetGood = true;
-            }
-            
-            if (desired == 0)
-            {
-                PadOut("LD" + register + " ZP.BP" + offsetComment(register), 0);
-            }
-            else
-            {
-                PadOut("LDA ZP.BP", 0);
-                if (desired < 0)
-                {
-                    // locals
-                    int negDesired = -desired;
-                    PadOut("SEC", 0);
-                    PadOut("SBC # 0x" + (negDesired.GetByte(0)).ToHexString(2), 0);
-                }
-                else if (desired > 0)
-                {
-                    // arguments
-                    PadOut("CLC", 0);
-                    PadOut("ADC # 0x" + (desired.GetByte(0)).ToHexString(2), 0);
-                }
-                PadOut("TA" + register + offsetComment(register), 0);
-            }
-            break;
-        } // loop
+            PadOut("TA" + register, 0);
+        }
     }
     string nameWithOffset(string name, int offset, bool isGlobal)
     {
@@ -617,27 +474,13 @@ unit TCCode
         PadOut("// PUSH " + nameWithOffset(name, offset, isGlobal) + Bitness(isByte), 0);
         if (isGlobal)
         {
-#ifdef ZEROGLOBALS
-            offset += GlobalStart;
-            PadOut("LDA 0x"+ (offset.GetByte(0)).ToHexString(2), 0);  
+            PadOut("LDA " + GlobalOperand(offset), 0);  
             PadOut("PHA", 0);
             if (!isByte)
             {
-                offset++;
-                PadOut("LDA 0x"+ (offset.GetByte(0)).ToHexString(2), 0);  
+                PadOut("LDA " + GlobalOperand(offset+1), 0);  
                 PadOut("PHA", 0);
             }
-#else
-            offset = 255 - offset;
-            PadOut("LDA 0x01"+ (offset.GetByte(0)).ToHexString(2), 0);  
-            PadOut("PHA", 0);
-            if (!isByte)
-            {
-                offset--;
-                PadOut("LDA 0x01"+ (offset.GetByte(0)).ToHexString(2), 0);  
-                PadOut("PHA", 0);
-            }
-#endif                        
         }
         else
         {
@@ -657,29 +500,13 @@ unit TCCode
         PadOut("// POP " + nameWithOffset(name, offset, isGlobal) + Bitness(isByte), 0);
         if (isGlobal)
         {
-#ifdef ZEROGLOBALS
-            offset += GlobalStart;
             if (!isByte)
             {
-                offset++;
                 PadOut("PLA", 0);
-                PadOut("STA 0x"+ (offset.GetByte(0)).ToHexString(2), 0);  
-                offset--;
+                PadOut("STA " + GlobalOperand(offset+1), 0);  
             }
             PadOut("PLA", 0);
-            PadOut("STA 0x"+ (offset.GetByte(0)).ToHexString(2), 0);  
-#else
-            offset = 255 - offset;
-            if (!isByte)
-            {
-                offset--;
-                PadOut("PLA", 0);
-                PadOut("STA 0x01"+ (offset.GetByte(0)).ToHexString(2), 0);  
-                offset++;
-            }
-            PadOut("PLA", 0);
-            PadOut("STA 0x01"+ (offset.GetByte(0)).ToHexString(2), 0);  
-#endif
+            PadOut("STA " + GlobalOperand(offset), 0);  
         }
         else
         {
@@ -703,7 +530,7 @@ unit TCCode
         PadOut("PLA", 0);
         if (!isByte)
         {
-            PadOut("PLX", 0); OffsetReset("X");
+            PadOut("PLX", 0);
             PadOut("PHX", 0);
             PadOut("PHA", 0);
             PadOut("PHX", 0);
@@ -853,7 +680,7 @@ unit TCCode
         PadOut("// read memory" +  Bitness(dataIsByte), 0);
         if (indexIsByte)
         {
-            PadOut("PLX", 0); OffsetReset("X");
+            PadOut("PLX", 0);
             PadOut("LDA 0x00, X", 0);
             PadOut("PHA", 0);    
             if (!dataIsByte)
@@ -873,7 +700,7 @@ unit TCCode
             PadOut("PHA", 0);
             if (!dataIsByte)
             {
-                PadOut("LDX # 1", 0); OffsetReset("X");
+                PadOut("LDX # 1", 0);
                 PadOut("LDA [ZP.TOP], X", 0);
                 PadOut("PHA", 0);
             }
@@ -891,7 +718,7 @@ unit TCCode
                 PadOut("STA ZP.ACCH", 0);     
             }   
             PadOut("PLA", 0); 
-            PadOut("PLX", 0); OffsetReset("X");
+            PadOut("PLX", 0);
             PadOut("STA 0x00, X", 0);
             if (!dataIsByte)
             {
@@ -918,7 +745,7 @@ unit TCCode
             if (!dataIsByte)
             {
                 PadOut("LDA ZP.ACCH", 0);     
-                PadOut("LDX # 1", 0); OffsetReset("X");
+                PadOut("LDX # 1", 0);
                 PadOut("LDA [ZP.TOP], X", 0);
             }
         }

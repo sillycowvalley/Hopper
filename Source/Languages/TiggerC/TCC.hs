@@ -1,9 +1,5 @@
 program TCCompile
 {
-    //#define XY_TRACKING
-    
-    #define ZEROGLOBALS
-    
     uses "/Source/System/System"
     uses "/Source/System/Diagnostics"
     
@@ -15,6 +11,7 @@ program TCCompile
     
     bool isExperimental;
     bool IsExperimental { get { return isExperimental; } set { isExperimental = value; } }
+    
     bool isOptimized;
     bool IsOptimized { get { return isOptimized; } set { isOptimized = value; } }
     

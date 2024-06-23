@@ -1091,8 +1091,6 @@ unit TCGen
         enablePeephole = true;
         InStreamMode = true;
         currentStream.Clear();
-        OffsetReset("X");
-        OffsetReset("Y");
     }
     
     <Instruction> CaptureStream()
@@ -1139,8 +1137,6 @@ unit TCGen
         }
         Generate();
         InStreamMode = false;
-        OffsetReset("X");
-        OffsetReset("Y");
     }
     
     LoopExit(string comment)
@@ -1172,28 +1168,6 @@ unit TCGen
     {
         byte b = offset.GetByte(0);
         return "0x" + b.ToHexString(2);
-    }
-    
-    
-    string GlobalToHex(int offset)
-    {
-#ifdef ZEROGLOBALS
-        byte b = offset.GetByte(0);
-        return "0x" + b.ToHexString(2);
-#else    
-        byte b = offset.GetByte(0);
-        return "0x01" + b.ToHexString(2);
-#endif
-    }
-    string GlobalToHex(uint offset)
-    {
-#ifdef ZEROGLOBALS
-        byte b = offset.GetByte(0);
-        return "0x" + b.ToHexString(2);
-#else    
-        byte b = offset.GetByte(0);
-        return "0x01" + b.ToHexString(2);
-#endif
     }
     
     string ToString(Instruction instruction)
@@ -1232,19 +1206,11 @@ unit TCGen
             }
             case "PUSHG":
             {
-#ifdef ZEROGLOBALS
-                content = "PUSHG"+width+" [" + OffsetToHex(GlobalStart + instruction.Offset) + "]";
-#else                
-                content = "PUSHG"+width+" [0x0100 + " + OffsetToHex(instruction.Offset) + "]";
-#endif
+                content = "PUSHG"+width+" [" + GlobalOperand(instruction.Offset) + "]";
             }
             case "POPG":
             {
-#ifdef ZEROGLOBALS
-                content = "POPG"+width+" [" + OffsetToHex(GlobalStart + instruction.Offset) + "]";
-#else
-                content = "POPG"+width+" [0x0100 + " + OffsetToHex(instruction.Offset) + "]";
-#endif
+                content = "POPG"+width+" [" + GlobalOperand(instruction.Offset) + "]";
             }
             case "PUSHM":
             {
@@ -1325,12 +1291,12 @@ unit TCGen
             case "LGADD":
             case "LGADDM":
             {
-                content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] [0x" + (instruction.Offset2).ToHexString(2) + "]";
+                content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] [" + GlobalOperand(instruction.Offset2) + "]";
             }
             case "LGADDI":
             case "LGADDIM":
             {
-                content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] [0x" + (instruction.Offset2).ToHexString(2) + "] # 0x" + (instruction.Operand).ToHexString(2);
+                content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] [" + GlobalOperand(instruction.Offset2) + "] # 0x" + (instruction.Operand).ToHexString(2);
             }
             case "2L":
             {
@@ -1343,22 +1309,22 @@ unit TCGen
             }
             case "2G":
             {
-                content = instruction.Name + width + " [" + OffsetToHex(GlobalStart + instruction.Offset) + "] [" +  OffsetToHex(GlobalStart + instruction.Offset2) + "]";
+                content = instruction.Name + width + " [" + GlobalOperand(instruction.Offset) + "] [" +  GlobalOperand(instruction.Offset2) + "]";
             }
             case "GGADD":
             case "GGADDM":
             {
-                content = instruction.Name + width + " [" + OffsetToHex(GlobalStart + instruction.Offset) + "] [" +OffsetToHex(GlobalStart + instruction.Offset2) + "]";
+                content = instruction.Name + width + " [" + GlobalOperand(instruction.Offset) + "] [" +GlobalOperand(instruction.Offset2) + "]";
             }
             case "GGADDG":
             {
-                content = instruction.Name + width + " [" + OffsetToHex(GlobalStart + instruction.Offset) + "] [" +OffsetToHex(GlobalStart + instruction.Offset2) + "] [" +OffsetToHex(GlobalStart + int(instruction.Operand)) + "]";
+                content = instruction.Name + width + " [" + GlobalOperand(instruction.Offset) + "] [" +GlobalOperand(instruction.Offset2) + "] [" +GlobalOperand(int(instruction.Operand)) + "]";
             }
             
             case "GGADDI":
             case "GGADDIM":
             {
-                content = instruction.Name + width + " [" + OffsetToHex(GlobalStart + instruction.Offset) + "] [" +OffsetToHex(GlobalStart + instruction.Offset2) + "] # 0x" + (instruction.Operand).ToHexString(2);
+                content = instruction.Name + width + " [" + GlobalOperand(instruction.Offset) + "] [" +GlobalOperand(instruction.Offset2) + "] # 0x" + (instruction.Operand).ToHexString(2);
             }
             case "INCLI":
             case "STLI":
@@ -1380,7 +1346,7 @@ unit TCGen
             case "GIADD":
             case "GILTX":
             {
-                content = instruction.Name + width + " [" + OffsetToHex(GlobalStart + instruction.Offset) + "] # 0x" + (instruction.Operand).ToHexString(instruction.IsByte ? 2 : 4);
+                content = instruction.Name + width + " [" + GlobalOperand(instruction.Offset) + "] # 0x" + (instruction.Operand).ToHexString(instruction.IsByte ? 2 : 4);
             }
             case "IADD":
             {
@@ -1462,24 +1428,12 @@ unit TCGen
                 case "ZEROG":
                 case "ZEROGB":
                 {
-#ifdef ZEROGLOBALS                    
-                    operand = operand + GlobalStart;
-                    TCCode.PadOut("STZ " + GlobalToHex(operand), 0);
+                    int offset = Int.FromBytes(operand.GetByte(0), operand.GetByte(1));
+                    TCCode.PadOut("STZ " + GlobalOperand(offset), 0);
                     if (!instruction.IsByte)
                     {
-                        operand++;
-                        TCCode.PadOut("STZ " + GlobalToHex(operand), 0);
+                        TCCode.PadOut("STZ " + GlobalOperand(offset+1), 0);
                     }
-#else
-                    if (instruction.IsByte)
-                    {
-                        TCCode.PushByte(0);
-                    }
-                    else
-                    {
-                        TCCode.PushWord(0);
-                    }
-#endif
                 }
                 
                 case "POPL":
@@ -1652,7 +1606,6 @@ unit TCGen
                 case "CALL":
                 {
                     TCCode.Call(instruction.Data);
-                    OffsetReset("X"); OffsetReset("Y");
                     if (instruction.Operand != 0)
                     {
                         TCCode.PopBytes(operand.GetByte(0), "");
@@ -1666,19 +1619,16 @@ unit TCGen
                 {
                     TCCode.If("if");
                     TCCode.PadOut("{", 0);
-                    OffsetReset("X"); OffsetReset("Y");
                 }
                 case "ELSE":
                 {
                     TCCode.PadOut("}", 0);
                     TCCode.Else();
                     TCCode.PadOut("{", 0);
-                    OffsetReset("X"); OffsetReset("Y");
                 }
                 case "ENDIF":
                 {
                     TCCode.PadOut("}", 0);
-                    OffsetReset("X"); OffsetReset("Y");
                 }
                 
                 case "INCLI":
@@ -1697,7 +1647,6 @@ unit TCGen
                                 TCCode.PadOut("DEX", 1);
                                 TCCode.PadOut("INC 0x0100, X", 1);
                                 TCCode.PadOut("}", 0);
-                                OffsetReset("X");
                             }
                         }
                         else
@@ -1721,43 +1670,29 @@ unit TCGen
                 {
                     if (instruction.Operand != 0)
                     {
-#ifdef ZEROGLOBALS
-                        int goffset = instruction.Offset + GlobalStart;
-#else                    
-                        int goffset = 255 - instruction.Offset;
-#endif                                                                
+                        int goffset = instruction.Offset;
                         if (instruction.Operand == 1)
                         {
-                            TCCode.PadOut("INC " + GlobalToHex(goffset), 0);
+                            TCCode.PadOut("INC " + GlobalOperand(goffset), 0);
                             if (!instruction.IsByte)
                             {
                                 TCCode.PadOut("if (Z)", 0);
                                 TCCode.PadOut("{", 0);
-#ifdef ZEROGLOBALS
-                                goffset++;
-#else
-                                goffset--;
-#endif
-                                TCCode.PadOut("INC " + GlobalToHex(goffset), 1);
+                                TCCode.PadOut("INC " + GlobalOperand(goffset+1), 1);
                                 TCCode.PadOut("}", 0);
                             }
                         }
                         else
                         {
                             TCCode.PadOut("CLC", 0);
-                            TCCode.PadOut("LDA " + GlobalToHex(goffset), 0);
+                            TCCode.PadOut("LDA " + GlobalOperand(goffset), 0);
                             TCCode.PadOut("ADC # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
-                            TCCode.PadOut("STA " + GlobalToHex(goffset), 0);
+                            TCCode.PadOut("STA " + GlobalOperand(goffset), 0);
                             if (!instruction.IsByte)
                             {
-#ifdef ZEROGLOBALS                            
-                                goffset++;
-#else
-                                goffset--;
-#endif
-                                TCCode.PadOut("LDA " + GlobalToHex(goffset), 0);
+                                TCCode.PadOut("LDA " + GlobalOperand(goffset+1), 0);
                                 TCCode.PadOut("ADC # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
-                                TCCode.PadOut("STA " + GlobalToHex(goffset), 0);
+                                TCCode.PadOut("STA " + GlobalOperand(goffset+1), 0);
                             }
                         }
                     }               
@@ -1802,7 +1737,7 @@ unit TCGen
                     // arguments in NEXT and TOP
                     string top = (instruction.IsByte ? ("# 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2)) :  ("# 0x" + (instruction.Operand).ToHexString(4)));
                     string next = "[BP+" + OffsetToHex(instruction.Offset) + "]";
-                    TCCode.PadOut("LDX #1 // " + next + " <= " + top, 0); OffsetReset("X");
+                    TCCode.PadOut("LDX #1 // " + next + " <= " + top, 0);
                     if (instruction.IsByte)
                     {
                         TCCode.PadOut("LDA 0x0100, Y", 0); // NEXTL
@@ -1819,13 +1754,12 @@ unit TCGen
                         TCCode.PadOut("LDA 0x0100, Y", 1); // NEXTL
                         TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 1); // TOPL
                         TCCode.PadOut("}", 0);
-                        OffsetReset("Y");
                     }
                     TCCode.PadOut("if (NZ) // " + next + " == " + top + " (not >)?", 0);
                     TCCode.PadOut("{", 0);
                     TCCode.PadOut("if (C) // " + next + " <  " + top + " (not >)?", 1);
                     TCCode.PadOut("{", 1);
-                    TCCode.PadOut("LDX #0  // " + next + " > " + top + "", 2); OffsetReset("X");
+                    TCCode.PadOut("LDX #0  // " + next + " > " + top + "", 2);
                     TCCode.PadOut("}", 1);
                     TCCode.PadOut("}", 0);
                     TCCode.PadOut("// result in X", 0);
@@ -1855,7 +1789,6 @@ unit TCGen
                         TCCode.PadOut("LDA 0x0100, Y", 1); // NEXTL
                         TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 1); // TOPL
                         TCCode.PadOut("}", 0);
-                        OffsetReset("Y");
                     }
                     TCCode.PadOut("if (NZ) // " + next + " == " + top + " (not >)?", 0);
                     TCCode.PadOut("{", 0);
@@ -1872,7 +1805,7 @@ unit TCGen
                     // arguments in NEXT and TOP
                     string top = (instruction.IsByte ? ("# 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2)) :  ("# 0x" + (instruction.Operand).ToHexString(4)));
                     string next = "[BP+" + OffsetToHex(instruction.Offset) + "]";
-                    TCCode.PadOut("LDX #1 // " + next + " < " + top, 0); OffsetReset("X");
+                    TCCode.PadOut("LDX #1 // " + next + " < " + top, 0);
                     if (instruction.IsByte)
                     {
                         TCCode.PadOut("LDA 0x0100, Y", 0); // NEXTL
@@ -1889,11 +1822,10 @@ unit TCGen
                         TCCode.PadOut("LDA 0x0100, Y", 1); // NEXTL
                         TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 1); // TOPL
                         TCCode.PadOut("}", 0);
-                        OffsetReset("Y");
                     }
                     TCCode.PadOut("if (C) // " + top + " <= " + next + " ?", 0);
                     TCCode.PadOut("{", 0);
-                    TCCode.PadOut("LDX #0  // " + top + " <= " + next + "", 1); OffsetReset("X");
+                    TCCode.PadOut("LDX #0  // " + top + " <= " + next + "", 1);
                     TCCode.PadOut("}", 0);
                     TCCode.PadOut("// result in X", 0);
                     TCCode.PadOut("PHX", 0);
@@ -1903,33 +1835,27 @@ unit TCGen
                 {
                     // arguments in NEXT and TOP
                     string top = (instruction.IsByte ? ("# 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2)) :  ("# 0x" + (instruction.Operand).ToHexString(4)));
-#ifdef ZEROGLOBALS
-                    int goffset = instruction.Offset + GlobalStart;
-                    int goffseth = goffset+1;
-#else                    
-                    int goffset = 255 - instruction.Offset;
-                    int goffseth = goffset-1;
-#endif              
-                    string next = "[" + GlobalToHex(goffset) + "]";
-                    TCCode.PadOut("LDX #1 // " + next + " < " + top, 0); OffsetReset("X");
+                    int goffset = instruction.Offset;
+                    string next = "[" + GlobalOperand(goffset) + "]";
+                    TCCode.PadOut("LDX #1 // " + next + " < " + top, 0);
                     if (instruction.IsByte)
                     {
-                        TCCode.PadOut("LDA " + GlobalToHex(goffset), 0); // NEXTL
+                        TCCode.PadOut("LDA " + GlobalOperand(goffset), 0); // NEXTL
                         TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0); // TOPL
                     }
                     else
                     {
-                        TCCode.PadOut("LDA " + GlobalToHex(goffseth), 0); // NEXTH
+                        TCCode.PadOut("LDA " + GlobalOperand(goffset+1), 0); // NEXTH
                         TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0); // TOPH
                         TCCode.PadOut("if (Z)", 0);
                         TCCode.PadOut("{", 0);
-                        TCCode.PadOut("LDA " + GlobalToHex(goffset), 1); // NEXTL
+                        TCCode.PadOut("LDA " + GlobalOperand(goffset), 1); // NEXTL
                         TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 1); // TOPL
                         TCCode.PadOut("}", 0);
                     }
                     TCCode.PadOut("if (C) // " + top + " <= " + next + " ?", 0);
                     TCCode.PadOut("{", 0);
-                    TCCode.PadOut("LDX #0  // " + top + " <= " + next + "", 1); OffsetReset("X");
+                    TCCode.PadOut("LDX #0  // " + top + " <= " + next + "", 1);
                     TCCode.PadOut("}", 0);
                     TCCode.PadOut("// result in X", 0);
                     TCCode.PadOut("PHX", 0);
@@ -1938,27 +1864,21 @@ unit TCGen
                 case "GILTXB":
                 {
                     // arguments in NEXT and TOP
-                    string top = (instruction.IsByte ? ("# 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2)) :  ("# 0x" + (instruction.Operand).ToHexString(4)));
-#ifdef ZEROGLOBALS
-                    int goffset = instruction.Offset + GlobalStart;
-                    int goffseth = goffset+1;
-#else                    
-                    int goffset = 255 - instruction.Offset;
-                    int goffseth = goffset-1;
-#endif              
-                    string next = "[" + GlobalToHex(goffset) + "]";
+                    int goffset = instruction.Offset;
+                    string top  = (instruction.IsByte ? ("# 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2)) :  ("# 0x" + (instruction.Operand).ToHexString(4)));
+                    string next = "[" + GlobalOperand(goffset) + "]";
                     if (instruction.IsByte)
                     {
-                        TCCode.PadOut("LDA " + GlobalToHex(goffset), 0); // NEXTL
+                        TCCode.PadOut("LDA " + GlobalOperand(goffset), 0); // NEXTL
                         TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0); // TOPL
                     }
                     else
                     {
-                        TCCode.PadOut("LDA " + GlobalToHex(goffseth), 0); // NEXTH
+                        TCCode.PadOut("LDA " + GlobalOperand(goffset+1), 0); // NEXTH
                         TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0); // TOPH
                         TCCode.PadOut("if (Z)", 0);
                         TCCode.PadOut("{", 0);
-                        TCCode.PadOut("LDA " + GlobalToHex(goffset), 1); // NEXTL
+                        TCCode.PadOut("LDA " + GlobalOperand(goffset), 1); // NEXTL
                         TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 1); // TOPL
                         TCCode.PadOut("}", 0);
                     }
@@ -1991,7 +1911,6 @@ unit TCGen
                         TCCode.PadOut("LDA 0x0100, Y", 1); // NEXTL
                         TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 1); // TOPL
                         TCCode.PadOut("}", 0);
-                        OffsetReset("Y");
                     }
                     TCCode.PadOut("if (C) // " + top + " <= " + next + " ?", 0);
                     TCCode.PadOut("{", 0);
@@ -2044,23 +1963,13 @@ unit TCGen
                 case "2G":
                 case "2GB":
                 {
-#ifdef ZEROGLOBALS
-                    int goffset = instruction.Offset + GlobalStart;
-                    
-#else                    
-                    int goffset = 255 - instruction.Offset;
-#endif              
-                    TCCode.PadOut("LDA " + GlobalToHex(goffset), 0);                          
+                    int goffset = instruction.Offset;
+                    TCCode.PadOut("LDA " + GlobalOperand(goffset), 0);                          
                     TCCode.PadOut("ASL", 0);
                     TCCode.PadOut("PHA", 0);
                     if (!instruction.IsByte)
                     {
-#ifdef ZEROGLOBALS
-                        goffset++;
-#else
-                        goffset--;
-#endif                        
-                        TCCode.PadOut("LDA " + GlobalToHex(goffset), 0);
+                        TCCode.PadOut("LDA " + GlobalOperand(goffset+1), 0);
                         TCCode.PadOut("ROL", 0);
                         TCCode.PadOut("PHA", 0);
                     }
@@ -2068,28 +1977,16 @@ unit TCGen
                 case "GGADD":
                 case "GGADDB":
                 {
-#ifdef ZEROGLOBALS
-                    int goffset  = instruction.Offset  + GlobalStart;
-                    int goffset2 = instruction.Offset2 + GlobalStart;
-#else
-                    int goffset  = 255 - instruction.Offset;
-                    int goffset2 = 255 - instruction.Offset2;
-#endif
+                    int goffset  = instruction.Offset;
+                    int goffset2 = instruction.Offset2;
                     TCCode.PadOut("CLC", 0);
-                    TCCode.PadOut("LDA " + GlobalToHex(goffset), 0);
-                    TCCode.PadOut("ADC " + GlobalToHex(goffset2), 0);
+                    TCCode.PadOut("LDA " + GlobalOperand(goffset), 0);
+                    TCCode.PadOut("ADC " + GlobalOperand(goffset2), 0);
                     TCCode.PadOut("PHA", 0);
                     if (!instruction.IsByte)
                     {
-#ifdef ZEROGLOBALS
-                        goffset++;
-                        goffset2++;
-#else                    
-                        goffset--;
-                        goffset2--;
-#endif
-                        TCCode.PadOut("LDA " + GlobalToHex(goffset), 0);
-                        TCCode.PadOut("ADC " + GlobalToHex(goffset2), 0);
+                        TCCode.PadOut("LDA " + GlobalOperand(goffset+1), 0);
+                        TCCode.PadOut("ADC " + GlobalOperand(goffset2+1), 0);
                         TCCode.PadOut("PHA", 0);
                     }
                 }
@@ -2123,27 +2020,13 @@ unit TCGen
                 case "GGADDM":
                 {
                     TCCode.PadOut("CLC", 0);
-                    
-#ifdef ZEROGLOBALS
-                    int goffset  = instruction.Offset + GlobalStart;
-                    int goffset2 = instruction.Offset2 + GlobalStart;
-#else                    
-                    int goffset  = 255 - instruction.Offset;
-                    int goffset2 = 255 - instruction.Offset2;
-#endif
-                    TCCode.PadOut("LDA " + GlobalToHex(goffset), 0);
-                    TCCode.PadOut("ADC " + GlobalToHex(goffset2), 0);
+                    int goffset  = instruction.Offset;
+                    int goffset2 = instruction.Offset2;
+                    TCCode.PadOut("LDA " + GlobalOperand(goffset), 0);
+                    TCCode.PadOut("ADC " + GlobalOperand(goffset2), 0);
                     TCCode.PadOut("STA ZP.TOPL", 0);
-                    
-#ifdef ZEROGLOBALS
-                    goffset++;
-                    goffset2++;
-#else
-                    goffset--;
-                    goffset2--;
-#endif
-                    TCCode.PadOut("LDA " + GlobalToHex(goffset), 0);
-                    TCCode.PadOut("ADC " + GlobalToHex(goffset2), 0);
+                    TCCode.PadOut("LDA " + GlobalOperand(goffset+1), 0);
+                    TCCode.PadOut("ADC " + GlobalOperand(goffset2+1), 0);
                     TCCode.PadOut("STA ZP.TOPH", 0);
                     
                     TCCode.PadOut("LDA [ZP.TOP]", 0);
@@ -2156,22 +2039,13 @@ unit TCGen
                     
                     TCCode.PadOut("CLC", 0);
                     TCCode.PadOut("LDA 0x0100, X", 0);
-#ifdef ZEROGLOBALS
-                    int goffset = instruction.Offset2 + GlobalStart;
-#else                    
-                    int goffset = 255 - instruction.Offset2;
-#endif
-                    TCCode.PadOut("ADC " + GlobalToHex(goffset), 0);
+                    int goffset = instruction.Offset2;
+                    TCCode.PadOut("ADC " + GlobalOperand(goffset), 0);
                     TCCode.PadOut("STA ZP.TOPL", 0);
                     
                     TCCode.PadOut("DEX", 0);
                     TCCode.PadOut("LDA 0x0100, X", 0);
-#ifdef ZEROGLOBALS
-                    goffset++;
-#else
-                    goffset--;
-#endif
-                    TCCode.PadOut("ADC " + GlobalToHex(goffset), 0);
+                    TCCode.PadOut("ADC " + GlobalOperand(goffset+1), 0);
                     TCCode.PadOut("STA ZP.TOPH", 0);
                     
                     TCCode.PadOut("LDA [ZP.TOP]", 0);
@@ -2184,22 +2058,13 @@ unit TCGen
                     
                     TCCode.PadOut("CLC", 0);
                     TCCode.PadOut("LDA 0x0100, X", 0);
-#ifdef ZEROGLOBALS
-                    int goffset = instruction.Offset2 + GlobalStart;
-#else                    
-                    int goffset = 255 - instruction.Offset2; 
-#endif
-                    TCCode.PadOut("ADC " + GlobalToHex(goffset), 0);
+                    int goffset = instruction.Offset2;
+                    TCCode.PadOut("ADC " + GlobalOperand(goffset), 0);
                     TCCode.PadOut("STA ZP.TOPL", 0);
                     
                     TCCode.PadOut("DEX", 0);
                     TCCode.PadOut("LDA 0x0100, X", 0);
-#ifdef ZEROGLOBALS
-                    goffset++;
-#else
-                    goffset--;
-#endif
-                    TCCode.PadOut("ADC " + GlobalToHex(goffset), 0);
+                    TCCode.PadOut("ADC " + GlobalOperand(goffset+1), 0);
                     TCCode.PadOut("STA ZP.TOPH", 0);
                     TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
                     TCCode.PadOut("STA [ZP.TOP]", 0);
@@ -2210,24 +2075,13 @@ unit TCGen
                     
                     TCCode.PadOut("CLC", 0);
                     TCCode.PadOut("LDA 0x0100, X", 0);
-#ifdef ZEROGLOBALS
-                    int goffset = instruction.Offset2 + GlobalStart;
-                    TCCode.PadOut("ADC 0x" + (goffset.GetByte(0)).ToHexString(2), 0);
-#else                    
-                    int goffset = 255 - instruction.Offset2;
-                    TCCode.PadOut("ADC 0x01" + (goffset.GetByte(0)).ToHexString(2), 0);
-#endif
+                    int goffset = instruction.Offset2;
+                    TCCode.PadOut("ADC " + GlobalOperand(goffset), 0);
                     TCCode.PadOut("PHA", 0);
                     
                     TCCode.PadOut("DEX", 0);
                     TCCode.PadOut("LDA 0x0100, X", 0);
-#ifdef ZEROGLOBALS
-                    goffset++;
-                    TCCode.PadOut("ADC 0x" + (goffset.GetByte(0)).ToHexString(2), 0);
-#else
-                    goffset--;
-                    TCCode.PadOut("ADC 0x01" + (goffset.GetByte(0)).ToHexString(2), 0);
-#endif               
+                    TCCode.PadOut("ADC 0x" + GlobalOperand(goffset+1), 0);
                     TCCode.PadOut("PHA", 0);
                     TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
                     TCCode.PadOut("PHA", 0);
@@ -2236,25 +2090,13 @@ unit TCGen
                 case "GGADDIM":
                 {
                     TCCode.PadOut("CLC", 0);
-#ifdef ZEROGLOBALS
-                    int goffset = instruction.Offset + GlobalStart;
-                    int goffset2 = instruction.Offset2 + GlobalStart;
-#else                    
-                    int goffset = 255 - instruction.Offset;
-                    int goffset2 = 255 - instruction.Offset2; 
-#endif
-                    TCCode.PadOut("LDA " + GlobalToHex(goffset), 0);
-                    TCCode.PadOut("ADC " + GlobalToHex(goffset2), 0);
+                    int goffset = instruction.Offset;
+                    int goffset2 = instruction.Offset2;
+                    TCCode.PadOut("LDA " + GlobalOperand(goffset), 0);
+                    TCCode.PadOut("ADC " + GlobalOperand(goffset2), 0);
                     TCCode.PadOut("STA ZP.TOPL", 0);
-#ifdef ZEROGLOBALS
-                    goffset++;
-                    goffset2++;
-#else
-                    goffset--;
-                    goffset2--;
-#endif
-                    TCCode.PadOut("LDA " + GlobalToHex(goffset), 0);
-                    TCCode.PadOut("ADC " + GlobalToHex(goffset2), 0);
+                    TCCode.PadOut("LDA " + GlobalOperand(goffset+1), 0);
+                    TCCode.PadOut("ADC " + GlobalOperand(goffset2+1), 0);
                     TCCode.PadOut("STA ZP.TOPH", 0);
                     TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
                     TCCode.PadOut("STA [ZP.TOP]", 0);
@@ -2262,25 +2104,13 @@ unit TCGen
                 case "GGADDI":
                 {
                     TCCode.PadOut("CLC", 0);
-#ifdef ZEROGLOBALS
-                    int goffset = instruction.Offset + GlobalStart;
-                    int goffset2 = instruction.Offset2 + GlobalStart;
-#else                    
-                    int goffset = 255 - instruction.Offset;
-                    int goffset2 = 255 - instruction.Offset2;
-#endif
-                    TCCode.PadOut("LDA " + GlobalToHex(goffset), 0);
-                    TCCode.PadOut("ADC " + GlobalToHex(goffset2), 0);
+                    int goffset = instruction.Offset;
+                    int goffset2 = instruction.Offset2;
+                    TCCode.PadOut("LDA " + GlobalOperand(goffset), 0);
+                    TCCode.PadOut("ADC " + GlobalOperand(goffset2), 0);
                     TCCode.PadOut("PHA", 0);
-#ifdef ZEROGLOBALS
-                    goffset++;
-                    goffset2++;
-#else
-                    goffset--;
-                    goffset2--;
-#endif               
-                    TCCode.PadOut("LDA " + GlobalToHex(goffset), 0);
-                    TCCode.PadOut("ADC " + GlobalToHex(goffset2), 0);
+                    TCCode.PadOut("LDA " + GlobalOperand(goffset+1), 0);
+                    TCCode.PadOut("ADC " + GlobalOperand(goffset2+1), 0);
                     TCCode.PadOut("PHA", 0);
                     TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
                     TCCode.PadOut("PHA", 0);
@@ -2292,25 +2122,13 @@ unit TCGen
                     TCCode.BPOffset(instruction.Offset, "X"); 
                     TCCode.PadOut("CLC", 0);
                     TCCode.PadOut("LDA 0x0100, X", 0);
-#ifdef ZEROGLOBALS
-                    int goffset = instruction.Offset2 + GlobalStart;
-                    TCCode.PadOut("ADC 0x" + (goffset.GetByte(0)).ToHexString(2), 0);
-#else                    
-                    int goffset = 255 - instruction.Offset2;
-                    TCCode.PadOut("ADC 0x01" + (goffset.GetByte(0)).ToHexString(2), 0);
-#endif
+                    TCCode.PadOut("ADC " + GlobalOperand(instruction.Offset2), 0);
                     TCCode.PadOut("PHA", 0);
                     if (!instruction.IsByte)
                     {
                         TCCode.PadOut("DEX", 0);
                         TCCode.PadOut("LDA 0x0100, X", 0);
-#ifdef ZEROGLOBALS
-                        goffset++;
-                        TCCode.PadOut("ADC 0x" + (goffset.GetByte(0)).ToHexString(2), 0);
-#else                        
-                        goffset--;
-                        TCCode.PadOut("ADC 0x01" + (goffset.GetByte(0)).ToHexString(2), 0);
-#endif
+                        TCCode.PadOut("ADC " + GlobalOperand(instruction.Offset2+1), 0);
                         TCCode.PadOut("PHA", 0);
                     }
                 }
@@ -2318,33 +2136,18 @@ unit TCGen
                 case "GGADDG":
                 case "GGADDGB":
                 {
-#ifdef ZEROGLOBALS
-                    int goffset  = instruction.Offset + GlobalStart;
-                    int goffset2 = instruction.Offset2 + GlobalStart;
-                    int goffset3 = int(instruction.Operand) + GlobalStart;
-#else                    
-                    int goffset = 255 - instruction.Offset;
-                    int goffset2 = 255 - instruction.Offset2;
-                    int goffset3 = 255 - int(instruction.Operand);
-#endif
+                    int goffset  = instruction.Offset;
+                    int goffset2 = instruction.Offset2;
+                    int goffset3 = int(instruction.Operand);
                     TCCode.PadOut("CLC", 0);
-                    TCCode.PadOut("LDA " + GlobalToHex(goffset), 0);
-                    TCCode.PadOut("ADC " + GlobalToHex(goffset2), 0);
-                    TCCode.PadOut("STA " + GlobalToHex(goffset3), 0);
+                    TCCode.PadOut("LDA " + GlobalOperand(goffset), 0);
+                    TCCode.PadOut("ADC " + GlobalOperand(goffset2), 0);
+                    TCCode.PadOut("STA " + GlobalOperand(goffset3), 0);
                     if (!instruction.IsByte)
                     {
-#ifdef ZEROGLOBALS
-                        goffset++;
-                        goffset2++;
-                        goffset3++;
-#else                    
-                        goffset--;
-                        goffset2--;
-                        goffset3--;
-#endif
-                        TCCode.PadOut("LDA " + GlobalToHex(goffset), 0);
-                        TCCode.PadOut("ADC " + GlobalToHex(goffset2), 0);
-                        TCCode.PadOut("STA " + GlobalToHex(goffset3), 0);
+                        TCCode.PadOut("LDA " + GlobalOperand(goffset+1), 0);
+                        TCCode.PadOut("ADC " + GlobalOperand(goffset2+1), 0);
+                        TCCode.PadOut("STA " + GlobalOperand(goffset3+1), 0);
                     }
                 }
                 case "LLADDL":
@@ -2356,14 +2159,14 @@ unit TCGen
                         if (instruction.Offset == 0)
                         {
                             TCCode.PadOut("PHX", 0);
-                            TCCode.PadOut("PLY", 0); OffsetSet("Y", "X");
+                            TCCode.PadOut("PLY", 0);
                         }
                         else
                         {
                             TCCode.PadOut("TAY", 0);
                         }
                         TCCode.PadOut("DEY", 0);
-                        TCCode.PadOut("DEY", 0); OffsetSet("Y", "X");
+                        TCCode.PadOut("DEY", 0);
                     }
                     else if ((instruction.Offset2 + 2 == instruction.Offset) && (instruction.Offset2 >= 0))
                     {
@@ -2371,11 +2174,11 @@ unit TCGen
                         if (instruction.Offset2 == 0)
                         {
                             TCCode.PadOut("PHY", 0);
-                            TCCode.PadOut("PLX", 0); OffsetSet("X", "Y");
+                            TCCode.PadOut("PLX", 0);
                         }
                         else
                         {
-                            TCCode.PadOut("TAX", 0); OffsetSet("X", "Y");
+                            TCCode.PadOut("TAX", 0);
                         }
                         TCCode.PadOut("DEX", 0);
                         TCCode.PadOut("DEX", 0);
@@ -2538,25 +2341,14 @@ unit TCGen
                 {
                     TCCode.PadOut("CLC", 0);
                     TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
-#ifdef ZEROGLOBALS
-                    int goffset = instruction.Offset + GlobalStart;
-                    TCCode.PadOut("ADC 0x" + (goffset.GetByte(0)).ToHexString(2), 0);
-#else                    
-                    int goffset = 255 - instruction.Offset;
-                    TCCode.PadOut("ADC 0x01" + (goffset.GetByte(0)).ToHexString(2), 0);
-#endif                    
+                    int goffset = instruction.Offset;
+                    TCCode.PadOut("ADC " + GlobalOperand(goffset), 0);
                     TCCode.PadOut("PHA", 0);
                     if (!instruction.IsByte)
                     {
                         TCCode.PadOut("DEX", 0);
                         TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
-#ifdef ZEROGLOBALS
-                        goffset++;
-                        TCCode.PadOut("ADC 0x" + (goffset.GetByte(0)).ToHexString(2), 0);
-#else                    
-                        goffset--;
-                        TCCode.PadOut("ADC 0x01" + (goffset.GetByte(0)).ToHexString(2), 0);
-#endif           
+                        TCCode.PadOut("ADC " + GlobalOperand(goffset+1), 0);
                         TCCode.PadOut("PHA", 0);
                     }
                 }
@@ -2632,7 +2424,7 @@ unit TCGen
                             TCCode.PadOut("LDA 0x0100, Y", 0);
                             TCCode.PadOut("STA ZP.NEXTH", 0);
                         }
-                        TCCode.PadOut("LDX # 0x" + shift.ToHexString(2), 0); OffsetReset("X");
+                        TCCode.PadOut("LDX # 0x" + shift.ToHexString(2), 0);
                         TCCode.PadOut("loop", 0);
                         TCCode.PadOut("{", 0);
                         TCCode.PadOut("if (Z) { break; }", 1);
@@ -2694,7 +2486,7 @@ unit TCGen
                             TCCode.PadOut("LDA 0x0100, Y", 0);
                             TCCode.PadOut("STA ZP.NEXTH", 0);
                         }
-                        TCCode.PadOut("LDX # 0x" + shift.ToHexString(2), 0); OffsetReset("X");
+                        TCCode.PadOut("LDX # 0x" + shift.ToHexString(2), 0);
                         TCCode.PadOut("loop", 0);
                         TCCode.PadOut("{", 0);
                         TCCode.PadOut("if (Z) { break; }", 1);
@@ -2731,7 +2523,7 @@ unit TCGen
                     TCCode.PadOut("STA ZP.TOPH", 0);
                     TCCode.PadOut("ASL // sign bit into carry", 0); 
                               
-                    TCCode.PadOut("LDX #0  // TOP <= 0", 0); OffsetReset("X");
+                    TCCode.PadOut("LDX #0  // TOP <= 0", 0);
                     TCCode.PadOut("loop", 0);
                     TCCode.PadOut("{", 0);
                     TCCode.PadOut("if (C) { break; }", 1);
@@ -2742,7 +2534,7 @@ unit TCGen
                     TCCode.PadOut("LDA ZP.TOPH", 2);
                     TCCode.PadOut("if (Z) { break; }", 2);
                     TCCode.PadOut("}", 1);
-                    TCCode.PadOut("LDX #1", 1); OffsetReset("X");
+                    TCCode.PadOut("LDX #1", 1);
                     TCCode.PadOut("break;", 1);
                     TCCode.PadOut("}", 0);
 

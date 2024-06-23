@@ -58,16 +58,16 @@ unit TCOps
         // operation
         if (!isByte)
         {
-            PadOut("TCOps.CompareLT();", 0); OffsetReset("X");
+            PadOut("TCOps.CompareLT();", 0);
         }
         else
         {
-            PadOut("LDX # 1 // NEXT < TOP", 0); OffsetReset("X");
+            PadOut("LDX # 1 // NEXT < TOP", 0);
             PadOut("LDA ZP.NEXTL", 0);
             PadOut("CMP ZP.TOPL", 0);
             PadOut("if (C) // TOP <= NEXT ?", 0);
             PadOut("{", 0);
-            PadOut("LDX # 0 // TOP <= NEXT", 1); OffsetReset("X");
+            PadOut("LDX # 0 // TOP <= NEXT", 1);
             PadOut("}", 0);
         }
         PadOut("PHX", 0);
@@ -83,16 +83,16 @@ unit TCOps
         // operation
         if (!isByte)
         {
-            PadOut("TCOps.CompareGT();", 0); OffsetReset("X");
+            PadOut("TCOps.CompareGT();", 0);
         }
         else
         {
-            PadOut("LDX # 1 // NEXT > TOP", 0); OffsetReset("X");
+            PadOut("LDX # 1 // NEXT > TOP", 0);
             PadOut("LDA ZP.TOPL", 0);
             PadOut("CMP ZP.NEXTL", 0);
             PadOut("if (C) // TOP >= NEXT ?", 0);
             PadOut("{", 0);
-            PadOut("LDX # 0 // TOP > NEXT", 1); OffsetReset("X");
+            PadOut("LDX # 0 // TOP > NEXT", 1);
             PadOut("}", 0);
         }
         PadOut("PHX", 0);
@@ -105,7 +105,7 @@ unit TCOps
         TCCode.PadOut("// <" + Bitness(false), 0); 
         
         PopTopNext(false);
-        PadOut("TCOps.CompareLTI();", 0); OffsetReset("X");
+        PadOut("TCOps.CompareLTI();", 0);
         PadOut("PHX", 0);    
     }
     CompareLEI()
@@ -114,7 +114,7 @@ unit TCOps
         TCCode.PadOut("// <=" + Bitness(false), 0); 
         
         PopTopNext(false);
-        PadOut("TCOps.CompareLEI();", 0); OffsetReset("X");
+        PadOut("TCOps.CompareLEI();", 0);
         PadOut("PHX", 0);    
     }
     CompareGTI()
@@ -123,7 +123,7 @@ unit TCOps
         TCCode.PadOut("// >" + Bitness(false), 0); 
         
         PopTopNext(false);
-        PadOut("TCOps.CompareGTI();", 0);  OffsetReset("X");
+        PadOut("TCOps.CompareGTI();", 0);
         PadOut("PHX", 0);    
     }
     CompareGEI()
@@ -132,7 +132,7 @@ unit TCOps
         TCCode.PadOut("// >=" + Bitness(false), 0); 
         
         PopTopNext(false);
-        PadOut("TCOps.CompareGEI();", 0); OffsetReset("X");
+        PadOut("TCOps.CompareGEI();", 0);
         PadOut("PHX", 0);    
     }
     
@@ -174,7 +174,7 @@ unit TCOps
         // operation
         if (!isByte)
         {
-            PadOut("TCOps.Sub16();", 0); OffsetReset("X"); OffsetReset("Y");
+            PadOut("TCOps.Sub16();", 0);
         }
         else
         {
@@ -236,11 +236,11 @@ unit TCOps
         // operation
         if (!isByte)
         {
-            PadOut("TCOps.Mul16();", 0); OffsetReset("X"); OffsetReset("Y");
+            PadOut("TCOps.Mul16();", 0);
         }
         else
         {
-            PadOut("TCOps.Mul8();", 0); OffsetReset("X"); OffsetReset("Y");
+            PadOut("TCOps.Mul8();", 0);
         }
         PushTop(isByte);
     }
@@ -256,11 +256,11 @@ unit TCOps
         // operation
         if (!isByte)
         {
-            PadOut("TCOps.Div16();", 0); OffsetReset("X"); OffsetReset("Y");
+            PadOut("TCOps.Div16();", 0);
         }
         else
         {
-            PadOut("TCOps.Div8();", 0); OffsetReset("X"); OffsetReset("Y");
+            PadOut("TCOps.Div8();", 0);
         }
         PushTop(isByte);
     }
@@ -276,11 +276,11 @@ unit TCOps
         // operation
         if (!isByte)
         {
-            PadOut("TCOps.Mod16();", 0); OffsetReset("X"); OffsetReset("Y");
+            PadOut("TCOps.Mod16();", 0);
         }
         else
         {
-            PadOut("TCOps.Mod8();", 0); OffsetReset("X"); OffsetReset("Y");
+            PadOut("TCOps.Mod8();", 0);
         }
         PushTop(isByte);
     }
@@ -295,7 +295,7 @@ unit TCOps
         PopTopNext(false);
     
         // operation
-        PadOut("TCOps.MulI();", 0); OffsetReset("X"); OffsetReset("Y");
+        PadOut("TCOps.MulI();", 0);
         PushTop(false);
     }
     
@@ -308,7 +308,7 @@ unit TCOps
         PopTopNext(false);
     
         // operation
-        PadOut("TCOps.DivI();", 0); OffsetReset("X"); OffsetReset("Y");
+        PadOut("TCOps.DivI();", 0);
         PushTop(false);
     }
     
@@ -320,7 +320,7 @@ unit TCOps
         PopTopNext(false);
     
         // operation
-        PadOut("TCOps.ModI();", 0); OffsetReset("X"); OffsetReset("Y");
+        PadOut("TCOps.ModI();", 0);
         PushTop(false);
     }
     
@@ -429,18 +429,18 @@ unit TCOps
         // operation
         if (!isByte)
         {
-            PadOut("TCOps.CompareLE();", 0); OffsetReset("X");
+            PadOut("TCOps.CompareLE();", 0);
         }
         else
         {
-            PadOut("LDX # 1 // NEXT <= TOP", 0); OffsetReset("X");
+            PadOut("LDX # 1 // NEXT <= TOP", 0);
             PadOut("LDA ZP.NEXTL", 0);
             PadOut("CMP ZP.TOPL", 0);
             PadOut("if (NZ) // NEXT == TOP (not >)?", 0);
             PadOut("{", 0);
             PadOut("if (C) // NEXT <  TOP (not >)?", 1);
             PadOut("{", 1);
-            PadOut("LDX # 0 // NEXT > TOP", 2); OffsetReset("X");
+            PadOut("LDX # 0 // NEXT > TOP", 2);
             PadOut("}", 1);
             PadOut("}", 0);
         }
@@ -458,16 +458,16 @@ unit TCOps
         // operation
         if (!isByte)
         {
-            PadOut("TCOps.CompareGE();", 0); OffsetReset("X");
+            PadOut("TCOps.CompareGE();", 0);
         }
         else
         {
-            PadOut("LDX # 0 // NEXT < TOP", 0); OffsetReset("X");
+            PadOut("LDX # 0 // NEXT < TOP", 0);
             PadOut("LDA ZP.NEXTL", 0);
             PadOut("CMP ZP.TOPL", 0);
             PadOut("if (C) // NEXT >= TOP", 0);
             PadOut("{", 0);
-            PadOut("LDX # 1 // NEXT >= TOP", 1); OffsetReset("X");
+            PadOut("LDX # 1 // NEXT >= TOP", 1);
             PadOut("}", 0);
         }
         PadOut("PHX", 0);
@@ -484,16 +484,16 @@ unit TCOps
         // operation
         if (!isByte)
         {
-            PadOut("TCOps.CompareEQ();", 0); OffsetReset("X");
+            PadOut("TCOps.CompareEQ();", 0);
         }
         else
         {
-            PadOut("LDX # 0 // NEXT != TOP", 0); OffsetReset("X");
+            PadOut("LDX # 0 // NEXT != TOP", 0);
             PadOut("LDA ZP.NEXTL", 0);
             PadOut("CMP ZP.TOPL", 0);
             PadOut("if (Z) // NEXT == TOP", 0);
             PadOut("{", 0);
-            PadOut("LDX # 1 // NEXT == TOP", 1); OffsetReset("X");
+            PadOut("LDX # 1 // NEXT == TOP", 1);
             PadOut("}", 0);
         }
         PadOut("PHX", 0);
@@ -509,16 +509,16 @@ unit TCOps
         // operation
         if (!isByte)
         {
-            PadOut("TCOps.CompareNE();", 0); OffsetReset("X");
+            PadOut("TCOps.CompareNE();", 0);
         }
         else
         {
-            PadOut("LDX # 1 // NEXT != TOP", 0); OffsetReset("X");
+            PadOut("LDX # 1 // NEXT != TOP", 0);
             PadOut("LDA ZP.NEXTL", 0);
             PadOut("CMP ZP.TOPL", 0);
             PadOut("if (Z) // NEXT == TOP", 0);
             PadOut("{", 0);
-            PadOut("LDX # 0 // NEXT == TOP", 1); OffsetReset("X");
+            PadOut("LDX # 0 // NEXT == TOP", 1);
             PadOut("}", 0);
         }
         PadOut("PHX", 0);
