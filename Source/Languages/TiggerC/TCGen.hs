@@ -92,25 +92,40 @@ unit TCGen
     //    INCLI   : PUSHL offset0, PUSHI, ADD, POPL offset0
     //    INCGI   : PUSHG offset0, PUSHI, ADD, POPG offset0
     //    STLI    : PUSHI, POPL offset0
+    //    STGI    : PUSHI, POPG offset0
     //    LISHR   : PUSHL offset, PUSHI, SHR
+    //    --
     //    LISHR8  : PUSHL offset, PUSHI 0x0008, SHR
+    //    --
     //    LISHL   : PUSHL offset, PUSHI, SHL
+    //    --
     //    LIAND   : PUSHL offset, PUSHI, AND
+    //    GIAND   : PUSHG offset, PUSHI, AND
     //    LIANDFF : PUSHL offset, PUSHI 0x00FF, AND
+    //    GIANDFF : PUSHG offset, PUSHI 0x00FF, AND
+    //    GIANDFFC: PUSHG offset, PUSHI 0x00FF, AND, DECSP 1
     //    ILADD   : PUSHI, PUSHL offset, ADD
+    //    --
     //    ILSUB   : PUSHI, PUSHL offset, SUB
+    //    --
     //    IADD    : PUSHI, ADD
+    //    IADDC   : PUSHI, ADD, DECSP 1
     //    IADDL   : PUSHI, ADD, POPL offset0
+    //    --
     //    LIADD   : PUSHL offset, PUSHI, ADD
     //    GIADD   : PUSHG offset, PUSHI, ADD
     //    LISUB   : PUSHL offset, PUSHI, SUB
+    //    --
     //    LTX     : LT, LOOPEXIT
     //    LEX     : LE, LOOPEXIT
     //    LILE    : PUSHL offset, PUSHI, LE
+    //    GILE    : PUSHG offset, PUSHI, LE
     //    LILT    : PUSHL offset, PUSHI, LT
     //    GILT    : PUSHG offset, PUSHI, LT
     //    LIGTI   : PUSHL offset, PUSHI, GTI
+    //    --
     //    LILEX   : PUSHL offset, PUSHI, LE, LOOPEXIT
+    //    GILEX   : PUSHG offset, PUSHI, LE, LOOPEXIT
     //    LILTX   : PUSHL offset, PUSHI, LT, LOOPEXIT
     //    GILTX   : PUSHG offset, PUSHI, LT, LOOPEXIT
     //
@@ -183,6 +198,16 @@ unit TCGen
                     modified = true;
                     break;
                 }
+                if (instruction1.Name == "GILE")
+                {
+                    //Print(" GILEX");
+                    instruction1.Name    = "GILEX";
+                    instruction1.Data = instruction0.Data;
+                    currentStream[currentStream.Count-2] = instruction1;
+                    DeleteInstruction(currentStream.Count-1);
+                    modified = true;
+                    break;
+                }
             }
             if ((instruction0.Name == "ADD"))
             {
@@ -197,6 +222,30 @@ unit TCGen
                         modified = true;
                         break;
                     }    
+                }
+            }
+            if ((instruction0.Name == "DECSP") && (instruction0.Operand == 1))
+            {
+                if (!instruction1.IsByte)
+                {
+                    if (instruction1.Name == "IADD")
+                    {
+                        //Print(" IADDC");
+                        instruction1.Name    = "IADDC";
+                        currentStream[currentStream.Count-2] = instruction1;
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
+                    if (instruction1.Name == "GIANDFF")
+                    {
+                        //Print(" GIANDFFC");    
+                        instruction1.Name    = "GIANDFFC";
+                        currentStream[currentStream.Count-2] = instruction1;
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
                 }
             }
             if ((instruction0.Name == "IADD"))
@@ -222,7 +271,7 @@ unit TCGen
                         DeleteInstruction(currentStream.Count-1);
                         modified = true;
                         break;
-                    }   
+                    } 
                 }
             }
             if ((instruction0.Name == "POPL"))
@@ -329,6 +378,16 @@ unit TCGen
             {
                 if (instruction0.IsByte == instruction1.IsByte)
                 {
+                    if (instruction1.Name == "PUSHI") 
+                    {
+                        //Print(" STGI");
+                        instruction0.Operand = instruction1.Operand;
+                        instruction0.Name = "STGI";
+                        currentStream[currentStream.Count-1] = instruction0;
+                        DeleteInstruction(currentStream.Count-2);
+                        modified = true;
+                        break;
+                    }
                     if ((instruction1.Name == "IGADD") && (instruction1.Offset == instruction0.Offset))
                     {   
                         //Print(" INCGI");
@@ -549,6 +608,39 @@ unit TCGen
                             currentStream[currentStream.Count-3] = instruction2;
                             DeleteInstruction(currentStream.Count-2);
                             DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
+                        if (instruction0.Name == "LE")
+                        {
+                            //Print(" GILE3");
+                            instruction2.Operand = instruction1.Operand;
+                            instruction2.Name = "GILE";
+                            currentStream[currentStream.Count-3] = instruction2;
+                            DeleteInstruction(currentStream.Count-2);
+                            DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
+                        if (instruction0.Name == "AND")
+                        {
+                            if (instruction1.Operand == 0x00FF)
+                            {
+                                //Print(" GIANDFF3");
+                                instruction2.Name = "GIANDFF";
+                                currentStream[currentStream.Count-3] = instruction2;
+                                DeleteInstruction(currentStream.Count-2);
+                                DeleteInstruction(currentStream.Count-1);
+                            }
+                            else
+                            {
+                                Print(" GIAND3");
+                                instruction2.Operand = instruction1.Operand;
+                                instruction2.Name = "GIAND";
+                                currentStream[currentStream.Count-3] = instruction2;
+                                DeleteInstruction(currentStream.Count-2);
+                                DeleteInstruction(currentStream.Count-1);
+                            }
                             modified = true;
                             break;
                         }
@@ -1198,7 +1290,7 @@ unit TCGen
             }
             case "ZEROG":
             {
-                content = "ZEROG"+width+"  0x" + (instruction.Operand).ToHexString(2);
+                content = "ZEROG"+width+" [" + GlobalOperand(int(instruction.Operand)) + "]";
             }
             case "PUSHC":
             {
@@ -1349,14 +1441,19 @@ unit TCGen
             {
                 content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] # 0x" + (instruction.Operand).ToHexString(instruction.IsByte ? 2 : 4);
             }
+            case "STGI":
             case "GILT":
+            case "GILE":
             case "INCGI":
             case "GIADD":
             case "GILTX":
+            case "GILEX":
+            case "GIAND":
             {
                 content = instruction.Name + width + " [" + GlobalOperand(instruction.Offset) + "] # 0x" + (instruction.Operand).ToHexString(instruction.IsByte ? 2 : 4);
             }
             case "IADD":
+            case "IADDC":
             {
                 content = instruction.Name + width + " # 0x" + (instruction.Operand).ToHexString(instruction.IsByte ? 2 : 4);
             }
@@ -1373,6 +1470,11 @@ unit TCGen
             case "LIANDFF":
             {
                 content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] # 0x00FF";
+            }
+            case "GIANDFF":
+            case "GIANDFFC":
+            {
+                content = instruction.Name + width + " [" + GlobalOperand(instruction.Offset) + "] # 0x00FF";
             }
             case "LISHR8":
             case "LISHL8":
@@ -1811,6 +1913,38 @@ unit TCGen
                     TCCode.PadOut("// result in X", 0);
                     TCCode.PadOut("PHX", 0);
                 }
+                case "GILE":
+                case "GILEB":
+                {
+                    string top = (instruction.IsByte ? ("# 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2)) :  ("# 0x" + (instruction.Operand).ToHexString(4)));
+                    int goffset = instruction.Offset;
+                    string next = "[" + GlobalOperand(goffset) + "]";
+                    TCCode.PadOut("LDX #1 // " + next + " <= " + top, 0);
+                    if (instruction.IsByte)
+                    {
+                        TCCode.PadOut("LDA " + GlobalOperand(goffset), 0); // NEXTL
+                        TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0); // TOPL
+                    }
+                    else
+                    {
+                        TCCode.PadOut("LDA " + GlobalOperand(goffset+1), 0); // NEXTH
+                        TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0); // TOPH
+                        TCCode.PadOut("if (Z)", 0);
+                        TCCode.PadOut("{", 0);
+                        TCCode.PadOut("LDA " + GlobalOperand(goffset), 1); // NEXTL
+                        TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 1); // TOPL
+                        TCCode.PadOut("}", 0);
+                    }
+                    TCCode.PadOut("if (NZ) // " + next + " == " + top + " (not >)?", 0);
+                    TCCode.PadOut("{", 0);
+                    TCCode.PadOut("if (C) // " + next + " <  " + top + " (not >)?", 1);
+                    TCCode.PadOut("{", 1);
+                    TCCode.PadOut("LDX #0  // " + next + " > " + top + "", 2);
+                    TCCode.PadOut("}", 1);
+                    TCCode.PadOut("}", 0);
+                    TCCode.PadOut("// result in X", 0);
+                    TCCode.PadOut("PHX", 0);
+                }
                 case "GILT":
                 case "GILTB":
                 {
@@ -1866,6 +2000,35 @@ unit TCGen
                     TCCode.PadOut("if (C) // " + top + " <= " + next + " ?", 0);
                     TCCode.PadOut("{", 0);
                     TCCode.PadOut("break; // " + instruction.Data, 1);
+                    TCCode.PadOut("}", 0);
+                }
+                case "GILEX":
+                case "GILEXB":
+                {
+                    string top = (instruction.IsByte ? ("# 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2)) :  ("# 0x" + (instruction.Operand).ToHexString(4)));
+                    int goffset = instruction.Offset;
+                    string next = "[" + GlobalOperand(goffset) + "]";
+                    if (instruction.IsByte)
+                    {
+                        TCCode.PadOut("LDA " + GlobalOperand(goffset), 0); // NEXTL
+                        TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0); // TOPL
+                    }
+                    else
+                    {
+                        TCCode.PadOut("LDA " + GlobalOperand(goffset+1), 0); // NEXTH
+                        TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0); // TOPH
+                        TCCode.PadOut("if (Z)", 0);
+                        TCCode.PadOut("{", 0);
+                        TCCode.PadOut("LDA " + GlobalOperand(goffset), 1); // NEXTL
+                        TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 1); // TOPL
+                        TCCode.PadOut("}", 0);
+                    }
+                    TCCode.PadOut("if (NZ) // " + next + " == " + top + " (not >)?", 0);
+                    TCCode.PadOut("{", 0);
+                    TCCode.PadOut("if (C) // " + next + " <  " + top + " (not >)?", 1);
+                    TCCode.PadOut("{", 1);
+                    TCCode.PadOut("break; // " + instruction.Data, 2);
+                    TCCode.PadOut("}", 1);
                     TCCode.PadOut("}", 0);
                 }
                 case "LILEX":
@@ -1994,6 +2157,42 @@ unit TCGen
                         TCCode.PadOut("LDA " + GlobalOperand(goffset+1), 0);
                         TCCode.PadOut("ROL", 0);
                         TCCode.PadOut("PHA", 0);
+                    }
+                }
+                case "STGI":
+                case "STGIB":
+                {
+                    int goffset = instruction.Offset;
+                    if (instruction.Operand == 0)
+                    {
+                        if (instruction.IsByte)
+                        {
+                            TCCode.PadOut("STZ " + GlobalOperand(goffset), 0);
+                        }
+                        else
+                        {
+                            TCCode.PadOut("STZ " + GlobalOperand(goffset), 0);
+                            TCCode.PadOut("STZ " + GlobalOperand(goffset+1), 0);
+                        }
+                    }
+                    else
+                    {
+                        
+                        if (instruction.IsByte)
+                        {
+                            TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                            TCCode.PadOut("STA " + GlobalOperand(goffset), 0);
+                        }
+                        else
+                        {
+                            TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                            TCCode.PadOut("STA " + GlobalOperand(goffset), 0);
+                            if ((instruction.Operand).GetByte(1) != (instruction.Operand).GetByte(0))
+                            {
+                                TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
+                            }
+                            TCCode.PadOut("STA " + GlobalOperand(goffset+1), 0);
+                        }
                     }
                 }
                 case "GGADD":
@@ -2224,7 +2423,59 @@ unit TCGen
                     }
                 }
                 
-                
+                case "GIANDB":
+                {
+                    if ((instruction.Operand).GetByte(0) == 0)
+                    {
+                        TCCode.PadOut("LDA # 0x00", 0);
+                    }
+                    else
+                    {
+                        int goffset  = instruction.Offset;
+                        TCCode.PadOut("LDA " + GlobalOperand(goffset), 0);
+                        TCCode.PadOut("AND # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                    }
+                    TCCode.PadOut("PHA", 0);
+                }
+                case "GIAND":
+                {
+                    int goffset  = instruction.Offset;
+                    if ((instruction.Operand).GetByte(0) == 0)
+                    {
+                        TCCode.PadOut("LDA # 0x00", 0);
+                    }
+                    else
+                    {
+                        TCCode.PadOut("LDA " + GlobalOperand(goffset), 0);
+                        TCCode.PadOut("AND # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                    }
+                    TCCode.PadOut("PHA", 0);
+                    if ((instruction.Operand).GetByte(1) == 0)
+                    {
+                        TCCode.PadOut("LDA # 0x00", 0);
+                    }
+                    else
+                    {
+                        TCCode.PadOut("LDA " + GlobalOperand(goffset+1), 0);
+                        TCCode.PadOut("AND # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
+                    }
+                    TCCode.PadOut("PHA", 0);
+                }
+                case "GIANDFF":
+                {
+                    int goffset  = instruction.Offset;
+                    TCCode.PadOut("LDA " + GlobalOperand(goffset), 0);
+                    TCCode.PadOut("PHA", 0);
+                    TCCode.PadOut("LDA # 0x00", 0);
+                    TCCode.PadOut("PHA", 0);
+                }
+                case "GIANDFFB":
+                case "GIANDFFC":
+                {
+                    int goffset  = instruction.Offset;
+                    TCCode.PadOut("LDA " + GlobalOperand(goffset), 0);
+                    TCCode.PadOut("PHA", 0);
+                }
                 
                 case "LIANDB":
                 {
@@ -2336,6 +2587,18 @@ unit TCGen
                         TCCode.PadOut("ADC # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
                         TCCode.PadOut("PHA", 0);
                     }
+                }
+                case "IADDC":
+                {
+                    if (instruction.IsByte)
+                    {
+                        Die(0x0B);
+                    }
+                    TCCode.PadOut("PLA", 0); // toss MSB
+                    TCCode.PadOut("CLC", 0);
+                    TCCode.PadOut("PLA", 0);
+                    TCCode.PadOut("ADC # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                    TCCode.PadOut("PHA", 0);
                 }
                 case "IADDL":
                 case "IADDLB":
