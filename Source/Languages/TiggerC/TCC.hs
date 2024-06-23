@@ -36,6 +36,7 @@ program TCCompile
         PrintLn("    -g <c> <r>  : called from GUI, not console");
         PrintLn("    -x          : use experimental features");
         PrintLn("    -o          : optimizations and less runtime checks");
+        PrintLn("    -z          : use Zero Page for global variables");
     }
     
     Hopper()
@@ -75,6 +76,10 @@ program TCCompile
                       case "-x":
                       {
                           isExperimental = true;   
+                      }
+                      case "-z":
+                      {
+                          ZeroPageGlobals = true;
                       }
                       default:
                       {

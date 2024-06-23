@@ -450,6 +450,54 @@ unit TCCode
             PadOut("TA" + register, 0);
         }
     }
+    BPOffset(int offset, string register, bool isByte)
+    {
+        if (InStreamMode)
+        {
+            Die(0x0B);
+        }
+        
+        int desired = offset;
+        if (offset > 0)
+        {
+            // locals
+            desired = -offset;
+        }
+        else if (offset < 0)
+        {
+            // arguments
+            desired = -offset;
+            desired += 3; // BP (1 byte) and return address (2 bytes)
+        }
+        
+        if (!isByte)
+        {
+            desired--; // MSB offset
+        }
+        
+        if (desired == 0)
+        {
+            PadOut("LD" + register + " ZP.BP", 0);
+        }
+        else
+        {
+            PadOut("LDA ZP.BP", 0);
+            if (desired < 0)
+            {
+                // locals
+                int negDesired = -desired;
+                PadOut("SEC", 0);
+                PadOut("SBC # 0x" + (negDesired.GetByte(0)).ToHexString(2), 0);
+            }
+            else if (desired > 0)
+            {
+                // arguments
+                PadOut("CLC", 0);
+                PadOut("ADC # 0x" + (desired.GetByte(0)).ToHexString(2), 0);
+            }
+            PadOut("TA" + register, 0);
+        }
+    }
     string nameWithOffset(string name, int offset, bool isGlobal)
     {
         if (isGlobal)
@@ -484,13 +532,18 @@ unit TCCode
         }
         else
         {
-            BPOffset(offset, "X");  
-            PadOut("LDA 0x0100, X", 0);  
-            PadOut("PHA", 0);
-            if (!isByte)
+            if (isByte)
             {
-                PadOut("DEX", 0);
+                BPOffset(offset, "X", isByte); // LSB offset 
                 PadOut("LDA 0x0100, X", 0);  
+                PadOut("PHA", 0);
+            }
+            else
+            {
+                BPOffset(offset, "X", isByte); // MSB offset
+                PadOut("LDA 0x0101, X // LSB", 0);  
+                PadOut("PHA", 0);
+                PadOut("LDA 0x0100, X // MSB", 0);  
                 PadOut("PHA", 0);
             }
         }
@@ -510,16 +563,20 @@ unit TCCode
         }
         else
         {
-            BPOffset(offset, "X");
-            if (!isByte)
+            if (isByte)
             {
-                PadOut("DEX", 0);
+                BPOffset(offset, "X", isByte); // LSB offset
                 PadOut("PLA", 0);
                 PadOut("STA 0x0100, X", 0);  
-                PadOut("INX", 0);
             }
-            PadOut("PLA", 0);
-            PadOut("STA 0x0100, X", 0);  
+            else
+            {
+                BPOffset(offset, "X", isByte); // MSB offset
+                PadOut("PLA", 0);
+                PadOut("STA 0x0100, X // MSB", 0);  
+                PadOut("PLA", 0);
+                PadOut("STA 0x0101, X // LSB", 0);  
+            }
         }
     }
     Dup(bool isByte)

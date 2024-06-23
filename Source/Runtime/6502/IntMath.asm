@@ -29,7 +29,7 @@ unit IntMath
             CMP #4
             if (Z)
             {
-                ASL vNEXTL
+                ASL ZP.NEXTL
                 ROL ZP.NEXTH
                 LSR
             }
