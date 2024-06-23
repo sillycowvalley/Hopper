@@ -44,6 +44,7 @@ unit TCCode
     }
     uint GlobalLimit { get { return globalLimit; } }
     
+    
     bool generating;
     bool Generating { get { return generating; } set { generating = value; } }
     
@@ -71,7 +72,7 @@ unit TCCode
         {
             Die(0x0B);
         }
-        if (generating)
+        if (!FirstPass && Compiling && generating)
         {
             if (text.Length != 0)
             {
@@ -89,13 +90,16 @@ unit TCCode
         codePath = path.Replace(extension, ".asm");
         File.Delete(codePath);
         
-        string name = Path.GetFileName(path);
-        name = name.Replace(extension, "");
-        name = name.ToUpper();
-        
-        codeFile = File.Create(codePath);
-        
-        PadOut("program " + name, 0);
+        if (!FirstPass)
+        {
+            string name = Path.GetFileName(path);
+            name = name.Replace(extension, "");
+            name = name.ToUpper();
+            
+            codeFile = File.Create(codePath);
+            TCSymbols.ExportFunctionTable();
+            PadOut("program " + name, 0);
+        }
     }
     Uses()
     {
@@ -154,23 +158,26 @@ unit TCCode
     }
     Flush()
     {
-        codeFile.Flush();
-        
-        string resourcesPath = "/Debug/Obj/resources.asm";
-        File.Delete(resourcesPath);
-        
-        file rfile = File.Create(resourcesPath);
-        rfile.Append("unit Resources"+ Char.EOL);
-        rfile.Append("{" + Char.EOL);
-        rfile.Append("    const string StrConsts = {");
-        string cstr = GetStringConstants(); 
-        foreach (var c in cstr)
+        if (!FirstPass)
         {
-            rfile.Append("0x" + (byte(c)).ToHexString(2) +", ");
+            codeFile.Flush();
+            
+            string resourcesPath = "/Debug/Obj/resources.asm";
+            File.Delete(resourcesPath);
+            
+            file rfile = File.Create(resourcesPath);
+            rfile.Append("unit Resources"+ Char.EOL);
+            rfile.Append("{" + Char.EOL);
+            rfile.Append("    const string StrConsts = {");
+            string cstr = GetStringConstants(); 
+            foreach (var c in cstr)
+            {
+                rfile.Append("0x" + (byte(c)).ToHexString(2) +", ");
+            }
+            rfile.Append("};" + Char.EOL);
+            rfile.Append("}" + Char.EOL);
+            rfile.Flush();
         }
-        rfile.Append("};" + Char.EOL);
-        rfile.Append("}" + Char.EOL);
-        rfile.Flush();
     }
     <string> deferred;
     Defer(string content)

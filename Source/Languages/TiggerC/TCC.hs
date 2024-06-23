@@ -1,5 +1,6 @@
 program TCCompile
 {
+#define TWOPASS    
     uses "/Source/System/System"
     uses "/Source/System/Diagnostics"
     
@@ -115,14 +116,25 @@ program TCCompile
               projectPath = Path.GetFileName(projectPath);
               projectPath = Path.Combine("/Debug/Obj/", projectPath);
               TCToken.Initialize();
+#ifdef TWOPASS                     
+              FirstPass = true;     
               TCScanner.Restart(projectPath);
               TCCode.Initialize(projectPath);
-              
               if (!TCCompile.Compile())
               {
                   break;
               }
-              
+              TCSymbols.Reset();
+              TCCompile.Reset(); // globalDefinitions
+              FirstPass = false;
+              Compiling = true;
+#endif
+              TCScanner.Restart(projectPath);
+              TCCode.Initialize(projectPath);
+              if (!TCCompile.Compile())
+              {
+                  break;
+              }
               TCCode.Flush();
               
               if (!Parser.IsInteractive())

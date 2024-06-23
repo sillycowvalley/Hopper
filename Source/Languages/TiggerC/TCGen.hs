@@ -804,27 +804,30 @@ unit TCGen
     
     Append(Instruction instruction)
     {
-        currentStream.Append(instruction);
-        if (IsOptimized)
+        if (!FirstPass && Compiling)
         {
-            if (enablePeephole)
+            currentStream.Append(instruction);
+            if (IsOptimized)
             {
-                // peephole optimizer
-                loop
+                if (enablePeephole)
                 {
-                    if (currentStream.Count >= 2)
+                    // peephole optimizer
+                    loop
                     {
-                        if (OptimizeTwo())   { continue; } // modified, loop again
+                        if (currentStream.Count >= 2)
+                        {
+                            if (OptimizeTwo())   { continue; } // modified, loop again
+                        }
+                        if (currentStream.Count >= 3)
+                        {
+                            if (OptimizeThree()) { continue; } // modified, loop again
+                        }
+                        if (currentStream.Count >= 4)
+                        {
+                            if (OptimizeFour())  { continue; } // modified, loop again
+                        }
+                        break; // made it here with no modifications, exit
                     }
-                    if (currentStream.Count >= 3)
-                    {
-                        if (OptimizeThree()) { continue; } // modified, loop again
-                    }
-                    if (currentStream.Count >= 4)
-                    {
-                        if (OptimizeFour())  { continue; } // modified, loop again
-                    }
-                    break; // made it here with no modifications, exit
                 }
             }
         }
@@ -868,6 +871,11 @@ unit TCGen
     }
     Call(string functionName, bool isReturnByte, bool notVoid, uint argumentBytesToPop)
     {
+        if (FirstPass)
+        {
+            TCSymbols.AddFunctionCall(CurrentFunction, functionName);
+        }
+        
         Instruction instruction;
         instruction.Name = "CALL";
         instruction.Data = functionName;
@@ -1387,11 +1395,10 @@ unit TCGen
     }
     Generate()
     {   
-        if (currentStream.Count == 0) { return; }
+        if (FirstPass || (currentStream.Count == 0) || !Compiling) { return; }
         
         InStreamMode = false;
         bool wasRem;
-        
         if (IsExperimental && (currentStream.Count != 1))
         {
             string content = ToString(currentStream);

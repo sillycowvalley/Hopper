@@ -10,6 +10,11 @@ unit TCType
         typeName = "|" + typeName.Replace("const ", "") + "|";
         return ("|byte|word|int|+int|").Contains(typeName);
     }
+    bool IsValueType(string typeName)
+    {
+        typeName = "|" + typeName.Replace("const ", "") + "|";
+        return ("|byte|word|int|+int|char|bool|").Contains(typeName);
+    }
     bool IsByteType(string typeName)
     {
         typeName = "|" + typeName.Replace("const ", "") + "|";

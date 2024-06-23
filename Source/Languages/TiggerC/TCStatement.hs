@@ -366,38 +366,46 @@ unit TCStatement
         string name = token.Lexeme;
         TCScanner.Advance(); // Skip identifier
         
-        if (!DefineVariable(tp, name, LocalOffset, false))
+        bool isGlobal;
+        int  offset = LocalOffset;
+        uint slotSize = IsByteType(tp) ? 1 : 2;
+        if ((IsValueType(tp) || IsPointerType(tp)) && (BlockLevel == 2) && RequestStaticBytes(CurrentFunction, slotSize)) 
         {
-            return false;
+            // top local scope, value type variabes or pointer variables (not automatically allocated)
+            isGlobal = true;
+            offset = int(GlobalOffset);
         }
-        
-        TCGen.Comment("initialize '" + name + "' (BP+" + (LocalOffset).ToString() +")");
-        TCGen.PushImmediate(TCType.IsByteType(tp), 0);
-        
-        string memberType;
-        if (IsArrayType(tp, ref memberType) && (size != 0))
+        if (isGlobal)
         {
-            if (!IsByteType(memberType))
+            if (!DefineVariable(tp, name, offset, isGlobal))
             {
-                size *= 2;
+                return false;
             }
-            /*
-            TCCode.PushWord(size, "array size");
-            TCCode.PadOut("TCSys.Malloc();", 0);
-            TCCode.PadOut("PLY", 0);
-            TCCode.PadOut("PLY", 0);
-            TCCode.PadOut("LDA ZP.TOPL", 0);
-            TCCode.PadOut("PHA", 0);
-            TCCode.PadOut("LDA ZP.TOPH", 0);
-            TCCode.PadOut("PHA", 0);
-            TCCode.PopVariable(name, LocalOffset, false, false);
-            */
-            TCGen.PushImmediate(false, size);
-            TCGen.Call("malloc", false, true, 2);
-            TCGen.PopVariable(LocalOffset, false, false);
+            TCGen.Comment("initialize '" + name + "' (" + (GlobalOffset).ToString() + ")");
+            TCGen.ZeroGlobal(TCType.IsByteType(tp), GlobalOffset);
+            GlobalOffset = GlobalOffset + slotSize;
         }
-        
-        LocalOffset = LocalOffset + int(IsByteType(tp) ? 1 : 2);
+        else
+        {
+            if (!DefineVariable(tp, name, offset, isGlobal))
+            {
+                return false;
+            }
+            TCGen.Comment("initialize '" + name + "' (BP+" + (LocalOffset).ToString() +")");
+            TCGen.PushImmediate(TCType.IsByteType(tp), 0);
+            string memberType;
+            if (IsArrayType(tp, ref memberType) && (size != 0))
+            {
+                if (!IsByteType(memberType))
+                {
+                    size *= 2;
+                }
+                TCGen.PushImmediate(false, size);
+                TCGen.Call("malloc", false, true, 2);
+                TCGen.PopVariable(LocalOffset, false, false);
+            }
+            LocalOffset = LocalOffset + int(slotSize);
+        }
     
         token = TCScanner.Current();
         if (token.Type == TokenType.SYM_EQ)
@@ -423,8 +431,6 @@ unit TCStatement
                 return false;
             }
             
-            int    offset;
-            bool   isGlobal;
             string variableType;
             if (!GetVariable(name, ref variableType, ref offset, ref isGlobal))
             {

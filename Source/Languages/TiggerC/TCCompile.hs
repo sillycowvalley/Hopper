@@ -17,7 +17,17 @@ unit TCCompile
     uint globalOffset;
     uint GlobalOffset { get { return globalOffset; } set { globalOffset = value; } }
     
-    < <Instruction> > globalDefinitions;   
+    bool firstPass;
+    bool FirstPass { get { return firstPass; } set { firstPass = value; } }
+    bool compiling;
+    bool Compiling { get { return compiling; } set { compiling = value; } }
+    
+    < <Instruction> > globalDefinitions;  
+    
+    Reset() 
+    {
+        globalDefinitions.Clear();
+    }
     
     bool Compile()
     {
@@ -62,6 +72,8 @@ unit TCCompile
         Token token;
         bool usesDone;
         
+        Parser.ProgressTick("c"); // C compiler
+        
         loop
         {
             token = TCScanner.Current();
@@ -98,6 +110,7 @@ unit TCCompile
                         usesDone = true;
                     }
                     success = parseFunction();
+                    Parser.ProgressTick("c"); // C compiler
                 }
                 case TokenType.SYM_HASH:
                 {
@@ -361,6 +374,12 @@ unit TCCompile
             }
         
             string functionName = token.Lexeme;
+            
+            if (!FirstPass)
+            {
+                Compiling = MustCompile(functionName);
+            }
+            
             CurrentIsNaked = functionName[0] == '_';
             TCScanner.Advance(); // Skip identifier
             
@@ -454,6 +473,11 @@ unit TCCompile
             
             TCSymbols.LeaveBlock(functionName, generate); // for arguments
             TCConstant.LeaveBlock();
+            
+            if (!FirstPass)
+            {
+                Compiling = true;
+            }
             
             CurrentIsNaked = false;
             

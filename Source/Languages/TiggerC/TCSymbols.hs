@@ -26,6 +26,11 @@ unit TCSymbols
     <string, Function> functions;
     <string,bool> symbols;
     
+    <string, <string,bool> > functionCalls;
+    <string, bool>           functionsToCompile;
+    <string,bool>            staticCandidates; // functions that are candidates for static local variables
+    uint                     staticBudget;     // bytes still available for static locals after all global allocations
+    
     string currentFunction;
     bool isNaked;
     string CurrentFunction { get { return currentFunction; } }
@@ -33,10 +38,138 @@ unit TCSymbols
     
     uint BlockLevel { get { return blockLevel; } set { blockLevel = value; } }
     
+    bool MustCompile(string name)
+    {
+        return functionsToCompile.Contains(name);
+    }
+    
     string VariableComment()
     {
         return "(level=" + (GetCurrentVariableLevel()).ToString() + ", levelBytes=" + (GetLevelBytes(GetCurrentVariableLevel())).ToString() + ")";
     }
+    Reset()
+    {
+        functions.Clear();
+        symbols.Clear();
+        staticBudget = GlobalLimit - GlobalOffset;
+    }
+    bool RequestStaticBytes(string functionName, uint bytes)
+    {
+        bool success;
+        if (staticCandidates.Contains(functionName))
+        {
+            if (staticCandidates[functionName])
+            {
+                if (staticBudget > bytes)
+                {
+                    staticBudget -= bytes;
+                    success = true;                
+                }
+            }
+        }
+        return success;
+    }
+        
+    ExportFunctionCalls(<string, bool> calls, int currentDepth, int maxDepth, <string> callStack)
+    {
+        uint count = 0;
+        uint total = calls.Count;
+        foreach (var kv in calls)
+        {
+            string name = kv.key;
+            count++;
+            
+            if (!functionsToCompile.Contains(name))
+            {
+                functionsToCompile[name] = false;
+            }
+            
+            // Check for recursion
+            bool recursion = callStack.Contains(name);
+        
+            if (currentDepth <= maxDepth)
+            {
+                if (count == total)
+                {
+                    PadOut("'-- " + name + (recursion ? " (recursion)" : ""), currentDepth);
+                }
+                else
+                {
+                    PadOut("|-- " + name + (recursion ? " (recursion)" : ""), currentDepth);
+                }
+            }
+            if (recursion)
+            {
+                staticCandidates[name] = false;
+                continue;
+            }
+            
+            callStack.Append(name); // Add the function to the call stack
+            
+            // Recursively export nested function calls if within the depth limit
+            if (functionCalls.Contains(name))
+            {
+                ExportFunctionCalls(functionCalls[name], currentDepth + 1, maxDepth, callStack);
+            }
+            
+            callStack.Remove(callStack.Count-1);
+        }
+    }
+    
+    ExportFunctionTable()
+    {
+        int maxDepth = 5;
+        PadOut("/*", 0);
+        PadOut("  Function dependency graph:", 0);
+        PadOut("", 0);
+        functionsToCompile["main"] = false;
+        string name;
+        <string> systemCalls;
+        loop
+        {
+            name = "";
+            foreach (var kv in functionsToCompile)
+            {
+                if (kv.value == false)
+                {
+                    name = kv.key;
+                    break;
+                }
+            }
+            if (name.Length == 0) { break; }
+            functionsToCompile[name] = true;
+        
+            staticCandidates[name] = true; // candidate for static locals
+            
+            // Initialize the call stack with the current function
+            <string> callStack; 
+            callStack.Append(name);
+            if (functionCalls.Contains(name)) 
+            {
+                PadOut(name, 1);
+                ExportFunctionCalls(functionCalls[name], 2, maxDepth, callStack);
+            }
+            else
+            {
+                // system call prototypes not included in functionCalls
+                systemCalls.Append(name);
+            }
+        }
+        PadOut("", 0);
+        if (systemCalls.Count != 0)
+        {
+            PadOut(" System calls used:", 0);
+            PadOut("", 0);
+            foreach (var syscall in systemCalls)
+            {
+                PadOut(syscall, 1);
+            }
+            PadOut("", 0);
+        }
+        PadOut("*/", 0);
+        PadOut("", 0);
+    }
+    
     uint GetCurrentVariableLevel()
     {
         if (variables.Count == 0)
@@ -53,7 +186,7 @@ unit TCSymbols
         foreach (var kv in scopeVariables)
         {
             Variable variable = kv.value;
-            if (variable.Offset >= 0) // not arguments)
+            if (!variable.IsGlobal && (variable.Offset >= 0)) // not arguments)
             {
                 bytes += IsByteType(variable.Type) ? 1 : 2;
             }
@@ -182,6 +315,19 @@ unit TCSymbols
             break;
         } // loop
         return success;
+    }
+    AddFunctionCall(string name, string callName)
+    {
+        <string, bool> calls;
+        if (functionCalls.Contains(name))
+        {
+            calls = functionCalls[name];
+        }
+        if (!calls.Contains(callName))
+        {
+            calls[callName] = true;
+            functionCalls[name] = calls;
+        }
     }
     UpdateArgumentOffsets(string functionName)
     {

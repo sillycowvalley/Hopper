@@ -2,6 +2,8 @@
 #define EXPERIMENTAL
 #define ROM_8K
 
+#define ZEROPAGEGLOBALS
+
 #include "../system.tc"  // for writeString, writeWord, writeChar
 #include "../time.tc"    // for millis, elapsedMillis
 
