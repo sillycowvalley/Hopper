@@ -1567,19 +1567,342 @@ unit TCGen
         
         generateDelegate = generateREM;
         generators["REM"] = generateDelegate;
-        
+
         generateDelegate = generatePUSHI;
         generators["PUSHI"] = generateDelegate;
         generateDelegate = generatePUSHIB;
         generators["PUSHIB"] = generateDelegate;
-        
+
         generateDelegate = generateZEROG;
         generators["ZEROG"] = generateDelegate;
         generators["ZEROGB"] = generateDelegate;
-        
+
         generateDelegate = generatePOPL;
         generators["POPL"] = generateDelegate;
         generators["POPLB"] = generateDelegate;
+
+        generateDelegate = generatePOPG;
+        generators["POPG"] = generateDelegate;
+        generators["POPGB"] = generateDelegate;
+
+        generateDelegate = generatePUSHL;
+        generators["PUSHL"] = generateDelegate;
+        generators["PUSHLB"] = generateDelegate;
+
+        generateDelegate = generatePUSHG;
+        generators["PUSHG"] = generateDelegate;
+        generators["PUSHGB"] = generateDelegate;
+
+        generateDelegate = generatePUSHM;
+        generators["PUSHM"] = generateDelegate;
+        generators["PUSHMB"] = generateDelegate;
+
+        generateDelegate = generatePOPM;
+        generators["POPM"] = generateDelegate;
+        generators["POPMB"] = generateDelegate;
+
+        generateDelegate = generatePUSHC;
+        generators["PUSHC"] = generateDelegate;
+
+        generateDelegate = generateADD;
+        generators["ADD"] = generateDelegate;
+        generators["ADDB"] = generateDelegate;
+
+        generateDelegate = generateSUB;
+        generators["SUB"] = generateDelegate;
+        generators["SUBB"] = generateDelegate;
+
+        generateDelegate = generateMUL;
+        generators["MUL"] = generateDelegate;
+        generators["MULB"] = generateDelegate;
+
+        generateDelegate = generateDIV;
+        generators["DIV"] = generateDelegate;
+        generators["DIVB"] = generateDelegate;
+
+        generateDelegate = generateMOD;
+        generators["MOD"] = generateDelegate;
+        generators["MODB"] = generateDelegate;
+
+        generateDelegate = generateMULI;
+        generators["MULI"] = generateDelegate;
+
+        generateDelegate = generateDIVI;
+        generators["DIVI"] = generateDelegate;
+
+        generateDelegate = generateMODI;
+        generators["MODI"] = generateDelegate;
+
+        generateDelegate = generateEQ;
+        generators["EQ"] = generateDelegate;
+        generators["EQB"] = generateDelegate;
+
+        generateDelegate = generateNE;
+        generators["NE"] = generateDelegate;
+        generators["NEB"] = generateDelegate;
+
+        generateDelegate = generateGT;
+        generators["GT"] = generateDelegate;
+        generators["GTB"] = generateDelegate;
+
+        generateDelegate = generateGE;
+        generators["GE"] = generateDelegate;
+        generators["GEB"] = generateDelegate;
+
+        generateDelegate = generateLTI;
+        generators["LTI"] = generateDelegate;
+        generators["LTIB"] = generateDelegate;
+
+        generateDelegate = generateLEI;
+        generators["LEI"] = generateDelegate;
+        generators["LEIB"] = generateDelegate;
+
+        generateDelegate = generateGTI;
+        generators["GTI"] = generateDelegate;
+        generators["GTIB"] = generateDelegate;
+
+        generateDelegate = generateGEI;
+        generators["GEI"] = generateDelegate;
+        generators["GEIB"] = generateDelegate;
+
+        generateDelegate = generateSHL;
+        generators["SHL"] = generateDelegate;
+        generators["SHLB"] = generateDelegate;
+
+        generateDelegate = generateSHR;
+        generators["SHR"] = generateDelegate;
+        generators["SHRB"] = generateDelegate;
+
+        generateDelegate = generateAND;
+        generators["AND"] = generateDelegate;
+        generators["ANDB"] = generateDelegate;
+
+        generateDelegate = generateOR;
+        generators["OR"] = generateDelegate;
+        generators["ORB"] = generateDelegate;
+
+        generateDelegate = generateXOR;
+        generators["XOR"] = generateDelegate;
+        generators["XORB"] = generateDelegate;
+
+        generateDelegate = generateNOT;
+        generators["NOT"] = generateDelegate;
+        generators["NOTB"] = generateDelegate;
+
+        generateDelegate = generateBOOLNOTB;
+        generators["BOOLNOTB"] = generateDelegate;
+
+        generateDelegate = generateLOOPEXIT;
+        generators["LOOPEXIT"] = generateDelegate;
+
+        generateDelegate = generatePADUNDER;
+        generators["PADUNDER"] = generateDelegate;
+
+        generateDelegate = generateDECSP;
+        generators["DECSP"] = generateDelegate;
+
+        generateDelegate = generateIF;
+        generators["IF"] = generateDelegate;
+
+        generateDelegate = generateELSE;
+        generators["ELSE"] = generateDelegate;
+
+        generateDelegate = generateENDIF;
+        generators["ENDIF"] = generateDelegate;
+
+        generateDelegate = generateLT;
+        generators["LT"] = generateDelegate;
+        generators["LTB"] = generateDelegate;
+
+        generateDelegate = generateLE;
+        generators["LE"] = generateDelegate;
+        generators["LEB"] = generateDelegate;
+
+        generateDelegate = generateCALL;
+        generators["CALL"] = generateDelegate;
+
+        generateDelegate = generateINCLI;
+        generators["INCLI"] = generateDelegate;
+        generators["INCLIB"] = generateDelegate;
+
+        generateDelegate = generateINCGI;
+        generators["INCGI"] = generateDelegate;
+        generators["INCGIB"] = generateDelegate;
+
+        generateDelegate = generateLEX;
+        generators["LEX"] = generateDelegate;
+        generators["LEXB"] = generateDelegate;
+
+        generateDelegate = generateLTX;
+        generators["LTX"] = generateDelegate;
+        generators["LTXB"] = generateDelegate;
+
+        generateDelegate = generateLILE;
+        generators["LILE"] = generateDelegate;
+        generators["LILEB"] = generateDelegate;
+
+        generateDelegate = generateLILT;
+        generators["LILT"] = generateDelegate;
+        generators["LILTB"] = generateDelegate;
+
+        generateDelegate = generateGILE;
+        generators["GILE"] = generateDelegate;
+        generators["GILEB"] = generateDelegate;
+
+        generateDelegate = generateGILT;
+        generators["GILT"] = generateDelegate;
+        generators["GILTB"] = generateDelegate;
+
+        generateDelegate = generateGILTX;
+        generators["GILTX"] = generateDelegate;
+        generators["GILTXB"] = generateDelegate;
+
+        generateDelegate = generateGILEX;
+        generators["GILEX"] = generateDelegate;
+
+        generateDelegate = generateGILEX;
+        generators["GILEX"] = generateDelegate;
+        generators["GILEXB"] = generateDelegate;
+
+        generateDelegate = generateLILEX;
+        generators["LILEX"] = generateDelegate;
+        generators["LILEXB"] = generateDelegate;
+
+        generateDelegate = generateLILTX;
+        generators["LILTX"] = generateDelegate;
+        generators["LILTXB"] = generateDelegate;
+
+        generateDelegate = generateSTLI;
+        generators["STLI"] = generateDelegate;
+        generators["STLIB"] = generateDelegate;
+
+        generateDelegate = generate2L;
+        generators["2L"] = generateDelegate;
+        generators["2LB"] = generateDelegate;
+
+        generateDelegate = generate2G;
+        generators["2G"] = generateDelegate;
+        generators["2GB"] = generateDelegate;
+
+        generateDelegate = generateSTGI;
+        generators["STGI"] = generateDelegate;
+        generators["STGIB"] = generateDelegate;
+
+        generateDelegate = generateGGADD;
+        generators["GGADD"] = generateDelegate;
+        generators["GGADDB"] = generateDelegate;
+
+        generateDelegate = generateGGADDG;
+        generators["GGADDG"] = generateDelegate;
+        generators["GGADDGB"] = generateDelegate;
+
+        generateDelegate = generateLLADD;
+        generators["LLADD"] = generateDelegate;
+        generators["LLADDB"] = generateDelegate;
+
+        generateDelegate = generateGGADDM;
+        generators["GGADDM"] = generateDelegate;
+
+        generateDelegate = generateLGADDM;
+        generators["LGADDM"] = generateDelegate;
+
+        generateDelegate = generateLGADDIM;
+        generators["LGADDIM"] = generateDelegate;
+
+        generateDelegate = generateLGADDI;
+        generators["LGADDI"] = generateDelegate;
+
+        generateDelegate = generateGGADDIM;
+        generators["GGADDIM"] = generateDelegate;
+
+        generateDelegate = generateGGADDI;
+        generators["GGADDI"] = generateDelegate;
+
+        generateDelegate = generateLGADD;
+        generators["LGADD"] = generateDelegate;
+        generators["LGADDB"] = generateDelegate;
+
+        generateDelegate = generateLLADDL;
+        generators["LLADDL"] = generateDelegate;
+        generators["LLADDLB"] = generateDelegate;
+
+        generateDelegate = generateGIANDB;
+        generators["GIANDB"] = generateDelegate;
+
+        generateDelegate = generateGIAND;
+        generators["GIAND"] = generateDelegate;
+
+        generateDelegate = generateGIANDFF;
+        generators["GIANDFF"] = generateDelegate;
+
+        generateDelegate = generateGIANDFFB;
+        generators["GIANDFFB"] = generateDelegate;
+        generators["GIANDFFC"] = generateDelegate;
+
+        generateDelegate = generateLIANDB;
+        generators["LIANDB"] = generateDelegate;
+
+        generateDelegate = generateLIAND;
+        generators["LIAND"] = generateDelegate;
+
+        generateDelegate = generateLIANDFF;
+        generators["LIANDFF"] = generateDelegate;
+        generators["LIANDFFB"] = generateDelegate;
+
+        generateDelegate = generateLISHL8;
+        generators["LISHL8"] = generateDelegate;
+        generators["LISHL8B"] = generateDelegate;
+
+        generateDelegate = generateLISHR8;
+        generators["LISHR8"] = generateDelegate;
+        generators["LISHR8B"] = generateDelegate;
+
+        generateDelegate = generateIADD;
+        generators["IADD"] = generateDelegate;
+        generators["IADDB"] = generateDelegate;
+
+        generateDelegate = generateIADDC;
+        generators["IADDC"] = generateDelegate;
+
+        generateDelegate = generateIADDL;
+        generators["IADDL"] = generateDelegate;
+        generators["IADDLB"] = generateDelegate;
+
+        generateDelegate = generateILADD;
+        generators["ILADD"] = generateDelegate;
+        generators["ILADDB"] = generateDelegate;
+        generators["LIADD"] = generateDelegate;
+        generators["LIADDB"] = generateDelegate;
+
+        generateDelegate = generateIGADD;
+        generators["IGADD"] = generateDelegate;
+        generators["IGADDB"] = generateDelegate;
+        generators["GIADD"] = generateDelegate;
+        generators["GIADDB"] = generateDelegate;
+
+        generateDelegate = generateIGSUB;
+        generators["IGSUB"] = generateDelegate;
+        generators["IGSUBB"] = generateDelegate;
+
+        generateDelegate = generateILSUB;
+        generators["ILSUB"] = generateDelegate;
+        generators["ILSUBB"] = generateDelegate;
+
+        generateDelegate = generateLISUB;
+        generators["LISUB"] = generateDelegate;
+        generators["LISUBB"] = generateDelegate;
+
+        generateDelegate = generateLISHR;
+        generators["LISHR"] = generateDelegate;
+        generators["LISHRB"] = generateDelegate;
+
+        generateDelegate = generateLISHL;
+        generators["LISHL"] = generateDelegate;
+        generators["LISHLB"] = generateDelegate;
+
+        generateDelegate = generateLIGTI;
+        generators["LIGTI"] = generateDelegate;
+
         
     }
     
@@ -1612,256 +1935,12 @@ unit TCGen
             }
             if (generators.Contains(name))
             {
-                Print(".");
                 GenerateDelegate generateDelegate = generators[name];
                 generateDelegate(instruction);
             }
             else
             {
-                switch (name)
-                {
-                    case "REM": { generateREM(instruction); }
-                    
-                    case "PUSHI": { generatePUSHI(instruction); }
-                    
-                    case "PUSHIB": { generatePUSHIB(instruction); }
-                    
-                    case "ZEROG":
-                    case "ZEROGB": { generateZEROG(instruction); }
-                    
-                    case "POPL":
-                    case "POPLB": { generatePOPL(instruction); }
-                    
-                    case "POPG":
-                    case "POPGB": { generatePOPG(instruction); }
-                    
-                    case "PUSHL":
-                    case "PUSHLB": { generatePUSHL(instruction); }
-                    
-                    case "PUSHG":
-                    case "PUSHGB": { generatePUSHG(instruction); }
-                    
-                    case "PUSHM":
-                    case "PUSHMB": { generatePUSHM(instruction); }
-                    
-                    case "POPM":
-                    case "POPMB": { generatePOPM(instruction); }
-                   
-                    case "PUSHC": { generatePUSHC(instruction); }
-                    
-                    case "ADD":
-                    case "ADDB": { generateADD(instruction); }
-                    
-                    case "SUB":
-                    case "SUBB": { generateSUB(instruction); }
-                    
-                    case "MUL":
-                    case "MULB": { generateMUL(instruction); }
-                    
-                    case "DIV":
-                    case "DIVB": { generateDIV(instruction); }
-                    
-                    case "MOD":
-                    case "MODB": { generateMOD(instruction); }
-                    
-                    case "MULI": { generateMULI(instruction); }
-                    
-                    case "DIVI": { generateDIVI(instruction); }
-                    
-                    case "MODI": { generateMODI(instruction); }
-                    
-                    case "EQ":
-                    case "EQB":  { generateEQ(instruction); }
-                    
-                    case "NE":
-                    case "NEB":  { generateNE(instruction); }
-                    
-                    case "GT":
-                    case "GTB":  { generateGT(instruction); }
-                    
-                    case "GE":
-                    case "GEB":  { generateGE(instruction); }
-                    
-                    case "LTI":
-                    case "LTIB": { generateLTI(instruction); }
-                    
-                    case "LEI":
-                    case "LEIB": { generateLEI(instruction); }
-                    
-                    case "GTI":
-                    case "GTIB": { generateGTI(instruction); }
-                    
-                    case "GEI":
-                    case "GEIB": { generateGEI(instruction); }
-                    
-                    case "SHL":
-                    case "SHLB": { generateSHL(instruction); }
-                    
-                    case "SHR":
-                    case "SHRB": { generateSHR(instruction); }
-                    
-                    case "AND":
-                    case "ANDB": { generateAND(instruction); }
-                    
-                    case "OR":
-                    case "ORB":  { generateOR(instruction); }
-                    
-                    case "XOR":
-                    case "XORB": { generateXOR(instruction); }
-                    
-                    case "NOT":
-                    case "NOTB": { generateNOT(instruction); }
-                    
-                    case "BOOLNOTB": { generateBOOLNOTB(instruction); }
-                    case "LOOPEXIT": { generateLOOPEXIT(instruction); }
-                    
-                    case "PADUNDER": { generatePADUNDER(instruction); }
-                    case "DECSP":    { generateDECSP(instruction); }
-                    
-                    case "IF":    { generateIF(instruction); }
-                    case "ELSE":  { generateELSE(instruction); }
-                    case "ENDIF": { generateENDIF(instruction); }
-                    
-                    case "LT":
-                    case "LTB": { generateLT(instruction); }
-                    
-                    case "LE":
-                    case "LEB":  { generateLE(instruction); }
-                    
-                    case "CALL": { generateCALL(instruction); }
-                    
-                    case "INCLI":
-                    case "INCLIB": { generateINCLI(instruction); }
-                    
-                    case "INCGI":
-                    case "INCGIB": { generateINCGI(instruction); }
-                        
-                    case "LEX":
-                    case "LEXB": { generateLEX(instruction); }
-                    
-                    case "LTX":
-                    case "LTXB": { generateLTX(instruction); }
-                    
-                    case "LILE":
-                    case "LILEB": { generateLILE(instruction); }
-                    
-                    case "LILT":
-                    case "LILTB": { generateLILT(instruction); }
-                    
-                    case "GILE":
-                    case "GILEB": { generateGILE(instruction); }
-                    
-                    case "GILT":
-                    case "GILTB": { generateGILT(instruction); }
-
-                    case "GILTX":
-                    case "GILTXB": { generateGILTX(instruction); }
-                    
-                    case "GILEX":
-                    case "GILEXB": { generateGILEX(instruction); }
-                    
-                    case "LILEX":
-                    case "LILEXB": { generateLILEX(instruction); }
-                    
-                    case "LILTX":
-                    case "LILTXB": { generateLILTX(instruction); }
-                    
-                    case "STLI":
-                    case "STLIB": { generaterSTLI(instruction); }
-                    
-                    case "2L":
-                    case "2LB":   { generater2L(instruction); }
-                    
-                    case "2G":
-                    case "2GB":   { generater2G(instruction); }
-                    
-                    case "STGI":
-                    case "STGIB": { generateSTGI(instruction); }
-                    
-                    case "GGADD":
-                    case "GGADDB": { generateGGADD(instruction); }
-                    
-                    case "GGADDG":
-                    case "GGADDGB": { generateGGADDG(instruction); }
-                    
-                    case "LLADD":
-                    case "LLADDB": { generateLLADD(instruction); }
-                    
-                    case "GGADDM": { generateGGADDM(instruction); }
-                    
-                    case "LGADDM": { generateLGADDM(instruction); }
-                    
-                    case "LGADDIM": { generateLGADDIM(instruction); }
-                    
-                    case "LGADDI": { generateLGADDI(instruction); }
-                    
-                    case "GGADDIM": { generateGGADDIM(instruction); }
-                    
-                    case "GGADDI": { generateGGADDI(instruction); }
-                    
-                    case "LGADD":
-                    case "LGADDB": { generateLGADD(instruction); }
-                    
-                    
-                    case "LLADDL":
-                    case "LLADDLB": { generateLLADDL(instruction); }
-                    
-                    case "GIANDB":   { generateGIANDB(instruction); }
-                    case "GIAND":    { generateGIAND(instruction); }
-                    case "GIANDFF":  { generateGIANDFF(instruction); }
-                    case "GIANDFFB":
-                    case "GIANDFFC": { generateGIANDFFB(instruction); }
-                    
-                    case "LIANDB": { generateLIANDB(instruction); }
-                    case "LIAND":  { generateLIAND(instruction); }
-                    case "LIANDFF":
-                    case "LIANDFFB": { generateLIANDFF(instruction); }
-                    
-                    case "LISHL8":
-                    case "LISHL8B": { generateLISHL8(instruction); }
-                    
-                    case "LISHR8":
-                    case "LISHR8B": { generateLISHR8(instruction); }
-                    
-                    case "IADD":
-                    case "IADDB": { generateIADD(instruction); }
-                    
-                    case "IADDC": { generateIADDC(instruction); }
-                    case "IADDL":
-                    case "IADDLB": { generateIADDL(instruction); }
-                    
-                    case "ILADD":
-                    case "ILADDB":
-                    case "LIADD":
-                    case "LIADDB": { generateILADD(instruction); }
-                    
-                    case "IGADD":
-                    case "IGADDB":
-                    case "GIADD":
-                    case "GIADDB": { generateIGADD(instruction); }
-                    
-                    case "IGSUB":
-                    case "IGSUBB": { generateIGSUB(instruction); }
-                    
-                    case "ILSUB":
-                    case "ILSUBB": { generateILSUB(instruction); }
-                    
-                    case "LISUB":
-                    case "LISUBB": { generateLISUB(instruction); }
-                    
-                    case "LISHR":
-                    case "LISHRB": { generateLISHR(instruction); }
-                    
-                    case "LISHL":
-                    case "LISHLB": { generateLISHL(instruction); }
-                    
-                    case "LIGTI":  { generateLIGTI(instruction); }
-                    
-                    default:
-                    {
-                        TCCode.PadOut("Generate() Not Implemented: " + name, 0);        
-                    }
-                }
+                TCCode.PadOut("Generate() Not Implemented: " + name, 0);
             }
         }
         currentStream.Clear();
@@ -2402,7 +2481,7 @@ unit TCGen
             }
         }
     }
-    generaterSTLI(Instruction instruction)
+    generateSTLI(Instruction instruction)
     {
         TCCode.BPOffset(instruction.Offset, "X", instruction.IsByte);
         if (instruction.Operand == 0)
@@ -2669,7 +2748,7 @@ unit TCGen
         TCCode.PadOut("break; // " + instruction.Data, 1);
         TCCode.PadOut("}", 0);
     }
-    generater2L(Instruction instruction)
+    generate2L(Instruction instruction)
     {
         TCCode.BPOffset(instruction.Offset, "X", instruction.IsByte);
         if (instruction.IsByte)
@@ -2688,7 +2767,7 @@ unit TCGen
             TCCode.PadOut("PHA", 0);
         }
     }
-    generater2G(Instruction instruction)
+    generate2G(Instruction instruction)
     {
         int goffset = instruction.Offset;
         TCCode.PadOut("LDA " + GlobalOperand(goffset), 0);
