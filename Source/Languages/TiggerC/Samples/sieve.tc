@@ -22,13 +22,13 @@ func main() {
         count = 0; 
         
         for (i = 0; i < SIZEPL; i++) {
-            flagsGlobal[[i] = true;
+            flagsGlobal[i] = true;
         }
         for (i = 0; i < SIZEPL; i++) { 
             if (flagsGlobal[i]) {
                 prime = i + i + 3; 
                 for (k = i + prime; k < SIZEPL; k += prime) {
-                    flagsGlobal[[k] = false; 
+                    flagsGlobal[k] = false; 
                 }
                 count++;
             }

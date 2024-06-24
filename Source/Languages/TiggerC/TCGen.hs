@@ -231,30 +231,82 @@ unit TCGen
                     }    
                 }
             }
-            if ((instruction0.Name == "DECSP") && (instruction0.Operand == 1))
+            if (instruction0.Name == "DECSP")
             {
-                if (!instruction1.IsByte)
+                if (instruction0.Operand == 1)
                 {
-                    if (instruction1.Name == "IADD")
+                    if (!instruction1.IsByte)
                     {
-                        //Print(" IADDC");
-                        instruction1.Name    = "IADDC";
-                        currentStream[currentStream.Count-2] = instruction1;
-                        DeleteInstruction(currentStream.Count-1);
-                        modified = true;
-                        break;
+                        if (instruction1.Name == "IADD")
+                        {
+                            //Print(" IADDC");
+                            instruction1.Name    = "IADDC";
+                            currentStream[currentStream.Count-2] = instruction1;
+                            DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
+                        if (instruction1.Name == "GIANDFF")
+                        {
+                            //Print(" GIANDFFC");    
+                            instruction1.Name    = "GIANDFFC";
+                            currentStream[currentStream.Count-2] = instruction1;
+                            DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
                     }
-                    if (instruction1.Name == "GIANDFF")
+                    if (instruction1.IsByte)
                     {
-                        //Print(" GIANDFFC");    
-                        instruction1.Name    = "GIANDFFC";
-                        currentStream[currentStream.Count-2] = instruction1;
-                        DeleteInstruction(currentStream.Count-1);
-                        modified = true;
-                        break;
+                        if (instruction1.Name == "PUSHL") // PUSHLB DECSP 1
+                        {
+                            Print(" [PUSHLB DECSP 1]");
+                            DeleteInstruction(currentStream.Count-2);
+                            DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
+                        if (instruction1.Name == "PUSHG") // PUSHGB DECSP 1
+                        {
+                            DeleteInstruction(currentStream.Count-2);
+                            DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
+                        if (instruction1.Name == "PUSHM") // PUSHMB DECSP 1
+                        {
+                            Print(" [PUSHMB DECSP 1]");
+                            instruction0.Operand = 2; // the index argument of PUSHMB is always 2 bytes
+                            currentStream[currentStream.Count-1] = instruction0;
+                            DeleteInstruction(currentStream.Count-2);
+                            modified = true;
+                            break;
+                        }
+                    }
+                }
+                if (instruction0.Operand == 2)
+                {
+                    if (!instruction1.IsByte)
+                    {
+                        if (instruction1.Name == "PUSHL") // PUSHL DECSP 2
+                        {
+                            Print(" [PUSHL DECSP 2]");
+                            DeleteInstruction(currentStream.Count-2);
+                            DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
+                        if (instruction1.Name == "PUSHG") // PUSHG DECSP 2
+                        {
+                            DeleteInstruction(currentStream.Count-2);
+                            DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
                     }
                 }
             }
+            
             if ((instruction0.Name == "IADD"))
             {
                 if (instruction1.IsByte == instruction0.IsByte)
@@ -1403,6 +1455,10 @@ unit TCGen
             {
                 content = "POPM"+width;
             }
+            case "DUP":
+            {
+                content = "DUP"+width;
+            }
             case "CALL":
             {
                 content = "CALL '" + instruction.Data + "'";
@@ -1727,6 +1783,10 @@ unit TCGen
 
         generateDelegate = generateDECSP;
         generators["DECSP"] = generateDelegate;
+        
+        generateDelegate = generateDUP;
+        generators["DUPB"] = generateDelegate;
+        generators["DUP"] = generateDelegate;
 
         generateDelegate = generateIF;
         generators["IF"] = generateDelegate;
@@ -1973,7 +2033,7 @@ unit TCGen
             }
             else
             {
-                TCCode.PadOut("Generate() Not Implemented: " + name, 0);
+                TCCode.PadOut(name + ": Not Implemented in TCGen", 0);
             }
         }
         currentStream.Clear();
@@ -3247,5 +3307,9 @@ unit TCGen
         TCCode.PadOut("PHA", 0);
         TCCode.PadOut("LDA ZP.TOPH", 0);
         TCCode.PadOut("PHA", 0);
+    }
+    generateDUP(Instruction instruction)
+    {
+        TCCode.Dup(instruction.IsByte);
     }
 }

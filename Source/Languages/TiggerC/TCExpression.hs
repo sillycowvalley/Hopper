@@ -14,12 +14,12 @@ unit TCExpression
         bool success;
         loop
         {
-            if (!parseAssignmentExpression(ref actualType))
+            if (!parseConditionalExpression(ref actualType))
             {
                 break;
             }
     
-            Token token = TCScanner.Current();        
+            Token token = TCScanner.Current();       
             if (token.Type == TokenType.KW_AS)
             {
                 string asType;
@@ -43,219 +43,6 @@ unit TCExpression
             break;
         }
         return success;   
-    }
-
-    bool parseAssignmentExpression(ref string actualType)
-    {
-        Token token = TCScanner.Current();
-        if ((token.Type == TokenType.IDENTIFIER) || (token.Type == TokenType.KW_MEM))
-        {
-            string name = token.Lexeme;
-            bool hasIndex;
-            bool isByteIndex;
-            bool isIncDecIndexed;
-            
-            Token peek  = TCScanner.Peek();
-            if (peek.Type == TokenType.SYM_LLBRACKET)
-            {
-                TCScanner.Advance(); // <name>
-                TCScanner.Advance(); // '[['
-                string indexType;
-                if (!parseExpression(ref indexType))
-                {
-                    return false;
-                }
-                if (!IsIndexType(indexType))
-                {
-                    Error(token.SourcePath, token.Line, "integral index type expected");
-                    return false;
-                }
-                token = TCScanner.Current();
-                if (token.Type != TokenType.SYM_RBRACKET)
-                {
-                    Error(token.SourcePath, token.Line, "expected ']' after index expression");
-                    return false;
-                }
-                peek  = TCScanner.Peek();
-                hasIndex = true;
-                isByteIndex = IsByteType(indexType);
-                isIncDecIndexed = (peek.Type == TokenType.SYM_PLUSPLUS) || (peek.Type == TokenType.SYM_MINUSMINUS);
-            }
-           
-            if ((peek.Type == TokenType.SYM_EQ) || IsCompoundAssignmentOperator(peek.Type) || isIncDecIndexed)
-            {
-                TCScanner.Advance(); // name or ']'
-                    
-                token = TCScanner.Current(); 
-                string op = token.Lexeme;
-                
-                TCGen.Comment(name + " " + op);
-                TCScanner.Advance(); // Skip '=' or compound assignment operator
-                
-                
-                int    offset;
-                bool   isGlobal;
-                if (hasIndex && (name == "mem"))
-                {
-                    actualType = "byte";
-                    if (isIncDecIndexed)
-                    {
-                        TCGen.Dup(isByteIndex);
-                    }
-                    // memory address is TOS, twice
-                }
-                else
-                {
-                    if (!GetVariable(name, ref actualType, ref offset, ref isGlobal))
-                    {
-                        Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
-                        return false;
-                    }
-                    if (hasIndex)
-                    {
-                        actualType = GetArrayMemberType(actualType);
-                    }
-                }
-                bool isByte = IsByteType(actualType);
-                
-                if (hasIndex && (name != "mem"))
-                {
-                    // calculate the address we want to access
-                    if (isByteIndex)
-                    {
-                        // for simplicity, cast the index to a word
-                        TCCode.CastPad(false);
-                    }
-                    if (!isByte)
-                    {
-                        // index *= 2;
-                        TCGen.Dup(false);
-                        TCGen.Add(false);
-                    }
-                    TCGen.PushVariable(offset, false, isGlobal);
-                    TCGen.Add(false);
-                    if (isIncDecIndexed)
-                    {
-                        TCGen.Dup(false);
-                    }
-                    // array member address is TOS
-                }
-                
-                if (op != "=")
-                {
-                    if (hasIndex && (name == "mem"))
-                    {
-                        TCGen.Dup(isByteIndex);
-                        TCGen.PushMemory(isByteIndex, isByte); // TCCode.ReadMemory(isByteIndex, isByte);
-                    }
-                    else
-                    {
-                        if (hasIndex)
-                        {
-                            // push member based on address
-                            TCGen.Comment("array assignment operator '" + op + "' getitem");
-                            TCGen.Dup(false);
-                            TCGen.PushMemory(false, isByte); // TCCode.ReadMemory(false, isByte);
-                        }
-                        else
-                        {
-                            TCGen.PushVariable(offset, isByte, isGlobal);
-                        }
-                    }
-                }
-                if (isIncDecIndexed)
-                {
-                    TCGen.PushImmediate(isByte, 1);
-                }
-                else
-                {  
-                    string rhsType;
-                    if (!parseExpression(ref rhsType))
-                    {
-                        return false;
-                    }
-                    
-                    if (!IsAutomaticCast(actualType, rhsType, false, false))
-                    {
-                        TypeError(actualType, rhsType);
-                        return false;
-                    }
-                }
-                
-                switch (op)
-                {
-                    case "+=":
-                    case "++":
-                    {
-                        TCGen.Add(IsByteType(actualType));
-                    }
-                    case "--":
-                    case "-=":
-                    {
-                        TCGen.Sub(IsByteType(actualType));
-                    }
-                    case "/=":
-                    {
-                        if (IsSignedType(actualType))
-                        {
-                            TCGen.DivI();
-                        }
-                        else
-                        {
-                            TCGen.Div(IsByteType(actualType));
-                        }
-                    }
-                    case "*=":
-                    {
-                        if (IsSignedType(actualType))
-                        {
-                            TCGen.MulI();
-                        }
-                        else
-                        {
-                            TCGen.Mul(IsByteType(actualType));
-                        }
-                    }
-                }
-                
-                if (hasIndex && (name == "mem"))
-                {
-                    TCGen.PopMemory(isByteIndex, isByte); // TCCode.WriteMemory(isByteIndex, isByte);
-                    if (isIncDecIndexed)
-                    {
-                        TCGen.PushMemory(isByteIndex, isByte); // TCCode.ReadMemory(isByteIndex, isByte); // for the expression result
-                    }
-                }
-                else
-                {
-                    if (hasIndex)
-                    {
-                        // pop member based on address
-                        TCGen.Comment("array assignment operator '" + op + "' setitem");
-                        TCGen.PopMemory(false, isByte); // TCCode.WriteMemory(false, isByte);
-                        if (isIncDecIndexed)
-                        {
-                            TCGen.PushMemory(false, isByte); // TCCode.ReadMemory(false, isByte); // for the expression result
-                        }
-                    }
-                    else
-                    {
-                        TCGen.PopVariable(offset, isByte, isGlobal);
-                    }
-                }
-                if (!isIncDecIndexed)
-                {
-                    actualType = "void"; // no expression result to pop
-                }
-                return true;
-            }
-        }
-        
-        if (!parseConditionalExpression(ref actualType))
-        {
-            return false;
-        }
-        return true;
     }
     
     bool parseConditionalExpression(ref string actualType)
@@ -779,13 +566,15 @@ unit TCExpression
         loop
         {
             Token token = TCScanner.Current();
-            if (token.Type == TokenType.IDENTIFIER)
+            if ((token.Type == TokenType.IDENTIFIER) || (token.Type == TokenType.KW_MEM))
             {
+                bool isMem = (token.Type == TokenType.KW_MEM);
+                
                 string name = token.Lexeme;
                 TCScanner.Advance(); // Skip identifier
                 
                 string constantValue;
-                if (GetConst(name, ref actualType, ref constantValue))
+                if (!isMem && GetConst(name, ref actualType, ref constantValue))
                 {
                     if (actualType.EndsWith(']'))
                     {
@@ -828,8 +617,7 @@ unit TCExpression
                             _ = UInt.TryParse(constantValue, ref address);
                             TCGen.PushConst(address);
                             TCGen.Add(false);  // const [] access in parsePrimaryExpression : add the index to the address (assumes char/byte array)
-                            
-                            TCGen.PushMemory(false, true); // TCCode.ReadMemory(false, true); 
+                            TCGen.PushMemory(false, true);
                         }
                         else
                         {
@@ -872,11 +660,11 @@ unit TCExpression
                     }
                     success = true;
                     break;
-                }
+                } // GetConst
             
             
                 token = TCScanner.Current();
-                if (token.Type == TokenType.SYM_LPAREN)
+                if (!isMem && (token.Type == TokenType.SYM_LPAREN))
                 {
                     // function call
                     if (!GetFunction(name, ref actualType))
@@ -904,6 +692,11 @@ unit TCExpression
                     //{
                     //    TCGen.PushTOP(IsByteType(actualType)); // TCOps.PushTop(IsByteType(actualType));
                     //}
+                } // function
+                else if (isMem && (token.Type != TokenType.SYM_LBRACKET))
+                {
+                    Error(token.SourcePath, token.Line, "'[' expected");
+                    break;
                 }
                 else if (token.Type == TokenType.SYM_LBRACKET)
                 {
@@ -941,10 +734,16 @@ unit TCExpression
                         break;
                     }
                     TCScanner.Advance(); // Skip ']'
+                    bool isByteIndex;
                     if (name == "mem")
                     {
                         actualType = "byte";
-                        TCGen.PushMemory(IsByteType(indexType), true); // TCCode.ReadMemory(IsByteType(indexType), true);
+                        if (IsByteType(indexType))
+                        {
+                            // for simplicity, cast the index to a word
+                            CastPad(false);
+                        }
+                        isByteIndex = false;
                     }
                     else
                     {
@@ -955,6 +754,8 @@ unit TCExpression
                             // for simplicity, cast the index to a word
                             CastPad(false);
                         }
+                        isByteIndex = false;
+                        
                         if (!actualType.Contains('['))
                         {
                             Error(token.SourcePath, token.Line, "array identifier expected");
@@ -969,7 +770,95 @@ unit TCExpression
                         }
                         TCGen.PushVariable(offset, false, isGlobal);
                         TCGen.Add(false);
-                        TCGen.PushMemory(false, IsByteType(actualType)); //TCCode.ReadMemory(false, IsByteType(actualType));  
+                    }
+                    token = TCScanner.Current();
+                    if ((token.Type == TokenType.SYM_PLUSPLUS) || (token.Type == TokenType.SYM_MINUSMINUS))
+                    {
+                        TCScanner.Advance(); // Skip '++' or '--'
+                         
+                        TCGen.Dup(isByteIndex); // once to push the result of the expression
+                        TCGen.Dup(isByteIndex); // once to push the value
+                        TCGen.Dup(isByteIndex); // once to pop the update value
+                         
+                        // i++ or i-- : value before --/++ is used in the expression
+                        TCGen.PushMemory(isByteIndex, IsByteType(actualType));
+                         
+                        TCGen.PushMemory(isByteIndex, IsByteType(actualType));
+                        TCGen.PushImmediate(IsByteType(actualType), 1);
+                        if (token.Type == TokenType.SYM_PLUSPLUS)
+                        {
+                            TCGen.Add(IsByteType(actualType));
+                        }
+                        else
+                        {
+                            TCGen.Sub(IsByteType(actualType));
+                        }
+                        TCGen.PopMemory(isByteIndex, IsByteType(actualType));
+                    }
+                    else if ((token.Type == TokenType.SYM_EQ) || IsCompoundAssignmentOperator(token.Type))
+                    {
+                        string op = "=";
+                        TCGen.Dup(isByteIndex); // expression result
+                        if (IsCompoundAssignmentOperator(token.Type))
+                        {
+                            op = token.Lexeme;
+                            TCGen.Dup(isByteIndex);
+                            TCGen.PushMemory(isByteIndex, IsByteType(actualType));
+                        }
+                        
+                        TCScanner.Advance(); 
+                     
+                        string rhsType;
+                        if (!parseExpression(ref rhsType))
+                        {
+                            return false;
+                        }
+                        if (!IsAutomaticCast(actualType, rhsType, false, false))
+                        {
+                            TypeError(actualType, rhsType);
+                            return false;
+                        }
+                     
+                        switch (op)
+                        {
+                            case "+=":
+                            {
+                                TCGen.Add(IsByteType(actualType));
+                            }
+                            case "-=":
+                            {
+                                TCGen.Sub(IsByteType(actualType));
+                            }
+                            case "/=":
+                            {
+                                if (IsSignedType(actualType))
+                                {
+                                    TCGen.DivI();
+                                }
+                                else
+                                {
+                                    TCGen.Div(IsByteType(actualType));
+                                }
+                            }
+                            case "*=":
+                            {
+                                if (IsSignedType(actualType))
+                                {
+                                    TCGen.MulI();
+                                }
+                                else
+                                {
+                                    TCGen.Mul(IsByteType(actualType));
+                                }
+                            }
+                        } // switch
+                        
+                        TCGen.PopMemory(isByteIndex, IsByteType(actualType));  
+                        TCGen.PushMemory(isByteIndex, IsByteType(actualType)); // expression result 
+                    }
+                    else
+                    {
+                        TCGen.PushMemory(isByteIndex, IsByteType(actualType)); // arr[] or mem[]
                     }
                 }
                 else
@@ -984,9 +873,7 @@ unit TCExpression
                     }
                     if ((token.Type == TokenType.SYM_PLUSPLUS) || (token.Type == TokenType.SYM_MINUSMINUS))
                     {
-                        
                         TCScanner.Advance(); // Skip '++' or '--'
-                        // TCCode.PostIncrement(name, offset, IsByteType(actualType), token.Type == TokenType.SYM_PLUSPLUS, isGlobal);
                         
                         // i++ or i-- : value before --/++ is used in the expression
                         TCGen.PushVariable(offset, IsByteType(actualType), isGlobal);
@@ -1001,11 +888,69 @@ unit TCExpression
                         {
                             TCGen.Sub(IsByteType(actualType));
                         }
+                        TCGen.PopVariable(offset, IsByteType(actualType), isGlobal); // variable++ or variable--
+                    }
+                    else if ((token.Type == TokenType.SYM_EQ) || IsCompoundAssignmentOperator(token.Type))
+                    {
+                        string op = "=";
+                        if (IsCompoundAssignmentOperator(token.Type))
+                        {
+                            op = token.Lexeme;
+                            TCGen.PushVariable(offset, IsByteType(actualType), isGlobal);
+                        }
+                        
+                        TCScanner.Advance(); 
+                     
+                        string rhsType;
+                        if (!parseExpression(ref rhsType))
+                        {
+                            return false;
+                        }
+                        if (!IsAutomaticCast(actualType, rhsType, false, false))
+                        {
+                            TypeError(actualType, rhsType);
+                            return false;
+                        }
+                        switch (op)
+                        {
+                            case "+=":
+                            {
+                                TCGen.Add(IsByteType(actualType));
+                            }
+                            case "-=":
+                            {
+                                TCGen.Sub(IsByteType(actualType));
+                            }
+                            case "/=":
+                            {
+                                if (IsSignedType(actualType))
+                                {
+                                    TCGen.DivI();
+                                }
+                                else
+                                {
+                                    TCGen.Div(IsByteType(actualType));
+                                }
+                            }
+                            case "*=":
+                            {
+                                if (IsSignedType(actualType))
+                                {
+                                    TCGen.MulI();
+                                }
+                                else
+                                {
+                                    TCGen.Mul(IsByteType(actualType));
+                                }
+                            }
+                        } // switch
                         TCGen.PopVariable(offset, IsByteType(actualType), isGlobal);
+                        TCGen.PushVariable(offset, IsByteType(actualType), isGlobal); // expression result 
                     }
                     else
                     {
-                        TCGen.PushVariable(offset, IsByteType(actualType), isGlobal);
+                        token = TCScanner.Current();
+                        TCGen.PushVariable(offset, IsByteType(actualType), isGlobal); // variable
                     }
                 }
             }
@@ -1048,40 +993,6 @@ unit TCExpression
                     Error(token.SourcePath, token.Line, "expected identifier after '++' or '--'");
                     break;
                 }
-            }
-            else if (token.Type == TokenType.KW_MEM)
-            {
-                TCScanner.Advance(); // Skip 'func'
-                
-                token = TCScanner.Current();
-                if (token.Type != TokenType.SYM_LBRACKET)
-                {
-                    Error(token.SourcePath, token.Line, "expected '[' after address expression");
-                    break;
-                }
-                TCScanner.Advance(); // Skip '['
-                
-                string indexType;
-                if (!parseExpression(ref indexType))
-                {
-                    break;
-                }
-                if (!IsIndexType(indexType))
-                {
-                    Error(token.SourcePath, token.Line, "integral address type expected");
-                    break;
-                }
-                
-                token = TCScanner.Current();
-                if (token.Type != TokenType.SYM_RBRACKET)
-                {
-                    Error(token.SourcePath, token.Line, "expected ']' after address expression");
-                    break;
-                }
-                TCScanner.Advance(); // Skip ']'
-                actualType = "byte";
-                
-                TCGen.PushMemory(IsByteType(indexType), true); // TCCode.ReadMemory(IsByteType(indexType), true);
             }
             else if ((token.Type == TokenType.LIT_NUMBER) || (token.Type == TokenType.LIT_CHAR) || (token.Type == TokenType.KW_FALSE) || (token.Type == TokenType.KW_TRUE))
             {
