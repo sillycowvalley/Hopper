@@ -98,4 +98,86 @@ unit TCSys
         STA ZP.IDXL
         Free.Free();
     }
+    I2CScan()
+    {
+        TSX
+        
+        // return address
+        INX
+        INX
+        
+        // byte address : SP - 1
+        INX
+        LDA 0x0100, X
+    
+        // I2C address in A
+        I2C.Scan();
+        if (Z)
+        {
+            LDA # 1 // found = true
+            STA ZP.TOPL
+        }
+        else
+        {
+            // not found
+            STZ ZP.TOPL
+        }
+        STZ ZP.TOPH
+    }
+    ReadPage()
+    {
+        TSX
+        
+        // return address
+        INX
+        INX
+        
+        // byte[] data
+        INX
+        LDA 0x0100, X
+        STA ZP.IDXH
+        INX
+        LDA 0x0100, X
+        STA ZP.IDXL
+        
+        // word address
+        INX
+        LDA 0x0100, X
+        STA ZP.IDYH
+        INX
+        LDA 0x0100, X
+        STA ZP.IDYL
+            
+        // IDY contains the source address (in EEPROM)
+        // IDX contains the destination address
+        SerialEEPROM.ReadPage();
+    }
+    WritePage()
+    {
+        TSX
+        
+        // return address
+        INX
+        INX
+        
+        // const byte[] data
+        INX
+        LDA 0x0100, X
+        STA ZP.IDXH
+        INX
+        LDA 0x0100, X
+        STA ZP.IDXL
+        
+        // word address
+        INX
+        LDA 0x0100, X
+        STA ZP.IDYH
+        INX
+        LDA 0x0100, X
+        STA ZP.IDYL
+        
+        // IDX contains the source address
+        // IDY contains the destination address (in EEPROM)
+        SerialEEPROM.WritePage();
+    }
 }

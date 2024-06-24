@@ -94,6 +94,8 @@ unit TCGen
     //    GGADDIM : PUSHL offset0, PUSHG offset1, ADD PUSHIB POPMB
     //    LLADDL  : PUSHL offset0, PUSHL offset1, ADD, POPL offset0 (offset0 may be the same as offset1)
     //    GGADDG  : PUSHG offset0, PUSHG offset1, ADD, POPG offset0 (offset0 may be the same as offset1)
+    //    GGMULI  : PUSHG offset0, PUSHG offset1, MULI
+    //    GGDIVI  : PUSHG offset0, PUSHG offset1, DIVI
     //    INCLI   : PUSHL offset0, PUSHI, ADD, POPL offset0
     //    INCGI   : PUSHG offset0, PUSHI, ADD, POPG offset0
     //    STLI    : PUSHI, POPL offset0
@@ -557,10 +559,11 @@ unit TCGen
             }
             if ((instruction2.Name == "PUSHG") && (instruction1.Name == "PUSHG"))
             {
-                if (instruction0.Name == "ADD")
+                if ((instruction2.IsByte == instruction1.IsByte) && (instruction1.IsByte == instruction0.IsByte))
                 {
-                    if ((instruction2.IsByte == instruction1.IsByte) && (instruction1.IsByte == instruction0.IsByte))
-                    {                        
+                    if (instruction0.Name == "ADD")
+                    {
+                                                
                         if (instruction2.Offset == instruction1.Offset)
                         {
                             //Print(" 2G3");
@@ -582,6 +585,28 @@ unit TCGen
                             modified = true;
                             break;
                         }
+                    }
+                    if (instruction0.Name == "MULI")
+                    {
+                        Print(" GGMULI");
+                        instruction2.Offset2 = instruction1.Offset;
+                        instruction2.Name    = "GGMULI";
+                        currentStream[currentStream.Count-3] = instruction2;
+                        DeleteInstruction(currentStream.Count-1);
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
+                    if (instruction0.Name == "DIVI")
+                    {
+                        Print(" GGDIVI");
+                        instruction2.Offset2 = instruction1.Offset;
+                        instruction2.Name    = "GGDIVI";
+                        currentStream[currentStream.Count-3] = instruction2;
+                        DeleteInstruction(currentStream.Count-1);
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
                     }
                 }
             }
@@ -1470,6 +1495,8 @@ unit TCGen
                 content = instruction.Name + width + " [" + GlobalOperand(instruction.Offset) + "] [" +  GlobalOperand(instruction.Offset2) + "]";
             }
             case "GGADD":
+            case "GGMULI":
+            case "GGDIVI":
             case "GGADDM":
             {
                 content = instruction.Name + width + " [" + GlobalOperand(instruction.Offset) + "] [" +GlobalOperand(instruction.Offset2) + "]";
@@ -1792,6 +1819,12 @@ unit TCGen
         generators["GGADD"] = generateDelegate;
         generators["GGADDB"] = generateDelegate;
 
+        generateDelegate = generateGGMULI;
+        generators["GGMULI"] = generateDelegate;
+        
+        generateDelegate = generateGGDIVI;
+        generators["GGDIVI"] = generateDelegate;
+        
         generateDelegate = generateGGADDG;
         generators["GGADDG"] = generateDelegate;
         generators["GGADDGB"] = generateDelegate;
@@ -3170,4 +3203,49 @@ unit TCGen
     generateGT(Instruction instruction)       { TCOps.CompareGT(instruction.IsByte); }
     generateNE(Instruction instruction)       { TCOps.CompareNE(instruction.IsByte); }
     generateEQ(Instruction instruction)       { TCOps.CompareEQ(instruction.IsByte); }
+    
+    generateGGMULI(Instruction instruction)
+    {
+        if (instruction.IsByte)
+        {
+            Die(0x0B);
+        }
+        int next  = instruction.Offset;
+        int top   = instruction.Offset2;
+        TCCode.PadOut("LDA " + GlobalOperand(next), 0);
+        TCCode.PadOut("STA ZP.NEXTL", 0);
+        TCCode.PadOut("LDA " + GlobalOperand(next+1), 0);
+        TCCode.PadOut("STA ZP.NEXTH", 0);
+        TCCode.PadOut("LDA " + GlobalOperand(top), 0);
+        TCCode.PadOut("STA ZP.TOPL", 0);
+        TCCode.PadOut("LDA " + GlobalOperand(top+1), 0);
+        TCCode.PadOut("STA ZP.TOPH", 0);
+        TCCode.PadOut("TCOps.MulI();", 0);
+        TCCode.PadOut("LDA ZP.TOPL", 0);
+        TCCode.PadOut("PHA", 0);
+        TCCode.PadOut("LDA ZP.TOPH", 0);
+        TCCode.PadOut("PHA", 0);
+    }
+    generateGGDIVI(Instruction instruction)
+    {
+        if (instruction.IsByte)
+        {
+            Die(0x0B);
+        }
+        int next  = instruction.Offset;
+        int top   = instruction.Offset2;
+        TCCode.PadOut("LDA " + GlobalOperand(next), 0);
+        TCCode.PadOut("STA ZP.NEXTL", 0);
+        TCCode.PadOut("LDA " + GlobalOperand(next+1), 0);
+        TCCode.PadOut("STA ZP.NEXTH", 0);
+        TCCode.PadOut("LDA " + GlobalOperand(top), 0);
+        TCCode.PadOut("STA ZP.TOPL", 0);
+        TCCode.PadOut("LDA " + GlobalOperand(top+1), 0);
+        TCCode.PadOut("STA ZP.TOPH", 0);
+        TCCode.PadOut("TCOps.DivI();", 0);
+        TCCode.PadOut("LDA ZP.TOPL", 0);
+        TCCode.PadOut("PHA", 0);
+        TCCode.PadOut("LDA ZP.TOPH", 0);
+        TCCode.PadOut("PHA", 0);
+    }
 }

@@ -827,8 +827,8 @@ unit TCExpression
                             uint address;
                             _ = UInt.TryParse(constantValue, ref address);
                             TCGen.PushConst(address);
-                            
                             TCGen.Add(false);  // const [] access in parsePrimaryExpression : add the index to the address (assumes char/byte array)
+                            
                             TCGen.PushMemory(false, true); // TCCode.ReadMemory(false, true); 
                         }
                         else

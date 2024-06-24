@@ -5,7 +5,7 @@ unit I2C
     
     // https://github.com/AndersBNielsen/65uino/blob/main/i2c.s
     
-    uses "6502/MemoryMap"
+    uses "/Source/Runtime/6502/MemoryMap"
     uses "/Source/Runtime/6502/ZeroPage"
     
     const byte SSD1306Address      = 0x3C;

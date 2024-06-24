@@ -1,0 +1,9 @@
+const byte SSD1306Address      = 0x3C;
+const byte SerialEEPROMAddress = 0x50;
+    
+
+func bool i2cScan(byte address); // true if found
+
+// EEPROM
+func writePage(word address, const byte[] data); // System function to write a 256 byte page of data to serial EEPROM
+func readPage(word address, byte[] buffer);      // System function to read a 256 byte page page of data from serial EEPROM

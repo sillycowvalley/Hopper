@@ -113,6 +113,7 @@ unit TCCode
             PadOut("#define ROM_32K", 0);
         }
         PadOut("#define W65C22_VIA", 0);
+        PadOut("#define I2C", 0);
         if (!IsDefined("ACIA_6850") && !IsDefined("APPLE_I"))
         {
             PadOut("#define ACIA_6850", 0);                            // ZP.ACIACONTROL, ZP.ACIADATA, ZP.ACIASTATUS
@@ -134,6 +135,8 @@ unit TCCode
         PadOut("uses \"/Source/Runtime/6502/Serial\"", 0);             // ZP.SerialInWritePointer, ZP.SerialInReadPointer, ZP.SerialBreakFlag, 
         PadOut("uses \"/Source/Runtime/6502/Time\"", 0);               // ZP.TICK0, ZP.TICK1, ZP.TICK2, ZP.TICK3, ZP.TARGET0, ZP.TARGET1, ZP.TARGET2, ZP.TARGET3
         PadOut("uses \"/Source/Runtime/6502/Devices/W65C22\"", 0);     // ZP.DDRA, ZP.DDRB, ZP.T1CL, ZP.T1CH, ZP.IER, ZP.ACR, ZP.IFR, ZF.PORTA, ZFPORTB
+        PadOut("uses \"/Source/Runtime/6502/I2C\"", 0);
+        PadOut("uses \"/Source/Runtime/6502/Devices/SerialEEPROM\"", 0);
         PadOut("uses \"/Source/Languages/TiggerC/TCOps\"", 0);         // ZP.TOPL, ZP.TOPH, ZP.TOPT, ZP.NEXTL, ZP.NEXTH, ZP.ACCL, ZP.ACCH, ZP.FSIGN
         PadOut("uses \"/Source/Languages/TiggerC/TCSys\"", 0);         // ZP.IDXL, ZP.IDXH
         PadOut("",0);
@@ -736,6 +739,19 @@ unit TCCode
             {
                  functionName = "TCSys.Free";
             }
+            case "i2cScan":
+            {
+                 functionName = "TCSys.I2CScan";
+            }
+            case "writePage":
+            {
+                 functionName = "TCSys.WritePage";
+            }
+            case "readPage":
+            {
+                 functionName = "TCSys.ReadPage";
+            }
+            
         }
         PadOut(functionName + "();", 0);
     }

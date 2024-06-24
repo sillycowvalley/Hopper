@@ -1,6 +1,7 @@
 program TCCompile
 {
-#define TWOPASS    
+    // Serial EEPROM page size needs to be defined in /Source/Runtime/6502/Devices/SerialEEPROM, defaults to 128 bytes for 24AA512 (64K) and 24AA1026 (128K)
+   
     uses "/Source/System/System"
     uses "/Source/System/Diagnostics"
     
@@ -115,8 +116,9 @@ program TCCompile
               projectPath = projectPath.Replace(extension, ".tc");
               projectPath = Path.GetFileName(projectPath);
               projectPath = Path.Combine("/Debug/Obj/", projectPath);
+
+              // First Pass:
               TCToken.Initialize();
-#ifdef TWOPASS                     
               FirstPass = true;     
               TCScanner.Restart(projectPath);
               TCCode.Initialize(projectPath);
@@ -124,11 +126,12 @@ program TCCompile
               {
                   break;
               }
+              
+              // Second Pass:
               TCSymbols.Reset();
               TCCompile.Reset(); // globalDefinitions
               FirstPass = false;
               Compiling = true;
-#endif
               TCGen.Initialize();
               TCScanner.Restart(projectPath);
               TCCode.Initialize(projectPath);

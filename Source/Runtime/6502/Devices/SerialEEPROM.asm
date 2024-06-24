@@ -177,4 +177,31 @@ unit SerialEEPROM
             if (Z) { break; }
         }
     }
+    WritePage()
+    {
+        // IDX contains the source address
+        // IDY contains the destination address (in EEPROM)
+        
+        // copy a 256 byte 6502 page:
+        copyPageToEEPROM();
+        copyPageToEEPROM();
+#ifdef SERIAL64BYTEPAGES
+        copyPageToEEPROM();
+        copyPageToEEPROM();
+#endif
+    }
+    
+    ReadPage()
+    {
+        // IDY contains the source address (in EEPROM)
+        // IDX contains the destination address
+        
+        // copy a 256 byte 6502 page:
+        copyProgramPage();
+        copyProgramPage();
+#ifdef SERIAL64BYTEPAGES
+        copyProgramPage();
+        copyProgramPage();
+#endif
+    }
 }
