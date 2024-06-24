@@ -1553,12 +1553,15 @@ unit TCGen
         }
         return content;
     }
+    
+    bool wasRem;
     Generate()
     {   
         if (FirstPass || (currentStream.Count == 0) || !Compiling) { return; }
         
         InStreamMode = false;
-        bool wasRem;
+        wasRem = false;
+        
         if (IsExperimental && (currentStream.Count != 1))
         {
             string content = ToString(currentStream);
@@ -1580,92 +1583,55 @@ unit TCGen
             }
             switch (name)
             {
-                case "REM": { wasRem = true; }
+                case "REM": { generateREM(instruction); }
                 
-                case "PUSHI":   
-                { 
-                    TCCode.PushWord(instruction.Operand);
-                }
-                case "PUSHIB":
-                { 
-                    TCCode.PushByte((instruction.Operand).GetByte(0));
-                }
+                case "PUSHI": { generatePUSHI(instruction); }
+                
+                case "PUSHIB": { generatePUSHIB(instruction); }
                 
                 case "ZEROG":
-                case "ZEROGB":
-                {
-                    int offset = Int.FromBytes((instruction.Operand).GetByte(0), (instruction.Operand).GetByte(1));
-                    TCCode.PadOut("STZ " + GlobalOperand(offset), 0);
-                    if (!instruction.IsByte)
-                    {
-                        TCCode.PadOut("STZ " + GlobalOperand(offset+1), 0);
-                    }
-                }
+                case "ZEROGB": { generateZEROG(instruction); }
                 
                 case "POPL":
-                case "POPLB":
-                {
-                    TCCode.PopVariable(instruction.Data, instruction.Offset, instruction.IsByte, false);
-                }
-                case "POPG":
-                case "POPGB":
-                {
-                    TCCode.PopVariable(instruction.Data, instruction.Offset, instruction.IsByte, true);
-                }
-                case "PUSHL":
-                case "PUSHLB":
-                {
-                    TCCode.PushVariable(instruction.Data, instruction.Offset, instruction.IsByte, false);
-                }
-                case "PUSHG":
-                case "PUSHGB":
-                {
-                    TCCode.PushVariable(instruction.Data, instruction.Offset, instruction.IsByte, true);
-                }
-                case "PUSHM":
-                case "PUSHMB":
-                {
-                    ReadMemory(instruction.Offset == 1, instruction.IsByte);  
-                }
-                case "POPM":
-                case "POPMB":
-                {
-                    WriteMemory(instruction.Offset == 1, instruction.IsByte);
-                }
+                case "POPLB": { generatePOPL(instruction); }
                 
-                case "PUSHC":
-                {
-                    TCCode.PushConst(instruction.Operand);
-                }
+                case "POPG":
+                case "POPGB": { generatePOPG(instruction); }
+                
+                case "PUSHL":
+                case "PUSHLB": { generatePUSHL(instruction); }
+                
+                case "PUSHG":
+                case "PUSHGB": { generatePUSHG(instruction); }
+                
+                case "PUSHM":
+                case "PUSHMB": { generatePUSHM(instruction); }
+                
+                case "POPM":
+                case "POPMB": { generatePOPM(instruction); }
+               
+                case "PUSHC": { generatePUSHC(instruction); }
                 
                 case "ADD":
-                case "ADDB":
-                {
-                    TCOps.Add(instruction.IsByte);
-                }
+                case "ADDB": { generateADD(instruction); }
+                
                 case "SUB":
-                case "SUBB":
-                {
-                    TCOps.Sub(instruction.IsByte);
-                }
+                case "SUBB": { generateSUB(instruction); }
+                
                 case "MUL":
-                case "MULB":
-                {
-                    TCOps.Mul(instruction.IsByte);
-                }
+                case "MULB": { generateMUL(instruction); }
+                
                 case "DIV":
-                case "DIVB":
-                {
-                    TCOps.Div(instruction.IsByte);
-                }
+                case "DIVB": { generateDIV(instruction); }
+                
                 case "MOD":
-                case "MODB": { TCOps.Mod(instruction.IsByte); }
+                case "MODB": { generateMOD(instruction); }
                 
-                case "MULI": { TCOps.MulI(); }
+                case "MULI": { generateMULI(instruction); }
                 
-                case "DIVI": { TCOps.DivI(); }
+                case "DIVI": { generateDIVI(instruction); }
                 
-                case "MODI": { TCOps.ModI(); }
+                case "MODI": { generateMODI(instruction); }
                 
                 case "EQ":
                 case "EQB": { TCOps.CompareEQ(instruction.IsByte); }
@@ -1701,13 +1667,13 @@ unit TCGen
                 case "ANDB": { TCOps.And(instruction.IsByte); }
                 
                 case "OR":
-                case "ORB": { TCOps.Or(instruction.IsByte); } 
+                case "ORB":  { generateOR(instruction); }
                 
                 case "XOR":
-                case "XORB": { TCOps.Xor(instruction.IsByte); }
+                case "XORB": { generateXOR(instruction); }
                 
                 case "NOT":
-                case "NOTB": { TCOps.BitNot(instruction.IsByte); }
+                case "NOTB": { generateNOT(instruction); }
                 
                 case "BOOLNOTB": { TCOps.BoolNot(); }
                 case "LOOPEXIT":
@@ -1736,10 +1702,10 @@ unit TCGen
                 case "ENDIF": { TCCode.PadOut("}", 0); }
                 
                 case "LT":
-                case "LTB": { TCOps.CompareLT(instruction.IsByte); }
+                case "LTB": { generateLT(instruction); }
                 
                 case "LE":
-                case "LEB": { TCOps.CompareLE(instruction.IsByte); }
+                case "LEB":  { generateLE(instruction); }
                 
                 case "CALL": { generateCALL(instruction); }
                 
@@ -2994,4 +2960,79 @@ unit TCGen
             TCOps.PushTop(instruction.IsByte);
         }
     }
+    generateLE(Instruction instruction) { TCOps.CompareLE(instruction.IsByte); }
+    generateLT(Instruction instruction) { TCOps.CompareLT(instruction.IsByte); }
+    
+    generateNOT(Instruction instruction) { TCOps.BitNot(instruction.IsByte); }
+    generateXOR(Instruction instruction) { TCOps.Xor(instruction.IsByte); }
+    generateOR(Instruction instruction)  { TCOps.Or(instruction.IsByte); } 
+    
+    generatePUSHG(Instruction instruction)
+    {
+        TCCode.PushVariable(instruction.Data, instruction.Offset, instruction.IsByte, true);
+    }
+    generatePUSHM(Instruction instruction)
+    {
+        ReadMemory(instruction.Offset == 1, instruction.IsByte);  
+    }
+    generatePOPM(Instruction instruction)
+    {
+        WriteMemory(instruction.Offset == 1, instruction.IsByte);
+    }
+    generatePUSHC(Instruction instruction)
+    {
+        TCCode.PushConst(instruction.Operand);
+    }
+    generatePUSHL(Instruction instruction)
+    {
+        TCCode.PushVariable(instruction.Data, instruction.Offset, instruction.IsByte, false);
+    }
+    generatePOPG(Instruction instruction)
+    {
+        TCCode.PopVariable(instruction.Data, instruction.Offset, instruction.IsByte, true);
+    }
+    generatePOPL(Instruction instruction)
+    {
+        TCCode.PopVariable(instruction.Data, instruction.Offset, instruction.IsByte, false);
+    }
+    generateZEROG(Instruction instruction)
+    {
+        int offset = Int.FromBytes((instruction.Operand).GetByte(0), (instruction.Operand).GetByte(1));
+        TCCode.PadOut("STZ " + GlobalOperand(offset), 0);
+        if (!instruction.IsByte)
+        {
+            TCCode.PadOut("STZ " + GlobalOperand(offset+1), 0);
+        }
+    }
+    generatePUSHIB(Instruction instruction)
+    { 
+        TCCode.PushByte((instruction.Operand).GetByte(0));
+    }
+    generatePUSHI(Instruction instruction)
+    { 
+        TCCode.PushWord(instruction.Operand);
+    }
+    generateREM(Instruction instruction) { wasRem = true; }
+    
+    generateADD(Instruction instruction)
+    {
+        TCOps.Add(instruction.IsByte);
+    }
+    generateSUB(Instruction instruction)
+    {
+        TCOps.Sub(instruction.IsByte);
+    }
+    generateMUL(Instruction instruction)
+    {
+        TCOps.Mul(instruction.IsByte);
+    }
+    generateDIV(Instruction instruction)
+    {
+        TCOps.Div(instruction.IsByte);
+    }
+    generateMOD(Instruction instruction)
+    { TCOps.Mod(instruction.IsByte); }
+    generateMULI(Instruction instruction) { TCOps.MulI(); }
+    generateDIVI(Instruction instruction) { TCOps.DivI(); }
+    generateMODI(Instruction instruction) { TCOps.ModI(); }
 }
