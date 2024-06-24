@@ -13,6 +13,11 @@ unit TCGen
         int    Offset2;
         string Data;
     }
+    
+    delegate GenerateDelegate(Instruction instruction);
+    
+    <string, GenerateDelegate> generators;
+    
     int  nestedStreamMode;
     bool capturingMode;
     bool enablePeephole;
@@ -1554,6 +1559,30 @@ unit TCGen
         return content;
     }
     
+    Initialize()
+    {
+        //<string, GenerateDelegate> generators;
+        generators.Clear();
+        GenerateDelegate generateDelegate;
+        
+        generateDelegate = generateREM;
+        generators["REM"] = generateDelegate;
+        
+        generateDelegate = generatePUSHI;
+        generators["PUSHI"] = generateDelegate;
+        generateDelegate = generatePUSHIB;
+        generators["PUSHIB"] = generateDelegate;
+        
+        generateDelegate = generateZEROG;
+        generators["ZEROG"] = generateDelegate;
+        generators["ZEROGB"] = generateDelegate;
+        
+        generateDelegate = generatePOPL;
+        generators["POPL"] = generateDelegate;
+        generators["POPLB"] = generateDelegate;
+        
+    }
+    
     bool wasRem;
     Generate()
     {   
@@ -1581,264 +1610,257 @@ unit TCGen
             {
                 name += "B";
             }
-            switch (name)
+            if (generators.Contains(name))
             {
-                case "REM": { generateREM(instruction); }
-                
-                case "PUSHI": { generatePUSHI(instruction); }
-                
-                case "PUSHIB": { generatePUSHIB(instruction); }
-                
-                case "ZEROG":
-                case "ZEROGB": { generateZEROG(instruction); }
-                
-                case "POPL":
-                case "POPLB": { generatePOPL(instruction); }
-                
-                case "POPG":
-                case "POPGB": { generatePOPG(instruction); }
-                
-                case "PUSHL":
-                case "PUSHLB": { generatePUSHL(instruction); }
-                
-                case "PUSHG":
-                case "PUSHGB": { generatePUSHG(instruction); }
-                
-                case "PUSHM":
-                case "PUSHMB": { generatePUSHM(instruction); }
-                
-                case "POPM":
-                case "POPMB": { generatePOPM(instruction); }
-               
-                case "PUSHC": { generatePUSHC(instruction); }
-                
-                case "ADD":
-                case "ADDB": { generateADD(instruction); }
-                
-                case "SUB":
-                case "SUBB": { generateSUB(instruction); }
-                
-                case "MUL":
-                case "MULB": { generateMUL(instruction); }
-                
-                case "DIV":
-                case "DIVB": { generateDIV(instruction); }
-                
-                case "MOD":
-                case "MODB": { generateMOD(instruction); }
-                
-                case "MULI": { generateMULI(instruction); }
-                
-                case "DIVI": { generateDIVI(instruction); }
-                
-                case "MODI": { generateMODI(instruction); }
-                
-                case "EQ":
-                case "EQB": { TCOps.CompareEQ(instruction.IsByte); }
-                
-                case "NE":
-                case "NEB": { TCOps.CompareNE(instruction.IsByte); }
-                
-                case "GT":
-                case "GTB": { TCOps.CompareGT(instruction.IsByte); }
-                
-                case "GE":
-                case "GEB": { TCOps.CompareGE(instruction.IsByte); }
-                
-                case "LTI":
-                case "LTIB": { TCOps.CompareLTI(); }
-                
-                case "LEI":
-                case "LEIB": { TCOps.CompareLEI(); }
-                
-                case "GTI":
-                case "GTIB": { TCOps.CompareGTI(); }
-                
-                case "GEI":
-                case "GEIB": { TCOps.CompareGEI(); }
-                
-                case "SHL":
-                case "SHLB": { TCOps.Shl(instruction.IsByte); }
-                
-                case "SHR":
-                case "SHRB": { TCOps.Shr(instruction.IsByte); }
-                
-                case "AND":
-                case "ANDB": { TCOps.And(instruction.IsByte); }
-                
-                case "OR":
-                case "ORB":  { generateOR(instruction); }
-                
-                case "XOR":
-                case "XORB": { generateXOR(instruction); }
-                
-                case "NOT":
-                case "NOTB": { generateNOT(instruction); }
-                
-                case "BOOLNOTB": { TCOps.BoolNot(); }
-                case "LOOPEXIT":
+                Print(".");
+                GenerateDelegate generateDelegate = generators[name];
+                generateDelegate(instruction);
+            }
+            else
+            {
+                switch (name)
                 {
-                    TCCode.PadOut("PLA", 0);
-                    TCCode.PadOut("if (Z) // " + instruction.Data, 0);
-                    TCCode.PadOut("{", 0);
-                    TCCode.PadOut("break;", 1);
-                    TCCode.PadOut("}", 0);
-                }
-                
-                case "PADUNDER": { TCCode.CastPad(true); }
-                case "DECSP": { TCCode.PopBytes((instruction.Operand).GetByte(0), ""); }
-                
-                case "IF":
-                {
-                    TCCode.If("if");
-                    TCCode.PadOut("{", 0);
-                }
-                case "ELSE":
-                {
-                    TCCode.PadOut("}", 0);
-                    TCCode.Else();
-                    TCCode.PadOut("{", 0);
-                }
-                case "ENDIF": { TCCode.PadOut("}", 0); }
-                
-                case "LT":
-                case "LTB": { generateLT(instruction); }
-                
-                case "LE":
-                case "LEB":  { generateLE(instruction); }
-                
-                case "CALL": { generateCALL(instruction); }
-                
-                case "INCLI":
-                case "INCLIB": { generateINCLI(instruction); }
-                
-                case "INCGI":
-                case "INCGIB": { generateINCGI(instruction); }
+                    case "REM": { generateREM(instruction); }
                     
-                case "LEX":
-                case "LEXB": { generateLEX(instruction); }
-                
-                case "LTX":
-                case "LTXB": { generateLTX(instruction); }
-                
-                case "LILE":
-                case "LILEB": { generateLILE(instruction); }
-                
-                case "LILT":
-                case "LILTB": { generateLILT(instruction); }
-                
-                case "GILE":
-                case "GILEB": { generateGILE(instruction); }
-                
-                case "GILT":
-                case "GILTB": { generateGILT(instruction); }
+                    case "PUSHI": { generatePUSHI(instruction); }
+                    
+                    case "PUSHIB": { generatePUSHIB(instruction); }
+                    
+                    case "ZEROG":
+                    case "ZEROGB": { generateZEROG(instruction); }
+                    
+                    case "POPL":
+                    case "POPLB": { generatePOPL(instruction); }
+                    
+                    case "POPG":
+                    case "POPGB": { generatePOPG(instruction); }
+                    
+                    case "PUSHL":
+                    case "PUSHLB": { generatePUSHL(instruction); }
+                    
+                    case "PUSHG":
+                    case "PUSHGB": { generatePUSHG(instruction); }
+                    
+                    case "PUSHM":
+                    case "PUSHMB": { generatePUSHM(instruction); }
+                    
+                    case "POPM":
+                    case "POPMB": { generatePOPM(instruction); }
+                   
+                    case "PUSHC": { generatePUSHC(instruction); }
+                    
+                    case "ADD":
+                    case "ADDB": { generateADD(instruction); }
+                    
+                    case "SUB":
+                    case "SUBB": { generateSUB(instruction); }
+                    
+                    case "MUL":
+                    case "MULB": { generateMUL(instruction); }
+                    
+                    case "DIV":
+                    case "DIVB": { generateDIV(instruction); }
+                    
+                    case "MOD":
+                    case "MODB": { generateMOD(instruction); }
+                    
+                    case "MULI": { generateMULI(instruction); }
+                    
+                    case "DIVI": { generateDIVI(instruction); }
+                    
+                    case "MODI": { generateMODI(instruction); }
+                    
+                    case "EQ":
+                    case "EQB":  { generateEQ(instruction); }
+                    
+                    case "NE":
+                    case "NEB":  { generateNE(instruction); }
+                    
+                    case "GT":
+                    case "GTB":  { generateGT(instruction); }
+                    
+                    case "GE":
+                    case "GEB":  { generateGE(instruction); }
+                    
+                    case "LTI":
+                    case "LTIB": { generateLTI(instruction); }
+                    
+                    case "LEI":
+                    case "LEIB": { generateLEI(instruction); }
+                    
+                    case "GTI":
+                    case "GTIB": { generateGTI(instruction); }
+                    
+                    case "GEI":
+                    case "GEIB": { generateGEI(instruction); }
+                    
+                    case "SHL":
+                    case "SHLB": { generateSHL(instruction); }
+                    
+                    case "SHR":
+                    case "SHRB": { generateSHR(instruction); }
+                    
+                    case "AND":
+                    case "ANDB": { generateAND(instruction); }
+                    
+                    case "OR":
+                    case "ORB":  { generateOR(instruction); }
+                    
+                    case "XOR":
+                    case "XORB": { generateXOR(instruction); }
+                    
+                    case "NOT":
+                    case "NOTB": { generateNOT(instruction); }
+                    
+                    case "BOOLNOTB": { generateBOOLNOTB(instruction); }
+                    case "LOOPEXIT": { generateLOOPEXIT(instruction); }
+                    
+                    case "PADUNDER": { generatePADUNDER(instruction); }
+                    case "DECSP":    { generateDECSP(instruction); }
+                    
+                    case "IF":    { generateIF(instruction); }
+                    case "ELSE":  { generateELSE(instruction); }
+                    case "ENDIF": { generateENDIF(instruction); }
+                    
+                    case "LT":
+                    case "LTB": { generateLT(instruction); }
+                    
+                    case "LE":
+                    case "LEB":  { generateLE(instruction); }
+                    
+                    case "CALL": { generateCALL(instruction); }
+                    
+                    case "INCLI":
+                    case "INCLIB": { generateINCLI(instruction); }
+                    
+                    case "INCGI":
+                    case "INCGIB": { generateINCGI(instruction); }
+                        
+                    case "LEX":
+                    case "LEXB": { generateLEX(instruction); }
+                    
+                    case "LTX":
+                    case "LTXB": { generateLTX(instruction); }
+                    
+                    case "LILE":
+                    case "LILEB": { generateLILE(instruction); }
+                    
+                    case "LILT":
+                    case "LILTB": { generateLILT(instruction); }
+                    
+                    case "GILE":
+                    case "GILEB": { generateGILE(instruction); }
+                    
+                    case "GILT":
+                    case "GILTB": { generateGILT(instruction); }
 
-                case "GILTX":
-                case "GILTXB": { generateGILTX(instruction); }
-                
-                case "GILEX":
-                case "GILEXB": { generateGILEX(instruction); }
-                
-                case "LILEX":
-                case "LILEXB": { generateLILEX(instruction); }
-                
-                case "LILTX":
-                case "LILTXB": { generateLILTX(instruction); }
-                
-                case "STLI":
-                case "STLIB": { generaterSTLI(instruction); }
-                
-                case "2L":
-                case "2LB":   { generater2L(instruction); }
-                
-                case "2G":
-                case "2GB":   { generater2G(instruction); }
-                
-                case "STGI":
-                case "STGIB": { generateSTGI(instruction); }
-                
-                case "GGADD":
-                case "GGADDB": { generateGGADD(instruction); }
-                
-                case "GGADDG":
-                case "GGADDGB": { generateGGADDG(instruction); }
-                
-                case "LLADD":
-                case "LLADDB": { generateLLADD(instruction); }
-                
-                case "GGADDM": { generateGGADDM(instruction); }
-                
-                case "LGADDM": { generateLGADDM(instruction); }
-                
-                case "LGADDIM": { generateLGADDIM(instruction); }
-                
-                case "LGADDI": { generateLGADDI(instruction); }
-                
-                case "GGADDIM": { generateGGADDIM(instruction); }
-                
-                case "GGADDI": { generateGGADDI(instruction); }
-                
-                case "LGADD":
-                case "LGADDB": { generateLGADD(instruction); }
-                
-                
-                case "LLADDL":
-                case "LLADDLB": { generateLLADDL(instruction); }
-                
-                case "GIANDB":   { generateGIANDB(instruction); }
-                case "GIAND":    { generateGIAND(instruction); }
-                case "GIANDFF":  { generateGIANDFF(instruction); }
-                case "GIANDFFB":
-                case "GIANDFFC": { generateGIANDFFB(instruction); }
-                
-                case "LIANDB": { generateLIANDB(instruction); }
-                case "LIAND":  { generateLIAND(instruction); }
-                case "LIANDFF":
-                case "LIANDFFB": { generateLIANDFF(instruction); }
-                
-                case "LISHL8":
-                case "LISHL8B": { generateLISHL8(instruction); }
-                
-                case "LISHR8":
-                case "LISHR8B": { generateLISHR8(instruction); }
-                
-                case "IADD":
-                case "IADDB": { generateIADD(instruction); }
-                
-                case "IADDC": { generateIADDC(instruction); }
-                case "IADDL":
-                case "IADDLB": { generateIADDL(instruction); }
-                
-                case "ILADD":
-                case "ILADDB":
-                case "LIADD":
-                case "LIADDB": { generateILADD(instruction); }
-                
-                case "IGADD":
-                case "IGADDB":
-                case "GIADD":
-                case "GIADDB": { generateIGADD(instruction); }
-                
-                case "IGSUB":
-                case "IGSUBB": { generateIGSUB(instruction); }
-                
-                case "ILSUB":
-                case "ILSUBB": { generateILSUB(instruction); }
-                
-                case "LISUB":
-                case "LISUBB": { generateLISUB(instruction); }
-                
-                case "LISHR":
-                case "LISHRB": { generateLISHR(instruction); }
-                
-                case "LISHL":
-                case "LISHLB": { generateLISHL(instruction); }
-                
-                case "LIGTI":  { generateLIGTI(instruction); }
-                
-                default:
-                {
-                    TCCode.PadOut("Generate() Not Implemented: " + name, 0);        
+                    case "GILTX":
+                    case "GILTXB": { generateGILTX(instruction); }
+                    
+                    case "GILEX":
+                    case "GILEXB": { generateGILEX(instruction); }
+                    
+                    case "LILEX":
+                    case "LILEXB": { generateLILEX(instruction); }
+                    
+                    case "LILTX":
+                    case "LILTXB": { generateLILTX(instruction); }
+                    
+                    case "STLI":
+                    case "STLIB": { generaterSTLI(instruction); }
+                    
+                    case "2L":
+                    case "2LB":   { generater2L(instruction); }
+                    
+                    case "2G":
+                    case "2GB":   { generater2G(instruction); }
+                    
+                    case "STGI":
+                    case "STGIB": { generateSTGI(instruction); }
+                    
+                    case "GGADD":
+                    case "GGADDB": { generateGGADD(instruction); }
+                    
+                    case "GGADDG":
+                    case "GGADDGB": { generateGGADDG(instruction); }
+                    
+                    case "LLADD":
+                    case "LLADDB": { generateLLADD(instruction); }
+                    
+                    case "GGADDM": { generateGGADDM(instruction); }
+                    
+                    case "LGADDM": { generateLGADDM(instruction); }
+                    
+                    case "LGADDIM": { generateLGADDIM(instruction); }
+                    
+                    case "LGADDI": { generateLGADDI(instruction); }
+                    
+                    case "GGADDIM": { generateGGADDIM(instruction); }
+                    
+                    case "GGADDI": { generateGGADDI(instruction); }
+                    
+                    case "LGADD":
+                    case "LGADDB": { generateLGADD(instruction); }
+                    
+                    
+                    case "LLADDL":
+                    case "LLADDLB": { generateLLADDL(instruction); }
+                    
+                    case "GIANDB":   { generateGIANDB(instruction); }
+                    case "GIAND":    { generateGIAND(instruction); }
+                    case "GIANDFF":  { generateGIANDFF(instruction); }
+                    case "GIANDFFB":
+                    case "GIANDFFC": { generateGIANDFFB(instruction); }
+                    
+                    case "LIANDB": { generateLIANDB(instruction); }
+                    case "LIAND":  { generateLIAND(instruction); }
+                    case "LIANDFF":
+                    case "LIANDFFB": { generateLIANDFF(instruction); }
+                    
+                    case "LISHL8":
+                    case "LISHL8B": { generateLISHL8(instruction); }
+                    
+                    case "LISHR8":
+                    case "LISHR8B": { generateLISHR8(instruction); }
+                    
+                    case "IADD":
+                    case "IADDB": { generateIADD(instruction); }
+                    
+                    case "IADDC": { generateIADDC(instruction); }
+                    case "IADDL":
+                    case "IADDLB": { generateIADDL(instruction); }
+                    
+                    case "ILADD":
+                    case "ILADDB":
+                    case "LIADD":
+                    case "LIADDB": { generateILADD(instruction); }
+                    
+                    case "IGADD":
+                    case "IGADDB":
+                    case "GIADD":
+                    case "GIADDB": { generateIGADD(instruction); }
+                    
+                    case "IGSUB":
+                    case "IGSUBB": { generateIGSUB(instruction); }
+                    
+                    case "ILSUB":
+                    case "ILSUBB": { generateILSUB(instruction); }
+                    
+                    case "LISUB":
+                    case "LISUBB": { generateLISUB(instruction); }
+                    
+                    case "LISHR":
+                    case "LISHRB": { generateLISHR(instruction); }
+                    
+                    case "LISHL":
+                    case "LISHLB": { generateLISHL(instruction); }
+                    
+                    case "LIGTI":  { generateLIGTI(instruction); }
+                    
+                    default:
+                    {
+                        TCCode.PadOut("Generate() Not Implemented: " + name, 0);        
+                    }
                 }
             }
         }
@@ -3030,9 +3052,43 @@ unit TCGen
     {
         TCOps.Div(instruction.IsByte);
     }
-    generateMOD(Instruction instruction)
-    { TCOps.Mod(instruction.IsByte); }
+    generateMOD(Instruction instruction)  { TCOps.Mod(instruction.IsByte); }
     generateMULI(Instruction instruction) { TCOps.MulI(); }
     generateDIVI(Instruction instruction) { TCOps.DivI(); }
     generateMODI(Instruction instruction) { TCOps.ModI(); }
+    
+    generateLOOPEXIT(Instruction instruction)
+    {
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("if (Z) // " + instruction.Data, 0);
+        TCCode.PadOut("{", 0);
+        TCCode.PadOut("break;", 1);
+        TCCode.PadOut("}", 0);
+    }
+    generateENDIF(Instruction instruction) { TCCode.PadOut("}", 0); }
+    generateELSE(Instruction instruction)
+    {
+        TCCode.PadOut("}", 0);
+        TCCode.Else();
+        TCCode.PadOut("{", 0);
+    }
+    generateIF(Instruction instruction)
+    {
+        TCCode.If("if");
+        TCCode.PadOut("{", 0);
+    }
+    generateDECSP(Instruction instruction)    { TCCode.PopBytes((instruction.Operand).GetByte(0), ""); }
+    generatePADUNDER(Instruction instruction) { TCCode.CastPad(true); }
+    generateBOOLNOTB(Instruction instruction) { TCOps.BoolNot(); }
+    generateAND(Instruction instruction)      { TCOps.And(instruction.IsByte); }
+    generateSHR(Instruction instruction)      { TCOps.Shr(instruction.IsByte); }
+    generateSHL(Instruction instruction)      { TCOps.Shl(instruction.IsByte); }
+    generateGEI(Instruction instruction)      { TCOps.CompareGEI(); }
+    generateGTI(Instruction instruction)      { TCOps.CompareGTI(); }
+    generateLEI(Instruction instruction)      { TCOps.CompareLEI(); }
+    generateLTI(Instruction instruction)      { TCOps.CompareLTI(); }
+    generateGE(Instruction instruction)       { TCOps.CompareGE(instruction.IsByte); }
+    generateGT(Instruction instruction)       { TCOps.CompareGT(instruction.IsByte); }
+    generateNE(Instruction instruction)       { TCOps.CompareNE(instruction.IsByte); }
+    generateEQ(Instruction instruction)       { TCOps.CompareEQ(instruction.IsByte); }
 }

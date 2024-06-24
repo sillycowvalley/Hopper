@@ -129,6 +129,7 @@ program TCCompile
               FirstPass = false;
               Compiling = true;
 #endif
+              TCGen.Initialize();
               TCScanner.Restart(projectPath);
               TCCode.Initialize(projectPath);
               if (!TCCompile.Compile())
