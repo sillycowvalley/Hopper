@@ -149,9 +149,6 @@ func int remove(const char[] filename);
 // Returns 0 on success, or -1 on error.
 func int rename(const char[] oldname, const char[] newname);
 
-// Creates a directory.
-// dirname: Name of the directory to create.
-// Returns 0 on success, or -1 on error.
 func int mkdir(const char[] dirname) {
     byte[PageSize] dirBlock;
     byte[DescriptorSize] descriptor;
@@ -159,7 +156,6 @@ func int mkdir(const char[] dirname) {
     byte[PageSize] newDirBlock;
     word i;
     byte newBlock = 0; 
-
     readBlock(ChainBlock, chainBlock);
 
     // Find a free block for the new directory
@@ -185,7 +181,7 @@ func int mkdir(const char[] dirname) {
     descriptor[StartBlockOffset] = newBlock;
 
     // Determine the parent directory block
-    char[] parentDir = dirname;
+    char[] parentDir;
     if (lastSlash != null) {
         lastSlash[0] = '\0';
         parentDir = dirname;
@@ -198,15 +194,15 @@ func int mkdir(const char[] dirname) {
     if (parentDirHandle == null) {
         return -1; // Failed to open parent directory
     }
-    readBlock(parentDirHandle[0], dirBlock);
     byte currentBlock = parentDirHandle[0];
-    closedir(parentDirHandle);
+    readBlock(currentBlock, dirBlock);
 
     while (true) {
         for (i = 0; i < PageSize; i += DescriptorSize) {
             if (dirBlock[i + FilenameOffset] == 0) {
                 memcpy(dirBlock + i, descriptor, DescriptorSize);
                 writeBlock(currentBlock, dirBlock);
+                closedir(parentDirHandle);
 
                 // Create new empty block for the directory and update ChainBlock
                 memset(newDirBlock, 0, PageSize);
@@ -228,6 +224,7 @@ func int mkdir(const char[] dirname) {
                 }
             }
             if (newDirBlockInChain == 0) {
+                closedir(parentDirHandle);
                 return -1; // Disk full (no available pages)
             }
             chainBlock[currentBlock] = newDirBlockInChain;
@@ -245,8 +242,10 @@ func int mkdir(const char[] dirname) {
             readBlock(currentBlock, dirBlock);
         }
     }
+    closedir(parentDirHandle);
     return -1; // No empty slot found
 }
+
 
 // Removes a directory.
 // dirname: Name of the directory to remove.
@@ -318,7 +317,7 @@ func byte[] opendir(const char[] dirname) {
     dirHandle[1] = 0;
     return dirHandle;
 }
-    
+   
 func byte[] readdir(byte[] dirHandle) {
     if (dirHandle[1] == PageSize - DescriptorSize) {
         // Previous entry was the last one in that page
@@ -354,8 +353,6 @@ func byte[] readdir(byte[] dirHandle) {
 // dirHandle: The handle of the directory to close.
 // Returns 0 on success, or -1 on error.
 func int closedir(byte[] dirHandle) {
-    // In this simple implementation, there's no resource to free
-    // Just return success
     if (null != dirHandle)
     {
         free(dirHandle);
