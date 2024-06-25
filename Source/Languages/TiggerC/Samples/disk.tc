@@ -86,6 +86,7 @@ func main() {
         writeString("EEPROM Not Found\n");
         return;
     }
+    chdir("/");
     
     if (format() != 0) {
         writeString("Format failed.\n");

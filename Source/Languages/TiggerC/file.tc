@@ -50,7 +50,9 @@ const byte FileTypeOffset = 14;
 const byte StartBlockOffset = 15;
 const byte DescriptorSize = 16;
 const byte DescriptorsPerBlock = PageSize / DescriptorSize;
+
 byte[DescriptorSize] _dirEntry; // global used by readdir
+char[256]            _currentDirectory;
 
 // prototypes
 func int closedir(byte[] dirHandle);
@@ -59,7 +61,8 @@ func byte findFreePage(byte[] chainBlock);
 
 // Prints the contents of a buffer in hexadecimal format.
 func printHex(const byte[] buffer, word length) {
-    for (word i = 0; i < length; i++) {
+    word i;
+    for (i = 0; i < length; i++) {
         writeHex(buffer[i]);
         writeChar(' ');
         if ((i + 1) % 16 == 0) {
@@ -109,17 +112,33 @@ func byte findFreePage(byte[] chainBlock) {
 // Validates a path for correct length and valid characters.
 // Returns true if the path is valid, false otherwise.
 func bool isValidPath(const char[] path) {
+    word i;
     word len = strlen(path);
     if (len == 0 || len > 255) {
         return false; // Invalid length
     }
-    for (word i = 0; i < len; i++) {
+    for (i = 0; i < len; i++) {
         if (!(isalnum(path[i]) || path[i] == '.' || path[i] == '/')) {
             return false; // Invalid character
         }
     }
     return true;
 }
+
+func getFullPath(char[] dest, const char[] path) {
+    if (path[0] == '/') {
+        // Absolute path
+        strcpy(dest, path);
+    } else {
+        // Relative path
+        strcpy(dest, _currentDirectory);
+        if (dest[strlen(dest) - 1] != '/') {
+            strcat(dest, "/");
+        }
+        strcat(dest, path);
+    }
+}
+
 
 // Formats the drive, initializing the file system.
 // Returns 0 on success, or -1 on error.
@@ -189,11 +208,14 @@ func int rename(const char[] oldname, const char[] newname);
 // dirname: Name of the directory to remove.
 // Returns 0 on success, or -1 on error.
 func int rmdir(const char[] dirname) {
-    word i;
     byte[PageSize] dirBlock;
     byte[DescriptorSize] descriptor;
+    char[256] fullPath;
+    word i;
     
-    if (!isValidPath(dirname)) {
+    getFullPath(fullPath, dirname);
+    
+    if (!isValidPath(fullPath)) {
         return -1; // Invalid path
     }
     
@@ -201,7 +223,7 @@ func int rmdir(const char[] dirname) {
     readBlock(RootDirStartBlock, dirBlock);
     for (i = 0; i < PageSize; i += DescriptorSize) {
         memcpy(descriptor, dirBlock + i, DescriptorSize);
-        if (strncmp((descriptor + FilenameOffset) as char[], dirname, strlen(dirname)) == 0 &&
+        if (strncmp((descriptor + FilenameOffset) as char[], fullPath, strlen(fullPath)) == 0 &&
             (descriptor[FileTypeOffset] & 0xF0) == FileTypeDirectory) {
             memset(dirBlock + i, 0, DescriptorSize); // Clear the descriptor
             writeBlock(RootDirStartBlock, dirBlock);
@@ -260,9 +282,12 @@ func int mkdir(const char[] dirname) {
     byte[PageSize] chainBlock;
     byte[PageSize] newDirBlock;
     byte newBlock;
+    char[256] fullPath;
     word i;
     
-    if (!isValidPath(dirname)) {
+    getFullPath(fullPath, dirname);
+    
+    if (!isValidPath(fullPath)) {
         return -1; // Invalid path
     }
     
@@ -273,7 +298,7 @@ func int mkdir(const char[] dirname) {
         return -1; // Disk full (no available pages)
     }
     // Create a local copy of dirname to modify
-    char[] localDirname = strdup(dirname);
+    char[] localDirname = strdup(fullPath);
     // Initialize the directory descriptor
     memset(descriptor, 0, DescriptorSize);
     char[] lastSlash = strrchr(localDirname, '/');
@@ -341,28 +366,31 @@ func byte[] opendir(const char[] dirname) {
     byte[] dirHandle = malloc(2);
     byte[PageSize] dirBlock;
     byte[PageSize] chainBlock;
+    char[256] fullPath;
     char[] pathCopy;
     char[] token;
     byte currentBlock;
     bool found;
     word i;
     
-    if (!isValidPath(dirname)) {
+    getFullPath(fullPath, dirname);
+    
+    if (!isValidPath(fullPath)) {
         free(dirHandle);
         return null; // Invalid path
     }
     
     readBlock(ChainBlock, chainBlock);
     
-    if (strcmp(dirname, "/") == 0) {
+    if (strcmp(fullPath, "/") == 0) {
         dirHandle[0] = RootDirStartBlock;  // Root directory descriptor index
         dirHandle[1] = 0;  // Current position in directory
         return dirHandle;
     }
     
     // Split the path into components
-    pathCopy     = strdup(dirname);
-    token        = strtok(pathCopy, "/");
+    pathCopy = strdup(fullPath);
+    token = strtok(pathCopy, "/");
     currentBlock = RootDirStartBlock;
     
     while (token != null) {
@@ -396,5 +424,18 @@ func byte[] opendir(const char[] dirname) {
     dirHandle[1] = 0;
     free(pathCopy as byte[]);
     return dirHandle;
+}
+
+func int chdir(const char[] path) {
+    if (!isValidPath(path)) {
+        return -1; // Invalid path
+    }
+    byte[] dirHandle = opendir(path);
+    if (dirHandle == null) {
+        return -1; // Directory not found
+    }
+    closedir(dirHandle);
+    strcpy(_currentDirectory, path);
+    return 0; // Success
 }
 
