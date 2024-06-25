@@ -37,6 +37,7 @@ unit TCGen
     //    PADUNDER (cast [next] to word by inserting a zero MSB (assuming [top] is a word))
     //
     //    REM data  (comment)
+    //    SP
     //
     //    CALL data (function name)
     //    DECSP operand
@@ -1214,6 +1215,10 @@ unit TCGen
     {
         Append("PUSHC", false, literal);
     }
+    SP()
+    {
+        Append("SP");
+    }
     Comment(string comment)
     {
         if (!IsOptimized)
@@ -1476,6 +1481,10 @@ unit TCGen
             {
                 content = instruction.Data;
             }
+            case "SP":
+            {
+                content = "SP";
+            }
             case "LOOPEXIT":
             {
                 content = "LOOPEXIT";
@@ -1724,6 +1733,9 @@ unit TCGen
         generators["PUSHI"] = generateDelegate;
         generateDelegate = generatePUSHIB;
         generators["PUSHIB"] = generateDelegate;
+        
+        generateDelegate = generateSP;
+        generators["SP"] = generateDelegate;
 
         generateDelegate = generateZEROG;
         generators["ZEROG"] = generateDelegate;
@@ -3075,7 +3087,7 @@ unit TCGen
         TCCode.PadOut("PHA", 0);
         
         TCCode.PadOut("LDA 0x0100, X // MSB", 0);
-        TCCode.PadOut("ADC 0x" + GlobalOperand(goffset+1), 0);
+        TCCode.PadOut("ADC " + GlobalOperand(goffset+1), 0);
         TCCode.PadOut("PHA", 0);
         TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
         TCCode.PadOut("PHA", 0);
@@ -3289,6 +3301,11 @@ unit TCGen
         {
             TCCode.PadOut("STZ " + GlobalOperand(offset+1), 0);
         }
+    }
+    generateSP(Instruction instruction)
+    {
+        TCCode.PadOut("TSX", 0);
+        TCCode.PadOut("PHX", 0);
     }
     generatePUSHIB(Instruction instruction)
     { 

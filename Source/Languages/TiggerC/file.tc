@@ -56,8 +56,8 @@ const byte DescriptorsPerBlock = PageSize / DescriptorSize;
 byte[DescriptorSize] _dirEntry; // global used by readdir
 
 // prototypes
-func byte[] opendir(const char[] dirname);
 func int closedir(byte[] dirHandle);
+func byte[] opendir(const char[] dirname);
 
 // Prints the contents of a buffer in hexadecimal format.
 func printHex(const byte[] buffer, word length) {
@@ -170,55 +170,7 @@ func int rmdir(const char[] dirname) {
     return -1; // Directory not found
 }
 
-// Opens a directory for reading.
-// dirname: Name of the directory to open.
-// Returns a directory handle if successful, or null if an error occurs.
-func byte[] opendir(const char[] dirname) {
-    byte[] dirHandle = malloc(2);
-    byte[PageSize] dirBlock;
-    byte[PageSize] chainBlock;
-    readBlock(ChainBlock, chainBlock);
 
-    if (strcmp(dirname, "/") == 0) {
-        dirHandle[0] = RootDirStartBlock;  // Root directory descriptor index
-        dirHandle[1] = 0;  // Current position in directory
-        return dirHandle;
-    }
-
-    // Split the path into components
-    char[] pathCopy = strdup(dirname);
-    char[] token = strtok(pathCopy, "/");
-    byte currentBlock = RootDirStartBlock;
-
-    while (token != null) {
-        bool found = false;
-        readBlock(currentBlock, dirBlock);
-
-        while (true) {
-            for (word i = 0; i < PageSize; i += DescriptorSize) {
-                if (strncmp((dirBlock + i + FilenameOffset) as char[], token, strlen(token)) == 0 &&
-                    (dirBlock[i + FileTypeOffset] & 0xF0) == FileTypeDirectory) {
-                    currentBlock = dirBlock[i + StartBlockOffset];
-                    found = true;
-                    break;
-                }
-            }
-            if (found || chainBlock[currentBlock] == 1) {
-                break;
-            }
-            currentBlock = chainBlock[currentBlock];
-            readBlock(currentBlock, dirBlock);
-        }
-        if (!found) {
-            free(dirHandle);
-            return null; // Directory not found
-        }
-        token = strtok(null, "/");
-    }
-    dirHandle[0] = currentBlock;
-    dirHandle[1] = 0;
-    return dirHandle;
-}
    
 func byte[] readdir(byte[] dirHandle) {
     if (dirHandle[1] == PageSize - DescriptorSize) {
@@ -279,73 +231,57 @@ func int mkdir(const char[] dirname) {
         }
     }
     if (newBlock == 0) {
-        writeString("Disk full, no available pages\n");
         return -1; // Disk full (no available pages)
     }
 
-    writeString("New directory will use block ");
-    writeHex(newBlock);
-    writeChar('\n');
+    // Create a local copy of dirname to modify
+    char[] localDirname = strdup(dirname);
 
     // Initialize the directory descriptor
     memset(descriptor, 0, DescriptorSize);
-    char[] lastSlash = strrchr(dirname, '/');
+    char[] lastSlash = strrchr(localDirname, '/');
     if (lastSlash != null) {
         strcpy((descriptor + FilenameOffset) as char[], lastSlash + 1);
+        lastSlash[0] = '\0'; // Terminate parent directory string
     } else {
-        strcpy((descriptor + FilenameOffset) as char[], dirname);
+        strcpy((descriptor + FilenameOffset) as char[], localDirname);
     }
     descriptor[FileTypeOffset] = (FileTypeDirectory | (strlen((descriptor + FilenameOffset) as char[]) & 0x0F)) as byte;
     descriptor[StartBlockOffset] = newBlock;
 
-    writeString("Creating directory: ");
-    writeString(dirname);
-    writeString("\nDescriptor: ");
-    printByteBuffer("", descriptor, DescriptorSize);
-
     // Determine the parent directory block
-    char[] parentDir;
+    char[] parentDir = localDirname;
     if (lastSlash != null) {
-        lastSlash[0] = '\0';
-        parentDir = dirname;
+        parentDir = localDirname;
     } else {
         parentDir = "/";
     }
 
-    writeString("Parent directory: ");
-    writeString(parentDir);
-    writeChar('\n');
-
     // Read the parent directory block to find an empty slot
     byte[] parentDirHandle = opendir(parentDir);
     if (parentDirHandle == null) {
-        writeString("Failed to open parent directory\n");
+        free(localDirname as byte[]);
         return -1; // Failed to open parent directory
     }
+
+    readBlock(parentDirHandle[0], dirBlock);
     byte currentBlock = parentDirHandle[0];
-    readBlock(currentBlock, dirBlock);
     closedir(parentDirHandle);
-
-    writeString("Current block: ");
-    writeHex(currentBlock);
-    writeChar('\n');
-
+    
     while (true) {
         for (i = 0; i < PageSize; i += DescriptorSize) {
             if (dirBlock[i + FilenameOffset] == 0) {
                 memcpy(dirBlock + i, descriptor, DescriptorSize);
                 writeBlock(currentBlock, dirBlock);
-                writeString("Directory entry created at offset ");
-                writeHex(i as byte);
-                writeChar('\n');
 
                 // Create new empty block for the directory and update ChainBlock
                 memset(newDirBlock, 0, PageSize);
                 writeBlock(newBlock, newDirBlock);
+
                 chainBlock[newBlock] = 1; // Mark as end of chain
                 writeBlock(ChainBlock, chainBlock);
 
-                writeString("New directory block created\n");
+                free(localDirname as byte[]);
                 return 0; // Success
             }
         }
@@ -360,7 +296,7 @@ func int mkdir(const char[] dirname) {
                 }
             }
             if (newDirBlockInChain == 0) {
-                writeString("Disk full, no available pages for new chain block\n");
+                free(localDirname as byte[]);
                 return -1; // Disk full (no available pages)
             }
             chainBlock[currentBlock] = newDirBlockInChain;
@@ -372,20 +308,71 @@ func int mkdir(const char[] dirname) {
             writeBlock(newDirBlockInChain, newDirBlock);
             currentBlock = newDirBlockInChain;
             readBlock(currentBlock, dirBlock);
-
-            writeString("New chain block added: ");
-            writeHex(newDirBlockInChain);
-            writeChar('\n');
         } else {
             // Move to the next block in the chain
             currentBlock = chainBlock[currentBlock];
             readBlock(currentBlock, dirBlock);
-
-            writeString("Moving to next block in chain: ");
-            writeHex(currentBlock);
-            writeChar('\n');
         }
     }
+    free(localDirname as byte[]);
     return -1; // No empty slot found
+}
+
+func byte[] opendir(const char[] dirname) {
+
+    byte[] dirHandle = malloc(2);
+    byte[PageSize] dirBlock;
+    byte[PageSize] chainBlock;
+    char[] pathCopy;
+    char[] token;
+    byte currentBlock;
+    bool found;
+    word i;
+    
+    readBlock(ChainBlock, chainBlock);
+    
+    if (strcmp(dirname, "/") == 0) {
+        dirHandle[0] = RootDirStartBlock;  // Root directory descriptor index
+        dirHandle[1] = 0;  // Current position in directory
+        return dirHandle;
+    }
+    
+    // Split the path into components
+    pathCopy     = strdup(dirname);
+    token        = strtok(pathCopy, "/");
+    currentBlock = RootDirStartBlock;
+    
+    while (token != null) {
+        found = false;
+        readBlock(currentBlock, dirBlock);
+        while (true) {
+            for (i = 0; i < PageSize; i += DescriptorSize) {
+                if (strncmp((dirBlock + i + FilenameOffset) as char[], token, strlen(token)) == 0 &&
+                    (dirBlock[i + FileTypeOffset] & 0xF0) == FileTypeDirectory) {
+                    currentBlock = dirBlock[i + StartBlockOffset];
+                    found = true;
+                    break;
+                }
+            }
+            if (found || chainBlock[currentBlock] == 1) {
+                break;
+            }
+            currentBlock = chainBlock[currentBlock];
+            readBlock(currentBlock, dirBlock);
+        }
+        
+        if (!found) {
+            free(dirHandle);
+            free(pathCopy as byte[]);
+            
+            return null; // Directory not found
+        }
+        token = strtok(null, "/");
+    }
+    
+    dirHandle[0] = currentBlock;
+    dirHandle[1] = 0;
+    free(pathCopy as byte[]);
+    return dirHandle;
 }
 

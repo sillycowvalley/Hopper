@@ -114,6 +114,8 @@ func main() {
     // List directories
     listDirectory("/");
     
+    writeString("\nCreate Subdirectory:\n");
+    
     // Create subdirectory inside newdir1
     if (mkdir("newdir1/subdir1") == 0) {
         writeString("Created subdirectory 'newdir1/subdir1'.\n");

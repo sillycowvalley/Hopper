@@ -566,7 +566,13 @@ unit TCExpression
         loop
         {
             Token token = TCScanner.Current();
-            if ((token.Type == TokenType.IDENTIFIER) || (token.Type == TokenType.KW_MEM))
+            if (token.Type == TokenType.KW_SP)
+            {
+                TCScanner.Advance();
+                TCGen.SP();
+                actualType = "byte";
+            }
+            else if ((token.Type == TokenType.IDENTIFIER) || (token.Type == TokenType.KW_MEM))
             {
                 bool isMem = (token.Type == TokenType.KW_MEM);
                 

@@ -111,6 +111,7 @@ unit AsmPoints
                 case OpCode.LDX_n:
                 case OpCode.PLX:
                 case OpCode.LDX_z:
+                case OpCode.TSX:
                 {
                     walkStats |= WalkStats.WriteX;
                 }
@@ -297,6 +298,9 @@ unit AsmPoints
                 
                 case OpCode.CLI:
                 case OpCode.SEI:
+                
+                case OpCode.INC_nn:
+                case OpCode.DEC_nn:
                 
                 case OpCode.STZ_z:
                 case OpCode.STZ_zX:
