@@ -3,39 +3,11 @@
 #include "../system.tc"
 #include "../file.tc"
 
-// Prints the contents of a buffer in hexadecimal format.
-func printHex(const byte[] buffer, word length) {
-    for (word i = 0; i < length; i++) {
-        writeHex(buffer[i]);
-        writeChar(' ');
-        if ((i + 1) % 16 == 0) {
-            if ((i + 1) % 32 == 0) {
-                writeChar('\n');
-            }
-            else
-            {
-                writeChar(' ');
-            }
-        }
-    }
-    writeChar('\n');
-}
-
 // Dumps the contents of the FAT blocks.
 func dumpFAT() {
     byte[PageSize] buffer;
     writeString("FAT Blocks:\n");
     for (byte i = FATStartBlock; i < FATStartBlock + FATBlocks; i++) {
-        readBlock(i, buffer);
-        printHex(buffer, PageSize);
-    }
-}
-
-// Dumps the contents of the FTD blocks.
-func dumpFTD() {
-    byte[PageSize] buffer;
-    writeString("FTD Blocks:\n");
-    for (byte i = FDTStartBlock; i < FDTStartBlock + FDTBlocks; i++) {
         readBlock(i, buffer);
         printHex(buffer, PageSize);
     }
@@ -64,9 +36,8 @@ func main() {
     }
     writeString("Format succeeded.\n");
     
-    // Dump FAT, FTD, and Root Directory blocks
+    // Dump FAT and Root Directory blocks
     dumpFAT();
-    dumpFTD();
     dumpRootDirectory();
     
     byte[] rootDir = opendir("/");
@@ -75,17 +46,25 @@ func main() {
         return;
     }
     writeString("Opened root directory.\n");
+    
+    // Create a new directory
+    if (mkdir("newdir") == 0) {
+        writeString("Created directory 'newdir'.\n");
+    } else {
+        writeString("Failed to create directory 'newdir'.\n");
+    }
 
+    // Dump Root Directory blocks again
+    dumpRootDirectory();
+    
     byte[] entry;
     while ((entry = readdir(rootDir)) != null) {
         writeString("Entry: ");
-        //writeString(&entry[FilenameOffset]);
         writeString((entry + FilenameOffset) as char[]);
         writeString("\n");
-        break;
     }
     writeString("No more entries in root directory.\n");
-
+    
     if (closedir(rootDir) != 0) {
         writeString("Failed to close root directory.\n");
         return;
