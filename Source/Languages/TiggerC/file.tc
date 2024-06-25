@@ -40,9 +40,7 @@ const byte DescriptorsPerBlock = PageSize / DescriptorSize;
 // blockNum: The block number to read.
 // buffer: The buffer to store the read data.
 func readBlock(word blockNum, byte[] buffer) {
-#ifndef APPLE_I
     readPage(blockNum * PageSize, buffer);
-#endif    
 }
 
 // Formats the drive, initializing the file system.
@@ -53,33 +51,25 @@ func int format() {
     // Initialize FAT (all blocks free)
     byte[PageSize] fatBlock;
     for (i = FATStartBlock; i < FATStartBlock + FATBlocks; i++) {
-#ifndef APPLE_I    
         writePage(i * PageSize, fatBlock);
-#endif
     }
 
     // Initialize FDT (empty descriptors)
     byte[PageSize] emptyFDT;
     for (i = FDTStartBlock; i < FDTStartBlock + FDTBlocks; i++) {
-#ifndef APPLE_I        
         writePage(i * PageSize, emptyFDT);
-#endif
     }
 
     // Initialize global block chain page (no chains yet)
     byte[PageSize] blockChainPage;
-#ifndef APPLE_I    
     writePage(ChainBlock * PageSize, blockChainPage);
-#endif
 
     // Initialize the root directory
     byte[PageSize] rootDir;
     rootDir[FilenameOffset] = '/' as byte;  // Root directory name
     rootDir[FileTypeOffset] = FileTypeDirectory | RootDirNameLength;  // Mark as directory with name length 1
     rootDir[StartBlockOffset] = RootDirStartBlock;  // Root directory starts at block 6
-#ifndef APPLE_I    
     writePage(RootDirStartBlock * PageSize, rootDir);
-#endif
 
     return 0; // Success
 }
@@ -152,22 +142,32 @@ func byte[] opendir(const char[] dirname) {
     byte[PageSize] fdtBlock;
     byte[2] dirHandle;
     byte[DescriptorSize] descriptor;
+    
+    writeChar('a');
 
     // Read the FDT blocks to find the directory descriptor
     for (i = FDTStartBlock; i < FDTStartBlock + FDTBlocks; i++) {
+        writeChar('b');
         readBlock(i, fdtBlock);
-        for (byte j = 0; j < PageSize; j += DescriptorSize) {
+        writeChar('c');
+        for (word j = 0; j < PageSize; j += DescriptorSize) {
+            writeChar('d');
             memcpy(descriptor, fdtBlock + j, DescriptorSize);
+            writeChar('e');
             if (strncmp((descriptor + FilenameOffset) as char[], dirname, descriptor[FileTypeOffset] & 0x0F) == 0 &&
                 (descriptor[FileTypeOffset] & 0xF0) == FileTypeDirectory) {
-                
+                writeChar('f');
                 word descriptorIndex = (i - FDTStartBlock) * DescriptorsPerBlock + (j / DescriptorSize);
                 dirHandle[0] = descriptorIndex as byte;  // Directory descriptor index
                 dirHandle[1] = 0;  // Current position in directory
+                writeChar('g');
                 return dirHandle;
             }
+            writeChar('h');
         }
+        writeChar('i');
     }
+    writeChar('j');
     return null; // Directory not found
 }
 

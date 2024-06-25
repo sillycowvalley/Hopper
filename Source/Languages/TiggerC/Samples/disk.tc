@@ -1,4 +1,3 @@
-//#define APPLE_I
 #define EXPERIMENTAL
 #define ZEROPAGEGLOBALS
 #include "../system.tc"
@@ -50,10 +49,7 @@ func dumpRootDirectory() {
     printHex(buffer, PageSize);
 }
 
-
-
 func main() {
-#ifndef APPLE_I
     writeString("\nScanning:\n");
     if (i2cScan(SerialEEPROMAddress)) {
         writeString("EEPROM Found\n");
@@ -61,7 +57,6 @@ func main() {
         writeString("EEPROM Not Found\n");
         return;
     }
-#endif
     
     if (format() != 0) {
         writeString("Format failed.\n");
@@ -74,8 +69,6 @@ func main() {
     dumpFTD();
     dumpRootDirectory();
     
-    return;
-
     byte[] rootDir = opendir("/");
     if (rootDir == null) {
         writeString("Failed to open root directory.\n");

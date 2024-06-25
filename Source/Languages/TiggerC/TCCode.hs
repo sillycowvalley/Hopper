@@ -20,8 +20,8 @@ unit TCCode
     
     // This is where you define the location and limit of global variables:
     
-    const uint globalZeroPageStart = 0x70;
-    const uint globalZeroPageLimit = (0xDF - 0x70 + 1);
+    const uint globalZeroPageStart = 0x88;
+    const uint globalZeroPageLimit = (0xEB - globalZeroPageStart + 1);
     
     const uint globalAreaStart = 0x0300;
     const uint globalAreaLimit = 256;
