@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Reflection;
+using System.Windows.Forms;
 
 namespace HopperNET
 {
@@ -21,6 +22,20 @@ namespace HopperNET
             {
                 hopperRoot = @"D:\Repos\Hopper";             // D drive dev location
             }
+
+            if (string.IsNullOrEmpty(hopperRoot))
+            {
+                FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
+                folderBrowserDialog.RootFolder = Environment.SpecialFolder.Personal;
+                folderBrowserDialog.Description = "Select the directory where the Hopper file system is located";
+                var result = folderBrowserDialog.ShowDialog();
+
+                if (result == DialogResult.OK)
+                {
+                    hopperRoot = folderBrowserDialog.SelectedPath;
+                }
+            }
+
             Assembly currentAssem = Assembly.GetExecutingAssembly();
             string exePath = currentAssem.Location;
             string exeFolder = Path.GetDirectoryName(exePath);

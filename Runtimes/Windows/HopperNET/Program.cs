@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Globalization;
 using System.Windows.Forms;
 
 namespace HopperNET
@@ -14,11 +12,12 @@ namespace HopperNET
         [STAThread]
         static void Main()
         {
-
-            HopperPath.InitializeFolders();
+            CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+
+            HopperPath.InitializeFolders();
             Application.Run(new Hopper());
         }
     }
