@@ -2,18 +2,16 @@
 #include "system.tc"
 #include "string.tc"
 #include "i2c.tc"
-
 /*
 File System Structure:
 -----------------------
 1. ChainLists:
    - Contains chains of blocks for files and directories that span multiple blocks.
    - Located at page 0.
-
 2. Root Directory:
    - The starting point of the file system, storing the root directory entries.
    - Located at page 1.
-
+   
 Descriptor Record Structure (within Directory Pages):
 -----------------------------------------------------
 - Filename:           Offset 0, 12 bytes (null-terminated if shorter)
@@ -28,21 +26,19 @@ File Handle Structure (byte array):
    [0] - File descriptor index (byte)
    [1] - Current position in file (word, 2 bytes)
    Total: 3 bytes
-
+   
 Directory Handle Structure (byte array):
 ----------------------------------------
    [0] - Directory descriptor index (byte)
    [1] - Current position in directory (byte)
    Total: 2 bytes
-
+   
 Directory Entry Structure (byte array):
 ---------------------------------------
    [0] - Entry type (0 for file, 1 for directory) (byte)
    [1-12] - Entry name (up to 12 bytes, null-terminated if shorter)
    Total: 13 bytes
-
 */
-
 const word PageSize   = 256;
 const word TotalPages = 256;
 const byte ChainBlock = 0;
@@ -56,7 +52,12 @@ const byte StartBlockOffset = 15;
 const byte DescriptorSize = 16;
 const byte DescriptorsPerBlock = PageSize / DescriptorSize;
 
+
 byte[DescriptorSize] _dirEntry; // global used by readdir
+
+// prototypes
+func byte[] opendir(const char[] dirname);
+func int closedir(byte[] dirHandle);
 
 // Prints the contents of a buffer in hexadecimal format.
 func printHex(const byte[] buffer, word length) {
@@ -73,28 +74,24 @@ func printHex(const byte[] buffer, word length) {
     }
     writeChar('\n');
 }
-
 // Debugging function to print a byte buffer
 func printByteBuffer(const char[] label, byte[] buffer, word length) {
     writeString(label);
     writeString(":\n");
     printHex(buffer, length);
 }
-
 // Reads a block from EEPROM.
 // blockNum: The block number to read.
 // buffer: The buffer to store the read data.
 func readBlock(word blockNum, byte[] buffer) {
     readPage(blockNum * PageSize, buffer);
 }
-
 // Writes a block to EEPROM.
 // blockNum: The block number to write.
 // buffer: The buffer containing the data to write.
 func writeBlock(word blockNum, const byte[] buffer) {
     writePage(blockNum * PageSize, buffer);
 }
-
 // Formats the drive, initializing the file system.
 // Returns 0 on success, or -1 on error.
 func int format() {
@@ -104,24 +101,20 @@ func int format() {
     blockChainPage[0] = 1;
     blockChainPage[1] = 1;
     writePage(ChainBlock * PageSize, blockChainPage);
-
     // Initialize the root directory (empty initially)
     byte[PageSize] rootDir;
     writePage(RootDirStartBlock * PageSize, rootDir);
     return 0; // Success
 }
-
 // Opens a file or directory.
 // filename: Name of the file or directory to open.
 // mode: Mode in which to open the file (e.g., "r" for read, "w" for write, etc.).
 // Returns a file handle if successful, or null if an error occurs.
 func byte[] fopen(const char[] filename, const char[] mode);
-
 // Closes an open file or directory.
 // fileHandle: The handle of the file or directory to close.
 // Returns 0 on success, or -1 on error.
 func int fclose(byte[] fileHandle);
-
 // Reads data from a file.
 // buffer: Buffer to store the read data.
 // size: Size of each element to read.
@@ -129,7 +122,6 @@ func int fclose(byte[] fileHandle);
 // fileHandle: The handle of the file to read from.
 // Returns the number of elements successfully read.
 func word fread(byte[] buffer, word size, word count, byte[] fileHandle);
-
 // Writes data to a file.
 // buffer: Buffer containing the data to write.
 // size: Size of each element to write.
@@ -137,24 +129,20 @@ func word fread(byte[] buffer, word size, word count, byte[] fileHandle);
 // fileHandle: The handle of the file to write to.
 // Returns the number of elements successfully written.
 func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle);
-
 // Sets the file position indicator for the file.
 // fileHandle: The handle of the file.
 // offset: Number of bytes to offset from whence.
 // whence: Position from where offset is applied (0: beginning, 1: current position, 2: end of file).
 // Returns 0 on success, or -1 on error.
 func int fseek(byte[] fileHandle, int offset, byte whence);
-
 // Returns the current file position indicator for the file.
 // fileHandle: The handle of the file.
 // Returns the current file position as a word, or 0 on error.
 func word ftell(byte[] fileHandle);
-
 // Deletes a file.
 // filename: Name of the file to delete.
 // Returns 0 on success, or -1 on error.
 func int remove(const char[] filename);
-
 // Renames a file or directory.
 // oldname: Current name of the file or directory.
 // newname: New name of the file or directory.
@@ -171,9 +159,9 @@ func int mkdir(const char[] dirname) {
     byte[PageSize] newDirBlock;
     word i;
     byte newBlock = 0; 
-    
+
     readBlock(ChainBlock, chainBlock);
-    
+
     // Find a free block for the new directory
     for (i = 2; i < TotalPages; i++) {
         if (chainBlock[i] == 0) {
@@ -184,39 +172,48 @@ func int mkdir(const char[] dirname) {
     if (newBlock == 0) {
         return -1; // Disk full (no available pages)
     }
-    
+
     // Initialize the directory descriptor
     memset(descriptor, 0, DescriptorSize);
-    strcpy((descriptor + FilenameOffset) as char[], dirname);
-    descriptor[FileTypeOffset] = (FileTypeDirectory | (strlen(dirname) & 0x0F)) as byte;
+    char[] lastSlash = strrchr(dirname, '/');
+    if (lastSlash != null) {
+        strcpy((descriptor + FilenameOffset) as char[], lastSlash + 1);
+    } else {
+        strcpy((descriptor + FilenameOffset) as char[], dirname);
+    }
+    descriptor[FileTypeOffset] = (FileTypeDirectory | (strlen((descriptor + FilenameOffset) as char[]) & 0x0F)) as byte;
     descriptor[StartBlockOffset] = newBlock;
-    
-    writeString("Creating directory: ");
-    writeString(dirname);
-    writeString("\nDescriptor: ");
-    printByteBuffer("", descriptor, DescriptorSize);
-    
-    // Read the root directory block to find an empty slot
-    byte currentBlock = RootDirStartBlock;
-    readBlock(currentBlock, dirBlock);
-    
+
+    // Determine the parent directory block
+    char[] parentDir = dirname;
+    if (lastSlash != null) {
+        lastSlash[0] = '\0';
+        parentDir = dirname;
+    } else {
+        parentDir = "/";
+    }
+
+    // Read the parent directory block to find an empty slot
+    byte[] parentDirHandle = opendir(parentDir);
+    if (parentDirHandle == null) {
+        return -1; // Failed to open parent directory
+    }
+    readBlock(parentDirHandle[0], dirBlock);
+    byte currentBlock = parentDirHandle[0];
+    closedir(parentDirHandle);
+
     while (true) {
         for (i = 0; i < PageSize; i += DescriptorSize) {
             if (dirBlock[i + FilenameOffset] == 0) {
-                writeString("Empty slot found at: ");
-                writeWord(i);
-                writeString("\n");
                 memcpy(dirBlock + i, descriptor, DescriptorSize);
                 writeBlock(currentBlock, dirBlock);
-                
+
                 // Create new empty block for the directory and update ChainBlock
                 memset(newDirBlock, 0, PageSize);
                 writeBlock(newBlock, newDirBlock);
-                
+
                 chainBlock[newBlock] = 1; // Mark as end of chain
                 writeBlock(ChainBlock, chainBlock);
-                writeString("Directory created successfully.\n");
-                printByteBuffer("Root directory after", dirBlock, PageSize);
                 return 0; // Success
             }
         }
@@ -236,7 +233,7 @@ func int mkdir(const char[] dirname) {
             chainBlock[currentBlock] = newDirBlockInChain;
             chainBlock[newDirBlockInChain] = 1; // Mark as end of chain
             writeBlock(ChainBlock, chainBlock);
-            
+
             // Initialize the new directory block
             memset(newDirBlock, 0, PageSize);
             writeBlock(newDirBlockInChain, newDirBlock);
@@ -248,11 +245,8 @@ func int mkdir(const char[] dirname) {
             readBlock(currentBlock, dirBlock);
         }
     }
-    
-    writeString("No empty slot found in root directory.\n");
     return -1; // No empty slot found
 }
-
 
 // Removes a directory.
 // dirname: Name of the directory to remove.
@@ -280,14 +274,51 @@ func int rmdir(const char[] dirname) {
 // Returns a directory handle if successful, or null if an error occurs.
 func byte[] opendir(const char[] dirname) {
     byte[] dirHandle = malloc(2);
+    byte[PageSize] dirBlock;
+    byte[PageSize] chainBlock;
+    readBlock(ChainBlock, chainBlock);
+
     if (strcmp(dirname, "/") == 0) {
         dirHandle[0] = RootDirStartBlock;  // Root directory descriptor index
         dirHandle[1] = 0;  // Current position in directory
         return dirHandle;
     }
-    return null; // Only root directory is supported in this example
-}
 
+    // Split the path into components
+    char[] pathCopy = strdup(dirname);
+    char[] token = strtok(pathCopy, "/");
+    byte currentBlock = RootDirStartBlock;
+
+    while (token != null) {
+        bool found = false;
+        readBlock(currentBlock, dirBlock);
+
+        while (true) {
+            for (word i = 0; i < PageSize; i += DescriptorSize) {
+                if (strncmp((dirBlock + i + FilenameOffset) as char[], token, strlen(token)) == 0 &&
+                    (dirBlock[i + FileTypeOffset] & 0xF0) == FileTypeDirectory) {
+                    currentBlock = dirBlock[i + StartBlockOffset];
+                    found = true;
+                    break;
+                }
+            }
+            if (found || chainBlock[currentBlock] == 1) {
+                break;
+            }
+            currentBlock = chainBlock[currentBlock];
+            readBlock(currentBlock, dirBlock);
+        }
+        if (!found) {
+            free(dirHandle);
+            return null; // Directory not found
+        }
+        token = strtok(null, "/");
+    }
+    dirHandle[0] = currentBlock;
+    dirHandle[1] = 0;
+    return dirHandle;
+}
+    
 func byte[] readdir(byte[] dirHandle) {
     if (dirHandle[1] == PageSize - DescriptorSize) {
         // Previous entry was the last one in that page
@@ -315,12 +346,10 @@ func byte[] readdir(byte[] dirHandle) {
         return null;
     }
         
-    // Update the directory handle positionfor the next iteration
+    // Update the directory handle position for the next iteration
     dirHandle[1] += DescriptorSize;
     return _dirEntry;
 }
-
-
 // Closes an open directory.
 // dirHandle: The handle of the directory to close.
 // Returns 0 on success, or -1 on error.

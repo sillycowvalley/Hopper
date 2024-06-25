@@ -19,7 +19,64 @@ func dumpRootDirectory() {
     printHex(buffer, PageSize);
 }
 
+// Dumps the contents of a specified directory block.
+func dumpDirectoryBlock(byte block) {
+    byte[PageSize] buffer;
+    writeString("Directory Block (");
+    writeHex(block);
+    writeString("):\n");
+    readBlock(block, buffer);
+    printHex(buffer, PageSize);
+}
 
+// Creates a directory and dumps relevant information.
+func createAndVerifyDir(const char[] dirname) {
+    if (mkdir(dirname) == 0) {
+        writeString("Created directory '");
+        writeString(dirname);
+        writeString("'.\n");
+    } else {
+        writeString("Failed to create directory '");
+        writeString(dirname);
+        writeString("'.\n");
+    }
+    dumpRootDirectory();
+    dumpChainLists();
+}
+
+// Opens a directory, lists its contents, and closes it.
+func listDirectory(const char[] dirname) {
+    byte[] dirHandle = opendir(dirname);
+    if (dirHandle == null) {
+        writeString("Failed to open directory '");
+        writeString(dirname);
+        writeString("'.\n");
+        return;
+    }
+    writeString("Opened directory '");
+    writeString(dirname);
+    writeString("'.\n");
+
+    byte[] dirEntry;
+    while ((dirEntry = readdir(dirHandle)) != null) {
+        writeString("Entry: ");
+        writeString((dirEntry + FilenameOffset) as char[]);
+        writeString("\n");
+    }
+    writeString("No more entries in directory '");
+    writeString(dirname);
+    writeString("'.\n");
+
+    if (closedir(dirHandle) != 0) {
+        writeString("Failed to close directory '");
+        writeString(dirname);
+        writeString("'.\n");
+        return;
+    }
+    writeString("Closed directory '");
+    writeString(dirname);
+    writeString("'.\n");
+}
 
 func main() {
     writeString("\nScanning:\n");
@@ -47,36 +104,31 @@ func main() {
     }
     writeString("Opened root directory.\n");
     
-    if (mkdir("newdir1") == -1)
-    {
-        writeString("FAILED to create directory '");
-        writeString("newdir1");
-        writeString("'.\n");
-    }
-    if (mkdir("newdir2") == -1)
-    {
-        writeString("FAILED to create directory '");
-        writeString("newdir2");
-        writeString("'.\n");
-    }
-    
+    createAndVerifyDir("newdir1");
+    createAndVerifyDir("newdir2");
+
     // Dump Root Directory blocks again
-    dumpChainLists();
-    dumpRootDirectory();
+    //dumpChainLists();
+    //dumpRootDirectory();
     
     // List directories
-    byte[] dirEntry;
-    while ((dirEntry = readdir(rootDir)) != null) {
-        writeString("Entry: ");
-        writeString((dirEntry + FilenameOffset) as char[]);
-        writeString("\n");
-    }
-    writeString("No more entries in root directory.\n");
+    listDirectory("/");
     
+    // Create subdirectory inside newdir1
+    if (mkdir("newdir1/subdir1") == 0) {
+        writeString("Created subdirectory 'newdir1/subdir1'.\n");
+    } else {
+        writeString("Failed to create subdirectory 'newdir1/subdir1'.\n");
+    }
+    
+    // List contents of newdir1
+    listDirectory("newdir1");
+
     if (closedir(rootDir) != 0) {
         writeString("Failed to close root directory.\n");
         return;
     }
     writeString("Closed root directory.\n");
 }
+
 
