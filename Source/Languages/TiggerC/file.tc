@@ -1,0 +1,199 @@
+// Tigger C File API Prototypes
+
+#include "system.tc"
+#include "string.tc"
+#include "i2c.tc"
+
+// File Handle Structure (byte array):
+// [0] - File descriptor index (byte)
+// [1] - Current position in file (word, 2 bytes)
+// Total: 3 bytes
+
+// Directory Handle Structure (byte array):
+// [0] - Directory descriptor index (byte)
+// [1] - Current position in directory (byte)
+// Total: 2 bytes
+
+// Directory Entry Structure (byte array):
+// [0] - Entry type (0 for file, 1 for directory) (byte)
+// [1-12] - Entry name (up to 12 bytes, null-terminated if shorter)
+// Total: 13 bytes
+
+const word PageSize = 256;
+const byte FATStartBlock = 1;
+const byte FATBlocks = 2;
+const byte ChainBlock = 3;
+const byte FDTStartBlock = 4;
+const byte FDTBlocks = 2;
+const byte RootDirBlock = 4;
+const byte RootDirStartBlock = 6;
+const byte RootDirNameLength = 1;
+const byte FileTypeDirectory = 0x10;
+const byte FileTypeFile = 0x00;
+const byte FilenameOffset = 0;
+const byte FileSizeOffset = 12;
+const byte FileTypeOffset = 14;
+const byte StartBlockOffset = 15;
+const byte DescriptorSize = 16;
+
+// Reads a block from EEPROM.
+// blockNum: The block number to read.
+// buffer: The buffer to store the read data.
+func readBlock(word blockNum, byte[] buffer) {
+    readPage(blockNum * PageSize, buffer);
+}
+
+// Formats the drive, initializing the file system.
+// Returns 0 on success, or -1 on error.
+func int format() {
+    byte i;
+
+    // Initialize FAT (all blocks free)
+    byte[PageSize] fatBlock;
+    for (i = FATStartBlock; i < FATStartBlock + FATBlocks; i++) {
+        writePage(i * PageSize, fatBlock);
+    }
+
+    // Initialize FDT (empty descriptors)
+    byte[PageSize] emptyFDT;
+    for (i = FDTStartBlock; i < FDTStartBlock + FDTBlocks; i++) {
+        writePage(i * PageSize, emptyFDT);
+    }
+
+    // Initialize global block chain page (no chains yet)
+    byte[PageSize] blockChainPage;
+    writePage(ChainBlock * PageSize, blockChainPage);
+
+    // Initialize the root directory
+    byte[PageSize] rootDir;
+    rootDir[FilenameOffset] = '/' as byte;  // Root directory name
+    rootDir[FileTypeOffset] = FileTypeDirectory | RootDirNameLength;  // Mark as directory with name length 1
+    rootDir[StartBlockOffset] = RootDirStartBlock;  // Root directory starts at block 6
+    writePage(RootDirBlock * PageSize, rootDir);
+
+    return 0; // Success
+}
+
+// Opens a file or directory.
+// filename: Name of the file or directory to open.
+// mode: Mode in which to open the file (e.g., "r" for read, "w" for write, etc.).
+// Returns a file handle if successful, or null if an error occurs.
+func byte[] fopen(const char[] filename, const char[] mode);
+
+// Closes an open file or directory.
+// fileHandle: The handle of the file or directory to close.
+// Returns 0 on success, or -1 on error.
+func int fclose(byte[] fileHandle);
+
+// Reads data from a file.
+// buffer: Buffer to store the read data.
+// size: Size of each element to read.
+// count: Number of elements to read.
+// fileHandle: The handle of the file to read from.
+// Returns the number of elements successfully read.
+func word fread(byte[] buffer, word size, word count, byte[] fileHandle);
+
+// Writes data to a file.
+// buffer: Buffer containing the data to write.
+// size: Size of each element to write.
+// count: Number of elements to write.
+// fileHandle: The handle of the file to write to.
+// Returns the number of elements successfully written.
+func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle);
+
+// Sets the file position indicator for the file.
+// fileHandle: The handle of the file.
+// offset: Number of bytes to offset from whence.
+// whence: Position from where offset is applied (0: beginning, 1: current position, 2: end of file).
+// Returns 0 on success, or -1 on error.
+func int fseek(byte[] fileHandle, int offset, byte whence);
+
+// Returns the current file position indicator for the file.
+// fileHandle: The handle of the file.
+// Returns the current file position as a word, or 0 on error.
+func word ftell(byte[] fileHandle);
+
+// Deletes a file.
+// filename: Name of the file to delete.
+// Returns 0 on success, or -1 on error.
+func int remove(const char[] filename);
+
+// Renames a file or directory.
+// oldname: Current name of the file or directory.
+// newname: New name of the file or directory.
+// Returns 0 on success, or -1 on error.
+func int rename(const char[] oldname, const char[] newname);
+
+// Creates a directory.
+// dirname: Name of the directory to create.
+// Returns 0 on success, or -1 on error.
+func int mkdir(const char[] dirname);
+
+// Removes a directory.
+// dirname: Name of the directory to remove.
+// Returns 0 on success, or -1 on error.
+func int rmdir(const char[] dirname);
+
+// Opens a directory for reading.
+// dirname: Name of the directory to open.
+// Returns a directory handle if successful, or null if an error occurs.
+func byte[] opendir(const char[] dirname) {
+    byte i;
+    byte[PageSize] fdtBlock;
+    byte[2] dirHandle;
+    byte[DescriptorSize] descriptor;
+
+    // Read the FDT blocks to find the directory descriptor
+    for (i = FDTStartBlock; i < FDTStartBlock + FDTBlocks; i++) {
+        readBlock(i, fdtBlock);
+        for (byte j = 0; j < PageSize; j += DescriptorSize) {
+            memcpy(descriptor, fdtBlock + j, DescriptorSize);
+            if (strncmp(descriptor + FilenameOffset, dirname, descriptor[FileTypeOffset] & 0x0F) == 0 &&
+                (descriptor[FileTypeOffset] & 0xF0) == FileTypeDirectory) {
+                dirHandle[0] = (i - FDTStartBlock) * (PageSize / DescriptorSize) + (j / DescriptorSize);  // Directory descriptor index
+                dirHandle[1] = 0;  // Current position in directory
+                return dirHandle;
+            }
+        }
+    }
+
+    return null; // Directory not found
+}
+
+
+// Reads an entry from a directory.
+// dirHandle: The handle of the directory to read from.
+// Returns a directory entry structure, or null if no more entries are available or an error occurs.
+func byte[] readdir(byte[] dirHandle) {
+    byte dirent[DescriptorSize];
+    byte dirBlock[PageSize];
+    byte blockIndex = RootDirStartBlock + (dirHandle[1] / PageSize);
+    byte offset = dirHandle[1] % PageSize;
+
+    // Read the directory block
+    readBlock(blockIndex, dirBlock);
+
+    // Check if there are more entries
+    if (dirBlock[offset + FilenameOffset] == 0) {
+        return null;  // No more entries
+    }
+
+    // Copy the directory entry
+    memcpy(dirent, dirBlock + offset, DescriptorSize);
+
+    // Update the directory handle position
+    dirHandle[1] += DescriptorSize;
+
+    return dirent;
+}
+
+// Closes an open directory.
+// dirHandle: The handle of the directory to close.
+// Returns 0 on success, or -1 on error.
+func int closedir(byte[] dirHandle) {
+    // In this simple implementation, there's no resource to free
+    // Just return success
+    return 0;
+}
+
+

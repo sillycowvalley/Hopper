@@ -1,30 +1,11 @@
 #define EXPERIMENTAL
 #define ZEROPAGEGLOBALS
 #include "../system.tc"
-#include "../i2c.tc"
+#include "../file.tc"
 
-func bool writeAndVerify(word address, byte[] data) {
-    writePage(address, data);
-    byte[256] readData;
-    readPage(address, readData);
-
-    for (word i = 0; i < 256; i++) {
-        if (readData[i] != data[i]) {
-            writeString("\nMismatch at address ");
-            writeWord(address + i);
-            writeString(": written ");
-            writeHex(data[i]);
-            writeString(", read ");
-            writeHex(readData[i]);
-            return false;
-        }
-    }
-    return true;
-}
 
 func main() {
-    word i;
-    
+
     writeString("\nScanning:");
     if (i2cScan(SerialEEPROMAddress)) {
         writeString("\nEEPROM Found");
@@ -32,54 +13,32 @@ func main() {
         writeString("\nEEPROM Not Found");
         return;
     }
+    
+    if (format() != 0) {
+        writeString("Format failed.\n");
+        return;
+    }
+    writeString("Format succeeded.\n");
 
-    // Test 1: Write and verify incremental pattern
-    byte[256] writeData1;
-    for (i = 0; i < 256; i++) {
-        writeData1[[i] = i as byte;
+    byte[] rootDir = opendir("/");
+    if (rootDir == null) {
+        writeString("Failed to open root directory.\n");
+        return;
     }
-    if (writeAndVerify(1024, writeData1)) {
-        writeString("\nIncremental pattern test passed.");
-    } else {
-        writeString("\nIncremental pattern test failed.");
-    }
+    writeString("Opened root directory.\n");
 
-    // Test 2: Write and verify all 0xFF pattern
-    byte[256] writeData2;
-    for (i = 0; i < 256; i++) {
-        writeData2[[i] = 0xFF;
+    byte[] entry;
+    while ((entry = readdir(rootDir)) != null) {
+        writeString("Entry: ");
+        writeString(&entry[FilenameOffset]);
+        writeString("\n");
     }
-    if (writeAndVerify(2048, writeData2)) {
-        writeString("\n0xFF pattern test passed.");
-    } else {
-        writeString("\n0xFF pattern test failed.");
-    }
+    writeString("No more entries in root directory.\n");
 
-    // Test 3: Write and verify all 0x00 pattern
-    byte[256] writeData3;
-    for (i = 0; i < 256; i++) {
-        writeData3[[i] = 0x00;
+    if (closedir(rootDir) != 0) {
+        writeString("Failed to close root directory.\n");
+        return;
     }
-    if (writeAndVerify(3072, writeData3)) {
-        writeString("\n0x00 pattern test passed.");
-    } else {
-        writeString("\n0x00 pattern test failed.");
-    }
-
-    // Test 4: Write and verify first page
-    if (writeAndVerify(0, writeData1)) {
-        writeString("\nFirst page test passed.");
-    } else {
-        writeString("\nFirst page test failed.");
-    }
-
-    // Test 5: Write and verify last page (assuming 64K EEPROM with 256-byte pages)
-    if (writeAndVerify(0xFF00, writeData1)) {
-        writeString("\nLast page test passed.");
-    } else {
-        writeString("\nLast page test failed.");
-    }
-
-    writeString("\nAll tests completed.");
+    writeString("Closed root directory.\n");
 }
 

@@ -13,10 +13,10 @@ func word strlen(const char[] str) {
 func char[] strcpy(char[] dest, const char[] src) {
     word i = 0;
     while (src[i] != '\0') {
-        dest[[i] = src[i];
+        dest[i] = src[i];
         i++;
     }
-    dest[[i] = '\0'; // Null-terminate the destination string
+    dest[i] = '\0'; // Null-terminate the destination string
     return dest;
 }
 
@@ -24,11 +24,11 @@ func char[] strcpy(char[] dest, const char[] src) {
 func char[] strncpy(char[] dest, const char[] src, word n) {
     word i = 0;
     while (i < n && src[i] != '\0') {
-        dest[[i] = src[i];
+        dest[i] = src[i];
         i++;
     }
     while (i < n) {
-        dest[[i] = '\0'; // Null-padding if src is shorter than n
+        dest[i] = '\0'; // Null-padding if src is shorter than n
         i++;
     }
     return dest;
@@ -39,10 +39,10 @@ func char[] strcat(char[] dest, const char[] src) {
     word dest_len = strlen(dest);
     word i = 0;
     while (src[i] != '\0') {
-        dest[[dest_len + i] = src[i];
+        dest[dest_len + i] = src[i];
         i++;
     }
-    dest[[dest_len + i] = '\0'; // Null-terminate the resulting string
+    dest[dest_len + i] = '\0'; // Null-terminate the resulting string
     return dest;
 }
 
@@ -51,10 +51,10 @@ func char[] strncat(char[] dest, const char[] src, word n) {
     word dest_len = strlen(dest);
     word i = 0;
     while (i < n && src[i] != '\0') {
-        dest[[dest_len + i] = src[i];
+        dest[dest_len + i] = src[i];
         i++;
     }
-    dest[[dest_len + i] = '\0'; // Null-terminate the resulting string
+    dest[dest_len + i] = '\0'; // Null-terminate the resulting string
     return dest;
 }
 
@@ -162,7 +162,7 @@ func char[] strtok(char[] str, const char[] delimiters) {
     }
 
     if (next_token[0] != '\0') {
-        next_token[[0] = '\0';
+        next_token[0] = '\0';
         next_token++;
     } else {
         next_token = null;
@@ -214,7 +214,7 @@ func char tolower(char c) {
 // Copy n bytes from source to destination
 func byte[] memcpy(byte[] dest, const byte[] src, word n) {
     for (word i = 0; i < n; i++) {
-        dest[[i] = src[i];
+        dest[i] = src[i];
     }
     return dest;
 }
@@ -223,11 +223,11 @@ func byte[] memcpy(byte[] dest, const byte[] src, word n) {
 func byte[] memmove(byte[] dest, const byte[] src, word n) {
     if (src < dest && dest < src + n) {
         for (word i = n; i != 0; i--) {
-            dest[[i - 1] = src[i - 1];
+            dest[i - 1] = src[i - 1];
         }
     } else {
         for (word i = 0; i < n; i++) {
-            dest[[i] = src[i];
+            dest[i] = src[i];
         }
     }
     return dest;
@@ -246,10 +246,8 @@ func int memcmp(const byte[] ptr1, const byte[] ptr2, word n) {
 // Fill the first n bytes of the memory area with a specified value
 func byte[] memset(byte[] ptr, byte value, word n) {
     for (word i = 0; i < n; i++) {
-        ptr[[i] = value;
+        ptr[i] = value;
     }
     return ptr;
 }
-
-
 
