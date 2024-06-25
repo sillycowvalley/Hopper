@@ -3416,8 +3416,8 @@ unit TCGen
         PadOut("PHA", 0);
         if (!instruction.IsByte)
         {
-            PadOut("LDX # 1", 0);
-            PadOut("LDA [ZP.TOP], X", 0);
+            PadOut("LDY # 1", 0);
+            PadOut("LDA [ZP.TOP], Y", 0);
             PadOut("PHA", 0);
         }
     }
@@ -3443,8 +3443,8 @@ unit TCGen
         if (!instruction.IsByte)
         {
             TCCode.PadOut("LDA ZP.ACCH", 0);     
-            TCCode.PadOut("LDX # 1", 0);
-            TCCode.PadOut("LDA [ZP.TOP], X", 0);
+            TCCode.PadOut("LDY # 1", 0);
+            TCCode.PadOut("STA [ZP.TOP], Y", 0);
         }
     }
     generateIPOPM(Instruction instruction)
@@ -3461,8 +3461,8 @@ unit TCGen
         if (!instruction.IsByte)
         {
             TCCode.PadOut("LDA # 0x" + (instruction.Operand >> 8).ToHexString(2), 0);     
-            TCCode.PadOut("LDX # 1", 0);
-            TCCode.PadOut("LDA [ZP.TOP], X", 0);
+            TCCode.PadOut("LDY # 1", 0);
+            TCCode.PadOut("STA [ZP.TOP], Y", 0);
         }
     }
 }

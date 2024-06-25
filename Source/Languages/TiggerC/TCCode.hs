@@ -522,7 +522,7 @@ unit TCCode
     {
         if (isGlobal)
         {
-            return name + " [0x01FF - " + offset.ToString() + "]";
+            return name + " [" + GlobalOperand(offset) + "]";
         }
         if (offset < 0) // argument
         {
