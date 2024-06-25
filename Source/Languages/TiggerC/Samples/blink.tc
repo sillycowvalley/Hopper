@@ -1,3 +1,6 @@
+#define EXPERIMENTAL
+#define ZEROPAGEGLOBALS
+
 #include "../system.tc"
 #include "../time.tc"    // for delay
 

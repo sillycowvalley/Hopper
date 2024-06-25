@@ -252,95 +252,107 @@ unit TCCompile
     
     bool parseGlobalVar()
     {
-        TCGen.BeginStream(true);
+        bool success;
+        loop
+        {
+            CurrentFunction = "main"; // malloc and free happen in main()
+            
+            TCGen.BeginStream(true);
+            
+            string tp;
+            uint size;
+            if (!parseType(ref tp, ref size))
+            {
+                break;
+            }
+            uint slotSize = (IsByteType(tp) ? 1 : 2);
         
-        string tp;
-        uint size;
-        if (!parseType(ref tp, ref size))
-        {
-            return false;
-        }
-        uint slotSize = (IsByteType(tp) ? 1 : 2);
-    
-        Token token = TCScanner.Current();
-        if (token.Type != TokenType.IDENTIFIER)
-        {
-            Error(token.SourcePath, token.Line, "expected identifier after type");
-            return false;
-        }
-        string name = token.Lexeme;
-        
-        if (GlobalOffset + slotSize > GlobalLimit)
-        {
-            Error(token.SourcePath, token.Line, "global space limit (" + (GlobalLimit).ToString() + " bytes) exceeded");
-            return false;
-        }
-        if (!DefineVariable(tp, name, int(GlobalOffset), true))
-        {
-            return false;
-        }
-        
-        TCScanner.Advance(); // Skip identifier
+            Token token = TCScanner.Current();
+            if (token.Type != TokenType.IDENTIFIER)
+            {
+                Error(token.SourcePath, token.Line, "expected identifier after type");
+                break;
+            }
+            string name = token.Lexeme;
+            
+            if (GlobalOffset + slotSize > GlobalLimit)
+            {
+                Error(token.SourcePath, token.Line, "global space limit (" + (GlobalLimit).ToString() + " bytes) exceeded");
+                break;
+            }
+            if (!DefineVariable(tp, name, int(GlobalOffset), true))
+            {
+                break;
+            }
+            
+            TCScanner.Advance(); // Skip identifier
 
-        BlockLevel++;
-        TCGen.Comment("initialize '" + name + "' (" + (GlobalOffset).ToString() + ")");
-        TCGen.ZeroGlobal(TCType.IsByteType(tp), GlobalOffset);
-        
-        string memberType;
-        if (IsArrayType(tp, ref memberType) && (size != 0))
-        {
-            if (!IsByteType(memberType))
-            {
-                size *= 2;
-            }
-            TCGen.PushImmediate(false, size);
-            TCGen.Call("malloc", false, true, 2);
-            TCGen.PopVariable(int(GlobalOffset), false, true);
-        }
-        
-        BlockLevel--;
-        
-        GlobalOffset = GlobalOffset + slotSize;
+            BlockLevel++;
+            TCGen.Comment("initialize '" + name + "' (" + (GlobalOffset).ToString() + ")");
+            TCGen.ZeroGlobal(TCType.IsByteType(tp), GlobalOffset);
             
-        token = TCScanner.Current();
-        if (token.Type == TokenType.SYM_EQ)
-        {
-            TCScanner.Advance(); // Skip '='
-            string exprType;
-            if (!TCExpression.Expression(ref exprType)) // global initializer expression
+            string memberType;
+            if (IsArrayType(tp, ref memberType) && (size != 0))
             {
-                return false;
+                if (!IsByteType(memberType))
+                {
+                    size *= 2;
+                }
+                TCGen.PushImmediate(false, size);
+                TCGen.Call("malloc", false, true, 2);
+                TCGen.PopVariable(int(GlobalOffset), false, true);
             }
             
-            if (!IsAutomaticCast(tp, exprType, false, false))
-            {
-                Error(token.SourcePath, token.Line, "type mismatch: expected '" + tp + "', was '" + exprType + "'");
-                return false;
-            }
+            BlockLevel--;
             
-            int    offset;
-            bool   isGlobal;
-            string variableType;
-            if (!GetVariable(name, ref variableType, ref offset, ref isGlobal))
+            GlobalOffset = GlobalOffset + slotSize;
+                
+            token = TCScanner.Current();
+            if (token.Type == TokenType.SYM_EQ)
             {
-                Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
+                TCScanner.Advance(); // Skip '='
+                string exprType;
+                if (!TCExpression.Expression(ref exprType)) // global initializer expression
+                {
+                    return false;
+                }
+                
+                if (!IsAutomaticCast(tp, exprType, false, false))
+                {
+                    Error(token.SourcePath, token.Line, "type mismatch: expected '" + tp + "', was '" + exprType + "'");
+                    break;
+                }
+                
+                int    offset;
+                bool   isGlobal;
+                string variableType;
+                if (!GetVariable(name, ref variableType, ref offset, ref isGlobal))
+                {
+                    Error(token.SourcePath, token.Line, "undefined identifier '" + name + "'");
+                    break;
+                }
+                TCGen.PopVariable(offset, IsByteType(variableType), isGlobal);
             }
-            TCGen.PopVariable(offset, IsByteType(variableType), isGlobal);
-        }
-    
-        token = TCScanner.Current();
-        if (token.Type != TokenType.SYM_SEMICOLON)
-        {
-            Error(token.SourcePath, token.Line, "expected ';' after variable declaration, (" + token.Lexeme + "')");
-            return false;
-        }
-    
-        TCScanner.Advance(); // Skip ';'
         
-        <Instruction> captured = TCGen.CaptureStream();
-        globalDefinitions.Append(captured);
+            token = TCScanner.Current();
+            if (token.Type != TokenType.SYM_SEMICOLON)
+            {
+                Error(token.SourcePath, token.Line, "expected ';' after variable declaration, (" + token.Lexeme + "')");
+                break;
+            }
         
-        return true;
+            TCScanner.Advance(); // Skip ';'
+            
+            <Instruction> captured = TCGen.CaptureStream();
+            globalDefinitions.Append(captured);
+            
+            success = true;
+            break;
+        } // loop
+        
+        CurrentFunction = "<none>";
+        
+        return success;
     }
     
     

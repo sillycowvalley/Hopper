@@ -33,8 +33,11 @@ unit TCSymbols
     
     string currentFunction;
     bool isNaked;
-    string CurrentFunction { get { return currentFunction; } }
+    string CurrentFunction { get { return currentFunction; } set { currentFunction = value; } }
     bool   CurrentIsNaked  { get { return isNaked; } set { isNaked = value; } }
+    
+    bool heapRequired;
+    bool HeapRequired      { get { return heapRequired; } }
     
     uint BlockLevel { get { return blockLevel; } set { blockLevel = value; } }
     
@@ -162,6 +165,14 @@ unit TCSymbols
             PadOut("", 0);
             foreach (var syscall in systemCalls)
             {
+                switch (syscall)
+                {
+                    case "malloc":
+                    case "free":
+                    {
+                        heapRequired = true;
+                    }
+                }
                 PadOut(syscall, 1);
             }
             PadOut("", 0);
@@ -229,7 +240,7 @@ unit TCSymbols
                     }
         
                     TCCode.PushVariable(kv.key, v.Offset, false, v.IsGlobal);
-                    TCCode.PadOut("TCSys.Free();", 0);
+                    TCCode.Call("free");
                     TCCode.PadOut("PLY", 0);
                     TCCode.PadOut("PLY", 0);
                 }
@@ -318,11 +329,18 @@ unit TCSymbols
     }
     InitializeFunctionCalls(string name)
     {
-        <string, bool> calls;
-        functionCalls[name] = calls;
+        if (!functionCalls.Contains(name))
+        {
+            <string, bool> calls;
+            functionCalls[name] = calls;
+        }
     }
     AddFunctionCall(string name, string callName)
     {
+        if (!functionCalls.Contains(name))
+        {
+            InitializeFunctionCalls(name); // typically 'main' for global allocations
+        }
         <string, bool> calls = functionCalls[name];
         if (!calls.Contains(callName))
         {

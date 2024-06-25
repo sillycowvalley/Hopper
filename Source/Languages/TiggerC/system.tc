@@ -100,8 +100,7 @@ func pinMode(byte pin, byte mode) { // System function to set the mode of a pin
     } else {
         ddr = DDRB;
     }
-    pin = pin & 0x07;
-    pin = 1 << pin;
+    pin = (1 << pin) & 0x07;
     byte currentValue = mem[ddr];
     if (mode == INPUT) {
         currentValue = currentValue & ~pin;

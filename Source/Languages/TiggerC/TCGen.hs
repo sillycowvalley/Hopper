@@ -262,7 +262,7 @@ unit TCGen
                     {
                         if (instruction1.Name == "PUSHL") // PUSHLB DECSP 1
                         {
-                            Print(" [PUSHLB DECSP 1]");
+                            //Print(" [PUSHLB DECSP 1]");
                             DeleteInstruction(currentStream.Count-2);
                             DeleteInstruction(currentStream.Count-1);
                             modified = true;

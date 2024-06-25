@@ -118,6 +118,7 @@ unit TCCode
         {
             PadOut("#define ACIA_6850", 0);                            // ZP.ACIACONTROL, ZP.ACIADATA, ZP.ACIASTATUS
         }
+
         PadOut("#define FASTINTS", 0);
         
         PadOut("",0);
@@ -129,17 +130,23 @@ unit TCCode
         PadOut("uses \"/Source/Runtime/6502/Utilities\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Types\"", 0);
         PadOut("uses \"/Source/Runtime/6502/IntMath\"", 0);            // FP.UWIDE0, FP.UWIDE1, FP.UWIDE2, FP.UWIDE3
-        PadOut("uses \"/Source/Runtime/6502/Memory\"", 0);             // ZP.FREELISTL, ZP.FREELISTH, ZP.HEAPSTART, ZP.HEAPSIZE, ZP.PROGSIZE
-        PadOut("uses \"/Source/Runtime/6502/Allocate\"", 0);           // ZP.M0 .. ZP.M13
-        PadOut("uses \"/Source/Runtime/6502/Free\"", 0);               // ZP.M0 .. ZP.M15, ZP.IDYL, ZP.IDYL
-        PadOut("uses \"/Source/Runtime/6502/Serial\"", 0);             // ZP.SerialInWritePointer, ZP.SerialInReadPointer, ZP.SerialBreakFlag, 
-        PadOut("uses \"/Source/Runtime/6502/Time\"", 0);               // ZP.TICK0, ZP.TICK1, ZP.TICK2, ZP.TICK3, ZP.TARGET0, ZP.TARGET1, ZP.TARGET2, ZP.TARGET3
-        PadOut("uses \"/Source/Runtime/6502/Devices/W65C22\"", 0);     // ZP.DDRA, ZP.DDRB, ZP.T1CL, ZP.T1CH, ZP.IER, ZP.ACR, ZP.IFR, ZF.PORTA, ZFPORTB
+        if (HeapRequired)
+        {
+            PadOut("uses \"/Source/Runtime/6502/Memory\"", 0);         // ZP.FREELISTL, ZP.FREELISTH, ZP.HEAPSTART, ZP.HEAPSIZE, ZP.PROGSIZE
+            PadOut("uses \"/Source/Runtime/6502/Allocate\"", 0);       // ZP.M0 .. ZP.M13
+            PadOut("uses \"/Source/Runtime/6502/Free\"", 0);           // ZP.M0 .. ZP.M15, ZP.IDYL, ZP.IDYL
+        }
+        PadOut("uses \"/Source/Runtime/6502/Serial\"", 0);         // ZP.SerialInWritePointer, ZP.SerialInReadPointer, ZP.SerialBreakFlag, 
+        
+        PadOut("uses \"/Source/Runtime/6502/Time\"", 0);           // ZP.TICK0, ZP.TICK1, ZP.TICK2, ZP.TICK3, ZP.TARGET0, ZP.TARGET1, ZP.TARGET2, ZP.TARGET3
+        PadOut("uses \"/Source/Runtime/6502/Devices/W65C22\"", 0); // ZP.DDRA, ZP.DDRB, ZP.T1CL, ZP.T1CH, ZP.IER, ZP.ACR, ZP.IFR, ZF.PORTA, ZFPORTB
         PadOut("uses \"/Source/Runtime/6502/I2C\"", 0);
         PadOut("uses \"/Source/Runtime/6502/Devices/SerialEEPROM\"", 0);
+
         PadOut("uses \"/Source/Languages/TiggerC/TCOps\"", 0);         // ZP.TOPL, ZP.TOPH, ZP.TOPT, ZP.NEXTL, ZP.NEXTH, ZP.ACCL, ZP.ACCH, ZP.FSIGN
         PadOut("uses \"/Source/Languages/TiggerC/TCSys\"", 0);         // ZP.IDXL, ZP.IDXH
         PadOut("",0);
+        
         PadOut("IRQ()",0);
         PadOut("{",0);
         PadOut("Serial.ISR();",1);
@@ -154,7 +161,10 @@ unit TCCode
     }
     StartUp()
     {
-        PadOut("Memory.InitializeHeapSize();",0);
+        if (HeapRequired)
+        {
+            PadOut("Memory.InitializeHeapSize();",0);
+        }
         PadOut("Serial.Initialize();", 0);
         PadOut("W65C22.Initialize();", 0);
         PadOut("",0);
@@ -717,6 +727,10 @@ unit TCCode
     }
     Call(string functionName)
     {
+        if (FirstPass)
+        {
+            TCSymbols.AddFunctionCall(CurrentFunction, functionName);
+        }
         switch (functionName)
         {
             case "writeChar":
@@ -725,31 +739,31 @@ unit TCCode
             }
             case "millis":
             {
-                 functionName = "TCSys.Millis";
+                functionName = "TCSys.Millis";
             }
             case "delay":
             {
-                 functionName = "TCSys.Delay";
+                functionName = "TCSys.Delay";
             }
             case "malloc":
             {
-                 functionName = "TCSys.Malloc";
+                functionName = "TCSys.Malloc";
             }
             case "free":
             {
-                 functionName = "TCSys.Free";
+                functionName = "TCSys.Free";
             }
             case "i2cScan":
             {
-                 functionName = "TCSys.I2CScan";
+                functionName = "TCSys.I2CScan";
             }
             case "writePage":
             {
-                 functionName = "TCSys.WritePage";
+                functionName = "TCSys.WritePage";
             }
             case "readPage":
             {
-                 functionName = "TCSys.ReadPage";
+                functionName = "TCSys.ReadPage";
             }
             
         }
