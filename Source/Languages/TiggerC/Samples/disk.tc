@@ -1,24 +1,80 @@
+//#define APPLE_I
 #define EXPERIMENTAL
 #define ZEROPAGEGLOBALS
 #include "../system.tc"
 #include "../file.tc"
 
+// Prints the contents of a buffer in hexadecimal format.
+func printHex(const byte[] buffer, word length) {
+    for (word i = 0; i < length; i++) {
+        writeHex(buffer[i]);
+        writeChar(' ');
+        if ((i + 1) % 16 == 0) {
+            if ((i + 1) % 32 == 0) {
+                writeChar('\n');
+            }
+            else
+            {
+                writeChar(' ');
+            }
+        }
+    }
+    writeChar('\n');
+}
+
+// Dumps the contents of the FAT blocks.
+func dumpFAT() {
+    byte[PageSize] buffer;
+    writeString("FAT Blocks:\n");
+    for (byte i = FATStartBlock; i < FATStartBlock + FATBlocks; i++) {
+        readBlock(i, buffer);
+        printHex(buffer, PageSize);
+    }
+}
+
+// Dumps the contents of the FTD blocks.
+func dumpFTD() {
+    byte[PageSize] buffer;
+    writeString("FTD Blocks:\n");
+    for (byte i = FDTStartBlock; i < FDTStartBlock + FDTBlocks; i++) {
+        readBlock(i, buffer);
+        printHex(buffer, PageSize);
+    }
+}
+
+// Dumps the contents of the root directory block.
+func dumpRootDirectory() {
+    byte[PageSize] buffer;
+    writeString("Root Directory Block:\n");
+    readBlock(RootDirStartBlock, buffer);
+    printHex(buffer, PageSize);
+}
+
+
 
 func main() {
-
-    writeString("\nScanning:");
+#ifndef APPLE_I
+    writeString("\nScanning:\n");
     if (i2cScan(SerialEEPROMAddress)) {
-        writeString("\nEEPROM Found");
+        writeString("EEPROM Found\n");
     } else {
-        writeString("\nEEPROM Not Found");
+        writeString("EEPROM Not Found\n");
         return;
     }
+#endif
     
     if (format() != 0) {
         writeString("Format failed.\n");
         return;
     }
     writeString("Format succeeded.\n");
+    
+    // Dump FAT, FTD, and Root Directory blocks
+    dumpFAT();
+    dumpFTD();
+    dumpRootDirectory();
+    
+    return;
 
     byte[] rootDir = opendir("/");
     if (rootDir == null) {
@@ -30,8 +86,10 @@ func main() {
     byte[] entry;
     while ((entry = readdir(rootDir)) != null) {
         writeString("Entry: ");
-        writeString(&entry[FilenameOffset]);
+        //writeString(&entry[FilenameOffset]);
+        writeString((entry + FilenameOffset) as char[]);
         writeString("\n");
+        break;
     }
     writeString("No more entries in root directory.\n");
 

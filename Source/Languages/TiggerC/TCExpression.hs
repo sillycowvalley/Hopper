@@ -1046,7 +1046,7 @@ unit TCExpression
                 TCGen.Comment(literalComment);
                 TCGen.PushImmediate(IsByteType(actualType), literalValue);
             }
-            else if ((token.Type == TokenType.LIT_STRING) || (token.Type == TokenType.KW_NULL))
+            else if (token.Type == TokenType.LIT_STRING)
             {
                 actualType = "const char[]";
                 uint index;

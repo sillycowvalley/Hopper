@@ -271,8 +271,6 @@ unit TCStatement
                 TypeError(returnType, actualType);
                 return false;
             }
-            
-            
             token = TCScanner.Current();
         }
         else if (returnType != "void")

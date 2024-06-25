@@ -1,165 +1,155 @@
-#include "../system.tc"
+#define APPLE_I
 
-// Test function declarations and basic arithmetic
-func testFunctionDeclarations() {
-    byte a = 10;
-    byte b = 20;
-    byte sum = a + b;
-    writeString("Test Function Declarations: ");
-    writeWord(sum);
-    writeString(" (Expected: 30)\n");
+#include "../system.tc"
+#include "../string.tc"
+#include "../time.tc"
+
+// Function to print test result
+func printResult(const char[] testName, bool result) {
+    writeString(testName);
+    if (result) {
+        writeString(": PASS\n");
+    } else {
+        writeString(": FAIL\n");
+    }
 }
 
-// Test control structures: if, while, for, switch
-func testControlStructures() {
-    // If-else test
-    byte x = 10;
-    if (x == 10) {
-        writeString("If Test Passed\n");
-    } else {
-        writeString("If Test Failed\n");
-    }
+func main() {
+    // Variables test
+    byte a = 0x10;
+    word b = 0x1234;
+    int d = -1234;
+    char c = 'A';
+    bool flag = true;
 
-    // While loop test
-    byte count = 5;
+    printResult("Variable Initialization", (a == 0x10) && (b == 0x1234) && (d == -1234) && (c == 'A') && flag);
+
+    // Array test
+    byte[10] arr;
+    for (byte i = 0; i < 10; i++) {
+        arr[i] = i;
+    }
+    bool arrTest = true;
+    for (byte j = 0; j < 10; j++) {
+        if (arr[j] != j) {
+            arrTest = false;
+            break;
+        }
+    }
+    printResult("Array Test", arrTest);
+
+    // Pointer and memory management test
+    byte[] ptr = malloc(10);
+    for (byte k = 0; k < 10; k++) {
+        ptr[k] = k;
+    }
+    bool ptrTest = true;
+    for (byte l = 0; l < 10; l++) {
+        if (ptr[l] != l) {
+            ptrTest = false;
+            break;
+        }
+    }
+    free(ptr);
+    printResult("Pointer and Memory Management Test", ptrTest);
+
+    // String functions test
+    const char[] hello = "Hello";
+    const char[] world = "World";
+    char[11] combined;
+    strcpy(combined, hello);
+    strcat(combined, " ");
+    strcat(combined, world);
+
+    bool strTest = strcmp(combined, "Hello World") == 0;
+    printResult("String Functions Test", strTest);
+
+    // Control structures test
+    byte sum = 0;
+    for (byte m = 0; m < 10; m++) {
+        sum += m;
+    }
+    printResult("For Loop Test", sum == 45);
+
+    byte count = 10;
     while (count > 0) {
-        writeChar('*');
         count--;
     }
-    writeString(" (Expected: ***** )\n");
+    printResult("While Loop Test", count == 0);
 
-    // For loop test
-    for (byte i = 0; i < 5; i++) {
-        writeChar('#');
+    count = 10;
+    if (count == 10) {
+        count = 0;
     }
-    writeString(" (Expected: ##### )\n");
+    printResult("If Statement Test", count == 0);
 
-    // Switch case test
+    // Switch statement test
     byte value = 2;
+    byte result = 0;
     switch (value) {
-        case 1:
-            writeString("Switch Test Failed\n");
-            done;
-        case 2:
-            writeString("Switch Test Passed\n");
-            done;
-        default:
-            writeString("Switch Test Failed\n");
-            done;
+        case 1: {
+            result = 1;
+        }
+        case 2: {
+            result = 2;
+        }
+        default: {
+            result = 3;
+        }
     }
-}
-
-// Test memory management: malloc, free
-func testMemoryManagement() {
-    byte[] memory = malloc(10);
-    if (memory != null) {
-        writeString("Memory Allocation Test Passed\n");
-    } else {
-        writeString("Memory Allocation Test Failed\n");
-    }
-    free(memory);
-    writeString("Memory Deallocation Test Passed\n");
-}
-
-// Test arrays and type casting
-func testArraysAndTypeCasting() {
-    const word SIZE = 5;
-    byte[SIZE] byteArray;
-    word[SIZE] wordArray;
-    
-    // Initialize and print byteArray
-    for (byte i = 0; i < SIZE; i++) {
-        byteArray[i] = i * 2;
-        writeWord(byteArray[i]);
-        writeChar(' ');
-    }
-    writeString("(Expected: 0 2 4 6 8)\n");
-
-    // Initialize and print wordArray
-    for (byte i = 0; i < SIZE; i++) {
-        wordArray[i] = i * 100;
-        writeWord(wordArray[i]);
-        writeChar(' ');
-    }
-    writeString("(Expected: 0 100 200 300 400)\n");
+    printResult("Switch Statement Test", result == 2);
 
     // Type casting test
-    word w = 0x1234;
-    byte b = w as byte;
-    writeString("Type Casting Test: ");
-    writeWord(b);
-    writeString(" (Expected: 52)\n");
-}
+    word wide_value = 0x1234;
+    byte narrow_value = wide_value as byte;
+    printResult("Type Casting Test", narrow_value == 0x34);
 
-// Test function pointers
-func testFunctionPointers() {
-    func testFunc = testFunctionDeclarations;
-    testFunc(); // Expected to call testFunctionDeclarations
-}
+    // System functions test
+    byte pin = 1; // Example pin number
+    pinMode(pin, OUTPUT);
+    pinSet(pin, true);
+    bool pinState = pinRead(pin);
+    printResult("GPIO Test", pinState);
 
-// Test system calls
-func testSystemCalls() {
-    // Test writeChar, writeString, writeWord
-    writeChar('A');
-    writeString(" (Expected: A)\n");
-    
-    const char[] testMessage = "System Call Test";
-    writeString(testMessage);
-    writeString(" (Expected: System Call Test)\n");
-    
-    writeWord(12345);
-    writeString(" (Expected: 12345)\n");
-    
-    // Test timing functions
-    word[] start = millis();
-    delay(1000);
-    word[] end = millis();
-    word elapsed = subtractMillis(start, end);
-    writeString("Delay Test: ");
-    writeWord(elapsed);
-    writeString(" (Expected: ~1 second in ms)\n");
-}
+    // EEPROM functions test
+    word eeprom_address = 0x100;
+    byte[16] write;
+    byte[16] read;
 
-func word subtractMillis(word[] start, word[] end) {
-    word low_res;
-    if (end[1] >= start[1]) {
-        low_res = end[1] - start[1];
-    } else {
-        low_res = (0xFFFF - start[1] + 1) + end[1];
-        end[0] -= 1;
+    // Initialize data to write
+    for (byte n = 0; n < 16; n++) {
+        write[n] = n;
     }
-    word high_res = end[0] - start[0];
 
-    // Calculate total milliseconds without overflow
-    word totalSecondsHigh = high_res * 66;  // High part in seconds (65536 / 1000 = 65.536)
-    word totalSecondsLow = low_res / 1000;  // Low part in seconds
+    /*
+    // Write a page to EEPROM
+    writePage(eeprom_address, write);
 
-    // Add the high and low parts to get the total milliseconds
-    word totalMillis = totalSecondsHigh + totalSecondsLow;
-    return totalMillis;
+    // Read a page from EEPROM
+    readPage(eeprom_address, read);
+
+    // Verify the read data
+    bool eepromTest = true;
+    for (byte i = 0; i < 16; i++) {
+        if (read[i] != write[i]) {
+            eepromTest = false;
+            break;
+        }
+    }
+    printResult("EEPROM Test", eepromTest);
+
+    // I2C functions test (Assuming a device at address 0x50)
+    byte i2c_address = 0x50;
+    I2CWrite(i2c_address, 0xAB);
+    byte i2cData = I2CRead(i2c_address);
+    printResult("I2C Test", i2cData == 0xAB);
+   */
+
+    // Timer functions test
+    byte[] start = millis();
+    delay(1000); // Delay for 1 second
+    word elapsed = elapsedMillis(start);
+    free(start);
+    printResult("Timer Functions Test", elapsed >= 1000);
 }
 
-// Main test runner
-func main() {
-    writeString("Starting TiggerC Test Suite\n\n");
-
-    writeString("Running Function Declarations Test\n");
-    testFunctionDeclarations();
-    
-    writeString("\nRunning Control Structures Test\n");
-    testControlStructures();
-
-    writeString("\nRunning Memory Management Test\n");
-    testMemoryManagement();
-
-    writeString("\nRunning Arrays and Type Casting Test\n");
-    testArraysAndTypeCasting();
-
-    writeString("\nRunning Function Pointers Test\n");
-    testFunctionPointers();
-
-    writeString("\nRunning System Calls Test\n");
-    testSystemCalls();
-
-    writeString("\nTiggerC Test Suite Completed\n");
-}

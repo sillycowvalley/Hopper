@@ -25,7 +25,6 @@ const byte FATBlocks = 2;
 const byte ChainBlock = 3;
 const byte FDTStartBlock = 4;
 const byte FDTBlocks = 2;
-const byte RootDirBlock = 4;
 const byte RootDirStartBlock = 6;
 const byte RootDirNameLength = 1;
 const byte FileTypeDirectory = 0x10;
@@ -35,12 +34,15 @@ const byte FileSizeOffset = 12;
 const byte FileTypeOffset = 14;
 const byte StartBlockOffset = 15;
 const byte DescriptorSize = 16;
+const byte DescriptorsPerBlock = PageSize / DescriptorSize;
 
 // Reads a block from EEPROM.
 // blockNum: The block number to read.
 // buffer: The buffer to store the read data.
 func readBlock(word blockNum, byte[] buffer) {
+#ifndef APPLE_I
     readPage(blockNum * PageSize, buffer);
+#endif    
 }
 
 // Formats the drive, initializing the file system.
@@ -51,25 +53,33 @@ func int format() {
     // Initialize FAT (all blocks free)
     byte[PageSize] fatBlock;
     for (i = FATStartBlock; i < FATStartBlock + FATBlocks; i++) {
+#ifndef APPLE_I    
         writePage(i * PageSize, fatBlock);
+#endif
     }
 
     // Initialize FDT (empty descriptors)
     byte[PageSize] emptyFDT;
     for (i = FDTStartBlock; i < FDTStartBlock + FDTBlocks; i++) {
+#ifndef APPLE_I        
         writePage(i * PageSize, emptyFDT);
+#endif
     }
 
     // Initialize global block chain page (no chains yet)
     byte[PageSize] blockChainPage;
+#ifndef APPLE_I    
     writePage(ChainBlock * PageSize, blockChainPage);
+#endif
 
     // Initialize the root directory
     byte[PageSize] rootDir;
     rootDir[FilenameOffset] = '/' as byte;  // Root directory name
     rootDir[FileTypeOffset] = FileTypeDirectory | RootDirNameLength;  // Mark as directory with name length 1
     rootDir[StartBlockOffset] = RootDirStartBlock;  // Root directory starts at block 6
-    writePage(RootDirBlock * PageSize, rootDir);
+#ifndef APPLE_I    
+    writePage(RootDirStartBlock * PageSize, rootDir);
+#endif
 
     return 0; // Success
 }
@@ -148,15 +158,16 @@ func byte[] opendir(const char[] dirname) {
         readBlock(i, fdtBlock);
         for (byte j = 0; j < PageSize; j += DescriptorSize) {
             memcpy(descriptor, fdtBlock + j, DescriptorSize);
-            if (strncmp(descriptor + FilenameOffset, dirname, descriptor[FileTypeOffset] & 0x0F) == 0 &&
+            if (strncmp((descriptor + FilenameOffset) as char[], dirname, descriptor[FileTypeOffset] & 0x0F) == 0 &&
                 (descriptor[FileTypeOffset] & 0xF0) == FileTypeDirectory) {
-                dirHandle[0] = (i - FDTStartBlock) * (PageSize / DescriptorSize) + (j / DescriptorSize);  // Directory descriptor index
+                
+                word descriptorIndex = (i - FDTStartBlock) * DescriptorsPerBlock + (j / DescriptorSize);
+                dirHandle[0] = descriptorIndex as byte;  // Directory descriptor index
                 dirHandle[1] = 0;  // Current position in directory
                 return dirHandle;
             }
         }
     }
-
     return null; // Directory not found
 }
 
@@ -165,13 +176,12 @@ func byte[] opendir(const char[] dirname) {
 // dirHandle: The handle of the directory to read from.
 // Returns a directory entry structure, or null if no more entries are available or an error occurs.
 func byte[] readdir(byte[] dirHandle) {
-    byte dirent[DescriptorSize];
-    byte dirBlock[PageSize];
-    byte blockIndex = RootDirStartBlock + (dirHandle[1] / PageSize);
-    byte offset = dirHandle[1] % PageSize;
+    byte[DescriptorSize] dirent;
+    byte[PageSize] dirBlock;
+    byte offset = dirHandle[1];
 
-    // Read the directory block
-    readBlock(blockIndex, dirBlock);
+    // Read the block where the current directory entry is
+    readBlock(RootDirStartBlock, dirBlock);
 
     // Check if there are more entries
     if (dirBlock[offset + FilenameOffset] == 0) {
@@ -184,8 +194,14 @@ func byte[] readdir(byte[] dirHandle) {
     // Update the directory handle position
     dirHandle[1] += DescriptorSize;
 
+    // Ensure we do not exceed the single byte limit
+    if (dirHandle[1] >= PageSize) {
+        return null;  // No more entries
+    }
+
     return dirent;
 }
+
 
 // Closes an open directory.
 // dirHandle: The handle of the directory to close.

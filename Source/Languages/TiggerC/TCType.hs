@@ -57,29 +57,41 @@ unit TCType
             return true;
         }
         
-        bool leftPointer  = otherType.EndsWith("[]");
-        bool rightPointer = actualType.EndsWith("[]");
+        bool leftPointer  = otherType.EndsWith("]");
+        bool rightPointer = actualType.EndsWith("]");
         if (leftPointer || rightPointer)
         {
+            //PrintLn();
+            //Print(" " + otherType + "," + actualType);
+        
             string leftType  = otherType.Replace ("const ", "");
             string rightType = actualType.Replace("const ", "");
             if (leftPointer && rightPointer)
             {
-                return leftType == rightType;
+                if (leftType == rightType)
+                {
+                    //Print("->" + actualType);
+                    return true;
+                }
             }
             else if (leftPointer)
             {
                 if (IsAutomaticCast("word", rightType, false, false))
                 {
                     actualType = otherType;
+                    //Print("->" + actualType);
                     return true;
                 }
-                return false;
             }
             else // rightPointer
             {
-                return IsAutomaticCast("word", otherType, false, false);
+                if (IsAutomaticCast("word", otherType, false, false))
+                {
+                    //Print("->" + actualType);
+                    return true;
+                }
             }
+            return false;
         }
         return MatchNumericTypes(otherType, ref actualType);
     }
@@ -199,10 +211,15 @@ unit TCType
         {
             if (expectedType.EndsWith("[]"))
             {
+                if (actualType == "[]") // null literal
+                {
+                    actualType = expectedType;
+                    return true;
+                }
                 string memberType;
                 _ = IsArrayType(actualType, ref memberType);
                 // type[nn] -> type[] is fine
-                return (expectedType == memberType + "[]") || (expectedType == memberType + "[]");
+                return (expectedType == memberType + "[]");
             }
         }
         
