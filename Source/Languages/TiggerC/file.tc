@@ -55,6 +55,7 @@ byte[DescriptorSize] _dirEntry; // global used by readdir
 // prototypes
 func int closedir(byte[] dirHandle);
 func byte[] opendir(const char[] dirname);
+func byte findFreePage(byte[] chainBlock);
 
 // Prints the contents of a buffer in hexadecimal format.
 func printHex(const byte[] buffer, word length) {
@@ -103,6 +104,21 @@ func byte findFreePage(byte[] chainBlock) {
         }
     }
     return 0; // No free page found
+}
+
+// Validates a path for correct length and valid characters.
+// Returns true if the path is valid, false otherwise.
+func bool isValidPath(const char[] path) {
+    word len = strlen(path);
+    if (len == 0 || len > 255) {
+        return false; // Invalid length
+    }
+    for (word i = 0; i < len; i++) {
+        if (!(isalnum(path[i]) || path[i] == '.' || path[i] == '/')) {
+            return false; // Invalid character
+        }
+    }
+    return true;
 }
 
 // Formats the drive, initializing the file system.
@@ -177,6 +193,10 @@ func int rmdir(const char[] dirname) {
     byte[PageSize] dirBlock;
     byte[DescriptorSize] descriptor;
     
+    if (!isValidPath(dirname)) {
+        return -1; // Invalid path
+    }
+    
     // Read the root directory block to find the directory descriptor
     readBlock(RootDirStartBlock, dirBlock);
     for (i = 0; i < PageSize; i += DescriptorSize) {
@@ -190,7 +210,7 @@ func int rmdir(const char[] dirname) {
     }
     return -1; // Directory not found
 }
-   
+
 func byte[] readdir(byte[] dirHandle) {
     if (dirHandle[1] == PageSize - DescriptorSize) {
         // Previous entry was the last one in that page
@@ -212,7 +232,8 @@ func byte[] readdir(byte[] dirHandle) {
     
     // Copy the directory entry
     memcpy(_dirEntry, dirBlock + dirHandle[1], DescriptorSize);
-    if (_dirEntry[StartBlockOffset] == 0) {
+    if (_dirEntry[StartBlockOffset] == 0)
+    {
         // empty slot
         return null;
     }
@@ -226,7 +247,8 @@ func byte[] readdir(byte[] dirHandle) {
 // dirHandle: The handle of the directory to close.
 // Returns 0 on success, or -1 on error.
 func int closedir(byte[] dirHandle) {
-    if (dirHandle != null) {
+    if (null != dirHandle)
+    {
         free(dirHandle);
     }
     return 0;
@@ -239,10 +261,14 @@ func int mkdir(const char[] dirname) {
     byte[PageSize] newDirBlock;
     byte newBlock;
     word i;
-
+    
+    if (!isValidPath(dirname)) {
+        return -1; // Invalid path
+    }
+    
     readBlock(ChainBlock, chainBlock);
+    // Find a free block for the new directory
     newBlock = findFreePage(chainBlock);
-
     if (newBlock == 0) {
         return -1; // Disk full (no available pages)
     }
@@ -320,6 +346,11 @@ func byte[] opendir(const char[] dirname) {
     byte currentBlock;
     bool found;
     word i;
+    
+    if (!isValidPath(dirname)) {
+        free(dirHandle);
+        return null; // Invalid path
+    }
     
     readBlock(ChainBlock, chainBlock);
     
