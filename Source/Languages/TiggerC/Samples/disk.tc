@@ -19,18 +19,7 @@ func dumpRootDirectory() {
     printHex(buffer, PageSize);
 }
 
-func createAndVerifyDir(const char[] dirname) {
-    if (mkdir(dirname) == 0) {
-        writeString("Created directory '");
-        writeString(dirname);
-        writeString("'.\n");
-    } else {
-        writeString("FAILED to create directory '");
-        writeString(dirname);
-        writeString("'.\n");
-    }
-    dumpRootDirectory();
-}
+
 
 func main() {
     writeString("\nScanning:\n");
@@ -58,19 +47,28 @@ func main() {
     }
     writeString("Opened root directory.\n");
     
-    // Create directories
-    createAndVerifyDir("newdir1");
-    createAndVerifyDir("newdir2");
+    if (mkdir("newdir1") == -1)
+    {
+        writeString("FAILED to create directory '");
+        writeString("newdir1");
+        writeString("'.\n");
+    }
+    if (mkdir("newdir2") == -1)
+    {
+        writeString("FAILED to create directory '");
+        writeString("newdir2");
+        writeString("'.\n");
+    }
     
     // Dump Root Directory blocks again
     dumpChainLists();
     dumpRootDirectory();
     
     // List directories
-    byte[] entry;
-    while ((entry = readdir(rootDir)) != null) {
+    byte[] dirEntry;
+    while ((dirEntry = readdir(rootDir)) != null) {
         writeString("Entry: ");
-        writeString((entry + FilenameOffset) as char[]);
+        writeString((dirEntry + FilenameOffset) as char[]);
         writeString("\n");
     }
     writeString("No more entries in root directory.\n");
