@@ -3,14 +3,12 @@
 #include "../system.tc"
 #include "../file.tc"
 
-// Dumps the contents of the FAT blocks.
-func dumpFAT() {
+// Dumps the contents of the ChainLists block.
+func dumpChainLists() {
     byte[PageSize] buffer;
-    writeString("FAT Blocks:\n");
-    for (byte i = FATStartBlock; i < FATStartBlock + FATBlocks; i++) {
-        readBlock(i, buffer);
-        printHex(buffer, PageSize);
-    }
+    writeString("ChainLists Block:\n");
+    readBlock(ChainBlock, buffer);
+    printHex(buffer, PageSize);
 }
 
 // Dumps the contents of the root directory block.
@@ -19,6 +17,19 @@ func dumpRootDirectory() {
     writeString("Root Directory Block:\n");
     readBlock(RootDirStartBlock, buffer);
     printHex(buffer, PageSize);
+}
+
+func createAndVerifyDir(const char[] dirname) {
+    if (mkdir(dirname) == 0) {
+        writeString("Created directory '");
+        writeString(dirname);
+        writeString("'.\n");
+    } else {
+        writeString("FAILED to create directory '");
+        writeString(dirname);
+        writeString("'.\n");
+    }
+    dumpRootDirectory();
 }
 
 func main() {
@@ -36,8 +47,8 @@ func main() {
     }
     writeString("Format succeeded.\n");
     
-    // Dump FAT and Root Directory blocks
-    dumpFAT();
+    // FAT, ChainLists, and Root Directory blocks
+    dumpChainLists();
     dumpRootDirectory();
     
     byte[] rootDir = opendir("/");
@@ -47,16 +58,15 @@ func main() {
     }
     writeString("Opened root directory.\n");
     
-    // Create a new directory
-    if (mkdir("newdir") == 0) {
-        writeString("Created directory 'newdir'.\n");
-    } else {
-        writeString("Failed to create directory 'newdir'.\n");
-    }
-
+    // Create directories
+    createAndVerifyDir("newdir1");
+    createAndVerifyDir("newdir2");
+    
     // Dump Root Directory blocks again
+    dumpChainLists();
     dumpRootDirectory();
     
+    // List directories
     byte[] entry;
     while ((entry = readdir(rootDir)) != null) {
         writeString("Entry: ");

@@ -3235,7 +3235,7 @@ unit TCGen
                 if (!instruction.IsByte)
                 {
                     TCCode.PadOut("LDA " + GlobalOperand(goffset+1), 0);
-                    TCCode.PadOut("ADC # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+                    TCCode.PadOut("ADC # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
                     TCCode.PadOut("STA " + GlobalOperand(goffset+1), 0);
                 }
             }

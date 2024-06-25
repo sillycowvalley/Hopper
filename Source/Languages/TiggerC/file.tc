@@ -6,46 +6,47 @@
 /*
 File System Structure:
 -----------------------
-1. FAT (File Allocation Table):
-   - Used to keep track of the allocation status of blocks.
-   - Located at FATStartBlock and spans FATBlocks blocks.
+1. ChainLists:
+   - Contains chains of blocks for files and directories that span multiple blocks.
+   - Located at page 0.
 
-2. Directory Blocks:
-   - Store metadata for files and directories directly within directory blocks.
-   - Each entry includes filename, file type, start block, and other attributes.
-
-3. ChainBlock:
-   - Contains chains of blocks for files that span multiple blocks.
-   - Located at ChainBlock.
-
-4. Root Directory:
+2. Root Directory:
    - The starting point of the file system, storing the root directory entries.
-   - Located at RootDirStartBlock.
-   
-   
- File Handle Structure (byte array):
+   - Located at page 1.
+
+Descriptor Record Structure (within Directory Pages):
+-----------------------------------------------------
+- Filename:           Offset 0, 12 bytes (null-terminated if shorter)
+- File Type:          Offset 12, 1 byte (high nibble: type, low nibble: name length)
+                      - 0x00: File
+                      - 0x10: Directory
+- Start Block:        Offset 13, 1 byte (block number where the file/directory starts)
+- File Size:          Offset 14, 2 bytes (size of the file in bytes)
+
+File Handle Structure (byte array):
+-----------------------------------
    [0] - File descriptor index (byte)
    [1] - Current position in file (word, 2 bytes)
    Total: 3 bytes
- 
- Directory Handle Structure (byte array):
+
+Directory Handle Structure (byte array):
+----------------------------------------
    [0] - Directory descriptor index (byte)
    [1] - Current position in directory (byte)
    Total: 2 bytes
- 
- Directory Entry Structure (byte array):
+
+Directory Entry Structure (byte array):
+---------------------------------------
    [0] - Entry type (0 for file, 1 for directory) (byte)
    [1-12] - Entry name (up to 12 bytes, null-terminated if shorter)
    Total: 13 bytes
-   
+
 */
 
-// Constants
-const word PageSize = 256;
-const byte FATStartBlock = 1;
-const byte FATBlocks = 2;
-const byte ChainBlock = 3;
-const byte RootDirStartBlock = 4;
+const word PageSize   = 256;
+const word TotalPages = 256;
+const byte ChainBlock = 0;
+const byte RootDirStartBlock = 1;
 const byte FileTypeDirectory = 0x10;
 const byte FileTypeFile = 0x00;
 const byte FilenameOffset = 0;
@@ -55,13 +56,14 @@ const byte StartBlockOffset = 15;
 const byte DescriptorSize = 16;
 const byte DescriptorsPerBlock = PageSize / DescriptorSize;
 
+
 // Prints the contents of a buffer in hexadecimal format.
 func printHex(const byte[] buffer, word length) {
     for (word i = 0; i < length; i++) {
         writeHex(buffer[i]);
         writeChar(' ');
         if ((i + 1) % 16 == 0) {
-            if ((i + 1) % 32 == 0) {
+            if ((i + 1) % 64 == 0) {
                 writeChar('\n');
             } else {
                 writeChar(' ');
@@ -72,17 +74,13 @@ func printHex(const byte[] buffer, word length) {
 }
 
 // Debugging function to print a byte buffer
-func printByteBuffer(const char[] label, byte[] buffer, byte length) {
+func printByteBuffer(const char[] label, byte[] buffer, word length) {
     writeString(label);
-    writeString(": ");
-    for (byte i = 0; i < length; i++) {
-        writeHex(buffer[i]);
-        writeString(" ");
-    }
-    writeString("\n");
+    writeString(":\n");
+    printHex(buffer, length);
 }
 
- Reads a block from EEPROM.
+// Reads a block from EEPROM.
 // blockNum: The block number to read.
 // buffer: The buffer to store the read data.
 func readBlock(word blockNum, byte[] buffer) {
@@ -100,19 +98,14 @@ func writeBlock(word blockNum, const byte[] buffer) {
 // Returns 0 on success, or -1 on error.
 func int format() {
     word i;
-    // Initialize FAT (all blocks free)
-    byte[PageSize] fatBlock;
-    for (i = FATStartBlock; i < FATStartBlock + FATBlocks; i++) {
-        writePage(i * PageSize, fatBlock);
-    }
-    // Initialize global block chain page (no chains yet)
+    // Initialize global block chain page (no chains yet, 0 and 1 reserved)
     byte[PageSize] blockChainPage;
+    blockChainPage[0] = 1;
+    blockChainPage[1] = 1;
     writePage(ChainBlock * PageSize, blockChainPage);
+
     // Initialize the root directory (empty initially)
     byte[PageSize] rootDir;
-    for (i = 0; i < PageSize; i++) {
-        rootDir[i] = 0;
-    }
     writePage(RootDirStartBlock * PageSize, rootDir);
     return 0; // Success
 }
@@ -173,7 +166,24 @@ func int rename(const char[] oldname, const char[] newname);
 func int mkdir(const char[] dirname) {
     byte[PageSize] dirBlock;
     byte[DescriptorSize] descriptor;
-    byte newBlock = 7; // New directory block (for simplicity, always use block 7)
+    byte[PageSize] chainBlock;
+    
+    word i;
+    byte newBlock = 0; 
+    readBlock(ChainBlock, chainBlock);
+    for (i = 2; i < TotalPages; i++)
+    {
+        if (chainBlock[i] == 0)
+        {
+            newBlock = i as byte;
+            break;
+        }
+    }
+    if (newBlock == 0)
+    {
+        return -1; // disk full (no available pages)
+    }
+    
     
     // Initialize the directory descriptor
     memset(descriptor, 0, DescriptorSize);
@@ -185,14 +195,26 @@ func int mkdir(const char[] dirname) {
     writeString(dirname);
     writeString("\nDescriptor: ");
     printByteBuffer("", descriptor, DescriptorSize);
-
     // Read the root directory block to find an empty slot
     readBlock(RootDirStartBlock, dirBlock);
-    for (word i = 0; i < PageSize; i += DescriptorSize) {
+    for (i = 0; i < PageSize; i += DescriptorSize) {
         if (dirBlock[i + FilenameOffset] == 0) {
+            writeString("Empty slot found at: ");
+            writeWord(i);
+            writeString("\n");
             memcpy(dirBlock + i, descriptor, DescriptorSize);
             writeBlock(RootDirStartBlock, dirBlock);
+
+            // Create new empty block for the directory and update ChainBlock
+            byte[PageSize] newDirBlock;
+            memset(newDirBlock, 0, PageSize);
+            writeBlock(newBlock, newDirBlock);
+            
+            chainBlock[newBlock] = 1; // Mark as end of chain
+            writeBlock(ChainBlock, chainBlock);
+
             writeString("Directory created successfully.\n");
+            printByteBuffer("Root directory after", dirBlock, PageSize);
             return 0; // Success
         }
     }
@@ -225,8 +247,8 @@ func int rmdir(const char[] dirname) {
 // dirname: Name of the directory to open.
 // Returns a directory handle if successful, or null if an error occurs.
 func byte[] opendir(const char[] dirname) {
+    byte[] dirHandle = malloc(2);
     if (strcmp(dirname, "/") == 0) {
-        byte[2] dirHandle;
         dirHandle[0] = RootDirStartBlock;  // Root directory descriptor index
         dirHandle[1] = 0;  // Current position in directory
         return dirHandle;
@@ -234,29 +256,41 @@ func byte[] opendir(const char[] dirname) {
     return null; // Only root directory is supported in this example
 }
 
-// Reads an entry from a directory.
-// dirHandle: The handle of the directory to read from.
-// Returns a directory entry structure, or null if no more entries are available or an error occurs.
 func byte[] readdir(byte[] dirHandle) {
-    byte[DescriptorSize] dirent;
-    byte[PageSize] dirBlock;
-    byte offset = dirHandle[1];
+    if (dirHandle[1] == PageSize - DescriptorSize) {
+        // Previous entry was the last one in that page
+        // Follow the chain to the next page for this directory
+        byte[PageSize] chainBlock;
+        readBlock(ChainBlock, chainBlock);
+        
+        dirHandle[0] = chainBlock[dirHandle[0]];
+        if (dirHandle[0] == 1) // that was the last page in the chain
+        {
+            return null;  
+        }
+        dirHandle[1] = 0;
+    }
+    
+    byte[] dirEntry = malloc(DescriptorSize);
+    
     // Read the block where the current directory entry is
+    byte[PageSize] dirBlock;
     readBlock(dirHandle[0], dirBlock);
-    // Check if there are more entries
-    if (dirBlock[offset + FilenameOffset] == 0) {
-        return null;  // No more entries
-    }
+    
     // Copy the directory entry
-    memcpy(dirent, dirBlock + offset, DescriptorSize);
-    // Update the directory handle position
-    dirHandle[1] += DescriptorSize;
-    // Ensure we do not exceed the single byte limit
-    if (dirHandle[1] >= PageSize) {
-        return null;  // No more entries
+    memcpy(dirEntry, dirBlock + dirHandle[1], DescriptorSize);
+    if (dirEntry[StartBlockOffset] == 0)
+    {
+        // empty slot
+        free(dirEntry);
+        return null;
     }
-    return dirent;
+        
+    // Update the directory handle positionfor the next iteration
+    dirHandle[1] += DescriptorSize;
+    return dirEntry;
 }
+
 
 // Closes an open directory.
 // dirHandle: The handle of the directory to close.
