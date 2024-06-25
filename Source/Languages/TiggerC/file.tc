@@ -149,104 +149,6 @@ func int remove(const char[] filename);
 // Returns 0 on success, or -1 on error.
 func int rename(const char[] oldname, const char[] newname);
 
-func int mkdir(const char[] dirname) {
-    byte[PageSize] dirBlock;
-    byte[DescriptorSize] descriptor;
-    byte[PageSize] chainBlock;
-    byte[PageSize] newDirBlock;
-    word i;
-    byte newBlock = 0; 
-    readBlock(ChainBlock, chainBlock);
-
-    // Find a free block for the new directory
-    for (i = 2; i < TotalPages; i++) {
-        if (chainBlock[i] == 0) {
-            newBlock = i as byte;
-            break;
-        }
-    }
-    if (newBlock == 0) {
-        return -1; // Disk full (no available pages)
-    }
-
-    // Initialize the directory descriptor
-    memset(descriptor, 0, DescriptorSize);
-    char[] lastSlash = strrchr(dirname, '/');
-    if (lastSlash != null) {
-        strcpy((descriptor + FilenameOffset) as char[], lastSlash + 1);
-    } else {
-        strcpy((descriptor + FilenameOffset) as char[], dirname);
-    }
-    descriptor[FileTypeOffset] = (FileTypeDirectory | (strlen((descriptor + FilenameOffset) as char[]) & 0x0F)) as byte;
-    descriptor[StartBlockOffset] = newBlock;
-
-    // Determine the parent directory block
-    char[] parentDir;
-    if (lastSlash != null) {
-        lastSlash[0] = '\0';
-        parentDir = dirname;
-    } else {
-        parentDir = "/";
-    }
-
-    // Read the parent directory block to find an empty slot
-    byte[] parentDirHandle = opendir(parentDir);
-    if (parentDirHandle == null) {
-        return -1; // Failed to open parent directory
-    }
-    byte currentBlock = parentDirHandle[0];
-    readBlock(currentBlock, dirBlock);
-
-    while (true) {
-        for (i = 0; i < PageSize; i += DescriptorSize) {
-            if (dirBlock[i + FilenameOffset] == 0) {
-                memcpy(dirBlock + i, descriptor, DescriptorSize);
-                writeBlock(currentBlock, dirBlock);
-                closedir(parentDirHandle);
-
-                // Create new empty block for the directory and update ChainBlock
-                memset(newDirBlock, 0, PageSize);
-                writeBlock(newBlock, newDirBlock);
-
-                chainBlock[newBlock] = 1; // Mark as end of chain
-                writeBlock(ChainBlock, chainBlock);
-                return 0; // Success
-            }
-        }
-        // If no empty slot found in the current block, follow the chain
-        if (chainBlock[currentBlock] == 1) {
-            // No more blocks in the chain, add a new block
-            byte newDirBlockInChain = 0;
-            for (i = 2; i < TotalPages; i++) {
-                if (chainBlock[i] == 0) {
-                    newDirBlockInChain = i as byte;
-                    break;
-                }
-            }
-            if (newDirBlockInChain == 0) {
-                closedir(parentDirHandle);
-                return -1; // Disk full (no available pages)
-            }
-            chainBlock[currentBlock] = newDirBlockInChain;
-            chainBlock[newDirBlockInChain] = 1; // Mark as end of chain
-            writeBlock(ChainBlock, chainBlock);
-
-            // Initialize the new directory block
-            memset(newDirBlock, 0, PageSize);
-            writeBlock(newDirBlockInChain, newDirBlock);
-            currentBlock = newDirBlockInChain;
-            readBlock(currentBlock, dirBlock);
-        } else {
-            // Move to the next block in the chain
-            currentBlock = chainBlock[currentBlock];
-            readBlock(currentBlock, dirBlock);
-        }
-    }
-    closedir(parentDirHandle);
-    return -1; // No empty slot found
-}
-
-
 // Removes a directory.
 // dirname: Name of the directory to remove.
 // Returns 0 on success, or -1 on error.
@@ -358,5 +260,132 @@ func int closedir(byte[] dirHandle) {
         free(dirHandle);
     }
     return 0;
+}
+
+func int mkdir(const char[] dirname) {
+    byte[PageSize] dirBlock;
+    byte[DescriptorSize] descriptor;
+    byte[PageSize] chainBlock;
+    byte[PageSize] newDirBlock;
+    word i;
+    byte newBlock = 0; 
+    readBlock(ChainBlock, chainBlock);
+
+    // Find a free block for the new directory
+    for (i = 2; i < TotalPages; i++) {
+        if (chainBlock[i] == 0) {
+            newBlock = i as byte;
+            break;
+        }
+    }
+    if (newBlock == 0) {
+        writeString("Disk full, no available pages\n");
+        return -1; // Disk full (no available pages)
+    }
+
+    writeString("New directory will use block ");
+    writeHex(newBlock);
+    writeChar('\n');
+
+    // Initialize the directory descriptor
+    memset(descriptor, 0, DescriptorSize);
+    char[] lastSlash = strrchr(dirname, '/');
+    if (lastSlash != null) {
+        strcpy((descriptor + FilenameOffset) as char[], lastSlash + 1);
+    } else {
+        strcpy((descriptor + FilenameOffset) as char[], dirname);
+    }
+    descriptor[FileTypeOffset] = (FileTypeDirectory | (strlen((descriptor + FilenameOffset) as char[]) & 0x0F)) as byte;
+    descriptor[StartBlockOffset] = newBlock;
+
+    writeString("Creating directory: ");
+    writeString(dirname);
+    writeString("\nDescriptor: ");
+    printByteBuffer("", descriptor, DescriptorSize);
+
+    // Determine the parent directory block
+    char[] parentDir;
+    if (lastSlash != null) {
+        lastSlash[0] = '\0';
+        parentDir = dirname;
+    } else {
+        parentDir = "/";
+    }
+
+    writeString("Parent directory: ");
+    writeString(parentDir);
+    writeChar('\n');
+
+    // Read the parent directory block to find an empty slot
+    byte[] parentDirHandle = opendir(parentDir);
+    if (parentDirHandle == null) {
+        writeString("Failed to open parent directory\n");
+        return -1; // Failed to open parent directory
+    }
+    byte currentBlock = parentDirHandle[0];
+    readBlock(currentBlock, dirBlock);
+    closedir(parentDirHandle);
+
+    writeString("Current block: ");
+    writeHex(currentBlock);
+    writeChar('\n');
+
+    while (true) {
+        for (i = 0; i < PageSize; i += DescriptorSize) {
+            if (dirBlock[i + FilenameOffset] == 0) {
+                memcpy(dirBlock + i, descriptor, DescriptorSize);
+                writeBlock(currentBlock, dirBlock);
+                writeString("Directory entry created at offset ");
+                writeHex(i as byte);
+                writeChar('\n');
+
+                // Create new empty block for the directory and update ChainBlock
+                memset(newDirBlock, 0, PageSize);
+                writeBlock(newBlock, newDirBlock);
+                chainBlock[newBlock] = 1; // Mark as end of chain
+                writeBlock(ChainBlock, chainBlock);
+
+                writeString("New directory block created\n");
+                return 0; // Success
+            }
+        }
+        // If no empty slot found in the current block, follow the chain
+        if (chainBlock[currentBlock] == 1) {
+            // No more blocks in the chain, add a new block
+            byte newDirBlockInChain = 0;
+            for (i = 2; i < TotalPages; i++) {
+                if (chainBlock[i] == 0) {
+                    newDirBlockInChain = i as byte;
+                    break;
+                }
+            }
+            if (newDirBlockInChain == 0) {
+                writeString("Disk full, no available pages for new chain block\n");
+                return -1; // Disk full (no available pages)
+            }
+            chainBlock[currentBlock] = newDirBlockInChain;
+            chainBlock[newDirBlockInChain] = 1; // Mark as end of chain
+            writeBlock(ChainBlock, chainBlock);
+
+            // Initialize the new directory block
+            memset(newDirBlock, 0, PageSize);
+            writeBlock(newDirBlockInChain, newDirBlock);
+            currentBlock = newDirBlockInChain;
+            readBlock(currentBlock, dirBlock);
+
+            writeString("New chain block added: ");
+            writeHex(newDirBlockInChain);
+            writeChar('\n');
+        } else {
+            // Move to the next block in the chain
+            currentBlock = chainBlock[currentBlock];
+            readBlock(currentBlock, dirBlock);
+
+            writeString("Moving to next block in chain: ");
+            writeHex(currentBlock);
+            writeChar('\n');
+        }
+    }
+    return -1; // No empty slot found
 }
 
