@@ -122,7 +122,7 @@ func resolveRelativePath(char[] dest, const char[] path) {
         strcpy(dest, "/");
         return;
     }
-    
+
     char[] token;
     char[] temp = malloc(256) as char[];
     strcpy(temp, path);
@@ -131,17 +131,17 @@ func resolveRelativePath(char[] dest, const char[] path) {
     while (token != null) {
         if (strcmp(token, ".") == 0) {
             // Skip
-        } else 
+        } else
         {
             if (strcmp(token, "..") == 0) {
-                // Remove last directory in dest
-                char[] lastSlash = strrchr(dest, '/');
-                if (lastSlash != null && lastSlash != dest) {
-                    lastSlash[0] = '\0';
-                } else {
-                    // Avoid removing the root slash
-                    dest[1] = '\0';
-                }
+            // Remove last directory in dest
+            char[] lastSlash = strrchr(dest, '/');
+            if (lastSlash != null && lastSlash != dest) {
+                lastSlash[0] = '\0';
+            } else {
+                // Avoid removing the root slash
+                dest[1] = '\0';
+            }
             } else {
                 if (strlen(dest) > 1) {
                     strcat(dest, "/");
@@ -156,8 +156,7 @@ func resolveRelativePath(char[] dest, const char[] path) {
 }
 
 func getFullPath(char[] dest, const char[] path) {
-    if (_currentDirectory[0] == '\0')
-    {
+    if (_currentDirectory[0] == '\0') {
         strcpy(_currentDirectory, "/"); // initialize before first use
     }
     if (path[0] == '/') {
@@ -175,8 +174,18 @@ func getFullPath(char[] dest, const char[] path) {
     char[] resolvedPath = malloc(256) as char[];
     resolveRelativePath(resolvedPath, dest);
     strcpy(dest, resolvedPath);
-    free(resolvedPath as byte[]); 
+    free(resolvedPath as byte[]);
+
+    // Ensure the path starts with a root '/'
+    if (dest[0] != '/') {
+        char[] temp = malloc(256) as char[];
+        strcpy(temp, dest);
+        strcpy(dest, "/");
+        strcat(dest, temp);
+        free(temp as byte[]);
+    }
 }
+
 // Formats the drive, initializing the file system.
 // Returns 0 on success, or -1 on error.
 func int format() {
@@ -335,8 +344,10 @@ func int mkdir(const char[] dirname) {
     }
     descriptor[FileTypeOffset] = (FileTypeDirectory | (strlen((descriptor + FilenameOffset) as char[]) & 0x0F)) as byte;
     descriptor[StartBlockOffset] = newBlock;
+
     // Determine the parent directory block
-    char[] parentDir = (lastSlash != null) ? localDirname : "/";
+    char[] parentDir = ((lastSlash != null) && (strlen(localDirname) > 0)) ? localDirname : "/";
+    
     // Read the parent directory block to find an empty slot
     byte[] parentDirHandle = opendir(parentDir);
     if (parentDirHandle == null) {
