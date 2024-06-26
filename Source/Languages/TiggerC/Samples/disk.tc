@@ -317,6 +317,8 @@ func main() {
     
     // Dump blocks used by the file
     dumpBlocksForFile("/file1");
+    mkdir("test");
+    rmdir("test");
     */
 }
 

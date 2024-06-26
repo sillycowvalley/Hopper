@@ -141,6 +141,11 @@ program TCCompile
               }
               TCCode.Flush();
               
+              if (IsExperimental)
+              {
+                  TCGen.EmitPairs();
+              }
+              
               if (!Parser.IsInteractive())
               {
                   Print("Success. ", Colour.ProgressText, Colour.ProgressFace);

@@ -709,45 +709,36 @@ func byte[] fopen(const char[] filename, const char[] mode) {
     byte[] fileHandle;
     byte fileBlock;
     byte nextBlock;
-    byte newBlock;
     byte newDirBlockInChain;
-    
-    for (;;)
-    {
+
+    for (;;) {
         getFullPath(fullPath, filename);
-        
+
         if (!isValidPath(fullPath)) {
             break; // Invalid path
         }
-        if ((strcmp(mode, "w") != 0) && (strcmp(mode, "r") != 0))
-        {
+        if ((strcmp(mode, "w") != 0) && (strcmp(mode, "r") != 0)) {
             break; // Invalid mode
         }
         readBlock(ChainBlock, chainBlock);
-    
+
         parentDir = strdup(fullPath);
         lastSlash = strrchr(parentDir, '/');
         if ((lastSlash != null) && (lastSlash != parentDir)) {
             lastSlash[0] = '\0'; // Terminate parent directory string
             fileName = lastSlash + 1;
         } else {
-            if (lastSlash == null) {
-                fileName = fullPath;     // no slash
-            } else {
-                fileName = fullPath + 1; // / is first character
-            }
+            fileName = (lastSlash == null) ? fullPath : (fullPath + 1); // no slash or / is first character
             strcpy(parentDir, "/"); // It's a root-level directory (no / or first character)
         }
         //writeString("\nfullPath="); writeString(fullPath);
         //writeString("\nparentDir="); writeString(parentDir);
         //writeString("\nfileName="); writeString(fileName);
-
         parentDirHandle = opendir(parentDir);
-        if (parentDirHandle == null)
-        {
+        if (parentDirHandle == null) {
             break; // directory not found
         }
-    
+
         // Locate the file descriptor
         while (true) {
             readBlock(parentDirHandle[0], dirBlock);
@@ -765,12 +756,12 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                             fileBlock = nextBlock;
                         }
                         // Reset the descriptor
-                        dirBlock[i + StartBlockOffset]   = 1; // end of chain
-                        dirBlock[i + FileSizeOffset]     = 0; // file size to 0
+                        dirBlock[i + StartBlockOffset] = 1; // end of chain
+                        dirBlock[i + FileSizeOffset] = 0; // file size to 0
                         dirBlock[i + FileSizeOffset + 1] = 0; // file size to 0
                         writeBlock(parentDirHandle[0], dirBlock);
                         writeBlock(ChainBlock, chainBlock);
-                    } 
+                    }
                     fileHandle = malloc(4);
                     fileHandle[1] = (i / DescriptorSize) as byte; // File descriptor index
                     fileHandle[0] = parentDirHandle[0]; // Directory block number
@@ -780,8 +771,7 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                     break; // Success
                 }
             } // for
-            if (fileHandle != null)
-            {
+            if (fileHandle != null) {
                 break; // Success
             }
             // Follow the chain if no descriptor found in current block
@@ -789,13 +779,11 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                 break; // No more blocks in the chain
             }
             parentDirHandle[0] = chainBlock[parentDirHandle[0]];
-        }// while
+        } // while
         closedir(parentDirHandle);
-        if (fileHandle != null)
-        {
+        if (fileHandle != null) {
             break; // Success
         }
-
         // If the file doesn't exist and mode is "w", create a new file
         if (strcmp(mode, "w") == 0) {
             // Initialize the file descriptor
@@ -805,7 +793,7 @@ func byte[] fopen(const char[] filename, const char[] mode) {
             descriptor[StartBlockOffset] = 1; // end of chain
             descriptor[FileSizeOffset] = 0;   // Empty file LSB
             descriptor[FileSizeOffset + 1] = 0; // Empty file MSB
-            
+
             // Read the parent directory block to find an empty slot
             parentDirHandle = opendir(parentDir);
             if (parentDirHandle == null) {
@@ -814,14 +802,12 @@ func byte[] fopen(const char[] filename, const char[] mode) {
             readBlock(parentDirHandle[0], dirBlock);
             currentBlock = parentDirHandle[0];
             closedir(parentDirHandle);
-            
+
             while (true) {
                 for (i = 0; i < PageSize; i += DescriptorSize) {
                     if (dirBlock[i + FilenameOffset] == 0) {
                         memcpy(dirBlock + i, descriptor, DescriptorSize);
                         writeBlock(currentBlock, dirBlock);
-                        chainBlock[newBlock] = 1; // Mark as end of chain
-                        writeBlock(ChainBlock, chainBlock);
                         fileHandle = malloc(4);
                         fileHandle[0] = currentBlock; // Directory block number
                         fileHandle[1] = (i / DescriptorSize) as byte; // File descriptor index
@@ -829,9 +815,8 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                         //fileHandle[3] = 0; // Current position MSB in file (Tigger C : automatic zero initialization)
                         break; // Success
                     }
-                }// for
-                if (fileHandle != null)
-                {
+                } // for
+                if (fileHandle != null) {
                     break; // Success
                 }
                 // If no empty slot found in the current block, follow the chain
@@ -854,10 +839,10 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                     currentBlock = chainBlock[currentBlock];
                     readBlock(currentBlock, dirBlock);
                 }
-            }// while
+            } // while
         } // if "w"
         break;
-    }// for (;;)
+    } // for (;;)
     free(parentDir as byte[]);
     return fileHandle;
 }
