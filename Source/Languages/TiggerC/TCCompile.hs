@@ -27,6 +27,7 @@ unit TCCompile
     Reset() 
     {
         globalDefinitions.Clear();
+        GlobalOffset = 0;
     }
     
     bool Compile()

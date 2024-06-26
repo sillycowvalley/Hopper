@@ -55,8 +55,10 @@ unit TCSymbols
         functions.Clear();
         symbols.Clear();
         staticBudget = GlobalLimit - GlobalOffset;
+        //PrintLn();
+        //PrintLn("GlobalLimit=" + (GlobalLimit).ToString() + ", GlobalOffset=" + (GlobalOffset).ToString() + ", staticBudget=" + staticBudget.ToString());
     }
-    bool RequestStaticBytes(string functionName, uint bytes)
+    bool RequestStaticBytes(string functionName, string variable, uint bytes)
     {
         bool success;
         if (staticCandidates.Contains(functionName))
@@ -70,6 +72,17 @@ unit TCSymbols
                 }
             }
         }
+        /*
+        if (!FirstPass && (staticBudget <= 16))
+        {
+            PrintLn();
+            Print("functionName=" + functionName + ", variable=" + variable + ", staticBudget=" + staticBudget.ToString() + (success ? " +" : " -"));
+            if (success)
+            {
+                Print(", Address=0x" + (GlobalOffset + 0x88).ToHexString(2));
+            }
+        }
+        */
         return success;
     }
         

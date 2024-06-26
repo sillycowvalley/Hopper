@@ -367,7 +367,7 @@ unit TCStatement
         bool isGlobal;
         int  offset = LocalOffset;
         uint slotSize = IsByteType(tp) ? 1 : 2;
-        if ((IsValueType(tp) || IsPointerType(tp)) && (BlockLevel == 2) && RequestStaticBytes(CurrentFunction, slotSize)) 
+        if ((IsValueType(tp) || IsPointerType(tp)) && (BlockLevel == 2) && RequestStaticBytes(CurrentFunction, name, slotSize)) 
         {
             // top local scope, value type variabes or pointer variables (not automatically allocated)
             isGlobal = true;
