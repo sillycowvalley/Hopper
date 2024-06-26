@@ -522,128 +522,134 @@ func int rmdir(const char[] dirname) {
     return -1; // Directory descriptor not found
 }
 
-// Closes an open file or directory.
-// fileHandle: The handle of the file or directory to close.
-// Returns 0 on success, or -1 on error.
-func int fclose(byte[] fileHandle) {
-    if (fileHandle == null) {
-        return -1; // Invalid file handle
-    }
-
-    // Flush any buffers if needed (not implemented in the current context)
-    // Example: if (writeBuffer != null) { flush(writeBuffer); }
-
-    // Release the file handle
-    free(fileHandle);
-    
-    return 0; // Success
-}
-
 // Opens a file or directory.
 // filename: Name of the file or directory to open.
 // mode: Mode in which to open the file (e.g., "r" for read, "w" for write, etc.).
 // Returns a file handle if successful, or null if an error occurs.
 func byte[] fopen(const char[] filename, const char[] mode) {
-    char[256] fullPath;
     byte[PageSize] dirBlock;
-    byte[PageSize] chainBlock; // Declare chainBlock here
+    byte[PageSize] chainBlock;
     byte[DescriptorSize] descriptor;
-    byte[] fileHandle;
-    byte[] dirHandle;
+    char[256] fullPath;
     byte currentBlock;
     word i;
-
+    
     getFullPath(fullPath, filename);
-
+    
     if (!isValidPath(fullPath)) {
         return null; // Invalid path
     }
-
-    // Read the ChainBlock
+    
     readBlock(ChainBlock, chainBlock);
-
-    // Open the directory containing the file
-    char[] parentDir = strdup(fullPath);
-    char[] lastSlash = strrchr(parentDir, '/');
-    if (lastSlash != null && lastSlash != parentDir) {
-        lastSlash[0] = '\0'; // Terminate parent directory string
-    } else {
-        strcpy(parentDir, "/"); // It's a root-level file
-    }
-
-    dirHandle = opendir(parentDir);
-    if (dirHandle == null) {
-        free(parentDir as byte[]);
-        return null; // Failed to open parent directory
-    }
-
-    readBlock(dirHandle[0], dirBlock);
-    while (true) {
-        for (i = 0; i < PageSize; i += DescriptorSize) {
-            memcpy(descriptor, dirBlock + i, DescriptorSize);
-            if (strncmp((descriptor + FilenameOffset) as char[], lastSlash + 1, strlen(lastSlash + 1)) == 0) {
-                if ((descriptor[FileTypeOffset] & 0xF0) == FileTypeFile || 
-                    (descriptor[FileTypeOffset] & 0xF0) == FileTypeDirectory) {
-                    // Allocate and initialize file handle
-                    fileHandle = malloc(3);
-                    fileHandle[0] = (i / DescriptorSize) as byte; // File descriptor index
-                    fileHandle[1] = 0; // Current position (low byte)
-                    fileHandle[2] = 0; // Current position (high byte)
-                    closedir(dirHandle);
-                    free(parentDir as byte[]);
-                    return fileHandle;
-                }
-            }
-        }
-        // Follow the chain if no descriptor found in current block
-        if (chainBlock[dirHandle[0]] == 1) {
-            break; // No more blocks in the chain
-        }
-        dirHandle[0] = chainBlock[dirHandle[0]];
-        readBlock(dirHandle[0], dirBlock);
-    }
-
-    // File not found
+    
+    // Handle opening for write mode
     if (strcmp(mode, "w") == 0) {
-        // Create a new file if mode is "w"
-        // Find an empty slot in the directory
+        // Check if the file already exists
+        byte[] parentDirHandle = opendir(fullPath);
+        if (parentDirHandle != null) {
+            closedir(parentDirHandle);
+            return null; // File already exists
+        }
+        
+        // Create a new file
+        // Find a free block for the file
+        byte newBlock = findFreePage(chainBlock);
+        if (newBlock == 0) {
+            return null; // Disk full (no available pages)
+        }
+        
+        // Initialize the file descriptor
+        memset(descriptor, 0, DescriptorSize);
+        char[] lastSlash = strrchr(fullPath, '/');
+        if (lastSlash != null) {
+            strcpy((descriptor + FilenameOffset) as char[], lastSlash + 1);
+            lastSlash[0] = '\0'; // Terminate parent directory string
+        } else {
+            strcpy((descriptor + FilenameOffset) as char[], fullPath);
+        }
+        descriptor[FileTypeOffset] = (FileTypeFile | (strlen((descriptor + FilenameOffset) as char[]) & 0x0F)) as byte;
+        descriptor[StartBlockOffset] = newBlock;
+        descriptor[FileSizeOffset] = 0; // Empty file
+        
+        // Determine the parent directory block
+        char[] parentDir = ((lastSlash != null) && (strlen(fullPath) > 0)) ? fullPath : "/";
+        
+        // Read the parent directory block to find an empty slot
+        parentDirHandle = opendir(parentDir);
+        if (parentDirHandle == null) {
+            return null; // Failed to open parent directory
+        }
+        readBlock(parentDirHandle[0], dirBlock);
+        byte currentBlock = parentDirHandle[0];
+        closedir(parentDirHandle);
+        
         while (true) {
             for (i = 0; i < PageSize; i += DescriptorSize) {
                 if (dirBlock[i + FilenameOffset] == 0) {
-                    memset(descriptor, 0, DescriptorSize);
-                    strcpy((descriptor + FilenameOffset) as char[], lastSlash + 1);
-                    descriptor[FileTypeOffset] = FileTypeFile;
-                    descriptor[StartBlockOffset] = findFreePage(chainBlock);
-                    if (descriptor[StartBlockOffset] == 0) {
-                        closedir(dirHandle);
-                        free(parentDir as byte[]);
-                        return null; // No free blocks available
-                    }
-                    writeBlock(ChainBlock, chainBlock);
                     memcpy(dirBlock + i, descriptor, DescriptorSize);
-                    writeBlock(dirHandle[0], dirBlock);
-
-                    // Allocate and initialize file handle
-                    fileHandle = malloc(3);
+                    writeBlock(currentBlock, dirBlock);
+                    chainBlock[newBlock] = 1; // Mark as end of chain
+                    writeBlock(ChainBlock, chainBlock);
+                    byte[] fileHandle = malloc(3);
                     fileHandle[0] = (i / DescriptorSize) as byte; // File descriptor index
-                    fileHandle[1] = 0; // Current position (low byte)
-                    fileHandle[2] = 0; // Current position (high byte)
-                    closedir(dirHandle);
-                    free(parentDir as byte[]);
-                    return fileHandle;
+                    fileHandle[1] = 0; // Current position in file
+                    return fileHandle; // Success
                 }
             }
-            // Follow the chain if no empty slot found in current block
-            if (chainBlock[dirHandle[0]] == 1) {
-                break; // No more blocks in the chain
+            // If no empty slot found in the current block, follow the chain
+            if (chainBlock[currentBlock] == 1) {
+                // No more blocks in the chain, add a new block
+                byte newDirBlockInChain = findFreePage(chainBlock);
+                if (newDirBlockInChain == 0) {
+                    return null; // Disk full (no available pages)
+                }
+                chainBlock[currentBlock] = newDirBlockInChain;
+                chainBlock[newDirBlockInChain] = 1; // Mark as end of chain
+                writeBlock(ChainBlock, chainBlock);
+                // Initialize the new directory block
+                memset(newDirBlock, 0, PageSize);
+                writeBlock(newDirBlockInChain, newDirBlock);
+                currentBlock = newDirBlockInChain;
+                readBlock(currentBlock, dirBlock);
+            } else {
+                // Move to the next block in the chain
+                currentBlock = chainBlock[currentBlock];
+                readBlock(currentBlock, dirBlock);
             }
-            dirHandle[0] = chainBlock[dirHandle[0]];
-            readBlock(dirHandle[0], dirBlock);
         }
+    } else if (strcmp(mode, "r") == 0) {
+        // Handle opening for read mode
+        byte[] parentDirHandle = opendir(fullPath);
+        if (parentDirHandle == null) {
+            return null; // File not found
+        }
+        
+        // Locate the file descriptor
+        readBlock(parentDirHandle[0], dirBlock);
+        for (i = 0; i < PageSize; i += DescriptorSize) {
+            if (strncmp((dirBlock + i + FilenameOffset) as char[], fullPath, strlen(fullPath)) == 0 &&
+                (dirBlock[i + FileTypeOffset] & 0xF0) == FileTypeFile) {
+                byte[] fileHandle = malloc(3);
+                fileHandle[0] = (i / DescriptorSize) as byte; // File descriptor index
+                fileHandle[1] = 0; // Current position in file
+                closedir(parentDirHandle);
+                return fileHandle; // Success
+            }
+        }
+        closedir(parentDirHandle);
     }
+    
+    return null; // Failed to open file
+}
 
-    closedir(dirHandle);
-    free(parentDir as byte[]);
-    return null; // File not found and mode is not "w"
+// Closes an open file or directory.
+// fileHandle: The handle of the file or directory to close.
+// Returns 0 on success, or -1 on error.
+func int fclose(byte[] fileHandle) {
+    if (fileHandle != null) {
+        free(fileHandle);
+        return 0; // Success
+    }
+    return -1; // Invalid handle
 }
 
