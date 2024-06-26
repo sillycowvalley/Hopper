@@ -2,7 +2,6 @@
 #define ZEROPAGEGLOBALS
 #include "../system.tc"
 #include "../file.tc"
-
 // Dumps the contents of the ChainLists block.
 func dumpChainLists() {
     byte[PageSize] buffer;
@@ -10,7 +9,6 @@ func dumpChainLists() {
     readBlock(ChainBlock, buffer);
     printHex(buffer, PageSize);
 }
-
 // Dumps the contents of the root directory block.
 func dumpRootDirectory() {
     byte[PageSize] buffer;
@@ -18,7 +16,6 @@ func dumpRootDirectory() {
     readBlock(RootDirStartBlock, buffer);
     printHex(buffer, PageSize);
 }
-
 // Dumps the contents of a specified directory block.
 func dumpDirectoryBlock(byte block) {
     byte[PageSize] buffer;
@@ -28,7 +25,6 @@ func dumpDirectoryBlock(byte block) {
     readBlock(block, buffer);
     printHex(buffer, PageSize);
 }
-
 // Creates a directory and dumps relevant information.
 func createAndVerifyDir(const char[] dirname) {
     if (mkdir(dirname) == 0) {
@@ -43,7 +39,6 @@ func createAndVerifyDir(const char[] dirname) {
     dumpRootDirectory();
     dumpChainLists();
 }
-
 // Opens a directory, lists its contents, and closes it.
 func listDirectory(const char[] dirname) {
     byte[] dirHandle = opendir(dirname);
@@ -56,7 +51,6 @@ func listDirectory(const char[] dirname) {
     writeString("Opened directory '");
     writeString(dirname);
     writeString("'.\n");
-
     byte[] dirEntry;
     while ((dirEntry = readdir(dirHandle)) != null) {
         writeString("Entry: ");
@@ -66,7 +60,6 @@ func listDirectory(const char[] dirname) {
     writeString("No more entries in directory '");
     writeString(dirname);
     writeString("'.\n");
-
     if (closedir(dirHandle) != 0) {
         writeString("Failed to close directory '");
         writeString(dirname);
@@ -77,7 +70,6 @@ func listDirectory(const char[] dirname) {
     writeString(dirname);
     writeString("'.\n");
 }
-
 func main() {
     writeString("\nScanning:\n");
     if (i2cScan(SerialEEPROMAddress)) {
@@ -86,7 +78,7 @@ func main() {
         writeString("EEPROM Not Found\n");
         return;
     }
-    chdir("/");
+    
     
     if (format() != 0) {
         writeString("Format failed.\n");
@@ -107,31 +99,37 @@ func main() {
     
     createAndVerifyDir("newdir1");
     createAndVerifyDir("newdir2");
-
-    // Dump Root Directory blocks again
-    //dumpChainLists();
-    //dumpRootDirectory();
     
     // List directories
     listDirectory("/");
     
     writeString("\nCreate Subdirectory:\n");
     
-    // Create subdirectory inside newdir1
-    if (mkdir("newdir1/subdir1") == 0) {
-        writeString("Created subdirectory 'newdir1/subdir1'.\n");
+    // Change to newdir1 and create subdirectory inside it
+    if (chdir("newdir1") == 0) {
+        writeString("Changed to directory 'newdir1'.\n");
+        createAndVerifyDir("subdir1");
     } else {
-        writeString("Failed to create subdirectory 'newdir1/subdir1'.\n");
+        writeString("Failed to change to directory 'newdir1'.\n");
     }
     
     // List contents of newdir1
     listDirectory("newdir1");
-
+    
+    // Change back to root directory
+    if (chdir("/") == 0) {
+        writeString("Changed to root directory.\n");
+    } else {
+        writeString("Failed to change to root directory.\n");
+    }
+    
+    // List directories
+    listDirectory("/");
+    
     if (closedir(rootDir) != 0) {
         writeString("Failed to close root directory.\n");
         return;
     }
     writeString("Closed root directory.\n");
 }
-
 

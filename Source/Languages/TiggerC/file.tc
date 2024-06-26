@@ -50,15 +50,12 @@ const byte FileTypeOffset = 14;
 const byte StartBlockOffset = 15;
 const byte DescriptorSize = 16;
 const byte DescriptorsPerBlock = PageSize / DescriptorSize;
-
 byte[DescriptorSize] _dirEntry; // global used by readdir
 char[256]            _currentDirectory;
-
 // prototypes
 func int closedir(byte[] dirHandle);
 func byte[] opendir(const char[] dirname);
 func byte findFreePage(byte[] chainBlock);
-
 // Prints the contents of a buffer in hexadecimal format.
 func printHex(const byte[] buffer, word length) {
     word i;
@@ -75,28 +72,24 @@ func printHex(const byte[] buffer, word length) {
     }
     writeChar('\n');
 }
-
 // Debugging function to print a byte buffer
 func printByteBuffer(const char[] label, byte[] buffer, word length) {
     writeString(label);
     writeString(":\n");
     printHex(buffer, length);
 }
-
 // Reads a block from EEPROM.
 // blockNum: The block number to read.
 // buffer: The buffer to store the read data.
 func readBlock(word blockNum, byte[] buffer) {
     readPage(blockNum * PageSize, buffer);
 }
-
 // Writes a block to EEPROM.
 // blockNum: The block number to write.
 // buffer: The buffer containing the data to write.
 func writeBlock(word blockNum, const byte[] buffer) {
     writePage(blockNum * PageSize, buffer);
 }
-
 // Finds a free page in the ChainList.
 // Returns the index of the free page or 0 if no free page is found.
 func byte findFreePage(byte[] chainBlock) {
@@ -108,7 +101,6 @@ func byte findFreePage(byte[] chainBlock) {
     }
     return 0; // No free page found
 }
-
 // Validates a path for correct length and valid characters.
 // Returns true if the path is valid, false otherwise.
 func bool isValidPath(const char[] path) {
@@ -124,8 +116,50 @@ func bool isValidPath(const char[] path) {
     }
     return true;
 }
+func resolveRelativePath(char[] dest, const char[] path) {
+    // Handle the root path separately
+    if (strcmp(path, "/") == 0) {
+        strcpy(dest, "/");
+        return;
+    }
+    
+    char[] token;
+    char[] temp = malloc(256) as char[];
+    strcpy(temp, path);
+    token = strtok(temp, "/");
+
+    while (token != null) {
+        if (strcmp(token, ".") == 0) {
+            // Skip
+        } else 
+        {
+            if (strcmp(token, "..") == 0) {
+                // Remove last directory in dest
+                char[] lastSlash = strrchr(dest, '/');
+                if (lastSlash != null && lastSlash != dest) {
+                    lastSlash[0] = '\0';
+                } else {
+                    // Avoid removing the root slash
+                    dest[1] = '\0';
+                }
+            } else {
+                if (strlen(dest) > 1) {
+                    strcat(dest, "/");
+                }
+                strcat(dest, token);
+            }
+        }
+        token = strtok(null, "/");
+    }
+
+    free(temp as byte[]);
+}
 
 func getFullPath(char[] dest, const char[] path) {
+    if (_currentDirectory[0] == '\0')
+    {
+        strcpy(_currentDirectory, "/"); // initialize before first use
+    }
     if (path[0] == '/') {
         // Absolute path
         strcpy(dest, path);
@@ -137,9 +171,12 @@ func getFullPath(char[] dest, const char[] path) {
         }
         strcat(dest, path);
     }
+    // Resolve relative components like '.' and '..'
+    char[] resolvedPath = malloc(256) as char[];
+    resolveRelativePath(resolvedPath, dest);
+    strcpy(dest, resolvedPath);
+    free(resolvedPath as byte[]); 
 }
-
-
 // Formats the drive, initializing the file system.
 // Returns 0 on success, or -1 on error.
 func int format() {
@@ -153,18 +190,15 @@ func int format() {
     writePage(RootDirStartBlock * PageSize, rootDir);
     return 0; // Success
 }
-
 // Opens a file or directory.
 // filename: Name of the file or directory to open.
 // mode: Mode in which to open the file (e.g., "r" for read, "w" for write, etc.).
 // Returns a file handle if successful, or null if an error occurs.
 func byte[] fopen(const char[] filename, const char[] mode);
-
 // Closes an open file or directory.
 // fileHandle: The handle of the file or directory to close.
 // Returns 0 on success, or -1 on error.
 func int fclose(byte[] fileHandle);
-
 // Reads data from a file.
 // buffer: Buffer to store the read data.
 // size: Size of each element to read.
@@ -172,7 +206,6 @@ func int fclose(byte[] fileHandle);
 // fileHandle: The handle of the file to read from.
 // Returns the number of elements successfully read.
 func word fread(byte[] buffer, word size, word count, byte[] fileHandle);
-
 // Writes data to a file.
 // buffer: Buffer containing the data to write.
 // size: Size of each element to write.
@@ -180,30 +213,25 @@ func word fread(byte[] buffer, word size, word count, byte[] fileHandle);
 // fileHandle: The handle of the file to write to.
 // Returns the number of elements successfully written.
 func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle);
-
 // Sets the file position indicator for the file.
 // fileHandle: The handle of the file.
 // offset: Number of bytes to offset from whence.
 // whence: Position from where offset is applied (0: beginning, 1: current position, 2: end of file).
 // Returns 0 on success, or -1 on error.
 func int fseek(byte[] fileHandle, int offset, byte whence);
-
 // Returns the current file position indicator for the file.
 // fileHandle: The handle of the file.
 // Returns the current file position as a word, or 0 on error.
 func word ftell(byte[] fileHandle);
-
 // Deletes a file.
 // filename: Name of the file to delete.
 // Returns 0 on success, or -1 on error.
 func int remove(const char[] filename);
-
 // Renames a file or directory.
 // oldname: Current name of the file or directory.
 // newname: New name of the file or directory.
 // Returns 0 on success, or -1 on error.
 func int rename(const char[] oldname, const char[] newname);
-
 // Removes a directory.
 // dirname: Name of the directory to remove.
 // Returns 0 on success, or -1 on error.
@@ -232,7 +260,6 @@ func int rmdir(const char[] dirname) {
     }
     return -1; // Directory not found
 }
-
 func byte[] readdir(byte[] dirHandle) {
     if (dirHandle[1] == PageSize - DescriptorSize) {
         // Previous entry was the last one in that page
@@ -264,7 +291,6 @@ func byte[] readdir(byte[] dirHandle) {
     dirHandle[1] += DescriptorSize;
     return _dirEntry;
 }
-
 // Closes an open directory.
 // dirHandle: The handle of the directory to close.
 // Returns 0 on success, or -1 on error.
@@ -275,7 +301,6 @@ func int closedir(byte[] dirHandle) {
     }
     return 0;
 }
-
 func int mkdir(const char[] dirname) {
     byte[PageSize] dirBlock;
     byte[DescriptorSize] descriptor;
@@ -361,7 +386,6 @@ func int mkdir(const char[] dirname) {
     free(localDirname as byte[]);
     return -1; // No empty slot found
 }
-
 func byte[] opendir(const char[] dirname) {
     byte[] dirHandle = malloc(2);
     byte[PageSize] dirBlock;
@@ -425,7 +449,6 @@ func byte[] opendir(const char[] dirname) {
     free(pathCopy as byte[]);
     return dirHandle;
 }
-
 func int chdir(const char[] path) {
     if (!isValidPath(path)) {
         return -1; // Invalid path
