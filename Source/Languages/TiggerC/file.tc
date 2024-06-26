@@ -651,77 +651,8 @@ func byte[] fopen(const char[] filename, const char[] mode) {
     return null; // Failed to open file
 }
 
-// Deletes a file.
-// filename: Name of the file to delete.
-// Returns 0 on success, or -1 on error.
-func int remove(const char[] filename) {
-    byte[PageSize] dirBlock;
-    byte[PageSize] chainBlock;
-    byte[DescriptorSize] descriptor;
-    char[256] fullPath;
-    byte[] dirHandle;
-    byte currentBlock;
-    word i;
-    
-    getFullPath(fullPath, filename);
-    
-    if (!isValidPath(fullPath)) {
-        return -1; // Invalid path
-    }
-    
-    // Open the directory to ensure it exists
-    char[] parentDir = strdup(fullPath);
-    char[] lastSlash = strrchr(parentDir, '/');
-    if (lastSlash != null && lastSlash != parentDir) {
-        lastSlash[0] = '\0'; // Terminate parent directory string
-    } else {
-        strcpy(parentDir, "/"); // It's a root-level directory
-    }
-    
-    dirHandle = opendir(parentDir);
-    if (dirHandle == null) {
-        free(parentDir as byte[]);
-        return -1; // Failed to open parent directory
-    }
-    
-    // Locate the file descriptor
-    readBlock(dirHandle[0], dirBlock);
-    while (true) {
-        for (i = 0; i < PageSize; i += DescriptorSize) {
-            memcpy(descriptor, dirBlock + i, DescriptorSize);
-            if (strncmp((descriptor + FilenameOffset) as char[], lastSlash + 1, strlen(lastSlash + 1)) == 0 &&
-                (descriptor[FileTypeOffset] & 0xF0) == FileTypeFile) {
-                byte fileBlock = descriptor[StartBlockOffset];
-                // Clear the file descriptor
-                memset(dirBlock + i, 0, DescriptorSize);
-                writeBlock(dirHandle[0], dirBlock);
-                
-                // Free the blocks used by the file
-                readBlock(ChainBlock, chainBlock);
-                while (fileBlock != 1) {
-                    byte nextBlock = chainBlock[fileBlock];
-                    chainBlock[fileBlock] = 0;
-                    fileBlock = nextBlock;
-                }
-                writeBlock(ChainBlock, chainBlock);
-                
-                free(parentDir as byte[]);
-                closedir(dirHandle);
-                return 0; // Success
-            }
-        }
-        // Follow the chain if no descriptor found in current block
-        if (chainBlock[dirHandle[0]] == 1) {
-            break; // No more blocks in the chain
-        }
-        dirHandle[0] = chainBlock[dirHandle[0]];
-        readBlock(dirHandle[0], dirBlock);
-    }
-    
-    free(parentDir as byte[]);
-    closedir(dirHandle);
-    return -1; // File descriptor not found
-}
+
+
 
 func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle) {
     byte[PageSize] fileBlock;
@@ -803,3 +734,87 @@ func word fread(byte[] buffer, word size, word count, byte[] fileHandle) {
     return bytesRead / size;
 }
 
+
+// Deletes a file.
+// filename: Name of the file to delete.
+// Returns 0 on success, or -1 on error.
+func int remove(const char[] filename) {
+    byte[PageSize] dirBlock;
+    byte[PageSize] chainBlock;
+    byte[DescriptorSize] descriptor;
+    char[256] fullPath;
+    byte[] dirHandle;
+    byte currentBlock;
+    word i;
+
+    getFullPath(fullPath, filename);
+
+    if (!isValidPath(fullPath)) {
+        writeString("Invalid path for file: ");
+        writeString(filename);
+        writeString("\n");
+        return -1; // Invalid path
+    }
+
+    // Open the directory to ensure it exists
+    char[] parentDir = strdup(fullPath);
+    char[] lastSlash = strrchr(parentDir, '/');
+    if (lastSlash != null && lastSlash != parentDir) {
+        lastSlash[0] = '\0'; // Terminate parent directory string
+    } else {
+        strcpy(parentDir, "/"); // It's a root-level directory
+    }
+
+    dirHandle = opendir(parentDir);
+    if (dirHandle == null) {
+        free(parentDir as byte[]);
+        writeString("Failed to open parent directory: ");
+        writeString(parentDir);
+        writeString("\n");
+        return -1; // Failed to open parent directory
+    }
+
+    // Locate the file descriptor
+    readBlock(dirHandle[0], dirBlock);
+    while (true) {
+        for (i = 0; i < PageSize; i += DescriptorSize) {
+            memcpy(descriptor, dirBlock + i, DescriptorSize);
+            if (strncmp((descriptor + FilenameOffset) as char[], lastSlash + 1, strlen(lastSlash + 1)) == 0 &&
+                (descriptor[FileTypeOffset] & 0xF0) == FileTypeFile) {
+                byte fileBlock = descriptor[StartBlockOffset];
+                // Clear the file descriptor
+                memset(dirBlock + i, 0, DescriptorSize);
+                writeBlock(dirHandle[0], dirBlock);
+
+                // Free the blocks used by the file
+                readBlock(ChainBlock, chainBlock);
+                while (fileBlock != 1) {
+                    byte nextBlock = chainBlock[fileBlock];
+                    chainBlock[fileBlock] = 0;
+                    fileBlock = nextBlock;
+                }
+                writeBlock(ChainBlock, chainBlock);
+
+                free(parentDir as byte[]);
+                closedir(dirHandle);
+                writeString("Successfully deleted file: ");
+                writeString(filename);
+                writeString("\n");
+                return 0; // Success
+            }
+        }
+        // Follow the chain if no descriptor found in current block
+        if (chainBlock[dirHandle[0]] == 1) {
+            break; // No more blocks in the chain
+        }
+        dirHandle[0] = chainBlock[dirHandle[0]];
+        readBlock(dirHandle[0], dirBlock);
+    }
+
+    free(parentDir as byte[]);
+    closedir(dirHandle);
+    writeString("File descriptor not found for: ");
+    writeString(filename);
+    writeString("\n");
+    return -1; // File descriptor not found
+}
