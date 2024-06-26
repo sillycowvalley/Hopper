@@ -969,7 +969,7 @@ unit TCGen
                     }
                     if (instruction0.Name == "SUB")
                     {
-                        Print(" ILSUB3");
+                        //Print(" ILSUB3");
                         instruction2.Offset = instruction1.Offset;
                         instruction2.Name = "ILSUB";
                         currentStream[currentStream.Count-3] = instruction2;

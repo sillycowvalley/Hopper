@@ -2,6 +2,7 @@
 #define ZEROPAGEGLOBALS
 #include "../system.tc"
 #include "../file.tc"
+
 // Dumps the contents of the ChainLists block.
 func dumpChainLists() {
     byte[PageSize] buffer;
@@ -9,6 +10,7 @@ func dumpChainLists() {
     readBlock(ChainBlock, buffer);
     printHex(buffer, PageSize);
 }
+
 // Dumps the contents of the root directory block.
 func dumpRootDirectory() {
     byte[PageSize] buffer;
@@ -16,78 +18,23 @@ func dumpRootDirectory() {
     readBlock(RootDirStartBlock, buffer);
     printHex(buffer, PageSize);
 }
-// Dumps the contents of a specified directory block.
-func dumpDirectoryBlock(byte block) {
-    byte[PageSize] buffer;
-    writeString("Directory Block (");
-    writeHex(block);
-    writeString("):\n");
-    readBlock(block, buffer);
-    printHex(buffer, PageSize);
-}
 
-func createAndVerifyFile(const char[] filename) {
-    byte[] fileHandle = fopen(filename, "w");
-    if (fileHandle != null) {
-        writeString("Created file '");
-        writeString(filename);
+// Creates a directory and verifies its creation.
+func createAndVerifyDir(const char[] dirname) {
+    if (mkdir(dirname) == 0) {
+        writeString("Created directory '");
+        writeString(dirname);
         writeString("'.\n");
-        if (fclose(fileHandle) != 0) {
-            writeString("Failed to close file '");
-            writeString(filename);
-            writeString("'.\n");
-        } else {
-            writeString("Closed file '");
-            writeString(filename);
-            writeString("'.\n");
-        }
     } else {
-        writeString("Failed to create file '");
-        writeString(filename);
+        writeString("Failed to create directory '");
+        writeString(dirname);
         writeString("'.\n");
     }
     dumpRootDirectory();
     dumpChainLists();
 }
 
-func openAndVerifyFile(const char[] filename) {
-    byte[] fileHandle = fopen(filename, "r");
-    if (fileHandle != null) {
-        writeString("Opened file '");
-        writeString(filename);
-        writeString("'.\n");
-        if (fclose(fileHandle) != 0) {
-            writeString("Failed to close file '");
-            writeString(filename);
-            writeString("'.\n");
-        } else {
-            writeString("Closed file '");
-            writeString(filename);
-            writeString("'.\n");
-        }
-    } else {
-        writeString("Failed to open file '");
-        writeString(filename);
-        writeString("'.\n");
-    }
-    dumpRootDirectory();
-    dumpChainLists();
-}
-
-func deleteAndVerifyFile(const char[] filename) {
-    if (remove(filename) == 0) {
-        writeString("Deleted file '");
-        writeString(filename);
-        writeString("'.\n");
-    } else {
-        writeString("Failed to delete file '");
-        writeString(filename);
-        writeString("'.\n");
-    }
-    dumpRootDirectory();
-    dumpChainLists();
-}
-
+// Lists the contents of a directory.
 func listDirectory(const char[] dirname) {
     byte[] dirHandle = opendir(dirname);
     if (dirHandle == null) {
@@ -119,20 +66,7 @@ func listDirectory(const char[] dirname) {
     writeString("'.\n");
 }
 
-func createAndVerifyDir(const char[] dirname) {
-    if (mkdir(dirname) == 0) {
-        writeString("Created directory '");
-        writeString(dirname);
-        writeString("'.\n");
-    } else {
-        writeString("Failed to create directory '");
-        writeString(dirname);
-        writeString("'.\n");
-    }
-    dumpRootDirectory();
-    dumpChainLists();
-}
-
+// Removes a directory and verifies its removal.
 func removeAndVerifyDir(const char[] dirname) {
     if (rmdir(dirname) == 0) {
         writeString("Removed directory '");
@@ -145,6 +79,113 @@ func removeAndVerifyDir(const char[] dirname) {
     }
     dumpRootDirectory();
     dumpChainLists();
+}
+
+// Creates a file and verifies its creation.
+func createAndVerifyFile(const char[] filename) {
+    byte[] fileHandle = fopen(filename, "w");
+    if (fileHandle != null) {
+        writeString("Created file '");
+        writeString(filename);
+        writeString("'.\n");
+        if (fclose(fileHandle) != 0) {
+            writeString("Failed to close file '");
+            writeString(filename);
+            writeString("'.\n");
+        } else {
+            writeString("Closed file '");
+            writeString(filename);
+            writeString("'.\n");
+        }
+    } else {
+        writeString("Failed to create file '");
+        writeString(filename);
+        writeString("'.\n");
+    }
+    dumpRootDirectory();
+    dumpChainLists();
+}
+
+// Opens a file and verifies its opening.
+func openAndVerifyFile(const char[] filename) {
+    byte[] fileHandle = fopen(filename, "r");
+    if (fileHandle != null) {
+        writeString("Opened file '");
+        writeString(filename);
+        writeString("'.\n");
+        if (fclose(fileHandle) != 0) {
+            writeString("Failed to close file '");
+            writeString(filename);
+            writeString("'.\n");
+        } else {
+            writeString("Closed file '");
+            writeString(filename);
+            writeString("'.\n");
+        }
+    } else {
+        writeString("Failed to open file '");
+        writeString(filename);
+        writeString("'.\n");
+    }
+    dumpRootDirectory();
+    dumpChainLists();
+}
+
+// Deletes a file and verifies its deletion.
+func deleteAndVerifyFile(const char[] filename) {
+    if (remove(filename) == 0) {
+        writeString("Deleted file '");
+        writeString(filename);
+        writeString("'.\n");
+    } else {
+        writeString("Failed to delete file '");
+        writeString(filename);
+        writeString("'.\n");
+    }
+    dumpRootDirectory();
+    dumpChainLists();
+}
+
+// Tests writing to and reading from a file.
+func testWriteAndReadFile(const char[] filename, const byte[] data, word size) {
+    byte[] fileHandle = fopen(filename, "w");
+    if (fileHandle == null) {
+        writeString("Failed to open file for writing: ");
+        writeString(filename);
+        writeString("\n");
+        return;
+    }
+    if (fwrite(data, 1, size, fileHandle) != size) {
+        writeString("Failed to write data to file: ");
+        writeString(filename);
+        writeString("\n");
+    }
+    fclose(fileHandle);
+
+    fileHandle = fopen(filename, "r");
+    if (fileHandle == null) {
+        writeString("Failed to open file for reading: ");
+        writeString(filename);
+        writeString("\n");
+        return;
+    }
+    byte[] readData = malloc(size);
+    if (fread(readData, 1, size, fileHandle) != size) {
+        writeString("Failed to read data from file: ");
+        writeString(filename);
+        writeString("\n");
+    }
+    fclose(fileHandle);
+
+    // Compare readData with the original data
+    if (memcmp(data, readData, size) == 0) {
+        writeString("Write and read test passed for file: ");
+    } else {
+        writeString("Write and read test failed for file: ");
+    }
+    free(readData);
+    writeString(filename);
+    writeString("\n");
 }
 
 func main() {
@@ -169,10 +210,10 @@ func main() {
     
     createAndVerifyFile("/file1");
     createAndVerifyFile("/file2");
-    
-    openAndVerifyFile("/file1");
-    openAndVerifyFile("/file2");
-    
+
+    char[] testData = "Hello, TiggerC!";
+    testWriteAndReadFile("/file1", testData as byte[], strlen(testData));
+
     deleteAndVerifyFile("/file1");
     deleteAndVerifyFile("/file2");
     
@@ -183,7 +224,10 @@ func main() {
     
     // List the directory contents
     listDirectory("/mydir");
-    
+
+    // Write and read test in the subdirectory
+    testWriteAndReadFile("/mydir/file1", testData as byte[], strlen(testData));
+
     // Delete files in the subdirectory
     deleteAndVerifyFile("/mydir/file1");
     deleteAndVerifyFile("/mydir/file2");

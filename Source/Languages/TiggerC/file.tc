@@ -201,20 +201,6 @@ func int format() {
     return 0; // Success
 }
 
-// Reads data from a file.
-// buffer: Buffer to store the read data.
-// size: Size of each element to read.
-// count: Number of elements to read.
-// fileHandle: The handle of the file to read from.
-// Returns the number of elements successfully read.
-func word fread(byte[] buffer, word size, word count, byte[] fileHandle);
-// Writes data to a file.
-// buffer: Buffer containing the data to write.
-// size: Size of each element to write.
-// count: Number of elements to write.
-// fileHandle: The handle of the file to write to.
-// Returns the number of elements successfully written.
-func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle);
 // Sets the file position indicator for the file.
 // fileHandle: The handle of the file.
 // offset: Number of bytes to offset from whence.
@@ -603,6 +589,7 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                     byte[] fileHandle = malloc(3);
                     fileHandle[0] = (i / DescriptorSize) as byte; // File descriptor index
                     fileHandle[1] = 0; // Current position in file
+                    fileHandle[2] = 0;
                     return fileHandle; // Success
                 }
             }
@@ -653,6 +640,7 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                     byte[] fileHandle = malloc(3);
                     fileHandle[0] = (i / DescriptorSize) as byte; // File descriptor index
                     fileHandle[1] = 0; // Current position in file
+                    fileHandle[2] = 0;
                     closedir(parentDirHandle);
                     return fileHandle; // Success
                 }
@@ -733,5 +721,85 @@ func int remove(const char[] filename) {
     free(parentDir as byte[]);
     closedir(dirHandle);
     return -1; // File descriptor not found
+}
+
+func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle) {
+    byte[PageSize] fileBlock;
+    byte[PageSize] chainBlock;
+    word bytesToWrite = size * count;
+    word bytesWritten = 0;
+    word position = (fileHandle[1] << 8) | fileHandle[2];
+    byte currentBlock = fileHandle[0];
+
+    readBlock(ChainBlock, chainBlock);
+
+    while (bytesToWrite > 0) {
+        word offset = position % PageSize;
+        word toWrite = (bytesToWrite < (PageSize - offset)) ? bytesToWrite : (PageSize - offset);
+
+        readBlock(currentBlock, fileBlock);
+        memcpy(fileBlock + offset, buffer + bytesWritten, toWrite);
+        writeBlock(currentBlock, fileBlock);
+
+        position += toWrite;
+        bytesWritten += toWrite;
+        bytesToWrite -= toWrite;
+
+        if (bytesToWrite > 0) {
+            if (chainBlock[currentBlock] == 1) {
+                // Allocate a new block
+                byte newBlock = findFreePage(chainBlock);
+                if (newBlock == 0) {
+                    return bytesWritten / size; // Disk full, return number of elements written
+                }
+                chainBlock[currentBlock] = newBlock;
+                chainBlock[newBlock] = 1; // Mark as end of chain
+                writeBlock(ChainBlock, chainBlock);
+                currentBlock = newBlock;
+            } else {
+                currentBlock = chainBlock[currentBlock];
+            }
+        }
+    }
+
+    fileHandle[1] = ((position >> 8) & 0xFF) as byte;
+    fileHandle[2] = (position & 0xFF) as byte;
+    return bytesWritten / size;
+}
+
+func word fread(byte[] buffer, word size, word count, byte[] fileHandle) {
+    byte[PageSize] fileBlock;
+    byte[PageSize] chainBlock;
+    byte currentBlock = fileHandle[0];
+    word position = (fileHandle[1] << 8) | fileHandle[2];
+    word bytesToRead = size * count;
+    word bytesRead = 0;
+    
+    readBlock(ChainBlock, chainBlock);
+    
+    while (bytesToRead > 0) {
+        word offset = position % PageSize;
+        word toRead = (bytesToRead < (PageSize - offset)) ? bytesToRead : (PageSize - offset);
+        
+        readBlock(currentBlock, fileBlock);
+        memcpy(buffer + bytesRead, fileBlock + offset, toRead);
+        
+        bytesToRead -= toRead;
+        bytesRead += toRead;
+        position += toRead;
+        
+        if (position % PageSize == 0) {
+            if (chainBlock[currentBlock] == 1) {
+                break; // End of file
+            } else {
+                currentBlock = chainBlock[currentBlock];
+            }
+        }
+    }
+    
+    fileHandle[0] = currentBlock;
+    fileHandle[1] = ((position >> 8) & 0xFF) as byte;
+    fileHandle[2] = (position & 0xFF) as byte;
+    return bytesRead / size;
 }
 
