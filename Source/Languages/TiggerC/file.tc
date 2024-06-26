@@ -522,6 +522,18 @@ func int rmdir(const char[] dirname) {
     return -1; // Directory descriptor not found
 }
 
+
+// Closes an open file or directory.
+// fileHandle: The handle of the file or directory to close.
+// Returns 0 on success, or -1 on error.
+func int fclose(byte[] fileHandle) {
+    if (fileHandle != null) {
+        free(fileHandle);
+        return 0; // Success
+    }
+    return -1; // Invalid handle
+}
+
 // Opens a file or directory.
 // filename: Name of the file or directory to open.
 // mode: Mode in which to open the file (e.g., "r" for read, "w" for write, etc.).
@@ -580,7 +592,7 @@ func byte[] fopen(const char[] filename, const char[] mode) {
             return null; // Failed to open parent directory
         }
         readBlock(parentDirHandle[0], dirBlock);
-        byte currentBlock = parentDirHandle[0];
+        currentBlock = parentDirHandle[0];
         closedir(parentDirHandle);
         
         while (true) {
@@ -607,6 +619,7 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                 chainBlock[newDirBlockInChain] = 1; // Mark as end of chain
                 writeBlock(ChainBlock, chainBlock);
                 // Initialize the new directory block
+                byte[PageSize] newDirBlock;
                 memset(newDirBlock, 0, PageSize);
                 writeBlock(newDirBlockInChain, newDirBlock);
                 currentBlock = newDirBlockInChain;
@@ -617,39 +630,38 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                 readBlock(currentBlock, dirBlock);
             }
         }
-    } else if (strcmp(mode, "r") == 0) {
-        // Handle opening for read mode
-        byte[] parentDirHandle = opendir(fullPath);
-        if (parentDirHandle == null) {
-            return null; // File not found
-        }
-        
-        // Locate the file descriptor
-        readBlock(parentDirHandle[0], dirBlock);
-        for (i = 0; i < PageSize; i += DescriptorSize) {
-            if (strncmp((dirBlock + i + FilenameOffset) as char[], fullPath, strlen(fullPath)) == 0 &&
-                (dirBlock[i + FileTypeOffset] & 0xF0) == FileTypeFile) {
-                byte[] fileHandle = malloc(3);
-                fileHandle[0] = (i / DescriptorSize) as byte; // File descriptor index
-                fileHandle[1] = 0; // Current position in file
-                closedir(parentDirHandle);
-                return fileHandle; // Success
+    } else 
+    {
+        if (strcmp(mode, "r") == 0) {
+            // Handle opening for read mode
+            char[] parentDir = strdup(fullPath);
+            char[] lastSlash = strrchr(parentDir, '/');
+            if (lastSlash != null && lastSlash != parentDir) {
+                lastSlash[0] = '\0'; // Terminate parent directory string
+            } else {
+                strcpy(parentDir, "/"); // It's a root-level directory
             }
-        }
-        closedir(parentDirHandle);
-    }
     
-    return null; // Failed to open file
-}
-
-// Closes an open file or directory.
-// fileHandle: The handle of the file or directory to close.
-// Returns 0 on success, or -1 on error.
-func int fclose(byte[] fileHandle) {
-    if (fileHandle != null) {
-        free(fileHandle);
-        return 0; // Success
+            byte[] parentDirHandle = opendir(parentDir);
+            if (parentDirHandle == null) {
+                return null; // File not found
+            }
+    
+            // Locate the file descriptor
+            readBlock(parentDirHandle[0], dirBlock);
+            for (i = 0; i < PageSize; i += DescriptorSize) {
+                if (strncmp((dirBlock + i + FilenameOffset) as char[], lastSlash + 1, strlen(lastSlash + 1)) == 0 &&
+                    (dirBlock[i + FileTypeOffset] & 0xF0) == FileTypeFile) {
+                    byte[] fileHandle = malloc(3);
+                    fileHandle[0] = (i / DescriptorSize) as byte; // File descriptor index
+                    fileHandle[1] = 0; // Current position in file
+                    closedir(parentDirHandle);
+                    return fileHandle; // Success
+                }
+            }
+            closedir(parentDirHandle);
+        }
     }
-    return -1; // Invalid handle
+    return null; // Failed to open file
 }
 
