@@ -29,67 +29,58 @@ func dumpDirectoryBlock(byte block) {
     printHex(buffer, PageSize);
 }
 
-// Creates a directory and dumps relevant information.
-func createAndVerifyDir(const char[] dirname) {
-    if (mkdir(dirname) == 0) {
-        writeString("Created directory '");
-        writeString(dirname);
+// Creates a file and dumps relevant information.
+func createAndVerifyFile(const char[] filename) {
+    byte[] fileHandle = fopen(filename, "w");
+    if (fileHandle != null) {
+        writeString("Created file '");
+        writeString(filename);
         writeString("'.\n");
     } else {
-        writeString("Failed to create directory '");
-        writeString(dirname);
+        writeString("Failed to create file '");
+        writeString(filename);
         writeString("'.\n");
+    }
+    if (fileHandle != null) {
+        if (fclose(fileHandle) == 0) {
+            writeString("Closed file '");
+            writeString(filename);
+            writeString("'.\n");
+        } else {
+            writeString("Failed to close file '");
+            writeString(filename);
+            writeString("'.\n");
+        }
     }
     dumpRootDirectory();
     dumpChainLists();
 }
 
-// Opens a directory, lists its contents, and closes it.
-func listDirectory(const char[] dirname) {
-    byte[] dirHandle = opendir(dirname);
-    if (dirHandle == null) {
-        writeString("Failed to open directory '");
-        writeString(dirname);
-        writeString("'.\n");
-        return;
-    }
-    writeString("Opened directory '");
-    writeString(dirname);
-    writeString("'.\n");
-    byte[] dirEntry;
-    while ((dirEntry = readdir(dirHandle)) != null) {
-        writeString("Entry: ");
-        writeString((dirEntry + FilenameOffset) as char[]);
-        writeString("\n");
-    }
-    writeString("No more entries in directory '");
-    writeString(dirname);
-    writeString("'.\n");
-    if (closedir(dirHandle) != 0) {
-        writeString("Failed to close directory '");
-        writeString(dirname);
-        writeString("'.\n");
-        return;
-    }
-    writeString("Closed directory '");
-    writeString(dirname);
-    writeString("'.\n");
-}
-
-// Removes a directory and verifies its removal.
-func removeAndVerifyDir(const char[] dirname) {
-    if (rmdir(dirname) == 0) {
-        writeString("Removed directory '");
-        writeString(dirname);
+// Opens a file and dumps relevant information.
+func openAndVerifyFile(const char[] filename) {
+    byte[] fileHandle = fopen(filename, "r");
+    if (fileHandle != null) {
+        writeString("Opened file '");
+        writeString(filename);
         writeString("'.\n");
     } else {
-        writeString("Failed to remove directory '");
-        writeString(dirname);
+        writeString("Failed to open file '");
+        writeString(filename);
         writeString("'.\n");
+    }
+    if (fileHandle != null) {
+        if (fclose(fileHandle) == 0) {
+            writeString("Closed file '");
+            writeString(filename);
+            writeString("'.\n");
+        } else {
+            writeString("Failed to close file '");
+            writeString(filename);
+            writeString("'.\n");
+        }
     }
     dumpRootDirectory();
     dumpChainLists();
-    listDirectory(dirname);
 }
 
 func main() {
@@ -112,41 +103,12 @@ func main() {
     dumpChainLists();
     dumpRootDirectory();
     
-    byte[] rootDir = opendir("/");
-    if (rootDir == null) {
-        writeString("Failed to open root directory.\n");
-        return;
-    }
-    writeString("Opened root directory.\n");
+    // Create and verify files
+    createAndVerifyFile("/file1");
+    createAndVerifyFile("/file2");
     
-    createAndVerifyDir("/newdir1");
-    createAndVerifyDir("/newdir2");
-    
-    // List directories
-    listDirectory("/");
-    
-    writeString("\nCreate Subdirectory:\n");
-    
-    // Create subdirectory inside newdir1
-    if (mkdir("/newdir1/subdir1") == 0) {
-        writeString("Created subdirectory '/newdir1/subdir1'.\n");
-    } else {
-        writeString("Failed to create subdirectory '/newdir1/subdir1'.\n");
-    }
-    
-    // List contents of newdir1
-    listDirectory("/newdir1");
-    if (closedir(rootDir) != 0) {
-        writeString("Failed to close root directory.\n");
-        return;
-    }
-    writeString("Closed root directory.\n");
-
-    writeString("\nRemove Directories:\n");
-    
-    // Remove directories and verify
-    removeAndVerifyDir("/newdir1/subdir1");
-    removeAndVerifyDir("/newdir1");
-    removeAndVerifyDir("/newdir2");
+    // Open and verify files
+    openAndVerifyFile("/file1");
+    openAndVerifyFile("/file2");
 }
 
