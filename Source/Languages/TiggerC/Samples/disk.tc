@@ -1,5 +1,9 @@
 #define EXPERIMENTAL
 #define ZEROPAGEGLOBALS
+
+func dumpRootDirectory();
+func dumpChainLists();
+
 #include "../system.tc"
 #include "../file.tc"
 
@@ -41,6 +45,58 @@ func dumpDirectory(const char[] dirname) {
         writeString("'.\n");
     }
 }
+
+func dumpBlocksForFile(const char[] filename) {
+    byte[PageSize] chainBlock;
+    byte[PageSize] fileBlock;
+    byte[PageSize] dirBlock; 
+    byte[DescriptorSize] descriptor;
+    char[256] fullPath;
+    byte[] dirHandle;
+    byte currentBlock;
+    word i;
+    byte fileBlockNum;
+    
+    getFullPath(fullPath, filename);
+    
+    dirHandle = opendir("/");
+    if (dirHandle == null) {
+        writeString("Failed to open root directory.\n");
+        return;
+    }
+    
+    while (true) {
+        readBlock(dirHandle[0], dirBlock);
+        for (i = 0; i < PageSize; i += DescriptorSize) {
+            memcpy(descriptor, dirBlock + i, DescriptorSize);
+            if (strncmp((descriptor + FilenameOffset) as char[], filename + 1, strlen(filename + 1)) == 0 &&
+                (descriptor[FileTypeOffset] & 0xF0) == FileTypeFile) {
+                
+                fileBlockNum = descriptor[StartBlockOffset];
+                while (fileBlockNum != 1) {
+                    writeString("Block ");
+                    writeHex(fileBlockNum);
+                    writeString(":\n");
+                    readBlock(fileBlockNum, fileBlock);
+                    printHex(fileBlock, PageSize);
+                    
+                    readBlock(ChainBlock, chainBlock);
+                    fileBlockNum = chainBlock[fileBlockNum];
+                }
+                closedir(dirHandle);
+                return;
+            }
+        }
+        if (chainBlock[dirHandle[0]] == 1) {
+            break; // No more blocks in the chain
+        }
+        dirHandle[0] = chainBlock[dirHandle[0]];
+    }
+    
+    writeString("File not found.\n");
+    closedir(dirHandle);
+}
+
 
 // Creates a file and verifies its creation.
 func createAndVerifyFile(const char[] filename) {
@@ -231,38 +287,36 @@ func main() {
     
     createAndVerifyFile("/file1");
     createAndVerifyFile("/file2");
-    char[] testData = "Hello, TiggerC!";
-    testWriteAndReadFile("/file1", testData as byte[], strlen(testData));
-    deleteAndVerifyFile("/file1");
-    deleteAndVerifyFile("/file2");
     
+    openAndVerifyFile("/file2");
+    openAndVerifyFile("/file1");
+    
+    /*
+    // Dump before write
+    writeString("Before write:\n");
     dumpChainLists();
     dumpRootDirectory();
     
-    /*
+    char[] testData = "Hello, TiggerC!";
     
-    // Create a directory and some files within it
-    createAndVerifyDir("/mydir");
-    dumpDirectory("/mydir");  // Dump directory block after creating directory
-
-    createAndVerifyFile("/mydir/file1");
-    createAndVerifyFile("/mydir/file2");
-    dumpDirectory("/mydir");  // Dump directory block after creating files
-
-    // List the directory contents
-    listDirectory("/mydir");
+    // Write data to the file
+    byte[] fileHandle = fopen("/file1", "w");
+    if (fileHandle == null) {
+        writeString("Failed to open file for writing: /file1\n");
+        return;
+    }
+    if (fwrite(testData as byte[], 1, strlen(testData), fileHandle) != strlen(testData)) {
+        writeString("Failed to write data to file: /file1\n");
+    }
+    fclose(fileHandle);
     
-    // Write and read test in the subdirectory
-    testWriteAndReadFile("/mydir/file1", testData as byte[], strlen(testData));
-    dumpDirectory("/mydir");  // Dump directory block after write/read test
-
-    // Delete files in the subdirectory
-    deleteAndVerifyFile("/mydir/file1");
-    deleteAndVerifyFile("/mydir/file2");
-    dumpDirectory("/mydir");  // Dump directory block after deleting files
-
-    // Remove the directory
-    removeAndVerifyDir("/mydir");
+    // Dump after write
+    writeString("\nAfter write:\n");
+    dumpChainLists();
+    dumpRootDirectory();
+    
+    // Dump blocks used by the file
+    dumpBlocksForFile("/file1");
     */
 }
 

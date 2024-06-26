@@ -737,13 +737,14 @@ func byte[] fopen(const char[] filename, const char[] mode) {
         }
         strcpy(parentDir, "/"); // It's a root-level directory (no / or first character)
     }
+    /*
     writeString("\nfileName=");
     writeString(fileName);
     writeString("\nparentDir=");
     writeString(parentDir);
     writeString("\nfullPath=");
     writeString(fullPath);
-    
+    */
     // Handle opening for write mode
     if (strcmp(mode, "w") == 0) {
         parentDirHandle = opendir(parentDir);
@@ -757,11 +758,9 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                         && (strncmp((dirBlock + i + FilenameOffset) as char[], fileName, strlen(fileName)) == 0)
                        ) 
                     {
-                        writeChar('f');
                         // Free the blocks used by the file if it already exists
                         fileBlock = dirBlock[i + StartBlockOffset];
                         while (fileBlock != 1) {
-                            writeChar('g');
                             nextBlock = chainBlock[fileBlock];
                             chainBlock[fileBlock] = 0;
                             fileBlock = nextBlock;
@@ -781,37 +780,22 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                         fileHandle[3] = 0; // Current position MSB in file
                         free(parentDir as byte[]);
                         closedir(parentDirHandle);
-                        writeString("Reopened existing file: ");
-                        writeString(filename);
-                        writeString("\n");
                         return fileHandle; // Success
                     }
-                }
-                writeChar('h');
+                } // for
                 // Follow the chain if no descriptor found in current block
                 if (chainBlock[parentDirHandle[0]] == 1) {
-                    writeChar('i');
                     break; // No more blocks in the chain
                 }
                 parentDirHandle[0] = chainBlock[parentDirHandle[0]];
-                writeChar('j');
-            }
+            } // while
             free(parentDir as byte[]);
             closedir(parentDirHandle);
-            writeChar('k');
         }
-        
         // Create a new file
-        // Find a free block for the file
-        newBlock = findFreePage(chainBlock);
-        writeChar('l');
-        if (newBlock == 0) {
-            return null; // Disk full (no available pages)
-        }
         
         // Initialize the file descriptor
         memset(descriptor, 0, DescriptorSize);
-        writeChar('m');
         strcpy((descriptor + FilenameOffset) as char[], fileName);
 
         descriptor[FileTypeOffset] = (FileTypeFile | (strlen((descriptor + FilenameOffset) as char[]) & 0x0F)) as byte;
@@ -824,17 +808,13 @@ func byte[] fopen(const char[] filename, const char[] mode) {
         if (parentDirHandle == null) {
             return null; // Failed to open parent directory
         }
-        writeChar('p');
         readBlock(parentDirHandle[0], dirBlock);
         currentBlock = parentDirHandle[0];
         closedir(parentDirHandle);
         
         while (true) {
-            writeChar('q');
             for (i = 0; i < PageSize; i += DescriptorSize) {
-                writeChar('r');
                 if (dirBlock[i + FilenameOffset] == 0) {
-                    writeChar('s');
                     memcpy(dirBlock + i, descriptor, DescriptorSize);
                     writeBlock(currentBlock, dirBlock);
                     chainBlock[newBlock] = 1; // Mark as end of chain
@@ -844,15 +824,11 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                     fileHandle[1] = (i / DescriptorSize) as byte; // File descriptor index
                     fileHandle[2] = 0; // Current position LSB in file
                     fileHandle[3] = 0; // Current position MSB in file
-                    writeString("Created new file: ");
-                    writeString(filename);
-                    writeString("\n");
                     return fileHandle; // Success
                 }
             }
             // If no empty slot found in the current block, follow the chain
             if (chainBlock[currentBlock] == 1) {
-                writeChar('t');
                 // No more blocks in the chain, add a new block
                 newDirBlockInChain = findFreePage(chainBlock);
                 if (newDirBlockInChain == 0) {
@@ -867,7 +843,6 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                 currentBlock = newDirBlockInChain;
                 readBlock(currentBlock, dirBlock);
             } else {
-                writeChar('u');
                 // Move to the next block in the chain
                 currentBlock = chainBlock[currentBlock];
                 readBlock(currentBlock, dirBlock);
