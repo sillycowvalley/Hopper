@@ -711,7 +711,6 @@ func byte[] fopen(const char[] filename, const char[] mode) {
     byte nextBlock;
     byte newBlock;
     byte newDirBlockInChain;
-    bool found;
     
     for (;;)
     {
@@ -720,7 +719,7 @@ func byte[] fopen(const char[] filename, const char[] mode) {
         if (!isValidPath(fullPath)) {
             break; // Invalid path
         }
-        if ((strcmp(mode, "w") == 0) && (strcmp(mode, "r") == 0))
+        if ((strcmp(mode, "w") != 0) && (strcmp(mode, "r") != 0))
         {
             break; // Invalid mode
         }
@@ -775,8 +774,8 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                     fileHandle = malloc(4);
                     fileHandle[1] = (i / DescriptorSize) as byte; // File descriptor index
                     fileHandle[0] = parentDirHandle[0]; // Directory block number
-                    fileHandle[2] = 0; // Current position LSB in file
-                    fileHandle[3] = 0; // Current position MSB in file
+                    //fileHandle[2] = 0; // Current position LSB in file (Tigger C : automatic zero initialization)
+                    //fileHandle[3] = 0; // Current position MSB in file (Tigger C : automatic zero initialization)
                     closedir(parentDirHandle);
                     break; // Success
                 }
@@ -790,7 +789,7 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                 break; // No more blocks in the chain
             }
             parentDirHandle[0] = chainBlock[parentDirHandle[0]];
-        }// while
+        }// while
         closedir(parentDirHandle);
         if (fileHandle != null)
         {
@@ -826,11 +825,11 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                         fileHandle = malloc(4);
                         fileHandle[0] = currentBlock; // Directory block number
                         fileHandle[1] = (i / DescriptorSize) as byte; // File descriptor index
-                        fileHandle[2] = 0; // Current position LSB in file
-                        fileHandle[3] = 0; // Current position MSB in file
+                        //fileHandle[2] = 0; // Current position LSB in file (Tigger C : automatic zero initialization)
+                        //fileHandle[3] = 0; // Current position MSB in file (Tigger C : automatic zero initialization)
                         break; // Success
                     }
-                }// for
+                }// for
                 if (fileHandle != null)
                 {
                     break; // Success
@@ -846,7 +845,7 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                     chainBlock[newDirBlockInChain] = 1; // Mark as end of chain
                     writeBlock(ChainBlock, chainBlock);
                     // Initialize the new directory block
-                    memset(newDirBlock, 0, PageSize);
+                    //memset(newDirBlock, 0, PageSize);  // (Tigger C : automatic zero initialization)
                     writeBlock(newDirBlockInChain, newDirBlock);
                     currentBlock = newDirBlockInChain;
                     readBlock(currentBlock, dirBlock);
@@ -855,10 +854,10 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                     currentBlock = chainBlock[currentBlock];
                     readBlock(currentBlock, dirBlock);
                 }
-            }// while
+            }// while
         } // if "w"
         break;
-    }// for (;;)
+    }// for (;;)
     free(parentDir as byte[]);
     return fileHandle;
 }
