@@ -2,7 +2,6 @@
 #define ZEROPAGEGLOBALS
 #include "../system.tc"
 #include "../file.tc"
-
 // Dumps the contents of the ChainLists block.
 func dumpChainLists() {
     byte[PageSize] buffer;
@@ -10,7 +9,6 @@ func dumpChainLists() {
     readBlock(ChainBlock, buffer);
     printHex(buffer, PageSize);
 }
-
 // Dumps the contents of the root directory block.
 func dumpRootDirectory() {
     byte[PageSize] buffer;
@@ -18,66 +16,50 @@ func dumpRootDirectory() {
     readBlock(RootDirStartBlock, buffer);
     printHex(buffer, PageSize);
 }
-
-// Dumps the contents of a specified directory block.
-func dumpDirectoryBlock(byte block) {
-    byte[PageSize] buffer;
-    writeString("Directory Block (");
-    writeHex(block);
-    writeString("):\n");
-    readBlock(block, buffer);
-    printHex(buffer, PageSize);
-}
-
-// Creates a file and dumps relevant information.
+// Creates a file and verifies its creation.
 func createAndVerifyFile(const char[] filename) {
     byte[] fileHandle = fopen(filename, "w");
     if (fileHandle != null) {
         writeString("Created file '");
         writeString(filename);
         writeString("'.\n");
+        if (fclose(fileHandle) != 0) {
+            writeString("Failed to close file '");
+            writeString(filename);
+            writeString("'.\n");
+        } else {
+            writeString("Closed file '");
+            writeString(filename);
+            writeString("'.\n");
+        }
     } else {
         writeString("Failed to create file '");
         writeString(filename);
         writeString("'.\n");
     }
-    if (fileHandle != null) {
-        if (fclose(fileHandle) == 0) {
-            writeString("Closed file '");
-            writeString(filename);
-            writeString("'.\n");
-        } else {
-            writeString("Failed to close file '");
-            writeString(filename);
-            writeString("'.\n");
-        }
-    }
     dumpRootDirectory();
     dumpChainLists();
 }
-
-// Opens a file and dumps relevant information.
+// Opens a file and verifies its opening.
 func openAndVerifyFile(const char[] filename) {
     byte[] fileHandle = fopen(filename, "r");
     if (fileHandle != null) {
         writeString("Opened file '");
         writeString(filename);
         writeString("'.\n");
+        if (fclose(fileHandle) != 0) {
+            writeString("Failed to close file '");
+            writeString(filename);
+            writeString("'.\n");
+        } else {
+            writeString("Closed file '");
+            writeString(filename);
+            writeString("'.\n");
+        }
     } else {
         writeString("Failed to open file '");
         writeString(filename);
         writeString("'.\n");
-    }
-    if (fileHandle != null) {
-        if (fclose(fileHandle) == 0) {
-            writeString("Closed file '");
-            writeString(filename);
-            writeString("'.\n");
-        } else {
-            writeString("Failed to close file '");
-            writeString(filename);
-            writeString("'.\n");
-        }
     }
     dumpRootDirectory();
     dumpChainLists();
@@ -103,11 +85,9 @@ func main() {
     dumpChainLists();
     dumpRootDirectory();
     
-    // Create and verify files
     createAndVerifyFile("/file1");
     createAndVerifyFile("/file2");
     
-    // Open and verify files
     openAndVerifyFile("/file1");
     openAndVerifyFile("/file2");
 }
