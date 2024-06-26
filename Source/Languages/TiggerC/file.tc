@@ -310,6 +310,7 @@ func int closedir(byte[] dirHandle) {
     }
     return 0;
 }
+
 func int mkdir(const char[] dirname) {
     byte[PageSize] dirBlock;
     byte[DescriptorSize] descriptor;
@@ -344,7 +345,6 @@ func int mkdir(const char[] dirname) {
     }
     descriptor[FileTypeOffset] = (FileTypeDirectory | (strlen((descriptor + FilenameOffset) as char[]) & 0x0F)) as byte;
     descriptor[StartBlockOffset] = newBlock;
-
     // Determine the parent directory block
     char[] parentDir = ((lastSlash != null) && (strlen(localDirname) > 0)) ? localDirname : "/";
     
@@ -397,6 +397,7 @@ func int mkdir(const char[] dirname) {
     free(localDirname as byte[]);
     return -1; // No empty slot found
 }
+
 func byte[] opendir(const char[] dirname) {
     byte[] dirHandle = malloc(2);
     byte[PageSize] dirBlock;
@@ -409,7 +410,7 @@ func byte[] opendir(const char[] dirname) {
     word i;
     
     getFullPath(fullPath, dirname);
-    
+
     if (!isValidPath(fullPath)) {
         free(dirHandle);
         return null; // Invalid path
@@ -460,6 +461,7 @@ func byte[] opendir(const char[] dirname) {
     free(pathCopy as byte[]);
     return dirHandle;
 }
+
 func int chdir(const char[] path) {
     if (!isValidPath(path)) {
         return -1; // Invalid path

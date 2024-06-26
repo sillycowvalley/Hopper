@@ -114,7 +114,7 @@ func main() {
     }
     
     // List contents of newdir1
-    listDirectory("newdir1");
+    listDirectory("/newdir1");
     
     // Change back to root directory
     if (chdir("/") == 0) {
