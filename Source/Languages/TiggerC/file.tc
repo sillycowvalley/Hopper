@@ -241,34 +241,7 @@ func int remove(const char[] filename);
 // newname: New name of the file or directory.
 // Returns 0 on success, or -1 on error.
 func int rename(const char[] oldname, const char[] newname);
-// Removes a directory.
-// dirname: Name of the directory to remove.
-// Returns 0 on success, or -1 on error.
-func int rmdir(const char[] dirname) {
-    byte[PageSize] dirBlock;
-    byte[DescriptorSize] descriptor;
-    char[256] fullPath;
-    word i;
-    
-    getFullPath(fullPath, dirname);
-    
-    if (!isValidPath(fullPath)) {
-        return -1; // Invalid path
-    }
-    
-    // Read the root directory block to find the directory descriptor
-    readBlock(RootDirStartBlock, dirBlock);
-    for (i = 0; i < PageSize; i += DescriptorSize) {
-        memcpy(descriptor, dirBlock + i, DescriptorSize);
-        if (strncmp((descriptor + FilenameOffset) as char[], fullPath, strlen(fullPath)) == 0 &&
-            (descriptor[FileTypeOffset] & 0xF0) == FileTypeDirectory) {
-            memset(dirBlock + i, 0, DescriptorSize); // Clear the descriptor
-            writeBlock(RootDirStartBlock, dirBlock);
-            return 0; // Success
-        }
-    }
-    return -1; // Directory not found
-}
+
 func byte[] readdir(byte[] dirHandle) {
     if (dirHandle[1] == PageSize - DescriptorSize) {
         // Previous entry was the last one in that page
@@ -473,5 +446,87 @@ func int chdir(const char[] path) {
     closedir(dirHandle);
     strcpy(_currentDirectory, path);
     return 0; // Success
+}
+
+func int rmdir(const char[] dirname) {
+    byte[PageSize] dirBlock;
+    byte[PageSize] chainBlock;
+    byte[DescriptorSize] descriptor;
+    char[256] fullPath;
+    byte[] dirHandle;
+    byte currentBlock;
+    word i;
+    
+    getFullPath(fullPath, dirname);
+    
+    if (!isValidPath(fullPath)) {
+        return -1; // Invalid path
+    }
+    
+    // Open the directory to ensure it exists
+    dirHandle = opendir(fullPath);
+    if (dirHandle == null) {
+        return -1; // Directory not found
+    }
+    
+    // Check if the directory is empty
+    readBlock(dirHandle[0], dirBlock);
+    for (i = 0; i < PageSize; i += DescriptorSize) {
+        if (dirBlock[i + FilenameOffset] != 0) {
+            closedir(dirHandle);
+            return -1; // Directory not empty
+        }
+    }
+    currentBlock = dirHandle[0];
+    closedir(dirHandle);
+    
+    // Free the blocks used by the directory
+    readBlock(ChainBlock, chainBlock);
+    while (currentBlock != 1) {
+        byte nextBlock = chainBlock[currentBlock];
+        chainBlock[currentBlock] = 0;
+        currentBlock = nextBlock;
+    }
+    writeBlock(ChainBlock, chainBlock);
+    
+    // Find and clear the directory descriptor in the parent directory
+    char[] parentDir = strdup(fullPath);
+    char[] lastSlash = strrchr(parentDir, '/');
+    if (lastSlash != null && lastSlash != parentDir) {
+        lastSlash[0] = '\0'; // Terminate parent directory string
+    } else {
+        strcpy(parentDir, "/"); // It's a root-level directory
+    }
+    
+    dirHandle = opendir(parentDir);
+    if (dirHandle == null) {
+        free(parentDir as byte[]);
+        return -1; // Failed to open parent directory
+    }
+    
+    readBlock(dirHandle[0], dirBlock);
+    while (true) {
+        for (i = 0; i < PageSize; i += DescriptorSize) {
+            memcpy(descriptor, dirBlock + i, DescriptorSize);
+            if (strncmp((descriptor + FilenameOffset) as char[], lastSlash + 1, strlen(lastSlash + 1)) == 0 &&
+                (descriptor[FileTypeOffset] & 0xF0) == FileTypeDirectory) {
+                memset(dirBlock + i, 0, DescriptorSize); // Clear the descriptor
+                writeBlock(dirHandle[0], dirBlock);
+                free(parentDir as byte[]);
+                closedir(dirHandle);
+                return 0; // Success
+            }
+        }
+        // Follow the chain if no descriptor found in current block
+        if (chainBlock[dirHandle[0]] == 1) {
+            break; // No more blocks in the chain
+        }
+        dirHandle[0] = chainBlock[dirHandle[0]];
+        readBlock(dirHandle[0], dirBlock);
+    }
+    
+    free(parentDir as byte[]);
+    closedir(dirHandle);
+    return -1; // Directory descriptor not found
 }
 
