@@ -44,11 +44,13 @@ const byte ChainBlock = 0;
 const byte RootDirStartBlock = 1;
 const byte FileTypeDirectory = 0x10;
 const byte FileTypeFile = 0x00;
+
 const byte FilenameOffset = 0;
-const byte FileSizeOffset = 12;
-const byte FileTypeOffset = 14;
-const byte StartBlockOffset = 15;
+const byte FileTypeOffset = 12;
+const byte StartBlockOffset = 13;
+const byte FileSizeOffset = 14;
 const byte DescriptorSize = 16;
+
 const byte DescriptorsPerBlock = PageSize / DescriptorSize;
 byte[DescriptorSize] _dirEntry; // global used by readdir
 char[256]            _currentDirectory;
@@ -657,10 +659,13 @@ func byte[] fopen(const char[] filename, const char[] mode) {
 func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle) {
     byte[PageSize] fileBlock;
     byte[PageSize] chainBlock;
+    byte[PageSize] dirBlock;
+    byte currentBlock = fileHandle[0];
+    word position = (fileHandle[1] << 8) | fileHandle[2];
     word bytesToWrite = size * count;
     word bytesWritten = 0;
-    word position = (fileHandle[1] << 8) | fileHandle[2];
-    byte currentBlock = fileHandle[0];
+    word dirIndex = fileHandle[0];
+    byte dirDescriptorIndex = fileHandle[1];
 
     readBlock(ChainBlock, chainBlock);
 
@@ -693,8 +698,18 @@ func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle) 
         }
     }
 
+    // Update the file size in the directory entry
+    readBlock(dirIndex, dirBlock);
+    word fileSize = (dirBlock[dirDescriptorIndex * DescriptorSize + FileSizeOffset] << 8) |
+                    dirBlock[dirDescriptorIndex * DescriptorSize + FileSizeOffset + 1];
+    fileSize += bytesWritten;
+    dirBlock[dirDescriptorIndex * DescriptorSize + FileSizeOffset] = ((fileSize >> 8) & 0xFF) as byte;
+    dirBlock[dirDescriptorIndex * DescriptorSize + FileSizeOffset + 1] = (fileSize & 0xFF) as byte;
+    writeBlock(dirIndex, dirBlock);
+
     fileHandle[1] = ((position >> 8) & 0xFF) as byte;
     fileHandle[2] = (position & 0xFF) as byte;
+
     return bytesWritten / size;
 }
 
@@ -735,9 +750,6 @@ func word fread(byte[] buffer, word size, word count, byte[] fileHandle) {
 }
 
 
-// Deletes a file.
-// filename: Name of the file to delete.
-// Returns 0 on success, or -1 on error.
 func int remove(const char[] filename) {
     byte[PageSize] dirBlock;
     byte[PageSize] chainBlock;
@@ -748,16 +760,16 @@ func int remove(const char[] filename) {
     word i;
     byte fileBlock;
     byte nextBlock;
-    
+
     getFullPath(fullPath, filename);
-    
+
     if (!isValidPath(fullPath)) {
         writeString("Invalid path for file: ");
         writeString(filename);
         writeString("\n");
         return -1; // Invalid path
     }
-    
+
     // Open the directory to ensure it exists
     char[] parentDir = strdup(fullPath);
     char[] lastSlash = strrchr(parentDir, '/');
@@ -766,7 +778,7 @@ func int remove(const char[] filename) {
     } else {
         strcpy(parentDir, "/"); // It's a root-level directory
     }
-    
+
     dirHandle = opendir(parentDir);
     if (dirHandle == null) {
         free(parentDir as byte[]);
@@ -775,7 +787,7 @@ func int remove(const char[] filename) {
         writeString("\n");
         return -1; // Failed to open parent directory
     }
-    
+
     // Locate the file descriptor
     while (true) {
         readBlock(dirHandle[0], dirBlock);
@@ -783,12 +795,12 @@ func int remove(const char[] filename) {
             memcpy(descriptor, dirBlock + i, DescriptorSize);
             if (strncmp((descriptor + FilenameOffset) as char[], lastSlash + 1, strlen(lastSlash + 1)) == 0 &&
                 (descriptor[FileTypeOffset] & 0xF0) == FileTypeFile) {
-                
+
                 fileBlock = descriptor[StartBlockOffset];
                 // Clear the file descriptor
                 memset(dirBlock + i, 0, DescriptorSize);
                 writeBlock(dirHandle[0], dirBlock);
-                
+
                 // Free the blocks used by the file
                 readBlock(ChainBlock, chainBlock);
                 while (fileBlock != 1) {
@@ -800,7 +812,7 @@ func int remove(const char[] filename) {
                     fileBlock = nextBlock;
                 }
                 writeBlock(ChainBlock, chainBlock);
-                
+
                 free(parentDir as byte[]);
                 closedir(dirHandle);
                 writeString("Successfully deleted file: ");
@@ -815,7 +827,7 @@ func int remove(const char[] filename) {
         }
         dirHandle[0] = chainBlock[dirHandle[0]];
     }
-    
+
     free(parentDir as byte[]);
     closedir(dirHandle);
     writeString("File descriptor not found for: ");
