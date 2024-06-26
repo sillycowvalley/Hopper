@@ -95,10 +95,10 @@ func char[] strchr(const char[] str, char c) {
 func char[] strrchr(const char[] str, char c) {
     word i = strlen(str);
     while (i != 0) {
-        i--;
-        if (str[i] == c) {
-            return str + i;
+        if (str[i - 1] == c) {
+            return str + i - 1;
         }
+        i--;
     }
     return null; // Null if the character is not found
 }
