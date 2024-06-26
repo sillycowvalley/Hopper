@@ -11,27 +11,30 @@ File System Structure:
 2. Root Directory:
    - The starting point of the file system, storing the root directory entries.
    - Located at page 1.
-   
+
 Descriptor Record Structure (within Directory Pages):
 -----------------------------------------------------
 - Filename:           Offset 0, 12 bytes (null-terminated if shorter)
 - File Type:          Offset 12, 1 byte (high nibble: type, low nibble: name length)
                       - 0x00: File
                       - 0x10: Directory
-- Start Block:        Offset 13, 1 byte (block number where the file/directory starts)
+- Start Block:        Offset 13, 1 byte (block number where the file/directory starts, 1 if empty or end of chain)
 - File Size:          Offset 14, 2 bytes (size of the file in bytes)
+
 File Handle Structure (byte array):
 -----------------------------------
-   [0] - File descriptor index (byte)
-   [1] - Current position in file (word, 2 bytes)
-   Total: 3 bytes
-   
+   [0] - Directory block number (byte)
+   [1] - File descriptor index (0 to 15) (byte)
+   [2] - Current position LSB in file (byte)
+   [3] - Current position MSB in file (byte)
+   Total: 4 bytes
+
 Directory Handle Structure (byte array):
 ----------------------------------------
    [0] - Directory descriptor index (byte)
    [1] - Current position in directory (byte)
    Total: 2 bytes
-   
+
 Directory Entry Structure (byte array):
 ---------------------------------------
    [0] - Entry type (0 for file, 1 for directory) (byte)
@@ -56,6 +59,7 @@ char[256]            _currentDirectory;
 func int closedir(byte[] dirHandle);
 func byte[] opendir(const char[] dirname);
 func byte findFreePage(byte[] chainBlock);
+
 // Prints the contents of a buffer in hexadecimal format.
 func printHex(const byte[] buffer, word length) {
     word i;
@@ -79,18 +83,21 @@ func printByteBuffer(const char[] label, byte[] buffer, word length) {
     writeString(":\n");
     printHex(buffer, length);
 }
+
 // Reads a block from EEPROM.
 // blockNum: The block number to read.
 // buffer: The buffer to store the read data.
 func readBlock(word blockNum, byte[] buffer) {
     readPage(blockNum * PageSize, buffer);
 }
+
 // Writes a block to EEPROM.
 // blockNum: The block number to write.
 // buffer: The buffer containing the data to write.
 func writeBlock(word blockNum, const byte[] buffer) {
     writePage(blockNum * PageSize, buffer);
 }
+
 // Finds a free page in the ChainList.
 // Returns the index of the free page or 0 if no free page is found.
 func byte findFreePage(byte[] chainBlock) {
@@ -102,6 +109,7 @@ func byte findFreePage(byte[] chainBlock) {
     }
     return 0; // No free page found
 }
+
 // Validates a path for correct length and valid characters.
 // Returns true if the path is valid, false otherwise.
 func bool isValidPath(const char[] path) {
@@ -117,6 +125,7 @@ func bool isValidPath(const char[] path) {
     }
     return true;
 }
+
 func resolveRelativePath(char[] dest, const char[] path) {
     // Handle the root path separately
     if (strcmp(path, "/") == 0) {
@@ -130,17 +139,16 @@ func resolveRelativePath(char[] dest, const char[] path) {
     while (token != null) {
         if (strcmp(token, ".") == 0) {
             // Skip
-        } else
-        {
+        } else {
             if (strcmp(token, "..") == 0) {
-            // Remove last directory in dest
-            char[] lastSlash = strrchr(dest, '/');
-            if (lastSlash != null && lastSlash != dest) {
-                lastSlash[0] = '\0';
-            } else {
-                // Avoid removing the root slash
-                dest[1] = '\0';
-            }
+                // Remove last directory in dest
+                char[] lastSlash = strrchr(dest, '/');
+                if (lastSlash != null && lastSlash != dest) {
+                    lastSlash[0] = '\0';
+                } else {
+                    // Avoid removing the root slash
+                    dest[1] = '\0';
+                }
             } else {
                 if (strlen(dest) > 1) {
                     strcat(dest, "/");
@@ -152,6 +160,7 @@ func resolveRelativePath(char[] dest, const char[] path) {
     }
     free(temp as byte[]);
 }
+
 func getFullPath(char[] dest, const char[] path) {
     if (_currentDirectory[0] == '\0') {
         strcpy(_currentDirectory, "/"); // initialize before first use
@@ -181,6 +190,7 @@ func getFullPath(char[] dest, const char[] path) {
         free(temp as byte[]);
     }
 }
+
 // Formats the drive, initializing the file system.
 // Returns 0 on success, or -1 on error.
 func int format() {
@@ -194,21 +204,25 @@ func int format() {
     writePage(RootDirStartBlock * PageSize, rootDir);
     return 0; // Success
 }
+
 // Sets the file position indicator for the file.
 // fileHandle: The handle of the file.
 // offset: Number of bytes to offset from whence.
 // whence: Position from where offset is applied (0: beginning, 1: current position, 2: end of file).
 // Returns 0 on success, or -1 on error.
 func int fseek(byte[] fileHandle, int offset, byte whence);
+
 // Returns the current file position indicator for the file.
 // fileHandle: The handle of the file.
 // Returns the current file position as a word, or 0 on error.
 func word ftell(byte[] fileHandle);
+
 // Renames a file or directory.
 // oldname: Current name of the file or directory.
 // newname: New name of the file or directory.
 // Returns 0 on success, or -1 on error.
 func int rename(const char[] oldname, const char[] newname);
+
 func byte[] readdir(byte[] dirHandle) {
     if (dirHandle[1] == PageSize - DescriptorSize) {
         // Previous entry was the last one in that page
@@ -512,15 +526,15 @@ func byte[] fopen(const char[] filename, const char[] mode) {
     char[256] fullPath;
     byte currentBlock;
     word i;
-
+    
     getFullPath(fullPath, filename);
-
+    
     if (!isValidPath(fullPath)) {
         return null; // Invalid path
     }
-
+    
     readBlock(ChainBlock, chainBlock);
-
+    
     // Handle opening for write mode
     if (strcmp(mode, "w") == 0) {
         // Check if the file already exists
@@ -531,67 +545,75 @@ func byte[] fopen(const char[] filename, const char[] mode) {
         } else {
             strcpy(parentDir, "/"); // It's a root-level directory
         }
-
+    
         byte[] parentDirHandle = opendir(parentDir);
-        if (parentDirHandle == null) {
-            // Failed to open parent directory, handle error
-            free(parentDir as byte[]);
-            return null;
-        }
-        writeString("\n");
-        writeString(lastSlash + 1);
-
-        // Locate the file descriptor
-        readBlock(parentDirHandle[0], dirBlock);
-        for (i = 0; i < PageSize; i += DescriptorSize) {
-            if (strncmp((dirBlock + i + FilenameOffset) as char[], lastSlash + 1, strlen(lastSlash + 1)) == 0 &&
-                (dirBlock[i + FileTypeOffset] & 0xF0) == FileTypeFile) {
-                // File exists, truncate it
-
-                // Free the blocks used by the file
-                byte fileBlock = dirBlock[i + StartBlockOffset];
-                byte nextBlock;
-                while (fileBlock != 1 && fileBlock != 0) {
-                    nextBlock = chainBlock[fileBlock];
-                    chainBlock[fileBlock] = 0; // Mark the block as free
-                    fileBlock = nextBlock;
+        if (parentDirHandle != null) {
+            // Locate the file descriptor
+            while (true) {
+                readBlock(parentDirHandle[0], dirBlock);
+                for (i = 0; i < PageSize; i += DescriptorSize) {
+                    if (strncmp((dirBlock + i + FilenameOffset) as char[], lastSlash + 1, strlen(lastSlash + 1)) == 0 &&
+                        (dirBlock[i + FileTypeOffset] & 0xF0) == FileTypeFile) {
+                        // Free the blocks used by the file if it already exists
+                        byte fileBlock = dirBlock[i + StartBlockOffset];
+                        while (fileBlock != 1) {
+                            byte nextBlock = chainBlock[fileBlock];
+                            chainBlock[fileBlock] = 0;
+                            fileBlock = nextBlock;
+                        }
+                        // Reset the descriptor
+                        dirBlock[i + StartBlockOffset] = 1; // end of chain
+                        dirBlock[i + FileSizeOffset] = 0; // file size to 0
+                        writeBlock(parentDirHandle[0], dirBlock);
+                        writeBlock(ChainBlock, chainBlock);
+                        
+                        byte[] fileHandle = malloc(4);
+                        fileHandle[0] = parentDirHandle[0]; // Directory block number
+                        fileHandle[1] = (i / DescriptorSize) as byte; // File descriptor index
+                        fileHandle[2] = 0; // Current position LSB in file
+                        fileHandle[3] = 0; // Current position MSB in file
+                        free(parentDir as byte[]);
+                        closedir(parentDirHandle);
+                        writeString("Reopened existing file: ");
+                        writeString(filename);
+                        writeString("\n");
+                        return fileHandle; // Success
+                    }
                 }
-                writeBlock(ChainBlock, chainBlock);
-
-                // Truncate the file
-                memset(descriptor, 0, DescriptorSize);
-                strcpy((descriptor + FilenameOffset) as char[], lastSlash + 1);
-                descriptor[FileTypeOffset] = (FileTypeFile | (strlen((descriptor + FilenameOffset) as char[]) & 0x0F)) as byte;
-                descriptor[StartBlockOffset] = 1; // Indicate end of chain for an empty file
-                descriptor[FileSizeOffset] = 0; // Empty file
-
-                memcpy(dirBlock + i, descriptor, DescriptorSize);
-                writeBlock(parentDirHandle[0], dirBlock);
-                closedir(parentDirHandle);
-                free(parentDir as byte[]);
-
-                byte[] fileHandle = malloc(3);
-                fileHandle[0] = (i / DescriptorSize) as byte; // File descriptor index
-                fileHandle[1] = 0; // Current position in file
-                fileHandle[2] = 0;
-                return fileHandle; // Success
+                // Follow the chain if no descriptor found in current block
+                if (chainBlock[parentDirHandle[0]] == 1) {
+                    break; // No more blocks in the chain
+                }
+                parentDirHandle[0] = chainBlock[parentDirHandle[0]];
             }
+            free(parentDir as byte[]);
+            closedir(parentDirHandle);
         }
-
-        closedir(parentDirHandle);
-        free(parentDir as byte[]);
-
-        // If file does not exist, create a new file
+        
+        // Create a new file
+        // Find a free block for the file
+        byte newBlock = findFreePage(chainBlock);
+        if (newBlock == 0) {
+            return null; // Disk full (no available pages)
+        }
+        
+        // Initialize the file descriptor
         memset(descriptor, 0, DescriptorSize);
+        lastSlash = strrchr(fullPath, '/');
         if (lastSlash != null) {
             strcpy((descriptor + FilenameOffset) as char[], lastSlash + 1);
+            lastSlash[0] = '\0'; // Terminate parent directory string
         } else {
             strcpy((descriptor + FilenameOffset) as char[], fullPath);
         }
         descriptor[FileTypeOffset] = (FileTypeFile | (strlen((descriptor + FilenameOffset) as char[]) & 0x0F)) as byte;
-        descriptor[StartBlockOffset] = 1; // Indicate end of chain for an empty file
+        descriptor[StartBlockOffset] = 1; // end of chain
         descriptor[FileSizeOffset] = 0; // Empty file
-
+        
+        // Determine the parent directory block
+        parentDir = ((lastSlash != null) && (strlen(fullPath) > 0)) ? fullPath : "/";
+        
+        // Read the parent directory block to find an empty slot
         parentDirHandle = opendir(parentDir);
         if (parentDirHandle == null) {
             return null; // Failed to open parent directory
@@ -599,16 +621,22 @@ func byte[] fopen(const char[] filename, const char[] mode) {
         readBlock(parentDirHandle[0], dirBlock);
         currentBlock = parentDirHandle[0];
         closedir(parentDirHandle);
-
+        
         while (true) {
             for (i = 0; i < PageSize; i += DescriptorSize) {
                 if (dirBlock[i + FilenameOffset] == 0) {
                     memcpy(dirBlock + i, descriptor, DescriptorSize);
                     writeBlock(currentBlock, dirBlock);
-                    byte[] fileHandle = malloc(3);
-                    fileHandle[0] = (i / DescriptorSize) as byte; // File descriptor index
-                    fileHandle[1] = 0; // Current position in file
-                    fileHandle[2] = 0;
+                    chainBlock[newBlock] = 1; // Mark as end of chain
+                    writeBlock(ChainBlock, chainBlock);
+                    byte[] fileHandle = malloc(4);
+                    fileHandle[0] = currentBlock; // Directory block number
+                    fileHandle[1] = (i / DescriptorSize) as byte; // File descriptor index
+                    fileHandle[2] = 0; // Current position LSB in file
+                    fileHandle[3] = 0; // Current position MSB in file
+                    writeString("Created new file: ");
+                    writeString(filename);
+                    writeString("\n");
                     return fileHandle; // Success
                 }
             }
@@ -634,42 +662,42 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                 readBlock(currentBlock, dirBlock);
             }
         }
-    }
-
-    // Handle opening for read mode
-    if (strcmp(mode, "r") == 0) {
-        char[] parentDir = strdup(fullPath);
-        char[] lastSlash = strrchr(parentDir, '/');
-        if (lastSlash != null && lastSlash != parentDir) {
-            lastSlash[0] = '\0'; // Terminate parent directory string
-        } else {
-            strcpy(parentDir, "/"); // It's a root-level directory
-        }
-
-        byte[] parentDirHandle = opendir(parentDir);
-        if (parentDirHandle == null) {
-            return null; // File not found
-        }
-
-        // Locate the file descriptor
-        readBlock(parentDirHandle[0], dirBlock);
-        for (i = 0; i < PageSize; i += DescriptorSize) {
-            if (strncmp((dirBlock + i + FilenameOffset) as char[], lastSlash + 1, strlen(lastSlash + 1)) == 0 &&
-                (dirBlock[i + FileTypeOffset] & 0xF0) == FileTypeFile) {
-                byte[] fileHandle = malloc(3);
-                fileHandle[0] = (i / DescriptorSize) as byte; // File descriptor index
-                fileHandle[1] = 0; // Current position in file
-                fileHandle[2] = 0;
-                closedir(parentDirHandle);
-                return fileHandle; // Success
+    } else 
+    {
+        if (strcmp(mode, "r") == 0) {
+            // Handle opening for read mode
+            char[] parentDir = strdup(fullPath);
+            char[] lastSlash = strrchr(parentDir, '/');
+            if (lastSlash != null && lastSlash != parentDir) {
+                lastSlash[0] = '\0'; // Terminate parent directory string
+            } else {
+                strcpy(parentDir, "/"); // It's a root-level directory
             }
+    
+            byte[] parentDirHandle = opendir(parentDir);
+            if (parentDirHandle == null) {
+                return null; // File not found
+            }
+    
+            // Locate the file descriptor
+            readBlock(parentDirHandle[0], dirBlock);
+            for (i = 0; i < PageSize; i += DescriptorSize) {
+                if (strncmp((dirBlock + i + FilenameOffset) as char[], lastSlash + 1, strlen(lastSlash + 1)) == 0 &&
+                    (dirBlock[i + FileTypeOffset] & 0xF0) == FileTypeFile) {
+                    byte[] fileHandle = malloc(4);
+                    fileHandle[0] = parentDirHandle[0]; // Directory block number
+                    fileHandle[1] = (i / DescriptorSize) as byte; // File descriptor index
+                    fileHandle[2] = 0; // Current position LSB in file
+                    fileHandle[3] = 0; // Current position MSB in file
+                    closedir(parentDirHandle);
+                    return fileHandle; // Success
+                }
+            }
+            closedir(parentDirHandle);
         }
-        closedir(parentDirHandle);
     }
     return null; // Failed to open file
 }
-
-
 
 func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle) {
     byte[PageSize] fileBlock;
