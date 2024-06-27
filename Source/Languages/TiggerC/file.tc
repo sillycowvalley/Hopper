@@ -209,33 +209,29 @@ func _splitPath(const char[] fullPath, char[] parentDir, char[] fileName) {
         strcpy(fileName, fullPath + 1);
     }
 }
-func bool _compareDirEntry(byte[] dirEntry, char[] name, byte entryType)
-{
-    bool found;
-    word length;
-    for (;;)
-    {
-        if (dirEntry[StartBlockOffset] == 0)
-        {
+
+func bool _compareDirEntry(byte[] dirEntry, char[] name, byte entryType) {
+    bool found = false;
+    word length = strlen(name);
+    for (;;) {
+        if (dirEntry[StartBlockOffset] == 0) {
             break; // empty dirEntry
         }
-        if (isFile != ((dirEntry[FileTypeOffset] & 0xF0) == entryType))
-        {
+        if ((dirEntry[FileTypeOffset] & 0xF0) != entryType) {
             break; // not the correct type of record
         }
-        length = strlen(name);
-        if (length != (dirEntry[FileTypeOffset] & 0x0F))
-        {
+        if (length != (dirEntry[FileTypeOffset] & 0x0F)) {
             break; // not the correct length
         }
-        if (strncmp((dirEntry + FilenameOffset) as char[], name, length) == 0)
-        {
+        if (strncmp((dirEntry + FilenameOffset) as char[], name, length) == 0) {
             found = true; // name match
         }
         break;
     }
     return found;
 }
+
+
 // ### end of private helper functions
 // Formats the drive, initializing the file system.
 // Returns 0 on success, or -1 on error.
@@ -707,7 +703,6 @@ func byte[] fopen(const char[] filename, const char[] mode) {
     return fileHandle; // Return file handle or null if not found/created
 }
 
-
 func int remove(const char[] filename) {
     byte[PageSize] dirBlock;
     byte[PageSize] chainBlock;
@@ -739,11 +734,9 @@ func int remove(const char[] filename) {
         while (true) {
             _readBlock(dirHandle[0], dirBlock);
             for (i = 0; i < PageSize; i += DescriptorSize) {
+                writeChar(' '); writeWord(i);
                 memcpy(descriptor, dirBlock + i, DescriptorSize);
-                
-                if (strncmp((descriptor + FilenameOffset) as char[], fileName, strlen(fileName)) == 0 &&
-                    (descriptor[FileTypeOffset] & 0xF0) == FileTypeFile) {
-                    
+                if (_compareDirEntry(descriptor, fileName, FileTypeFile)) {
                     fileBlock = descriptor[StartBlockOffset];
                     // Clear the file descriptor
                     memset(descriptor, 0, DescriptorSize); // Clearing the descriptor array itself
@@ -762,8 +755,6 @@ func int remove(const char[] filename) {
                     writeString("Cleared file descriptor for '");
                     writeString(fileName);
                     writeString("'.\n");
-                    dumpRootDirectory();
-                    dumpChainLists();
                     result = 0; // Success
                     break; // Exit the loop
                 }
@@ -778,6 +769,8 @@ func int remove(const char[] filename) {
     }
     return result; // Return the result
 }
+
+
 func int rmdir(const char[] dirname) {
     byte[PageSize] dirBlock;
     byte[PageSize] chainBlock;
@@ -837,8 +830,7 @@ func int rmdir(const char[] dirname) {
         while (true) {
             for (i = 0; i < PageSize; i += DescriptorSize) {
                 memcpy(descriptor, dirBlock + i, DescriptorSize);
-                if (strncmp((descriptor + FilenameOffset) as char[], dirName, strlen(dirName)) == 0 &&
-                    (descriptor[FileTypeOffset] & 0xF0) == FileTypeDirectory) {
+                if (_compareDirEntry(descriptor, dirName, FileTypeDirectory)) {
                     memset(dirBlock + i, 0, DescriptorSize); // Clear the descriptor
                     _writeBlock(dirHandle[0], dirBlock);
                     
