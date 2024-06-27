@@ -93,6 +93,7 @@ func bool _isValidPath(const char[] path) {
     }
     return true;
 }
+
 func _resolveRelativePath(char[] dest, const char[] path) {
     // Handle the root path separately
     if (strcmp(path, "/") == 0) {
@@ -169,7 +170,7 @@ func _compactDirectory(byte startBlock, byte currentBlock) {
     bool isEmpty;
     byte prevBlock;
     
-    writeChar('<');
+    //writeChar('<');
     
     _readBlock(ChainBlock, chainBlock);
     while (true) {
@@ -222,7 +223,7 @@ func _compactDirectory(byte startBlock, byte currentBlock) {
             chainBlock[prevBlock] = chainBlock[currentBlock];
             chainBlock[currentBlock] = 0;
             _writeBlock(ChainBlock, chainBlock);
-            writeChar('-');
+            //writeChar('-');
             break;
         }
         if (!blockMoved) {
@@ -232,7 +233,7 @@ func _compactDirectory(byte startBlock, byte currentBlock) {
         currentBlock = chainBlock[currentBlock];
         if (currentBlock == 1) { break; }
     }
-    writeChar('>');
+    //writeChar('>');
 }
 
 // Splits the full path into parent directory and file name.
@@ -248,6 +249,7 @@ func _splitPath(const char[] fullPath, char[] parentDir, char[] fileName) {
     }
 }
 
+
 func bool _compareDirEntry(byte[] dirEntry, char[] name, byte entryType) {
     bool found = false;
     word length = strlen(name);
@@ -261,13 +263,14 @@ func bool _compareDirEntry(byte[] dirEntry, char[] name, byte entryType) {
         if (length != (dirEntry[FileTypeOffset] & 0x0F)) {
             break; // not the correct length
         }
-        if (strncmp((dirEntry + FilenameOffset) as char[], name, length) == 0) {
+        if (strnicmp((dirEntry + FilenameOffset) as char[], name, length) == 0) {
             found = true; // name match
         }
         break;
     }
     return found;
 }
+
 
 
 // ### end of private helper functions
@@ -426,6 +429,7 @@ func int mkdir(const char[] dirname) {
     free(localDirname);
     return -1; // No empty slot found
 }
+
 func byte[] opendir(const char[] dirname) {
     byte[] dirHandle = malloc(2);
     byte[PageSize] dirBlock;
@@ -461,8 +465,8 @@ func byte[] opendir(const char[] dirname) {
         _readBlock(currentBlock, dirBlock);
         while (true) {
             for (i = 0; i < PageSize; i += DescriptorSize) {
-                if (strncmp((dirBlock + i + FilenameOffset) as char[], token, strlen(token)) == 0 &&
-                    (dirBlock[i + FileTypeOffset] & 0xF0) == FileTypeDirectory) {
+                memcpy(_dirEntry, dirBlock + i, DescriptorSize);
+                if (_compareDirEntry(_dirEntry, token, FileTypeDirectory)) {
                     currentBlock = dirBlock[i + StartBlockOffset];
                     found = true;
                     break;
@@ -488,6 +492,7 @@ func byte[] opendir(const char[] dirname) {
     free(pathCopy);
     return dirHandle;
 }
+
 func int chdir(const char[] path) {
     if (!_isValidPath(path)) {
         return -1; // Invalid path
@@ -740,6 +745,7 @@ func byte[] fopen(const char[] filename, const char[] mode) {
     free(parentDir);
     return fileHandle; // Return file handle or null if not found/created
 }
+
 
 func int remove(const char[] filename) {
     byte[PageSize] dirBlock;
