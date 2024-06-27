@@ -564,7 +564,7 @@ unit TCGen
                 {
                     if (instruction1.Name == "PUSHI") 
                     {
-                        //Print(" STLI");
+                        Print(" STLI");
                         instruction0.Operand = instruction1.Operand;
                         instruction0.Name = "STLI";
                         currentStream[currentStream.Count-1] = instruction0;
@@ -607,7 +607,7 @@ unit TCGen
                 {
                     if (instruction1.Name == "PUSHI") 
                     {
-                        //Print(" STGI");
+                        Print(" STGI");
                         instruction0.Operand = instruction1.Operand;
                         instruction0.Name = "STGI";
                         currentStream[currentStream.Count-1] = instruction0;
@@ -734,6 +734,21 @@ unit TCGen
                     {
                         //Print(" IGADDPUSHM");
                         instruction1.Name    = "IGADDPUSHM";
+                        currentStream[currentStream.Count-2] = instruction1;
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
+                }
+            }
+            if ((instruction0.Name == "PUSHM"))
+            {
+                if (instruction0.IsByte && !instruction1.IsByte)
+                {
+                    if (instruction1.Name == "ILADD")
+                    {
+                        //Print(" ILADDPUSHM");
+                        instruction1.Name    = "ILADDPUSHM";
                         currentStream[currentStream.Count-2] = instruction1;
                         DeleteInstruction(currentStream.Count-1);
                         modified = true;
@@ -912,7 +927,7 @@ unit TCGen
                     }
                     if (instruction0.Name == "MULI")
                     {
-                        Print(" GGMULI");
+                        //Print(" GGMULI");
                         instruction2.Offset2 = instruction1.Offset;
                         instruction2.Name    = "GGMULI";
                         currentStream[currentStream.Count-3] = instruction2;
@@ -923,7 +938,7 @@ unit TCGen
                     }
                     if (instruction0.Name == "DIVI")
                     {
-                        Print(" GGDIVI");
+                        //Print(" GGDIVI");
                         instruction2.Offset2 = instruction1.Offset;
                         instruction2.Name    = "GGDIVI";
                         currentStream[currentStream.Count-3] = instruction2;
@@ -3083,33 +3098,29 @@ unit TCGen
     generateSTGI(Instruction instruction)
     {
         int goffset = instruction.Offset;
-        if (instruction.Operand == 0)
+        byte lsb = (instruction.Operand).GetByte(0);
+        byte msb = (instruction.Operand).GetByte(1);
+        
+        if (lsb == 0)
         {
-            if (instruction.IsByte)
-            {
-                TCCode.PadOut("STZ " + GlobalOperand(goffset), 0);
-            }
-            else
-            {
-                TCCode.PadOut("STZ " + GlobalOperand(goffset), 0);
-                TCCode.PadOut("STZ " + GlobalOperand(goffset+1), 0);
-            }
+            TCCode.PadOut("STZ " + GlobalOperand(goffset), 0);
         }
         else
         {
-            
-            if (instruction.IsByte)
+            TCCode.PadOut("LDA # 0x" + lsb.ToHexString(2), 0);
+            TCCode.PadOut("STA " + GlobalOperand(goffset), 0);
+        }
+        if (!instruction.IsByte)
+        {
+            if (msb == 0)
             {
-                TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
-                TCCode.PadOut("STA " + GlobalOperand(goffset), 0);
+                TCCode.PadOut("STZ " + GlobalOperand(goffset+1), 0);
             }
             else
             {
-                TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
-                TCCode.PadOut("STA " + GlobalOperand(goffset), 0);
-                if ((instruction.Operand).GetByte(1) != (instruction.Operand).GetByte(0))
+                if (msb != lsb)
                 {
-                    TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
+                    TCCode.PadOut("LDA # 0x" + msb.ToHexString(2), 0);
                 }
                 TCCode.PadOut("STA " + GlobalOperand(goffset+1), 0);
             }
@@ -3118,33 +3129,43 @@ unit TCGen
     generateSTLI(Instruction instruction)
     {
         TCCode.BPOffset(instruction.Offset, "X", instruction.IsByte);
-        if (instruction.Operand == 0)
+        byte lsb = (instruction.Operand).GetByte(0);
+        byte msb = (instruction.Operand).GetByte(1);
+            
+        if (lsb == 0)
         {
             if (instruction.IsByte)
             {
-                TCCode.PadOut("STZ 0x0100, X", 0);
+                TCCode.PadOut("STZ 0x0100, X // LSB", 0);
             }
             else
             {
                 TCCode.PadOut("STZ 0x0101, X // LSB", 0);
-                TCCode.PadOut("STZ 0x0100, X // MSB", 0);
             }
-        }
+        } 
         else
         {
-            
+            TCCode.PadOut("LDA # 0x" + lsb.ToHexString(2), 0);
             if (instruction.IsByte)
             {
-                TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
-                TCCode.PadOut("STA 0x0100, X", 0);
+                TCCode.PadOut("STA 0x0100, X // LSB", 0);
             }
             else
             {
-                TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
                 TCCode.PadOut("STA 0x0101, X // LSB", 0);
-                if ((instruction.Operand).GetByte(1) != (instruction.Operand).GetByte(0))
+            }
+        }
+        if (!instruction.IsByte)
+        {
+            if (msb == 0)
+            {
+                TCCode.PadOut("STZ 0x0100, X // MSB", 0);
+            }
+            else
+            {
+                if (msb != lsb)
                 {
-                    TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
+                    TCCode.PadOut("LDA # 0x" + msb.ToHexString(2), 0);
                 }
                 TCCode.PadOut("STA 0x0100, X // MSB", 0);
             }
