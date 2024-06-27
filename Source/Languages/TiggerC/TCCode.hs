@@ -213,12 +213,14 @@ unit TCCode
         }
         deferred.Clear();
     }
+    /*
     If(string comment)
     {
         PadOut("", 0);
         PadOut("PLA // bool", 0); // bool so one byte
         PadOut("if (NZ) // " + comment, 0);
     }
+    */
     Else()
     {
         PadOut("else", 0);

@@ -63,7 +63,7 @@ unit TCExpression
             //TCCode.If("if");
             //TCCode.PadOut("{", 0);
             
-            TCGen.IF();
+            TCGen.IF(true); // 
             
             TCScanner.Advance(); // Skip '?'
             string trueType;

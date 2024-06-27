@@ -60,6 +60,8 @@ unit TCStatement
             return false;
         }
         
+        TCGen.BeginStream(false);
+        
         TCScanner.Advance(); // Skip '('
         string booleanType;
         if (!TCExpression.Expression(ref booleanType)) // if statement bool expression
@@ -72,7 +74,9 @@ unit TCStatement
             return false;    
         }
         
-        TCCode.If("if");
+        TCGen.IF(false); // no {
+        
+        TCGen.FlushStream();
         
         token = TCScanner.Current();
         if (token.Type != TokenType.SYM_RPAREN)

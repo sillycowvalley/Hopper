@@ -9,7 +9,7 @@ unit TCGen
         string Name;
         bool   IsByte;
         uint   Operand;
-        int    Offset; // used by CALL as bool
+        int    Offset; // used by CALL, IF as bool
         int    Offset2;
         string Data;
     }
@@ -147,6 +147,7 @@ unit TCGen
     //    IEQ     : PUSHI operand, EQ
     //    INE     : PUSHI operand, NE
     //    INEX    : PUSHI operand, NE, LOOPEXIT
+    //    IEQZIF  : PUSHI 0x0000,  EQ, IF
     //
     //    PUSHM1  : PUSHI 0, PUSH 1, SUB
     
@@ -184,8 +185,29 @@ unit TCGen
                     }
                 }
             }
+            if ((instruction0.Name == "IF"))
+            {
+                if ((instruction1.Name == "IEQ") && (instruction1.Operand == 0))
+                {
+                    Print(" IEQZIF");
+                    instruction0.Name    = "IEQZIF";
+                    instruction0.IsByte  = instruction1.IsByte;
+                    currentStream[currentStream.Count-1] = instruction0;
+                    DeleteInstruction(currentStream.Count-2);
+                    modified = true;
+                    break;
+                }
+            }
             if ((instruction0.Name == "LOOPEXIT"))
             {
+                if (instruction1.IsByte && (instruction1.Name == "PUSHI") && (instruction1.Operand != 0))
+                {
+                    // while true
+                    DeleteInstruction(currentStream.Count-2);
+                    DeleteInstruction(currentStream.Count-1);
+                    modified = true;
+                    break;
+                }
                 if (instruction1.Name == "INE") 
                 {
                     //Print(" INEX");
@@ -1490,9 +1512,13 @@ unit TCGen
         Append("DECSP", false, bytes);
     }
     
-    IF()
+    IF(bool hasBrace)
     {
-        Append("IF");
+        Instruction instruction;
+        instruction.Name = "IF";
+        instruction.Operand = (hasBrace ? 1 : 0);
+        Append(instruction);
+        
         if (!capturingMode)
         {
             Generate(); // reset peephole
@@ -1761,6 +1787,10 @@ unit TCGen
             {
                 content = instruction.Name+width+" 0x" + (instruction.Operand).ToHexString(instruction.IsByte ? 2 : 4);
             }
+            case "IEQZIF":
+            {
+                content = instruction.Name+width+" 0x" + (0).ToHexString(instruction.IsByte ? 2 : 4);
+            }
             
             
             
@@ -1927,7 +1957,10 @@ unit TCGen
         generators["INEX"] = generateDelegate;
         generateDelegate = generateINEXB;
         generators["INEXB"] = generateDelegate;
-        
+        generateDelegate = generateIEQZIF;
+        generators["IEQZIF"] = generateDelegate;
+        generateDelegate = generateIEQZIFB;
+        generators["IEQZIFB"] = generateDelegate;
         
         generateDelegate = generateSP;
         generators["SP"] = generateDelegate;
@@ -2365,7 +2398,7 @@ unit TCGen
                     string pname = previous.Name + (previous.IsByte ? "B" : "");
                     string cname = instruction.Name + (instruction.IsByte ? "B" : "");
                     string pr = pname + "+" + cname;
-                    if (pr.Contains("CALL+") || pr.Contains("+CALL")  || pr.Contains("+IF")  || pr.Contains("+ELSE")  || pr.Contains("+ENDIF"))
+                    if (pr.Contains("CALL+") || pr.Contains("+CALL")  || pr.Contains("+ELSE")  || pr.Contains("+ENDIF"))
                     {
                         // ignore
                     }
@@ -3741,8 +3774,13 @@ unit TCGen
     }
     generateIF(Instruction instruction)
     {
-        TCCode.If("if");
-        TCCode.PadOut("{", 0);
+        TCCode.PadOut("", 0);
+        TCCode.PadOut("PLA // bool", 0); // bool so one byte
+        TCCode.PadOut("if (NZ) // if", 0);
+        if (instruction.Operand != 0)
+        {
+            TCCode.PadOut("{", 0);
+        }
     }
     generateDECSP(Instruction instruction)    { TCCode.PopBytes((instruction.Operand).GetByte(0), ""); }
     generatePADUNDER(Instruction instruction) { TCCode.CastPad(true); }
@@ -4031,6 +4069,51 @@ unit TCGen
         else
         {
             TCOps.And(instruction.IsByte); 
+        }
+    }
+    generateIEQZIFB(Instruction instruction)
+    { 
+        TCCode.PadOut("// == (8 bit)", 0);
+        TCCode.PadOut("// arguments in NEXT and TOP", 0);
+        TCCode.PadOut("LDX # 0 // NEXT != TOP", 0);
+        TCCode.PadOut("PLA", 0); // NEXTL
+        TCCode.PadOut("if (Z)", 0);
+        TCCode.PadOut("{", 0);
+        TCCode.PadOut("LDX # 1 // NEXT == TOP", 1);
+        TCCode.PadOut("}", 0);
+        TCCode.PadOut("// result in X", 0);
+        TCCode.PadOut("PHX", 0);
+        TCCode.PadOut("", 0);
+        TCCode.PadOut("PLA // bool", 0); // bool so one byte
+        TCCode.PadOut("if (NZ) // if", 0);
+        if (instruction.Operand != 0)
+        {
+            TCCode.PadOut("{", 0);
+        }
+    }
+    generateIEQZIF(Instruction instruction)
+    { 
+        TCCode.PadOut("// == (16 bit)", 0);
+        TCCode.PadOut("PLY", 0); // NEXTH
+        TCCode.PadOut("// arguments in NEXT and TOP", 0);
+        TCCode.PadOut("LDX # 0 // NEXT != TOP", 0);
+        TCCode.PadOut("PLA", 0); // NEXTL
+        TCCode.PadOut("if (Z)", 0);
+        TCCode.PadOut("{", 0);
+        TCCode.PadOut("TYA", 1); // NEXTH
+        TCCode.PadOut("if (Z)", 1);
+        TCCode.PadOut("{", 1);
+        TCCode.PadOut("LDX # 1 // NEXT == TOP", 2);
+        TCCode.PadOut("}", 1);
+        TCCode.PadOut("}", 0);
+        TCCode.PadOut("// result in X", 0);
+        TCCode.PadOut("PHX", 0); 
+        TCCode.PadOut("", 0);
+        TCCode.PadOut("PLA // bool", 0); // bool so one byte
+        TCCode.PadOut("if (NZ) // if", 0);
+        if (instruction.Operand != 0)
+        {
+            TCCode.PadOut("{", 0);
         }
     }
     
