@@ -143,31 +143,26 @@ func char[] strtok(char[] str, const char[] delimiters) {
         return null;
     }
     
-        // Skip initial delimiters
+    // Skip initial delimiters
     while (next_token[0] != '\0' && strchr(delimiters, next_token[0]) != null) {
         next_token++;
     }
-
     if (next_token[0] == '\0') {
         next_token = null;
         return null;
     }
-
     // Start of the token
     char[] token = next_token;
-
     // Find the end of the token
     while (next_token[0] != '\0' && strchr(delimiters, next_token[0]) == null) {
         next_token++;
     }
-
     if (next_token[0] != '\0') {
         next_token[0] = '\0';
         next_token++;
     } else {
         next_token = null;
     }
-
     return token;
 }
 
@@ -249,5 +244,50 @@ func byte[] memset(byte[] ptr, byte value, word n) {
         ptr[i] = value;
     }
     return ptr;
+}
+
+// Convert an integer to a string
+func char[] itoa(int ivalue, char[] str, byte base) {
+    char[] digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    char[33] buffer; // Maximum length for an int in base 2 + null terminator
+    bool isNegative;
+    word i;
+    word value;
+    
+    if (ivalue == 0) {
+        str[0] = '0';
+        str[1] = '\0';
+        return str;
+    }
+    
+    // Handle negative numbers for base 10
+    if (ivalue < 0 && base == 10) {
+        isNegative = true;
+        ivalue = -ivalue;
+    }
+    value = ivalue as word;
+    
+    // Process individual digits
+    while (value != 0) {
+        buffer[i++] = digits[value % base];
+        value /= base;
+    }
+    
+    // If the number is negative, append '-'
+    if (isNegative) {
+        buffer[i++] = '-';
+    }
+    
+    // Null-terminate the string
+    buffer[i] = '\0';
+    
+    // Reverse the string
+    word len = strlen(buffer);
+    for (word j = 0; j < len; j++) {
+        str[j] = buffer[len - j - 1];
+    }
+    str[len] = '\0';
+    
+    return str;
 }
 

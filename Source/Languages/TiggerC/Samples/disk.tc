@@ -22,6 +22,7 @@ func printHex(const byte[] buffer, word length) {
     }
     writeChar('\n');
 }
+
 // Debugging function to print a byte buffer
 func printByteBuffer(const char[] label, byte[] buffer, word length) {
     writeString(label);
@@ -52,9 +53,12 @@ func handleTestFailure(const char[] message) {
     dumpChainLists();
 }
 
-func writeFileN(char[] name, word n)
-{
-    writeString(name); writeWord(n);
+// Converts a number to a string and appends it to the base name.
+func constructFilename(char[] filename, const char[] baseName, word n) {
+    strcpy(filename, baseName);
+    char[10] numStr;
+    itoa(n as int, numStr, 10);  // Convert number to string
+    strcat(filename, numStr);  // Append the number string to the base name
 }
 
 // Creates multiple files in the root directory.
@@ -62,7 +66,7 @@ func createMultipleFiles(word count) {
     char[256] filename;
     word i;
     for (i = 0; i < count; i++) {
-        writeFileN("/file", i );
+        constructFilename(filename, "/file", i);
         byte[] fileHandle = fopen(filename, "w");
         if (fileHandle == null) {
             handleTestFailure("Failed to create file '");
@@ -79,7 +83,7 @@ func removeMultipleFiles(word count) {
     char[256] filename;
     word i;
     for (i = 0; i < count; i++) {
-        writeFileN("/file", i );
+        constructFilename(filename, "/file", i);
         if (remove(filename) != 0) {
             handleTestFailure("Failed to remove file '");
             writeString(filename);
@@ -131,7 +135,7 @@ func main() {
     // Verify the files were created.
     char[256] filename;
     for (word i = 0; i < extraFiles; i++) {
-        writeFileN("/file", i );
+        constructFilename(filename, "/file", i);
         byte[] fileHandle = fopen(filename, "r");
         if (fileHandle == null) {
             handleTestFailure("Failed to verify file '");
