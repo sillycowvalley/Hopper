@@ -46,19 +46,16 @@ func dumpRootDirectory() {
     printHex(buffer, PageSize);
 }
 
-// Prints a message and dumps the root directory and chain lists if a test fails.
+// Prints a message and dumps the root directory and chain lists if a test fails, then halts execution.
 func handleTestFailure(const char[] message) {
     writeString(message);
     dumpRootDirectory();
     dumpChainLists();
 }
 
-// Converts a number to a string and appends it to the base name.
-func constructFilename(char[] filename, const char[] baseName, word n) {
-    strcpy(filename, baseName);
-    char[10] numStr;
-    itoa(n as int, numStr, 10);  // Convert number to string
-    strcat(filename, numStr);  // Append the number string to the base name
+// Appends an integer to a string.
+func writeFileN(char[] name, word n) {
+    itoa(n as int, name + strlen(name), 10); // Append the number to the name
 }
 
 // Creates multiple files in the root directory.
@@ -66,15 +63,19 @@ func createMultipleFiles(word count) {
     char[256] filename;
     word i;
     for (i = 0; i < count; i++) {
-        constructFilename(filename, "/file", i);
+        strcpy(filename, "/file");
+        writeFileN(filename, i);
         byte[] fileHandle = fopen(filename, "w");
         if (fileHandle == null) {
             handleTestFailure("Failed to create file '");
             writeString(filename);
             writeString("'.\n");
-            return;
+            while (true) {}
         }
         fclose(fileHandle);
+        writeString("Created file '");
+        writeString(filename);
+        writeString("'.\n");
     }
 }
 
@@ -83,13 +84,24 @@ func removeMultipleFiles(word count) {
     char[256] filename;
     word i;
     for (i = 0; i < count; i++) {
-        constructFilename(filename, "/file", i);
+        strcpy(filename, "/file");
+        writeFileN(filename, i);
         if (remove(filename) != 0) {
             handleTestFailure("Failed to remove file '");
             writeString(filename);
             writeString("'.\n");
-            return;
+            while (true) {}
         }
+        byte[] fileHandle = fopen(filename, "w");
+        if (fileHandle != null) {
+            handleTestFailure("Incorrectly opened removed file '");
+            writeString(filename);
+            writeString("'.\n");
+            while (true) {}
+        }
+        writeString("Removed file '");
+        writeString(filename);
+        writeString("'.\n");
     }
 }
 
@@ -98,15 +110,75 @@ func verifyRootDirectoryEmpty() {
     byte[] dirHandle = opendir("/");
     if (dirHandle == null) {
         handleTestFailure("Failed to open root directory.\n");
-        return;
+        while (true) {}
     }
     byte[] dirEntry;
     while ((dirEntry = readdir(dirHandle)) != null) {
         handleTestFailure("Root directory is not empty.\n");
         closedir(dirHandle);
-        return;
+        while (true) {}
     }
     closedir(dirHandle);
+}
+
+// Creates and verifies a file with the maximum allowed filename length.
+func createAndVerifyMaxFilenameLength() {
+    char[13] filename;
+    memset(filename as byte[], 'A' as byte, 12);
+    filename[12] = '\0';
+    byte[] fileHandle = fopen(filename, "w");
+    if (fileHandle == null) {
+        handleTestFailure("Failed to create file with max filename length.\n");
+        while (true) {}
+    }
+    fclose(fileHandle);
+    writeString("Created file with max filename length.\n");
+    fileHandle = fopen(filename, "r");
+    if (fileHandle == null) {
+        handleTestFailure("Failed to verify file with max filename length.\n");
+        while (true) {}
+    }
+    fclose(fileHandle);
+    writeString("Verified file with max filename length.\n");
+    if (remove(filename) != 0) {
+        handleTestFailure("Failed to remove file with max filename length.\n");
+        while (true) {}
+    }
+    writeString("Removed file with max filename length.\n");
+}
+
+// Creates and verifies nested directories.
+func createAndVerifyNestedDirs() {
+    if (mkdir("/dir1") != 0) {
+        handleTestFailure("Failed to create directory '/dir1'.\n");
+        while (true) {}
+    }
+    writeString("Created directory '/dir1'.\n");
+    if (mkdir("/dir1/dir2") != 0) {
+        handleTestFailure("Failed to create directory '/dir1/dir2'.\n");
+        while (true) {}
+    }
+    writeString("Created directory '/dir1/dir2'.\n");
+    if (mkdir("/dir1/dir2/dir3") != 0) {
+        handleTestFailure("Failed to create directory '/dir1/dir2/dir3'.\n");
+        while (true) {}
+    }
+    writeString("Created directory '/dir1/dir2/dir3'.\n");
+    if (rmdir("/dir1/dir2/dir3") != 0) {
+        handleTestFailure("Failed to remove directory '/dir1/dir2/dir3'.\n");
+        while (true) {}
+    }
+    writeString("Removed directory '/dir1/dir2/dir3'.\n");
+    if (rmdir("/dir1/dir2") != 0) {
+        handleTestFailure("Failed to remove directory '/dir1/dir2'.\n");
+        while (true) {}
+    }
+    writeString("Removed directory '/dir1/dir2'.\n");
+    if (rmdir("/dir1") != 0) {
+        handleTestFailure("Failed to remove directory '/dir1'.\n");
+        while (true) {}
+    }
+    writeString("Removed directory '/dir1'.\n");
 }
 
 func main() {
@@ -118,40 +190,43 @@ func main() {
         return;
     }
     chdir("/");
-    
     if (format() != 0) {
         writeString("Format failed.\n");
         return;
     }
     writeString("Format succeeded.\n");
-    
     // Determine the number of files needed to exceed one directory block.
     word filesPerBlock = PageSize / DescriptorSize;
     word extraFiles = filesPerBlock + 10; // Creating 10 more files than would fit in one block.
-
     // Create more files than would fit into one directory block.
     createMultipleFiles(extraFiles);
-
     // Verify the files were created.
     char[256] filename;
     for (word i = 0; i < extraFiles; i++) {
-        constructFilename(filename, "/file", i);
+        strcpy(filename, "/file");
+        writeFileN(filename, i);
         byte[] fileHandle = fopen(filename, "r");
         if (fileHandle == null) {
             handleTestFailure("Failed to verify file '");
             writeString(filename);
             writeString("'.\n");
-            return;
+            while (true) {}
         }
         fclose(fileHandle);
+        writeString("Verified file '");
+        writeString(filename);
+        writeString("'.\n");
     }
-
     // Remove all the files.
     removeMultipleFiles(extraFiles);
-
     // Verify the root directory is empty.
     verifyRootDirectoryEmpty();
-
+    // Create and verify a file with the maximum allowed filename length.
+    createAndVerifyMaxFilenameLength();
+    // Create and verify nested directories.
+    createAndVerifyNestedDirs();
     writeString("All tests passed successfully.\n");
+    dumpRootDirectory();
+    dumpChainLists();
 }
 
