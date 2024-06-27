@@ -121,25 +121,27 @@ func dumpFileContents(byte startBlock, word fileSize, byte indent) {
     word remainingBytes = fileSize;
     word bytesToRead;
     word i;
-
-    _readBlock(ChainBlock, chainBuffer);
-    while (true) {
-        _readBlock(currentBlock, buffer);
-        bytesToRead = (remainingBytes < PageSize) ? remainingBytes : PageSize;
-        writeSpaces(indent);
-        writeString("  Data Block ");
-        writeHex(currentBlock);
-        writeString(": ");
-        for (i = 0; i < bytesToRead; i++) {
-            writeHex(buffer[i]);
-            writeChar(' ');
+    if (startBlock != 1)
+    {
+        _readBlock(ChainBlock, chainBuffer);
+        while (true) {
+            _readBlock(currentBlock, buffer);
+            bytesToRead = (remainingBytes < PageSize) ? remainingBytes : PageSize;
+            writeSpaces(indent);
+            writeString("  Data Block ");
+            writeHex(currentBlock);
+            writeString(": ");
+            for (i = 0; i < bytesToRead; i++) {
+                writeHex(buffer[i]);
+                writeChar(' ');
+            }
+            writeChar('\n');
+            remainingBytes -= bytesToRead;
+            if (remainingBytes == 0 || chainBuffer[currentBlock] == 1) {
+                break;
+            }
+            currentBlock = chainBuffer[currentBlock];
         }
-        writeChar('\n');
-        remainingBytes -= bytesToRead;
-        if (remainingBytes == 0 || chainBuffer[currentBlock] == 1) {
-            break;
-        }
-        currentBlock = chainBuffer[currentBlock];
     }
 }
 
@@ -176,7 +178,7 @@ func dumpDirectoryStructured(byte startBlock, byte indent) {
             if (fileBlock != 0) {
                 strncpy(entryName, (buffer + i + FilenameOffset) as char[], entryLength);
                 entryName[entryLength] = '\0';
-                entrySize = (buffer[i + FileSizeOffset] << 8) | buffer[i + FileSizeOffset + 1];
+                entrySize = ((buffer[i + FileSizeOffset] as word) << 8) | buffer[i + FileSizeOffset + 1];
                 writeSpaces(indent);
                 writeString("  ");
                 writeHex((i / DescriptorSize) as byte);
@@ -241,14 +243,18 @@ func main() {
     testWriteReadFile("/file1", writeData1, 256);
     testWriteReadFile("/file2", writeData2, 256);
     */
-    fh = fopen("/file1", "w");
     
-    for (i = 1; i < 10; i++)
+    fh = fopen("/file1", "w");
+    dumpDirectoryStructured(RootDirStartBlock, 0);
+    for (i = 0; i < 6; i++)
     {
         fwrite(writeData1, 1, 100, fh);
         dumpDirectoryStructured(RootDirStartBlock, 0);
     }
     fclose(fh);
+    dumpDirectoryStructured(RootDirStartBlock, 0);
+    
+    remove("/file");
     
     dumpDirectoryStructured(RootDirStartBlock, 0);
     
