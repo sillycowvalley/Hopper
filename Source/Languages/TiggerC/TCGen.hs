@@ -31,6 +31,7 @@ unit TCGen
     //    PUSHM isByte ([top] could is a word address)
     //    POPM  isByte ([next] could is a word address)
     //    PUSHI isByte operand
+    //    PUSHZ isByte 0
     //    ZEROG isByte offset
     //    PUSHC address (address needs to be added to Resources.StrConsts)
     //
@@ -91,6 +92,7 @@ unit TCGen
     //    LGADDPUSHM  : PUSHL offset0, PUSHG offset1, ADD PUSHMB
     //    LADDPUSHM   : PUSHL offset0, ADD PUSHMB
     //    ILADDPUSHM  : PUSHI operand, PUSHL offset0, ADD PUSHMB
+    //    IGADDPUSHM  : PUSHI operand, PUSHG offset0, ADD PUSHMB
     //    GLADDPUSHM  : PUSHG offset0, PUSHL offset1, ADD PUSHMB
     //    GGADDPUSHM  : PUSHG offset0, PUSHG offset1, ADD PUSHMB
     //    LGADDIPOPM : PUSHL offset0, PUSHG offset1, ADD PUSHIB POPMB
@@ -148,6 +150,7 @@ unit TCGen
     //    INE     : PUSHI operand, NE
     //    INEX    : PUSHI operand, NE, LOOPEXIT
     //    IEQZIF  : PUSHI 0x0000,  EQ, IF
+    //    INEZIF  : PUSHI 0x0000,  NE, IF
     //
     //    PUSHM1  : PUSHI 0, PUSH 1, SUB
     
@@ -191,6 +194,16 @@ unit TCGen
                 {
                     //Print(" IEQZIF");
                     instruction0.Name    = "IEQZIF";
+                    instruction0.IsByte  = instruction1.IsByte;
+                    currentStream[currentStream.Count-1] = instruction0;
+                    DeleteInstruction(currentStream.Count-2);
+                    modified = true;
+                    break;
+                }
+                if ((instruction1.Name == "INE") && (instruction1.Operand == 0))
+                {
+                    //Print(" INEZIF");
+                    instruction0.Name    = "INEZIF";
                     instruction0.IsByte  = instruction1.IsByte;
                     currentStream[currentStream.Count-1] = instruction0;
                     DeleteInstruction(currentStream.Count-2);
@@ -301,6 +314,22 @@ unit TCGen
                         modified = true;
                         break;
                     }    
+                }
+            }
+            if ((instruction0.Name == "LADD"))
+            {
+                if (instruction1.IsByte == instruction0.IsByte)
+                {
+                    if (instruction1.Name == "PUSHI")
+                    {
+                        //Print(" ILADD");
+                        instruction1.Name   = "ILADD";
+                        instruction1.Offset = instruction0.Offset;
+                        currentStream[currentStream.Count-2] = instruction1;
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
                 }
             }
             if (instruction0.Name == "EQ")
@@ -452,22 +481,24 @@ unit TCGen
                     }    
                 }
             }
+            if ((instruction0.Name == "PUSHZ"))
+            {
+                if (instruction0.IsByte && instruction1.IsByte && (instruction1.Name == "PUSHI")) // 0 -> CAST to word
+                { 
+                    //Print(" IZ->I");
+                    instruction0.Name = "PUSHI";
+                    instruction0.Operand = instruction1.Operand; // MSB is zero
+                    instruction0.IsByte = false;
+                    currentStream[currentStream.Count-2] = instruction0;
+                    DeleteInstruction(currentStream.Count-1);
+                    modified = true;
+                    break;
+                }
+            }
             if ((instruction0.Name == "PUSHI"))
             {
                 if (instruction0.IsByte)
                 { 
-                    if (instruction1.Name == "PUSHI")
-                    {
-                        if (instruction1.IsByte)
-                        {
-                            instruction0.Operand = (instruction0.Operand << 8) + instruction1.Operand;
-                            instruction0.IsByte = false;
-                            currentStream[currentStream.Count-2] = instruction0;
-                            DeleteInstruction(currentStream.Count-1);
-                            modified = true;
-                            break;
-                        }
-                    }
                     if (!instruction1.IsByte)
                     {
                         if (instruction1.Name == "LGADD")
@@ -688,6 +719,21 @@ unit TCGen
                     {
                         //Print(" GGADDPUSHM");
                         instruction1.Name    = "GGADDPUSHM";
+                        currentStream[currentStream.Count-2] = instruction1;
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
+                }
+            }
+            if ((instruction0.Name == "PUSHM"))
+            {
+                if (instruction0.IsByte && !instruction1.IsByte)
+                {
+                    if (instruction1.Name == "IGADD")
+                    {
+                        //Print(" IGADDPUSHM");
+                        instruction1.Name    = "IGADDPUSHM";
                         currentStream[currentStream.Count-2] = instruction1;
                         DeleteInstruction(currentStream.Count-1);
                         modified = true;
@@ -1379,6 +1425,10 @@ unit TCGen
     {
         Append("PUSHI", isByte, literal);
     }
+    PushCastZero()
+    {
+        Append("PUSHZ", true, uint(0));
+    }
     PadUnder()
     {
         Append("PADUNDER");
@@ -1663,7 +1713,11 @@ unit TCGen
             }
             case "LOOPEXIT":
             {
-                content = "LOOPEXIT";
+                content = instruction.Name;
+            }
+            case "PUSHZ":
+            {
+                content = instruction.Name+width;
             }
             case "PUSHI":
             {
@@ -1788,6 +1842,7 @@ unit TCGen
                 content = instruction.Name+width+" 0x" + (instruction.Operand).ToHexString(instruction.IsByte ? 2 : 4);
             }
             case "IEQZIF":
+            case "INEZIF":
             {
                 content = instruction.Name+width+" 0x" + (0).ToHexString(instruction.IsByte ? 2 : 4);
             }
@@ -1804,6 +1859,11 @@ unit TCGen
             case "GLADDPUSHM":
             {
                 content = instruction.Name + width + " [" + GlobalOperand(instruction.Offset) + "] [BP+" + OffsetToHex(instruction.Offset2) + "]";
+            }
+            
+            case "IGADDPUSHM":
+            {
+                content = instruction.Name + width + " # 0x" + (instruction.Operand).ToHexString(instruction.IsByte ? 2 : 4) + " [" + GlobalOperand(instruction.Offset) + "]";
             }
             
             case "ILADDPUSHM":
@@ -1945,6 +2005,12 @@ unit TCGen
         generateDelegate = generatePUSHIB;
         generators["PUSHIB"] = generateDelegate;
         
+        generateDelegate = generatePUSHZ;
+        generators["PUSHZ"] = generateDelegate;
+        generateDelegate = generatePUSHZB;
+        generators["PUSHZB"] = generateDelegate;
+        
+        
         generateDelegate = generateINE;
         generators["INE"] = generateDelegate;
         generateDelegate = generateINEB;
@@ -1957,10 +2023,16 @@ unit TCGen
         generators["INEX"] = generateDelegate;
         generateDelegate = generateINEXB;
         generators["INEXB"] = generateDelegate;
+        
         generateDelegate = generateIEQZIF;
         generators["IEQZIF"] = generateDelegate;
         generateDelegate = generateIEQZIFB;
         generators["IEQZIFB"] = generateDelegate;
+        
+        generateDelegate = generateINEZIF;
+        generators["INEZIF"] = generateDelegate;
+        generateDelegate = generateINEZIFB;
+        generators["INEZIFB"] = generateDelegate;
         
         generateDelegate = generateSP;
         generators["SP"] = generateDelegate;
@@ -2222,6 +2294,9 @@ unit TCGen
         generateDelegate = generateILADDPUSHM;
         generators["ILADDPUSHM"] = generateDelegate;
         
+        generateDelegate = generateIGADDPUSHM;
+        generators["IGADDPUSHM"] = generateDelegate;
+        
         
         generateDelegate = generateLADDPUSHM;
         generators["LADDPUSHM"] = generateDelegate;
@@ -2350,7 +2425,7 @@ unit TCGen
         uint rows = 0;
         loop
         {
-            if (max <= 3)   { break; }
+            if (max <= 2)   { break; }
             if (rows >= 20) { break; }
             bool first = true;
             foreach (var pr in pairs)
@@ -2402,10 +2477,10 @@ unit TCGen
                     {
                         // ignore
                     }
-                    //else if (previous.IsByte != instruction.IsByte)
-                    //{
-                    //    // ignore
-                    //}
+                    else if (pr.StartsWith("PUSH") && pr.Contains("+PUSH"))
+                    {
+                        // ignore PUSH+PUSH (of any kind)
+                    }
                     else if (!pairs.Contains(pr))
                     {
                         pairs[pr] = 1;
@@ -3457,6 +3532,34 @@ unit TCGen
         TCCode.PadOut("LDA [ZP.TOP]", 0);
         TCCode.PadOut("PHA", 0);
     }
+    generateIGADDPUSHM(Instruction instruction)
+    {
+        if (instruction.IsByte)
+        {
+            Die(0x0A);
+        }
+        int goffset = instruction.Offset;
+        if (instruction.Operand == 0)
+        {
+            TCCode.PadOut("LDA " + GlobalOperand(goffset), 0);
+            TCCode.PadOut("STA ZP.TOPL", 0);
+            TCCode.PadOut("LDA " + GlobalOperand(goffset+1), 0);
+            TCCode.PadOut("STA ZP.TOPH", 0);
+        }
+        else
+        {
+            TCCode.PadOut("CLC", 0);
+            TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0);
+            TCCode.PadOut("ADC " + GlobalOperand(goffset), 0);
+            TCCode.PadOut("STA ZP.TOPL", 0);
+            
+            TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0);
+            TCCode.PadOut("ADC " + GlobalOperand(goffset+1), 0);
+            TCCode.PadOut("STA ZP.TOPH", 0);
+        }
+        TCCode.PadOut("LDA [ZP.TOP]", 0);
+        TCCode.PadOut("PHA", 0);
+    }
     
     generateLGADDIPOPM(Instruction instruction)
     {
@@ -3719,6 +3822,14 @@ unit TCGen
     generatePUSHI(Instruction instruction)
     { 
         TCCode.PushWord(instruction.Operand);
+    }
+    generatePUSHZB(Instruction instruction)
+    { 
+        TCCode.PushByte(0);
+    }
+    generatePUSHZ(Instruction instruction)
+    { 
+        TCCode.PushWord(0);
     }
     /*
     generatePUSHGI(Instruction instruction)
@@ -4081,6 +4192,16 @@ unit TCGen
             TCCode.PadOut("{ // if", 0);
         }
     }
+    generateINEZIFB(Instruction instruction)       
+    { 
+        TCCode.PadOut("// != 0 (8 bit) ?", 0);
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("if (NZ)", 0);
+        if (instruction.Operand != 0)
+        {
+            TCCode.PadOut("{ // if", 0);
+        }
+    }
     generateIEQZIF(Instruction instruction)
     { 
         TCCode.PadOut("// == 0 (16 bit) ?", 0);
@@ -4091,6 +4212,21 @@ unit TCGen
         TCCode.PadOut("TYA", 1);
         TCCode.PadOut("}", 0);
         TCCode.PadOut("if (Z)", 0);
+        if (instruction.Operand != 0)
+        {
+            TCCode.PadOut("{ // if", 0);
+        }
+    }
+    generateINEZIF(Instruction instruction)       
+    { 
+        TCCode.PadOut("// != 0 (16 bit) ?", 0);
+        TCCode.PadOut("PLY", 0);
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("if (Z)", 0);
+        TCCode.PadOut("{", 0);
+        TCCode.PadOut("TYA", 1);
+        TCCode.PadOut("}", 0);
+        TCCode.PadOut("if (NZ)", 0);
         if (instruction.Operand != 0)
         {
             TCCode.PadOut("{ // if", 0);

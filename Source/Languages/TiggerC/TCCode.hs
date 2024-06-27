@@ -303,7 +303,7 @@ unit TCCode
             else
             {
                 TCGen.Comment("cast MSB");
-                TCGen.PushImmediate(true, 0);
+                TCGen.PushCastZero();
             }
         }
         else
