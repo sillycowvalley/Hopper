@@ -515,6 +515,7 @@ func int fclose(byte[] fileHandle) {
     }
     return -1; // Invalid handle
 }
+
 func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle) {
     byte[PageSize] fileBlock;
     byte[PageSize] chainBlock;
@@ -522,8 +523,25 @@ func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle) 
     word bytesToWrite = size * count;
     word bytesWritten = 0;
     word position = (fileHandle[1] << 8) | fileHandle[2];
-    byte currentBlock = fileHandle[0];
+    byte directoryBlock = fileHandle[0];
+    byte descriptorIndex = fileHandle[1];
+    byte currentBlock;
+    
     _readBlock(ChainBlock, chainBlock);
+    _readBlock(directoryBlock, dirBlock);
+    
+    // Fetch the correct starting block for the file data
+    currentBlock = dirBlock[descriptorIndex * DescriptorSize + StartBlockOffset];
+    if (currentBlock == 1) {
+        // Allocate a new block if the file is empty
+        currentBlock = _findFreePage(chainBlock);
+        if (currentBlock == 0) {
+            return 0; // Disk full, return 0 elements written
+        }
+        dirBlock[descriptorIndex * DescriptorSize + StartBlockOffset] = currentBlock;
+        _writeBlock(directoryBlock, dirBlock);
+    }
+    
     while (bytesToWrite > 0) {
         word offset = position % PageSize;
         word toWrite = (bytesToWrite < (PageSize - offset)) ? bytesToWrite : (PageSize - offset);
@@ -552,15 +570,15 @@ func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle) 
     fileHandle[1] = ((position >> 8) & 0xFF) as byte;
     fileHandle[2] = (position & 0xFF) as byte;
     // Update the file size in the directory entry
-    _readBlock(fileHandle[0], dirBlock);
-    word fileSize = (dirBlock[fileHandle[1] * DescriptorSize + FileSizeOffset] << 8) |
-                    dirBlock[fileHandle[1] * DescriptorSize + FileSizeOffset + 1];
+    word fileSize = (dirBlock[descriptorIndex * DescriptorSize + FileSizeOffset] << 8) |
+                    dirBlock[descriptorIndex * DescriptorSize + FileSizeOffset + 1];
     fileSize += bytesWritten;
-    dirBlock[fileHandle[1] * DescriptorSize + FileSizeOffset] = ((fileSize >> 8) & 0xFF) as byte;
-    dirBlock[fileHandle[1] * DescriptorSize + FileSizeOffset + 1] = (fileSize & 0xFF) as byte;
-    _writeBlock(fileHandle[0], dirBlock);
+    dirBlock[descriptorIndex * DescriptorSize + FileSizeOffset] = ((fileSize >> 8) & 0xFF) as byte;
+    dirBlock[descriptorIndex * DescriptorSize + FileSizeOffset + 1] = (fileSize & 0xFF) as byte;
+    _writeBlock(directoryBlock, dirBlock);
     return bytesWritten / size;
 }
+   
 func word fread(byte[] buffer, word size, word count, byte[] fileHandle) {
     byte[PageSize] fileBlock;
     byte[PageSize] chainBlock;

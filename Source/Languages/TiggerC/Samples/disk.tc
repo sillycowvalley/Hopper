@@ -114,6 +114,35 @@ func testWriteReadFile(const char[] filename, const byte[] writeData, word write
     writeChar('\n');
 }
 
+func dumpFileContents(byte startBlock, word fileSize, byte indent) {
+    byte[PageSize] buffer;
+    byte[PageSize] chainBuffer;
+    byte currentBlock = startBlock;
+    word remainingBytes = fileSize;
+    word bytesToRead;
+    word i;
+
+    _readBlock(ChainBlock, chainBuffer);
+    while (true) {
+        _readBlock(currentBlock, buffer);
+        bytesToRead = (remainingBytes < PageSize) ? remainingBytes : PageSize;
+        writeSpaces(indent);
+        writeString("  Data Block ");
+        writeHex(currentBlock);
+        writeString(": ");
+        for (i = 0; i < bytesToRead; i++) {
+            writeHex(buffer[i]);
+            writeChar(' ');
+        }
+        writeChar('\n');
+        remainingBytes -= bytesToRead;
+        if (remainingBytes == 0 || chainBuffer[currentBlock] == 1) {
+            break;
+        }
+        currentBlock = chainBuffer[currentBlock];
+    }
+}
+
 func dumpDirectoryStructured(byte startBlock, byte indent) {
     byte[PageSize] buffer;
     byte[PageSize] chainBuffer;
@@ -125,12 +154,11 @@ func dumpDirectoryStructured(byte startBlock, byte indent) {
     word entrySize;
     byte fileBlock;
     byte currentBlock = startBlock;
-    
+
     // Read the chain list
     _readBlock(ChainBlock, chainBuffer);
     // Iterate through the directory blocks
     while (true) {
-        
         _readBlock(currentBlock, buffer);
         writeSpaces(indent);
         writeString("Block ");
@@ -159,22 +187,30 @@ func dumpDirectoryStructured(byte startBlock, byte indent) {
                 writeString(" bytes, block=");
                 writeWord(fileBlock);
                 writeChar('\n');
-                if ((entryType == FileTypeDirectory) && (fileBlock != 1))
+                if (entryType == FileTypeFile) {
+                    dumpFileContents(fileBlock, entrySize, indent + 2);
+                } 
+                else
                 {
-                    dumpDirectoryStructured(fileBlock, indent+4);
+                    if ((entryType == FileTypeDirectory) && (fileBlock != 1)) {
+                        dumpDirectoryStructured(fileBlock, indent + 4);
+                    }
                 }
             } else {
                 //writeString("  Empty Slot\n");
             }
         }
         currentBlock = chainBuffer[currentBlock];
-        if (currentBlock == 1) { break; }
+        if (currentBlock == 1) {
+            break;
+        }
     }
 }
 
 func main() {
     byte[256] writeData1;
     byte[256] writeData2;
+    byte[] fh;
     word i;
     
     writeString("\nScanning:\n");
@@ -200,10 +236,19 @@ func main() {
     }
     
     writeString("Data Created.\n");
-
+    /*
     // Test fwrite and fread with two small files
     testWriteReadFile("/file1", writeData1, 256);
     testWriteReadFile("/file2", writeData2, 256);
+    */
+    fh = fopen("/file1", "w");
+    
+    for (i = 1; i < 10; i++)
+    {
+        fwrite(writeData1, 1, 100, fh);
+        dumpDirectoryStructured(RootDirStartBlock, 0);
+    }
+    fclose(fh);
     
     dumpDirectoryStructured(RootDirStartBlock, 0);
     
