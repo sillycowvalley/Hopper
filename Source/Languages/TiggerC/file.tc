@@ -515,69 +515,6 @@ func int fclose(byte[] fileHandle) {
     }
     return -1; // Invalid handle
 }
-
-func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle) {
-    byte[PageSize] fileBlock;
-    byte[PageSize] chainBlock;
-    byte[PageSize] dirBlock;
-    word bytesToWrite = size * count;
-    word bytesWritten = 0;
-    word position = (fileHandle[1] << 8) | fileHandle[2];
-    byte directoryBlock = fileHandle[0];
-    byte descriptorIndex = fileHandle[1];
-    byte currentBlock;
-    
-    _readBlock(ChainBlock, chainBlock);
-    _readBlock(directoryBlock, dirBlock);
-    
-    // Fetch the correct starting block for the file data
-    currentBlock = dirBlock[descriptorIndex * DescriptorSize + StartBlockOffset];
-    if (currentBlock == 1) {
-        // Allocate a new block if the file is empty
-        currentBlock = _findFreePage(chainBlock);
-        if (currentBlock == 0) {
-            return 0; // Disk full, return 0 elements written
-        }
-        dirBlock[descriptorIndex * DescriptorSize + StartBlockOffset] = currentBlock;
-        _writeBlock(directoryBlock, dirBlock);
-    }
-    
-    while (bytesToWrite > 0) {
-        word offset = position % PageSize;
-        word toWrite = (bytesToWrite < (PageSize - offset)) ? bytesToWrite : (PageSize - offset);
-        _readBlock(currentBlock, fileBlock);
-        memcpy(fileBlock + offset, buffer + bytesWritten, toWrite);
-        _writeBlock(currentBlock, fileBlock);
-        position += toWrite;
-        bytesWritten += toWrite;
-        bytesToWrite -= toWrite;
-        if (bytesToWrite > 0) {
-            if (chainBlock[currentBlock] == 1) {
-                // Allocate a new block
-                byte newBlock = _findFreePage(chainBlock);
-                if (newBlock == 0) {
-                    return bytesWritten / size; // Disk full, return number of elements written
-                }
-                chainBlock[currentBlock] = newBlock;
-                chainBlock[newBlock] = 1; // Mark as end of chain
-                _writeBlock(ChainBlock, chainBlock);
-                currentBlock = newBlock;
-            } else {
-                currentBlock = chainBlock[currentBlock];
-            }
-        }
-    }
-    fileHandle[1] = ((position >> 8) & 0xFF) as byte;
-    fileHandle[2] = (position & 0xFF) as byte;
-    // Update the file size in the directory entry
-    word fileSize = (dirBlock[descriptorIndex * DescriptorSize + FileSizeOffset] << 8) |
-                    dirBlock[descriptorIndex * DescriptorSize + FileSizeOffset + 1];
-    fileSize += bytesWritten;
-    dirBlock[descriptorIndex * DescriptorSize + FileSizeOffset] = ((fileSize >> 8) & 0xFF) as byte;
-    dirBlock[descriptorIndex * DescriptorSize + FileSizeOffset + 1] = (fileSize & 0xFF) as byte;
-    _writeBlock(directoryBlock, dirBlock);
-    return bytesWritten / size;
-}
    
 func word fread(byte[] buffer, word size, word count, byte[] fileHandle) {
     byte[PageSize] fileBlock;
@@ -909,5 +846,69 @@ func int rmdir(const char[] dirname) {
         break; // Exit the main for loop
     }
     return result; // Return the result
+}
+
+
+func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle) {
+    byte[PageSize] fileBlock;
+    byte[PageSize] chainBlock;
+    byte[PageSize] dirBlock;
+    word bytesToWrite = size * count;
+    word bytesWritten = 0;
+    word position = (fileHandle[2] << 8) | fileHandle[3];
+    byte currentBlock = fileHandle[0];
+    byte startBlock = currentBlock;  // Save the start block to update the directory entry
+    _readBlock(ChainBlock, chainBlock);
+
+    while (bytesToWrite > 0) {
+        word offset = position % PageSize;
+        word toWrite = (bytesToWrite < (PageSize - offset)) ? bytesToWrite : (PageSize - offset);
+        _readBlock(currentBlock, fileBlock);
+        
+        // Debug prints
+        writeString("Writing ");
+        writeWord(toWrite);
+        writeString(" bytes to block ");
+        writeHex(currentBlock);
+        writeString(" at offset ");
+        writeWord(offset);
+        writeChar('\n');
+
+        memcpy(fileBlock + offset, buffer + bytesWritten, toWrite);
+        _writeBlock(currentBlock, fileBlock);
+        position += toWrite;
+        bytesWritten += toWrite;
+        bytesToWrite -= toWrite;
+        if (bytesToWrite > 0) {
+            if (chainBlock[currentBlock] == 1) {
+                // Allocate a new block
+                byte newBlock = _findFreePage(chainBlock);
+                if (newBlock == 0) {
+                    return bytesWritten / size; // Disk full, return number of elements written
+                }
+                chainBlock[currentBlock] = newBlock;
+                chainBlock[newBlock] = 1; // Mark as end of chain
+                _writeBlock(ChainBlock, chainBlock);
+                currentBlock = newBlock;
+            } else {
+                currentBlock = chainBlock[currentBlock];
+            }
+        }
+    }
+
+    fileHandle[2] = ((position >> 8) & 0xFF) as byte;
+    fileHandle[3] = (position & 0xFF) as byte;
+
+    // Update the file size in the directory entry
+    byte dirBlockIndex = fileHandle[1];
+    _readBlock(startBlock, dirBlock);
+    word fileSize = (dirBlock[dirBlockIndex * DescriptorSize + FileSizeOffset] << 8) |
+                    dirBlock[dirBlockIndex * DescriptorSize + FileSizeOffset + 1];
+    fileSize = position; // Update file size to the new position
+    dirBlock[dirBlockIndex * DescriptorSize + FileSizeOffset] = ((fileSize >> 8) & 0xFF) as byte;
+    dirBlock[dirBlockIndex * DescriptorSize + FileSizeOffset + 1] = (fileSize & 0xFF) as byte;
+    _writeBlock(startBlock, dirBlock);
+
+    return bytesWritten / size;
 }
 
