@@ -261,6 +261,9 @@ func main() {
     dumpDirectoryStructured(RootDirStartBlock, 0);
     
     fh = fopen("/file1", "r");
+    fseek(fh, 300, SEEK_SET);
+    writeString("\ntell=");
+    writeWord(ftell(fh));
     while (true)
     {
         word bytes = fread(readData, 1, 50, fh);

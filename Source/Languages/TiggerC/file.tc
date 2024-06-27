@@ -37,6 +37,11 @@ Directory Entry Structure (byte array):
    [1-12] - Entry name (up to 12 bytes, null-terminated if shorter)
    Total: 13 bytes
 */
+
+const byte SEEK_SET = 0;
+const byte SEEK_CUR = 1;
+const byte SEEK_END = 2;
+
 const word PageSize   = 256;
 const word TotalPages = 256;
 const byte ChainBlock = 0;
@@ -287,21 +292,7 @@ func int format() {
     writePage(RootDirStartBlock * PageSize, rootDir);
     return 0; // Success
 }
-// Sets the file position indicator for the file.
-// fileHandle: The handle of the file.
-// offset: Number of bytes to offset from whence.
-// whence: Position from where offset is applied (0: beginning, 1: current position, 2: end of file).
-// Returns 0 on success, or -1 on error.
-func int fseek(byte[] fileHandle, int offset, byte whence);
-// Returns the current file position indicator for the file.
-// fileHandle: The handle of the file.
-// Returns the current file position as a word, or 0 on error.
-func word ftell(byte[] fileHandle);
-// Renames a file or directory.
-// oldname: Current name of the file or directory.
-// newname: New name of the file or directory.
-// Returns 0 on success, or -1 on error.
-func int rename(const char[] oldname, const char[] newname);
+
 func byte[] readdir(byte[] dirHandle) {
     if (dirHandle[1] == PageSize - DescriptorSize) {
         // Previous entry was the last one in that page
@@ -905,44 +896,6 @@ func int remove(const char[] filename) {
     return result; // Return the result
 }
 
-/*
-func word fread(byte[] buffer, word size, word count, byte[] fileHandle) {
-    byte[PageSize] fileBlock;
-    byte[PageSize] chainBlock;
-    byte currentBlock = fileHandle[0];
-    word position = ((fileHandle[1] as word) << 8) | fileHandle[2];
-    word bytesToRead = size * count;
-    word bytesRead = 0;
-    
-    _readBlock(ChainBlock, chainBlock);
-    
-    while (bytesToRead > 0) {
-        word offset = position % PageSize;
-        word toRead = (bytesToRead < (PageSize - offset)) ? bytesToRead : (PageSize - offset);
-        
-        _readBlock(currentBlock, fileBlock);
-        memcpy(buffer + bytesRead, fileBlock + offset, toRead);
-        
-        bytesToRead -= toRead;
-        bytesRead += toRead;
-        position += toRead;
-        
-        if (position % PageSize == 0) {
-            if (chainBlock[currentBlock] == 1) {
-                break; // End of file
-            } else {
-                currentBlock = chainBlock[currentBlock];
-            }
-        }
-    }
-    
-    fileHandle[0] = currentBlock;
-    fileHandle[1] = ((position >> 8) & 0xFF) as byte;
-    fileHandle[2] = (position & 0xFF) as byte;
-    return bytesRead / size;
-}
-*/
-
 func word fread(byte[] buffer, word size, word count, byte[] fileHandle) {
     byte[PageSize] fileBlock;
     byte[PageSize] chainBlock;
@@ -955,14 +908,22 @@ func word fread(byte[] buffer, word size, word count, byte[] fileHandle) {
     word offset = position;
     byte dirBlockNumber = fileHandle[0]; // Directory block number
     byte dirIndex = fileHandle[1]; // Directory entry index
+    word fileSize;
 
     _readBlock(ChainBlock, chainBlock);
     _readBlock(dirBlockNumber, dirBlock);
     currentBlock = dirBlock[dirIndex * DescriptorSize + StartBlockOffset];
+    fileSize = ((dirBlock[dirIndex * DescriptorSize + FileSizeOffset] as word) << 8) |
+               dirBlock[dirIndex * DescriptorSize + FileSizeOffset + 1];
 
     // Handle empty file scenario
-    if (currentBlock == 1) {
+    if (currentBlock == 1 || position >= fileSize) {
         return 0; // Nothing to read
+    }
+
+    // Adjust bytesToRead if it exceeds the remaining file size
+    if (bytesToRead > (fileSize - position)) {
+        bytesToRead = fileSize - position;
     }
 
     // Walk the current file data block chain until you get to the block that contains the current position
@@ -1000,4 +961,65 @@ func word fread(byte[] buffer, word size, word count, byte[] fileHandle) {
 
     return bytesRead / size;
 }
+
+// Sets the file position indicator for the file.
+// fileHandle: The handle of the file.
+// offset: Number of bytes to offset from whence.
+// whence: Position from where offset is applied (0: beginning, 1: current position, 2: end of file).
+// Returns 0 on success, or -1 on error.
+func int fseek(byte[] fileHandle, int offset, byte whence) {
+    byte[PageSize] dirBlock;
+    byte dirBlockNumber = fileHandle[0];
+    byte dirIndex = fileHandle[1];
+    word newPosition;
+    word fileSize;
+    int  intPosition;
+
+    // Read the directory block to get the file size
+    _readBlock(dirBlockNumber, dirBlock);
+    fileSize = ((dirBlock[dirIndex * DescriptorSize + FileSizeOffset] as word) << 8) | dirBlock[dirIndex * DescriptorSize + FileSizeOffset + 1];
+
+    
+    switch (whence) {
+        case 0: // SEEK_SET
+        {
+            intPosition = offset;
+        }
+        case 1: // SEEK_CUR
+        {
+            intPosition = (((fileHandle[2] as word) << 8) | fileHandle[3]) as int;
+            intPosition += offset;
+        }
+        case 2: // SEEK_END
+        {
+            intPosition = ((fileSize as int) + offset);
+        }
+        default:
+        {
+            return -1; // Invalid whence
+        }
+    }
+    newPosition = intPosition as word;
+
+    // Check for out-of-bounds
+    if (newPosition > fileSize || newPosition < 0) {
+        return -1; // Out of bounds
+    }
+
+    // Update the position in the file handle
+    fileHandle[2] = ((newPosition >> 8) & 0xFF) as byte;
+    fileHandle[3] = (newPosition & 0xFF) as byte;
+
+    return 0; // Success
+}
+
+// Returns the current file position indicator for the file.
+// fileHandle: The handle of the file.
+// Returns the current file position as a word, or 0 on error.
+func word ftell(byte[] fileHandle) {
+    // Extract the current position from the file handle
+    word position = ((fileHandle[2] as word) << 8) | fileHandle[3];
+    return position;
+}
+
 

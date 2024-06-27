@@ -947,20 +947,6 @@ func int remove(const char[] filename);
 
 **Return Value**: 0 on success, or -1 on error.
 
-#### rename
-
-**Description**: Renames a file or directory.
-
-**Prototype**:
-```c
-func int rename(const char[] oldname, const char[] newname);
-```
-
-**Arguments**:
-- `oldname`: Current name of the file or directory.
-- `newname`: New name of the file or directory.
-
-**Return Value**: 0 on success, or -1 on error.
 
 #### mkdir
 
