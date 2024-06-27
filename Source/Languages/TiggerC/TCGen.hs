@@ -189,7 +189,7 @@ unit TCGen
             {
                 if ((instruction1.Name == "IEQ") && (instruction1.Operand == 0))
                 {
-                    Print(" IEQZIF");
+                    //Print(" IEQZIF");
                     instruction0.Name    = "IEQZIF";
                     instruction0.IsByte  = instruction1.IsByte;
                     currentStream[currentStream.Count-1] = instruction0;
@@ -2350,7 +2350,7 @@ unit TCGen
         uint rows = 0;
         loop
         {
-            if (max <= 1)   { break; }
+            if (max <= 3)   { break; }
             if (rows >= 20) { break; }
             bool first = true;
             foreach (var pr in pairs)
@@ -3776,10 +3776,10 @@ unit TCGen
     {
         TCCode.PadOut("", 0);
         TCCode.PadOut("PLA // bool", 0); // bool so one byte
-        TCCode.PadOut("if (NZ) // if", 0);
+        TCCode.PadOut("if (NZ)", 0);
         if (instruction.Operand != 0)
         {
-            TCCode.PadOut("{", 0);
+            TCCode.PadOut("{ // if", 0);
         }
     }
     generateDECSP(Instruction instruction)    { TCCode.PopBytes((instruction.Operand).GetByte(0), ""); }
@@ -4073,47 +4073,27 @@ unit TCGen
     }
     generateIEQZIFB(Instruction instruction)
     { 
-        TCCode.PadOut("// == (8 bit)", 0);
-        TCCode.PadOut("// arguments in NEXT and TOP", 0);
-        TCCode.PadOut("LDX # 0 // NEXT != TOP", 0);
-        TCCode.PadOut("PLA", 0); // NEXTL
+        TCCode.PadOut("// == 0 (8 bit) ?", 0);
+        TCCode.PadOut("PLA", 0);
         TCCode.PadOut("if (Z)", 0);
-        TCCode.PadOut("{", 0);
-        TCCode.PadOut("LDX # 1 // NEXT == TOP", 1);
-        TCCode.PadOut("}", 0);
-        TCCode.PadOut("// result in X", 0);
-        TCCode.PadOut("PHX", 0);
-        TCCode.PadOut("", 0);
-        TCCode.PadOut("PLA // bool", 0); // bool so one byte
-        TCCode.PadOut("if (NZ) // if", 0);
         if (instruction.Operand != 0)
         {
-            TCCode.PadOut("{", 0);
+            TCCode.PadOut("{ // if", 0);
         }
     }
     generateIEQZIF(Instruction instruction)
     { 
-        TCCode.PadOut("// == (16 bit)", 0);
-        TCCode.PadOut("PLY", 0); // NEXTH
-        TCCode.PadOut("// arguments in NEXT and TOP", 0);
-        TCCode.PadOut("LDX # 0 // NEXT != TOP", 0);
-        TCCode.PadOut("PLA", 0); // NEXTL
+        TCCode.PadOut("// == 0 (16 bit) ?", 0);
+        TCCode.PadOut("PLY", 0);
+        TCCode.PadOut("PLA", 0);
         TCCode.PadOut("if (Z)", 0);
         TCCode.PadOut("{", 0);
-        TCCode.PadOut("TYA", 1); // NEXTH
-        TCCode.PadOut("if (Z)", 1);
-        TCCode.PadOut("{", 1);
-        TCCode.PadOut("LDX # 1 // NEXT == TOP", 2);
-        TCCode.PadOut("}", 1);
+        TCCode.PadOut("TYA", 1);
         TCCode.PadOut("}", 0);
-        TCCode.PadOut("// result in X", 0);
-        TCCode.PadOut("PHX", 0); 
-        TCCode.PadOut("", 0);
-        TCCode.PadOut("PLA // bool", 0); // bool so one byte
-        TCCode.PadOut("if (NZ) // if", 0);
+        TCCode.PadOut("if (Z)", 0);
         if (instruction.Operand != 0)
         {
-            TCCode.PadOut("{", 0);
+            TCCode.PadOut("{ // if", 0);
         }
     }
     
