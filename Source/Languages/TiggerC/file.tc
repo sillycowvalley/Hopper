@@ -520,7 +520,7 @@ func word fread(byte[] buffer, word size, word count, byte[] fileHandle) {
     byte[PageSize] fileBlock;
     byte[PageSize] chainBlock;
     byte currentBlock = fileHandle[0];
-    word position = (fileHandle[1] << 8) | fileHandle[2];
+    word position = ((fileHandle[1] as word) << 8) | fileHandle[2];
     word bytesToRead = size * count;
     word bytesRead = 0;
     
@@ -619,7 +619,7 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                         _writeBlock(ChainBlock, chainBlock);
                     }
                     fileHandle = malloc(4);
-                    fileHandle[0] = dirBlock[i + StartBlockOffset]; // Directory block number
+                    fileHandle[0] = parentDirHandle[0]; // Directory block number
                     fileHandle[1] = (i / DescriptorSize) as byte; // File descriptor index
                     //fileHandle[2] = 0; // Current position LSB in file (Tigger C : automatic zero initialization)
                     //fileHandle[3] = 0; // Current position MSB in file (Tigger C : automatic zero initialization)
@@ -646,8 +646,8 @@ func byte[] fopen(const char[] filename, const char[] mode) {
             memset(descriptor, 0, DescriptorSize);
             strcpy((descriptor + FilenameOffset) as char[], fileName);
             descriptor[FileTypeOffset] = (FileTypeFile | (strlen((descriptor + FilenameOffset) as char[]) & 0x0F)) as byte;
-            descriptor[StartBlockOffset] = 1; // end of chain
-            descriptor[FileSizeOffset] = 0;   // Empty file LSB
+            descriptor[StartBlockOffset]   = 1; // end of chain
+            descriptor[FileSizeOffset]     = 0; // Empty file LSB
             descriptor[FileSizeOffset + 1] = 0; // Empty file MSB
             // Read the parent directory block to find an empty slot
             parentDirHandle = opendir(parentDir);
@@ -660,19 +660,11 @@ func byte[] fopen(const char[] filename, const char[] mode) {
             while (true) {
                 for (i = 0; i < PageSize; i += DescriptorSize) {
                     if (dirBlock[i + FilenameOffset] == 0) {
-                        // Allocate a new block for the file data
-                        byte newFileBlock = _findFreePage(chainBlock);
-                        if (newFileBlock == 0) {
-                            break; // Disk full (no available pages)
-                        }
-                        chainBlock[newFileBlock] = 1; // Mark as end of chain
-                        _writeBlock(ChainBlock, chainBlock);
-                        descriptor[StartBlockOffset] = newFileBlock; // Set the start block to the new file block
                         memcpy(dirBlock + i, descriptor, DescriptorSize);
                         _writeBlock(currentBlock, dirBlock);
                         fileHandle = malloc(4);
-                        fileHandle[0] = newFileBlock; // File data block number
-                        fileHandle[1] = (i / DescriptorSize) as byte; // File descriptor index
+                        fileHandle[0]   = currentBlock; // Directory block number
+                        fileHandle[1]   = (i / DescriptorSize) as byte; // File descriptor index
                         //fileHandle[2] = 0; // Current position LSB in file (Tigger C : automatic zero initialization)
                         //fileHandle[3] = 0; // Current position MSB in file (Tigger C : automatic zero initialization)
                         break; // Success
@@ -863,13 +855,20 @@ func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle) 
     byte[PageSize] chainBlock;
     byte[PageSize] dirBlock;
     word bytesToWrite = size * count;
-    word bytesWritten = 0;
-    word position = (fileHandle[2] << 8) | fileHandle[3];
-    byte currentBlock = fileHandle[0];
-    byte startBlock = fileHandle[1]; // Directory block number
-    byte dirIndex = fileHandle[1]; // Directory entry index
-    _readBlock(ChainBlock, chainBlock);
-
+    word bytesWritten;
+    word toWrite;
+    word position = ((fileHandle[2] as word) << 8) | fileHandle[3];
+    byte currentBlock;
+    byte dirBlockNumber = fileHandle[0]; // Directory block number
+    byte dirIndex       = fileHandle[1]; // Directory entry index
+    _readBlock(ChainBlock,    chainBlock);
+    _readBlock(dirBlockNumber, dirBlock);
+    currentBlock = dirBlock[dirIndex * DescriptorSize + StartBlockOffset];
+    writeString("\nfirstBlock=");
+    writeHex(currentBlock);
+    writeString("\nposition before=");
+    writeWord(position);
+        
     // Handle new empty file scenario
     if (currentBlock == 1) {
         currentBlock = _findFreePage(chainBlock);
@@ -878,61 +877,31 @@ func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle) 
         }
         chainBlock[currentBlock] = 1; // Mark as end of chain
         _writeBlock(ChainBlock, chainBlock);
-
         // Update directory entry with new block number
-        _readBlock(startBlock, dirBlock);
         dirBlock[dirIndex * DescriptorSize + StartBlockOffset] = currentBlock;
-        _writeBlock(startBlock, dirBlock);
     }
 
     while (bytesToWrite > 0) {
-        word offset = position % PageSize;
-        word toWrite = (bytesToWrite < (PageSize - offset)) ? bytesToWrite : (PageSize - offset);
-        _readBlock(currentBlock, fileBlock);
-
-        // Debug prints
-        writeString("Writing ");
-        writeWord(toWrite);
-        writeString(" bytes to block ");
-        writeWord(currentBlock);
-        writeString(" at offset ");
-        writeWord(offset);
-        writeChar('\n');
-
-        memcpy(fileBlock + offset, buffer + bytesWritten, toWrite);
-        _writeBlock(currentBlock, fileBlock);
-        position += toWrite;
+        toWrite = bytesToWrite;
+        if (bytesToWrite > 256)
+        {
+            toWrite = 256;
+        }
+        position     += toWrite;
         bytesWritten += toWrite;
         bytesToWrite -= toWrite;
-
-        if (bytesToWrite > 0) {
-            if (chainBlock[currentBlock] == 1) {
-                // Allocate a new block
-                byte newBlock = _findFreePage(chainBlock);
-                if (newBlock == 0) {
-                    return bytesWritten / size; // Disk full, return number of elements written
-                }
-                chainBlock[currentBlock] = newBlock;
-                chainBlock[newBlock] = 1; // Mark as end of chain
-                _writeBlock(ChainBlock, chainBlock);
-                currentBlock = newBlock;
-            } else {
-                currentBlock = chainBlock[currentBlock];
-            }
-        }
     }
+    writeString("\nposition after=");
+    writeWord(position);
 
+    // Update positon in file handle
     fileHandle[2] = ((position >> 8) & 0xFF) as byte;
     fileHandle[3] = (position & 0xFF) as byte;
 
-    // Update the file size in the directory entry
-    _readBlock(startBlock, dirBlock);
-    word fileSize = (dirBlock[dirIndex * DescriptorSize + FileSizeOffset] << 8) |
-                    dirBlock[dirIndex * DescriptorSize + FileSizeOffset + 1];
-    fileSize = position; // Update the file size to the current position
-    dirBlock[dirIndex * DescriptorSize + FileSizeOffset] = ((fileSize >> 8) & 0xFF) as byte;
-    dirBlock[dirIndex * DescriptorSize + FileSizeOffset + 1] = (fileSize & 0xFF) as byte;
-    _writeBlock(startBlock, dirBlock);
+    // Update the file size to the current position in directory entry
+    dirBlock[dirIndex * DescriptorSize + FileSizeOffset]     = ((position >> 8) & 0xFF) as byte;
+    dirBlock[dirIndex * DescriptorSize + FileSizeOffset + 1] = (position & 0xFF) as byte;
+    _writeBlock(dirBlockNumber, dirBlock);
 
     return bytesWritten / size;
 }
