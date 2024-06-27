@@ -165,11 +165,13 @@ func _compactDirectory(byte currentBlock) {
     byte parentPrevBlock = 0;
     word i;
     word j;
+    bool blockMoved;
     
     writeChar('<');
     
     _readBlock(ChainBlock, chainBlock);
     while (true) {
+        blockMoved = false;
         _readBlock(currentBlock, dirBlock);
         for (i = 0; i < PageSize; i += DescriptorSize) {
             if (dirBlock[i + FilenameOffset] == 0) { // Find empty slot
@@ -184,6 +186,7 @@ func _compactDirectory(byte currentBlock) {
                             memset(nextDirBlock + j, 0, DescriptorSize);
                             _writeBlock(currentBlock, dirBlock);
                             _writeBlock(parentNextBlock, nextDirBlock);
+                            blockMoved = true;
                             break;
                         }
                     }
@@ -195,12 +198,30 @@ func _compactDirectory(byte currentBlock) {
                 }
             }
         }
+        if (!blockMoved) {
+            // Check if the current block is completely empty
+            bool isEmpty = true;
+            for (i = 0; i < PageSize; i += DescriptorSize) {
+                if (dirBlock[i + FilenameOffset] != 0) {
+                    isEmpty = false;
+                    break;
+                }
+            }
+            if (isEmpty && chainBlock[currentBlock] != 1) {
+                // Remove the empty block from the chain
+                chainBlock[parentPrevBlock] = chainBlock[currentBlock];
+                chainBlock[currentBlock] = 0;
+                _writeBlock(ChainBlock, chainBlock);
+                break;
+            }
+        }
         parentPrevBlock = currentBlock;
         currentBlock = chainBlock[currentBlock];
         if (currentBlock == 1) { break; }
     }
     writeChar('>');
 }
+
 
 // Splits the full path into parent directory and file name.
 func _splitPath(const char[] fullPath, char[] parentDir, char[] fileName) {
@@ -756,6 +777,8 @@ func int remove(const char[] filename) {
                     }
                     _writeBlock(ChainBlock, chainBlock);
                     result = 0; // Success
+                    // Call to compact the directory
+                    _compactDirectory(dirHandle[0]);
                     break; // Exit the loop
                 }
             }
