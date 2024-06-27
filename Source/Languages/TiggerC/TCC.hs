@@ -143,6 +143,7 @@ program TCCompile
               
               if (IsExperimental)
               {
+                  TCGen.EmitTrips();
                   TCGen.EmitPairs();
               }
               

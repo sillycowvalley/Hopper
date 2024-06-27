@@ -275,6 +275,9 @@ func main() {
     }
     fclose(fh);
     
+    remove("/file1");
+    rmdir("/");
+    
     //dumpRootDirectory();
     //dumpChainLists();
     

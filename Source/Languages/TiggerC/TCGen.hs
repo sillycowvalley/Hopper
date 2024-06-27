@@ -455,13 +455,23 @@ unit TCGen
                     }  
                     if (instruction1.Name == "PUSHG")
                     {
-                        //Print(" GIADD");
-                        instruction1.Name    = "GIADD";
-                        instruction1.Operand = instruction0.Operand;
-                        currentStream[currentStream.Count-2] = instruction1;
-                        DeleteInstruction(currentStream.Count-1);
-                        modified = true;
-                        break;
+                        if (instruction0.Operand == 0)
+                        {
+                            //Print(" PUSHG2");
+                            DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
+                        else
+                        {
+                            //Print(" GIADD");
+                            instruction1.Name    = "GIADD";
+                            instruction1.Operand = instruction0.Operand;
+                            currentStream[currentStream.Count-2] = instruction1;
+                            DeleteInstruction(currentStream.Count-1);
+                            modified = true;
+                            break;
+                        }
                     } 
                 }
             }
@@ -972,14 +982,25 @@ unit TCGen
                     {
                         if ((instruction0.Name == "ADD"))
                         {
-                            //Print(" IGADD3");
-                            instruction2.Offset = instruction1.Offset;
-                            instruction2.Name = "IGADD";
-                            currentStream[currentStream.Count-3] = instruction2;
-                            DeleteInstruction(currentStream.Count-2);
-                            DeleteInstruction(currentStream.Count-1);
-                            modified = true;
-                            break;
+                            if (instruction2.Operand == 0)
+                            {
+                                //Print(" PUSHG1");
+                                DeleteInstruction(currentStream.Count-3);
+                                DeleteInstruction(currentStream.Count-1);
+                                modified = true;
+                                break;
+                            }
+                            else
+                            {
+                                //Print(" IGADD3");
+                                instruction2.Offset = instruction1.Offset;
+                                instruction2.Name = "IGADD";
+                                currentStream[currentStream.Count-3] = instruction2;
+                                DeleteInstruction(currentStream.Count-2);
+                                DeleteInstruction(currentStream.Count-1);
+                                modified = true;
+                                break;
+                            }
                         }
                         if ((instruction0.Name == "SUB"))
                         {
@@ -1397,7 +1418,7 @@ unit TCGen
         instruction.Operand = argumentBytesToPop;
         instruction.Offset  = (notVoid ? 1 : 0); // returnType != "void"
         Append(instruction);
-        
+        /*
         if (!capturingMode)
         {
             Generate(); // reset peephole
@@ -1406,6 +1427,7 @@ unit TCGen
         {
             enablePeephole = false; // no more peephole for the remainder of this stream
         }
+        */
     }
        
     PushVariable(int offset, bool isByte, bool isGlobal)
@@ -2425,6 +2447,7 @@ unit TCGen
     }
     
     <string,uint> pairs;
+    <string,uint> trips;
     
     EmitPairs()
     {
@@ -2451,6 +2474,58 @@ unit TCGen
                     if (first)
                     {
                         PrintLn();
+                        Print(count.ToString() + ": ", Colour.Ocean, Colour.Black);
+                        first = false;
+                        rows++;
+                    }
+                    else
+                    {
+                        Print(", ", Colour.Ocean, Colour.Black);
+                    }
+                    uint colour = Colour.Ocean;
+                    string data = pr.key;
+                    if (data.EndsWith("B"))
+                    {
+                        data = data.Substring(0, data.Length-1);
+                    }
+                    if (   data.EndsWith("ADD") || data.EndsWith("SUB")
+                        || data.EndsWith("MUL") || data.EndsWith("MULI") || data.EndsWith("DIV") || data.EndsWith("DIVI")
+                        || data.EndsWith("OR") || data.EndsWith("AND") || data.EndsWith("NOT") || data.EndsWith("XOR")
+                       )
+                    {
+                        colour = Colour.Red;
+                    }
+                    Print(data, colour, Colour.Black);
+                }
+            }
+            max--;
+        }
+    }
+    EmitTrips()
+    {
+        uint max = 0;
+        foreach (var pr in trips)
+        {
+            uint count = pr.value;
+            if (count > max)
+            {
+                max = count;
+            }
+        }
+        uint rows = 0;
+        loop
+        {
+            if (max <= 2)   { break; }
+            if (rows >= 20) { break; }
+            bool first = true;
+            foreach (var pr in trips)
+            {
+                uint count = pr.value;
+                if (count == max)
+                {
+                    if (first)
+                    {
+                        PrintLn();
                         Print(count.ToString() + ": ");
                         first = false;
                         rows++;
@@ -2459,7 +2534,20 @@ unit TCGen
                     {
                         Print(", ");
                     }
-                    Print(pr.key);
+                    uint colour = Colour.MatrixGreen;
+                    string data = pr.key;
+                    if (data.EndsWith("B"))
+                    {
+                        data = data.Substring(0, data.Length-1);
+                    }
+                    if (   data.EndsWith("ADD") || data.EndsWith("SUB")
+                        || data.EndsWith("MUL") || data.EndsWith("MULI") || data.EndsWith("DIV") || data.EndsWith("DIVI")
+                        || data.EndsWith("OR") || data.EndsWith("AND") || data.EndsWith("NOT") || data.EndsWith("XOR")
+                       )
+                    {
+                        colour = Colour.Red;
+                    }
+                    Print(pr.key, colour, Colour.Black);
                 }
             }
             max--;
@@ -2480,15 +2568,24 @@ unit TCGen
             PadOut("", 0);
             PadOut("// ### " + content, 0);
             Instruction previous;
+            Instruction previousPrevious;
             foreach (var vi in currentStream)
             {
                 Instruction instruction = vi;
                 if ((previous.Name).Length != 0)
                 {
                     string pname = previous.Name + (previous.IsByte ? "B" : "");
+                    if (pname == "DECSP")
+                    {
+                        pname = pname + (previous.Operand).ToString();
+                    }
                     string cname = instruction.Name + (instruction.IsByte ? "B" : "");
+                    if (cname == "DECSP")
+                    {
+                        cname = cname + (instruction.Operand).ToString();
+                    }
                     string pr = pname + "+" + cname;
-                    if (pr.Contains("CALL+") || pr.Contains("+CALL")  || pr.Contains("+ELSE")  || pr.Contains("+ENDIF"))
+                    if (/*pr.Contains("CALL+") || pr.Contains("+CALL")  ||*/ pr.Contains("+ELSE")  || pr.Contains("+ENDIF"))
                     {
                         // ignore
                     }
@@ -2505,6 +2602,35 @@ unit TCGen
                         pairs[pr] = pairs[pr] + 1;
                     }
                 }
+                if ((previousPrevious.Name).Length != 0)
+                {
+                    string ppname = previousPrevious.Name + (previousPrevious.IsByte ? "B" : "");
+                    string pname  = previous.Name + (previous.IsByte ? "B" : "");
+                    if (pname == "DECSP")
+                    {
+                        pname = pname + (previous.Operand).ToString();
+                    }
+                    string cname  = instruction.Name + (instruction.IsByte ? "B" : "");
+                    if (cname == "DECSP")
+                    {
+                        cname = cname + (instruction.Operand).ToString();
+                    }
+                    string pr = ppname + "+" + pname + "+" + cname;
+                    //if (pr.Contains("CALL+") || pr.Contains("+CALL")  || pr.Contains("+ELSE")  || pr.Contains("+ENDIF"))
+                    //{
+                    //    // ignore
+                    //}
+                    //else 
+                    if (!trips.Contains(pr))
+                    {
+                        trips[pr] = 1;
+                    }
+                    else
+                    {
+                        trips[pr] = trips[pr] + 1;
+                    }
+                }
+                previousPrevious = previous;
                 previous = instruction;
             }
         }
