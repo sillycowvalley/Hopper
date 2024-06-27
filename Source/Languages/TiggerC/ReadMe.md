@@ -119,7 +119,7 @@ mem[42] = b;           // Store to memory
 
 ### Inline Assembly
 
-Tigger C supports inline assembly, allowing direct 6502 assembly instructions within your code. An underscore before a function name indicates a "naked" function, meaning it has no entry or exit code (beyond RTS).
+Tigger C supports inline assembly, allowing direct 6502 assembly instructions within your code. Two underscores before a function name indicates a "naked" function, meaning it has no entry or exit code (beyond RTS).
 This means no stack frame (local variables) and no arguments. Inline assembly can be inserted anywhere in any method.
 
 #### Sample Program: Inline 6502 Assembly
@@ -134,11 +134,11 @@ func Setup() {
     writeString("Initialized.");
 }
 
-func _LEDOn() {
+func __LEDOn() {
     asm("SMB0 0xF1 // PORTA");
 }
 
-func _LEDOff() {
+func __LEDOff() {
     asm("RMB0 0xF1 // PORTA");
 }
 
@@ -147,14 +147,14 @@ func main() {
     bool ledState;
 
     Setup();
-    _LEDOff();
+    __LEDOff();
 
     while (true) {
         if (ledState) {
-            _LEDOff();
+            __LEDOff();
             ledState = false;
         } else {
-            _LEDOn();
+            __LEDOn();
             ledState = true;
         }
         delay(1000); // Delay for 1 second
@@ -637,6 +637,37 @@ func int strcmp(const char[] str1, const char[] str2);
 func int strncmp(const char[] str1, const char[] str2, word n);
 ```
 
+#### `stricmp`
+
+**Description**: Compares two strings lexicographically in a case-insensitive manner.
+
+**Prototype**:
+```c
+func int stricmp(const char[] str1, const char[] str2);
+```
+
+**Arguments**:
+- `str1`: First string.
+- `str2`: Second string.
+
+**Return Value**: Integer indicating the result of the comparison.
+
+#### `strnicmp`
+
+**Description**: Compares up to `n` characters of two strings lexicographically in a case-insensitive manner.
+
+**Prototype**:
+```c
+func int strnicmp(const char[] str1, const char[] str2, word n);
+```
+
+**Arguments**:
+- `str1`: First string.
+- `str2`: Second string.
+- `n`: Maximum number of characters to compare.
+
+**Return Value**: Integer indicating the result of the comparison.
+
 **Arguments**:
 - `str1`: First string.
 - `str2`: Second string.
@@ -805,6 +836,216 @@ func char tolower(char c);
 - `c`: Character to convert.
 
 **Return Value**: Lowercase character.
+
+
+### File System Functions
+
+#### fopen
+
+**Description**: Opens a file or directory.
+
+**Prototype**:
+```c
+func byte[] fopen(const char[] filename, const char[] mode);
+```
+
+**Arguments**:
+- `filename`: Name of the file or directory to open.
+- `mode`: Mode in which to open the file (e.g., "r" for read, "w" for write, etc.).
+
+**Return Value**: A file handle if successful, or null if an error occurs.
+
+#### fclose
+
+**Description**: Closes an open file or directory.
+
+**Prototype**:
+```c
+func int fclose(byte[] fileHandle);
+```
+
+**Arguments**:
+- `fileHandle`: The handle of the file or directory to close.
+
+**Return Value**: 0 on success, or -1 on error.
+
+#### fread
+
+**Description**: Reads data from an open file.
+
+**Prototype**:
+```c
+func word fread(byte[] buffer, word size, word count, byte[] fileHandle);
+```
+
+**Arguments**:
+- `buffer`: Buffer to store the read data.
+- `size`: Size of each element to read.
+- `count`: Number of elements to read.
+- `fileHandle`: The handle of the file to read from.
+
+**Return Value**: Number of elements successfully read.
+
+#### fwrite
+
+**Description**: Writes data to an open file.
+
+**Prototype**:
+```c
+func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle);
+```
+
+**Arguments**:
+- `buffer`: Buffer containing the data to write.
+- `size`: Size of each element to write.
+- `count`: Number of elements to write.
+- `fileHandle`: The handle of the file to write to.
+
+**Return Value**: Number of elements successfully written.
+
+#### fseek
+
+**Description**: Sets the file position indicator for the file.
+
+**Prototype**:
+```c
+func int fseek(byte[] fileHandle, int offset, byte whence);
+```
+
+**Arguments**:
+- `fileHandle`: The handle of the file.
+- `offset`: Number of bytes to offset from `whence`.
+- `whence`: Position from where the offset is applied (0: beginning, 1: current position, 2: end of file).
+
+**Return Value**: 0 on success, or -1 on error.
+
+#### ftell
+
+**Description**: Returns the current file position indicator for the file.
+
+**Prototype**:
+```c
+func word ftell(byte[] fileHandle);
+```
+
+**Arguments**:
+- `fileHandle`: The handle of the file.
+
+**Return Value**: Current file position as a word, or 0 on error.
+
+#### remove
+
+**Description**: Removes a file.
+
+**Prototype**:
+```c
+func int remove(const char[] filename);
+```
+
+**Arguments**:
+- `filename`: Name of the file to remove.
+
+**Return Value**: 0 on success, or -1 on error.
+
+#### rename
+
+**Description**: Renames a file or directory.
+
+**Prototype**:
+```c
+func int rename(const char[] oldname, const char[] newname);
+```
+
+**Arguments**:
+- `oldname`: Current name of the file or directory.
+- `newname`: New name of the file or directory.
+
+**Return Value**: 0 on success, or -1 on error.
+
+#### mkdir
+
+**Description**: Creates a new directory.
+
+**Prototype**:
+```c
+func int mkdir(const char[] dirname);
+```
+
+**Arguments**:
+- `dirname`: Name of the directory to create.
+
+**Return Value**: 0 on success, or -1 on error.
+
+#### rmdir
+
+**Description**: Removes a directory.
+
+**Prototype**:
+```c
+func int rmdir(const char[] dirname);
+```
+
+**Arguments**:
+- `dirname`: Name of the directory to remove.
+
+**Return Value**: 0 on success, or -1 on error.
+
+#### opendir
+
+**Description**: Opens a directory for reading.
+
+**Prototype**:
+```c
+func byte[] opendir(const char[] dirname);
+```
+
+**Arguments**:
+- `dirname`: Name of the directory to open.
+
+**Return Value**: Directory handle if successful, or null if an error occurs.
+
+#### readdir
+
+**Description**: Reads the next entry in an open directory.
+
+**Prototype**:
+```c
+func byte[] readdir(byte[] dirHandle);
+```
+
+**Arguments**:
+- `dirHandle`: The handle of the directory to read from.
+
+**Return Value**: The next directory entry, or null if no more entries are available.
+
+#### closedir
+
+**Description**: Closes an open directory.
+
+**Prototype**:
+```c
+func int closedir(byte[] dirHandle);
+```
+
+**Arguments**:
+- `dirHandle`: The handle of the directory to close.
+
+**Return Value**: 0 on success, or -1 on error.
+
+#### chdir
+
+**Description**: Changes the current working directory.
+
+**Prototype**:
+```c
+func int chdir(const char[] path);
+```
+
+**Arguments**:
+- `path`: Path to the new working directory.
+
+**Return Value**: 0 on success, or -1 on error.
+
 
 ## Example Programs
 
