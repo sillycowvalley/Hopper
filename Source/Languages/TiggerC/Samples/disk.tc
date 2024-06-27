@@ -259,6 +259,9 @@ func main() {
     fclose(fh);
     dumpDirectoryStructured(RootDirStartBlock, 0);
     
+    dumpRootDirectory();
+    dumpChainLists();
+    
     writeString("Removing:\n");
     remove("/file");
     writeString("Removed.\n");

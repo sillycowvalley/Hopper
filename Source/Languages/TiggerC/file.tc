@@ -888,20 +888,22 @@ func int remove(const char[] filename) {
     byte fileBlock;
     byte nextBlock;
     int result = -1; // Default to failure
-    
+
     for (;;) {
         _getFullPath(fullPath, filename);
-        
+
         if (!_isValidPath(fullPath)) {
             break; // Invalid path
         }
-        
+
         _splitPath(fullPath, parentDir, fileName);
         dirHandle = opendir(parentDir);
         if (dirHandle == null) {
             break; // Failed to open parent directory
         }
         
+        _readBlock(ChainBlock, chainBlock);
+
         // Locate the file descriptor
         while (true) {
             _readBlock(dirHandle[0], dirBlock);
@@ -909,32 +911,34 @@ func int remove(const char[] filename) {
                 memcpy(descriptor, dirBlock + i, DescriptorSize);
                 if (_compareDirEntry(descriptor, fileName, FileTypeFile)) {
                     fileBlock = descriptor[StartBlockOffset];
+                    
                     // Clear the file descriptor
                     memset(descriptor, 0, DescriptorSize); // Clearing the descriptor array itself
                     memset(dirBlock + i, 0, DescriptorSize); // Clearing the block position
-                    // Verify the descriptor was actually cleared
                     _writeBlock(dirHandle[0], dirBlock);
+
                     // Free the blocks used by the file
-                    _readBlock(ChainBlock, chainBlock);
-                    while (fileBlock != 1 && fileBlock != 0) {
+                    
+                    while ((fileBlock != 1) && (fileBlock != 0)) {
                         nextBlock = chainBlock[fileBlock];
                         chainBlock[fileBlock] = 0;
                         fileBlock = nextBlock;
                     }
                     _writeBlock(ChainBlock, chainBlock);
                     result = 0; // Success
-                    // Call to compact the directory
+                     // Call to compact the directory
                     _compactDirectory(dirHandle[0], dirHandle[0]);
                     break; // Exit the loop
                 }
-            }
-            if (result == 0 || chainBlock[dirHandle[0]] == 1) {
+            } // for
+            if ((result == 0) || (chainBlock[dirHandle[0]] == 1)) {
                 break; // Exit the loop if success or no more blocks in the chain
             }
             dirHandle[0] = chainBlock[dirHandle[0]];
-        }
+        } // while
         closedir(dirHandle);
         break; // Exit the main for loop
     }
     return result; // Return the result
 }
+
