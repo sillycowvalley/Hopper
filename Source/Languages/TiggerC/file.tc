@@ -156,6 +156,7 @@ func _getFullPath(char[] dest, const char[] path) {
         free(temp);
     }
 }
+
 // Compacts a directory by moving entries from later blocks to empty slots in earlier blocks.
 func _compactDirectory(byte currentBlock) {
     byte[PageSize] dirBlock;
@@ -166,6 +167,8 @@ func _compactDirectory(byte currentBlock) {
     word i;
     word j;
     bool blockMoved;
+    bool isEmpty;
+    byte prevBlock;
     
     writeChar('<');
     
@@ -173,6 +176,7 @@ func _compactDirectory(byte currentBlock) {
     while (true) {
         blockMoved = false;
         _readBlock(currentBlock, dirBlock);
+
         for (i = 0; i < PageSize; i += DescriptorSize) {
             if (dirBlock[i + FilenameOffset] == 0) { // Find empty slot
                 // Look for entries in later blocks
@@ -187,6 +191,7 @@ func _compactDirectory(byte currentBlock) {
                             _writeBlock(currentBlock, dirBlock);
                             _writeBlock(parentNextBlock, nextDirBlock);
                             blockMoved = true;
+                            // Debug output for moving an entry
                             break;
                         }
                     }
@@ -198,29 +203,40 @@ func _compactDirectory(byte currentBlock) {
                 }
             }
         }
-        if (!blockMoved) {
-            // Check if the current block is completely empty
-            bool isEmpty = true;
-            for (i = 0; i < PageSize; i += DescriptorSize) {
-                if (dirBlock[i + FilenameOffset] != 0) {
-                    isEmpty = false;
-                    break;
-                }
-            }
-            if (isEmpty && chainBlock[currentBlock] != 1) {
-                // Remove the empty block from the chain
-                chainBlock[parentPrevBlock] = chainBlock[currentBlock];
-                chainBlock[currentBlock] = 0;
-                _writeBlock(ChainBlock, chainBlock);
+        
+        // Check if the current block is completely empty
+        isEmpty = true;
+        for (i = 0; i < PageSize; i += DescriptorSize) {
+            if (dirBlock[i + FilenameOffset] != 0) {
+                isEmpty = false;
                 break;
             }
         }
+        
+        // If the current block is empty and not the first block, remove it from the chain
+        if (isEmpty && currentBlock != RootDirStartBlock) {
+            prevBlock = RootDirStartBlock;
+            while (chainBlock[prevBlock] != currentBlock) {
+                prevBlock = chainBlock[prevBlock];
+            }
+            chainBlock[prevBlock] = chainBlock[currentBlock];
+            chainBlock[currentBlock] = 0;
+            _writeBlock(ChainBlock, chainBlock);
+            writeChar('-');
+            break;
+        }
+
+        if (!blockMoved) {
+            break;
+        }
+        
         parentPrevBlock = currentBlock;
         currentBlock = chainBlock[currentBlock];
         if (currentBlock == 1) { break; }
     }
     writeChar('>');
 }
+
 
 
 // Splits the full path into parent directory and file name.
