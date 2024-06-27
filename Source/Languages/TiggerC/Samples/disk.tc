@@ -275,41 +275,22 @@ func main() {
     }
     
     dumpRootDirectoryStructured();
-    writeString("Remove /file0../file8:\n");
     
-    remove("/file4");
-    remove("/file3");
-    remove("/file8");
-    remove("/file0");
-    remove("/file7");
-    remove("/file1");
-    remove("/file5");
-    remove("/file2");
-    remove("/file6");
-    dumpChainLists();
-    remove("/file11");
-    dumpChainLists();
-    dumpRootDirectoryStructured();
     
-    //remove("/file12");
-    //dumpRootDirectoryStructured();
-    
-    /*
-    writeString("Remove /file8:\n");
-    remove("/file8");
-    dumpRootDirectoryStructured();
-    */
-    /*
     // Remove all the files.
     removeMultipleFiles(extraFiles);
+    
+    dumpRootDirectoryStructured();
+    
     // Verify the root directory is empty.
     verifyRootDirectoryEmpty();
+    
     // Create and verify a file with the maximum allowed filename length.
     createAndVerifyMaxFilenameLength();
     // Create and verify nested directories.
     createAndVerifyNestedDirs();
     writeString("All tests passed successfully.\n");
-    */
+    
     dumpRootDirectory();
     dumpChainLists();
     
