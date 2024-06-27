@@ -108,7 +108,7 @@ unit Memory
 #endif
     }
     
-    Available()
+    AvailableACC()
     {
         // uses IDXand ACC
         // pushes result to [top]
@@ -159,13 +159,16 @@ unit Memory
             PLA
             STA IDXL
         } // loop
-        
+    }
+    Available()
+    {
+        AvaiableACC();
         LDA # Types.UInt
         STA ZP.ACCT
         Stacks.PushACC();  // munts Y, A
-   }
+    }
     
-    Maximum()
+    MaximumACC()
     {
         // uses ACC, IDX and IDY
         // pushes result to [top]
@@ -254,7 +257,10 @@ unit Memory
             PLA
             STA IDXL
         } // loop
-        
+    }
+    Maximum()
+    {
+        MaximumACC();
         LDA #Types.UInt
         STA ZP.ACCT
         Stacks.PushACC();

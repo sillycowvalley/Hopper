@@ -755,6 +755,14 @@ unit TCCode
             {
                 functionName = "TCSys.Free";
             }
+            case "heapfree":
+            {
+                functionName = "TCSys.Available";
+            }
+            case "heapmax":
+            {
+                functionName = "TCSys.Maximum";
+            }
             case "i2cScan":
             {
                 functionName = "TCSys.I2CScan";

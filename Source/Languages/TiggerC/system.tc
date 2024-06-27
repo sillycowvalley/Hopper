@@ -13,7 +13,9 @@ const char[] hexChars = "0123456789ABCDEF";
 
 // Memory Management
 func byte[] malloc(word size); // System function to allocate memory
-func free([] ptr);         // System function to free allocated memory
+func free([] ptr);             // System function to free allocated memory
+func word heapfree();          // System function to report free heap space in bytes
+func word heapmax();           // System function to report largest available block from heap in bytes
 
 // Serial Communication
 func writeChar(char c); // System function to write a single character

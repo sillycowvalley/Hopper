@@ -98,6 +98,24 @@ unit TCSys
         STA ZP.IDXL
         Free.Free();
     }
+    Available()
+    {
+        Memory.AvailableACC();
+        
+        LDA ZP.ACCL
+        STA ZP.TOPL
+        LDA ZP.ACCH
+        STA ZP.TOPH
+    }
+    Maximum()
+    {
+        Memory.MaximumACC();
+        
+        LDA ZP.ACCL
+        STA ZP.TOPL
+        LDA ZP.ACCH
+        STA ZP.TOPH
+    }
     I2CScan()
     {
         TSX

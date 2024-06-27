@@ -1,11 +1,20 @@
 #define EXPERIMENTAL
 #define ZEROPAGEGLOBALS
+
 func dumpRootDirectory();
 func dumpChainLists();
 #include "../system.tc"
 #include "../file.tc"
+func dumpDirectoryStructured(byte startBlock, byte indent);
 
-func dumpRootDirectoryStructured(byte startBlock, byte indent);
+func writeSpaces(byte indent)
+{
+    while (indent != 0)
+    {
+        writeChar(' ');
+        indent--;
+    }
+}
 
 // Prints the contents of a buffer in hexadecimal format.
 func printHex(const byte[] buffer, word length) {
@@ -24,12 +33,14 @@ func printHex(const byte[] buffer, word length) {
     }
     writeChar('\n');
 }
+
 // Debugging function to print a byte buffer
 func printByteBuffer(const char[] label, byte[] buffer, word length) {
     writeString(label);
     writeString(":\n");
     printHex(buffer, length);
 }
+
 // Dumps the contents of the ChainLists block.
 func dumpChainLists() {
     byte[PageSize] buffer;
@@ -37,6 +48,7 @@ func dumpChainLists() {
     _readBlock(ChainBlock, buffer);
     printHex(buffer, PageSize);
 }
+
 // Dumps the contents of the root directory block.
 func dumpRootDirectory() {
     byte[PageSize] buffer;
@@ -44,176 +56,65 @@ func dumpRootDirectory() {
     _readBlock(RootDirStartBlock, buffer);
     printHex(buffer, PageSize);
 }
+
 // Prints a message and dumps the root directory and chain lists if a test fails, then halts execution.
 func handleTestFailure(const char[] message) {
     writeString(message);
     dumpRootDirectory();
     dumpChainLists();
+    while (true) {}
 }
-// Appends an integer to a string.
-func writeFileN(char[] name, word n) {
-    itoa(n as int, name + strlen(name), 10); // Append the number to the name
-}
-// Creates multiple files in the given directory.
-func createMultipleFiles(const char[] dir, word count) {
-    char[256] filename;
-    word i;
-    for (i = 0; i < count; i++) {
-        strcpy(filename, dir);
-        strcat(filename, "/file");
-        writeFileN(filename, i);
-        byte[] fileHandle = fopen(filename, "w");
-        if (fileHandle == null) {
-            handleTestFailure("Failed to create file '");
-            writeString(filename);
-            writeString("'.\n");
-            while (true) {}
-        }
-        fclose(fileHandle);
-        writeString("Created file '");
-        writeString(filename);
-        writeString("'.\n");
-    }
-}
-// Removes multiple files from the given directory.
-func removeMultipleFiles(const char[] dir, word count) {
-    char[256] filename;
-    word i;
-    for (i = 0; i < count; i++) {
-        strcpy(filename, dir);
-        strcat(filename, "/file");
-        writeFileN(filename, i);
-        if (remove(filename) != 0) {
-            handleTestFailure("Failed to remove file '");
-            writeString(filename);
-            writeString("'.\n");
-            while (true) {}
-        }
-        byte[] fileHandle = fopen(filename, "r");
-        if (fileHandle != null) {
-            handleTestFailure("Incorrectly opened removed file '");
-            writeString(filename);
-            writeString("'.\n");
-            while (true) {}
-        }
-        writeString("Removed file '");
-        writeString(filename);
-        writeString("'.\n");
-        dumpRootDirectoryStructured(RootDirStartBlock, 0);
-    }
-}
-// Verifies that the given directory is empty.
-func verifyDirectoryEmpty(const char[] dir) {
-    byte[] dirHandle = opendir(dir);
-    if (dirHandle == null) {
-        handleTestFailure("Failed to open directory '");
-        writeString(dir);
-        writeString("'.\n");
-        while (true) {}
-    }
-    byte[] dirEntry;
-    while ((dirEntry = readdir(dirHandle)) != null) {
-        handleTestFailure("Directory '");
-        writeString(dir);
-        writeString("' is not empty.\n");
-        closedir(dirHandle);
-        while (true) {}
-    }
-    closedir(dirHandle);
-}
-// Creates and verifies a file with the maximum allowed filename length in the given directory.
-func createAndVerifyMaxFilenameLength(const char[] dir) {
-    char[256] filename;
-    strcpy(filename, dir);
-    strcat(filename, "/");
-    memset((filename + strlen(filename)) as byte[], 'A' as byte, 12);
-    filename[strlen(filename) + 12] = '\0';
-    byte[] fileHandle = fopen(filename, "w");
+
+// Writes data to a file and reads it back to verify correctness.
+func testWriteReadFile(const char[] filename, const byte[] writeData, word writeSize) {
+    byte[256] readData;
+    byte[] fileHandle;
+
+    // Write data to the file
+    fileHandle = fopen(filename, "w");
     if (fileHandle == null) {
-        handleTestFailure("Failed to create file with max filename length in '");
-        writeString(dir);
-        writeString("'.\n");
-        while (true) {}
+        handleTestFailure("Failed to open file for writing: ");
+        writeString(filename);
+        writeChar('\n');
+    }
+    word written = fwrite(writeData, 1, writeSize, fileHandle);
+    if (written != writeSize) {
+        handleTestFailure("Failed to write data to file: ");
+        writeString(filename);
+        writeChar('\n');
     }
     fclose(fileHandle);
-    writeString("Created file with max filename length in '");
-    writeString(dir);
-    writeString("'.\n");
+    
+    dumpDirectoryStructured(RootDirStartBlock, 0);
+
+    // Read data back from the file
     fileHandle = fopen(filename, "r");
     if (fileHandle == null) {
-        handleTestFailure("Failed to verify file with max filename length in '");
-        writeString(dir);
-        writeString("'.\n");
-        while (true) {}
+        handleTestFailure("Failed to open file for reading: ");
+        writeString(filename);
+        writeChar('\n');
+    }
+    word read = fread(readData, 1, writeSize, fileHandle);
+    if (read != writeSize) {
+        handleTestFailure("Failed to read data from file: ");
+        writeString(filename);
+        writeChar('\n');
     }
     fclose(fileHandle);
-    writeString("Verified file with max filename length in '");
-    writeString(dir);
-    writeString("'.\n");
-    if (remove(filename) != 0) {
-        handleTestFailure("Failed to remove file with max filename length in '");
-        writeString(dir);
-        writeString("'.\n");
-        while (true) {}
+
+    // Verify the read data matches the written data
+    if (memcmp(writeData, readData, writeSize) != 0) {
+        handleTestFailure("Data read does not match data written in file: ");
+        writeString(filename);
+        writeChar('\n');
     }
-    writeString("Removed file with max filename length in '");
-    writeString(dir);
-    writeString("'.\n");
+
+    writeString("Successfully verified file: ");
+    writeString(filename);
+    writeChar('\n');
 }
-// Creates and verifies nested directories.
-func createAndVerifyNestedDirs() {
-    if (mkdir("/dir1") != 0) {
-        handleTestFailure("Failed to create directory '/dir1'.\n");
-        while (true) {}
-    }
-    writeString("Created directory '/dir1'.\n");
-    if (mkdir("/dir1/dir2") != 0) {
-        handleTestFailure("Failed to create directory '/dir1/dir2'.\n");
-        while (true) {}
-    }
-    writeString("Created directory '/dir1/dir2'.\n");
-    if (mkdir("/dir1/dir2/dir3") != 0) {
-        handleTestFailure("Failed to create directory '/dir1/dir2/dir3'.\n");
-        while (true) {}
-    }
-    writeString("Created directory '/dir1/dir2/dir3'.\n");
-    
-    dumpRootDirectoryStructured(RootDirStartBlock, 0);
-    
-    if (rmdir("/dir1/dir2/dir3") != 0) {
-        handleTestFailure("Failed to remove directory '/dir1/dir2/dir3'.\n");
-        while (true) {}
-    }
-    writeString("Removed directory '/dir1/dir2/dir3'.\n");
-    
-    dumpRootDirectoryStructured(RootDirStartBlock, 0);
-    
-    if (rmdir("/dir1/dir2") != 0) {
-        handleTestFailure("Failed to remove directory '/dir1/dir2'.\n");
-        while (true) {}
-    }
-    writeString("Removed directory '/dir1/dir2'.\n");
-    
-    dumpRootDirectoryStructured(RootDirStartBlock, 0);
-    
-    if (rmdir("/dir1") != 0) {
-        handleTestFailure("Failed to remove directory '/dir1'.\n");
-        while (true) {}
-    }
-    
-    writeString("Removed directory '/dir1'.\n");
-    dumpRootDirectoryStructured(RootDirStartBlock, 0);
-}
-func writeSpaces(byte indent)
-{
-    while (indent != 0)
-    {
-        writeChar(' ');
-        indent--;
-    }
-}
-// Diagnostic function to output the current root directory contents in a structured way
-func dumpRootDirectoryStructured(byte startBlock, byte indent) {
+
+func dumpDirectoryStructured(byte startBlock, byte indent) {
     byte[PageSize] buffer;
     byte[PageSize] chainBuffer;
     byte nextBlock;
@@ -260,7 +161,7 @@ func dumpRootDirectoryStructured(byte startBlock, byte indent) {
                 writeChar('\n');
                 if ((entryType == FileTypeDirectory) && (fileBlock != 1))
                 {
-                    dumpRootDirectoryStructured(fileBlock, indent+4);
+                    dumpDirectoryStructured(fileBlock, indent+4);
                 }
             } else {
                 //writeString("  Empty Slot\n");
@@ -270,7 +171,12 @@ func dumpRootDirectoryStructured(byte startBlock, byte indent) {
         if (currentBlock == 1) { break; }
     }
 }
+
 func main() {
+    byte[256] writeData1;
+    byte[256] writeData2;
+    word i;
+    
     writeString("\nScanning:\n");
     if (i2cScan(SerialEEPROMAddress)) {
         writeString("EEPROM Found\n");
@@ -285,19 +191,22 @@ func main() {
     }
     writeString("Format succeeded.\n");
     
-    dumpRootDirectoryStructured(RootDirStartBlock, 0);
+    dumpDirectoryStructured(RootDirStartBlock, 0);
     
-    // Create and verify a file with the maximum allowed filename length.
-    createAndVerifyMaxFilenameLength("/");
+    // Create test data for writing and reading
+    for (i = 0; i < 256; i++) {
+        writeData1[i] = i as byte;
+        writeData2[i] = (255 - i) as byte;
+    }
     
-    dumpRootDirectoryStructured(RootDirStartBlock, 0);
+    writeString("Data Created.\n");
+
+    // Test fwrite and fread with two small files
+    testWriteReadFile("/file1", writeData1, 256);
+    testWriteReadFile("/file2", writeData2, 256);
     
-    // Create and verify nested directories.
-    createAndVerifyNestedDirs();
+    dumpDirectoryStructured(RootDirStartBlock, 0);
     
     writeString("All tests passed successfully.\n");
-    
-    dumpRootDirectory();
-    dumpChainLists();
 }
 
