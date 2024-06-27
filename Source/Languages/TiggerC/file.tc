@@ -891,7 +891,6 @@ func int remove(const char[] filename) {
 
     for (;;) {
         _getFullPath(fullPath, filename);
-
         if (!_isValidPath(fullPath)) {
             break; // Invalid path
         }
@@ -901,9 +900,9 @@ func int remove(const char[] filename) {
         if (dirHandle == null) {
             break; // Failed to open parent directory
         }
-        
-        _readBlock(ChainBlock, chainBlock);
 
+        _readBlock(ChainBlock, chainBlock);
+        
         // Locate the file descriptor
         while (true) {
             _readBlock(dirHandle[0], dirBlock);
@@ -916,9 +915,8 @@ func int remove(const char[] filename) {
                     memset(descriptor, 0, DescriptorSize); // Clearing the descriptor array itself
                     memset(dirBlock + i, 0, DescriptorSize); // Clearing the block position
                     _writeBlock(dirHandle[0], dirBlock);
-
-                    // Free the blocks used by the file
                     
+                    // Free the blocks used by the file
                     while ((fileBlock != 1) && (fileBlock != 0)) {
                         nextBlock = chainBlock[fileBlock];
                         chainBlock[fileBlock] = 0;
@@ -926,16 +924,19 @@ func int remove(const char[] filename) {
                     }
                     _writeBlock(ChainBlock, chainBlock);
                     result = 0; // Success
-                     // Call to compact the directory
+
+                    // Call to compact the directory
                     _compactDirectory(dirHandle[0], dirHandle[0]);
                     break; // Exit the loop
                 }
-            } // for
+            }
+
             if ((result == 0) || (chainBlock[dirHandle[0]] == 1)) {
                 break; // Exit the loop if success or no more blocks in the chain
             }
             dirHandle[0] = chainBlock[dirHandle[0]];
-        } // while
+        }
+
         closedir(dirHandle);
         break; // Exit the main for loop
     }
