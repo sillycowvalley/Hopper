@@ -619,8 +619,8 @@ func byte[] fopen(const char[] filename, const char[] mode) {
                         _writeBlock(ChainBlock, chainBlock);
                     }
                     fileHandle = malloc(4);
+                    fileHandle[0] = dirBlock[i + StartBlockOffset]; // Directory block number
                     fileHandle[1] = (i / DescriptorSize) as byte; // File descriptor index
-                    fileHandle[0] = parentDirHandle[0]; // Directory block number
                     //fileHandle[2] = 0; // Current position LSB in file (Tigger C : automatic zero initialization)
                     //fileHandle[3] = 0; // Current position MSB in file (Tigger C : automatic zero initialization)
                     closedir(parentDirHandle);
@@ -660,10 +660,18 @@ func byte[] fopen(const char[] filename, const char[] mode) {
             while (true) {
                 for (i = 0; i < PageSize; i += DescriptorSize) {
                     if (dirBlock[i + FilenameOffset] == 0) {
+                        // Allocate a new block for the file data
+                        byte newFileBlock = _findFreePage(chainBlock);
+                        if (newFileBlock == 0) {
+                            break; // Disk full (no available pages)
+                        }
+                        chainBlock[newFileBlock] = 1; // Mark as end of chain
+                        _writeBlock(ChainBlock, chainBlock);
+                        descriptor[StartBlockOffset] = newFileBlock; // Set the start block to the new file block
                         memcpy(dirBlock + i, descriptor, DescriptorSize);
                         _writeBlock(currentBlock, dirBlock);
                         fileHandle = malloc(4);
-                        fileHandle[0] = currentBlock; // Directory block number
+                        fileHandle[0] = newFileBlock; // File data block number
                         fileHandle[1] = (i / DescriptorSize) as byte; // File descriptor index
                         //fileHandle[2] = 0; // Current position LSB in file (Tigger C : automatic zero initialization)
                         //fileHandle[3] = 0; // Current position MSB in file (Tigger C : automatic zero initialization)
@@ -700,6 +708,7 @@ func byte[] fopen(const char[] filename, const char[] mode) {
     free(parentDir);
     return fileHandle; // Return file handle or null if not found/created
 }
+
 
 
 func int remove(const char[] filename) {
@@ -857,19 +866,35 @@ func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle) 
     word bytesWritten = 0;
     word position = (fileHandle[2] << 8) | fileHandle[3];
     byte currentBlock = fileHandle[0];
-    byte startBlock = currentBlock;  // Save the start block to update the directory entry
+    byte startBlock = fileHandle[1]; // Directory block number
+    byte dirIndex = fileHandle[1]; // Directory entry index
     _readBlock(ChainBlock, chainBlock);
+
+    // Handle new empty file scenario
+    if (currentBlock == 1) {
+        currentBlock = _findFreePage(chainBlock);
+        if (currentBlock == 0) {
+            return 0; // Disk full, no blocks available
+        }
+        chainBlock[currentBlock] = 1; // Mark as end of chain
+        _writeBlock(ChainBlock, chainBlock);
+
+        // Update directory entry with new block number
+        _readBlock(startBlock, dirBlock);
+        dirBlock[dirIndex * DescriptorSize + StartBlockOffset] = currentBlock;
+        _writeBlock(startBlock, dirBlock);
+    }
 
     while (bytesToWrite > 0) {
         word offset = position % PageSize;
         word toWrite = (bytesToWrite < (PageSize - offset)) ? bytesToWrite : (PageSize - offset);
         _readBlock(currentBlock, fileBlock);
-        
+
         // Debug prints
         writeString("Writing ");
         writeWord(toWrite);
         writeString(" bytes to block ");
-        writeHex(currentBlock);
+        writeWord(currentBlock);
         writeString(" at offset ");
         writeWord(offset);
         writeChar('\n');
@@ -879,6 +904,7 @@ func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle) 
         position += toWrite;
         bytesWritten += toWrite;
         bytesToWrite -= toWrite;
+
         if (bytesToWrite > 0) {
             if (chainBlock[currentBlock] == 1) {
                 // Allocate a new block
@@ -900,13 +926,12 @@ func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle) 
     fileHandle[3] = (position & 0xFF) as byte;
 
     // Update the file size in the directory entry
-    byte dirBlockIndex = fileHandle[1];
     _readBlock(startBlock, dirBlock);
-    word fileSize = (dirBlock[dirBlockIndex * DescriptorSize + FileSizeOffset] << 8) |
-                    dirBlock[dirBlockIndex * DescriptorSize + FileSizeOffset + 1];
-    fileSize = position; // Update file size to the new position
-    dirBlock[dirBlockIndex * DescriptorSize + FileSizeOffset] = ((fileSize >> 8) & 0xFF) as byte;
-    dirBlock[dirBlockIndex * DescriptorSize + FileSizeOffset + 1] = (fileSize & 0xFF) as byte;
+    word fileSize = (dirBlock[dirIndex * DescriptorSize + FileSizeOffset] << 8) |
+                    dirBlock[dirIndex * DescriptorSize + FileSizeOffset + 1];
+    fileSize = position; // Update the file size to the current position
+    dirBlock[dirIndex * DescriptorSize + FileSizeOffset] = ((fileSize >> 8) & 0xFF) as byte;
+    dirBlock[dirIndex * DescriptorSize + FileSizeOffset + 1] = (fileSize & 0xFF) as byte;
     _writeBlock(startBlock, dirBlock);
 
     return bytesWritten / size;
