@@ -158,12 +158,11 @@ func _getFullPath(char[] dest, const char[] path) {
 }
 
 // Compacts a directory by moving entries from later blocks to empty slots in earlier blocks.
-func _compactDirectory(byte currentBlock) {
+func _compactDirectory(byte startBlock, byte currentBlock) {
     byte[PageSize] dirBlock;
     byte[PageSize] chainBlock;
     byte[PageSize] nextDirBlock;
     byte parentNextBlock;
-    byte parentPrevBlock = 0;
     word i;
     word j;
     bool blockMoved;
@@ -176,7 +175,6 @@ func _compactDirectory(byte currentBlock) {
     while (true) {
         blockMoved = false;
         _readBlock(currentBlock, dirBlock);
-
         for (i = 0; i < PageSize; i += DescriptorSize) {
             if (dirBlock[i + FilenameOffset] == 0) { // Find empty slot
                 // Look for entries in later blocks
@@ -198,7 +196,6 @@ func _compactDirectory(byte currentBlock) {
                     if (j < PageSize) {
                         break;
                     }
-                    parentPrevBlock = parentNextBlock;
                     parentNextBlock = chainBlock[parentNextBlock];
                 }
             }
@@ -214,10 +211,13 @@ func _compactDirectory(byte currentBlock) {
         }
         
         // If the current block is empty and not the first block, remove it from the chain
-        if (isEmpty && currentBlock != RootDirStartBlock) {
-            prevBlock = RootDirStartBlock;
+        if (isEmpty && (currentBlock != startBlock)) {
+            prevBlock = startBlock;
             while (chainBlock[prevBlock] != currentBlock) {
                 prevBlock = chainBlock[prevBlock];
+                if (prevBlock == 1 || prevBlock == 0) {
+                    break;
+                }
             }
             chainBlock[prevBlock] = chainBlock[currentBlock];
             chainBlock[currentBlock] = 0;
@@ -225,19 +225,15 @@ func _compactDirectory(byte currentBlock) {
             writeChar('-');
             break;
         }
-
         if (!blockMoved) {
             break;
         }
         
-        parentPrevBlock = currentBlock;
         currentBlock = chainBlock[currentBlock];
         if (currentBlock == 1) { break; }
     }
     writeChar('>');
 }
-
-
 
 // Splits the full path into parent directory and file name.
 func _splitPath(const char[] fullPath, char[] parentDir, char[] fileName) {
@@ -794,7 +790,7 @@ func int remove(const char[] filename) {
                     _writeBlock(ChainBlock, chainBlock);
                     result = 0; // Success
                     // Call to compact the directory
-                    _compactDirectory(dirHandle[0]);
+                    _compactDirectory(dirHandle[0], dirHandle[0]);
                     break; // Exit the loop
                 }
             }
@@ -808,7 +804,6 @@ func int remove(const char[] filename) {
     }
     return result; // Return the result
 }
-
 
 func int rmdir(const char[] dirname) {
     byte[PageSize] dirBlock;
@@ -873,7 +868,7 @@ func int rmdir(const char[] dirname) {
                     memset(dirBlock + i, 0, DescriptorSize); // Clear the descriptor
                     _writeBlock(dirHandle[0], dirBlock);
                     
-                    _compactDirectory(dirHandle[0]); // Compact the directory
+                    _compactDirectory(dirHandle[0], dirHandle[0]); // Compact the directory
                     
                     result = 0; // Success
                     break; // Exit the loop
