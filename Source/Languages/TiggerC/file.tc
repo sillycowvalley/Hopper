@@ -209,6 +209,33 @@ func _splitPath(const char[] fullPath, char[] parentDir, char[] fileName) {
         strcpy(fileName, fullPath + 1);
     }
 }
+func bool _compareDirEntry(byte[] dirEntry, char[] name, byte entryType)
+{
+    bool found;
+    word length;
+    for (;;)
+    {
+        if (dirEntry[StartBlockOffset] == 0)
+        {
+            break; // empty dirEntry
+        }
+        if (isFile != ((dirEntry[FileTypeOffset] & 0xF0) == entryType))
+        {
+            break; // not the correct type of record
+        }
+        length = strlen(name);
+        if (length != (dirEntry[FileTypeOffset] & 0x0F))
+        {
+            break; // not the correct length
+        }
+        if (strncmp((dirEntry + FilenameOffset) as char[], name, length) == 0)
+        {
+            found = true; // name match
+        }
+        break;
+    }
+    return found;
+}
 // ### end of private helper functions
 // Formats the drive, initializing the file system.
 // Returns 0 on success, or -1 on error.
@@ -530,6 +557,9 @@ func word fread(byte[] buffer, word size, word count, byte[] fileHandle) {
     fileHandle[2] = (position & 0xFF) as byte;
     return bytesRead / size;
 }
+
+
+
 // Opens a file or directory.
 // filename: Name of the file or directory to open.
 // mode: Mode in which to open the file (e.g., "r" for read, "w" for write, etc.).
@@ -542,13 +572,15 @@ func byte[] fopen(const char[] filename, const char[] mode) {
     char[256] fullPath;
     byte currentBlock;
     word i;
-    char[256] parentDir;
-    char[256] fileName;
+    char[] parentDir;
+    char[] lastSlash;
+    char[] fileName;
     byte[] parentDirHandle;
     byte[] fileHandle;
     byte fileBlock;
     byte nextBlock;
     byte newDirBlockInChain;
+    
     for (;;) {
         _getFullPath(fullPath, filename);
         if (!_isValidPath(fullPath)) {
@@ -558,7 +590,15 @@ func byte[] fopen(const char[] filename, const char[] mode) {
             break; // Invalid mode
         }
         _readBlock(ChainBlock, chainBlock);
-        _splitPath(fullPath, parentDir, fileName);
+        parentDir = strdup(fullPath);
+        lastSlash = strrchr(parentDir, '/');
+        if ((lastSlash != null) && (lastSlash != parentDir)) {
+            lastSlash[0] = '\0'; // Terminate parent directory string
+            fileName = lastSlash + 1;
+        } else {
+            fileName = (lastSlash == null) ? fullPath : (fullPath + 1); // no slash or / is first character
+            strcpy(parentDir, "/"); // It's a root-level directory (no / or first character)
+        }
         parentDirHandle = opendir(parentDir);
         if (parentDirHandle == null) {
             break; // directory not found
@@ -567,10 +607,8 @@ func byte[] fopen(const char[] filename, const char[] mode) {
         while (true) {
             _readBlock(parentDirHandle[0], dirBlock);
             for (i = 0; i < PageSize; i += DescriptorSize) {
-                if ((dirBlock[i + StartBlockOffset] != 0) && // not an empty direntry
-                    ((dirBlock[i + FileTypeOffset] & 0xF0) == FileTypeFile) && // file, not directory
-                    (strncmp((dirBlock + i + FilenameOffset) as char[], fileName, strlen(fileName)) == 0)) {
-                    // If mode is "w", truncate the file
+                if (_compareDirEntry(dirBlock + i, fileName, FileTypeFile)) {
+                     // If mode is "w", truncate the file
                     if (strcmp(mode, "w") == 0) {
                         // Free the blocks used by the file if it already exists
                         fileBlock = dirBlock[i + StartBlockOffset];
@@ -665,8 +703,11 @@ func byte[] fopen(const char[] filename, const char[] mode) {
         } // if "w"
         break;
     } // for (;;)
-    return fileHandle;
+    free(parentDir);
+    return fileHandle; // Return file handle or null if not found/created
 }
+
+
 func int remove(const char[] filename) {
     byte[PageSize] dirBlock;
     byte[PageSize] chainBlock;
@@ -699,6 +740,7 @@ func int remove(const char[] filename) {
             _readBlock(dirHandle[0], dirBlock);
             for (i = 0; i < PageSize; i += DescriptorSize) {
                 memcpy(descriptor, dirBlock + i, DescriptorSize);
+                
                 if (strncmp((descriptor + FilenameOffset) as char[], fileName, strlen(fileName)) == 0 &&
                     (descriptor[FileTypeOffset] & 0xF0) == FileTypeFile) {
                     
