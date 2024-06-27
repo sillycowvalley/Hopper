@@ -211,9 +211,12 @@ unit TCType
         {
             if (expectedType.EndsWith("[]"))
             {
+                if (expectedType == "[]") // any pointer type will do like free([] ptr)
+                {
+                    return true;
+                }
                 if (actualType == "[]") // null literal
                 {
-                    actualType = expectedType;
                     return true;
                 }
                 string memberType;

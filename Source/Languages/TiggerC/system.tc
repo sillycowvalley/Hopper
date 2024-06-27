@@ -13,7 +13,7 @@ const char[] hexChars = "0123456789ABCDEF";
 
 // Memory Management
 func byte[] malloc(word size); // System function to allocate memory
-func free(byte[] ptr);         // System function to free allocated memory
+func free([] ptr);         // System function to free allocated memory
 
 // Serial Communication
 func writeChar(char c); // System function to write a single character

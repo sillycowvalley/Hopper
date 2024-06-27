@@ -7,11 +7,35 @@ func dumpChainLists();
 #include "../system.tc"
 #include "../file.tc"
 
+// Prints the contents of a buffer in hexadecimal format.
+func printHex(const byte[] buffer, word length) {
+    word i;
+    for (i = 0; i < length; i++) {
+        writeHex(buffer[i]);
+        writeChar(' ');
+        if ((i + 1) % 16 == 0) {
+            if ((i + 1) % 64 == 0) {
+                writeChar('\n');
+                break;
+            } else {
+                writeChar(' ');
+            }
+        }
+    }
+    writeChar('\n');
+}
+// Debugging function to print a byte buffer
+func printByteBuffer(const char[] label, byte[] buffer, word length) {
+    writeString(label);
+    writeString(":\n");
+    printHex(buffer, length);
+}
+
 // Dumps the contents of the ChainLists block.
 func dumpChainLists() {
     byte[PageSize] buffer;
     writeString("ChainLists Block:\n");
-    readBlock(ChainBlock, buffer);
+    _readBlock(ChainBlock, buffer);
     printHex(buffer, PageSize);
 }
 
@@ -19,7 +43,7 @@ func dumpChainLists() {
 func dumpRootDirectory() {
     byte[PageSize] buffer;
     writeString("Root Directory Block:\n");
-    readBlock(RootDirStartBlock, buffer);
+    _readBlock(RootDirStartBlock, buffer);
     printHex(buffer, PageSize);
 }
 
@@ -29,7 +53,7 @@ func dumpDirectoryBlock(byte block) {
     writeString("Directory Block (");
     writeHex(block);
     writeString("):\n");
-    readBlock(block, buffer);
+    _readBlock(block, buffer);
     printHex(buffer, PageSize);
 }
 
@@ -57,7 +81,7 @@ func dumpBlocksForFile(const char[] filename) {
     word i;
     byte fileBlockNum;
     
-    getFullPath(fullPath, filename);
+    _getFullPath(fullPath, filename);
     
     dirHandle = opendir("/");
     if (dirHandle == null) {
@@ -66,7 +90,7 @@ func dumpBlocksForFile(const char[] filename) {
     }
     
     while (true) {
-        readBlock(dirHandle[0], dirBlock);
+        _readBlock(dirHandle[0], dirBlock);
         for (i = 0; i < PageSize; i += DescriptorSize) {
             memcpy(descriptor, dirBlock + i, DescriptorSize);
             if (strncmp((descriptor + FilenameOffset) as char[], filename + 1, strlen(filename + 1)) == 0 &&
@@ -77,10 +101,10 @@ func dumpBlocksForFile(const char[] filename) {
                     writeString("Block ");
                     writeHex(fileBlockNum);
                     writeString(":\n");
-                    readBlock(fileBlockNum, fileBlock);
+                    _readBlock(fileBlockNum, fileBlock);
                     printHex(fileBlock, PageSize);
                     
-                    readBlock(ChainBlock, chainBlock);
+                    _readBlock(ChainBlock, chainBlock);
                     fileBlockNum = chainBlock[fileBlockNum];
                 }
                 closedir(dirHandle);
@@ -290,7 +314,6 @@ func main() {
     
     openAndVerifyFile("/file2");
     openAndVerifyFile("/file1");
-    
     /*
     // Dump before write
     writeString("Before write:\n");

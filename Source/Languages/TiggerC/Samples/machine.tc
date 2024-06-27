@@ -2,16 +2,18 @@
 #include "../system.tc"  // for writeString, writeWord, writeChar
 #include "../time.tc"    // for delay
 
+#define EXPERIMENTAL
+
 func Setup()
 {
     asm("SMB0 0xF3 // DDRA");
     writeString("Initialized.");
 }
-func _LEDOn()
+func __LEDOn()
 {
     asm("SMB0 0xF1 // PORTA");
 }
-func _LEDOff()
+func __LEDOff()
 {
     asm("RMB0 0xF1 // PORTA");
 }
@@ -21,14 +23,14 @@ func main() {
     bool ledState;
     
     Setup();
-    _LEDOff();
+    __LEDOff();
     
     while (true) {
         if (ledState) {
-            _LEDOff();
+            __LEDOff();
             ledState = false;
         } else {
-            _LEDOn();
+            __LEDOn();
             ledState = true;
         }
         delay(1000); // Delay for 1 second

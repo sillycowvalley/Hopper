@@ -1,5 +1,5 @@
 func byte[] malloc(word size); // System function to allocate memory
-func free(byte[] ptr);         // System function to free allocated memory
+func free([] ptr);         // System function to free allocated memory
 
 // Zero out a 32-bit long represented as an array of 4 bytes
 func zeroLong(byte[] long) {

@@ -637,7 +637,7 @@ unit Scanner
                     case '_': 
                     { 
                         c = sourceGetFromPos(currentPos, true); // peek
-                        if (IsTiggerC && (c.IsLower() || c.IsUpper()))
+                        if (IsTiggerC && (c.IsLower() || c.IsUpper() || (c == '_')))
                         {
                             token = scanIdentifier('_');
                         }

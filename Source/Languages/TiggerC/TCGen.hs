@@ -607,7 +607,7 @@ unit TCGen
                 {
                     if (instruction1.Name == "PUSHI") 
                     {
-                        Print(" STGI");
+                        //Print(" STGI");
                         instruction0.Operand = instruction1.Operand;
                         instruction0.Name = "STGI";
                         currentStream[currentStream.Count-1] = instruction0;

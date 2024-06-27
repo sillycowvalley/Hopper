@@ -393,7 +393,7 @@ unit TCCompile
                 Compiling = MustCompile(functionName);
             }
             
-            CurrentIsNaked = functionName[0] == '_';
+            CurrentIsNaked = functionName.StartsWith("__");
             TCScanner.Advance(); // Skip identifier
             
             if (CurrentIsNaked && (returnType != "void"))
@@ -578,6 +578,17 @@ unit TCCompile
     
         if (!TCToken.IsTypeKeyword(token.Type))
         {
+            if (token.Type == TokenType.SYM_LBRACKET)
+            {
+                TCScanner.Advance(); // Skip '['
+                token = TCScanner.Current();
+                if (token.Type == TokenType.SYM_RBRACKET)
+                {
+                    TCScanner.Advance(); // Skip ']'
+                    tp += "[]";
+                    return true; // generic pointer type
+                }
+            }
             Error(token.SourcePath, token.Line, "expected type");
             return false;
         }
