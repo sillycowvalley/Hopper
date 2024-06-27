@@ -667,81 +667,6 @@ func byte[] fopen(const char[] filename, const char[] mode) {
     free(parentDir);
     return fileHandle;
 }
-func int remove(const char[] filename) {
-    byte[PageSize] dirBlock;
-    byte[PageSize] chainBlock;
-    byte[DescriptorSize] descriptor;
-    char[256] fullPath;
-    byte[] dirHandle;
-    byte currentBlock;
-    word i;
-    byte fileBlock;
-    byte nextBlock;
-    
-    _getFullPath(fullPath, filename);
-    
-    if (!_isValidPath(fullPath)) {
-        return -1; // Invalid path
-    }
-    
-    // Open the directory to ensure it exists
-    char[] parentDir = strdup(fullPath);
-    char[] lastSlash = strrchr(parentDir, '/');
-    if (lastSlash != null && lastSlash != parentDir) {
-        lastSlash[0] = '\0'; // Terminate parent directory string
-    } else {
-        strcpy(parentDir, "/"); // It's a root-level directory
-    }
-    
-    dirHandle = opendir(parentDir);
-    if (dirHandle == null) {
-        free(parentDir);
-        return -1; // Failed to open parent directory
-    }
-    
-    // Locate the file descriptor
-    while (true) {
-        _readBlock(dirHandle[0], dirBlock);
-        for (i = 0; i < PageSize; i += DescriptorSize) {
-            memcpy(descriptor, dirBlock + i, DescriptorSize);
-            if (strncmp((descriptor + FilenameOffset) as char[], lastSlash + 1, strlen(lastSlash + 1)) == 0 &&
-                (descriptor[FileTypeOffset] & 0xF0) == FileTypeFile) {
-                
-                fileBlock = descriptor[StartBlockOffset];
-                // Clear the file descriptor
-                memset(descriptor, 0, DescriptorSize); // Clearing the descriptor array itself
-                memset(dirBlock + i, 0, DescriptorSize); // Clearing the block position
-                
-                // Verify the descriptor was actually cleared
-                _writeBlock(dirHandle[0], dirBlock);
-                
-                // Free the blocks used by the file
-                _readBlock(ChainBlock, chainBlock);
-                while (fileBlock != 1 && fileBlock != 0) {
-                    nextBlock = chainBlock[fileBlock];
-                    chainBlock[fileBlock] = 0;
-                    fileBlock = nextBlock;
-                }
-                _writeBlock(ChainBlock, chainBlock);
-                
-                _compactDirectory(dirHandle[0]); // Compact the directory
-                
-                free(parentDir);
-                closedir(dirHandle);
-                return 0; // Success
-            }
-        }
-        // Follow the chain if no descriptor found in current block
-        if (chainBlock[dirHandle[0]] == 1) {
-            break; // No more blocks in the chain
-        }
-        dirHandle[0] = chainBlock[dirHandle[0]];
-    }
-    
-    free(parentDir);
-    closedir(dirHandle);
-    return -1; // File descriptor not found
-}
 func int rmdir(const char[] dirname) {
     byte[PageSize] dirBlock;
     byte[PageSize] chainBlock;
@@ -825,5 +750,87 @@ func int rmdir(const char[] dirname) {
     free(parentDir);
     closedir(dirHandle);
     return -1; // Directory descriptor not found
+}
+
+func int remove(const char[] filename) {
+    byte[PageSize] dirBlock;
+    byte[PageSize] chainBlock;
+    byte[DescriptorSize] descriptor;
+    char[256] fullPath;
+    byte[] dirHandle;
+    byte currentBlock;
+    word i;
+    byte fileBlock;
+    byte nextBlock;
+    
+    _getFullPath(fullPath, filename);
+    
+    if (!_isValidPath(fullPath)) {
+        return -1; // Invalid path
+    }
+    
+    // Open the directory to ensure it exists
+    char[] parentDir = strdup(fullPath);
+    char[] lastSlash = strrchr(parentDir, '/');
+    if (lastSlash != null && lastSlash != parentDir) {
+        lastSlash[0] = '\0'; // Terminate parent directory string
+    } else {
+        strcpy(parentDir, "/"); // It's a root-level directory
+    }
+    
+    dirHandle = opendir(parentDir);
+    if (dirHandle == null) {
+        free(parentDir);
+        return -1; // Failed to open parent directory
+    }
+    
+    // Locate the file descriptor
+    while (true) {
+        _readBlock(dirHandle[0], dirBlock);
+        for (i = 0; i < PageSize; i += DescriptorSize) {
+            memcpy(descriptor, dirBlock + i, DescriptorSize);
+            if (strncmp((descriptor + FilenameOffset) as char[], lastSlash + 1, strlen(lastSlash + 1)) == 0 &&
+                (descriptor[FileTypeOffset] & 0xF0) == FileTypeFile) {
+                
+                fileBlock = descriptor[StartBlockOffset];
+                // Clear the file descriptor
+                memset(descriptor, 0, DescriptorSize); // Clearing the descriptor array itself
+                memset(dirBlock + i, 0, DescriptorSize); // Clearing the block position
+
+                // Verify the descriptor was actually cleared
+                _writeBlock(dirHandle[0], dirBlock);
+
+                // Free the blocks used by the file
+                _readBlock(ChainBlock, chainBlock);
+                while (fileBlock != 1 && fileBlock != 0) {
+                    nextBlock = chainBlock[fileBlock];
+                    chainBlock[fileBlock] = 0;
+                    fileBlock = nextBlock;
+                }
+                _writeBlock(ChainBlock, chainBlock);
+
+                // Add debugging statements to ensure the file is being cleared
+                writeString("Cleared file descriptor for '");
+                writeString(lastSlash + 1);
+                writeString("'.\n");
+
+                dumpRootDirectory();
+                dumpChainLists();
+
+                free(parentDir);
+                closedir(dirHandle);
+                return 0; // Success
+            }
+        }
+        // Follow the chain if no descriptor found in current block
+        if (chainBlock[dirHandle[0]] == 1) {
+            break; // No more blocks in the chain
+        }
+        dirHandle[0] = chainBlock[dirHandle[0]];
+    }
+
+    free(parentDir);
+    closedir(dirHandle);
+    return -1; // File descriptor not found
 }
 
