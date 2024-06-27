@@ -54,7 +54,6 @@ char[256]            _currentDirectory;
 // prototypes
 func int closedir(byte[] dirHandle);
 func byte[] opendir(const char[] dirname);
-
 // ### private helper functions:
 // Reads a block from EEPROM.
 // blockNum: The block number to read.
@@ -198,7 +197,18 @@ func _compactDirectory(byte currentBlock) {
         currentBlock = chainBlock[currentBlock];
     }
 }
-
+// Splits the full path into parent directory and file name.
+func _splitPath(const char[] fullPath, char[] parentDir, char[] fileName) {
+    strcpy(parentDir, fullPath);
+    char[] lastSlash = strrchr(parentDir, '/');
+    if (lastSlash != null && lastSlash != parentDir) {
+        lastSlash[0] = '\0'; // Terminate parent directory string
+        strcpy(fileName, lastSlash + 1);
+    } else {
+        strcpy(parentDir, "/"); // It's a root-level directory
+        strcpy(fileName, fullPath + 1);
+    }
+}
 // ### end of private helper functions
 // Formats the drive, initializing the file system.
 // Returns 0 on success, or -1 on error.
@@ -532,9 +542,8 @@ func byte[] fopen(const char[] filename, const char[] mode) {
     char[256] fullPath;
     byte currentBlock;
     word i;
-    char[] parentDir;
-    char[] lastSlash;
-    char[] fileName;
+    char[256] parentDir;
+    char[256] fileName;
     byte[] parentDirHandle;
     byte[] fileHandle;
     byte fileBlock;
@@ -549,15 +558,7 @@ func byte[] fopen(const char[] filename, const char[] mode) {
             break; // Invalid mode
         }
         _readBlock(ChainBlock, chainBlock);
-        parentDir = strdup(fullPath);
-        lastSlash = strrchr(parentDir, '/');
-        if ((lastSlash != null) && (lastSlash != parentDir)) {
-            lastSlash[0] = '\0'; // Terminate parent directory string
-            fileName = lastSlash + 1;
-        } else {
-            fileName = (lastSlash == null) ? fullPath : (fullPath + 1); // no slash or / is first character
-            strcpy(parentDir, "/"); // It's a root-level directory (no / or first character)
-        }
+        _splitPath(fullPath, parentDir, fileName);
         parentDirHandle = opendir(parentDir);
         if (parentDirHandle == null) {
             break; // directory not found
@@ -664,7 +665,6 @@ func byte[] fopen(const char[] filename, const char[] mode) {
         } // if "w"
         break;
     } // for (;;)
-    free(parentDir);
     return fileHandle;
 }
 func int remove(const char[] filename) {
@@ -672,6 +672,8 @@ func int remove(const char[] filename) {
     byte[PageSize] chainBlock;
     byte[DescriptorSize] descriptor;
     char[256] fullPath;
+    char[256] parentDir;
+    char[256] fileName;
     byte[] dirHandle;
     byte currentBlock;
     word i;
@@ -686,18 +688,9 @@ func int remove(const char[] filename) {
             break; // Invalid path
         }
         
-        // Open the directory to ensure it exists
-        char[] parentDir = strdup(fullPath);
-        char[] lastSlash = strrchr(parentDir, '/');
-        if (lastSlash != null && lastSlash != parentDir) {
-            lastSlash[0] = '\0'; // Terminate parent directory string
-        } else {
-            strcpy(parentDir, "/"); // It's a root-level directory
-        }
-        
+        _splitPath(fullPath, parentDir, fileName);
         dirHandle = opendir(parentDir);
         if (dirHandle == null) {
-            free(parentDir);
             break; // Failed to open parent directory
         }
         
@@ -706,17 +699,15 @@ func int remove(const char[] filename) {
             _readBlock(dirHandle[0], dirBlock);
             for (i = 0; i < PageSize; i += DescriptorSize) {
                 memcpy(descriptor, dirBlock + i, DescriptorSize);
-                if (strncmp((descriptor + FilenameOffset) as char[], lastSlash + 1, strlen(lastSlash + 1)) == 0 &&
+                if (strncmp((descriptor + FilenameOffset) as char[], fileName, strlen(fileName)) == 0 &&
                     (descriptor[FileTypeOffset] & 0xF0) == FileTypeFile) {
                     
                     fileBlock = descriptor[StartBlockOffset];
                     // Clear the file descriptor
                     memset(descriptor, 0, DescriptorSize); // Clearing the descriptor array itself
                     memset(dirBlock + i, 0, DescriptorSize); // Clearing the block position
-
                     // Verify the descriptor was actually cleared
                     _writeBlock(dirHandle[0], dirBlock);
-
                     // Free the blocks used by the file
                     _readBlock(ChainBlock, chainBlock);
                     while (fileBlock != 1 && fileBlock != 0) {
@@ -725,15 +716,12 @@ func int remove(const char[] filename) {
                         fileBlock = nextBlock;
                     }
                     _writeBlock(ChainBlock, chainBlock);
-
                     // Add debugging statements to ensure the file is being cleared
                     writeString("Cleared file descriptor for '");
-                    writeString(lastSlash + 1);
+                    writeString(fileName);
                     writeString("'.\n");
-
                     dumpRootDirectory();
                     dumpChainLists();
-
                     result = 0; // Success
                     break; // Exit the loop
                 }
@@ -743,20 +731,18 @@ func int remove(const char[] filename) {
             }
             dirHandle[0] = chainBlock[dirHandle[0]];
         }
-
-        free(parentDir);
         closedir(dirHandle);
         break; // Exit the main for loop
     }
-
     return result; // Return the result
 }
-
 func int rmdir(const char[] dirname) {
     byte[PageSize] dirBlock;
     byte[PageSize] chainBlock;
     byte[DescriptorSize] descriptor;
     char[256] fullPath;
+    char[256] parentDir;
+    char[256] dirName;
     byte[] dirHandle;
     byte currentBlock;
     word i;
@@ -799,17 +785,9 @@ func int rmdir(const char[] dirname) {
         _writeBlock(ChainBlock, chainBlock);
         
         // Find and clear the directory descriptor in the parent directory
-        char[] parentDir = strdup(fullPath);
-        char[] lastSlash = strrchr(parentDir, '/');
-        if (lastSlash != null && lastSlash != parentDir) {
-            lastSlash[0] = '\0'; // Terminate parent directory string
-        } else {
-            strcpy(parentDir, "/"); // It's a root-level directory
-        }
-        
+        _splitPath(fullPath, parentDir, dirName);
         dirHandle = opendir(parentDir);
         if (dirHandle == null) {
-            free(parentDir);
             break; // Failed to open parent directory
         }
         
@@ -817,7 +795,7 @@ func int rmdir(const char[] dirname) {
         while (true) {
             for (i = 0; i < PageSize; i += DescriptorSize) {
                 memcpy(descriptor, dirBlock + i, DescriptorSize);
-                if (strncmp((descriptor + FilenameOffset) as char[], lastSlash + 1, strlen(lastSlash + 1)) == 0 &&
+                if (strncmp((descriptor + FilenameOffset) as char[], dirName, strlen(dirName)) == 0 &&
                     (descriptor[FileTypeOffset] & 0xF0) == FileTypeDirectory) {
                     memset(dirBlock + i, 0, DescriptorSize); // Clear the descriptor
                     _writeBlock(dirHandle[0], dirBlock);
@@ -835,11 +813,9 @@ func int rmdir(const char[] dirname) {
             _readBlock(dirHandle[0], dirBlock);
         }
         
-        free(parentDir);
         closedir(dirHandle);
         break; // Exit the main for loop
     }
-
     return result; // Return the result
 }
 
