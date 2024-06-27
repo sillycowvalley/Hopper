@@ -166,8 +166,10 @@ func _compactDirectory(byte currentBlock) {
     word i;
     word j;
     
+    writeChar('<');
+    
     _readBlock(ChainBlock, chainBlock);
-    while (currentBlock != 1) {
+    while (true) {
         _readBlock(currentBlock, dirBlock);
         for (i = 0; i < PageSize; i += DescriptorSize) {
             if (dirBlock[i + FilenameOffset] == 0) { // Find empty slot
@@ -195,8 +197,11 @@ func _compactDirectory(byte currentBlock) {
         }
         parentPrevBlock = currentBlock;
         currentBlock = chainBlock[currentBlock];
+        if (currentBlock == 1) { break; }
     }
+    writeChar('>');
 }
+
 // Splits the full path into parent directory and file name.
 func _splitPath(const char[] fullPath, char[] parentDir, char[] fileName) {
     strcpy(parentDir, fullPath);
@@ -734,7 +739,6 @@ func int remove(const char[] filename) {
         while (true) {
             _readBlock(dirHandle[0], dirBlock);
             for (i = 0; i < PageSize; i += DescriptorSize) {
-                writeChar(' '); writeWord(i);
                 memcpy(descriptor, dirBlock + i, DescriptorSize);
                 if (_compareDirEntry(descriptor, fileName, FileTypeFile)) {
                     fileBlock = descriptor[StartBlockOffset];
@@ -751,10 +755,6 @@ func int remove(const char[] filename) {
                         fileBlock = nextBlock;
                     }
                     _writeBlock(ChainBlock, chainBlock);
-                    // Add debugging statements to ensure the file is being cleared
-                    writeString("Cleared file descriptor for '");
-                    writeString(fileName);
-                    writeString("'.\n");
                     result = 0; // Success
                     break; // Exit the loop
                 }

@@ -92,7 +92,7 @@ func removeMultipleFiles(word count) {
             writeString("'.\n");
             while (true) {}
         }
-        byte[] fileHandle = fopen(filename, "w");
+        byte[] fileHandle = fopen(filename, "r");
         if (fileHandle != null) {
             handleTestFailure("Incorrectly opened removed file '");
             writeString(filename);
@@ -181,6 +181,62 @@ func createAndVerifyNestedDirs() {
     writeString("Removed directory '/dir1'.\n");
 }
 
+// Diagnostic function to output the current root directory contents in a structured way
+func dumpRootDirectoryStructured() {
+    byte[PageSize] buffer;
+    byte[PageSize] chainBuffer;
+    byte nextBlock;
+    word i;
+    byte entryType;
+    byte entryLength;
+    char[13] entryName;
+    word entrySize;
+    byte fileBlock;
+    byte currentBlock = RootDirStartBlock;
+    
+    // Read the chain list
+    _readBlock(ChainBlock, chainBuffer);
+
+    // Iterate through the directory blocks
+    while (true) {
+        
+        _readBlock(currentBlock, buffer);
+        writeString("Block ");
+        writeHex(currentBlock);
+        writeString(" -> ");
+        writeHex(chainBuffer[currentBlock]);
+        writeString(":\n");
+
+        // Iterate through directory entries in the block
+        for (i = 0; i < PageSize; i += DescriptorSize) {
+            entryType = buffer[i + FileTypeOffset];
+            entryLength = entryType & 0x0F;
+            entryType = entryType & 0xF0;
+            entryName[0] = '\0';
+            fileBlock = buffer[i + StartBlockOffset];
+
+            if (fileBlock != 0) {
+                strncpy(entryName, (buffer + i + FilenameOffset) as char[], entryLength);
+                entryName[entryLength] = '\0';
+                entrySize = (buffer[i + FileSizeOffset] << 8) | buffer[i + FileSizeOffset + 1];
+                writeString("  ");
+                writeHex((i / DescriptorSize) as byte);
+                writeString(entryType == FileTypeFile ? " File:      " : " Directory: ");
+                writeString(entryName);
+                writeString(", Size: ");
+                writeWord(entrySize);
+                writeString(" bytes, block=");
+                writeWord(fileBlock);
+                writeChar('\n');
+            } else {
+                //writeString("  Empty Slot\n");
+            }
+        }
+        currentBlock = chainBuffer[currentBlock];
+        if (currentBlock == 1) { break; }
+    }
+}
+
 func main() {
     writeString("\nScanning:\n");
     if (i2cScan(SerialEEPROMAddress)) {
@@ -217,6 +273,15 @@ func main() {
         writeString(filename);
         writeString("'.\n");
     }
+    
+    dumpRootDirectoryStructured();
+    writeString("Remove /file6:\n");
+    remove("/file6");
+    dumpRootDirectoryStructured();
+    writeString("Remove /file24:\n");
+    remove("/file24");
+    dumpRootDirectoryStructured();
+    /*
     // Remove all the files.
     removeMultipleFiles(extraFiles);
     // Verify the root directory is empty.
@@ -228,5 +293,6 @@ func main() {
     writeString("All tests passed successfully.\n");
     dumpRootDirectory();
     dumpChainLists();
+    */
 }
 
