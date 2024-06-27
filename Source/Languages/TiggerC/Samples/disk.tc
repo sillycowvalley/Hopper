@@ -121,12 +121,17 @@ func dumpFileContents(byte startBlock, word fileSize, byte indent) {
     word remainingBytes = fileSize;
     word bytesToRead;
     word i;
+    
     if (startBlock != 1)
     {
         _readBlock(ChainBlock, chainBuffer);
         while (true) {
             _readBlock(currentBlock, buffer);
-            bytesToRead = (remainingBytes < PageSize) ? remainingBytes : PageSize;
+            bytesToRead = remainingBytes;
+            if (bytesToRead > PageSize)
+            {
+                bytesToRead = PageSize;
+            }
             writeSpaces(indent);
             writeString("  Data Block ");
             writeHex(currentBlock);
@@ -249,12 +254,14 @@ func main() {
     for (i = 0; i < 6; i++)
     {
         fwrite(writeData1, 1, 100, fh);
-        dumpDirectoryStructured(RootDirStartBlock, 0);
+        //dumpDirectoryStructured(RootDirStartBlock, 0);
     }
     fclose(fh);
     dumpDirectoryStructured(RootDirStartBlock, 0);
     
+    writeString("Removing:\n");
     remove("/file");
+    writeString("Removed.\n");
     
     dumpDirectoryStructured(RootDirStartBlock, 0);
     

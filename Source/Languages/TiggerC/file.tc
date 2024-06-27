@@ -855,14 +855,15 @@ func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle) 
     byte[PageSize] chainBlock;
     byte[PageSize] dirBlock;
     word bytesToWrite = size * count;
-    word bytesWritten;
+    word bytesWritten = 0; // Explicitly setting it to 0 for clarity
     word toWrite;
     word position = ((fileHandle[2] as word) << 8) | fileHandle[3];
     byte currentBlock;
     byte newBlock;
     word offset = position;
     byte dirBlockNumber = fileHandle[0]; // Directory block number
-    byte dirIndex       = fileHandle[1]; // Directory entry index
+    byte dirIndex = fileHandle[1]; // Directory entry index
+
     _readBlock(ChainBlock, chainBlock);
     _readBlock(dirBlockNumber, dirBlock);
     currentBlock = dirBlock[dirIndex * DescriptorSize + StartBlockOffset];
@@ -888,9 +889,9 @@ func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle) 
                 return 0; // Disk full, no blocks available
             }
             chainBlock[currentBlock] = newBlock;
-            newBlock = currentBlock;
-            chainBlock[currentBlock] = 1; // Mark as end of chain
+            chainBlock[newBlock] = 1; // Mark as end of chain
             _writeBlock(ChainBlock, chainBlock);
+            currentBlock = newBlock;
         } else {
             currentBlock = chainBlock[currentBlock];
         }
@@ -904,11 +905,9 @@ func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle) 
         if (toWrite > bytesToWrite) {
             toWrite = bytesToWrite;
         }
-
         memcpy(fileBlock + offset, buffer + bytesWritten, toWrite);
         _writeBlock(currentBlock, fileBlock);
-
-        position     += toWrite;
+        position += toWrite;
         bytesWritten += toWrite;
         bytesToWrite -= toWrite;
 
@@ -932,9 +931,10 @@ func word fwrite(const byte[] buffer, word size, word count, byte[] fileHandle) 
     fileHandle[2] = ((position >> 8) & 0xFF) as byte;
     fileHandle[3] = (position & 0xFF) as byte;
     // Update the file size to the current position in directory entry
-    dirBlock[dirIndex * DescriptorSize + FileSizeOffset]     = ((position >> 8) & 0xFF) as byte;
+    dirBlock[dirIndex * DescriptorSize + FileSizeOffset] = ((position >> 8) & 0xFF) as byte;
     dirBlock[dirIndex * DescriptorSize + FileSizeOffset + 1] = (position & 0xFF) as byte;
     _writeBlock(dirBlockNumber, dirBlock);
+
     return bytesWritten / size;
 }
 
