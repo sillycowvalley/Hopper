@@ -92,9 +92,11 @@ unit TCGen
     //
     //    LGADDPUSHM  : PUSHL offset0, PUSHG offset1, ADD PUSHMB
     //    LADDPUSHM   : PUSHL offset0, ADD PUSHMB
+    //    LZLADDPUSHM : PUSHL offset0, PUSHZ, PUSHL offset1, ADD PUSHMB
     //    ILADDPUSHM  : PUSHI operand, PUSHL offset0, ADD PUSHMB
     //    IGADDPUSHM  : PUSHI operand, PUSHG offset0, ADD PUSHMB
     //    GLADDPUSHM  : PUSHG offset0, PUSHL offset1, ADD PUSHMB
+    //    GZLADDPUSHM : PUSHG offset0, PUSHZ, PUSHL offset1, ADD PUSHMB
     //    GGADDPUSHM  : PUSHG offset0, PUSHG offset1, ADD PUSHMB
     //    LGADDIPOPM : PUSHL offset0, PUSHG offset1, ADD PUSHIB POPMB
     //    GGADDIPOPM : PUSHL offset0, PUSHG offset1, ADD PUSHIB POPMB
@@ -171,7 +173,30 @@ unit TCGen
         
         loop
         {
-            
+            if (instruction0.Name == "PUSHM")
+            {
+                if (instruction0.IsByte && !instruction1.IsByte)
+                {
+                    if (instruction1.Name == "LZLADD") 
+                    {
+                        //Print(" LZLADDPUSHM");
+                        instruction1.Name    = "LZLADDPUSHM";
+                        currentStream[currentStream.Count-2] = instruction1;
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
+                    if (instruction1.Name == "GZLADD") 
+                    {
+                        //Print(" GZLADDPUSHM");
+                        instruction1.Name    = "GZLADDPUSHM";
+                        currentStream[currentStream.Count-2] = instruction1;
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
+                }
+            }
             if (instruction0.Name == "PUSHM")
             {
                 if (instruction1.Name == "GLADD") 
@@ -303,7 +328,7 @@ unit TCGen
                         }
                         else
                         {
-                            Print(" IDIV" + (instruction1.Operand).ToString());
+                            // Print(" IDIV" + (instruction1.Operand).ToString()); // TODO
                         }
                     }
                 }
@@ -954,6 +979,67 @@ unit TCGen
         Instruction instruction0 = currentStream[currentStream.Count-1];
         loop
         {
+            
+            if ((instruction2.Name == "PUSHL") && (instruction1.Name == "PUSHZ"))
+            {
+                if (instruction2.IsByte && instruction1.IsByte && !instruction0.IsByte)
+                {
+                    if (instruction0.Name == "LADDPUSHM")
+                    {
+                        //Print(" LZLADDPUSHM");
+                        instruction2.Offset2 = instruction0.Offset;
+                        instruction2.Name = "LZLADDPUSHM";
+                        instruction2.IsByte = false;
+                        currentStream[currentStream.Count-3] = instruction2;
+                        DeleteInstruction(currentStream.Count-1);
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;       
+                    }
+                    if (instruction0.Name == "LADD")
+                    {
+                        //Print(" LZLADD");
+                        instruction2.Offset2 = instruction0.Offset;
+                        instruction2.Name = "LZLADD";
+                        instruction2.IsByte = false;
+                        currentStream[currentStream.Count-3] = instruction2;
+                        DeleteInstruction(currentStream.Count-1);
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;       
+                    }
+                }
+            }
+            if ((instruction2.Name == "PUSHG") && (instruction1.Name == "PUSHZ"))
+            {
+                if (instruction2.IsByte && instruction1.IsByte && !instruction0.IsByte)
+                {
+                    if (instruction0.Name == "LADDPUSHM")
+                    {
+                        //Print(" GZLADDPUSHM");
+                        instruction2.Offset2 = instruction0.Offset;
+                        instruction2.Name = "GZLADDPUSHM";
+                        instruction2.IsByte = false;
+                        currentStream[currentStream.Count-3] = instruction2;
+                        DeleteInstruction(currentStream.Count-1);
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;       
+                    }
+                    if (instruction0.Name == "LADD")
+                    {
+                        //Print(" GZLADD");
+                        instruction2.Offset2 = instruction0.Offset;
+                        instruction2.Name = "GZLADD";
+                        instruction2.IsByte = false;
+                        currentStream[currentStream.Count-3] = instruction2;
+                        DeleteInstruction(currentStream.Count-1);
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;       
+                    }
+                }
+            }
             if ((instruction2.Name == "PUSHI") && (instruction1.Name == "PUSHI") && (instruction0.Name == "SUB"))
             {
                 if (!instruction2.IsByte && !instruction1.IsByte && !instruction0.IsByte)
@@ -2035,6 +2121,14 @@ unit TCGen
             {
                 content = instruction.Name + width + " [" + GlobalOperand(instruction.Offset) + "] [BP+" + OffsetToHex(instruction.Offset2) + "]";
             }
+            case "GZLADDPUSHM":
+            {
+                content = instruction.Name + width + " [" + GlobalOperand(instruction.Offset) + "] 0x00 [BP+" + OffsetToHex(instruction.Offset2) + "]";
+            }
+            case "GZLADD":
+            {
+                content = instruction.Name + width + " [" + GlobalOperand(instruction.Offset) + "] 0x00 [BP+" + OffsetToHex(instruction.Offset2) + "]";
+            }
             
             case "IGADDPUSHM":
             {
@@ -2044,6 +2138,14 @@ unit TCGen
             case "ILADDPUSHM":
             {
                 content = instruction.Name + width + " # 0x" + (instruction.Operand).ToHexString(instruction.IsByte ? 2 : 4) + " [BP+" + OffsetToHex(instruction.Offset) + "]";
+            }
+            case "LZLADDPUSHM":
+            {
+                content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] # 0x00 [BP+" + OffsetToHex(instruction.Offset2) + "]";
+            }
+            case "LZLADD":
+            {
+                content = instruction.Name + width + " [BP+" + OffsetToHex(instruction.Offset) + "] # 0x00 [BP+" + OffsetToHex(instruction.Offset2) + "]";
             }
             case "LADDPUSHM":
             {
@@ -2466,6 +2568,12 @@ unit TCGen
         generateDelegate = generateGLADDPUSHM;
         generators["GLADDPUSHM"] = generateDelegate;
         
+        generateDelegate = generateGZLADDPUSHM;
+        generators["GZLADDPUSHM"] = generateDelegate;
+        
+        generateDelegate = generateGZLADD;
+        generators["GZLADD"] = generateDelegate;
+        
         generateDelegate = generateILADDPUSHM;
         generators["ILADDPUSHM"] = generateDelegate;
         
@@ -2475,6 +2583,12 @@ unit TCGen
         
         generateDelegate = generateLADDPUSHM;
         generators["LADDPUSHM"] = generateDelegate;
+        
+        generateDelegate = generateLZLADDPUSHM;
+        generators["LZLADDPUSHM"] = generateDelegate;
+        
+        generateDelegate = generateLZLADD;
+        generators["LZLADD"] = generateDelegate;
 
         generateDelegate = generateLGADDIPOPM;
         generators["LGADDIPOPM"] = generateDelegate;
@@ -2626,16 +2740,27 @@ unit TCGen
                     }
                     uint colour = Colour.Ocean;
                     string data = pr.key;
-                    if (data.EndsWith("B") && !data.EndsWith("SUBB"))
-                    {
-                        data = data.Substring(0, data.Length-1);
-                    }
+                    //if (data.EndsWith("B") && !data.EndsWith("SUBB"))
+                    //{
+                    //    data = data.Substring(0, data.Length-1);
+                    //}
                     if (   data.EndsWith("ADD") || data.EndsWith("SUB")
                         || data.EndsWith("MUL") || data.EndsWith("MULI") || data.EndsWith("DIV") || data.EndsWith("DIVI")
                         || data.EndsWith("OR") || data.EndsWith("AND") || data.EndsWith("NOT") || data.EndsWith("XOR")
                        )
                     {
                         colour = Colour.Red;
+                    }
+                    if (   data.EndsWith("ADDB") || data.EndsWith("SUBB")
+                        || data.EndsWith("MULB") || data.EndsWith("MULIB") || data.EndsWith("DIVB") || data.EndsWith("DIVIB")
+                        || data.EndsWith("ORB") || data.EndsWith("ANDB") || data.EndsWith("NOTB") || data.EndsWith("XORB")
+                       )
+                    {
+                        colour = Colour.Orange;
+                    }
+                    if (data.EndsWith("+IF"))
+                    {
+                        colour = Colour.Raspberry;
                     }
                     Print(data, colour, Colour.Black);
                 }
@@ -2678,16 +2803,27 @@ unit TCGen
                     }
                     uint colour = Colour.MatrixGreen;
                     string data = pr.key;
-                    if (data.EndsWith("B") && !data.EndsWith("SUBB"))
-                    {
-                        data = data.Substring(0, data.Length-1);
-                    }
+                    //if (data.EndsWith("B") && !data.EndsWith("SUBB"))
+                    //{
+                    //    data = data.Substring(0, data.Length-1);
+                    //}
                     if (   data.EndsWith("ADD") || data.EndsWith("SUB")
                         || data.EndsWith("MUL") || data.EndsWith("MULI") || data.EndsWith("DIV") || data.EndsWith("DIVI")
                         || data.EndsWith("OR") || data.EndsWith("AND") || data.EndsWith("NOT") || data.EndsWith("XOR")
                        )
                     {
                         colour = Colour.Red;
+                    }
+                    if (   data.EndsWith("ADDB") || data.EndsWith("SUBB")
+                        || data.EndsWith("MULB") || data.EndsWith("MULIB") || data.EndsWith("DIVB") || data.EndsWith("DIVIB")
+                        || data.EndsWith("ORB") || data.EndsWith("ANDB") || data.EndsWith("NOTB") || data.EndsWith("XORB")
+                       )
+                    {
+                        colour = Colour.Orange;
+                    }
+                    if (data.EndsWith("+IF"))
+                    {
+                        colour = Colour.Raspberry;
                     }
                     Print(pr.key, colour, Colour.Black);
                 }
@@ -3051,6 +3187,40 @@ unit TCGen
         TCCode.PadOut("ADC 0x0100, X // MSB", 0); // TOPH
         TCCode.PadOut("STA ZP.TOPH", 0);
         TCCode.PadOut("LDA [ZP.TOP]", 0);
+        TCCode.PadOut("PHA", 0);
+    }
+    generateLZLADDPUSHM(Instruction instruction)
+    {
+        if (instruction.IsByte)
+        {
+            Die(0x0A);
+        }
+        TCCode.BPOffset(instruction.Offset,  "X", true); 
+        TCCode.BPOffset(instruction.Offset2, "Y", instruction.IsByte); 
+        TCCode.PadOut("CLC", 0);
+        TCCode.PadOut("LDA 0x0100, X // LSB", 0);  // NEXTL
+        TCCode.PadOut("ADC 0x0101, Y // LSB", 0); // TOPL
+        TCCode.PadOut("STA ZP.TOPL", 0);
+        TCCode.PadOut("LDA # 0", 0); 
+        TCCode.PadOut("ADC 0x0100, Y // MSB", 0); // TOPH
+        TCCode.PadOut("STA ZP.TOPH", 0);
+        TCCode.PadOut("LDA [ZP.TOP]", 0);
+        TCCode.PadOut("PHA", 0);
+    }
+    generateLZLADD(Instruction instruction)
+    {
+        if (instruction.IsByte)
+        {
+            Die(0x0A);
+        }
+        TCCode.BPOffset(instruction.Offset,  "X", true); 
+        TCCode.BPOffset(instruction.Offset2, "Y", instruction.IsByte); 
+        TCCode.PadOut("CLC", 0);
+        TCCode.PadOut("LDA 0x0100, X // LSB", 0);  // NEXTL
+        TCCode.PadOut("ADC 0x0101, Y // LSB", 0); // TOPL
+        TCCode.PadOut("PHA", 0);
+        TCCode.PadOut("LDA # 0", 0); 
+        TCCode.PadOut("ADC 0x0100, Y // MSB", 0); // TOPH
         TCCode.PadOut("PHA", 0);
     }
     generateIADDG(Instruction instruction)
@@ -3790,6 +3960,45 @@ unit TCGen
         TCCode.PadOut("STA ZP.TOPH", 0);
         
         TCCode.PadOut("LDA [ZP.TOP]", 0);
+        TCCode.PadOut("PHA", 0);
+    }
+    generateGZLADDPUSHM(Instruction instruction)
+    {
+        if (instruction.IsByte)
+        {
+            Die(0x0A);
+        }
+        TCCode.BPOffset(instruction.Offset2, "X", false); 
+        
+        TCCode.PadOut("CLC", 0);
+        int goffset = instruction.Offset;
+        TCCode.PadOut("LDA " + GlobalOperand(goffset), 0);
+        TCCode.PadOut("ADC 0x0101, X // LSB", 0);
+        TCCode.PadOut("STA ZP.TOPL", 0);
+        
+        TCCode.PadOut("LDA # 0", 0);
+        TCCode.PadOut("ADC 0x0100, X // MSB", 0);
+        TCCode.PadOut("STA ZP.TOPH", 0);
+        
+        TCCode.PadOut("LDA [ZP.TOP]", 0);
+        TCCode.PadOut("PHA", 0);
+    }
+    generateGZLADD(Instruction instruction)
+    {
+        if (instruction.IsByte)
+        {
+            Die(0x0A);
+        }
+        TCCode.BPOffset(instruction.Offset2, "X", false); 
+        
+        TCCode.PadOut("CLC", 0);
+        int goffset = instruction.Offset;
+        TCCode.PadOut("LDA " + GlobalOperand(goffset), 0);
+        TCCode.PadOut("ADC 0x0101, X // LSB", 0);
+        TCCode.PadOut("PHA", 0);
+        
+        TCCode.PadOut("LDA # 0", 0);
+        TCCode.PadOut("ADC 0x0100, X // MSB", 0);
         TCCode.PadOut("PHA", 0);
     }
     generateILADDPUSHM(Instruction instruction)

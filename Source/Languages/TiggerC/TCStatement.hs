@@ -96,12 +96,25 @@ unit TCStatement
         {
             TCCode.Else();
             TCScanner.Advance(); // Skip 'else'
-            if (!parseBlock(true, "else")) // else scope block
+            
+            token = TCScanner.Current();    
+            if (token.Type == TokenType.KW_IF)
             {
-                return false;
+                TCCode.PadOut("{ // else if", 0);
+                if (!parseIfStatement())
+                {
+                    return false;
+                }
+                TCCode.PadOut("} // else if", 0);
+            }
+            else
+            {
+                if (!parseBlock(true, "else")) // else scope block
+                {
+                    return false;
+                }
             }
         }
-        
         return true;
     }
     
