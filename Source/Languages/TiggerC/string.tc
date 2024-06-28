@@ -52,7 +52,6 @@ func char[] strncpy(char[] dest, const char[] src, word n) {
     return dest;
 }
 
-
 // Concatenate up to n characters from source string to the destination string
 func char[] strncat(char[] dest, const char[] src, word n) {
     word dest_len = strlen(dest);
@@ -176,7 +175,7 @@ func char[] strtok(char[] str, const char[] delimiters) {
     }
     return token;
 }
-
+//
 // Check if a character is an uppercase letter
 func bool isupper(char c) {
     return c >= 'A' && c <= 'Z';
@@ -192,7 +191,7 @@ func bool isdigit(char c) {
 }
 
 func bool isalpha(char c) {
-    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+    return isupper(c) || islower(c);
 }
 
 func bool isalnum(char c) {
@@ -204,25 +203,17 @@ func bool isspace(char c) {
 }
 
 func char toupper(char c) {
-    if (c >= 'a' && c <= 'z') {
+    if (islower(c)) {
         return c - ('a' - 'A');
     }
     return c;
 }
 
 func char tolower(char c) {
-    if (c >= 'A' && c <= 'Z') {
+    if (isupper(c)) {
         return c + ('a' - 'A');
     }
     return c;
-}
-
-// Copy n bytes from source to destination
-func byte[] memcpy(byte[] dest, const byte[] src, word n) {
-    for (word i = 0; i < n; i++) {
-        dest[i] = src[i];
-    }
-    return dest;
 }
 
 // Copy n bytes from source to destination, allowing for overlapping memory areas
@@ -238,6 +229,12 @@ func byte[] memmove(byte[] dest, const byte[] src, word n) {
     }
     return dest;
 }
+    
+// Copy n bytes from source to destination
+func byte[] memcpy(byte[] dest, const byte[] src, word n) {
+    return memmove(dest, src, n);
+}
+
 
 // Compare the first n bytes of two memory areas
 func int memcmp(const byte[] ptr1, const byte[] ptr2, word n) {
