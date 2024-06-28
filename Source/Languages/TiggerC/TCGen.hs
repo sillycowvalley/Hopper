@@ -88,6 +88,7 @@ unit TCGen
     //    GGADD   : PUSHG offset0, PUSHG offset1, ADD  (offset0 may be the same as offset1)
     //    2G:     : PUSHG offset0, PUSHG offset1, ADD  (offset0 == offset1)
     //    LGADD   : PUSHL offset0, PUSHG offset1, ADD
+    //    GLADD   : PUSHG offset0, PUSHL offset1, ADD
     //
     //    LGADDPUSHM  : PUSHL offset0, PUSHG offset1, ADD PUSHMB
     //    LADDPUSHM   : PUSHL offset0, ADD PUSHMB
@@ -170,6 +171,143 @@ unit TCGen
         
         loop
         {
+            
+            if (instruction0.Name == "PUSHM")
+            {
+                if (instruction1.Name == "GLADD") 
+                {
+                    if (instruction0.IsByte && !instruction1.IsByte)
+                    {
+                        //Print(" GLADDPUSHM");
+                        instruction1.Name    = "GLADDPUSHM";
+                        currentStream[currentStream.Count-2] = instruction1;
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
+                }
+            }
+            if (instruction0.Name == "LADD")
+            {
+                if (instruction1.Name == "PUSHL") 
+                {
+                    if (instruction0.IsByte == instruction1.IsByte)
+                    {
+                        //Print(" LLADD");
+                        instruction1.Offset2 = instruction0.Offset;
+                        instruction1.Name    = "LLADD";
+                        currentStream[currentStream.Count-2] = instruction1;
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
+                }
+            }
+            if (instruction0.Name == "LADD")
+            {
+                if (instruction1.Name == "PUSHG") 
+                {
+                    if (instruction0.IsByte == instruction1.IsByte)
+                    {
+                        //Print(" GLADD");
+                        instruction1.Offset2 = instruction0.Offset;
+                        instruction1.Name    = "GLADD";
+                        currentStream[currentStream.Count-2] = instruction1;
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
+                }
+            }
+                    
+            if (instruction0.Name == "MUL")
+            {
+                if (instruction1.Name == "PUSHI") 
+                {
+                    if (instruction0.IsByte == instruction1.IsByte)
+                    {
+                        byte shl;
+                        switch (instruction1.Operand)
+                        {
+                            case 0:
+                            {
+                                Print(" IMUL0");
+                            }
+                            case 1:
+                            {
+                                Print(" IMUL1");
+                            }
+                            case 2:   { shl = 1; }
+                            case 4:   { shl = 2; }
+                            case 8:   { shl = 3; }
+                            case 16:  { shl = 4; }
+                            case 32:  { shl = 5; }
+                            case 64:  { shl = 6; }
+                            case 128: { shl = 7; }
+                            case 256: { shl = 8; }
+                            
+                        }
+                        if (shl != 0)
+                        {
+                            //Print(" SHL" + shl.ToString());
+                            instruction1.Operand = shl;
+                            instruction0.Name = "SHL";
+                            currentStream[currentStream.Count-2] = instruction1;
+                            currentStream[currentStream.Count-1] = instruction0;
+                            modified = true;
+                            break;
+                        }
+                        else
+                        {
+                            Print(" IMUL" + (instruction1.Operand).ToString());
+                        }
+                    }
+                }
+            }
+            if (instruction0.Name == "DIV")
+            {
+                if (instruction1.Name == "PUSHI") 
+                {
+                    if (instruction0.IsByte == instruction1.IsByte)
+                    {
+                        byte shr;
+                        switch (instruction1.Operand)
+                        {
+                            case 0:
+                            {
+                                Print(" IDIV0");
+                            }
+                            case 1:
+                            {
+                                Print(" IDIV1");
+                            }
+                            case 2:   { shr = 1; }
+                            case 4:   { shr = 2; }
+                            case 8:   { shr = 3; }
+                            case 16:  { shr = 4; }
+                            case 32:  { shr = 5; }
+                            case 64:  { shr = 6; }
+                            case 128: { shr = 7; }
+                            case 256: { shr = 8; }
+                            
+                        }
+                        if (shr != 0)
+                        {
+                            //Print(" SHR" + shr.ToString());
+                            instruction1.Operand = shr;
+                            instruction0.Name = "SHR";
+                            currentStream[currentStream.Count-2] = instruction1;
+                            currentStream[currentStream.Count-1] = instruction0;
+                            modified = true;
+                            break;
+                        }
+                        else
+                        {
+                            Print(" IDIV" + (instruction1.Operand).ToString());
+                        }
+                    }
+                }
+            }
             if (instruction0.Name == "STGI")
             {
                 if (instruction1.Name == "ZEROG") 
@@ -1146,7 +1284,7 @@ unit TCGen
                     {    
                         if (instruction1.Operand == 0x0008)
                         {
-                            Print(" LISHL83");
+                            //Print(" LISHL83");
                             instruction2.Name = "LISHL8";
                             currentStream[currentStream.Count-3] = instruction2;
                             DeleteInstruction(currentStream.Count-2);
@@ -1154,7 +1292,7 @@ unit TCGen
                         }
                         else
                         {
-                            Print(" LISHL3");
+                            //Print(" LISHL3");
                             instruction2.Operand = instruction1.Operand;
                             instruction2.Name = "LISHL";
                             currentStream[currentStream.Count-3] = instruction2;
@@ -2354,6 +2492,10 @@ unit TCGen
         generators["LGADD"] = generateDelegate;
         generators["LGADDB"] = generateDelegate;
 
+        generateDelegate = generateGLADD;
+        generators["GLADD"] = generateDelegate;
+        generators["GLADDB"] = generateDelegate;
+        
         generateDelegate = generateLLADDL;
         generators["LLADDL"] = generateDelegate;
         generators["LLADDLB"] = generateDelegate;
@@ -2484,7 +2626,7 @@ unit TCGen
                     }
                     uint colour = Colour.Ocean;
                     string data = pr.key;
-                    if (data.EndsWith("B"))
+                    if (data.EndsWith("B") && !data.EndsWith("SUBB"))
                     {
                         data = data.Substring(0, data.Length-1);
                     }
@@ -2536,7 +2678,7 @@ unit TCGen
                     }
                     uint colour = Colour.MatrixGreen;
                     string data = pr.key;
-                    if (data.EndsWith("B"))
+                    if (data.EndsWith("B") && !data.EndsWith("SUBB"))
                     {
                         data = data.Substring(0, data.Length-1);
                     }
@@ -3801,6 +3943,26 @@ unit TCGen
             TCCode.PadOut("PHA", 0);
             TCCode.PadOut("LDA 0x0100, X // MSB", 0);
             TCCode.PadOut("ADC " + GlobalOperand(instruction.Offset2+1), 0);
+            TCCode.PadOut("PHA", 0);
+        }
+    }
+    generateGLADD(Instruction instruction)
+    {
+        TCCode.BPOffset(instruction.Offset2, "X", instruction.IsByte); 
+        TCCode.PadOut("CLC", 0);
+        if (instruction.IsByte)
+        {
+            TCCode.PadOut("LDA " + GlobalOperand(instruction.Offset), 0);
+            TCCode.PadOut("ADC 0x0100, X", 0);
+            TCCode.PadOut("PHA", 0);
+        }
+        else
+        {
+            TCCode.PadOut("LDA " + GlobalOperand(instruction.Offset), 0);
+            TCCode.PadOut("ADC 0x0101, X // LSB", 0);
+            TCCode.PadOut("PHA", 0);
+            TCCode.PadOut("LDA " + GlobalOperand(instruction.Offset+1), 0);
+            TCCode.PadOut("ADC 0x0100, X // MSB", 0);
             TCCode.PadOut("PHA", 0);
         }
     }
