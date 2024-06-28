@@ -1,287 +1,220 @@
 #define EXPERIMENTAL
 #define ZEROPAGEGLOBALS
-
-func dumpRootDirectory();
-func dumpChainLists();
 #include "../system.tc"
 #include "../file.tc"
-func dumpDirectoryStructured(byte startBlock, byte indent);
 
-func writeSpaces(byte indent)
-{
-    while (indent != 0)
-    {
-        writeChar(' ');
-        indent--;
-    }
-}
-
-// Prints the contents of a buffer in hexadecimal format.
-func printHex(const byte[] buffer, word length) {
-    word i;
-    for (i = 0; i < length; i++) {
-        writeHex(buffer[i]);
-        writeChar(' ');
-        if ((i + 1) % 16 == 0) {
-            if ((i + 1) % 64 == 0) {
-                writeChar('\n');
-                break;
-            } else {
-                writeChar(' ');
-            }
-        }
-    }
-    writeChar('\n');
-}
-
-// Debugging function to print a byte buffer
-func printByteBuffer(const char[] label, byte[] buffer, word length) {
-    writeString(label);
-    writeString(":\n");
-    printHex(buffer, length);
-}
-
-// Dumps the contents of the ChainLists block.
-func dumpChainLists() {
+func test_file_api() {
+    // Buffer for read/write operations
     byte[PageSize] buffer;
-    writeString("ChainLists Block:\n");
-    _readBlock(ChainBlock, buffer);
-    printHex(buffer, PageSize);
-}
-
-// Dumps the contents of the root directory block.
-func dumpRootDirectory() {
-    byte[PageSize] buffer;
-    writeString("Root Directory Block:\n");
-    _readBlock(RootDirStartBlock, buffer);
-    printHex(buffer, PageSize);
-}
-
-// Prints a message and dumps the root directory and chain lists if a test fails, then halts execution.
-func handleTestFailure(const char[] message) {
-    writeString(message);
-    dumpRootDirectory();
-    dumpChainLists();
-    while (true) {}
-}
-
-// Writes data to a file and reads it back to verify correctness.
-func testWriteReadFile(const char[] filename, const byte[] writeData, word writeSize) {
-    byte[256] readData;
+    memset(buffer, 'A' as byte, PageSize); // Fill buffer with 'A's for testing
+    
+    // Test variables
     byte[] fileHandle;
-
-    // Write data to the file
-    fileHandle = fopen(filename, "w");
-    if (fileHandle == null) {
-        handleTestFailure("Failed to open file for writing: ");
-        writeString(filename);
-        writeChar('\n');
-    }
-    word written = fwrite(writeData, 1, writeSize, fileHandle);
-    if (written != writeSize) {
-        handleTestFailure("Failed to write data to file: ");
-        writeString(filename);
-        writeChar('\n');
-    }
-    fclose(fileHandle);
+    byte[] dirHandle;
+    int result;
+    word count;
+    word position;
     
-    dumpDirectoryStructured(RootDirStartBlock, 0);
-
-    // Read data back from the file
-    fileHandle = fopen(filename, "r");
+    // Format the file system
+    result = format();
+    if (result != 0) {
+        writeString("Format failed!");
+        return;
+    }
+    // Create a new directory
+    result = mkdir("/testdir");
+    if (result != 0) {
+        writeString("mkdir failed!");
+        return;
+    }
+    // Change directory
+    result = chdir("/testdir");
+    if (result != 0) {
+        writeString("chdir failed!");
+        return;
+    }
+    // Open a file for writing
+    fileHandle = fopen("testfile", "w");
     if (fileHandle == null) {
-        handleTestFailure("Failed to open file for reading: ");
-        writeString(filename);
-        writeChar('\n');
+        writeString("fopen for write failed!");
+        return;
     }
-    word read = fread(readData, 1, writeSize, fileHandle);
-    if (read != writeSize) {
-        handleTestFailure("Failed to read data from file: ");
-        writeString(filename);
-        writeChar('\n');
+    // Write to the file
+    count = fwrite(buffer, 1, PageSize, fileHandle);
+    if (count != PageSize) {
+        writeString("fwrite failed!");
+        return;
     }
-    fclose(fileHandle);
-
-    // Verify the read data matches the written data
-    if (memcmp(writeData, readData, writeSize) != 0) {
-        handleTestFailure("Data read does not match data written in file: ");
-        writeString(filename);
-        writeChar('\n');
+    // Write to the file to exceed one page
+    count = fwrite(buffer, 1, PageSize, fileHandle);
+    if (count != PageSize) {
+        writeString("fwrite second page failed!");
+        return;
     }
-
-    writeString("Successfully verified file: ");
-    writeString(filename);
-    writeChar('\n');
-}
-
-func dumpFileContents(byte startBlock, word fileSize, byte indent) {
-    byte[PageSize] buffer;
-    byte[PageSize] chainBuffer;
-    byte currentBlock = startBlock;
-    word remainingBytes = fileSize;
-    word bytesToRead;
-    word i;
-    
-    if (startBlock != 1)
-    {
-        _readBlock(ChainBlock, chainBuffer);
-        while (true) {
-            _readBlock(currentBlock, buffer);
-            bytesToRead = remainingBytes;
-            if (bytesToRead > PageSize)
-            {
-                bytesToRead = PageSize;
-            }
-            writeSpaces(indent);
-            writeString("  Data Block ");
-            writeHex(currentBlock);
-            writeString(": ");
-            for (i = 0; i < bytesToRead; i++) {
-                writeHex(buffer[i]);
-                writeChar(' ');
-            }
-            writeChar('\n');
-            remainingBytes -= bytesToRead;
-            if (remainingBytes == 0 || chainBuffer[currentBlock] == 1) {
-                break;
-            }
-            currentBlock = chainBuffer[currentBlock];
+    // Close the file
+    result = fclose(fileHandle);
+    if (result != 0) {
+        writeString("fclose failed!");
+        return;
+    }
+    // Open the file for reading
+    fileHandle = fopen("testfile", "r");
+    if (fileHandle == null) {
+        writeString("fopen for read failed!");
+        return;
+    }
+    // Read from the file
+    count = fread(buffer, 1, PageSize, fileHandle);
+    if (count != PageSize) {
+        writeString("fread failed!");
+        return;
+    }
+    // Check the contents
+    for (word i = 0; i < PageSize; i++) {
+        if (buffer[i] != ('A' as byte)) {
+            writeString("Read data mismatch!");
+            return;
         }
     }
-}
-
-func dumpDirectoryStructured(byte startBlock, byte indent) {
-    byte[PageSize] buffer;
-    byte[PageSize] chainBuffer;
-    byte nextBlock;
-    word i;
-    byte entryType;
-    byte entryLength;
-    char[13] entryName;
-    word entrySize;
-    byte fileBlock;
-    byte currentBlock = startBlock;
-
-    // Read the chain list
-    _readBlock(ChainBlock, chainBuffer);
-    // Iterate through the directory blocks
-    while (true) {
-        _readBlock(currentBlock, buffer);
-        writeSpaces(indent);
-        writeString("Block ");
-        writeHex(currentBlock);
-        writeString(" -> ");
-        writeHex(chainBuffer[currentBlock]);
-        writeString(":\n");
-        // Iterate through directory entries in the block
-        for (i = 0; i < PageSize; i += DescriptorSize) {
-            entryType = buffer[i + FileTypeOffset];
-            entryLength = entryType & 0x0F;
-            entryType = entryType & 0xF0;
-            entryName[0] = '\0';
-            fileBlock = buffer[i + StartBlockOffset];
-            if (fileBlock != 0) {
-                strncpy(entryName, (buffer + i + FilenameOffset) as char[], entryLength);
-                entryName[entryLength] = '\0';
-                entrySize = ((buffer[i + FileSizeOffset] as word) << 8) | buffer[i + FileSizeOffset + 1];
-                writeSpaces(indent);
-                writeString("  ");
-                writeHex((i / DescriptorSize) as byte);
-                writeString(entryType == FileTypeFile ? " File:      " : " Directory: ");
-                writeString(entryName);
-                writeString(", Size: ");
-                writeWord(entrySize);
-                writeString(" bytes, block=");
-                writeWord(fileBlock);
-                writeChar('\n');
-                if (entryType == FileTypeFile) {
-                    dumpFileContents(fileBlock, entrySize, indent + 2);
-                } 
-                else
-                {
-                    if ((entryType == FileTypeDirectory) && (fileBlock != 1)) {
-                        dumpDirectoryStructured(fileBlock, indent + 4);
-                    }
-                }
-            } else {
-                //writeString("  Empty Slot\n");
-            }
-        }
-        currentBlock = chainBuffer[currentBlock];
-        if (currentBlock == 1) {
-            break;
+    // Read the second page from the file
+    count = fread(buffer, 1, PageSize, fileHandle);
+    if (count != PageSize) {
+        writeString("fread second page failed!");
+        return;
+    }
+    // Check the contents of the second page
+    for (i = 0; i < PageSize; i++) {
+        if (buffer[i] != ('A' as byte)) {
+            writeString("Read data mismatch on second page!");
+            return;
         }
     }
+    // Use fseek to move to the beginning of the file
+    result = fseek(fileHandle, 0, SEEK_SET);
+    if (result != 0) {
+        writeString("fseek failed!");
+        return;
+    }
+    // Use ftell to get the current position
+    position = ftell(fileHandle);
+    if (position != 0) {
+        writeString("ftell failed!");
+        return;
+    }
+    // Close the file
+    result = fclose(fileHandle);
+    if (result != 0) {
+        writeString("fclose after read failed!");
+        return;
+    }
+    // Remove the file
+    result = remove("testfile");
+    if (result != 0) {
+        writeString("remove failed!");
+        return;
+    }
+    // Create a subdirectory
+    result = mkdir("/testdir/subdir");
+    if (result != 0) {
+        writeString("mkdir subdir failed!");
+        return;
+    }
+    // Change directory to the subdirectory
+    result = chdir("/testdir/subdir");
+    if (result != 0) {
+        writeString("chdir subdir failed!");
+        return;
+    }
+    // Open a file for writing in the subdirectory
+    fileHandle = fopen("subfile", "w");
+    if (fileHandle == null) {
+        writeString("fopen subfile for write failed!");
+        return;
+    }
+    // Write to the file in the subdirectory
+    count = fwrite(buffer, 1, PageSize, fileHandle);
+    if (count != PageSize) {
+        writeString("fwrite subfile failed!");
+        return;
+    }
+    // Close the file in the subdirectory
+    result = fclose(fileHandle);
+    if (result != 0) {
+        writeString("fclose subfile failed!");
+        return;
+    }
+    // Open the file for reading in the subdirectory
+    fileHandle = fopen("subfile", "r");
+    if (fileHandle == null) {
+        writeString("fopen subfile for read failed!");
+        return;
+    }
+    // Read from the file in the subdirectory
+    count = fread(buffer, 1, PageSize, fileHandle);
+    if (count != PageSize) {
+        writeString("fread subfile failed!");
+        return;
+    }
+    // Check the contents of the file in the subdirectory
+    for (i = 0; i < PageSize; i++) {
+        if (buffer[i] != ('A' as byte)) {
+            writeString("Read data mismatch in subfile!");
+            return;
+        }
+    }
+    // Close the file in the subdirectory
+    result = fclose(fileHandle);
+    if (result != 0) {
+        writeString("fclose subfile after read failed!");
+        return;
+    }
+    // Remove the file in the subdirectory
+    result = remove("subfile");
+    if (result != 0) {
+        writeString("remove subfile failed!");
+        return;
+    }
+    // Change directory back to the parent directory
+    result = chdir("/testdir");
+    if (result != 0) {
+        writeString("chdir back to parent directory failed!");
+        return;
+    }
+    // Remove the subdirectory
+    result = rmdir("/testdir/subdir");
+    if (result != 0) {
+        writeString("rmdir subdir failed!");
+        return;
+    }
+    // Open the directory
+    dirHandle = opendir("/testdir");
+    if (dirHandle == null) {
+        writeString("opendir failed!");
+        return;
+    }
+    // Read the directory
+    byte[] dirEntry;
+    while ((dirEntry = readdir(dirHandle)) != null) {
+        writeString("Unexpected directory entry found!");
+        return;
+    }
+    // Close the directory
+    result = closedir(dirHandle);
+    if (result != 0) {
+        writeString("closedir failed!");
+        return;
+    }
+    // Remove the directory
+    result = rmdir("/testdir");
+    if (result != 0) {
+        writeString("rmdir failed!");
+        return;
+    }
+    // All tests passed
+    writeString("All file API tests passed!");
 }
 
 func main() {
-    byte[256] writeData1;
-    byte[256] writeData2;
-    byte[256] readData;
-    byte[] fh;
-    word i;
-    
-    writeString("\nScanning:\n");
-    if (i2cScan(SerialEEPROMAddress)) {
-        writeString("EEPROM Found\n");
-    } else {
-        writeString("EEPROM Not Found\n");
-        return;
-    }
-    chdir("/");
-    if (format() != 0) {
-        writeString("Format failed.\n");
-        return;
-    }
-    writeString("Format succeeded.\n");
-    
-    dumpDirectoryStructured(RootDirStartBlock, 0);
-    
-    // Create test data for writing and reading
-    for (i = 0; i < 256; i++) {
-        writeData1[i] = i as byte;
-        writeData2[i] = (255 - i) as byte;
-    }
-    
-    writeString("Data Created.\n");
-    /*
-    // Test fwrite and fread with two small files
-    testWriteReadFile("/file1", writeData1, 256);
-    testWriteReadFile("/file2", writeData2, 256);
-    */
-    
-    fh = fopen("/file1", "w");
-    dumpDirectoryStructured(RootDirStartBlock, 0);
-    for (i = 0; i < 6; i++)
-    {
-        fwrite(writeData1, 1, 100, fh);
-        //dumpDirectoryStructured(RootDirStartBlock, 0);
-    }
-    fclose(fh);
-    dumpDirectoryStructured(RootDirStartBlock, 0);
-    
-    fh = fopen("/file1", "r");
-    fseek(fh, 300, SEEK_SET);
-    writeString("\ntell=");
-    writeWord(ftell(fh));
-    while (true)
-    {
-        word bytes = fread(readData, 1, 50, fh);
-        if (bytes == 0)
-        {
-            break;
-        }
-        printByteBuffer("Data", readData, 50);
-    }
-    fclose(fh);
-    
-    remove("/file1");
-    rmdir("/");
-    
-    //dumpRootDirectory();
-    //dumpChainLists();
-    
-    
-    writeString("All tests passed successfully.\n");
+    test_file_api();
 }
 

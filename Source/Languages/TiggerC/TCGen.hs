@@ -184,6 +184,7 @@ unit TCGen
                     {
                         //Print(" ORIF");
                         instruction1.Name    = "ORIF";
+                        instruction1.Operand = instruction0.Operand;
                         currentStream[currentStream.Count-2] = instruction1;
                         DeleteInstruction(currentStream.Count-1);
                         modified = true;
@@ -193,6 +194,7 @@ unit TCGen
                     {
                         //Print(" ANDIF");
                         instruction1.Name    = "ANDIF";
+                        instruction1.Operand = instruction0.Operand;
                         currentStream[currentStream.Count-2] = instruction1;
                         DeleteInstruction(currentStream.Count-1);
                         modified = true;
@@ -202,6 +204,7 @@ unit TCGen
                     {
                         //Print(" BOOLNOTIF");
                         instruction1.Name    = "BOOLNOTIF";
+                        instruction1.Operand = instruction0.Operand;
                         currentStream[currentStream.Count-2] = instruction1;
                         DeleteInstruction(currentStream.Count-1);
                         modified = true;

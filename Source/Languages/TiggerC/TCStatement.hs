@@ -96,7 +96,6 @@ unit TCStatement
         {
             TCCode.Else();
             TCScanner.Advance(); // Skip 'else'
-            
             token = TCScanner.Current();    
             if (token.Type == TokenType.KW_IF)
             {
