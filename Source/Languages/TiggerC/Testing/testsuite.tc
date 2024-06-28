@@ -6,11 +6,11 @@
 
 // Function to print test result
 func printResult(const char[] testName, bool result) {
-    writeString(testName);
+    puts(testName);
     if (result) {
-        writeString(": PASS\n");
+        puts(": PASS\n");
     } else {
-        writeString(": FAIL\n");
+        puts(": FAIL\n");
     }
 }
 

@@ -14,7 +14,7 @@ func main() {
     word count;
     byte iter;
     
-    writeString("\n10 iterations\n");
+    puts("\n10 iterations\n");
 
     byte[] start = millis();
     
@@ -39,9 +39,9 @@ func main() {
     word sec = elapsedSeconds(start);
     free(start);
     
-    writeString("Done.\n");
+    puts("Done.\n");
     writeWord(count);
-    writeString(" primes\n\n");
-    writeWord(ms);writeString(" ms\n");        
-    writeWord(sec);writeString(" s\n");        
+    puts(" primes\n\n");
+    writeWord(ms);puts(" ms\n");        
+    writeWord(sec);puts(" s\n");        
 }

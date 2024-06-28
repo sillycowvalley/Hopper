@@ -7,7 +7,7 @@ func main() {
     word j;
     byte[4] s;
     
-    writeString("\nNRL32:\n"); 
+    puts("\nNRL32:\n"); 
 
     // start timing
     byte[] start = millis();
@@ -17,17 +17,17 @@ func main() {
         for (j = 1; j <= 1000; j++) {
             addWordToLong(s, j);
         }
-        writeChar('.');
+        putc('.');
     }
     
-    writeChar('\n');writeHex(s[3]);writeHex(s[2]);writeHex(s[1]);writeHex(s[0]);
+    putc('\n');writeHex(s[3]);writeHex(s[2]);writeHex(s[1]);writeHex(s[0]);
     
     // stop timing
     word ms = elapsedMillis(start);
     word sec = elapsedSeconds(start);
     free(start);
     
-    writeString("\n");
-    writeWord(ms);writeString(" ms\n");        
-    writeWord(sec);writeString(" s\n");        
+    puts("\n");
+    writeWord(ms);puts(" ms\n");        
+    writeWord(sec);puts(" s\n");        
 }

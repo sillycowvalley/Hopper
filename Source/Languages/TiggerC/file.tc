@@ -173,7 +173,7 @@ func _compactDirectory(byte startBlock, byte currentBlock) {
     bool isEmpty;
     byte prevBlock;
     
-    //writeChar('<');
+    //putc('<');
     
     _readBlock(ChainBlock, chainBlock);
     while (true) {
@@ -226,7 +226,7 @@ func _compactDirectory(byte startBlock, byte currentBlock) {
             chainBlock[prevBlock] = chainBlock[currentBlock];
             chainBlock[currentBlock] = 0;
             _writeBlock(ChainBlock, chainBlock);
-            //writeChar('-');
+            //putc('-');
             break;
         }
         if (!blockMoved) {
@@ -236,7 +236,7 @@ func _compactDirectory(byte startBlock, byte currentBlock) {
         currentBlock = chainBlock[currentBlock];
         if (currentBlock == 1) { break; }
     }
-    //writeChar('>');
+    //putc('>');
 }
 
 // Splits the full path into parent directory and file name.

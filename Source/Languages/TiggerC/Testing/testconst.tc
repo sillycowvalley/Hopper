@@ -37,81 +37,81 @@ func testConstExpressions() {
     const bool BOOL_NOT = !CONST_BOOL_TRUE;
 
     // Output results for verification
-    writeString("ARITH_BYTE = ");
+    puts("ARITH_BYTE = ");
     writeWord(ARITH_BYTE);
-    writeString("\n");
+    puts("\n");
 
-    writeString("ARITH_WORD = ");
+    puts("ARITH_WORD = ");
     writeWord(ARITH_WORD);
-    writeString("\n");
+    puts("\n");
 
-    writeString("ARITH_INT = ");
+    puts("ARITH_INT = ");
     writeWord(ARITH_INT);
-    writeString("\n");
+    puts("\n");
 
-    writeString("ARITH_DIV = ");
+    puts("ARITH_DIV = ");
     writeWord(ARITH_DIV);
-    writeString("\n");
+    puts("\n");
 
-    writeString("ARITH_MOD = ");
+    puts("ARITH_MOD = ");
     writeWord(ARITH_MOD);
-    writeString("\n");
+    puts("\n");
 
-    writeString("BITWISE_AND = ");
+    puts("BITWISE_AND = ");
     writeWord(BITWISE_AND);
-    writeString("\n");
+    puts("\n");
 
-    writeString("BITWISE_OR = ");
+    puts("BITWISE_OR = ");
     writeWord(BITWISE_OR);
-    writeString("\n");
+    puts("\n");
 
-    writeString("BITWISE_XOR = ");
+    puts("BITWISE_XOR = ");
     writeWord(BITWISE_XOR);
-    writeString("\n");
+    puts("\n");
 
-    writeString("BITWISE_LSHIFT = ");
+    puts("BITWISE_LSHIFT = ");
     writeWord(BITWISE_LSHIFT);
-    writeString("\n");
+    puts("\n");
 
-    writeString("BITWISE_RSHIFT = ");
+    puts("BITWISE_RSHIFT = ");
     writeWord(BITWISE_RSHIFT);
-    writeString("\n");
+    puts("\n");
 
-    writeString("COMP_LT = ");
+    puts("COMP_LT = ");
     writeWord(COMP_LT);
-    writeString("\n");
+    puts("\n");
 
-    writeString("COMP_LTE = ");
+    puts("COMP_LTE = ");
     writeWord(COMP_LTE);
-    writeString("\n");
+    puts("\n");
 
-    //writeString("COMP_GT = ");
+    //puts("COMP_GT = ");
     //writeWord(COMP_GT);
-    //writeString("\n");
+    //puts("\n");
 
-    //writeString("COMP_GTE = ");
+    //puts("COMP_GTE = ");
     //writeWord(COMP_GTE);
-    //writeString("\n");
+    //puts("\n");
 
-    writeString("COMP_EQ = ");
+    puts("COMP_EQ = ");
     writeWord(COMP_EQ);
-    writeString("\n");
+    puts("\n");
 
-    writeString("COMP_NEQ = ");
+    puts("COMP_NEQ = ");
     writeWord(COMP_NEQ);
-    writeString("\n");
+    puts("\n");
 
-    writeString("BOOL_AND = ");
+    puts("BOOL_AND = ");
     writeWord(BOOL_AND);
-    writeString("\n");
+    puts("\n");
 
-    writeString("BOOL_OR = ");
+    puts("BOOL_OR = ");
     writeWord(BOOL_OR);
-    writeString("\n");
+    puts("\n");
 
-    writeString("BOOL_NOT = ");
+    puts("BOOL_NOT = ");
     writeWord(BOOL_NOT);
-    writeString("\n");
+    puts("\n");
 }
 
 func main() {

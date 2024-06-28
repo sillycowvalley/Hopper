@@ -102,16 +102,26 @@ unit TCSymbols
             
             // Check for recursion
             bool recursion = callStack.Contains(name);
+            
+            string callCount;
+            if (functionCalls.Contains(name))
+            {
+                uint itCalls = (functionCalls[name]).Count;
+                if (itCalls > 0)
+                {
+                    callCount = " (" + itCalls.ToString() + ")";
+                }
+            }
         
             if (currentDepth <= maxDepth)
             {
                 if (count == total)
                 {
-                    PadOut("'-- " + name + (recursion ? " (recursion)" : ""), currentDepth);
+                    PadOut("'-- " + name + (recursion ? " (recursion)" : "") + callCount, currentDepth);
                 }
                 else
                 {
-                    PadOut("|-- " + name + (recursion ? " (recursion)" : ""), currentDepth);
+                    PadOut("|-- " + name + (recursion ? " (recursion)" : "") + callCount, currentDepth);
                 }
             }
             if (recursion)
@@ -131,10 +141,40 @@ unit TCSymbols
             callStack.Remove(callStack.Count-1);
         }
     }
+    WalkFunctionCalls(<string, bool> calls, int currentDepth, <string> callStack)
+    {
+        foreach (var kv in calls)
+        {
+            string name = kv.key;
+            
+            if (!functionsToCompile.Contains(name))
+            {
+                functionsToCompile[name] = false;
+            }
+            
+            // Check for recursion
+            bool recursion = callStack.Contains(name);
+            if (recursion)
+            {
+                staticCandidates[name] = false;
+                continue;
+            }
+            
+            callStack.Append(name); // Add the function to the call stack
+            
+            // Recursively export nested function calls if within the depth limit
+            if (functionCalls.Contains(name))
+            {
+                WalkFunctionCalls(functionCalls[name], currentDepth + 1, maxDepth, callStack);
+            }
+            callStack.Remove(callStack.Count-1);
+        }
+    }
     
     ExportFunctionTable()
     {
-        int maxDepth = 2;
+        
+        int maxDepth = 3;
         PadOut("/*", 0);
         PadOut("  Functions called:", 0);
         PadOut("", 0);
@@ -153,8 +193,8 @@ unit TCSymbols
                 }
             }
             if (name.Length == 0) { break; }
+            
             functionsToCompile[name] = true;
-        
             staticCandidates[name] = true; // candidate for static locals
             
             // Initialize the call stack with the current function

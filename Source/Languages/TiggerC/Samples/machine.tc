@@ -1,5 +1,5 @@
 
-#include "../system.tc"  // for writeString, writeWord, writeChar
+#include "../system.tc"  // for puts, writeWord, putc
 #include "../time.tc"    // for delay
 
 #define EXPERIMENTAL
@@ -7,7 +7,7 @@
 func Setup()
 {
     asm("SMB0 0xF3 // DDRA");
-    writeString("Initialized.");
+    puts("Initialized.");
 }
 func __LEDOn()
 {

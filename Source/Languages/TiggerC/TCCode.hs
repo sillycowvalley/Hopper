@@ -735,7 +735,7 @@ unit TCCode
         }
         switch (functionName)
         {
-            case "writeChar":
+            case "putc":
             {
                 functionName = "TCSys.WriteChar";
             }

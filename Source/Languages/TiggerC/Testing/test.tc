@@ -12,40 +12,40 @@ func main()
 
     for (byte i = 0; i < 5; i = i + 1)
     {
-        writeString("In for loop\n");
+        puts("In for loop\n");
     }
 
-    writeString("A string with // in it\n");
-    writeString("A string with /* not a comment */ inside\n");
+    puts("A string with // in it\n");
+    puts("A string with /* not a comment */ inside\n");
 
     // Conditional compilation based on DEBUG symbol
     #ifdef DEBUG
-        writeString("Debug mode enabled\n");
+        puts("Debug mode enabled\n");
     #else
-        writeString("Debug mode disabled\n");
+        puts("Debug mode disabled\n");
     #endif
 
     #undef DEBUG
 
     #ifndef DEBUG
-        writeString("Debug mode is now undefined\n");
+        puts("Debug mode is now undefined\n");
     #else
-        writeString("Debug mode is still defined\n");
+        puts("Debug mode is still defined\n");
     #endif
 
     // Test #if defined
     #define FEATURE_ENABLED
 
     #if defined(FEATURE_ENABLED)
-        writeString("Feature is enabled\n");
+        puts("Feature is enabled\n");
     #endif
 
     #undef FEATURE_ENABLED
 
     #if defined(FEATURE_ENABLED)
-        writeString("Feature is still enabled\n");
+        puts("Feature is still enabled\n");
     #else
-        writeString("Feature is now disabled\n");
+        puts("Feature is now disabled\n");
     #endif
 
     // Test #if defined with logical operators
@@ -53,26 +53,26 @@ func main()
     #define OPTION_B
 
     #if defined(OPTION_A) && defined(OPTION_B)
-        writeString("Both options are enabled\n");
+        puts("Both options are enabled\n");
     #endif
 
     #undef OPTION_B
 
     #if defined(OPTION_A) && defined(OPTION_B)
-        writeString("Both options are still enabled\n");
+        puts("Both options are still enabled\n");
     #else
-        writeString("One or both options are disabled\n");
+        puts("One or both options are disabled\n");
     #endif
 
     // Test #if defined with negation
     #define ENABLE_LOGGING
 
     #if !defined(ENABLE_DEBUG)
-        writeString("Debugging is not enabled\n");
+        puts("Debugging is not enabled\n");
     #endif
 
     #if defined(ENABLE_LOGGING) || defined(ENABLE_DEBUG)
-        writeString("Logging or debugging is enabled\n");
+        puts("Logging or debugging is enabled\n");
     #endif
 
     // Test complex logical expression
@@ -80,8 +80,8 @@ func main()
     #define ZZZ
 
     #if !(defined(XXX) && defined(YYY)) || defined(ZZZ)
-        writeString("Complex condition is true\n");
+        puts("Complex condition is true\n");
     #else
-        writeString("Complex condition is false\n");
+        puts("Complex condition is false\n");
     #endif
 }

@@ -17,194 +17,194 @@ func test_string_api() {
     strcpy(buffer1, "Hello, world!");
     len = strlen(buffer1);
     if (len != 13) {
-        writeString("strlen failed!");
+        puts("strlen failed!");
         return;
     }
-    writeChar('.');
+    putc('.');
 
     // Test strcpy
     strcpy(buffer2, buffer1);
     if (strcmp(buffer2, "Hello, world!") != 0) {
-        writeString("strcpy failed!");
+        puts("strcpy failed!");
         return;
     }
-    writeChar('.');
+    putc('.');
 
     // Test strncpy
     strncpy(buffer3, buffer1, 5);
     buffer3[5] = '\0';
     if (strcmp(buffer3, "Hello") != 0) {
-        writeString("strncpy failed!");
+        puts("strncpy failed!");
         return;
     }
-    writeChar('.');
+    putc('.');
 
     // Test strcat
     strcpy(buffer1, "Hello, ");
     strcat(buffer1, "world!");
     if (strcmp(buffer1, "Hello, world!") != 0) {
-        writeString("strcat failed!");
+        puts("strcat failed!");
         return;
     }
-    writeChar('.');
+    putc('.');
 
     // Test strncat
     strcpy(buffer1, "Hello");
     strncat(buffer1, ", world!!!", 7);
     if (strcmp(buffer1, "Hello, world") != 0) {
-        writeString("strncat failed!");
+        puts("strncat failed!");
         return;
     }
-    writeChar('.');
+    putc('.');
 
     // Test strcmp
     strcpy(buffer1, "Hello");
     strcpy(buffer2, "Hello");
     intResult = strcmp(buffer1, buffer2);
     if (intResult != 0) {
-        writeString("strcmp failed!");
+        puts("strcmp failed!");
         return;
     }
-    writeChar('.');
+    putc('.');
 
     // Test strncmp
     strcpy(buffer1, "Hello");
     strcpy(buffer2, "Hell");
     intResult = strncmp(buffer1, buffer2, 4);
     if (intResult != 0) {
-        writeString("strncmp failed!");
+        puts("strncmp failed!");
         return;
     }
-    writeChar('.');
+    putc('.');
 
     // Test strnicmp
     strcpy(buffer1, "Hello");
     strcpy(buffer2, "hello");
     intResult = strnicmp(buffer1, buffer2, 5);
     if (intResult != 0) {
-        writeString("strnicmp failed!");
+        puts("strnicmp failed!");
         return;
     }
-    writeChar('.');
+    putc('.');
 
     // Test stricmp
     strcpy(buffer1, "Hello");
     strcpy(buffer2, "hello");
     intResult = stricmp(buffer1, buffer2);
     if (intResult != 0) {
-        writeString("stricmp failed!");
+        puts("stricmp failed!");
         return;
     }
-    writeChar('.');
+    putc('.');
 
     // Test strchr
     strcpy(buffer1, "Hello, world!");
     result = strchr(buffer1, 'w');
     if (result == null || strcmp(result, "world!") != 0) {
-        writeString("strchr failed!");
+        puts("strchr failed!");
         return;
     }
-    writeChar('.');
+    putc('.');
 
     // Test strrchr
     strcpy(buffer1, "Hello, world!");
     result = strrchr(buffer1, 'o');
     if (result == null || strcmp(result, "orld!") != 0) {
-        writeString("strrchr failed!");
+        puts("strrchr failed!");
         return;
     }
-    writeChar('.');
+    putc('.');
 
     // Test strstr
     strcpy(buffer1, "Hello, world!");
     result = strstr(buffer1, "world");
     if (result == null || strcmp(result, "world!") != 0) {
-        writeString("strstr failed!");
+        puts("strstr failed!");
         return;
     }
-    writeChar('.');
+    putc('.');
 
     // Test strdup
     strcpy(buffer1, "Hello, world!");
     result = strdup(buffer1);
     if (result == null || strcmp(result, "Hello, world!") != 0) {
-        writeString("strdup failed!");
+        puts("strdup failed!");
         free(result);
         return;
     }
     free(result);
-    writeChar('.');
+    putc('.');
 
     // Test strtok
     strcpy(buffer1, "Hello, world! How are you?");
     result = strtok(buffer1, " ");
     if (result == null || strcmp(result, "Hello,") != 0) {
-        writeString("strtok failed!");
+        puts("strtok failed!");
         return;
     }
-    writeChar('.');
+    putc('.');
 
     // Continue strtok test
     result = strtok(null, " ");
     if (result == null || strcmp(result, "world!") != 0) {
-        writeString("strtok continuation failed!");
+        puts("strtok continuation failed!");
         return;
     }
-    writeChar('.');
+    putc('.');
 
     // Test isupper, islower, isdigit, isalpha, isalnum, isspace
     if (!isupper('A') || isupper('a') || !islower('a') || islower('A') ||
         !isdigit('0') || isdigit('a') || !isalpha('A') || !isalpha('a') ||
         isalpha('1') || !isalnum('A') || !isalnum('1') || isalnum(' ') ||
         !isspace(' ') || isspace('A')) {
-        writeString("character test failed!");
+        puts("character test failed!");
         return;
     }
-    writeChar('.');
+    putc('.');
 
     // Test toupper, tolower
     c = toupper('a');
     if (c != 'A') {
-        writeString("toupper failed!");
+        puts("toupper failed!");
         return;
     }
     c = tolower('A');
     if (c != 'a') {
-        writeString("tolower failed!");
+        puts("tolower failed!");
         return;
     }
-    writeChar('.');
+    putc('.');
 
     // Test memcpy, memmove, memcmp, memset
     char[] src = "123456789";
     byte[10] dest;
     memcpy(dest, src as byte[], 10);
     if (memcmp(dest, src as byte[], 10) != 0) {
-        writeString("memcpy/memcmp failed!");
+        puts("memcpy/memcmp failed!");
         return;
     }
     memmove(dest + 2, dest, 8);
     if (memcmp(dest + 2, "12345678" as byte[], 8) != 0) {
-        writeString("memmove failed!");
+        puts("memmove failed!");
         return;
     }
     memset(dest, 'A' as byte, 10);
     if (memcmp(dest, "AAAAAAAAAA" as byte[], 10) != 0) {
-        writeString("memset failed!");
+        puts("memset failed!");
         return;
     }
-    writeChar('.');
+    putc('.');
 
     // Test itoa
     itoa(12345, buffer1, 10);
     if (strcmp(buffer1, "12345") != 0) {
-        writeString("itoa failed!");
+        puts("itoa failed!");
         return;
     }
-    writeChar('.');
+    putc('.');
 
     // All tests passed
-    writeString("All string API tests passed!");
+    puts("All string API tests passed!");
 }
 
 func main() {

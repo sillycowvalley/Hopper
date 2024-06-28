@@ -19,337 +19,337 @@ func test_file_api() {
     // Format the file system
     result = format();
     if (result != 0) {
-        writeString("Format failed!");
+        puts("Format failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Create a new directory
     result = mkdir("/testdir");
     if (result != 0) {
-        writeString("mkdir failed!");
+        puts("mkdir failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Change directory
     result = chdir("/testdir");
     if (result != 0) {
-        writeString("chdir failed!");
+        puts("chdir failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Open a file for writing
     fileHandle = fopen("testfile", "w");
     if (fileHandle == null) {
-        writeString("fopen for write failed!");
+        puts("fopen for write failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Write to the file
     count = fwrite(buffer, 1, PageSize, fileHandle);
     if (count != PageSize) {
-        writeString("fwrite failed!");
+        puts("fwrite failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Write to the file to exceed one page
     count = fwrite(buffer, 1, PageSize, fileHandle);
     if (count != PageSize) {
-        writeString("fwrite second page failed!");
+        puts("fwrite second page failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Close the file
     result = fclose(fileHandle);
     if (result != 0) {
-        writeString("fclose failed!");
+        puts("fclose failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Open the file for reading
     fileHandle = fopen("testfile", "r");
     if (fileHandle == null) {
-        writeString("fopen for read failed!");
+        puts("fopen for read failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Read from the file
     count = fread(buffer, 1, PageSize, fileHandle);
     if (count != PageSize) {
-        writeString("fread failed!");
+        puts("fread failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Check the contents
     for (i = 0; i < PageSize; i++) {
         if (buffer[i] != ('A' as byte)) {
-            writeString("Read data mismatch!");
+            puts("Read data mismatch!");
             return;
         }
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Read the second page from the file
     count = fread(buffer, 1, PageSize, fileHandle);
     if (count != PageSize) {
-        writeString("fread second page failed!");
+        puts("fread second page failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Check the contents of the second page
     for (i = 0; i < PageSize; i++) {
         if (buffer[i] != ('A' as byte)) {
-            writeString("Read data mismatch on second page!");
+            puts("Read data mismatch on second page!");
             return;
         }
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Use fseek to move to the middle of the file
     result = fseek(fileHandle, PageSize as int, SEEK_SET);
     if (result != 0) {
-        writeString("fseek to middle failed!");
+        puts("fseek to middle failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Use ftell to get the current position
     word position = ftell(fileHandle);
     if (position != PageSize) {
-        writeString("ftell after seek failed!");
+        puts("ftell after seek failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Read from the middle of the file
     count = fread(readBuffer, 1, PageSize, fileHandle);
     if (count != PageSize) {
-        writeString("fread from middle failed!");
+        puts("fread from middle failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Check the contents from the middle of the file
     for (i = 0; i < PageSize; i++) {
         if (readBuffer[i] != ('A' as byte)) {
-            writeString("Read data mismatch from middle!");
+            puts("Read data mismatch from middle!");
             return;
         }
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Use fseek to move to the beginning of the file
     result = fseek(fileHandle, 0, SEEK_SET);
     if (result != 0) {
-        writeString("fseek failed!");
+        puts("fseek failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Use ftell to get the current position
     position = ftell(fileHandle);
     if (position != 0) {
-        writeString("ftell failed!");
+        puts("ftell failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Close the file
     result = fclose(fileHandle);
     if (result != 0) {
-        writeString("fclose after read failed!");
+        puts("fclose after read failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Open the file for writing to test truncation
     fileHandle = fopen("testfile", "w");
     if (fileHandle == null) {
-        writeString("fopen for write to truncate failed!");
+        puts("fopen for write to truncate failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Close the file
     result = fclose(fileHandle);
     if (result != 0) {
-        writeString("fclose after truncate failed!");
+        puts("fclose after truncate failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Open the file for reading to verify truncation
     fileHandle = fopen("testfile", "r");
     if (fileHandle == null) {
-        writeString("fopen for read after truncate failed!");
+        puts("fopen for read after truncate failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Read from the file
     count = fread(buffer, 1, PageSize, fileHandle);
     if (count != 0) {
-        writeString("fread after truncate failed!");
+        puts("fread after truncate failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Close the file
     result = fclose(fileHandle);
     if (result != 0) {
-        writeString("fclose after read failed!");
+        puts("fclose after read failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Remove the file
     result = remove("testfile");
     if (result != 0) {
-        writeString("remove failed!");
+        puts("remove failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Create a subdirectory
     result = mkdir("/testdir/subdir");
     if (result != 0) {
-        writeString("mkdir subdir failed!");
+        puts("mkdir subdir failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Change directory to the subdirectory
     result = chdir("/testdir/subdir");
     if (result != 0) {
-        writeString("chdir subdir failed!");
+        puts("chdir subdir failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Open a file for writing in the subdirectory
     fileHandle = fopen("subfile", "w");
     if (fileHandle == null) {
-        writeString("fopen subfile for write failed!");
+        puts("fopen subfile for write failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Write to the file in the subdirectory
     count = fwrite(buffer, 1, PageSize, fileHandle);
     if (count != PageSize) {
-        writeString("fwrite subfile failed!");
+        puts("fwrite subfile failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Close the file in the subdirectory
     result = fclose(fileHandle);
     if (result != 0) {
-        writeString("fclose subfile failed!");
+        puts("fclose subfile failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Open the file for reading in the subdirectory
     fileHandle = fopen("subfile", "r");
     if (fileHandle == null) {
-        writeString("fopen subfile for read failed!");
+        puts("fopen subfile for read failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Read from the file in the subdirectory
     count = fread(buffer, 1, PageSize, fileHandle);
     if (count != PageSize) {
-        writeString("fread subfile failed!");
+        puts("fread subfile failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Check the contents of the file in the subdirectory
     for (i = 0; i < PageSize; i++) {
         if (buffer[i] != ('A' as byte)) {
-            writeString("Read data mismatch in subfile!");
+            puts("Read data mismatch in subfile!");
             return;
         }
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Close the file in the subdirectory
     result = fclose(fileHandle);
     if (result != 0) {
-        writeString("fclose subfile after read failed!");
+        puts("fclose subfile after read failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Remove the file in the subdirectory
     result = remove("subfile");
     if (result != 0) {
-        writeString("remove subfile failed!");
+        puts("remove subfile failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Change directory back to the parent directory
     result = chdir("/testdir");
     if (result != 0) {
-        writeString("chdir to parent dir failed!");
+        puts("chdir to parent dir failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Remove the subdirectory
     result = rmdir("/testdir/subdir");
     if (result != 0) {
-        writeString("rmdir subdir failed!");
+        puts("rmdir subdir failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Open the directory
     dirHandle = opendir("/testdir");
     if (dirHandle == null) {
-        writeString("opendir failed!");
+        puts("opendir failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Read the directory
     byte[] dirEntry;
     while ((dirEntry = readdir(dirHandle)) != null) {
-        writeString("Unexpected directory entry found!");
+        puts("Unexpected directory entry found!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Close the directory
     result = closedir(dirHandle);
     if (result != 0) {
-        writeString("closedir failed!");
+        puts("closedir failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // Remove the directory
     result = rmdir("/testdir");
     if (result != 0) {
-        writeString("rmdir failed!");
+        puts("rmdir failed!");
         return;
     }
-    writeChar('.'); // Progress indicator
+    putc('.'); // Progress indicator
 
     // All tests passed
-    writeString("All file API tests passed!");
+    puts("All file API tests passed!");
 }
 
 func main() {

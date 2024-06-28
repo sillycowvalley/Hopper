@@ -18,21 +18,21 @@ func word heapfree();          // System function to report free heap space in b
 func word heapmax();           // System function to report largest available block from heap in bytes
 
 // Serial Communication
-func writeChar(char c); // System function to write a single character
+func putc(char c); // System function to write a single character
 
-func writeString(const char[] str) {
-    // Function to write a null-terminated string to the serial output using writeChar
+func puts(const char[] str) {
+    // Function to write a null-terminated string to the serial output using putc
     word i;
     while (str[i] != (0 as char)) {
-        writeChar(str[i]);
+        putc(str[i]);
         i++;
     }
 }
 
 func writeWord(word num) {
-    // Function to write a word as a string to the serial output buffer using writeChar
+    // Function to write a word as a string to the serial output buffer using putc
     if (num == 0) {
-        writeChar('0');
+        putc('0');
         return;
     }
     byte i;
@@ -43,14 +43,14 @@ func writeWord(word num) {
     }
     // Write the digits in reverse order
     while (i != 0) {
-        writeChar(digits[--i]);
+        putc(digits[--i]);
     }
 }
 
 func writeInt(int num) {
     if (num < 0) {
         num = -num;
-        writeChar('-');
+        putc('-');
     }
     word w = num as word;
     writeWord(w);
@@ -61,11 +61,11 @@ func writeHex(byte value) {
     
     // Write the high nibble
     byte highNibble = (value >> 4) & 0x0F;
-    writeChar(hexChars[highNibble]);
+    putc(hexChars[highNibble]);
     
     // Write the low nibble
     byte lowNibble = value & 0x0F;
-    writeChar(hexChars[lowNibble]);
+    putc(hexChars[lowNibble]);
 }
 
 // GPIO (Pin) Control

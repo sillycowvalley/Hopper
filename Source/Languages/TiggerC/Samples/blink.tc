@@ -12,7 +12,7 @@ func main() {
     
     pinMode(pin, OUTPUT); // Set pin mode to output
     pinSet(pin, false); // Ensure LED is off
-    writeString(welcome_message); // Send welcome message
+    puts(welcome_message); // Send welcome message
 
     // Main loop
     while (true) {

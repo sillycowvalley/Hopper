@@ -4,7 +4,7 @@
 
 #define ZEROPAGEGLOBALS
 
-#include "../system.tc"  // for writeString, writeWord, writeChar
+#include "../system.tc"  // for puts, writeWord, putc
 #include "../time.tc"    // for millis, elapsedMillis
 
 func word Fibo(word n) {
@@ -18,7 +18,7 @@ func word Fibo(word n) {
 
 func Benchmark(const char[] name, word arg, word loops) {
 
-    writeChar('\n');
+    putc('\n');
     
     // Start timing
     byte[] start = millis(); 
@@ -33,16 +33,16 @@ func Benchmark(const char[] name, word arg, word loops) {
     word sec = elapsedSeconds(start);
     free(start);
     
-    writeString(name);
-    writeChar('(');
+    puts(name);
+    putc('(');
     writeWord(arg);
-    writeString(") = ");
+    puts(") = ");
     writeWord(result);
-    writeString(" in ");
+    puts(" in ");
     writeWord(sec);
-    writeString(" seconds (");
+    puts(" seconds (");
     writeWord(ms);
-    writeString(" ms)\n");
+    puts(" ms)\n");
 }
 
 func main() {

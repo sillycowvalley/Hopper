@@ -2,7 +2,7 @@
 #define EXPERIMENTAL
 #define ZEROPAGEGLOBALS
 
-#include "../system.tc"  // for writeString, writeWord, writeHex
+#include "../system.tc"  // for puts, writeWord, writeHex
 #include "../time.tc"    // for millis, elapsedMillis
 
 func NRL() {
@@ -10,7 +10,7 @@ func NRL() {
     word j;
     word s;
     
-    writeString("\nNRL:\n"); 
+    puts("\nNRL:\n"); 
 
     // start timing
     byte[] start = millis();
@@ -20,7 +20,7 @@ func NRL() {
         for (j = 1; j <= 1000; j++) {
             s = s + j;
         }
-        writeChar('.');
+        putc('.');
     }
     
     writeWord(s);
@@ -30,9 +30,9 @@ func NRL() {
     word sec = elapsedSeconds(start);
     free(start);
     
-    writeString("\n"); 
-    writeWord(ms);writeString(" ms\n");        
-    writeWord(sec);writeString(" s\n");        
+    puts("\n"); 
+    writeWord(ms);puts(" ms\n");        
+    writeWord(sec);puts(" s\n");        
 }
 
 func NRL32() {
@@ -40,7 +40,7 @@ func NRL32() {
     word j;
     byte[4] s;
     
-    writeString("\nNRL32:\n"); 
+    puts("\nNRL32:\n"); 
     // start timing
     byte[] start = millis();
     for (i = 1; i <= 10; i++) {
@@ -48,19 +48,19 @@ func NRL32() {
         for (j = 1; j <= 1000; j++) {
             addWordToLong(s, j);
         }
-        writeChar('.');
+        putc('.');
     }
     
-    writeChar('\n');writeHex(s[3]);writeHex(s[2]);writeHex(s[1]);writeHex(s[0]);
+    putc('\n');writeHex(s[3]);writeHex(s[2]);writeHex(s[1]);writeHex(s[0]);
     
     // stop timing
     word ms = elapsedMillis(start);
     word sec = elapsedSeconds(start);
     free(start);
     
-    writeString("\n");
-    writeWord(ms);writeString(" ms\n");        
-    writeWord(sec);writeString(" s\n");        
+    puts("\n");
+    writeWord(ms);puts(" ms\n");        
+    writeWord(sec);puts(" s\n");        
 }
 
 func main() {

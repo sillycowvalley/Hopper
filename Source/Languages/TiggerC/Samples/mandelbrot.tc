@@ -2,14 +2,14 @@
 #define EXPERIMENTAL
 #define ZEROPAGEGLOBALS
 
-#include "../system.tc"  // for writeString, writeWord, writeChar
+#include "../system.tc"  // for puts, writeWord, putc
 #include "../time.tc"    // for millis, elapsedMillis
 
 func main() {
     
-    writeString("\n Mandelbrot - ported from Gordon's TinyBasic - Integers\n");
-    writeString("    Ported to Tigger C.\n\n");
-    writeChar(' ');
+    puts("\n Mandelbrot - ported from Gordon's TinyBasic - Integers\n");
+    puts("    Ported to Tigger C.\n\n");
+    putc(' ');
     
     byte[] start = millis();
     
@@ -30,28 +30,28 @@ func main() {
                 b = 2 * ((a * q) + (a * s / f)) + d;
                 a = t; p = a / f; q = b / f;
                 if (((p * p) + (q * q)) >= 5) {
-                    writeChar(palette[i]);
+                    putc(palette[i]);
                     break;
                 } else {
                     i++;
                     if (i < 16) {
                         continue;
                     }
-                    writeChar(' ');
+                    putc(' ');
                     break;
                 }
             }
         } // next x
-        writeString("\n "); 
+        puts("\n "); 
     } // next y
     
     word ms = elapsedMillis(start);
     word sec = elapsedSeconds(start);
     free(start);
     
-    writeString("\n"); 
-    writeWord(ms);writeString(" ms\n");        
-    writeWord(sec);writeString(" s\n");        
+    puts("\n"); 
+    writeWord(ms);puts(" ms\n");        
+    writeWord(sec);puts(" s\n");        
     
     
 }
