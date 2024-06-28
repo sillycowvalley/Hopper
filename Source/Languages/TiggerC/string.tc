@@ -1,6 +1,22 @@
 #include "system.tc"
-
 func char tolower(char c);
+
+// Internal function to compare strings lexicographically with optional length and case insensitivity
+func int _compare_strings(const char[] str1, const char[] str2, word n, bool caseInsensitive) {
+    word i = 0;
+    while (i < n && str1[i] != '\0' && str2[i] != '\0') {
+        char c1 = caseInsensitive ? tolower(str1[i]) : str1[i];
+        char c2 = caseInsensitive ? tolower(str2[i]) : str2[i];
+        if (c1 != c2) {
+            return (c1 as int) - (c2 as int);
+        }
+        i++;
+    }
+    if (i == n) {
+        return 0;
+    }
+    return (str1[i] as int) - (str2[i] as int);
+}
 
 // Calculate the length of a string
 func word strlen(const char[] str) {
@@ -36,17 +52,6 @@ func char[] strncpy(char[] dest, const char[] src, word n) {
     return dest;
 }
 
-// Concatenate source string to the destination string
-func char[] strcat(char[] dest, const char[] src) {
-    word dest_len = strlen(dest);
-    word i = 0;
-    while (src[i] != '\0') {
-        dest[dest_len + i] = src[i];
-        i++;
-    }
-    dest[dest_len + i] = '\0'; // Null-terminate the resulting string
-    return dest;
-}
 
 // Concatenate up to n characters from source string to the destination string
 func char[] strncat(char[] dest, const char[] src, word n) {
@@ -60,48 +65,30 @@ func char[] strncat(char[] dest, const char[] src, word n) {
     return dest;
 }
 
+// Concatenate source string to the destination string
+func char[] strcat(char[] dest, const char[] src) {
+    return strncat(dest, src, strlen(src));
+}
+
 // Compare two strings lexicographically
 func int strcmp(const char[] str1, const char[] str2) {
-    word i = 0;
-    while (str1[i] != '\0' && str1[i] == str2[i]) {
-        i++;
-    }
-    return (str1[i] as int) - (str2[i] as int);
+    return _compare_strings(str1, str2, 0xFFFF, false);
 }
 
 // Compare up to n characters of two strings lexicographically
 func int strncmp(const char[] str1, const char[] str2, word n) {
-    word i = 0;
-    while (i < n && str1[i] != '\0' && str1[i] == str2[i]) {
-        i++;
-    }
-    if (i == n) {
-        return 0;
-    }
-    return (str1[i] as int) - (str2[i] as int);
+    return _compare_strings(str1, str2, n, false);
 }
 
 // Compare up to n characters of two strings lexicographically (case insensitive)
 func int strnicmp(const char[] str1, const char[] str2, word n) {
-    word i = 0;
-    while (i < n && str1[i] != '\0' && tolower(str1[i]) == tolower(str2[i])) {
-        i++;
-    }
-    if (i == n) {
-        return 0;
-    }
-    return (tolower(str1[i]) as int) - (tolower(str2[i]) as int);
+    return _compare_strings(str1, str2, n, true);
 }
 
 // Compare two strings lexicographically (case insensitive)
 func int stricmp(const char[] str1, const char[] str2) {
-    word i = 0;
-    while (str1[i] != '\0' && tolower(str1[i]) == tolower(str2[i])) {
-        i++;
-    }
-    return (tolower(str1[i]) as int) - (tolower(str2[i]) as int);
+    return _compare_strings(str1, str2, 0xFFFF, true);
 }
-
 
 // Find the first occurrence of a character in a string
 func char[] strchr(const char[] str, char c) {
@@ -275,7 +262,7 @@ func char[] itoa(int ivalue, char[] str, byte base) {
     char[] digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     char[33] buffer; // Maximum length for an int in base 2 + null terminator
     bool isNegative;
-    word i;
+    word i = 0;
     word value;
     
     if (ivalue == 0) {
