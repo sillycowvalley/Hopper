@@ -154,6 +154,9 @@ unit TCGen
     //    INEX    : PUSHI operand, NE, LOOPEXIT
     //    IEQZIF  : PUSHI 0x0000,  EQ, IF
     //    INEZIF  : PUSHI 0x0000,  NE, IF
+    //    ORIF    : ORB, IF
+    //    ANDIF   : ANDB, IF
+    //    BOOLNOTIF : BOOLNOT, IF
     //
     //    PUSHM1  : PUSHI 0, PUSH 1, SUB
     
@@ -173,6 +176,39 @@ unit TCGen
         
         loop
         {
+            if (instruction0.Name == "IF")
+            {
+                if (instruction1.IsByte)
+                {
+                    if (instruction1.Name == "OR") 
+                    {
+                        //Print(" ORIF");
+                        instruction1.Name    = "ORIF";
+                        currentStream[currentStream.Count-2] = instruction1;
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
+                    if (instruction1.Name == "AND") 
+                    {
+                        //Print(" ANDIF");
+                        instruction1.Name    = "ANDIF";
+                        currentStream[currentStream.Count-2] = instruction1;
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
+                    if (instruction1.Name == "BOOLNOT") 
+                    {
+                        //Print(" BOOLNOTIF");
+                        instruction1.Name    = "BOOLNOTIF";
+                        currentStream[currentStream.Count-2] = instruction1;
+                        DeleteInstruction(currentStream.Count-1);
+                        modified = true;
+                        break;
+                    }
+                }
+            }
             if (instruction0.Name == "PUSHM")
             {
                 if (instruction0.IsByte && !instruction1.IsByte)
@@ -2062,6 +2098,14 @@ unit TCGen
                 content = instruction.Name + width;
             }
             
+            case "ORIF":
+            case "ANDIF":
+            case "BOOLNOTIF":
+            {
+                content = instruction.Name;
+                content = content.Replace("IF", width + "IF");
+            }
+            
             case "NOT":
             {
                 content = instruction.Name + width;
@@ -2429,7 +2473,19 @@ unit TCGen
         generateDelegate = generateOR;
         generators["OR"] = generateDelegate;
         generators["ORB"] = generateDelegate;
+        
+        generateDelegate    = generateORIF;
+        generators["ORIF"]  = generateDelegate;
+        generators["ORIFB"] = generateDelegate;
+        
+        generateDelegate     = generateANDIF;
+        generators["ANDIF"]  = generateDelegate;
+        generators["ANDIFB"] = generateDelegate;
 
+        generateDelegate     = generateBOOLNOTIF;
+        generators["BOOLNOTIF"]  = generateDelegate;
+        generators["BOOLNOTIFB"] = generateDelegate;
+        
         generateDelegate = generateXOR;
         generators["XOR"] = generateDelegate;
         generators["XORB"] = generateDelegate;
@@ -4745,6 +4801,53 @@ unit TCGen
         TCCode.PadOut("TYA", 1);
         TCCode.PadOut("}", 0);
         TCCode.PadOut("if (NZ)", 0);
+        if (instruction.Operand != 0)
+        {
+            TCCode.PadOut("{ // if", 0);
+        }
+    }
+    
+    generateORIF(Instruction instruction)  
+    {
+        if (!instruction.IsByte)
+        {
+            Die(0x0A);
+        }
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("STA ZP.NEXTL", 0);
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("ORA ZP.NEXTL", 0);
+        TCCode.PadOut("if (NZ)", 0);
+        if (instruction.Operand != 0)
+        {
+            TCCode.PadOut("{ // if", 0);
+        }
+    } 
+    generateANDIF(Instruction instruction)
+    {
+        if (!instruction.IsByte)
+        {
+            Die(0x0A);
+        }
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("STA ZP.NEXTL", 0);
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("AND ZP.NEXTL", 0);
+        TCCode.PadOut("if (NZ)", 0);
+        if (instruction.Operand != 0)
+        {
+            TCCode.PadOut("{ // if", 0);
+        }
+    }
+    generateBOOLNOTIF(Instruction instruction)
+    { 
+        if (!instruction.IsByte)
+        {
+            Die(0x0A);
+        }
+        TCCode.PadOut("// ! ", 0); 
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("if (Z)", 0);
         if (instruction.Operand != 0)
         {
             TCCode.PadOut("{ // if", 0);
