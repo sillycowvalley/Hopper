@@ -4394,14 +4394,37 @@ unit TCGen
     }
     generateCALL(Instruction instruction)
     {
-        TCCode.Call(instruction.Data);
-        if (instruction.Operand != 0)
+        bool done;
+        switch (instruction.Data)
         {
-            TCCode.PopBytes((instruction.Operand).GetByte(0), "");
+            case "putc":
+            {
+                TCCode.PadOut("PLA", 0);
+                TCCode.PadOut("Serial.WriteChar();", 0);
+                done = true;
+            }
+            case "malloc":
+            {
+                TCOps.Malloc();
+                done = true;
+            }
+            case "free":
+            {
+                TCOps.Free();
+                done = true;
+            }
         }
-        if (instruction.Offset != 0)
+        if (!done)
         {
-            TCOps.PushTop(instruction.IsByte);
+            TCCode.Call(instruction.Data);
+            if (instruction.Operand != 0)
+            {
+                TCCode.PopBytes((instruction.Operand).GetByte(0), "");
+            }
+            if (instruction.Offset != 0)
+            {
+                TCOps.PushTop(instruction.IsByte);
+            }
         }
     }
     generateLE(Instruction instruction) { TCOps.CompareLE(instruction.IsByte); }

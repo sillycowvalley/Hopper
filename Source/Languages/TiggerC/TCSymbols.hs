@@ -489,6 +489,7 @@ unit TCSymbols
     {
         bool commented;
         <string, Variable> level = variables[variableLevel];
+        TCGen.BeginStream(false);
         foreach (var kv in level)
         {
             Variable v = kv.value;
@@ -500,18 +501,15 @@ unit TCSymbols
                 {
                     if (!commented)
                     {
-                        TCCode.PadOut("", 0);
-                        TCCode.PadOut("// free automatic allocations " + VariableComment(), 0);
+                        TCGen.Comment("// free automatic allocations " + VariableComment());
                         commented = true;
                     }
-        
-                    TCCode.PushVariable(kv.key, v.Offset, false, v.IsGlobal);
-                    TCCode.Call("free");
-                    TCCode.PadOut("PLY", 0);
-                    TCCode.PadOut("PLY", 0);
+                    TCGen.PushVariable(v.Offset, false, v.IsGlobal);
+                    TCGen.Call("free", false, true, 2);
                 }
             }
         }
+        TCGen.FlushStream();
     }
     LeaveBlock(string name, bool generate)
     {

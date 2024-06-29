@@ -399,9 +399,11 @@ unit TCStatement
                 {
                     size *= 2;
                 }
+                TCGen.BeginStream(false);
                 TCGen.PushImmediate(false, size);
                 TCGen.Call("malloc", false, true, 2);
                 TCGen.PopVariable(LocalOffset, false, false);
+                TCGen.FlushStream();
             }
             LocalOffset = LocalOffset + int(slotSize);
         }

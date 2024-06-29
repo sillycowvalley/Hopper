@@ -523,4 +523,24 @@ unit TCOps
         }
         PadOut("PHX", 0);
     }
+    Malloc()
+    {
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("STA ZP.ACCH", 0);
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("STA ZP.ACCL", 0);
+        TCCode.PadOut("Allocate.Allocate();", 0);
+        TCCode.PadOut("LDA ZP.IDXL", 0);
+        TCCode.PadOut("PHA", 0);
+        TCCode.PadOut("LDA ZP.IDXH", 0);
+        TCCode.PadOut("PHA", 0);
+    }
+    Free()
+    {
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("STA ZP.IDXH", 0);
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("STA ZP.IDXL", 0);
+        TCCode.PadOut("Free.Free();", 0);
+    }
 }

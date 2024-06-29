@@ -299,9 +299,11 @@ unit TCCompile
                 {
                     size *= 2;
                 }
+                TCGen.BeginStream(false);
                 TCGen.PushImmediate(false, size);
                 TCGen.Call("malloc", false, true, 2);
                 TCGen.PopVariable(int(GlobalOffset), false, true);
+                TCGen.FlushStream();
             }
             
             BlockLevel--;
