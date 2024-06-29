@@ -55,7 +55,7 @@ func test_file_api() {
         return;
     }
     putc('.'); // Progress indicator
-
+    
     // Write to the file to exceed one page
     count = fwrite(buffer, 1, PageSize, fileHandle);
     if (count != PageSize) {
@@ -71,7 +71,7 @@ func test_file_api() {
         return;
     }
     putc('.'); // Progress indicator
-
+    
     // Open the file for reading
     fileHandle = fopen("testfile", "r");
     if (fileHandle == null) {
@@ -113,7 +113,7 @@ func test_file_api() {
         }
     }
     putc('.'); // Progress indicator
-
+    
     // Use fseek to move to the middle of the file
     result = fseek(fileHandle, PageSize as int, SEEK_SET);
     if (result != 0) {
@@ -186,7 +186,7 @@ func test_file_api() {
         return;
     }
     putc('.'); // Progress indicator
-
+    
     // Open the file for reading to verify truncation
     fileHandle = fopen("testfile", "r");
     if (fileHandle == null) {
@@ -218,7 +218,7 @@ func test_file_api() {
         return;
     }
     putc('.'); // Progress indicator
-
+    
     // Create a subdirectory
     result = mkdir("/testdir/subdir");
     if (result != 0) {

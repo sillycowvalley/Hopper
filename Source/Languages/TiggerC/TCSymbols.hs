@@ -58,8 +58,9 @@ unit TCSymbols
         functions.Clear();
         symbols.Clear();
         staticBudget = GlobalLimit - GlobalOffset;
+        staticBudget = staticBudget - ArgumentReserve;
         //PrintLn();
-        //PrintLn("GlobalLimit=" + (GlobalLimit).ToString() + ", GlobalOffset=" + (GlobalOffset).ToString() + ", staticBudget=" + staticBudget.ToString());
+        //PrintLn("GlobalLimit=" + (GlobalLimit).ToString() + ", GlobalOffset=" + (GlobalOffset).ToString() + ", ArgumentReserve=" + (ArgumentReserve).ToString() + ", staticBudget=" + staticBudget.ToString());
     }
     bool RequestStaticLocal(string functionName, string variable, uint bytes)
     {
@@ -323,15 +324,15 @@ unit TCSymbols
                         }
                     }
                 
-                    PrintLn();
-                    Print(maxArgumentBytes.ToString() + ":");
+                    //PrintLn();
+                    //Print(maxArgumentBytes.ToString() + ":");
                     foreach(var name in independents) 
                     { 
                         string args = GetArgumentString(name);
                         if (args != "()")
                         {
-                            Print(name, Colour.Ocean, Colour.Black);
-                            Print(args + " "); 
+                            //Print(name, Colour.Ocean, Colour.Black);
+                            //Print(args + " "); 
                             staticArguments[name]      = true;
                             staticArgumentsStartOffset[name] = argumentsUsed;
                         }
@@ -343,12 +344,14 @@ unit TCSymbols
             if (count == 0) { break; }
         }
         ArgumentReserve = argumentsUsed;
+        /*
         PrintLn();
         Print("GlobalLimit=" + (GlobalLimit).ToString());
         PrintLn();
         Print("GlobalStart=" + (GlobalStart).ToHexString(2));
         PrintLn();
         Print("ArgumentReserve=" + (ArgumentReserve).ToHexString(2));
+        */
     }
     
     ExportFunctionTable()
@@ -605,6 +608,9 @@ unit TCSymbols
         <uint, string> argumentIndex;
         <uint, byte>   argumentSize;
         
+        uint staticOffset;
+        bool staticArguments = RequestStaticArgument(functionName, ref staticOffset);
+        
         Function function = functions[functionName];
         <string, Variable> arguments = function.Arguments;
         if (arguments.Count != 0)
@@ -615,21 +621,38 @@ unit TCSymbols
                 argumentIndex[variable.Offset] = argument.key;
                 argumentSize [variable.Offset] = (IsByteType(variable.Type) ? 1 : 2);
             }            
-            uint i = argumentIndex.Count - 1;
-            int  offset = 0;
-            loop
+            if (staticArguments)
             {
-                string name = argumentIndex[i];
-                byte size   = argumentSize[i];
-                
-                string variableType;
-                int    oldOffset;
-                bool   isGlobal;
-                _ = GetVariable(name, ref variableType, ref oldOffset, ref isGlobal);
-                offset -= size;
-                SetVariableOffset(name, offset);
-                if (i == 0) { break; }
-                i--; 
+                uint i = 0;
+                loop
+                {
+                    string name = argumentIndex[i];
+                    byte size   = argumentSize[i];
+                    
+                    SetStaticArgument(name, int(staticOffset));
+                    staticOffset += size;
+                    i++;
+                    if (i == argumentIndex.Count) { break; }
+                }
+            }
+            else
+            {
+                uint i = argumentIndex.Count - 1;
+                int  offset = 0;
+                loop
+                {
+                    string name = argumentIndex[i];
+                    byte size   = argumentSize[i];
+                    
+                    //string variableType;
+                    //int    oldOffset;
+                    //bool   isGlobal;
+                    //_ = GetVariable(name, ref variableType, ref oldOffset, ref isGlobal);
+                    offset -= size;
+                    SetVariableOffset(name, offset);
+                    if (i == 0) { break; }
+                    i--; 
+                }
             }
         }
     }
@@ -718,6 +741,25 @@ unit TCSymbols
             level--;
         }
         return false; // not found
+    }
+    SetStaticArgument(string variableName, int offset)
+    {
+        uint level = variables.Count - 1;
+        loop
+        {
+            <string, Variable> scopeVariables = variables[level];
+            if (scopeVariables.Contains(variableName))
+            {
+                Variable variable = scopeVariables[variableName];
+                variable.Offset = -(offset+1); // to differentiate from regular globals : flip sign and subtract 1 to revert
+                variable.IsGlobal = true;
+                scopeVariables[variableName] =  variable;
+                variables[level] = scopeVariables;
+                break;
+            }
+            if (level == 0) { break; }
+            level--;
+        }
     }
     SetVariableOffset(string variableName, int offset)
     {

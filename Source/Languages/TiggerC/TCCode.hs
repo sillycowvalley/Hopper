@@ -52,9 +52,29 @@ unit TCCode
     bool inStreamMode;
     bool InStreamMode { get { return inStreamMode; } set { inStreamMode = value; } }
     
+    int GlobalMSB(int offset)
+    {
+        if (offset >= 0)
+        {
+            return offset+1;
+        }
+        else
+        {
+            return offset-1; // static argument
+        }
+    }
     string GlobalOperand(int offset)
     {
-        uint address = globalStart + ArgumentReserve + UInt.FromBytes(offset.GetByte(0), offset.GetByte(1));
+        uint address = globalStart;
+        if (offset >= 0)
+        {
+            address += ArgumentReserve;
+        }
+        else
+        {
+            offset = (-offset) - 1;
+        }
+        address = address + UInt.FromBytes(offset.GetByte(0), offset.GetByte(1));
         string operand;
         if (ZeroPageGlobals)
         {
@@ -549,7 +569,7 @@ unit TCCode
             PadOut("PHA", 0);
             if (!isByte)
             {
-                PadOut("LDA " + GlobalOperand(offset+1), 0);  
+                PadOut("LDA " + GlobalOperand(GlobalMSB(offset)), 0);  
                 PadOut("PHA", 0);
             }
         }
@@ -579,7 +599,7 @@ unit TCCode
             if (!isByte)
             {
                 PadOut("PLA", 0);
-                PadOut("STA " + GlobalOperand(offset+1), 0);  
+                PadOut("STA " + GlobalOperand(GlobalMSB(offset)), 0);  
             }
             PadOut("PLA", 0);
             PadOut("STA " + GlobalOperand(offset), 0);  

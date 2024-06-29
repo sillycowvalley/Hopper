@@ -1,4 +1,4 @@
-#define APPLE_I
+//#define APPLE_I
 #define EXPERIMENTAL
 #define ZEROPAGEGLOBALS
 #include "../system.tc"

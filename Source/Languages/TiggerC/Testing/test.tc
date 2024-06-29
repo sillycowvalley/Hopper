@@ -1,3 +1,4 @@
+#define APPLE_I
 #define EXPERIMENTAL
 #define ZEROPAGEGLOBALS
 
@@ -5,21 +6,27 @@
 
 word ten = 10;
 
+func Empty()
+{
+    writeWord(ten);
+}
 func FuncA(char[] arg)
 {
     puts(arg);
 }
 
-func FuncB(word arg)
+func FuncB(word a, word b)
 {
     puts("\n");
-    writeWord(arg);
+    writeWord(a);
     puts("\n");
-    writeWord(ten);
+    writeWord(b);
+    puts("\n");
 }
 
 func main() 
 {
     FuncA("Hello");
-    FuncB(42);
+    FuncB(42, 84);
+    Empty();
 }

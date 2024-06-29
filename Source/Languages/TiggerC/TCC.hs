@@ -141,7 +141,7 @@ program TCCompile
               }
               TCCode.Flush();
               
-              if (false && IsExperimental)
+              if (IsExperimental)
               {
                   TCGen.EmitTrips();
                   TCGen.EmitPairs();

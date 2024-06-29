@@ -584,7 +584,6 @@ unit TCExpression
                 {
                     if (actualType.EndsWith(']'))
                     {
-                        // const char[] palette = ".,'~=+:;*%&$OXB#@ ";
                         token = TCScanner.Current();
                         if (token.Type == TokenType.SYM_LBRACKET)
                         {
@@ -680,8 +679,8 @@ unit TCExpression
                     }
                     
                     TCScanner.Advance(); // Skip '('
-                    byte bytes;
-                    if (!parseArgumentList(name, ref bytes))
+                    byte bytesToPop;
+                    if (!parseArgumentList(name, ref bytesToPop))
                     {
                         break;
                     }
@@ -692,12 +691,8 @@ unit TCExpression
                         break;
                     }
                     TCScanner.Advance(); // Skip ')'
-                    TCGen.Call(name, IsByteType(actualType), actualType != "void", bytes);
-                    //TCGen.DecSP(bytes); // TCCode.PopBytes(bytes, name + " arguments"); // arguments after returning from method call
-                    //if (actualType != "void")
-                    //{
-                    //    TCGen.PushTOP(IsByteType(actualType)); // TCOps.PushTop(IsByteType(actualType));
-                    //}
+                    TCGen.Call(name, IsByteType(actualType), actualType != "void", bytesToPop);
+                    
                 } // function
                 else if (isMem && (token.Type != TokenType.SYM_LBRACKET))
                 {
@@ -1107,12 +1102,16 @@ unit TCExpression
         return success;
     }
     
-    bool parseArgumentList(string functionName, ref byte bytes)
+    bool parseArgumentList(string functionName, ref byte bytesToPop)
     {
         Token token;
         <string> argumentNames;
         <string,Variable> arguments = GetArguments(functionName, ref argumentNames);
         uint currentArgument = 0;
+        
+        uint staticOffset;
+        bool staticArguments = RequestStaticArgument(functionName, ref staticOffset);
+        
         loop
         {
             token = TCScanner.Current();
@@ -1126,7 +1125,9 @@ unit TCExpression
                 Error(token.SourcePath, token.Line, "too many arguments for '" + functionName  + "'");
                 return false;
             }
-        
+            
+            TCGen.BeginStream(false);
+            
             string argType;
             if (!parseExpression(ref argType))
             {
@@ -1140,7 +1141,17 @@ unit TCExpression
                  Error(token.SourcePath, token.Line, "expected '" + argument.Type + "' for argument '" + argName  + "', was '" + argType + "'");
                  return false;
             }
-            bytes += (IsByteType(argument.Type) ? 1 : 2);
+            if (staticArguments)
+            {
+                int offset = -int(staticOffset+1);
+                TCGen.PopVariable(offset, IsByteType(argument.Type), true);
+                staticOffset += (IsByteType(argument.Type) ? 1 : 2);
+            }
+            else
+            {
+                bytesToPop += (IsByteType(argument.Type) ? 1 : 2);
+            }
+            TCGen.FlushStream();
         
             token = TCScanner.Current();
             if (token.Type == TokenType.SYM_COMMA)
