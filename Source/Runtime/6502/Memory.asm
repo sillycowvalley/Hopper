@@ -162,7 +162,7 @@ unit Memory
     }
     Available()
     {
-        AvaiableACC();
+        AvailableACC();
         LDA # Types.UInt
         STA ZP.ACCT
         Stacks.PushACC();  // munts Y, A

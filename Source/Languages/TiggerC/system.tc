@@ -48,23 +48,26 @@ func writeWord(word num) {
 }
 
 func writeInt(int num) {
+    word w;
     if (num < 0) {
         num = -num;
         putc('-');
     }
-    word w = num as word;
+    w = num as word;
     writeWord(w);
 }
 
 func writeHex(byte value) {
     // Function to write a byte as two hexadecimal characters
+    byte highNibble;
+    byte lowNibble;
     
     // Write the high nibble
-    byte highNibble = (value >> 4) & 0x0F;
+    highNibble = (value >> 4) & 0x0F;
     putc(hexChars[highNibble]);
     
     // Write the low nibble
-    byte lowNibble = value & 0x0F;
+    lowNibble = value & 0x0F;
     putc(hexChars[lowNibble]);
 }
 
@@ -97,13 +100,14 @@ func bool pinRead(byte pin) { // System function to read the value of a pin
 
 func pinMode(byte pin, byte mode) { // System function to set the mode of a pin
     byte ddr;
+    byte currentValue;
     if (pin <= 7) {
         ddr = DDRA;
     } else {
         ddr = DDRB;
     }
     pin = (1 << pin) & 0x07;
-    byte currentValue = mem[ddr];
+    currentValue = mem[ddr];
     if (mode == INPUT) {
         currentValue = currentValue & ~pin;
     } else {

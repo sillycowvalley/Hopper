@@ -308,17 +308,6 @@ unit TCStatement
             TCCode.Ret(IsByteType(returnType));
         }
         
-        byte bytes;
-        uint level = GetCurrentVariableLevel();
-        loop
-        {
-            FreeAutomaticAllocations(level);
-            bytes += GetLevelBytes(level);
-            if (level == 1) { break; }
-            level--;
-        }
-        TCCode.PopBytes(bytes, CurrentFunction + " locals");
-        
         TCCode.Return("exit " + CurrentFunction + " " + VariableComment());
         
         return true;
@@ -389,22 +378,18 @@ unit TCStatement
             isGlobal = true;
             offset = int(GlobalOffset);
         }
+        if (!DefineVariable(tp, name, offset, isGlobal)) // parseLocalVarDeclaration
+        {
+            return false;
+        }
         if (isGlobal)
         {
-            if (!DefineVariable(tp, name, offset, isGlobal))
-            {
-                return false;
-            }
             TCGen.Comment("initialize '" + name + "' (" + (GlobalOffset).ToString() + ")");
             TCGen.ZeroGlobal(TCType.IsByteType(tp), GlobalOffset);
             GlobalOffset = GlobalOffset + slotSize;
         }
         else
         {
-            if (!DefineVariable(tp, name, offset, isGlobal))
-            {
-                return false;
-            }
             TCGen.Comment("initialize '" + name + "' (BP+" + (LocalOffset).ToString() +")");
             TCGen.PushImmediate(TCType.IsByteType(tp), 0);
             string memberType;

@@ -1,5 +1,6 @@
 unit ZP
 {
+#ifndef TIGGERC
     const byte PC                   = 0x00;
     const byte PCL                  = 0x00;
     const byte PCH                  = 0x01;
@@ -16,8 +17,11 @@ unit ZP
     // Bit 0 - a program has been loaded
     
     const byte SP                   = 0x03;
+#endif
     const byte BP                   = 0x04;
+#ifndef TIGGERC
     const byte CSP                  = 0x05;
+#endif
     
     const byte FREELIST             = 0x06;
     const byte FREELISTL            = 0x06;
@@ -59,11 +63,13 @@ unit ZP
     const byte TOPT                 = 0x1B;
     const byte NEXTT                = 0x1C;
     
+
     const byte PROGSIZE             = 0x1D;
     
     const byte I2CInWritePtr        = 0x1E;
     const byte I2CInReadPtr         = 0x1F;
-    
+
+
     // used by firmware for 'W'orkspace
     // (for example, Serial also uses these, especially on 6502 where PLX, PLY, PHX and PHY are missing)
     const byte W0                   = 0x20;
@@ -75,10 +81,13 @@ unit ZP
     const byte W6                   = 0x26;
     const byte W7                   = 0x27;
 
+
+#ifndef TIGGERC
     const byte PLUGNPLAY            = W7; // devices on this machine
     // Bit 1 - I2C 0x50 EEPROM exists
     // Bit 0 - I2C 0x3C OLED exists
-    
+#endif
+
     // used by I2C
     const byte I2CADDR              = W3;
     const byte OutB                 = W4;
@@ -94,10 +103,12 @@ unit ZP
     const byte TARGET1              = 0x2D;
     const byte TARGET2              = 0x2E;
     const byte TARGET3              = 0x2F;
-    
+#ifndef TIGGERC
     const byte BRKL                 = 0x30; // .. 0x3F
     const byte BRKH                 = 0x40; // .. 0x4F
-    
+#endif
+
+#ifndef TIGGERC
     // used by 'M'emory manager functions
     const byte M0                   = 0x50;
     const byte M1                   = 0x51;
@@ -115,8 +126,30 @@ unit ZP
     const byte M13                  = 0x5D;
     const byte M14                  = 0x5E;
     const byte M15                  = 0x5F;
+#else
+    // used by 'M'emory manager functions
+    const byte M0                   = 0x30;
+    const byte M1                   = 0x31;
+    const byte M2                   = 0x32;
+    const byte M3                   = 0x33;
+    const byte M4                   = 0x34;
+    const byte M5                   = 0x35;
+    const byte M6                   = 0x36;
+    const byte M7                   = 0x37;
+    const byte M8                   = 0x38;
+    const byte M9                   = 0x39;
+    const byte M10                  = 0x3A;
+    const byte M11                  = 0x3B;
+    const byte M12                  = 0x3C;
+    const byte M13                  = 0x3D;
+    const byte M14                  = 0x3E;
+    const byte M15                  = 0x3F;
+#endif
     
     // used by general syscall 'F'unctions  
+    
+    
+#ifndef TIGGERC
     const byte F0                   = 0x60;
     const byte F1                   = 0x61;
     const byte F2                   = 0x62;
@@ -142,7 +175,11 @@ unit ZP
     const byte D4                   = 0x74;
     const byte D5                   = 0x75;
     const byte D6                   = 0x76;
-    
+#else
+    const byte F0                   = 0x05;
+#endif
+
+#ifndef TIGGERC
     // used my 'U'Int functions
     const byte U0                   = 0x80;
     const byte U1                   = 0x81;
@@ -152,6 +189,13 @@ unit ZP
     const byte U5                   = 0x85;
     const byte U6                   = 0x86;
     const byte U7                   = 0x87;
+#else
+    const byte U0                   = 0x00;
+    const byte U1                   = 0x01;
+    const byte U2                   = 0x02;
+    const byte U3                   = 0x03;
+    
+#endif
 
 #ifdef NONZERO_IO
     // 6551 ACIA
@@ -205,6 +249,7 @@ unit ZP
     // used for Int library for sign
     const byte FSIGN                = F0;
 
+#ifndef TIGGERC
     const byte FSIZE = F1;
     const byte FSIZEL = F1;
     const byte FSIZEH = F2;
@@ -283,5 +328,5 @@ unit ZP
 
     // used by arrays
     const byte ACARRY   = F14;
-    
+#endif
 }

@@ -1352,7 +1352,7 @@ unit TCGen
                             }
                             else
                             {
-                                Print(" GIAND3");
+                                //Print(" GIAND3");
                                 instruction2.Operand = instruction1.Operand;
                                 instruction2.Name = "GIAND";
                                 currentStream[currentStream.Count-3] = instruction2;
@@ -2266,6 +2266,7 @@ unit TCGen
             }
             case "GGADDG":
             {
+                //Print(" " + (instruction.Operand).ToString());
                 content = instruction.Name + width + " [" + GlobalOperand(instruction.Offset) + "] [" +GlobalOperand(instruction.Offset2) + "] [" +GlobalOperand(int(instruction.Operand)) + "]";
             }
             
@@ -3790,28 +3791,25 @@ unit TCGen
         string top = (instruction.IsByte ? ("# 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2)) :  ("# 0x" + (instruction.Operand).ToHexString(4)));
         int goffset = instruction.Offset;
         string next = "[" + GlobalOperand(goffset) + "]";
-        TCCode.PadOut("LDX #1 // " + next + " <= " + top, 0);
+        TCCode.PadOut("LDX #0 // " + next + " <= " + top, 0); // same as ! >, same as ! top < next
         if (instruction.IsByte)
         {
-            TCCode.PadOut("LDA " + GlobalOperand(goffset), 0); // NEXTL
-            TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0); // TOPL
+            TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 0); // TOPL
+            TCCode.PadOut("CMP " + GlobalOperand(goffset), 0); // NEXTL
         }
         else
         {
-            TCCode.PadOut("LDA " + GlobalOperand(GlobalMSB(goffset)), 0); // NEXTH
-            TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0); // TOPH
+            TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(1)).ToHexString(2), 0); // TOPH
+            TCCode.PadOut("CMP " + GlobalOperand(GlobalMSB(goffset)), 0); // NEXTH
             TCCode.PadOut("if (Z)", 0);
             TCCode.PadOut("{", 0);
-            TCCode.PadOut("LDA " + GlobalOperand(goffset), 1); // NEXTL
-            TCCode.PadOut("CMP # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 1); // TOPL
+            TCCode.PadOut("LDA # 0x" + ((instruction.Operand).GetByte(0)).ToHexString(2), 1); // TOPL
+            TCCode.PadOut("CMP " + GlobalOperand(goffset), 1); // NEXTL
             TCCode.PadOut("}", 0);
         }
-        TCCode.PadOut("if (NZ) // " + next + " == " + top + " (not >)?", 0);
+        TCCode.PadOut("if (C) // " + top + " => " + next + " (not >)?", 0);
         TCCode.PadOut("{", 0);
-        TCCode.PadOut("if (C) // " + next + " <  " + top + " (not >)?", 1);
-        TCCode.PadOut("{", 1);
-        TCCode.PadOut("LDX #0  // " + next + " > " + top + "", 2);
-        TCCode.PadOut("}", 1);
+        TCCode.PadOut("LDX #1  // " + top + " >= " + next + "", 1);
         TCCode.PadOut("}", 0);
         TCCode.PadOut("// result in X", 0);
         TCCode.PadOut("PHX", 0);

@@ -281,7 +281,7 @@ unit TCCompile
                 Error(token.SourcePath, token.Line, "global space limit (" + (GlobalLimit).ToString() + " bytes) exceeded");
                 break;
             }
-            if (!DefineVariable(tp, name, int(GlobalOffset), true))
+            if (!DefineVariable(tp, name, int(GlobalOffset), true)) // parseGlobalVar
             {
                 break;
             }
@@ -404,7 +404,7 @@ unit TCCompile
             
             TCCode.Function(functionName);
             TCConstant.EnterBlock();
-            TCSymbols.EnterBlock(false, functionName + " arguments"); // for arguments
+            TCSymbols.EnterBlock(false, functionName + (GetRequiresFrame(functionName) ? " arguments" : "")); // for arguments
             
             if (!DefineFunction(returnType, functionName))
             {
@@ -456,6 +456,17 @@ unit TCCompile
             }
             else if (token.Type == TokenType.SYM_LBRACE)
             {
+                /*
+                if (!FirstPass && Compiling)
+                {
+                    PrintLn();
+                    Print("Function: " + functionName);
+                    if (GetRequiresFrame(functionName))
+                    {
+                        Print(" STACK", Colour.MatrixBlue, Colour.Black);
+                    }
+                }
+                */
                 if (FirstPass)
                 {
                     TCSymbols.InitializeFunctionCalls(functionName);
@@ -470,7 +481,7 @@ unit TCCompile
                 }
                 if (!CurrentIsNaked)
                 {
-                    TCCode.Enter();
+                    TCCode.Enter(functionName);
                 }
                 
                 // This is an actual function definition
@@ -480,7 +491,7 @@ unit TCCompile
                 }
                 if (!CurrentIsNaked)
                 {
-                    TCCode.Leave();
+                    TCCode.Leave(functionName);
                 }
             }
             else
@@ -503,6 +514,7 @@ unit TCCompile
             break;
         } // loop
         
+        CurrentFunction = "<none";
         
         return success;
     }
@@ -535,7 +547,7 @@ unit TCCompile
             
             string variableName = token.Lexeme;
             
-            if (!DefineVariable(variableType, variableName, offset, false))
+            if (!DefineVariable(variableType, variableName, offset, false)) // parseParameterList
             {
                 return false;
             }

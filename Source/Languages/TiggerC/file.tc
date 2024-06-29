@@ -106,6 +106,7 @@ func _resolveRelativePath(char[] dest, const char[] path) {
         return;
     }
     char[] token;
+    char[] lastSlash;
     char[] temp = malloc(256) as char[];
     strcpy(temp, path);
     token = strtok(temp, "/");
@@ -114,7 +115,7 @@ func _resolveRelativePath(char[] dest, const char[] path) {
             // Skip
         } else if (strcmp(token, "..") == 0) {
             // Remove last directory in dest
-            char[] lastSlash = strrchr(dest, '/');
+            lastSlash = strrchr(dest, '/');
             if (lastSlash != null && lastSlash != dest) {
                 lastSlash[0] = '\0';
             } else {
@@ -132,6 +133,8 @@ func _resolveRelativePath(char[] dest, const char[] path) {
     free(temp);
 }
 func _getFullPath(char[] dest, const char[] path) {
+    char[] resolvedPath;
+    char[] temp;
     if (_currentDirectory[0] == '\0') {
         strcpy(_currentDirectory, "/"); // initialize before first use
     }
@@ -147,13 +150,13 @@ func _getFullPath(char[] dest, const char[] path) {
         strcat(dest, path);
     }
     // Resolve relative components like '.' and '..'
-    char[] resolvedPath = malloc(256) as char[];
+    resolvedPath = malloc(256) as char[];
     _resolveRelativePath(resolvedPath, dest);
     strcpy(dest, resolvedPath);
     free(resolvedPath);
     // Ensure the path starts with a root '/'
     if (dest[0] != '/') {
-        char[] temp = malloc(256) as char[];
+        temp = malloc(256) as char[];
         strcpy(temp, dest);
         strcpy(dest, "/");
         strcat(dest, temp);
@@ -483,10 +486,11 @@ func byte[] opendir(const char[] dirname) {
 }
 
 func int chdir(const char[] path) {
+    byte[] dirHandle;
     if (!_isValidPath(path)) {
         return -1; // Invalid path
     }
-    byte[] dirHandle = opendir(path);
+    dirHandle = opendir(path);
     if (dirHandle == null) {
         return -1; // Directory not found
     }

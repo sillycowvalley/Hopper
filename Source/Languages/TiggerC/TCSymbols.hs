@@ -31,6 +31,7 @@ unit TCSymbols
     <string>                 systemCalls;
     <string,bool>            staticCandidates; // functions that are candidates for static local variables
     <string,bool>            staticArguments;
+    <string,bool>            requiresFrame;
     <string,uint>            staticArgumentsStartOffset;
     uint                     staticBudget;     // bytes still available for static locals after all global allocations
     
@@ -59,9 +60,10 @@ unit TCSymbols
         symbols.Clear();
         staticBudget = GlobalLimit - GlobalOffset;
         staticBudget = staticBudget - ArgumentReserve;
-        //PrintLn();
-        //PrintLn("GlobalLimit=" + (GlobalLimit).ToString() + ", GlobalOffset=" + (GlobalOffset).ToString() + ", ArgumentReserve=" + (ArgumentReserve).ToString() + ", staticBudget=" + staticBudget.ToString());
+        PrintLn();
+        PrintLn("GlobalLimit=" + (GlobalLimit).ToString() + ", GlobalOffset=" + (GlobalOffset).ToString() + ", ArgumentReserve=" + (ArgumentReserve).ToString() + ", staticBudget=" + staticBudget.ToString());
     }
+    uint shortFall;
     bool RequestStaticLocal(string functionName, string variable, uint bytes)
     {
         bool success;
@@ -74,16 +76,25 @@ unit TCSymbols
                     staticBudget -= bytes;
                     success = true;                
                 }
+                else
+                {
+                    shortFall += bytes;
+                    requiresFrame[functionName] = true;
+                }
             }
         }
         /*
-        if (!FirstPass && (staticBudget <= 16))
+        if (!FirstPass && (staticBudget <= 16) && (shortFall < 8))
         {
             PrintLn();
             Print("functionName=" + functionName + ", variable=" + variable + ", staticBudget=" + staticBudget.ToString() + (success ? " +" : " -"));
             if (success)
             {
-                Print(", Address=0x" + (GlobalOffset + 0x88).ToHexString(2));
+                Print(", Address=0x" + (GlobalOffset + GlobalStart).ToHexString(2));
+            }
+            else
+            {
+                Print(", shortFall=" + shortFall.ToString());
             }
         }
         */
@@ -575,6 +586,10 @@ unit TCSymbols
             Function function;
             function.ReturnType = returnType;
             functions[functionName] = function;
+            if (FirstPass)
+            {
+                requiresFrame[functionName] = false;
+            }
             currentFunction = functionName;
             success =  true;
         
@@ -644,12 +659,12 @@ unit TCSymbols
                     string name = argumentIndex[i];
                     byte size   = argumentSize[i];
                     
-                    //string variableType;
-                    //int    oldOffset;
-                    //bool   isGlobal;
-                    //_ = GetVariable(name, ref variableType, ref oldOffset, ref isGlobal);
                     offset -= size;
                     SetVariableOffset(name, offset);
+                    if (!FirstPass)
+                    {
+                        requiresFrame[functionName] = true;
+                    }
                     if (i == 0) { break; }
                     i--; 
                 }
@@ -716,10 +731,39 @@ unit TCSymbols
         newVariable.IsGlobal = isGlobal;
         scopeVariables[variableName] = newVariable;
         
-        variables[level] = scopeVariables;   
-        //PrintLn();
-        //Print(level.ToString() + ": " +variableType + " " + variableName);
+        variables[level] = scopeVariables; 
+        string functionName = CurrentFunction;  
+        if (FirstPass && (functionName != "<none>") && !isGlobal /*&& !requiresFrame[functionName]*/)
+        {
+            bool stackVariable;
+            string memberType;
+            if (level >= 2)
+            {
+                stackVariable = true;
+            }
+            else if (IsArrayType(variableType, ref memberType) && (variableType != memberType + "[]") && (variableType != "const " + memberType + "[]"))
+            {
+                stackVariable = true;
+            }
+            if (stackVariable)
+            {
+                requiresFrame[functionName] = true;
+            }
+            /*
+            PrintLn();
+            Print(functionName + " " + level.ToString() + ": " +variableType + " " + variableName);
+            Print(stackVariable ? " STACK" : "", Colour.Red, Colour.Black);
+            */
+        }
         return true;
+    }
+    bool GetRequiresFrame(string functionName)
+    {
+        if (requiresFrame.Contains(functionName))
+        {
+            return requiresFrame[functionName];
+        }
+        return false;
     }
     
         

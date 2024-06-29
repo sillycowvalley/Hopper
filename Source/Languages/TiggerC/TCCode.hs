@@ -20,7 +20,7 @@ unit TCCode
     
     // This is where you define the location and limit of global variables:
     
-    const uint globalZeroPageStart = 0x88;
+    const uint globalZeroPageStart = 0x88; // 0x40;
     const uint globalZeroPageLimit = (0xEB - globalZeroPageStart + 1);
     
     const uint globalAreaStart = 0x0300;
@@ -268,22 +268,6 @@ unit TCCode
             PadOut("break;", 0);
         }
     }
-    Return(string comment)
-    {
-        PadOut("", 0);
-        PadOut("// POP BP", 0);
-        PadOut("PLX", 0);
-        PadOut("STX ZP.BP", 0);
-        
-        if (comment.Length != 0)
-        {
-            PadOut("return; // " + comment, 0);
-        }
-        else
-        {
-            PadOut("return;", 0);
-        }
-    }
     Continue()
     {
         PadOut("continue;", 0);
@@ -406,33 +390,114 @@ unit TCCode
         }
     }
     
-    Enter()
+    Enter(string functionName)
     {
-        PadOut("", 0);
-        PadOut("// PUSH BP", 0);
-        PadOut("LDX ZP.BP", 0);
-        PadOut("PHX", 0);
-        PadOut("// SP -> BP", 0);
-        PadOut("TSX", 0);
-        PadOut("STX ZP.BP", 0);
-        PadOut("", 0);
+        if (!FirstPass)
+        {
+            if (true || GetRequiresFrame(functionName))
+            {
+                if (Compiling)
+                {
+                    //PrintLn();
+                    //Print("Enter: " + functionName);
+                }
+                PadOut("", 0);
+                PadOut("// PUSH BP", 0);
+                PadOut("LDX ZP.BP", 0);
+                PadOut("PHX", 0);
+                PadOut("// SP -> BP", 0);
+                PadOut("TSX", 0);
+                PadOut("STX ZP.BP", 0);
+                PadOut("", 0);
+            }
+        }
         PadOut("// locals scope", 0);
         PadOut("", 0);
     }
-    Leave()
+    Leave(string functionName)
     {
         PadOut("", 0);
         PadOut("// end of locals scope", 0);
         PadOut("", 0); 
             
         TCSymbols.FreeAutomaticAllocations(GetCurrentVariableLevel());
-        TCCode.PopBytes(GetLevelBytes(GetCurrentVariableLevel()), "local variable " + VariableComment()); // method single exit loop
+        byte bytesToPop = GetLevelBytes(GetCurrentVariableLevel());
+        if (bytesToPop != 0)
+        {
+            TCCode.PopBytes(bytesToPop, "local variable " + VariableComment()); // method single exit loop
+        }
         
-        PadOut("", 0);
-        PadOut("// POP BP", 0);
-        PadOut("PLX", 0);
-        PadOut("STX ZP.BP", 0);
+        if (!FirstPass)
+        {
+            if (true || GetRequiresFrame(functionName))
+            {
+                if (Compiling)
+                {
+                    //rintLn();
+                    //Print("Leave: " + functionName + " " + bytesToPop.ToString() + " bytes");
+                }
+            
+                PadOut("", 0);
+                PadOut("// POP BP", 0);
+                PadOut("PLX", 0);
+                PadOut("STX ZP.BP", 0);
+            }
+            else if (bytesToPop != 0)
+            {
+                PrintLn();
+                Print("BAD Leave from " + CurrentFunction + ", " + bytesToPop.ToString() + " bytes");
+                //Die(0x0B);    
+            }
+        }
     }
+    Return(string comment)
+    {
+        byte bytesToPop;
+        uint level = GetCurrentVariableLevel();
+        loop
+        {
+            FreeAutomaticAllocations(level);
+            bytesToPop += GetLevelBytes(level);
+            if (level == 1) { break; }
+            level--;
+        }
+        if (bytesToPop != 0)
+        {
+            TCCode.PopBytes(bytesToPop, CurrentFunction + " locals");
+        }
+        
+        if (!FirstPass)
+        {
+            string functionName = CurrentFunction;
+            if (true || GetRequiresFrame(functionName))
+            {
+                if (Compiling)
+                {   
+                    //PrintLn();
+                    //Print("Return: " + functionName + " " + bytesToPop.ToString() + " bytes");
+                }
+                PadOut("", 0);
+                PadOut("// POP BP", 0);
+                PadOut("PLX", 0);
+                PadOut("STX ZP.BP", 0);
+            }
+            else if (bytesToPop != 0)
+            {
+                PrintLn();
+                Print("BAD Return from " + CurrentFunction + ", " + bytesToPop.ToString() + " bytes");
+                //Die(0x0B);    
+            }
+        }
+        if (comment.Length != 0)
+        {
+            PadOut("return; // " + comment, 0);
+        }
+        else
+        {
+            PadOut("return;", 0);
+        }
+    }
+    
     PopBytes(string comment)
     {
         byte bytes = GetLevelBytes(GetCurrentVariableLevel());

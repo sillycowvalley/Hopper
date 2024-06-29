@@ -10,9 +10,9 @@ unit Diagnostics
     die()
     {
         PHA
-        
+#ifndef TIGGERC
         registers();
-        
+#endif
         LDA # 0x0A
         Serial.WriteChar();
         LDA # 'D'
@@ -23,12 +23,12 @@ unit Diagnostics
         Serial.WriteChar();
         LDA # ':'
         Serial.WriteChar();
-        
+#ifndef TIGGERC        
         LDA ZP.PCH
         Serial.HexOut();
         LDA ZP.PCL
         Serial.HexOut();
-        
+#endif
         LDA # ' '
         Serial.WriteChar();
         
@@ -171,6 +171,7 @@ unit Diagnostics
         }
     }
     
+#ifndef TIGGERC    
     registers()
     {
         PHA
@@ -293,6 +294,7 @@ unit Diagnostics
         
         PLA
     }
+#endif
     HeapDump()
     {
         PHA
