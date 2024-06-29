@@ -17,10 +17,11 @@ unit TCCode
     
     uint line;
     uint extra;
+    <string> removeFrame;
     
     // This is where you define the location and limit of global variables:
     
-    const uint globalZeroPageStart = 0x88; // 0x40;
+    const uint globalZeroPageStart = 0x40; // 0x88;
     const uint globalZeroPageLimit = (0xEB - globalZeroPageStart + 1);
     
     const uint globalAreaStart = 0x0300;
@@ -117,6 +118,8 @@ unit TCCode
             name = name.Replace(extension, "");
             name = name.ToUpper();
             
+            codePath = path.Replace(extension, ".asmtmp");
+            
             codeFile = File.Create(codePath);
             TCSymbols.ExportFunctionTable();
             PadOut("program " + name, 0);
@@ -211,6 +214,32 @@ unit TCCode
             rfile.Append("};" + Char.EOL);
             rfile.Append("}" + Char.EOL);
             rfile.Flush();
+            
+            string finalCodePath = codePath.Replace(".asmtmp", ".asm");
+            file tfile    = File.Open(codePath);
+            file codeFile = File.Create(finalCodePath);
+            
+            loop
+            {
+                string ln = tfile.ReadLine();
+                if (!tfile.IsValid()) { break; }
+                if (ln.EndsWith("PUSH BP, SP -> BP"))
+                {
+                    bool found;
+                    foreach (var remove in removeFrame)
+                    {
+                        if (ln.EndsWith("// " + remove + " PUSH BP, SP -> BP"))
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found) { continue; }    
+                }
+                codeFile.Append(ln + Char.EOL);
+            }
+            codeFile.Flush();
+            File.Delete(codePath);
         }
     }
     <string> deferred;
@@ -394,22 +423,22 @@ unit TCCode
     {
         if (!FirstPass)
         {
-            if (true || GetRequiresFrame(functionName))
-            {
+            //if (true || GetRequiresFrame(functionName))
+            //{
                 if (Compiling)
                 {
                     //PrintLn();
                     //Print("Enter: " + functionName);
                 }
                 PadOut("", 0);
-                PadOut("// PUSH BP", 0);
-                PadOut("LDX ZP.BP", 0);
-                PadOut("PHX", 0);
-                PadOut("// SP -> BP", 0);
-                PadOut("TSX", 0);
-                PadOut("STX ZP.BP", 0);
+                //PadOut("", 0);
+                PadOut("LDX ZP.BP PHX TSX STX ZP.BP // " + functionName + " PUSH BP, SP -> BP", 0);
+                //PadOut("PHX", 0);
+                //PadOut("// ", 0);
+                //PadOut("TSX", 0);
+                //PadOut("STX ZP.BP", 0);
                 PadOut("", 0);
-            }
+            //}
         }
         PadOut("// locals scope", 0);
         PadOut("", 0);
@@ -429,24 +458,31 @@ unit TCCode
         
         if (!FirstPass)
         {
-            if (true || GetRequiresFrame(functionName))
+            if (GetRequiresFrame(functionName))
             {
                 if (Compiling)
                 {
-                    //rintLn();
+                    //PrintLn();
                     //Print("Leave: " + functionName + " " + bytesToPop.ToString() + " bytes");
                 }
             
                 PadOut("", 0);
-                PadOut("// POP BP", 0);
-                PadOut("PLX", 0);
-                PadOut("STX ZP.BP", 0);
+                PadOut("PLX STX ZP.BP // " + functionName + " POP BP", 0);
+                //PadOut("PLX", 0);
+                //PadOut("STX ZP.BP", 0);
             }
-            else if (bytesToPop != 0)
+            else 
             {
-                PrintLn();
-                Print("BAD Leave from " + CurrentFunction + ", " + bytesToPop.ToString() + " bytes");
-                //Die(0x0B);    
+                if (bytesToPop != 0)
+                {
+                    PrintLn();
+                    Print("BAD Leave from " + CurrentFunction + ", " + bytesToPop.ToString() + " bytes");
+                    //Die(0x0B);  
+                }
+                if (Compiling)
+                {
+                    removeFrame.Append(functionName);
+                }
             }
         }
     }
@@ -469,7 +505,7 @@ unit TCCode
         if (!FirstPass)
         {
             string functionName = CurrentFunction;
-            if (true || GetRequiresFrame(functionName))
+            if (GetRequiresFrame(functionName))
             {
                 if (Compiling)
                 {   
@@ -477,9 +513,9 @@ unit TCCode
                     //Print("Return: " + functionName + " " + bytesToPop.ToString() + " bytes");
                 }
                 PadOut("", 0);
-                PadOut("// POP BP", 0);
-                PadOut("PLX", 0);
-                PadOut("STX ZP.BP", 0);
+                PadOut("PLX STX ZP.BP // " + functionName +" POP BP", 0);
+                //PadOut("PLX", 0);
+                //PadOut("STX ZP.BP", 0);
             }
             else if (bytesToPop != 0)
             {

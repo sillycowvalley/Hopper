@@ -60,8 +60,8 @@ unit TCSymbols
         symbols.Clear();
         staticBudget = GlobalLimit - GlobalOffset;
         staticBudget = staticBudget - ArgumentReserve;
-        PrintLn();
-        PrintLn("GlobalLimit=" + (GlobalLimit).ToString() + ", GlobalOffset=" + (GlobalOffset).ToString() + ", ArgumentReserve=" + (ArgumentReserve).ToString() + ", staticBudget=" + staticBudget.ToString());
+        //PrintLn();
+        //PrintLn("GlobalLimit=" + (GlobalLimit).ToString() + ", GlobalOffset=" + (GlobalOffset).ToString() + ", ArgumentReserve=" + (ArgumentReserve).ToString() + ", staticBudget=" + staticBudget.ToString());
     }
     uint shortFall;
     bool RequestStaticLocal(string functionName, string variable, uint bytes)
@@ -817,6 +817,8 @@ unit TCSymbols
                 variable.Offset = offset;
                 scopeVariables[variableName] =  variable;
                 variables[level] = scopeVariables;
+                
+                //Print(" S:" + variableName + " " + offset.ToString());
                 break;
             }
             if (level == 0) { break; }

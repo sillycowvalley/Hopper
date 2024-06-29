@@ -11,6 +11,7 @@ unit TCGen
         uint   Operand;
         int    Offset; // used by CALL, IF as bool
         int    Offset2;
+        int    Offset3;
         string Data;
     }
     
@@ -882,7 +883,7 @@ unit TCGen
                     {   
                         //Print(" GGADDG");
                         instruction1.Name    = "GGADDG";
-                        instruction1.Operand = UInt.FromBytes((instruction0.Offset).GetByte(0), (instruction0.Offset).GetByte(1));
+                        instruction1.Offset3 = instruction0.Offset;
                         currentStream[currentStream.Count-2] = instruction1;
                         DeleteInstruction(currentStream.Count-1);
                         modified = true;
@@ -2266,8 +2267,7 @@ unit TCGen
             }
             case "GGADDG":
             {
-                //Print(" " + (instruction.Operand).ToString());
-                content = instruction.Name + width + " [" + GlobalOperand(instruction.Offset) + "] [" +GlobalOperand(instruction.Offset2) + "] [" +GlobalOperand(int(instruction.Operand)) + "]";
+                content = instruction.Name + width + " [" + GlobalOperand(instruction.Offset) + "] [" +GlobalOperand(instruction.Offset2) + "] [" +GlobalOperand(instruction.Offset3) + "]";
             }
             
             case "GGADDI":
@@ -4307,7 +4307,7 @@ unit TCGen
     {
         int goffset  = instruction.Offset;
         int goffset2 = instruction.Offset2;
-        int goffset3 = int(instruction.Operand);
+        int goffset3 = instruction.Offset3;
         TCCode.PadOut("CLC", 0);
         TCCode.PadOut("LDA " + GlobalOperand(goffset), 0);
         TCCode.PadOut("ADC " + GlobalOperand(goffset2), 0);
