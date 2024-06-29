@@ -1,34 +1,25 @@
+#define EXPERIMENTAL
+#define ZEROPAGEGLOBALS
 
+#include "../system"
 
+word ten = 10;
 
-
-
-
-
-
-
-
-
-
-
-
-
-func FuncA();
-
-
-func FuncC()
+func FuncA(char[] arg)
 {
- 
+    puts(arg);
 }
-func FuncA()
+
+func FuncB(word arg)
 {
-    FuncC();
+    puts("\n");
+    writeWord(arg);
+    puts("\n");
+    writeWord(ten);
 }
-func FuncB()
-{
-}
+
 func main() 
 {
-    FuncA();
-    FuncB();
+    FuncA("Hello");
+    FuncB(42);
 }

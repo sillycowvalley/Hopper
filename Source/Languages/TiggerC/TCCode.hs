@@ -30,7 +30,8 @@ unit TCCode
     
     uint globalStart = globalAreaStart;
     uint globalLimit = globalAreaLimit;
-    
+    uint argumentReserve = 0;
+    uint ArgumentReserve { get { return argumentReserve; } set { argumentReserve = value; } }
     
     bool ZeroPageGlobals 
     { 
@@ -43,7 +44,7 @@ unit TCCode
         } 
     }
     uint GlobalLimit { get { return globalLimit; } }
-    
+    uint GlobalStart { get { return globalStart; } }
     
     bool generating;
     bool Generating { get { return generating; } set { generating = value; } }
@@ -53,7 +54,7 @@ unit TCCode
     
     string GlobalOperand(int offset)
     {
-        uint address = globalStart + UInt.FromBytes(offset.GetByte(0), offset.GetByte(1));
+        uint address = globalStart + ArgumentReserve + UInt.FromBytes(offset.GetByte(0), offset.GetByte(1));
         string operand;
         if (ZeroPageGlobals)
         {

@@ -31,7 +31,7 @@ unit TCSymbols
     <string>                 systemCalls;
     <string,bool>            staticCandidates; // functions that are candidates for static local variables
     <string,bool>            staticArguments;
-    <string,uint>            staticArgumentsOffset;
+    <string,uint>            staticArgumentsStartOffset;
     uint                     staticBudget;     // bytes still available for static locals after all global allocations
     
     string currentFunction;
@@ -61,7 +61,7 @@ unit TCSymbols
         //PrintLn();
         //PrintLn("GlobalLimit=" + (GlobalLimit).ToString() + ", GlobalOffset=" + (GlobalOffset).ToString() + ", staticBudget=" + staticBudget.ToString());
     }
-    bool RequestStaticBytes(string functionName, string variable, uint bytes)
+    bool RequestStaticLocal(string functionName, string variable, uint bytes)
     {
         bool success;
         if (staticCandidates.Contains(functionName))
@@ -88,6 +88,20 @@ unit TCSymbols
         */
         return success;
     }
+    bool RequestStaticArgument(string functionName, ref uint offset)
+    {
+        bool success;
+        if (staticArguments.Contains(functionName))
+        {
+            if (staticArguments[functionName])
+            {
+                offset = staticArgumentsStartOffset[functionName];
+                return true;
+            }
+        }
+        return success;
+    }
+    
     string GetArgumentString(string functionName)
     {
         string argumentString = "(";
@@ -187,7 +201,7 @@ unit TCSymbols
     < <string> > FindIndependentLists(<string, <string> > functionCalls)
     {
         < <string> > independentLists;
-       <string> processedFunctions;
+       <string> processedFunctions;
         loop
         {
             <string> currentList;
@@ -219,7 +233,7 @@ unit TCSymbols
                 foreach (var call in func.value)
                 {
                     if (!currentList.Contains(call))
-                   {
+                   {
                         calls.Append(call);
                     }
                 }
@@ -238,19 +252,7 @@ unit TCSymbols
     
     AllocateStaticArguments()
     {
-        /*
-        foreach (var kv in functionCalls)
-        {
-            PrintLn();
-            Print(kv.key + ":");
-            foreach (var kv2 in kv.value)
-            {
-                Print(" " + kv2.key);
-            }
-        }
-        PrintLn();
-        */
-        uint argumentsBase = GlobalOffset;
+        uint argumentsUsed = 0;
         
         <string, <string> > functionCallsCopy;
         foreach (var kv in functionCalls)
@@ -268,56 +270,85 @@ unit TCSymbols
                 functionCallsCopy[kv.key] = calls; 
             }
         }
-        
-        < <string> > independentLists = FindIndependentLists(functionCallsCopy);
-        foreach (var independents in independentLists)
+        /*
+        foreach (var kv in functionCallsCopy)
         {
-            if (independents.Count > 1)
+            PrintLn();
+            Print(kv.key + ":");
+            foreach (var kv2 in kv.value)
             {
-                // staticCandidates
-                
-                <string> argumentNames;
-                <string,Variable> arguments;
-                uint maxArgumentBytes;
-                foreach(var functionName in independents) 
-                {
-                    uint argumentBytes;
-                    if (functions.Contains(functionName))
-                    {
-                        arguments = GetArguments(functionName, ref argumentNames);
-                        foreach (var argument in arguments)
-                        {
-                            Variable variable = argument.value;
-                            argumentBytes += (IsByteType(variable.Type) ? 1 : 2);
-                        }
-                    }
-                    if (argumentBytes > maxArgumentBytes)
-                    {
-                        maxArgumentBytes = argumentBytes;
-                    }
-                }
-            
-                PrintLn();
-                Print(maxArgumentBytes.ToString() + ":");
-                foreach(var name in independents) 
-                { 
-                    string args = GetArgumentString(name);
-                    //if (args != "()")
-                    //{
-                        Print(name, Colour.Ocean, Colour.Black);
-                        Print(args + " "); 
-                        staticArguments[name]       = true;
-                        staticArgumentsOffset[name] = argumentsBase;
-                    //}
-                }
-                argumentsBase += maxArgumentBytes;
+                Print(" " + kv2.key);
             }
         }
-        //GlobalOffset = GlobalOffset + argumentsBase;
-        //PrintLn();
-        //Print("GlobalLimit=" + (GlobalLimit).ToString());
-        //PrintLn();
-        //Print("GlobalOffset=" + (GlobalOffset).ToString());
+        PrintLn();
+        */
+        
+        < <string> > independentLists = FindIndependentLists(functionCallsCopy);
+        
+        uint maxCandidates  = 0;
+        foreach (var independents in independentLists)
+        {
+            if (independents.Count > maxCandidates)
+            {
+                maxCandidates = independents.Count;
+            }
+        }
+        uint count = maxCandidates;
+        loop
+        {
+            foreach (var independents in independentLists)
+            {
+                if (independents.Count == count)
+                {
+                    // staticCandidates
+                    
+                    <string> argumentNames;
+                    <string,Variable> arguments;
+                    uint maxArgumentBytes;
+                    foreach(var functionName in independents) 
+                    {
+                        uint argumentBytes;
+                        if (functions.Contains(functionName))
+                        {
+                            arguments = GetArguments(functionName, ref argumentNames);
+                            foreach (var argument in arguments)
+                            {
+                                Variable variable = argument.value;
+                                argumentBytes += (IsByteType(variable.Type) ? 1 : 2);
+                            }
+                        }
+                        if (argumentBytes > maxArgumentBytes)
+                        {
+                            maxArgumentBytes = argumentBytes;
+                        }
+                    }
+                
+                    PrintLn();
+                    Print(maxArgumentBytes.ToString() + ":");
+                    foreach(var name in independents) 
+                    { 
+                        string args = GetArgumentString(name);
+                        if (args != "()")
+                        {
+                            Print(name, Colour.Ocean, Colour.Black);
+                            Print(args + " "); 
+                            staticArguments[name]      = true;
+                            staticArgumentsStartOffset[name] = argumentsUsed;
+                        }
+                    }
+                    argumentsUsed += maxArgumentBytes;
+                }
+            }
+            count--;
+            if (count == 0) { break; }
+        }
+        ArgumentReserve = argumentsUsed;
+        PrintLn();
+        Print("GlobalLimit=" + (GlobalLimit).ToString());
+        PrintLn();
+        Print("GlobalStart=" + (GlobalStart).ToHexString(2));
+        PrintLn();
+        Print("ArgumentReserve=" + (ArgumentReserve).ToHexString(2));
     }
     
     ExportFunctionTable()
@@ -340,7 +371,7 @@ unit TCSymbols
             
             functionsToCompile[name] = true;
             staticCandidates[name] = true; // candidate for static locals
-            staticArgumentsOffset[name] = 0;
+            staticArgumentsStartOffset[name] = 0;
             staticArguments[name] = false;
             
             // Initialize the call stack with the current function
@@ -369,7 +400,7 @@ unit TCSymbols
                 string statics;
                 if (staticArguments[name])
                 {
-                    statics = " 0x" + (staticArgumentsOffset[name]).ToHexString(2);
+                    statics = " 0x" + (staticArgumentsStartOffset[name]).ToHexString(2);
                 }   
                 PadOut(name +  GetArgumentString(name) + statics, 1);
                 if (functionCalls.Contains(name))
