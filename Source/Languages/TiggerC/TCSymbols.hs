@@ -28,7 +28,10 @@ unit TCSymbols
     
     <string, <string,bool> > functionCalls;
     <string, bool>           functionsToCompile;
+    <string>                 systemCalls;
     <string,bool>            staticCandidates; // functions that are candidates for static local variables
+    <string,bool>            staticArguments;
+    <string,uint>            staticArgumentsOffset;
     uint                     staticBudget;     // bytes still available for static locals after all global allocations
     
     string currentFunction;
@@ -85,8 +88,27 @@ unit TCSymbols
         */
         return success;
     }
+    string GetArgumentString(string functionName)
+    {
+        string argumentString = "(";
+        <string> argumentNames;
+        <string,Variable> arguments;
+        if (functions.Contains(functionName))
+        {
+            arguments = GetArguments(functionName, ref argumentNames);
+            string comma;
+            foreach (var argumentName in argumentNames)
+            {
+                Variable argument = arguments[argumentName];
+                argumentString = argumentString + comma + argument.Type;
+                comma = ", ";
+            }
+        }
+        argumentString = argumentString + ")";
+        return argumentString;
+    }
         
-    ExportFunctionCalls(<string, bool> calls, int currentDepth, int maxDepth, <string> callStack)
+    ExportFunctionCalls(<string, bool> calls, int currentDepth, int maxDepth)
     {
         uint count = 0;
         uint total = calls.Count;
@@ -95,15 +117,12 @@ unit TCSymbols
             string name = kv.key;
             count++;
             
-            if (!functionsToCompile.Contains(name))
-            {
-                functionsToCompile[name] = false;
-            }
-            
-            // Check for recursion
-            bool recursion = callStack.Contains(name);
+            bool recursion = !staticCandidates[name];
             
             string callCount;
+            callCount = callCount + GetArgumentString(name);
+            
+            /*
             if (functionCalls.Contains(name))
             {
                 uint itCalls = (functionCalls[name]).Count;
@@ -112,7 +131,7 @@ unit TCSymbols
                     callCount = " (" + itCalls.ToString() + ")";
                 }
             }
-        
+            */
             if (currentDepth <= maxDepth)
             {
                 if (count == total)
@@ -126,20 +145,15 @@ unit TCSymbols
             }
             if (recursion)
             {
-                staticCandidates[name] = false;
                 continue;
             }
-            
-            callStack.Append(name); // Add the function to the call stack
             
             // Recursively export nested function calls if within the depth limit
             if (functionCalls.Contains(name))
             {
-                ExportFunctionCalls(functionCalls[name], currentDepth + 1, maxDepth, callStack);
+                ExportFunctionCalls(functionCalls[name], currentDepth + 1, maxDepth);
             }
-            
-            callStack.Remove(callStack.Count-1);
-        }
+       }
     }
     WalkFunctionCalls(<string, bool> calls, int currentDepth, <string> callStack)
     {
@@ -159,28 +173,158 @@ unit TCSymbols
                 staticCandidates[name] = false;
                 continue;
             }
-            
             callStack.Append(name); // Add the function to the call stack
             
             // Recursively export nested function calls if within the depth limit
             if (functionCalls.Contains(name))
             {
-                WalkFunctionCalls(functionCalls[name], currentDepth + 1, maxDepth, callStack);
+                WalkFunctionCalls(functionCalls[name], currentDepth + 1, callStack);
             }
             callStack.Remove(callStack.Count-1);
         }
     }
     
+    < <string> > FindIndependentLists(<string, <string> > functionCalls)
+    {
+        < <string> > independentLists;
+       <string> processedFunctions;
+        loop
+        {
+            <string> currentList;
+    
+            // Find all functions that do not call any other functions
+            foreach (var func in functionCalls)
+            {
+                if (processedFunctions.Contains(func.key)) { continue; }
+                if ((func.value).Count == 0)
+                {
+                    currentList.Append(func.key);
+                }
+            }
+    
+            // If no more independent functions, break
+            if (currentList.Count == 0)
+            {
+                break;
+            }
+    
+            // Add the current list to the independent lists
+            independentLists.Append(currentList);
+    
+            // Remove these functions from all call lists
+            foreach (var func in functionCalls)
+            {
+                if (processedFunctions.Contains(func.key)) { continue; }
+                <string> calls;
+                foreach (var call in func.value)
+                {
+                    if (!currentList.Contains(call))
+                   {
+                        calls.Append(call);
+                    }
+                }
+                functionCalls[func.key] = calls;
+            }
+            // Remove processed functions from the main list
+            foreach (var independentFunc in currentList)
+            {
+                processedFunctions.Append(independentFunc);
+            }
+        }
+    
+        return independentLists;
+    }
+    
+    
+    AllocateStaticArguments()
+    {
+        /*
+        foreach (var kv in functionCalls)
+        {
+            PrintLn();
+            Print(kv.key + ":");
+            foreach (var kv2 in kv.value)
+            {
+                Print(" " + kv2.key);
+            }
+        }
+        PrintLn();
+        */
+        uint argumentsBase = GlobalOffset;
+        
+        <string, <string> > functionCallsCopy;
+        foreach (var kv in functionCalls)
+        {
+            if (functionsToCompile.Contains(kv.key))
+            {
+                <string> calls;
+                foreach (var kv2 in kv.value)
+                {
+                    if (!systemCalls.Contains(kv2.key))
+                    {
+                        calls.Append(kv2.key);
+                    }
+                }
+                functionCallsCopy[kv.key] = calls; 
+            }
+        }
+        
+        < <string> > independentLists = FindIndependentLists(functionCallsCopy);
+        foreach (var independents in independentLists)
+        {
+            if (independents.Count > 1)
+            {
+                // staticCandidates
+                
+                <string> argumentNames;
+                <string,Variable> arguments;
+                uint maxArgumentBytes;
+                foreach(var functionName in independents) 
+                {
+                    uint argumentBytes;
+                    if (functions.Contains(functionName))
+                    {
+                        arguments = GetArguments(functionName, ref argumentNames);
+                        foreach (var argument in arguments)
+                        {
+                            Variable variable = argument.value;
+                            argumentBytes += (IsByteType(variable.Type) ? 1 : 2);
+                        }
+                    }
+                    if (argumentBytes > maxArgumentBytes)
+                    {
+                        maxArgumentBytes = argumentBytes;
+                    }
+                }
+            
+                PrintLn();
+                Print(maxArgumentBytes.ToString() + ":");
+                foreach(var name in independents) 
+                { 
+                    string args = GetArgumentString(name);
+                    //if (args != "()")
+                    //{
+                        Print(name, Colour.Ocean, Colour.Black);
+                        Print(args + " "); 
+                        staticArguments[name]       = true;
+                        staticArgumentsOffset[name] = argumentsBase;
+                    //}
+                }
+                argumentsBase += maxArgumentBytes;
+            }
+        }
+        //GlobalOffset = GlobalOffset + argumentsBase;
+        //PrintLn();
+        //Print("GlobalLimit=" + (GlobalLimit).ToString());
+        //PrintLn();
+        //Print("GlobalOffset=" + (GlobalOffset).ToString());
+    }
+    
     ExportFunctionTable()
     {
-        
-        int maxDepth = 3;
-        PadOut("/*", 0);
-        PadOut("  Functions called:", 0);
-        PadOut("", 0);
+        int maxDepth = 2;
         functionsToCompile["main"] = false;
         string name;
-        <string> systemCalls;
         loop
         {
             name = "";
@@ -196,14 +340,15 @@ unit TCSymbols
             
             functionsToCompile[name] = true;
             staticCandidates[name] = true; // candidate for static locals
+            staticArgumentsOffset[name] = 0;
+            staticArguments[name] = false;
             
             // Initialize the call stack with the current function
-            <string> callStack; 
+            <string> callStack;
             callStack.Append(name);
             if (functionCalls.Contains(name)) 
             {
-                PadOut(name, 1);
-                ExportFunctionCalls(functionCalls[name], 2, maxDepth, callStack);
+                WalkFunctionCalls(functionCalls[name], 1, callStack);
             }
             else
             {
@@ -211,6 +356,29 @@ unit TCSymbols
                 systemCalls.Append(name);
             }
         }
+        AllocateStaticArguments();
+        
+        PadOut("/*", 0);
+        PadOut("  Functions called:", 0);
+        PadOut("", 0);
+        foreach (var kv in functionsToCompile)
+        {
+            name = kv.key;
+            if (!systemCalls.Contains(name))
+            {
+                string statics;
+                if (staticArguments[name])
+                {
+                    statics = " 0x" + (staticArgumentsOffset[name]).ToHexString(2);
+                }   
+                PadOut(name +  GetArgumentString(name) + statics, 1);
+                if (functionCalls.Contains(name))
+                {
+                    ExportFunctionCalls(functionCalls[name], 2, maxDepth);
+                }
+            }
+        }
+        
         PadOut("", 0);
         if (systemCalls.Count != 0)
         {
@@ -458,17 +626,6 @@ unit TCSymbols
         function.Arguments = arguments;
         function.ArgumentNames = argumentNames;
         functions[functionName] = function;
-        /*
-        if (arguments.Count == 1)
-        {
-            Print(" : ");
-        }
-        else
-        {
-            Print(", ");
-        }
-        Print(argumentType + " " + argumentName);
-        */
         return true;
     }
     

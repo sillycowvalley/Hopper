@@ -128,20 +128,20 @@ program TCCompile
               }
               
               // Second Pass:
-              TCSymbols.Reset();
-              TCCompile.Reset(); // globalDefinitions
               FirstPass = false;
               Compiling = true;
+              TCCode.Initialize(projectPath);
+              TCSymbols.Reset();
+              TCCompile.Reset(); // globalDefinitions
               TCGen.Initialize();
               TCScanner.Restart(projectPath);
-              TCCode.Initialize(projectPath);
               if (!TCCompile.Compile())
               {
                   break;
               }
               TCCode.Flush();
               
-              if (IsExperimental)
+              if (false && IsExperimental)
               {
                   TCGen.EmitTrips();
                   TCGen.EmitPairs();

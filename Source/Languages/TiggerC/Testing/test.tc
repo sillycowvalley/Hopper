@@ -1,87 +1,34 @@
-#include "../system"
 
-#define DEBUG
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+func FuncA();
+
+
+func FuncC()
+{
+ 
+}
+func FuncA()
+{
+    FuncC();
+}
+func FuncB()
+{
+}
 func main() 
 {
-    byte y = 0;
-    while (y < 10)
-    {
-        y = y + 1; // Increment y
-    }
-
-    for (byte i = 0; i < 5; i = i + 1)
-    {
-        puts("In for loop\n");
-    }
-
-    puts("A string with // in it\n");
-    puts("A string with /* not a comment */ inside\n");
-
-    // Conditional compilation based on DEBUG symbol
-    #ifdef DEBUG
-        puts("Debug mode enabled\n");
-    #else
-        puts("Debug mode disabled\n");
-    #endif
-
-    #undef DEBUG
-
-    #ifndef DEBUG
-        puts("Debug mode is now undefined\n");
-    #else
-        puts("Debug mode is still defined\n");
-    #endif
-
-    // Test #if defined
-    #define FEATURE_ENABLED
-
-    #if defined(FEATURE_ENABLED)
-        puts("Feature is enabled\n");
-    #endif
-
-    #undef FEATURE_ENABLED
-
-    #if defined(FEATURE_ENABLED)
-        puts("Feature is still enabled\n");
-    #else
-        puts("Feature is now disabled\n");
-    #endif
-
-    // Test #if defined with logical operators
-    #define OPTION_A
-    #define OPTION_B
-
-    #if defined(OPTION_A) && defined(OPTION_B)
-        puts("Both options are enabled\n");
-    #endif
-
-    #undef OPTION_B
-
-    #if defined(OPTION_A) && defined(OPTION_B)
-        puts("Both options are still enabled\n");
-    #else
-        puts("One or both options are disabled\n");
-    #endif
-
-    // Test #if defined with negation
-    #define ENABLE_LOGGING
-
-    #if !defined(ENABLE_DEBUG)
-        puts("Debugging is not enabled\n");
-    #endif
-
-    #if defined(ENABLE_LOGGING) || defined(ENABLE_DEBUG)
-        puts("Logging or debugging is enabled\n");
-    #endif
-
-    // Test complex logical expression
-    #define XXX
-    #define ZZZ
-
-    #if !(defined(XXX) && defined(YYY)) || defined(ZZZ)
-        puts("Complex condition is true\n");
-    #else
-        puts("Complex condition is false\n");
-    #endif
+    FuncA();
+    FuncB();
 }
