@@ -825,7 +825,7 @@ unit TCGen
                     {
                         if (instruction1.Name == "GGADD")
                         {
-                            Print(" GGADDiPOPM");
+                            //Print(" GGADDiPOPM");
                             instruction1.Name    = "GGADDiPOPM";
                             instruction1.Operand = instruction0.Operand;
                             currentStream[currentStream.Count-2] = instruction1;
