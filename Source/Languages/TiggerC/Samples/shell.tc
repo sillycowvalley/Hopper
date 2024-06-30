@@ -4,9 +4,63 @@
 #include "../system"
 #include "../file"
 
-func ls() {
-    // Simulate listing files
-    puts("file1.txt\nfile2.txt\ndir1\n"); // TODO
+func ls(char[] path, bool recursive, byte indent) {
+    byte[] dirHandle;
+    byte[] entry;
+    char[256] fullPath;
+    char[256] childPath;
+    bool isDir;
+    byte i;
+
+    // Get full path
+    _getFullPath(fullPath, path);
+
+    // Open directory
+    dirHandle = opendir(fullPath);
+    if (dirHandle == null) {
+        puts(" ??");
+        return;
+    }
+
+    // Read entries
+    while (true) {
+        entry = readdir(dirHandle);
+        if (entry == null) { break;}
+        
+        isDir = ((entry[FileTypeOffset] & 0xF0) == FileTypeDirectory);
+
+        putc('\n');
+        i = indent;
+        while (i != 0)
+        {
+            puts("    ");
+            i--;
+        }
+        if (isDir)
+        {
+            putc('<');    
+        }
+        else
+        {
+            putc(' ');
+        }
+        puts((entry + FilenameOffset) as char[]);
+        if (isDir)
+        {
+            putc('>');
+        }
+
+        // If entry is a directory and recursive flag is set
+        if (recursive && isDir) {
+            strcpy(childPath, fullPath);
+            if (childPath[strlen(childPath) - 1] != '/') {
+                strcat(childPath, "/");
+            }
+            strcat(childPath, (entry + FilenameOffset) as char[]);
+            ls(childPath, true, indent+1); // Recursive call
+        }
+    }
+    closedir(dirHandle);
 }
 
 func mkDir(char[] name) {
@@ -24,7 +78,7 @@ func cd(char[] name) {
 }
 
 func cat(char[] name, bool writeMode) {
-    byte[10240] buffer;
+    byte[4096] buffer;
     word i;
     int  result;
     byte[] fh;
@@ -32,7 +86,7 @@ func cat(char[] name, bool writeMode) {
     byte b;
     
     if (writeMode) {
-        // Simulate writing to a file
+        putc('\n');
         while (true) {
             c = getc();
             b = c as byte;
@@ -65,7 +119,7 @@ func cat(char[] name, bool writeMode) {
         }
         else
         {
-            i = fread(buffer, 1, 10240-1, fh);
+            i = fread(buffer, 1, 4095, fh);
             if (i != 0)
             {
                 buffer[i] = 0;
@@ -85,21 +139,20 @@ func cat(char[] name, bool writeMode) {
 
 func main() {
     char[100] cmd;      // Buffer for command input
-    char[50]  filename; // Buffer for filename
-    char[256]  cwd;
+    char[256] path;
     word index;
     char c;
     byte b;
-    puts("\n\n");
+    putc('\n');
     
     chdir("/"); // initialize
 
     while (true) {
         index = 0;
         // newline
-        getcwd(cwd, 256);
+        getcwd(path, 256);
         putc('\n');
-        puts(cwd);
+        puts(path);
         puts(" $ ");
         while (true) {
             c = getc();
@@ -130,26 +183,47 @@ func main() {
             }
         }
 
-        if (strcmp(cmd, "ls") == 0) {
-            ls();
+        if (strncmp(cmd, "ls", 2) == 0) {
+            strcpy(path, ".");
+            bool recursive = false;
+            
+            // Parse arguments
+            char[] args = cmd + 2;
+            while (args[0] == ' ') { args++; }  // Skip spaces
+            
+            if (strncmp(args, "-R", 2) == 0) {
+                recursive = true;
+                args = args + 2;
+                while (args[0] == ' ') { args++; } // Skip spaces
+            }
+        
+            if (args[0] != (0 as char)) {
+                strcpy(path, args);  // Copy path if provided
+            }
+            
+            ls(path, recursive, 1);
             continue;
         } else if (strncmp(cmd, "mkdir ", 6) == 0) {
-            strcpy(filename, cmd + 6);
-            mkDir(filename);
+            strcpy(path, cmd + 6);
+            mkDir(path);
             continue;
         } else if (strncmp(cmd, "cd ", 3) == 0) { // TODO "cd .." to root?
-            strcpy(filename, cmd + 3);
-            cd(filename);
+            strcpy(path, cmd + 3);
+            cd(path);
+            continue;
+        } else if (strcmp(cmd, "mkfs") == 0) {
+            format();
+            chdir("/");
             continue;
         } else if (strncmp(cmd, "cat ", 4) == 0) {
             char[] space = strchr(cmd, ' ');
             if (space != null) {
-                strcpy(filename, space + 1);
-                if (strchr(filename, '>') != null) {
-                    cat(filename + 2, true);
+                strcpy(path, space + 1);
+                if (strchr(path, '>') != null) {
+                    cat(path + 2, true);
                     continue;
                 } else {
-                    cat(filename, false);
+                    cat(path, false);
                     continue;
                 }
             }
