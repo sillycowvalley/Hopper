@@ -1641,6 +1641,22 @@ unit AsmPoints
                     iLengths[iIndex-0] = 1;
                     modified = true;
                 }
+                if ((opCode1 == OpCode.PHA) && (opCode0 == OpCode.PLY))
+                {
+                    if (WalkAhead(iIndex+1, WalkStats.WriteA | WalkStats.Exit | WalkStats.CallRet, WalkStats.ReadA, 20))
+                    {
+                        iCodes  [iIndex-1] = OpCode.NOP;
+                        iLengths[iIndex-1] = 1;
+                        iCodes  [iIndex-0] = OpCode.TAY;
+                        modified = true;
+                    }
+                }
+                if ((opCode1 == OpCode.LDY_z) && (opCode0 == OpCode.PLY))
+                {
+                    iCodes  [iIndex-1] = OpCode.NOP;
+                    iLengths[iIndex-1] = 1;
+                    modified = true;
+                }
                 if ((opCode1 == OpCode.LDX_z) && (opCode0 == OpCode.LDA_z) && (iOperands[iIndex-1] == iOperands[iIndex-0]))
                 {
                     iCodes  [iIndex-0] = OpCode.TXA;
@@ -1693,6 +1709,18 @@ unit AsmPoints
                         modified = true;
                     }
                 }
+                if ((opCode1 == OpCode.TXA) && (opCode0 == OpCode.STA_z))
+                {
+                    
+                    if (WalkAhead(iIndex+1, WalkStats.WriteA | WalkStats.Exit | WalkStats.CallRet, WalkStats.ReadA, 20))
+                    {
+                        iCodes  [iIndex-1] = OpCode.NOP;
+                        iLengths[iIndex-1] = 1;
+                        iCodes  [iIndex-0] = OpCode.STX_z;
+                        modified = true;
+                    }
+                }
+                
             }
             iIndex++;
         } // loop
@@ -1806,6 +1834,18 @@ unit AsmPoints
                         iLengths[iIndex-0] = 1;
                         modified = true;
                     }
+                }
+                if ((opCode5 == OpCode.LDA_z) && (opCode4 == OpCode.PHA) && (opCode3 == OpCode.LDA_z) && (opCode2 == OpCode.STA_z) && (opCode1 == OpCode.PLA) && (opCode0 == OpCode.STA_z))
+                {
+                    iCodes   [iIndex-5] = OpCode.NOP;
+                    iLengths [iIndex-5] = 1;
+                    iCodes   [iIndex-4] = OpCode.NOP;
+                    iLengths [iIndex-4] = 1;
+                    
+                    iCodes   [iIndex-1] = OpCode.LDA_z;
+                    iLengths [iIndex-1] = 2;
+                    iOperands[iIndex-1] = iOperands[iIndex-5];
+                    modified = true;
                 }
             }
             iIndex++;

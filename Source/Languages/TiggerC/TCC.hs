@@ -127,8 +127,6 @@ program TCCompile
                   break;
               }
               
-              PrintLn(); // TODO REMOVE
-              
               // Second Pass:
               FirstPass = false;
               Compiling = true;
@@ -143,7 +141,7 @@ program TCCompile
               }
               TCCode.Flush();
               
-              if (false && IsExperimental)
+              if (IsExperimental)
               {
                   TCGen.EmitTrips();
                   TCGen.EmitPairs();
