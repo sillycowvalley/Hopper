@@ -6,50 +6,80 @@
 
 func ls() {
     // Simulate listing files
-    puts("file1.txt\nfile2.txt\ndir1\n");
+    puts("file1.txt\nfile2.txt\ndir1\n"); // TODO
 }
 
 func mkDir(char[] name) {
     if (0 != mkdir(name))
     {
-        puts("failed to create ");
-        puts(name);
+        puts(" ??");
     }
 }
 
 func cd(char[] name) {
     if (0 != chdir(name))
     {
-        puts("failed to change to ");
-        puts(name);
+        puts(" ??");
     }
 }
 
 func cat(char[] name, bool writeMode) {
+    byte[10240] buffer;
+    word i;
+    int  result;
+    byte[] fh;
+    char c;
+    byte b;
+    
     if (writeMode) {
         // Simulate writing to a file
-        puts("Enter text (end with <ctrl><Z>):\n");
         while (true) {
-            char c = getc();
-            byte b = c as byte;
+            c = getc();
+            b = c as byte;
 #ifdef APPLE_I
             b = b & 0x7F;
             c = b as char;
-            c = tolower(c);
 #endif            
             if (b == 0x1A) { break; } // <ctrl><Z>
-            // fwrite logic here
+            buffer[i++] = b;
+            putc(c);
         }
-        puts("File saved: ");
-        puts(name);
-        puts("\n");
+        fh = fopen(name, "w");
+        if (fh == null)
+        {
+            result = -1;
+        }
+        else
+        {
+            buffer[i-1] = 0;
+            if (0 == fwrite(buffer, 1, i, fh))
+            {
+                result = -1;
+            }
+        }
     } else {
-        // Simulate reading a file
-        puts("Contents of ");
-        puts(name);
-        puts(":\n");
-        puts("This is a sample file content.\n");
-        // fread logic here
+        fh = fopen(name, "r");
+        if (fh == null)
+        {
+            result = -1;
+        }
+        else
+        {
+            i = fread(buffer, 1, 10240-1, fh);
+            if (i != 0)
+            {
+                buffer[i] = 0;
+                puts(buffer as char[]);
+            }
+        }
+    }
+    if (result != -1)
+    {
+        fclose(fh);    
+    }
+    else
+    {
+        puts(" ??");
     }
 }
 
@@ -60,7 +90,9 @@ func main() {
     word index;
     char c;
     byte b;
-    puts("Simple Console Simulation\n");
+    puts("\n\n");
+    
+    chdir("/"); // initialize
 
     while (true) {
         index = 0;
@@ -100,25 +132,32 @@ func main() {
 
         if (strcmp(cmd, "ls") == 0) {
             ls();
+            continue;
         } else if (strncmp(cmd, "mkdir ", 6) == 0) {
             strcpy(filename, cmd + 6);
             mkDir(filename);
-        } else if (strncmp(cmd, "cd ", 3) == 0) {
+            continue;
+        } else if (strncmp(cmd, "cd ", 3) == 0) { // TODO "cd .." to root?
             strcpy(filename, cmd + 3);
             cd(filename);
+            continue;
         } else if (strncmp(cmd, "cat ", 4) == 0) {
             char[] space = strchr(cmd, ' ');
             if (space != null) {
                 strcpy(filename, space + 1);
                 if (strchr(filename, '>') != null) {
-                    cat(filename, true);
+                    cat(filename + 2, true);
+                    continue;
                 } else {
                     cat(filename, false);
+                    continue;
                 }
             }
-        } else {
-            puts("Unknown command\n");
+        } else if (strlen(cmd) == 0)
+        {
+            continue; // empty command
         }
+        puts(" ??");
     }
 }
 

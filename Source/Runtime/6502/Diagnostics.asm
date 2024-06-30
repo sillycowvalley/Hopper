@@ -9,7 +9,12 @@ unit Diagnostics
     
     die()
     {
+#ifdef TIGGERC   
+        TSX PHX     // save SP to Y
+#endif
+
         PHA
+        
 #ifndef TIGGERC
         registers();
 #endif
@@ -34,6 +39,27 @@ unit Diagnostics
         
         PLA
         Serial.HexOut();
+        
+#ifdef TIGGERC   
+        PLY             // SP to Y
+        
+        LDX # 0xFF      // Start at the top of the stack (0x01FF)
+        
+        loop
+        {
+            LDA # 0x0A
+            Serial.WriteChar();
+            TXA
+            Serial.HexOut();
+            LDA # ' '
+            Serial.WriteChar();
+            LDA 0x0100, X
+            Serial.HexOut();
+            DEX
+            INY
+            if (Z) { break; }
+        }
+#endif
         loop { }
         INC ZP.SerialBreakFlag // hardware <ctrl><C>
         BRK
