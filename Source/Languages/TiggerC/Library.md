@@ -458,7 +458,12 @@ In Tigger C, file handles are represented using a 4-byte array with the followin
   - **[2]** - Current position LSB in file (byte)
   - **[3]** - Current position MSB in file (byte)
   
-This 4-byte structure allows efficient management of file operations within the system.
+Directory handles are represented using a 2-byte array with the following structure:
+
+- **Directory Handle Structure (byte array):**
+  - **[0]** - Directory descriptor index (byte).
+  - **[1]** - Current position in directory (byte).
+
 
 - **`fopen`**
   - **Description**: Opens a file or directory.
