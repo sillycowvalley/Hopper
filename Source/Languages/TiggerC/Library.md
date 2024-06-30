@@ -144,34 +144,36 @@ This document describes the available system/library functions in Tigger C, incl
 
 #### Timing
 
+In Tigger C, time is represented using a 4-byte array, which serves as a timestamp in milliseconds. This allows tracking time since the system doesn't have a 32-bit integral type. Each function in this section that deals with time returns or accepts this 4-byte array format.
+
 - **`millis`**
-  - **Description**: Gets the current system tick count.
+  - **Description**: Gets the current system tick count as a 4-byte array representing milliseconds since system start.
   - **Prototype**:
     ```c
     func byte[] millis();
     ```
   - **Arguments**: None.
-  - **Return Value**: Byte array containing the current tick count.
+  - **Return Value**: 4-byte array containing the current tick count in milliseconds.
 
 - **`elapsedMillis`**
-  - **Description**: Calculates the elapsed milliseconds since the start.
+  - **Description**: Calculates the elapsed milliseconds since a given start time.
   - **Prototype**:
     ```c
     func word elapsedMillis(byte[] start);
     ```
   - **Arguments**:
-    - `start`: Byte array containing the start tick count.
-  - **Return Value**: Elapsed milliseconds since the start.
+    - `start`: 4-byte array representing the start time.
+  - **Return Value**: Elapsed milliseconds since the start time (as a `word`).
 
 - **`elapsedSeconds`**
-  - **Description**: Calculates the elapsed seconds since the start.
+  - **Description**: Calculates the elapsed seconds since a given start time.
   - **Prototype**:
     ```c
     func word elapsedSeconds(byte[] start);
     ```
   - **Arguments**:
-    - `start`: Byte array containing the start tick count.
-  - **Return Value**: Elapsed seconds since the start.
+    - `start`: 4-byte array representing the start time.
+  - **Return Value**: Elapsed seconds since the start time (as a `word`).
 
 - **`delay`**
   - **Description**: Delays execution for a specified number of milliseconds.
@@ -445,7 +447,18 @@ This document describes the available system/library functions in Tigger C, incl
     - `c`: Character to convert.
   - **Return Value**: Lowercase character.
 
+
 #### File System Functions
+
+In Tigger C, file handles are represented using a 4-byte array with the following structure:
+
+- **File Handle Structure (byte array):**
+  - **[0]** - Directory block number (byte)
+  - **[1]** - File descriptor index (0 to 15) (byte)
+  - **[2]** - Current position LSB in file (byte)
+  - **[3]** - Current position MSB in file (byte)
+  
+This 4-byte structure allows efficient management of file operations within the system.
 
 - **`fopen`**
   - **Description**: Opens a file or directory.
