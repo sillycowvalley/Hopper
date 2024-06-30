@@ -4403,6 +4403,27 @@ unit TCGen
                 TCCode.PadOut("Serial.WriteChar();", 0);
                 done = true;
             }
+            case "getc":
+            {
+                TCCode.PadOut("Serial.WaitForChar();", 0);
+                TCCode.PadOut("PHA", 0);
+                done = true;
+            }
+            case "kbhit":
+            {
+                // Z flag clear if there is a character available in the buffer, Z set if not
+                TCCode.PadOut("Serial.IsAvailable();", 0);
+                TCCode.PadOut("if (Z)", 0);
+                TCCode.PadOut("{", 0);
+                TCCode.PadOut("LDA # 0", 0);
+                TCCode.PadOut("}", 0);
+                TCCode.PadOut("else", 0);
+                TCCode.PadOut("{", 0);
+                TCCode.PadOut("LDA # 1", 0);
+                TCCode.PadOut("}", 0);
+                TCCode.PadOut("PHA", 0);
+                done = true;
+            }
             case "malloc":
             {
                 TCOps.Malloc();
@@ -4411,6 +4432,48 @@ unit TCGen
             case "free":
             {
                 TCOps.Free();
+                done = true;
+            }
+            case "readPage":
+            {
+                TCOps.ReadPage();
+                done = true;
+            }
+            case "writePage":
+            {
+                TCOps.WritePage();
+                done = true;
+            }
+            case "delay":
+            {
+                TCOps.Delay();
+                done = true;
+            }
+            case "millis":
+            {
+                TCCode.Call(instruction.Data);
+                TCCode.PadOut("LDA IDXL", 0);
+                TCCode.PadOut("PHA", 0);
+                TCCode.PadOut("LDA IDXH", 0);
+                TCCode.PadOut("PHA", 0);
+                done = true;
+            }
+            case "heapfree":
+            {
+                TCCode.PadOut("Memory.AvailableACC();", 0);
+                TCCode.PadOut("LDA ACCL", 0);
+                TCCode.PadOut("PHA", 0);
+                TCCode.PadOut("LDA ACCH", 0);
+                TCCode.PadOut("PHA", 0);
+                done = true;
+            }
+            case "heapmax":
+            {
+                TCCode.PadOut("Memory.MaximumACC();", 0);
+                TCCode.PadOut("LDA ACCL", 0);
+                TCCode.PadOut("PHA", 0);
+                TCCode.PadOut("LDA ACCH", 0);
+                TCCode.PadOut("PHA", 0);
                 done = true;
             }
         }

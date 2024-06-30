@@ -857,47 +857,14 @@ unit TCCode
         }
         switch (functionName)
         {
-            case "putc":
-            {
-                functionName = "TCSys.WriteChar";
-            }
             case "millis":
             {
                 functionName = "TCSys.Millis";
-            }
-            case "delay":
-            {
-                functionName = "TCSys.Delay";
-            }
-            case "malloc":
-            {
-                functionName = "TCSys.Malloc";
-            }
-            case "free":
-            {
-                functionName = "TCSys.Free";
-            }
-            case "heapfree":
-            {
-                functionName = "TCSys.Available";
-            }
-            case "heapmax":
-            {
-                functionName = "TCSys.Maximum";
             }
             case "i2cScan":
             {
                 functionName = "TCSys.I2CScan";
             }
-            case "writePage":
-            {
-                functionName = "TCSys.WritePage";
-            }
-            case "readPage":
-            {
-                functionName = "TCSys.ReadPage";
-            }
-            
         }
         PadOut(functionName + "();", 0);
     }

@@ -543,4 +543,49 @@ unit TCOps
         TCCode.PadOut("STA ZP.IDXL", 0);
         TCCode.PadOut("Free.Free();", 0);
     }
+    ReadPage()
+    {
+        TCCode.PadOut("// byte[] data", 0);
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("STA ZP.IDXH", 0);
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("STA ZP.IDXL", 0);
+        
+        TCCode.PadOut("// word address", 0);
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("STA ZP.IDYH", 0);
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("STA ZP.IDYL", 0);
+            
+        // IDY contains the source address (in EEPROM)
+        // IDX contains the destination address
+        TCCode.PadOut("SerialEEPROM.ReadPage();", 0);
+    }
+    WritePage()
+    {
+        TCCode.PadOut("// const byte[] data", 0);
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("STA ZP.IDXH", 0);
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("STA ZP.IDXL", 0);
+        
+        TCCode.PadOut("// word address", 0);
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("STA ZP.IDYH", 0);
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("STA ZP.IDYL", 0);
+        
+        // IDX contains the source address
+        // IDY contains the destination address (in EEPROM)
+        TCCode.PadOut("SerialEEPROM.WritePage();", 0);
+    }
+    Delay()
+    {
+        TCCode.PadOut("// word milliseconds : SP - 1", 0);
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("STA TOPH", 0);
+        TCCode.PadOut("PLA", 0);
+        TCCode.PadOut("STA TOPL", 0);
+        TCCode.PadOut("Time.DelayTOP();", 0);
+    }
 }

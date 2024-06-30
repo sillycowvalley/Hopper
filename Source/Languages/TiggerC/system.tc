@@ -19,6 +19,8 @@ func word heapmax();           // System function to report largest available bl
 
 // Serial Communication
 func putc(char c); // System function to write a single character
+func char getc();
+func bool kbhit();
 
 func puts(const char[] str) {
     // Function to write a null-terminated string to the serial output using putc
