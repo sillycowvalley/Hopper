@@ -1,6 +1,6 @@
 ### EEPROM 64K File System Structure
 
-The file system is designed to efficiently manage files and directories within a 64K EEPROM, optimized for the 8-bit instructions of the 6502 microprocessor. The EEPROM is divided into 256 pages, each 256 bytes, allowing the use of single-byte ChainList entries to simplify block management.
+This file system is designed to efficiently manage files and directories within a 64K Serial EEPROM, optimized for the 8-bit instructions of the 6502 microprocessor. The EEPROM is divided into 256 pages, each 256 bytes, allowing the use of single-byte ChainList entries to simplify block management.
 
 #### Special Block Values
 - **0**: Unused block (in ChainList) or free directory entry (if `Start Block` is zero).
@@ -86,4 +86,4 @@ File handles and directory handles are temporary structures in memory to facilit
 +-------------+----------------+
 ```
 
-This structure allows for flexible file and directory management within the constraints of the EEPROM, supporting both file storage and hierarchical directory structures. The use of single-byte block references facilitates efficient memory access and management, crucial for 8-bit systems like the 6502.
+This structure allows for flexible file and directory management within the constraints of the Serial EEPROM, supporting both file storage and hierarchical directory structures. The use of single-byte block references facilitates efficient memory access and management, crucial for 8-bit systems like the 6502.

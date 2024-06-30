@@ -1,0 +1,124 @@
+//#define APPLE_I
+#define EXPERIMENTAL
+#define ZEROPAGEGLOBALS
+#include "../system"
+#include "../file"
+
+func ls() {
+    // Simulate listing files
+    puts("file1.txt\nfile2.txt\ndir1\n");
+}
+
+func mkDir(char[] name) {
+    if (0 != mkdir(name))
+    {
+        puts("failed to create ");
+        puts(name);
+    }
+}
+
+func cd(char[] name) {
+    if (0 != chdir(name))
+    {
+        puts("failed to change to ");
+        puts(name);
+    }
+}
+
+func cat(char[] name, bool writeMode) {
+    if (writeMode) {
+        // Simulate writing to a file
+        puts("Enter text (end with <ctrl><Z>):\n");
+        while (true) {
+            char c = getc();
+            byte b = c as byte;
+#ifdef APPLE_I
+            b = b & 0x7F;
+            c = b as char;
+            c = tolower(c);
+#endif            
+            if (b == 0x1A) { break; } // <ctrl><Z>
+            // fwrite logic here
+        }
+        puts("File saved: ");
+        puts(name);
+        puts("\n");
+    } else {
+        // Simulate reading a file
+        puts("Contents of ");
+        puts(name);
+        puts(":\n");
+        puts("This is a sample file content.\n");
+        // fread logic here
+    }
+}
+
+func main() {
+    char[100] cmd;      // Buffer for command input
+    char[50]  filename; // Buffer for filename
+    char[256]  cwd;
+    word index;
+    char c;
+    byte b;
+    puts("Simple Console Simulation\n");
+
+    while (true) {
+        index = 0;
+        // newline
+        getcwd(cwd, 256);
+        putc('\n');
+        puts(cwd);
+        puts(" $ ");
+        while (true) {
+            c = getc();
+            b = c as byte;
+#ifdef APPLE_I
+            b = b & 0x7F;
+            c = b as char;
+            c = tolower(c);
+#endif
+            if (b == 0x0A) { 
+                cmd[index] = '\0';  // Null-terminate the command
+                break; 
+            } else if (b == 0x1A) {
+                // <ctrl><Z>
+                puts("\nExited\n");
+                return;
+            } else if (b == 0x08) {
+                // backspace
+                index--;
+                putc(c);
+                putc(' ');
+                putc(c);
+            } 
+            else
+            {
+                cmd[index++] = c;
+                putc(c);
+            }
+        }
+
+        if (strcmp(cmd, "ls") == 0) {
+            ls();
+        } else if (strncmp(cmd, "mkdir ", 6) == 0) {
+            strcpy(filename, cmd + 6);
+            mkDir(filename);
+        } else if (strncmp(cmd, "cd ", 3) == 0) {
+            strcpy(filename, cmd + 3);
+            cd(filename);
+        } else if (strncmp(cmd, "cat ", 4) == 0) {
+            char[] space = strchr(cmd, ' ');
+            if (space != null) {
+                strcpy(filename, space + 1);
+                if (strchr(filename, '>') != null) {
+                    cat(filename, true);
+                } else {
+                    cat(filename, false);
+                }
+            }
+        } else {
+            puts("Unknown command\n");
+        }
+    }
+}
+

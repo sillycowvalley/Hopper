@@ -485,19 +485,6 @@ func byte[] opendir(const char[] dirname) {
     return dirHandle;
 }
 
-func int chdir(const char[] path) {
-    byte[] dirHandle;
-    if (!_isValidPath(path)) {
-        return -1; // Invalid path
-    }
-    dirHandle = opendir(path);
-    if (dirHandle == null) {
-        return -1; // Directory not found
-    }
-    closedir(dirHandle);
-    strcpy(_currentDirectory, path);
-    return 0; // Success
-}
 // Closes an open file or directory.
 // fileHandle: The handle of the file or directory to close.
 // Returns 0 on success, or -1 on error.
@@ -1024,4 +1011,28 @@ func word ftell(byte[] fileHandle) {
     return position;
 }
 
+func getcwd(char[] buffer, word size) {
+    if (_currentDirectory[0] == '\0') {
+        strcpy(_currentDirectory, "/"); // initialize before first use
+    }
+    strncpy(buffer, _currentDirectory, size - 1);
+    buffer[size - 1] = '\0'; // Ensure null-termination
+}
 
+func int chdir(const char[] path) {
+    byte[] dirHandle;
+    char[256] fullPath;
+    
+    _getFullPath(fullPath, path);
+    
+    if (!_isValidPath(fullPath)) {
+        return -1; // Invalid path
+    }
+    dirHandle = opendir(fullPath);
+    if (dirHandle == null) {
+        return -1; // Directory not found
+    }
+    closedir(dirHandle);
+    strcpy(_currentDirectory, fullPath);
+    return 0; // Success
+}
