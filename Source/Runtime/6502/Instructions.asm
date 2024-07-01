@@ -532,46 +532,7 @@ unit Instruction
         Utilities.IncPC();
 #endif
     }
-    // load the operand into IDX, increment the PC by 1
-    ConsumeOperandSB()
-    {
-#ifdef INLINE_EXPANSIONS
-        INC ZP.ACCL
-        if (Z)
-        {
-            INC ZP.ACCH
-        }
-#else
-        Utilities.IncACC();
-#endif
-        
-#ifdef CPU_65C02S
-        STZ ZP.IDXH
-        LDA [ZP.ACC]
-        STA ZP.IDXL
-#else        
-        LDY #0
-        STY ZP.IDXH
-        LDA [ZP.ACC], Y
-        STA ZP.IDXL
-#endif
-        if (MI)
-        {
-            // signed byte, extend the sign
-            LDA # 0xFF
-            STA ZP.IDXH  
-        }
-        
-#ifdef INLINE_EXPANSIONS        
-        INC ZP.PCL
-        if (Z)
-        {
-            INC ZP.PCH
-        }
-#else
-        Utilities.IncPC();
-#endif
-    }
+   
     // increment the PC by 1, load the operand into A
     ConsumeOperandA()
     {
@@ -1693,29 +1654,49 @@ unit Instruction
         Utilities.IncPC();
         Utilities.IncPC();
     }
-    
-    jCommonB()
-    {
-        // PC += offset - 2
-        CLC
-        LDA ZP.PCL
-        ADC ZP.IDXL
-        STA ZP.PCL
-        LDA ZP.PCH
-        ADC ZP.IDXH
-        STA ZP.PCH
-        SEC
-        LDA ZP.PCL
-        SBC # 2
-        STA ZP.PCL
-        LDA ZP.PCH
-        SBC # 0
-        STA ZP.PCH
-    }
     jb()
     {
-        ConsumeOperandSB();
-        jCommonB();
+        // load the operand into IDX, increment the PC by 1, then PC += offset - 2
+
+        // PC--  (-1 == +1 -2)
+        LDA ZP.PCL
+        if (Z)
+        {
+            DEC ZP.PCH
+        }
+        DEC ZP.PCL
+        
+        INC ZP.ACCL
+        if (Z)
+        {
+            INC ZP.ACCH
+        }
+#ifdef CPU_65C02S
+        LDA [ZP.ACC]
+#else        
+        LDY #0
+        LDA [ZP.ACC], Y
+#endif
+        // PC += offset
+        if (MI)
+        {
+            // -ve signed byte
+            CLC
+            ADC ZP.PCL
+            STA ZP.PCL
+            LDA ZP.PCH
+            ADC # 0xFF
+            STA ZP.PCH
+        }
+        else
+        {
+            CLC
+            ADC ZP.PCL
+            STA ZP.PCL
+            LDA ZP.PCH
+            ADC # 0
+            STA ZP.PCH
+        }
     }
     
     jzb()
@@ -1725,12 +1706,20 @@ unit Instruction
         ORA ZP.TOPH
         if (Z)
         {
-            ConsumeOperandSB();
-            jCommonB();
+            jb();
             return;
         }
+        
         // skip operand
+#ifdef INLINE_EXPANSIONS
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
+#else
         Utilities.IncPC();
+#endif
     }
     jnzb()
     {
@@ -1739,12 +1728,19 @@ unit Instruction
         ORA ZP.TOPH
         if (NZ)
         {
-            ConsumeOperandSB();
-            jCommonB();
+            jb();
             return;
         }
         // skip operand
+#ifdef INLINE_EXPANSIONS
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
+#else
         Utilities.IncPC();
+#endif
     }
        
     pushI()
@@ -2066,30 +2062,7 @@ unit Instruction
         checkDecReferenceY();
     }
     
-    popShared()
-    {
-        // slot to pop to is in Y
-        LDA ZP.CNP
-        if (NZ)
-        {
-            LDA # 0
-            STA ZP.CNP
-            popCopyShared();
-            return;
-        }
-                        
-        Stacks.PopTop();
-        
-        // this is the slot we are about to overwrite: decrease reference count if reference type
-        checkDecReferenceY();
-        
-        LDA ZP.TOPL
-        STA Address.ValueStackLSB, Y
-        LDA ZP.TOPH
-        STA Address.ValueStackMSB, Y
-        LDA ZP.TOPT
-        STA Address.TypeStackLSB, Y
-    }
+    
     popLocal()
     {
         ConsumeOperand();
@@ -2120,19 +2093,7 @@ unit Instruction
         
         popCopyShared(); // slot to pop to is in Y
     }
-    popLocalB00()
-    {
-        LDA # 0 
-        STA IDXL
-        STA IDXH
-        
-        CLC
-        LDA ZP.IDXL
-        ADC ZP.BP
-        TAY
-        
-        popShared(); // slot to pop to is in Y
-    }
+    
     popCopyLocalB00()
     {
         LDA # 0 
@@ -2254,6 +2215,104 @@ unit Instruction
         LDA ZP.TOPT
         Stacks.PushTop(); 
     }
+    
+    popShared()
+    {
+        // slot to pop to is in Y
+        LDA ZP.CNP
+        if (NZ)
+        {
+            LDA # 0
+            STA ZP.CNP
+            popCopyShared();
+            return;
+        }
+                        
+        Stacks.PopTop();
+        
+        // this is the slot we are about to overwrite: decrease reference count if reference type
+        checkDecReferenceY();
+        
+        LDA ZP.TOPL
+        STA Address.ValueStackLSB, Y
+        LDA ZP.TOPH
+        STA Address.ValueStackMSB, Y
+        LDA ZP.TOPT
+        STA Address.TypeStackLSB, Y
+    }
+    
+    pushLocalB00()
+    {
+        LDY ZP.BP
+#ifdef INLINE_EXPANSIONS
+        // slot to push is in Y
+        LDA Address.ValueStackLSB, Y
+        STA ZP.IDXL
+        LDA Address.ValueStackMSB, Y
+        STA ZP.IDXH
+        LDA Address.TypeStackLSB, Y
+        STA ZP.TOPT
+        CMP # Types.ReferenceType // C set if heap type, C clear if value type
+        if (C)
+        {
+            GC.AddReference();
+        }
+        LDA ZP.TOPT
+        LDY ZP.SP
+        STA Address.TypeStackLSB, Y
+        LDA ZP.IDXL
+        STA Address.ValueStackLSB, Y
+        LDA ZP.IDXH
+        STA Address.ValueStackMSB, Y
+        INC ZP.SP
+#else
+        pushShared(); // slot to push is in Y
+#endif
+    }
+    
+    
+    popLocalB00()
+    {
+        LDY ZP.BP
+#ifdef INLINE_EXPANSIONS
+        // slot to pop to is in Y
+        LDA ZP.CNP
+        if (NZ)
+        {
+            LDA # 0
+            STA ZP.CNP
+            popCopyShared();
+            return;
+        }
+                        
+        DEC ZP.SP
+        LDX ZP.SP
+        LDA Address.ValueStackLSB, X
+        STA ZP.IDXL
+        LDA Address.ValueStackMSB, X
+        STA ZP.IDXH
+        LDA Address.TypeStackLSB, X
+        STA ZP.TOPT
+        
+        // this is the slot we are about to overwrite: decrease reference count if reference type
+        // Y is pointing at the stack slot in question
+        CMP # Types.ReferenceType // C set if heap type, C clear if value type
+        if (C)
+        {
+            GC.Release(); // munts IDY
+        }
+        
+        LDA ZP.IDXL
+        STA Address.ValueStackLSB, Y
+        LDA ZP.IDXH
+        STA Address.ValueStackMSB, Y
+        LDA ZP.TOPT
+        STA Address.TypeStackLSB, Y
+#else
+        popShared(); // slot to pop to is in Y
+#endif
+    }
+    
     commonInc()
     {
         INC Address.ValueStackLSB, X
@@ -2266,11 +2325,42 @@ unit Instruction
     }
     incLocalB()
     {
+#ifdef INLINE_EXPANSIONS  
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
+        INC ZP.ACCL
+        if (Z)
+        {
+            INC ZP.ACCH
+        }
+        CLC
+#ifdef CPU_65C02S        
+        LDA [ZP.ACC]
+#else
+        LDY # 0
+        LDA [ZP.ACC], Y
+#endif
+        ADC ZP.BP
+        TAX // slot to INC is in X
+        
+        INC Address.ValueStackLSB, X
+        if (Z)
+        {
+            INC Address.ValueStackMSB, X
+            LDA # Types.UInt          // just in case it was Types.Byte
+            STA Address.TypeStackLSB, X
+        }   
+                                          
+#else
         ConsumeOperandA();
         CLC
         ADC ZP.BP
         TAX // slot to INC is in X
         commonInc();
+#endif
     }
     incGlobalB()
     {
@@ -2438,19 +2528,7 @@ unit Instruction
         pushShared(); // slot to push is in Y, munts IDX, A
     }
     
-    pushLocalB00()
-    {
-        LDA # 0
-        STA IDXL
-        STA IDXH
-        
-        CLC
-        LDA ZP.IDXL
-        ADC ZP.BP
-        TAY
-        
-        pushShared(); // slot to push is in Y
-    }
+    
     pushLocalB01()
     {
         LDA # 1
