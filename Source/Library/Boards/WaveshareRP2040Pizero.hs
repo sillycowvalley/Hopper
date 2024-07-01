@@ -1,20 +1,16 @@
-unit Board // Waveshare RP2040 Matrix
+unit Board // Waveshare RP2040 Pizero
 {
-    #define WAVESHARE_RP2040_MATRIX
+    #define WAVESHARE_RP2040_PIZERO
 
     #define MCU_BOARD_DEFINED
     #define MCU_BOARD_RP2040
 
-    #define BOARD_HAS_NEOPIXEL
     #define BOARD_HAS_I2C
     #define BOARD_HAS_SPI
     #define BOARD_HAS_A0
     #define BOARD_HAS_A1
     #define BOARD_HAS_A2
     #define BOARD_HAS_A3
-
-    const byte BuiltInNeoPixel = 16;
-    const byte BuiltInNeoPixelLength = 25;
 
     const byte BuiltInA0 = 26;
     const byte BuiltInA1 = 27;
@@ -27,10 +23,10 @@ unit Board // Waveshare RP2040 Matrix
     const byte I2CSDA1 = 26;
     const byte I2CSCL1 = 27;
 
-    const byte SPI0Tx = 3;
-    const byte SPI0Rx = 4;
-    const byte SPI0SCK = 2;
-    const byte SPI0SS = 5;
+    const byte SPI0Tx = 19;
+    const byte SPI0Rx = 20;
+    const byte SPI0SCK = 18;
+    const byte SPI0SS = 21;
     const byte SPI1Tx = 15;
     const byte SPI1Rx = 12;
     const byte SPI1SCK = 14;
@@ -44,6 +40,6 @@ unit Board // Waveshare RP2040 Matrix
 
     uses "/Source/Library/MCU"
 
-    string BoardName { get { return "Waveshare RP2040 Matrix"; } }
+    string BoardName { get { return "Waveshare RP2040 Pizero"; } }
 
 }
