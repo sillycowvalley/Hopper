@@ -10,6 +10,7 @@ I got mine made by [JLCPCB](https://jlcpcb.com/).
 ## Preferred Sources
 
 Always check to see if [Anders Nielsen](https://abnielsen.com/) has used versions of the retro chips you are hunting for first: [DIY Kits, Electronics and ICs](https://www.imania.dk/samlesaet-hobbyelektronik-og-ic-er.htm)
+
 Let's support his salvage and recycling efforts.
 
 My usual next stop is [JameCo](https://www.jameco.com/) in California. Unlike some of the larger vendors, they stock retro components so let's support their efforts.
