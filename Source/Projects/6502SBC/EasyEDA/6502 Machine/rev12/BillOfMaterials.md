@@ -18,6 +18,7 @@ This is the PCB. I got mine made by JLCPCB:
 | 1        | MC6850              | ACIA (Asynchronous Communications Interface Adapter) |
 | 1        | AT28C256            | EEPROM (Parallel)                          |
 | 1        | 6C1008 / 62256      | SRAM (Static RAM)                          |
+| 1        | DS1813+5            | 5V Supervisor (150ms power/reset up delay) |
 
 ## Can Oscillators (DIP-4 or DIP-14)
 
@@ -44,13 +45,13 @@ This is the PCB. I got mine made by JLCPCB:
 | 1        | FTDI Header       |
 | 1        | Velleman Header   |
 | 1        | Waveshare Header  |
-| 1        | Power Connector   |
 
 ## Diodes
 
 | Quantity | Part Number | Description       |
 |----------|-------------|-------------------|
 | 2        | 1N5817      | Schottky Diode    |
+
 
 ## Miscellaneous
 
@@ -75,3 +76,5 @@ DIP IC Extractor:
 DIP IC Pin benders to 3D print:  
 [Pin Bender 1](https://www.thingiverse.com/thing:3124978)  
 [Pin Bender 2](https://www.thingiverse.com/thing:3121797)
+
+
