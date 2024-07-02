@@ -57,7 +57,7 @@ I got mine made by [JLCPCB](https://jlcpcb.com/).
 | Quantity | Description       |
 |----------|-------------------|
 | 1        | [40 pin female headers](https://www.jameco.com/z/RS1-40-T-Adam-Technologies-40-Position-Single-Row-Vertical-Mount-Receptacle-3mm-Pin-Length_2168173.html) (cut as needed)      |
-| 1        | [40 pin male right angle headers](https://www.jameco.com/z/7000-1X40RG-A-Jameco-ValuePro-Connector-Unshrouded-Breakaway-Header-40-Position-2-54mm-Right-Angle-Thru-Hole-Solder_2294663.html) |
+| 1        | [40 pin male right angle headers](https://www.jameco.com/z/7000-1X40RG-A-Jameco-ValuePro-Connector-Unshrouded-Breakaway-Header-40-Position-2-54mm-Right-Angle-Thru-Hole-Solder_2294663.html) (cut as needed) |
 
 ## Diodes
 
@@ -92,8 +92,7 @@ DIP IC Pin benders to 3D print:
 [0.6" Pin Bender](https://www.thingiverse.com/thing:3121797)
 
 For building Ben Eater's computer you need a wire stripper that goes down to at least 24AWG. Not needed for the Hopper 6502 SBC. 
-Something like this:  
-[Wire Stripper](https://www.jameco.com/z/HT-1043-R-Hanlong-Tools-Tool-Hand-7-in-1-HT-1043-22-30AWG_127871.html)
+Something like this: [Wire Stripper](https://www.jameco.com/z/HT-1043-R-Hanlong-Tools-Tool-Hand-7-in-1-HT-1043-22-30AWG_127871.html)
 
 ## Software
 
