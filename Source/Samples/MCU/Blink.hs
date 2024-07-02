@@ -1,13 +1,14 @@
 program Blink
 {
     uses "/Source/Library/Boards/PiPico"
+    //uses "/Source/Library/Boards/Hopper6502"
     
     {
         loop
         {
-            Write(LED ? '+' : '-');
             Delay(500);
             LED = !LED;
+            WriteLn((Time.Seconds).ToString() + " seconds");
         }
     }
 }

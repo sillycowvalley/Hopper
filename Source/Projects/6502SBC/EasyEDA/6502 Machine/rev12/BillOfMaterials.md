@@ -1,5 +1,11 @@
 # Bill of Materials for the Hopper 6502 Single Board Computer
 
+## PCB
+
+This is the PCB. I got mine made by JLCPCB:
+[Gerber File](https://github.com/sillycowvalley/Hopper/blob/main/Source/Projects/6502SBC/EasyEDA/6502%20Machine/rev12/Gerber_6502-v2_PCB_6502-v4_2024-05-15.zip)
+
+
 ## ICs
 
 | Quantity | Part Number         | Description                                |
@@ -53,3 +59,19 @@
 | 1        | Reset Button   |
 | 1        | NMI Button     |
 | 1        | User Button    |
+
+
+## Tools
+
+This is my ideal FTDI solution. You can probably find multiple sources for it. Just be sure you are ordering a 5V version:  
+[FTDI TTL-232R-5V](https://ftdichip.com/products/ttl-232r-5v/)
+
+You need a wire stripper that goes down to at least 24AWG. Something like this:  
+[Wire Stripper](https://www.jameco.com/z/HT-1043-R-Hanlong-Tools-Tool-Hand-7-in-1-HT-1043-22-30AWG_127871.html)
+
+DIP IC Extractor:  
+[DIP IC Extractor](https://www.jameco.com/z/08-609-HT103A--Jameco-BenchPro-DIP-IC-Extractor-Tool_16838.html)
+
+DIP IC Pin benders to 3D print:  
+[Pin Bender 1](https://www.thingiverse.com/thing:3124978)  
+[Pin Bender 2](https://www.thingiverse.com/thing:3121797)

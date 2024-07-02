@@ -66,5 +66,20 @@ unit MCU
             Memory.WriteByte(port, Memory.ReadByte(port) & ~pin);
         }
     }
+    
+    bool ledState;
+    bool LED 
+    { 
+        set 
+        { 
+            ledState = value;
+            PinMode(Board.BuiltInLED, MCU.PinModeOption.Output);
+            DigitalWrite(Board.BuiltInLED, value); 
+        } 
+        get
+        {
+            return ledState;
+        }
+    }
 #endif
 }
