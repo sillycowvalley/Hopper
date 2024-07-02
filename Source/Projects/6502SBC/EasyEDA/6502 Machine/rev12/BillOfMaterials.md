@@ -86,4 +86,4 @@ For building Ben Eater's board you need a wire stripper that goes down to at lea
 
 ## Software
 
-[WinCUPL](https://www.microchip.com/en-us/products/fpgas-and-plds/spld-cplds/pld-design-resources) is used to program the CPLD (GAL20V8 or ATF22V10C). Optional if you don't want the default addressing scheme.
+[WinCUPL](https://www.microchip.com/en-us/products/fpgas-and-plds/spld-cplds/pld-design-resources) is used to program the CPLD (GAL20V8 or ATF22V10C). Optional if you don't want the [default addressing scheme](https://github.com/sillycowvalley/Hopper/blob/main/Source/Projects/6502SBC/CPLD/6502SBC.jed).
