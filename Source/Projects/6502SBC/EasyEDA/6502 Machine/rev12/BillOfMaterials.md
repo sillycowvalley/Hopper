@@ -40,14 +40,14 @@ This is the PCB. I got mine made by JLCPCB:
 
 | Quantity | Part Number         | Description                                |
 |----------|---------------------|--------------------------------------------|
-| 1        | 28 PIN 0.6" ZIF Socket       |  Two variants: [low profile](https://www.jameco.com/z/28-526-10-Aries-Electronics-ZIF-Socket-28-Position-2-54mm-Solder-Straight-Thru-Hole_102745.html) or [conventional](https://www.jameco.com/z/28-6554-10-Aries-Electronics-Connector-Test-Socket-Receptacle-28-Position-2-54mm-Solder-Straight-Thru-Hole_104003.html) (easier to use)                                     |
+| 1        | 28 PIN 0.3" ZIF Socket       |  Two variants: [low profile](https://www.jameco.com/z/28-526-10-Aries-Electronics-ZIF-Socket-28-Position-2-54mm-Solder-Straight-Thru-Hole_102745.html) or [conventional](https://www.jameco.com/z/28-6554-10-Aries-Electronics-Connector-Test-Socket-Receptacle-28-Position-2-54mm-Solder-Straight-Thru-Hole_104003.html) (easier to use)                                     |
 
 ## Connectors and Headers
 
 | Quantity | Description       |
 |----------|-------------------|
-| 1        | [40 pin female headers](https://www.jameco.com/z/RS1-40-T-Adam-Technologies-40-Position-Single-Row-Vertical-Mount-Receptacle-3mm-Pin-Length_2168173.html)       |
-| 1        | [40 pin male right angle headers] (https://www.jameco.com/z/7000-1X40RG-A-Jameco-ValuePro-Connector-Unshrouded-Breakaway-Header-40-Position-2-54mm-Right-Angle-Thru-Hole-Solder_2294663.html)
+| 1        | [40 pin female headers](https://www.jameco.com/z/RS1-40-T-Adam-Technologies-40-Position-Single-Row-Vertical-Mount-Receptacle-3mm-Pin-Length_2168173.html) (cut as needed)      |
+| 1        | [40 pin male right angle headers](https://www.jameco.com/z/7000-1X40RG-A-Jameco-ValuePro-Connector-Unshrouded-Breakaway-Header-40-Position-2-54mm-Right-Angle-Thru-Hole-Solder_2294663.html) (if using FTDI cable/socket)
 
 ## Diodes
 
