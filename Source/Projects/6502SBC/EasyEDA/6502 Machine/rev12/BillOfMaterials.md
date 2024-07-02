@@ -12,9 +12,9 @@ This is the PCB. I got mine made by JLCPCB:
 |----------|---------------------|--------------------------------------------|
 | 1        | [WD65C02S](https://www.jameco.com/z/W65C02S6TPG-14-Western-Design-Center-MPU-8-Bit-14MHz-65KB-Memory-40-Pin-PDIP_2143638.html) / 6502     | Microprocessor                             |
 | 1        | [65C22](https://www.jameco.com/z/W65C22S6TPG-14-Western-Design-Center-Versatile-Interface-Adapter-via-8-Bit-I-O-Ports-14-MHz-40-Pin-PDIP-CMOS-5-Volt_2143591.html)               | VIA (Versatile Interface Adapter)          |
+| 1        | [MC6850] (https://www.jameco.com/z/6850-Major-Brands-IC-6850-Asynchronous-Communications-Interface-Adapter-24-pin-DIP_43633.html)              | ACIA (Asynchronous Communications Interface Adapter) |
 | 1        | [GAL20V8](https://www.jameco.com/z/GAL20V8B-25LP-Lattice-Semiconductor-Corporation-CPLD-Complex-Programmable-Logic-Device-25ns-8MC-DIP-24_876766.html) / ATF22V10C | Programmable Logic                         |
 | 1        | [24AA512] (https://au.mouser.com/ProductDetail/Microchip-Technology/24AA512-I-P?qs=t4j2cOJKO62XNcEsx%2F77Xw%3D%3D&countryCode=US&currencyCode=USD)            | EEPROM (I2C)                               |
-| 1        | [MC6850] (https://www.jameco.com/z/6850-Major-Brands-IC-6850-Asynchronous-Communications-Interface-Adapter-24-pin-DIP_43633.html)              | ACIA (Asynchronous Communications Interface Adapter) |
 | 1        | [AT28C256](https://au.mouser.com/ProductDetail/Microchip-Technology/AT28C256-15DM-883-815?qs=lqAf%2FiVYw9gtSFr69lKk6g%3D%3D)            | EEPROM (Parallel) - speed matters, 150ns or better                         |
 | 1        | 6C1008 / [62256](https://www.jameco.com/z/HM62256LP-70-Major-Brands-IC-62256LP-70-Low-Power-CMOS-SRAM-256K-Bit-32Kx8-70ns_82472.html)      | SRAM (Static RAM) - speed matters, 70ns or better                         |
 | 1        | [DS1813+5](https://au.mouser.com/ProductDetail/Analog-Devices-Maxim-Integrated/DS1813-5+?qs=Jw2w9zrI6w%2Fv9tYN5eKaiw%3D%3D&countryCode=US&currencyCode=USD)            | 5V Supervisor (150ms power/reset up delay) |
