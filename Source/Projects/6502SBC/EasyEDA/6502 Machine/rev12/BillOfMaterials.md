@@ -2,8 +2,10 @@
 
 ## PCB
 
-This is the PCB. I got mine made by JLCPCB:
+This is the PCB:
 [Gerber File](https://github.com/sillycowvalley/Hopper/blob/main/Source/Projects/6502SBC/EasyEDA/6502%20Machine/rev12/Gerber_6502-v2_PCB_6502-v4_2024-05-15.zip)
+
+I got mine made by [JLCPCB](https://jlcpcb.com/).
 
 
 ## ICs
@@ -13,7 +15,7 @@ This is the PCB. I got mine made by JLCPCB:
 | 1        | [WD65C02S](https://www.jameco.com/z/W65C02S6TPG-14-Western-Design-Center-MPU-8-Bit-14MHz-65KB-Memory-40-Pin-PDIP_2143638.html) / 6502     | Microprocessor                             |
 | 1        | [65C22](https://www.jameco.com/z/W65C22S6TPG-14-Western-Design-Center-Versatile-Interface-Adapter-via-8-Bit-I-O-Ports-14-MHz-40-Pin-PDIP-CMOS-5-Volt_2143591.html)               | VIA (Versatile Interface Adapter)          |
 | 1        | [MC6850](https://www.jameco.com/z/6850-Major-Brands-IC-6850-Asynchronous-Communications-Interface-Adapter-24-pin-DIP_43633.html)              | ACIA (Asynchronous Communications Interface Adapter) |
-| 1        | [GAL20V8](https://www.jameco.com/z/GAL20V8B-25LP-Lattice-Semiconductor-Corporation-CPLD-Complex-Programmable-Logic-Device-25ns-8MC-DIP-24_876766.html) / ATF22V10C | Programmable Logic                         |
+| 1        | [GAL20V8](https://www.jameco.com/z/GAL20V8B-25LP-Lattice-Semiconductor-Corporation-CPLD-Complex-Programmable-Logic-Device-25ns-8MC-DIP-24_876766.html) / ATF22V10C | Address Logic ([default JED file](https://github.com/sillycowvalley/Hopper/blob/main/Source/Projects/6502SBC/CPLD/6502SBC.jed))                        |
 | 1        | [24AA512](https://au.mouser.com/ProductDetail/Microchip-Technology/24AA512-I-P?qs=t4j2cOJKO62XNcEsx%2F77Xw%3D%3D&countryCode=US&currencyCode=USD)            | EEPROM (I2C)                               |
 | 1        | [AT28C256](https://au.mouser.com/ProductDetail/Microchip-Technology/AT28C256-15DM-883-815?qs=lqAf%2FiVYw9gtSFr69lKk6g%3D%3D)            | EEPROM (Parallel) - speed matters, 150ns or better                         |
 | 1        | 6C1008 / [62256](https://www.jameco.com/z/HM62256LP-70-Major-Brands-IC-62256LP-70-Low-Power-CMOS-SRAM-256K-Bit-32Kx8-70ns_82472.html)      | SRAM (Static RAM) - speed matters, 70ns or better                         |
@@ -72,14 +74,16 @@ This same programmer can be used to program both the firmware EEPROM and the GAL
 This is my ideal FTDI solution. You can probably find multiple sources for it. Just be sure you are ordering a 5V version:  
 [FTDI TTL-232R-5V](https://ftdichip.com/products/ttl-232r-5v/)
 
-You need a wire stripper that goes down to at least 24AWG. Something like this:  
-[Wire Stripper](https://www.jameco.com/z/HT-1043-R-Hanlong-Tools-Tool-Hand-7-in-1-HT-1043-22-30AWG_127871.html)
-
-DIP IC Extractor:  
+Extractor Tool:  
 [DIP IC Extractor](https://www.jameco.com/z/08-609-HT103A--Jameco-BenchPro-DIP-IC-Extractor-Tool_16838.html)
 
 DIP IC Pin benders to 3D print:  
 [0.3" DIP Pin Bender](https://www.thingiverse.com/thing:3124978)  
 [0.6" Pin Bender](https://www.thingiverse.com/thing:3121797)
 
+For building Ben Eater's board you need a wire stripper that goes down to at least 24AWG. Something like this:  
+[Wire Stripper](https://www.jameco.com/z/HT-1043-R-Hanlong-Tools-Tool-Hand-7-in-1-HT-1043-22-30AWG_127871.html)
 
+## Software
+
+[WinCUPL](https://www.microchip.com/en-us/products/fpgas-and-plds/spld-cplds/pld-design-resources) is used to program the CPLD (GAL20V8 or ATF22V10C). Optional if you don't want the default addressing scheme.
