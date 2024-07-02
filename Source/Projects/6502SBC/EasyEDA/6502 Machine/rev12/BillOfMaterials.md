@@ -12,6 +12,7 @@
 | 1        | MC6850              | ACIA (Asynchronous Communications Interface Adapter) |
 | 1        | AT28C256            | EEPROM (Parallel)                          |
 | 1        | 6C1008 / 62256      | SRAM (Static RAM)                          |
+| 1        | DS1813+5            | 5V Supervisor (150ms power/reset up delay) |
 
 ## Can Oscillators (DIP-4 or DIP-14)
 
@@ -44,6 +45,7 @@
 | Quantity | Part Number | Description       |
 |----------|-------------|-------------------|
 | 2        | 1N5817      | Schottky Diode    |
+
 
 ## Miscellaneous
 
