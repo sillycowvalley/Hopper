@@ -30,11 +30,11 @@ This is the PCB. I got mine made by JLCPCB:
 
 | Quantity | Description          |
 |----------|----------------------|
-| 5        | Capacitor, 0.1uF     |
-| 1        | Capacitor, 10uF      |
-| 2        | Resistor, 3.3kΩ      |
-| 3        | Resistor, 4.7kΩ      |
-| 2        | Resistor, 470Ω       |
+| 5        | [Capacitor, 0.1uF](https://www.jameco.com/z/DC-1-16-James-Electronics-0-1uF-16V-plusmn-20-Ceramic-Disc-Capacitor_2289855.html)    |
+| 1        | [Capacitor, 10uF](https://www.jameco.com/z/ECA-1EM100-JVP-Jameco-ValuePro-10uF-25-Volt-Radial-Electrolytic-Capacitor-20-85c-5x11x5mm_1946367.html)      |
+| 2        | [Resistor, 3.3kΩ](https://www.jameco.com/z/CF1-4W332JRC-Jameco-ValuePro-Resistor-Carbon-Film-3-3k-Ohm-1-4-Watt-5-_690988.html)      |
+| 3        | [Resistor, 4.7kΩ](https://www.jameco.com/z/CF1-4W472JRC-Jameco-ValuePro-Resistor-Carbon-Film-4-7k-Ohm-1-4-Watt-5-_691024.html)      |
+| 2        | [Resistor, 470Ω](https://www.jameco.com/z/CF1-4W471JRC-Jameco-ValuePro-Resistor-Carbon-Film-470-Ohm-1-4-Watt-5-_690785.html)       |
 
 ## Sockets
 
@@ -46,7 +46,8 @@ This is the PCB. I got mine made by JLCPCB:
 
 | Quantity | Description       |
 |----------|-------------------|
-| 1        | FTDI Header       |
+| 1        | [40 pin female headers](https://www.jameco.com/z/RS1-40-T-Adam-Technologies-40-Position-Single-Row-Vertical-Mount-Receptacle-3mm-Pin-Length_2168173.html)       |
+| 1        | [40 pin male right angle headers] (https://www.jameco.com/z/7000-1X40RG-A-Jameco-ValuePro-Connector-Unshrouded-Breakaway-Header-40-Position-2-54mm-Right-Angle-Thru-Hole-Solder_2294663.html)
 
 ## Diodes
 
