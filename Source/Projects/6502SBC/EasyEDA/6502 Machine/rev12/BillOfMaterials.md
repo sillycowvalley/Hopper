@@ -43,12 +43,12 @@ I got mine made by [JLCPCB](https://jlcpcb.com/).
 | Quantity | Part Number         | Description                                |
 |----------|---------------------|--------------------------------------------|
 | 1        | 28 PIN 0.6" ZIF Socket       |  Two variants: [low profile](https://www.jameco.com/z/28-526-10-Aries-Electronics-ZIF-Socket-28-Position-2-54mm-Solder-Straight-Thru-Hole_102745.html) or [conventional](https://www.jameco.com/z/28-6554-10-Aries-Electronics-Connector-Test-Socket-Receptacle-28-Position-2-54mm-Solder-Straight-Thru-Hole_104003.html) (easier to use)                                     |
-| 2        | [40 Pin 0.6" DIP](https://www.jameco.com/z/ICS-640-T-Jameco-ValuePro-40-Pin-Dual-Wipe-Low-Profile-IC-Socket-0-60-Inch-Wide_112311.html) | |
-| 1        | [32 Pin 0.6" DIP](https://www.jameco.com/z/32LPD-6-Jameco-ValuePro-Socket-IC-32-Pin-600-Inch-Tin-Dual-Solder-Low-Profile_112301.html) | |
-| 1        | [28 Pin 0.6" DIP](https://www.jameco.com/z/28LPD-6-Jameco-ValuePro-28-Pin-Dual-Wipe-Low-Profile-IC-Socket-0-6-Inch-Wide_40301.html) | |
-| 1        | [24 Pin 0.6" DIP](https://www.jameco.com/z/6000-24W-James-Electronics-24-Pin-Dual-Wipe-Low-Profile-IC-Socket-0-6-Inch-Wide_112264.html)| |
-| 1        | [24 Pin 0.3" DIP](https://www.jameco.com/z/24LPD-3-James-Electronics-24-Pin-Dual-Wipe-Low-Profile-IC-Socket-0-3-Inch-Wide_39378.html)| |
-| 1        | [8 Pin 0.3" DIP](https://www.jameco.com/z/2202-Adafruit-Industries-Ic-Socket-for-8-Pin-0-3-Chips-Pack-of-3_2508599.html)| |
+| 2        | [40 Pin 0.6" DIP](https://www.jameco.com/z/ICS-640-T-Jameco-ValuePro-40-Pin-Dual-Wipe-Low-Profile-IC-Socket-0-60-Inch-Wide_112311.html) | CPU and VIA |
+| 1        | [32 Pin 0.6" DIP](https://www.jameco.com/z/32LPD-6-Jameco-ValuePro-Socket-IC-32-Pin-600-Inch-Tin-Dual-Solder-Low-Profile_112301.html) | SRAM (28 is ok if you never use 6C1008)|
+| 1        | [28 Pin 0.6" DIP](https://www.jameco.com/z/28LPD-6-Jameco-ValuePro-28-Pin-Dual-Wipe-Low-Profile-IC-Socket-0-6-Inch-Wide_40301.html) | EEPROM |
+| 1        | [24 Pin 0.6" DIP](https://www.jameco.com/z/6000-24W-James-Electronics-24-Pin-Dual-Wipe-Low-Profile-IC-Socket-0-6-Inch-Wide_112264.html)| ACIA |
+| 1        | [24 Pin 0.3" DIP](https://www.jameco.com/z/24LPD-3-James-Electronics-24-Pin-Dual-Wipe-Low-Profile-IC-Socket-0-3-Inch-Wide_39378.html)| CPLD |
+| 1        | [8 Pin 0.3" DIP](https://www.jameco.com/z/2202-Adafruit-Industries-Ic-Socket-for-8-Pin-0-3-Chips-Pack-of-3_2508599.html)| Serial EEPROM |
 | 1        | [DIP-14 0.3](https://www.jameco.com/z/1107741-Aries-Electronics-Machine-Tooled-4-Pin-Full-Can-Crystal-Oscillator-Socket_133006.html)| DIP-14 Can Oscillator Socket |
 | 1        | [DIP-8 0.3](https://www.jameco.com/z/1108800-Aries-Electronics-Machine-Tooled-4-Pin-Half-Can-Crystal-Oscillator-Socket_676385.html)| DIP-8 Can Oscillator Socket |
 
