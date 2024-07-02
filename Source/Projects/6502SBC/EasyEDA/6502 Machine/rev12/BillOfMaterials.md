@@ -38,7 +38,6 @@
 | 1        | FTDI Header       |
 | 1        | Velleman Header   |
 | 1        | Waveshare Header  |
-| 1        | Power Connector   |
 
 ## Diodes
 
