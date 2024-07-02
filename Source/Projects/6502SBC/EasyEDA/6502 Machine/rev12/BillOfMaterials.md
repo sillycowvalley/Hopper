@@ -81,7 +81,8 @@ DIP IC Pin benders to 3D print:
 [0.3" DIP Pin Bender](https://www.thingiverse.com/thing:3124978)  
 [0.6" Pin Bender](https://www.thingiverse.com/thing:3121797)
 
-For building Ben Eater's board you need a wire stripper that goes down to at least 24AWG. Something like this:  
+For building Ben Eater's computer you need a wire stripper that goes down to at least 24AWG. Not needed for the Hopper 6502 SBC. 
+Something like this:  
 [Wire Stripper](https://www.jameco.com/z/HT-1043-R-Hanlong-Tools-Tool-Hand-7-in-1-HT-1043-22-30AWG_127871.html)
 
 ## Software
