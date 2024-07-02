@@ -21,12 +21,12 @@ I got mine made by [JLCPCB](https://jlcpcb.com/).
 | 1        | 6C1008 / [62256](https://www.jameco.com/z/HM62256LP-70-Major-Brands-IC-62256LP-70-Low-Power-CMOS-SRAM-256K-Bit-32Kx8-70ns_82472.html)      | SRAM (Static RAM) - speed matters, 70ns or better                         |
 | 1        | [DS1813+5](https://au.mouser.com/ProductDetail/Analog-Devices-Maxim-Integrated/DS1813-5+?qs=Jw2w9zrI6w%2Fv9tYN5eKaiw%3D%3D&countryCode=US&currencyCode=USD)            | 5V Supervisor (150ms power/reset up delay) |
 
-## Can Oscillators (DIP-4 or DIP-14)
+## Can Oscillators (DIP-8 or DIP-14)
 
 | Quantity | Description                    |
 |----------|--------------------------------|
-| 1        | Crystal, [1-8 MHz](https://www.jameco.com/z/OSC8-000-James-Electronics-8-MHz-Full-Can-Crystal-Oscillator_27991.html)               |
-| 1        | Crystal, 1.8432 / [3.6864 MHz](https://www.jameco.com/z/H5C-2E3-3-6864-FOX-ELECTRONICS-Standard-Clock-Oscillator-3-6864MHz-Half-Can-DIP-8_2322439.html)   |
+| 1        | Full Can Crystal Oscillator, [1-8 MHz](https://www.jameco.com/z/OSC8-000-James-Electronics-8-MHz-Full-Can-Crystal-Oscillator_27991.html)               |
+| 1        | Half Can Crystal Oscillator, 1.8432 / [3.6864 MHz](https://www.jameco.com/z/H5C-2E3-3-6864-FOX-ELECTRONICS-Standard-Clock-Oscillator-3-6864MHz-Half-Can-DIP-8_2322439.html)   |
 
 ## Passive Components
 
