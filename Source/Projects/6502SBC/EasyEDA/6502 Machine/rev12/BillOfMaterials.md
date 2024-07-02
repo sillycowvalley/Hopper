@@ -47,7 +47,7 @@ This is the PCB. I got mine made by JLCPCB:
 | Quantity | Description       |
 |----------|-------------------|
 | 1        | [40 pin female headers](https://www.jameco.com/z/RS1-40-T-Adam-Technologies-40-Position-Single-Row-Vertical-Mount-Receptacle-3mm-Pin-Length_2168173.html) (cut as needed)      |
-| 1        | [40 pin male right angle headers](https://www.jameco.com/z/7000-1X40RG-A-Jameco-ValuePro-Connector-Unshrouded-Breakaway-Header-40-Position-2-54mm-Right-Angle-Thru-Hole-Solder_2294663.html) (if using FTDI cable/socket)
+| 1        | [40 pin male right angle headers](https://www.jameco.com/z/7000-1X40RG-A-Jameco-ValuePro-Connector-Unshrouded-Breakaway-Header-40-Position-2-54mm-Right-Angle-Thru-Hole-Solder_2294663.html) |
 
 ## Diodes
 
