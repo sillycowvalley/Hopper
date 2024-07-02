@@ -79,7 +79,7 @@ DIP IC Extractor:
 [DIP IC Extractor](https://www.jameco.com/z/08-609-HT103A--Jameco-BenchPro-DIP-IC-Extractor-Tool_16838.html)
 
 DIP IC Pin benders to 3D print:  
-[Pin Bender 1](https://www.thingiverse.com/thing:3124978)  
-[Pin Bender 2](https://www.thingiverse.com/thing:3121797)
+[0.3" DIP Pin Bender](https://www.thingiverse.com/thing:3124978)  
+[0.6" Pin Bender](https://www.thingiverse.com/thing:3121797)
 
 
