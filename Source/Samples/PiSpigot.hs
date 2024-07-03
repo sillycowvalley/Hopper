@@ -1,21 +1,19 @@
 program PiSpigot
 {
-    
-#define SERIAL_CONSOLE
+    #define SERIAL_CONSOLE
     uses "/Source/System/System"
     uses "/Source/System/IO"
-    
+
     const uint n = 1000;
     const uint len = 10 * n / 3;
 
     WriteUInt(uint value)
     {
         IO.Write(value.ToString());
-    }    
+    }
 
     Hopper()
     {
-        
         uint i;
         uint j;
         uint k;
@@ -24,16 +22,14 @@ program PiSpigot
         uint nines;
         uint predigit;
         uint[len] a;
-        
+
         IO.WriteLn();
-        uint places = n;
         IO.Write("Pi to ");
-        WriteUInt(places);
+        WriteUInt(n);
         IO.WriteLn(" places:");
         IO.WriteLn();
+        long start = Millis;
 
-        long start  = Millis;
-    
         // Initialize array
         for (j = 0; j < len; j++) 
         {
@@ -46,7 +42,7 @@ program PiSpigot
         for (j = 1; j <= n; j++)
         {
             q = 0;
-            for (i = len; i >= 1; i--)
+            for (i = len; i > 0; i--)
             {
                 x = 10 * a[i - 1] + q * i;
                 a[i - 1] = x % (2 * i - 1);
@@ -86,10 +82,11 @@ program PiSpigot
         }
 
         WriteUInt(predigit);
-        
+        IO.WriteLn();
         IO.WriteLn("Done.");
-        
-        float ms = ((Millis - start) / 10.0); 
-        IO.WriteLn(ms.ToString() + " " + " ms");
+
+        float ms = (Millis - start) / 10.0; 
+        IO.WriteLn(ms.ToString() + " ms");
     }
 }
+
