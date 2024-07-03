@@ -4,7 +4,7 @@ program PiSpigot
     uses "/Source/System/System"
     uses "/Source/System/IO"
 
-    const uint n = 1000;
+    const uint n = 20; //1000;
     const uint len = 10 * n / 3;
 
     WriteUInt(uint value)
@@ -22,13 +22,14 @@ program PiSpigot
         uint nines;
         uint predigit;
         uint[len] a;
+        bool firstDigit = true; // Flag to handle the first digit specially
 
         IO.WriteLn();
         IO.Write("Pi to ");
         WriteUInt(n);
         IO.WriteLn(" places:");
         IO.WriteLn();
-        long start = Millis;
+        uint start = Seconds;
 
         // Initialize array
         for (j = 0; j < len; j++) 
@@ -58,7 +59,15 @@ program PiSpigot
             }
             else if (q == 10)
             {
-                WriteUInt(predigit + 1);
+                if (firstDigit)
+                {
+                    IO.Write("3.");
+                    firstDigit = false;
+                }
+                else
+                {
+                    WriteUInt(predigit + 1);
+                }
                 for (k = 1; k <= nines; k++) 
                 {
                     WriteUInt(0); // Zeros
@@ -68,7 +77,16 @@ program PiSpigot
             }
             else
             {
-                WriteUInt(predigit);
+                if (firstDigit)
+                {
+                    IO.Write("3.");
+                    WriteUInt(predigit);
+                    firstDigit = false;
+                }
+                else
+                {
+                    WriteUInt(predigit);
+                }
                 predigit = q;
                 if (nines != 0)
                 {
@@ -82,11 +100,12 @@ program PiSpigot
         }
 
         WriteUInt(predigit);
+        uint elapsed = (Seconds - start); 
+        
         IO.WriteLn();
         IO.WriteLn("Done.");
-
-        float ms = (Millis - start) / 10.0; 
-        IO.WriteLn(ms.ToString() + " ms");
+        
+        IO.WriteLn(elapsed.ToString() + " seconds");
     }
 }
 
