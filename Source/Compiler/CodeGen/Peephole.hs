@@ -48,12 +48,21 @@ unit Peephole
        }
     }
     
-    TrimTail(<byte> currentStream, uint remove)
+    popAndTrim(<byte> currentStream, byte instructionsToPop, uint bytestoTrim)
     {
-        while (remove > 0)
+        while (bytestoTrim != 0)
         {
             currentStream.Remove(currentStream.Count-1);
-            remove--;
+            bytestoTrim--;
+        }
+        while (instructionsToPop != 0)
+        {
+            lastInstruction0 = lastInstruction1;
+            lastInstruction1 = lastInstruction2;
+            lastInstruction2 = lastInstruction3;
+            lastInstruction3 = lastInstruction4;
+            lastInstruction4 = 0;
+            instructionsToPop--;
         }
     }
     
@@ -136,6 +145,7 @@ unit Peephole
     bool IsPushLocalB(<byte> currentStream, uint index, ref byte offset, ref byte length)
     {
         Instruction opCode = Instruction(currentStream[index]);
+        length = 1;
         switch (opCode)
         {
             case Instruction.PUSHLOCALB:
@@ -147,13 +157,11 @@ unit Peephole
             case Instruction.PUSHLOCALB00:
             {
                 offset = 0;   
-                length = 1;    
                 return true;
             }
             case Instruction.PUSHLOCALB01:
             {
                 offset = 1;   
-                length = 1;    
                 return true;
             }
         }
@@ -163,6 +171,7 @@ unit Peephole
     bool IsPopLocalB(<byte> currentStream, uint index, ref byte offset, ref byte length)
     {
         Instruction opCode = Instruction(currentStream[index]);
+        length = 1; 
         switch (opCode)
         {
             case Instruction.POPLOCALB:
@@ -174,13 +183,11 @@ unit Peephole
             case Instruction.POPLOCALB00:
             {
                 offset = 0;
-                length = 1; 
                 return true;
             }
             case Instruction.POPLOCALB01:
             {
                 offset = 1;
-                length = 1; 
                 return true;
             }
         }
@@ -196,12 +203,7 @@ unit Peephole
             // PUSHI0 PUSHI1 SUBI -> PUSHIM1
             // i2     i1     i0      i2
             currentStream.SetItem(lastInstruction2,   byte(Instruction.PUSHIM1));
-            TrimTail(currentStream, 2);
-            lastInstruction0 = lastInstruction2;
-            lastInstruction1 = lastInstruction3;
-            lastInstruction2 = lastInstruction4;
-            lastInstruction3 = 0;
-            lastInstruction4 = 0;
+            popAndTrim(currentStream, 2, 2);
             return true; // hunt for more
         }
         if (currentStream[lastInstruction2] == byte(Instruction.PUSHLOCALBB))
@@ -210,8 +212,8 @@ unit Peephole
             byte offset1 = currentStream[lastInstruction2+2]; 
             byte length1 = 1;
             
-            byte offset0 = 0;
-            byte length0 = 0;
+            byte offset0;
+            byte length0;
             bool isPopLocalB0  = IsPopLocalB (currentStream, lastInstruction0, ref offset0, ref length0);
             if (isPopLocalB0)
             {
@@ -234,12 +236,7 @@ unit Peephole
                     
                     // 6 -> 3 = -3
                     uint remove = length0 + length1;
-                    TrimTail(currentStream, remove);
-                    lastInstruction0 = lastInstruction2;
-                    lastInstruction1 = lastInstruction3;
-                    lastInstruction2 = lastInstruction4;
-                    lastInstruction3 = 0;
-                    lastInstruction4 = 0;
+                    popAndTrim(currentStream, 2, remove);
                     return true; // hunt for more
                 }
                 if (((offset2 == offset0) || (offset1 == offset0))
@@ -261,12 +258,7 @@ unit Peephole
                     
                     // 6 -> 3 = -3
                     uint remove = length0 + length1;
-                    TrimTail(currentStream, remove);
-                    lastInstruction0 = lastInstruction2;
-                    lastInstruction1 = lastInstruction3;
-                    lastInstruction2 = lastInstruction4;
-                    lastInstruction3 = 0;
-                    lastInstruction4 = 0;
+                    popAndTrim(currentStream, 2, remove);
                     return true; // hunt for more
                 }
             }
@@ -298,12 +290,7 @@ unit Peephole
                 currentStream.SetItem(lastInstruction3+1, offset0);
                 // 6 -> 2 = -4
                 uint remove = (length0-1) + (length3-1) + 2;
-                TrimTail(currentStream, remove);
-                lastInstruction0 = lastInstruction3;
-                lastInstruction1 = lastInstruction4;
-                lastInstruction2 = 0;
-                lastInstruction3 = 0;
-                lastInstruction4 = 0;
+                popAndTrim(currentStream, 3, remove);
                 return true; // hunt for more
             }
             if ((offset3 == offset0)
@@ -317,12 +304,7 @@ unit Peephole
                 currentStream.SetItem(lastInstruction3+1, offset0);
                 // 6 -> 2 = -4
                 uint remove = (length0-1) + (length3-1) + 2;
-                TrimTail(currentStream, remove);
-                lastInstruction0 = lastInstruction3;
-                lastInstruction1 = lastInstruction4;
-                lastInstruction2 = 0;
-                lastInstruction3 = 0;
-                lastInstruction4 = 0;
+                popAndTrim(currentStream, 3, remove);
                 return true; // hunt for more
             }
         }
@@ -339,12 +321,7 @@ unit Peephole
                 currentStream.SetItem(lastInstruction3+1, offset0);
                 // 6 -> 2 = -4
                 uint remove = (length0-1) + (length3-1) + 2;
-                TrimTail(currentStream, remove);
-                lastInstruction0 = lastInstruction3;
-                lastInstruction1 = lastInstruction4;
-                lastInstruction2 = 0;
-                lastInstruction3 = 0;
-                lastInstruction4 = 0;
+                popAndTrim(currentStream, 3, remove);
                 return true; // hunt for more
             }
             byte offset2 = 0;
@@ -371,12 +348,7 @@ unit Peephole
                 
                 // 7 -> 3 = -4
                 uint remove = (length0-1) + (length2-1) + (length3-1) + 1;
-                TrimTail(currentStream, remove);
-                lastInstruction0 = lastInstruction3;
-                lastInstruction1 = lastInstruction4;
-                lastInstruction2 = 0;
-                lastInstruction3 = 0;
-                lastInstruction4 = 0;
+                popAndTrim(currentStream, 3, remove);
                 return true; // hunt for more
             }
             if (isPushLocalB2
@@ -399,12 +371,7 @@ unit Peephole
                 
                 // 7 -> 3 = -4
                 uint remove = (length0-1) + (length2-1) + (length3-1) + 1;
-                TrimTail(currentStream, remove);
-                lastInstruction0 = lastInstruction3;
-                lastInstruction1 = lastInstruction4;
-                lastInstruction2 = 0;
-                lastInstruction3 = 0;
-                lastInstruction4 = 0;
+                popAndTrim(currentStream, 3, remove);
                 return true; // hunt for more
             }
         }
@@ -419,7 +386,7 @@ unit Peephole
             if (operand <= 255)
             {
                 currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHIB));
-                TrimTail(currentStream, 1); // MSB
+                popAndTrim(currentStream, 0, 1); // MSB
                 return true; // hunt for more
             }
         }
@@ -429,13 +396,13 @@ unit Peephole
             if (operand == 0)
             {
                 currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHI0));
-                TrimTail(currentStream, 1); // '0'
+                popAndTrim(currentStream, 0, 1); // '0'
                 return true; // hunt for more
             }
             if (operand == 1)
             {
                 currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHI1));
-                TrimTail(currentStream, 1); // '1'
+                popAndTrim(currentStream, 0, 1); // '1'
                 return true; // hunt for more
             }
         }
@@ -458,7 +425,7 @@ unit Peephole
                 // i0         -> i0
                 currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHLOCALB01));
             }
-            TrimTail(currentStream, 1);
+            popAndTrim(currentStream, 0, 1);
             return true; // hunt for more
         }
         
@@ -477,7 +444,7 @@ unit Peephole
                 // i0         -> i0
                 currentStream.SetItem(lastInstruction0, byte(Instruction.POPLOCALB01));
             }
-            TrimTail(currentStream, 1);
+            popAndTrim(currentStream, 0, 1);
             return true; // hunt for more
         }
         return false;
@@ -495,15 +462,74 @@ unit Peephole
                 byte value = currentStream[lastInstruction0+1];
                 if (value == byte(type(byte)))
                 {
-                    TrimTail(currentStream, 2);
-                    lastInstruction0 = lastInstruction1;
-                    lastInstruction1 = lastInstruction2;
-                    lastInstruction2 = lastInstruction3;
-                    lastInstruction3 = lastInstruction4;
-                    lastInstruction4 = 0;
+                    popAndTrim(currentStream, 1, 2);
                     return true; // hunt for more
                 }
             }
+        }
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHI1)) 
+         && ( (currentStream[lastInstruction0] == byte(Instruction.MUL)) || 
+              (currentStream[lastInstruction0] == byte(Instruction.MULI)) || 
+              (currentStream[lastInstruction0] == byte(Instruction.DIV)) || 
+              (currentStream[lastInstruction0] == byte(Instruction.DIVI))
+            )
+           )
+        {
+            // PUSHI1 MUL|DIV    -> NOP
+            popAndTrim(currentStream, 2, 2);
+            return true; // hunt for more
+        }
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHI0)) 
+         && ( (currentStream[lastInstruction0] == byte(Instruction.ADD)) || 
+              (currentStream[lastInstruction0] == byte(Instruction.SUB)) || 
+              (currentStream[lastInstruction0] == byte(Instruction.ADDI)) || 
+              (currentStream[lastInstruction0] == byte(Instruction.SUBI))
+            )
+           )
+        {
+            // PUSHI0 ADD|SUB    -> NOP
+            popAndTrim(currentStream, 2, 2);
+            return true; // hunt for more
+        }
+        if ( 
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHIB)) 
+         && ( (currentStream[lastInstruction0] == byte(Instruction.MUL)) || (currentStream[lastInstruction0] == byte(Instruction.DIV)))
+           )
+        {
+            byte shift;
+            byte value = currentStream[lastInstruction1+1];
+            switch (value)
+            {
+                case 2:   { shift = 1; }
+                case 4:   { shift = 2; }
+                case 8:   { shift = 3; }
+                case 16:  { shift = 4; }
+                case 32:  { shift = 5; }
+                case 64:  { shift = 6; }
+                case 128: { shift = 7; }
+            }
+            if (shift != 0)
+            {
+                if (currentStream[lastInstruction0] == byte(Instruction.MUL))
+                {
+                    // PUSHIB MUL    -> BITSHLB
+                    // i1     i0     -> i0
+                    currentStream.SetItem(lastInstruction1,   byte(Instruction.BITSHLB));
+                    currentStream.SetItem(lastInstruction1+1, shift);
+                }
+                else
+                {
+                    // PUSHIB DIV    -> BITSHRB
+                    // i1     i0     -> i0
+                    currentStream.SetItem(lastInstruction1,   byte(Instruction.BITSHRB));
+                    currentStream.SetItem(lastInstruction1+1, shift);
+                }
+                popAndTrim(currentStream, 1, 1);
+                return true; // hunt for more
+            }
+            
         }
         if (
             (currentStream[lastInstruction1] == byte(Instruction.PUSHIB)) 
@@ -514,12 +540,7 @@ unit Peephole
             if (value == 8)
             {
                 currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHL8));
-                TrimTail(currentStream, 2);
-                lastInstruction0 = lastInstruction1;
-                lastInstruction1 = lastInstruction2;
-                lastInstruction2 = lastInstruction3;
-                lastInstruction3 = lastInstruction4;
-                lastInstruction4 = 0;
+                popAndTrim(currentStream, 1, 2);
                 return true; // hunt for more
             }
             else
@@ -527,12 +548,7 @@ unit Peephole
                 // PUSHIB BITSHL -> BITSHLB
                 // i1     i0     -> i0
                 currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHLB));
-                TrimTail(currentStream, 1);
-                lastInstruction0 = lastInstruction1;
-                lastInstruction1 = lastInstruction2;
-                lastInstruction2 = lastInstruction3;
-                lastInstruction3 = lastInstruction4;
-                lastInstruction4 = 0;
+                popAndTrim(currentStream, 1, 1);
                 return true; // hunt for more
             }
         }
@@ -545,11 +561,7 @@ unit Peephole
             // i1     i0     -> i0
             currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHLB));
             currentStream.SetItem(lastInstruction0, byte(1));
-            lastInstruction0 = lastInstruction1;
-            lastInstruction1 = lastInstruction2;
-            lastInstruction2 = lastInstruction3;
-            lastInstruction3 = lastInstruction4;
-            lastInstruction4 = 0;
+            popAndTrim(currentStream, 1, 0);
             return true; // hunt for more
         }
         if (
@@ -561,12 +573,7 @@ unit Peephole
             if (value == 8)
             {
                 currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHR8));
-                TrimTail(currentStream, 2);
-                lastInstruction0 = lastInstruction1;
-                lastInstruction1 = lastInstruction2;
-                lastInstruction2 = lastInstruction3;
-                lastInstruction3 = lastInstruction4;
-                lastInstruction4 = 0;
+                popAndTrim(currentStream, 1, 2);
                 return true; // hunt for more
             }
             else
@@ -574,12 +581,7 @@ unit Peephole
                 // PUSHIB BITSHR -> BITSHRB
                 // i1     i0     -> i0
                 currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHRB));
-                TrimTail(currentStream, 1);
-                lastInstruction0 = lastInstruction1;
-                lastInstruction1 = lastInstruction2;
-                lastInstruction2 = lastInstruction3;
-                lastInstruction3 = lastInstruction4;
-                lastInstruction4 = 0;
+                popAndTrim(currentStream, 1, 1);
                 return true; // hunt for more
             }
         }
@@ -592,11 +594,7 @@ unit Peephole
             // i1     i0     -> i0
             currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHRB));
             currentStream.SetItem(lastInstruction0, byte(1));
-            lastInstruction0 = lastInstruction1;
-            lastInstruction1 = lastInstruction2;
-            lastInstruction2 = lastInstruction3;
-            lastInstruction3 = lastInstruction4;
-            lastInstruction4 = 0;
+            popAndTrim(currentStream, 1, 0);
             return true; // hunt for more
         }
         if (
@@ -608,12 +606,7 @@ unit Peephole
             if (value == 0xFF)
             {
                 currentStream.SetItem(lastInstruction1, byte(Instruction.BITANDFF));
-                TrimTail(currentStream, 2);
-                lastInstruction0 = lastInstruction1;
-                lastInstruction1 = lastInstruction2;
-                lastInstruction2 = lastInstruction3;
-                lastInstruction3 = lastInstruction4;
-                lastInstruction4 = 0;
+                popAndTrim(currentStream, 1, 2);
                 return true; // hunt for more
             }
             else
@@ -621,12 +614,7 @@ unit Peephole
                 // PUSHIB BITAND -> BITANDB
                 // i1     i0     -> i0
                 currentStream.SetItem(lastInstruction1, byte(Instruction.BITANDB));
-                TrimTail(currentStream, 1);
-                lastInstruction0 = lastInstruction1;
-                lastInstruction1 = lastInstruction2;
-                lastInstruction2 = lastInstruction3;
-                lastInstruction3 = lastInstruction4;
-                lastInstruction4 = 0;
+                popAndTrim(currentStream, 1, 1);
                 return true; // hunt for more
             }
         }
@@ -639,11 +627,7 @@ unit Peephole
             // i1     i0     -> i0
             currentStream.SetItem(lastInstruction1, byte(Instruction.BITANDB));
             currentStream.SetItem(lastInstruction0, byte(1));
-            lastInstruction0 = lastInstruction1;
-            lastInstruction1 = lastInstruction2;
-            lastInstruction2 = lastInstruction3;
-            lastInstruction3 = lastInstruction4;
-            lastInstruction4 = 0;
+            popAndTrim(currentStream, 1, 0);
             return true; // hunt for more
         }
         if (
@@ -655,12 +639,7 @@ unit Peephole
             // PUSHIB BITOR -> BITORB
             // i1     i0    -> i0
             currentStream.SetItem(lastInstruction1, byte(Instruction.BITORB));
-            TrimTail(currentStream, 1);
-            lastInstruction0 = lastInstruction1;
-            lastInstruction1 = lastInstruction2;
-            lastInstruction2 = lastInstruction3;
-            lastInstruction3 = lastInstruction4;
-            lastInstruction4 = 0;
+            popAndTrim(currentStream, 1, 1);
             return true; // hunt for more
         }
         if (
@@ -672,11 +651,7 @@ unit Peephole
             // i1     i0     -> i0
             currentStream.SetItem(lastInstruction1, byte(Instruction.BITORB));
             currentStream.SetItem(lastInstruction0, byte(1));
-            lastInstruction0 = lastInstruction1;
-            lastInstruction1 = lastInstruction2;
-            lastInstruction2 = lastInstruction3;
-            lastInstruction3 = lastInstruction4;
-            lastInstruction4 = 0;
+            popAndTrim(currentStream, 1, 0);
             return true; // hunt for more
         }
         if (
@@ -687,12 +662,7 @@ unit Peephole
             // PUSHI LE -> PUSHILE
             // i1     i0 -> i0
             currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHILE));
-            TrimTail(currentStream, 1);
-            lastInstruction0 = lastInstruction1;
-            lastInstruction1 = lastInstruction2;
-            lastInstruction2 = lastInstruction3;
-            lastInstruction3 = lastInstruction4;
-            lastInstruction4 = 0;
+            popAndTrim(currentStream, 1, 1);
             return true; // hunt for more
         }
         if (
@@ -703,12 +673,7 @@ unit Peephole
             // PUSHIB LE -> PUSHIBLE
             // i1     i0 -> i0
             currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHIBLE));
-            TrimTail(currentStream, 1);
-            lastInstruction0 = lastInstruction1;
-            lastInstruction1 = lastInstruction2;
-            lastInstruction2 = lastInstruction3;
-            lastInstruction3 = lastInstruction4;
-            lastInstruction4 = 0;
+            popAndTrim(currentStream, 1, 1);
             return true; // hunt for more
         }
         if (
@@ -719,12 +684,7 @@ unit Peephole
             // PUSHIB EQ -> PUSHIBEQ
             // i1     i0 -> i0
             currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHIBEQ));
-            TrimTail(currentStream, 1);
-            lastInstruction0 = lastInstruction1;
-            lastInstruction1 = lastInstruction2;
-            lastInstruction2 = lastInstruction3;
-            lastInstruction3 = lastInstruction4;
-            lastInstruction4 = 0;
+            popAndTrim(currentStream, 1, 1);
             return true; // hunt for more
         }
         if (
@@ -735,12 +695,7 @@ unit Peephole
             // PUSHIB ADD -> ADDB
             // i1     i0  -> i0
             currentStream.SetItem(lastInstruction1, byte(Instruction.ADDB));
-            TrimTail(currentStream, 1);
-            lastInstruction0 = lastInstruction1;
-            lastInstruction1 = lastInstruction2;
-            lastInstruction2 = lastInstruction3;
-            lastInstruction3 = lastInstruction4;
-            lastInstruction4 = 0;
+            popAndTrim(currentStream, 1, 1);
             return true; // hunt for more
         }
         if (
@@ -748,15 +703,10 @@ unit Peephole
          && (currentStream[lastInstruction0] == byte(Instruction.SUB))
            )
         {
-            // PUSHIB ADD -> ADDB
+            // PUSHIB SUB -> SUBB
             // i1     i0  -> i0
             currentStream.SetItem(lastInstruction1, byte(Instruction.SUBB));
-            TrimTail(currentStream, 1);
-            lastInstruction0 = lastInstruction1;
-            lastInstruction1 = lastInstruction2;
-            lastInstruction2 = lastInstruction3;
-            lastInstruction3 = lastInstruction4;
-            lastInstruction4 = 0;
+            popAndTrim(currentStream, 1, 1);
             return true; // hunt for more
         }
         if (
@@ -767,12 +717,7 @@ unit Peephole
             // PUSHI LEI -> PUSHILEI
             // i1     i0 -> i0
             currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHILEI));
-            TrimTail(currentStream, 1);
-            lastInstruction0 = lastInstruction1;
-            lastInstruction1 = lastInstruction2;
-            lastInstruction2 = lastInstruction3;
-            lastInstruction3 = lastInstruction4;
-            lastInstruction4 = 0;
+            popAndTrim(currentStream, 1, 1);
             return true; // hunt for more
         }
         if (
@@ -783,12 +728,7 @@ unit Peephole
             // PUSHI LT -> PUSHILT
             // i1     i0 -> i0
             currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHILT));
-            TrimTail(currentStream, 1);
-            lastInstruction0 = lastInstruction1;
-            lastInstruction1 = lastInstruction2;
-            lastInstruction2 = lastInstruction3;
-            lastInstruction3 = lastInstruction4;
-            lastInstruction4 = 0;
+            popAndTrim(currentStream, 1, 1);
             return true; // hunt for more
         }
         if (
@@ -802,13 +742,7 @@ unit Peephole
             byte offset1 = currentStream[lastInstruction1+1];   
             currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHGLOBALBB));
             currentStream.SetItem(lastInstruction1+2, offset0);
-            
-            TrimTail(currentStream, 1);
-            lastInstruction0 = lastInstruction1;
-            lastInstruction1 = lastInstruction2;
-            lastInstruction2 = lastInstruction3;
-            lastInstruction3 = lastInstruction4;
-            lastInstruction4 = 0;
+            popAndTrim(currentStream, 1, 1);
             return true; // hunt for more
         }
     
@@ -823,13 +757,7 @@ unit Peephole
             byte offset1 = currentStream[lastInstruction1+1];   
             currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHLOCALBB));
             currentStream.SetItem(lastInstruction1+2, offset0);
-            
-            TrimTail(currentStream, 1);
-            lastInstruction0 = lastInstruction1;
-            lastInstruction1 = lastInstruction2;
-            lastInstruction2 = lastInstruction3;
-            lastInstruction3 = lastInstruction4;
-            lastInstruction4 = 0;
+            popAndTrim(currentStream, 1, 1);
             return true; // hunt for more
         }
         return false;

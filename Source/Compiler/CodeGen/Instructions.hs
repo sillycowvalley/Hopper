@@ -144,6 +144,8 @@ unit Instructions
         
         ADDB,
         SUBB,
+        INC,
+        DEC,
         
         // pop 2 -> operation -> push 1: (bit 0 set means 'signed')
         ADD  = 0x80,
@@ -678,6 +680,14 @@ unit Instructions
             case Instruction.SUBB:
             {
                 result = "SUBB";
+            }
+            case Instruction.INC:
+            {
+                result = "INC";
+            }
+            case Instruction.DEC:
+            {
+                result = "DEC";
             }
             case Instruction.BITSHLB:
             {

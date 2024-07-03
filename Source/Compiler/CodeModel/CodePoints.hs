@@ -2024,12 +2024,23 @@ unit CodePoints
                 if (!IsTargetOfJumps(iIndex))
                 {
                     byte       operand = ((opCode1 == Instruction.PUSHI0) ? 0 : 1);
-                    Instruction opCode = ((opCode0 == Instruction.ADD) ? Instruction.ADDB : Instruction.SUBB);
-                    iCodes.SetItem   (iIndex-1, opCode);
-                    iOperands.SetItem(iIndex-1, operand);
-                    iLengths.SetItem (iIndex-1, 2);
-                    RemoveInstruction(iIndex);
-                    modified = true;
+                    if (operand == 1)
+                    {
+                        Instruction opCode = ((opCode0 == Instruction.ADD) ? Instruction.INC : Instruction.DEC);
+                        iCodes.SetItem   (iIndex-1, opCode);
+                        iLengths.SetItem (iIndex-1, 1);
+                        RemoveInstruction(iIndex);
+                        modified = true;
+                    }
+                    else
+                    {
+                        Instruction opCode = ((opCode0 == Instruction.ADD) ? Instruction.ADDB : Instruction.SUBB);
+                        iCodes.SetItem   (iIndex-1, opCode);
+                        iOperands.SetItem(iIndex-1, operand);
+                        iLengths.SetItem (iIndex-1, 2);
+                        RemoveInstruction(iIndex);
+                        modified = true;
+                    }
                 }
             }
             iIndex++;

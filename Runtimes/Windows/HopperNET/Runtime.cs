@@ -176,6 +176,8 @@ namespace HopperNET
 
         ADDB,
         SUBB,
+        INC,
+        DEC,
 
         // pop 2 -> operation -> push 1: (bit 0 set means 'signed')
         ADD   = 0x80,
@@ -2011,7 +2013,18 @@ namespace HopperNET
                             uint next = Pop();
                             Push(next - top, HopperType.tUInt);
                         }
-
+                        break;
+                    case Instruction.INC:
+                        {
+                            uint next = Pop();
+                            Push(next + 1, HopperType.tUInt);
+                        }
+                        break;
+                    case Instruction.DEC:
+                        {
+                            uint next = Pop();
+                            Push(next - 1, HopperType.tUInt);
+                        }
                         break;
 
                     case Instruction.RETB:

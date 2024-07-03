@@ -140,6 +140,8 @@ unit Instruction
         PUSHIBEQ     = 0x6C,
         ADDB         = 0x6D,
         SUBB         = 0x6E,
+        INC          = 0x6F,
+        DEC          = 0x70,
         
         BITSHLB      = 0x0C,
         BITSHRB      = 0x0D,
@@ -248,6 +250,8 @@ unit Instruction
             case Instructions.BITANDFF:
             
             // PACKED_INSTRUCTIONS
+            case Instructions.INC:
+            case Instructions.DEC:
             case Instructions.PUSHI0:
             case Instructions.PUSHI1:
             case Instructions.PUSHIM1:
@@ -768,6 +772,29 @@ unit Instruction
         LDA #Types.Byte
         STA TOPT
         addShared();
+        LDA #Types.UInt
+        Stacks.PushNext();
+    }
+    inc()
+    {
+        Stacks.PopNext();
+        INC ZP.NEXTL
+        if (Z)
+        {
+            INC ZP.NEXTH
+        }
+        LDA #Types.UInt
+        Stacks.PushNext();
+    }
+    dec()
+    {
+        Stacks.PopNext();
+        LDA ZP.NEXTL
+        if (Z)
+        {
+            DEC ZP.NEXTH
+        }
+        DEC ZP.NEXTL
         LDA #Types.UInt
         Stacks.PushNext();
     }
@@ -3364,6 +3391,22 @@ unit Instruction
             {
 #ifdef PACKED_INSTRUCTIONS
                 subB();
+#else
+                missing();
+#endif
+            }
+            case Instructions.INC:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                inc();
+#else
+                missing();
+#endif
+            }
+            case Instructions.DEC:
+            {
+#ifdef PACKED_INSTRUCTIONS
+                dec();
 #else
                 missing();
 #endif

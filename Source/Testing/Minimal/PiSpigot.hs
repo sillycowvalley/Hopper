@@ -1,5 +1,7 @@
 program PiSpigot
 {
+    #define EXPERIMENTAL
+    
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/IO"
     
@@ -45,9 +47,9 @@ program PiSpigot
             q = 0;
             for (i = len; i > 0; i--)
             {
-                x = 10 * a[i - 1] + q * i;
-                a[i - 1] = x % (2 * i - 1);
-                q = x / (2 * i - 1);
+                x = a[i - 1] * 10 + q * i;
+                a[i - 1] = x % (i * 2 - 1);
+                q = x / (i * 2 - 1);
             }
             a[0] = q % 10;
             q = q / 10;

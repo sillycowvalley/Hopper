@@ -178,7 +178,9 @@ unit OpCodes
         PUSHIBEQ  = 0x6C,
         
         ADDB      = 0x6D,
-        SUBB      = 0x6E,  
+        SUBB      = 0x6E,
+        INC       = 0x6F,
+        DEC       = 0x70,
         
     }
     

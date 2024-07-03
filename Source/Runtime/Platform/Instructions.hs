@@ -102,6 +102,8 @@ unit Instructions
         WriteToJumpTable(OpCode.PUSHIBEQ, Instructions.PushIBEQ);
         WriteToJumpTable(OpCode.ADDB, Instructions.AddB);
         WriteToJumpTable(OpCode.SUBB, Instructions.SubB);
+        WriteToJumpTable(OpCode.INC, Instructions.Inc);
+        WriteToJumpTable(OpCode.DEC, Instructions.Dec);
         WriteToJumpTable(OpCode.BITSHLB, Instructions.BitShlB);
         WriteToJumpTable(OpCode.BITSHRB, Instructions.BitShrB);
         WriteToJumpTable(OpCode.BITANDB, Instructions.BitAndB);
@@ -1929,6 +1931,42 @@ unit Instructions
         WriteByte(msb, byte(value >> 8));
         WriteByte(HopperVM.typeStackPage + sp2, byte(Type.UInt));
         HopperVM.pc++;
+#endif  
+        return true;
+    }
+    bool Inc()
+    {
+#ifdef CHECKED
+        Type ntype;
+        uint next = Pop(ref ntype);
+        AssertUInt(ntype, next);
+        Push(next + 1, Type.UInt);
+#else
+        uint sp2 = HopperVM.sp - 1;
+        uint lsb = HopperVM.valueStackLSBPage + sp2;
+        uint msb = HopperVM.valueStackMSBPage + sp2;
+        uint value = (ReadByte(lsb) + (ReadByte(msb) << 8)) + 1;        
+        WriteByte(lsb, byte(value & 0xFF));
+        WriteByte(msb, byte(value >> 8));
+        WriteByte(HopperVM.typeStackPage + sp2, byte(Type.UInt));
+#endif  
+        return true;
+    }
+    bool Dec()
+    {
+#ifdef CHECKED
+        Type ntype;
+        uint next = Pop(ref ntype);
+        AssertUInt(ntype, next);
+        Push(next - 1, Type.UInt);
+#else
+        uint sp2 = HopperVM.sp - 1;
+        uint lsb = HopperVM.valueStackLSBPage + sp2;
+        uint msb = HopperVM.valueStackMSBPage + sp2;
+        uint value = (ReadByte(lsb) + (ReadByte(msb) << 8)) - 1;        
+        WriteByte(lsb, byte(value & 0xFF));
+        WriteByte(msb, byte(value >> 8));
+        WriteByte(HopperVM.typeStackPage + sp2, byte(Type.UInt));
 #endif  
         return true;
     }

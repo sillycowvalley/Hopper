@@ -151,6 +151,8 @@ enum OpCode {
     ePUSHIBEQ = 0x006C,
     eADDB = 0x006D,
     eSUBB = 0x006E,
+    eINC = 0x006F,
+    eDEC = 0x0070,
 };
 
 enum SysCalls {
@@ -372,7 +374,6 @@ enum Type {
     eFile = 0x0015,
     eDirectory = 0x0016,
     eList = 0x0019,
-    eListItem = 0x001A,
 };
 
 enum HopperPinStatus {
@@ -787,6 +788,8 @@ Bool Instructions_PushILEI();
 Bool Instructions_PushIBEQ();
 Bool Instructions_AddB();
 Bool Instructions_SubB();
+Bool Instructions_Inc();
+Bool Instructions_Dec();
 Bool Instructions_BitShlB();
 Bool Instructions_BitShrB();
 Bool Instructions_BitAndB();
@@ -1018,6 +1021,7 @@ UInt HRUInt_ToLong(UInt ui);
 UInt HRInt_ToLong(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
+
 
 
 #endif // HOPPERRUNTIME_H

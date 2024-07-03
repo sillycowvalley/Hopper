@@ -101,7 +101,7 @@ namespace HopperNET
             long codeSegmentSize = fileSize - EntryPoint;
             if (codeSegmentSize > 0xFFFF)
             {
-                screen.PrintLn(ProgramPath + " is " + fileSize.ToString() + " bytes, more than 64K of code!!", 0xF77, 0);
+                screen.PrintLn(ProgramPath + " is " + codeSegmentSize.ToString() + " bytes, more than 64K of code!! (" + (codeSegmentSize  - 0x10000) + " bytes over)", 0xF77, 0);
             }
             CodeOffset = 0;
             if ((BinaryVersion & 0x0001) != 0)
