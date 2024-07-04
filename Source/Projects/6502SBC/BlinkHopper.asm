@@ -3,13 +3,16 @@ program Blink
     #define CPU_8MHZ
     #define CPU_65C02S
     
-    uses "/Source/Runtime/6502/Serial"
+    #define W65C22_VIA
+    //#define ACIA_6850
+    
+    //uses "/Source/Runtime/6502/Serial"
     uses "/Source/Runtime/6502/Devices/W65C22"
     uses "/Source/Runtime/6502/Time"
     
     IRQ()
     {
-        Serial.ISR();
+        //Serial.ISR();
         W65C22.ISR();
     }
     NMI()
@@ -28,7 +31,7 @@ program Blink
     }
     Hopper()
     {
-        Serial.Initialize(); // since the 6850 is powered up, we'd better initialize it
+        //Serial.Initialize(); // since the 6850 is powered up, we'd better initialize it
         W65C22.Initialize(); // sets all pins to input, initializes timer
         
         RMB0 ZP.DDRB   // PB0 as input
@@ -57,19 +60,6 @@ program Blink
             LDA # (2000 / 256)
             STA ZP.TOPH
             Time.Delay();
-                 
-            /*      
-            // use the Hopper runtime Time.Seconds() (VIA timer) 
-            Time.Seconds();
-            
-            // use the Hopper runtime Serial.WriteChar() and Serial.OutHex() (Motorola 6850)
-            LDA TOPH
-            Serial.HexOut();
-            LDA TOPL
-            Serial.HexOut();
-            LDA # 0x0A
-            Serial.WriteChar();       
-            */
         }
     }
 }
