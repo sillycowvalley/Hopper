@@ -3,7 +3,7 @@
 ## PCB
 
 This is the PCB:
-[Gerber File](https://github.com/sillycowvalley/Hopper/blob/main/Source/Projects/6502SBC/EasyEDA/6502%20Machine/rev12/Gerber_6502-v2_PCB_6502-v4_2024-05-15.zip)
+[Gerber File](https://github.com/sillycowvalley/Hopper/blob/main/Source/Projects/6502SBC/rev12/Gerber_6502-v2_PCB_6502-v4_2024-05-15.zip)
 
 I got mine made by [JLCPCB](https://jlcpcb.com/).
 
