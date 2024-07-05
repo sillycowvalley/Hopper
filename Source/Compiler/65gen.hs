@@ -26,6 +26,8 @@ program Generate
     <uint,uint> splitPatchesMSB; // <callMSBLocation,methodIndex>
     <uint,uint> methods; // <methodIndex,address>
     
+    <uint,uint> reserveds;
+    
     bool NoPackedInstructions { get { return false; } }
     
     badArguments()
@@ -38,7 +40,30 @@ program Generate
     
     writeMethod(uint methodIndex, <byte> code, uint romAddress)
     {
-        uint methodAddress   = output.Count + romAddress;
+        uint methodAddress;
+        uint methodEnd;
+        loop
+        {
+            methodAddress = output.Count + romAddress;
+            methodEnd     = methodAddress + code.Count - 1;
+            bool updated;
+            foreach (var kv in reserveds)
+            {
+                uint reservedStart = kv.key;
+                if ((reservedStart >= methodAddress) && (reservedStart <= methodEnd))
+                {
+                    // reserved section starts within this method
+                    uint reservedEnd   = kv.key + kv.value;
+                    while (output.Count + romAddress < reservedEnd)
+                    {
+                        output.Append(0xEA);
+                    }
+                    updated = true;
+                }
+            }
+            if (updated) { continue; }
+            break;
+        }
         
         methods[methodIndex] = methodAddress;
         
@@ -454,6 +479,8 @@ program Generate
                 //byte arch = byte(Architecture);
                 //output.Append(0);    // version
                 //output.Append(arch); // CPU
+                
+                reserveds = GetReservedDefines();
                 
                 <byte> methodCode = Code.GetMethodCode(entryIndex);
                 writeMethod(entryIndex, methodCode, romAddress);

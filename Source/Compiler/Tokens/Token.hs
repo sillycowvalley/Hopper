@@ -337,6 +337,8 @@ unit Token
         statementKeywords["uses"] = true;
         statementKeywords["while"] = true;
         statementKeywords["friend"] = true;
+        
+        statementKeywords["reserve"] = true; // assembly only
     }
     InitializeTiggerC()
     {

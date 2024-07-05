@@ -339,6 +339,8 @@ program DASM
                 }
                               
                 <uint, uint> methodSizes = Code.GetMethodSizes();
+                <uint, uint> reserveds   = GetReservedDefines();
+                
                 uint indexMax = 0;
                 foreach (var sz in methodSizes)
                 {
@@ -353,6 +355,24 @@ program DASM
                 {
                     if (!methodSizes.Contains(mi)) { continue; }   
                     uint methodSize = methodSizes[mi];
+                    
+                    loop
+                    {
+                        uint methodEnd     = methodAddress + methodSize - 1;
+                        bool updated;
+                        foreach (var kv in reserveds)
+                        {
+                            uint reservedStart = kv.key;
+                            if ((reservedStart >= methodAddress) && (reservedStart <= methodEnd))
+                            {
+                                // reserved section starts within this method
+                                methodAddress = reservedStart + kv.value;
+                                updated = true;
+                            }
+                        }
+                        if (updated) { continue; }
+                        break;
+                    }
                     methodAddresses[methodAddress] = mi;
                     methodAddress += methodSize;
                 }

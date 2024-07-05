@@ -1242,6 +1242,50 @@ program PreProcess
                     curlyDeclarations++;
                 }
             }
+            else if (Parser.CheckKeyword("reserve"))
+            {
+                if (!IsAssembly)
+                {
+                    Parser.Error("'reserve' is an assembly keyword");
+                }
+                else
+                {
+                    Parser.Advance(); // reserve  
+                    
+                    loop
+                    {
+                        string actualType;
+                        string location = ParseConstantExpression("uint", ref actualType);
+                        if (HadError)
+                        {
+                            break;
+                        }
+                        if (!Parser.Check(HopperToken.Comma))
+                        {
+                            Parser.Error("',' expected");  
+                            
+                        }
+                        Parser.Advance(); // ,
+                        string length = ParseConstantExpression("uint", ref actualType);
+                        if (HadError)
+                        {
+                            break;
+                        }
+                        uint ilocation;
+                        uint ilength;
+                        _ = UInt.TryParse(location, ref ilocation);
+                        _ = UInt.TryParse(length, ref ilength);
+                        
+                        string reserve = "__RESERVE_" + ilocation.ToHexString(4) + "_" + ilength.ToHexString(4);
+                        Symbols.AddDefine(reserve, "true");
+                        
+                        <string, string> idToken = Parser.CurrentToken;
+                        Symbols.AddLocation(reserve, idToken["source"] + ":" + idToken["line"]);
+                
+                        break;
+                    } // loop
+                }
+            }
             else
             {   // global, method or function
                 loop

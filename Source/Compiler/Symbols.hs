@@ -475,6 +475,25 @@ unit Symbols
     {
         pdValues[name] = value;
     }
+    <uint,uint> GetReservedDefines()
+    {
+        <uint,uint> reserveds;
+        foreach (var kv in pdValues)
+        {
+            string name = kv.key;
+            if (name.StartsWith("__RESERVE"))
+            {
+                name = name.Substring(2);
+                <string> parts = name.Split('_');
+                uint location;
+                uint length;
+                _ = UInt.TryParse("0x"+ parts[1], ref location);
+                _ = UInt.TryParse("0x"+ parts[2], ref length);
+                reserveds[location] = length;
+            }
+        }
+        return reserveds;
+    }
     
     bool ConstantExists(string name)
     {
