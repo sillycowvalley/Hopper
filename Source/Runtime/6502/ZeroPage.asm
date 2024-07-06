@@ -241,24 +241,31 @@ unit ZP
 
 #if defined(BENEATER_IO)
 
-    reserve 0xD000, 32
-    
+#ifdef ACIA_6551
+    // Rockwell 6551
+    const uint ACIADATA             = 0x5000;
+    const uint ACIASTATUS           = 0x5001;
+    const uint ACIACOMMAND          = 0x5002;
+    const uint ACIACONTROL          = 0x5003;
+#endif
+#ifdef ACIA_6850
     // Motorola 6850 ACIA
-    const uint ACIACONTROL          = 0xD010;
-    const uint ACIASTATUS           = 0xD010;
-    const uint ACIADATA             = 0xD011;
+    const uint ACIACONTROL          = 0x5000;
+    const uint ACIASTATUS           = 0x5000;
+    const uint ACIADATA             = 0x5001;
+#endif
     
     // W65C22 VIA
-    const uint PORTB                = 0xD000;
-    const uint PORTA                = 0xD001;
-    const uint DDRB                 = 0xD002;
-    const uint DDRA                 = 0xD003;
-    const uint T1CL                 = 0xD004; // Timer 1 counter low
-    const uint T1CH                 = 0xD005; // Timer 1 counter high
-    const uint ACR                  = 0xD00B; // Auxiliary Control Register
-    const uint PCR                  = 0xD00C; // Peripheral Control Register
-    const uint IFR                  = 0xD00D; // Interrupt Flag Register
-    const uint IER                  = 0xD00E; // Interrupt Enable Register
+    const uint PORTB                = 0x6000;
+    const uint PORTA                = 0x6001;
+    const uint DDRB                 = 0x6002;
+    const uint DDRA                 = 0x6003;
+    const uint T1CL                 = 0x6004; // Timer 1 counter low
+    const uint T1CH                 = 0x6005; // Timer 1 counter high
+    const uint ACR                  = 0x600B; // Auxiliary Control Register
+    const uint PCR                  = 0x600C; // Peripheral Control Register
+    const uint IFR                  = 0x600D; // Interrupt Flag Register
+    const uint IER                  = 0x600E; // Interrupt Enable Register
 #endif
       
 #if defined(ZEROPAGE_IO)   

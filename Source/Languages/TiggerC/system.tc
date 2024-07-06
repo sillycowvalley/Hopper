@@ -6,10 +6,10 @@ const byte INPUT_PULLUP = 2;
 // assuming the W65C22 VIA for now:
 
 #if defined(BENEATER_IO)
-    const word PORTB                = 0xD000;
-    const word PORTA                = 0xD001;
-    const word DDRB                 = 0xD002;
-    const word DDRA                 = 0xD003;
+    const word PORTB                = 0x6000;
+    const word PORTA                = 0x6001;
+    const word DDRB                 = 0x6002;
+    const word DDRA                 = 0x6003;
 #endif
 
 #if defined(X16_IO)

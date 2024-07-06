@@ -27,10 +27,10 @@ unit Board
     
     #define BENEATER_IO
     
-    const uint PORTB                = 0xD000;
-    const uint PORTA                = 0xD001;
-    const uint DDRB                 = 0xD002;
-    const uint DDRA                 = 0xD003;
+    const uint PORTB                = 0x6000;
+    const uint PORTA                = 0x6001;
+    const uint DDRB                 = 0x6002;
+    const uint DDRA                 = 0x6003;
     
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/MCU"

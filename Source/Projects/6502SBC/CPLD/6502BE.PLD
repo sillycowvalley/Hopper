@@ -41,17 +41,16 @@ Pin 20 = CSVIA;
 Pin 19 = CSACIA;
 Pin 18 = OERAM;
 
-IO      = A15 & A14 & !A13 & A12 & !A11 & !A10 & !A9 & !A8 & !A7 & !A6 & !A5; /* 0xD00x */
-
 /* ACIA and VIA locations for Ben Eater 6502 board */
 
-ACIA    = IO &  A4;                /* 0xD010 to 0xD013*/
-VIA     = IO & !A4;                /* 0xD000 to 0xD00F */
+ACIA    = !A15 & A14 & !A13 &  A12;                /* 0x5000 to 0x5003*/
+VIA     = !A15 & A14 &  A13 & !A12;                /* 0x6000 to 0x600F */
+RAM     = !A15 & !(VIA # ACIA);
 
 CSACIA = !ACIA;
 CSVIA  = !VIA;
-CSRAM  = !(!A15 & CLK);
-OERAM  = A15;
-CSROM  = !(A15 & !IO);
+CSRAM  = !(RAM & CLK);
+OERAM  = !RAM;
+CSROM  = !A15;
 
 
