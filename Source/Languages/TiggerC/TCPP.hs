@@ -462,6 +462,7 @@ program TCPreprocess
                                 {
                                     if (symbol.StartsWith("CPU_") || symbol.StartsWith("ROM_") || 
                                         symbol.StartsWith("ACIA_") || symbol.StartsWith("APPLE_") || 
+                                        symbol.EndsWith("ZEROPAGE_IO") || symbol.EndsWith("BENEATER_IO") || symbol.EndsWith("X16_IO") ||
                                         (symbol == "EXPERIMENTAL") || (symbol == "ZEROPAGEGLOBALS")
                                        )
                                     {

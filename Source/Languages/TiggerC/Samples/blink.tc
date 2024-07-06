@@ -1,6 +1,9 @@
 #define EXPERIMENTAL
 #define ZEROPAGEGLOBALS
 
+#define ZEROPAGE_IO
+//#define BENEATER_IO
+
 #include "../system.tc"
 #include "../time.tc"    // for delay
 

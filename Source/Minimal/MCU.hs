@@ -1,12 +1,10 @@
 unit MCU
 {
     // 8 bit CPU version of MCU
-    // assuming the W65C22 VIA for now:
-    const byte PORTB                = 0xF0;
-    const byte PORTA                = 0xF1;
-    const byte DDRB                 = 0xF2;
-    const byte DDRA                 = 0xF3;
-    
+#if !defined(MCU_BOARD_DEFINED)
+    #error "Find your board under /Source/Library/Boards, add 'uses' for it in your program"
+#endif    
+
     uses "/Source/Minimal/Memory"
     uses "/Source/Minimal/Wire"
     uses "/Source/Minimal/IO"
@@ -24,6 +22,7 @@ unit MCU
         Low = 0,
         High = 1,
     }
+    
 #ifdef MCU
     PinMode(byte pin, PinModeOption pinMode) library;
     bool DigitalRead(byte pin) library;
@@ -32,7 +31,7 @@ unit MCU
     
     PinMode(byte pin, PinModeOption pinMode)
     {
-        byte ddr = (pin <= 7) ? DDRA : DDRB;
+        uint ddr = (pin <= 7) ? DDRA : DDRB;
         pin = pin & 0x07;
         pin = 1 << pin;
         byte currentValue = Memory.ReadByte(ddr);
@@ -49,13 +48,13 @@ unit MCU
     
     bool DigitalRead(byte pin)
     {
-        byte port = (pin <= 7) ? PORTA : PORTB;
+        uint port = (pin <= 7) ? PORTA : PORTB;
         pin = 1 << (pin & 0x07);
         return ((Memory.ReadByte(port) & pin) != 0);
     }
     DigitalWrite(byte pin, bool value)
     {
-        byte port = (pin <= 7) ? PORTA : PORTB;
+        uint port = (pin <= 7) ? PORTA : PORTB;
         pin = 1 << (pin & 0x07);
         if (value)
         {

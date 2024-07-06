@@ -4,10 +4,27 @@ const byte OUTPUT = 1;
 const byte INPUT_PULLUP = 2;
 
 // assuming the W65C22 VIA for now:
-const byte PORTB = 0xF0;
-const byte PORTA = 0xF1;
-const byte DDRB = 0xF2;
-const byte DDRA = 0xF3;
+
+#if defined(BENEATER_IO)
+    const word PORTB                = 0xD000;
+    const word PORTA                = 0xD001;
+    const word DDRB                 = 0xD002;
+    const word DDRA                 = 0xD003;
+#endif
+
+#if defined(X16_IO)
+    const word PORTB                = 0x9F20;
+    const word PORTA                = 0x9F21;
+    const word DDRB                 = 0x9F22;
+    const word DDRA                 = 0x9F23;
+#endif
+
+#ifdef ZEROPAGE_IO
+    const word PORTB = 0xF0;
+    const word PORTA = 0xF1;
+    const word DDRB = 0xF2;
+    const word DDRA = 0xF3;
+#endif
 
 const char[] hexChars = "0123456789ABCDEF";
 
@@ -75,7 +92,7 @@ func writeHex(byte value) {
 
 // GPIO (Pin) Control
 func pinSet(byte pin, bool value) { // System function to set the value of a pin
-    byte port;
+    word port;
     if (pin <= 7) {
         port = PORTA;
     } else {
@@ -90,7 +107,7 @@ func pinSet(byte pin, bool value) { // System function to set the value of a pin
 }
 
 func bool pinRead(byte pin) { // System function to read the value of a pin
-    byte port;
+    word port;
     if (pin <= 7) {
         port = PORTA;
     } else {
@@ -101,7 +118,7 @@ func bool pinRead(byte pin) { // System function to read the value of a pin
 }
 
 func pinMode(byte pin, byte mode) { // System function to set the mode of a pin
-    byte ddr;
+    word ddr;
     byte currentValue;
     if (pin <= 7) {
         ddr = DDRA;

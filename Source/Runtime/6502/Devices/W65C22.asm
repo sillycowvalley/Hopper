@@ -79,7 +79,7 @@ unit W65C22
     
     ISR()
     {
-#if defined(CPU_65C02S) && !defined(NONZERO_IO)
+#if defined(CPU_65C02S) && defined(ZEROPAGE_IO)
         if (BBS7, ZP.IFR) // IRQ by VIA
         {
             if (BBS6, ZP.IFR) // Timer 1 IRQ

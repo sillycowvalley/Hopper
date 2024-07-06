@@ -25,15 +25,14 @@ unit Board
     const byte I2CSDA0 = 17;
     const byte I2CSCL0 = 16;
     
-    #define ZEROPAGE_IO
-    
-    const byte PORTB                = 0xF0;
-    const byte PORTA                = 0xF1;
-    const byte DDRB                 = 0xF2;
-    const byte DDRA                 = 0xF3;
+    #define X16_IO
+    const uint PORTB                = 0x9F20;
+    const uint PORTA                = 0x9F21;
+    const uint DDRB                 = 0x9F22;
+    const uint DDRA                 = 0x9F23;
     
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/MCU"
     
-    string BoardName { get { return "Hopper 6502 SBC"; } }
+    string BoardName { get { return "6502-Retro"; } }
 }

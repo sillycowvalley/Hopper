@@ -1,0 +1,77 @@
+%SIGNAL
+PIN  23 =  A1 
+PIN  17 =  A2 
+PIN  16 =  A3 
+PIN  14 =  A4 
+PIN  13 =  A5 
+PIN  11 =  A6 
+PIN  10 =  A7 
+PIN   9 =  A8 
+PIN   8 =  A9 
+PIN   7 =  A10 
+PIN   6 =  A11 
+PIN   5 =  A12 
+PIN   4 =  A13 
+PIN   3 =  A14 
+PIN   2 =  A15 
+PIN   1 =  CLK 
+PIN  19 =  CSACIA 
+PIN  22 =  CSRAM 
+PIN  21 =  CSROM 
+PIN  20 =  CSVIA 
+PIN  18 =  OERAM 
+%END
+
+%FIELD
+%END
+
+%EQUATION
+ACIA =>
+    A4 & !A5 & !A6 & !A7 & A8 & A9 & A10 & A11 & A12 & !A13 & !A14 & A15
+
+CSACIA =>
+    A4 & !A5 & !A6 & !A7 & A8 & A9 & A10 & A11 & A12 & !A13 & !A14 & A15
+
+CSRAM =>
+    !A15 & CLK
+
+CSROM =>
+    A14 & A15
+  # A13 & A15
+  # !A12 & A15
+  # !A11 & A15
+  # !A10 & A15
+  # !A9 & A15
+  # !A8 & A15
+
+CSVIA =>
+    !A4 & A5 & !A6 & !A7 & A8 & A9 & A10 & A11 & A12 & !A13 & !A14 & A15
+
+IO =>
+    A8 & A9 & A10 & A11 & A12 & !A13 & !A14 & A15
+
+OERAM =>
+    A15
+
+VIA =>
+    !A4 & A5 & !A6 & !A7 & A8 & A9 & A10 & A11 & A12 & !A13 & !A14 & A15
+
+A4.oe  =>
+    0 
+
+CSACIA.oe  =>
+    1 
+
+CSRAM.oe  =>
+    1 
+
+CSROM.oe  =>
+    1 
+
+CSVIA.oe  =>
+    1 
+
+OERAM.oe  =>
+    1 
+
+%END

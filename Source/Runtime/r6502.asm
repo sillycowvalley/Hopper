@@ -1,10 +1,13 @@
 program R6502
 {
+    
     #define CPU_8MHZ
     
     #define CPU_65C02S  // Rockwell and WDC
-    //#define CPU_6502      // MOS
+    //#define CPU_6502  // MOS
     
+    //#define BENEATER_IO
+    #define X16_IO
     
     //#define CHECKED              // 111/109 bytes
     
@@ -39,7 +42,7 @@ program R6502
     #define ROM_8K // 31 bytes remaining without JIX_INSTRUCTIONS or FASTINTS
 #endif
 
-#ifndef ROM_8K
+#if !defined(ROM_8K) && !defined(ROM_16K) && !defined(ROM_32K)
     #define ROM_16K
 #endif
 
@@ -553,7 +556,7 @@ program R6502
         // zeroes mean faster debug protocol
         
         // clear the Zero Page
-#ifdef NONZERO_IO  
+#ifndef ZEROPAGE_IO  
         LDA #0
         LDX #0
         loop
@@ -829,7 +832,7 @@ program R6502
     {
         // is the User button held low?
         
-  #if defined(CPU_65C02S) && !defined(NONZERO_IO)
+  #if defined(CPU_65C02S) && defined(ZEROPAGE_IO)
        if (BBR1, ZP.PORTA)
        {
            return;

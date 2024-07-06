@@ -1,7 +1,7 @@
 unit SerialDevice
 {
     // Rockwell 6551
-    //#define HAS_SERIAL_ISR
+    #define HAS_SERIAL_ISR
     
     const uint ControlRegister    = ZP.ACIACONTROL;
     const uint CommandRegister    = ZP.ACIACOMMAND;
@@ -22,10 +22,9 @@ unit SerialDevice
     {
         LDA #0x00
         STA StatusRegister
-        LDA # (ACIA_PARITY_DISABLE | ACIA_ECHO_DISABLE | ACIA_TX_INT_DISABLE_RTS_LOW | ACIA_RX_INT_DISABLE | ACIA_DTR_LOW)
+        LDA #(ACIA_PARITY_DISABLE | ACIA_ECHO_DISABLE | ACIA_TX_INT_DISABLE_RTS_LOW | ACIA_RX_INT_ENABLE | ACIA_DTR_LOW)
         STA CommandRegister
-     // LDA #0x10                 // 16 x external clock which if running a 1.8432 MZ can, you get 115200 baud.
-        LDA #0x1F                 // This gives 19200 baud rate generator.
+        LDA #0x10                 // 16 x external clock which if running a 1.8432 MZ can, you get 115200 baud.
         STA ControlRegister
     }
     
@@ -43,10 +42,17 @@ unit SerialDevice
     }
     
     isr()
-    {       
+    {
+        PHA
+        LDA StatusRegister
+        AND #0x80
+        if (NZ)
+        {
+            pollRead();
+        }
+        PLA
     }
     
-    // munts X
     pollRead()
     {
         PHA
@@ -55,7 +61,11 @@ unit SerialDevice
             AND # 0x08
             if (NZ) // RDRF : receive data register full
             {
+#ifdef CPU_65C02S
+                PHX
+#else
                 TXA PHA
+#endif
                 LDA DataRegister // read serial byte
                 CMP #0x03        // is it break? (<ctrl><C>)
                 if (Z)
@@ -68,7 +78,11 @@ unit SerialDevice
                     STA Serial.InBuffer, X
                     INC Serial.InWritePointer
                 }
-                PLA TAX // can't use XREG in ISR
+#ifdef CPU_65C02S
+                PLX
+#else
+                PLA TAX
+#endif
             }
         }
         PLA        

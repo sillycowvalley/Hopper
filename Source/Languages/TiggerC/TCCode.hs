@@ -142,6 +142,10 @@ unit TCCode
         {
             PadOut("#define ACIA_6850", 0);                            // ZP.ACIACONTROL, ZP.ACIADATA, ZP.ACIASTATUS
         }
+        if (!IsDefined("BENEATER_IO") && !IsDefined("X16_IO") && !IsDefined("ZEROPAGE_IO"))
+        {
+            PadOut("#define ZEROPAGE_IO", 0);
+        }
 
         PadOut("#define FASTINTS", 0);
         

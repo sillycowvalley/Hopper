@@ -197,13 +197,35 @@ unit ZP
     
 #endif
 
-#ifdef NONZERO_IO
-    // 6551 ACIA
+#if !defined(BENEATER_IO) && !defined(X16_IO) && !defined(ZEROPAGE_IO)
+    #define ZEROPAGE_IO // default if IO is not specified
+#endif
+
+    // MECB addresses for IO:
+    //
+    // MC6840 PTM  = 0xE000
+    // MC6850 ACIA = 0xE008
+    // MC6821 PIA  = 0xE010
+
+#if defined(X16_IO)
+    
+    reserve 0x9F00, 256
+    
+#ifdef ACIA_6551
+    // Rockwell 6551
     const uint ACIADATA             = 0x9F10;
     const uint ACIASTATUS           = 0x9F11;
     const uint ACIACOMMAND          = 0x9F12;
     const uint ACIACONTROL          = 0x9F13;
-    
+#endif
+
+#ifdef ACIA_6850
+    // Motorola 6850 ACIA
+    const uint ACIACONTROL          = 0x9F10;
+    const uint ACIASTATUS           = 0x9F10;
+    const uint ACIADATA             = 0x9F11;
+#endif
+
     // W65C22 VIA
     const uint PORTB                = 0x9F20;
     const uint PORTA                = 0x9F21;
@@ -215,8 +237,31 @@ unit ZP
     const uint PCR                  = 0x9F2C; // Peripheral Control Register
     const uint IFR                  = 0x9F2D; // Interrupt Flag Register
     const uint IER                  = 0x9F2E; // Interrupt Enable Register
-#else
-     
+#endif
+
+#if defined(BENEATER_IO)
+
+    reserve 0xD000, 32
+    
+    // Motorola 6850 ACIA
+    const uint ACIACONTROL          = 0xD010;
+    const uint ACIASTATUS           = 0xD010;
+    const uint ACIADATA             = 0xD011;
+    
+    // W65C22 VIA
+    const uint PORTB                = 0xD000;
+    const uint PORTA                = 0xD001;
+    const uint DDRB                 = 0xD002;
+    const uint DDRA                 = 0xD003;
+    const uint T1CL                 = 0xD004; // Timer 1 counter low
+    const uint T1CH                 = 0xD005; // Timer 1 counter high
+    const uint ACR                  = 0xD00B; // Auxiliary Control Register
+    const uint PCR                  = 0xD00C; // Peripheral Control Register
+    const uint IFR                  = 0xD00D; // Interrupt Flag Register
+    const uint IER                  = 0xD00E; // Interrupt Enable Register
+#endif
+      
+#if defined(ZEROPAGE_IO)   
     // Motorola 6850 ACIA
     const byte ACIACONTROL          = 0xEC; //0x1E;
     const byte ACIASTATUS           = 0xEC; //0x1E;
@@ -234,7 +279,6 @@ unit ZP
     const byte PCR                  = 0xFC; // Peripheral Control Register
     const byte IFR                  = 0xFD; // Interrupt Flag Register
     const byte IER                  = 0xFE; // Interrupt Enable Register
-
 #endif    
     
     // used for UInt library

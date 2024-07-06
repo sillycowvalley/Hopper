@@ -1,6 +1,7 @@
 program Blink
 {
     #define CPU_65C02S
+    #define X16_IO
     
     uses "/Source/Runtime/6502/ZeroPage"
     

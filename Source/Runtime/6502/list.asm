@@ -367,13 +367,23 @@ unit List
         // length: increment the item count in the list
         LDY # lsCount
         LDA LLENGTHL
+#ifdef CPU_65C02S
         INC
+#else
+        CLC
+        ADC # 1
+#endif
         STA [IDY], Y
         if (Z)
         {
             INY
             LDA LLENGTHH
+#ifdef CPU_65C02S
             INC
+#else
+            CLC
+            ADC # 1
+#endif
             STA [IDY], Y
         }
     }
@@ -1568,13 +1578,23 @@ unit List
         // length: increment the item count in the list
         LDY # lsCount
         LDA LLENGTHL
+#ifdef CPU_65C02S
         INC
+#else
+        CLC
+        ADC #1
+#endif
         STA [IDY], Y
         if (Z)
         {
             INY
             LDA LLENGTHH
+#ifdef CPU_65C02S
             INC
+#else
+            CLC
+            ADC #1
+#endif
             STA [IDY], Y
         }
         
