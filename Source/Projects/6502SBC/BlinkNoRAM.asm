@@ -4,8 +4,8 @@ program Blink
     #define CPU_65C02S
     //#define ROM_8K
     
-    //#define BENEATER_IO
-    #define X16_IO
+    #define BENEATER_IO
+    //#define X16_IO
     
     
     uses "/Source/Runtime/6502/ZeroPage"

@@ -22,8 +22,8 @@ unit Board
     
     const byte BuiltInLED = Board.GP0;
     
-    const byte I2CSDA0 = 17;
-    const byte I2CSCL0 = 16;
+    const byte I2CSCL0 = GP8;
+    const byte I2CSDA0 = GP9;
     
     #define ZEROPAGE_IO
     

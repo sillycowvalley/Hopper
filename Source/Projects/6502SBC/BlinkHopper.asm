@@ -3,8 +3,8 @@ program Blink
     #define CPU_8MHZ
     #define CPU_65C02S
     
-    //#define BENEATER_IO
-    #define X16_IO
+    #define BENEATER_IO
+    //#define X16_IO
     
     #define W65C22_VIA
     #define ACIA_6850

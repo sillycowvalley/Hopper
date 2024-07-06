@@ -1,0 +1,367 @@
+#define ZEROPAGEGLOBALS
+#define ZEROPAGE_IO
+
+#include "../system.tc"
+#include "../string.tc"
+#include "../time.tc"
+
+const char[] str = "Hello Hopper!";
+
+
+// Hitachi HD44780 LCD driver
+
+#define LCD_8_BITS
+
+// GP0 is the built in LED
+// GP1 is the user button
+// GP8 and GP9 are I2C
+const byte rs      = GP2;      // device pin 4  0-Command, 1-Data
+const byte rw      = GP3;      // device pin 5  0-Write, 1-Read
+const byte e       = GP4;      // device pin 6
+
+#ifdef LCD_8_BITS
+const byte d0 = GP5;
+const byte d1 = GP6;
+const byte d2 = GP7;
+const byte d3 = GP10;
+#endif
+const byte d4 = GP11;
+const byte d5 = GP12;
+const byte d6 = GP13;
+const byte d7 = GP14;
+
+byte lcdColumns;
+byte lcdRows;
+byte currentCol;
+byte currentRow;
+byte[4] lcdRowStart; // see LCD.Instruction(byte data)
+
+func dataAsOutput()
+{
+#ifdef LCD_8_BITS
+    pinMode(d0, OUTPUT);
+    pinMode(d1, OUTPUT);
+    pinMode(d2, OUTPUT);
+    pinMode(d3, OUTPUT);
+#endif
+    pinMode(d4, OUTPUT);
+    pinMode(d5, OUTPUT);
+    pinMode(d6, OUTPUT);
+    pinMode(d7, OUTPUT);
+}
+func dataAsInput()
+{
+#ifdef LCD_8_BITS
+    pinMode(d0, INPUT);
+    pinMode(d1, INPUT);
+    pinMode(d2, INPUT);
+    pinMode(d3, INPUT);
+#endif
+    pinMode(d4, INPUT);
+    pinMode(d5, INPUT);
+    pinMode(d6, INPUT);
+    pinMode(d7, INPUT);
+}
+
+#ifdef LCD_8_BITS 
+func writeData8(byte data)
+{
+    pinSet(d0, (data & 0b00000001) != 0);
+    pinSet(d1, (data & 0b00000010) != 0);
+    pinSet(d2, (data & 0b00000100) != 0);
+    pinSet(d3, (data & 0b00001000) != 0);
+    pinSet(d4, (data & 0b00010000) != 0);
+    pinSet(d5, (data & 0b00100000) != 0);
+    pinSet(d6, (data & 0b01000000) != 0);
+    pinSet(d7, (data & 0b10000000) != 0);
+}
+#else
+func writeData4(byte data)
+{
+    pinSet(d4, (data & 0b00000001) != 0);
+    pinSet(d5, (data & 0b00000010) != 0);
+    pinSet(d6, (data & 0b00000100) != 0);
+    pinSet(d7, (data & 0b00001000) != 0);
+}
+#endif
+func writeData(byte data)
+{
+#ifdef LCD_8_BITS  
+    writeData8(data);
+    // pulse Enable pin
+    pinSet(e, false);
+    pinSet(e, true);
+    pinSet(e, false);
+#else
+    writeData4(data >> 4);
+    // pulse Enable pin
+    pinSet(e, false);
+    pinSet(e, true);
+    pinSet(e, false);
+    writeData4(data &0x0F);
+    // pulse Enable pin
+    pinSet(e, false);
+    pinSet(e, true);
+    pinSet(e, false);
+#endif  
+}
+
+#ifdef LCD_8_BITS  
+func byte readData8()
+{
+    byte data = 0;
+    data = data | (pinRead(d0) ? 0b00000001 : 0b00000000);
+    data = data | (pinRead(d1) ? 0b00000010 : 0b00000000);
+    data = data | (pinRead(d2) ? 0b00000100 : 0b00000000);
+    data = data | (pinRead(d3) ? 0b00001000 : 0b00000000);
+    data = data | (pinRead(d4) ? 0b00010000 : 0b00000000);
+    data = data | (pinRead(d5) ? 0b00100000 : 0b00000000);
+    data = data | (pinRead(d6) ? 0b01000000 : 0b00000000);
+    data = data | (pinRead(d7) ? 0b10000000 : 0b00000000);
+    return data;
+}
+#else
+func byte readData4()
+{
+    byte data = 0;
+    data = data | (pinRead(d4) ? 0b00000001 : 0b00000000);
+    data = data | (pinRead(d5) ? 0b00000010 : 0b00000000);
+    data = data | (pinRead(d6) ? 0b00000100 : 0b00000000);
+    data = data | (pinRead(d7) ? 0b00001000 : 0b00000000);
+    return data;
+}
+#endif
+func byte readData()
+{
+    byte data = 0;
+#ifdef LCD_8_BITS  
+    // pulse Enable pin
+    pinSet(e, false);
+    pinSet(e, true);
+    data = readData8();
+    pinSet(e, false);
+#else
+    // pulse Enable pin
+    pinSet(e, false);
+    pinSet(e, true);
+    data = readData4() << 4;
+    pinSet(e, false);
+    // pulse Enable pin
+    pinSet(e, false);
+    pinSet(e, true);
+    data = data | readData4();
+    pinSet(e, false);
+#endif
+    return data;
+}    
+
+func wait()
+{
+    byte data;
+    dataAsInput();
+    pinSet(rs, false);
+    pinSet(rw, true);
+    putc('1');
+    for (;;)
+    {
+        data = readData();
+        if ((data & 0x80) == 0) // busy?
+        {
+            putc('2');
+            break;
+        }
+    }
+    putc('3');
+    dataAsOutput();
+    putc('4');
+}
+
+func byte getCurrentAddress()
+{
+    byte data;
+    wait();
+    dataAsInput();
+    pinSet(rs, false);
+    pinSet(rw, true);
+    data = readData();
+    dataAsOutput();
+    return data;
+}
+func instruction(byte data)
+{
+    wait();
+    pinSet(rs, false);
+    pinSet(rw, false);
+    writeData(data);
+}
+
+func LCDSetCursorPosition(byte col, byte row)
+{
+    byte address = lcdRowStart[row] + col;
+    if (currentRow < lcdRows) // don't wrap around if (col,row) out of range (less confusion)
+    {
+        byte instruction = 0b10000000 | address;
+        instruction(instruction); // Set DDRAM address
+    }
+    currentCol = col;
+    currentRow = row;
+}
+func LCDCharacter(char c)
+{
+    LCDSetCursorPosition(currentCol, currentRow);
+    if (currentRow < lcdRows) // don't wrap around if (col,row) out of range (less confusion)
+    {
+        wait();
+        pinSet(rs, true);
+        pinSet(rw, false);
+        writeData(c as byte);
+    }
+    currentCol++;
+    if (currentCol == lcdColumns)
+    {
+        currentCol = 0;
+        currentRow++;
+    }
+}
+func LCDCharacterAt(char c, byte col, byte row)
+{
+    currentCol = col;
+    currentRow = row;
+    LCDCharacter(c);
+}
+#ifdef LCD_8_BITS 
+func initialize8Bit(byte functionSet)
+{
+    // as per Figure 23 (page 45) of the Hitachi data sheet - yes, much like beating it with a rock!
+    delay(1); // > 40ms for Vcc to rise above 2.7V
+    
+    writeData8(functionSet);
+    // pulse Enable pin
+    pinSet(e, false);
+    pinSet(e, true);
+    pinSet(e, false);
+    
+    delay(5);// 4500 us
+    
+    writeData8(functionSet);
+    // pulse Enable pin
+    pinSet(e, false);
+    pinSet(e, true);
+    pinSet(e, false);
+    
+    delay(1);// 150 us
+    
+    writeData8(functionSet);
+    // pulse Enable pin
+    pinSet(e, false);
+    pinSet(e, true);
+    pinSet(e, false);
+    
+    instruction(functionSet);
+}
+#else
+func initialize4Bit(byte functionSet)
+{
+    // as per Figure 24 (page 46) of the Hitachi data sheet - yes, much like beating it with a rock!
+    
+    delay(1); // > 40ms for Vcc to rise above 2.7V
+    
+    writeData4(0b0010);
+    // pulse Enable pin
+    pinSet(e, false);
+    pinSet(e, true);
+    pinSet(e, false);
+    delay(5); // 4500 us
+    
+    writeData4(0b0010);
+    // pulse Enable pin
+    pinSet(e, false);
+    pinSet(e, true);
+    pinSet(e, false);
+    delay(1); // 150 us
+    
+    writeData4(0b0010);
+    // pulse Enable pin
+    pinSet(e, false);
+    pinSet(e, true);
+    pinSet(e, false);
+    
+    // This 4 bit initialization works well for cold reset (no power to the LCD) but not for resetting
+    // an already initialized and powered up LCD (without power cycling).
+    // More luck with warm reset with even number of 4 bit writes (in case LCD is already in 4 bit mode)
+    writeData4(0b0010);
+    // pulse Enable pin
+    pinSet(e, false);
+    pinSet(e, true);
+    pinSet(e, false);
+    
+    instruction(functionSet);
+}
+#endif
+func LCDInitialize()
+{
+    putc('<');
+    // 20x4
+    /*
+    lcdRowStart[0] = 0x00;
+    lcdRowStart[1] = 0x40;
+    lcdRowStart[2] = 0x14;
+    lcdRowStart[3] = 0x54;
+    lcdColumns = 20;
+    lcdRows = 4;
+    */
+    
+    // 16x2
+    lcdRowStart[0] = 0x00;
+    lcdRowStart[1] = 0x40;
+    lcdColumns = 16;
+    lcdRows = 2;
+    
+    currentCol = 0;
+    currentRow = 0;
+    
+    putc('a');
+    
+    pinMode(rs, OUTPUT);
+    pinMode(rw, OUTPUT);
+    pinMode(e, OUTPUT);
+    
+    putc('b');
+    
+    dataAsOutput();
+    
+    putc('c');
+    
+    pinSet(rs, false);
+    pinSet(rw, false);
+    pinSet(e, false);
+    
+    putc('d');
+    
+#ifdef LCD_8_BITS 
+    initialize8Bit(0b00111000); // Set 8-bit mode; 2-line display; 5x8 font
+#else
+    initialize4Bit(0b00101000); // Set 4-bit mode; 2-line display; 5x8 font
+#endif
+    putc('e');
+    instruction(0b00001110); // Display on; cursor on; blink off
+    instruction(0b00000110); // Increment and shift cursor; don't shift display
+    instruction(0b00000001); // Clear screen
+    putc('f');
+    LCDSetCursorPosition(0,0);
+    putc('>');
+}    
+
+
+
+func main()
+{
+    word len = strlen(str);
+    word i;
+    LCDInitialize();
+    for (i = 0; i < len; i++)
+    {
+        LCDCharacter(str[i]);
+    }
+}   
+

@@ -13,6 +13,10 @@ unit Long
         {
             return tryParseHex(content, ref returnValue);
         }
+        if (content.StartsWith("0b"))
+        {
+            return tryParseBinary(content, ref returnValue);
+        }
         if (content.StartsWith('+'))
         {
             String.Substring(ref content, 1);
@@ -36,6 +40,32 @@ unit Long
             result = -result;
         }
         returnValue = result;
+        return true;
+    }
+    bool tryParseBinary(string content, ref long returnValue)
+    {
+        char c;
+        uint length;
+        uint i;
+        returnValue = 0;
+        if (!content.StartsWith("0b"))
+        {
+            return false;
+        }
+        length = content.Length;
+        if (length < 3)
+        {
+            return false;
+        }
+        for ( ; i < length-2; i++)
+        {
+            returnValue = returnValue * 2;
+            c = content.GetChar(i+2);
+            if (c == '1')
+            {
+                returnValue = returnValue + 1;
+            }
+        }
         return true;
     }
     bool tryParseHex(string content, ref long returnValue)

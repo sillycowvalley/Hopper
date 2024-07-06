@@ -273,24 +273,24 @@ unit DisplayDriver
     
     clear(uint colour)
     {
-        int size = DisplayDriver.pw * DisplayDriver.ph / 8;
+        uint size = DisplayDriver.pw * DisplayDriver.ph / 8;
         if (colour == Colour.Black)
         {
-            for (int i = 0; i < size; i++)
+            for (uint i = 0; i < size; i++)
             {
                 monoFrameBuffer[i] = 0;
             }
         }
         else if (colour == Colour.Invert)
         {
-            for (int i = 0; i < size; i++)
+            for (uint i = 0; i < size; i++)
             {
                 monoFrameBuffer[i] = ~monoFrameBuffer[i];
             }
         }
         else // everything else is 'white'
         {
-            for (int i = 0; i < size; i++)
+            for (uint i = 0; i < size; i++)
             {
                 monoFrameBuffer[i] = 0xFF;
             }

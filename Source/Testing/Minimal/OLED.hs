@@ -1,10 +1,7 @@
 program Test
 {
-    #define MCU
-    
     uses "/Source/Minimal/System"
-    
-    uses "/Source/Minimal/Wire" // just for fast navigation for now
+    uses "/Source/Library/Boards/Hopper6502"
     
     uses "/Source/Library/Displays/OLEDSSD1306"    
     uses "/Source/Library/Fonts/Verdana5x8"
@@ -18,21 +15,23 @@ program Test
     
     Hopper()
     {
+        DisplayDriver.FlipX = true;
+        DisplayDriver.FlipY = true;
         if (!Display.Begin())
         {
             IO.WriteLn("Failed to initialize display");
             return;
         }
         
-        uint start = Seconds;
+        long start = Millis;
         Display.Suspend();
         Display.Clear(Colour.Black);
         Display.Resume();
-        uint elapsed = Seconds - start;
+        long elapsed = Millis - start;
         WriteLn();
-        WriteLn("Clear Time:   " + elapsed.ToString() + " seconds");
+        WriteLn("Clear Time:   " + elapsed.ToString() + " ms");
         
-        start = Seconds;
+        start = Millis;
         
         Display.Suspend();
         Display.FilledRoundedRectangle(0,0, Display.PixelWidth-1, Display.PixelHeight-1, 12, Colour.White);
@@ -43,12 +42,12 @@ program Test
         
         Screen.DrawText(20, 15, " Verdana x1 ", Colour.White, Colour.Black, 1);
         Screen.DrawText(4,  38, "Verdana x2", Colour.Black, Colour.White, 2);
-        elapsed = Seconds - start;
-        start = Seconds;
+        elapsed = Millis - start;
+        start = Millis;
         Display.Resume();
-        uint elapsed2 = Seconds - start;
-        WriteLn("Draw Time:   " + elapsed.ToString() + " seconds");
-        WriteLn("Update Time: " + elapsed2.ToString() + " seconds");
+        long elapsed2 = Millis - start;
+        WriteLn("Draw Time:   " + elapsed.ToString() + " ms");
+        WriteLn("Update Time: " + elapsed2.ToString() + " ms");
     }
 }
 

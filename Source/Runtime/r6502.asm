@@ -7,7 +7,7 @@ program R6502
     //#define CPU_6502  // MOS
     
     //#define BENEATER_IO
-    #define X16_IO
+    //#define X16_IO
     
     //#define CHECKED              // 111/109 bytes
     
