@@ -67,7 +67,7 @@ unit SysCall
         
         // ....
         
-        UIntToInt             = 0x37, // TODO
+        UIntToInt             = 0x37,
         
         // ....
         
@@ -399,11 +399,7 @@ unit SysCall
             
             case SysCalls.UIntToInt:  
             {
-#ifdef LISTS                
                 UIntToInt();
-#else
-                missing();
-#endif                
             }
             case SysCalls.TypesTypeOf:  
             {

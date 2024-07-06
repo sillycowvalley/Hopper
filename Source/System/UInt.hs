@@ -231,4 +231,22 @@ unit UInt
     uint Min(uint a, uint b) { return (a < b) ? a : b; }
     uint Max(uint a, uint b) { return (a > b) ? a : b; }
     Swap(ref uint a, ref uint b) { uint t = a; a = b; b = t; }
+    
+    uint gRnd;
+    uint Random()
+    {
+        gRnd = gRnd ^ (gRnd << 7);
+        gRnd = gRnd ^ (gRnd >> 9);
+        gRnd = gRnd ^ (gRnd << 8);
+        return gRnd & 0x7FFF;
+    }
+    
+    Seed(uint seed) 
+    {
+        if (seed == 0)
+        {
+            seed = 1;
+        }
+        gRnd = seed;
+    }
 }

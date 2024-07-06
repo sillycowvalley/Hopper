@@ -244,4 +244,22 @@ unit UInt
     {
         return Long.FromBytes(UInt.GetByte(i, 0), UInt.GetByte(i, 1), 0, 0);
     }
+    
+    uint gRnd;
+    uint Random()
+    {
+        gRnd = gRnd ^ (gRnd << 7);
+        gRnd = gRnd ^ (gRnd >> 9);
+        gRnd = gRnd ^ (gRnd << 8);
+        return gRnd & 0x7FFF;
+    }
+    
+    Seed(uint seed) 
+    {
+        if (seed == 0)
+        {
+            seed = 1;
+        }
+        gRnd = seed;
+    }
 }
