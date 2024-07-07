@@ -6,8 +6,8 @@ program R6502
     #define CPU_65C02S  // Rockwell and WDC
     //#define CPU_6502  // MOS
     
-    #define BENEATER_IO
-    //#define X16_IO
+    //#define BENEATER_IO
+    #define X16_IO
     
     //#define CHECKED              // 111/109 bytes
     
@@ -24,7 +24,6 @@ program R6502
     #define INLINE_EXPANSIONS 
 
     //#define EXPORT_BIN // export as .bin (in addition to .hex (Intel IHex) - 65dasm needs the .hex)    
-    //#define NONZERO_IO
     
     #define W65C22_VIA
     #define ACIA_6850

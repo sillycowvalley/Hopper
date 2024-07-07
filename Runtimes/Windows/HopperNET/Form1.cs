@@ -244,13 +244,20 @@ namespace HopperNET
 
         private void Hopper_Load(object sender, EventArgs e)
         {
-            if (Settings.Default.Maximized)
+            if (!HopperPath.InitializeFolders(this))
             {
-                WindowState = FormWindowState.Maximized;
+                this.Close();
             }
-            worker = new BackgroundWorker();
-            worker.DoWork += Worker_DoWork;
-            worker.RunWorkerAsync();
+            else
+            {
+                if (Settings.Default.Maximized)
+                {
+                    WindowState = FormWindowState.Maximized;
+                }
+                worker = new BackgroundWorker();
+                worker.DoWork += Worker_DoWork;
+                worker.RunWorkerAsync();
+            }
         }
 
         private void Hopper_ClientSizeChanged(object sender, EventArgs e)

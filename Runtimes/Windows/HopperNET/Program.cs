@@ -17,7 +17,6 @@ namespace HopperNET
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            HopperPath.InitializeFolders();
             Application.Run(new Hopper());
         }
     }

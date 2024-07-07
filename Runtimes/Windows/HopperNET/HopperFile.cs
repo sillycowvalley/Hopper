@@ -12,30 +12,9 @@ namespace HopperNET
     public class HopperPath
     {
         static string hopperRoot;
-        public static void InitializeFolders()
+        public static bool InitializeFolders(Hopper mainForm)
         {
-            if (Directory.Exists(@"C:\Repos\Hopper\"))
-            {
-                hopperRoot = @"C:\Repos\Hopper\";            // C drive dev location
-            }
-            else if (Directory.Exists(@"D:\Repos\Hopper"))
-            {
-                hopperRoot = @"D:\Repos\Hopper";             // D drive dev location
-            }
-
-            if (string.IsNullOrEmpty(hopperRoot))
-            {
-                FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
-                folderBrowserDialog.RootFolder = Environment.SpecialFolder.Personal;
-                folderBrowserDialog.Description = "Select the directory where the Hopper file system is located";
-                var result = folderBrowserDialog.ShowDialog();
-
-                if (result == DialogResult.OK)
-                {
-                    hopperRoot = folderBrowserDialog.SelectedPath;
-                }
-            }
-
+            
             Assembly currentAssem = Assembly.GetExecutingAssembly();
             string exePath = currentAssem.Location;
             string exeFolder = Path.GetDirectoryName(exePath);
@@ -45,6 +24,22 @@ namespace HopperNET
             {
                 hopperRoot = exeFolder;
             }
+            if (string.IsNullOrEmpty(hopperRoot))
+            {
+                FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
+                folderBrowserDialog.RootFolder = Environment.SpecialFolder.MyComputer;
+                folderBrowserDialog.Description = "Select the directory where the Hopper file system is located";
+                var result = folderBrowserDialog.ShowDialog(mainForm);
+                if (result == DialogResult.OK)
+                {
+                    hopperRoot = folderBrowserDialog.SelectedPath;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            
             string tempFolder = Path.Combine(hopperRoot, "Temp");
             if (!Directory.Exists(tempFolder))
             {
@@ -60,6 +55,7 @@ namespace HopperNET
             {
                 Directory.CreateDirectory(objFolder);
             }
+            return true;
         }
         public static string ToWindowsPath(string path)
         {
