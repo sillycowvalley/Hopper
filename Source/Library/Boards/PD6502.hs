@@ -34,5 +34,5 @@ unit Board
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/MCU"
     
-    string BoardName { get { return "6502-Retro"; } }
+    string BoardName { get { return "PD6502"; } }
 }
