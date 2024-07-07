@@ -785,7 +785,7 @@ unit Monitor
         return crc;
     }
     
-    bool Connect(uint comPort)
+    bool Connect(uint comPort, string baudRate)
     {
         bool success;
         portConnected = 4242;
@@ -806,7 +806,7 @@ unit Monitor
             }
             if (comPort != 4242)
             {
-                Serial.Connect(comPort);
+                Serial.Connect(comPort, baudRate);
                 if (Serial.IsValid())
                 {
                     success = true;
@@ -814,7 +814,7 @@ unit Monitor
                     break; // success
                 }
             }
-            string message = "Failed to connect to " + "COM" + comPort.ToString() + ".";
+            string message = "Failed to connect to " + "COM" + comPort.ToString() + " at " + baudRate + " baud.";
             if (comPort == 4242)
             {
                 message = "No COM ports found.";

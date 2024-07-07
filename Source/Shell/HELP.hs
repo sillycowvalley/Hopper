@@ -25,6 +25,8 @@ program Help
 #endif
             WriteLn("    MD         MKDIR    Create new directory.");
             WriteLn("    RD         RMDIR    Remove empty directory.");
+            WriteLn("    PORT                Select the current COM port (for DEBUG and HM).");
+            WriteLn("    BAUD                Select the baud rate for COM ports (for DEBUG and HM).");
             WriteLn("    SHELL               Launch a nested Hopper Shell within the current one.");
             WriteLn("    EXIT                Quit the current Hopper Shell.");
             // TODO
@@ -55,7 +57,7 @@ program Help
                     command = Common.ResolveCommandPath(command);
                     _ = Runtime.Execute(command, args);
                 }
-                default: { WriteLn("unknown command '" + command +"'", Colour.MatrixRed); }
+                default: { WriteLn("no help for command '" + command +"'", Colour.MatrixRed); }
             }
             
         }

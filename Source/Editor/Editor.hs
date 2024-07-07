@@ -54,6 +54,7 @@ unit Editor
     bool   isAssemblerSource;
     bool   isAssemblerListing;
     bool   isTiggerCSource;
+    bool   isJSONSource;
     
     string IncludeToken { get { return (isTiggerCSource ? "#include" : "uses"); } } 
     
@@ -1647,7 +1648,7 @@ unit Editor
         uint lineCount = TextBuffer.GetLineCount();
         
         bool isAssembly     = isAssemblerSource || isAssemblerListing;
-        bool isHighlighting = isAssembly || isHopperSource || isTiggerCSource;
+        bool isHighlighting = isAssembly || isHopperSource || isTiggerCSource || isJSONSource;
         
         if (isHighlighting)
         {
@@ -2056,7 +2057,8 @@ unit Editor
         isHopperSource     = (extension == ".hs");
         isAssemblerSource  = (extension == ".asm");
         isAssemblerListing = (extension == ".lst");
-        isTiggerCSource      = (extension == ".tc");
+        isTiggerCSource    = (extension == ".tc");
+        isJSONSource       = (extension == ".options") || (extension == ".json") || (extension == ".code") || (extension == ".sym");
         
         string localProject = ProjectPath;
         if (localProject.Length == 0) // first load

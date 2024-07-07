@@ -340,6 +340,7 @@ unit BuildCommand
                 arguments.Append(col.ToString());
                 arguments.Append(row.ToString());
                 arguments.Append("-a");
+                arguments.Append("-t");
                 
                 Editor.SetStatusBarText("Preprocessing '" + tcOutPath + "' -> '" + codePath);
                 error = runtimeExecute(binaryPath, arguments);

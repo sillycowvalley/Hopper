@@ -123,7 +123,10 @@ program Edit
             
             filePath = Path.GetCorrectCase(filePath); // get correct case
             
-            optionsPath = Path.MakeOptions(filePath);
+            if (!(filePath.ToLower()).EndsWith(".options"))
+            {
+                optionsPath = Path.MakeOptions(filePath);
+            }
             
             Screen.Clear();
             Commands.Initialize();

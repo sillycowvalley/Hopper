@@ -2,6 +2,7 @@ unit Serial
 {
     Connect() system;
     Connect(uint port) system;
+    Connect(uint port, string baud) system;
     Close() system;
     bool IsValid() system;
     bool IsAvailable { get system; }

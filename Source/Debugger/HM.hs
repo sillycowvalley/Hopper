@@ -637,6 +637,7 @@ program HopperMonitor
         
         // if "Debugger.options" exists, see it has a comPort set by Port.hexe:
         uint comPort = 4242; // bogus port value
+        string baudRate = "56700";
         optionsPath = Path.MakeOptions("Debugger.options");
         if (File.Exists(optionsPath))
         {
@@ -651,6 +652,10 @@ program HopperMonitor
                     {
                         // found a current port
                     }
+                }
+                if (debugOptions.Contains("baudRate"))
+                {
+                    baudRate = debugOptions["baudRate"];
                 }
                 if (comPort != 4242)
                 {
@@ -670,8 +675,7 @@ program HopperMonitor
                 }
             }
         }
-        
-        if (!Monitor.Connect(comPort))
+        if (!Monitor.Connect(comPort, baudRate))
         {
             return;
         }

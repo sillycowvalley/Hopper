@@ -22,6 +22,7 @@ namespace HopperNET
         static bool continueSerial;
         static SerialPort serialPort;
         static string lastPort;
+        static string lastBaud;
         static List<string> btPorts = new List<string>();
 
         static bool isHopperCOM0Server = false; // Portable Runtime or Emulator
@@ -335,12 +336,17 @@ namespace HopperNET
         {
             String[] names = SerialPort.GetPortNames();
             string portName = names[names.Length - 1];
-            connect(portName);
+            connect(portName, "57600");
         }
         public static void Connect(uint port)
         {
             string portName = "COM" + port.ToString();
-            connect(portName);
+            connect(portName, "57600");
+        }
+        public static void Connect(uint port, string baud)
+        {
+            string portName = "COM" + port.ToString();
+            connect(portName, baud);
         }
         public static List<String> GetPorts()
         {
@@ -425,7 +431,7 @@ namespace HopperNET
 
         
 
-        static void  connect(string portName)
+        static void  connect(string portName, string baud)
         {
             if (portName == "COM4242")
             {
@@ -495,10 +501,11 @@ namespace HopperNET
                 serialPort.Close(); // if it is already connected, close it first
                 serialPort = null;
             }
-
+            int baudRate = int.Parse(baud);
             serialPort = new SerialPort();
             serialPort.PortName = portName;
-            serialPort.BaudRate = 57600; //  57600 for 6502 machine (with 3.6MHz oscillator), 115200 for Arduino MEGA2560 apps from 8bitforce;
+            serialPort.BaudRate = baudRate;
+            //serialPort.BaudRate = 57600; //  57600 for 6502 machine (with 3.6MHz oscillator), 115200 for Arduino MEGA2560 apps from 8bitforce;
             //serialPort.BaudRate = 28800; //  28800  for 6502 machine (at 28K with 1.8Mhz oscillator)
             serialPort.Parity = Parity.None;
             serialPort.DataBits = 8;
@@ -523,6 +530,7 @@ namespace HopperNET
                 serialPort.Open();
                 continueSerial = serialPort.IsOpen;
                 lastPort = portName;
+                lastBaud = baud;
             }
             catch (Exception ex)
             {
@@ -588,9 +596,10 @@ namespace HopperNET
                     if ((null == serialPort) && !String.IsNullOrEmpty(lastPort))
                     {
                         // try reconnecting
-                        connect(lastPort);
+                        connect(lastPort, lastBaud);
                     }
                     isValid = (null != serialPort) && serialPort.IsOpen;
+                    //Diagnostics.OutputDebug("IsValid: " + (isValid ? "True" : "False"));
                 }
             }
             catch (Exception ex)

@@ -14,7 +14,6 @@ namespace HopperNET
         static string hopperRoot;
         public static bool InitializeFolders(Hopper mainForm)
         {
-            
             Assembly currentAssem = Assembly.GetExecutingAssembly();
             string exePath = currentAssem.Location;
             string exeFolder = Path.GetDirectoryName(exePath);

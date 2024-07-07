@@ -173,7 +173,10 @@ program Shell
         return (IsValidPathCharacter(c) || (c == ' ') || (c == '-') || (c == '*'));
     }
     
+    Hopper()
     {
+        PrintLn("Hopper Shell");
+        PrintLn("    HELP for a list of shell commands.");
         string currentDirectory = CurrentDirectory;
         
         EditControl.ValidEditCharacter validator = ValidCommandLineCharacter;

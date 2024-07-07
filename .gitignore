@@ -1,7 +1,6 @@
 *.hasm
 *.hex
 *.ihex
-*.options
 *.log
 *.mem
 *.uf2

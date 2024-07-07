@@ -1,37 +1,12 @@
 program R6502
 {
+    //#define EXPERIMENTAL
     
-    #define CPU_8MHZ
-    
+    // This cannot be in '/Bin/Options/Configuration.options':
     #define CPU_65C02S  // Rockwell and WDC
     //#define CPU_6502  // MOS
     
-    //#define BENEATER_IO
-    #define X16_IO
-    
-    //#define CHECKED              // 111/109 bytes
-    
-    #define PACKED_INSTRUCTIONS
-    #define JIX_INSTRUCTIONS
-    
-    // Optional types:
-    #define LONGS              //  236 bytes
-    #define FLOATS             //   28 bytes (requires LONGS)
-    #define LISTS              // 2458 bytes (requires Variant)
-    
-    // Speed vs Size:
-    #define FASTINTS
-    #define INLINE_EXPANSIONS 
-
-    //#define EXPORT_BIN // export as .bin (in addition to .hex (Intel IHex) - 65dasm needs the .hex)    
-    
-    #define W65C22_VIA
-    #define ACIA_6850
-    //#define ACIA_6551
-         
-#ifdef W65C22_VIA
-    #define I2C
-#endif         
+    // For all other configuration options, use '/Bin/Options/Configuration.options' now
 
 #if defined(CPU_65C02S) && !defined(CHECKED) && !defined(FASTINTS) && !defined(INLINE_EXPANSIONS)
     #define ROM_8K // 240 bytes overrun with I2C but without FASTINTS
@@ -44,8 +19,6 @@ program R6502
 #if !defined(ROM_8K) && !defined(ROM_16K) && !defined(ROM_32K)
     #define ROM_16K
 #endif
-
-    
     
     // HopperMon commands to support:
     //

@@ -16,7 +16,7 @@ unit BuildOptions
     Register()
     {
         buildOptions["checkedBuild"]        = "false";
-        buildOptions["runOptimizer"]        = "false";
+        buildOptions["runOptimizer"]        = "true";  // default to Optimizing if no .options file
         buildOptions["runDisassembler"]     = "false";
         buildOptions["autoSaveOnBuild"]     = "false";
         loadOptions();
@@ -56,11 +56,14 @@ unit BuildOptions
     }
     saveOptions()
     {
-        File.Delete(OptionsPath);
-        <string, variant> dict;
-        dict["buildoptions"] = buildOptions;
-        if (JSON.Write(OptionsPath, dict))
+        if ((OptionsPath).Length != 0)
         {
+            File.Delete(OptionsPath);
+            <string, variant> dict;
+            dict["buildoptions"] = buildOptions;
+            if (JSON.Write(OptionsPath, dict))
+            {
+            }
         }
     }
     bool AlwaysEnabled()

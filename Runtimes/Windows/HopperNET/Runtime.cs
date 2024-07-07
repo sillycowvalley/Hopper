@@ -7262,6 +7262,13 @@ namespace HopperNET
                                 Serial.Connect(port);
                                 break;
                             }
+                        case 2:
+                            {
+                                HopperString baud = (HopperString)PopVariant(HopperType.tString);
+                                uint port = Pop();
+                                Serial.Connect(port, baud.Value);
+                                break;
+                            }
                     }
                     break;
                 case SysCall.SerialClose:
