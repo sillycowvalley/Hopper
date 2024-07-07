@@ -1,6 +1,7 @@
 {
     "Hopper": 
   {
+      // "PD6502": "true"
   },
     "Hopper 6502 Assembly": 
   {
@@ -17,6 +18,7 @@
     , "LISTS": "true"                // costs about 2458 bytes (requires Variant)
     , "FASTINTS": "true"             // speed vs size
     , "INLINE_EXPANSIONS": "true"    // speed vs size
+    // , "EXPORT_BIN": "true"        // export as .bin (in addition to .hex (Intel IHex) - 65dasm needs the .hex)
     
   },
   "Tigger C": 

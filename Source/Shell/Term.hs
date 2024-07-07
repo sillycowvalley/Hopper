@@ -121,7 +121,7 @@ program Term
                         exitKey = true;
                     }
                     ch = Keyboard.ToSerial(key, ref maker);
-#ifdef RETRO6502                    
+#ifdef PD6502
                     if (ch == char(0x0A)) { ch = char(0x0D); }
 #endif
                     if (maker != char(0))
