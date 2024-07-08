@@ -1,7 +1,7 @@
 program R6502
 {
     //#define EXPERIMENTAL
-    #define CHECKED
+    //#define CHECKED
     
     // This cannot be in '/Bin/Options/Configuration.options':
     #define CPU_65C02S  // Rockwell and WDC
