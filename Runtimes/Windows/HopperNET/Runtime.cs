@@ -6765,7 +6765,7 @@ namespace HopperNET
                 case SysCall.UIntGetByte:
                     {
                         uint index = Pop();
-                        Int16 top = PopInt();
+                        uint top = Pop();
                         byte[] bytes = BitConverter.GetBytes(top);
                         if (index >= bytes.Length)
                         {
