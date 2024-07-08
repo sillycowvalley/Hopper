@@ -1,6 +1,7 @@
 program R6502
 {
     //#define EXPERIMENTAL
+    #define CHECKED
     
     // This cannot be in '/Bin/Options/Configuration.options':
     #define CPU_65C02S  // Rockwell and WDC
@@ -16,6 +17,9 @@ program R6502
     #define ROM_8K // 31 bytes remaining without JIX_INSTRUCTIONS or FASTINTS
 #endif
 
+#if defined(FAST_6502_RUNTIME)
+    #define ROM_32K
+#endif
 #if !defined(ROM_8K) && !defined(ROM_16K) && !defined(ROM_32K)
     #define ROM_16K
 #endif

@@ -6,7 +6,14 @@ unit Long
     
     byte GetByte(long this, byte index) system;
     long FromBytes(byte b0, byte b1, byte b2, byte b3) system;
-        
+    
+#ifdef FAST_6502_RUNTIME
+    long Add(long a, long b) system;
+    long Sub(long a, long b) system;
+    long Div(long dividend, long divisor) system;
+    long Mod(long dividend, long divisor) system;
+    long Negate(long value) system;
+#else        
     long Add(long a, long b)
     {
         byte result0;
@@ -53,7 +60,6 @@ unit Long
         return FromBytes(result0, result1, result2, result3);
     }
         
-        
     long Sub(long a, long b)
     {
         byte result0;
@@ -99,7 +105,22 @@ unit Long
         // Create new long from result bytes
         return FromBytes(result0, result1, result2, result3);
     }
-        
+    long Div(long dividend, long divisor)
+    {
+        long remainder = 0;
+        return divMod(dividend, divisor, ref remainder);
+    }
+    long Mod(long dividend, long divisor)
+    {
+        long remainder;
+        _ = divMod(dividend, divisor, ref remainder);
+        return remainder;
+    }
+    long Negate(long value)
+    {
+        return Sub(long(0), value);
+    }
+#endif
      
     long Mul(long ai, long bi)
     {
@@ -236,19 +257,11 @@ unit Long
         return quotient;
     }
 
-    long Div(long dividend, long divisor)
-    {
-        long remainder = 0;
-        return divMod(dividend, divisor, ref remainder);
-    }
-
-    long Mod(long dividend, long divisor)
-    {
-        long remainder;
-        _ = divMod(dividend, divisor, ref remainder);
-        return remainder;
-    }
-
+    
+#ifdef FAST_6502_RUNTIME
+    bool EQ(long left, long right) system;
+    bool LT(long left, long right) system;
+#else
     bool EQ(long left, long right)
     {
         for (byte i = 0; i < 4; i++)
@@ -260,6 +273,11 @@ unit Long
         }
         return true;
     }
+    bool LT(long left, long right)
+    {
+        return !GE(left, right);
+    }
+#endif
 
     bool GT(long left, long right)
     {
@@ -300,12 +318,6 @@ unit Long
         // They are equal
         return false;
     }
-       
-
-    bool LT(long left, long right)
-    {
-        return !GE(left, right);
-    }
 
     bool GE(long left, long right)
     {
@@ -320,11 +332,6 @@ unit Long
     long Abs(long value)
     {
         return GE(value, long(0)) ? value : Negate(value);
-    }
-
-    long Negate(long value)
-    {
-        return Sub(long(0), value);
     }
 
     long Max(long a, long b)
@@ -359,8 +366,13 @@ unit Long
 
         while (!EQ(value, zero))
         {
+#ifdef FAST_6502_RUNTIME
+            long remainder = value % ten;
+            value = value / ten;
+#else
             long remainder;
             value = divMod(value, ten, ref remainder);
+#endif
             char c = char(GetByte(remainder, 0) + '0');
             String.BuildFront(ref result, c);
         }

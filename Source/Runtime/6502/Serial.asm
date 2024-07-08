@@ -14,10 +14,10 @@ unit Serial
     
     // Location of the Serial input buffer (256 bytes)
     const uint InBuffer        = Address.SerialInBuffer;
-#ifdef ACIA_6850    
+#if defined(ACIA_6850) && !defined(APPLE_I)
     uses "Devices/ACIA6850"
 #endif
-#ifdef ACIA_6551
+#if defined(ACIA_6551) && !defined(APPLE_I)
     uses "Devices/ACIA6551"
 #endif
     //uses "Devices/PIA6821"

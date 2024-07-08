@@ -69,6 +69,17 @@ unit SysCall
         
         UIntToInt             = 0x37,
         
+        LongAdd               = 0x3F,
+        LongSub               = 0x40,
+        LongDiv               = 0x41,
+        
+        LongMod               = 0x43,
+        
+        LongEQ                = 0x44,
+        LongLT                = 0x45,
+        
+        LongNegate            = 0x49,
+        
         // ....
         
         TypesTypeOf           = 0x7E, // TODO
@@ -342,6 +353,63 @@ unit SysCall
             {
 #ifdef LONGS
                 Long.GetByte();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.LongAdd:
+            {
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
+                Long.Add();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.LongSub:
+            {
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
+                Long.Sub();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.LongDiv:
+            {
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
+                Long.Div();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.LongMod:
+            {
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
+                Long.Mod();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.LongNegate:
+            {
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
+                Long.Negate();
+#else
+                missing();
+#endif                
+            }
+            
+            case SysCalls.LongEQ:
+            {
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
+                Long.EQ();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.LongLT:
+            {
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
+                Long.LT();
 #else
                 missing();
 #endif                

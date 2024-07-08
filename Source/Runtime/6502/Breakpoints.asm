@@ -45,7 +45,7 @@ unit Breakpoints
     Clear() // munts X
     {
         PHA
-        LDX #1
+        LDX # 1
         loop
         {
             // clearNextBreakPoint

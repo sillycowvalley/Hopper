@@ -161,7 +161,7 @@ unit IntMath
         // Initialize RESULT to 0
         LDA # 0
         STA ZP.UWIDE2
-        LDX #16      // there are 16 bits in TOP
+        LDX # 16      // there are 16 bits in TOP
         loop
         {
             LSR ZP.TOPH  // get low bit of TOP
@@ -329,10 +329,10 @@ unit IntMath
                
         // https://codebase64.org/doku.php?id=base:16bit_division_16-bit_result
         // https://llx.com/Neil/a2/mult.html
-        LDA #0
+        LDA # 0
         STA ZP.ACCL
         STA ZP.ACCH
-        LDX #16
+        LDX # 16
         
         loop
         {

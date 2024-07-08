@@ -30,7 +30,44 @@ unit Long
             }
         }
     }
-       
+#ifdef FAST_6502_RUNTIME    
+    commonLongTOP()
+    {
+        Stacks.PopIDX();
+        LDY # siData
+        LDA [IDX], Y
+        STA ZP.LTOP0
+        INY
+        LDA [IDX], Y
+        STA ZP.LTOP1
+        INY
+        LDA [IDX], Y
+        STA ZP.LTOP2
+        INY
+        LDA [IDX], Y
+        STA ZP.LTOP3
+        GC.Release();
+        
+    }
+    commonLongNEXTTOP()
+    {
+        commonLongTOP();
+        Stacks.PopIDX();
+        LDY # siData
+        LDA [IDX], Y
+        STA ZP.LNEXT0
+        INY
+        LDA [IDX], Y
+        STA ZP.LNEXT1
+        INY
+        LDA [IDX], Y
+        STA ZP.LNEXT2
+        INY
+        LDA [IDX], Y
+        STA ZP.LNEXT3
+        GC.Release();
+    }
+#endif 
     pushNewFromL()
     {
         STA FTYPE
@@ -65,6 +102,7 @@ unit Long
         LDA FTYPE
         Stacks.PushTop();
     }
+    
     fromBytes()
     {
         STA FTYPE
@@ -126,11 +164,18 @@ unit Long
     }
     New()
     {
+#ifdef CPU_65C02S
+        STZ ZP.LNEXT0
+        STZ ZP.LNEXT1
+        STZ ZP.LNEXT2
+        STZ ZP.LNEXT3
+#else
         LDA # 0
         STA ZP.LNEXT0
         STA ZP.LNEXT1
         STA ZP.LNEXT2
         STA ZP.LNEXT3
+#endif
         LDA # Types.Long
         pushNewFromL();
     }
@@ -233,4 +278,172 @@ unit Long
         ADC IDXH
         STA IDYH
     }
+#ifdef FAST_6502_RUNTIME
+    Add()
+    {  
+        commonLongTOP();
+        Stacks.PopIDX();
+        CLC
+        LDY # siData
+        LDA [IDX], Y
+        ADC LTOP0
+        STA LNEXT0
+        INY
+        LDA [IDX], Y
+        ADC LTOP1
+        STA LNEXT1
+        INY
+        LDA [IDX], Y
+        ADC LTOP2
+        STA LNEXT2
+        INY
+        LDA [IDX], Y
+        ADC LTOP3
+        STA LNEXT3
+        GC.Release();
+        
+        LDA # Types.Long
+        pushNewFromL(); 
+    }
+    Sub()
+    {  
+        commonLongTOP();
+        Stacks.PopIDX();
+        SEC
+        LDY # siData
+        LDA [IDX], Y
+        SBC LTOP0
+        STA LNEXT0
+        INY
+        LDA [IDX], Y
+        SBC LTOP1
+        STA LNEXT1
+        INY
+        LDA [IDX], Y
+        SBC LTOP2
+        STA LNEXT2
+        INY
+        LDA [IDX], Y
+        SBC LTOP3
+        STA LNEXT3
+        GC.Release();
+        
+        LDA # Types.Long
+        pushNewFromL(); 
+    }
+    Div()
+    {
+        commonLongNEXTTOP();
+        DivMod();
+        LDA # Types.Long
+        pushNewFromL(); 
+    }
+    Mod()
+    {
+        commonLongNEXTTOP();
+        DivMod();
+        LDA LRESULT0
+        STA LNEXT0
+        LDA LRESULT1
+        STA LNEXT1
+        LDA LRESULT2
+        STA LNEXT2
+        LDA LRESULT3
+        STA LNEXT3
+        LDA # Types.Long
+        pushNewFromL(); 
+    }
+    Negate()
+    {  
+        Stacks.PopIDX();
+        SEC
+        LDY # siData
+        LDA # 0
+        SBC [IDX], Y
+        STA LNEXT0
+        INY
+        LDA # 0
+        SBC [IDX], Y
+        STA LNEXT1
+        INY
+        LDA # 0
+        SBC [IDX], Y
+        STA LNEXT2
+        INY
+        LDA # 0
+        SBC [IDX], Y
+        STA LNEXT3
+        GC.Release();
+        
+        LDA # Types.Long
+        pushNewFromL(); 
+    }
+    LT()
+    {
+        // NEXT = NEXT - TOP
+        commonLongTOP();
+        Stacks.PopIDX();
+        SEC
+        LDY # siData
+        LDA [IDX], Y
+        SBC LTOP0
+        STA LNEXT0
+        INY
+        LDA [IDX], Y
+        SBC LTOP1
+        STA LNEXT1
+        INY
+        LDA [IDX], Y
+        SBC LTOP2
+        STA LNEXT2
+        INY
+        LDA [IDX], Y
+        SBC LTOP3
+        STA LNEXT3
+        GC.Release();
+        
+        LDX # 0
+        LDA LNEXT3
+        AND # 0b10000000
+        if (NZ)
+        {
+            // NEXT >= TOP? -> +ve or zero (sign not set)
+            INX
+        }
+        Stacks.PushX(); // as Type.Bool
+    }
+    EQ()
+    {  
+        commonLongTOP();
+        Stacks.PopIDX();
+        LDX # 0
+        LDY # siData
+        LDA [IDX], Y
+        CMP LTOP0
+        if (Z)
+        {
+            INY
+            LDA [IDX], Y
+            CMP LTOP1
+            if (Z)
+            {
+                INY
+                LDA [IDX], Y
+                CMP LTOP2
+                if (Z)
+                {
+                    LDA [IDX], Y
+                    SBC LTOP3
+                    STA LNEXT3
+                    if (Z)
+                    {
+                        INX
+                    }
+                }
+            }
+        }
+        GC.Release();
+        Stacks.PushX(); // as Type.Bool
+    }
+#endif
 }

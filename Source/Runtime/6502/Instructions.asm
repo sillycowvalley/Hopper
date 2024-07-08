@@ -2867,27 +2867,27 @@ unit Instruction
             }
             case Instructions.MUL:
             {
-                Mul();
+                IntMath.Mul();
             }
             case Instructions.DIV:
             {
-                Div();
+                IntMath.Div();
             }
             case Instructions.MOD:
             {
-                Mod();
+                IntMath.Mod();
             }
             case Instructions.MULI:
             {
-                MulI();
+                IntMath.MulI();
             }
             case Instructions.DIVI:
             {
-                DivI();
+                IntMath.DivI();
             }
             case Instructions.MODI:
             {
-                ModI();
+                IntMath.ModI();
             }
             
             case Instructions.BOOLAND:
