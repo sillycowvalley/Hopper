@@ -67,18 +67,32 @@ unit SysCall
         
         // ....
         
+        IntToLong             = 0x35,
+        UIntToLong            = 0x36,
+        
         UIntToInt             = 0x37,
+      //LongToString          = 0x38,
+        UIntGetByte           = 0x39,
+        
+      //LongToInt             = 0x3B,
+      //LongToUInt            = 0x3C,
+        UIntFromBytes         = 0x3D,
         
         LongAdd               = 0x3F,
         LongSub               = 0x40,
         LongDiv               = 0x41,
-        
+        LongMul               = 0x42,
         LongMod               = 0x43,
         
         LongEQ                = 0x44,
         LongLT                = 0x45,
-        
+      //LongLE                = 0x46,
+      //LongGT                = 0x47,
+      //LongGE                = 0x48,
         LongNegate            = 0x49,
+        
+      //LongAddB              = 0xEE,
+      //LongSubB              = 0xEF,
         
         // ....
         
@@ -190,6 +204,14 @@ unit SysCall
         LDA # Types.Int
         Stacks.PushNext();
     }
+    uintFromBytes()
+    {
+        PopTopNext();
+        LDA ZP.TOPL
+        STA ZP.NEXTH
+        LDA # Types.UInt
+        Stacks.PushNext();
+    }
     
     SysCallShared()
     {
@@ -248,6 +270,14 @@ unit SysCall
             case SysCalls.IntFromBytes:
             {
                 intFromBytes();
+            }
+            case SysCalls.UIntGetByte:
+            {
+                intGetByte();
+            }
+            case SysCalls.UIntFromBytes:
+            {
+                uintFromBytes();
             }
             
             case SysCalls.MemoryReadByte:
@@ -359,7 +389,7 @@ unit SysCall
             }
             case SysCalls.LongAdd:
             {
-#if defined(LONGS) && defined(FAST_6502_RUNTIME)
+#if defined(LONGS)
                 Long.Add();
 #else
                 missing();
@@ -367,7 +397,7 @@ unit SysCall
             }
             case SysCalls.LongSub:
             {
-#if defined(LONGS) && defined(FAST_6502_RUNTIME)
+#if defined(LONGS)
                 Long.Sub();
 #else
                 missing();
@@ -375,15 +405,23 @@ unit SysCall
             }
             case SysCalls.LongDiv:
             {
-#if defined(LONGS) && defined(FAST_6502_RUNTIME)
+#if defined(LONGS)
                 Long.Div();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.LongMul:
+            {
+#if defined(LONGS)
+                Long.Mul();
 #else
                 missing();
 #endif                
             }
             case SysCalls.LongMod:
             {
-#if defined(LONGS) && defined(FAST_6502_RUNTIME)
+#if defined(LONGS)
                 Long.Mod();
 #else
                 missing();
@@ -391,16 +429,31 @@ unit SysCall
             }
             case SysCalls.LongNegate:
             {
-#if defined(LONGS) && defined(FAST_6502_RUNTIME)
+#if defined(LONGS)
                 Long.Negate();
 #else
                 missing();
 #endif                
             }
-            
+            case SysCalls.IntToLong:
+            {
+#if defined(LONGS)
+                IntToLong();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.UIntToLong:
+            {
+#if defined(LONGS)
+                IntToLong();
+#else
+                missing();
+#endif                
+            }            
             case SysCalls.LongEQ:
             {
-#if defined(LONGS) && defined(FAST_6502_RUNTIME)
+#if defined(LONGS)
                 Long.EQ();
 #else
                 missing();
@@ -408,7 +461,7 @@ unit SysCall
             }
             case SysCalls.LongLT:
             {
-#if defined(LONGS) && defined(FAST_6502_RUNTIME)
+#if defined(LONGS)
                 Long.LT();
 #else
                 missing();

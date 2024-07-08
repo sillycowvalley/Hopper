@@ -1,7 +1,8 @@
 unit Int
 {
     byte GetByte(int this, byte index) system;
-    int FromBytes(byte b0, byte b1) system;
+    int  FromBytes(byte b0, byte b1) system;
+    long ToLong(int value) system;
     
     bool TryParse(string input, ref int returnValue)
     {
@@ -127,6 +128,7 @@ unit Int
     int Max(int a, int b) { return (a > b) ? a : b; }
     Swap(ref int a, ref int b) { int t = a; a = b; b = t; }
     
+#ifdef UNUSED
     long ToLong(int value)
     {
         // Extract bytes from the int
@@ -139,6 +141,7 @@ unit Int
         // Create new long from int bytes
         return Long.FromBytes(lowByte, highByte, highHighByte, highHighByte);
     }
+#endif
     
     float ToFloat(int i)
     {

@@ -1,6 +1,6 @@
 unit String
 {
-    friend GC, Diagnostics;
+    friend GC, Diagnostics, IntMath;
     
     // String memory map:
     //   0000 heap allocator size

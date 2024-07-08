@@ -1,6 +1,10 @@
 unit UInt
 {
-    byte GetByte(uint this, byte index)
+    long ToLong(uint i) system;
+    byte GetByte(uint this, byte index) system;
+    uint FromBytes(byte b0, byte b1) system;
+    /*
+    byte GetByte(uint this, byte index) system;
     {
         byte result;
         if (index == 1)
@@ -17,6 +21,7 @@ unit UInt
     {
         return b0 + b1 << 8;
     }
+    */
     bool TryParse(string input, ref uint returnValue)
     {
         bool success;
@@ -168,6 +173,7 @@ unit UInt
         }
         return success;
     }
+
     string ToString(uint this)
     {
         string result;
@@ -183,6 +189,7 @@ unit UInt
         }
         return result;
     }
+
     string ToHexString(uint this, byte digits)
     {
         string result;
@@ -240,10 +247,14 @@ unit UInt
     {
         return Long.ToFloat(UInt.ToLong(i));
     }
+
+    
+#ifdef UNUSED
     long ToLong(uint i)
     {
         return Long.FromBytes(UInt.GetByte(i, 0), UInt.GetByte(i, 1), 0, 0);
     }
+#endif
     
     uint gRnd;
     uint Random()

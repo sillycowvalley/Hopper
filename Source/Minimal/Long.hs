@@ -7,13 +7,15 @@ unit Long
     byte GetByte(long this, byte index) system;
     long FromBytes(byte b0, byte b1, byte b2, byte b3) system;
     
-#ifdef FAST_6502_RUNTIME
+
     long Add(long a, long b) system;
     long Sub(long a, long b) system;
+    long Mul(long ai, long bi) system;
     long Div(long dividend, long divisor) system;
     long Mod(long dividend, long divisor) system;
     long Negate(long value) system;
-#else        
+    
+#ifdef UNUSED
     long Add(long a, long b)
     {
         byte result0;
@@ -120,8 +122,6 @@ unit Long
     {
         return Sub(long(0), value);
     }
-#endif
-     
     long Mul(long ai, long bi)
     {
         long a = ai;
@@ -209,7 +209,6 @@ unit Long
         return finalResult;
     }
     
-    
     long divMod(long dividendi, long divisori, ref long remainder)
     {
         long dividend = dividendi;
@@ -256,12 +255,13 @@ unit Long
         }
         return quotient;
     }
+#endif
 
     
-#ifdef FAST_6502_RUNTIME
+
     bool EQ(long left, long right) system;
     bool LT(long left, long right) system;
-#else
+#ifdef UNUSED
     bool EQ(long left, long right)
     {
         for (byte i = 0; i < 4; i++)
@@ -366,10 +366,9 @@ unit Long
 
         while (!EQ(value, zero))
         {
-#ifdef FAST_6502_RUNTIME
             long remainder = value % ten;
             value = value / ten;
-#else
+#ifdef UNUSED
             long remainder;
             value = divMod(value, ten, ref remainder);
 #endif

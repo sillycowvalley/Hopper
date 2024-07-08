@@ -1,7 +1,5 @@
 unit IntMath
 {
-    // FASTINTS
-    
     MulShared()
     {
         // TOP = NEXT * TOP
@@ -485,4 +483,40 @@ unit IntMath
         LDA # Types.Int     
         Stacks.PushTop();
     }
+#if defined(LONGS)
+    UIntToLong()
+    {
+        Stacks.PopTop();
+        LDA ZP.TOPL
+        STA ZP.LNEXT0
+        LDA ZP.TOPH
+        STA ZP.LNEXT1
+        STZ ZP.LNEXT2
+        STZ ZP.LNEXT3
+        LDA # Types.Long
+        Long.pushNewFromL();
+    }
+    IntToLong()
+    {
+        Stacks.PopTop();
+        LDA ZP.TOPL
+        STA ZP.LNEXT0
+        LDA ZP.TOPH
+        STA ZP.LNEXT1
+        
+        // http://forum.6502.org/viewtopic.php?f=2&t=6069
+        // sign extension
+        
+        ASL           // sign bit into carry
+        LDA # 0x00
+        ADC # 0xFF    // C set:   A = 0xFF + C = 0x00
+                      // C clear: A = 0xFF + C = 0xFF
+        EOR # 0xFF    // Flip all bits and they all now match C
+        
+        STA ZP.LNEXT2
+        STA ZP.LNEXT3
+        LDA # Types.Long
+        Long.pushNewFromL();
+    }
+#endif    
 }

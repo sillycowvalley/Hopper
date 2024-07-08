@@ -2,7 +2,7 @@ unit Long
 {
     uses "/Source/Runtime/6502/ZeroPage"
     
-    friend Time, Float, GC;
+    friend Time, Float, GC, IntMath;
     
     const uint siData = 2;
     
@@ -30,7 +30,7 @@ unit Long
             }
         }
     }
-#ifdef FAST_6502_RUNTIME    
+
     commonLongTOP()
     {
         Stacks.PopIDX();
@@ -67,7 +67,7 @@ unit Long
         STA ZP.LNEXT3
         GC.Release();
     }
-#endif 
+
     pushNewFromL()
     {
         STA FTYPE
@@ -209,6 +209,63 @@ unit Long
         Stacks.PushNext();
     }
     
+    negateLongTOP()
+    {
+        SEC
+        LDA # 0
+        SBC LTOP1
+        STA LTOP1
+        LDA # 0
+        SBC LTOP1
+        STA LTOP1
+        LDA # 0
+        SBC LTOP1
+        STA LTOP1
+        LDA # 0
+        SBC LTOP1
+        STA LTOP1
+    }
+    negateLongNEXT()
+    {
+        SEC
+        LDA # 0
+        SBC LNEXT0
+        STA LNEXT0
+        LDA # 0
+        SBC LNEXT1
+        STA LNEXT1
+        LDA # 0
+        SBC LNEXT2
+        STA LNEXT2
+        LDA # 0
+        SBC LNEXT3
+        STA LNEXT3
+    }
+    
+    utilityDoLongSigns()
+    {
+        PHX
+        
+        LDX #0
+        LDA LNEXT3
+        ASL // sign bit into carry
+        if (C)
+        {
+            INX // count the -ve
+            negateLongNEXT(); // NEXT = -NEXT
+        }
+        LDA LTOP3
+        ASL // sign bit into carry
+        if (C)
+        {
+            INX // count the -ve
+            negateLongTOP(); // TOP = -TOP
+        }
+        STX ZP.FSIGN // store the sign count
+        
+        PLX
+    }
+        
     DivMod()
     {
         // LNEXT = LNEXT / LTOP + LRESULT
@@ -278,7 +335,7 @@ unit Long
         ADC IDXH
         STA IDYH
     }
-#ifdef FAST_6502_RUNTIME
+
     Add()
     {  
         commonLongTOP();
@@ -334,7 +391,14 @@ unit Long
     Div()
     {
         commonLongNEXTTOP();
+        utilityDoLongSigns();
         DivMod();
+        LDA ZP.FSIGN // load the sign count
+        CMP # 1
+        if (Z)
+        {
+            negateLongNEXT(); // NEXT  = -NEXT 
+        }
         LDA # Types.Long
         pushNewFromL(); 
     }
@@ -353,6 +417,87 @@ unit Long
         LDA # Types.Long
         pushNewFromL(); 
     }
+    
+    utilityLongMUL()
+    {
+        // LNEXT = LNEXT0..LNEXT3 * LTOP0..LTOP3
+        
+        // https://llx.com/Neil/a2/mult.html
+        // http://www.6502.org/source/integers/32muldiv.htm
+        
+        LDA # 0x00
+        STA LRESULT4   // Clear upper half of
+        STA LRESULT5   // product
+        STA LRESULT6
+        STA LRESULT7
+        LDX # 0x20     // set binary count to 32
+        loop
+        {
+            LSR LNEXT3   // shift multiplyer right
+            ROR LNEXT2
+            ROR LNEXT1
+            ROR LNEXT0
+            if (C) // Go rotate right if c = 0
+            {
+                LDA LRESULT4   // get upper half of product and add multiplicand to it
+                CLC               
+                ADC LTOP0
+                STA LRESULT4
+                LDA LRESULT5
+                ADC LTOP1
+                STA LRESULT5
+                LDA LRESULT6
+                ADC LTOP2
+                STA LRESULT6
+                LDA LRESULT7
+                ADC LTOP3
+            }
+            ROR A    // rotate partial product
+            STA LRESULT7   // right
+            ROR LRESULT6
+            ROR LRESULT5
+            ROR LRESULT4
+            ROR LRESULT3
+            ROR LRESULT2
+            ROR LRESULT1
+            ROR LRESULT0
+            DEX                // decrement bit count and
+            if (Z) { break; }  // exit loop when 32 bits are done
+        }
+        LDA LRESULT0
+        STA LNEXT0
+        LDA LRESULT1
+        STA LNEXT1
+        LDA LRESULT2
+        STA LNEXT2
+        LDA LRESULT3
+        STA LNEXT3
+    }
+    
+        
+    Mul()
+    {
+        commonLongNEXTTOP();
+        utilityDoLongSigns();
+    
+        // (IDY) = (NEXT) * (TOP)
+        
+        // #### https://llx.com/Neil/a2/mult.html ####
+        // http://www.6502.org/source/integers/32muldiv.htm
+    
+        utilityLongMUL();
+    
+        LDA ZP.FSIGN // load the sign count
+        CMP # 1
+        if (Z)
+        {
+            negateLongNEXT(); // NEXT  = -NEXT 
+        }
+        LDA # Types.Long
+        pushNewFromL(); 
+    }
+    
+        
     Negate()
     {  
         Stacks.PopIDX();
@@ -445,5 +590,5 @@ unit Long
         GC.Release();
         Stacks.PushX(); // as Type.Bool
     }
-#endif
+
 }

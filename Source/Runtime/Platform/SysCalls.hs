@@ -68,12 +68,12 @@ unit SysCalls
         UIntToLong           = 0x36,
         UIntToInt            = 0x37,
         LongToString         = 0x38,
-        //LongToBytes          = 0x39,
+        UIntGetByte          = 0x39,
         LongToFloat          = 0x3A,
         LongToInt            = 0x3B,
         LongToUInt           = 0x3C,
-        //LongNew              = 0x3D,
-        //LongNewFromConstant  = 0x3E,
+        UIntFromBytes        = 0x3D,
+        
         LongAdd              = 0x3F,
         LongSub              = 0x40,
         LongDiv              = 0x41,
@@ -233,10 +233,7 @@ unit SysCalls
         //MCUDigitalRead   = 0xDA,
         //MCUDigitalWrite  = 0xDB,
         
-        //LongGetByte      = 0xE0,
-        //FloatGetByte     = 0xE2,
-        //LongFromBytes    = 0xE3,
-        //FloatFromBytes   = 0xE5,
+        
         UIntToFloat      = 0xE6,
         
         StringCompare   = 0xE8,
