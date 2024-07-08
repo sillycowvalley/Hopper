@@ -777,6 +777,24 @@ unit HopperVM
                 uint i = HRInt.FromBytes(b0, b1);
                 Push(i, Type.Int);  
             }
+            case SysCalls.UIntGetByte:
+            {
+                index = Pop();
+                uint i = Pop();
+                switch (index)
+                {
+                    case 0:  { b = byte (i & 0xFF); }
+                    case 1:  { b = byte (i >> 8); }
+                    default: {ErrorDump(101); Error = 0x02; } // array index out of range
+                }
+                Push(b, Type.Byte);                
+            }
+            case SysCalls.UIntFromBytes:
+            {
+                byte b1 = byte(Pop());
+                byte b0 = byte(Pop());
+                Push(b0 + (b1 << 8), Type.UInt);  
+            }
             case SysCalls.UIntToInt:
             {
                 uint value = Pop();
@@ -3482,7 +3500,6 @@ unit HopperVM
             case SysCalls.IntGetByte:
             {
                 uint index = Pop();
-                Type htype;
                 uint i = Pop();
                 byte b = HRInt.GetByte(i, index);
                 Push(b, Type.Byte);                
@@ -3494,6 +3511,25 @@ unit HopperVM
                 
                 uint i = HRInt.FromBytes(b0, b1);
                 Push(i, Type.Int);  
+            }
+            case SysCalls.UIntGetByte:
+            {
+                uint index = Pop();
+                uint i = Pop();
+                byte b;
+                switch (index)
+                {
+                    case 0:  { b = byte (i & 0xFF); }
+                    case 1:  { b = byte (i >> 8); }
+                    default: {ErrorDump(101); Error = 0x02; } // array index out of range
+                }
+                Push(b, Type.Byte);                
+            }
+            case SysCalls.UIntFromBytes:
+            {
+                byte b1 = byte(Pop());
+                byte b0 = byte(Pop());
+                Push(b0 + (b1 << 8), Type.UInt);  
             }
             case SysCalls.FloatToString:
             {

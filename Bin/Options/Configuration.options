@@ -13,11 +13,12 @@
     , "I2C": "true"                  // (requires W65C22_VIA)
     , "PACKED_INSTRUCTIONS": "true"  // as opposed to just the minimal instruction set for the VM
     , "JIX_INSTRUCTIONS": "true"     // used by 'switch' statement (optimized to indexed jumps if JIX exists)
-    , "LONGS": "true"                // costs about 236 bytes
+    , "LONGS": "true"                // costs about 760 bytes
     , "FLOATS": "true"               // costs about 28 bytes (requires longs)
     , "LISTS": "true"                // costs about 2458 bytes (requires Variant)
     , "FASTINTS": "true"             // speed vs size
     , "INLINE_EXPANSIONS": "true"    // speed vs size
+    //, "FAST_6502_RUNTIME": "true"    // speed vs size (> 16K R6502)
     // , "EXPORT_BIN": "true"        // export as .bin (in addition to .hex (Intel IHex) - 65dasm needs the .hex)
     
   },

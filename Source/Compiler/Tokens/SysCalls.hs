@@ -81,11 +81,11 @@ unit SysCalls
         addEntry("UInt.ToInt");
         
         addEntry("Long.ToString");
-        addEntry("_Long.ToBytes");
+        addEntry("UInt.GetByte");
         addEntry("Long.ToFloat");
         addEntry("Long.ToInt");
         addEntry("Long.ToUInt");
-        addEntry("_Long.New");
+        addEntry("UInt.FromBytes");
         addEntry("_Long.NewFromConstant");
         addEntry("Long.Add");
         addEntry("Long.Sub");

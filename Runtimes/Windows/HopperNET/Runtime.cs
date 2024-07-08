@@ -290,11 +290,11 @@ namespace HopperNET
         UIntToLong = 0x36,
         UIntToInt = 0x37,
         LongToString = 0x38,
-        //LongToBytes = 0x39,
+        UIntGetByte = 0x39,
         LongToFloat = 0x3A,
         LongToInt = 0x3B,
         LongToUInt = 0x3C,
-        //LongNew2 = 0x3D,
+        UIntFromBytes = 0x3D,
         //LongNewFromConstant2 = 0x3E,
         LongAdd = 0x3F,
         LongSub = 0x40,
@@ -6762,6 +6762,20 @@ namespace HopperNET
                         hasResult = true;
                     }
                     break;
+                case SysCall.UIntGetByte:
+                    {
+                        uint index = Pop();
+                        Int16 top = PopInt();
+                        byte[] bytes = BitConverter.GetBytes(top);
+                        if (index >= bytes.Length)
+                        {
+                            Diagnostics.Die(0x02, this); // array index out of range
+                            break;
+                        }
+                        Push(bytes[index], HopperType.tByte);
+                        hasResult = true;
+                    }
+                    break;
 
                 case SysCall.IntFromBytes:
                     {
@@ -6771,6 +6785,17 @@ namespace HopperNET
 
                         Int16 i = BitConverter.ToInt16(bytes, 0);
                         PushInt(i);
+                        hasResult = true;
+                        break;
+                    }
+                case SysCall.UIntFromBytes:
+                    {
+                        byte[] bytes = new byte[2];
+                        bytes[1] = (byte)Pop();
+                        bytes[0] = (byte)Pop();
+
+                        UInt16 i = BitConverter.ToUInt16(bytes, 0);
+                        Push(i, HopperType.tUInt);
                         hasResult = true;
                         break;
                     }

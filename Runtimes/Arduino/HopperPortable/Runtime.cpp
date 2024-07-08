@@ -6,7 +6,6 @@
 
 
 
-
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -48,6 +47,7 @@ Bool HopperVM_inDebugger = false;
 OpCode HopperVM_opCode = (OpCode)0;
 UInt HopperVM_jumpTable = 0;
 UInt HopperVM_pcStore = 0;
+UInt UInt_gRnd = 0;
 Bool IO_echoToLCD = false;
 UInt IO_keyboardBufferBase = 0;
 UInt IO_keyboardInPointer = 0;
@@ -6197,7 +6197,6 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     case SysCalls::eIntGetByte:
     {
         UInt index = HopperVM_Pop();
-        Type htype = (Type)0;
         UInt i = HopperVM_Pop();
         Byte b = HRInt_GetByte(i, index);
         HopperVM_Push(b, Type::eByte);
@@ -6209,6 +6208,40 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
         Byte b0 = Byte(HopperVM_Pop());
         UInt i = HRInt_FromBytes(b0, b1);
         HopperVM_Push(i, Type::eInt);
+        break;
+    }
+    case SysCalls::eUIntGetByte:
+    {
+        UInt index = HopperVM_Pop();
+        UInt i = HopperVM_Pop();
+        Byte b = 0;
+        switch (index)
+        {
+        case 0x00:
+        {
+            b = Byte(i & 0xFF);
+            break;
+        }
+        case 0x01:
+        {
+            b = Byte(i >> 0x08);
+            break;
+        }
+        default:
+        {
+            Runtime_ErrorDump(0x65);
+            Minimal_Error_Set(0x02);
+            break;
+        }
+        } // switch
+        HopperVM_Push(b, Type::eByte);
+        break;
+    }
+    case SysCalls::eUIntFromBytes:
+    {
+        Byte b1 = Byte(HopperVM_Pop());
+        Byte b0 = Byte(HopperVM_Pop());
+        HopperVM_Push(b0 + (b1 << 0x08), Type::eUInt);
         break;
     }
     case SysCalls::eFloatToString:
