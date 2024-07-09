@@ -91,8 +91,8 @@ unit SysCall
       //LongGE                = 0x48,
         LongNegate            = 0x49,
         
-      //LongAddB              = 0xEE,
-      //LongSubB              = 0xEF,
+        LongAddB              = 0xEE,
+        LongSubB              = 0xEF,
         
         // ....
         
@@ -403,6 +403,22 @@ unit SysCall
                 missing();
 #endif                
             }
+            case SysCalls.LongAddB:
+            {
+#if defined(LONGS)
+                Long.AddB();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.LongSubB:
+            {
+#if defined(LONGS)
+                Long.SubB();
+#else
+                missing();
+#endif                
+            }
             case SysCalls.LongDiv:
             {
 #if defined(LONGS)
@@ -446,7 +462,7 @@ unit SysCall
             case SysCalls.UIntToLong:
             {
 #if defined(LONGS)
-                IntToLong();
+                UIntToLong();
 #else
                 missing();
 #endif                

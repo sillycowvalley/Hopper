@@ -213,17 +213,17 @@ unit Long
     {
         SEC
         LDA # 0
-        SBC LTOP1
-        STA LTOP1
+        SBC LTOP0
+        STA LTOP0
         LDA # 0
         SBC LTOP1
         STA LTOP1
         LDA # 0
-        SBC LTOP1
-        STA LTOP1
+        SBC LTOP2
+        STA LTOP2
         LDA # 0
-        SBC LTOP1
-        STA LTOP1
+        SBC LTOP3
+        STA LTOP3
     }
     negateLongNEXT()
     {
@@ -247,14 +247,14 @@ unit Long
         PHX
         
         LDX #0
-        LDA LNEXT3
+        LDA ZP.LNEXT3
         ASL // sign bit into carry
         if (C)
         {
             INX // count the -ve
             negateLongNEXT(); // NEXT = -NEXT
         }
-        LDA LTOP3
+        LDA ZP.LTOP3
         ASL // sign bit into carry
         if (C)
         {
@@ -362,6 +362,32 @@ unit Long
         LDA # Types.Long
         pushNewFromL(); 
     }
+    AddB()
+    {  
+        Stacks.PopTop();
+        Stacks.PopIDX();
+        CLC
+        LDY # siData
+        LDA [IDX], Y
+        ADC ZP.TOPL
+        STA LNEXT0
+        INY
+        LDA [IDX], Y
+        ADC # 0
+        STA LNEXT1
+        INY
+        LDA [IDX], Y
+        ADC # 0
+        STA LNEXT2
+        INY
+        LDA [IDX], Y
+        ADC # 0
+        STA LNEXT3
+        GC.Release();
+        
+        LDA # Types.Long
+        pushNewFromL(); 
+    }
     Sub()
     {  
         commonLongTOP();
@@ -382,6 +408,32 @@ unit Long
         INY
         LDA [IDX], Y
         SBC LTOP3
+        STA LNEXT3
+        GC.Release();
+        
+        LDA # Types.Long
+        pushNewFromL(); 
+    }
+    SubB()
+    {  
+        Stacks.PopTop();
+        Stacks.PopIDX();
+        SEC
+        LDY # siData
+        LDA [IDX], Y
+        SBC ZP.TOPL
+        STA LNEXT0
+        INY
+        LDA [IDX], Y
+        SBC # 0
+        STA LNEXT1
+        INY
+        LDA [IDX], Y
+        SBC # 0
+        STA LNEXT2
+        INY
+        LDA [IDX], Y
+        SBC # 0
         STA LNEXT3
         GC.Release();
         
@@ -493,6 +545,7 @@ unit Long
         {
             negateLongNEXT(); // NEXT  = -NEXT 
         }
+        
         LDA # Types.Long
         pushNewFromL(); 
     }
@@ -577,9 +630,9 @@ unit Long
                 CMP LTOP2
                 if (Z)
                 {
+                    INY
                     LDA [IDX], Y
-                    SBC LTOP3
-                    STA LNEXT3
+                    CMP LTOP3
                     if (Z)
                     {
                         INX
