@@ -18,7 +18,7 @@
     , "LISTS": "true"                // costs about 2458 bytes (requires Variant)
     , "FASTINTS": "true"             // speed vs size
     , "INLINE_EXPANSIONS": "true"    // speed vs size
-    //, "FAST_6502_RUNTIME": "true"    // speed vs size (> 16K R6502)
+    , "FAST_6502_RUNTIME": "true"    // speed vs size (> 16K R6502)
     // , "EXPORT_BIN": "true"        // export as .bin (in addition to .hex (Intel IHex) - 65dasm needs the .hex)
     
   },

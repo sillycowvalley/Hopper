@@ -576,29 +576,48 @@ unit Long
         LDA # Types.Long
         pushNewFromL(); 
     }
-    LT()
+    commonEQ()
+    {
+        // NEXT == TOP
+        LDX # 0
+        LDA LNEXT0
+        CMP LTOP0
+        if (Z)
+        {
+            LDA LNEXT1
+            CMP LTOP1
+            if (Z)
+            {
+                LDA LNEXT2
+                CMP LTOP2
+                if (Z)
+                {
+                    LDA LNEXT3
+                    CMP LTOP3
+                    if (Z)
+                    {
+                        INX
+                    }
+                }
+            }
+        }
+    }
+    commonLT()
     {
         // NEXT = NEXT - TOP
-        commonLongTOP();
-        Stacks.PopIDX();
         SEC
-        LDY # siData
-        LDA [IDX], Y
+        LDA LNEXT0
         SBC LTOP0
         STA LNEXT0
-        INY
-        LDA [IDX], Y
+        LDA LNEXT1
         SBC LTOP1
         STA LNEXT1
-        INY
-        LDA [IDX], Y
+        LDA LNEXT2
         SBC LTOP2
         STA LNEXT2
-        INY
-        LDA [IDX], Y
+        LDA LNEXT3
         SBC LTOP3
         STA LNEXT3
-        GC.Release();
         
         LDX # 0
         LDA LNEXT3
@@ -608,39 +627,70 @@ unit Long
             // NEXT >= TOP? -> +ve or zero (sign not set)
             INX
         }
+    }
+    commonSwapNEXTTOP()
+    {
+        LDA ZP.LTOP0
+        TAY
+        LDA ZP.LNEXT0
+        STA ZP.LTOP0
+        STY ZP.LNEXT0
+        LDA ZP.LTOP1
+        TAY
+        LDA ZP.LNEXT1
+        STA ZP.LTOP1
+        STY ZP.LNEXT1
+        LDA ZP.LTOP2
+        TAY
+        LDA ZP.LNEXT2
+        STA ZP.LTOP2
+        STY ZP.LNEXT2
+        LDA ZP.LTOP3
+        TAY
+        LDA ZP.LNEXT3
+        STA ZP.LTOP3
+        STY ZP.LNEXT3
+    }
+    LT()
+    {
+        commonLongNEXTTOP();
+        commonLT();
+        Stacks.PushX(); // as Type.Bool
+    }
+    GT()
+    {
+        commonLongNEXTTOP();
+        commonSwapNEXTTOP();
+        commonLT();
         Stacks.PushX(); // as Type.Bool
     }
     EQ()
     {  
-        commonLongTOP();
-        Stacks.PopIDX();
-        LDX # 0
-        LDY # siData
-        LDA [IDX], Y
-        CMP LTOP0
+        commonLongNEXTTOP();
+        commonEQ();
+        Stacks.PushX(); // as Type.Bool
+    }
+    LE()
+    {
+        commonLongNEXTTOP();
+        commonEQ();
+        CPX # 0
         if (Z)
         {
-            INY
-            LDA [IDX], Y
-            CMP LTOP1
-            if (Z)
-            {
-                INY
-                LDA [IDX], Y
-                CMP LTOP2
-                if (Z)
-                {
-                    INY
-                    LDA [IDX], Y
-                    CMP LTOP3
-                    if (Z)
-                    {
-                        INX
-                    }
-                }
-            }
+            commonLT();           
         }
-        GC.Release();
+        Stacks.PushX(); // as Type.Bool
+    }
+    GE()
+    {
+        commonLongNEXTTOP();
+        commonEQ();
+        CPX # 0
+        if (Z)
+        {
+            commonSwapNEXTTOP();
+            commonLT();           
+        }
         Stacks.PushX(); // as Type.Bool
     }
 

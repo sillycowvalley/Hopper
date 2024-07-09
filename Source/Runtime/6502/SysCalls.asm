@@ -86,10 +86,14 @@ unit SysCall
         
         LongEQ                = 0x44,
         LongLT                = 0x45,
-      //LongLE                = 0x46,
-      //LongGT                = 0x47,
-      //LongGE                = 0x48,
+        LongLE                = 0x46,
+        LongGT                = 0x47,
+        LongGE                = 0x48,
         LongNegate            = 0x49,
+        
+        FloatAdd              = 0x4E,
+        
+        FloatEQ               = 0x52,
         
         LongAddB              = 0xEE,
         LongSubB              = 0xEF,
@@ -483,6 +487,30 @@ unit SysCall
                 missing();
 #endif                
             }
+            case SysCalls.LongGT:
+            {
+#if defined(LONGS)
+                Long.GT();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.LongLE:
+            {
+#if defined(LONGS)
+                Long.LE();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.LongGE:
+            {
+#if defined(LONGS)
+                Long.GE();
+#else
+                missing();
+#endif                
+            }
             
             case SysCalls.FloatNew:
             {
@@ -516,6 +544,25 @@ unit SysCall
                 missing();
 #endif                
             }
+            
+            case SysCalls.FloatAdd:
+            {
+#if defined(FLOATS) && defined(FAST_6502_RUNTIME)
+                Float.Add();
+#else
+                missing();
+#endif                
+            }
+            
+            case SysCalls.FloatEQ:
+            {
+#if defined(FLOATS)
+                Float.EQ();
+#else
+                missing();
+#endif                
+            }
+            
             case SysCalls.VariantBox:
             {
 #ifdef LISTS                

@@ -128,7 +128,7 @@ unit Int
     int Max(int a, int b) { return (a > b) ? a : b; }
     Swap(ref int a, ref int b) { int t = a; a = b; b = t; }
     
-#ifdef UNUSED
+    /*
     long ToLong(int value)
     {
         // Extract bytes from the int
@@ -141,7 +141,7 @@ unit Int
         // Create new long from int bytes
         return Long.FromBytes(lowByte, highByte, highHighByte, highHighByte);
     }
-#endif
+    */
     
     float ToFloat(int i)
     {

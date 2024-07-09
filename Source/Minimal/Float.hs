@@ -117,19 +117,13 @@ unit Float
         return result;
     }
     
-
-
-            
+#ifdef FAST_6502_RUNTIME
+    float Add(float a, float b) system;
+#else            
     float Add(float a, float b)
     {
-        if (isZero(a))
-        {
-            return b;
-        }
-        if (isZero(b))
-        {
-            return a;
-        }
+        if (a == 0) { return b; }
+        if (a == 0) { return a; }
         
         byte signA     = getSign(a);
         int exponentA  = getExponent(a);  // Change to int for processing
@@ -144,65 +138,54 @@ unit Float
         mantissaB = Long.or(mantissaB, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
     
         // Align exponents
-        if (exponentA > exponentB)
-        {
+        if (exponentA > exponentB) {
             int shift = exponentA - exponentB;
             mantissaB = Long.shiftRight(mantissaB, shift);
             exponentB = exponentA;
         }
-        else if (exponentA < exponentB)
-        {
+        else if (exponentA < exponentB) {
             int shift = exponentB - exponentA;
             mantissaA = Long.shiftRight(mantissaA, shift);
             exponentA = exponentB;
         }
     
         long resultMantissa;
-        if (signA == signB)
-        {
-            resultMantissa = Long.Add(mantissaA, mantissaB); // Same sign: addition
+        if (signA == signB) {
+            resultMantissa = mantissaA + mantissaB; // Same sign: addition
         }
-        else
-        {
-            if (Long.GE(mantissaA, mantissaB))
-            {
-                resultMantissa = Long.Sub(mantissaA, mantissaB); // Different signs: subtraction
+        else {
+            if (mantissaA >= mantissaB) {
+                resultMantissa = mantissaA - mantissaB; // Different signs: subtraction
             }
-            else
-            {
-                resultMantissa = Long.Sub(mantissaB, mantissaA);
+            else {
+                resultMantissa = mantissaB - mantissaA;
                 signA = signB;
             }
             
             // Check for zero mantissa (cancellation)
-            if (Long.EQ(resultMantissa, Long.FromBytes(0, 0, 0, 0)))
-            {
-                return FromBytes(0, 0, 0, 0); // Return +0.0
+            if (resultMantissa == 0) {
+                return 0; // Return +0.0
             }
         }
         
         // Normalize the result
         byte leadingZeros = countLeadingZeros(resultMantissa);
-        if (leadingZeros < 8)
-        {
+        if (leadingZeros < 8) {
             resultMantissa = Long.shiftRight(resultMantissa, 8 - leadingZeros);
             exponentA += (8 - leadingZeros);
         }
-        else
-        {
+        else {
             resultMantissa = Long.shiftLeft(resultMantissa, leadingZeros - 8);
             exponentA -= (leadingZeros - 8);
         }
         
         // Handle exponent overflow/underflow
-        if (exponentA <= 0) 
-        {
+        if (exponentA <= 0) {
             // Underflow: result is too small to be represented
             exponentA = 0;
             resultMantissa  = 0;
         }
-        else if (exponentA >= 255) 
-        {
+        else if (exponentA >= 255) {
             // Overflow: result is too large to be represented
             exponentA = 255;
             resultMantissa  = 0;
@@ -211,10 +194,11 @@ unit Float
         // Remove the implicit leading bit
         resultMantissa = Long.and(resultMantissa, Long.FromBytes(0xFF, 0xFF, 0x7F, 0));
     
-        float result = combineComponents(signA, byte(exponentA), resultMantissa); // Convert exponent back to byte for combining
+        // Convert exponent back to byte for combining
+        float result = combineComponents(signA, byte(exponentA), resultMantissa); 
         return result;
     }
-        
+#endif
     
     float Sub(float a, float b)
     {
@@ -396,8 +380,9 @@ unit Float
         return result;
     }
 
-
+    bool EQ(float a, float b) system;
        
+    /*
     bool EQ(float a, float b)
     {
         if (isZero(a) && isZero(b))
@@ -409,6 +394,7 @@ unit Float
                (GetByte(a, 2) == GetByte(b, 2)) &&
                (GetByte(a, 3) == GetByte(b, 3));
     }
+    */
     
     bool LT(float a, float b)
     {

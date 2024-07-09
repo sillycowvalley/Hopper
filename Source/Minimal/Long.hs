@@ -15,7 +15,7 @@ unit Long
     long Mod(long dividend, long divisor) system;
     long Negate(long value) system;
     
-#ifdef UNUSED
+    /*
     long Add(long a, long b)
     {
         byte result0;
@@ -255,13 +255,16 @@ unit Long
         }
         return quotient;
     }
-#endif
+    */
 
     
 
     bool EQ(long left, long right) system;
     bool LT(long left, long right) system;
-#ifdef UNUSED
+    bool GT(long left, long right) system;
+    bool GE(long left, long right) system;
+    bool LE(long left, long right) system;
+    /*
     bool EQ(long left, long right)
     {
         for (byte i = 0; i < 4; i++)
@@ -277,8 +280,6 @@ unit Long
     {
         return !GE(left, right);
     }
-#endif
-
     bool GT(long left, long right)
     {
         byte leftSignByte = GetByte(left, 3);
@@ -328,50 +329,49 @@ unit Long
     {
         return LT(left, right) || EQ(left, right);
     }
-
+    */
     long Abs(long value)
     {
-        return GE(value, long(0)) ? value : Negate(value);
+        return (value >= 0) ? value : -value;
     }
 
     long Max(long a, long b)
     {
-        return GT(a, b) ? a : b;
+        return (a > b) ? a : b;
     }
 
     long Min(long a, long b)
     {
-        return LT(a, b) ? a : b;
+        return (a < b) ? a : b;
     }
     
     string ToString(long this)
     {
-        long zero;
         long ten = 10;
         long value = this;
         string result;
 
-        if (EQ(value, zero))
+        if (value == 0)
         {
             String.BuildFront(ref result, '0');
             return result;
         }
 
         bool isNegative = false;
-        if (LT(value, zero))
+        if (value < 0)
         {
             isNegative = true;
             value = Negate(value);
         }
 
-        while (!EQ(value, zero))
+        while (value != 0)
         {
             long remainder = value % ten;
             value = value / ten;
-#ifdef UNUSED
+            /*
             long remainder;
             value = divMod(value, ten, ref remainder);
-#endif
+            */
             char c = char(GetByte(remainder, 0) + '0');
             String.BuildFront(ref result, c);
         }
@@ -418,19 +418,16 @@ unit Long
     int ToInt(long this)
     {
         long l = this;
-        long intMax =  32767; // Max value for int (32767)
-        long intMin = -32768; // Min value for int (-32768)
-        long zero;
         
-        if (Long.GT(l, intMax) || Long.LT(l, intMin))
+        if ((l > 32767) || (l < -32768))
         {
             Die(0x0D); // numeric type out of range / overflow
         }
     
         int result;
-        if (Long.LT(l, zero)) // Check if the value is negative
+        if (l < 0) // Check if the value is negative
         {
-            l = Long.Sub(zero, l); // Get the positive equivalent
+            l = -l; // Get the positive equivalent
             byte lowByte  = Long.GetByte(l, 0);
             byte highByte = Long.GetByte(l, 1);
             result = -Int.FromBytes(lowByte, highByte); // Negate the result
@@ -449,14 +446,10 @@ unit Long
 
     uint ToUInt(long l)
     {
-        long uintMax = 65535; // Max value for uint (65535)
-        long uintMin;         // Min value for uint (0)
-
-        if (Long.GT(l, uintMax) || Long.LT(l, uintMin))
+        if ((l > 65535) || (l < 0))
         {
             Die(0x0D); // numeric type out of range / overflow
         }
-
         return UInt.FromBytes(GetByte(l, 0), GetByte(l, 1));
     }
     

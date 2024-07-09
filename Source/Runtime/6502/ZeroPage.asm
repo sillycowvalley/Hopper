@@ -325,7 +325,10 @@ unit ZP
     const byte FVALUEL = F10;
     const byte FVALUEH = F11;
     
-    // used by long:
+    // used by long and float:
+    const byte LSIGNNEXT = F0;
+    const byte LSIGNTOP  = F1;
+    
     const byte LTOP0 = F5;
     const byte LTOP1 = F6;
     const byte LTOP2 = F7;

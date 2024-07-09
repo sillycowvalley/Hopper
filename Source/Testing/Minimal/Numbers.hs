@@ -1,8 +1,7 @@
 program Numbers
 {
     
-    //#define TESTFLOATS
-    
+    #define TESTFLOATS
     
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/IO"
