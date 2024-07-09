@@ -224,6 +224,59 @@ countEntry:
         }
         commonAdd();
     }
+    
+    handleExponentOverflow()
+    {
+        // Handle exponent overflow/underflow
+        LDA NEXTH
+        if (MI) 
+        {
+            // exponentA < 0
+            STZ NEXTH
+            STZ NEXTL
+            STZ LRESULT0
+            STZ LRESULT1
+            STZ LRESULT2
+            STZ LRESULT3
+            return;
+        }
+        if (Z)
+        {
+            LDA NEXTL
+            if (Z)
+            {
+                // exponentA == 0
+                STZ NEXTH
+                STZ NEXTL
+                STZ LRESULT0
+                STZ LRESULT1
+                STZ LRESULT2
+                STZ LRESULT3
+                return;
+            }
+            CMP # 0xFF
+            if (Z)
+            {
+                // exponentA == 255
+                STZ LRESULT0
+                STZ LRESULT1
+                STZ LRESULT2
+                STZ LRESULT3
+                return;
+            }
+        }
+        else
+        {
+            // exponentA > 255
+            LDA # 0xFF
+            STA NEXTL
+            STZ NEXTH
+            STZ LRESULT0
+            STZ LRESULT1
+            STZ LRESULT2
+            STZ LRESULT3
+        }
+    }
     commonAdd()
     {
         loop
@@ -445,64 +498,11 @@ countEntry:
             LDA NEXTL
             SBC ZP.ACCH
             STA NEXTL
-            LDA NEXTT
+            LDA NEXTH
             SBC # 0
-            STA NEXTT
-            loop
-            {
-                // Handle exponent overflow/underflow
-                LDA NEXTH
-                if (MI) 
-                {
-                    // exponentA < 0
-                    STZ NEXTH
-                    STZ NEXTL
-                    STZ LRESULT0
-                    STZ LRESULT1
-                    STZ LRESULT2
-                    STZ LRESULT3
-                    break;
-                }
-                if (Z)
-                {
-                    LDA NEXTL
-                    if (Z)
-                    {
-                        // exponentA == 0
-                        STZ NEXTH
-                        STZ NEXTL
-                        STZ LRESULT0
-                        STZ LRESULT1
-                        STZ LRESULT2
-                        STZ LRESULT3
-                        break;
-                    }
-                    CMP # 0xFF
-                    if (Z)
-                    {
-                        // exponentA == 255
-                        STZ LRESULT0
-                        STZ LRESULT1
-                        STZ LRESULT2
-                        STZ LRESULT3
-                        break;
-                    }
-                }
-                else
-                {
-                    // exponentA > 255
-                    LDA # 0xFF
-                    STA NEXTL
-                    STZ NEXTH
-                    STZ LRESULT0
-                    STZ LRESULT1
-                    STZ LRESULT2
-                    STZ LRESULT3
-                    break;
-                }
-                break;
-            }
-            
+            STA NEXTH
+            handleExponentOverflow();
+                       
             // Remove the implicit leading bit
             LDA LRESULT2
             AND # 0x7F
@@ -547,4 +547,202 @@ countEntry:
         LDA # Types.Long
         Long.pushNewFromL(); 
     }
+    countLeadingZeros48()
+    {
+        LDX #0
+        LDA ZP.LRESULT5
+        if (Z)
+        {
+            LDX # 8
+            
+            LDA ZP.LRESULT4
+            if (Z)
+            {
+                LDX # 16
+                
+                LDA ZP.LRESULT3
+                if (Z)
+                {
+                    LDX # 24
+                    
+                    LDA ZP.LRESULT2
+                    if (Z)
+                    {
+                        LDX # 32
+                        LDA ZP.LRESULT1
+                        if (Z)
+                        {
+                            LDX # 40
+                            LDA ZP.LRESULT0
+                            if (Z)
+                            {
+                                LDX # 48
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // this loop exits because A != 0
+        BRA countEntry
+        loop
+        {        
+            INX
+countEntry:        
+            ASL
+            if (NC) { continue; }
+            break;
+        }
+    }
+    Mul()
+    {
+        Long.commonLongNEXTTOP();
+        loop
+        {
+            getSignNEXT();
+            getSignTOP();  
+            LDA LSIGNNEXT
+            EOR LSIGNTOP
+            STA LSIGNNEXT
+            
+            Float.isZeroNEXT();
+            CPX # 1
+            if (Z)
+            {
+                break;
+            }
+            Float.isZeroTOP();
+            CPX # 1
+            if (Z)
+            {
+                Long.commonSwapNEXTTOP();
+                break;
+            }
+            
+            getExponentNEXT();
+            getMantissaNEXT();
+            
+            getExponentTOP();
+            getMantissaTOP();
+            
+            // Add the implicit leading '1' bit
+            LDA LNEXT2
+            ORA # 0b10000000
+            STA LNEXT2
+            LDA LTOP2
+            ORA # 0b10000000
+            STA LTOP2
+            
+            Long.utilityLongMUL();
+                       
+            countLeadingZeros48();
+            STX ZP.ACCH
+            CPX # 24
+            if (NC)
+            {
+                // leadingZeros < 24
+                STX ZP.ACCL
+                SEC
+                LDA # 24
+                SBC ZP.ACCL
+                TAX
+                loop
+                {
+                    if (Z) { break; }
+                    LSR LRESULT5
+                    ROR LRESULT4
+                    ROR LRESULT3
+                    ROR LRESULT2
+                    ROR LRESULT1
+                    ROR LRESULT0
+                    DEX
+                }
+            }
+            else
+            {
+                // leadingZeros >= 24
+                TXA
+                SEC
+                SBC # 24
+                TAX
+                loop
+                {
+                    if (Z) { break; }
+                    ASL LRESULT0
+                    ROL LRESULT1
+                    ROL LRESULT2
+                    ROL LRESULT3
+                    DEX
+                }
+            }
+            
+            // exponent = exponentA + exponentB - 127
+            CLC
+            LDA NEXTL
+            ADC TOPL
+            STA NEXTL
+            LDA NEXTH
+            ADC TOPH
+            STA NEXTH
+            SEC
+            LDA NEXTL
+            SBC # 127
+            STA NEXTL
+            LDA NEXTH
+            SBC # 0
+            STA NEXTH
+            
+            // if leadingZeros == 0, exponent++
+            LDA ZP.ACCL
+            if (Z)
+            {
+                INC NEXTL
+                if (Z)
+                {
+                    INC NEXTH
+                }
+            }
+            
+            handleExponentOverflow();
+            
+            // Remove the implicit leading bit
+            LDA LRESULT2
+            AND # 0x7F
+            STA LNEXT2
+            
+            // Set the least significant bit of the exponent
+            LDA NEXTL
+            AND # 0b00000001
+            if (NZ)
+            {
+                LDA LNEXT2
+                ORA # 0b10000000
+                STA LNEXT2
+            }
+            
+            // Take the next 7 bits of the exponent
+            LDA NEXTL
+            LSR
+            STA LNEXT3
+            
+            LDA LRESULT0
+            STA LNEXT0
+            LDA LRESULT1
+            STA LNEXT1
+            break;
+        }
+        // apply the sign
+        LDA LSIGNNEXT
+        if (NZ)
+        {
+            LDA LNEXT3
+            ORA # 0b10000000
+            STA LNEXT3
+        }
+        
+        LDA # Types.Long
+        Long.pushNewFromL(); 
+    }
+    
 }

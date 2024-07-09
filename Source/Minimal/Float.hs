@@ -45,6 +45,22 @@ unit Float
             }
         }
     }
+    
+    byte countLeadingZeros(long result)
+    {
+        byte count;
+        long one = 1; // 0x00000001 as a long
+    
+        for (int i = 31; i >= 0; i--)
+        {
+            if (!Long.EQ(Long.and(result, Long.shiftLeft(one, i)), Long.FromBytes(0, 0, 0, 0)))
+            {
+                return count;
+            }
+            count++;
+        }
+        return count; // all zero, return 32
+    }
        
     float Div(float a, float b)
     {
@@ -120,6 +136,7 @@ unit Float
 
     float Add(float a, float b) system;
     float Sub(float a, float b) system;
+    float Mul(float a, float b) system;
     /*
     float Add(float a, float b)
     {
@@ -205,7 +222,6 @@ unit Float
         float negativeB = combineComponents(signB, getExponent(b), getMantissa(b));
         return a + negativeB;
     }
-    */
     
     mantissaMultiply(long mantissaA, long mantissaB, ref long resultHigh, ref long resultLow)
     {
@@ -239,7 +255,9 @@ unit Float
         lowerLong = Long.and(lowerLong, Long.FromBytes(0xFF, 0xFF, 0, 0));
     
         // Accumulate the 16..31 bits
-        middleLong = Long.Add(middleLong, Long.shiftRight(lowLow, 16)); // Add bits 16..31 of lowLow
+        
+        // Add bits 16..31 of lowLow
+        middleLong = Long.Add(middleLong, Long.shiftRight(lowLow, 16)); 
         
         // Add the overlapping bits from highLow and lowHigh
         
@@ -284,21 +302,6 @@ unit Float
         resultHigh = upperLong;
     }
     
-    byte countLeadingZeros(long result)
-    {
-        byte count;
-        long one = 1; // 0x00000001 as a long
-    
-        for (int i = 31; i >= 0; i--)
-        {
-            if (!Long.EQ(Long.and(result, Long.shiftLeft(one, i)), Long.FromBytes(0, 0, 0, 0)))
-            {
-                return count;
-            }
-            count++;
-        }
-        return count; // all zero, return 32
-    }
     byte countLeadingZeros(long resultHigh, long resultLow)
     {
         byte count = countLeadingZeros(resultHigh);
@@ -309,6 +312,7 @@ unit Float
         count += countLeadingZeros(resultLow);
         return count; // If both resultHigh and resultLow are zero, return 64
     }
+    
     shiftRight64Bit(ref long resultHigh, ref long resultLow, byte shift)
     {
         if (shift >= 32)
@@ -323,6 +327,8 @@ unit Float
             resultHigh = Long.shiftRight(resultHigh, shift);
         }
     }
+    
+    
     
     float Mul(float a, float b)
     {
@@ -347,13 +353,24 @@ unit Float
         mantissaA = Long.or(mantissaA, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
         mantissaB = Long.or(mantissaB, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
         
+        WriteLn();
+        IO.Write(mantissaA.ToHexString(8));
+        WriteLn();
+        IO.Write(mantissaB.ToHexString(8));
+        
         // Perform the multiplication
         long resultHigh;
         long resultLow;
         mantissaMultiply(mantissaA, mantissaB, ref resultHigh, ref resultLow);
         
+        WriteLn();
+        IO.Write(resultHigh.ToHexString(8));
+        IO.Write(resultLow.ToHexString(8));
+        
         // Normalize the result
         byte leadingZeros = countLeadingZeros(resultHigh, resultLow);
+        IO.WriteLn();
+        IO.Write("leadingZeros=" + leadingZeros.ToString());
         if (leadingZeros < 40)
         {
             shiftRight64Bit(ref resultHigh, ref resultLow, 40 - leadingZeros);
@@ -389,7 +406,8 @@ unit Float
         float result = combineComponents(resultSign, byte(resultExponent), resultMantissa);
         return result;
     }
-
+    */
+    
     bool EQ(float a, float b) system;
        
     /*

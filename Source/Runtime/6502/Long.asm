@@ -489,7 +489,7 @@ unit Long
         STA LRESULT5   // product
         STA LRESULT6
         STA LRESULT7
-        LDX # 0x20     // set binary count to 32
+        LDX # 32     // set binary count to 32
         loop
         {
             LSR LNEXT3   // shift multiplyer right
@@ -523,14 +523,6 @@ unit Long
             DEX                // decrement bit count and
             if (Z) { break; }  // exit loop when 32 bits are done
         }
-        LDA LRESULT0
-        STA LNEXT0
-        LDA LRESULT1
-        STA LNEXT1
-        LDA LRESULT2
-        STA LNEXT2
-        LDA LRESULT3
-        STA LNEXT3
     }
     
         
@@ -545,6 +537,14 @@ unit Long
         // http://www.6502.org/source/integers/32muldiv.htm
     
         utilityLongMUL();
+        LDA LRESULT0
+        STA LNEXT0
+        LDA LRESULT1
+        STA LNEXT1
+        LDA LRESULT2
+        STA LNEXT2
+        LDA LRESULT3
+        STA LNEXT3
     
         LDA ZP.FSIGN // load the sign count
         CMP # 1

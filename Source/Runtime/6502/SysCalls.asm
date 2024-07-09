@@ -94,6 +94,7 @@ unit SysCall
         FloatAdd              = 0x4E,
         FloatSub              = 0x4F,
         
+        FloatMul              = 0x51,
         FloatEQ               = 0x52,
         
         LongAddB              = 0xEE,
@@ -558,6 +559,14 @@ unit SysCall
             {
 #if defined(FLOATS)
                 Float.Sub();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.FloatMul:
+            {
+#if defined(FLOATS)
+                Float.Mul();
 #else
                 missing();
 #endif                
