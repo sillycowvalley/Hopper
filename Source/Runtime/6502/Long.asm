@@ -244,8 +244,11 @@ unit Long
     
     utilityDoLongSigns()
     {
+#ifdef CPU_65C02S
         PHX
-        
+#else
+        TXA PHA
+#endif
         LDX #0
         LDA ZP.LNEXT3
         ASL // sign bit into carry
@@ -263,7 +266,11 @@ unit Long
         }
         STX ZP.FSIGN // store the sign count
         
+#ifdef CPU_65C02S
         PLX
+#else
+        PLA TAX
+#endif
     }
         
     DivMod()
@@ -604,25 +611,19 @@ unit Long
     }
     commonLT()
     {
+        LDX # 0
+        
         // NEXT = NEXT - TOP
         SEC
         LDA LNEXT0
         SBC LTOP0
-        STA LNEXT0
         LDA LNEXT1
         SBC LTOP1
-        STA LNEXT1
         LDA LNEXT2
         SBC LTOP2
-        STA LNEXT2
         LDA LNEXT3
         SBC LTOP3
-        STA LNEXT3
-        
-        LDX # 0
-        LDA LNEXT3
-        AND # 0b10000000
-        if (NZ)
+        if (MI)
         {
             // NEXT >= TOP? -> +ve or zero (sign not set)
             INX

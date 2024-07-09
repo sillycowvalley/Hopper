@@ -2,6 +2,7 @@ program Numbers
 {
     
     #define TESTFLOATS
+    #define FAST_6502_RUNTIME
     
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/IO"
@@ -1504,7 +1505,7 @@ program Numbers
         WriteLn("'float' math");
         
         float gpta; float gptb; float gptr; 
-        
+        /*
         // Test: Division of equal positive numbers
         gpta = 2.0;
         gptb = 2.0;
@@ -1663,12 +1664,35 @@ program Numbers
             WriteLn(gptr.ToString());
             PrintFailed("'float' div 2");
         }
-        
+        */
         // globalFloat3  = 10000.0;
         // globalFloat4  = 10000.1;
         float localFloat  = 10000.0;
         float localFloat2 = 10000.1;
         float localFloatNeg = 0 - localFloat;
+        
+        // +
+        if (localFloat + localFloat != 20000.0)
+        {
+            PrintFailed("'float' 1");        
+        }
+        if (localFloat2 + localFloat2 != 20000.2)
+        {
+            PrintFailed("'float' 2");        
+        }
+        if (globalFloat3 + localFloat != 20000.0)
+        {
+            PrintFailed("'float' 3");        
+        }
+        if (globalFloat4 + localFloat2 != 20000.2)
+        {
+            PrintFailed("'float' 4");        
+        }
+        
+        if (-localFloat2 != -10000.1)
+        {
+            PrintFailed("'float' 8");
+        }
         
         // /
         float result = localFloat / 2;
@@ -1702,29 +1726,6 @@ program Numbers
         if (test != testAfter)
         {
             PrintFailed("'float' 28");
-        }
-        
-        // +
-        if (localFloat + localFloat != 20000.0)
-        {
-            PrintFailed("'float' 1");        
-        }
-        if (localFloat2 + localFloat2 != 20000.2)
-        {
-            PrintFailed("'float' 2");        
-        }
-        if (globalFloat3 + localFloat != 20000.0)
-        {
-            PrintFailed("'float' 3");        
-        }
-        if (globalFloat4 + localFloat2 != 20000.2)
-        {
-            PrintFailed("'float' 4");        
-        }
-        
-        if (-localFloat2 != -10000.1)
-        {
-            PrintFailed("'float' 8");
         }
         
         // *

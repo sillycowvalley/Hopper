@@ -92,6 +92,7 @@ unit SysCall
         LongNegate            = 0x49,
         
         FloatAdd              = 0x4E,
+        FloatSub              = 0x4F,
         
         FloatEQ               = 0x52,
         
@@ -547,8 +548,16 @@ unit SysCall
             
             case SysCalls.FloatAdd:
             {
-#if defined(FLOATS) && defined(FAST_6502_RUNTIME)
+#if defined(FLOATS)
                 Float.Add();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.FloatSub:
+            {
+#if defined(FLOATS)
+                Float.Sub();
 #else
                 missing();
 #endif                

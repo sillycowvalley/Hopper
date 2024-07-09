@@ -491,8 +491,14 @@ unit IntMath
         STA ZP.LNEXT0
         LDA ZP.TOPH
         STA ZP.LNEXT1
+#ifdef CPU_65C02S
         STZ ZP.LNEXT2
         STZ ZP.LNEXT3
+#else
+        LDA #0
+        STA ZP.LNEXT2
+        STA ZP.LNEXT3
+#endif
         LDA # Types.Long
         Long.pushNewFromL();
     }

@@ -421,6 +421,7 @@ unit Long
         
         if ((l > 32767) || (l < -32768))
         {
+            WriteLn(l.ToString() + " ");
             Die(0x0D); // numeric type out of range / overflow
         }
     

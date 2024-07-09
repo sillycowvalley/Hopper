@@ -834,10 +834,13 @@ program Assemble
                         case "BPL": { instructionName = "BMI"; }
                         case "BVC": { instructionName = "BVS"; }
                         case "BVS": { instructionName = "BVC"; }
-                        default:    { NI();                    }
-                        
+                        case "BRA": { instructionName = "BRA"; }
+                        default:    { Print(instructionName + ":"); NI(); }
                     }
-                    Asm6502.EmitInstruction(instructionName, int(3));
+                    if (instructionName != "BRA")
+                    {
+                        Asm6502.EmitInstruction(instructionName, int(3));
+                    }
                     string label = (currentToken["lexeme"]).Replace(":", "");
                     labelBranches[Asm6502.NextAddress] = label;
                     Asm6502.EmitInstructionAbsolute("JMP", uint(0), AddressingModes.Absolute);

@@ -117,9 +117,10 @@ unit Float
         return result;
     }
     
-#ifdef FAST_6502_RUNTIME
+
     float Add(float a, float b) system;
-#else            
+    float Sub(float a, float b) system;
+    /*
     float Add(float a, float b)
     {
         if (a == 0) { return b; }
@@ -172,12 +173,11 @@ unit Float
         byte leadingZeros = countLeadingZeros(resultMantissa);
         if (leadingZeros < 8) {
             resultMantissa = Long.shiftRight(resultMantissa, 8 - leadingZeros);
-            exponentA += (8 - leadingZeros);
         }
         else {
             resultMantissa = Long.shiftLeft(resultMantissa, leadingZeros - 8);
-            exponentA -= (leadingZeros - 8);
         }
+        exponentA = exponentA + 8 - leadingZeros;
         
         // Handle exponent overflow/underflow
         if (exponentA <= 0) {
@@ -198,15 +198,14 @@ unit Float
         float result = combineComponents(signA, byte(exponentA), resultMantissa); 
         return result;
     }
-#endif
-    
     float Sub(float a, float b)
     {
         byte signB = getSign(b);
         signB = signB ^ 1; // Flip the sign of b
         float negativeB = combineComponents(signB, getExponent(b), getMantissa(b));
-        return Add(a, negativeB);
+        return a + negativeB;
     }
+    */
     
     mantissaMultiply(long mantissaA, long mantissaB, ref long resultHigh, ref long resultLow)
     {
@@ -243,13 +242,20 @@ unit Float
         middleLong = Long.Add(middleLong, Long.shiftRight(lowLow, 16)); // Add bits 16..31 of lowLow
         
         // Add the overlapping bits from highLow and lowHigh
-        highLowOverlap  = Long.and(highLow, Long.FromBytes(0xF0, 0xFF, 0x0F, 0)); // Extract bits 16..31 from 12..35 (0x000FFFF0)
-        lowHighOverlap  = Long.and(lowHigh, Long.FromBytes(0xF0, 0xFF, 0x0F, 0)); // Extract bits 16..31 from 12..35 (0x000FFFF0)
-        long highHighOverlap = Long.and(highHigh, Long.FromBytes(0xFF, 0, 0, 0)); // Extract bits 24..31 from 24..47 (0x000000FF)
+        
+        // Extract bits 16..31 from 12..35 (0x000FFFF0)
+        highLowOverlap  = Long.and(highLow, Long.FromBytes(0xF0, 0xFF, 0x0F, 0)); 
+        // Extract bits 16..31 from 12..35 (0x000FFFF0)
+        lowHighOverlap  = Long.and(lowHigh, Long.FromBytes(0xF0, 0xFF, 0x0F, 0)); 
+        // Extract bits 24..31 from 24..47 (0x000000FF)
+        long highHighOverlap = Long.and(highHigh, Long.FromBytes(0xFF, 0, 0, 0)); 
     
-        middleLong = Long.Add(middleLong, Long.shiftRight(highLowOverlap, 4));  // Add bits 16..31 of highLow
-        middleLong = Long.Add(middleLong, Long.shiftRight(lowHighOverlap, 4));  // Add bits 16..31 of lowHigh
-        middleLong = Long.Add(middleLong, Long.shiftLeft (highHighOverlap, 8)); // Add bits 24..31 of highHigh
+        // Add bits 16..31 of highLow
+        middleLong = Long.Add(middleLong, Long.shiftRight(highLowOverlap, 4));  
+        // Add bits 16..31 of lowHigh
+        middleLong = Long.Add(middleLong, Long.shiftRight(lowHighOverlap, 4));  
+        // Add bits 24..31 of highHigh
+        middleLong = Long.Add(middleLong, Long.shiftLeft (highHighOverlap, 8)); 
     
         // Check for carry to upperLong
         long upperLong = Long.shiftRight(middleLong, 16);
@@ -258,9 +264,13 @@ unit Float
         middleLong = Long.and(middleLong, Long.FromBytes(0xFF, 0xFF, 0, 0));
     
         // Accumulate the 32..47 bits
-        highLowOverlap = Long.and(Long.shiftRight(highLow, 20), Long.FromBytes(0x0F, 0x00, 0, 0)); // Extract bits 32..35 (0x0000000F)
-        lowHighOverlap = Long.and(Long.shiftRight(lowHigh, 20), Long.FromBytes(0x0F, 0x00, 0, 0)); // Extract bits 32..35 (0x0000000F)
-        highHighOverlap = Long.shiftRight(highHigh, 8);                                            // Extract bits 32..47
+        
+        // Extract bits 32..35 (0x0000000F)
+        highLowOverlap = Long.and(Long.shiftRight(highLow, 20), Long.FromBytes(0x0F, 0x00, 0, 0));
+        // Extract bits 32..35 (0x0000000F)
+        lowHighOverlap = Long.and(Long.shiftRight(lowHigh, 20), Long.FromBytes(0x0F, 0x00, 0, 0)); 
+        // Extract bits 32..47
+        highHighOverlap = Long.shiftRight(highHigh, 8);                                            
         
         upperLong = Long.Add(upperLong, highLowOverlap);  // Add bits 32..47 of highLow
         upperLong = Long.Add(upperLong, lowHighOverlap);  // Add bits 32..47 of lowHigh

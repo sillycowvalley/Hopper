@@ -6,6 +6,8 @@ unit Instruction
     
     uses "6502/IntMath"
     
+    friend Float;
+    
     enum Instructions
     {
         NOP    = 0x00,
@@ -899,8 +901,6 @@ unit Instruction
     // http://6502.org/tutorials/compare_instructions.html
     ltShared()
     {
-        Stacks.PopNext();
-        
         LDX #1 // NEXT < TOP
         LDA ZP.NEXTH
         CMP ZP.TOPH
@@ -913,12 +913,14 @@ unit Instruction
         {
             LDX #0 // NEXT >= TOP
         }
-        Stacks.PushX(); // X
+        
     }
     lt()
     {
         Stacks.PopTop();
+        Stacks.PopNext();
         ltShared();
+        Stacks.PushX(); // X
     }
     pushILT()
     {
@@ -929,7 +931,9 @@ unit Instruction
         STA ZP.TOPH
         LDA #Types.UInt
         STA ZP.TOPT
+        Stacks.PopNext();
         ltShared();
+        Stacks.PushX(); // X
     }
     leShared()
     {
@@ -996,9 +1000,8 @@ unit Instruction
         }
         Stacks.PushX(); // as Type.Bool  
     }
-    gt()
+    gtShared()
     {
-        Stacks.PopTopNext();
         LDX #0 // NEXT <= TOP
         LDA ZP.NEXTH
         CMP ZP.TOPH
@@ -1014,6 +1017,11 @@ unit Instruction
                 LDX #1   // NEXT > TOP
             }
         }
+    }
+    gt()
+    {
+        Stacks.PopTopNext();
+        gtShared();
         Stacks.PushX(); // as Type.Bool  
     }
     lti()
@@ -1087,7 +1095,6 @@ unit Instruction
         STA ZP.TOPT
         leiShared();
     }
-    
     gti()
     {
         Stacks.PopTopNext();

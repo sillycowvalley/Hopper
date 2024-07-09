@@ -472,7 +472,7 @@ unit Output
         while (icsp < csp)
         {
             // nth frame up the stack would be would be icsp = csp - 2*n
-            if ((csp <= 7) || (icsp > csp - (2 * 4))) 
+            if ((csp <= 7) || (icsp > csp - (2 * 6))) 
             {
                 address = Pages.GetPageByte(0x0300+icsp)   + Pages.GetPageByte(0x0400+icsp) << 8;
                 bp      = Pages.GetPageByte(0x0300+icsp+1) + Pages.GetPageByte(0x0400+icsp+1) << 8;
