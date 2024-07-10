@@ -1,68 +1,62 @@
 program NRL
 {
 //#define CPU_Z80
-    /#define FAST_6502_RUNTIME
-
-    uses "/Source/Minimal/System"
-    uses "/Source/Minimal/IO"
+    
+    uses "/Source/Library/Boards/Hopper6502"
     
     NRL()
     {
         uint i;
         uint j;
-        uint s;
+        long s;
         
         IO.WriteLn("NRL:");
         
-        //uint start = Seconds;
         long start = Millis;
-        
         for (i=1; i <= 10; i++)
         {
+            LED = !LED;
             s = 0;
             for (j=1; j <= 1000; j++)
             {
                 s = s + j;
             }
-            IO.Write('.');
         }
+        float elapsed = (Millis - start) / 1000.0;
+        
+        LED = false;
         IO.WriteLn();
         IO.WriteLn(s.ToString());
-        
-        //uint elapsed = (Seconds - start); 
-        long elapsed = (Millis - start);
-        IO.WriteLn(elapsed.ToString() + " ms");
+        IO.WriteLn(elapsed.ToString() + " seconds");
     }
     NRL32()
     {
-        uint i;
-        uint j;
+        long i;
+        long j;
         long s;
         
         IO.WriteLn("NRL32:");
         
-        //uint start = Seconds;
         long start = Millis;
-        
         for (i=1; i <= 10; i++)
         {
+            LED = !LED;
             s = 0;
             for (j=1; j <= 1000; j++)
             {
                 s = s + j;
             }
-            IO.Write('.');
         }
+        float elapsed = (Millis - start) / 1000.0;
+        
+        LED = false;
         IO.WriteLn();
         IO.WriteLn(s.ToString());
-        
-        //uint elapsed = (Seconds - start); 
-        long elapsed = (Millis - start);
-        IO.WriteLn(elapsed.ToString() + " ms");
+        IO.WriteLn(elapsed.ToString() + " seconds");
     }
     Hopper()
     {
-        NRL();
         NRL32();
+        NRL();
     }
 }

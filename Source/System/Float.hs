@@ -23,7 +23,7 @@ unit Float
                 if (parts.Count == 2)
                 {
                     int exponent;
-                    if (Float.TryParse(parts[0], ref returnValue) && Int.TryParse(parts[1], ref exponent))
+                    if (Float.TryParse(parts[0], ref floatValue) && Int.TryParse(parts[1], ref exponent))
                     {
                         // 4E+07
                         if (exponent == 0)
@@ -35,7 +35,7 @@ unit Float
                             exponent = -exponent;
                             while (exponent != 0)
                             {
-                                returnValue = returnValue / 10;
+                                floatValue = floatValue / 10;
                                 exponent--;
                             }    
                         }
@@ -43,7 +43,7 @@ unit Float
                         {
                             while (exponent != 0)
                             {
-                                returnValue = returnValue * 10;
+                                floatValue = floatValue * 10;
                                 exponent--;
                             }    
                         }
@@ -69,12 +69,15 @@ unit Float
                     {
                         break;
                     }
+                    
                     float decimalValue = longValue.ToFloat();
+                    float divisor = 1.0;
                     while (length > 0)
                     {
-                        decimalValue = decimalValue / 10.0;
+                        divisor = divisor * 10;
                         length--;
                     }
+                    decimalValue = decimalValue / divisor;
                     if (negative)
                     {
                         floatValue = floatValue - decimalValue;
@@ -98,6 +101,17 @@ unit Float
         }
         if (success)
         {
+            /*
+            if (IsExperimental)
+            {
+                PrintLn();
+                PrintLn(content + " " + floatValue.ToString() + " " + floatValue.GetByte(3).ToHexString(2)
+                                                                    + floatValue.GetByte(2).ToHexString(2)
+                                                                    + floatValue.GetByte(1).ToHexString(2)
+                                                                    + floatValue.GetByte(0).ToHexString(2)
+                );
+            }
+            */
             returnValue = floatValue;
         }
         return success;

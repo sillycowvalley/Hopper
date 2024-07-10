@@ -908,14 +908,18 @@ unit Expression
                                 actualType = "long";
                             }            
                         }
-                        else if (Float.TryParse(value, ref f))
+                        else
                         {
-                            uint constantAddress = CodeStream.CreateFloatConstant(f);
-                            CodeStream.AddInstructionPUSHI(constantAddress);
-                            CodeStream.AddInstructionSysCall0("Float", "NewFromConstant");
-                            actualType = "float";
+                            if (Float.TryParse(value, ref f))
+                            {
+                                uint constantAddress = CodeStream.CreateFloatConstant(f);
+                                CodeStream.AddInstructionPUSHI(constantAddress);
+                                CodeStream.AddInstructionSysCall0("Float", "NewFromConstant");
+                                actualType = "float";
+                            }
                         }
                     } // default
+                    
                 }
             }
             else
@@ -972,17 +976,20 @@ unit Expression
                     CodeStream.AddInstructionPUSHI(0);
                     actualType = "bool";
                 }
-                else if (Float.TryParse(value, ref f))
+                else 
                 {
-                    uint constantAddress = CodeStream.CreateFloatConstant(f);
-                    CodeStream.AddInstructionPUSHI(constantAddress);
-                    CodeStream.AddInstructionSysCall0("Float", "NewFromConstant");
-                    actualType = "float";
-                }
-                else
-                {
-                    CodeStream.AddString("string", value);
-                    actualType = "string";
+                    if (Float.TryParse(value, ref f))
+                    {
+                        uint constantAddress = CodeStream.CreateFloatConstant(f);
+                        CodeStream.AddInstructionPUSHI(constantAddress);
+                        CodeStream.AddInstructionSysCall0("Float", "NewFromConstant");
+                        actualType = "float";
+                    }
+                    else
+                    {
+                        CodeStream.AddString("string", value);
+                        actualType = "string";
+                    }
                 }
             }
             break;
@@ -1966,7 +1973,7 @@ unit Expression
                 {
                     Parser.Advance();
                     float f;
-                    if (!Float.TryParse(currentToken["lexeme"], ref f))
+                    if (!Float.TryParse(currentToken["lexeme"], ref f)) // converting the constant lexeme back to a float
                     {
                         Parser.ErrorAtCurrent("invalid float token " + currentToken["type"]);
                     }

@@ -243,6 +243,22 @@ unit UInt
     }
     Swap(ref uint a, ref uint b) { uint t = a; a = b; b = t; }
     
+    uint Sqrt(uint number)
+    {
+        if (number == 0) { return 0; }
+        if (number == 1) { return 1; }
+
+        uint guess = number / 2 + 1; // Initial guess
+        uint result = (guess + number / guess) / 2;
+
+        while (result < guess)
+        {
+            guess = result;
+            result = (guess + number / guess) / 2;
+        }
+        return guess;
+    }
+    
     float ToFloat(uint i)
     {
         return Long.ToFloat(UInt.ToLong(i));
@@ -274,5 +290,10 @@ unit UInt
             seed = 1;
         }
         gRnd = seed;
+    }
+    Seed()
+    {
+        long seed = Millis;
+        Seed(UInt.FromBytes(seed.GetByte(0), seed.GetByte(1)));
     }
 }

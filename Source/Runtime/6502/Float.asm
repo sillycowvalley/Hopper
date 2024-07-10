@@ -728,15 +728,8 @@ countEntry:
         LSR A
         TAX   // byte index
         
-        // create bit mask
-        LDA # 1
-        loop
-        {
-            CPY # 0
-            if (Z) { break; }
-            ASL A
-            DEY
-        }
+        // load bit mask
+        LDA Array.bitMasks, Y
         AND LNEXT0, X
     }
     orQuotientBit()
@@ -752,15 +745,8 @@ countEntry:
         LSR A
         TAX   // byte index
         
-        // create bit mask
-        LDA # 1
-        loop
-        {
-            CPY # 0
-            if (Z) { break; }
-            ASL A
-            DEY
-        }
+        // load bit mask
+        LDA Array.bitMasks, Y
         ORA LRESULT0, X
         STA LRESULT0, X
     }

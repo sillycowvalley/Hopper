@@ -1,6 +1,6 @@
 unit Array
 {
-    friend GC, Diagnostics;
+    friend GC, Diagnostics, Float;
     
     uses "GC"
     

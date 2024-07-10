@@ -21,8 +21,8 @@ program R6502
     #define ROM_8K // 31 bytes remaining without JIX_INSTRUCTIONS or FASTINTS
 #endif
 
-#if defined(FAST_6502_RUNTIME)
-    #define ROM_32K
+#if defined(FAST_6502_RUNTIME) 
+    #define ROM_16K // ROM_32K
 #endif
 #if !defined(ROM_8K) && !defined(ROM_16K) && !defined(ROM_32K)
     #define ROM_16K

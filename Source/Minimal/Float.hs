@@ -643,7 +643,7 @@ unit Float
                 if (parts.Count == 2)
                 {
                     int exponent;
-                    if (Float.TryParse(parts[0], ref returnValue) && Int.TryParse(parts[1], ref exponent))
+                    if (Float.TryParse(parts[0], ref floatValue) && Int.TryParse(parts[1], ref exponent))
                     {
                         // 4E+07
                         if (exponent == 0)
@@ -655,7 +655,7 @@ unit Float
                             exponent = -exponent;
                             while (exponent != 0)
                             {
-                                returnValue = returnValue / 10;
+                                floatValue = floatValue / 10;
                                 exponent--;
                             }    
                         }
@@ -663,7 +663,7 @@ unit Float
                         {
                             while (exponent != 0)
                             {
-                                returnValue = returnValue * 10;
+                                floatValue = floatValue * 10;
                                 exponent--;
                             }    
                         }
@@ -722,6 +722,29 @@ unit Float
         }
         return success;
     }
+    
+    
+    // Function to calculate the square root using the Newton-Raphson method
+    float Sqrt(float number)
+    {
+        if (number == 0) { return 0; }
+        if (number == 1) { return 1; }
+        if (number < 0)
+        {
+            Die(0x0D); // numeric type out of range / overflow
+        }
+
+        float guess = number;
+        float epsilon = 0.000001; // Precision of the result
+        loop
+        {
+            float quotient = number / guess;
+            float average = (guess + quotient) / 2;
+            if (Float.Abs(guess - average) < epsilon) { break; }
+            guess = average;
+        }
+        return guess;
+    }
             
     float Radians(float angle) { return angle * Pi / 180.0; }
     float Degrees(float angle) { return angle * 180.0 / Pi; }
@@ -729,5 +752,12 @@ unit Float
     float Abs(float value) { return (value >= 0) ? value : -value; }
     float Min(float a, float b) { return (a < b) ? a : b; }
     float Max(float a, float b) { return (a > b) ? a : b; }
+    
+    
+    float Random()
+    {
+        uint ri = UInt.Random();
+        return ri / 65535.0;
+    }
 }
 

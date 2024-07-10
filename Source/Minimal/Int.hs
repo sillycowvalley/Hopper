@@ -127,6 +127,24 @@ unit Int
     int Max(int a, int b) { return (a > b) ? a : b; }
     Swap(ref int a, ref int b) { int t = a; a = b; b = t; }
     
+    int Sqrt(int number)
+    {
+        if (number == 0) { return 0; }
+        if (number == 1) { return 1; }
+        if (number < 0)
+        {
+            Die(0x0D); // numeric type out of range / overflow
+        }
+        int guess = number / 2 + 1; // Initial guess
+        int result = (guess + number / guess) / 2;
+        while (result < guess)
+        {
+            guess = result;
+            result = (guess + number / guess) / 2;
+        }
+        return guess;
+    }
+    
 #if defined(FAST_6502_RUNTIME)
     long ToLong(int value) system;
 #else

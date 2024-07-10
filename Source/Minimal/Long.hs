@@ -523,12 +523,13 @@ unit Long
 
         while (value != 0)
         {
+#ifdef FAST_6502_RUNTIME
             long remainder = value % ten;
             value = value / ten;
-            /*
+#else
             long remainder;
             value = divMod(value, ten, ref remainder);
-            */
+#endif
             char c = char(GetByte(remainder, 0) + '0');
             String.BuildFront(ref result, c);
         }
@@ -687,6 +688,23 @@ unit Long
             break;
         }
         return success;
+    }
+    long Sqrt(long number)
+    {
+        if (number == 0) { return 0; }
+        if (number == 1) { return 1; }
+        if (number < 0)
+        {
+            Die(0x0D); // numeric type out of range / overflow
+        }
+        long guess = number / 2 + 1; // Initial guess
+        long result = (guess + number / guess) / 2;
+        while (result < guess)
+        {
+            guess = result;
+            result = (guess + number / guess) / 2;
+        }
+        return guess;
     }
         
 }

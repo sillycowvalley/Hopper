@@ -476,12 +476,13 @@ unit Scanner
             else if (floatOk)
             {
                 float f;
-                if (!Float.TryParse(value, ref f))
+                if (!Float.TryParse(value, ref f)) // creating the constant lexeme
                 {
                     token = errorToken("invalid float literal");
                     break;       
                 }
-                value = f.ToString();
+                // keep the original string - less round trips
+                //value = f.ToString();
                 ttype = HopperToken.Float;
             }
             else // just Integer

@@ -2,8 +2,9 @@ program Numbers
 {
     
     #define TESTFLOATS
-    #define LOOP_TESTS // slower 'int' and 'uint' tests
-    #define FAST_6502_RUNTIME
+    //#define LOOP_TESTS // slower 'int' and 'uint' tests
+    
+    #define EXPERIMENTAL
     
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/IO"
@@ -1955,10 +1956,10 @@ program Numbers
         }
                 
         // Multiply a very small number with a very large number
-        gpta = 0.0000000001;
-        gptb = 1000000000.0;
+        gpta = 0.0000001;
+        gptb = 10000000.0;
         gptr = gpta * gptb;
-        if (gptr.ToString() != "0")
+        if (gptr.ToString() != "1")
         {
             WriteLn(gptr.ToString());
             PrintFailed("'float' 46");

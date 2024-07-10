@@ -6862,7 +6862,8 @@ namespace HopperNET
                     {
                         float top = PopFloat();
                         float next = PopFloat();
-                        PushFloat(next * top);
+                        float result = next * top;
+                        PushFloat(result);
                         hasResult = true;
                     }
                     break;
@@ -6875,7 +6876,8 @@ namespace HopperNET
                             Diagnostics.Die(0x04, this);
                             break;
                         }
-                        PushFloat(next / top);
+                        float result = next / top;
+                        PushFloat(result);
                         hasResult = true;
                     }
                     break;
@@ -6922,7 +6924,7 @@ namespace HopperNET
                 case SysCall.FloatToString:
                     {
                         float top = PopFloat();
-                        Push(new HopperString(top.ToString()));
+                        Push(new HopperString(top.ToString("G9")));
                         hasResult = true;
                     }
                     break;
