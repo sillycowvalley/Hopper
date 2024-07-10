@@ -19,6 +19,7 @@ unit Float
     float Div(float a, float b) system;
     
     bool EQ(float a, float b) system;
+    bool LT(float a, float b) system;
     long ToLong(float f) system;
 #else
 
@@ -441,7 +442,6 @@ unit Float
         return result;
     }
     
-#endif
     byte getSign(float f)
     {
         return (GetByte(f, 3) >> 7) & 1;
@@ -497,18 +497,22 @@ unit Float
         long mantissaB = getMantissa(b);
         return (signA == 0) ? (mantissaA < mantissaB) : (mantissaA > mantissaB);
     }
-    
+#endif
     string ToString(float this)
     {
         float value = this;
-        bool isNegative = getSign(value) == 1;
-        if (isZero(value))
+        byte b3 = value.GetByte(3);
+        bool isNegative = (b3 & 0x80) != 0;
+        if ((b3 == 0) && (value.GetByte(0) == 0) && (value.GetByte(1) == 0) && (value.GetByte(2) == 0))
         {
             return isNegative ? "-0" : "0";
         }
         if (isNegative)
         {
-            value = negate(value);
+            byte b0 = value.GetByte(0);
+            byte b1 = value.GetByte(1);
+            byte b2 = value.GetByte(2);
+            value = Float.FromBytes(b0, b1, b2, (b3 & 0x7F));
         }
         
         long   integerPart = long(value);

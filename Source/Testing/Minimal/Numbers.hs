@@ -504,7 +504,27 @@ program Numbers
         {
             PrintFailed("float < long failed");
         }
-#endif        
+        if (-1.0 < -1.0)
+        {
+            PrintFailed("-1.0 < -1.0 failed");
+        }
+        if (-1.0 < -1.5)
+        {
+            PrintFailed("-1.0 < -1.5 failed");
+        }
+        if (!(-1.5 < -1.0))
+        {
+            PrintFailed("-1.5 < -1.0 failed");
+        }
+#endif   
+        if (-1 < -1)
+        {
+            PrintFailed("-1 < -1 failed");
+        }  
+        if (long(-1) < long(-1))
+        {
+            PrintFailed("-1 < -1 failed");
+        }     
     }
     TestLessThanOrEqual()
     {

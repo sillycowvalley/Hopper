@@ -83,48 +83,7 @@ unit Float
             }
         }
     }
-    EQ()
-    {
-        Long.commonLongNEXTTOP();
-        isZeroTOP();
-        TXA
-        if (NZ)
-        {
-            isZeroNEXT();
-            TXA
-            if (NZ)
-            {
-                // TOP == 0 && NEXT == 0
-                // X is already 1
-                Stacks.PushX(); // as Type.Bool
-                return;
-            }
-        }
-        // X is already 0
-        LDA LNEXT0
-        CMP LTOP0
-        if (Z)
-        {
-            LDA LNEXT1
-            CMP LTOP1
-            if (Z)
-            {
-                LDA LNEXT2
-                CMP LTOP2
-                if (Z)
-                {
-                    LDA LNEXT3
-                    CMP LTOP3
-                    if (Z)
-                    {
-                        INX
-                    }
-                }
-            }
-        }
-        Stacks.PushX(); // as Type.Bool
-    }
-
+    
     getSignNEXT()
     {
         STZ LSIGNNEXT
@@ -1173,6 +1132,131 @@ countEntry:
         
         LDA # Types.Long
         Long.pushNewFromL(); 
+    }
+    EQ()
+    {
+        Long.commonLongNEXTTOP();
+        isZeroTOP();
+        TXA
+        if (NZ)
+        {
+            isZeroNEXT();
+            TXA
+            if (NZ)
+            {
+                // TOP == 0 && NEXT == 0
+                // X is already 1
+                Stacks.PushX(); // as Type.Bool
+                return;
+            }
+        }
+        // X is already 0
+        LDA LNEXT0
+        CMP LTOP0
+        if (Z)
+        {
+            LDA LNEXT1
+            CMP LTOP1
+            if (Z)
+            {
+                LDA LNEXT2
+                CMP LTOP2
+                if (Z)
+                {
+                    LDA LNEXT3
+                    CMP LTOP3
+                    if (Z)
+                    {
+                        INX
+                    }
+                }
+            }
+        }
+        Stacks.PushX(); // as Type.Bool
+    }
+    
+    LT()
+    {
+        loop
+        {
+            Long.commonLongNEXTTOP();
+            getSignNEXT();
+            getSignTOP();  
+            LDX # 0
+            LDA LSIGNNEXT
+            CMP LSIGNTOP
+            if (NZ)
+            {    
+                // signA != signB
+                if (C)
+                {
+                    // signA > signB
+                    INX
+                }
+                break;
+            }
+            getExponentNEXT();
+            getExponentTOP();
+            LDA NEXTL
+            CMP TOPL
+            if (NZ)
+            {
+                // exponentA != exponentB
+                LDX # 0
+                LDA LSIGNNEXT
+                if (Z)
+                {
+                    // signA == 0
+                    LDA NEXTL
+                    CMP TOPL
+                    if (NC)
+                    {
+                        // exponentA < exponentB
+                        INX
+                    }
+                }
+                else
+                {
+                    LDA NEXTL
+                    CMP TOPL
+                    if (C)
+                    {
+                        // exponentA > exponentB
+                        INX
+                    }
+                }
+                break;
+            }
+            getMantissaNEXT();
+            getMantissaTOP();
+            
+            LDA LSIGNNEXT
+            if (Z)
+            {
+                // signA == 0
+                // mantissaA < mantissaB ?
+                Long.commonLT(); 
+            }
+            else
+            {
+                Long.commonEQ();
+                CPX # 1
+                if (Z)
+                {
+                    DEX
+                }
+                else
+                {
+                    // mantissaA > mantissaB ?
+                    Long.commonLT();
+                    TXA
+                    EOR # 0b00000001
+                    TAX
+                }
+            }
+            break;
+        }
+        Stacks.PushX(); // as Type.Bool
     }
     
 }

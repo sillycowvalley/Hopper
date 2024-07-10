@@ -97,6 +97,7 @@ unit SysCall
         FloatDiv              = 0x50,
         FloatMul              = 0x51,
         FloatEQ               = 0x52,
+        FloatLT               = 0x53,
         
         FloatToLong           = 0xED,
         LongAddB              = 0xEE,
@@ -608,6 +609,15 @@ unit SysCall
                 missing();
 #endif                
             }
+            case SysCalls.FloatLT:
+            {
+#if defined(FLOATS) && defined(FAST_6502_RUNTIME)
+                Float.LT();
+#else
+                missing();
+#endif                
+            }
+            
             
             case SysCalls.VariantBox:
             {
