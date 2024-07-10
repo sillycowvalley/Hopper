@@ -7,8 +7,8 @@ program R6502
     #define CPU_65C02S  // Rockwell and WDC
     //#define CPU_6502  // MOS
     
-#if defined(CPU_6502) && defined(FLOATS)
-    #error "'float' only supported for 65C02S" // see '/Bin/Options/Configuration.options'
+#if defined(CPU_6502) && defined(FAST_6502_RUNTIME)
+    #error "'FAST_6502_RUNTIME' only supported for 65C02S" // comment out in '/Bin/Options/Configuration.options'
 #endif
     
     // For all other configuration options, use '/Bin/Options/Configuration.options' now

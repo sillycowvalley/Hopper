@@ -1,6 +1,6 @@
 unit UInt
 {
-    long ToLong(uint i) system;
+    
     byte GetByte(uint this, byte index) system;
     uint FromBytes(byte b0, byte b1) system;
     /*
@@ -249,7 +249,9 @@ unit UInt
     }
 
     
-#ifdef UNUSED
+#if defined(FAST_6502_RUNTIME)
+    long ToLong(uint i) system;
+#else
     long ToLong(uint i)
     {
         return Long.FromBytes(UInt.GetByte(i, 0), UInt.GetByte(i, 1), 0, 0);

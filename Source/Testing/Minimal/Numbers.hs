@@ -1395,6 +1395,18 @@ program Numbers
         //    PrintFailed("'long' 18");
         //}
         
+        localLong++;
+        if (localLong != 100001)
+        {
+            PrintFailed("'long' 36");
+        }
+        localLong--;
+        if (localLong != 100000)
+        {
+            PrintFailed("'long' 37");
+        }
+        
+        
         long longRef = 10;
         long longResult = longRef * longRef;
         if (longResult != 100)
@@ -1505,7 +1517,37 @@ program Numbers
         WriteLn("'float' math");
         
         float gpta; float gptb; float gptr; 
-        /*
+        
+        // Test: Division by 1
+        gpta = 7.0;
+        gptb = 1.0;
+        gptr = gpta / gptb;
+        if ((gptr.ToString() != "7") && (gptr.ToString() != "6.999877"))
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' div 4");
+        }
+        
+        // Test: Division by -1
+        gpta = 7.0;
+        gptb = -1.0;
+        gptr = gpta / gptb;
+        if ((gptr.ToString() != "-7") && (gptr.ToString() != "-6.999877"))
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' div 15");
+        }
+        
+        // Test: Division of a very large number by a positive number
+        gpta = 1000000.0;  // using a large number directly
+        gptb = 1.0;
+        gptr = gpta / gptb;
+        if ((gptr.ToString() != "1e+06") && (gptr.ToString() != "1000000"))
+        {
+            WriteLn(gptr.ToString());
+            PrintFailed("'float' div 14");
+        }
+        
         // Test: Division of equal positive numbers
         gpta = 2.0;
         gptb = 2.0;
@@ -1536,16 +1578,6 @@ program Numbers
             PrintFailed("'float' div 3");
         }
         
-        // Test: Division by 1
-        gpta = 7.0;
-        gptb = 1.0;
-        gptr = gpta / gptb;
-        if ((gptr.ToString() != "7") && (gptr.ToString() != "6.999877"))
-        {
-            WriteLn(gptr.ToString());
-            PrintFailed("'float' div 4");
-        }
-        
         // Test: Division by a very small number
         gpta = 7.0;
         gptb = 0.1;
@@ -1566,16 +1598,6 @@ program Numbers
             PrintFailed("'float' div 7");
         }
                 
-        // Test: Division of a very large number by a positive number
-        gpta = 1000000.0;  // using a large number directly
-        gptb = 1.0;
-        gptr = gpta / gptb;
-        if ((gptr.ToString() != "1e+06") && (gptr.ToString() != "1000000"))
-        {
-            WriteLn(gptr.ToString());
-            PrintFailed("'float' div 14");
-        }
-        
         // Test: Division of zero by a negative number
         gpta = 0.0;
         gptb = -3.0;
@@ -1664,7 +1686,7 @@ program Numbers
             WriteLn(gptr.ToString());
             PrintFailed("'float' div 2");
         }
-        */
+        
         // globalFloat3  = 10000.0;
         // globalFloat4  = 10000.1;
         float localFloat  = 10000.0;
@@ -2001,6 +2023,8 @@ program Numbers
         //EchoToLCD = true;
         //Screen.Clear();
         
+        uint start = Seconds;
+        
 #ifdef TESTFLOATS
         TestFloatMath();
 #endif                
@@ -2020,8 +2044,12 @@ program Numbers
         
         TestPropertyMath();
         
+        uint elapsed = Seconds - start;
         WriteLn();
         WriteLn("TestNumbers Ok");
+        WriteLn(elapsed.ToString() + " seconds");
+        
+        
     }
 }
 

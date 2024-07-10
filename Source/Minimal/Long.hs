@@ -7,15 +7,30 @@ unit Long
     byte GetByte(long this, byte index) system;
     long FromBytes(byte b0, byte b1, byte b2, byte b3) system;
     
-
+#ifdef FAST_6502_RUNTIME
     long Add(long a, long b) system;
     long Sub(long a, long b) system;
+    long AddB(long a, byte b) system;
+    long SubB(long a, byte b) system;
     long Mul(long ai, long bi) system;
     long Div(long dividend, long divisor) system;
     long Mod(long dividend, long divisor) system;
     long Negate(long value) system;
-    
-    /*
+
+    bool EQ(long left, long right) system;
+    bool LT(long left, long right) system;
+    bool GT(long left, long right) system;
+    bool GE(long left, long right) system;
+    bool LE(long left, long right) system;
+#else
+    long AddB(long a, byte b)
+    {
+        return Add(a, long(b));
+    }
+    long SubB(long a, byte b)
+    {
+        return Sub(a, long(b));
+    }
     long Add(long a, long b)
     {
         byte result0;
@@ -255,16 +270,7 @@ unit Long
         }
         return quotient;
     }
-    */
 
-    
-
-    bool EQ(long left, long right) system;
-    bool LT(long left, long right) system;
-    bool GT(long left, long right) system;
-    bool GE(long left, long right) system;
-    bool LE(long left, long right) system;
-    /*
     bool EQ(long left, long right)
     {
         for (byte i = 0; i < 4; i++)
@@ -329,7 +335,7 @@ unit Long
     {
         return LT(left, right) || EQ(left, right);
     }
-    */
+#endif
     long Abs(long value)
     {
         return (value >= 0) ? value : -value;

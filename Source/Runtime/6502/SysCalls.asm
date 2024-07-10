@@ -93,7 +93,7 @@ unit SysCall
         
         FloatAdd              = 0x4E,
         FloatSub              = 0x4F,
-        
+        FloatDiv              = 0x50,
         FloatMul              = 0x51,
         FloatEQ               = 0x52,
         
@@ -395,7 +395,7 @@ unit SysCall
             }
             case SysCalls.LongAdd:
             {
-#if defined(LONGS)
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
                 Long.Add();
 #else
                 missing();
@@ -403,7 +403,7 @@ unit SysCall
             }
             case SysCalls.LongSub:
             {
-#if defined(LONGS)
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
                 Long.Sub();
 #else
                 missing();
@@ -411,7 +411,7 @@ unit SysCall
             }
             case SysCalls.LongAddB:
             {
-#if defined(LONGS)
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
                 Long.AddB();
 #else
                 missing();
@@ -419,7 +419,7 @@ unit SysCall
             }
             case SysCalls.LongSubB:
             {
-#if defined(LONGS)
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
                 Long.SubB();
 #else
                 missing();
@@ -427,7 +427,7 @@ unit SysCall
             }
             case SysCalls.LongDiv:
             {
-#if defined(LONGS)
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
                 Long.Div();
 #else
                 missing();
@@ -435,7 +435,7 @@ unit SysCall
             }
             case SysCalls.LongMul:
             {
-#if defined(LONGS)
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
                 Long.Mul();
 #else
                 missing();
@@ -443,7 +443,7 @@ unit SysCall
             }
             case SysCalls.LongMod:
             {
-#if defined(LONGS)
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
                 Long.Mod();
 #else
                 missing();
@@ -451,7 +451,7 @@ unit SysCall
             }
             case SysCalls.LongNegate:
             {
-#if defined(LONGS)
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
                 Long.Negate();
 #else
                 missing();
@@ -459,7 +459,7 @@ unit SysCall
             }
             case SysCalls.IntToLong:
             {
-#if defined(LONGS)
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
                 IntToLong();
 #else
                 missing();
@@ -467,7 +467,7 @@ unit SysCall
             }
             case SysCalls.UIntToLong:
             {
-#if defined(LONGS)
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
                 UIntToLong();
 #else
                 missing();
@@ -475,7 +475,7 @@ unit SysCall
             }            
             case SysCalls.LongEQ:
             {
-#if defined(LONGS)
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
                 Long.EQ();
 #else
                 missing();
@@ -483,7 +483,7 @@ unit SysCall
             }
             case SysCalls.LongLT:
             {
-#if defined(LONGS)
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
                 Long.LT();
 #else
                 missing();
@@ -491,7 +491,7 @@ unit SysCall
             }
             case SysCalls.LongGT:
             {
-#if defined(LONGS)
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
                 Long.GT();
 #else
                 missing();
@@ -499,7 +499,7 @@ unit SysCall
             }
             case SysCalls.LongLE:
             {
-#if defined(LONGS)
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
                 Long.LE();
 #else
                 missing();
@@ -507,7 +507,7 @@ unit SysCall
             }
             case SysCalls.LongGE:
             {
-#if defined(LONGS)
+#if defined(LONGS) && defined(FAST_6502_RUNTIME)
                 Long.GE();
 #else
                 missing();
@@ -549,7 +549,7 @@ unit SysCall
             
             case SysCalls.FloatAdd:
             {
-#if defined(FLOATS)
+#if defined(FLOATS) && defined(FAST_6502_RUNTIME)
                 Float.Add();
 #else
                 missing();
@@ -557,7 +557,7 @@ unit SysCall
             }
             case SysCalls.FloatSub:
             {
-#if defined(FLOATS)
+#if defined(FLOATS) && defined(FAST_6502_RUNTIME)
                 Float.Sub();
 #else
                 missing();
@@ -565,8 +565,16 @@ unit SysCall
             }
             case SysCalls.FloatMul:
             {
-#if defined(FLOATS)
+#if defined(FLOATS) && defined(FAST_6502_RUNTIME)
                 Float.Mul();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.FloatDiv:
+            {
+#if defined(FLOATS) && defined(FAST_6502_RUNTIME)
+                Float.Div();
 #else
                 missing();
 #endif                
@@ -574,7 +582,7 @@ unit SysCall
             
             case SysCalls.FloatEQ:
             {
-#if defined(FLOATS)
+#if defined(FLOATS) && defined(FAST_6502_RUNTIME)
                 Float.EQ();
 #else
                 missing();

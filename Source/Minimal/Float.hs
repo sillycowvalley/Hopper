@@ -12,40 +12,6 @@ unit Float
     float FromBytes(byte b0, byte b1, byte b2, byte b3) system;
     const float Pi = 3.1415926535;
     
-    mantissaDivide(long dividend, long divisor, ref long quotient, ref long remainder)
-    {
-        long zero;      // 0x00000000 in 32-bit
-        long one  = 1;  // 0x00000001 in 32-bit
-        
-        quotient  = zero;
-        remainder = zero;
-    
-        // Split the dividend into high and low parts for extended precision
-        long extendedDividendHigh = Long.shiftRight(dividend, 8); // upper 24 bits of dividend
-        long extendedDividendLow  = Long.shiftLeft(dividend, 24); // lower 8 bits of dividend
-    
-        for (int i = 47; i >= 0; i--)
-        {
-            // Shift remainder left by 1 and combine with the next bit from extendedDividendHigh or extendedDividendLow
-            remainder = remainder.shiftLeftOne();
-            if (i >= 24)
-            {
-                remainder = Long.or(remainder, Long.and(Long.shiftRight(extendedDividendHigh, i - 24), one));
-            }
-            else
-            {
-                remainder = Long.or(remainder, Long.and(Long.shiftRight(extendedDividendLow, i), one));
-            }
-    
-            // If the remainder is greater than or equal to the divisor, subtract the divisor from the remainder
-            if (Long.GE(remainder, divisor))
-            {
-                remainder = Long.Sub(remainder, divisor);
-                quotient = Long.or(quotient, Long.shiftLeft(one, i));
-            }
-        }
-    }
-    
     byte countLeadingZeros(long result)
     {
         byte count;
@@ -61,7 +27,45 @@ unit Float
         }
         return count; // all zero, return 32
     }
-       
+    
+#ifdef FAST_6502_RUNTIME    
+    float Add(float a, float b) system;
+    float Sub(float a, float b) system;
+    float Mul(float a, float b) system;
+    float Div(float a, float b) system;
+    
+    bool EQ(float a, float b) system;
+#else
+
+    mantissaDivide(long dividend, long divisor, ref long quotient, ref long remainder)
+    {
+        long zero;      // 0x00000000 in 32-bit
+        long one  = 1;  // 0x00000001 in 32-bit
+        
+        quotient  = zero;
+        remainder = zero;
+    
+        for (int i = 47; i >= 0; i--)
+        {
+            // Shift remainder left by 1 and combine with the next bit from extendedDividendHigh or extendedDividendLow
+            remainder = remainder.shiftLeftOne();
+            if (i >= 24)
+            {
+                remainder = Long.or(remainder, Long.and(Long.shiftRight(dividend, i-16), one));
+            }
+            else
+            {
+                remainder = Long.or(remainder, Long.and(Long.shiftLeft(dividend, 24-i), one));
+            }
+            // If the remainder is greater than or equal to the divisor, subtract the divisor from the remainder
+            if (remainder >= divisor)
+            {
+                remainder = remainder - divisor;
+                quotient = Long.or(quotient, Long.shiftLeft(one, i));
+            }
+        }
+    }
+         
     float Div(float a, float b)
     {
         byte signA = getSign(a);
@@ -98,7 +102,6 @@ unit Float
         
         // Normalize the result
         byte leadingZeros = countLeadingZeros(resultMantissa);
-        
         if (leadingZeros > 8)
         {
             resultMantissa = Long.shiftLeft(resultMantissa, leadingZeros - 8);
@@ -133,11 +136,6 @@ unit Float
         return result;
     }
     
-
-    float Add(float a, float b) system;
-    float Sub(float a, float b) system;
-    float Mul(float a, float b) system;
-    /*
     float Add(float a, float b)
     {
         if (a == 0) { return b; }
@@ -328,8 +326,6 @@ unit Float
         }
     }
     
-    
-    
     float Mul(float a, float b)
     {
         byte signA = getSign(a);
@@ -353,24 +349,13 @@ unit Float
         mantissaA = Long.or(mantissaA, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
         mantissaB = Long.or(mantissaB, Long.FromBytes(0, 0, 0x80, 0)); // 0x00800000 in 32-bit
         
-        WriteLn();
-        IO.Write(mantissaA.ToHexString(8));
-        WriteLn();
-        IO.Write(mantissaB.ToHexString(8));
-        
         // Perform the multiplication
         long resultHigh;
         long resultLow;
         mantissaMultiply(mantissaA, mantissaB, ref resultHigh, ref resultLow);
         
-        WriteLn();
-        IO.Write(resultHigh.ToHexString(8));
-        IO.Write(resultLow.ToHexString(8));
-        
         // Normalize the result
         byte leadingZeros = countLeadingZeros(resultHigh, resultLow);
-        IO.WriteLn();
-        IO.Write("leadingZeros=" + leadingZeros.ToString());
         if (leadingZeros < 40)
         {
             shiftRight64Bit(ref resultHigh, ref resultLow, 40 - leadingZeros);
@@ -406,11 +391,6 @@ unit Float
         float result = combineComponents(resultSign, byte(resultExponent), resultMantissa);
         return result;
     }
-    */
-    
-    bool EQ(float a, float b) system;
-       
-    /*
     bool EQ(float a, float b)
     {
         if (isZero(a) && isZero(b))
@@ -422,7 +402,7 @@ unit Float
                (GetByte(a, 2) == GetByte(b, 2)) &&
                (GetByte(a, 3) == GetByte(b, 3));
     }
-    */
+#endif
     
     bool LT(float a, float b)
     {

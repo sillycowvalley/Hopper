@@ -625,7 +625,6 @@ unit Long
         SBC LTOP3
         if (MI)
         {
-            // NEXT >= TOP? -> +ve or zero (sign not set)
             INX
         }
     }

@@ -5,10 +5,18 @@ unit Float
     New()
     {
         // IEEE +0.0
+#ifdef CPU_65C02S        
         STZ ZP.LNEXT0
         STZ ZP.LNEXT1
         STZ ZP.LNEXT2
         STZ ZP.LNEXT3
+#else
+        LDA # 0
+        STA ZP.LNEXT0
+        STA ZP.LNEXT1
+        STA ZP.LNEXT2
+        STA ZP.LNEXT3
+#endif
         LDA # Types.Float
         Long.pushNewFromL();
     }
@@ -738,6 +746,324 @@ countEntry:
         {
             LDA LNEXT3
             ORA # 0b10000000
+            STA LNEXT3
+        }
+        
+        LDA # Types.Long
+        Long.pushNewFromL(); 
+    }
+    
+    checkDividendBit()
+    {
+        // check if bit X is set in dividend
+        // Calculate the byte index and bit mask
+        TXA
+        AND # 0x07
+        TAY   // bit index
+        TXA
+        LSR A
+        LSR A
+        LSR A
+        TAX   // byte index
+        
+        // create bit mask
+        LDA # 1
+        loop
+        {
+            CPY # 0
+            if (Z) { break; }
+            ASL A
+            DEY
+        }
+        AND LNEXT0, X
+    }
+    orQuotientBit()
+    {
+        // set bit X in the quotient
+        // Calculate the byte index and bit mask
+        TXA
+        AND # 0x07
+        TAY   // bit index
+        TXA
+        LSR A
+        LSR A
+        LSR A
+        TAX   // byte index
+        
+        // create bit mask
+        LDA # 1
+        loop
+        {
+            CPY # 0
+            if (Z) { break; }
+            ASL A
+            DEY
+        }
+        ORA LRESULT0, X
+        STA LRESULT0, X
+    }
+    
+    mantissaDivide()
+    {
+        // NEXT is dividend
+        // TOP  is divisor
+        
+        // quotient
+        STZ LRESULT0
+        STZ LRESULT1
+        STZ LRESULT2
+        STZ LRESULT3
+        
+        // remainder:
+        STZ LRESULT4
+        STZ LRESULT5
+        STZ LRESULT6
+        STZ LRESULT7
+        
+        LDX # 47
+        loop
+        {
+            // X : 47 .. 0
+            
+            // remainder = remainder << 1
+            ASL LRESULT4
+            ROL LRESULT5
+            ROL LRESULT6
+            ROL LRESULT7
+
+            CPX # 24
+            if (C)
+            {
+                // X >= 24
+                TXA
+                SEC
+                SBC # 16
+            }
+            else
+            {
+                // X < 24
+                STX ZP.ACCL
+                SEC
+                LDA # 24
+                SBC ZP.ACCL
+            }
+            
+            PHX
+            TAX
+            checkDividendBit();
+            
+            if (NZ)
+            {
+                
+                LDA LRESULT4
+                ORA # 1
+                STA LRESULT4
+            }
+            
+            // If the remainder is greater than or equal to the divisor, subtract the divisor from the remainder
+            
+            // remainder - divisor >= 0?
+            SEC
+            LDA LRESULT4
+            SBC LTOP0
+            LDA LRESULT5
+            SBC LTOP1
+            LDA LRESULT6
+            SBC LTOP2
+            LDA LRESULT7
+            SBC LTOP3
+            if (PL)
+            {
+                // remainder = remainder - divisor;
+                SEC
+                LDA LRESULT4
+                SBC LTOP0
+                STA LRESULT4
+                LDA LRESULT5
+                SBC LTOP1
+                STA LRESULT5
+                LDA LRESULT6
+                SBC LTOP2
+                STA LRESULT6
+                LDA LRESULT7
+                SBC LTOP3
+                STA LRESULT7
+                PLX
+                PHX
+                orQuotientBit();
+            }          
+            
+            PLX
+            if (Z) { break; }
+            DEX
+        }
+    }
+    Div()
+    {
+        Long.commonLongNEXTTOP();
+        loop
+        {
+            getSignNEXT();
+            getSignTOP();  
+            LDA LSIGNNEXT
+            EOR LSIGNTOP
+            STA LSIGNNEXT
+            
+            Float.isZeroNEXT();
+            CPX # 1
+            if (Z)
+            {
+                break; // return NEXT
+            }
+                        
+            // TOP == 1 or TOP == -1 ? (mantissa = 0, exponent = 127
+            LDA LTOP0
+            if (Z)
+            {
+                LDA LTOP1
+                if (Z)
+                {
+                    LDA LTOP2
+                    CMP # 0x80
+                    if (Z)
+                    {
+                        LDA LTOP3
+                        AND # 0x7F
+                        CMP # 0x3F
+                        if (Z)
+                        {
+                            break; // return NEXT
+                        }
+                    }
+                }
+            }
+            
+            getExponentNEXT();
+            getMantissaNEXT();
+            
+            getExponentTOP();
+            getMantissaTOP();
+            
+            
+            // Add the implicit leading '1' bit
+            LDA LNEXT2
+            ORA # 0b10000000
+            STA LNEXT2
+            LDA LTOP2
+            ORA # 0b10000000
+            STA LTOP2
+            
+            mantissaDivide();
+            
+            countLeadingZeros();
+            STX ZP.ACCL
+            CPX # 8
+            if (NC)
+            {
+                // leadingZeros < 8
+                SEC
+                LDA # 8
+                SBC ZP.ACCL
+                TAX
+                loop
+                {
+                    if (Z) { break; }
+                    LSR LRESULT3
+                    ROR LRESULT2
+                    ROR LRESULT1
+                    ROR LRESULT0
+                    DEX
+                }
+            }
+            else
+            {
+                // leadingZeros >= 8
+                TXA
+                SEC
+                SBC # 8
+                TAX
+                loop
+                {
+                    if (Z) { break; }
+                    ASL LRESULT0
+                    ROL LRESULT1
+                    ROL LRESULT2
+                    ROL LRESULT3
+                    DEX
+                }
+            }
+            
+            // exponent = exponentA - exponentB + 127
+            CLC
+            LDA NEXTL
+            ADC # 127
+            STA NEXTL
+            LDA NEXTH
+            ADC # 0
+            STA NEXTH
+            SEC
+            LDA NEXTL
+            SBC TOPL
+            STA NEXTL
+            LDA NEXTH
+            SBC TOPH
+            STA NEXTH
+            
+            // leadingZeros == 16?  exponent--
+            LDA ZP.ACCL
+            CMP # 16
+            if (Z)
+            {
+                LDA NEXTL
+                if (Z)
+                {
+                    DEC NEXTH
+                }
+                DEC NEXTL
+            }
+            
+            handleExponentOverflow();
+            
+            // Remove the implicit leading bit
+            LDA LRESULT2
+            AND # 0x7F
+            STA LNEXT2
+            
+            // Set the least significant bit of the exponent
+            LDA NEXTL
+            AND # 0b00000001
+            if (NZ)
+            {
+                LDA LNEXT2
+                ORA # 0b10000000
+                STA LNEXT2
+            }
+            
+            // Take the next 7 bits of the exponent
+            LDA NEXTL
+            LSR
+            STA LNEXT3
+            
+            LDA LRESULT0
+            STA LNEXT0
+            LDA LRESULT1
+            STA LNEXT1
+            
+            break;
+        } // loop
+        
+        // apply the sign
+        LDA LSIGNNEXT
+        if (NZ)
+        {
+            LDA LNEXT3
+            ORA # 0b10000000
+            STA LNEXT3
+        }
+        else
+        {
+            LDA LNEXT3
+            AND # 0b01111111
             STA LNEXT3
         }
         
