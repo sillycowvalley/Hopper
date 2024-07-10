@@ -48,9 +48,12 @@ program Baud
         {
             <char, string> rates;
             rates['1'] = "9600";
-            rates['2'] = "28800";
-            rates['3'] = "57600";
-            rates['4'] = "115200";
+            rates['2'] = "19200";
+            rates['3'] = "28800";
+            rates['4'] = "38400";
+            rates['5'] = "57600";
+            rates['6'] = "76800";
+            rates['7'] = "115200";
             string currentBaud = LoadBaud();
             bool currentExists;
             char defCh;
