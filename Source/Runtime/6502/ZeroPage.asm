@@ -197,7 +197,7 @@ unit ZP
     
 #endif
 
-#if !defined(BENEATER_IO) && !defined(X16_IO) && !defined(ZEROPAGE_IO) && !defined(MECB6502_8K_IO)
+#if !defined(BENEATER_IO) && !defined(X16_IO) && !defined(ZEROPAGE_IO) && !defined(MECB6502_8K_IO) && !defined(ZEROPAGE_16K_IO)
     #define ZEROPAGE_IO // default if IO is not specified
 #endif
 
@@ -277,7 +277,7 @@ unit ZP
     const uint IER                  = 0x600E; // Interrupt Enable Register
 #endif
       
-#if defined(ZEROPAGE_IO)   
+#if defined(ZEROPAGE_IO) || defined(ZEROPAGE_16K_IO)
     // Motorola 6850 ACIA
     const byte ACIACONTROL          = 0xEC; //0x1E;
     const byte ACIASTATUS           = 0xEC; //0x1E;

@@ -1,11 +1,11 @@
-{COMPONENT D:\REPOS\HOPPER\SOURCE\PROJECTS\6502SBC\CPLD\6502SBC 48K.SYM
+{COMPONENT D:\REPOS\HOPPER\SOURCE\PROJECTS\6502SBC\CPLD\6502SBC48K.SYM
 
  {ENVIRONMENT
   {PDIFvrev 3.00}
   {Program "CUPL(WM) Version 5.0a"}
   {DBtype "Schematic"}
   {DBvrev 1.01}
-  {DBtime "Sat May 18 09:31:01 2024 "}
+  {DBtime "Thu Jul 11 02:21:05 2024 "}
   {DBunit "MIL"}
   {DBgrid 10}
   {Lyrstr "WIRES" 1 "BUS" 1 "GATE" 2 "IEEE" 2 "PINFUN" 3 "PINNUM" 1 
@@ -33,7 +33,7 @@
  {SYMBOL
   {PIN_DEF
    [Ly "PINCON"]
-   {P CLK {Pt "INPUT"}{Lq 0}{Ploc 100 340}}
+   {P CLK {Pt "INPUT"}{Lq 0}{Ploc 100 320}}
    {P A15 {Pt "INPUT"}{Lq 0}{Ploc 100 300}}
    {P A14 {Pt "INPUT"}{Lq 0}{Ploc 100 280}}
    {P A13 {Pt "INPUT"}{Lq 0}{Ploc 100 260}}
@@ -59,12 +59,11 @@
   {PKG
    [Ly "REFDES"]
    [Ts 25][Tj "CB"][Tr 0][Tm "N"]
-   {Rdl 195 370}
+   {Rdl 195 350}
 
    [Ly "PINNUM"]
    [Ts 15][Tj "RC"]
-   {Pnl 120 350}
-   [Ts 15][Tj "RC"]
+   {Pnl 120 330}
    {Pnl 120 310}
    {Pnl 120 290}
    {Pnl 120 270}
@@ -93,9 +92,8 @@
   {PIC
    [Ly "GATE"]
    [Ts 15][Tj "LC"][Tr 0][Tm "N"]
-   {R 130 360 260 0}
-   {L 130 340 100 340}
-   {L 130 350 140 340 130 330}
+   {R 130 340 260 0}
+   {L 130 320 100 320}
    {L 130 300 100 300}
    {L 130 280 100 280}
    {L 130 260 100 260}
@@ -118,7 +116,7 @@
    {L 260 100 290 100}
    [Ly "PINNAM"]
    [Tj "LC"]
-   {T "CLK" 140 340}
+   {T "CLK" 140 320}
    {T "A15" 140 300}
    {T "A14" 140 280}
    {T "A13" 140 260}
@@ -142,7 +140,7 @@
    {T "CSRAM" 250 100}
    [Ly "DEVICE"]
    [Tj "CT"]
-   {T "G22V10" 195 -10}
+   {T "G20V8MA" 195 -10}
   }
 
   {ATR
@@ -153,7 +151,7 @@
    {EX
     [Ly "ATTR2"]
     [Ts 12][Tj "CT"][Tr 0][Tm "N"]
-    {At PLD D:\REPOS\HOPPER\SOURCE\PROJECTS\6502SBC\CPLD\6502SBC 48K 195 360}
+    {At PLD D:\REPOS\HOPPER\SOURCE\PROJECTS\6502SBC\CPLD\6502SBC48K 195 340}
    }
   }
  }

@@ -1,7 +1,7 @@
 program R6502
 {
     //#define EXPERIMENTAL
-    #define CHECKED
+    //#define CHECKED
     
     // This cannot be in '/Bin/Options/Configuration.options':
     #define CPU_65C02S  // Rockwell and WDC
@@ -536,16 +536,7 @@ program R6502
         // zeroes mean faster debug protocol
         
         // clear the Zero Page
-#ifndef ZEROPAGE_IO  
-        LDA #0
-        LDX #0
-        loop
-        {
-            STA 0x00, X
-            DEX
-            if (Z) { break; }
-        }
-#else
+#if defined(ZEROPAGE_IO) || defined(ZEROPAGE_16K_IO)
         LDX #0
         loop
         {
@@ -561,8 +552,17 @@ program R6502
             }
             DEX
             if (Z) { break; }
-        }  
-#endif        
+        }
+#else
+        LDA #0
+        LDX #0
+        loop
+        {
+            STA 0x00, X
+            DEX
+            if (Z) { break; }
+        }
+#endif
         LDA #0
         STA IDXL
         LDA # (SerialInBuffer >> 8)
@@ -812,7 +812,7 @@ program R6502
     {
         // is the User button held low?
         
-  #if defined(CPU_65C02S) && defined(ZEROPAGE_IO)
+  #if defined(CPU_65C02S) && (defined(ZEROPAGE_IO) || defined(ZEROPAGE_16K_IO))
        if (BBR1, ZP.PORTA)
        {
            return;
