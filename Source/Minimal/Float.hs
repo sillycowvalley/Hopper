@@ -12,6 +12,16 @@ unit Float
     float FromBytes(byte b0, byte b1, byte b2, byte b3) system;
     const float Pi = 3.1415926535;
     
+#ifdef FAST_6502_RUNTIME    
+    float Add(float a, float b) system;
+    float Sub(float a, float b) system;
+    float Mul(float a, float b) system;
+    float Div(float a, float b) system;
+    
+    bool EQ(float a, float b) system;
+    long ToLong(float f) system;
+#else
+
     byte countLeadingZeros(long result)
     {
         byte count;
@@ -27,15 +37,6 @@ unit Float
         }
         return count; // all zero, return 32
     }
-    
-#ifdef FAST_6502_RUNTIME    
-    float Add(float a, float b) system;
-    float Sub(float a, float b) system;
-    float Mul(float a, float b) system;
-    float Div(float a, float b) system;
-    
-    bool EQ(float a, float b) system;
-#else
 
     mantissaDivide(long dividend, long divisor, ref long quotient, ref long remainder)
     {
@@ -402,7 +403,81 @@ unit Float
                (GetByte(a, 2) == GetByte(b, 2)) &&
                (GetByte(a, 3) == GetByte(b, 3));
     }
+
+    long ToLong(float f)
+    {
+        long result;
+        byte sign = getSign(f);
+        int exponent = getExponent(f) - 127; // Bias adjustment
+        loop
+        {
+            if (exponent < 0)
+            {
+                // exponent is -ve so fraction only
+                break;
+            }
+            long mantissa = getMantissa(f);
+            mantissa = Long.or(mantissa, Long.FromBytes(0, 0, 0x80, 0)); // Add the implicit leading bit
+        
+            
+            if (exponent > 23)
+            {
+                result = Long.shiftLeft(mantissa, exponent - 23);
+            }
+            else if (exponent < 23)
+            {
+                result = Long.shiftRight(mantissa, 23 - exponent);
+            }
+            else
+            {
+                result = mantissa;
+            }
+            if (sign == 1)
+            {
+                result = -result;
+            }
+            break;
+        }
+        return result;
+    }
+    
 #endif
+    byte getSign(float f)
+    {
+        return (GetByte(f, 3) >> 7) & 1;
+    }
+    byte getExponent(float f)
+    {
+        return (GetByte(f, 3) & 0x7F) << 1 | (GetByte(f, 2) >> 7);
+    }
+    long getMantissa(float f)
+    {
+        return Long.FromBytes(GetByte(f, 0), GetByte(f, 1), GetByte(f, 2) & 0x7F, 0);
+    }
+    bool isZero(float this)
+    {
+        return (GetByte(this, 0) == 0) && (GetByte(this, 1) == 0) && (GetByte(this, 2) == 0) && ((GetByte(this, 3) & 0x7F) == 0);
+    }
+    float negate(float value)
+    {
+        byte sign = getSign(value) ^ 1;
+        byte exponent = getExponent(value);
+        long mantissa = getMantissa(value);
+        return combineComponents(sign, exponent, mantissa);
+    }
+    float combineComponents(byte sign, byte exponent, long mantissa)
+    {
+        // Extract bytes from mantissa
+        byte b0 = Long.GetByte(mantissa, 0);
+        byte b1 = Long.GetByte(mantissa, 1);
+        byte b2 = Long.GetByte(mantissa, 2) & 0x7F; // Only take the 7 least significant bits
+        b2 |= byte((exponent & 1) << 7); // Set the least significant bit of the exponent in b2
+    
+        byte b3 = byte((exponent >> 1) & 0x7F); // Take the next 7 bits of the exponent
+        b3 |= byte(sign << 7); // Set the sign bit in b3
+    
+        return FromBytes(b0, b1, b2, b3);
+    }
     
     bool LT(float a, float b)
     {
@@ -423,6 +498,79 @@ unit Float
         return (signA == 0) ? (mantissaA < mantissaB) : (mantissaA > mantissaB);
     }
     
+    string ToString(float this)
+    {
+        float value = this;
+        bool isNegative = getSign(value) == 1;
+        if (isZero(value))
+        {
+            return isNegative ? "-0" : "0";
+        }
+        if (isNegative)
+        {
+            value = negate(value);
+        }
+        
+        long   integerPart = long(value);
+        string result      = integerPart.ToString();
+        
+        float  fractionalPart    = value - float(integerPart);
+        string fractionalPartStr = fractionToString(fractionalPart);
+        
+        // If the fractional part is not empty, append it
+        if ((fractionalPartStr.Length == 1) && (fractionalPartStr[0] == '0'))
+        {
+        }
+        else
+        {
+            String.Build(ref result, '.');
+            String.Build(ref result, fractionalPartStr);
+        }
+        
+        if (isNegative)
+        {
+            String.BuildFront(ref result, '-');
+        }
+        return result;
+    }
+    
+    string fractionToString(float input)
+    {
+        uint length;
+        int digit;
+        uint i;
+        char ch;
+        int precision = 6; // Number of digits after the decimal point
+        string result;
+        float fractionalPart = input;
+        while (precision > 0)
+        {
+            fractionalPart = fractionalPart * 10.0;
+            digit = int(long(fractionalPart));
+            ch = char(byte('0') + digit);
+            String.Build(ref result, ch);
+            fractionalPart = fractionalPart - float(digit);
+            precision--;
+        }
+        
+        // Remove trailing zeros
+        length = result.Length;
+        while ((length > 1) && (result[length-1] == '0'))
+        {
+            length--;
+        }
+        if (length != result.Length)
+        {
+            string tmp = result;
+            String.Build(ref result);
+            for (i=0; i < length; i++)
+            {
+                String.Build(ref result, tmp[i]);
+            }
+        }
+        return result;
+    }
+    
     bool GT(float a, float b)
     {
         return !LE(a, b);
@@ -437,31 +585,7 @@ unit Float
     {
         return GT(a, b) || EQ(a, b);
     }
-    
-    long ToLong(float f)
-    {
-        byte sign = getSign(f);
-        int exponent = getExponent(f) - 127; // Bias adjustment
-        long mantissa = getMantissa(f);
-        mantissa = Long.or(mantissa, Long.FromBytes(0, 0, 0x80, 0)); // Add the implicit leading bit
-    
-        long result;
-        if (exponent > 23)
-        {
-            result = Long.shiftLeft(mantissa, exponent - 23);
-        }
-        else if (exponent < 23)
-        {
-            result = Long.shiftRight(mantissa, 23 - exponent);
-        }
-        else
-        {
-            result = mantissa;
-        }
-    
-        return sign == 1 ? Long.Negate(result) : result;
-    }
-    
+        
     int ToInt(float f)
     {
         long longValue = f.ToLong();
@@ -480,49 +604,6 @@ unit Float
             Die(0x0D); // Overflow
         }
         return uint(intValue);
-    }
-    
-    
-    byte getSign(float f)
-    {
-        return (GetByte(f, 3) >> 7) & 1;
-    }
-    
-    byte getExponent(float f)
-    {
-        return (GetByte(f, 3) & 0x7F) << 1 | (GetByte(f, 2) >> 7);
-    }
-    
-    long getMantissa(float f)
-    {
-        return Long.FromBytes(GetByte(f, 0), GetByte(f, 1), GetByte(f, 2) & 0x7F, 0);
-    }
-    
-    float combineComponents(byte sign, byte exponent, long mantissa)
-    {
-        // Extract bytes from mantissa
-        byte b0 = Long.GetByte(mantissa, 0);
-        byte b1 = Long.GetByte(mantissa, 1);
-        byte b2 = Long.GetByte(mantissa, 2) & 0x7F; // Only take the 7 least significant bits
-        b2 |= byte((exponent & 1) << 7); // Set the least significant bit of the exponent in b2
-    
-        byte b3 = byte((exponent >> 1) & 0x7F); // Take the next 7 bits of the exponent
-        b3 |= byte(sign << 7); // Set the sign bit in b3
-    
-        return FromBytes(b0, b1, b2, b3);
-    }
-    
-    bool isZero(float this)
-    {
-        return (GetByte(this, 0) == 0) && (GetByte(this, 1) == 0) && (GetByte(this, 2) == 0) && ((GetByte(this, 3) & 0x7F) == 0);
-    }
-    
-    float negate(float value)
-    {
-        byte sign = getSign(value) ^ 1;
-        byte exponent = getExponent(value);
-        long mantissa = getMantissa(value);
-        return combineComponents(sign, exponent, mantissa);
     }
     
     string ToHexString(float f)
@@ -637,61 +718,7 @@ unit Float
         }
         return success;
     }
-    
-    string ToString(float this)
-    {
-        float value = this;
-        bool isNegative = getSign(value) == 1;
-        if (isZero(value))
-        {
-            return isNegative ? "-0" : "0";
-        }
-        if (isNegative)
-        {
-            value = negate(value);
-        }
-        
-        long   integerPart = Float.ToLong(value);
-        string result      = integerPart.ToString();
-        
-        float  fractionalPart    = Float.Sub(value, Long.ToFloat(integerPart));
-        string fractionalPartStr = fractionToString(fractionalPart);
-        
-        // If the fractional part is not empty, append it
-        if (fractionalPartStr != "0")
-        {
-            result += "." + fractionalPartStr;
-        }
-        
-        if (isNegative)
-        {
-            String.BuildFront(ref result, '-');
-        }
-        return result;
-    }
-    
-    string fractionToString(float input)
-    {
-        string result;
-        float fractionalPart = input;
-        int precision = 6; // Number of digits after the decimal point
-        while (precision > 0)
-        {
-            fractionalPart = Mul(fractionalPart, 10.0);
-            int digit = int(fractionalPart.ToLong());
-            result += char(byte('0') + digit);
-            fractionalPart = Sub(fractionalPart, Int.ToFloat(digit));
-            precision--;
-        }
-        
-        // Remove trailing zeros
-        while (result.Length > 1 && result.EndsWith("0"))
-        {
-            result = String.Substring(result, 0, result.Length - 1);
-        }
-        return result;
-    }
-         
+            
     float Radians(float angle) { return angle * Pi / 180.0; }
     float Degrees(float angle) { return angle * 180.0 / Pi; }
     

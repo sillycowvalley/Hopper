@@ -1,6 +1,7 @@
 unit Long
 {
     uses "/Source/Runtime/6502/ZeroPage"
+    uses "Float"
     
     friend Time, Float, GC, IntMath;
     
@@ -47,11 +48,9 @@ unit Long
         LDA [IDX], Y
         STA ZP.LTOP3
         GC.Release();
-        
     }
-    commonLongNEXTTOP()
+    commonLongNEXT()
     {
-        commonLongTOP();
         Stacks.PopIDX();
         LDY # siData
         LDA [IDX], Y
@@ -66,6 +65,11 @@ unit Long
         LDA [IDX], Y
         STA ZP.LNEXT3
         GC.Release();
+    }
+    commonLongNEXTTOP()
+    {
+        commonLongTOP();
+        commonLongNEXT();
     }
 
     pushNewFromL()
@@ -693,5 +697,170 @@ unit Long
         }
         Stacks.PushX(); // as Type.Bool
     }
-
+    
+    ToFloat()
+    {
+        commonLongNEXT();
+        
+        loop
+        {
+            // zero?
+            LDA LNEXT0
+            if (Z)
+            {
+                LDA LNEXT1
+                if (Z)
+                {
+                    LDA LNEXT2
+                    if (Z)
+                    {
+                        LDA LNEXT3
+                        if (Z)
+                        {
+                            // zero
+                            break;
+                        }
+                    }
+                }
+            }
+            STZ LSIGNNEXT
+            BIT LNEXT3
+            if (MI)
+            {
+                LDA # 1
+                STA LSIGNNEXT
+                
+                // NEXT = 0 - NEXT
+                SEC
+                LDA # 0
+                SBC LNEXT0
+                STA LRESULT0
+                LDA # 0
+                SBC LNEXT1
+                STA LRESULT1
+                LDA # 0
+                SBC LNEXT2
+                STA LRESULT2
+                LDA # 0
+                SBC LNEXT3
+                STA LRESULT3
+            }
+            else
+            {
+                LDA LNEXT0
+                STA LRESULT0
+                LDA LNEXT1
+                STA LRESULT1
+                LDA LNEXT2
+                STA LRESULT2
+                LDA LNEXT3
+                STA LRESULT3
+            }
+            // Bias + initial shift for normalization
+            // exponent = 127 + 23; 
+            LDA # (127 + 23)
+            STA NEXTL
+            STZ NEXTH
+    
+            // Normalize the mantissa using countLeadingZeros
+            Float.countLeadingZeros();
+            STX ZP.ACCL
+            CPX #8
+            if (NC)
+            {
+                // leadingZeros < 8   
+                SEC
+                LDA # 8
+                SBC ZP.ACCL
+                TAX
+                loop
+                {
+                    if (Z) { break; }
+                    LSR LRESULT3
+                    ROR LRESULT2
+                    ROR LRESULT1
+                    ROR LRESULT0
+                    DEX
+                } 
+            }
+            else
+            {
+                // leadingZeros >= 8
+                TXA
+                SEC
+                SBC # 8
+                TAX
+                loop
+                {
+                    if (Z) { break; }
+                    ASL LRESULT0
+                    ROL LRESULT1
+                    ROL LRESULT2
+                    ROL LRESULT3
+                    DEX
+                }
+            }
+            //exponent = exponent + 8 - leadingZeros;
+            CLC
+            LDA NEXTL
+            ADC # 8
+            STA NEXTL
+            LDA NEXTH
+            ADC # 0
+            STA NEXTH
+            SEC
+            LDA NEXTL
+            SBC ZP.ACCL
+            STA NEXTL
+            LDA NEXTH
+            SBC # 0
+            STA NEXTH
+    
+            // Handle exponent overflow/underflow
+            Float.handleExponentOverflow();
+            
+            // Remove the implicit leading bit
+            LDA LRESULT2
+            AND # 0x7F
+            STA LRESULT2
+            STZ LRESULT3
+            
+            // Set the least significant bit of the exponent
+            LDA NEXTL
+            AND # 0b00000001
+            if (NZ)
+            {
+                LDA LRESULT2
+                ORA # 0b10000000
+                STA LRESULT2
+            }
+            
+            // Take the next 7 bits of the exponent
+            LDA NEXTL
+            LSR
+            STA LRESULT3
+            
+            // Set the sign bit
+            LDA LSIGNNEXT
+            if (NZ)
+            {
+                LDA # 0b10000000
+                ORA LRESULT3
+                STA LRESULT3
+            }
+            
+            LDA LRESULT0
+            STA LNEXT0
+            LDA LRESULT1
+            STA LNEXT1
+            LDA LRESULT2
+            STA LNEXT2
+            LDA LRESULT3
+            STA LNEXT3
+           
+            break;
+        }
+        LDA # Types.Float
+        Long.pushNewFromL(); 
+    }
 }

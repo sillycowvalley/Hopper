@@ -1,6 +1,9 @@
 unit Float
 {
     uses "/Source/Runtime/6502/ZeroPage"
+    uses "Long"
+    
+    friend Long;
     
     New()
     {
@@ -552,7 +555,7 @@ countEntry:
             
             break;   
         }
-        LDA # Types.Long
+        LDA # Types.Float
         Long.pushNewFromL(); 
     }
     countLeadingZeros48()
@@ -749,7 +752,7 @@ countEntry:
             STA LNEXT3
         }
         
-        LDA # Types.Long
+        LDA # Types.Float
         Long.pushNewFromL(); 
     }
     
@@ -1065,6 +1068,107 @@ countEntry:
             LDA LNEXT3
             AND # 0b01111111
             STA LNEXT3
+        }
+        
+        LDA # Types.Float
+        Long.pushNewFromL(); 
+    }
+    ToLong()
+    {
+        Long.commonLongNEXT();
+        
+        getSignNEXT();  
+        getExponentNEXT();
+        getMantissaNEXT();
+        
+        // exponent = exponent - 127; // Bias adjustment
+        SEC
+        LDA ZP.NEXTL
+        SBC # 127
+        STA ZP.NEXTL
+        LDA ZP.NEXTH
+        SBC # 0
+        STA ZP.NEXTH
+        loop
+        {
+            if (NZ)
+            {
+                // exponent is -ve so fraction only
+                STZ ZP.LNEXT0
+                STZ ZP.LNEXT1
+                STZ ZP.LNEXT2
+                STZ ZP.LNEXT3
+                break;
+            }
+        
+            // Add the implicit leading '1' bit
+            LDA ZP.LNEXT2
+            ORA # 0b10000000
+            STA ZP.LNEXT2
+            
+            LDA ZP.NEXTL
+            CMP # 23
+            if (Z)
+            {
+                // exponent == 23
+            }
+            else
+            {
+                if (C)
+                {
+                    // exponent > 23
+                    SEC
+                    SBC # 23
+                    TAX
+                    loop
+                    {
+                        if (Z) { break; }
+                        ASL LNEXT0
+                        ROL LNEXT1
+                        ROL LNEXT2
+                        ROL LNEXT3
+                        DEX
+                    }
+                }
+                else
+                {
+                    // exponent < 23
+                    SEC
+                    LDA # 23
+                    SBC ZP.NEXTL
+                    TAX
+                    loop
+                    {
+                        if (Z) { break; }
+                        LSR ZP.LNEXT3
+                        ROR ZP.LNEXT2
+                        ROR ZP.LNEXT1
+                        ROR ZP.LNEXT0
+                        DEX
+                    }
+                }
+            }
+        
+            // apply the sign
+            LDA LSIGNNEXT
+            if (NZ)
+            {
+                // result = -result
+                SEC
+                LDA # 0
+                SBC LNEXT0
+                STA LNEXT0
+                LDA # 0
+                SBC LNEXT1
+                STA LNEXT1
+                LDA # 0
+                SBC LNEXT2
+                STA LNEXT2
+                LDA # 0
+                SBC LNEXT3
+                STA LNEXT3
+            }
+            break;
         }
         
         LDA # Types.Long

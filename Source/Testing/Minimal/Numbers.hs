@@ -2,6 +2,7 @@ program Numbers
 {
     
     #define TESTFLOATS
+    #define LOOP_TESTS // slower 'int' and 'uint' tests
     #define FAST_6502_RUNTIME
     
     uses "/Source/Minimal/System"
@@ -974,7 +975,7 @@ program Numbers
         {
             PrintFailed("'uint' 11");
         }
-        
+#ifdef LOOP_TESTS
         long total;
         for (uint fi = 0; fi < 400; fi = fi + 27)
         {
@@ -1005,6 +1006,7 @@ program Numbers
         {
             PrintFailed("'uint' 13");
         }
+#endif
         
         uint test = 0xAA55;
         
@@ -1254,6 +1256,7 @@ program Numbers
         {
             PrintFailed("'int' 51");
         }
+#ifdef LOOP_TESTS        
         long total;
         for (int fi = -100; fi < 50; fi = fi + 27)
         {
@@ -1284,6 +1287,7 @@ program Numbers
         {
             PrintFailed("'int' 52");
         }
+#endif
         
         // %
         if (localInt % 3 != 1)
@@ -2023,7 +2027,7 @@ program Numbers
         //EchoToLCD = true;
         //Screen.Clear();
         
-        uint start = Seconds;
+        long start = Millis;
         
 #ifdef TESTFLOATS
         TestFloatMath();
@@ -2044,10 +2048,10 @@ program Numbers
         
         TestPropertyMath();
         
-        uint elapsed = Seconds - start;
+        long elapsed = Millis - start;
         WriteLn();
         WriteLn("TestNumbers Ok");
-        WriteLn(elapsed.ToString() + " seconds");
+        WriteLn(elapsed.ToString() + " ms");
         
         
     }

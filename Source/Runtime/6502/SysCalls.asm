@@ -74,6 +74,7 @@ unit SysCall
       //LongToString          = 0x38,
         UIntGetByte           = 0x39,
         
+        LongToFloat           = 0x3A,
       //LongToInt             = 0x3B,
       //LongToUInt            = 0x3C,
         UIntFromBytes         = 0x3D,
@@ -97,6 +98,7 @@ unit SysCall
         FloatMul              = 0x51,
         FloatEQ               = 0x52,
         
+        FloatToLong           = 0xED,
         LongAddB              = 0xEE,
         LongSubB              = 0xEF,
         
@@ -513,6 +515,24 @@ unit SysCall
                 missing();
 #endif                
             }
+            case SysCalls.FloatToLong:
+            {
+#if defined(FLOATS) && defined(FAST_6502_RUNTIME)
+                Float.ToLong();
+#else
+                missing();
+#endif                
+            }
+            case SysCalls.LongToFloat:
+            {
+#if defined(FLOATS) && defined(FAST_6502_RUNTIME)
+                Long.ToFloat();
+#else
+                missing();
+#endif                
+            }
+            
+            
             
             case SysCalls.FloatNew:
             {
