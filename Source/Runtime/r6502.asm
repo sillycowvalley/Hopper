@@ -13,7 +13,7 @@ program R6502
     
     // For all other configuration options, use '/Bin/Options/Configuration.options' now
 
-#if defined(CPU_65C02S) /*&& !defined(CHECKED)*/ && !defined(FASTINTS) && !defined(INLINE_EXPANSIONS) && !defined(I2C) && !defined(JIX_INSTRUCTIONS)
+#if defined(CPU_65C02S) /*&& !defined(CHECKED)*/ && !defined(FASTINTS) && !defined(INLINE_EXPANSIONS) /*&& !defined(I2C)*/ && !defined(JIX_INSTRUCTIONS)
     #define ROM_8K // 240 bytes overrun with I2C but without FASTINTS
 #endif
     

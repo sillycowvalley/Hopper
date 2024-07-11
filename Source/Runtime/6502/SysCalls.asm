@@ -141,14 +141,11 @@ unit SysCall
     
     serialIsAvailable()
     {
+        LDX # 1
         Serial.IsAvailable();
         if (Z)
         {
-            LDX # 0
-        }
-        else
-        {
-            LDX # 1
+            DEX
         }
         Stacks.PushX();
     }

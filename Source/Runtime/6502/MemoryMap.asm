@@ -16,7 +16,12 @@ unit Address
 
 #if defined(BENEATER_IO)
     const uint RamSize              = 0x5000;  // the IO ports on the Ben Eater 6502 start at 0x5000 ..
-#else       
+#endif    
+#if defined(PD6502)
+    const uint RamSize              = 0x9F00;  // stop just below bank switching IO for Dave's board
+#endif    
+
+#if !defined(BENEATER_IO) && !defined(PD6502) 
     const uint RamSize              = 0x8000;  // we assume RAM starts at 0x0000 and that we have at least 32K ..
 #endif
 }

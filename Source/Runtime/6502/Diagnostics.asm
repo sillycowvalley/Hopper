@@ -15,7 +15,7 @@ unit Diagnostics
 
         PHA
         
-#ifndef TIGGERC
+#if !defined(TIGGERC) && !defined(ROM_8K)
         registers();
 #endif
         LDA # 0x0A
@@ -744,4 +744,5 @@ unit Diagnostics
         LDA # 0
         return;
     }
+    
 }

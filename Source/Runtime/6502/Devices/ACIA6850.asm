@@ -110,7 +110,6 @@ unit SerialDevice
     }
     
 #ifndef HAS_SERIAL_ISR    
-    // munts X
     pollRead()
     {
         PHA

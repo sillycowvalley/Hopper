@@ -76,7 +76,7 @@ unit Memory
                 LDA # 0x80
                 break;
             }
-            LDA # 0x4F
+            LDA # 0x3F
             STA ZP.IDXH
             probeTest();
             if (C)
