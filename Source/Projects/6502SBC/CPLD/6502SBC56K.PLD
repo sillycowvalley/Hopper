@@ -1,4 +1,4 @@
-Name     6502SBC48K ;
+Name     6502SBC56K ;
 PartNo   00 ;
 Date     4/07/2023 ;
 Revision 01 ;
@@ -42,7 +42,7 @@ Pin 18 = OERAM;  /* active low */
 
 
  ZEROPAGE  = !A15 & !A14 & !A13 & !A12 & !A11 & !A10 & !A9 & !A8;
- SRAMANDIO = !(A15 & A14);
+ SRAMANDIO = !(A15 & A14 & A13);
 
  CSACIA = !(ZEROPAGE  & A7 & A6 & A5 & !A4 & A3 & A2);
  CSVIA  = !(ZEROPAGE  & A7 & A6 & A5 &  A4);

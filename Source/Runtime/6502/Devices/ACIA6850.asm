@@ -7,7 +7,7 @@ unit SerialDevice
     // address and are selected based on R or W.
     // If these addresses are bytes, then they are on zero page, if uint regular memory space.
     //
-#if defined(ZEROPAGE_IO) || defined(ZEROPAGE_16K_IO)
+#if defined(ZEROPAGE_IO)
     const byte ControlRegister    = ZP.ACIACONTROL;
     const byte DataRegister       = ZP.ACIADATA;
     const byte StatusRegister     = ZP.ACIASTATUS;
@@ -35,7 +35,7 @@ unit SerialDevice
     
     writeChar()
     {
-#if defined(CPU_65C02S) && (defined(ZEROPAGE_IO) || defined(ZEROPAGE_16K_IO))
+#if defined(CPU_65C02S) && defined(ZEROPAGE_IO)
         loop
         {
             if (BBS1, StatusRegister) { break; } // loop if not ready (bit set means TDRE is empty and ready)
@@ -56,7 +56,7 @@ unit SerialDevice
     
     isr()
     {
-#if defined(CPU_65C02S) && (defined(ZEROPAGE_IO) || defined(ZEROPAGE_16K_IO))
+#if defined(CPU_65C02S) && defined(ZEROPAGE_IO)
         if (BBS7, StatusRegister) // interrupt request by 6850
         {
             if (BBS0, StatusRegister) // RDRF : receive data register full

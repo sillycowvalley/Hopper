@@ -7,7 +7,7 @@
     "Hopper 6502 Assembly": 
   {
       "CPU_8MHZ": "true"             // CPU_8MHZ, CPU_4MHZ, CPU_2MHZ or CPU_1MHZ
-    , "ZEROPAGE_IO": "true"          // ZEROPAGE_IO, BENEATER_IO or X16_IO
+    , "ZEROPAGE_IO": "true"          // ZEROPAGE_IO, BENEATER_IO, X16_IO or MECB6502_8K_IO
     , "W65C22_VIA": "true"           // W65C22_VIA required for I2C
     , "ACIA_6850": "true"            // ACIA_6850, ACIA_6551 or APPLE_I (for E6502 emulator)
     
@@ -20,7 +20,7 @@
     , "FASTINTS": "true"             // speed vs size
     , "INLINE_EXPANSIONS": "true"    // speed vs size
     , "FAST_6502_RUNTIME": "true"    // speed vs size (65C02S only)
-    // , "EXPORT_BIN": "true"        // export as .bin (in addition to .hex (Intel IHex) - 65dasm needs the .hex)
+ // , "EXPORT_BIN": "true"           // export as .bin (in addition to .hex (Intel IHex) - 65dasm needs the .hex)
     
   },
   "Tigger C": 

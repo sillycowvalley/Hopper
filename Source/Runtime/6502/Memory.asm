@@ -5,6 +5,92 @@ unit Memory
     uses "Allocate.asm"
     uses "Free.asm"
     
+    probeTest()
+    {
+        // set the carry flag if RAM is found at IDX
+        loop
+        {
+            LDA #0xAA
+#ifdef CPU_65C02S
+            STA [IDX]
+            LDA [IDX]
+#else
+            LDY # 0
+            STA [IDX], Y
+            LDA [IDX], Y
+#endif
+            CMP #0xAA
+            if (Z)
+            {
+                LDA #0x55
+#ifdef CPU_65C02S
+                STA [IDX]
+                LDA [IDX]
+#else
+                STA [IDX], Y
+                LDA [IDX], Y
+#endif
+                CMP #0x55
+                if (Z)
+                {
+                    SEC // RAM found
+                    break;
+                }
+            }
+            CLC // not RAM
+            break;
+        }
+    }
+    
+    probeRAM()
+    {
+        loop
+        {
+            // probe to discover RAM size:
+            LDA # 0xFF
+            STA ZP.IDXL
+            LDA # 0xDF
+            STA ZP.IDXH
+            probeTest();
+            if (C)
+            {
+                // A = 0xE0 for 56K
+                LDA # 0xE0
+                break;
+            }
+            LDA # 0xBF
+            STA ZP.IDXH
+            probeTest();
+            if (C)
+            {
+                // A = 0xC0 for 48K
+                LDA # 0xC0
+                break;
+            }
+            LDA # 0x7F
+            STA ZP.IDXH
+            probeTest();
+            if (C)
+            {
+                // A = 0x80 for 32K
+                LDA # 0x80
+                break;
+            }
+            LDA # 0x4F
+            STA ZP.IDXH
+            probeTest();
+            if (C)
+            {
+                // A = 0x40 for 16K
+                LDA # 0x40
+                break;
+            }
+            LDA # 0x0B
+            Die();
+            break;
+        } // loop
+    }        
+    
     InitializeHeapSize()
     {
         // Assumes that:
@@ -16,8 +102,19 @@ unit Memory
         ADC ZP.PROGSIZE  // program size in pages (rounded up to the nearest page)
         STA ZP.HEAPSTART
         
+        // if RAM does not end at 0x80 (0x7FFF) then respect the value of RamSize (like 0x5000 for Ben Eater 6502)
+        LDA # (Address.RamSize >> 8)
+        CMP # 0x80 
+        if (Z)
+        {
+            // probe to discover RAM size:
+            // - A = 0x40 for 16K    
+            // - A = 0x80 for 32K    
+            // - A = 0xC0 for 48K
+            // - A = 0xE0 for 56K
+            probeRAM(); // munts Y, sets A
+        }
         SEC
-        LDA # (Address.RamSize >> 8) // top page of RAM (typically 0x80)
         SBC ZP.HEAPSTART
         STA ZP.HEAPSIZE
         

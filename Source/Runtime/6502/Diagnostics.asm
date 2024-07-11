@@ -92,7 +92,7 @@ unit Diagnostics
             LDY #0
             loop
             {
-#if defined(ZEROPAGE_IO) || defined(ZEROPAGE_16K_IO)
+#if defined(ZEROPAGE_IO)
                 // avoid ever reading the ACIA status register on the zero page
                 LDA ZP.IDXH
                 if (Z) // Zero Page?
@@ -128,7 +128,7 @@ unit Diagnostics
         {
             DEY
             
-#if defined(ZEROPAGE_IO) || defined(ZEROPAGE_16K_IO)
+#if defined(ZEROPAGE_IO)
             // avoid ever reading the ACIA status register on the zero page
             LDA ZP.IDXH
             if (Z) // Zero Page?
@@ -158,7 +158,7 @@ unit Diagnostics
         TAX // Y -> X
         loop
         {
-#if defined(ZEROPAGE_IO) || defined(ZEROPAGE_16K_IO)
+#if defined(ZEROPAGE_IO)
             // avoid ever reading the ACIA status or data register on the zero page
             LDA ZP.IDXH
             if (Z) // Zero Page?

@@ -30,11 +30,12 @@ CSACIA =>
     A2 & A3 & !A4 & A5 & A6 & A7 & !A8 & !A9 & !A10 & !A11 & !A12 & !A13 & !A14 & !A15
 
 CSRAM =>
-    !A14 & CLK & CSACIA & CSVIA
-  # !A15 & CLK & CSACIA & CSVIA
+    !A15 & CLK & CSACIA & CSVIA
+  # !A13 & CLK & CSACIA & CSVIA
+  # !A14 & CLK & CSACIA & CSVIA
 
 CSROM =>
-    A14 & A15
+    A13 & A14 & A15
 
 CSVIA =>
     A4 & A5 & A6 & A7 & !A8 & !A9 & !A10 & !A11 & !A12 & !A13 & !A14 & !A15
@@ -42,10 +43,12 @@ CSVIA =>
 OERAM =>
     !A15 & CSACIA & CSVIA
   # !A14 & CSACIA & CSVIA
+  # !A13 & CSACIA & CSVIA
 
 SRAMANDIO =>
     !A15
   # !A14
+  # !A13
 
 ZEROPAGE =>
     !A8 & !A9 & !A10 & !A11 & !A12 & !A13 & !A14 & !A15

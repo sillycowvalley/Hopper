@@ -17,10 +17,6 @@ unit Address
 #if defined(BENEATER_IO)
     const uint RamSize              = 0x5000;  // the IO ports on the Ben Eater 6502 start at 0x5000 ..
 #else       
-  #if defined(ZEROPAGE_16K_IO)
-    const uint RamSize              = 0xC000;  // we assume RAM starts at 0x0000 and that we have 48K
-  #else
-    const uint RamSize              = 0x8000;  // we assume RAM starts at 0x0000 and that we have 32K
-  #endif
+    const uint RamSize              = 0x8000;  // we assume RAM starts at 0x0000 and that we have at least 32K ..
 #endif
 }

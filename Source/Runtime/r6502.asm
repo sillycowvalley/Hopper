@@ -536,7 +536,7 @@ program R6502
         // zeroes mean faster debug protocol
         
         // clear the Zero Page
-#if defined(ZEROPAGE_IO) || defined(ZEROPAGE_16K_IO)
+#if defined(ZEROPAGE_IO)
         LDX #0
         loop
         {
@@ -812,7 +812,7 @@ program R6502
     {
         // is the User button held low?
         
-  #if defined(CPU_65C02S) && (defined(ZEROPAGE_IO) || defined(ZEROPAGE_16K_IO))
+  #if defined(CPU_65C02S) && defined(ZEROPAGE_IO)
        if (BBR1, ZP.PORTA)
        {
            return;
