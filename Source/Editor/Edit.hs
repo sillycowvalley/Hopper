@@ -123,7 +123,8 @@ program Edit
             
             filePath = Path.GetCorrectCase(filePath); // get correct case
             
-            if (!(filePath.ToLower()).EndsWith(".options"))
+            string lowerFilePath = filePath.ToLower();
+            if (!lowerFilePath.EndsWith(".options") && !lowerFilePath.EndsWith(".local"))
             {
                 optionsPath = Path.MakeOptions(filePath);
             }

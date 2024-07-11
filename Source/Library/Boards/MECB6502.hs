@@ -27,10 +27,10 @@ unit Board
     
     #define MECB6502_8K_IO
     
-    const uint PORTB                = 0xD017;
-    const uint PORTA                = 0xD018;
-    const uint DDRB                 = 0xD019;
-    const uint DDRA                 = 0xD01A;
+    const uint PORTB                = 0xE017;
+    const uint PORTA                = 0xE018;
+    const uint DDRB                 = 0xE019;
+    const uint DDRA                 = 0xE01A;
     
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/MCU"
