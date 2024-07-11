@@ -157,10 +157,16 @@ unit Allocate
                 STA maBESTH
         
                 // bestSize = ReadWord(best);
+#ifdef CPU_65C02S
+                LDA [maBEST]
+                STA maBESTSIZEL
+                LDY # 1
+#else
                 LDY # 0
                 LDA [maBEST], Y
                 STA maBESTSIZEL
                 INY
+#endif
                 LDA [maBEST], Y
                 STA maBESTSIZEH
                 // bestNext = ReadWord(best + 2);
@@ -240,10 +246,15 @@ unit Allocate
         
                 // so we now how much to free later
                 // block size includes the size of the size field itself
-                LDY # 0
                 LDA ACCL
+#ifdef CPU_65C02S
+                STA [maBEST]
+                LDY # 1
+#else
+                LDY # 0
                 STA [maBEST], Y
                 INY
+#endif
                 LDA ACCH
                 STA [maBEST], Y
         
@@ -263,11 +274,16 @@ unit Allocate
                 LDA maBESTSIZEH
                 SBC ACCH
                 STA maNEWHOLESIZEH
-        
-                LDY # 0
+     
                 LDA maNEWHOLESIZEL
+#ifdef CPU_65C02S
+                STA [maNEWHOLE]
+                LDY # 1
+#else
+                LDY # 0
                 STA [maNEWHOLE], Y
                 INY
+#endif
                 LDA maNEWHOLESIZEH
                 STA [maNEWHOLE], Y
     
@@ -377,10 +393,16 @@ unit Allocate
             // so we now how much to free later
             // block size includes the size of the size field itself
             // WriteWord(best, bestSize);
-            LDY # 0
+            
             LDA maBESTSIZEL
+#ifdef CPU_65C02S
+            STA [maBEST]
+            LDY # 1
+#else
+            LDY # 0
             STA [maBEST], Y
             INY
+#endif
             LDA maBESTSIZEH
             STA [maBEST], Y
     

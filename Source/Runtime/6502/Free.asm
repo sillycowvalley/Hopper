@@ -88,11 +88,15 @@ unit Free
             LDA IDXH
             SBC # 0
             STA IDYH
-            
+#ifdef CPU_65C02S
+            LDA [IDY]
+            LDY # 1
+#else
             LDY # 0
             LDA [IDY], Y
-            STA mfSIZEL
             INY
+#endif
+            STA mfSIZEL
             LDA [IDY], Y
             STA mfSIZEH
 
@@ -188,10 +192,16 @@ unit Free
                 }
                 // 0 != current
                 // currentSize = ReadWord[mfCURRENT]
+#ifdef CPU_65C02S
+                LDA [mfCURRENT]
+                LDY # 1
+#else
                 LDY # 0
                 LDA [mfCURRENT], Y
-                STA mfCURRENTSIZEL
                 INY
+#endif
+                STA mfCURRENTSIZEL
+                
                 LDA [mfCURRENT], Y
                 STA mfCURRENTSIZEH
                 // currentNext = ReadWord(mfCURRENT + 2)
@@ -277,10 +287,16 @@ unit Free
                             // GAPFRONT == 0
 
                             // nextSize = ReadWord(freeList)
+#ifdef CPU_65C02S
+                            LDA [FREELIST]
+                            LDY # 1
+#else
                             LDY # 0
                             LDA [FREELIST], Y
-                            STA mfNEXTSIZEL
                             INY
+#endif
+                            STA mfNEXTSIZEL
+                            
                             LDA [FREELIST], Y
                             STA mfNEXTSIZEH
                             // nextNext = ReadWord(freeList+2);
@@ -301,10 +317,15 @@ unit Free
                             STA mfSIZEH
 
                             // WriteWord(freeSlot, size+nextSize);
-                            LDY # 0
                             LDA mfSIZEL
+#ifdef CPU_65C02S
+                            STA [mfFREESLOT]
+                            LDY # 1
+#else
+                            LDY # 0
                             STA [mfFREESLOT], Y
                             INY
+#endif
                             LDA mfSIZEH
                             STA [mfFREESLOT], Y
 
@@ -369,7 +390,7 @@ unit Free
                     LDA mfFREESLOTH
                     STA [mfCURRENTPREV], Y
 
-                    // WriteWord(freeSlot   +4, currentPrev);
+                    // WriteWord(freeSlot+4, currentPrev);
                     INY
                     LDA mfCURRENTPREVL
                     STA [mfFREESLOT], Y
@@ -377,7 +398,7 @@ unit Free
                     LDA mfCURRENTPREVH
                     STA [mfFREESLOT], Y
 
-                    // WriteWord(freeSlot   +2, 0);
+                    // WriteWord(freeSlot+2, 0);
                     LDY #2
                     LDA #0
                     STA [mfFREESLOT], Y
@@ -385,31 +406,8 @@ unit Free
                     STA [mfFREESLOT], Y
 
                     // prevSize = ReadWord(currentPrev);
-                    LDY # 0
-                    LDA [mfCURRENTPREV], Y
-                    STA mfPREVSIZEL
-                    INY
-                    LDA [mfCURRENTPREV], Y
-                    STA mfPREVSIZEH
-
                     // gapBack = freeSlot - (currentPrev+prevSize);
-
-                    CLC
-                    LDA mfCURRENTPREVL
-                    ADC mfPREVSIZEL
-                    STA mfGAPBACKL
-                    LDA mfCURRENTPREVH
-                    ADC mfPREVSIZEH
-                    STA mfGAPBACKH
-                    SEC
-                    LDA mfFREESLOTL
-                    SBC mfGAPBACKL
-                    STA mfGAPBACKL
-                    LDA mfFREESLOTH
-                    SBC mfGAPBACKH
-                    STA mfGAPBACKH
-
-                    LDA mfGAPBACKL
+                    freeHelper1();
                     if (NZ) 
                     {
                         break; // memoryFreeExit
@@ -431,10 +429,16 @@ unit Free
                     LDA mfSIZEH
                     ADC mfPREVSIZEH
                     STA mfSIZEH
-                    LDY # 0
+                    
                     LDA mfSIZEL
+#ifdef CPU_65C02S
+                    STA [mfCURRENTPREV]
+                    LDY # 1
+#else
+                    LDY # 0
                     STA [mfCURRENTPREV], Y
                     INY
+#endif
                     LDA mfSIZEH
                     STA [mfCURRENTPREV], Y
 
@@ -461,7 +465,7 @@ unit Free
             LDA mfFREESLOTH
             STA [mfCURRENTPREV], Y
 
-            // WriteWord(freeSlot   +4, currentPrev);
+            // WriteWord(freeSlot+4, currentPrev);
             INY
             LDA mfCURRENTPREVL
             STA [mfFREESLOT], Y
@@ -469,7 +473,7 @@ unit Free
             LDA mfCURRENTPREVH
             STA [mfFREESLOT], Y
 
-            // WriteWord(freeSlot   +2, mfCURRENT);
+            // WriteWord(freeSlot+2, mfCURRENT);
             LDY #2
             LDA mfCURRENTL
             STA [mfFREESLOT], Y
@@ -477,7 +481,7 @@ unit Free
             LDA mfCURRENTH
             STA [mfFREESLOT], Y
 
-            // WriteWord(mfCURRENT    +4, freeSlot);
+            // WriteWord(mfCURRENT+4, freeSlot);
             INY
             LDA mfFREESLOTL
             STA [mfCURRENT], Y
@@ -486,35 +490,11 @@ unit Free
             STA [mfCURRENT], Y
 
             // prevSize = ReadWord(currentPrev);
-            LDY # 0
-            LDA [mfCURRENTPREV], Y
-            STA mfPREVSIZEL
-            INY
-            LDA [mfCURRENTPREV], Y
-            STA mfPREVSIZEH
-
             // gapBack = freeSlot - (currentPrev+prevSize);
-
-            CLC
-            LDA mfCURRENTPREVL
-            ADC mfPREVSIZEL
-            STA mfGAPBACKL
-            LDA mfCURRENTPREVH
-            ADC mfPREVSIZEH
-            STA mfGAPBACKH
-            SEC
-            LDA mfFREESLOTL
-            SBC mfGAPBACKL
-            STA mfGAPBACKL
-            LDA mfFREESLOTH
-            SBC mfGAPBACKH
-            STA mfGAPBACKH
-
-            LDA #0
-            CMP mfGAPBACKL
+            freeHelper1();
             if (Z)
             {
-                CMP mfGAPBACKH
+                LDA mfGAPBACKH
                 if (Z)
                 {
                     // no gap between freeSlot and previous so absorb it into previous block
@@ -529,10 +509,15 @@ unit Free
                     ADC mfPREVSIZEH
                     STA mfSIZEH
 
-                    LDY # 0
                     LDA mfSIZEL
+#ifdef CPU_65C02S
+                    STA [mfCURRENTPREV]
+                    LDY # 1
+#else
+                    LDY # 0
                     STA [mfCURRENTPREV], Y
                     INY
+#endif
                     LDA mfSIZEH
                     STA [mfCURRENTPREV], Y
 
@@ -592,11 +577,16 @@ unit Free
             LDA mfSIZEH
             ADC mfCURRENTSIZEH
             STA mfSIZEH
-            
-            LDY # 0
+     
             LDA mfSIZEL
+#ifdef CPU_65C02S
+            STA [mfFREESLOT]
+            LDY # 1
+#else
+            LDY # 0
             STA [mfFREESLOT], Y
             INY
+#endif
             LDA mfSIZEH
             STA [mfFREESLOT], Y
 
@@ -631,4 +621,38 @@ unit Free
             break;
         } // loop
     }
+    
+    freeHelper1()
+    {
+        // prevSize = ReadWord(currentPrev);
+#ifdef CPU_65C02S
+        LDA [mfCURRENTPREV]
+        LDY # 1
+#else
+        LDY # 0
+        LDA [mfCURRENTPREV], Y
+        INY
+#endif
+        STA mfPREVSIZEL
+        LDA [mfCURRENTPREV], Y
+        STA mfPREVSIZEH
+        // gapBack = freeSlot - (currentPrev+prevSize);
+        CLC
+        LDA mfCURRENTPREVL
+        ADC mfPREVSIZEL
+        STA mfGAPBACKL
+        LDA mfCURRENTPREVH
+        ADC mfPREVSIZEH
+        STA mfGAPBACKH
+        SEC
+        LDA mfFREESLOTL
+        SBC mfGAPBACKL
+        STA mfGAPBACKL
+        LDA mfFREESLOTH
+        SBC mfGAPBACKH
+        STA mfGAPBACKH
+        LDA mfGAPBACKL
+    }
+    
 }
+
