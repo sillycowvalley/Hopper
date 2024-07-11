@@ -17,6 +17,8 @@ program PreProcess
     uses "Constant"
     uses "Directives" 
     
+    uses "JSON/Configuration"
+    
     bool isExperimental;
     bool IsExperimental { get { return isExperimental; } set { isExperimental = value; } }
     
@@ -1604,42 +1606,6 @@ program PreProcess
         return success;
     }
     
-    GetConfigurationSymbols(<string> cliSymbols)
-    {
-        string configSymbolsPath = Path.MakeOptions("Configuration.options");
-        loop
-        {
-            if (!File.Exists(configSymbolsPath))
-            {
-                break;
-            }
-            <string, variant> dict;
-            if (JSON.Read(configSymbolsPath, ref dict))
-            {
-                <string, string> symbols;
-                if (!IsAssembly && dict.Contains("Hopper"))
-                {
-                    symbols = dict["Hopper"];
-                }
-                if (IsAssembly && dict.Contains("Hopper 6502 Assembly"))
-                {
-                    symbols = dict["Hopper 6502 Assembly"];
-                }
-                foreach (var kv in symbols)
-                {
-                    if (kv.value == "true")
-                    {
-                        if (!cliSymbols.Contains(kv.key))
-                        {
-                            cliSymbols.Append(kv.key);
-                        }
-                    }
-                }
-            }
-            break;
-        }
-    }
-    
     BadArguments()
     {
         PrintLn("Invalid arguments for PREPROCESS:");
@@ -1762,7 +1728,7 @@ program PreProcess
               }
               if (!IsTiggerC)
               {
-                  GetConfigurationSymbols(cliSymbols);
+                  cliSymbols = Configuration.ReadSymbols(cliSymbols, IsAssembly ? "Hopper 6502 Assembly" : "Hopper");
               }
               if (!buildSymbols(projectPath, cliSymbols))
               {

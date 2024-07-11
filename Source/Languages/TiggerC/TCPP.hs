@@ -3,7 +3,7 @@ program TCPreprocess
     uses "/Source/System/System"
     uses "/Source/System/Diagnostics"
     
-    uses "/Source/Compiler/JSON/JSON"
+    uses "/Source/Compiler/JSON/Configuration"
     
     uses "/Source/Compiler/Tokens/Parser" // for SetInteractive
     
@@ -115,34 +115,7 @@ program TCPreprocess
         }
         return includePath;
     }
-    GetConfigurationSymbols()
-    {
-        string configSymbolsPath = Path.MakeOptions("Configuration.options");
-        loop
-        {
-            if (!File.Exists(configSymbolsPath))
-            {
-                break;
-            }
-            <string, variant> dict;
-            if (JSON.Read(configSymbolsPath, ref dict))
-            {
-                <string, string> symbols;
-                if (dict.Contains("Tigger C"))
-                {
-                    symbols = dict["Tigger C"];
-                }
-                foreach (var kv in symbols)
-                {
-                    if (kv.value == "true")
-                    {
-                        definedSymbols[kv.key] = true;
-                    }
-                }
-            }
-            break;
-        }
-    }
+    
     BadArguments()
     {
         PrintLn("Invalid arguments for TCPP:");
@@ -611,25 +584,6 @@ program TCPreprocess
             }
             _ = AddInclude(projectPath);
             
-            // defined here means from 'configuration.options' or '-d' command line option
-            /*
-            if (definedSymbols.Count != 0)
-            {
-                string configSymbolsPath = (Path.MakeOptions("Configuration.options")).ToLower();
-                uint i;
-                foreach (var kv in definedSymbols)
-                {
-                    if (kv.value)
-                    {
-                        i++;
-                        PrintLn();
-                        Print(kv.key);
-                        preFile.Append(configSymbolsPath + ":" + i.ToString() + Char.Tab + "#define " + kv.key + Char.EOL);
-                    }
-                }
-            }
-            */
-            
             success = processFile(projectPath, preFile);
             
             preFile.Flush();
@@ -718,8 +672,12 @@ program TCPreprocess
               BadArguments();
               break;
           }
-          
-          GetConfigurationSymbols();
+          <string> configSymbols;
+          configSymbols = Configuration.ReadSymbols(configSymbols, "Tigger C");
+          foreach (var configSymbol in configSymbols)
+          {
+              definedSymbols[configSymbol] = true;
+          }
           
           projectPath = Path.GetFullPath(projectPath);
           
