@@ -234,7 +234,7 @@ unit Memory
                 }
             }
         
-            LDY #0
+            LDY # 0
             CLC
             LDA [ZP.IDX], Y
             ADC ZP.ACCL

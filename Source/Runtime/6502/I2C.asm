@@ -281,9 +281,14 @@ unit I2C
     Read()
     {
         // return zero if we read past end of buffer
+#if defined(CPU_65C02S)
+        STZ ZP.TOPL
+        STZ ZP.TOPH
+#else
         LDA # 0
         STA ZP.TOPL
         STA ZP.TOPH
+#endif
         
         LDA ZP.I2CInReadPtr
         CMP ZP.I2CInWritePtr
@@ -297,27 +302,9 @@ unit I2C
         LDA # Types.Byte
         PushTop();
     }
-    /*
-    ByteOutDelay()
-    {
-        ByteOut();
-        
-        // delay 5ms for EEPROM write
-        PHA
-        LDA # 5
-        STA ZP.TOPL
-        STZ ZP.TOPH
-        Time.DelayTOP(); // munts A
-        PLA
-    }
-    */
      
     ByteOut() // clears ZP.OutB 
     {
-        //LDA # ' '
-        //Serial.WriteChar();
-        //LDA ZP.OutB
-        //Serial.HexOut();
         PHA        
 #if defined(CPU_65C02S) && defined(ZEROPAGE_IO)
         PHX

@@ -84,12 +84,12 @@ unit Diagnostics
         
         // find the first non-zero from the back
         
-        LDY #0xFF
+        LDY # 0xFF
         LDA [ZP.IDX], Y
         if (NZ)
         {
             // trivial case: [ZP.IDX], 0xFF is non-zero
-            LDY #0
+            LDY # 0
             loop
             {
 #if defined(ZEROPAGE_IO)

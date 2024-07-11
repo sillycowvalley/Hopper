@@ -1,9 +1,6 @@
 program MRVT
 {
     
-    //#define CPU_Z80
-    #define FAST_6502_RUNTIME
-    
     uses "/Source/Minimal/IO"
     
     PrintFailed(string message, uint instance)

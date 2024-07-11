@@ -49,8 +49,12 @@ unit SerialEEPROM
         loop
         {
             LDA Address.I2CInBuffer, X
+#ifdef CPU_65C02S
+            STA [IDX]
+#else
             LDY # 0
             STA [IDX], Y
+#endif
             IncIDY();
             IncIDX();
             INX
@@ -126,8 +130,12 @@ unit SerialEEPROM
         LDX # serialPageSize
         loop
         {
+#ifdef CPU_65C02S 
+            LDA [IDX]
+#else
             LDY # 0
             LDA [IDX], Y
+#endif
             STA ZP.OutB
             I2C.ByteOut(); // zeros ZP.OutB
             IncIDX();

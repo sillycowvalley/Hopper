@@ -157,7 +157,7 @@ unit Allocate
                 STA maBESTH
         
                 // bestSize = ReadWord(best);
-                LDY #0
+                LDY # 0
                 LDA [maBEST], Y
                 STA maBESTSIZEL
                 INY
@@ -240,7 +240,7 @@ unit Allocate
         
                 // so we now how much to free later
                 // block size includes the size of the size field itself
-                LDY #0
+                LDY # 0
                 LDA ACCL
                 STA [maBEST], Y
                 INY
@@ -264,7 +264,7 @@ unit Allocate
                 SBC ACCH
                 STA maNEWHOLESIZEH
         
-                LDY #0
+                LDY # 0
                 LDA maNEWHOLESIZEL
                 STA [maNEWHOLE], Y
                 INY
@@ -377,7 +377,7 @@ unit Allocate
             // so we now how much to free later
             // block size includes the size of the size field itself
             // WriteWord(best, bestSize);
-            LDY #0
+            LDY # 0
             LDA maBESTSIZEL
             STA [maBEST], Y
             INY

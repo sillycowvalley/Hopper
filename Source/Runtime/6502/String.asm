@@ -682,7 +682,7 @@ unit String
         LDA FDESTINATIONADDRESSH
         ADC FLENGTHH
         STA FDESTINATIONADDRESSH                          
-        LDY #0
+        LDY # 0
         LDA TOPL
         STA [FDESTINATIONADDRESS], Y
         
@@ -756,7 +756,7 @@ unit String
                 }
             }
     
-            LDY #0        
+            LDY # 0        
             LDA [FSOURCEADDRESS], Y
             STA [FDESTINATIONADDRESS] , Y
             
@@ -778,7 +778,7 @@ unit String
         }
 
         // build[0] = insertChar
-        LDY #0
+        LDY # 0
         LDA TOPL
         STA [FDESTINATIONADDRESS], Y
         

@@ -376,7 +376,7 @@ unit Instruction
 #ifdef CPU_65C02S
         LDA [ZP.ACC]
 #else
-        LDY #0
+        LDY # 0
         LDA [ZP.ACC], Y
 #endif        
         
@@ -409,7 +409,7 @@ unit Instruction
 #ifdef CPU_65C02S
         LDA [ZP.ACC]
 #else
-        LDY #0
+        LDY # 0
         LDA [ZP.ACC], Y
 #endif        
         
@@ -482,7 +482,7 @@ unit Instruction
         Utilities.IncACC();
 #endif
         
-        LDY #0
+        LDY # 0
         LDA [ZP.ACC], Y
         STA ZP.IDXL
         INY
@@ -522,7 +522,7 @@ unit Instruction
         LDA [ZP.ACC]
         STA ZP.IDXL
 #else        
-        LDY #0
+        LDY # 0
         STY ZP.IDXH
         LDA [ZP.ACC], Y
         STA ZP.IDXL
@@ -1708,7 +1708,7 @@ unit Instruction
 #ifdef CPU_65C02S
         LDA [ZP.ACC]
 #else        
-        LDY #0
+        LDY # 0
         LDA [ZP.ACC], Y
 #endif
         // PC += offset
@@ -2691,7 +2691,7 @@ unit Instruction
 #ifdef CPU_65C02S
         STA [ZP.ACC]
 #else        
-        LDY #0
+        LDY # 0
         STA [ZP.ACC], Y
 #endif
         
@@ -2702,7 +2702,7 @@ unit Instruction
         lookupMethod();
         
         // address store back to [ACC] and PC
-        LDY #0
+        LDY # 0
         LDA ZP.IDXL
         STA [ZP.ACC], Y
         INY
@@ -2779,7 +2779,7 @@ unit Instruction
 #ifdef CPU_65C02S
         LDA [ZP.ACC]
 #else
-        LDY #0
+        LDY # 0
         LDA [ZP.ACC], Y
 #endif                
 

@@ -328,7 +328,7 @@ unit GC
                     break;
                 }
             }
-            LDY #0
+            LDY # 0
             LDA [IDX], Y
             CMP [IDY], Y
             if (NZ)
