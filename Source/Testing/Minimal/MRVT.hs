@@ -1,12 +1,24 @@
 program MRVT
 {
+    #define TESTFLOATS
+    //#define DICTIONARIES
+    #define LOOP_TESTS // slower 'int' and 'uint' tests
     
     uses "/Source/Minimal/IO"
+    
+    uses "Numbers"
+    uses "Strings"
+    uses "Suite"
     
     PrintFailed(string message, uint instance)
     {
         WriteLn("  Failed: " + message + " " + instance.ToString());
-        Diagnostics.Die(0x0B); // system failure / internal error
+        loop {}
+    }
+    PrintFailed(string message)
+    {
+        WriteLn("  " + message);
+        loop {}
     }
     
     TestStringTrim()
@@ -1798,7 +1810,7 @@ program MRVT
             PrintFailed(prompt, 58);
         }
     }
-    flags PFlags
+    flags MPFlags
     {
         None = 0,
         One = 0x01,
@@ -1809,8 +1821,8 @@ program MRVT
     uint gProp;
     uint Prop { get { return gProp; } set { gProp = value; } }
     
-    PFlags fProp;
-    PFlags FProp { get { return fProp; } set { fProp = value; } }
+    MPFlags fProp;
+    MPFlags FProp { get { return fProp; } set { fProp = value; } }
     
     TestPropertyMath()
     {
@@ -1856,24 +1868,24 @@ program MRVT
         }
         
         
-        fProp |= PFlags.Four;
-        if (fProp != PFlags.Four)
+        fProp |= MPFlags.Four;
+        if (fProp != MPFlags.Four)
         {
             PrintFailed(prompt, 65);
         }
-        fProp &= PFlags.Two;
-        if (fProp != PFlags.None)
+        fProp &= MPFlags.Two;
+        if (fProp != MPFlags.None)
         {
             PrintFailed(prompt, 66);
         }
         
-        FProp |= PFlags.Four;
-        if (FProp != PFlags.Four)
+        FProp |= MPFlags.Four;
+        if (FProp != MPFlags.Four)
         {
             PrintFailed(prompt, 67);
         }
-        FProp &= PFlags.Two;
-        if (FProp != PFlags.None)
+        FProp &= MPFlags.Two;
+        if (FProp != MPFlags.None)
         {
             PrintFailed(prompt, 68);
         }
@@ -2475,7 +2487,7 @@ program MRVT
     }
     
     
-    Hopper()
+    Tests()
     {
         
         WriteLn();
@@ -2508,6 +2520,16 @@ program MRVT
         TestUIntMath();
         TestIntMath();
   
-        WriteLn("  Passed");
+        WriteLn("    MRVT Passed");   
+    }
+    Hopper()
+    {
+        MRVT.Tests();
+        Numbers.Tests();
+        Strings.Tests();
+        Suite.Tests();
+        
+        WriteLn();
+        WriteLn("    Success");   
     }
 }

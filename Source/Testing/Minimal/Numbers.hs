@@ -1,19 +1,5 @@
-program Numbers
+unit Numbers
 {
-    
-    #define TESTFLOATS
-    //#define LOOP_TESTS // slower 'int' and 'uint' tests
-    
-    #define EXPERIMENTAL
-    
-    uses "/Source/Minimal/System"
-    uses "/Source/Minimal/IO"
-     PrintFailed(string message)
-    {
-        WriteLn("  " + message);
-        loop {}
-    }
-   
     TestEquals()
     { 
         WriteLn("'==' constants");
@@ -2044,11 +2030,9 @@ program Numbers
             PrintFailed("'bit' 5");
         }
     }
+    Tests()
     {
-        //EchoToLCD = true;
-        //Screen.Clear();
-        
-        long start = Millis;
+        WriteLn();
         
 #ifdef TESTFLOATS
         TestFloatMath();
@@ -2069,11 +2053,8 @@ program Numbers
         
         TestPropertyMath();
         
-        long elapsed = Millis - start;
         WriteLn();
-        WriteLn("TestNumbers Ok");
-        WriteLn(elapsed.ToString() + " ms");
-        
+        WriteLn("    Numbers Passed");   
         
     }
 }
