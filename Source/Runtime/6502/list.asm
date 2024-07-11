@@ -573,16 +573,10 @@ unit List
         {
             // iRecent == 0?
             LDA LCOUNTL
+            ORA LCOUNTH
             if (Z)
             {
-                LDA LCOUNTH
-                if (Z)
-                {
-                    LDA # 0
-                    STA LCOUNTL
-                    STA LCOUNTH
-                    break; // moveToItem : NotRecent
-                }
+                break; // moveToItem : NotRecent
             }
             
             // iRecent <= index?
@@ -617,18 +611,14 @@ unit List
             STA LCURRENTH
         
 #ifdef CHECKED
-            LDA LCURRENTL
+            ORA LCURRENTL
             if (Z)
             {
-                LDA LCURRENTH
-                if (Z)
-                {
-                    // pFirst == 0 : empty list
-                     
-                    // list index out of range
-                    LDA # 0x01 
-                    Diagnostics.die();
-                }
+                // pFirst == 0 : empty list
+                 
+                // list index out of range
+                LDA # 0x01 
+                Diagnostics.die();
             }
 #endif
             break;
@@ -829,13 +819,10 @@ unit List
         loop
         {
             LDA LNEXTL
+            ORA LNEXTH
             if (Z)
             {
-                LDA LNEXTH
-                if (Z)
-                {
-                    break;
-                }
+                break;
             }
         
             LDA # 4

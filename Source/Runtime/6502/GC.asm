@@ -278,10 +278,10 @@ unit GC
         loop
         {
             LDA FLENGTHL
+            ORA FLENGTHH
             if (Z)
             {
-                LDA FLENGTHH
-                if (Z) { break; }
+                break;
             }
             
             LDA [FSOURCEADDRESS], Y

@@ -159,13 +159,10 @@ unit Utilities
         loop
         {
             LDA LCOUNTL
+            ORA LCOUNTH
             if (Z)
             {
-                LDA LCOUNTH
-                if (Z)
-                {
-                    return;
-                }
+                return;
             }
             LDA [FSOURCEADDRESS], Y
             STA [FDESTINATIONADDRESS], Y
@@ -180,5 +177,4 @@ unit Utilities
             DEC LCOUNTL
         } // loop
     }
-    
 }
