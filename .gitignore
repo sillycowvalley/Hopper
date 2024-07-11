@@ -4,7 +4,7 @@
 *.log
 *.mem
 *.uf2
-*.locals
+*.local
 
 *.suo
 *.vsidx

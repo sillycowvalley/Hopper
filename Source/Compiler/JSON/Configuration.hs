@@ -38,7 +38,7 @@ unit Configuration
                     }
                 }
             }
-            configSymbolsPath = configSymbolsPath.Replace(".options", ".locals");
+            configSymbolsPath = configSymbolsPath.Replace(".options", ".local");
             if (!File.Exists(configSymbolsPath))
             {
                 break;
@@ -53,7 +53,7 @@ unit Configuration
                 }
                 foreach (var kv in symbols)
                 {
-                    // if a symbol is found in .locals it
+                    // if a symbol is found in .local it
                     // is set or cleared (override if exists)
                     allSymbols[kv.key] = (kv.value == "true");
                 }
