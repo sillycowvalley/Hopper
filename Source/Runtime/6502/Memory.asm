@@ -225,13 +225,10 @@ unit Memory
         loop
         {
             LDA ZP.IDXL
+            ORA ZP.IDXH
             if (Z)
             {
-                LDA ZP.IDXH
-                if (Z)
-                {
-                    break;
-                }
+                break;
             }
         
             LDY # 0
@@ -289,27 +286,21 @@ unit Memory
         loop
         {
             LDA IDXL
+            ORA IDXH
             if (Z)
             {
-                LDA IDXH
+                // current == 0
+                LDA ACCL
+                ORA ACCH
                 if (Z)
                 {
-                    // current == 0
-                    LDA ACCL
-                    if (Z)
-                    {
-                        LDA ACCH
-                        if (Z)
-                        { 
-                            // available== 0
-                            break; 
-                        } 
-                    }
-                    
-                    // 2 byte cost for the block
-                    DecACCx2();
-                    break;
+                    // available== 0
+                    break; 
                 }
+                
+                // 2 byte cost for the block
+                DecACCx2();
+                break;
             }
     
             // size = ReadWord(current + 0);

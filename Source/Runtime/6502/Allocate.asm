@@ -98,13 +98,10 @@ unit Allocate
         {
             // available block search loop    
             LDA IDYL
+            ORA IDYH
             if (Z)
             {
-                LDA IDYH
-                if (Z)
-                {
-                    break;
-                }
+                break;
             }
     
             // read current FreeList
@@ -124,27 +121,24 @@ unit Allocate
                 if (NC) { break; } // [IDY] < ACC
                 // [IDY] >= ACC
         
-                // (0 == maBESTSIZE) ? 
+                // (0 != maBESTSIZE) ? 
                 LDA maBESTSIZEL
+                ORA maBESTSIZEH
                 if (NZ)
                 {
-                    LDA maBESTSIZEH
-                    if (NZ)
-                    { 
-                        // [IDY] < maBESTSIZE ?
-                        LDY #1
+                    // [IDY] < maBESTSIZE ?
+                    LDY #1
+                    LDA [IDY], Y
+                    CMP maBESTSIZEH
+                    if (Z)
+                    {
+                        DEY
                         LDA [IDY], Y
-                        CMP maBESTSIZEH
-                        if (Z)
-                        {
-                            DEY
-                            LDA [IDY], Y
-                            CMP maBESTSIZEL
-                        }
-                        if (C)
-                        {
-                            break;  // [IDY] < maBESTSIZE
-                        }
+                        CMP maBESTSIZEL
+                    }
+                    if (C)
+                    {
+                        break;  // [IDY] < maBESTSIZE
                     }
                 }
     
@@ -288,46 +282,40 @@ unit Allocate
                 STA [maNEWHOLE], Y
     
                 LDA maBESTPREVL
+                ORA maBESTPREVH
                 if (Z)
                 {
-                    LDA maBESTPREVH
+                    // 0 == bestPrev
+                    LDA maNEWHOLEL
+                    STA FREELISTL
+                    LDA maNEWHOLEH
+                    STA FREELISTH
+                    INY
+                    LDA maBESTNEXTL
+                    STA [maNEWHOLE], Y
+                    INY
+                    LDA maBESTNEXTH
+                    STA [maNEWHOLE], Y
+                    INY
+                    LDA #0
+                    STA [maNEWHOLE], Y
+                    INY
+                    STA [maNEWHOLE], Y
+        
+                    LDA maBESTNEXTL
+                    ORA maBESTNEXTH
                     if (Z)
                     {
-                        // 0 == bestPrev
-                        LDA maNEWHOLEL
-                        STA FREELISTL
-                        LDA maNEWHOLEH
-                        STA FREELISTH
-                        INY
-                        LDA maBESTNEXTL
-                        STA [maNEWHOLE], Y
-                        INY
-                        LDA maBESTNEXTH
-                        STA [maNEWHOLE], Y
-                        INY
-                        LDA #0
-                        STA [maNEWHOLE], Y
-                        INY
-                        STA [maNEWHOLE], Y
-            
-                        LDA maBESTNEXTL
-                        if (Z)
-                        {
-                            LDA maBESTNEXTH
-                            if (Z)
-                            {
-                                break; // memoryAllocateExit
-                            }
-                        }
-                
-                        LDY #4
-                        LDA maNEWHOLEL
-                        STA [maBESTNEXT], Y
-                        INY
-                        LDA maNEWHOLEH
-                        STA [maBESTNEXT], Y
                         break; // memoryAllocateExit
                     }
+            
+                    LDY #4
+                    LDA maNEWHOLEL
+                    STA [maBESTNEXT], Y
+                    INY
+                    LDA maNEWHOLEH
+                    STA [maBESTNEXT], Y
+                    break; // memoryAllocateExit
                 }
         
                 LDY #2
@@ -350,13 +338,10 @@ unit Allocate
                 STA [maBESTPREV], Y
                 
                 LDA maBESTNEXTL
+                ORA maBESTNEXTH
                 if (Z)
                 {
-                    LDA maBESTNEXTH
-                    if (Z)
-                    {
-                        break; // memoryAllocateExit
-                    }
+                    break; // memoryAllocateExit
                 }
         
                 LDY #4
@@ -407,37 +392,31 @@ unit Allocate
             STA [maBEST], Y
     
             LDA maBESTPREVL
+            ORA maBESTPREVH
             if (Z)
             {
-                LDA maBESTPREVH
+                // 0 == bestPrev
+        
+                // best was the old FreeList
+                LDA maBESTNEXTL
+                STA FREELISTL
+                LDA maBESTNEXTH
+                STA FREELISTH
+        
+                LDA maBESTNEXTL
+                ORA maBESTNEXTH
                 if (Z)
                 {
-                    // 0 == bestPrev
-            
-                    // best was the old FreeList
-                    LDA maBESTNEXTL
-                    STA FREELISTL
-                    LDA maBESTNEXTH
-                    STA FREELISTH
-            
-                    LDA maBESTNEXTL
-                    if (Z)
-                    {
-                        LDA maBESTNEXTH
-                        if (Z)
-                        {
-                            break; // memoryAllocateExit
-                        }
-                    }
-            
-                    // WriteWord(freeList+4, 0)// // start of list now so no previous
-                    LDA # 0
-                    LDY # 4
-                    STA [FREELIST], Y
-                    INY
-                    STA [FREELIST], Y
                     break; // memoryAllocateExit
                 }
+        
+                // WriteWord(freeList+4, 0)// // start of list now so no previous
+                LDA # 0
+                LDY # 4
+                STA [FREELIST], Y
+                INY
+                STA [FREELIST], Y
+                break; // memoryAllocateExit
             }
     
             // 0 != bestPrev
@@ -450,14 +429,10 @@ unit Allocate
             LDA maBESTNEXTH
             STA [maBESTPREV], Y
     
-            LDA maBESTNEXTL
+            ORA maBESTNEXTL
             if (Z)
             {
-                LDA maBESTNEXTH
-                if (Z)
-                {
-                    break; // memoryAllocateExit
-                }
+                break; // memoryAllocateExit
             }
     
             // WriteWord(bestNext+4, bestPrev);

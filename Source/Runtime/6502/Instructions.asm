@@ -1045,10 +1045,10 @@ unit Instruction
             if (C) { break; }
             //  0 or positive
             LDA ZP.TOPL
+            ORA ZP.TOPH
             if (Z)
             {
-                LDA ZP.TOPH
-                if (Z) { break; }
+                break;
             }
             LDX #1
             break;
@@ -1117,10 +1117,10 @@ unit Instruction
             if (C) { break; }
             //  0 or positive
             LDA ZP.TOPL
+            ORA ZP.TOPH
             if (Z)
             {
-                LDA ZP.TOPH
-                if (Z) { break; }
+                break;
             }
             LDX #1
             break;
@@ -1436,14 +1436,11 @@ unit Instruction
         STA IDYH
         
         // zero offset?
+        ORA IDYL
         if (Z)
         {
-            LDA IDYL
-            if (Z)
-            {
-                jixDefault();
-                return;
-            }
+            jixDefault();
+            return;
         }
         
         // pc = pc - jumpBackOffset - 5 + offset
