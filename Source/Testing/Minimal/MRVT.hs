@@ -4,7 +4,7 @@ program MRVT
     //#define DICTIONARIES
     #define LOOP_TESTS // slower 'int' and 'uint' tests
     
-    uses "/Source/Minimal/IO"
+    uses "/Source/Library/Boards/Hopper6502"
     
     uses "Numbers"
     uses "Strings"
@@ -2524,10 +2524,12 @@ program MRVT
     }
     Hopper()
     {
+        LED = true;
         MRVT.Tests();
         Numbers.Tests();
         Strings.Tests();
         Suite.Tests();
+        LED = false;
         
         WriteLn();
         WriteLn("    Success");   

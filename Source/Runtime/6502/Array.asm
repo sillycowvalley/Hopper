@@ -343,7 +343,6 @@ unit Array
         
         getIndexAndMask(); // returns index in IDY and bit # in X
                 
-        //LDY # 0        
         LDY # aiElements
         LDA # 0
         STA NEXTH
@@ -417,7 +416,6 @@ unit Array
         
         getIndexAndMask(); // returns index in IDY and bit # in X
                 
-        //LDY # 0        
         LDY # aiElements
         LDA # 0
         STA NEXTH
