@@ -54,6 +54,7 @@ program Baud
             rates['5'] = "57600";
             rates['6'] = "76800";
             rates['7'] = "115200";
+            rates['8'] = "230400";
             string currentBaud = LoadBaud();
             bool currentExists;
             char defCh;

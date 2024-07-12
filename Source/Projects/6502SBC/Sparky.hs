@@ -16,19 +16,19 @@ program Sparky
             NeoPixel.SetColor(0, 0, 255, 0);
             NeoPixel.Show();
             DigitalWrite(GP2, true);
-            //Delay(delay);
+            Delay(delay);
             
             NeoPixel.SetColor(0, 0, 0, 255);
             NeoPixel.Show();
             DigitalWrite(GP2, false);
-            //Delay(delay);
+            Delay(delay);
             if (resetCycles != 0)
             {
                 resetCycles--;
                 if (resetCycles == 0)
                 {
                     DigitalWrite(GP4, true);
-                    delay = 100;
+                    delay = 50;
                 }
             }
         }
