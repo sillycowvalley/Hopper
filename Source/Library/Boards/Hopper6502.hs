@@ -1,6 +1,7 @@
 unit Board
 {
     #define MCU_BOARD_DEFINED
+    #define HOPPER_6502_SBC
     
     const byte GP0 = 0;
     const byte GP1 = 1;
