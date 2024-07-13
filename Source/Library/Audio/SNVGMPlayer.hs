@@ -2,7 +2,9 @@ unit SNVGMPlayer
 {
     /*
     SN 76489 Library
-    Author : Dave Latham - https://github.com/linuxplayground
+    Authors : Dave Latham        - https://github.com/linuxplayground
+            : Michael Cartwright - https://github.com/sillycowvalley
+            
     Version: 1.0
      
     Copyright 2024 David Latham
@@ -48,6 +50,15 @@ unit SNVGMPlayer
     
     delegate bool VgmOpDelegate();
     VgmOpDelegate[256] vgmOp;
+    
+    bool notImplemented()
+    {
+        IO.WriteLn();
+        byte current = data[idx-1]; // idx has already been incremented
+        IO.WriteLn("VGM instruction 0x" + current.ToHexString(2) + " not implemented at 0x" + (idx-1).ToHexString(4));
+        Die(0x0A);
+        return false;
+    }
     
     bool send()
     {
@@ -126,6 +137,11 @@ unit SNVGMPlayer
         uint luint; // first local
         
         VgmOpDelegate callOp;
+        callOp =  notImplemented;
+        for (uint i=0; i < 256; i++)
+        {
+            vgmOp[i] = callOp;
+        }
         callOp = send;       vgmOp[sn_SEND]     = callOp;
         callOp = end;        vgmOp[sn_END]      = callOp;
         callOp = wait;       vgmOp[sn_WAIT]     = callOp;
@@ -172,37 +188,54 @@ unit SNVGMPlayer
         
         // WAIT:
         float fWaitDiv = usPerDecIteration / 23.0;
-        waitShift = 0;
-        if (fWaitDiv > 16)
+        if (fWaitDiv < 1.5)
         {
-            waitShift = 4;
+            waitShift = 0;
         }
-        else if (fWaitDiv > 8)
+        else if (fWaitDiv < 2.999) // /1.5 .. /3
         {
-            waitShift = 3;
+            waitShift = 1; // /2
         }
-        else if (fWaitDiv > 4)
+        else if (fWaitDiv < 5.999) // /3 .. /6
         {
-            waitShift = 2;
-        }
-        else if (fWaitDiv > 2)
+            waitShift = 2; // /4
+        }       
+        else if (fWaitDiv < 9.999) // /6 .. /10
         {
-            waitShift = 1;
+            // 6.652099 for Dave -> 3
+            waitShift = 3; // /8
         }
-        /*
+        else if (fWaitDiv < 23.999) // /10 .. /24
+        {
+            waitShift = 4; // /16
+        }
+        else
+        {
+            waitShift = 5; // /32
+        }
+
         IO.WriteLn(usPerN1Iteration.ToString() + " us for n1()");
         IO.WriteLn(usPerDecIteration.ToString() + " us for each lu-- iteration");
         IO.WriteLn(sixtiethIterations.ToString() + " iterations for SIXTIETH");
         IO.WriteLn(fWaitDiv.ToString() + " fWaitDiv");
         IO.WriteLn(waitShift.ToString() + " waitShift");
-        */
+        
         Memory.WriteByte(DDRB, 0b11111111);
         PinMode(sn_WE, PinModeOption.Output);
+        DigitalWrite(sn_WE, true);    // Make sure the SN76489 is not selected at start up.
         Silence();
     }
     Play(byte[] vgm)
     {
         data = vgm;
+        
+        byte last = data[data.Count-1];
+        if (last != sn_END)
+        {
+            IO.WriteLn("Last VGM instruction not END");  
+            Die(0x0B);
+        }
+        
         idx = 0;
         VgmOpDelegate callOp;
         loop {
