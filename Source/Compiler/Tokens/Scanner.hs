@@ -350,11 +350,45 @@ unit Scanner
             if (c == char(0x5C)) // \
             {
                 p = sourceGetFromPos(currentPos, true); // peek
-                if (   (p == '"') // \"
-                    || (p == char(0x5C)) // \\
-                    )
+                switch (p)
                 {
-                    c = advance(); // gooble the \
+                    case '"': // \"
+                    case char(0x5C): // \\
+                    {
+                        c = advance(); // gobble the \ (literal
+                    }
+                    
+                    // supported escape codes:
+                    case 'n':
+                    {
+                        _ = advance();
+                        c = Char.EOL;
+                    }
+                    case 't':
+                    {
+                        _ = advance();
+                        c = Char.Tab;
+                    }
+                    case 'f':
+                    {
+                        _ = advance();
+                        c = Char.Formfeed;
+                    }
+                    case 'b':
+                    {
+                        _ = advance();
+                        c = Char.Backspace;
+                    }
+                    case 'e':
+                    {
+                        _ = advance();
+                        c = Char.Escape;
+                    }
+                    case 'r':
+                    {
+                        _ = advance();
+                        c = char(0x0D);
+                    }
                 }
             }
             String.Build(ref value, c);
@@ -378,12 +412,47 @@ unit Scanner
         if (c == char(0x5C)) 
         {
             p = sourceGetFromPos(currentPos, true); // peek
-            if (   (p == char(0x27)) // \'
-                || (p == char(0x5C)) // \\
-                )
+            switch (p)
             {
-                c = advance();         // gobble the \
+                case char(0x27): // \'
+                case char(0x5C): // \\
+                {
+                    c = advance(); // gobble the \ (literal
+                }
+                
+                // supported escape codes:
+                case 'n':
+                {
+                    _ = advance();
+                    c = Char.EOL;
+                }
+                case 't':
+                {
+                    _ = advance();
+                    c = Char.Tab;
+                }
+                case 'f':
+                {
+                    _ = advance();
+                    c = Char.Formfeed;
+                }
+                case 'b':
+                {
+                    _ = advance();
+                    c = Char.Backspace;
+                }
+                case 'e':
+                {
+                    _ = advance();
+                    c = Char.Escape;
+                }
+                case 'r':
+                {
+                    _ = advance();
+                    c = char(0x0D);
+                }
             }
+            
         }
         d = advance();
         if (isAtEnd() || (d != char(0x27))) // '

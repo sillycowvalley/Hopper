@@ -40,6 +40,7 @@ program PreProcess
     
     string projectPath;
     <string, bool> unitsParsed;
+    <string, <string> > unitsUsed;
     string programNamespace;
     
     bool normalizeIdentifier(<string,string> idToken, ref string identifier, ref bool public, bool noDuplicates)
@@ -687,6 +688,13 @@ program PreProcess
             usesPathLower = usesPath.ToLower();
             if (!unitsParsed.Contains(usesPathLower))
             {
+                <string> used;
+                if (unitsUsed.Contains(sourcePath))
+                {
+                    used = unitsUsed[sourcePath];
+                }
+                used.Append(usesPathLower);
+                unitsUsed[sourcePath] = used;
                 unitsParsed[usesPathLower] = false; // false means we're aware of it but we haven't parsed it yet
             }
             <string, string> nextToken = Parser.CurrentToken;
@@ -1582,21 +1590,48 @@ program PreProcess
               break;
           }
           // any more units to parse?
+          string previousPath = sourcePath;
           sourcePath = "";
-          foreach (var kv in unitsParsed)
+          if (IsExperimental)
           {
-              if (!kv.value)
+              if (unitsUsed.Contains(previousPath))
               {
-                  // not yet parsed
-                  sourcePath = kv.key;
-                  unitsParsed[sourcePath] = true;
-                  break;
+                  foreach (var used in unitsUsed[previousPath])
+                  {
+                      if (unitsParsed.Contains(used) && !unitsParsed[used])
+                      {
+                          if (IsExperimental)
+                          {
+                              PrintLn();
+                              Print(previousPath + " wants " + used, Colour.Ocean, Colour.Black);
+                              sourcePath = used;
+                              break;
+                          }               
+                      }
+                  }
               }
           }
-          if (sourcePath == "")
+          if (sourcePath.Length == 0) 
           {
-              break;
+              foreach (var kv in unitsParsed)
+              {
+                  if (!kv.value)
+                  {
+                      // not yet parsed
+                      sourcePath = kv.key;
+                      break;
+                  }
+              }
           }
+          if (sourcePath.Length == 0) { break; }
+          
+          unitsParsed[sourcePath] = true;
+          if (IsExperimental)
+          {
+              PrintLn();
+              Print("  Parsing " + sourcePath);
+          } 
+          
         } // loop
         
         if (success)
