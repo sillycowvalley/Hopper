@@ -86,7 +86,7 @@ unit SysCalls
         addEntry("Long.ToInt");
         addEntry("Long.ToUInt");
         addEntry("UInt.FromBytes");
-        addEntry("_Long.NewFromConstant");
+        addEntry("Time.DelaySamples");
         addEntry("Long.Add");
         addEntry("Long.Sub");
         addEntry("Long.Div");
@@ -100,7 +100,7 @@ unit SysCalls
         addEntry("Long.Negate");
         
         addEntry("Float.ToString");
-        addEntry("_Float.ToBytes");
+        addEntry("Time.SampleMicros_Set");
         addEntry("_Float.New");
         addEntry("_Float.NewFromConstant");
         addEntry("Float.Add");

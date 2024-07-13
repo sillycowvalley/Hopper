@@ -74,6 +74,8 @@ unit SysCalls
         LongToUInt           = 0x3C,
         UIntFromBytes        = 0x3D,
         
+        TimeDelaySamples     = 0x3E,
+        
         LongAdd              = 0x3F,
         LongSub              = 0x40,
         LongDiv              = 0x41,
@@ -87,7 +89,7 @@ unit SysCalls
         LongNegate           = 0x49,
         
         FloatToString        = 0x4A,
-        //FloatToBytes         = 0x4B,
+        TimeSampleMicrosSet  = 0x4B,
         //FloatNew             = 0x4C,
         //FloatNewFromConstant = 0x4D,
         FloatAdd             = 0x4E,

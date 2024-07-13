@@ -805,6 +805,15 @@ unit HopperVM
                 External.Delay(Pop());
                 doNext = false;
             }
+            case SysCalls.TimeDelaySamples:
+            {
+                External.DelaySamples(Pop());
+            }
+            case SysCalls.TimeSampleMicrosSet :
+            {
+                Type stype;
+                External.SampleMicrosSet(Pop());
+            }
             case SysCalls.SerialIsAvailableGet:
             {
                 bool avail = Serial.IsAvailable;
@@ -1011,6 +1020,7 @@ unit HopperVM
                 }
                 Push(GC.Clone(currentDirectory), Type.String);
             }
+            
             case SysCalls.SystemCurrentDirectorySet:
             {
                 Type stype;
@@ -3963,6 +3973,15 @@ unit HopperVM
             {
                 External.Delay(Pop());
                 doNext = false;
+            }
+            case SysCalls.TimeDelaySamples:
+            {
+                External.DelaySamples(Pop());
+            }
+            case SysCalls.TimeSampleMicrosSet :
+            {
+                Type stype;
+                External.SampleMicrosSet(Pop());
             }
             
             

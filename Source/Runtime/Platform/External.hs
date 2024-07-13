@@ -477,6 +477,14 @@ unit External
     {
         Time.Delay(ms);
     }
+    DelaySamples(uint samples)
+    {
+        Time.DelaySamples(samples);
+    }
+    SampleMicrosSet(uint us)
+    {
+        Time.SampleMicros = us;
+    }
     DigitalWrite(byte pin, byte value)
     {
         //ErrorDump(157); Error = 0x0A; 

@@ -48,14 +48,14 @@ program VGMtoHopper
                 if (count < headerSize)
                 {
                     // header
-                    /*
                     if (count % 32 == 0)
                     {
                         PrintLn();
                         Print(count.ToHexString(4) + " ");
                     }
                     Print(" " + data.ToHexString(2), Colour.Ocean, Colour.Black);
-                    */
+                    
+                    /* assuming header is always 0x100 bytes:
                     switch(count)
                     {
                         case 0x08: { versionLSB = data; }
@@ -64,11 +64,11 @@ program VGMtoHopper
                             versionMSB = data; 
                             if ((versionMSB == 0x01) && (versionLSB == 0x50))
                             {
-                                headerSize = 64;
+                                //headerSize = 64;
                             }
                             else if ((versionMSB == 0x01) && (versionLSB == 0x51))
                             {
-                                headerSize = 128;
+                                //headerSize = 128;
                             }
                             else
                             {
@@ -78,6 +78,8 @@ program VGMtoHopper
                             }
                         }
                     }
+                    */
+                    
                     count++;
                 }
                 else
@@ -214,7 +216,7 @@ program VGMtoHopper
             else
             {
                 PrintLn();
-                PrintLn("Failure converting '" + vgmPath + "' to '" + hsPath + "'");
+                PrintLn("Failure converting '" + vgmPath + "' to '" + hsPath + "'", Colour.MatrixRed, Colour.Black);
             }
             break;
         } // loop

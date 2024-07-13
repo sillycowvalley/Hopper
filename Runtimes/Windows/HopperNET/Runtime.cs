@@ -295,7 +295,8 @@ namespace HopperNET
         LongToInt = 0x3B,
         LongToUInt = 0x3C,
         UIntFromBytes = 0x3D,
-        //LongNewFromConstant2 = 0x3E,
+        TimeDelaySamples = 0x3E,
+
         LongAdd = 0x3F,
         LongSub = 0x40,
         LongDiv = 0x41,
@@ -308,7 +309,7 @@ namespace HopperNET
         LongGE = 0x48,
         LongNegate = 0x49,
         FloatToString = 0x4A,
-        //FloatToBytes = 0x4B,
+        SampleMicrosSet = 0x4B,
         //FloatNew2 = 0x4C,
         //FloatNewFromConstant2 = 0x4D,
         FloatAdd = 0x4E,

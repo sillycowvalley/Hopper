@@ -217,6 +217,7 @@ enum SysCalls {
     eLongToInt = 0x003B,
     eLongToUInt = 0x003C,
     eUIntFromBytes = 0x003D,
+    eTimeDelaySamples = 0x003E,
     eLongAdd = 0x003F,
     eLongSub = 0x0040,
     eLongDiv = 0x0041,
@@ -229,6 +230,7 @@ enum SysCalls {
     eLongGE = 0x0048,
     eLongNegate = 0x0049,
     eFloatToString = 0x004A,
+    eTimeSampleMicrosSet = 0x004B,
     eFloatAdd = 0x004E,
     eFloatSub = 0x004F,
     eFloatDiv = 0x0050,
@@ -1023,7 +1025,6 @@ UInt HRUInt_ToLong(UInt ui);
 UInt HRInt_ToLong(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
-
 
 
 #endif // HOPPERRUNTIME_H

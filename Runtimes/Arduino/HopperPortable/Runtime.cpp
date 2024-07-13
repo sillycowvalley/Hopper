@@ -6,6 +6,9 @@
 
 
 
+
+
+
 Bool Runtime_loaded = false;
 UInt Runtime_currentCRC = 0;
 Byte Minimal_error = 0;
@@ -6564,6 +6567,17 @@ Bool HopperVM_ExecuteSysCall(Byte iSysCall, UInt iOverload)
     {
         External_Delay(HopperVM_Pop());
         doNext = false;
+        break;
+    }
+    case SysCalls::eTimeDelaySamples:
+    {
+        External_DelaySamples(HopperVM_Pop());
+        break;
+    }
+    case SysCalls::eTimeSampleMicrosSet:
+    {
+        Type stype = (Type)0;
+        External_SampleMicrosSet(HopperVM_Pop());
         break;
     }
     case SysCalls::eScreenPrint:

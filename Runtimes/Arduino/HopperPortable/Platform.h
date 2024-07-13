@@ -88,6 +88,8 @@ bool External_FunctionCall(UInt jumpTable, Byte opCode);
 UInt External_GetMillis();
 UInt External_GetSeconds();
 void External_Delay(UInt ms);
+void External_DelaySamples(UInt samples);
+void External_SampleMicrosSet(UInt us);
 void External_PinMode(Byte pin, Byte value);
 void External_DigitalWrite(Byte pin, Byte value);
 Byte External_DigitalRead(Byte pin);

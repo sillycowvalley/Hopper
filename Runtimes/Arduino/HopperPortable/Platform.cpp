@@ -394,6 +394,16 @@ void External_Delay(UInt ms)
 {
     delay(ms);
 }
+unsigned int usSamples = 1; // good default : 1us
+void External_DelaySamples(UInt samples)
+{
+    unsigned int us = usSamples * samples;
+    delayMicroseconds(us);
+}
+void External_SampleMicrosSet(UInt us)
+{
+    usSamples = us;
+}
 
 void External_PinMode(Byte pin, Byte value)
 {
