@@ -5,7 +5,8 @@ program SNVGM
 
     //uses "Samples/Ghost"
     //uses "Samples/Christmas"
-    uses "Samples/Sonata"
+    //uses "Samples/Sonata"
+    uses "Samples/AlleyCat"
         
     Hopper()
     {
