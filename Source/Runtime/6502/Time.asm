@@ -77,6 +77,7 @@ unit Time
     }
     SampleMicrosGet()
     {
+#ifdef W65C22_VIA
         LDA ZP.T1LL 
         STA ZP.TOPL
         LDA ZP.T1LH 
@@ -105,6 +106,13 @@ unit Time
         LSR ZP.TOPH
         ROR ZP.TOPL     
 #endif       
+
+#else
+        LDA # 0xE8
+        STA ZP.TOPL
+        LDA # 0x03
+        STA ZP.TOPH
+#endif
         
         LDA # Types.UInt
         Stacks.PushTop();
@@ -176,6 +184,7 @@ unit Time
     
     sharedSamplesMicroSet()
     {
+#ifdef W65C22_VIA
         LDA # 0b00000000 // Disable Timer1 interrupt
         STA ZP.IER
       
@@ -212,5 +221,6 @@ unit Time
         
         LDA # 0b11000000 // Set Timer1 bit in IER to put Timer1 into free run mode
         STA ZP.IER
+#endif
     }
 }

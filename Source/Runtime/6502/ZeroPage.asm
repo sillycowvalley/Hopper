@@ -197,7 +197,7 @@ unit ZP
     
 #endif
 
-#if !defined(BENEATER_IO) && !defined(X16_IO) && !defined(ZEROPAGE_IO) && !defined(MECB6502_8K_IO)
+#if !defined(BENEATER_IO) && !defined(X16_IO) && !defined(ZEROPAGE_IO) && !defined(MECB6502_IO)
     #define ZEROPAGE_IO // default if IO is not specified
 #endif
 
@@ -206,7 +206,7 @@ unit ZP
     // MC6840 PTM  = 0xF000
     // MC6850 ACIA = 0xF008
     // MC6821 PIA  = 0xF010
-#ifdef MECB6502_8K_IO    
+#ifdef MECB6502_IO    
     
     reserve 0xF000, 256
     

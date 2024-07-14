@@ -1,0 +1,201 @@
+{COMPONENT D:\REPOS\HOPPER\SOURCE\PROJECTS\6502SBC\CPLD\MECB_CHIPSELECT_6502_CPU.SYM
+
+ {ENVIRONMENT
+  {PDIFvrev 3.00}
+  {Program "CUPL(WM) Version 5.0a"}
+  {DBtype "Schematic"}
+  {DBvrev 1.01}
+  {DBtime "Sun Jul 14 16:44:51 2024 "}
+  {DBunit "MIL"}
+  {DBgrid 10}
+  {Lyrstr "WIRES" 1 "BUS" 1 "GATE" 2 "IEEE" 2 "PINFUN" 3 "PINNUM" 1 
+          "PINNAM" 6 "PINCON" 4 "REFDES" 2 "ATTR" 6 "SDOT" 1 
+          "DEVICE" 5 "OUTLIN" 5 "ATTR2" 6 "NOTES" 6 "NETNAM" 4 
+          "CMPNAM" 5 "BORDER" 5}
+ }
+
+ {USER
+  {VIEW
+   {Mode SYMB}
+   {Nlst OPEN}
+   {Vw 0 0 2}
+   {Lv 12 2 2 2 0 0 2 2 2 2 0 0 2 1 2 0 0 0 0}
+   {Gs 10 10}
+  }
+ }
+
+ {DISPLAY
+  [Ly "PINNUM"]
+  [Ls "SOLID"][Wd 0]
+  [Ts 15][Tj "LC"][Tr 0][Tm "N"]
+ }
+
+ {SYMBOL
+  {PIN_DEF
+   [Ly "PINCON"]
+   {P IOADDR' {Pt "INPUT"}{Lq 0}{Ploc 100 200}}
+   {P CLK {Pt "INPUT"}{Lq 0}{Ploc 100 180}}
+   {P CPU_PHI2 {Pt "INPUT"}{Lq 0}{Ploc 100 160}}
+   {P CPU_RW {Pt "INPUT"}{Lq 0}{Ploc 100 140}}
+   {P A11 {Pt "INPUT"}{Lq 0}{Ploc 100 120}}
+   {P A14 {Pt "INPUT"}{Lq 0}{Ploc 100 100}}
+   {P A10 {Pt "INPUT"}{Lq 0}{Ploc 100 80}}
+   {P A12 {Pt "INPUT"}{Lq 0}{Ploc 100 60}}
+   {P A15 {Pt "INPUT"}{Lq 0}{Ploc 100 40}}
+   {P A13 {Pt "INPUT"}{Lq 0}{Ploc 100 20}}
+   {P ECB_MREQ' {Pt "I/O"}{Lq 0}{Ploc 360 20}}
+   {P ECB_CLK {Pt "I/O"}{Lq 0}{Ploc 360 40}}
+   {P CS_ROM' {Pt "I/O"}{Lq 0}{Ploc 360 60}}
+   {P CS_RAM' {Pt "I/O"}{Lq 0}{Ploc 360 80}}
+   {P CS_SPARE' {Pt "I/O"}{Lq 0}{Ploc 360 100}}
+   {P ECB_IORQ' {Pt "I/O"}{Lq 0}{Ploc 360 120}}
+   {P ECB_RD' {Pt "I/O"}{Lq 0}{Ploc 360 140}}
+   {P ECB_WR' {Pt "I/O"}{Lq 0}{Ploc 360 160}}
+  }
+
+  {PKG
+   [Ly "REFDES"]
+   [Ts 25][Tj "CB"][Tr 0][Tm "N"]
+   {Rdl 230 230}
+
+   [Ly "PINNUM"]
+   [Ts 15][Tj "RC"]
+   {Pnl 120 210}
+   {Pnl 120 190}
+   {Pnl 120 170}
+   {Pnl 120 150}
+   {Pnl 120 130}
+   {Pnl 120 110}
+   {Pnl 120 90}
+   {Pnl 120 70}
+   {Pnl 120 50}
+   {Pnl 120 30}
+   [Ts 15][Tj "LC"]
+   {Pnl 340 30}
+   {Pnl 340 50}
+   {Pnl 340 70}
+   {Pnl 340 90}
+   {Pnl 340 110}
+   {Pnl 340 130}
+   {Pnl 340 150}
+   {Pnl 340 170}
+
+   {Sd A 1 2 3 4 5 6 7 8 9 11 12 13 14 15 16 17 18 19}
+  }
+
+  {PIC
+   [Ly "GATE"]
+   [Ts 15][Tj "LC"][Tr 0][Tm "N"]
+   {R 130 220 330 0}
+   {L 120 200 100 200}
+   {C 125 200 5}
+   {L 130 180 100 180}
+   {L 130 160 100 160}
+   {L 130 140 100 140}
+   {L 130 120 100 120}
+   {L 130 100 100 100}
+   {L 130 80 100 80}
+   {L 130 60 100 60}
+   {L 130 40 100 40}
+   {L 130 20 100 20}
+   {C 335 20 5}
+   {L 340 20 360 20}
+   {L 330 40 360 40}
+   {C 335 60 5}
+   {L 340 60 360 60}
+   {C 335 80 5}
+   {L 340 80 360 80}
+   {C 335 100 5}
+   {L 340 100 360 100}
+   {C 335 120 5}
+   {L 340 120 360 120}
+   {C 335 140 5}
+   {L 340 140 360 140}
+   {C 335 160 5}
+   {L 340 160 360 160}
+   [Ly "PINNAM"]
+   [Tj "LC"]
+   {T "IOADDR'" 140 200}
+   {T "CLK" 140 180}
+   {T "CPU_PHI2" 140 160}
+   {T "CPU_RW" 140 140}
+   {T "A11" 140 120}
+   {T "A14" 140 100}
+   {T "A10" 140 80}
+   {T "A12" 140 60}
+   {T "A15" 140 40}
+   {T "A13" 140 20}
+   [Tj "RC"]
+   {T "ECB_MREQ'" 320 20}
+   {T "ECB_CLK" 320 40}
+   {T "CS_ROM'" 320 60}
+   {T "CS_RAM'" 320 80}
+   {T "CS_SPARE'" 320 100}
+   {T "ECB_IORQ'" 320 120}
+   {T "ECB_RD'" 320 140}
+   {T "ECB_WR'" 320 160}
+   [Ly "DEVICE"]
+   [Tj "CT"]
+   {T "G16V8AS" 230 -10}
+  }
+
+  {ATR
+   {IN
+    {Org 100 20}
+    {Ty 255}
+   }
+   {EX
+    [Ly "ATTR2"]
+    [Ts 12][Tj "CT"][Tr 0][Tm "N"]
+    {At PLD D:\REPOS\HOPPER\SOURCE\PROJECTS\6502SBC\CPLD\MECB_CHIPSELECT_6502_CPU 230 220}
+   }
+  }
+ }
+
+ {DETAIL
+  {ANNOTATE
+  }
+
+  {NET_DEF
+   {N IOADDR'
+   }
+   {N CLK
+   }
+   {N CPU_PHI2
+   }
+   {N CPU_RW
+   }
+   {N A11
+   }
+   {N A14
+   }
+   {N A10
+   }
+   {N A12
+   }
+   {N A15
+   }
+   {N A13
+   }
+   {N ECB_MREQ'
+   }
+   {N ECB_CLK
+   }
+   {N CS_ROM'
+   }
+   {N CS_RAM'
+   }
+   {N CS_SPARE'
+   }
+   {N ECB_IORQ'
+   }
+   {N ECB_RD'
+   }
+   {N ECB_WR'
+   }
+  }
+
+  {SUBCOMP
+  }
+ }
+}

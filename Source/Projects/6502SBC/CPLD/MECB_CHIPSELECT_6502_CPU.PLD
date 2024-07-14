@@ -1,0 +1,111 @@
+Name            MECB_ChipSelect_6502_CPU;
+Partno          CA0001;
+Revision        01;
+Date            06/2024;
+Designer        Greg;
+Company         Digicool Things;
+Location        None;
+Assembly        None;
+Device          g16v8as;
+
+/****************************************************************/
+/*                                                              */
+/* Note: For an ATV16V8 in Simple Mode pins 15 and 16           */
+/*  (center macrocells) are permanently configured as           */
+/*  combinatorial outputs.                                      */   
+/*                                                              */
+/****************************************************************/
+
+/*
+ * Inputs: Address Inputs were assigned based on the ECB bus pin sequence (for ease of PCB routing).
+ * Active low pins are inverted at the pin so all signals can be consistently treated as positive logic.
+ *
+ */
+
+Pin 1 = !ioaddr;
+Pin 2 = clk;
+Pin 3 = cpu_phi2o;
+Pin 4 = cpu_rw;
+Pin 5 = a11;
+Pin 6 = a14; 
+Pin 7 = a10;
+Pin 8 = a12;
+Pin 9 = a15;
+Pin 11 = a13;
+
+/*
+ * Outputs:  define outputs
+ * Active low pins are inverted at the pin so all signals can be consistently treated as positive logic.
+ *
+ */
+
+Pin 12 = !ecb_mreq;
+Pin 13 = ecb_clk;
+Pin 14 = !cs_rom;
+Pin 15 = !cs_ram;
+Pin 16 = !cs_spare;
+Pin 17 = !ecb_iorq;
+Pin 18 = !ecb_rd;
+Pin 19 = !ecb_wr;
+
+/*
+ *
+ * Logic: 6502 CPU Card - Bus Control  
+ *
+ * ecb_mreq : ioaddr not asserted, while clk high.
+ * ecb_iorq : ioaddr asserted, while clk high.
+ * ecb_clk : clk
+ * ecb_rd : cpu_rw is high, while clk high.
+ * ecb_wr : cpu_rw is low, while clk high.
+ *
+ */
+
+ecb_mreq = !ioaddr & clk;
+ecb_iorq =  ioaddr & clk;
+ecb_clk = clk;
+ecb_rd = cpu_rw & clk;
+ecb_wr = !cpu_rw & clk;
+
+/*
+ *
+ * Logic: 6502 CPU Card - Chip Selects for 56K RAM 8K ROM 
+ *
+ * cs_rom : ROM address space (0xE000 - 0xFFFF), while ecb_mreq asserted.
+ * cs_ram : RAM address space (0x0000 - 0xDFFF), while ecb_mreq asserted.
+ * cs_spare : Unused, but assigned to replicate ecb_iorq.
+ *
+ */
+/*
+cs_rom = ecb_mreq & a15 & a14 & a13;
+cs_ram = ecb_mreq & !(a15 & a14 & a13);
+cs_spare = ioaddr & clk;
+*/
+/*
+ *
+ * Logic: 6502 CPU Card - Alternative Chip Selects for 48K RAM 16K ROM 
+ *
+ * cs_rom : ROM address space (0xC000 - 0xFFFF), while ecb_mreq asserted.
+ * cs_ram : RAM address space (0x0000 - 0xBFFF), while ecb_mreq asserted.
+ * cs_spare : Unused, but assigned to replicate ecb_iorq.
+ *
+ */
+
+cs_rom = ecb_mreq & a15 & a14;
+cs_ram = ecb_mreq & !(a15 & a14);
+cs_spare = ioaddr & clk;
+
+/*
+ *
+ * Logic: 6502 CPU Card - Alternative Chip Selects for 32K RAM 32K ROM 
+ *
+ * cs_rom : ROM address space (0x8000 - 0xFFFF), while ecb_mreq asserted.
+ * cs_ram : RAM address space (0x0000 - 0x7FFF), while ecb_mreq asserted.
+ * cs_spare : Unused, but assigned to replicate iorq.
+ *
+ */
+/*
+cs_rom = ecb_mreq & a15;
+cs_ram = ecb_mreq & !a15;
+cs_spare = ioaddr & clk;
+*/
+

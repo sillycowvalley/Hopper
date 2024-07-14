@@ -25,8 +25,6 @@ unit Board
     const byte I2CSDA0 = 17;
     const byte I2CSCL0 = 16;
     
-    #define MECB6502_8K_IO
-    
     const uint PORTB                = 0xE017;
     const uint PORTA                = 0xE018;
     const uint DDRB                 = 0xE019;

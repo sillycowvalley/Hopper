@@ -1,0 +1,51 @@
+%SIGNAL
+PIN   7 =  a10 
+PIN   5 =  a11 
+PIN   8 =  a12 
+PIN  11 =  a13 
+PIN   6 =  a14 
+PIN   9 =  a15 
+PIN   2 =  clk 
+PIN   3 =  cpu_phi2o 
+PIN   4 =  cpu_rw 
+PIN  15 = !cs_ram 
+PIN  14 = !cs_rom 
+PIN  16 = !cs_spare 
+PIN  13 =  ecb_clk 
+PIN  17 = !ecb_iorq 
+PIN  12 = !ecb_mreq 
+PIN  18 = !ecb_rd 
+PIN  19 = !ecb_wr 
+PIN   1 = !ioaddr 
+%END
+
+%FIELD
+%END
+
+%EQUATION
+cs_ram =>
+    !a15 & !ecb_mreq
+  # !a14 & !ecb_mreq
+
+cs_rom =>
+    a14 & a15 & !ecb_mreq
+
+cs_spare =>
+    clk & !ioaddr
+
+ecb_clk =>
+    clk
+
+ecb_iorq =>
+    clk & !ioaddr
+
+ecb_mreq =>
+    clk & ioaddr
+
+ecb_rd =>
+    clk & cpu_rw
+
+ecb_wr =>
+    clk & !cpu_rw
+
+%END
