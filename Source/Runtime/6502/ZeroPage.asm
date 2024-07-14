@@ -290,11 +290,19 @@ unit ZP
     const byte DDRA                 = 0xF3;
     const byte T1CL                 = 0xF4; // Timer 1 counter low
     const byte T1CH                 = 0xF5; // Timer 1 counter high
+    
+    const byte T1LL                 = 0xF6; // Timer 1 Latch Low
+    const byte T1LH                 = 0xF7; // Timer 1 Latch High
+    const byte T2CL                 = 0xF8; // Timer 2 Counter Low
+    const byte T2CH                 = 0xF9; // Timer 2 Counter High
+    const byte SR                   = 0xFA; // Shift Register
 
     const byte ACR                  = 0xFB; // Auxiliary Control Register
     const byte PCR                  = 0xFC; // Peripheral Control Register
     const byte IFR                  = 0xFD; // Interrupt Flag Register
     const byte IER                  = 0xFE; // Interrupt Enable Register
+    
+    const byte ORA_NO_HANDSHAKE     = 0xFF; // Output Register A with no handshake
 #endif    
     
     // used for UInt library

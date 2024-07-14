@@ -40,41 +40,13 @@ unit W65C22
       
         LDA # 0b01000000 // put the timer into free run mode
         STA ZP.ACR
-      
-      // 1 millisecond intervals:
-      //   A CPU clock of 1 mHz = 1000 cycles - 2 = 998 / 0x03E6
-      //   A CPU clock of 2mHz would be 2x faster so this count would need to be 2000 cycles - 2 = 1998 / 0x07CE
-      //   A CPU clock of 4mHz would be 4x faster so this count would need to be 4000 cycles - 2 = 3998 / 0x0F9E
-      //   A CPU clock of 4.9152 mHz would be 4.9152x faster so this count would need to be 4915 cycles - 2 = 4913 / 0x1061: 
-      //   A CPU clock of 8mHz would be 8x faster so this count would need to be 8000 cycles - 2 = 7998 / 0x1F40
-      //   A CPU clock of 10 kHz would be  100x slower so this would be a 100ms interval
-      //   A CPU clock of  1 kHz would be 1000x slower so this would be a 1000ms interval (1 second)
-#ifdef CPU_1MHZ
-        LDA # 0xE6
-        STA ZP.T1CL
+        
+        // 1000us per sample = 1ms units for Time.Delay(..)
+        LDA # 0xE8
+        STA ZP.TOPL
         LDA # 0x03
-        STA ZP.T1CH
-#endif      
-#ifdef CPU_2MHZ
-        LDA # 0xCE
-        STA ZP.T1CL
-        LDA # 0x07
-        STA ZP.T1CH
-#endif      
-#ifdef CPU_4MHZ
-        LDA # 0x9E
-        STA ZP.T1CL
-        LDA # 0x0F
-        STA ZP.T1CH
-#endif      
-#ifdef CPU_8MHZ
-        LDA # 0x40
-        STA ZP.T1CL
-        LDA # 0x1F
-        STA ZP.T1CH
-#endif      
-        LDA # 0b11000000 // set Timer1 bit in IER to put Timer1 into free run mode
-        STA ZP.IER
+        STA ZP.TOPH
+        Time.sharedSamplesMicroSet();
     }
     
     ISR()

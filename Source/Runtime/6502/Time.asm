@@ -1,5 +1,7 @@
 unit Time
 {
+    friend W65C22;
+    
     uses "/Source/Runtime/6502/ZeroPage"
     
 #ifdef W65C22_VIA
@@ -67,19 +69,43 @@ unit Time
         PLA
 #endif
     }
+    
     SampleMicrosSet()
     {
         PopTop();
-        // TODO
+        sharedSamplesMicroSet();
     }
     SampleMicrosGet()
     {
-        // TODO : default 1000us for now
-        LDA # 0xE8
-        STA TOPL
-        LDA # 0x03
-        STA TOPH
-
+        LDA ZP.T1LL 
+        STA ZP.TOPL
+        LDA ZP.T1LH 
+        STA ZP.TOPH
+        
+        // The timer counts down from n-1 to 0, including the 0 as part of the count
+        // +1
+        INC ZP.TOPL
+        if (Z)
+        {
+            INC ZP.TOPH
+        }
+        
+#if defined(CPU_2MHZ) || defined(CPU_4MHZ) || defined(CPU_8MHZ)
+        // /2
+        LSR ZP.TOPH
+        ROR ZP.TOPL        
+#endif  
+#if defined(CPU_4MHZ) || defined(CPU_8MHZ)
+        // /4
+        LSR ZP.TOPH
+        ROR ZP.TOPL             
+#endif          
+#if defined(CPU_8MHZ)
+        // /8
+        LSR ZP.TOPH
+        ROR ZP.TOPL     
+#endif       
+        
         LDA # Types.UInt
         Stacks.PushTop();
     }
@@ -146,5 +172,45 @@ unit Time
         Stacks.PushTop();
 #endif
 #endif
+    }
+    
+    sharedSamplesMicroSet()
+    {
+        LDA # 0b00000000 // Disable Timer1 interrupt
+        STA ZP.IER
+      
+        // At a CPU clock of 1 mHz = 1000 cycles - 1 = 999 / 0x03E7 would give us a sample cycle of 1ms
+
+#if defined(CPU_2MHZ) || defined(CPU_4MHZ) || defined(CPU_8MHZ)
+        // x2
+        ASL ZP.TOPL
+        ROL ZP.TOPH        
+#endif  
+#if defined(CPU_4MHZ) || defined(CPU_8MHZ)
+        // x4
+        ASL ZP.TOPL
+        ROL ZP.TOPH        
+#endif          
+#if defined(CPU_8MHZ)
+        // x8
+        ASL ZP.TOPL
+        ROL ZP.TOPH        
+#endif       
+        // The timer counts down from n-1 to 0, including the 0 as part of the count
+        // -1
+        LDA ZP.TOPL
+        if (Z)
+        {
+            DEC ZP.TOPH
+        }
+        DEC ZP.TOPL
+        
+        LDA ZP.TOPL
+        STA ZP.T1CL
+        LDA ZP.TOPH
+        STA ZP.T1CH
+        
+        LDA # 0b11000000 // Set Timer1 bit in IER to put Timer1 into free run mode
+        STA ZP.IER
     }
 }

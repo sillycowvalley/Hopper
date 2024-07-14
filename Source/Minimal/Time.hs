@@ -11,4 +11,5 @@ unit Time
     }
     uint Seconds { get system; }
     long Millis { get system; }
+    uint SampleMicros { get system; set system; }
 }
