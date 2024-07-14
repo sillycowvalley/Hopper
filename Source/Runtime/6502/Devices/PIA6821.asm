@@ -105,7 +105,7 @@ unit PIA6821
         LDA ZP.TOPH          // Load MSB of 1000 cycles
         STA ZP.TIMER1_MSB       // Write to Timer 1 MSB register
         
-        LDA ZP.ZP.TOPL          // Load LSB of 1000 cycles
+        LDA ZP.TOPL          // Load LSB of 1000 cycles
         STA ZP.TIMER1_LSB       // Write to Timer 1 LSB register
         
         LDA #0b01000001      // Enable Timer 1 and set the prescaler if necessary
