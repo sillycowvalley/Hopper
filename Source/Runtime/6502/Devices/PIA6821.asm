@@ -44,9 +44,9 @@ unit PIA6821
         {
             // Clear the interrupt flag by writing to TCSR1
             PHA
-            LDA TCSR1
+            LDA ZP.TCSR1
             AND # 0b01111111 //Clear the interrupt flag (bit 7)
-            STA TCSR1
+            STA ZP.TCSR1
             PLA
             
             INC  ZP.TICK0
@@ -96,8 +96,6 @@ unit PIA6821
         }
         DEC ZP.TOPL
         
-        LDA #0b01100000      // Set Timer 1 to operate in continuous mode, Enable Timer 1 interrupts
-        STA ZP.TCSR1         // Write to Timer 1 Status and Control Register
         
         LDA ZP.TOPH          // Load MSB of 1000 cycles
         STA ZP.TIMER1_MSB       // Write to Timer 1 MSB register
@@ -105,8 +103,19 @@ unit PIA6821
         LDA ZP.TOPL          // Load LSB of 1000 cycles
         STA ZP.TIMER1_LSB    // Write to Timer 1 LSB register
         
-        LDA #0b01100001      // Enable Timer 1 and set the prescaler if necessary
+        /*
+        Bit 0 (TEN): Timer Enable bit (1 to enable the timer).
+        Bit 1 (TRG): Trigger Mode bit (0 for continuous mode).
+        Bit 2 (OL): Output Level bit (0 to keep output low).
+        Bit 3 (IRQE): Interrupt Request Enable bit (1 to enable interrupts).
+        Bit 4 (CR): Control Register bit (not used in this setup, assumed 0).
+        Bit 5 (PRES): Prescaler Control bit (0 to not use prescaler).
+        Bit 6 (CLK2): Clock Select Bit 2 (1 for external clock source).
+        Bit 7 (CLK1): Clock Select Bit 1 (0 for external clock source).
+        */
+        LDA # 0b01001001     // Set Timer 1
         STA ZP.TCSR1         // Write to Timer 1 Status and Control Register
+        
         
 #ifdef CPU_65C02S
         STZ ZP.TICK0
