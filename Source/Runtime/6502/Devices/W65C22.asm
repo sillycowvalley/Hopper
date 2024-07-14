@@ -1,6 +1,6 @@
 unit W65C22
 {
-    friend Parallel;
+    friend Parallel, Time;
     
 #if !defined(CPU_8MHZ) && !defined(CPU_4MHZ) && !defined(CPU_2MHZ) && !defined(CPU_1MHZ)
     #define CPU_8MHZ
@@ -23,18 +23,6 @@ unit W65C22
 #endif               
         // start timer last since it generates interrupts
         // VIA interval timer to tick every 1ms or 1000 clock cycles
-
-#ifdef CPU_65C02S               
-        STZ ZP.TICK0
-        STZ ZP.TICK1
-        STZ ZP.TICK2
-        STZ ZP.TICK3
-#else
-        STA ZP.TICK0
-        STA ZP.TICK1
-        STA ZP.TICK2
-        STA ZP.TICK3
-#endif
       
         LDA # 0b01000000 // put the timer into free run mode
         STA ZP.ACR
@@ -44,7 +32,7 @@ unit W65C22
         STA ZP.TOPL
         LDA # 0x03
         STA ZP.TOPH
-        Time.sharedSamplesMicroSet();
+        sharedSamplesMicroSet();
     }
     
     isr()
@@ -94,5 +82,71 @@ unit W65C22
             }
         }
 #endif        
+    }
+    
+    sharedSamplesMicroSet()
+    {
+        LDA # 0b00000000 // Disable Timer1 interrupt
+        STA ZP.IER
+      
+        // At a CPU clock of 1 mHz = 1000 cycles - 1 = 999 / 0x03E7 would give us a sample cycle of 1ms
+#if defined(CPU_2MHZ) || defined(CPU_4MHZ) || defined(CPU_8MHZ)
+        // x2
+        ASL ZP.TOPL
+        ROL ZP.TOPH        
+#endif  
+#if defined(CPU_4MHZ) || defined(CPU_8MHZ)
+        // x4
+        ASL ZP.TOPL
+        ROL ZP.TOPH        
+#endif          
+#if defined(CPU_8MHZ)
+        // x8
+        ASL ZP.TOPL
+        ROL ZP.TOPH        
+#endif       
+        // The timer counts down from n-1 to 0, including the 0 as part of the count
+        // -1
+        LDA ZP.TOPL
+        if (Z)
+        {
+            DEC ZP.TOPH
+        }
+        DEC ZP.TOPL
+        
+        LDA ZP.TOPL
+        STA ZP.T1CL
+        LDA ZP.TOPH
+        STA ZP.T1CH
+        
+#ifdef CPU_65C02S
+        STZ ZP.TICK0
+        STZ ZP.TICK1
+        STZ ZP.TICK2
+        STZ ZP.TICK3
+#else
+        LDA #0
+        STA ZP.TICK0
+        STA ZP.TICK1
+        STA ZP.TICK2
+        STA ZP.TICK3
+#endif
+        
+        LDA # 0b11000000 // Set Timer1 bit in IER to put Timer1 into free run mode
+        STA ZP.IER
+    }
+    sharedSamplesMicroGet()
+    {
+        LDA ZP.T1LL 
+        STA ZP.TOPL
+        LDA ZP.T1LH 
+        STA ZP.TOPH
+        // The timer counts down from n-1 to 0, including the 0 as part of the count
+        // +1
+        INC ZP.TOPL
+        if (Z)
+        {
+            INC ZP.TOPH
+        }
     }
 }

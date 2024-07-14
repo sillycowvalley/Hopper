@@ -95,7 +95,7 @@ program R6502
             Serial.HexIn();
             STA ZP.BRKL, X
             
-#ifdef CPU_65C02S            
+#ifdef CPU_65C02S
             SMB5 ZP.FLAGS
 #else
             LDA ZP.FLAGS

@@ -210,6 +210,18 @@ unit ZP
     
     reserve 0xF000, 256
     
+    // Motorola 6840 PTM (Programmable Timer Module)
+    const uint TCR                  = 0xF000;  // Timer Control Register
+    const uint TCSR1                = 0xF001;  // Timer Status and Control Register 1
+    const uint TCSR2                = 0xF002;  // Timer Status and Control Register 2
+    const uint TCSR3                = 0xF003;  // Timer Status and Control Register 3
+    const uint TIMER1_LSB           = 0xF004;  // Timer 1 Low Byte
+    const uint TIMER1_MSB           = 0xF005;  // Timer 1 High Byte
+    const uint TIMER2_LSB           = 0xF008;  // Timer 2 Low Byte
+    const uint TIMER2_MSB           = 0xF009;  // Timer 2 High Byte
+    const uint TIMER3_LSB           = 0xF00C;  // Timer 3 Low Byte
+    const uint TIMER3_MSB           = 0xF00D;  // Timer 3 High Byte
+    
     // Motorola 6850 ACIA
     const uint ACIACONTROL          = 0xF008;
     const uint ACIASTATUS           = 0xF008;

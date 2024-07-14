@@ -1,6 +1,6 @@
 unit Time
 {
-    friend W65C22;
+    friend W65C22, PIA6821;
     
     uses "/Source/Runtime/6502/ZeroPage"
     
@@ -73,24 +73,22 @@ unit Time
     SampleMicrosSet()
     {
         PopTop();
-        sharedSamplesMicroSet();
+#ifdef W65C22_VIA
+        W65C22.sharedSamplesMicroSet();
+#endif  
+#ifdef M6840_PTM
+       PIA6821.sharedSamplesMicroSet();
+#endif      
     }
     SampleMicrosGet()
     {
 #ifdef W65C22_VIA
-        LDA ZP.T1LL 
-        STA ZP.TOPL
-        LDA ZP.T1LH 
-        STA ZP.TOPH
-        
-        // The timer counts down from n-1 to 0, including the 0 as part of the count
-        // +1
-        INC ZP.TOPL
-        if (Z)
-        {
-            INC ZP.TOPH
-        }
-        
+        W65C22.sharedSamplesMicroGet();
+#endif
+#ifdef M6840_PTM
+       PIA6821.sharedSamplesMicroGet();
+#endif
+
 #if defined(CPU_2MHZ) || defined(CPU_4MHZ) || defined(CPU_8MHZ)
         // /2
         LSR ZP.TOPH
@@ -106,14 +104,6 @@ unit Time
         LSR ZP.TOPH
         ROR ZP.TOPL     
 #endif       
-
-#else
-        LDA # 0xE8
-        STA ZP.TOPL
-        LDA # 0x03
-        STA ZP.TOPH
-#endif
-        
         LDA # Types.UInt
         Stacks.PushTop();
     }
@@ -121,9 +111,6 @@ unit Time
 #ifdef LONGS
     Millis()
     {
-#ifndef W65C22_VIA
-        TXA BRK // VIA not included?
-#else
         // LNEXT = LNEXT / LTOP + LRESULT
         
         LDA ZP.TICK3 // reading TICK3 makes a snapshot of all 4 registers on the emulator
@@ -137,14 +124,10 @@ unit Time
         
         LDA # Types.Long
         Long.pushNewFromL();
-#endif
     }
 #endif        
     Seconds()
     {
-#ifndef W65C22_VIA
-        TXA BRK // VIA not included?
-#else
         // LNEXT = LNEXT / LTOP + LRESULT
         
         LDA ZP.TICK3 // reading TICK3 makes a snapshot of all 4 registers on the emulator
@@ -178,49 +161,6 @@ unit Time
 #ifdef HOPPER_STACK
         LDA # Types.UInt
         Stacks.PushTop();
-#endif
-#endif
-    }
-    
-    sharedSamplesMicroSet()
-    {
-#ifdef W65C22_VIA
-        LDA # 0b00000000 // Disable Timer1 interrupt
-        STA ZP.IER
-      
-        // At a CPU clock of 1 mHz = 1000 cycles - 1 = 999 / 0x03E7 would give us a sample cycle of 1ms
-
-#if defined(CPU_2MHZ) || defined(CPU_4MHZ) || defined(CPU_8MHZ)
-        // x2
-        ASL ZP.TOPL
-        ROL ZP.TOPH        
-#endif  
-#if defined(CPU_4MHZ) || defined(CPU_8MHZ)
-        // x4
-        ASL ZP.TOPL
-        ROL ZP.TOPH        
-#endif          
-#if defined(CPU_8MHZ)
-        // x8
-        ASL ZP.TOPL
-        ROL ZP.TOPH        
-#endif       
-        // The timer counts down from n-1 to 0, including the 0 as part of the count
-        // -1
-        LDA ZP.TOPL
-        if (Z)
-        {
-            DEC ZP.TOPH
-        }
-        DEC ZP.TOPL
-        
-        LDA ZP.TOPL
-        STA ZP.T1CL
-        LDA ZP.TOPH
-        STA ZP.T1CH
-        
-        LDA # 0b11000000 // Set Timer1 bit in IER to put Timer1 into free run mode
-        STA ZP.IER
 #endif
     }
 }
