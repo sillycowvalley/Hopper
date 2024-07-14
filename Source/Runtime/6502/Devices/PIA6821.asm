@@ -96,20 +96,17 @@ unit PIA6821
         }
         DEC ZP.TOPL
         
-        LDA #0b01000000      // Set Timer 1 to operate in continuous mode
-        STA ZP.TCSR1            // Write to Timer 1 Status and Control Register
-        
-        LDA #0b00100000      // Enable Timer 1 interrupts
-        STA ZP.TCSR1            // Write to Timer 1 Status and Control Register
+        LDA #0b01100000      // Set Timer 1 to operate in continuous mode, Enable Timer 1 interrupts
+        STA ZP.TCSR1         // Write to Timer 1 Status and Control Register
         
         LDA ZP.TOPH          // Load MSB of 1000 cycles
         STA ZP.TIMER1_MSB       // Write to Timer 1 MSB register
         
         LDA ZP.TOPL          // Load LSB of 1000 cycles
-        STA ZP.TIMER1_LSB       // Write to Timer 1 LSB register
+        STA ZP.TIMER1_LSB    // Write to Timer 1 LSB register
         
-        LDA #0b01000001      // Enable Timer 1 and set the prescaler if necessary
-        STA ZP.TCSR1            // Write to Timer 1 Status and Control Register
+        LDA #0b01100001      // Enable Timer 1 and set the prescaler if necessary
+        STA ZP.TCSR1         // Write to Timer 1 Status and Control Register
         
 #ifdef CPU_65C02S
         STZ ZP.TICK0
