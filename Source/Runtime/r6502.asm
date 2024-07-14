@@ -54,6 +54,8 @@ program R6502
     
     uses "6502/Utilities"
     uses "6502/Serial"
+    uses "6502/Parallel"
+    
     uses "6502/Diagnostics"
     
     uses "6502/LibCalls"
@@ -65,9 +67,7 @@ program R6502
     IRQ()
     {
         Serial.ISR();
-#ifdef W65C22_VIA
-        W65C22.ISR();
-#endif  
+        Parallel.ISR();
     }
     NMI()
     {
@@ -574,9 +574,7 @@ program R6502
 
         Serial.Initialize(); // munts A
         
-#ifdef W65C22_VIA
-        W65C22.Initialize();
-#endif             
+        Parallel.Initialize();
 
         LDA #0
         STA IDXL

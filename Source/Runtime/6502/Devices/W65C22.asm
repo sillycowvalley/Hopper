@@ -1,16 +1,14 @@
 unit W65C22
 {
+    friend Parallel;
     
-#if !defined(W65C22_VIA)
-    #define W65C22_VIA
-#endif    
 #if !defined(CPU_8MHZ) && !defined(CPU_4MHZ) && !defined(CPU_2MHZ) && !defined(CPU_1MHZ)
     #define CPU_8MHZ
 #endif
 
     uses "/Source/Runtime/6502/ZeroPage"
     
-    Initialize()
+    initialize()
     {
         // VIA initialization assuming the RESB pulse was too short
         // "Reset clears all internal registers (except T1 and T2 counters and latches, and the SR"
@@ -49,7 +47,7 @@ unit W65C22
         Time.sharedSamplesMicroSet();
     }
     
-    ISR()
+    isr()
     {
 #if defined(CPU_65C02S) && defined(ZEROPAGE_IO)
         if (BBS7, ZP.IFR) // IRQ by VIA

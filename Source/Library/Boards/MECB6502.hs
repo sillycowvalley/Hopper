@@ -1,6 +1,8 @@
 unit Board
 {
     #define MCU_BOARD_DEFINED
+    #define MECB_6502
+    #define M6821_PIA
     
     const byte GP0 = 0;
     const byte GP1 = 1;
@@ -25,10 +27,14 @@ unit Board
     const byte I2CSDA0 = 17;
     const byte I2CSCL0 = 16;
     
-    const uint PORTB                = 0xE017;
-    const uint PORTA                = 0xE018;
-    const uint DDRB                 = 0xE019;
-    const uint DDRA                 = 0xE01A;
+    const uint PORTA                = 0xF010;
+    const uint PORTB                = 0xF011;
+    
+    const uint CRA                  = 0xF012; // Control Register A
+    const uint CRB                  = 0xF013; // Control Register B
+    
+    const uint DDRA                 = 0xF010;
+    const uint DDRB                 = 0xF011;
     
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/MCU"

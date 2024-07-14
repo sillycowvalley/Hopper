@@ -204,8 +204,8 @@ unit ZP
     // MECB addresses for IO:
     //
     // MC6840 PTM  = 0xF000
-    // MC6850 ACIA = 0xF008
-    // MC6821 PIA  = 0xF010
+    
+    
 #ifdef MECB6502_IO    
     
     reserve 0xF000, 256
@@ -214,6 +214,17 @@ unit ZP
     const uint ACIACONTROL          = 0xF008;
     const uint ACIASTATUS           = 0xF008;
     const uint ACIADATA             = 0xF009;
+    
+    // Motorola 6821 PIA (Peripheral Interface Adapter)
+    const uint PORTA                = 0xF010; // Peripheral A Data Register
+    const uint PORTB                = 0xF011; // Peripheral B Data Register
+    const uint CRA                  = 0xF012; // Control Register A
+    const uint CRB                  = 0xF013; // Control Register B
+    // Data Direction Registers
+    const uint DDRA                 = 0xF010; // Data Direction Register A (Shared with PORTA)
+    const uint DDRB                 = 0xF011; // Data Direction Register B (Shared with PORTB)
+    
+    
 #endif
 
 #if defined(X16_IO)
@@ -242,6 +253,13 @@ unit ZP
     const uint DDRA                 = 0x9F23;
     const uint T1CL                 = 0x9F24; // Timer 1 counter low
     const uint T1CH                 = 0x9F25; // Timer 1 counter high
+    
+    const byte T1LL                 = 0xF6; // Timer 1 Latch Low
+    const byte T1LH                 = 0xF7; // Timer 1 Latch High
+    const byte T2CL                 = 0xF8; // Timer 2 Counter Low
+    const byte T2CH                 = 0xF9; // Timer 2 Counter High
+    const byte SR                   = 0xFA; // Shift Register
+    
     const uint ACR                  = 0x9F2B; // Auxiliary Control Register
     const uint PCR                  = 0x9F2C; // Peripheral Control Register
     const uint IFR                  = 0x9F2D; // Interrupt Flag Register
@@ -271,6 +289,13 @@ unit ZP
     const uint DDRA                 = 0x6003;
     const uint T1CL                 = 0x6004; // Timer 1 counter low
     const uint T1CH                 = 0x6005; // Timer 1 counter high
+    
+    const byte T1LL                 = 0xF6; // Timer 1 Latch Low
+    const byte T1LH                 = 0xF7; // Timer 1 Latch High
+    const byte T2CL                 = 0xF8; // Timer 2 Counter Low
+    const byte T2CH                 = 0xF9; // Timer 2 Counter High
+    const byte SR                   = 0xFA; // Shift Register
+    
     const uint ACR                  = 0x600B; // Auxiliary Control Register
     const uint PCR                  = 0x600C; // Peripheral Control Register
     const uint IFR                  = 0x600D; // Interrupt Flag Register

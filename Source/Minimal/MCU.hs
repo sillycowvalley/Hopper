@@ -32,30 +32,42 @@ unit MCU
     PinMode(byte pin, PinModeOption pinMode)
     {
         uint ddr = (pin <= 7) ? DDRA : DDRB;
-        pin = pin & 0x07;
+#ifdef M6821_PIA
+        uint cr = (pin <= 7) ? CRA : CRB;
+        // Select the DDR
+        Memory.WriteByte(cr, 0b00000000);
+#endif        
+        pin = pin & 0b00000111;
         pin = 1 << pin;
-        byte currentValue = Memory.ReadByte(ddr);
         if (pinMode == PinModeOption.Input)
         {
-            currentValue = currentValue & ~pin;
+            Memory.WriteByte(ddr, Memory.ReadByte(ddr) & ~pin);
         }
         else
         {
-            currentValue = currentValue | pin;
+            Memory.WriteByte(ddr, Memory.ReadByte(ddr) | pin);
         }
-        Memory.WriteByte(ddr, currentValue);
     }
     
     bool DigitalRead(byte pin)
     {
         uint port = (pin <= 7) ? PORTA : PORTB;
-        pin = 1 << (pin & 0x07);
-        return ((Memory.ReadByte(port) & pin) != 0);
+#ifdef M6821_PIA
+        uint cr = (pin <= 7) ? CRA : CRB;
+        // Select the port register
+        Memory.WriteByte(cr, 0b00000100);
+#endif
+        return ((Memory.ReadByte(port) & (1 << (pin & 0b00000111))) != 0);
     }
     DigitalWrite(byte pin, bool value)
     {
         uint port = (pin <= 7) ? PORTA : PORTB;
-        pin = 1 << (pin & 0x07);
+#ifdef M6821_PIA
+        uint cr = (pin <= 7) ? CRA : CRB;
+        // Select the port register
+        Memory.WriteByte(cr, 0b00000100);
+#endif
+        pin = 1 << (pin & 0b00000111);
         if (value)
         {
             Memory.WriteByte(port, Memory.ReadByte(port) | pin);

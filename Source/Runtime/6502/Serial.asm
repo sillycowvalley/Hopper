@@ -20,7 +20,6 @@ unit Serial
 #if defined(ACIA_6551) && !defined(APPLE_I)
     uses "Devices/ACIA6551"
 #endif
-    //uses "Devices/PIA6821"
 #ifdef APPLE_I
     uses "Devices/AppleI"
 #endif    
