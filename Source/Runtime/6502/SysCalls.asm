@@ -79,6 +79,8 @@ unit SysCall
       //LongToUInt            = 0x3C,
         UIntFromBytes         = 0x3D,
         
+        TimeSampleMicrosGet   = 0x3E,
+        
         LongAdd               = 0x3F,
         LongSub               = 0x40,
         LongDiv               = 0x41,
@@ -91,6 +93,8 @@ unit SysCall
         LongGT                = 0x47,
         LongGE                = 0x48,
         LongNegate            = 0x49,
+        
+        TimeSampleMicrosSet   = 0x4B,
         
         FloatAdd              = 0x4E,
         FloatSub              = 0x4F,
@@ -251,6 +255,14 @@ unit SysCall
             case SysCalls.TimeDelay:
             {
                 Time.Delay();
+            }
+            case SysCalls.TimeSampleMicrosSet:
+            {
+                Time.SampleMicrosSet();
+            }
+            case SysCalls.TimeSampleMicrosGet:
+            {
+                Time.SampleMicrosGet();
             }
             case SysCalls.TimeSeconds:
             {

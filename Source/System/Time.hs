@@ -5,8 +5,7 @@ unit Time
 
 #if defined(MCU)
     Delay(uint ms) system;
-    uint SampleMicros { set system; }
-    DelaySamples(uint samples) system;
+    uint SampleMicros { set system; get system; }
 #else
     Delay(uint ms)
     {

@@ -74,7 +74,7 @@ unit SysCalls
         LongToUInt           = 0x3C,
         UIntFromBytes        = 0x3D,
         
-        TimeDelaySamples     = 0x3E,
+        TimeSampleMicrosGet  = 0x3E,
         
         LongAdd              = 0x3F,
         LongSub              = 0x40,

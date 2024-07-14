@@ -67,6 +67,22 @@ unit Time
         PLA
 #endif
     }
+    SampleMicrosSet()
+    {
+        PopTop();
+        // TODO
+    }
+    SampleMicrosGet()
+    {
+        // TODO : default 1000us for now
+        LDA # 0xE8
+        STA TOPL
+        LDA # 0x03
+        STA TOPH
+
+        LDA # Types.UInt
+        Stacks.PushTop();
+    }
 
 #ifdef LONGS
     Millis()

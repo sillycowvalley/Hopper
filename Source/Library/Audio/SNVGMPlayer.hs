@@ -55,8 +55,9 @@ unit SNVGMPlayer
     const byte sn_N1       = 0x70;
     
     const uint timingIterations = 1000;
+    const uint vgmSampleMicros = 22;
 #ifdef MCU
-    uint callSampleCost;
+    uint callCostInSamples;
 #else
     uint sixtiethIterations; 
     uint waitShift;
@@ -108,7 +109,7 @@ unit SNVGMPlayer
     {
         // wait 735 samples (60th of a second = 1000 / 60 ms = 16.667 ms = 16667us),
 #ifdef MCU
-        Time.DelaySamples(735-callSampleCost);
+        Time.Delay(735-callCostInSamples);
 #else
         uint lu = sixtiethIterations;
         loop
@@ -124,9 +125,9 @@ unit SNVGMPlayer
 #ifdef MCU
         // a sample is 1 second / 44100 = 22.67us
         uint samples = (data[idx+1]<<8) | data[idx];
-        if (samples > 0)
+        if (samples > callCostInSamples)
         {
-            Time.DelaySamples(samples - callSampleCost);
+            Time.Delay(samples - callCostInSamples);
         }
 #else
         uint lu; // first local
@@ -145,14 +146,25 @@ unit SNVGMPlayer
         
         return false;
     }
+    bool timingCall() // for timing
+    {
+#ifdef MCU
+       uint samples = (data[idx-1] & 0x0F)+1;
+       if (samples > callCostInSamples) // include the time for the 'if'
+       {
+           // NOP
+       }
+#endif   
+        return false;
+    }
     bool n1() 
     {
         // 1..4 x 22us : 2.5 x 22us = 55us
 #ifdef MCU
        uint samples = (data[idx-1] & 0x0F)+1;
-       if (samples > callSampleCost)
+       if (samples > callCostInSamples)
        {
-           Time.DelaySamples(samples - callSampleCost);
+           Time.Delay(samples - callCostInSamples);
        }
 #endif   
         return false;
@@ -211,8 +223,8 @@ unit SNVGMPlayer
         vgmOp[sn_N1 | 0b1100] = callOp; vgmOp[sn_N1 | 0b1101] = callOp; vgmOp[sn_N1 | 0b1110] = callOp; vgmOp[sn_N1 | 0b1111] = callOp;
         
 #ifdef MCU        
-        Time.SampleMicros = 22;
-        callSampleCost = 0;
+        Time.SampleMicros = vgmSampleMicros;
+        callCostInSamples = 0;
 #endif
         byte[2] vgm;  
         vgm[0] = sn_N1;
@@ -240,16 +252,16 @@ unit SNVGMPlayer
             // how long does it take just to make an empty delegate call?
             callOp = vgmOp[data[idx-1]]; // idy is always 1 for this test
             idy++;
-            _ = n1();
+            _ = timingCall();
         }
         long elapsedN1 = Millis - startTiming - elapsedDecrement;
         
         // 248us on 6502 at 8MHz on Hopper 6502 SBC
         float usPerN1Iteration =  1000.0 * elapsedN1 / timingIterations;
 #ifdef MCU        
-        IO.WriteLn(usPerN1Iteration.ToString() + " us for n1()");
-        callSampleCost = uint(usPerN1Iteration) - 22;
-        IO.WriteLn(callSampleCost.ToString() + " us sample cost for calls");
+        IO.WriteLn(usPerN1Iteration.ToString() + " us for empty 'n1()' call");
+        callCostInSamples = uint((usPerN1Iteration + vgmSampleMicros * 0.49999) / vgmSampleMicros);
+        IO.WriteLn(callCostInSamples.ToString() + " samples per empty call");
 #else
         // SIXTIETH:
         // 18us on 6502 at 8MHz on Hopper 6502 SBC

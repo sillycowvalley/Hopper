@@ -1,7 +1,9 @@
 unit SerialDevice
 {
     // Motorola 6850
+//#if !defined(MECB6502_8K_IO)    
     #define HAS_SERIAL_ISR
+//#endif
     
     // On the 6850 the control and status registers are at the same
     // address and are selected based on R or W.
@@ -24,12 +26,16 @@ unit SerialDevice
         LDA #0b00000011        // reset the 6850
         STA ControlRegister
         
-        // LDA #0b00010101     // 8-N-1, 115200 baud (/16 for  1.8432 mHz), no rx interrupt
-#ifdef HAS_SERIAL_ISR        
-        LDA #0b10010110        // 8-N-1,  28800 baud (/64 for  1.8432 mHz), rx interrupt
+#if defined(MECB6502_8K_IO)
+        LDA # 0b00010101       // 8-N-1, (/16 for 4.9152MHz), no rx interrupt
 #else        
         LDA #0b00010110        // 8-N-1,  28800 baud (/64 for  1.8432 mHz), no rx interrupt
 #endif
+
+#if defined(HAS_SERIAL_ISR)
+        ORA #0b10000000        // has rx interrupt
+#endif
+
         STA ControlRegister
     }
     
@@ -140,4 +146,4 @@ unit SerialDevice
         PLA        
     }
 #endif    
-}
+}fffff

@@ -86,7 +86,7 @@ unit SysCalls
         addEntry("Long.ToInt");
         addEntry("Long.ToUInt");
         addEntry("UInt.FromBytes");
-        addEntry("Time.DelaySamples");
+        addEntry("Time.SampleMicros_Get");
         addEntry("Long.Add");
         addEntry("Long.Sub");
         addEntry("Long.Div");

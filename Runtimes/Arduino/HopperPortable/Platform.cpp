@@ -37,6 +37,8 @@ unsigned char * codeStartAddress = nullptr;
 
 uint jumpTableAddress;
 
+unsigned int usSamples = 1000; // good default : 1000us = 1ms (see Delay(..))
+
 Byte lastError;
 bool exited;
 bool interruptsEnabled;
@@ -196,6 +198,8 @@ void External_WatchDog()
 void Platform_Initialize()
 {
     External_MCUClockSpeedSet(133);
+    External_SampleMicrosSet(1000);
+
     External_TimerInitialize();
     if (nullptr != dataMemoryBlock)
     {
@@ -390,15 +394,14 @@ void External_SetProgramOffset(UInt codeStart)
     codeStartAddress = codeMemoryBlock + codeStart;
 }
 
-void External_Delay(UInt ms)
-{
-    delay(ms);
-}
-unsigned int usSamples = 1; // good default : 1us
-void External_DelaySamples(UInt samples)
+void External_Delay(UInt samples)
 {
     unsigned int us = usSamples * samples;
     delayMicroseconds(us);
+}
+UInt External_SampleMicrosGet()
+{
+    return usSamples;
 }
 void External_SampleMicrosSet(UInt us)
 {

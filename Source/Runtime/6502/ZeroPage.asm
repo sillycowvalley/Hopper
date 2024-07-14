@@ -203,17 +203,17 @@ unit ZP
 
     // MECB addresses for IO:
     //
-    // MC6840 PTM  = 0xE000
-    // MC6850 ACIA = 0xE008
-    // MC6821 PIA  = 0xE010
+    // MC6840 PTM  = 0xF000
+    // MC6850 ACIA = 0xF008
+    // MC6821 PIA  = 0xF010
 #ifdef MECB6502_8K_IO    
     
-    reserve 0xD000, 256
+    reserve 0xF000, 256
     
     // Motorola 6850 ACIA
-    const uint ACIACONTROL          = 0xD008;
-    const uint ACIASTATUS           = 0xD008;
-    const uint ACIADATA             = 0xD009;
+    const uint ACIACONTROL          = 0xF008;
+    const uint ACIASTATUS           = 0xF008;
+    const uint ACIADATA             = 0xF009;
 #endif
 
 #if defined(X16_IO)

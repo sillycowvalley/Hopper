@@ -477,13 +477,13 @@ unit External
     {
         Time.Delay(ms);
     }
-    DelaySamples(uint samples)
-    {
-        Time.DelaySamples(samples);
-    }
     SampleMicrosSet(uint us)
     {
         Time.SampleMicros = us;
+    }
+    uint SampleMicrosGet()
+    {
+        return Time.SampleMicros;
     }
     DigitalWrite(byte pin, byte value)
     {

@@ -498,6 +498,7 @@ program R6502
     hopperInit()
     {
         Memory.InitializeHeapSize(); // sets HEAPSTART and HEAPSIZE based on size of program loaded
+        
         Stacks.Initialize();
         
         // CODESTART = EntryPoint + HopperData
@@ -554,8 +555,8 @@ program R6502
             if (Z) { break; }
         }
 #else
-        LDA #0
-        LDX #0
+        LDA # 0
+        LDX # 0
         loop
         {
             STA 0x00, X
@@ -563,13 +564,14 @@ program R6502
             if (Z) { break; }
         }
 #endif
-        LDA #0
+
+        LDA # 0
         STA IDXL
         LDA # (SerialInBuffer >> 8)
         STA IDXH
         LDX # 1
         Utilities.ClearPages(); // clear the serial buffer
-        
+
         Serial.Initialize(); // munts A
         
 #ifdef W65C22_VIA

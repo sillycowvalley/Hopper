@@ -805,14 +805,15 @@ unit HopperVM
                 External.Delay(Pop());
                 doNext = false;
             }
-            case SysCalls.TimeDelaySamples:
-            {
-                External.DelaySamples(Pop());
-            }
             case SysCalls.TimeSampleMicrosSet :
             {
                 Type stype;
                 External.SampleMicrosSet(Pop());
+            }
+            case SysCalls.TimeSampleMicrosGet :
+            {
+                uint us = External.SampleMicrosGet();
+                Push(us, Type.UInt);
             }
             case SysCalls.SerialIsAvailableGet:
             {
@@ -3974,9 +3975,10 @@ unit HopperVM
                 External.Delay(Pop());
                 doNext = false;
             }
-            case SysCalls.TimeDelaySamples:
+            case SysCalls.TimeSampleMicrosGet :
             {
-                External.DelaySamples(Pop());
+                uint us = External.SampleMicrosGet();
+                Push(us, Type.UInt);
             }
             case SysCalls.TimeSampleMicrosSet :
             {
