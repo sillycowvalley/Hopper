@@ -56,12 +56,8 @@ unit SNVGMPlayer
     
     const uint timingIterations = 1000;
     const uint vgmSampleMicros = 22;
-#ifdef MCU
     uint callCostInSamples;
-#else
-    uint sixtiethIterations; 
-    uint waitShift;
-#endif
+    uint sixtiethIterations;
     
     uint idx;
     uint idy; // just for timing
@@ -105,68 +101,76 @@ unit SNVGMPlayer
     {
         return true; // done
     }
-    bool sixteenth()
+    bool sixtieth()
     {
         // wait 735 samples (60th of a second = 1000 / 60 ms = 16.667 ms = 16667us),
-#ifdef MCU
         Time.Delay(735-callCostInSamples);
-#else
+        return false;
+    }
+    bool sixtieth_slow()
+    {
+        // wait 735 samples (60th of a second = 1000 / 60 ms = 16.667 ms = 16667us),
         uint lu = sixtiethIterations;
+        /*
         loop
         {
             if (lu == 0) { break; }
             lu--;
         }
-#endif
+        */
         return false;
     }
     bool wait()
     {
-#ifdef MCU
         // a sample is 1 second / 44100 = 22.67us
         uint samples = (data[idx+1]<<8) | data[idx];
-        if (samples > callCostInSamples)
+        if (callCostInSamples < samples)
         {
             Time.Delay(samples - callCostInSamples);
         }
-#else
+        idx += 2;
+        return false;
+    }
+    bool wait_slow()
+    {
+        // a sample is 1 second / 44100 = 22.67us
         uint lu; // first local
         
         // n samples : // 0.. 1.49 seconds 
         // 1.49 seconds = 1490000 us / 65536 = ~23us per iteration
         lu = (data[idx+1]<<8) | data[idx];
-        lu = lu >> waitShift;
+        /*
+        lu = lu >> 3; // '3' by trial an error on 4MHz machines
         loop
         {
             if (lu == 0) { break; }
             lu--;
         }
-#endif        
+        */
         idx += 2;
-        
         return false;
     }
     bool timingCall() // for timing
     {
-#ifdef MCU
        uint samples = (data[idx-1] & 0x0F)+1;
-       if (samples > callCostInSamples) // include the time for the 'if'
+       if (callCostInSamples < samples) // include the time for the 'if'
        {
            // NOP
        }
-#endif   
-        return false;
+       return false;
     }
     bool n1() 
     {
-        // 1..4 x 22us : 2.5 x 22us = 55us
-#ifdef MCU
        uint samples = (data[idx-1] & 0x0F)+1;
-       if (samples > callCostInSamples)
+       if (callCostInSamples < samples)
        {
            Time.Delay(samples - callCostInSamples);
        }
-#endif   
+       return false;
+    }
+    bool n1_00()
+    {
+        // 1..4 x 22us : 2.5 x 22us = 55us
         return false;
     }
     bool n1_01()
@@ -182,14 +186,13 @@ unit SNVGMPlayer
     bool n1_11()
     {
         // 13..16 x 22us : 14.5 x 22 = 319us
-#ifdef HOPPER_6502_SBC
+        
         // (319us - 248us) / ~20us = 4
         uint lt;
+        //lt--;
+        //lt--;
         lt--;
         lt--;
-        lt--;
-        lt--;
-#endif        
         return false;
     }
         
@@ -203,29 +206,10 @@ unit SNVGMPlayer
         {
             vgmOp[i] = callOp;
         }
-        callOp = send;       vgmOp[sn_SEND]     = callOp;
-        callOp = end;        vgmOp[sn_END]      = callOp;
-        callOp = wait;       vgmOp[sn_WAIT]     = callOp;
-        callOp = sixteenth;  vgmOp[sn_SIXTIETH] = callOp;
         
-        callOp = n1;         vgmOp[sn_N1 | 0b0000] = callOp; vgmOp[sn_N1 | 0b0001] = callOp; vgmOp[sn_N1 | 0b0010] = callOp; vgmOp[sn_N1 | 0b0011] = callOp;
-#ifndef MCU        
-        callOp = n1_01;      
-#endif
-        vgmOp[sn_N1 | 0b0100] = callOp; vgmOp[sn_N1 | 0b0101] = callOp; vgmOp[sn_N1 | 0b0110] = callOp; vgmOp[sn_N1 | 0b0111] = callOp;
-#ifndef MCU                
-        callOp = n1_10;      
-#endif
-        vgmOp[sn_N1 | 0b1000] = callOp; vgmOp[sn_N1 | 0b1001] = callOp; vgmOp[sn_N1 | 0b1010] = callOp; vgmOp[sn_N1 | 0b1011] = callOp;
-#ifndef MCU        
-        callOp = n1_11;      
-#endif
-        vgmOp[sn_N1 | 0b1100] = callOp; vgmOp[sn_N1 | 0b1101] = callOp; vgmOp[sn_N1 | 0b1110] = callOp; vgmOp[sn_N1 | 0b1111] = callOp;
-        
-#ifdef MCU        
-        Time.SampleMicros = vgmSampleMicros;
         callCostInSamples = 0;
-#endif
+        Time.SampleMicros = 1000; // make sure that 'Millis' mean 'Millis' when we are calibrating
+
         byte[2] vgm;  
         vgm[0] = sn_N1;
         data = vgm;
@@ -256,52 +240,17 @@ unit SNVGMPlayer
         }
         long elapsedN1 = Millis - startTiming - elapsedDecrement;
         
-        // 248us on 6502 at 8MHz on Hopper 6502 SBC
         float usPerN1Iteration =  1000.0 * elapsedN1 / timingIterations;
-#ifdef MCU        
-        IO.WriteLn(usPerN1Iteration.ToString() + " us for empty 'n1()' call");
-        callCostInSamples = uint((usPerN1Iteration + vgmSampleMicros * 0.49999) / vgmSampleMicros);
-        IO.WriteLn(callCostInSamples.ToString() + " samples per empty call");
-#else
-        // SIXTIETH:
-        // 18us on 6502 at 8MHz on Hopper 6502 SBC
         float usPerDecIteration =  1000.0 * elapsedDecrement / timingIterations;
         sixtiethIterations = uint((16667.0 - usPerN1Iteration) / usPerDecIteration); 
         
-        // WAIT:
-        float fWaitDiv = usPerDecIteration / 23.0;
-        if (fWaitDiv < 1.5)
-        {
-            waitShift = 0;
-        }
-        else if (fWaitDiv < 2.999) // /1.5 .. /3
-        {
-            waitShift = 1; // /2
-        }
-        else if (fWaitDiv < 5.999) // /3 .. /6
-        {
-            waitShift = 2; // /4
-        }       
-        else if (fWaitDiv < 9.999) // /6 .. /10
-        {
-            // 6.652099 for Dave -> 3
-            waitShift = 3; // /8
-        }
-        else if (fWaitDiv < 23.999) // /10 .. /24
-        {
-            waitShift = 4; // /16
-        }
-        else
-        {
-            waitShift = 5; // /32
-        }
-
-        IO.WriteLn(usPerN1Iteration.ToString() + " us for n1()");
-        IO.WriteLn(usPerDecIteration.ToString() + " us for each lu-- iteration");
-        IO.WriteLn(sixtiethIterations.ToString() + " iterations for SIXTIETH");
-        IO.WriteLn(fWaitDiv.ToString() + " fWaitDiv");
-        IO.WriteLn(waitShift.ToString() + " waitShift");
-#endif
+        IO.WriteLn(usPerDecIteration.ToString() + " us per --"); // ~76us for 8MHz, ~150us for 4MHz
+        IO.WriteLn(sixtiethIterations.ToString() + " sixtieth iterations");
+        
+        IO.WriteLn(usPerN1Iteration.ToString() + " us for empty 'n1()' call");
+        callCostInSamples = uint((usPerN1Iteration + vgmSampleMicros * 0.49999) / vgmSampleMicros);
+        IO.WriteLn(callCostInSamples.ToString() + " samples per empty call");
+        Time.SampleMicros = vgmSampleMicros;
         
 #ifdef MCU
         PinMode(d0, PinModeOption.Output);
@@ -315,6 +264,45 @@ unit SNVGMPlayer
 #else                
         Memory.WriteByte(DDRB, 0b11111111);
 #endif
+
+        callOp = send;       vgmOp[sn_SEND]     = callOp;
+        callOp = end;        vgmOp[sn_END]      = callOp;
+        callOp = wait;       
+        if (callCostInSamples > 45) // 4MHz or less
+        {
+            callOp = wait_slow;
+        }
+        vgmOp[sn_WAIT]     = callOp;
+        callOp = sixtieth;  
+        if (callCostInSamples > 45) // 4MHz or less
+        {
+            callOp = sixtieth_slow;
+        }
+        vgmOp[sn_SIXTIETH] = callOp;
+        
+        callOp = n1;         
+        if (callCostInSamples > 45) // 4MHz or less
+        {       
+            callOp = n1_00;      
+        }
+        vgmOp[sn_N1 | 0b0000] = callOp; vgmOp[sn_N1 | 0b0001] = callOp; vgmOp[sn_N1 | 0b0010] = callOp; vgmOp[sn_N1 | 0b0011] = callOp;
+        if (callCostInSamples > 45) // 4MHz or less
+        {       
+            callOp = n1_01;      
+        }
+        vgmOp[sn_N1 | 0b0100] = callOp; vgmOp[sn_N1 | 0b0101] = callOp; vgmOp[sn_N1 | 0b0110] = callOp; vgmOp[sn_N1 | 0b0111] = callOp;
+        if (callCostInSamples > 45) // 4MHz or less
+        {
+            callOp = n1_10;      
+        }
+        vgmOp[sn_N1 | 0b1000] = callOp; vgmOp[sn_N1 | 0b1001] = callOp; vgmOp[sn_N1 | 0b1010] = callOp; vgmOp[sn_N1 | 0b1011] = callOp;
+        if (callCostInSamples > 45) // 4MHz or less
+        {
+            callOp = n1_11;      
+        }
+        vgmOp[sn_N1 | 0b1100] = callOp; vgmOp[sn_N1 | 0b1101] = callOp; vgmOp[sn_N1 | 0b1110] = callOp; vgmOp[sn_N1 | 0b1111] = callOp;
+        
+
         PinMode(sn_WE, PinModeOption.Output);
         DigitalWrite(sn_WE, true);    // Make sure the SN76489 is not selected at start up.
         Silence();
@@ -346,5 +334,7 @@ unit SNVGMPlayer
                       sn_SEND, (3 << 5) | 0x9F, 
                       sn_END};
         Play(vgm);
+        //IO.WriteLn("sixtiethIterations=" + sixtiethIterations.ToString());
+        //IO.WriteLn("Time.SampleMicros=" + (Time.SampleMicros).ToString());
     }
 }
