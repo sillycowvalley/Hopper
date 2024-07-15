@@ -6,6 +6,25 @@ unit PIA6821
     
     uses "/Source/Runtime/6502/ZeroPage"
     
+    // Better Register Aliass:
+    const uint Timer1Control   = TCR;
+    const uint Timer3Control   = TCR;
+    const uint Timer2Control   = TCSR2; // (least significant bit selects TCR as Timer1Control (1) or Timer3Control (0))
+    const uint TimerStatus     = TCSR2;
+    const uint Timer1MSBBuffer = TIMER1_MSB;
+    const uint Timer1LSBLatch  = TIMER1_LSB;
+    const uint Timer1Counter   = TIMER1_MSB;
+    const uint Timer1LSBBuffer = TIMER1_LSB;
+    
+    const uint Timer2MSBBuffer = TIMER2_MSB;
+    const uint Timer2LSBLatch  = TIMER2_LSB;
+    const uint Timer2Counter   = TIMER2_MSB;
+    const uint Timer2LSBBuffer = TIMER2_LSB;
+    
+    const uint Timer3MSBBuffer = TIMER3_MSB;
+    const uint Timer3LSBLatch  = TIMER3_LSB;
+    const uint Timer3Counter   = TIMER3_MSB;
+    const uint Timer3LSBBuffer = TIMER3_LSB;
     
     initialize()
     {
@@ -39,37 +58,63 @@ unit PIA6821
     }
     isr()
     {
-        BIT ZP.TCSR1
-        if (MI) // IRQ by Timer 1
+        BIT TimerStatus
+        if (MI) // IRQ by Timer 1, 2 or 3
         {
-            // Clear the interrupt flag by writing to TCSR1
             PHA
-            LDA ZP.TCSR1
-            AND # 0b01111111 //Clear the interrupt flag (bit 7)
-            STA ZP.TCSR1
-            PLA
-            
-            INC  ZP.TICK0
-            if (Z)
+            LDA TimerStatus
+            AND # 0b00000001 // Timer 1 interrupt
+            if (NZ)
             {
-                INC  ZP.TICK1
+                // Read Timer 1 counter to clear interrupt
+                LDA Timer1Counter
+                INC  ZP.TICK0
                 if (Z)
                 {
-                    INC  ZP.TICK2
+                    INC  ZP.TICK1
                     if (Z)
                     {
-                        INC  ZP.TICK3
+                        INC  ZP.TICK2
+                        if (Z)
+                        {
+                            INC  ZP.TICK3
+                        }
                     }
                 }
             }
+            
+            PLA
         }
     }   
     
     sharedSamplesMicroSet()
     {
         // Motorola 6840 Timer
-        LDA # 0b00000000            // Disable all timers during configuration
-        STA ZP.TCR
+        LDA # 0b00000001            // Select Timer 3 Control Register
+        STA Timer2Control
+        // CR30 = 0 - no prescaler
+        LDA # 0b00000000     
+        STA Timer3Control           // Write to Timer 3 Control Register
+        
+        LDA # 0b00000001            // Select Timer 1 Control Register
+        STA Timer2Control
+        //  CR10 = 1 all timers held in preset state (disabled)
+        LDA # 0b00000001            // Disable all timers during configuration
+        STA Timer1Control
+     
+        // Zero the tick counter
+#ifdef CPU_65C02S
+        STZ ZP.TICK0
+        STZ ZP.TICK1
+        STZ ZP.TICK2
+        STZ ZP.TICK3
+#else
+        LDA #0
+        STA ZP.TICK0
+        STA ZP.TICK1
+        STA ZP.TICK2
+        STA ZP.TICK3
+#endif        
         
         // At a CPU clock of 1 mHz = 1000 cycles - 1 = 999 / 0x03E7 would give us a sample cycle of 1ms
 #if defined(CPU_2MHZ) || defined(CPU_4MHZ) || defined(CPU_8MHZ)
@@ -96,42 +141,26 @@ unit PIA6821
         }
         DEC ZP.TOPL
         
-        
+        // Always write the MSB to the single MSB buffer register first:
         LDA ZP.TOPH          // Load MSB of 1000 cycles
-        STA ZP.TIMER1_MSB       // Write to Timer 1 MSB register
+        STA Timer1MSBBuffer  // Write to Timer 1 MSB register
         
         LDA ZP.TOPL          // Load LSB of 1000 cycles
-        STA ZP.TIMER1_LSB    // Write to Timer 1 LSB register
+        STA Timer1LSBLatch   // Write to Timer 1 LSB register
         
-        /*
-        Bit 0 (TEN): Timer Enable bit (1 to enable the timer).
-        Bit 1 (TRG): Trigger Mode bit (0 for continuous mode).
-        Bit 2 (OL): Output Level bit (0 to keep output low).
-        Bit 3 (IRQE): Interrupt Request Enable bit (1 to enable interrupts).
-        Bit 4 (CR): Control Register bit (not used in this setup, assumed 0).
-        Bit 5 (PRES): Prescaler Control bit (0 to not use prescaler).
-        Bit 6 (CLK2): Clock Select Bit 2 (1 for external clock source).
-        Bit 7 (CLK1): Clock Select Bit 1 (0 for external clock source).
-        */
-        LDA # 0b01001001     // Set Timer 1
-        STA ZP.TCSR1         // Write to Timer 1 Status and Control Register
+        // CR10 = 0 - all timers are allowed to operate
+        // CR21 = 0 - use external clock source
+        // CR22 = 0 - normal 16 bit counting mode
         
+        // CR23 = 0 - continuous mode (write to latches or reset causes initialization)
+        // CR24 = 0
+        // CR25 = 0
         
-#ifdef CPU_65C02S
-        STZ ZP.TICK0
-        STZ ZP.TICK1
-        STZ ZP.TICK2
-        STZ ZP.TICK3
-#else
-        LDA #0
-        STA ZP.TICK0
-        STA ZP.TICK1
-        STA ZP.TICK2
-        STA ZP.TICK3
-#endif
+        // CR26 = 1 - interrupt flag enabled to IRQ
+        // CR27 - 0 - output masked on output OX
         
-        LDA #0b00000001      // Enable Timer 1
-        STA TCR              // Write to Timer Control Register 
+        LDA # 0b01000000     
+        STA Timer1Control    // Write to Timer 1 Control Register 
     }
     sharedSamplesMicroGet()
     {

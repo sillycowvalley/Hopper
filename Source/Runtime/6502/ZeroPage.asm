@@ -211,16 +211,14 @@ unit ZP
     reserve 0xF000, 256
     
     // Motorola 6840 PTM (Programmable Timer Module)
-    const uint TCR                  = 0xF000;  // Timer Control Register
-    const uint TCSR1                = 0xF001;  // Timer Status and Control Register 1
-    const uint TCSR2                = 0xF002;  // Timer Status and Control Register 2
-    const uint TCSR3                = 0xF003;  // Timer Status and Control Register 3
-    const uint TIMER1_LSB           = 0xF004;  // Timer 1 Low Byte
-    const uint TIMER1_MSB           = 0xF005;  // Timer 1 High Byte
-    const uint TIMER2_LSB           = 0xF008;  // Timer 2 Low Byte
-    const uint TIMER2_MSB           = 0xF009;  // Timer 2 High Byte
-    const uint TIMER3_LSB           = 0xF00C;  // Timer 3 Low Byte
-    const uint TIMER3_MSB           = 0xF00D;  // Timer 3 High Byte
+    const uint TCR                  = 0xF000;  // Write: Timer Control Registers 1 & 3   Read: NOP
+    const uint TCSR2                = 0xF001;  // Write: Control Register 2              Read: Status Register (least significant bit selects TCR as TCSR1 or TCSR3)
+    const uint TIMER1_MSB           = 0xF002;  // Write: MSB Buffer Register             Read: Timer 1 Counter
+    const uint TIMER1_LSB           = 0xF003;  // Write: Timer #1 Latches                Read: LSB Buffer Register
+    const uint TIMER2_MSB           = 0xF004;  // Write: MSB Buffer Register             Read: Timer 1 Counter
+    const uint TIMER2_LSB           = 0xF005;  // Write: Timer #1 Latches                Read: LSB Buffer Register
+    const uint TIMER3_MSB           = 0xF006;  // Write: MSB Buffer Register             Read: Timer 1 Counter
+    const uint TIMER3_LSB           = 0xF007;  // Write: Timer #1 Latches                Read: LSB Buffer Register
     
     // Motorola 6850 ACIA
     const uint ACIACONTROL          = 0xF008;
