@@ -174,11 +174,11 @@ unit PIA6821
     }
     sharedSamplesMicroGet()
     {
-        /* TODO
-        LDA ZP.T1LL 
-        STA ZP.TOPL
-        LDA ZP.T1LH 
+        LDA Timer1Counter 
         STA ZP.TOPH
+        LDA Timer1LSBBuffer 
+        STA ZP.TOPL
+        
         // The timer counts down from n-1 to 0, including the 0 as part of the count
         // +1
         INC ZP.TOPL
@@ -186,6 +186,5 @@ unit PIA6821
         {
             INC ZP.TOPH
         }
-        */
     }
 }
