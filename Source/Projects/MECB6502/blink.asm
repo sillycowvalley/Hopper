@@ -1,7 +1,7 @@
 program Blink
 {
     #define CPU_65C02S
-    #define ROM_16K
+    #define ROM_8K                    // by default the CPLD is programmed for 8K ROM
     
     const uint MECB_IO  = 0xF000;
     
@@ -32,6 +32,7 @@ program Blink
     const uint DDRB                 = PIA+1; // Data Direction Register B (Shared with PORTB)
     
     // Zero Page
+    const byte SECONDS              = 0x27;
     const byte TICK0                = 0x28;
     const byte TICK1                = 0x29;
     const byte TICK2                = 0x2A;
@@ -40,7 +41,6 @@ program Blink
     const byte TARGET1              = 0x2D;
     const byte TARGET2              = 0x2E;
     const byte TARGET3              = 0x2F;
-    
     
     WriteChar()
     {
@@ -90,51 +90,55 @@ program Blink
     
     IRQ()
     {
-        BIT PTM_SR
+        PHA
+        LDA PTM_SR
         if (MI) // Interrupt flag, 0b10000000, set in the status register?
         {
-            // Reading the timer clears the interrupt flag. Use the BIT 
-            // instruction to 'read' without modifying any CPU registers.
-            BIT PTM_T1MSB
-            BIT PTM_T1LSB
-            
-            INC TICK0 // Increment the Tick (on Zero Page)
-            if (Z)
+            ROR A  // put bit 0 into Carry Flag
+            if (C) // Timer 1 caused interrupt?
             {
-                INC TICK1
+                // Reading the timer LSB clears the interrupt flag. 
+                LDA PTM_T1MSB
+                
+                INC TICK0 // Increment the Tick (on Zero Page)
                 if (Z)
                 {
-                    INC TICK2
+                    INC TICK1
                     if (Z)
                     {
-                        INC TICK3
+                        INC TICK2
+                        if (Z)
+                        {
+                            INC TICK3
+                        }
                     }
                 }
             }
         }
+        PLA
     }
     
     InitPTR()
     {
-        SEI
+        SEI    // disable interrupts (seems like a bad idea to allow interrupts while configuring interrupts)
+        
+        // on a 1MHz clock we'd need ~1000 clock cycles to get 1ms period
         // on a 4MHz clock we'd need ~4000 clock cycles to get 1ms period
-        LDA     (4000 >> 8) // Set up the countdown timer for timer 1
+        LDA     (1000 >> 8) // Set up the countdown timer for timer 1
         STA     PTM_T1MSB   // MSB must be written first!
-        LDA     (4000 & 0xFF)
+        LDA     (1000 & 0xFF)
         STA     PTM_T1LSB
 
-        LDA     # 0x01      // Preset all timers
-        STA     PTM_CR2     // Write to CR1
-        LDA     # 0x42      // CRX6=1 (interrupt); CRX1=1 (enable clock)
+        LDA     # 0b00000001 // Select CR1
+        STA     PTM_CR2      
+        LDA     # 0b01000010 // CRX6=1 (interrupt); CRX1=1 (enable clock)
         STA     PTM_CR13
-        LDA     # 0x00
-        STZ     PTM_CR2
         STZ     TICK0       // Reset the tick counter
         STZ     TICK1
         STZ     TICK2
         STZ     TICK3
+        STZ     SECONDS
 
-        LDA     PTM_SR      // Read the interrupt flag from the status register
         CLI
     }
     
@@ -176,57 +180,7 @@ program Blink
             break; // Target >= Ticks : match ->
         }
     }
-    TimerBlink()
-    {
-        InitPTR();
-        loop
-        {
-            LDA #0b00000100 // Select PORTA
-            STA CRA
-            LDA #0b00000001
-            STA PORTA
-            Delay500();
-            
-            LDA #0b00000100 // Select PORTA
-            STA CRA
-            LDA #0b00000000
-            STA PORTA
-            Delay500();
-        }
-    }
         
-    DelayCounters()
-    {
-        LDX #0
-        loop {
-            LDY #0
-            loop {
-                DEY
-                if (Z) { break; }
-            }
-            DEX
-            if (Z) { break; }
-        }
-    }
-        
-    LoopBlink()
-    {
-        loop
-        {
-            LDA #0b00000001
-            STA PORTA
-            DelayCounters();
-            LDA # '+'
-            WriteChar();
-            
-            LDA #0b00000000
-            STA PORTA
-            DelayCounters();
-            
-            LDA # '-'
-            WriteChar();
-        }
-    }
     Hopper()
     {
         LDA #0b00000011        // reset the 6850
@@ -234,7 +188,6 @@ program Blink
         
         LDA # 0b00010101       // 8-N-1, (/16 for 4.9152MHz), no rx interrupt
         //ORA #0b10000000      // has rx interrupt
-        
         STA ACIA_CONTROL
         
         LDA # 0x0A
@@ -242,6 +195,11 @@ program Blink
         LDA # ':'
         WriteChar();
         
+        LDA # '<'
+        WriteChar();
+        InitPTR();
+        LDA # '>'
+        WriteChar();
         
         LDA #0b00000000 // Select DDRA and clear interrupt flags in CRA
         STA CRA
@@ -250,19 +208,21 @@ program Blink
         LDA #0b00000100 // Select PORTA
         STA CRA
         
-        /*
-        LDA # '<'
-        WriteChar();
-        InitPTR();
-        LDA # '>'
-        WriteChar();
-        
         loop
         {
-            DelayCounters();
-            DelayCounters();
-            DelayCounters();
-            DelayCounters();
+            LDA #0b00000100 // Select PORTA
+            STA CRA
+            LDA #0b00000001
+            STA PORTA
+            Delay500();
+            
+            LDA #0b00000100 // Select PORTA
+            STA CRA
+            LDA #0b00000000
+            STA PORTA
+            Delay500();
+            
+            INC SECONDS
             
             LDA # 0x0A
             WriteChar();
@@ -274,10 +234,11 @@ program Blink
             HexOut();
             LDA TICK0
             HexOut();
+            LDA # ' '
+            WriteChar();
+            LDA SECONDS
+            HexOut();
+            
         }
-        */
-        //LoopBlink();
-        TimerBlink();
     }
-    
 }

@@ -13,6 +13,8 @@ program Blink
     
     const uint PTM_T1MSB = PTM+2;    // Write: MSB Buffer Register             Read: Timer 1 Counter
     const uint PTM_T1LSB = PTM+3;    // Write: Timer #1 Latches                Read: LSB Buffer Register
+    const uint PTM_T2MSB = PTM+4;    // Write: MSB Buffer Register             Read: Timer 2 Counter
+    const uint PTM_T2LSB = PTM+5;    // Write: Timer #2 Latches                Read: LSB Buffer Register
     
     // Motorola 6821 PIA (Peripheral Interface Adapter)
     const uint PIA                  = MECB_IO + 0x0010;
@@ -66,12 +68,12 @@ program Blink
         
         // On a 4MHz clock we'd need ~4000 clock cycles to get 1ms period.
         // So, why is this off by a factor of 2x?! Pre-scaler?
-        LDA     (1000 >> 8) // Set up the countdown timer for timer 1
+        LDA     (2000 >> 8) // Set up the countdown timer for timer 1
         STA     PTM_T1MSB   // MSB must be written first!
-        LDA     (1000 & 0xFF)
+        LDA     (2000 & 0xFF)
         STA     PTM_T1LSB
 
-        LDA     # 0b00000001 // Select CR1
+        LDA     # 0b00000001 // Select CR1 
         STA     PTM_CR2
         LDA     # 0b01000010 // CRX6=1 (interrupt); CRX1=1 (enable clock)
         STA     PTM_CR13
