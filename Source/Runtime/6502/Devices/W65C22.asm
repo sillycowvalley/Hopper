@@ -32,6 +32,7 @@ unit W65C22
         STA ZP.TOPL
         LDA # 0x03
         STA ZP.TOPH
+        
         sharedSamplesMicroSet();
     }
     

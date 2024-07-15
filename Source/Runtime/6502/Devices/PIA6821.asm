@@ -55,6 +55,7 @@ unit PIA6821
         STA ZP.TOPL
         LDA # 0x03
         STA ZP.TOPH
+        
         sharedSamplesMicroSet();
     }
     isr()
@@ -62,14 +63,14 @@ unit PIA6821
         BIT TimerStatus
         if (MI) // IRQ by Timer 1, 2 or 3
         {
-            PHA
+            //PHA
             //LDA TimerStatus
             //AND # 0b00000001 // Timer 1 interrupt
             //if (NZ)
             //{
                 // Read Timer 1 counter to clear interrupt
-                LDA Timer1Counter
-                LDA Timer1LSBBuffer
+                BIT Timer1Counter
+                BIT Timer1LSBBuffer
                 
                 // Increment the Tick
                 INC  ZP.TICK0
@@ -86,13 +87,15 @@ unit PIA6821
                     }
                 }
             //}
-            
-            PLA
+            //PLA
         }
     }   
     
     sharedSamplesMicroSet()
     {
+        LDA #'<'
+        WriteChar();
+        
         // Motorola 6840 Timer
         SEI
         
@@ -160,16 +163,15 @@ unit PIA6821
      
         LDA # 0b01000010            // interrupt enabled, external clock source
         STA Timer1Control
+        
+        LDA # 0b00000000
+        STA Timer2Control
 
-        LDA # 0b00000001            // Select Timer 3 Control Register
-        STA Timer2Control     
-        
-        
-        LDA # 0b01000000     
-        STA Timer1Control    // Write to Timer 1 Control Register 
-        
-        LDA TimerStatus // read interrupt flag from status register
         CLI
+        
+        LDA #'>'
+        WriteChar();
+        
     }
     sharedSamplesMicroGet()
     {

@@ -142,10 +142,10 @@ program Blink
     {
         // add ArgumentWord to Ticks0..3 and store in Target0..3
         CLC
-        LDA (500 & 0xFF) // LSB of our 500ms delay
+        LDA # (500 & 0xFF) // LSB of our 500ms delay
         ADC TICK0      // reading TICK0 makes a snapshot of all 4 registers on the emulator
         STA TARGET0
-        LDA (500 >> 8)    // MSB of our 500ms delay
+        LDA # (500 >> 8)    // MSB of our 500ms delay
         ADC TICK1
         STA TARGET1
         LDA TICK2
@@ -250,6 +250,7 @@ program Blink
         LDA #0b00000100 // Select PORTA
         STA CRA
         
+        /*
         LDA # '<'
         WriteChar();
         InitPTR();
@@ -274,9 +275,9 @@ program Blink
             LDA TICK0
             HexOut();
         }
-        
+        */
         //LoopBlink();
-        //TimerBlink();
+        TimerBlink();
     }
     
 }

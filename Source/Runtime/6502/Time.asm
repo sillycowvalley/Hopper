@@ -4,8 +4,7 @@ unit Time
     
     uses "/Source/Runtime/6502/ZeroPage"
     
-#ifdef W65C22_VIA
-    uses "/Source/Runtime/6502/Devices/W65C22"
+#if defined(W65C22_VIA) || defined(M6840_PTM)
     uses "/Source/Runtime/6502/Long"
     uses "/Source/Runtime/6502/Types"
 #endif    
@@ -14,20 +13,13 @@ unit Time
     // TimerDelay         : value in [top] in milliseconds, returns after delay
     Delay()
     {
-#ifndef W65C22_VIA
-        TXA BRK // VIA not included?
-#else        
 #ifdef HOPPER_STACK
         PopTop();
 #endif
         DelayTOP();
-#endif
     }
     DelayTOP()
     {
-#ifndef W65C22_VIA
-        TXA BRK // VIA not included?
-#else        
         PHA
         
         // add ArgumentWord to Ticks0..3 and store in Target0..3
@@ -67,7 +59,6 @@ unit Time
         }
         
         PLA
-#endif
     }
     
     SampleMicrosSet()
