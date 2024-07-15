@@ -11,6 +11,7 @@ unit PIA6821
     const uint Timer3Control   = TCR;
     const uint Timer2Control   = TCSR2; // (least significant bit selects TCR as Timer1Control (1) or Timer3Control (0))
     const uint TimerStatus     = TCSR2;
+    
     const uint Timer1MSBBuffer = TIMER1_MSB;
     const uint Timer1LSBLatch  = TIMER1_LSB;
     const uint Timer1Counter   = TIMER1_MSB;
@@ -90,11 +91,16 @@ unit PIA6821
     sharedSamplesMicroSet()
     {
         // Motorola 6840 Timer
+        
+        // No prescaler:
+        
         LDA # 0b00000001            // Select Timer 3 Control Register
         STA Timer2Control
         // CR30 = 0 - no prescaler
         LDA # 0b00000000     
         STA Timer3Control           // Write to Timer 3 Control Register
+        
+        // Select Timer 1:
         
         LDA # 0b00000001            // Select Timer 1 Control Register
         STA Timer2Control
@@ -141,13 +147,6 @@ unit PIA6821
         }
         DEC ZP.TOPL
         
-        // Always write the MSB to the single MSB buffer register first:
-        LDA ZP.TOPH          // Load MSB of 1000 cycles
-        STA Timer1MSBBuffer  // Write to Timer 1 MSB register
-        
-        LDA ZP.TOPL          // Load LSB of 1000 cycles
-        STA Timer1LSBLatch   // Write to Timer 1 LSB register
-        
         // CR10 = 0 - all timers are allowed to operate
         // CR21 = 0 - use external clock source
         // CR22 = 0 - normal 16 bit counting mode
@@ -161,6 +160,17 @@ unit PIA6821
         
         LDA # 0b01000000     
         STA Timer1Control    // Write to Timer 1 Control Register 
+        
+        
+        // Write to latches to initialize:
+        
+        // Always write the MSB to the single MSB buffer register first:
+        LDA ZP.TOPH          // Load MSB of 1000 cycles
+        STA Timer1MSBBuffer  // Write to Timer 1 MSB register
+        
+        LDA ZP.TOPL          // Load LSB of 1000 cycles
+        STA Timer1LSBLatch   // Write to Timer 1 LSB register
+        
     }
     sharedSamplesMicroGet()
     {
