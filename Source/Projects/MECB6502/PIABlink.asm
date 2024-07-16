@@ -52,7 +52,7 @@ program Blink
     {
         LDA #0b00000000 // Select DDRA and clear interrupt flags in CRA
         STA CRA
-        LDA #0b00000000 // Set PA0 of PORTA as output (DDRA)
+        LDA #0b00000001 // Set PA0 of PORTA as output (DDRA)
         STA DDRA
         LDA #0b00000100 // Select PORTA
         STA CRA

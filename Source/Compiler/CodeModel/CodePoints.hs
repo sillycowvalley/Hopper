@@ -2491,6 +2491,27 @@ unit CodePoints
         } // loop
         return modified;
     }
+    processImmediate(uint iIndex, uint result)
+    {
+        if (result == 0)
+        {
+            iCodes.SetItem(iIndex, Instruction.PUSHI0);
+            iOperands.SetItem(iIndex, result);
+            iLengths.SetItem(iIndex, 1);
+        }
+        else if (result == 1)
+        {
+            iCodes.SetItem(iIndex, Instruction.PUSHI1);
+            iOperands.SetItem(iIndex, result);
+            iLengths.SetItem(iIndex, 1);
+        }
+        else
+        {
+            iCodes.SetItem(iIndex, (result < 256) ? Instruction.PUSHIB : Instruction.PUSHI);
+            iOperands.SetItem(iIndex, result);
+            iLengths.SetItem(iIndex, (result < 256) ? 2 : 3);
+        }
+    }
     bool OptimizeConstantFolding()
     {
         bool modified;
@@ -2514,45 +2535,50 @@ unit CodePoints
             Instruction opCode0 = iCodes[iIndex]; 
             if (IsPUSHImmediateInstruction(opCode2, ref operand2) && IsPUSHImmediateInstruction(opCode1, ref operand1))
             {
-                if ((opCode0 == Instruction.BITOR) || (opCode0 == Instruction.BITAND) || (opCode0 == Instruction.BITXOR)
+                if ((opCode0 == Instruction.BITOR)  || (opCode0 == Instruction.BITAND) || (opCode0 == Instruction.BITXOR)
                  || (opCode0 == Instruction.BOOLOR) || (opCode0 == Instruction.BOOLAND)
-                 || (opCode0 == Instruction.ADD) || (opCode0 == Instruction.SUB)
-                 || (opCode0 == Instruction.MUL) || (opCode0 == Instruction.DIV)
+                 || (opCode0 == Instruction.ADD)    || (opCode0 == Instruction.SUB)
+                 || (opCode0 == Instruction.MUL)    || (opCode0 == Instruction.DIV)
                  || (opCode0 == Instruction.BITSHL) || (opCode0 == Instruction.BITSHR)
-                 || (opCode0 == Instruction.GT) || (opCode0 == Instruction.GTI)
-                 || (opCode0 == Instruction.LT) || (opCode0 == Instruction.LTI)
-                 || (opCode0 == Instruction.GE) || (opCode0 == Instruction.GEI)
-                 || (opCode0 == Instruction.LE) || (opCode0 == Instruction.LEI)
-                 || (opCode0 == Instruction.EQ) || (opCode0 == Instruction.NE)
+                 || (opCode0 == Instruction.GT)     || (opCode0 == Instruction.GTI)
+                 || (opCode0 == Instruction.LT)     || (opCode0 == Instruction.LTI)
+                 || (opCode0 == Instruction.GE)     || (opCode0 == Instruction.GEI)
+                 || (opCode0 == Instruction.LE)     || (opCode0 == Instruction.LEI)
+                 || (opCode0 == Instruction.EQ)     || (opCode0 == Instruction.NE)
                  )
                 {
                     if (!IsTargetOfJumps(iIndex) && !IsTargetOfJumps(iIndex-1))
                     {
                         bool process;
-                        if (IsExperimental)
+                        uint result;
+                        switch (opCode0)
                         {
-                            uint result;
-                            switch (opCode0)
+                            case Instruction.GE:
                             {
-                                case Instruction.BITOR:
-                                {
-                                    result = operand2 | operand1; 
-                                    process = true;
-                                }
+                                result = (operand2 >= operand1) ? 1 : 0; 
+                                process = true;
                             }
-                            if (process)
+                            case Instruction.BITOR:
                             {
-                                iCodes.SetItem(iIndex, (result < 256) ? Instruction.PUSHIB : Instruction.PUSHI);
-                                iOperands.SetItem(iIndex, result);
-                                iLengths.SetItem(iIndex, (result < 256) ? 2 : 3);
-                                RemoveInstruction(iIndex-2); // good
-                                RemoveInstruction(iIndex-2); // good
-                                modified = true;
+                                result = operand2 | operand1; 
+                                process = true;
                             }
+                            case Instruction.BITAND:
+                            {
+                                result = operand2 & operand1; 
+                                process = true;
+                            }
+                        }
+                        if (process)
+                        {
+                            processImmediate(iIndex, result);
+                            RemoveInstruction(iIndex-2); // good
+                            RemoveInstruction(iIndex-2); // good
+                            modified = true;
                         }
                         if (!process)
                         {
-                            //Print(" X:" + Instructions.ToString(opCode0) +"(0x" + operand2.ToHexString(4) + ",0x" + operand1.ToHexString(4) + ")");
+                            //Print(" A:" + Instructions.ToString(opCode0) +"(0x" + operand2.ToHexString(4) + ",0x" + operand1.ToHexString(4) + ")");
                         }
                     }
                 }
@@ -2563,7 +2589,20 @@ unit CodePoints
                 {
                     if (!IsTargetOfJumps(iIndex))
                     {
-                        //Print(" Y:" + Instructions.ToString(opCode0) +"(0x" + operand1.ToHexString(4) + ")");
+                        switch (opCode0)
+                        {
+                            case Instruction.BOOLNOT:
+                            {
+                                processImmediate(iIndex, operand1);
+                                iLengths.SetItem(iIndex, 1);
+                                RemoveInstruction(iIndex-1); // good
+                                modified = true;
+                            }
+                            default:
+                            {
+                                //Print(" B:" + Instructions.ToString(opCode0) +"(0x" + operand1.ToHexString(4) + ")");
+                            }
+                        }
                     }
                 }
                 if ( (opCode0 == Instruction.BITSHLB) || (opCode0 == Instruction.BITSHRB)
@@ -2574,39 +2613,78 @@ unit CodePoints
                     if (!IsTargetOfJumps(iIndex))
                     {
                         bool process;
-                        if (IsExperimental)
+                        uint result;
+                        switch (opCode0)
                         {
-                            uint result;
-                            switch (opCode0)
+                            case Instruction.ADDB:
                             {
-                                case Instruction.BITORB:
-                                {
-                                    result = operand1 | operand0; 
-                                    process = true;
-                                }
+                                result = operand1 + operand0; 
+                                process = true;
                             }
-                            if (process)
+                            case Instruction.SUBB:
                             {
-                                iCodes.SetItem(iIndex, (result < 256) ? Instruction.PUSHIB : Instruction.PUSHI);
-                                iOperands.SetItem(iIndex, result);
-                                iLengths.SetItem(iIndex, (result < 256) ? 2 : 3);
-                                RemoveInstruction(iIndex-1); // good
-                                modified = true;
+                                result = operand1 - operand0; 
+                                process = true;
+                            }
+                            case Instruction.BITORB:
+                            {
+                                result = operand1 | operand0; 
+                                process = true;
+                            }
+                            case Instruction.BITANDB:
+                            {
+                                result = operand1 & operand0; 
+                                process = true;
+                            }
+                            case Instruction.BITSHLB:
+                            {
+                                result = operand1 << operand0; 
+                                process = true;
+                            }
+                            case Instruction.BITSHRB:
+                            {
+                                result = operand1 >> operand0; 
+                                process = true;
                             }
                         }
-                        if (!process)
+                        if (process)
                         {
-                            //Print(" Z:" + Instructions.ToString(opCode0) +"(0x" + operand1.ToHexString(4) + ",0x" + operand0.ToHexString(4) + ")");
+                            processImmediate(iIndex, result);
+                            RemoveInstruction(iIndex-1); // good
+                            modified = true;
                         }
-                        
                     }
                 }
                 if ( (opCode0 == Instruction.BITSHL8) || (opCode0 == Instruction.BITSHR8) || (opCode0 == Instruction.BITANDFF))
                 {
-                    operand0 = (opCode0 == Instruction.BITANDFF) ? 0xFF : 8;
                     if (!IsTargetOfJumps(iIndex))
                     {
-                        //Print(" W:" + Instructions.ToString(opCode0) +"(0x" + operand1.ToHexString(4) + ",0x" + operand0.ToHexString(4) + ")");
+                        bool process;
+                        uint result;
+                        switch (opCode0)
+                        {
+                            case Instruction.BITANDFF:
+                            {
+                                result = operand1 & 0xFF; 
+                                process = true;
+                            }
+                            case Instruction.BITSHR8:
+                            {
+                                result = operand1 >> 8; 
+                                process = true;
+                            }
+                            case Instruction.BITSHL8:
+                            {
+                                result = operand1 << 8; 
+                                process = true;
+                            }
+                        }
+                        if (process)
+                        {
+                            processImmediate(iIndex, result);
+                            RemoveInstruction(iIndex-1); // good
+                            modified = true;
+                        }
                     }
                 }
             }
