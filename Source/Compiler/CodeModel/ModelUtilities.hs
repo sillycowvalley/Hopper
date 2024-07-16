@@ -231,6 +231,7 @@ unit ModelUtilities
             case Instruction.PUSHIB:
             {
                 // from code
+                // operand = operand;
                 return true;
             }
             case Instruction.PUSHI0:

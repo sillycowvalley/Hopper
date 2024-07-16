@@ -11,8 +11,11 @@ program Blink
     const uint PTM_SR   = PTM+1;
     const uint PTM_CR2  = PTM+1;     // Write: Control Register 2              Read: Status Register (least significant bit selects TCR as TCSR1 or TCSR3)
     
-    const uint PTM_T1MSB = PTM+2;    // Write: MSB Buffer Register             Read: Timer 1 Counter
-    const uint PTM_T1LSB = PTM+3;    // Write: Timer #1 Latches                Read: LSB Buffer Register
+    const uint PTM_T1MSB_LATCH = PTM+2;    // Write: MSB Buffer Register             Read: Timer 1 Counter
+    const uint PTM_T1LSB_LATCH = PTM+3;    // Write: Timer #1 Latches                Read: LSB Buffer Register
+    
+    const uint PTM_T1MSB_TIMER = PTM+2;    // Write: MSB Buffer Register             Read: Timer 1 Counter
+    const uint PTM_T1LSB_TIMER = PTM+3;    // Write: Timer #1 Latches                Read: LSB Buffer Register
     
     // Motorola 6850 ACIA
     //
@@ -97,8 +100,9 @@ program Blink
             ROR A  // put bit 0 into Carry Flag
             if (C) // Timer 1 caused interrupt?
             {
-                // Reading the timer LSB clears the interrupt flag. 
-                LDA PTM_T1MSB
+                // Reading the timer LSB clears the interrupt flag and reset the counter
+                LDA PTM_T1MSB_TIMER
+                LDA PTM_T1LSB_TIMER
                 
                 INC TICK0 // Increment the Tick (on Zero Page)
                 if (Z)
@@ -124,10 +128,10 @@ program Blink
         
         // on a 1MHz clock we'd need ~1000 clock cycles to get 1ms period
         // on a 4MHz clock we'd need ~4000 clock cycles to get 1ms period
-        LDA     (1000 >> 8) // Set up the countdown timer for timer 1
-        STA     PTM_T1MSB   // MSB must be written first!
-        LDA     (1000 & 0xFF)
-        STA     PTM_T1LSB
+        LDA     # (4000 >> 8) // Set up the countdown timer for timer 1
+        STA     PTM_T1MSB_LATCH   // MSB must be written first!
+        LDA     # (4000 & 0xFF)
+        STA     PTM_T1LSB_LATCH
 
         LDA     # 0b00000001 // Select CR1
         STA     PTM_CR2      

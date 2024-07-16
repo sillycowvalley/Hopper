@@ -278,6 +278,16 @@ program Optimize
             
             if (optimizeMethod)
             {
+                if (CodePoints.OptimizeConstantFolding())
+                {
+#ifdef DIAGNOSTICS
+                    if (logging)
+                    {
+                        CodePoints.DumpInstructions("OptimizeConstantFolding");
+                    }
+#endif
+                    methodModified = true;
+                }
                 if (!NoPackedInstructions)
                 {
                     if (verbose) { showElapsed("a"); } 

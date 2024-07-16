@@ -63,11 +63,11 @@ unit PIA6821
         BIT TimerStatus
         if (MI) // IRQ by Timer 1, 2 or 3
         {
-            //PHA
-            //LDA TimerStatus
-            //AND # 0b00000001 // Timer 1 interrupt
-            //if (NZ)
-            //{
+            PHA
+            LDA TimerStatus
+            AND # 0b00000001 // Timer 1 interrupt
+            if (NZ)
+            {
                 // Read Timer 1 counter to clear interrupt
                 BIT Timer1Counter
                 BIT Timer1LSBBuffer
@@ -86,8 +86,8 @@ unit PIA6821
                         }
                     }
                 }
-            //}
-            //PLA
+            }
+            PLA
         }
     }   
     
