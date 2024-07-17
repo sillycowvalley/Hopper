@@ -692,7 +692,7 @@ program PreProcess
                 Parser.ErrorAtCurrent("'uses' declaration must be alone on line");
                 break;
             }
-            if (true /*IsExperimental*/)
+            if (false /*IsExperimental*/)
             {
             
                 parseUnit(usesPath, false);
@@ -1672,7 +1672,7 @@ program PreProcess
         {
             Symbols.AddDefine(symbol, "true");
         }
-        if (true /*IsExperimental || (sourcePath.ToLower()).Contains("compile2")*/)
+        if (false /*IsExperimental || (sourcePath.ToLower()).Contains("compile2")*/)
         {
             parseUnit(sourcePath, true);
             success = !Parser.HadError;
