@@ -591,148 +591,123 @@ unit Peephole
         }
         
         
-        
-        if ( 
-            (instruction1 == Instruction.PUSHIB) 
-         && ( (instruction0 == Instruction.MUL) || (instruction0 == Instruction.DIV))
-           )
+        if (instruction1 == Instruction.PUSHIB)
         {
-            byte shift;
-            byte value = currentStream[lastInstruction1+1];
-            switch (value)
+            if ( (instruction0 == Instruction.MUL) || (instruction0 == Instruction.DIV))
             {
-                case 2:   { shift = 1; }
-                case 4:   { shift = 2; }
-                case 8:   { shift = 3; }
-                case 16:  { shift = 4; }
-                case 32:  { shift = 5; }
-                case 64:  { shift = 6; }
-                case 128: { shift = 7; }
-            }
-            if (shift != 0)
-            {
-                if (instruction0 == Instruction.MUL)
+                byte shift;
+                byte value = currentStream[lastInstruction1+1];
+                switch (value)
                 {
-                    // PUSHIB MUL    -> BITSHLB
-                    // i1     i0     -> i0
-                    instruction = Instruction.BITSHLB;
-                    currentStream.SetItem(lastInstruction1+1, shift);
+                    case 2:   { shift = 1; }
+                    case 4:   { shift = 2; }
+                    case 8:   { shift = 3; }
+                    case 16:  { shift = 4; }
+                    case 32:  { shift = 5; }
+                    case 64:  { shift = 6; }
+                    case 128: { shift = 7; }
+                }
+                if (shift != 0)
+                {
+                    if (instruction0 == Instruction.MUL)
+                    {
+                        // PUSHIB MUL    -> BITSHLB
+                        // i1     i0     -> i0
+                        instruction = Instruction.BITSHLB;
+                        currentStream.SetItem(lastInstruction1+1, shift);
+                    }
+                    else
+                    {
+                        // PUSHIB DIV    -> BITSHRB
+                        // i1     i0     -> i0
+                        instruction = Instruction.BITSHRB;
+                        currentStream.SetItem(lastInstruction1+1, shift);
+                    }
+                }
+            }
+            if (instruction0 == Instruction.BITSHL)
+            {
+                byte value = currentStream[lastInstruction1+1];
+                if (value == 8)
+                {
+                    currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHL8));
+                    popAndTrim(currentStream, 1, 2);
+                    return true; // hunt for more
                 }
                 else
                 {
-                    // PUSHIB DIV    -> BITSHRB
+                    // PUSHIB BITSHL -> BITSHLB
                     // i1     i0     -> i0
-                    instruction = Instruction.BITSHRB;
-                    currentStream.SetItem(lastInstruction1+1, shift);
+                    instruction = Instruction.BITSHLB;
                 }
             }
-        }
-        if (
-            (instruction1 == Instruction.PUSHIB) 
-         && (instruction0 == Instruction.BITSHL)
-           )
-        {
-            byte value = currentStream[lastInstruction1+1];
-            if (value == 8)
-            {
-                currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHL8));
-                popAndTrim(currentStream, 1, 2);
-                return true; // hunt for more
-            }
-            else
-            {
-                // PUSHIB BITSHL -> BITSHLB
-                // i1     i0     -> i0
-                instruction = Instruction.BITSHLB;
-            }
-        }
         
-        if (
-            (instruction1 == Instruction.PUSHIB) 
-         && (instruction0 == Instruction.BITSHR)
-           )
-        {
-            byte value = currentStream[lastInstruction1+1];
-            if (value == 8)
+            if (instruction0 == Instruction.BITSHR)
             {
-                currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHR8));
-                popAndTrim(currentStream, 1, 2);
-                return true; // hunt for more
+                byte value = currentStream[lastInstruction1+1];
+                if (value == 8)
+                {
+                    currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHR8));
+                    popAndTrim(currentStream, 1, 2);
+                    return true; // hunt for more
+                }
+                else
+                {
+                    // PUSHIB BITSHR -> BITSHRB
+                    // i1     i0     -> i0
+                    instruction = Instruction.BITSHRB;
+                }
             }
-            else
-            {
-                // PUSHIB BITSHR -> BITSHRB
-                // i1     i0     -> i0
-                instruction = Instruction.BITSHRB;
-            }
-        }
         
-        if (
-            (instruction1 == Instruction.PUSHIB) 
-         && (instruction0 == Instruction.BITAND)
-           )
-        {
-            byte value = currentStream[lastInstruction1+1];
-            if (value == 0xFF)
+            if (instruction0 == Instruction.BITAND)
             {
-                currentStream.SetItem(lastInstruction1, byte(Instruction.BITANDFF));
-                popAndTrim(currentStream, 1, 2);
-                return true; // hunt for more
+                byte value = currentStream[lastInstruction1+1];
+                if (value == 0xFF)
+                {
+                    currentStream.SetItem(lastInstruction1, byte(Instruction.BITANDFF));
+                    popAndTrim(currentStream, 1, 2);
+                    return true; // hunt for more
+                }
+                else
+                {
+                    // PUSHIB BITAND -> BITANDB
+                    // i1     i0     -> i0
+                    instruction = Instruction.BITANDB;
+                }
             }
-            else
+        
+            if (instruction0 == Instruction.BITOR)
             {
-                // PUSHIB BITAND -> BITANDB
-                // i1     i0     -> i0
-                instruction = Instruction.BITANDB;
+                byte value = currentStream[lastInstruction1+1];
+                // PUSHIB BITOR -> BITORB
+                // i1     i0    -> i0
+                instruction = Instruction.BITORB;
             }
-        }
         
-        if (
-            (instruction1 == Instruction.PUSHIB) 
-         && (instruction0 == Instruction.BITOR)
-           )
-        {
-            byte value = currentStream[lastInstruction1+1];
-            // PUSHIB BITOR -> BITORB
-            // i1     i0    -> i0
-            instruction = Instruction.BITORB;
-        }
-        
-        if (
-            (instruction1 == Instruction.PUSHIB) 
-         && (instruction0 == Instruction.LE)
-           )
-        {
-            // PUSHIB LE -> PUSHIBLE
-            // i1     i0 -> i0
-            instruction = Instruction.PUSHIBLE;
-        }
-        if (
-            (instruction1 == Instruction.PUSHIB) 
-         && (instruction0 == Instruction.EQ)
-           )
-        {
-            // PUSHIB EQ -> PUSHIBEQ
-            // i1     i0 -> i0
-            instruction = Instruction.PUSHIBEQ;
-        }
-        if (
-            (instruction1 == Instruction.PUSHIB) 
-         && (instruction0 == Instruction.ADD)
-           )
-        {
-            // PUSHIB ADD -> ADDB
-            // i1     i0  -> i0
-            instruction = Instruction.ADDB;
-        }
-        if (
-            (instruction1 == Instruction.PUSHIB) 
-         && (instruction0 == Instruction.SUB)
-           )
-        {
-            // PUSHIB SUB -> SUBB
-            // i1     i0  -> i0
-            instruction = Instruction.SUBB;
+            if (instruction0 == Instruction.LE)
+            {
+                // PUSHIB LE -> PUSHIBLE
+                // i1     i0 -> i0
+                instruction = Instruction.PUSHIBLE;
+            }
+            if (instruction0 == Instruction.EQ)
+            {
+                // PUSHIB EQ -> PUSHIBEQ
+                // i1     i0 -> i0
+                instruction = Instruction.PUSHIBEQ;
+            }
+            if (instruction0 == Instruction.ADD)
+            {
+                // PUSHIB ADD -> ADDB
+                // i1     i0  -> i0
+                instruction = Instruction.ADDB;
+            }
+            if (instruction0 == Instruction.SUB)
+            {
+                // PUSHIB SUB -> SUBB
+                // i1     i0  -> i0
+                instruction = Instruction.SUBB;
+            }
         }
         
         
