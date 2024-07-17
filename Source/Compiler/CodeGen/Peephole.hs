@@ -94,7 +94,6 @@ unit Peephole
                         }
                     }
                 }
-                
                 // at least 3 instructions
                 if (lastInstruction2 > peephholeBoundary) 
                 {
@@ -196,12 +195,9 @@ unit Peephole
     }
     bool peepholeOptimize3(<byte> currentStream)
     {
-        Instruction instruction2 = Instruction(currentStream[lastInstruction2]);
-        Instruction instruction1 = Instruction(currentStream[lastInstruction1]);
-        Instruction instruction0 = Instruction(currentStream[lastInstruction0]);
-        if (    (instruction2 == Instruction.PUSHI0)
-             && (instruction1 == Instruction.PUSHI1)
-             && (instruction0 == Instruction.SUBI)
+        if (    (currentStream[lastInstruction2] == byte(Instruction.PUSHI0))
+             && (currentStream[lastInstruction1] == byte(Instruction.PUSHI1))
+             && (currentStream[lastInstruction0] == byte(Instruction.SUBI))
            ) 
         {
             // PUSHI0 PUSHI1 SUBI -> PUSHIM1
@@ -210,7 +206,7 @@ unit Peephole
             popAndTrim(currentStream, 2, 2);
             return true; // hunt for more
         }
-        if (instruction2 == Instruction.PUSHLOCALBB)
+        if (currentStream[lastInstruction2] == byte(Instruction.PUSHLOCALBB))
         {
             byte offset2 = currentStream[lastInstruction2+1]; 
             byte offset1 = currentStream[lastInstruction2+2]; 
@@ -222,7 +218,7 @@ unit Peephole
             if (isPopLocalB0)
             {
                 if (((offset2 == offset0) || (offset1 == offset0))
-                 && (instruction1 == Instruction.ADD)
+                 && (currentStream[lastInstruction1] == byte(Instruction.ADD))
                    )
                 {
                     // PUSHLOCALBB ADD POPLOCALB -> INCLOCALBB
@@ -244,7 +240,7 @@ unit Peephole
                     return true; // hunt for more
                 }
                 if (((offset2 == offset0) || (offset1 == offset0))
-                 && (instruction1 == Instruction.ADDI)
+                 && (currentStream[lastInstruction1] == byte(Instruction.ADDI))
                    )
                 {
                     // PUSHLOCALBB ADDI POPLOCALB -> INCLOCALIBB
@@ -281,14 +277,12 @@ unit Peephole
         bool isPopLocalB0  = IsPopLocalB (currentStream, lastInstruction0, ref offset0, ref length0);
         bool isPopGlobalB0 = IsPopGlobalB(currentStream, lastInstruction0, ref offset0, ref length0);
         
-        Instruction instruction2 = Instruction(currentStream[lastInstruction2]);
-        Instruction instruction1 = Instruction(currentStream[lastInstruction1]);
-        if (    isPushGlobalB3 && isPopGlobalB0 
-            && (offset3 == offset0)
-            && (instruction2 == Instruction.PUSHI1)
-            )
+        if (isPushGlobalB3 && isPopGlobalB0)
         {
-            if (instruction1 == Instruction.ADD) 
+            if ((offset3 == offset0)
+             && (currentStream[lastInstruction2] == byte(Instruction.PUSHI1))
+             && (currentStream[lastInstruction1] == byte(Instruction.ADD)) 
+               )
             {
                 // PUSHGLOBALB PUSHI1 ADD POPGLOBALB -> INCGLOBALB
                 // i3          i2     i1  i0            i3
@@ -299,7 +293,10 @@ unit Peephole
                 popAndTrim(currentStream, 3, remove);
                 return true; // hunt for more
             }
-            if (instruction1 == Instruction.SUB) 
+            if ((offset3 == offset0)
+             && (currentStream[lastInstruction2] == byte(Instruction.PUSHI1))
+             && (currentStream[lastInstruction1] == byte(Instruction.SUB)) 
+               )
             {
                 // PUSHGLOBALB PUSHI1 ADD POPGLOBALB -> DECGLOBALB
                 // i3          i2     i1  i0            i3
@@ -314,8 +311,8 @@ unit Peephole
         if (isPushLocalB3 && isPopLocalB0)
         {
             if ((offset3 == offset0)
-             && (instruction2 == Instruction.PUSHI1)
-             && (instruction1 == Instruction.ADD) 
+             && (currentStream[lastInstruction2] == byte(Instruction.PUSHI1))
+             && (currentStream[lastInstruction1] == byte(Instruction.ADD)) 
                )
             {
                 // PUSHLOCALB PUSHI1 ADD POPLOCALB -> INCLOCALB
@@ -331,39 +328,51 @@ unit Peephole
             byte length2 = 0;
             bool isPushLocalB2 = IsPushLocalB(currentStream, lastInstruction2, ref offset2, ref length2);
         
-            if (isPushLocalB2 && ((offset3 == offset0) || (offset2 == offset0)))
+            if (isPushLocalB2 
+             && ((offset3 == offset0) || (offset2 == offset0))
+             && (currentStream[lastInstruction1] == byte(Instruction.ADD))
+               )
             {
-                Instruction incInstruction = Instruction.NOP;
-                if (instruction1 == Instruction.ADD)
+                // PUSHLOCALB PUSHLOCALB ADD POPLOCALB -> INCLOCALBB
+                // i3         i2         i1  i0           i3
+                currentStream.SetItem(lastInstruction3, byte(Instruction.INCLOCALBB));
+                currentStream.SetItem(lastInstruction3+1, offset0);
+                if (offset3 == offset0)
                 {
-                    // PUSHLOCALB PUSHLOCALB ADD POPLOCALB -> INCLOCALBB
-                    // i3         i2         i1  i0           i3
-                    incInstruction = Instruction.INCLOCALBB;
+                    currentStream.SetItem(lastInstruction3+2, offset2);
                 }
-                if (instruction1 == Instruction.ADDI)
+                else
                 {
-                    // PUSHLOCALB PUSHLOCALB ADDI POPLOCALB -> INCLOCALIBB
-                    // i3         i2         i1   i0           i3
-                    incInstruction = Instruction.INCLOCALIBB;
+                    currentStream.SetItem(lastInstruction3+2, offset3);
                 }
-                if (incInstruction != Instruction.NOP)
+                
+                // 7 -> 3 = -4
+                uint remove = (length0-1) + (length2-1) + (length3-1) + 1;
+                popAndTrim(currentStream, 3, remove);
+                return true; // hunt for more
+            }
+            if (isPushLocalB2
+             && ((offset3 == offset0) || (offset2 == offset0))
+             && (currentStream[lastInstruction1] == byte(Instruction.ADDI))
+               )
+            {
+                // PUSHLOCALB PUSHLOCALB ADDI POPLOCALB -> INCLOCALIBB
+                // i3         i2         i1   i0           i3
+                currentStream.SetItem(lastInstruction3, byte(Instruction.INCLOCALIBB));
+                currentStream.SetItem(lastInstruction3+1, offset0);
+                if (offset3 == offset0)
                 {
-                    currentStream.SetItem(lastInstruction3, byte(incInstruction));
-                    currentStream.SetItem(lastInstruction3+1, offset0);
-                    if (offset3 == offset0)
-                    {
-                        currentStream.SetItem(lastInstruction3+2, offset2);
-                    }
-                    else
-                    {
-                        currentStream.SetItem(lastInstruction3+2, offset3);
-                    }
-                    
-                    // 7 -> 3 = -4
-                    uint remove = (length0-1) + (length2-1) + (length3-1) + 1;
-                    popAndTrim(currentStream, 3, remove);
-                    return true; // hunt for more
+                    currentStream.SetItem(lastInstruction3+2, offset2);
                 }
+                else
+                {
+                    currentStream.SetItem(lastInstruction3+2, offset3);
+                }
+                
+                // 7 -> 3 = -4
+                uint remove = (length0-1) + (length2-1) + (length3-1) + 1;
+                popAndTrim(currentStream, 3, remove);
+                return true; // hunt for more
             }
         }
         return false;   
@@ -371,49 +380,70 @@ unit Peephole
    	
     bool peepholeOptimize1(<byte> currentStream)
     {
-        Instruction instruction0 = Instruction(currentStream[lastInstruction0]);
-        Instruction instruction = Instruction.NOP;
-        if (instruction0 == Instruction.PUSHI)
+        if (currentStream[lastInstruction0] == byte(Instruction.PUSHI))
         {
             uint operand = currentStream[lastInstruction0+1] + (currentStream[lastInstruction0+2] << 8);
             if (operand <= 255)
             {
-                instruction = Instruction.PUSHIB;
+                currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHIB));
+                popAndTrim(currentStream, 0, 1); // MSB
+                return true; // hunt for more
             }
         }
-        if (instruction0 == Instruction.PUSHIB)
+        if (currentStream[lastInstruction0] == byte(Instruction.PUSHIB))
         {
             byte operand = currentStream[lastInstruction0+1];
             if (operand == 0)
             {
-                instruction = Instruction.PUSHI0;
+                currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHI0));
+                popAndTrim(currentStream, 0, 1); // '0'
+                return true; // hunt for more
             }
             if (operand == 1)
             {
-                instruction = Instruction.PUSHI1;
+                currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHI1));
+                popAndTrim(currentStream, 0, 1); // '1'
+                return true; // hunt for more
             }
         }
         
-        byte offset0;
-        byte length0;
+        byte offset0 = 0;
+        byte length0 = 0;
         bool isPushLocalB = IsPushLocalB(currentStream, lastInstruction0, ref offset0, ref length0);
+        
         if (isPushLocalB && (length0 == 2) && ((offset0 == 0) || (offset0 == 1)))
         {
-            // PUSHLOCALB -> PUSHLOCALB00 | PUSHLOCALB01
-            // i0         -> i0
-            instruction = (offset0 == 0) ? Instruction.PUSHLOCALB00 : Instruction.PUSHLOCALB01;
+            if (offset0 == 0)
+            {
+                // PUSHLOCALB -> PUSHLOCALB00
+                // i0         -> i0
+                currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHLOCALB00));
+            }
+            if (offset0 == 1)
+            {
+                // PUSHLOCALB -> PUSHLOCALB01
+                // i0         -> i0
+                currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHLOCALB01));
+            }
+            popAndTrim(currentStream, 0, 1);
+            return true; // hunt for more
         }
         
         bool isPopLocalB = IsPopLocalB(currentStream, lastInstruction0, ref offset0, ref length0);
         if (isPopLocalB && (length0 == 2) && ((offset0 == 0) || (offset0 == 1)))
         {
-            // POPLOCALB -> POPLOCALB00 | POPLOCALB01
-            // i0         -> i0
-            instruction = (offset0 == 0) ? Instruction.POPLOCALB00 : Instruction.POPLOCALB01;
-        }
-        if (instruction != Instruction.NOP)
-        {
-            currentStream.SetItem(lastInstruction0, byte(instruction));
+            if (offset0 == 0)
+            {
+                // POPLOCALB -> POPLOCALB00
+                // i0         -> i0
+                currentStream.SetItem(lastInstruction0, byte(Instruction.POPLOCALB00));
+            }
+            if (offset0 == 1)
+            {
+                // POPLOCALB -> POPLOCALB01
+                // i0         -> i0
+                currentStream.SetItem(lastInstruction0, byte(Instruction.POPLOCALB01));
+            }
             popAndTrim(currentStream, 0, 1);
             return true; // hunt for more
         }
@@ -422,14 +452,12 @@ unit Peephole
     
     bool peepholeOptimize2(<byte> currentStream)
     {    
-        Instruction instruction1 = Instruction(currentStream[lastInstruction1]);
-        Instruction instruction0 = Instruction(currentStream[lastInstruction0]);
-        if (    (instruction1 == Instruction.BITANDFF) 
-             || (instruction1 == Instruction.BITANDB) 
-             || (instruction1 == Instruction.BITSHR8) 
+        if (    (currentStream[lastInstruction1] == byte(Instruction.BITANDFF)) 
+             || (currentStream[lastInstruction1] == byte(Instruction.BITANDB)) 
+             || (currentStream[lastInstruction1] == byte(Instruction.BITSHR8)) 
            )
         {
-            if (instruction0 == Instruction.CAST)
+            if ((currentStream[lastInstruction0] == byte(Instruction.CAST)))
             {
                 byte value = currentStream[lastInstruction0+1];
                 if (value == byte(type(byte)))
@@ -439,236 +467,296 @@ unit Peephole
                 }
             }
         }
-        if (instruction1 == Instruction.PUSHI0) 
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHI1)) 
+         && ( (currentStream[lastInstruction0] == byte(Instruction.MUL)) || 
+              (currentStream[lastInstruction0] == byte(Instruction.MULI)) || 
+              (currentStream[lastInstruction0] == byte(Instruction.DIV)) || 
+              (currentStream[lastInstruction0] == byte(Instruction.DIVI))
+            )
+           )
         {
-            if ( (instruction0 == Instruction.ADD) || 
-                 (instruction0 == Instruction.SUB) || 
-                 (instruction0 == Instruction.ADDI) || 
-                 (instruction0 == Instruction.SUBI)
-               )
+            // PUSHI1 MUL|DIV    -> NOP
+            popAndTrim(currentStream, 2, 2);
+            return true; // hunt for more
+        }
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHI0)) 
+         && ( (currentStream[lastInstruction0] == byte(Instruction.ADD)) || 
+              (currentStream[lastInstruction0] == byte(Instruction.SUB)) || 
+              (currentStream[lastInstruction0] == byte(Instruction.ADDI)) || 
+              (currentStream[lastInstruction0] == byte(Instruction.SUBI))
+            )
+           )
+        {
+            // PUSHI0 ADD|SUB    -> NOP
+            popAndTrim(currentStream, 2, 2);
+            return true; // hunt for more
+        }
+        if ( 
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHIB)) 
+         && ( (currentStream[lastInstruction0] == byte(Instruction.MUL)) || (currentStream[lastInstruction0] == byte(Instruction.DIV)))
+           )
+        {
+            byte shift;
+            byte value = currentStream[lastInstruction1+1];
+            switch (value)
             {
-                // PUSHI0 ADD|SUB    -> NOP
-                popAndTrim(currentStream, 2, 2);
+                case 2:   { shift = 1; }
+                case 4:   { shift = 2; }
+                case 8:   { shift = 3; }
+                case 16:  { shift = 4; }
+                case 32:  { shift = 5; }
+                case 64:  { shift = 6; }
+                case 128: { shift = 7; }
+            }
+            if (shift != 0)
+            {
+                if (currentStream[lastInstruction0] == byte(Instruction.MUL))
+                {
+                    // PUSHIB MUL    -> BITSHLB
+                    // i1     i0     -> i0
+                    currentStream.SetItem(lastInstruction1,   byte(Instruction.BITSHLB));
+                    currentStream.SetItem(lastInstruction1+1, shift);
+                }
+                else
+                {
+                    // PUSHIB DIV    -> BITSHRB
+                    // i1     i0     -> i0
+                    currentStream.SetItem(lastInstruction1,   byte(Instruction.BITSHRB));
+                    currentStream.SetItem(lastInstruction1+1, shift);
+                }
+                popAndTrim(currentStream, 1, 1);
+                return true; // hunt for more
+            }
+            
+        }
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHIB)) 
+         && (currentStream[lastInstruction0] == byte(Instruction.BITSHL))
+           )
+        {
+            byte value = currentStream[lastInstruction1+1];
+            if (value == 8)
+            {
+                currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHL8));
+                popAndTrim(currentStream, 1, 2);
+                return true; // hunt for more
+            }
+            else
+            {
+                // PUSHIB BITSHL -> BITSHLB
+                // i1     i0     -> i0
+                currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHLB));
+                popAndTrim(currentStream, 1, 1);
                 return true; // hunt for more
             }
         }
-        Instruction instruction = Instruction.NOP;
-        
-        if (instruction1 == Instruction.PUSHI1) 
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHI1)) 
+         && (currentStream[lastInstruction0] == byte(Instruction.BITSHL))
+           )
         {
-            if ((instruction0 == Instruction.MUL) || 
-                (instruction0 == Instruction.MULI) || 
-                (instruction0 == Instruction.DIV) || 
-                (instruction0 == Instruction.DIVI)
-               )
-            {
-                // PUSHI1 MUL|DIV    -> NOP
-                popAndTrim(currentStream, 2, 2);
-                return true; // hunt for more
-            }
-            if (instruction0 == Instruction.BITSHL)
-            {
-                // PUSHI1 BITSHL -> BITSHLB
-                // i1     i0     -> i0
-                instruction = Instruction.BITSHLB;
-                currentStream.SetItem(lastInstruction0, byte(1));
-            }
-            if (instruction0 == Instruction.BITSHR)
-            {
-                // PUSHI1 BITSHR -> BITSHRB
-                // i1     i0     -> i0
-                instruction = Instruction.BITSHRB;
-                currentStream.SetItem(lastInstruction0, byte(1));
-            }
-            if (instruction0 == Instruction.BITAND)
-            {
-                // PUSHI1 BITAND -> BITANDB
-                // i1     i0     -> i0
-                instruction = Instruction.BITANDB;
-                currentStream.SetItem(lastInstruction0, byte(1));
-            }
-        }
-        if (instruction != Instruction.NOP)
-        {
-            currentStream.SetItem(lastInstruction1, byte(instruction));
+            // PUSHI1 BITSHL -> BITSHLB
+            // i1     i0     -> i0
+            currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHLB));
+            currentStream.SetItem(lastInstruction0, byte(1));
             popAndTrim(currentStream, 1, 0);
             return true; // hunt for more
         }
-        
-        if (instruction1 == Instruction.PUSHIB) 
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHIB)) 
+         && (currentStream[lastInstruction0] == byte(Instruction.BITSHR))
+           )
         {
-            if ( (instruction0 == Instruction.MUL) || (instruction0 == Instruction.DIV))
+            byte value = currentStream[lastInstruction1+1];
+            if (value == 8)
             {
-                byte shift;
-                byte value = currentStream[lastInstruction1+1];
-                switch (value)
-                {
-                    case 2:   { shift = 1; }
-                    case 4:   { shift = 2; }
-                    case 8:   { shift = 3; }
-                    case 16:  { shift = 4; }
-                    case 32:  { shift = 5; }
-                    case 64:  { shift = 6; }
-                    case 128: { shift = 7; }
-                }
-                if (shift != 0)
-                {
-                    if (instruction0 == Instruction.MUL)
-                    {
-                        // PUSHIB MUL    -> BITSHLB
-                        // i1     i0     -> i0
-                        instruction = Instruction.BITSHLB;
-                    }
-                    else
-                    {
-                        // PUSHIB DIV    -> BITSHRB
-                        // i1     i0     -> i0
-                        instruction = Instruction.BITSHRB;
-                    }
-                    currentStream.SetItem(lastInstruction1+1, shift);
-                }
-            }
-            if (instruction0 == Instruction.BITSHL)
-            {
-                byte value = currentStream[lastInstruction1+1];
-                if (value == 8)
-                {
-                    currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHL8));
-                    popAndTrim(currentStream, 1, 2);
-                    return true; // hunt for more
-                }
-                else
-                {
-                    // PUSHIB BITSHL -> BITSHLB
-                    // i1     i0     -> i0
-                    instruction = Instruction.BITSHLB;
-                }
-            }
-            if (instruction0 == Instruction.BITSHR)
-            {
-                byte value = currentStream[lastInstruction1+1];
-                if (value == 8)
-                {
-                    currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHR8));
-                    popAndTrim(currentStream, 1, 2);
-                    return true; // hunt for more
-                }
-                else
-                {
-                    // PUSHIB BITSHR -> BITSHRB
-                    // i1     i0     -> i0
-                    instruction = Instruction.BITSHRB;
-                }
-            }
-            if (instruction0 == Instruction.BITAND)
-            {
-                byte value = currentStream[lastInstruction1+1];
-                if (value == 0xFF)
-                {
-                    currentStream.SetItem(lastInstruction1, byte(Instruction.BITANDFF));
-                    popAndTrim(currentStream, 1, 2);
-                    return true; // hunt for more
-                }
-                else
-                {
-                    // PUSHIB BITAND -> BITANDB
-                    // i1     i0     -> i0
-                    instruction = Instruction.BITANDB;
-                }
-            }
-            if (instruction0 == Instruction.BITOR)
-            {
-                // PUSHIB BITOR -> BITORB
-                // i1     i0    -> i0
-                instruction = Instruction.BITORB;
-            }
-            if (instruction0 == Instruction.LE)
-            {
-                // PUSHIB LE -> PUSHIBLE
-                // i1     i0 -> i0
-                instruction = Instruction.PUSHIBLE;
-            }
-            if (instruction0 == Instruction.EQ)
-            {
-                // PUSHIB EQ -> PUSHIBEQ
-                // i1     i0 -> i0
-                instruction = Instruction.PUSHIBEQ;
-            }
-            if (instruction0 == Instruction.ADD)
-            {
-                // PUSHIB ADD -> ADDB
-                // i1     i0  -> i0
-                instruction = Instruction.ADDB;
-            }
-            if (instruction0 == Instruction.SUB)
-            {
-                // PUSHIB SUB -> SUBB
-                // i1     i0  -> i0
-                instruction = Instruction.SUBB;
-            } 
-        }
-        
-        if (instruction1 == Instruction.PUSHI1) 
-        {
-            if (instruction0 == Instruction.BITOR)
-            {
-                // PUSHI1 BITOR -> BITORB
-                // i1     i0     -> i0
-                currentStream.SetItem(lastInstruction1, byte(Instruction.BITORB));
-                currentStream.SetItem(lastInstruction0, byte(1));
-                popAndTrim(currentStream, 1, 0);
+                currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHR8));
+                popAndTrim(currentStream, 1, 2);
                 return true; // hunt for more
             }
-            if (instruction0 == Instruction.LE)
+            else
             {
-                // PUSHI LE -> PUSHILE
-                // i1     i0 -> i0
-                instruction = Instruction.PUSHILE;
-            }
-            if (instruction0 == Instruction.LEI)
-            {
-                // PUSHI LEI -> PUSHILEI
-                // i1     i0 -> i0
-                instruction = Instruction.PUSHILEI;
-            }
-            if (instruction0 == Instruction.LT)
-            {
-                // PUSHI LT -> PUSHILT
-                // i1     i0 -> i0
-                instruction = Instruction.PUSHILT;
+                // PUSHIB BITSHR -> BITSHRB
+                // i1     i0     -> i0
+                currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHRB));
+                popAndTrim(currentStream, 1, 1);
+                return true; // hunt for more
             }
         }
-        
         if (
-            (instruction1 == Instruction.PUSHGLOBALB) 
-         && (instruction0 == Instruction.PUSHGLOBALB)
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHI1)) 
+         && (currentStream[lastInstruction0] == byte(Instruction.BITSHR))
+           )
+        {
+            // PUSHI1 BITSHR -> BITSHRB
+            // i1     i0     -> i0
+            currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHRB));
+            currentStream.SetItem(lastInstruction0, byte(1));
+            popAndTrim(currentStream, 1, 0);
+            return true; // hunt for more
+        }
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHIB)) 
+         && (currentStream[lastInstruction0] == byte(Instruction.BITAND))
+           )
+        {
+            byte value = currentStream[lastInstruction1+1];
+            if (value == 0xFF)
+            {
+                currentStream.SetItem(lastInstruction1, byte(Instruction.BITANDFF));
+                popAndTrim(currentStream, 1, 2);
+                return true; // hunt for more
+            }
+            else
+            {
+                // PUSHIB BITAND -> BITANDB
+                // i1     i0     -> i0
+                currentStream.SetItem(lastInstruction1, byte(Instruction.BITANDB));
+                popAndTrim(currentStream, 1, 1);
+                return true; // hunt for more
+            }
+        }
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHI1)) 
+         && (currentStream[lastInstruction0] == byte(Instruction.BITAND))
+           )
+        {
+            // PUSHI1 BITAND -> BITANDB
+            // i1     i0     -> i0
+            currentStream.SetItem(lastInstruction1, byte(Instruction.BITANDB));
+            currentStream.SetItem(lastInstruction0, byte(1));
+            popAndTrim(currentStream, 1, 0);
+            return true; // hunt for more
+        }
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHIB)) 
+         && (currentStream[lastInstruction0] == byte(Instruction.BITOR))
+           )
+        {
+            byte value = currentStream[lastInstruction1+1];
+            // PUSHIB BITOR -> BITORB
+            // i1     i0    -> i0
+            currentStream.SetItem(lastInstruction1, byte(Instruction.BITORB));
+            popAndTrim(currentStream, 1, 1);
+            return true; // hunt for more
+        }
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHI1)) 
+         && (currentStream[lastInstruction0] == byte(Instruction.BITOR))
+           )
+        {
+            // PUSHI1 BITOR -> BITORB
+            // i1     i0     -> i0
+            currentStream.SetItem(lastInstruction1, byte(Instruction.BITORB));
+            currentStream.SetItem(lastInstruction0, byte(1));
+            popAndTrim(currentStream, 1, 0);
+            return true; // hunt for more
+        }
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHI)) 
+         && (currentStream[lastInstruction0] == byte(Instruction.LE))
+           )
+        {
+            // PUSHI LE -> PUSHILE
+            // i1     i0 -> i0
+            currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHILE));
+            popAndTrim(currentStream, 1, 1);
+            return true; // hunt for more
+        }
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHIB)) 
+         && (currentStream[lastInstruction0] == byte(Instruction.LE))
+           )
+        {
+            // PUSHIB LE -> PUSHIBLE
+            // i1     i0 -> i0
+            currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHIBLE));
+            popAndTrim(currentStream, 1, 1);
+            return true; // hunt for more
+        }
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHIB)) 
+         && (currentStream[lastInstruction0] == byte(Instruction.EQ))
+           )
+        {
+            // PUSHIB EQ -> PUSHIBEQ
+            // i1     i0 -> i0
+            currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHIBEQ));
+            popAndTrim(currentStream, 1, 1);
+            return true; // hunt for more
+        }
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHIB)) 
+         && (currentStream[lastInstruction0] == byte(Instruction.ADD))
+           )
+        {
+            // PUSHIB ADD -> ADDB
+            // i1     i0  -> i0
+            currentStream.SetItem(lastInstruction1, byte(Instruction.ADDB));
+            popAndTrim(currentStream, 1, 1);
+            return true; // hunt for more
+        }
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHIB)) 
+         && (currentStream[lastInstruction0] == byte(Instruction.SUB))
+           )
+        {
+            // PUSHIB SUB -> SUBB
+            // i1     i0  -> i0
+            currentStream.SetItem(lastInstruction1, byte(Instruction.SUBB));
+            popAndTrim(currentStream, 1, 1);
+            return true; // hunt for more
+        }
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHI)) 
+         && (currentStream[lastInstruction0] == byte(Instruction.LEI))
+           )
+        {
+            // PUSHI LEI -> PUSHILEI
+            // i1     i0 -> i0
+            currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHILEI));
+            popAndTrim(currentStream, 1, 1);
+            return true; // hunt for more
+        }
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHI)) 
+         && (currentStream[lastInstruction0] == byte(Instruction.LT))
+           )
+        {
+            // PUSHI LT -> PUSHILT
+            // i1     i0 -> i0
+            currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHILT));
+            popAndTrim(currentStream, 1, 1);
+            return true; // hunt for more
+        }
+        if (
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHGLOBALB)) 
+         && (currentStream[lastInstruction0] == byte(Instruction.PUSHGLOBALB))
            )
         {
             // PUSHGLOBALB PUSHGLOBALB -> PUSHGLOBALBB
             // i1          i0          -> i0
             byte offset0 = currentStream[lastInstruction0+1];   
-            //byte offset1 = currentStream[lastInstruction1+1];   
-            instruction = Instruction.PUSHGLOBALBB;
+            byte offset1 = currentStream[lastInstruction1+1];   
+            currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHGLOBALBB));
             currentStream.SetItem(lastInstruction1+2, offset0);
+            popAndTrim(currentStream, 1, 1);
+            return true; // hunt for more
         }
     
         if (
-            (instruction1 == Instruction.PUSHLOCALB) 
-         && (instruction0 == Instruction.PUSHLOCALB)
+            (currentStream[lastInstruction1] == byte(Instruction.PUSHLOCALB)) 
+         && (currentStream[lastInstruction0] == byte(Instruction.PUSHLOCALB))
            )
         {
             // PUSHLOCALB PUSHLOCALB -> PUSHLOCALBB
             // i1         i0         -> i0
             byte offset0 = currentStream[lastInstruction0+1];   
-            //byte offset1 = currentStream[lastInstruction1+1];   
-            instruction = Instruction.PUSHLOCALBB;
+            byte offset1 = currentStream[lastInstruction1+1];   
+            currentStream.SetItem(lastInstruction1, byte(Instruction.PUSHLOCALBB));
             currentStream.SetItem(lastInstruction1+2, offset0);
-            
-        }
-
-        if (instruction != Instruction.NOP)
-        {
-            currentStream.SetItem(lastInstruction1, byte(instruction));
             popAndTrim(currentStream, 1, 1);
             return true; // hunt for more
         }
