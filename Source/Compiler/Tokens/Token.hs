@@ -112,14 +112,37 @@ unit Token
             case HopperToken.LBracket:  { return "["; }
             case HopperToken.RBracket:  { return "]"; }
             
+            case HopperToken.LT:        { return "<"; }
+            case HopperToken.GT:        { return ">"; }
+
+            
             case HopperToken.SemiColon: { return ";"; }
             case HopperToken.Comma:     { return ","; }
             case HopperToken.Dot:
             case HopperToken.Colon:     { return ":"; }
             case HopperToken.Question:  { return "?"; }            
             case HopperToken.Hash:      { return "#"; }
+            case HopperToken.Undefined: { return "#"; }
+            
+            default: 
+            { 
+                Print(HopperTokenToString(tokenType) + " ");
+                Die(0x0A); 
+            }
         }
         return hopperTokenNames[tokenType];
+    }
+    uint GetLength(<string,string> hopperToken)
+    {
+        if (hopperToken.Contains("lexeme"))
+        {
+            if ((hopperToken["lexeme"]).Length != 0)
+            {
+                return (hopperToken["lexeme"]).Length;
+            }
+        }
+        HopperToken tokenType = GetType(hopperToken);
+        return (Token.ToString(tokenType)).Length;
     }
     
     flags CPUArchitecture
@@ -144,8 +167,8 @@ unit Token
         else
         {
             i = uint(tokenType);
-            content = "0x" + i.ToHexString(4);
-            PrintLn("TODO : token not implemented in Token.HopperTokenToString");
+            Print("0x" + i.ToHexString(4) + " ");
+            Die(0x0A);
         }
         return content;
     }
@@ -158,14 +181,14 @@ unit Token
         {
             // <string, HopperToken> hopperTokenTypes;
             string name = token["type"];
-            
             if (hopperTokenTypes.Contains(name))
             {
                 tokenType = hopperTokenTypes[name];
             }
             else
             {
-                PrintLn("TODO : token not implemented in Token.GetType");
+                Print(name + " ");
+                Die(0x0A);
             }
         }
         return tokenType;

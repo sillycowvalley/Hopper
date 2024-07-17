@@ -84,16 +84,21 @@ unit Peephole
                     }
                 }
                 // at least 2 instructions
-                if (lastInstruction1 > peephholeBoundary) 
+                
+                if (IsExperimental)
                 {
-                    if (lastInstruction1 != lastInstruction0) // why?! it does happen
+                    if (lastInstruction1 > peephholeBoundary) 
                     {
-                        if (peepholeOptimize2(currentStream))
+                        if (lastInstruction1 != lastInstruction0) // why?! it does happen
                         {
-                            continue; // hunt for more
+                            if (peepholeOptimize2(currentStream))
+                            {
+                                continue; // hunt for more
+                            }
                         }
                     }
                 }
+                
                 // at least 3 instructions
                 if (lastInstruction2 > peephholeBoundary) 
                 {
@@ -277,12 +282,12 @@ unit Peephole
         bool isPopLocalB0  = IsPopLocalB (currentStream, lastInstruction0, ref offset0, ref length0);
         bool isPopGlobalB0 = IsPopGlobalB(currentStream, lastInstruction0, ref offset0, ref length0);
         
-        if (isPushGlobalB3 && isPopGlobalB0)
+        if (    isPushGlobalB3 && isPopGlobalB0 
+            && (offset3 == offset0)
+            && (currentStream[lastInstruction2] == byte(Instruction.PUSHI1))
+            )
         {
-            if ((offset3 == offset0)
-             && (currentStream[lastInstruction2] == byte(Instruction.PUSHI1))
-             && (currentStream[lastInstruction1] == byte(Instruction.ADD)) 
-               )
+            if (currentStream[lastInstruction1] == byte(Instruction.ADD)) 
             {
                 // PUSHGLOBALB PUSHI1 ADD POPGLOBALB -> INCGLOBALB
                 // i3          i2     i1  i0            i3
@@ -293,10 +298,7 @@ unit Peephole
                 popAndTrim(currentStream, 3, remove);
                 return true; // hunt for more
             }
-            if ((offset3 == offset0)
-             && (currentStream[lastInstruction2] == byte(Instruction.PUSHI1))
-             && (currentStream[lastInstruction1] == byte(Instruction.SUB)) 
-               )
+            if (currentStream[lastInstruction1] == byte(Instruction.SUB)) 
             {
                 // PUSHGLOBALB PUSHI1 ADD POPGLOBALB -> DECGLOBALB
                 // i3          i2     i1  i0            i3
@@ -328,51 +330,39 @@ unit Peephole
             byte length2 = 0;
             bool isPushLocalB2 = IsPushLocalB(currentStream, lastInstruction2, ref offset2, ref length2);
         
-            if (isPushLocalB2 
-             && ((offset3 == offset0) || (offset2 == offset0))
-             && (currentStream[lastInstruction1] == byte(Instruction.ADD))
-               )
+            if (isPushLocalB2 && ((offset3 == offset0) || (offset2 == offset0)))
             {
-                // PUSHLOCALB PUSHLOCALB ADD POPLOCALB -> INCLOCALBB
-                // i3         i2         i1  i0           i3
-                currentStream.SetItem(lastInstruction3, byte(Instruction.INCLOCALBB));
-                currentStream.SetItem(lastInstruction3+1, offset0);
-                if (offset3 == offset0)
+                Instruction incInstruction = Instruction.NOP;
+                if (currentStream[lastInstruction1] == byte(Instruction.ADD))
                 {
-                    currentStream.SetItem(lastInstruction3+2, offset2);
+                    // PUSHLOCALB PUSHLOCALB ADD POPLOCALB -> INCLOCALBB
+                    // i3         i2         i1  i0           i3
+                    incInstruction = Instruction.INCLOCALBB;
                 }
-                else
+                if (currentStream[lastInstruction1] == byte(Instruction.ADDI))
                 {
-                    currentStream.SetItem(lastInstruction3+2, offset3);
+                    // PUSHLOCALB PUSHLOCALB ADDI POPLOCALB -> INCLOCALIBB
+                    // i3         i2         i1   i0           i3
+                    incInstruction = Instruction.INCLOCALIBB;
                 }
-                
-                // 7 -> 3 = -4
-                uint remove = (length0-1) + (length2-1) + (length3-1) + 1;
-                popAndTrim(currentStream, 3, remove);
-                return true; // hunt for more
-            }
-            if (isPushLocalB2
-             && ((offset3 == offset0) || (offset2 == offset0))
-             && (currentStream[lastInstruction1] == byte(Instruction.ADDI))
-               )
-            {
-                // PUSHLOCALB PUSHLOCALB ADDI POPLOCALB -> INCLOCALIBB
-                // i3         i2         i1   i0           i3
-                currentStream.SetItem(lastInstruction3, byte(Instruction.INCLOCALIBB));
-                currentStream.SetItem(lastInstruction3+1, offset0);
-                if (offset3 == offset0)
+                if (incInstruction != Instruction.NOP)
                 {
-                    currentStream.SetItem(lastInstruction3+2, offset2);
+                    currentStream.SetItem(lastInstruction3, byte(incInstruction));
+                    currentStream.SetItem(lastInstruction3+1, offset0);
+                    if (offset3 == offset0)
+                    {
+                        currentStream.SetItem(lastInstruction3+2, offset2);
+                    }
+                    else
+                    {
+                        currentStream.SetItem(lastInstruction3+2, offset3);
+                    }
+                    
+                    // 7 -> 3 = -4
+                    uint remove = (length0-1) + (length2-1) + (length3-1) + 1;
+                    popAndTrim(currentStream, 3, remove);
+                    return true; // hunt for more
                 }
-                else
-                {
-                    currentStream.SetItem(lastInstruction3+2, offset3);
-                }
-                
-                // 7 -> 3 = -4
-                uint remove = (length0-1) + (length2-1) + (length3-1) + 1;
-                popAndTrim(currentStream, 3, remove);
-                return true; // hunt for more
             }
         }
         return false;   
@@ -452,6 +442,7 @@ unit Peephole
     
     bool peepholeOptimize2(<byte> currentStream)
     {    
+        /*
         if (    (currentStream[lastInstruction1] == byte(Instruction.BITANDFF)) 
              || (currentStream[lastInstruction1] == byte(Instruction.BITANDB)) 
              || (currentStream[lastInstruction1] == byte(Instruction.BITSHR8)) 
@@ -760,6 +751,7 @@ unit Peephole
             popAndTrim(currentStream, 1, 1);
             return true; // hunt for more
         }
+        */
         return false;
     }
     

@@ -1144,7 +1144,7 @@ unit Instructions
     
     
     
-    string Disassemble(<byte> code, ref uint address, long entryPointOffset, ref <uint> jumpLabels, ref <uint> jixLabels, bool doLabels)
+    string DisassembleHopper(<byte> code, ref uint address, long entryPointOffset, ref <uint> jumpLabels, ref <uint> jixLabels, bool doLabels)
     {
         string disassembledContent;
         byte cd = code[address];

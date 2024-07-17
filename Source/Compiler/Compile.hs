@@ -2961,7 +2961,7 @@ program Compile
             <string> rawArgs = System.Arguments;
             <string> args;
             bool checkedBuild = true;
-            bool touchesTree;
+            //bool touchesTree;
             bool argIsExperimental;
           
             for (uint iArg = 0; iArg < rawArgs.Count; iArg++)
@@ -2990,10 +2990,12 @@ program Compile
                         {
                             checkedBuild = false;   
                         }
+                        /*
                         case "-t":
                         {
                             touchesTree = true;   
                         }
+                        */
                         case "-x":
                         {
                             argIsExperimental = true;   
@@ -3073,12 +3075,13 @@ program Compile
                 {
                     break;
                 }
-                
+                /*
                 if (touchesTree)
                 {
                     string touchPath = jsonPath.Replace(extension, ".txt");
                     ExportTouchTree(touchPath);
                 }
+                */
                 
                 if (!IsInteractive())
                 {

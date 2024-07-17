@@ -38,6 +38,7 @@ unit Scanner
     bool IsTiggerC { get { return isTiggerC; } set { isTiggerC = value; } }
     
     long PosEOL { get { return currentPosEOL; } }
+    string CurrentSourcePath { get { return currentSourcePath; } }
     
     Load(string sourcePath)
     {

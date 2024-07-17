@@ -12,6 +12,14 @@ unit Directives
     {
         defineNesting.Clear();
     }
+    <bool> Store()
+    {
+        return defineNesting;
+    }
+    Restore(<bool> oldNesting)
+    {
+        defineNesting = oldNesting;
+    }
     
     bool IsStillOpen { get { return (defineNesting.Count != 0); }}
     

@@ -655,6 +655,15 @@ unit Symbols
         return nameSpaces;
     }
     
+    <string, string> makeStartToken(long pos, uint ln, string path)
+    {
+        <string, string> startToken;
+        startToken["pos"]    = pos.ToString();
+        startToken["line"]   = ln.ToString();
+        startToken["source"] = path;     
+        startToken["type"] = "LBrace";
+        return startToken;
+    }
     <string, string> GetGlobalStart(uint iGlobal)
     {
         <string, string> startToken;
@@ -663,14 +672,15 @@ unit Symbols
             if (gStartPos[iGlobal]  != 0)
             {
                 // -1 so that the next call to Advance() returns the opening '{'
-                long isp = gStartPos[iGlobal] - 1;
-                startToken["pos"]    = isp.ToString();
-                uint isl = gStartLine[iGlobal];
-                startToken["line"]   = isl.ToString();
-                startToken["source"] = gSourcePath[iGlobal];     
+                return makeStartToken(gStartPos[iGlobal] - 1, gStartLine[iGlobal], gSourcePath[iGlobal]);
             }
         }
         return startToken;
+    }
+    <string, string> GetOverloadStart(uint iOverload)
+    {
+        // -1 so that the next call to Advance() returns the opening '{'
+        return makeStartToken(fStartPos[iOverload] - 1,  fStartLine[iOverload], fSourcePath[iOverload]);
     }
     string GetGlobalLocation(uint iGlobal)
     {
@@ -1517,21 +1527,7 @@ unit Symbols
         fLibCall[iOverload] = iLibCall;    
         fLibCallOverload[iOverload] = iLibCallOverload;
     }
-    
-    
-    <string, string> GetOverloadStart(uint iOverload)
-    {
-        <string, string> startToken;
-        // -1 so that the next call to Advance() returns the opening '{'
-        long pos = fStartPos[iOverload];
-        pos = pos - 1;
-        startToken["pos"]    = pos.ToString();
-        uint ln = fStartLine[iOverload];
-        startToken["line"]   = ln.ToString();
-        startToken["source"] = fSourcePath[iOverload];     
-        return startToken;
-    }
-    
+       
     string GetOverloadReturnType(uint iOverload)
     {
         string returnType = fReturnTypes[iOverload];
@@ -1987,7 +1983,6 @@ unit Symbols
             {
                 dict["globals"] = globals;
             }
-                     
             foreach (var iUsedOverload in usedOverloads)
             {
                 <string,variant> mdict;
@@ -2183,7 +2178,7 @@ unit Symbols
                 dict["globals"] = gdict;           
             }
 
-            <string, <string, variant> > fddict;            
+            <string, <string, variant> > fddict;    
             foreach (var fd in fdIndex)
             {
                 <string, variant> fdentry;

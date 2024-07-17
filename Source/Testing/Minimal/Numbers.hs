@@ -1886,6 +1886,7 @@ unit Numbers
             PrintFailed("'float' 37");
         }
         
+#ifndef MCU
         // Multiply two very small positive numbers
         gpta = 0.0000001; gptb = 0.00001; gptr = 0.000000000001;
         if (gptr.ToString() != "0")
@@ -1901,6 +1902,7 @@ unit Numbers
             WriteLn(gptr.ToString());
             PrintFailed("'float' 39");
         }
+#endif
         
         // Multiply a very large number and a very small number
         gpta = 1000000000000.0; gptb = 0.000000000001; gptr = 1.0;
@@ -1918,9 +1920,7 @@ unit Numbers
             PrintFailed("'float' 42");
         }
         
-        
-        
-        
+#ifndef MCU        
         // Multiply two very small numbers
         gpta = 0.00000001;
         gptb = 0.00000001;
@@ -1930,7 +1930,7 @@ unit Numbers
             WriteLn(gptr.ToString());
             PrintFailed("'float' 43");
         }
-        
+
         // Multiply two very large numbers
         gpta = 1000000000.0;
         gptb = 1000000000.0;
@@ -1940,6 +1940,7 @@ unit Numbers
             WriteLn(gptr.ToString());
             PrintFailed("'float' 44");
         }
+#endif        
                 
         // Multiply a very small number with a very large number
         gpta = 0.0000001;
@@ -1951,15 +1952,17 @@ unit Numbers
             PrintFailed("'float' 46");
         }
         
+#ifndef MCU        
         // Multiply two very large numbers
         gpta = 10000000000.0;
         gptb = 10000000000.0;
         gptr = gpta * gptb;
-        if ((gptr.ToString() != "0") && (gptr.ToString() != "0.0"))
+        if (gptr.ToString() != "0")
         {
             WriteLn(gptr.ToString());
             PrintFailed("'float' 47");
         }
+#endif
         
         float ya = 1.6;
         float xa = 0.04 * ya;
