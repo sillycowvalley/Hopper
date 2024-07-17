@@ -380,14 +380,13 @@ unit Peephole
    	
     bool peepholeOptimize1(<byte> currentStream)
     {
+        Instruction instruction = Instruction.NOP;
         if (currentStream[lastInstruction0] == byte(Instruction.PUSHI))
         {
             uint operand = currentStream[lastInstruction0+1] + (currentStream[lastInstruction0+2] << 8);
             if (operand <= 255)
             {
-                currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHIB));
-                popAndTrim(currentStream, 0, 1); // MSB
-                return true; // hunt for more
+                instruction = Instruction.PUSHIB;
             }
         }
         if (currentStream[lastInstruction0] == byte(Instruction.PUSHIB))
@@ -395,15 +394,11 @@ unit Peephole
             byte operand = currentStream[lastInstruction0+1];
             if (operand == 0)
             {
-                currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHI0));
-                popAndTrim(currentStream, 0, 1); // '0'
-                return true; // hunt for more
+                instruction = Instruction.PUSHI0;
             }
             if (operand == 1)
             {
-                currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHI1));
-                popAndTrim(currentStream, 0, 1); // '1'
-                return true; // hunt for more
+                instruction = Instruction.PUSHI1;
             }
         }
         
@@ -413,38 +408,22 @@ unit Peephole
         
         if (isPushLocalB && (length0 == 2) && ((offset0 == 0) || (offset0 == 1)))
         {
-            if (offset0 == 0)
-            {
-                // PUSHLOCALB -> PUSHLOCALB00
-                // i0         -> i0
-                currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHLOCALB00));
-            }
-            if (offset0 == 1)
-            {
-                // PUSHLOCALB -> PUSHLOCALB01
-                // i0         -> i0
-                currentStream.SetItem(lastInstruction0, byte(Instruction.PUSHLOCALB01));
-            }
-            popAndTrim(currentStream, 0, 1);
-            return true; // hunt for more
+            // PUSHLOCALB -> PUSHLOCALB00 | PUSHLOCALB01
+            // i0         -> i0
+            instruction = (offset0 == 0) ? Instruction.PUSHLOCALB00 : Instruction.PUSHLOCALB01;
         }
         
         bool isPopLocalB = IsPopLocalB(currentStream, lastInstruction0, ref offset0, ref length0);
         if (isPopLocalB && (length0 == 2) && ((offset0 == 0) || (offset0 == 1)))
         {
-            if (offset0 == 0)
-            {
-                // POPLOCALB -> POPLOCALB00
-                // i0         -> i0
-                currentStream.SetItem(lastInstruction0, byte(Instruction.POPLOCALB00));
-            }
-            if (offset0 == 1)
-            {
-                // POPLOCALB -> POPLOCALB01
-                // i0         -> i0
-                currentStream.SetItem(lastInstruction0, byte(Instruction.POPLOCALB01));
-            }
-            popAndTrim(currentStream, 0, 1);
+            // POPLOCALB -> POPLOCALB00 | POPLOCALB01
+            // i0         -> i0
+            instruction = (offset0 == 0) ? Instruction.POPLOCALB00 : Instruction.POPLOCALB01;
+        }
+        if (instruction != Instruction.NOP)
+        {
+            currentStream.SetItem(lastInstruction0, byte(instruction));
+            popAndTrim(currentStream, 0, 1); // MSB
             return true; // hunt for more
         }
         return false;
