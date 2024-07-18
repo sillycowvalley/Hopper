@@ -43,7 +43,7 @@ program PreProcess
     string projectPath;
     <string, bool> unitsParsed;
     string programNamespace;
-    bool newPreprocessor;
+    //bool newPreprocessor;
     
     bool normalizeIdentifier(<string,string> idToken, ref string identifier, ref bool public, bool noDuplicates)
     {
@@ -693,7 +693,7 @@ program PreProcess
                 Parser.ErrorAtCurrent("'uses' declaration must be alone on line");
                 break;
             }
-            if (newPreprocessor)
+            if (true /*newPreprocessor*/)
             {
                 parseUnit(usesPath, false);
             }
@@ -1672,8 +1672,8 @@ program PreProcess
         {
             Symbols.AddDefine(symbol, "true");
         }
-        newPreprocessor = !(sourcePath.ToLower()).Contains("compile.");
-        if (newPreprocessor)
+        //newPreprocessor = !(sourcePath.ToLower()).Contains("compile.");
+        if (true /*newPreprocessor*/)
         {
             parseUnit(sourcePath, true);
             success = !Parser.HadError;

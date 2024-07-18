@@ -4,8 +4,8 @@ program MRVT
     //#define DICTIONARIES
     #define LOOP_TESTS // slower 'int' and 'uint' tests
     
-    //uses "/Source/Library/Boards/Hopper6502"
-    uses "/Source/Library/Boards/PiPico"
+    uses "/Source/Library/Boards/Hopper6502"
+    //uses "/Source/Library/Boards/PiPico"
     
     uses "Numbers"
     uses "Strings"
