@@ -485,15 +485,26 @@ unit Peephole
                 }
             }
         }
-        
-        if (
-            (instruction1 == Instruction.PUSHI) 
-         && (instruction0 == Instruction.LE)
-           )
+        if (instruction1 == Instruction.PUSHI) 
         {
-            // PUSHI LE -> PUSHILE
-            // i1     i0 -> i0
-            instruction = Instruction.PUSHILE;
+            if (instruction0 == Instruction.LE)
+            {
+                // PUSHI LE -> PUSHILE
+                // i1     i0 -> i0
+                instruction = Instruction.PUSHILE;
+            }
+            if (instruction0 == Instruction.LEI)
+            {
+                // PUSHI LEI -> PUSHILEI
+                // i1     i0 -> i0
+                instruction = Instruction.PUSHILEI;
+            }
+            if (instruction0 == Instruction.LT)
+            {
+                // PUSHI LT -> PUSHILT
+                // i1     i0 -> i0
+                instruction = Instruction.PUSHILT;
+            }
         }
         
         if (
@@ -510,86 +521,55 @@ unit Peephole
             return true; // hunt for more
         }
         
-        if (
-            (instruction1 == Instruction.PUSHI1) 
-         && ( (instruction0 == Instruction.MUL) || 
-              (instruction0 == Instruction.MULI) || 
-              (instruction0 == Instruction.DIV) || 
-              (instruction0 == Instruction.DIVI)
-            )
-           )
+        if (instruction1 == Instruction.PUSHI1)
         {
-            // PUSHI1 MUL|DIV    -> NOP
-            popAndTrim(currentStream, 2, 2);
-            return true; // hunt for more
+            if ( (instruction0 == Instruction.MUL) || 
+                 (instruction0 == Instruction.MULI) || 
+                 (instruction0 == Instruction.DIV) || 
+                 (instruction0 == Instruction.DIVI)
+               )
+            {
+                // PUSHI1 MUL|DIV    -> NOP
+                popAndTrim(currentStream, 2, 2);
+                return true; // hunt for more
+            }
+            if (instruction0 == Instruction.BITSHL)
+            {
+                // PUSHI1 BITSHL -> BITSHLB
+                // i1     i0     -> i0
+                currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHLB));
+                currentStream.SetItem(lastInstruction0, byte(1));
+                popAndTrim(currentStream, 1, 0);
+                return true; // hunt for more
+            }
+            if (instruction0 == Instruction.BITSHR)
+            {
+                // PUSHI1 BITSHR -> BITSHRB
+                // i1     i0     -> i0
+                currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHRB));
+                currentStream.SetItem(lastInstruction0, byte(1));
+                popAndTrim(currentStream, 1, 0);
+                return true; // hunt for more
+            }
+            if (instruction0 == Instruction.BITAND)
+            {
+                // PUSHI1 BITAND -> BITANDB
+                // i1     i0     -> i0
+                currentStream.SetItem(lastInstruction1, byte(Instruction.BITANDB));
+                currentStream.SetItem(lastInstruction0, byte(1));
+                popAndTrim(currentStream, 1, 0);
+                return true; // hunt for more
+            }
+            if (instruction0 == Instruction.BITOR)
+            {
+                // PUSHI1 BITOR -> BITORB
+                // i1     i0     -> i0
+                currentStream.SetItem(lastInstruction1, byte(Instruction.BITORB));
+                currentStream.SetItem(lastInstruction0, byte(1));
+                popAndTrim(currentStream, 1, 0);
+                return true; // hunt for more
+            }
         }
-        if (
-            (instruction1 == Instruction.PUSHI1) 
-         && (instruction0 == Instruction.BITSHL)
-           )
-        {
-            // PUSHI1 BITSHL -> BITSHLB
-            // i1     i0     -> i0
-            currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHLB));
-            currentStream.SetItem(lastInstruction0, byte(1));
-            popAndTrim(currentStream, 1, 0);
-            return true; // hunt for more
-        }
-        if (
-            (instruction1 == Instruction.PUSHI) 
-         && (instruction0 == Instruction.LEI)
-           )
-        {
-            // PUSHI LEI -> PUSHILEI
-            // i1     i0 -> i0
-            instruction = Instruction.PUSHILEI;
-        }
-        if (
-            (instruction1 == Instruction.PUSHI) 
-         && (instruction0 == Instruction.LT)
-           )
-        {
-            // PUSHI LT -> PUSHILT
-            // i1     i0 -> i0
-            instruction = Instruction.PUSHILT;
-        }
-        if (
-            (instruction1 == Instruction.PUSHI1) 
-         && (instruction0 == Instruction.BITSHR)
-           )
-        {
-            // PUSHI1 BITSHR -> BITSHRB
-            // i1     i0     -> i0
-            currentStream.SetItem(lastInstruction1, byte(Instruction.BITSHRB));
-            currentStream.SetItem(lastInstruction0, byte(1));
-            popAndTrim(currentStream, 1, 0);
-            return true; // hunt for more
-        }
-        if (
-            (instruction1 == Instruction.PUSHI1) 
-         && (instruction0 == Instruction.BITAND)
-           )
-        {
-            // PUSHI1 BITAND -> BITANDB
-            // i1     i0     -> i0
-            currentStream.SetItem(lastInstruction1, byte(Instruction.BITANDB));
-            currentStream.SetItem(lastInstruction0, byte(1));
-            popAndTrim(currentStream, 1, 0);
-            return true; // hunt for more
-        }
-        if (
-            (instruction1 == Instruction.PUSHI1) 
-         && (instruction0 == Instruction.BITOR)
-           )
-        {
-            // PUSHI1 BITOR -> BITORB
-            // i1     i0     -> i0
-            currentStream.SetItem(lastInstruction1, byte(Instruction.BITORB));
-            currentStream.SetItem(lastInstruction0, byte(1));
-            popAndTrim(currentStream, 1, 0);
-            return true; // hunt for more
-        }
-        
         
         if (instruction1 == Instruction.PUSHIB)
         {
