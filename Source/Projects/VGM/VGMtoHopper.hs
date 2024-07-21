@@ -10,6 +10,7 @@ program VGMtoHopper
         PrintLn("Invalid arguments for VGMtoHopper:");
         PrintLn("  VGMtoHopper <vgm file>");
         PrintLn("    -c         : count in K to keep (default is 4)");
+        PrintLn("    -b         : as binary");
     }
     
     appendByte(file hsFile, byte data, uint count)
@@ -28,7 +29,7 @@ program VGMtoHopper
         Print(" " + data.ToHexString(2));
         */
     }
-    bool convert(string name, file vgmFile, file hsFile)
+    bool convert(string name, file vgmFile, file hsFile, bool asBinary)
     {
         bool success;
         bool ended;
@@ -38,8 +39,11 @@ program VGMtoHopper
         byte versionMSB;
         byte versionLSB;  
         
-        hsFile.Append("unit VGMSRC { // " +name + " (" + keepK.ToString() + " KB)" + Char.EOL);
-        hsFile.Append("    const byte[] VGMDATA = {");
+        if (!asBinary)
+        {
+            hsFile.Append("unit VGMSRC { // " +name + " (" + keepK.ToString() + " KB)" + Char.EOL);
+            hsFile.Append("    const byte[] VGMDATA = {");
+        }
         loop
         {
             byte data = vgmFile.Read();
@@ -55,7 +59,7 @@ program VGMtoHopper
                     }
                     Print(" " + data.ToHexString(2), Colour.Ocean, Colour.Black);
                     
-                    /* assuming header is always 0x100 bytes:
+                    /* assuming header is always 0x100 bytes: */
                     switch(count)
                     {
                         case 0x08: { versionLSB = data; }
@@ -64,11 +68,11 @@ program VGMtoHopper
                             versionMSB = data; 
                             if ((versionMSB == 0x01) && (versionLSB == 0x50))
                             {
-                                //headerSize = 64;
+                                headerSize = 64;
                             }
                             else if ((versionMSB == 0x01) && (versionLSB == 0x51))
                             {
-                                //headerSize = 128;
+                                headerSize = 128;
                             }
                             else
                             {
@@ -78,7 +82,7 @@ program VGMtoHopper
                             }
                         }
                     }
-                    */
+                    
                     
                     count++;
                 }
@@ -108,12 +112,27 @@ program VGMtoHopper
                             break;
                         }
                     }
-                    appendByte(hsFile, data, count);
+                    if (asBinary)
+                    {
+                        hsFile.Append(data);
+                    }
+                    else
+                    {
+                        appendByte(hsFile, data, count);
+                    }
+                    
                     count++;
                     while (arguments != 0)
                     {
                         data = vgmFile.Read();
-                        appendByte(hsFile, data, count);
+                        if (asBinary)
+                        {
+                            hsFile.Append(data);
+                        }
+                        else
+                        {
+                            appendByte(hsFile, data, count);
+                        }
                         count++;
                         arguments--;
                     }
@@ -125,11 +144,21 @@ program VGMtoHopper
                     {
                         continue;
                     }
-                    hsFile.Append("0x66" + Char.EOL); // END
+                    if (asBinary)
+                    {
+                        hsFile.Append(0x66);
+                    }
+                    else
+                    {
+                        hsFile.Append("0x66" + Char.EOL); // END
+                    }
                 }
             }
-            hsFile.Append("    };" + Char.EOL);
-            hsFile.Append("}" + Char.EOL);
+            if (!asBinary)
+            {
+                hsFile.Append("    };" + Char.EOL);
+                hsFile.Append("}" + Char.EOL);
+            }
             
             if (!hsFile.IsValid())
             {
@@ -148,6 +177,7 @@ program VGMtoHopper
         {
             <string> rawArgs = System.Arguments;
             <string> args;
+            bool asBinary;
             for (uint iArg = 0; iArg < rawArgs.Count; iArg++)
             {
                 string arg = rawArgs[iArg];
@@ -164,6 +194,10 @@ program VGMtoHopper
                                 args.Clear();
                                 break;
                             }
+                        }
+                        case "-b":
+                        {
+                            asBinary = true;
                         }
                         default:
                         {
@@ -199,25 +233,24 @@ program VGMtoHopper
             
             
             string extension = Path.GetExtension(vgmPath);
-            string hsPath  = vgmPath.Replace(extension, ".hs");
-            File.Delete(hsPath);
+            string outputPath  = vgmPath.Replace(extension, asBinary ? ".vg" : ".hs");
+            File.Delete(outputPath);
 
-            file hsFile = File.Create(hsPath);
-            if (!hsFile.IsValid())
+            file outputFile = File.Create(outputPath);
+            if (!outputFile.IsValid())
             {
-                PrintLn("Failed to create '" + hsPath + "'");
+                PrintLn("Failed to create '" + outputPath + "'");
                 break;
             }
-            if (convert(Path.GetFileName(hsPath), vgmFile, hsFile))
+            if (convert(Path.GetFileName(outputPath), vgmFile, outputFile, asBinary))
             {
                 PrintLn();
-                PrintLn("Successfully created '" + hsPath + "'");
+                PrintLn("Successfully created '" + outputPath + "'");
+                break;
             }
-            else
-            {
-                PrintLn();
-                PrintLn("Failure converting '" + vgmPath + "' to '" + hsPath + "'", Colour.MatrixRed, Colour.Black);
-            }
+            
+            PrintLn();
+            PrintLn("Failure converting '" + vgmPath + "' to '" + outputPath + "'", Colour.MatrixRed, Colour.Black);
             break;
         } // loop
     }

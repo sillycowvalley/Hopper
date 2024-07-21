@@ -307,6 +307,34 @@ unit SNVGMPlayer
         DigitalWrite(sn_WE, true);    // Make sure the SN76489 is not selected at start up.
         Silence();
     }
+    Play(string filePath)
+    {
+        IO.WriteLn();
+        IO.WriteLn("Loading '" + Path.GetFileName(filePath) + "':");
+        file dfile = File.Open(filePath);
+        
+        byte[0x2100] vgm;
+        uint bytesLoaded = dfile.Read(vgm, 0x2100);
+        
+        IO.WriteLn();
+        IO.WriteLn(bytesLoaded.ToString() + " bytes loaded");
+        
+        byte last = vgm[bytesLoaded-1];
+        if (last != sn_END)
+        {
+            IO.WriteLn("Last VGM instruction not END");  
+            Die(0x0B);
+        }
+        
+        data = vgm;
+        idx = 0;
+        VgmOpDelegate callOp;
+        loop {
+            callOp = vgmOp[vgm[idx]];
+            idx++;
+            if (callOp()) { break; }
+        }
+    }
     Play(byte[] vgm)
     {
         data = vgm;
