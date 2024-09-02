@@ -124,6 +124,9 @@ unit Serial
     // transmits A as two hex characters
     HexOut()
     {
+        // consider tight nibble swap in future:
+        // http://6502.org/source/general/SWN.html in future
+        
         PHA
         PHA
         
