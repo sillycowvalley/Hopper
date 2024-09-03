@@ -14,7 +14,7 @@ program Count
             Memory.WriteByte(PORTA, byte(counter & 0xFF));
             Memory.WriteByte(PORTB, byte(counter >> 8));
             
-            Delay(100);
+            Delay(50);
             counter++;
         }
     }
