@@ -14,6 +14,7 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 //
 #if defined(ARDUINO_RASPBERRY_PI_PICO_W)
 #define RP2040PICOW
+#define USESDFS
 #endif
 
 // Raspberry Pi Pico
@@ -22,6 +23,16 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 //
 #if defined(ARDUINO_RASPBERRY_PI_PICO)
 #define RP2040PICO
+#define USESDFS
+#endif
+
+// Raspberry Pi Pico 2
+// - LittleFS for built-in Flash
+// - no WiFi
+//
+#if defined(ARDUINO_RASPBERRY_PI_PICO_2)
+#define RP2040PICO2
+#define USESDFS
 #endif
 
 // Challenger RP2040 WiFi
@@ -37,12 +48,18 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 // - WiFiNina
 #if defined(ARDUINO_NANO_RP2040_CONNECT)
 #define ARDUINONANO_RP2040
+#define USETIMERSTUBS
 #endif
 
+#if defined(ARDUINO_UNOR4_WIFI)
+#define USETIMERSTUBS
+#endif
 
 #if defined(ARDUINO_TEENSY41)
 #define TEENSY
 #define USETIMERSTUBS
+#define USELITTLEFS
+//#define USESDFS // ?
 #endif
 
 // Lolin Wemos D1 Mini, ESP 8266
@@ -67,10 +84,11 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 // - exit TERM then run HM!
 
 // Just use 'ARDUINO_ARCH_RP2040' ?
-#if defined(RP2040PICO) || defined(RP2040PICOW) || defined(ARDUINONANO_RP2040) || defined(CHALLENGER_RP2040_WIFI)
+#if defined(RP2040PICO) || defined(RP2040PICO2) || defined(RP2040PICOW) || defined(ARDUINONANO_RP2040) || defined(CHALLENGER_RP2040_WIFI)
 #define RP2040
 #define SPI_INCLUDED
 #define USETIMER
+#define USELITTLEFS
 #endif
 
 // Seems to be "ARDUINO_" + BOARD_NAME when using Pico board manager

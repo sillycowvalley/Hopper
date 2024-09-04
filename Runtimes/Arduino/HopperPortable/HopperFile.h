@@ -43,6 +43,8 @@ void External_SDRxPinSet(Byte pin);
 bool External_SDMount();
 void External_SDEject();
 
+void FileSystem_End();
+
 
 
 #endif // HOPPERFILE_H

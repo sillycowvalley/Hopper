@@ -54,7 +54,14 @@ program WebClient
         foreach(var kv in time)
         {
             Write(kv.key + " ");
-            WriteLn((kv.value).ToString());
+            if (typeof(kv.value) == delegate)
+            {
+                WriteLn("null");
+            }
+            else
+            {
+                WriteLn((kv.value).ToString());
+            }
         }
 
     }

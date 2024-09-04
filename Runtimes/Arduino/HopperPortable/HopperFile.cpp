@@ -50,13 +50,17 @@ void External_SDRxPinSet(Byte pin)
     sdRxPin = pin;
 }
 
-#ifdef TEENSY
+#if !defined(USELITTLEFS)
 
 // https://github.com/greiman/SdFat
 // https://github.com/greiman/SdFat/blob/master/examples/TeensySdioDemo/TeensySdioDemo.ino
 // https://github.com/greiman/SdFat/blob/master/examples/TeensyRtcTimestamp/TeensyRtcTimestamp.ino
 
 void FileSystem_Initialize()  // TEENSY TODO
+{
+}
+
+void FileSystem_End()
 {
 }
 
@@ -159,10 +163,12 @@ Bool External_TryFileReadByte_R(UInt hrpath, UInt hrseekpos, Byte & b)  // TEENS
 
 #else
 
-
 #include "LittleFS.h" // https://arduino-pico.readthedocs.io/en/latest/fs.html
+
+#ifdef USESDFS
 #include <FS.h>
 #include <SDFS.h>
+#endif
 
 #include <time.h>
 
@@ -197,6 +203,16 @@ void FileSystem_Initialize()
 
 }
 
+void FileSystem_End()
+{
+#ifdef USELITTLEFS  
+    LittleFS.end(); // unmount the file system
+#endif
+#ifdef ESP32LITTLEFS
+    LittleFS.end();
+#endif
+}
+
 bool isValidHopperPath(const char * path)
 {
     bool isValid = (path != nullptr);
@@ -208,6 +224,7 @@ bool isValidHopperPath(const char * path)
     return isValid;
 }
 
+#ifdef USESDFS
 char * isSDPath(char * buffer)
 {
     char* sdpath = nullptr;
@@ -258,6 +275,7 @@ bool isSDRoot(char * buffer)
     }
     return false;
 }
+#endif
 
 const UInt pathBufferSize = 128;
 void HRPathToBuffer(UInt hrpath, char * buffer)
@@ -278,8 +296,9 @@ Bool External_FileExists(UInt hrpath)
 {
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
-    char * sdpath = isSDPath(buffer);
     File f;
+#ifdef USESDFS
+    char * sdpath = isSDPath(buffer);
     if (nullptr != sdpath)
     {
         if (SDFS.exists(sdpath))
@@ -287,7 +306,9 @@ Bool External_FileExists(UInt hrpath)
             f = SDFS.open(sdpath, "r");
         }
     }
-    else if(LittleFS.exists(buffer))
+    else 
+#endif
+    if(LittleFS.exists(buffer))
     {
         f = LittleFS.open(buffer, "r");
     }
@@ -298,12 +319,14 @@ void External_FileDelete(UInt hrpath)
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
 
+#ifdef USESDFS
     char * sdpath = isSDPath(buffer);
     if (nullptr != sdpath)
     {
         SDFS.remove(sdpath);
     }
     else
+#endif    
     {
         LittleFS.remove(buffer);
     }
@@ -313,12 +336,14 @@ void External_FileWriteAllBytes(UInt hrpath, UInt hrcontent, bool append)
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
     File f;
+#ifdef USESDFS    
     char * sdpath = isSDPath(buffer);
     if (nullptr != sdpath)
     {
         f = SDFS.open(sdpath, append ? "a+" : "w");
     }
     else
+#endif
     {
         // "a+"
         // Open for reading and appending (writing at end of file).  The
@@ -348,12 +373,14 @@ void External_FileWriteAllCodeBytes(UInt hrpath, UInt codeStart, UInt codeLength
     HRPathToBuffer(hrpath, (char*)&buffer);
 
     File f;
+#ifdef USESDFS    
     char * sdpath = isSDPath(buffer);
     if (nullptr != sdpath)
     {
         f = SDFS.open(sdpath, "w");
     }
     else
+#endif
     {
         // "w"
         // Truncate file to zero length or create text file for writing.
@@ -380,12 +407,14 @@ Bool External_ReadAllCodeBytes_R(UInt hrpath, UInt loadAddress, UInt & codeLengt
     HRPathToBuffer(hrpath, (char*)&buffer);
 
     File f;
+#ifdef USESDFS
     char * sdpath = isSDPath(buffer);
     if (nullptr != sdpath)
     {
         f = SDFS.open(sdpath, "r");
     }
     else
+#endif
     {
         f = LittleFS.open(buffer, "r");
     }
@@ -416,12 +445,14 @@ UInt External_TryFileReadBuffer(UInt hrpath, UInt hrseekpos, UInt hrbuffer, UInt
     HRPathToBuffer(hrpath, (char*)&pathBuffer);
     
     File f;
+#ifdef USESDFS
     char * sdpath = isSDPath(pathBuffer);
     if (nullptr != sdpath)
     {
         f = SDFS.open(sdpath, "r");
     }
     else
+#endif
     {
         f = LittleFS.open(pathBuffer, "r");
     }
@@ -456,12 +487,14 @@ Bool External_TryFileReadByte_R(UInt hrpath, UInt hrseekpos, Byte & b)
     HRPathToBuffer(hrpath, (char*)&buffer);
 
     File f;
+#ifdef USESDFS    
     char * sdpath = isSDPath(buffer);
     if (nullptr != sdpath)
     {
         f = SDFS.open(sdpath, "r");
     }
     else
+#endif
     {
         f = LittleFS.open(buffer, "r");
     }
@@ -485,12 +518,14 @@ UInt External_FileGetSize(UInt hrpath)
 
     File f;
 
+#ifdef USESDFS
     char * sdpath = isSDPath(buffer);
     if (nullptr != sdpath)
     {
         f = SDFS.open(sdpath, "r");
     }
     else
+#endif
     {
         f = LittleFS.open(buffer, "r");
     }
@@ -509,11 +544,14 @@ Bool External_DirectoryExists(UInt hrpath)
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
 
+#ifdef USESDFS
     if (isSDRoot(buffer))
     {
         return true; // not a real directory
     }
+#endif
     File f;
+#ifdef USESDFS    
     char * sdpath = isSDPath(buffer);
     if (nullptr != sdpath)
     {
@@ -523,6 +561,7 @@ Bool External_DirectoryExists(UInt hrpath)
         }
     }
     else
+#endif
     {
         if(LittleFS.exists(buffer))
         {
@@ -551,6 +590,7 @@ void External_DirectoryDelete(UInt hrpath)
     buffer2[plen]   = '_';  
     buffer2[plen+1] = 0;
 
+#ifdef USESDFS
     char * sdpath = isSDPath(buffer);
     if (nullptr != sdpath)
     {
@@ -560,6 +600,7 @@ void External_DirectoryDelete(UInt hrpath)
         }
     }
     else
+#endif
     {    
         if(LittleFS.exists(buffer2))
         {
@@ -574,12 +615,14 @@ void External_DirectoryCreate(UInt hrpath)
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
 
+#ifdef USESDFS
     char * sdpath = isSDPath(buffer);
     if (nullptr != sdpath)
     {
         SDFS.mkdir(sdpath);
     }
     else
+#endif
     {
         LittleFS.mkdir(buffer);
         uint plen = strlen(buffer);
@@ -606,12 +649,14 @@ UInt External_DirectoryGetFileCount_R(UInt hrpath, UInt & skipped)
 
     Dir dir;
 
+#ifdef USESDFS
     char * sdpath = isSDPath(buffer);
     if (nullptr != sdpath)
     {
         dir = SDFS.openDir(sdpath);
     }
     else
+#endif
     {
         dir = LittleFS.openDir(buffer);
     }
@@ -634,13 +679,14 @@ UInt External_DirectoryGetDirectoryCount_R(UInt hrpath, UInt & skipped)
     skipped = 0;
 
     Dir dir;
-
+#ifdef USESDFS
     char * sdpath = isSDPath(buffer);
     if (nullptr != sdpath)
     {
         dir = SDFS.openDir(sdpath);
     }
     else
+#endif
     {
         if (sdMounted && (buffer[0] == '/') && (buffer[1] == 0))
         {
@@ -666,13 +712,14 @@ UInt External_DirectoryGetFile(UInt hrpath, UInt index)
     UInt count = 0;
 
     Dir dir;
-
+#ifdef USESDFS
     char * sdpath = isSDPath(buffer);
     if (nullptr != sdpath)
     {
         dir = SDFS.openDir(sdpath);
     }
     else
+#endif
     {
         dir = LittleFS.openDir(buffer);
     }
@@ -712,13 +759,14 @@ UInt External_DirectoryGetDirectory(UInt hrpath, UInt index)
     UInt count = 0;
 
     Dir dir;
-
+#ifdef USESDFS
     char * sdpath = isSDPath(buffer);
     if (nullptr != sdpath)
     {
         dir = SDFS.openDir(sdpath);
     }
     else
+#endif
     {
         dir = LittleFS.openDir(buffer);
     }
@@ -781,12 +829,14 @@ UInt External_ReadLine(UInt _this)
                 HRPathToBuffer(Memory_ReadWord(_this + 6), (char*)&buffer);
 
                 File f;
+#ifdef USESDFS                
                 char * sdpath = isSDPath(buffer);
                 if (nullptr != sdpath)
                 {
                     f = SDFS.open(sdpath, "r");
                 }
                 else
+#endif
                 { 
                     f = LittleFS.open(buffer, "r");
                 }
@@ -849,6 +899,7 @@ UInt External_ReadLine(UInt _this)
 
 bool External_SDMount()
 {
+#ifdef USESDFS  
     //pinMode(sdCSPin, OUTPUT);
     SPIClassRP2040* sdSPI = (sdController == 0) ? &SPI : &SPI1;
     sdSPI->setSCK(sdClkPin);
@@ -859,9 +910,13 @@ bool External_SDMount()
     SDFS.setConfig(SDFSConfig(sdCSPin, 4000000 /*SPI_HALF_SPEED*/, *sdSPI));
     sdMounted = SDFS.begin();
     return sdMounted;
+#else
+    return false;
+#endif    
 }
 void External_SDEject()
 {
+#ifdef USESDFS  
     if (sdMounted)
     {
         SDFS.end();
@@ -870,6 +925,7 @@ void External_SDEject()
         //sdSPI->end(); 
         sdMounted = false;
     }
+#endif
 }
 
 UInt External_DirectoryGetDate(UInt hrpath)
@@ -881,12 +937,14 @@ UInt External_DirectoryGetDate(UInt hrpath)
 
     File f;
 
+#ifdef USESDFS
     char * sdpath = isSDPath(buffer);
     if (nullptr != sdpath)
     {
         f = SDFS.open(sdpath, "r");
     }
     else
+#endif
     {
         f = LittleFS.open(buffer, "r");
     }
@@ -919,13 +977,14 @@ UInt External_DirectoryGetTime(UInt hrpath)
     UInt result = HRString_New();
 
     File f;
-
+#ifdef USESDFS
     char * sdpath = isSDPath(buffer);
     if (nullptr != sdpath)
     {
         f = SDFS.open(sdpath, "r");
     }
     else
+#endif
     {
         f = LittleFS.open(buffer, "r");
     }
@@ -954,12 +1013,14 @@ UInt External_FileGetDate(UInt hrpath)
 
     File f;
 
+#ifdef USESDFS
     char * sdpath = isSDPath(buffer);
     if (nullptr != sdpath)
     {
         f = SDFS.open(sdpath, "r");
     }
     else
+#endif
     {
         f = LittleFS.open(buffer, "r");
     }
@@ -992,13 +1053,14 @@ UInt External_FileGetTime(UInt hrpath)
     UInt result = HRString_New();
 
     File f;
-
+#ifdef USESDFS
     char * sdpath = isSDPath(buffer);
     if (nullptr != sdpath)
     {
         f = SDFS.open(sdpath, "r");
     }
     else
+#endif
     {
         f = LittleFS.open(buffer, "r");
     }
@@ -1024,13 +1086,14 @@ UInt External_FileGetTimeStamp(UInt hrpath)
     HRPathToBuffer(hrpath, (char*)&buffer);
 
     File f;
-
+#ifdef USESDFS
     char * sdpath = isSDPath(buffer);
     if (nullptr != sdpath)
     {
         f = SDFS.open(sdpath, "r");
     }
     else
+#endif
     {
         f = LittleFS.open(buffer, "r");
     }
@@ -1044,4 +1107,4 @@ UInt External_FileGetTimeStamp(UInt hrpath)
     return HRLong_New();
 }
 
-#endif // !TEENSY
+#endif // USELITTLEFS

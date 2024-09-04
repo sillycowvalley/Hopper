@@ -1,6 +1,7 @@
 program Blink
 {
-    uses "/Source/Library/Boards/PiPico"
+    //uses "/Source/Library/Boards/PiPico"
+    uses "/Source/Library/Boards/Challenger2040WiFi"
     //uses "/Source/Library/Boards/Hopper6502"
     
     {

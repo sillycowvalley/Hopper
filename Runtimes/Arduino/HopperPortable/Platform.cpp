@@ -3,6 +3,7 @@
 #include "Platform.h"
 #include "HopperScreen.h"
 #include "HopperTimer.h"
+#include "HopperFile.h"
 
 #include <Wire.h>
 #include <SPI.h>
@@ -35,7 +36,7 @@ unsigned char * dataMemoryBlock  = nullptr;
 unsigned char * codeMemoryBlock  = nullptr;
 unsigned char * codeStartAddress = nullptr;
 
-uint jumpTableAddress;
+unsigned int jumpTableAddress;
 
 unsigned int usSamples = 1000; // good default : 1000us = 1ms (see Delay(..))
 
@@ -47,7 +48,7 @@ std::queue<HopperISRStruct> isrQueue;
 
 void pinISR(void * param)
 {
-    uint lparam          = (uint)(param);
+    unsigned int lparam          = (unsigned int)(param);
 
     HopperISRStruct isrStruct;
 
@@ -125,8 +126,8 @@ void External_ServiceInterrupts()
         interrupts();
 
         // find the delegate method
-        uint methodIndex = isrStruct.isrDelegate;
-        uint methodAddress = HopperVM_LookupMethod(methodIndex);
+        unsigned int methodIndex = isrStruct.isrDelegate;
+        unsigned int methodAddress = HopperVM_LookupMethod(methodIndex);
 
 #ifdef DIAGNOSTICS
         //Serial.print((isrStruct.interruptType == InterruptType::ePin) ? "P: 0x" : "T: 0x");
@@ -226,12 +227,7 @@ void Platform_Initialize()
 void Platform_Release()
 {
     External_TimerRelease();
-#ifdef USELITTLEFS  
-    LittleFS.end(); // unmount the file system
-#endif
-#ifdef ESP32LITTLEFS
-    LittleFS.end();
-#endif
+    FileSystem_End();
 
     //HRGraphics_End();
     
@@ -860,7 +856,7 @@ Bool HopperVM_InlinedExecuteWarp(bool logging)
             }
             if (--watchDog == 0)
             {
-#if defined(RP2040PICO) || defined(RP2040PICOW)  
+#if defined(RP2040PICO) || defined(RP2040PICO2) || defined(RP2040PICOW)  
                 // Pi Pico appears to not need this
 #else
                 External_WatchDog();
@@ -1643,7 +1639,7 @@ void HRString_ToString(UInt hrstr, String & str)
     str = "";
     if (0 != hrstr)
     {
-        for (uint i = 0; i < HRString_GetLength(hrstr); i++)
+        for (UInt i = 0; i < HRString_GetLength(hrstr); i++)
         {
             str += (char)HRString_GetChar(hrstr, i);
         }
