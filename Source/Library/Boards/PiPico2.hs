@@ -1,4 +1,4 @@
-unit Board // RPipico2
+unit Board // PiPico2
 {
     #define RPIPICO2
 
@@ -43,6 +43,6 @@ unit Board // RPipico2
 
     uses "/Source/Library/MCU"
 
-    string BoardName { get { return "RPipico2"; } }
+    string BoardName { get { return "PiPico2"; } }
 
 }
