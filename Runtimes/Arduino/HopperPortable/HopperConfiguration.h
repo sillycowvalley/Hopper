@@ -41,6 +41,7 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 //
 #if defined(ARDUINO_CHALLENGER_2040_WIFI_RP2040)
 #define CHALLENGER_RP2040_WIFI
+#define USELITTLEFS
 #endif
 
 // Arduino Connect RP2040
