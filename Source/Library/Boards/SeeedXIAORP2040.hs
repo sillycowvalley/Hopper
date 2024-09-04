@@ -3,7 +3,7 @@ unit Board // Seeed XIAO RP2040
     #define SEEED_XIAO_RP2040
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP2040
+    #define MCU_BOARD_RP
 
     #define BOARD_HAS_NEOPIXEL
     #define BOARD_HAS_NEOPIXEL_POWER

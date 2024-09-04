@@ -3,7 +3,7 @@ unit Board // PiPico
     #define RPIPICO
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP2040
+    #define MCU_BOARD_RP
     #define FORMFACTOR_PICO
 
     // https://mischianti.org/raspberry-pi-pico-high-resolution-pinout-and-specs/

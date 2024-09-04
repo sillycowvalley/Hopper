@@ -3,7 +3,7 @@ unit Board // Arduino Nano Connect
     #define ARDUINO_NANO_CONNECT
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP2040
+    #define MCU_BOARD_RP
 
     #define BOARD_HAS_LED
     #define BOARD_HAS_I2C

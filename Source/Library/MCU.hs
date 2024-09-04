@@ -75,14 +75,14 @@ unit MCU
     
     bool InterruptsEnabled { get library; set library; }
 
-#if defined(MCU_BOARD_RP2040)    
+#if defined(MCU_BOARD_RP)
     Reboot(bool bootsel) library;
     
     // Use these two APIs to keep an eye on the health of your MCU memory:
     long HeapFree() library;  // Is there a leak in the system level stuff? 
     long StackFree() library; // Are we close to the stack limit?
     
-    enum RP2040ClockSpeed // enum so that tested good values are obvious:
+    enum RPClockSpeed // enum so that tested good values are obvious:
     {
         Slow48       =  48,   // have not managed to reliably go slower than this
         Slow50       =  50,   
@@ -95,7 +95,7 @@ unit MCU
         //Overclock300 = 300, // doesn't work on USB voltage
     }
     
-    RP2040ClockSpeed ClockSpeed { get library; set library; }
+    RPClockSpeed ClockSpeed { get library; set library; }
 #endif
 
 }

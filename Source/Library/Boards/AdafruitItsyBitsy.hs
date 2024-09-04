@@ -3,7 +3,7 @@ unit Board // Adafruit ItsyBitsy
     #define ADAFRUIT_ITSYBITSY
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP2040
+    #define MCU_BOARD_RP
 
     #define BOARD_HAS_NEOPIXEL
     #define BOARD_HAS_NEOPIXEL_POWER

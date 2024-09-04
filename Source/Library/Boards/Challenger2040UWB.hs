@@ -3,7 +3,7 @@ unit Board // Challenger 2040 UWB
     #define CHALLENGER_2040_UWB
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP2040
+    #define MCU_BOARD_RP
 
     #define BOARD_HAS_LED
     #define BOARD_HAS_I2C

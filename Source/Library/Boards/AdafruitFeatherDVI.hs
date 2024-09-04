@@ -3,7 +3,7 @@ unit Board // Adafruit Feather DVI
     #define ADAFRUIT_FEATHER_DVI
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP2040
+    #define MCU_BOARD_RP
     #define FORMFACTOR_FEATHER
 
     // https://learn.adafruit.com/adafruit-feather-rp2040-pico/pinouts

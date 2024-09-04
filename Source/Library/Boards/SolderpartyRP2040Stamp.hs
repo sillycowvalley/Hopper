@@ -3,7 +3,7 @@ unit Board // Solderparty RP2040 Stamp
     #define SOLDERPARTY_RP2040_STAMP
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP2040
+    #define MCU_BOARD_RP
 
     #define BOARD_HAS_NEOPIXEL
     #define BOARD_HAS_LED

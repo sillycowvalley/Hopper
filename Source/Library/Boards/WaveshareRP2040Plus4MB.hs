@@ -3,7 +3,7 @@ unit Board // Waveshare RP2040 Plus 4MB
     #define WAVESHARE_RP2040_PLUS_4MB
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP2040
+    #define MCU_BOARD_RP
     #define FORMFACTOR_PICO
 
     // https://mischianti.org/raspberry-pi-pico-high-resolution-pinout-and-specs/

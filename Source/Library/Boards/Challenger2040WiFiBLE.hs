@@ -3,7 +3,7 @@ unit Board // Challenger 2040 WiFi BLE
     #define CHALLENGER_2040_WIFI_BLE
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP2040
+    #define MCU_BOARD_RP
 
     #define BOARD_HAS_WIFI
     #define BOARD_HAS_NEOPIXEL

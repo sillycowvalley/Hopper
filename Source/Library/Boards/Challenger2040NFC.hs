@@ -3,7 +3,7 @@ unit Board // Challenger 2040 NFC
     #define CHALLENGER_2040_NFC
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP2040
+    #define MCU_BOARD_RP
 
     #define BOARD_HAS_NEOPIXEL
     #define BOARD_HAS_LED

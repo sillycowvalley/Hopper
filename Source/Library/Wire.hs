@@ -23,7 +23,7 @@ unit Wire
         bool success;
         loop
         {
-#if defined(MCU_BOARD_RP2040)
+#if defined(MCU_BOARD_RP)
             // While all of these combinations may not be valid,
             // they are the only possible superset.
             switch (i2cController)

@@ -3,7 +3,7 @@ unit Board // Cytron Maker Uno RP2040
     #define CYTRON_MAKER_UNO_RP2040
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP2040
+    #define MCU_BOARD_RP
 
     #define BOARD_HAS_NEOPIXEL
     #define BOARD_HAS_LED

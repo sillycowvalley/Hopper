@@ -3,7 +3,7 @@ unit Board // Waveshare RP2040 Matrix
     #define WAVESHARE_RP2040_MATRIX
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP2040
+    #define MCU_BOARD_RP
 
     #define BOARD_HAS_NEOPIXEL
     #define BOARD_HAS_I2C

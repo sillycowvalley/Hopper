@@ -3,7 +3,7 @@ unit Board // Waveshare RP2040 LCD 0.96
     #define WAVESHARE_RP2040_LCD_096
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP2040
+    #define MCU_BOARD_RP
 
     #define BOARD_HAS_I2C
     #define BOARD_HAS_SPI
