@@ -3,7 +3,7 @@ unit Board // Challenger 2350 Bconnect
     #define CHALLENGER_2350_BCONNECT
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP
+    #define MCU_BOARD_RP2350
 
     // Note: see Attribution.md (in the same folder as this file)
 

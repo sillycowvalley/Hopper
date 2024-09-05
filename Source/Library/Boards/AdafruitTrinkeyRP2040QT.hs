@@ -3,7 +3,7 @@ unit Board // Adafruit TrinkeyRP2040QT
     #define ADAFRUIT_TRINKEYRP2040QT
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP
+    #define MCU_BOARD_RP2040
 
     // Note: see Attribution.md (in the same folder as this file)
     // https://learn.adafruit.com/adafruit-trinkey-qt2040/pinouts

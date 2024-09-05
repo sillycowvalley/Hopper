@@ -1,9 +1,9 @@
-unit Board // Pimoroni Tiny2040
+unit Board // Pimoroni Tiny2350
 {
-    #define PIMORONI_TINY2040
+    #define PIMORONI_TINY2350
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP2040
+    #define MCU_BOARD_RP2350
 
     // Note: see Attribution.md (in the same folder as this file)
 
@@ -64,6 +64,6 @@ unit Board // Pimoroni Tiny2040
 
     uses "/Source/Library/MCU"
 
-    string BoardName { get { return "Pimoroni Tiny2040"; } }
+    string BoardName { get { return "Pimoroni Tiny2350"; } }
 
 }

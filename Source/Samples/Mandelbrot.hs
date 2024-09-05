@@ -1,8 +1,12 @@
 program Mandelbrot
 {
-    uses "/Source/Library/Boards/PiPico"
+    //uses "/Source/Library/Boards/PiPico"
+    uses "/Source/Library/Boards/PiPico2"
         
+    Hopper()
     {
+        //ClockSpeed = RPClockSpeed.Overclock300;
+        
         IO.Clear();
         IO.WriteLn();
         

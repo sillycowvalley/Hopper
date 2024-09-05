@@ -5,22 +5,15 @@ program TestGPIO
     //uses "/Source/Library/Boards/AdafruitQTPy"
     //uses "/Source/Library/Boards/Challenger2040WiFi"
     
-    uses "/Source/Library/Boards/SparkfunProMicroRP2040"
-        
+    //uses "/Source/Library/Boards/SparkfunProMicroRP2040"
+    
+    //uses "/Source/Library/Boards/PimoroniTiny2040"
+    uses "/Source/Library/Boards/PimoroniTiny2350"
+    
     Hopper()
     {
-        
-        byte pin = GP21;
+        byte pin = GP0;
         PinMode(pin, PinModeOption.Output);
-        
-        /*        
-        byte button = GP13;
-        PinMode(pin, PinModeOption.InputPulldown);
-        loop
-        {
-            DigitalWrite(pin, DigitalRead(button));
-        }
-        */
         
         for (byte iterations = 0; iterations < 10; iterations++)
         {
@@ -30,7 +23,17 @@ program TestGPIO
             DigitalWrite(pin, false);
             Delay(250);    
         }
+        
         WriteLn();
-    
+#ifdef BOARD_HAS_USER_BUTTON     
+        PinMode(UserButton, PinModeOption.Input);
+        loop
+        {
+            bool button = DigitalRead(UserButton);
+            WriteLn(button.ToString());
+            DigitalWrite(BuiltInLED, button);
+            Delay(300);
+        }
+#endif    
     }
 }

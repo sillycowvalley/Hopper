@@ -3,7 +3,7 @@ unit Board // Challenger 2350 WiFi6 Ble5
     #define CHALLENGER_2350_WIFI6_BLE5
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP
+    #define MCU_BOARD_RP2350
 
     // Note: see Attribution.md (in the same folder as this file)
 

@@ -1,13 +1,17 @@
 program Sieve
 {
-#define SERIAL_CONSOLE
-    uses "/Source/System/System"
-    uses "/Source/System/IO"
+//uses "/Source/Library/Boards/PiPico"
+    uses "/Source/Library/Boards/PiPico2"
     
     const uint sizepl = 8191;
     bool[sizepl] flagsGlobal;
-        
+                
+    Hopper()
     {
+        //ClockSpeed = RPClockSpeed.Slow133;
+        //ClockSpeed = RPClockSpeed.Default; // 150 MHz
+        ClockSpeed = RPClockSpeed.Overclock300;    
+        
         uint i; 
         uint prime;
         uint k;

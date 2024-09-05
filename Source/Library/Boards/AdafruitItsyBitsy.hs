@@ -3,7 +3,7 @@ unit Board // Adafruit ItsyBitsy
     #define ADAFRUIT_ITSYBITSY
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP
+    #define MCU_BOARD_RP2040
 
     // Note: see Attribution.md (in the same folder as this file)
 
@@ -12,6 +12,7 @@ unit Board // Adafruit ItsyBitsy
     #define BOARD_HAS_NEOPIXEL
     #define BOARD_HAS_NEOPIXEL_POWER
     #define BOARD_HAS_LED
+    #define BOARD_HAS_USER_BUTTON
     #define BOARD_HAS_I2C
     #define BOARD_HAS_NO_SPI1
     #define BOARD_HAS_SPI
@@ -24,6 +25,7 @@ unit Board // Adafruit ItsyBitsy
     const byte BuiltInNeoPixel = 17;
     const byte BuiltInNeoPixelLength = 1;
     const byte BuiltInNeoPixelPower = 16;
+    const byte UserButton = 13;
 
     const byte A0 = 26;
     const byte A1 = 27;
@@ -57,7 +59,7 @@ unit Board // Adafruit ItsyBitsy
     const byte GP10 = 10;
     const byte GP11 = 11; // BuiltInLED
     const byte GP12 = 12;
-    const byte GP13 = 13; // Boot Button
+    const byte GP13 = 13; // UserButton
     const byte GP14 = 14;
     const byte GP16 = 16; // BuiltInNeoPixelPower
     const byte GP17 = 17; // BuiltInNeoPixel

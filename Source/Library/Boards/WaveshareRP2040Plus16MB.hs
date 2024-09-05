@@ -3,7 +3,7 @@ unit Board // Waveshare RP2040 Plus 16MB
     #define WAVESHARE_RP2040_PLUS_16MB
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP
+    #define MCU_BOARD_RP2040
 
     // Note: see Attribution.md (in the same folder as this file)
     // https://mischianti.org/raspberry-pi-pico-high-resolution-pinout-and-specs/

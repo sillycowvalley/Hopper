@@ -3,7 +3,7 @@ unit Board // Waveshare RP2040 LCD 0.96
     #define WAVESHARE_RP2040_LCD_096
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP
+    #define MCU_BOARD_RP2040
 
     // Note: see Attribution.md (in the same folder as this file)
 

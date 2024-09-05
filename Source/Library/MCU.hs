@@ -75,18 +75,19 @@ unit MCU
     
     bool InterruptsEnabled { get library; set library; }
 
-#if defined(MCU_BOARD_RP)
+#if defined(MCU_BOARD_RP2040) || defined(MCU_BOARD_RP2350)
     Reboot(bool bootsel) library;
     
     // Use these two APIs to keep an eye on the health of your MCU memory:
     long HeapFree() library;  // Is there a leak in the system level stuff? 
     long StackFree() library; // Are we close to the stack limit?
-    
+
+#if defined(MCU_BOARD_RP2040)        
     enum RPClockSpeed // enum so that tested good values are obvious:
     {
         Slow48       =  48,   // have not managed to reliably go slower than this
         Slow50       =  50,   
-        Default133   = 133,   // default for Pi Pico
+        Default      = 133,   // default for RP2040
         Overclock240 = 240,   // overclock sets clock to 240 MHz
         Overclock250 = 250,   // overclock sets clock to 250 MHz
         //Overclock266 = 266,   
@@ -94,7 +95,18 @@ unit MCU
         //Overclock275 = 275, // doesn't work on USB voltage
         //Overclock300 = 300, // doesn't work on USB voltage
     }
-    
+#endif
+#if defined(MCU_BOARD_RP2350)        
+    enum RPClockSpeed // enum so that tested good values are obvious:
+    {
+        Slow48       =  48,   // have not managed to reliably go slower than this
+        Slow50       =  50,   
+        Slow133      = 133,   // emulate RP2040 default
+        Default      = 150,   // default for RP2350
+        Overclock300 = 300,   // overclock sets clock to 300 MHz
+        Overclock320 = 320,   // overclock sets clock to 300 MHz
+    }
+#endif    
     RPClockSpeed ClockSpeed { get library; set library; }
 #endif
 

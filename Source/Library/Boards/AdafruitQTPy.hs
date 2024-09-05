@@ -3,7 +3,7 @@ unit Board // Adafruit QT Py
     #define ADAFRUIT_QTPY
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP
+    #define MCU_BOARD_RP2040
 
     // Note: see Attribution.md (in the same folder as this file)
 
