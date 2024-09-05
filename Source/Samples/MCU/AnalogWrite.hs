@@ -1,11 +1,11 @@
 program AnalogWrite
 {
-    #define SERIAL_CONSOLE
-    #define RP2040_PICOW
-    uses "/Source/Library/MCU"
+    //uses "/Source/Library/Boards/AdaFruitItsyBitsy"
+    //uses "/Source/Library/Boards/AdaFruitQTPy"
+    uses "/Source/Library/Boards/AdaFruitFeather"
     
-    const byte ledA = 15;
-    const byte ledB = 16;
+    const byte ledA = A0;
+    const byte ledB = A1;
     {
         AnalogWriteResolution(10);
         uint fade;
