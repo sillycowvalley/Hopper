@@ -5,6 +5,8 @@ unit Board // Challenger 2040 NFC
     #define MCU_BOARD_DEFINED
     #define MCU_BOARD_RP
 
+    // Note: see Attribution.md (in the same folder as this file)
+
     #define BOARD_HAS_NEOPIXEL
     #define BOARD_HAS_LED
     #define BOARD_HAS_I2C
@@ -21,12 +23,12 @@ unit Board // Challenger 2040 NFC
     const byte BuiltInNeoPixel = 14;
     const byte BuiltInNeoPixelLength = 1;
 
-    const byte BuiltInA0 = 26;
-    const byte BuiltInA1 = 27;
-    const byte BuiltInA2 = 28;
-    const byte BuiltInA3 = 29;
-    const byte BuiltInA4 = 19;
-    const byte BuiltInA5 = 21;
+    const byte A0 = 26;
+    const byte A1 = 27;
+    const byte A2 = 28;
+    const byte A3 = 29;
+    const byte A4 = 19;
+    const byte A5 = 21;
     const byte ADCResolution = 12;
 
     const byte I2CSDA0 = 0;

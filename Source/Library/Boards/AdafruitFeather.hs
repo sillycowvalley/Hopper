@@ -4,9 +4,11 @@ unit Board // Adafruit Feather
 
     #define MCU_BOARD_DEFINED
     #define MCU_BOARD_RP
-    #define FORMFACTOR_FEATHER
 
+    // Note: see Attribution.md (in the same folder as this file)
     // https://learn.adafruit.com/adafruit-feather-rp2040-pico/pinouts
+
+    #define FORMFACTOR_FEATHER
 
     #define BOARD_HAS_NEOPIXEL
     #define BOARD_HAS_LED
@@ -23,10 +25,10 @@ unit Board // Adafruit Feather
     const byte BuiltInNeoPixel = 16;
     const byte BuiltInNeoPixelLength = 1;
 
-    const byte BuiltInA0 = 26;
-    const byte BuiltInA1 = 27;
-    const byte BuiltInA2 = 28;
-    const byte BuiltInA3 = 29;
+    const byte A0 = 26;
+    const byte A1 = 27;
+    const byte A2 = 28;
+    const byte A3 = 29;
     const byte ADCResolution = 12;
 
     const byte I2CSDA0 = 24;
@@ -46,7 +48,7 @@ unit Board // Adafruit Feather
     const byte GP1 = 1;   // UART1Rx
     const byte GP2 = 2;   // I2CSDA1 (STEMMA)
     const byte GP3 = 3;   // I2CSCL1 (STEMMA)
-    const byte GP6 = 6;
+    const byte GP6 = 6;   // corrected (physical 6 != D6)
     const byte GP7 = 7;
     const byte GP8 = 8;
     const byte GP9 = 9;
@@ -60,10 +62,10 @@ unit Board // Adafruit Feather
     const byte GP20 = 20; // SPI0Rx
     const byte GP24 = 24; // I2CSDA0
     const byte GP25 = 25; // I2CSCL0
-    const byte GP26 = 26; // BuiltInA0
-    const byte GP27 = 27; // BuiltInA1
-    const byte GP28 = 28; // BuiltInA2
-    const byte GP29 = 29; // BuiltInA3
+    const byte GP26 = 26; // A0
+    const byte GP27 = 27; // A1
+    const byte GP28 = 28; // A2
+    const byte GP29 = 29; // A3
 
     uses "/Source/Library/MCU"
 

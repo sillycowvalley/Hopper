@@ -5,6 +5,8 @@ unit Board // Solderparty RP2350 Stamp Xl
     #define MCU_BOARD_DEFINED
     #define MCU_BOARD_RP
 
+    // Note: see Attribution.md (in the same folder as this file)
+
     #define BOARD_HAS_LED
     #define BOARD_HAS_I2C
     #define BOARD_HAS_SPI
@@ -15,10 +17,10 @@ unit Board // Solderparty RP2350 Stamp Xl
 
     const byte BuiltInLED = 3;
 
-    const byte BuiltInA0 = 26;
-    const byte BuiltInA1 = 27;
-    const byte BuiltInA2 = 28;
-    const byte BuiltInA3 = 29;
+    const byte A0 = 26;
+    const byte A1 = 27;
+    const byte A2 = 28;
+    const byte A3 = 29;
     const byte ADCResolution = 12;
 
     const byte I2CSDA0 = 4;

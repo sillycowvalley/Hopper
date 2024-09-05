@@ -4,9 +4,11 @@ unit Board // Adafruit Feather Prop Maker
 
     #define MCU_BOARD_DEFINED
     #define MCU_BOARD_RP
-    #define FORMFACTOR_FEATHER
 
+    // Note: see Attribution.md (in the same folder as this file)
     // https://learn.adafruit.com/adafruit-feather-rp2040-pico/pinouts
+
+    #define FORMFACTOR_FEATHER
 
     #define BOARD_HAS_NEOPIXEL
     #define BOARD_HAS_LED
@@ -23,10 +25,10 @@ unit Board // Adafruit Feather Prop Maker
     const byte BuiltInNeoPixel = 4;
     const byte BuiltInNeoPixelLength = 1;
 
-    const byte BuiltInA0 = 26;
-    const byte BuiltInA1 = 27;
-    const byte BuiltInA2 = 28;
-    const byte BuiltInA3 = 29;
+    const byte A0 = 26;
+    const byte A1 = 27;
+    const byte A2 = 28;
+    const byte A3 = 29;
     const byte ADCResolution = 12;
 
     const byte I2CSDA1 = 2;

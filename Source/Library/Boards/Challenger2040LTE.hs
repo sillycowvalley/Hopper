@@ -5,6 +5,8 @@ unit Board // Challenger 2040 LTE
     #define MCU_BOARD_DEFINED
     #define MCU_BOARD_RP
 
+    // Note: see Attribution.md (in the same folder as this file)
+
     #define BOARD_HAS_LED
     #define BOARD_HAS_I2C
     #define BOARD_HAS_NO_I2C1
@@ -19,12 +21,12 @@ unit Board // Challenger 2040 LTE
 
     const byte BuiltInLED = 19;
 
-    const byte BuiltInA0 = 29;
-    const byte BuiltInA1 = 28;
-    const byte BuiltInA2 = 27;
-    const byte BuiltInA3 = 26;
-    const byte BuiltInA4 = 25;
-    const byte BuiltInA5 = 21;
+    const byte A0 = 29;
+    const byte A1 = 28;
+    const byte A2 = 27;
+    const byte A3 = 26;
+    const byte A4 = 25;
+    const byte A5 = 21;
     const byte ADCResolution = 12;
 
     const byte I2CSDA0 = 0;

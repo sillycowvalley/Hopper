@@ -5,6 +5,8 @@ unit Board // Challenger 2350 WiFi6 Ble5
     #define MCU_BOARD_DEFINED
     #define MCU_BOARD_RP
 
+    // Note: see Attribution.md (in the same folder as this file)
+
     #define BOARD_HAS_WIFI
     #define BOARD_HAS_LED
     #define BOARD_HAS_I2C
@@ -19,12 +21,12 @@ unit Board // Challenger 2350 WiFi6 Ble5
 
     const byte BuiltInLED = 7;
 
-    const byte BuiltInA0 = 29;
-    const byte BuiltInA1 = 28;
-    const byte BuiltInA2 = 27;
-    const byte BuiltInA3 = 26;
-    const byte BuiltInA4 = 1;
-    const byte BuiltInA5 = 17;
+    const byte A0 = 29;
+    const byte A1 = 28;
+    const byte A2 = 27;
+    const byte A3 = 26;
+    const byte A4 = 1;
+    const byte A5 = 17;
     const byte ADCResolution = 12;
 
     const byte I2CSDA0 = 20;
@@ -45,7 +47,7 @@ unit Board // Challenger 2350 WiFi6 Ble5
     const byte UART2Rx = 5;
 
     const byte GP0 = 13;
-    const byte GP1 = 12;  // BuiltInA4
+    const byte GP1 = 12;  // A4
     const byte GP5 = 23;  // UART2Rx
     const byte GP6 = 24;
     const byte GP9 = 25;  // SPI1SS

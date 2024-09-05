@@ -5,6 +5,8 @@ unit Board // Waveshare RP2040 LCD 0.96
     #define MCU_BOARD_DEFINED
     #define MCU_BOARD_RP
 
+    // Note: see Attribution.md (in the same folder as this file)
+
     #define BOARD_HAS_I2C
     #define BOARD_HAS_SPI
     #define BOARD_HAS_A0
@@ -12,10 +14,10 @@ unit Board // Waveshare RP2040 LCD 0.96
     #define BOARD_HAS_A2
     #define BOARD_HAS_A3
 
-    const byte BuiltInA0 = 26;
-    const byte BuiltInA1 = 27;
-    const byte BuiltInA2 = 28;
-    const byte BuiltInA3 = 29;
+    const byte A0 = 26;
+    const byte A1 = 27;
+    const byte A2 = 28;
+    const byte A3 = 29;
     const byte ADCResolution = 12;
 
     const byte I2CSDA0 = 8;

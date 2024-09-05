@@ -4,9 +4,11 @@ unit Board // PiPico
 
     #define MCU_BOARD_DEFINED
     #define MCU_BOARD_RP
-    #define FORMFACTOR_PICO
 
+    // Note: see Attribution.md (in the same folder as this file)
     // https://mischianti.org/raspberry-pi-pico-high-resolution-pinout-and-specs/
+
+    #define FORMFACTOR_PICO
 
     #define BOARD_HAS_LED
     #define BOARD_HAS_I2C
@@ -18,10 +20,10 @@ unit Board // PiPico
 
     const byte BuiltInLED = 25;
 
-    const byte BuiltInA0 = 26;
-    const byte BuiltInA1 = 27;
-    const byte BuiltInA2 = 28;
-    const byte BuiltInA3 = 29;
+    const byte A0 = 26;
+    const byte A1 = 27;
+    const byte A2 = 28;
+    const byte A3 = 29;
     const byte ADCResolution = 12;
 
     const byte I2CSDA0 = 4;
@@ -71,8 +73,8 @@ unit Board // PiPico
     const byte GP25 = 25; // BuiltInLED
     const byte GP26 = 26; // I2CSDA1
     const byte GP27 = 27; // I2CSCL1
-    const byte GP28 = 28; // BuiltInA2
-    const byte GP29 = 29; // BuiltInA3 (input:  used in ADC mode (A3) to measure VSYS/3)
+    const byte GP28 = 28; // A2
+    const byte GP29 = 29; // A3 (input:  used in ADC mode (A3) to measure VSYS/3)
 
     uses "/Source/Library/MCU"
 

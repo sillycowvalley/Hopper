@@ -5,6 +5,8 @@ unit Board // Seeed XIAO RP2040
     #define MCU_BOARD_DEFINED
     #define MCU_BOARD_RP
 
+    // Note: see Attribution.md (in the same folder as this file)
+
     #define BOARD_HAS_NEOPIXEL
     #define BOARD_HAS_NEOPIXEL_POWER
     #define BOARD_HAS_LED
@@ -26,10 +28,10 @@ unit Board // Seeed XIAO RP2040
     const byte BuiltInNeoPixelLength = 1;
     const byte BuiltInNeoPixelPower = 11;
 
-    const byte BuiltInA0 = 26;
-    const byte BuiltInA1 = 27;
-    const byte BuiltInA2 = 28;
-    const byte BuiltInA3 = 29;
+    const byte A0 = 26;
+    const byte A1 = 27;
+    const byte A2 = 28;
+    const byte A3 = 29;
     const byte ADCResolution = 12;
 
     const byte I2CSDA1 = 6;

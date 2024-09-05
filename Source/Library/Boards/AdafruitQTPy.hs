@@ -5,6 +5,10 @@ unit Board // Adafruit QT Py
     #define MCU_BOARD_DEFINED
     #define MCU_BOARD_RP
 
+    // Note: see Attribution.md (in the same folder as this file)
+
+    // https://github.com/adafruit/Adafruit-QT-Py-RP2040-PCB/blob/main/Adafruit%20QT%20Py%20RP2040%20Pinout.pdf
+
     #define BOARD_HAS_NEOPIXEL
     #define BOARD_HAS_NEOPIXEL_POWER
     #define BOARD_HAS_LED
@@ -21,10 +25,10 @@ unit Board // Adafruit QT Py
     const byte BuiltInNeoPixelLength = 1;
     const byte BuiltInNeoPixelPower = 11;
 
-    const byte BuiltInA0 = 29;
-    const byte BuiltInA1 = 28;
-    const byte BuiltInA2 = 27;
-    const byte BuiltInA3 = 26;
+    const byte A0 = 29;
+    const byte A1 = 28;
+    const byte A2 = 27;
+    const byte A3 = 26;
     const byte ADCResolution = 12;
 
     const byte I2CSDA0 = 24;
@@ -54,8 +58,8 @@ unit Board // Adafruit QT Py
     const byte GP23 = 23; // I2CSCL1 (STEMMA)
     const byte GP24 = 24; // I2CSDA0
     const byte GP25 = 25; // I2CSCL0
-    const byte GP26 = 26; // BuiltInA3
-    const byte GP27 = 27; // BuiltInA2
+    const byte GP26 = 26; // A3
+    const byte GP27 = 27; // A2
     const byte GP28 = 28; // UART1Tx
     const byte GP29 = 29; // UART1Rx
 
