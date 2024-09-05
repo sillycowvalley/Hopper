@@ -10,7 +10,7 @@ program Sieve
     {
         //ClockSpeed = RPClockSpeed.Slow133;
         //ClockSpeed = RPClockSpeed.Default; // 150 MHz
-        ClockSpeed = RPClockSpeed.Overclock300;    
+        ClockSpeed = RPClockSpeed.Overclock300;  
         
         uint i; 
         uint prime;

@@ -104,7 +104,6 @@ unit MCU
         Slow133      = 133,   // emulate RP2040 default
         Default      = 150,   // default for RP2350
         Overclock300 = 300,   // overclock sets clock to 300 MHz
-        Overclock320 = 320,   // overclock sets clock to 300 MHz
     }
 #endif    
     RPClockSpeed ClockSpeed { get library; set library; }

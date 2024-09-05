@@ -73,7 +73,7 @@ unit GPIO
         { 
             ledState = value;
             MCU.PinMode(Board.BuiltInLED, MCU.PinModeOption.Output);
-#if defined(PIMORONI_TINY2040)
+#if defined(PIMORONI_TINY2040) || defined(PIMORONI_TINY2350)
             value = !value; // false = ON?!
 #endif
             MCU.DigitalWrite(Board.BuiltInLED, value); 

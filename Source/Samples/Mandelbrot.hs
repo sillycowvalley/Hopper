@@ -5,7 +5,9 @@ program Mandelbrot
         
     Hopper()
     {
-        //ClockSpeed = RPClockSpeed.Overclock300;
+        //ClockSpeed = RPClockSpeed.Slow133;
+        //ClockSpeed = RPClockSpeed.Default;
+        ClockSpeed = RPClockSpeed.Overclock300;
         
         IO.Clear();
         IO.WriteLn();
@@ -53,5 +55,7 @@ program Mandelbrot
         } // next y
         long ms = (Millis - start); 
         IO.WriteLn(ms.ToString() + " " + " ms");
+        
+        Delay(3000);
     }
 }
