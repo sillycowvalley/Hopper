@@ -324,7 +324,13 @@ unit Display
         Suspend();
         if ((x0-r >= 0) && (y0-r >= 0) && (x0+r < PixelWidth) && (y0+r < PixelHeight))
         {
+#ifdef DISPLAY_IS_RGB565
+    #ifdef HAS_DISPLAY_READ
+            colour = (colour == Colour.Invert) ? colour : DisplayDriver.convertToRGB565(colour);
+    #else
             colour = DisplayDriver.convertToRGB565(colour);
+    #endif
+#endif
             DisplayDriver.setClippedTextPixel(x0, y0 + r, colour);
             DisplayDriver.setClippedTextPixel(x0, y0 - r, colour);
             DisplayDriver.setClippedTextPixel(x0 + r, y0, colour);

@@ -9,16 +9,22 @@ unit DeviceDriver
     #define HAS_BUTTONS
     #define SH110X_OLED_128x64
     
-    uses "/Source/Library/Displays/SH110XDriver"
- 
-    friend DisplayDriver;
-    
     const int pw =  64;
     const int ph = 128;
+    friend DisplayDriver;
+        
+    uses "/Source/Library/Displays/SH110XDriver"
     
+#if defined(CHALLENGER_NB_2040_WIFI) || defined(CHALLENGER_2040_WIFI)
+    const byte keyAPin = Board.GP6;
+    const byte keyBPin = Board.GP3;
+    const byte keyCPin = Board.GP2;
+#endif
+#if defined(ADAFRUIT_FEATHER)
     const byte keyAPin = Board.GP9;
     const byte keyBPin = Board.GP8;
     const byte keyCPin = Board.GP7;
+#endif    
     
     
     bool Begin()

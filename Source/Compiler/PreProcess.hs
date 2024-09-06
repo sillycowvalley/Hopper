@@ -43,7 +43,6 @@ program PreProcess
     string projectPath;
     <string, bool> unitsParsed;
     string programNamespace;
-    //bool newPreprocessor;
     
     bool normalizeIdentifier(<string,string> idToken, ref string identifier, ref bool public, bool noDuplicates)
     {
@@ -693,18 +692,10 @@ program PreProcess
                 Parser.ErrorAtCurrent("'uses' declaration must be alone on line");
                 break;
             }
-            if (true /*newPreprocessor*/)
-            {
-                parseUnit(usesPath, false);
-            }
-            else
-            {
-                usesPathLower = usesPath.ToLower();
-                if (!unitsParsed.Contains(usesPathLower))
-                {
-                    unitsParsed[usesPathLower] = false; // false means we're aware of it but we haven't parsed it yet
-                }
-            }
+            
+            //PrintLn("  uses \"" + usesPath + '"'); // REMOVE
+            
+            parseUnit(usesPath, false);
             break;
         }
     }
@@ -1672,141 +1663,9 @@ program PreProcess
         {
             Symbols.AddDefine(symbol, "true");
         }
-        //newPreprocessor = !(sourcePath.ToLower()).Contains("compile.");
-        if (true /*newPreprocessor*/)
-        {
-            parseUnit(sourcePath, true);
-            success = !Parser.HadError;
-        }
-        else
-        {
-            bool firstUnit = true;
-            loop
-            {
-                unitsParsed[sourcePath] = true; // sourcePath is about to be parsed
-                Parser.Reset();
-                
-                Directives.New();
-                               
-                Scanner.Load(sourcePath);
-                long pos;
-                Scanner.Reset(pos, 1, sourcePath);
-                Parser.Advance(); // load up first token
-                if (firstUnit)
-                {
-                    Parser.ConsumeKeyword("program");
-                    Parser.Consume(HopperToken.Identifier, "Program name identifier expected");
-                }
-                else
-                {
-                    Parser.ConsumeKeyword("unit");
-                    Parser.Consume(HopperToken.Identifier, "Unit name identifier expected");
-                }
-                if (Parser.HadError)
-                {
-                    success = false;
-                    break;
-                }
-                <string,string> previousToken = Parser.PreviousToken;
-                Types.CurrentNamespace = previousToken["lexeme"];
-                AddNameSpace(Types.CurrentNamespace, sourcePath);
-                
-                if (firstUnit)
-                {
-                    programNamespace = Types.CurrentNamespace;
-                }
-              
-                Parser.Consume(HopperToken.LBrace);
-                if (Parser.HadError)
-                {
-                    success = false;
-                    break;
-                }
-                firstUnit = false;
-                bool endedProperly = false;
-                uint curlyDeclarations;
-                string lastID;
-                uint progressCount = 0;
-                loop
-                {
-                    if (Parser.Check(HopperToken.EOF))
-                    {
-                        break;
-                    }
-                    if (Parser.Check(HopperToken.RBrace))
-                    {
-                        endedProperly = true;
-                        break;
-                    }
-                    if (Parser.HadError)
-                    {
-                        success = false;
-                        break;
-                    }
-                    declaration(ref curlyDeclarations, ref lastID, sourcePath);
-                    if (Parser.HadError)
-                    {
-                        success = false;
-                        break;
-                    }
-                    if (progressCount % 32 == 0)
-                    {
-                        Parser.ProgressTick("p"); // preprocess
-                    }
-                    progressCount++;
-                }   
-                if (Parser.HadError)
-                {
-                    // already seen error message
-                    success = false;
-                }
-                else if (!endedProperly)
-                {
-                    // can't "Consume" at the end of the file
-                    string message = "'}' expected";
-                    if (lastID.Length != 0)
-                    {
-                        message = " missing '}', opening '{' in " + lastID;
-                    }
-                    Parser.Error(message);
-                    success = false;
-                }
-                else
-                {
-                    uint mIndex;
-                    if (!Symbols.GetFunctionIndex("Hopper", ref mIndex))
-                    {
-                        Parser.Error("program requires entry point");
-                        success = false;
-                    }
-                    else if (Directives.IsStillOpen)
-                    {
-                        Parser.ErrorAtCurrent("'#endif' expected before end of file");
-                        success = false;
-                    }
-                }
-                if (Parser.HadError)
-                {
-                    success = false;
-                    break;
-                }
-                // any more units to parse?
-                sourcePath = "";
-                if (sourcePath.Length == 0) 
-                {
-                    foreach (var kv in unitsParsed)
-                    {
-                        if (!kv.value)
-                        {
-                            // not yet parsed
-                            sourcePath = kv.key;
-                            break;
-                        }
-                    }
-                }
-                if (sourcePath.Length == 0) { break; }
-            } // loop
-        } // !IsExperimental
+        
+        parseUnit(sourcePath, true);
+        success = !Parser.HadError;
         if (success)
         {
             success = Constant.ResolveUnresolveds();

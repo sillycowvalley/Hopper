@@ -211,17 +211,20 @@ unit Directives
             bool allDefined = Directives.IsAllDefined();
             if (allDefined) // otherwise ignore it
             {
-                if (Symbols.DefineExists(idToken["lexeme"]))
+                string symbol = idToken["lexeme"];
+                if (Symbols.DefineExists(symbol))
                 {
                     Parser.ErrorAtCurrent("preprocessor symbol can only be defined once");
                     break;
                 }
-                if (idToken["lexeme"] == "EXPERIMENTAL")
+                if (symbol == "EXPERIMENTAL")
                 {
                     IsExperimental = true;
                 }
-                Symbols.AddDefine(idToken["lexeme"], value);
-                Symbols.AddLocation(idToken["lexeme"], idToken["source"] + ":" + idToken["line"]);
+                Symbols.AddDefine(symbol, value);
+                Symbols.AddLocation(symbol, idToken["source"] + ":" + idToken["line"]);
+                
+                //PrintLn("#define " + symbol + " in " + idToken["source"]); // REMOVE
             }
             break;
         }

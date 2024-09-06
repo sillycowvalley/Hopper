@@ -17,6 +17,30 @@ unit Constant
         string result;
         long   lresult;
         float  fresult;
+        
+        if (leftValue.StartsWith("unresolved,"))
+        {
+            // "unresolved,lexeme,line,source,identifier"
+            <string> parts = leftValue.Split(',');
+            string identifier = parts[4];
+            if (!Symbols.ConstantExists(identifier))
+            {
+                Parser.ErrorAtCurrent("undefined constant identifier '" + identifier + "'");
+                return result;
+            }
+        }
+        if (rightValue.StartsWith("unresolved,"))
+        {
+            // "unresolved,lexeme,line,source,identifier"
+            <string> parts = rightValue.Split(',');
+            string identifier = parts[4];
+            if (!Symbols.ConstantExists(identifier))
+            {
+                Parser.ErrorAtCurrent("undefined constant identifier '" + identifier + "'");
+                return result;
+            }
+        }
+        
         string message = typeExpected + "." + HopperTokenToString(operation) + "(" + leftValue + ", " + rightValue + ")";
         loop
         {
@@ -464,6 +488,7 @@ unit Constant
                         }
                         else
                         {
+                            
                             if (pass == 0)
                             {
                                 //  Keyboard.Key ->  Keyboard.Key.Escape

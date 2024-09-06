@@ -1,11 +1,17 @@
 program OLEDdemo
 {
-    //uses "/Source/Library/Devices/Adafruit128x64OLEDFeatherwing"
-    
-    uses "/Source/Library/Boards/AdafruitQTPy"
-    uses "/Source/Library/Displays/OLEDSSD1306"    
-    
     uses "/Source/Library/Fonts/System5x7"
+
+    uses "/Source/Library/Boards/ChallengerNB2040WiFi"    
+    uses "/Source/Library/Devices/Adafruit128x64OLEDFeatherwing"
+    
+    //uses "/Source/Library/Boards/AdafruitQTPy"
+    //uses "/Source/Library/Displays/OLEDSSD1306"    
+    
+    ButtonISR(byte pin, PinStatus status) 
+    { 
+        IO.WriteLn("    Pressed: '" + PinToButton(pin) + "'");  
+    }    
     
     testTextChars()
     {
@@ -226,10 +232,11 @@ program OLEDdemo
 // SSD1306_OLED_128x64
 
         //IsPortrait = true;
-        FlipY = true;
-        FlipX = true;
+        //FlipY = true;
+        //FlipX = true;
         
-        if (!Display.Begin())
+        PinISRDelegate buttonDelegate = ButtonISR;
+        if (!DeviceDriver.Begin(buttonDelegate))
         {
             IO.WriteLn("Failed to initialize display");
             return;
@@ -242,12 +249,6 @@ program OLEDdemo
             testScreenClear();
             Delay(500);
             
-            testTextChars();
-            Delay(500);
-            testText();
-            Delay(500);
-            break;
- 
             testLines();
             Delay(500);
             
