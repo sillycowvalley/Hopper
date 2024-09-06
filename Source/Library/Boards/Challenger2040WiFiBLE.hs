@@ -49,28 +49,26 @@ unit Board // Challenger 2040 WiFi BLE
     const byte UART2Tx = 4;
     const byte UART2Rx = 5;
 
-    const byte GP0 = 16;  // I2CSDA0
-    const byte GP1 = 17;  // I2CSCL0
-    const byte GP2 = 20;
-    const byte GP3 = 23;
-    const byte GP4 = 22;  // UART2Tx
-    const byte GP5 = 2;   // UART2Rx
-    const byte GP6 = 3;
-    const byte GP7 = 0;
-    const byte GP8 = 1;
-    const byte GP9 = 6;
-    const byte GP10 = 7;  // BuiltInLED
-    const byte GP11 = 8;  // BuiltInNeoPixel
-    const byte GP12 = 9;  // SPI1Rx
-    const byte GP13 = 10; // SPI1SS
-    const byte GP14 = 11; // SPI1SCK
-    const byte GP15 = 12; // SPI1Tx
-    const byte GP16 = 13; // UART1Tx
-    const byte GP17 = 14; // UART1Rx
-    const byte GP18 = 15;
-    const byte GP19 = 18;
-    const byte GP20 = 19;
-    const byte GP21 = 24; // SPI0SS
+    const byte GP26 = 26; // A0
+    const byte GP27 = 27; // A1
+    const byte GP28 = 28; // A2
+    const byte GP29 = 29; // A3
+    const byte GP25 = 25; // A4
+    const byte GP21 = 21; // SPI0SS
+    const byte GP22 = 22; // SPI0SCK
+    const byte GP23 = 23; // SPI0Tx
+    const byte GP20 = 20;
+    const byte GP17 = 17; // UART1Rx
+    const byte GP16 = 16; // UART1Tx
+    const byte GP10 = 10; // BuiltInLED
+    const byte GP9 = 9;
+    const byte GP8 = 8;
+    const byte GP7 = 7;
+    const byte GP6 = 6;
+    const byte GP3 = 3;
+    const byte GP2 = 2;
+    const byte GP1 = 1;   // I2CSCL0
+    const byte GP0 = 0;   // I2CSDA0
 
     uses "/Source/Library/MCU"
 

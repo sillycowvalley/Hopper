@@ -96,6 +96,15 @@ Bool External_MCUInterruptsEnabledGet()
 void External_MCUInterruptsEnabledSet(Bool value)
 {
     interruptsEnabled = value;
+    if (value)
+    {
+        interrupts();
+    }
+    else
+    {
+        noInterrupts();
+    }
+   
 }
 
 void External_ServiceInterrupts()

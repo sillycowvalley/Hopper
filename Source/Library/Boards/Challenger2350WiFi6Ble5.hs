@@ -46,15 +46,26 @@ unit Board // Challenger 2350 WiFi6 Ble5
     const byte UART2Tx = 4;
     const byte UART2Rx = 5;
 
-    const byte GP0 = 13;
-    const byte GP1 = 12;  // A4
-    const byte GP5 = 23;  // UART2Rx
-    const byte GP6 = 24;
-    const byte GP9 = 25;  // SPI1SS
-    const byte GP10 = 2;  // SPI1SCK
-    const byte GP11 = 3;  // SPI1Tx
-    const byte GP12 = 6;  // UART1Tx
-    const byte GP13 = 7;  // UART1Rx
+    const byte GP26 = 26; // A3
+    const byte GP27 = 27; // A2
+    const byte GP28 = 28; // A1
+    const byte GP29 = 29; // A0
+    const byte GP25 = 25;
+    const byte GP21 = 21; // I2CSCL0
+    const byte GP22 = 22;
+    const byte GP23 = 23;
+    const byte GP20 = 20; // I2CSDA0
+    const byte GP17 = 17; // SPI0SS
+    const byte GP16 = 16; // SPI0Rx
+    const byte GP10 = 10; // SPI1SCK
+    const byte GP9 = 9;   // SPI1SS
+    const byte GP8 = 8;   // SPI1Rx
+    const byte GP7 = 7;   // BuiltInLED
+    const byte GP6 = 6;
+    const byte GP3 = 3;
+    const byte GP2 = 2;
+    const byte GP1 = 1;   // A4
+    const byte GP0 = 0;
 
     uses "/Source/Library/MCU"
 
