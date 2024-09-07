@@ -1,11 +1,14 @@
 program TFTandSDdemo
 {
-    uses "/Source/Library/Boards/SparkfunProMicroRP2040"
+    uses "/Source/Library/Fonts/Hitachi5x7"
+    
+    uses "/Source/Library/Boards/PiPicoW"
+    //uses "/Source/Library/Boards/SparkfunProMicroRP2040"
     uses "/Source/Library/Devices/Adafruit240x135ColorTFT"
     
     uses "/Source/Library/Graphics/Vectors"
     
-    uses "/Source/Library/Fonts/Hitachi5x7"
+    
     
     const string lorumIpsum = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse iaculis tortor vitae imperdiet tempus. Quisque eget sapien ex. Donec molestie tincidunt sem imperdiet condimentum. Nulla facilisi. Class aptent taciti sociosqu ad litora vestibulum.";
 
@@ -81,9 +84,9 @@ program TFTandSDdemo
         //FlipX = true;
         //FlipY = true;
         
-        DeviceDriver.SDCS = Board.GP29;
+        DeviceDriver.SDCS = Board.GP12;
         DeviceDriver.CS   = Board.SPI0SS;
-        DeviceDriver.DC   = Board.GP28;
+        DeviceDriver.DC   = Board.GP13;
         
         if (!DeviceDriver.Begin())
         {
@@ -94,12 +97,11 @@ program TFTandSDdemo
         if (!SD.Mount())
         {
             IO.WriteLn("Failed to mount SD card");
-            return;
+            //return;
         }
         
         loop
         {
-            /*
             DrawRGB();
             DelaySeconds(3);
             
@@ -111,8 +113,9 @@ program TFTandSDdemo
             
             DrawText();
             DelaySeconds(3);
-            */
-            
+        }
+        loop
+        {   
             <string> imagePaths;
             
             directory dir = Directory.Open("/sd/content/");

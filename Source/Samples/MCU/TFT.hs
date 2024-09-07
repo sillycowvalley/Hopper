@@ -1,5 +1,7 @@
 program TFTandSDdemo
 {
+    uses "/Source/Library/Fonts/System5x7"
+    
     //uses "/Source/Library/Boards/SparkfunThingPlusRP2040"
     //uses "/Source/Library/Devices/Generic320x200ILI9341TFT"
 
@@ -7,9 +9,10 @@ program TFTandSDdemo
     //uses "/Source/Library/Devices/Adafruit240x135ColorTFT"
     //uses "/Source/Library/Devices/Adafruit160x80ColorTFT"
     
-    //uses "/Source/Library/Boards/PiPicoW"
-    uses "/Source/Library/Boards/PiPico"
-    uses "/Source/Library/Devices/Generic320x200ILI9341TFT"
+    uses "/Source/Library/Boards/PiPicoW"
+    //uses "/Source/Library/Boards/PiPico"
+    uses "/Source/Library/Devices/Adafruit240x135ColorTFT"
+    //uses "/Source/Library/Devices/Generic320x200ILI9341TFT"
     //uses "/Source/Library/Devices/Generic480x320ST7796TFT"
     
     //uses "/Source/Library/Devices/WSPicoLCD114"
@@ -17,7 +20,7 @@ program TFTandSDdemo
     //uses "/Source/Library/Devices/WSPicoLCD144"
     //uses "/Source/Library/Devices/WSRP2040LCD096"
     
-    uses "/Source/Library/Fonts/System5x7"
+    
     
     const string lorumIpsum = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse iaculis tortor vitae imperdiet tempus. Quisque eget sapien ex. Donec molestie tincidunt sem imperdiet condimentum. Nulla facilisi. Class aptent taciti sociosqu ad litora vestibulum.";
 
@@ -416,9 +419,9 @@ program TFTandSDdemo
  
 #if defined(ADAFRUIT_TFT_114) || defined(ADAFRUIT_TFT_096)
         // Adafruit240x135ColorTFT, Adafruit160x80ColorTFT:
-        DeviceDriver.SDCS = Board.GP29;
+        DeviceDriver.SDCS = Board.GP12;
         DeviceDriver.CS   = Board.SPI0SS;
-        DeviceDriver.DC   = Board.GP28;
+        DeviceDriver.DC   = Board.GP13;
         IsPortrait = true;
         FlipX = true;
         FlipY = true;

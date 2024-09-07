@@ -73,11 +73,12 @@ unit IO
         Serial.WriteChar(Char.Formfeed);
         if (echoToLCD)
         {
-#ifdef RUNTIME
+  #ifdef RUNTIME
             HRScreen.Clear();
-#else
+  #endif
+  #if !defined(RUNTIME) && defined(DISPLAY_DRIVER)
             Screen.Clear();
-#endif
+  #endif
         }
 #else        
         Screen.Clear();
@@ -134,7 +135,7 @@ unit IO
     Write(char c)
     {
         Serial.WriteChar(c);
-#ifndef RUNTIME
+#if !defined(RUNTIME) && defined(DISPLAY_DRIVER)
         if (echoToLCD)
         {
             if (Char.EOL == c)

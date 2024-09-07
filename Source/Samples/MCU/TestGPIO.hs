@@ -1,11 +1,13 @@
 program TestGPIO
 {
+    uses "/Source/Library/Boards/PiPicoW"
+    
     //uses "/Source/Library/Boards/AdafruitFeather"
     //uses "/Source/Library/Boards/AdafruitItsyBitsy"
     //uses "/Source/Library/Boards/AdafruitQTPy"
     //uses "/Source/Library/Boards/Challenger2040WiFi"
     
-    uses "/Source/Library/Boards/ChallengerNB2040WiFi"
+    //uses "/Source/Library/Boards/ChallengerNB2040WiFi"
     
     //uses "/Source/Library/Boards/SparkfunProMicroRP2040"
     
@@ -14,7 +16,7 @@ program TestGPIO
     
     Hopper()
     {
-        byte pin = GP10;
+        byte pin = GP17;
         PinMode(pin, PinModeOption.Output);
         
         for (byte iterations = 0; iterations < 10; iterations++)

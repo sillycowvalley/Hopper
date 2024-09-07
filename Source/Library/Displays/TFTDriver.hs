@@ -119,7 +119,7 @@ unit DisplayDriver
       TFT_VMCTR1 , 1      ,  // 12: Power control, 1 arg, no delay:
         0x0E,
 
-      TFT_INVON , 0      ,         // 13: 
+      TFT_INVON , 0      ,   // 13: 
       TFT_MADCTL      , 1,      MADCTL_BGR,              // Memory Access Control
       
       TFT_PIXFMT , 1      ,  // 15: set colour mode, 1 arg, no delay:
