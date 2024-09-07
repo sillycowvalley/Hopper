@@ -2,14 +2,19 @@ program ScalePicoW
 {
     uses "/Source/Library/Fonts/Verdana5x8"
     
-    uses "/Source/Library/Boards/PiPicoW"
-    uses "/Source/Library/Devices/Generic160x128ST7735TFT"
+    //uses "/Source/Library/Boards/PiPicoW"
+    //uses "/Source/Library/Devices/Generic160x128ST7735TFT"
     
-    //uses "/Source/Library/Boards/ChallengerNB2040WiFi"
-    //uses "/Source/Library/Devices/Adafruit128x64OLEDFeatherwing"
+    uses "/Source/Library/Boards/ChallengerNB2040WiFi"
+    uses "/Source/Library/Devices/Adafruit128x64OLEDFeatherwing"
     
     
     uses "/Source/Library/Devices/HX711"
+    
+#ifdef OLED_FEATHERWING_128x64
+    const byte textLeft  = 0;
+    const byte textWidth = 10;
+#endif
     
 #ifdef ST7735_TFT_160x128    
     const byte TFTCS = Board.SPI0SS;
@@ -19,6 +24,9 @@ program ScalePicoW
     const byte CELLDATA = Board.GP15;
     
     const byte RESETBUTTON = Board.GP12;
+    
+    const byte textLeft  = 5;
+    const byte textWidth = 10;
 #endif
     
     const long gramFactor = 246; // calibrated using a gym weight (number of grams per reading from the HX711)
@@ -46,7 +54,9 @@ program ScalePicoW
         Display.Suspend();
 
         Screen.Clear(); // reset col and row to [0,0]
-        Screen.PrintLn("Tare Set");
+        Screen.CursorX = textLeft;
+        Screen.CursorY = 0;
+        Screen.Print("Tare Set");
         
         prevMax = -1;
         prevTotal = -1;
@@ -59,25 +69,32 @@ program ScalePicoW
         long kg = maxGrams / 1000;
         long grams = maxGrams - (kg * 1000);
         string gstring = (grams.ToString()).LeftPad('0', 3);
+        string weight = (kg.ToString() + "." + gstring + " kg").LeftPad(' ', textWidth);
         if (last)
         {
-            IO.WriteLn("Measured " + kg.ToString() + "." + gstring + " kg");
+            IO.WriteLn("Measured " + weight);
         }
         
         Display.Suspend();
         
-        Screen.CursorX = 0;
+        Screen.CursorX = textLeft;
         Screen.CursorY = 0;
-        Screen.Print(kg.ToString() + "." + gstring + " kg", Colour.MatrixGreen, Colour.Black); // top text line (max)
+        Screen.Print(weight, Colour.MatrixGreen, Colour.Black); // top text line (max)
         
+        Screen.CursorX = textLeft;
+        Screen.CursorY = 1;
         if (!last)
         {
             kg = totalGrams / 1000;
             grams = totalGrams - (kg * 1000);
             gstring = (grams.ToString()).LeftPad('0', 3);
-            Screen.CursorX = 0;
-            Screen.CursorY = 1;
-            Screen.Print(kg.ToString() + "." + gstring + " kg", Colour.MatrixOrange, Colour.Black); // 2nd text line (current)
+            weight = (kg.ToString() + "." + gstring + " kg").LeftPad(' ', textWidth);
+            Screen.Print(weight, Colour.MatrixOrange, Colour.Black); // 2nd text line (current)
+        }
+        else
+        {
+            weight = (" ").LeftPad(' ', textWidth);
+            Screen.Print(weight, Colour.MatrixOrange, Colour.Black); // 2nd text line (current)
         }
         
         long lineGrams = maxGrams * PixelHeight / 12000; // 12kg for entire display
