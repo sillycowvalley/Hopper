@@ -1,33 +1,11 @@
-program ScalePicoW
+program ScaleProject
 {
     uses "/Source/Library/Fonts/Verdana5x8"
     
-    //uses "/Source/Library/Boards/PiPicoW"
-    //uses "/Source/Library/Devices/Generic160x128ST7735TFT"
-    
-    uses "/Source/Library/Boards/ChallengerNB2040WiFi"
-    uses "/Source/Library/Devices/Adafruit128x64OLEDFeatherwing"
-    
+    //uses "PiPicoWHardware"
+    uses "ChallengerHardware"
     
     uses "/Source/Library/Devices/HX711"
-    
-#ifdef OLED_FEATHERWING_128x64
-    const byte textLeft  = 0;
-    const byte textWidth = 10;
-#endif
-    
-#ifdef ST7735_TFT_160x128    
-    const byte TFTCS = Board.SPI0SS;
-    const byte DATACONTROL = Board.GP13;
-    
-    const byte CELLCLOCK = Board.GP14;
-    const byte CELLDATA = Board.GP15;
-    
-    const byte RESETBUTTON = Board.GP12;
-    
-    const byte textLeft  = 5;
-    const byte textWidth = 10;
-#endif
     
     const long gramFactor = 246; // calibrated using a gym weight (number of grams per reading from the HX711)
     
@@ -54,7 +32,7 @@ program ScalePicoW
         Display.Suspend();
 
         Screen.Clear(); // reset col and row to [0,0]
-        Screen.CursorX = textLeft;
+        Screen.CursorX = Hardware.TextLeft;
         Screen.CursorY = 0;
         Screen.Print("Tare Set");
         
@@ -69,7 +47,7 @@ program ScalePicoW
         long kg = maxGrams / 1000;
         long grams = maxGrams - (kg * 1000);
         string gstring = (grams.ToString()).LeftPad('0', 3);
-        string weight = (kg.ToString() + "." + gstring + " kg").LeftPad(' ', textWidth);
+        string weight = (kg.ToString() + "." + gstring + " kg").LeftPad(' ', Hardware.TextWidth);
         if (last)
         {
             IO.WriteLn("Measured " + weight);
@@ -77,23 +55,23 @@ program ScalePicoW
         
         Display.Suspend();
         
-        Screen.CursorX = textLeft;
+        Screen.CursorX = Hardware.TextLeft;
         Screen.CursorY = 0;
         Screen.Print(weight, Colour.MatrixGreen, Colour.Black); // top text line (max)
         
-        Screen.CursorX = textLeft;
+        Screen.CursorX = Hardware.TextLeft;
         Screen.CursorY = 1;
         if (!last)
         {
             kg = totalGrams / 1000;
             grams = totalGrams - (kg * 1000);
             gstring = (grams.ToString()).LeftPad('0', 3);
-            weight = (kg.ToString() + "." + gstring + " kg").LeftPad(' ', textWidth);
+            weight = (kg.ToString() + "." + gstring + " kg").LeftPad(' ', Hardware.TextWidth);
             Screen.Print(weight, Colour.MatrixOrange, Colour.Black); // 2nd text line (current)
         }
         else
         {
-            weight = (" ").LeftPad(' ', textWidth);
+            weight = (" ").LeftPad(' ', Hardware.TextWidth);
             Screen.Print(weight, Colour.MatrixOrange, Colour.Black); // 2nd text line (current)
         }
         
@@ -136,43 +114,11 @@ program ScalePicoW
     {
         ////////////////////
         // Initialization:
-        
-        // Overclocking to meet the clock criteria for the HX711 (see HX711.shiftIn())
-        ClockSpeed = RPClockSpeed.Overclock250;
-        
-#if defined(ST7735_TFT_160x128)
-        Screen.ForeColour = Colour.White;
-        Screen.BackColour = Colour.Black;
-        
-        DeviceDriver.CS   = TFTCS;
-        DeviceDriver.DC   = DATACONTROL;
-        IsPortrait = true;
-        FlipX = true;
-        FlipY = false;
-
-        // configuring the Tare reset button:
-        MCU.PinISRDelegate buttonDelegate = ButtonISR;
-        MCU.PinMode(RESETBUTTON, PinModeOption.InputPullup);
-        _ = MCU.AttachToPin(RESETBUTTON, buttonDelegate, PinStatus.Rising);
-        
-        if (!DeviceDriver.Begin())
-        {
-            IO.WriteLn("Failed to initialize display");
-            return;
-        }
-        cell = HX711.Create(CELLDATA, CELLCLOCK);
-#endif   
-#if defined(OLED_FEATHERWING_128x64)
-        IsPortrait = true;
         PinISRDelegate buttonDelegate = ButtonISR;
-        if (!DeviceDriver.Begin(buttonDelegate))
+        if (!Hardware.Initialize(ref cell, buttonDelegate))
         {
-            IO.WriteLn("Failed to initialize Adafruit 128x64 OLED Featherwing");
-            return;
+            return; // failed
         }
-        cell = HX711.Create(GP17, GP16);
-#endif     
-        
         
         Reset();
         
