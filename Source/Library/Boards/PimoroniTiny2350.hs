@@ -11,7 +11,6 @@ unit Board // Pimoroni Tiny2350
     #define BOARD_HAS_RGBLED
     #define BOARD_HAS_USER_BUTTON
     #define BOARD_HAS_I2C
-    #define BOARD_HAS_NO_SPI1
     #define BOARD_HAS_SPI
     #define BOARD_HAS_A0
     #define BOARD_HAS_A1
@@ -30,15 +29,19 @@ unit Board // Pimoroni Tiny2350
     const byte A3 = 29;
     const byte ADCResolution = 12;
 
-    const byte I2CSDA0 = 4;
-    const byte I2CSCL0 = 5;
+    const byte I2CSDA0 = 12;
+    const byte I2CSCL0 = 13;
     const byte I2CSDA1 = 6;
     const byte I2CSCL1 = 7;
 
     const byte SPI0Tx = 7;
     const byte SPI0Rx = 4;
     const byte SPI0SCK = 6;
-    const byte SPI0SS = 17;
+    const byte SPI0SS = 5;
+    const byte SPI1Tx = 27;
+    const byte SPI1Rx = 28;
+    const byte SPI1SCK = 26;
+    const byte SPI1SS = 29;
 
     const byte UART1Tx = 0;
     const byte UART1Rx = 1;
@@ -53,14 +56,16 @@ unit Board // Pimoroni Tiny2350
     const byte GP5 = 5;   // UART2Rx
     const byte GP6 = 6;   // SPI0SCK
     const byte GP7 = 7;   // SPI0Tx
+    const byte GP12 = 12; // I2CSDA0
+    const byte GP13 = 13; // I2CSCL0
     const byte GP18 = 18; // BuiltInLEDR
     const byte GP19 = 19; // BuiltInLEDG
     const byte GP20 = 20; // BuiltInLEDB
     const byte GP23 = 23; // UserButton
-    const byte GP26 = 26; // A0
-    const byte GP27 = 27; // A1
-    const byte GP28 = 28; // A2
-    const byte GP29 = 29; // A3
+    const byte GP26 = 26; // SPI1SCK
+    const byte GP27 = 27; // SPI1Tx
+    const byte GP28 = 28; // SPI1Rx
+    const byte GP29 = 29; // SPI1SS
 
     uses "/Source/Library/MCU"
 
