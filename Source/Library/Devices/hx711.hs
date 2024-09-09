@@ -54,6 +54,11 @@ unit HX711
         return !DigitalRead(cell.dataPin);
     }
     
+    SetTare(LoadCell cell, long tare)
+    {
+        cell.offset = tare;
+    }
+    
     waitReady(LoadCell cell) 
     {
         loop
@@ -90,7 +95,7 @@ unit HX711
         return value;
     }
     
-    long Read(LoadCell cell)
+    long Read(LoadCell cell, bool useTare)
     {
         // Wait for the chip to become ready.
         waitReady(cell);
@@ -129,6 +134,10 @@ unit HX711
         }
         
         value = Long.FromBytes(data[0], data[1], data[2], data[3]);
+        if (useTare)
+        {
+            value = value - cell.offset;
+        }
         return value;
     }
 }
