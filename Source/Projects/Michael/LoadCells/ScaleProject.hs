@@ -2,8 +2,8 @@ program ScaleProject
 {
     uses "/Source/Library/Fonts/Verdana5x8"
     
-    //uses "PiPicoWHardware"
-    uses "ChallengerHardware"
+    uses "PiPicoWHardware"
+    //uses "ChallengerHardware"
     
     uses "/Source/Library/Devices/HX711"
     

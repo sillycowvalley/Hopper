@@ -17,7 +17,7 @@ unit Hardware
     byte TextLeft { get { return textLeft; } } 
     byte TextWidth { get { return textWidth; } } 
     
-    bool Initialize(ref LoadCell cell)
+    bool Initialize(ref LoadCell cell, PinISRDelegate buttonDelegate)
     {
         // Overclocking to meet the clock criteria for the HX711 (see HX711.shiftIn())
         ClockSpeed = RPClockSpeed.Overclock270;
@@ -30,9 +30,9 @@ unit Hardware
         IsPortrait = true;
         FlipX = true;
         FlipY = false;
+        
         // configuring the Tare reset button:
-        MCU.PinISRDelegate buttonDelegate = ButtonISR;
-        MCU.PinMode(RESETBUTTON, PinModeOption.InputPullup);
+        MCU.PinMode(RESETBUTTON, PinModeOption.Input);
         _ = MCU.AttachToPin(RESETBUTTON, buttonDelegate, PinStatus.Rising);
         
         if (!DeviceDriver.Begin())
