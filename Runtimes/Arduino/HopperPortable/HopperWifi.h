@@ -5,7 +5,7 @@
 #include "Runtime.h"
 #include "Platform.h"
 
-#if defined(RP2040PICOW) || defined(ARDUINONANO_RP2040) || defined(CHALLENGER_RP2040_WIFI)
+#if defined(RP2040PICOW) || defined(ARDUINONANO_RP2040) || defined(USESWIFIESPAT)
 #define USEWIFI       // WiFi for Raspberry Pi Pico W
 #define USESERVER
 #endif
@@ -26,7 +26,7 @@
 #include <WiFiNINA.h>
 #endif
 
-#ifdef CHALLENGER_RP2040_WIFI
+#ifdef USESWIFIESPAT
 #include <ChallengerWiFi.h>
 #include <WiFiEspAT.h>
 #endif

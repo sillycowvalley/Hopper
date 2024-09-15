@@ -31,7 +31,7 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 // - no WiFi
 //
 #if defined(ARDUINO_RASPBERRY_PI_PICO_2)
-#define RP2040PICO2
+#define RP2350PICO2
 #define USESDFS
 #endif
 
@@ -39,9 +39,15 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 // - LittleFS for built-in Flash
 // - WiFiEspAT
 //
-#if defined(ARDUINO_CHALLENGER_2040_WIFI_RP2040)
+#if defined(ARDUINO_CHALLENGER_2040_WIFI_RP2040) || defined(ARDUINO_CHALLENGER_2040_WIFI6_BLE_RP2040) || defined(ARDUINO_CHALLENGER_2040_WIFI_BLE_RP2040)
 #define CHALLENGER_RP2040_WIFI
-#define USELITTLEFS
+#define USESWIFIESPAT
+#endif
+
+#if defined(ARDUINO_CHALLENGER_2350_WIFI_BLE_RP2350)
+#define CHALLENGER_RP2350_WIFI
+#define USESDFS
+#define USESWIFIESPAT
 #endif
 
 // Arduino Connect RP2040
@@ -85,7 +91,14 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 // - exit TERM then run HM!
 
 // Just use 'ARDUINO_ARCH_RP2040' ?
-#if defined(RP2040PICO) || defined(RP2040PICO2) || defined(RP2040PICOW) || defined(ARDUINONANO_RP2040) || defined(CHALLENGER_RP2040_WIFI)
+#if defined(RP2040PICO) || defined(RP2040PICOW) || defined(ARDUINONANO_RP2040) || defined(CHALLENGER_RP2040_WIFI)
+#define RP2040
+#define SPI_INCLUDED
+#define USETIMER
+#define USELITTLEFS
+#endif
+
+#if defined(RP2350PICO2) || defined(CHALLENGER_RP2350_WIFI)
 #define RP2040
 #define SPI_INCLUDED
 #define USETIMER

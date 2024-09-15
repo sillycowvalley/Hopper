@@ -277,7 +277,7 @@ void External_WebServerEvents()
                         // The HTTP response ends with another blank line:
                         client.println();
 
-#if defined(CHALLENGER_RP2040_WIFI) || defined(RP2040PICOW)
+#if defined(USESWIFIESPAT) || defined(RP2040PICOW)
                         client.flush(); // PLATFORM
 #endif
                         // close the connection after we return from the handler
@@ -354,12 +354,12 @@ void External_WebServerSend(UInt httpCode, UInt hrheaderContent, UInt hrcontent)
 void External_WebServerBegin(UInt port) { if (IsWiFiConnected()) { server.begin(); } }
 
 #ifdef ARDUINONANO_RP2040
-void External_WebServerClose() {} // PLATFORM
+void External_WebServerClose() {}
 #endif // ARDUINONANO_RP2040
 
 
-#if defined(CHALLENGER_RP2040_WIFI) || defined(RP2040PICOW)
-void External_WebServerClose() { if (IsWiFiConnected()) { server.end(); } } // PLATFORM :  end() is the same as close() for RP2040PICOW
+#if defined(USESWIFIESPAT) || defined(RP2040PICOW)
+void External_WebServerClose() { if (IsWiFiConnected()) { server.end(); } } // end() is the same as close() for RP2040PICOW
 #endif
 
 #endif // USEWIFI

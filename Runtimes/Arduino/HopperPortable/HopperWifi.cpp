@@ -131,20 +131,23 @@ bool WifiConnect()
 }
 #endif // ARDUINONANO_RP2040
 
-#ifdef CHALLENGER_RP2040_WIFI
+#ifdef USESWIFIESPAT
 bool WifiConnect()
 {
     bool success = false;
 
     for (;;)
     {
+        ESP_SERIAL_PORT.begin(115200);
         if (!Challenger2040WiFi.reset())
         {
             Serial.println(F("Could not reset WiFi chip !"));
             break;
         }
         
-        WiFi.init(Serial2);
+        //WiFi.init(Serial2);
+        WiFi.init(ESP_SERIAL_PORT);
+        
 
         if (WiFi.status() == WL_NO_MODULE) 
         {
