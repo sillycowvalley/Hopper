@@ -50,6 +50,9 @@
     <DebugSymbols>true</DebugSymbols>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -133,6 +136,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>xcopy $(TargetPath) $(SolutionDir)..\..\..\Bin /Y</PostBuildEvent>
+    <PostBuildEvent>"C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe" sign /tr http://timestamp.digicert.com /td sha256 /fd sha256 /sha1 42c07ead38aa67a2283ea52e433017c4d4459185 $(TargetPath)
+xcopy $(TargetPath) $(SolutionDir)..\..\..\Bin /Y</PostBuildEvent>
   </PropertyGroup>
 </Project>
