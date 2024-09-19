@@ -86,7 +86,6 @@ Bool External_AttachToPin(Byte pin, PinISRDelegate gpioISRDelegate, Byte status)
     uint param = gpioISRDelegate + (pin << 16) + (status << 24);
     attachInterruptParam(digitalPinToInterrupt(pin), pinISR, (PinStatus)status, (void*)param); // TEENSY TODO
 #endif
-    interruptsEnabled = true; // just in case it wasn't
     return true;
 }
 Bool External_MCUInterruptsEnabledGet()
@@ -95,16 +94,16 @@ Bool External_MCUInterruptsEnabledGet()
 }
 void External_MCUInterruptsEnabledSet(Bool value)
 {
-    interruptsEnabled = value;
     if (value)
     {
         interrupts();
+        interruptsEnabled = true;
     }
     else
     {
         noInterrupts();
+        interruptsEnabled = false;
     }
-   
 }
 
 void External_ServiceInterrupts()
@@ -131,7 +130,7 @@ void External_ServiceInterrupts()
         }
         isrStruct = isrQueue.front();
         isrQueue.pop();
-
+        
         interrupts();
 
         // find the delegate method
@@ -173,6 +172,7 @@ void External_ServiceInterrupts()
             // make the call
             HopperVM_PC_Set(methodAddress);
         }
+        
         break;
     } // for (;;)
 }
