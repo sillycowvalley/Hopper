@@ -27,4 +27,21 @@ unit Display
             DisplayDriver.write(module, current[0], current[1], current[2], current[3]);
         }
     }
+    uint Modules { get { return modules.Count; } }
+    byte Brightness { set
+        {
+            foreach (var module in modules)
+            {
+                DisplayDriver.setBrightness(module, value);
+            }
+        }
+    }
+    BlinkRate Blink { set
+        {
+            foreach (var module in modules)
+            {
+                DisplayDriver.setBlinkRate(module, value);
+            }
+        }
+    }
 }

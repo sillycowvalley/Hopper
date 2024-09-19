@@ -144,11 +144,22 @@ unit DisplayDriver
     byte I2CSDAPin     { get { return sdaPin; }        set { sdaPin = value; } }
     byte I2CSCLPin     { get { return sclPin; }        set { sclPin = value; } }
     
-    blinkRate(byte i2cAddress, byte blink)
+    enum BlinkRate
     {
-        if (blink > 3)
+        None,
+        TwoHz,
+        OneHz,
+        HalfHz,
+    }
+    
+    setBlinkRate(byte i2cAddress, BlinkRate blinkRate)
+    {
+        byte blink; // turn off if not sure
+        switch (blinkRate)
         {
-            blink = 0; // turn off if not sure
+            case BlinkRate.TwoHz:  { blink = 1; }
+            case BlinkRate.OneHz:  { blink = 2; }
+            case BlinkRate.HalfHz: { blink = 3; }
         }
         Wire.BeginTx(DisplayDriver.I2CController, i2cAddress);
         Wire.Write(DisplayDriver.I2CController, HT16K33_BLINK_CMD | HT16K33_BLINK_DISPLAYON | (blink << 1));
@@ -173,7 +184,7 @@ unit DisplayDriver
         
         write(i2cAddress, ' ', ' ', ' ', ' ');
         
-        blinkRate(i2cAddress, HT16K33_BLINK_OFF);
+        setBlinkRate(i2cAddress, BlinkRate.None);
 
         setBrightness(i2cAddress, 15); // max brightness
     }
