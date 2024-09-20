@@ -1,8 +1,8 @@
 program LED14SegmentDemo
 {
    
-    uses "/Source/Library/Boards/PimoroniTiny2350"
-    //uses "/Source/Library/Boards/Hopper6502"
+    //uses "/Source/Library/Boards/PimoroniTiny2350"
+    uses "/Source/Library/Boards/Hopper6502"
     uses "/Source/Library/Devices/Adafruit14Segment"
     
     Scroll(string content)
@@ -44,15 +44,14 @@ program LED14SegmentDemo
             return;
         }
         
-        /*
-        Scroll("CHEESY");
-        */
         
+        Scroll("CHEESY");
+        
+        /*
         Display.Brightness = 15;
-        //Display.Blink = BlinkRate.HalfHz;
+        Display.Blink = BlinkRate.HalfHz;
         Display.Write("EDAM");
         
-        /*
         loop
         {
             for (byte brightness=0; brightness<16; brightness++)
@@ -66,8 +65,7 @@ program LED14SegmentDemo
                 Delay(100);
             }
         }
-        */   
-        
+        */
     }
 }
 

@@ -217,6 +217,7 @@ unit DisplayDriver
         
         Wire.Write(DisplayDriver.I2CController, 0);
         Wire.Write(DisplayDriver.I2CController, 0);
+        
         byte result = Wire.EndTx(DisplayDriver.I2CController);
     }
 }

@@ -1,14 +1,13 @@
 program EEPROM
 {
     //#define MCU
-    uses "/Source/Minimal/System"
-    uses "/Source/Minimal/MCU"
+    uses "/Source/Library/Boards/Hopper6502"
     
-    const byte i2cEEPROMaddress = 0x50;
+    const byte i2cEEPROMaddress = 0x54;
     Hopper()
     {
         _ = Wire.Initialize();
-        /*
+        
         for (byte i2cAddress = 8; i2cAddress < 120; i2cAddress++)
         {
             Wire.BeginTx(i2cAddress);
@@ -17,7 +16,7 @@ program EEPROM
                 WriteLn(i2cAddress.ToHexString(2) + " exists");
             }
         }
-        */
+        
         /*
         // Clear : test pattern
         for (byte p = 0; p < 80; p++)
@@ -39,7 +38,7 @@ program EEPROM
             Time.Delay(5);
         }
         return;
-        */        
+        */       
         for (uint j = 0; j < 8 /*40*/; j++)
         {
             uint address = j * 32;

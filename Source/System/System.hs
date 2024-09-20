@@ -18,11 +18,14 @@ unit System
     uses "Dictionary"
     uses "Pair"
     uses "Array"
-    uses "File"
     uses "Path"
-    uses "Directory"
     uses "Type"
     uses "Variant"
+    
+#if !defined(BLOCKFILESYSTEM)
+    uses "File"
+    uses "Directory"
+#endif    
     
     <string> Arguments { get system; }
     string CurrentDirectory { get system; set system; }
