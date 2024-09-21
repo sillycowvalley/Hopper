@@ -4,6 +4,8 @@ unit FileSystem
         #define BLOCKFILESYSTEM
     #endif
     
+    friend Directory, File, System;
+    
     /*
     File System Structure:
     -----------------------
@@ -58,7 +60,6 @@ unit FileSystem
     const byte descriptorSize = 16;
     const uint descriptorsPerBlock = blockSize / descriptorSize;
     
-    byte[descriptorSize] dirEntry; // Global used by readdir
     string currentDirectory;
 
     // ### private Helper Functions
@@ -82,11 +83,11 @@ unit FileSystem
 
     // Finds a free page in the ChainList.
     // Returns the index of the free page or 0 if no free page is found.
-    byte findFreePage(byte[] chainBlock)
+    byte findFreePage(byte[] theChainBlock)
     {
-        for (uint i = 2; i < TotalPages; i++)
+        for (uint i = 2; i < totalPages; i++)
         {
-            if (chainBlock[i] == 0)
+            if (theChainBlock[i] == 0)
             {
                 return byte(i);
             }
@@ -132,14 +133,130 @@ unit FileSystem
         }
     }
     
+    string resolveRelativePath(string path)
+    {
+        string resolved;
+        
+        // Handle the root path separately
+        if (path == "/") 
+        {
+            resolved = "/";
+            return resolved;
+        }
+        
+        <string> tokens = path.Split('/');
+        foreach (var token in tokens)
+        {
+            if (token == ".") 
+            {
+                // Skip
+            }
+            else if (token == "..")
+            {
+                // Remove last directory in resolved
+                uint iSlash;
+                if (resolved.LastIndexOf('/', ref iSlash) && (iSlash != 0))
+                {
+                    resolved = resolved.Substring(0, iSlash);
+                }
+                else
+                {
+                    // Avoid removing the root slash
+                    resolved = resolved.Substring(0, 1);
+                }
+            }
+            else
+            {
+                if (resolved.Length > 1)
+                {
+                    resolved += '/';
+                }
+                resolved += token;
+            }
+        }
+        return resolved;
+    }
+    string getFullPath(string path)
+    {
+        string result;
+        string resolvedPath;
+        if (currentDirectory.Length == 0) 
+        {
+            currentDirectory = "/"; // initialize before first use
+        }
+        if ((path.Length > 0) && (path[0] == '/'))
+        {
+            // Absolute path
+            result = path;
+        }
+        else 
+        {
+            // Relative path
+            result = currentDirectory;
+            if (!result.EndsWith('/')) 
+            {
+                result += '/';
+            }
+            result += path;
+        }
+        
+        // Resolve relative components like '.' and '..'
+        resolvedPath = resolveRelativePath(result);
+        
+        result = resolvedPath;
+        
+        // Ensure the path starts with a root '/'
+        if (result[0] != '/')
+        {
+            result = "/" + result;
+        }
+        return result;
+    }
+    
+    
+    bool compareDirEntry(byte[] dirEntry, string name, byte entryType)
+    {
+        bool found;
+        uint length = name.Length;
+        loop
+        {
+            if (dirEntry[startBlockOffset] == 0) 
+            {
+                break; // empty dirEntry
+            }
+            if ((dirEntry[fileTypeOffset] & 0xF0) != entryType)
+            {
+                break; // not the correct type of record
+            }
+            if (length != (dirEntry[fileTypeOffset] & 0x0F))
+            {
+                break; // not the correct length
+            }
+            for (uint i=0; i < length; i++)
+            {
+                if (dirEntry[filenameOffset+i] != byte(name[i]))
+                {
+                    break; // name does not match
+                }
+            }
+            found = true; // name match
+            break;
+        }
+        return found;
+    }
+    
+    // Compacts a directory by moving entries from later blocks to empty slots in earlier blocks.
+    compactDirectory(byte startBlock, byte currentBlock)
+    {
+        Diagnostics.Die(0x0A); // not implemented
+    }
+    
     // ### end of private helper functions
     
-    
-    // ### internal c-like methods
-    
-    
-    // ### end of internal c-like methods
-    
+    bool isDirectory(byte[] dirEntry)
+    {
+        return (dirEntry[fileTypeOffset] & 0xF0) == fileTypeDirectory;
+    }
     
     // Formats the drive, initializing the file system.
     Format() 
@@ -155,5 +272,342 @@ unit FileSystem
         writeBlock(rootDirStartBlock, rootDir);
     }
     
+    // Closes an open directory.
+    // dirHandle: The handle of the directory to close.
+    // Returns 0 on success, or -1 on error.
+    closeDir(byte[] dirHandle) {
+        dirHandle[0] = 0; // so it cannot be used
+        dirHandle[1] = 0;
+    }  
     
+    // Closes an open file or directory.
+    // fileHandle: The handle of the file or directory to close.
+    // Returns 0 on success, or -1 on error.
+    int fClose(byte[] fileHandle) {
+        if (fileHandle[0] != 0)
+        {
+            fileHandle[0] = 0; // Directory block number
+            fileHandle[1] = 0; // File descriptor index
+            return 0; // Success
+        }
+        return -1; // Invalid handle
+    }
+      
+    int mkDir(string dirname) 
+    {
+        byte[blockSize] dirBlock;
+        byte[descriptorSize] descriptor;
+        byte[blockSize] theChainBlock;
+        byte newBlock;
+        string fullPath;
+        uint i;
+        
+        byte[2] dirHandle = OpenDir(dirname);
+        if (dirHandle[0] != 0)
+        {
+            return -1; // Directory already exists
+        }
+        
+        fullPath = getFullPath(dirname);
+        if (!isValidPath(fullPath)) 
+        {
+            return -1; // Invalid path
+        }
+        
+        readBlock(chainBlock, theChainBlock);
+        
+        // Find a free block for the new directory
+        newBlock = findFreePage(theChainBlock);
+        if (newBlock == 0) 
+        {
+            return -1; // Disk full (no available pages)
+        }
+        
+        // Create a local copy of dirname to modify
+        string localParent;
+        string localName;
+        // Initialize the directory descriptor
+        uint iSlash;
+        if (fullPath.LastIndexOf('/', ref iSlash))
+        {
+            localName = fullPath.Substring(iSlash+1);
+            // Terminate parent directory string
+            localParent = fullPath.Substring(0, iSlash+1);
+        }
+        else
+        {
+            localName = fullPath;
+            localParent = "/";
+        }
+        for (i = 0; i < localName.Length; i++)
+        {
+            descriptor[filenameOffset+i] = byte(localName[i]);
+        }
+        descriptor[fileTypeOffset] = byte(fileTypeDirectory | (localName.Length & 0x0F));
+        descriptor[startBlockOffset] = newBlock;
+        
+        // Read the parent directory block to find an empty slot
+        byte[] parentDirHandle = OpenDir(localParent);
+        if (parentDirHandle[0] == 0)
+        {
+            return -1; // Failed to open parent directory
+        }
+        readBlock(parentDirHandle[0], dirBlock);
+        byte currentBlock = parentDirHandle[0];
+        closeDir(parentDirHandle);
+        
+        loop
+        {
+            for (i = 0; i < blockSize; i += descriptorSize)
+            {
+                if (dirBlock[i + filenameOffset] == 0)
+                {
+                    for (uint j = 0; j < descriptorSize; j++)
+                    {
+                        dirBlock[i+j] = descriptor[j];
+                    }
+                    writeBlock(currentBlock, dirBlock);
+                    
+                    // Create new empty block for the directory and update ChainBlock
+                    byte [blockSize] newDirBlock;
+                    writeBlock(newBlock, newDirBlock);
+                    theChainBlock[newBlock] = 1; // Mark as end of chain
+                    writeBlock(chainBlock, theChainBlock);
+                    return 0; // Success
+                }
+            }
+            // If no empty slot found in the current block, follow the chain
+            if (theChainBlock[currentBlock] == 1)
+            {
+                // No more blocks in the chain, add a new block
+                byte newDirBlockInChain = findFreePage(theChainBlock);
+                if (newDirBlockInChain == 0)
+                {
+                    return -1; // Disk full (no available pages)
+                }
+                theChainBlock[currentBlock] = newDirBlockInChain;
+                theChainBlock[newDirBlockInChain] = 1; // Mark as end of chain
+                writeBlock(chainBlock, theChainBlock);
+                
+                // Initialize the new directory block
+                byte [blockSize] newDirBlock;
+                writeBlock(newDirBlockInChain, newDirBlock);
+                currentBlock = newDirBlockInChain;
+                readBlock(currentBlock, dirBlock);
+            }
+            else
+            {
+                // Move to the next block in the chain
+                currentBlock = theChainBlock[currentBlock];
+                readBlock(currentBlock, dirBlock);
+            }
+        }
+        return -1; // No empty slot found
+    }
+    
+    byte[2] openDir(string dirname)
+    {
+        byte[2] dirHandle;
+        byte[blockSize] dirBlock;
+        byte[blockSize] theChainBlock;
+        string fullPath;
+        byte currentBlock;
+        bool found;
+        uint i;
+        
+        fullPath = getFullPath(dirname);
+        if (!isValidPath(fullPath))
+        {
+            return dirHandle; // Invalid path
+        }
+        
+        readBlock(chainBlock, theChainBlock);
+        
+        if (fullPath == "/")
+        {
+            dirHandle[0] = rootDirStartBlock;  // Root directory descriptor index
+            //dirHandle[1] = 0;                // Current position in directory
+            return dirHandle;
+        }
+        
+        // Split the path into components
+        currentBlock = rootDirStartBlock;
+        <string> tokens = fullPath.Split('/');
+        foreach (var token in tokens)
+        {
+            found = false;
+            readBlock(currentBlock, dirBlock);
+            loop
+            {
+                for (i = 0; i < blockSize; i += descriptorSize)
+                {
+                    byte[descriptorSize] dirEntry;
+                    for (uint j = 0; j < descriptorSize; j++)
+                    {
+                        dirEntry[j] = dirBlock[i+j];
+                    }
+                    if (compareDirEntry(dirEntry, token, fileTypeDirectory))
+                    {
+                        currentBlock = dirBlock[i + startBlockOffset];
+                        found = true;
+                        break;
+                    }
+                }
+                if (found || (theChainBlock[currentBlock] == 1))
+                {
+                    break;
+                }
+                currentBlock = theChainBlock[currentBlock];
+                readBlock(currentBlock, dirBlock);
+            }
+            
+            if (!found)
+            {
+                dirHandle[0] = 0;
+                //dirHandle[1] = 0;
+                return dirHandle; // Directory not found
+            }
+        }
+        
+        dirHandle[0] = currentBlock;
+        //dirHandle[1] = 0;
+        return dirHandle;
+    }
+    
+    string getName(byte[] dirEntry)
+    {
+        string name;
+        uint length = dirEntry[fileTypeOffset] & 0x0F;
+        for (uint i=0; i < length; i++)
+        {
+            name = name + char(dirEntry[filenameOffset+i]);
+        }
+        return name;
+    }
+    
+    byte[descriptorSize] readDir(byte[2] dirHandle)
+    {
+        byte[descriptorSize] dirEntry;
+        
+        if (dirHandle[1] == blockSize - descriptorSize) 
+        {
+            // Previous entry was the last one in that page
+            // Follow the chain to the next page for this directory
+            byte[blockSize] theChainBlock;
+            readBlock(chainBlock, theChainBlock);
+            
+            dirHandle[0] = theChainBlock[dirHandle[0]];
+            if (dirHandle[0] == 1) // that was the last page in the chain
+            {
+                return dirEntry;  
+            }
+            dirHandle[1] = 0;
+        }
+        
+        // Read the block where the current directory entry is
+        byte[blockSize] dirBlock;
+        readBlock(dirHandle[0], dirBlock);
+        
+        // Copy the directory entry
+        for (uint i=0; i < descriptorSize; i++)
+        {
+            dirEntry[i] = dirBlock[dirHandle[1]+i];
+        }
+        if (dirEntry[startBlockOffset] == 0)
+        {
+            // empty slot
+            return dirEntry;
+        }
+            
+        // Update the directory handle position for the next iteration
+        dirHandle[1] = dirHandle[1] + descriptorSize;
+        return dirEntry;
+    }
+    
+    // Opens a file or directory.
+    // filename: Name of the file or directory to open.
+    // mode: Mode in which to open the file (e.g., "r" for read, "w" for write, etc.).
+    // Returns a file handle if successful, or null if an error occurs.
+    byte[] fOpen(string filename, string mode)
+    {
+        byte[4] fileHandle;
+        Diagnostics.Die(0x0A); // not implemented
+        return fileHandle;
+    }
+    
+    int rmDir(string dirName)
+    {
+        Diagnostics.Die(0x0A); // not implemented
+        return -1;
+    }
+    int remove(string fileName)
+    {
+        Diagnostics.Die(0x0A); // not implemented
+        return -1;
+    }
+    
+    uint fWrite(byte[] buffer, uint size, uint count, byte[4] fileHandle)
+    {
+        Diagnostics.Die(0x0A); // not implemented
+        return 0;
+    }
+       
+    uint fRead(byte[] buffer, uint size, uint count, byte[4] fileHandle) 
+    {
+        Diagnostics.Die(0x0A); // not implemented
+        return 0;
+    }
+    
+    // Sets the file position indicator for the file.
+    // fileHandle: The handle of the file.
+    // offset: Number of bytes to offset from whence.
+    // whence: Position from where offset is applied (0: beginning, 1: current position, 2: end of file).
+    // Returns 0 on success, or -1 on error.
+    int fSeek(byte[4] fileHandle, int offset, byte whence)
+    {
+        Diagnostics.Die(0x0A); // not implemented
+        return -1;
+    }
+    
+    // Returns the current file position indicator for the file.
+    // fileHandle: The handle of the file.
+    // Returns the current file position as a word, or 0 on error.
+    uint fTell(byte[4] fileHandle)
+    {
+        // Extract the current position from the file handle
+        uint position = (fileHandle[2] << 8) | fileHandle[3];
+        return position;
+    }
+    
+    string getCwd()
+    {
+        string copy;
+        if (currentDirectory == "")
+        {
+            currentDirectory = "/"; // initialize before first use
+        }
+        copy = currentDirectory;
+        return copy;
+    }
+    
+    int chDir(string path)
+    {
+        byte[2] dirHandle;
+        string fullPath = getFullPath(path);
+        
+        if (!isValidPath(fullPath))
+        {
+            return -1; // Invalid path
+        }
+        dirHandle = openDir(fullPath);
+        if (dirHandle[0] == 0)
+        {
+            return -1; // Directory not found
+        }
+        closeDir(dirHandle);
+        currentDirectory = fullPath;
+        return 0; // Success
+    }
+    
+
 }
