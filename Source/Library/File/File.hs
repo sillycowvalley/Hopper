@@ -19,127 +19,151 @@ unit File
     // Check if a file exists at the given path.
     bool Exists(string path)
     {
-        // Stub implementation
-        Diagnostics.Die(0x0A); // not implemented
-        return false;
+        string fullPath = FileSystem.getFullPath(path);
+        byte[4] fileHandle = FileSystem.fOpen(fullPath, "r");
+        if (fileHandle[0] == 0)
+        {
+            return false; // File not found
+        }
+        return true;
     }
     
     // Delete the file at the given path.
     Delete(string path)
     {
-        // Stub implementation
-        Diagnostics.Die(0x0A); // not implemented
+        _ = FileSystem.remove(path); // error check?
     }
     
     // Get the size of the file at the given path.
     long GetSize(string path)
     {
         // Stub implementation
-        Diagnostics.Die(0x0A); // not implemented
+        File current;
+        current = File.Open(path);
+        if (current.isValue)
+        {
+            return current.size;
+        }
         return 0;
     }
     
     // Check if the file object is valid.
     bool IsValid(File this)
     {
-        // Stub implementation
-        Diagnostics.Die(0x0A); // not implemented
-        return false;
-    }
-    
-    // Open a file at the given path.
-    File Open(string fullpath)
-    {
-        // Stub implementation
-        File fileInstance
-        Diagnostics.Die(0x0A); // not implemented
-        return fileInstance;
+        return this.isValid;
     }
     
     // Read a line from the file.
     string ReadLine(File this)
     {
-        // Stub implementation
-        Diagnostics.Die(0x0A); // not implemented
-        return "";
+        string line;
+        if (!this.isReading || this.isWriting || !this.isValid)
+        {
+            this.isValid = false;
+            return line;
+        }
+        
+        if (!this.isReading || this.isWriting || !this.isValid)
+        {
+            this.isValid = false;
+            return line;
+        }
+        if (this.pos >= this.size)
+        {
+            this.isValid = false;
+            return line;
+        }
+        uint count;
+        string buffer = this.buffer;
+        while (this.pos < this.size)
+        {
+            char ch = buffer[this.pos];
+            this.pos = this.pos + 1;
+            if (ch == Char.EOL)
+            {
+                break;
+            }
+            line += ch;
+            count++;
+        }
+        return line;
     }
     
     // Read a byte from the file.
     byte Read(File this)
     {
-        // Stub implementation
-        return 0;
+        if (!this.isReading || this.isWriting || !this.isValid)
+        {
+            this.isValid = false;
+            return 0;
+        }
+        if (this.pos >= this.size)
+        {
+            this.isValid = false;
+            return 0;
+        }
+        byte data = byte(this.buffer[pos]);
+        this.pos = this.pos + 1;
+        return data;
     }
     
     // Read a byte from the file at the specified seek position.
     byte Read(File this, uint seekPosition)
     {
-        // Stub implementation
-        Diagnostics.Die(0x0A); // not implemented
-        return 0;
+        this.pos = seekPosition;
+        return Read(this);
     }
     
     // Read data from the file into a byte array.
     uint Read(File this, byte[] data, uint bufferSize)
     {
-        // Stub implementation
-        Diagnostics.Die(0x0A); // not implemented
-        return 0;
-    }
-    
-    // Create a new file at the given path.
-    File Create(string fullpath)
-    {
-        // Stub implementation
-        File fileInstance;
-        Diagnostics.Die(0x0A); // not implemented
-        return fileInstance;
+        uint count;
+        if (!this.isReading || this.isWriting || !this.isValid)
+        {
+            this.isValid = false;
+            return count;
+        }
+        while ((this.pos < this.size) && (count < bufferSize))
+        {
+            data[count] = byte(buffer[this.pos]);
+            this.pos = this.pos + 1;
+            count++;
+        }
+        return count;
     }
     
     // Append a byte to the file.
     Append(File this, byte content)
     {
-        // Stub implementation
-        Diagnostics.Die(0x0A); // not implemented
+        if (this.isReading || !this.isWriting || !this.isValid)
+        {
+            this.isValid = false;
+            return;
+        }
+        this.buffer += char(content);
     }
     
     // Append a string to the file.
     Append(File this, string content)
     {
-        // Stub implementation
-        Diagnostics.Die(0x0A); // not implemented
-    }
-    
-    // Flush the file buffer to the storage media.
-    Flush(File this)
-    {
-        // Stub implementation
-        Diagnostics.Die(0x0A); // not implemented
-    }
-    
-    // Check if a file exists with the given extension in the specified folder.
-    bool Exists(ref string filePath, ref string extension, string searchFolder)
-    {
-        // Stub implementation
-        Diagnostics.Die(0x0A); // not implemented
-        return false;
+        if (this.isReading || !this.isWriting || !this.isValid)
+        {
+            this.isValid = false;
+            return;
+        }
+        this.buffer += content;
     }
     
     // Try to read all text from a file into a string.
     bool TryReadAllText(string path, ref string content)
     {
         content = "";
-        file tf = File.Open(path);
-        if (!tf.IsValid())
+        file current = File.Open(path);
+        if (!current.IsValid())
         {
             return false;
         }
-        loop
-        {
-            char ch = char(tf.Read());
-            if (!tf.IsValid()) { break; }
-            content = content + ch;
-        }
+        content = current.buffer;
         return true;
     }
     
@@ -155,7 +179,10 @@ unit File
             {
                 return false;
             }
-            File.Delete(destinationPath);   
+            if (0 != FileSystem.remove(destinationPath))
+            {
+                return false;
+            }
         }
         
         bool success;
@@ -177,6 +204,90 @@ unit File
             break;
         }
         return success;
+    }
+    
+    // Create a new file at the given path.
+    File Create(string path)
+    {
+        string fullPath = FileSystem.getFullPath(path);
+        File fileInstance;
+        if (File.Exists(fullPath))
+        {
+            if (0 != FileSystem.remove(fullPath))  
+            {
+                return fileInstance;
+            }
+        }
+        fileInstance.isWriting = true;
+        fileInstance.isValid = true;
+        fileInstance.path = fullPath;
+        return fileInstance;
+    }
+    
+    
+    // Open a file at the given path (and read all content into buffer)
+    File Open(string path)
+    {
+        File fileInstance;
+        string fullPath = FileSystem.getFullPath(path);
+        fileInstance.path = fullPath;
+        fileInstance.isReading = true;
+        
+        byte[4] fileHandle = FileSystem.fOpen(fullPath, "r");
+        if (fileHandle[0] == 0)
+        {
+            fileInstance.isValid = false;
+            return fileInstance; // File not found
+        }
+        loop
+        {
+            byte[128] buffer;
+            uint count = FileSystem.fRead(buffer, 128, 1, fileHandle);
+            for (uint i=0; i < count; i++)
+            {
+                fileInstance.buffer = fileInstance.buffer + char(buffer[i]);
+            }
+        }
+        fileInstance.size = (fileInstance.buffer).Length;
+        fileInstance.pos = 0;
+        fileInstance.isValid = (0 == FileSystem.fClose(fileHandle));
+        return fileInstance;
+    }
+    
+    // Flush the file buffer to the storage media.
+    Flush(File this)
+    {
+        if (this.isReading || !this.isWriting || !this.isValid)
+        {
+            this.isValid = false;
+            return;
+        }
+        
+        byte[4] fileHandle = FileSystem.fOpen(this.path, "w");
+        if (fileHandle[0] == 0)
+        {
+            this.isValid = false;
+            return; // failed to create
+        }
+        string content = this.buffer;
+        byte[128] buffer;
+        uint pos = 0;
+        loop
+        {
+            uint i;
+            while ((pos < content.Length) && (i < 128))
+            {
+                buffer[i] = byte(content[pos]);
+                pos++;
+                i++;
+            }
+            if (i == 0)
+            {
+                break;
+            }
+            _ = FileSystem.fWrite(buffer, i, 1, fileHandle);
+        }
+        this.isValid = (0 == FileSystem.fClose(fileHandle));
     }
     
 }

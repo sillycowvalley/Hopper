@@ -34,7 +34,7 @@ unit System
     string CurrentDirectory 
     { 
         get { return FileSystem.getCwd(); }
-        set { _ = FileSystem.chDir(value); }
+        set { _ = FileSystem.chDir(value); } // error check?
     }
 #endif
     Beep() system;

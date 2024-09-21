@@ -120,7 +120,14 @@ unit FileSystem
         parentDir = "";
         if (fullPath.LastIndexOf('/', ref iSlash))
         {
-            parentDir = fullPath.Substring(0, iSlash-1);
+            if (iSlash == 0)
+            {
+                parentDir = "/";
+            }
+            else
+            {
+                parentDir = fullPath.Substring(0, iSlash);
+            }
             fileName  = fullPath.Substring(iSlash + 1);
         }
         else 
@@ -248,7 +255,95 @@ unit FileSystem
     // Compacts a directory by moving entries from later blocks to empty slots in earlier blocks.
     compactDirectory(byte startBlock, byte currentBlock)
     {
-        Diagnostics.Die(0x0A); // not implemented
+        byte[blockSize] dirBlock;
+        byte[blockSize] theChainBlock;
+        byte[blockSize] nextDirBlock;
+        byte parentNextBlock;
+        uint i;
+        uint j;
+        bool blockMoved;
+        bool isEmpty;
+        byte prevBlock;
+        
+        readBlock(chainBlock, theChainBlock);
+        loop
+        {
+            blockMoved = false;
+            readBlock(currentBlock, dirBlock);
+            for (i = 0; i < blockSize; i += descriptorSize)
+            {
+                if (dirBlock[i + filenameOffset] == 0) // Find empty slot
+                { 
+                    // Look for entries in later blocks
+                    parentNextBlock = theChainBlock[currentBlock];
+                    while (parentNextBlock != 1) 
+                    {
+                        readBlock(parentNextBlock, nextDirBlock);
+                        for (j = 0; j < blockSize; j += descriptorSize) 
+                        {
+                            if (nextDirBlock[j + filenameOffset] != 0) // Find used slot
+                            { 
+                                // Move the entry to the empty slot
+                                for (uint k=0; k < descriptorSize; k++)
+                                {
+                                    dirBlock[i+k] = nextDirBlock[j+k];
+                                }
+                                for (uint k=0; k < descriptorSize; k++)
+                                {
+                                    nextDirBlock[j+k] = 0;
+                                }
+                                writeBlock(currentBlock, dirBlock);
+                                writeBlock(parentNextBlock, nextDirBlock);
+                                blockMoved = true;
+                                // Debug output for moving an entry
+                                break;
+                            }
+                        }
+                        if (j < blockSize) 
+                        {
+                            break;
+                        }
+                        parentNextBlock = theChainBlock[parentNextBlock];
+                    }
+                }
+            }
+            
+            // Check if the current block is completely empty
+            isEmpty = true;
+            for (i = 0; i < blockSize; i += descriptorSize) 
+            {
+                if (dirBlock[i + filenameOffset] != 0) 
+                {
+                    isEmpty = false;
+                    break;
+                }
+            }
+            
+            // If the current block is empty and not the first block, remove it from the chain
+            if (isEmpty && (currentBlock != startBlock))
+            {
+                prevBlock = startBlock;
+                while (theChainBlock[prevBlock] != currentBlock)
+                {
+                    prevBlock = theChainBlock[prevBlock];
+                    if ((prevBlock == 1) || (prevBlock == 0))
+                    {
+                        break;
+                    }
+                }
+                theChainBlock[prevBlock] = theChainBlock[currentBlock];
+                theChainBlock[currentBlock] = 0;
+                writeBlock(chainBlock, theChainBlock);
+                break;
+            }
+            if (!blockMoved)
+            {
+                break;
+            }
+            
+            currentBlock = theChainBlock[currentBlock];
+            if (currentBlock == 1) { break; }
+        }
     }
     
     // ### end of private helper functions
@@ -302,7 +397,7 @@ unit FileSystem
         string fullPath;
         uint i;
         
-        byte[2] dirHandle = OpenDir(dirname);
+        byte[2] dirHandle = openDir(dirname);
         if (dirHandle[0] != 0)
         {
             return -1; // Directory already exists
@@ -327,18 +422,8 @@ unit FileSystem
         string localParent;
         string localName;
         // Initialize the directory descriptor
-        uint iSlash;
-        if (fullPath.LastIndexOf('/', ref iSlash))
-        {
-            localName = fullPath.Substring(iSlash+1);
-            // Terminate parent directory string
-            localParent = fullPath.Substring(0, iSlash+1);
-        }
-        else
-        {
-            localName = fullPath;
-            localParent = "/";
-        }
+        splitPath(fullPath, ref localParent, ref localName);
+        
         for (i = 0; i < localName.Length; i++)
         {
             descriptor[filenameOffset+i] = byte(localName[i]);
@@ -347,7 +432,7 @@ unit FileSystem
         descriptor[startBlockOffset] = newBlock;
         
         // Read the parent directory block to find an empty slot
-        byte[] parentDirHandle = OpenDir(localParent);
+        byte[] parentDirHandle = openDir(localParent);
         if (parentDirHandle[0] == 0)
         {
             return -1; // Failed to open parent directory
@@ -524,49 +609,109 @@ unit FileSystem
         return dirEntry;
     }
     
-    // Opens a file or directory.
-    // filename: Name of the file or directory to open.
-    // mode: Mode in which to open the file (e.g., "r" for read, "w" for write, etc.).
-    // Returns a file handle if successful, or null if an error occurs.
-    byte[] fOpen(string filename, string mode)
-    {
-        byte[4] fileHandle;
-        Diagnostics.Die(0x0A); // not implemented
-        return fileHandle;
-    }
     
-    int rmDir(string dirName)
+    int rmDir(string path)
     {
-        Diagnostics.Die(0x0A); // not implemented
-        return -1;
-    }
-    int remove(string fileName)
-    {
-        Diagnostics.Die(0x0A); // not implemented
-        return -1;
-    }
-    
-    uint fWrite(byte[] buffer, uint size, uint count, byte[4] fileHandle)
-    {
-        Diagnostics.Die(0x0A); // not implemented
-        return 0;
-    }
-       
-    uint fRead(byte[] buffer, uint size, uint count, byte[4] fileHandle) 
-    {
-        Diagnostics.Die(0x0A); // not implemented
-        return 0;
-    }
-    
-    // Sets the file position indicator for the file.
-    // fileHandle: The handle of the file.
-    // offset: Number of bytes to offset from whence.
-    // whence: Position from where offset is applied (0: beginning, 1: current position, 2: end of file).
-    // Returns 0 on success, or -1 on error.
-    int fSeek(byte[4] fileHandle, int offset, byte whence)
-    {
-        Diagnostics.Die(0x0A); // not implemented
-        return -1;
+        byte[2] dirHandle;
+        
+        byte[blockSize] dirBlock;
+        byte[blockSize] theChainBlock;
+        byte[descriptorSize] descriptor;
+        string fullPath;
+        string parentDir;
+        string dirName;
+        byte currentBlock;
+        uint i;
+        int result = -1; // Default to failure
+        
+        loop
+        {
+            fullPath = getFullPath(path);
+            
+            if (!isValidPath(fullPath)) 
+            {
+                break; // Invalid path
+            }
+            
+            // Open the directory to ensure it exists
+            dirHandle = openDir(fullPath);
+            if (dirHandle[0] == 0) 
+            {
+                break; // Directory not found
+            }
+            
+            // Check if the directory is empty
+            readBlock(dirHandle[0], dirBlock);
+            for (i = 0; i < blockSize; i += descriptorSize) 
+            {
+                if (dirBlock[i + filenameOffset] != 0) 
+                {
+                    closeDir(dirHandle);
+                    break; // Directory not empty
+                }
+            }
+            if (i < blockSize) 
+            {
+                break; // Directory not empty
+            }
+            currentBlock = dirHandle[0];
+            closeDir(dirHandle);
+            
+            // Free the blocks used by the directory
+            readBlock(chainBlock, theChainBlock);
+            while (currentBlock != 1) 
+            {
+                byte nextBlock = theChainBlock[currentBlock];
+                theChainBlock[currentBlock] = 0;
+                currentBlock = nextBlock;
+            }
+            writeBlock(chainBlock, theChainBlock);
+            
+            // Find and clear the directory descriptor in the parent directory
+            splitPath(fullPath, ref parentDir, ref dirName);
+            dirHandle = openDir(parentDir);
+            if (dirHandle[0] == 0) 
+            {
+                break; // Failed to open parent directory
+            }
+            
+            readBlock(dirHandle[0], dirBlock);
+            loop
+            {
+                for (i = 0; i < blockSize; i += descriptorSize)
+                {
+                    for (uint j=0; j < descriptorSize; j++)
+                    {
+                        descriptor[j] = dirBlock[i+j];
+                    }
+                    
+                    if (compareDirEntry(descriptor, dirName, fileTypeDirectory))
+                    {
+                        // Clear the descriptor
+                        for (uint j=0; j < descriptorSize; j++)
+                        {
+                            dirBlock[i+j] = 0;
+                        }
+                        writeBlock(dirHandle[0], dirBlock);
+                        
+                        compactDirectory(dirHandle[0], dirHandle[0]); // Compact the directory
+                        
+                        result = 0; // Success
+                        break; // Exit the loop
+                    }
+                }
+                if ((result == 0) || (theChainBlock[dirHandle[0]] == 1))
+                {
+                    break; // Exit the loop if success or no more blocks in the chain
+                }
+                dirHandle[0] = theChainBlock[dirHandle[0]];
+                readBlock(dirHandle[0], dirBlock);
+            }
+            
+            closeDir(dirHandle);
+            break; // Exit the main for loop
+        }
+        return result; // Return the result
     }
     
     // Returns the current file position indicator for the file.
@@ -609,5 +754,203 @@ unit FileSystem
         return 0; // Success
     }
     
-
+    // Opens a file
+    // filename: Name of the file or directory to open.
+    // mode: Mode in which to open the file (e.g., "r" for read, "w" for write, etc.).
+    // Returns a file handle if successful, or null if an error occurs.
+    byte[4] fOpen(string path, string mode)
+    {
+        byte[blockSize] dirBlock;
+        byte[blockSize] newDirBlock;
+        byte[blockSize] theChainBlock;
+        byte[descriptorSize] descriptor;
+        byte currentBlock;
+        uint i;
+        string parentDir;
+        string fileName;
+        byte[2] parentDirHandle;
+        byte[4] fileHandle;
+        byte fileBlock;
+        byte nextBlock;
+        byte newDirBlockInChain;
+        
+        loop
+        {
+            string fullPath = getFullPath(path);
+            if (!isValidPath(fullPath)) 
+            {
+                break; // Invalid path
+            }
+            if ((mode != "w") && (mode != "r"))
+            {
+                break; // Invalid mode
+            }
+            readBlock(chainBlock, theChainBlock);
+            splitPath(fullPath, ref parentDir, ref fileName);
+            
+            parentDirHandle = openDir(parentDir);
+            if (parentDirHandle[0] == 0)
+            {
+                break; // directory not found
+            }
+            // Locate the file descriptor
+            loop
+            {
+                readBlock(parentDirHandle[0], dirBlock);
+                for (i = 0; i < blockSize; i += descriptorSize)
+                {
+                    byte[descriptorSize] dirEntry;
+                    for (uint j = 0; j < descriptorSize; j++)
+                    {
+                        dirEntry[j] = dirBlock[i+j];
+                    }
+                    if (compareDirEntry(dirEntry, fileName, fileTypeFile))
+                    {
+                         // If mode is "w", truncate the file
+                        if (mode == "w")
+                        {
+                            // Free the blocks used by the file if it already exists
+                            fileBlock = dirBlock[i + startBlockOffset];
+                            while (fileBlock != 1)
+                            {
+                                nextBlock = theChainBlock[fileBlock];
+                                theChainBlock[fileBlock] = 0;
+                                fileBlock = nextBlock;
+                            }
+                            // Reset the descriptor
+                            dirBlock[i + startBlockOffset] = 1; // end of chain
+                            dirBlock[i + fileSizeOffset] = 0; // file size to 0
+                            dirBlock[i + fileSizeOffset + 1] = 0; // file size to 0
+                            writeBlock(parentDirHandle[0], dirBlock);
+                            writeBlock(chainBlock, theChainBlock);
+                        }
+                        fileHandle[0] = parentDirHandle[0]; // Directory block number
+                        fileHandle[1] = byte(i / descriptorSize); // File descriptor index
+                        //fileHandle[2] = 0; // Current position LSB in file (Tigger C : automatic zero initialization)
+                        //fileHandle[3] = 0; // Current position MSB in file (Tigger C : automatic zero initialization)
+                        closeDir(parentDirHandle);
+                        break; // Success
+                    }
+                } // for
+                if (fileHandle[0] != 0)
+                {
+                    break; // Success
+                }
+                // Follow the chain if no descriptor found in current block
+                if (theChainBlock[parentDirHandle[0]] == 1)
+                {
+                    break; // No more blocks in the chain
+                }
+                parentDirHandle[0] = theChainBlock[parentDirHandle[0]];
+            } // while
+            closeDir(parentDirHandle);
+            if (fileHandle[0] != 0)
+            {
+                break; // Success
+            }
+            // If the file doesn't exist and mode is "w", create a new file
+            if (mode == "w") 
+            {
+                // Initialize the file descriptor
+                uint length = fileName.Length;
+                for (uint j = 0; j < length; j++)
+                {
+                    descriptor[filenameOffset+j] = byte(fileName[j]);
+                }
+                
+                descriptor[fileTypeOffset] = byte(fileTypeFile | (length & 0x0F));
+                descriptor[startBlockOffset]   = 1; // end of chain
+                descriptor[fileSizeOffset]     = 0; // Empty file LSB
+                descriptor[fileSizeOffset + 1] = 0; // Empty file MSB
+                // Read the parent directory block to find an empty slot
+                parentDirHandle = openDir(parentDir);
+                if (parentDirHandle[0] == 0) 
+                {
+                    break; // Failed to open parent directory
+                }
+                readBlock(parentDirHandle[0], dirBlock);
+                currentBlock = parentDirHandle[0];
+                closeDir(parentDirHandle);
+                loop
+                {
+                    for (i = 0; i < blockSize; i += descriptorSize)
+                    {
+                        if (dirBlock[i + filenameOffset] == 0) 
+                        {
+                            for (uint j = 0; j < descriptorSize; j++)
+                            {
+                                dirBlock[i+j] = descriptor[j];
+                            }
+                            writeBlock(currentBlock, dirBlock);
+                            fileHandle[0]   = currentBlock; // Directory block number
+                            fileHandle[1]   = byte(i / descriptorSize); // File descriptor index
+                            //fileHandle[2] = 0; // Current position LSB in file (Tigger C : automatic zero initialization)
+                            //fileHandle[3] = 0; // Current position MSB in file (Tigger C : automatic zero initialization)
+                            break; // Success
+                        }
+                    } // for
+                    if (fileHandle[0] != 0)
+                    {
+                        break; // Success
+                    }
+                    // If no empty slot found in the current block, follow the chain
+                    if (theChainBlock[currentBlock] == 1) 
+                    {
+                        // No more blocks in the chain, add a new block
+                        newDirBlockInChain = findFreePage(theChainBlock);
+                        if (newDirBlockInChain == 0)
+                        {
+                            break; // Disk full (no available pages)
+                        }
+                        theChainBlock[currentBlock] = newDirBlockInChain;
+                        theChainBlock[newDirBlockInChain] = 1; // Mark as end of chain
+                        writeBlock(chainBlock, theChainBlock);
+                        // Initialize the new directory block
+                        writeBlock(newDirBlockInChain, newDirBlock);
+                        currentBlock = newDirBlockInChain;
+                        readBlock(currentBlock, dirBlock);
+                    }
+                    else
+                    {
+                        // Move to the next block in the chain
+                        currentBlock = theChainBlock[currentBlock];
+                        readBlock(currentBlock, dirBlock);
+                    }
+                } // while
+            } // if "w"
+            break;
+        } // loop
+        return fileHandle; // Return file handle or null if not found/created
+    }
+    
+    int remove(string fileName)
+    {
+        string fullPath = FileSystem.getFullPath(fileName);
+        
+        Diagnostics.Die(0x0A); // TODO
+        return -1;
+    }
+    
+    uint fWrite(byte[] buffer, uint size, uint count, byte[4] fileHandle)
+    {
+        Diagnostics.Die(0x0A); // TODO
+        return 0;
+    }
+       
+    uint fRead(byte[] buffer, uint size, uint count, byte[4] fileHandle) 
+    {
+        Diagnostics.Die(0x0A); // TODO
+        return 0;
+    }
+    
+    // Sets the file position indicator for the file.
+    // fileHandle: The handle of the file.
+    // offset: Number of bytes to offset from whence.
+    // whence: Position from where offset is applied (0: beginning, 1: current position, 2: end of file).
+    // Returns 0 on success, or -1 on error.
+    int fSeek(byte[4] fileHandle, int offset, byte whence)
+    {
+        Diagnostics.Die(0x0A); // TODO
+        return -1;
+    }
 }

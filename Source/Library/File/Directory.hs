@@ -32,13 +32,11 @@ unit Directory
     
     Delete(string path)
     {
-        // Stub implementation
-        Diagnostics.Die(0x0A); // not implemented
+        _ = FileSystem.rmDir(path); // error check?
     }
     Create(string path)
     {
-        // Stub implementation
-        Diagnostics.Die(0x0A); // not implemented
+        _ = FileSystem.mkDir(path); // error check?
     }
     
     uint GetDirectoryCount(Directory this)
