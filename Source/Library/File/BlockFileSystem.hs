@@ -353,12 +353,27 @@ unit FileSystem
         return (dirEntry[fileTypeOffset] & 0xF0) == fileTypeDirectory;
     }
     
-    // Formats the drive, initializing the file system.
-    Format() 
+    // initialize the file system.
+    Mount() 
     {
-        // Initialize global block chain page (no chains yet, 0 and 1 reserved)
+        Mount(false);
+    }
+    Mount(bool alwaysFormat) 
+    {
         byte[blockSize] blockChainPage;
-        blockChainPage[0] = 1;
+        if (!alwaysFormat)
+        {
+            readBlock(chainBlock, blockChainPage);
+            if ((blockChainPage[0] == 42) && (blockChainPage[1] == 1))
+            {
+                return; // already formatted
+            }
+        }
+        
+        // Formats the drive, initializing the file system.
+        
+        // Initialize global block chain page (no chains yet, 0 and 1 reserved)
+        blockChainPage[0] = 42;
         blockChainPage[1] = 1;
         writeBlock(chainBlock, blockChainPage);
         

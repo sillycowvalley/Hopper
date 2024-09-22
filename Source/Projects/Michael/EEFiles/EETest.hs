@@ -6,31 +6,17 @@ program EEPROM
     //uses "/Source/Library/Boards/PimoroniTiny2350"
     uses "/Source/Library/Boards/Hopper6502"
     
-    uses "/Source/Library/File/BlockFileSystem"
-    
-    
     Hopper()
     {
         _ = Wire.Initialize();
-        
         BlockStorage.Configure(0x54, SerialEEPROM.XX512);
+        FileSystem.Mount(); // formats if not already formatted
         
-        FileSystem.Format();
+        /*
         Directory.Create("Folder");
         Directory.Create("Folder2");
         
-        
-        /*
-        
-        
-        result = ChDir("Folder");
-        IO.WriteLn(GetCwd());
-        result = ChDir("/Folder");
-        IO.WriteLn(GetCwd());
-        */
-        
-        Directory dir;
-        dir = Directory.Open("/");
+        Directory dir = Directory.Open("/");
         uint count = Directory.GetDirectoryCount(dir);
         for (uint i = 0; i < count; i++)
         {
@@ -38,28 +24,32 @@ program EEPROM
             IO.WriteLn(folder);
         }
         
-        File current = File.Create("/Folder/Test");
-        if (File.IsValid(current))
+        File writer = File.Create("/Folder/Test");
+        if (File.IsValid(writer))
         {
-            File.Append(current, "Content One" + Char.EOL);
-            File.Append(current, "Content Two" + Char.EOL);
-            File.Flush(current);
+            File.Append(writer, "Content One" + Char.EOL);
+            File.Append(writer, "Content Two" + Char.EOL);
+            File.Flush(writer);
         }
+        */
         
-        current = File.Open("/Folder/Test");
+        
+        File current = File.Open("/Folder/Test");
         if (File.IsValid(current))
         {
             string content = File.ReadLine(current);
-            IO.Write(content);
+            IO.WriteLn(content);
             content = File.ReadLine(current);
-            IO.Write(content);
+            IO.WriteLn(content);
         }
+        /*
         File.Delete("/Folder/Test");
         
         Directory.Delete("/");
         
         Directory.Delete("Folder");
         Directory.Delete("Folder2");
+        */
         
     }
 }
