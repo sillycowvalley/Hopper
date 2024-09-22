@@ -24,4 +24,14 @@ unit System
     
     uses "Serial"
     uses "Diagnostics"
+
+#if defined(BLOCKFILESYSTEM)
+    string CurrentDirectory 
+    { 
+        get { return FileSystem.getCwd(); }
+        set { _ = FileSystem.chDir(value); } // error check?
+    }
+#endif
+    
+    
 }

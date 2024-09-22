@@ -91,8 +91,19 @@ unit IO
         String.Build(ref str);
         loop
         {
+            loop
+            {
+                if (Serial.IsAvailable)
+                {
+                    break;
+                }
+            }
             ch = Serial.ReadChar();
-            if (ch == Char.EOL) 
+            if (ch == Char.Break)
+            {
+                break; // return false
+            }
+            else if (ch == Char.EOL) 
             { 
                 WriteLn();
                 result = true; // good

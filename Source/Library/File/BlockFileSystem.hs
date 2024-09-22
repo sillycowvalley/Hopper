@@ -166,6 +166,10 @@ unit FileSystem
                 {
                     resolved = resolved.Substring(0, iSlash);
                 }
+                else if (!resolved.Contains('/'))
+                {
+                    resolved = ""; // remove root folder
+                }
                 else
                 {
                     // Avoid removing the root slash
