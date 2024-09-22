@@ -923,12 +923,88 @@ unit FileSystem
         return fileHandle; // Return file handle or null if not found/created
     }
     
-    int remove(string fileName)
+    int remove(string path)
     {
-        string fullPath = FileSystem.getFullPath(fileName);
-        
-        Diagnostics.Die(0x0A); // TODO
-        return -1;
+        byte[blockSize] dirBlock;
+        byte[blockSize] theChainBlock;
+        byte[descriptorSize] descriptor;
+        string fullPath;
+        string parentDir;
+        string fileName;
+        byte[2] dirHandle;
+        byte currentBlock;
+        uint i;
+        byte fileBlock;
+        byte nextBlock;
+        int result = -1; // Default to failure
+    
+        loop
+        {
+            fullPath = getFullPath(path);
+            if (!isValidPath(fullPath))
+            {
+                break; // Invalid path
+            }
+    
+            splitPath(fullPath, ref parentDir, ref fileName);
+            dirHandle = openDir(parentDir);
+            if (dirHandle[0] == 0)
+            {
+                break; // Failed to open parent directory
+            }
+    
+            readBlock(chainBlock, theChainBlock);
+            
+            // Locate the file descriptor
+            loop
+            {
+                readBlock(dirHandle[0], dirBlock);
+                for (i = 0; i < blockSize; i += descriptorSize)
+                {
+                    for (uint j=0; j < descriptorSize; j++)
+                    {
+                        descriptor[j] = dirBlock[i + j];
+                    }
+                    
+                    if (compareDirEntry(descriptor, fileName, fileTypeFile))
+                    {
+                        fileBlock = descriptor[startBlockOffset];
+                        
+                        // Clear the file descriptor
+                        for (uint j=0; j < descriptorSize; j++)
+                        {
+                            descriptor[j] = 0; // Clearing the descriptor array itself
+                            dirBlock[i+j] = 0; // Clearing the block position
+                        }
+                        writeBlock(dirHandle[0], dirBlock);
+                        
+                        // Free the blocks used by the file
+                        while ((fileBlock != 1) && (fileBlock != 0))
+                        {
+                            nextBlock = theChainBlock[fileBlock];
+                            theChainBlock[fileBlock] = 0;
+                            fileBlock = nextBlock;
+                        }
+                        writeBlock(chainBlock, theChainBlock);
+                        result = 0; // Success
+    
+                        // Call to compact the directory
+                        compactDirectory(dirHandle[0], dirHandle[0]);
+                        break; // Exit the loop
+                    }
+                }
+    
+                if ((result == 0) || (theChainBlock[dirHandle[0]] == 1))
+                {
+                    break; // Exit the loop if success or no more blocks in the chain
+                }
+                dirHandle[0] = theChainBlock[dirHandle[0]];
+            }
+    
+            closeDir(dirHandle);
+            break; // Exit the main for loop
+        }
+        return result; // Return the result
     }
     
     uint fWrite(byte[] buffer, uint size, uint count, byte[4] fileHandle)

@@ -242,7 +242,7 @@ unit File
         loop
         {
             byte[128] buffer;
-            uint count = FileSystem.fRead(buffer, 128, 1, fileHandle);
+            uint count = FileSystem.fRead(buffer, 1, 128, fileHandle);
             if (count == 0)
             {
                 break;
@@ -289,7 +289,7 @@ unit File
             {
                 break;
             }
-            _ = FileSystem.fWrite(buffer, i, 1, fileHandle);
+            _ = FileSystem.fWrite(buffer, 1, i, fileHandle);
         }
         this.isValid = (0 == FileSystem.fClose(fileHandle));
     }

@@ -202,39 +202,63 @@ unit List
     appendReferenceType()
     {
         // item is reference type
+        
+        // store list
         LDA IDYL
         PHA
         LDA IDYH
         PHA
         
-        // IDX -> IDX   variantItem = Variant_Clone(variantOriginal)) and release original
+        LDA LTYPE
+        IsReferenceType();
+        if (NC)
+        {
+            // adding value type to list of reference types: must be list of variants?
+            
+            // type in A, value in FVALUE
+            //     return tVariant in IDX
+            // uses FSIZE
+            
+            LDA IDXL
+            STA FVALUEL
+            LDA IDXH
+            STA FVALUEH
         
-        // type is in A
-        // reference type to clone is at IDY, resulting clone in IDX
-        LDA IDXL
-        STA IDYL
-        LDA IDXH
-        STA IDYH
+            LDA LTYPE // type in A, value in FVALUE
+            Variant.createValueVariant();
+        }
+        else
+        {
+            // IDX -> IDX   variantItem = Variant_Clone(variantOriginal)) and release original
+            
+            // type is in A
+            // reference type to clone is at IDY, resulting clone in IDX
+            LDA IDXL
+            STA IDYL
+            LDA IDXH
+            STA IDYH
+            
+            LDY # 0
+            LDA [IDY], Y // type in A
+            GC.Clone();
+            LDA IDXL
+            PHA
+            LDA IDXH
+            PHA
+            
+            LDA IDYL
+            STA IDXL
+            LDA IDYH
+            STA IDXH
+            GC.Release(); // release original
+            
+            PLA
+            STA IDXH
+            PLA
+            STA IDXL
+        }
         
-        LDY # 0
-        LDA [IDY], Y // type in A
-        GC.Clone();
-        LDA IDXL
-        PHA
-        LDA IDXH
-        PHA
-        
-        LDA IDYL
-        STA IDXL
-        LDA IDYH
-        STA IDXH
-        GC.Release(); // release original
-        
-        PLA
-        STA IDXH
-        PLA
-        STA IDXL
-        
+        // restore list
         PLA
         STA IDYH
         PLA
@@ -1187,27 +1211,50 @@ unit List
             //   munts IDX, IDY
             releaseItemValue(); // release pData 
             
-            // clone value and put it into LCURRENT/NEXT
-            LDA TOPL
-            STA IDYL
-            LDA TOPH
-            STA IDYH
-            
             PLA // LTYPE
-            // type is in A
-            // reference type to clone is at IDY, resulting clone in IDX
-            GC.Clone(); // cloneIDY
+            STA LTYPE
+            IsReferenceType();
+            if (NC)
+            {
+                // setting a value item in list of reference types: must be list of variants?
+                
+                // LCURRENT collides with LVALUE
+                LDA LCURRENTL
+                PHA
+                LDA LCURRENTH
+                PHA
+                
+                // type in A, value in FVALUE
+                //     return tVariant in IDX
+                // uses FSIZE
+                
+                LDA TOPL
+                STA FVALUEL
+                LDA TOPH
+                STA FVALUEH
             
-            /*
-            LDY # 2
-            LDA IDXL
-            STA [NEXT], Y
-            INY
-            LDA IDXH
-            STA [NEXT], Y
-            */
+                LDA LTYPE // type in A, value in FVALUE
+                Variant.createValueVariant();
+                
+                PLA
+                STA LCURRENTH
+                PLA
+                STA LCURRENTL
+            }
+            else
+            {
+                // clone value and put it into LCURRENT/NEXT
+                LDA TOPL
+                STA IDYL
+                LDA TOPH
+                STA IDYH
+                
+                LDA LTYPE
+                // type is in A
+                // reference type to clone is at IDY, resulting clone in IDX
+                GC.Clone(); // cloneIDY
+            }
             
-        
             // IDX -> LCURRENT.pData
             LDY # liData
             LDA IDXL
@@ -1216,12 +1263,16 @@ unit List
             LDA IDXH
             STA [LCURRENT], Y
             
-            LDA TOPL
-            STA IDXL
-            LDA TOPH
-            STA IDXH
-            GC.Release(); // we consumed 'value', decrease reference count
-            
+            LDA LTYPE
+            IsReferenceType();
+            if (C)
+            {
+                LDA TOPL
+                STA IDXL
+                LDA TOPH
+                STA IDXH
+                GC.Release(); // we consumed 'value', decrease reference count
+            }       
             PLA
             STA IDXH
             PLA

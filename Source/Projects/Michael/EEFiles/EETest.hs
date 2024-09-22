@@ -3,8 +3,8 @@ program EEPROM
     uses "/Source/Library/File/File"
     uses "/Source/Library/File/Directory"
     
-    uses "/Source/Library/Boards/PimoroniTiny2350"
-    //uses "/Source/Library/Boards/Hopper6502"
+    //uses "/Source/Library/Boards/PimoroniTiny2350"
+    uses "/Source/Library/Boards/Hopper6502"
     
     uses "/Source/Library/File/BlockFileSystem"
     
@@ -29,7 +29,8 @@ program EEPROM
         IO.WriteLn(GetCwd());
         */
         
-        Directory dir = Directory.Open("/");
+        Directory dir;
+        dir = Directory.Open("/");
         uint count = Directory.GetDirectoryCount(dir);
         for (uint i = 0; i < count; i++)
         {
