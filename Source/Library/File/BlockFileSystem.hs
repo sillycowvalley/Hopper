@@ -933,14 +933,186 @@ unit FileSystem
     
     uint fWrite(byte[] buffer, uint size, uint count, byte[4] fileHandle)
     {
-        Diagnostics.Die(0x0A); // TODO
-        return 0;
+        byte[blockSize] fileBlock;
+        byte[blockSize] theChainBlock;
+        byte[blockSize] dirBlock;
+        uint bytesToWrite = size * count;
+        uint bytesWritten = 0; // Explicitly setting it to 0 for clarity
+        uint toWrite;
+        uint position = (fileHandle[2] << 8) | fileHandle[3];
+        byte currentBlock;
+        byte newBlock;
+        uint offset = position;
+        byte dirBlockNumber = fileHandle[0]; // Directory block number
+        byte dirIndex = fileHandle[1]; // Directory entry index
+    
+        readBlock(chainBlock, theChainBlock);
+        readBlock(dirBlockNumber, dirBlock);
+        currentBlock = dirBlock[dirIndex * descriptorSize + startBlockOffset];
+    
+        // Handle new empty file scenario
+        if (currentBlock == 1)
+        {
+            currentBlock = findFreePage(theChainBlock);
+            if (currentBlock == 0)
+            {
+                return 0; // Disk full, no blocks available
+            }
+            theChainBlock[currentBlock] = 1; // Mark as end of chain
+            writeBlock(chainBlock, theChainBlock);
+            // Update directory entry with new block number
+            dirBlock[dirIndex * descriptorSize + startBlockOffset] = currentBlock;
+            writeBlock(dirBlockNumber, dirBlock);
+        }
+    
+        // Walk the current file data block chain until you get to the block that contains the current position
+        while (offset >= blockSize)
+        {
+            if (theChainBlock[currentBlock] == 1)
+            {
+                newBlock = findFreePage(theChainBlock);
+                if (newBlock == 0)
+                {
+                    return 0; // Disk full, no blocks available
+                }
+                theChainBlock[currentBlock] = newBlock;
+                theChainBlock[newBlock] = 1; // Mark as end of chain
+                writeBlock(chainBlock, theChainBlock);
+                currentBlock = newBlock;
+            }
+            else
+            {
+                currentBlock = theChainBlock[currentBlock];
+            }
+            offset -= blockSize;
+        }
+    
+        while (bytesToWrite > 0)
+        {
+            readBlock(currentBlock, fileBlock);
+            offset = position % blockSize;
+            toWrite = blockSize - offset;
+            if (toWrite > bytesToWrite)
+            {
+                toWrite = bytesToWrite;
+            }
+            for (uint i=0; i < toWrite; i++)
+            {
+                fileBlock[offset+i] = buffer[bytesWritten+i];
+            }
+            writeBlock(currentBlock, fileBlock);
+            position += toWrite;
+            bytesWritten += toWrite;
+            bytesToWrite -= toWrite;
+    
+            if (bytesToWrite > 0)
+            {
+                if (theChainBlock[currentBlock] == 1)
+                {
+                    newBlock = findFreePage(theChainBlock);
+                    if (newBlock == 0)
+                    {
+                        return bytesWritten / size; // Disk full, return number of elements written
+                    }
+                    theChainBlock[currentBlock] = newBlock;
+                    theChainBlock[newBlock] = 1; // Mark as end of chain
+                    writeBlock(chainBlock, theChainBlock);
+                    currentBlock = newBlock;
+                }
+                else
+                {
+                    currentBlock = theChainBlock[currentBlock];
+                }
+            }
+        }
+    
+        // Update position in file handle
+        fileHandle[2] = byte((position >> 8) & 0xFF);
+        fileHandle[3] = byte(position & 0xFF);
+        // Update the file size to the current position in directory entry
+        dirBlock[dirIndex * descriptorSize + fileSizeOffset]     = byte((position >> 8) & 0xFF);
+        dirBlock[dirIndex * descriptorSize + fileSizeOffset + 1] = byte(position & 0xFF);
+        writeBlock(dirBlockNumber, dirBlock);
+    
+        return bytesWritten / size;
     }
        
     uint fRead(byte[] buffer, uint size, uint count, byte[4] fileHandle) 
     {
-        Diagnostics.Die(0x0A); // TODO
-        return 0;
+        byte[blockSize] fileBlock;
+        byte[blockSize] theChainBlock;
+        byte[blockSize] dirBlock;
+        uint bytesToRead = size * count;
+        uint bytesRead = 0; // Explicitly setting it to 0 for clarity
+        uint toRead;
+        uint position = (fileHandle[2] << 8) | fileHandle[3];
+        byte currentBlock;
+        uint offset = position;
+        byte dirBlockNumber = fileHandle[0]; // Directory block number
+        byte dirIndex = fileHandle[1]; // Directory entry index
+        uint fileSize;
+    
+        readBlock(chainBlock, theChainBlock);
+        readBlock(dirBlockNumber, dirBlock);
+        currentBlock = dirBlock[dirIndex * descriptorSize + startBlockOffset];
+        fileSize   = ((dirBlock[dirIndex * descriptorSize + fileSizeOffset]) << 8) |
+                       dirBlock[dirIndex * descriptorSize + fileSizeOffset + 1];
+    
+        // Handle empty file scenario
+        if ((currentBlock == 1) || (position >= fileSize))
+        {
+            return 0; // Nothing to read
+        }
+    
+        // Adjust bytesToRead if it exceeds the remaining file size
+        if (bytesToRead > (fileSize - position))
+        {
+            bytesToRead = fileSize - position;
+        }
+    
+        // Walk the current file data block chain until you get to the block that contains the current position
+        while (offset >= blockSize)
+        {
+            if (theChainBlock[currentBlock] == 1)
+            {
+                return bytesRead / size; // End of file reached
+            }
+            currentBlock = theChainBlock[currentBlock];
+            offset -= blockSize;
+        }
+    
+        while (bytesToRead > 0)
+        {
+            readBlock(currentBlock, fileBlock);
+            offset = position % blockSize;
+            toRead = blockSize - offset;
+            if (toRead > bytesToRead)
+            {
+                toRead = bytesToRead;
+            }
+            for (uint i = 0; i < toRead; i++)
+            {
+                buffer[bytesRead+i] = fileBlock[offset+i];
+            }
+            position += toRead;
+            bytesRead += toRead;
+            bytesToRead -= toRead;
+    
+            if (bytesToRead > 0)
+            {
+                if (theChainBlock[currentBlock] == 1)
+                {
+                    break; // End of file reached
+                }
+                currentBlock = theChainBlock[currentBlock];
+            }
+        }
+    
+        // Update position in file handle
+        fileHandle[2] = byte((position >> 8) & 0xFF);
+        fileHandle[3] = byte(position & 0xFF);
+    
+        return bytesRead / size;
     }
     
     // Sets the file position indicator for the file.

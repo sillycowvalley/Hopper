@@ -1,6 +1,7 @@
 program Blink
 {
     #define CPU_65C02S
+    #define ROM_16K
     
     uses "/Source/Runtime/6502/ZeroPage"
     

@@ -243,6 +243,10 @@ unit File
         {
             byte[128] buffer;
             uint count = FileSystem.fRead(buffer, 128, 1, fileHandle);
+            if (count == 0)
+            {
+                break;
+            }
             for (uint i=0; i < count; i++)
             {
                 fileInstance.buffer = fileInstance.buffer + char(buffer[i]);

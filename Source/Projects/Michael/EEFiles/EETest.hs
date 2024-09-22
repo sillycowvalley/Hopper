@@ -49,7 +49,9 @@ program EEPROM
         if (File.IsValid(current))
         {
             string content = File.ReadLine(current);
+            IO.Write(content);
             content = File.ReadLine(current);
+            IO.Write(content);
         }
         File.Delete("/Folder/Test");
         
