@@ -56,11 +56,6 @@ unit File
             return line;
         }
         
-        if (!this.isReading || this.isWriting || !this.isValid)
-        {
-            this.isValid = false;
-            return line;
-        }
         if (this.pos >= this.size)
         {
             this.isValid = false;

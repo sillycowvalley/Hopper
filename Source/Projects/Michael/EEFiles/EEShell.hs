@@ -3,7 +3,6 @@ program EEShell
     uses "/Source/Library/File/File"
     uses "/Source/Library/File/Directory"
     
-    //uses "/Source/Library/Boards/PimoroniTiny2350"
     uses "/Source/Library/Boards/Hopper6502"
     
     Help()
@@ -15,6 +14,7 @@ program EEShell
         WriteLn("    RD         RMDIR    Remove empty directory.");
         WriteLn("    RM         DEL      Delete a file.");
         WriteLn("    DIR        LS       Lists a directory. -S for recursive.");
+        WriteLn("    CREATE              Creates a multiline text file.");
         WriteLn("    SHOW                Echos file content to console.");
         WriteLn("    BLOCK               Hex output of a drive block (0..255).");
         WriteLn("    FORMAT              Resets the drive.");
@@ -282,6 +282,7 @@ program EEShell
                     string command = (parts[0]).ToUpper();
                     if (GoodArguments(command, parts.Count-1))
                     {
+                        LED = true;
                         switch (command)
                         {
                             case "EXIT":   { break; }
@@ -315,6 +316,7 @@ program EEShell
                                 IO.WriteLn("    Invalid command");
                             }
                         }
+                        LED = false;
                     }
                     else
                     {
