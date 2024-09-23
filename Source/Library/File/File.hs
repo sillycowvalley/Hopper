@@ -28,23 +28,16 @@ unit File
         return true;
     }
     
+    uint GetSize(string path)
+    {
+        string fullPath = FileSystem.getFullPath(path);
+        return FileSystem.getSize(fullPath);
+    }
+    
     // Delete the file at the given path.
     Delete(string path)
     {
         _ = FileSystem.remove(path); // error check?
-    }
-    
-    // Get the size of the file at the given path.
-    long GetSize(string path)
-    {
-        // Stub implementation
-        File current;
-        current = File.Open(path);
-        if (current.isValue)
-        {
-            return current.size;
-        }
-        return 0;
     }
     
     // Check if the file object is valid.

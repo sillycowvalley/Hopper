@@ -6,19 +6,6 @@ program EEShell
     //uses "/Source/Library/Boards/PimoroniTiny2350"
     uses "/Source/Library/Boards/Hopper6502"
     
-    // Commands:
-    // - EXIT  - exit the console so the debugger or monitor can break in
-    // - DIR   - list files and directories, -S for recursive
-    // - CHDIR - change current directory
-    // - MKDIR - make directory
-    // - BLOCK - dump a block
-    // - RMDIR - remove empty directory
-    // - SHOW  - display the content of a text file
-    //
-    // - FORMAT - reset the drive
-    // - DEL   - remove file
-    // - HELP  - show these commands
-    
     Help()
     {
         WriteLn("  Command:   Alias:");
@@ -31,6 +18,12 @@ program EEShell
         WriteLn("    SHOW                Echos file content to console.");
         WriteLn("    BLOCK               Hex output of a drive block (0..255).");
         WriteLn("    FORMAT              Resets the drive.");
+    }
+    
+    Format()
+    {
+        FileSystem.Mount(true);
+        IO.WriteLn("    Drive formatted.");    
     }
     
     doDir(string path, bool recurse, string indent)
@@ -57,10 +50,11 @@ program EEShell
             for (uint i = 0; i < count; i++)
             {
                 string filePath = Directory.GetFile(dir, i);
+                uint size = File.GetSize(filePath);
                 string fileName = Path.GetFileName(filePath);
                 filePath = Path.GetDirectoryName(filePath);
                 fileName = fileName.Pad(' ', 12);
-                fileName = fileName + "K";
+                fileName = fileName + size.ToString() + " bytes";
                 filePath = Path.Combine(filePath, fileName);
                 IO.WriteLn(indent + filePath);
             }
@@ -167,6 +161,19 @@ program EEShell
             break;
         }
     }
+    Del(string path)
+    {
+        loop
+        {
+            if (!File.Exists(path))
+            {
+                IO.WriteLn("    File does not exist");
+                break;
+            }
+            File.Delete(path);
+            break;
+        }
+    }
     Show(string path)
     {
         loop
@@ -226,6 +233,7 @@ program EEShell
         switch (command)
         {
             case "HELP":
+            case "FORMAT":
             case "EXIT":   { ok = (count == 0); }
             
             case "DIR":    { ok = (count == 0) || (count == 1); }
@@ -241,6 +249,8 @@ program EEShell
             
             case "SHOW":
             case "CREATE":
+            case "RM":
+            case "DEL":
             
             case "BLOCK":  { ok = (count == 1); }
         }
@@ -276,6 +286,8 @@ program EEShell
                         {
                             case "EXIT":   { break; }
                             
+                            case "FORMAT": { Format(); }
+                            
                             case "DIR":    { Dir(argument); }
                             
                             case "CD":
@@ -289,6 +301,10 @@ program EEShell
                             
                             case "SHOW":   { Show(argument);    }
                             case "CREATE": { Create(argument);  }
+                            
+                            case "RM":
+                            case "DEL":    { Del(argument);     }
+                            
                             
                             case "BLOCK":  { Block(argument); }
                             

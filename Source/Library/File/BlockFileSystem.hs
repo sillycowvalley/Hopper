@@ -786,6 +786,75 @@ unit FileSystem
         return 0; // Success
     }
     
+    uint getSize(string path)
+    {
+        uint size;
+        bool success;
+        
+        byte[blockSize] dirBlock;
+        byte[blockSize] theChainBlock;
+        byte[descriptorSize] descriptor;
+        uint i;
+        string parentDir;
+        string fileName;
+        byte[2] parentDirHandle;
+        
+        loop
+        {
+            string fullPath = getFullPath(path);
+            if (!isValidPath(fullPath)) 
+            {
+                break; // Invalid path
+            }
+            
+            readBlock(chainBlock, theChainBlock);
+            splitPath(fullPath, ref parentDir, ref fileName);
+            
+            parentDirHandle = openDir(parentDir);
+            if (parentDirHandle[0] == 0)
+            {
+                break; // directory not found
+            }
+            // Locate the file descriptor
+            loop
+            {
+                readBlock(parentDirHandle[0], dirBlock);
+                for (i = 0; i < blockSize; i += descriptorSize)
+                {
+                    byte[descriptorSize] dirEntry;
+                    for (uint j = 0; j < descriptorSize; j++)
+                    {
+                        dirEntry[j] = dirBlock[i+j];
+                    }
+                    if (compareDirEntry(dirEntry, fileName, fileTypeFile))
+                    {
+                        size = ((dirEntry[fileSizeOffset]) << 8) | dirEntry[fileSizeOffset + 1];
+                        success = true;
+                        closeDir(parentDirHandle);
+                        break; // Success
+                    }
+                } // for
+                if (success)
+                {
+                    break; // Success
+                }
+                // Follow the chain if no descriptor found in current block
+                if (theChainBlock[parentDirHandle[0]] == 1)
+                {
+                    break; // No more blocks in the chain
+                }
+                parentDirHandle[0] = theChainBlock[parentDirHandle[0]];
+            } // while
+            closeDir(parentDirHandle);
+            if (success)
+            {
+                break; // Success
+            }
+        }
+        return size;
+    }
+    
+    
     // Opens a file
     // filename: Name of the file or directory to open.
     // mode: Mode in which to open the file (e.g., "r" for read, "w" for write, etc.).
