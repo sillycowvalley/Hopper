@@ -388,6 +388,10 @@ unit FileSystem
         // Initialize global block chain page (no chains yet, 0 and 1 reserved)
         blockChainPage[0] = 42;
         blockChainPage[1] = 1;
+        for (uint i=2; i < 256; i++)
+        {
+            blockChainPage[i] = 0;
+        }
         writeBlock(chainBlock, blockChainPage);
         
         // Initialize the root directory (empty initially)
