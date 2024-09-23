@@ -283,6 +283,7 @@ program EEShell
                     if (GoodArguments(command, parts.Count-1))
                     {
                         LED = true;
+                        //long start = Time.Millis;
                         switch (command)
                         {
                             case "EXIT":   { break; }
@@ -316,6 +317,8 @@ program EEShell
                                 IO.WriteLn("    Invalid command");
                             }
                         }
+                        //long elapsed = Time.Millis - start;
+                        //IO.WriteLn("Time: " + elapsed.ToString() + " ms");
                         LED = false;
                     }
                     else

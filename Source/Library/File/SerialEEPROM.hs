@@ -46,6 +46,8 @@ unit BlockStorage
     
     WriteBlock(byte blockNumber, byte[] dataBlock)
     {
+        //IO.WriteLn("W:" + blockNumber.ToString());
+        
         uint address = blockNumber * blockSize; // 16 bit type so will truncate
         byte blockAddress = i2cEEPROMaddress;
         uint index;
@@ -71,6 +73,8 @@ unit BlockStorage
     }
     ReadBlock(byte blockNumber, byte[] dataBlock)
     {
+        //IO.WriteLn("R:" + blockNumber.ToString());
+        
         uint address = blockNumber * blockSize; // 16 bit type so will truncate
         uint index;
         byte blockAddress = i2cEEPROMaddress;

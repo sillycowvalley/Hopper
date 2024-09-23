@@ -61,24 +61,66 @@ unit FileSystem
     const uint descriptorsPerBlock = blockSize / descriptorSize;
     
     string currentDirectory;
+    
+    bool   chainCached;
+    byte[blockSize] cacheChain; 
+    byte   blockCached;
+    byte[blockSize] cacheBlock;
+    
 
     // ### private Helper Functions
     
     // Reads a block from EEPROM.
     // blockNum: The block number to read.
     // buffer: The buffer to store the read data.
-    readBlock(byte blockNum, byte[] buffer) 
+    readBlock(byte blockNum, ref byte[blockSize] buffer) 
     {
-        BlockStorage.ReadBlock(blockNum, buffer);
+        loop
+        {
+            if (blockNum == 0)
+            {
+                if (chainCached)
+                {
+                    buffer = cacheChain;
+                    break;
+                }
+            }
+            else if (blockNum == blockCached)
+            {
+                buffer = cacheBlock;
+                break;
+            }
+            BlockStorage.ReadBlock(blockNum, buffer);
+            if (blockNum == 0)
+            {
+                cacheChain = buffer;
+                chainCached = true;
+            }
+            else
+            {
+                cacheBlock = buffer;
+                blockCached = blockNum;
+            }
+            break;
+        }
     }
     
     
     // Writes a block to EEPROM.
     // blockNum: The block number to write.
     // buffer: The buffer containing the data to write.
-    writeBlock(byte blockNum, byte[] buffer)
+    writeBlock(byte blockNum, byte[blockSize] buffer)
     {
         BlockStorage.WriteBlock(blockNum, buffer);
+        if (blockNum == 0)
+        {
+            cacheChain = buffer;
+            chainCached = true;
+        }
+        else if (blockNum == blockCached)
+        {
+            blockCached = 0;
+        }
     }
 
     // Finds a free page in the ChainList.
@@ -278,11 +320,11 @@ unit FileSystem
         bool isEmpty;
         byte prevBlock;
         
-        readBlock(chainBlock, theChainBlock);
+        readBlock(chainBlock, ref theChainBlock);
         loop
         {
             blockMoved = false;
-            readBlock(currentBlock, dirBlock);
+            readBlock(currentBlock, ref dirBlock);
             for (i = 0; i < blockSize; i += descriptorSize)
             {
                 if (dirBlock[i + filenameOffset] == 0) // Find empty slot
@@ -291,7 +333,7 @@ unit FileSystem
                     parentNextBlock = theChainBlock[currentBlock];
                     while (parentNextBlock != 1) 
                     {
-                        readBlock(parentNextBlock, nextDirBlock);
+                        readBlock(parentNextBlock, ref nextDirBlock);
                         for (j = 0; j < blockSize; j += descriptorSize) 
                         {
                             if (nextDirBlock[j + filenameOffset] != 0) // Find used slot
@@ -376,7 +418,7 @@ unit FileSystem
         byte[blockSize] blockChainPage;
         if (!alwaysFormat)
         {
-            readBlock(chainBlock, blockChainPage);
+            readBlock(chainBlock, ref blockChainPage);
             if ((blockChainPage[0] == 42) && (blockChainPage[1] == 1))
             {
                 return; // already formatted
@@ -441,7 +483,7 @@ unit FileSystem
             return -1; // Invalid path
         }
         
-        readBlock(chainBlock, theChainBlock);
+        readBlock(chainBlock, ref theChainBlock);
         
         // Find a free block for the new directory
         newBlock = findFreePage(theChainBlock);
@@ -469,7 +511,7 @@ unit FileSystem
         {
             return -1; // Failed to open parent directory
         }
-        readBlock(parentDirHandle[0], dirBlock);
+        readBlock(parentDirHandle[0], ref dirBlock);
         byte currentBlock = parentDirHandle[0];
         closeDir(parentDirHandle);
         
@@ -510,13 +552,13 @@ unit FileSystem
                 byte [blockSize] newDirBlock;
                 writeBlock(newDirBlockInChain, newDirBlock);
                 currentBlock = newDirBlockInChain;
-                readBlock(currentBlock, dirBlock);
+                readBlock(currentBlock, ref dirBlock);
             }
             else
             {
                 // Move to the next block in the chain
                 currentBlock = theChainBlock[currentBlock];
-                readBlock(currentBlock, dirBlock);
+                readBlock(currentBlock, ref dirBlock);
             }
         }
         return -1; // No empty slot found
@@ -538,7 +580,7 @@ unit FileSystem
             return dirHandle; // Invalid path
         }
         
-        readBlock(chainBlock, theChainBlock);
+        readBlock(chainBlock, ref theChainBlock);
         
         if (fullPath == "/")
         {
@@ -553,7 +595,7 @@ unit FileSystem
         foreach (var token in tokens)
         {
             found = false;
-            readBlock(currentBlock, dirBlock);
+            readBlock(currentBlock, ref dirBlock);
             loop
             {
                 for (i = 0; i < blockSize; i += descriptorSize)
@@ -575,7 +617,7 @@ unit FileSystem
                     break;
                 }
                 currentBlock = theChainBlock[currentBlock];
-                readBlock(currentBlock, dirBlock);
+                readBlock(currentBlock, ref dirBlock);
             }
             
             if (!found)
@@ -612,7 +654,7 @@ unit FileSystem
             // Previous entry was the last one in that page
             // Follow the chain to the next page for this directory
             byte[blockSize] theChainBlock;
-            readBlock(chainBlock, theChainBlock);
+            readBlock(chainBlock, ref theChainBlock);
             
             dirHandle[0] = theChainBlock[dirHandle[0]];
             if (dirHandle[0] == 1) // that was the last page in the chain
@@ -625,7 +667,7 @@ unit FileSystem
         
         // Read the block where the current directory entry is
         byte[blockSize] dirBlock;
-        readBlock(dirHandle[0], dirBlock);
+        readBlock(dirHandle[0], ref dirBlock);
         
         // Copy the directory entry
         for (uint i=0; i < descriptorSize; i++)
@@ -677,7 +719,7 @@ unit FileSystem
             }
             
             // Check if the directory is empty
-            readBlock(dirHandle[0], dirBlock);
+            readBlock(dirHandle[0], ref dirBlock);
             for (i = 0; i < blockSize; i += descriptorSize) 
             {
                 if (dirBlock[i + filenameOffset] != 0) 
@@ -694,7 +736,7 @@ unit FileSystem
             closeDir(dirHandle);
             
             // Free the blocks used by the directory
-            readBlock(chainBlock, theChainBlock);
+            readBlock(chainBlock, ref theChainBlock);
             while (currentBlock != 1) 
             {
                 byte nextBlock = theChainBlock[currentBlock];
@@ -711,7 +753,7 @@ unit FileSystem
                 break; // Failed to open parent directory
             }
             
-            readBlock(dirHandle[0], dirBlock);
+            readBlock(dirHandle[0], ref dirBlock);
             loop
             {
                 for (i = 0; i < blockSize; i += descriptorSize)
@@ -741,7 +783,7 @@ unit FileSystem
                     break; // Exit the loop if success or no more blocks in the chain
                 }
                 dirHandle[0] = theChainBlock[dirHandle[0]];
-                readBlock(dirHandle[0], dirBlock);
+                readBlock(dirHandle[0], ref dirBlock);
             }
             
             closeDir(dirHandle);
@@ -811,7 +853,7 @@ unit FileSystem
                 break; // Invalid path
             }
             
-            readBlock(chainBlock, theChainBlock);
+            readBlock(chainBlock, ref theChainBlock);
             splitPath(fullPath, ref parentDir, ref fileName);
             
             parentDirHandle = openDir(parentDir);
@@ -822,7 +864,7 @@ unit FileSystem
             // Locate the file descriptor
             loop
             {
-                readBlock(parentDirHandle[0], dirBlock);
+                readBlock(parentDirHandle[0], ref dirBlock);
                 for (i = 0; i < blockSize; i += descriptorSize)
                 {
                     byte[descriptorSize] dirEntry;
@@ -890,7 +932,7 @@ unit FileSystem
             {
                 break; // Invalid mode
             }
-            readBlock(chainBlock, theChainBlock);
+            readBlock(chainBlock, ref theChainBlock);
             splitPath(fullPath, ref parentDir, ref fileName);
             
             parentDirHandle = openDir(parentDir);
@@ -901,7 +943,7 @@ unit FileSystem
             // Locate the file descriptor
             loop
             {
-                readBlock(parentDirHandle[0], dirBlock);
+                readBlock(parentDirHandle[0], ref dirBlock);
                 for (i = 0; i < blockSize; i += descriptorSize)
                 {
                     byte[descriptorSize] dirEntry;
@@ -973,7 +1015,7 @@ unit FileSystem
                 {
                     break; // Failed to open parent directory
                 }
-                readBlock(parentDirHandle[0], dirBlock);
+                readBlock(parentDirHandle[0], ref dirBlock);
                 currentBlock = parentDirHandle[0];
                 closeDir(parentDirHandle);
                 loop
@@ -1013,13 +1055,13 @@ unit FileSystem
                         // Initialize the new directory block
                         writeBlock(newDirBlockInChain, newDirBlock);
                         currentBlock = newDirBlockInChain;
-                        readBlock(currentBlock, dirBlock);
+                        readBlock(currentBlock, ref dirBlock);
                     }
                     else
                     {
                         // Move to the next block in the chain
                         currentBlock = theChainBlock[currentBlock];
-                        readBlock(currentBlock, dirBlock);
+                        readBlock(currentBlock, ref dirBlock);
                     }
                 } // while
             } // if "w"
@@ -1058,12 +1100,12 @@ unit FileSystem
                 break; // Failed to open parent directory
             }
     
-            readBlock(chainBlock, theChainBlock);
+            readBlock(chainBlock, ref theChainBlock);
             
             // Locate the file descriptor
             loop
             {
-                readBlock(dirHandle[0], dirBlock);
+                readBlock(dirHandle[0], ref dirBlock);
                 for (i = 0; i < blockSize; i += descriptorSize)
                 {
                     for (uint j=0; j < descriptorSize; j++)
@@ -1127,8 +1169,8 @@ unit FileSystem
         byte dirBlockNumber = fileHandle[0]; // Directory block number
         byte dirIndex = fileHandle[1]; // Directory entry index
     
-        readBlock(chainBlock, theChainBlock);
-        readBlock(dirBlockNumber, dirBlock);
+        readBlock(chainBlock, ref theChainBlock);
+        readBlock(dirBlockNumber, ref dirBlock);
         currentBlock = dirBlock[dirIndex * descriptorSize + startBlockOffset];
     
         // Handle new empty file scenario
@@ -1170,7 +1212,7 @@ unit FileSystem
     
         while (bytesToWrite > 0)
         {
-            readBlock(currentBlock, fileBlock);
+            readBlock(currentBlock, ref fileBlock);
             offset = position % blockSize;
             toWrite = blockSize - offset;
             if (toWrite > bytesToWrite)
@@ -1233,8 +1275,8 @@ unit FileSystem
         byte dirIndex = fileHandle[1]; // Directory entry index
         uint fileSize;
     
-        readBlock(chainBlock, theChainBlock);
-        readBlock(dirBlockNumber, dirBlock);
+        readBlock(chainBlock, ref theChainBlock);
+        readBlock(dirBlockNumber, ref dirBlock);
         currentBlock = dirBlock[dirIndex * descriptorSize + startBlockOffset];
         fileSize   = ((dirBlock[dirIndex * descriptorSize + fileSizeOffset]) << 8) |
                        dirBlock[dirIndex * descriptorSize + fileSizeOffset + 1];
@@ -1264,7 +1306,7 @@ unit FileSystem
     
         while (bytesToRead > 0)
         {
-            readBlock(currentBlock, fileBlock);
+            readBlock(currentBlock, ref fileBlock);
             offset = position % blockSize;
             toRead = blockSize - offset;
             if (toRead > bytesToRead)
