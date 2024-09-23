@@ -104,11 +104,19 @@ unit FileSystem
         {
             return false;
         }
-        for (uint i = 0; i < len; i++)
+        <string> parts = path.Split('/');
+        foreach (var part in parts)
         {
-            if (!Path.IsValidPathCharacter(path[i]))
+            if ((part.Length == 0) || (part.Length > 12))
             {
                 return false;
+            }
+            foreach (var ch in part)
+            {
+                if (!Path.IsValidPathCharacter(ch))
+                {
+                    return false;
+                }
             }
         }
         return true;
@@ -243,14 +251,15 @@ unit FileSystem
             {
                 break; // not the correct length
             }
+            found = true; // name matches
             for (uint i=0; i < length; i++)
             {
                 if (dirEntry[filenameOffset+i] != byte(name[i]))
                 {
-                    break; // name does not match
+                    found = false; // name does not match
+                    break; 
                 }
             }
-            found = true; // name match
             break;
         }
         return found;
@@ -589,9 +598,10 @@ unit FileSystem
         return name;
     }
     
-    byte[descriptorSize] readDir(byte[2] dirHandle)
+    byte[descriptorSize] readDir(byte[2] dirHandle, ref bool done)
     {
         byte[descriptorSize] dirEntry;
+        done = false;
         
         if (dirHandle[1] == blockSize - descriptorSize) 
         {
@@ -603,6 +613,7 @@ unit FileSystem
             dirHandle[0] = theChainBlock[dirHandle[0]];
             if (dirHandle[0] == 1) // that was the last page in the chain
             {
+                done = true;
                 return dirEntry;  
             }
             dirHandle[1] = 0;
@@ -617,11 +628,13 @@ unit FileSystem
         {
             dirEntry[i] = dirBlock[dirHandle[1]+i];
         }
+        /*
         if (dirEntry[startBlockOffset] == 0)
         {
             // empty slot
             return dirEntry;
         }
+        */
             
         // Update the directory handle position for the next iteration
         dirHandle[1] = dirHandle[1] + descriptorSize;

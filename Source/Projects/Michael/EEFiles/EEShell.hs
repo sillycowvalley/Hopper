@@ -10,12 +10,28 @@ program EEShell
     // - EXIT  - exit the console so the debugger or monitor can break in
     // - DIR   - list files and directories, -S for recursive
     // - CHDIR - change current directory
-    //
     // - MKDIR - make directory
+    // - BLOCK - dump a block
     // - RMDIR - remove empty directory
-    // - DEL   - remove file
     // - SHOW  - display the content of a text file
+    //
+    // - FORMAT - reset the drive
+    // - DEL   - remove file
     // - HELP  - show these commands
+    
+    Help()
+    {
+        WriteLn("  Command:   Alias:");
+        WriteLn("    EXIT                Terminate this program.");
+        WriteLn("    CD         CHDIR    Changes the current directory.");
+        WriteLn("    MD         MKDIR    Create a new directory.");
+        WriteLn("    RD         RMDIR    Remove empty directory.");
+        WriteLn("    RM         DEL      Delete a file.");
+        WriteLn("    DIR        LS       Lists a directory. -S for recursive.");
+        WriteLn("    SHOW                Echos file content to console.");
+        WriteLn("    BLOCK               Hex output of a drive block (0..255).");
+        WriteLn("    FORMAT              Resets the drive.");
+    }
     
     doDir(string path, bool recurse, string indent)
     {
@@ -40,8 +56,13 @@ program EEShell
             count = Directory.GetFileCount(dir);
             for (uint i = 0; i < count; i++)
             {
-                string filename = Directory.GetFile(dir, i);
-                IO.WriteLn(indent + filename);
+                string filePath = Directory.GetFile(dir, i);
+                string fileName = Path.GetFileName(filePath);
+                filePath = Path.GetDirectoryName(filePath);
+                fileName = fileName.Pad(' ', 12);
+                fileName = fileName + "K";
+                filePath = Path.Combine(filePath, fileName);
+                IO.WriteLn(indent + filePath);
             }
             break;
         } 
@@ -51,25 +72,181 @@ program EEShell
         bool recurse = (argument.ToUpper() == "-S");
         doDir(System.CurrentDirectory, recurse, "  ");
     }
-    ChDir(string path)
+    Block(string blockNumber)
     {
         loop
         {
-            if (path.Length == 0)
+            uint iBlock;
+            if (!UInt.TryParse(blockNumber, ref iBlock) || (iBlock > 255))
             {
+                IO.WriteLn("    Invalid block number '" + blockNumber + "'");
                 break;
             }
-            if (Directory.Exists(path))
+            byte[256] buffer;
+            BlockStorage.ReadBlock(byte(iBlock), buffer);
+            uint address = iBlock * 256;
+            string current;
+            for (uint i = 0; i < 256; i++)
             {
-                System.CurrentDirectory = path;
+                if (address % 16 == 0)
+                {
+                    IO.Write(address.ToHexString(4) + " ");
+                }
+                IO.Write((buffer[i]).ToHexString(2) + " ");
+                if (buffer[i] >= 32)
+                {
+                    current += char(buffer[i]);
+                }
+                else
+                {
+                    current += '.';
+                }
+                if (address % 16 == 7)
+                {
+                    IO.Write(" ");
+                }
+                if (address % 16 == 15)
+                {
+                    IO.WriteLn("  " + current);
+                    current = "";
+                }
+                address++;
             }
-            else
+            IO.WriteLn();
+            break;
+        }
+    }
+    ChDir(string path)
+    {
+        if (Directory.Exists(path))
+        {
+            System.CurrentDirectory = path;
+        }
+        else
+        {
+            IO.WriteLn("    Directory does not exist");
+        }
+    }
+    MkDir(string path)
+    {
+        if (Directory.Exists(path))
+        {
+            IO.WriteLn("    Directory already exists");
+        }
+        else
+        {
+            Directory.Create(path);
+            Directory dir = Directory.Open(path);
+            if (!Directory.IsValid(dir))
+            {
+                IO.WriteLn("    Invalid directory '" + path + "'");
+            }
+        }
+    }
+    RmDir(string path)
+    {
+        loop
+        {
+            if (!Directory.Exists(path))
             {
                 IO.WriteLn("    Directory does not exist");
+                break;
+            }
+            if (path == System.CurrentDirectory)
+            {
+                IO.WriteLn("    Cannot remove current directory");
+                break;
+            }
+            Directory dir = Directory.Open(path);
+            if ((Directory.GetDirectoryCount(dir) != 0) || (Directory.GetFileCount(dir) != 0))
+            {
+                IO.WriteLn("    Can only remove empty directory");
+                break;
+            }
+            Directory.Delete(path);
+            break;
+        }
+    }
+    Show(string path)
+    {
+        loop
+        {
+            if (!File.Exists(path))
+            {
+                IO.WriteLn("    File does not exist");
+                break;
+            }
+            File fl = File.Open(path);
+            loop
+            {
+                string content = File.ReadLine(fl);
+                if (!File.IsValid(fl))
+                {
+                    break;
+                }         
+                IO.WriteLn(content);   
             }
             break;
         }
     }
+    Create(string path)
+    {
+        loop
+        {
+            if (File.Exists(path))
+            {
+                IO.WriteLn("    File already exists");
+                break;
+            }
+            File fl = File.Create(path);
+            if (!File.IsValid(fl))
+            {
+                IO.WriteLn("    Failed to create '" + path + "'");
+            }
+            loop
+            {
+                string line;
+                if (!IO.ReadLn(ref line))
+                {
+                    break;
+                }
+                if (line.Length == 0)
+                {
+                    break;
+                }                
+                File.Append(fl, line + Char.EOL);
+            }
+            File.Flush(fl);
+            break;
+        }
+    }
+    bool GoodArguments(string command, uint count)
+    {
+        bool ok;
+        switch (command)
+        {
+            case "HELP":
+            case "EXIT":   { ok = (count == 0); }
+            
+            case "DIR":    { ok = (count == 0) || (count == 1); }
+            
+            case "CD":
+            case "CHDIR":  
+            
+            case "MD":
+            case "MKDIR":  
+            
+            case "RD":
+            case "RMDIR":  
+            
+            case "SHOW":
+            case "CREATE":
+            
+            case "BLOCK":  { ok = (count == 1); }
+        }
+        return ok;
+    }
+    
     Hopper()
     {
         _ = Wire.Initialize();
@@ -92,14 +269,40 @@ program EEShell
                     {
                         argument = parts[1];
                     }
-                    switch ((parts[0]).ToUpper())
+                    string command = (parts[0]).ToUpper();
+                    if (GoodArguments(command, parts.Count-1))
                     {
-                        case "EXIT":   { break; }
-                        
-                        case "DIR":    { Dir(argument); }
-                        
-                        case "CD":
-                        case "CHDIR":  { ChDir(argument); }
+                        switch (command)
+                        {
+                            case "EXIT":   { break; }
+                            
+                            case "DIR":    { Dir(argument); }
+                            
+                            case "CD":
+                            case "CHDIR":  { ChDir(argument); }
+                            
+                            case "MD":
+                            case "MKDIR":  { MkDir(argument); }
+                            
+                            case "RD":
+                            case "RMDIR":  { RmDir(argument); }
+                            
+                            case "SHOW":   { Show(argument);    }
+                            case "CREATE": { Create(argument);  }
+                            
+                            case "BLOCK":  { Block(argument); }
+                            
+                            case "HELP":   { Help(); }
+                            
+                            default:
+                            {
+                                IO.WriteLn("    Invalid command");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        IO.WriteLn("    Invalid arguments for '" + command + "'");
                     }
                 }
             }

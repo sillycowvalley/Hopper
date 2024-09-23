@@ -41,15 +41,20 @@ unit Directory
     uint GetDirectoryCount(Directory this)
     {
         uint count;
+        bool done;
         if (Directory.IsValid(this))
         {
             byte[2] dirHandle = FileSystem.openDir(this.path);
             loop
             {
-                byte[] entry =  FileSystem.readDir(dirHandle);
-                if (entry[0] == 0) 
+                byte[] entry =  FileSystem.readDir(dirHandle, ref done);
+                if (done)
                 {
                     break;
+                }
+                if (entry[0] == 0) 
+                {
+                    continue; // skip empty slot
                 }
                 if (FileSystem.isDirectory(entry))
                 {
@@ -64,15 +69,20 @@ unit Directory
     uint GetFileCount(Directory this)
     {
         uint count;
+        bool done;
         if (Directory.IsValid(this))
         {
             byte[2] dirHandle = FileSystem.openDir(this.path);
             loop
             {
-                byte[] entry =  FileSystem.readDir(dirHandle);
-                if (entry[0] == 0) 
+                byte[] entry =  FileSystem.readDir(dirHandle, ref done);
+                if (done)
                 {
                     break;
+                }
+                if (entry[0] == 0) 
+                {
+                    continue; // skip empty slot
                 }
                 if (!FileSystem.isDirectory(entry))
                 {
@@ -88,15 +98,20 @@ unit Directory
     {
         string result;
         uint count;
+        bool done;
         if (Directory.IsValid(this))
         {
             byte[2] dirHandle = FileSystem.openDir(this.path);
             loop
             {
-                byte[] entry =  FileSystem.readDir(dirHandle);
-                if (entry[0] == 0) 
+                byte[] entry =  FileSystem.readDir(dirHandle, ref done);
+                if (done)
                 {
                     break;
+                }
+                if (entry[0] == 0) 
+                {
+                    continue; // skip empty slot
                 }
                 if (FileSystem.isDirectory(entry))
                 {
@@ -118,15 +133,20 @@ unit Directory
     {
         string result;
         uint count;
+        bool done;
         if (Directory.IsValid(this))
         {
             byte[2] dirHandle = FileSystem.openDir(this.path);
             loop
             {
-                byte[] entry =  FileSystem.readDir(dirHandle);
-                if (entry[0] == 0) 
+                byte[] entry =  FileSystem.readDir(dirHandle, ref done);
+                if (done)
                 {
                     break;
+                }
+                if (entry[0] == 0) 
+                {
+                    continue; // skip empty slot
                 }
                 if (!FileSystem.isDirectory(entry))
                 {
