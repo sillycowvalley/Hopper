@@ -62,11 +62,16 @@ unit FileSystem
     
     string currentDirectory;
     
+    #define CACHE_BLOCKS
+    
+#ifdef CACHE_BLOCKS
     bool   chainCached;
     byte[blockSize] cacheChain; 
+    bool   rootCached;
+    byte[blockSize] cacheRoot; 
     byte   blockCached;
     byte[blockSize] cacheBlock;
-    
+#endif
 
     // ### private Helper Functions
     
@@ -77,6 +82,7 @@ unit FileSystem
     {
         loop
         {
+#ifdef CACHE_BLOCKS
             if (blockNum == 0)
             {
                 if (chainCached)
@@ -85,22 +91,38 @@ unit FileSystem
                     break;
                 }
             }
+            else if (blockNum == 1)
+            {
+                if (rootCached)
+                {
+                    buffer = cacheRoot;
+                    break;
+                }
+            }
             else if (blockNum == blockCached)
             {
                 buffer = cacheBlock;
                 break;
             }
+#endif
             BlockStorage.ReadBlock(blockNum, buffer);
+#ifdef CACHE_BLOCKS
             if (blockNum == 0)
             {
                 cacheChain = buffer;
                 chainCached = true;
+            }
+            else if (blockNum == 1)
+            {
+                cacheRoot = buffer;
+                rootCached = true;
             }
             else
             {
                 cacheBlock = buffer;
                 blockCached = blockNum;
             }
+#endif
             break;
         }
     }
@@ -112,15 +134,22 @@ unit FileSystem
     writeBlock(byte blockNum, byte[blockSize] buffer)
     {
         BlockStorage.WriteBlock(blockNum, buffer);
+#ifdef CACHE_BLOCKS
         if (blockNum == 0)
         {
             cacheChain = buffer;
             chainCached = true;
         }
+        else if (blockNum == 1)
+        {
+            cacheRoot = buffer;
+            rootCached = true;
+        }
         else if (blockNum == blockCached)
         {
             blockCached = 0;
         }
+#endif
     }
 
     // Finds a free page in the ChainList.
