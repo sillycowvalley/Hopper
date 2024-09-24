@@ -303,29 +303,28 @@ unit FileSystem
         return result;
     }
     
-    
-    bool compareDirEntry(byte[] dirEntry, string name, byte entryType)
+    bool compareDirEntry(byte[] dirBlock, uint dirEntryStart, string name, byte entryType)
     {
         bool found;
         uint length = name.Length;
         loop
         {
-            if (dirEntry[startBlockOffset] == 0) 
+            if (dirBlock[dirEntryStart+startBlockOffset] == 0) 
             {
                 break; // empty dirEntry
             }
-            if ((dirEntry[fileTypeOffset] & 0xF0) != entryType)
+            if ((dirBlock[dirEntryStart+fileTypeOffset] & 0xF0) != entryType)
             {
                 break; // not the correct type of record
             }
-            if (length != (dirEntry[fileTypeOffset] & 0x0F))
+            if (length != (dirBlock[dirEntryStart+fileTypeOffset] & 0x0F))
             {
                 break; // not the correct length
             }
             found = true; // name matches
             for (uint i=0; i < length; i++)
             {
-                if (dirEntry[filenameOffset+i] != byte(name[i]))
+                if (dirBlock[dirEntryStart+filenameOffset+i] != byte(name[i]))
                 {
                     found = false; // name does not match
                     break; 
@@ -629,12 +628,7 @@ unit FileSystem
             {
                 for (i = 0; i < blockSize; i += descriptorSize)
                 {
-                    byte[descriptorSize] dirEntry;
-                    for (uint j = 0; j < descriptorSize; j++)
-                    {
-                        dirEntry[j] = dirBlock[i+j];
-                    }
-                    if (compareDirEntry(dirEntry, token, fileTypeDirectory))
+                    if (compareDirEntry(dirBlock, i, token, fileTypeDirectory))
                     {
                         currentBlock = dirBlock[i + startBlockOffset];
                         found = true;
@@ -698,18 +692,14 @@ unit FileSystem
         byte[blockSize] dirBlock;
         readBlock(dirHandle[0], ref dirBlock);
         
-        // Copy the directory entry
-        for (uint i=0; i < descriptorSize; i++)
+        if (0 != dirBlock[dirHandle[1]])
         {
-            dirEntry[i] = dirBlock[dirHandle[1]+i];
+            // Copy the directory entry
+            for (uint i=0; i < descriptorSize; i++)
+            {
+                dirEntry[i] = dirBlock[dirHandle[1]+i];
+            }
         }
-        /*
-        if (dirEntry[startBlockOffset] == 0)
-        {
-            // empty slot
-            return dirEntry;
-        }
-        */
             
         // Update the directory handle position for the next iteration
         dirHandle[1] = dirHandle[1] + descriptorSize;
@@ -723,7 +713,6 @@ unit FileSystem
         
         byte[blockSize] dirBlock;
         byte[blockSize] theChainBlock;
-        byte[descriptorSize] descriptor;
         string fullPath;
         string parentDir;
         string dirName;
@@ -787,12 +776,7 @@ unit FileSystem
             {
                 for (i = 0; i < blockSize; i += descriptorSize)
                 {
-                    for (uint j=0; j < descriptorSize; j++)
-                    {
-                        descriptor[j] = dirBlock[i+j];
-                    }
-                    
-                    if (compareDirEntry(descriptor, dirName, fileTypeDirectory))
+                    if (compareDirEntry(dirBlock, i, dirName, fileTypeDirectory))
                     {
                         // Clear the descriptor
                         for (uint j=0; j < descriptorSize; j++)
@@ -868,7 +852,6 @@ unit FileSystem
         
         byte[blockSize] dirBlock;
         byte[blockSize] theChainBlock;
-        byte[descriptorSize] descriptor;
         uint i;
         string parentDir;
         string fileName;
@@ -896,14 +879,9 @@ unit FileSystem
                 readBlock(parentDirHandle[0], ref dirBlock);
                 for (i = 0; i < blockSize; i += descriptorSize)
                 {
-                    byte[descriptorSize] dirEntry;
-                    for (uint j = 0; j < descriptorSize; j++)
+                    if (compareDirEntry(dirBlock, i, fileName, fileTypeFile))
                     {
-                        dirEntry[j] = dirBlock[i+j];
-                    }
-                    if (compareDirEntry(dirEntry, fileName, fileTypeFile))
-                    {
-                        size = ((dirEntry[fileSizeOffset]) << 8) | dirEntry[fileSizeOffset + 1];
+                        size = ((dirBlock[i+fileSizeOffset]) << 8) | dirBlock[i+fileSizeOffset + 1];
                         success = true;
                         closeDir(parentDirHandle);
                         break; // Success
@@ -939,7 +917,6 @@ unit FileSystem
         byte[blockSize] dirBlock;
         byte[blockSize] newDirBlock;
         byte[blockSize] theChainBlock;
-        byte[descriptorSize] descriptor;
         byte currentBlock;
         uint i;
         string parentDir;
@@ -975,12 +952,7 @@ unit FileSystem
                 readBlock(parentDirHandle[0], ref dirBlock);
                 for (i = 0; i < blockSize; i += descriptorSize)
                 {
-                    byte[descriptorSize] dirEntry;
-                    for (uint j = 0; j < descriptorSize; j++)
-                    {
-                        dirEntry[j] = dirBlock[i+j];
-                    }
-                    if (compareDirEntry(dirEntry, fileName, fileTypeFile))
+                    if (compareDirEntry(dirBlock, i, fileName, fileTypeFile))
                     {
                          // If mode is "w", truncate the file
                         if (mode == "w")
@@ -1028,6 +1000,7 @@ unit FileSystem
             if (mode == "w") 
             {
                 // Initialize the file descriptor
+                byte[descriptorSize] descriptor;
                 uint length = fileName.Length;
                 for (uint j = 0; j < length; j++)
                 {
@@ -1103,7 +1076,6 @@ unit FileSystem
     {
         byte[blockSize] dirBlock;
         byte[blockSize] theChainBlock;
-        byte[descriptorSize] descriptor;
         string fullPath;
         string parentDir;
         string fileName;
@@ -1137,19 +1109,13 @@ unit FileSystem
                 readBlock(dirHandle[0], ref dirBlock);
                 for (i = 0; i < blockSize; i += descriptorSize)
                 {
-                    for (uint j=0; j < descriptorSize; j++)
+                    if (compareDirEntry(dirBlock, i, fileName, fileTypeFile))
                     {
-                        descriptor[j] = dirBlock[i + j];
-                    }
-                    
-                    if (compareDirEntry(descriptor, fileName, fileTypeFile))
-                    {
-                        fileBlock = descriptor[startBlockOffset];
+                        fileBlock = dirBlock[i + startBlockOffset];
                         
                         // Clear the file descriptor
                         for (uint j=0; j < descriptorSize; j++)
                         {
-                            descriptor[j] = 0; // Clearing the descriptor array itself
                             dirBlock[i+j] = 0; // Clearing the block position
                         }
                         writeBlock(dirHandle[0], dirBlock);

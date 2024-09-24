@@ -264,7 +264,14 @@ program EEShell
         BlockStorage.Configure(0x54, SerialEEPROM.XX512);
         
         FileSystem.Mount(); // formats if it is a fresh EEPROM
-        
+        /*
+        IO.WriteLn("Start");
+        LED = true;
+        Dir("-S");
+        LED = false;
+        IO.WriteLn("End");
+        return;
+        */
         loop
         {
             string line;
@@ -286,7 +293,7 @@ program EEShell
                         //long start = Time.Millis;
                         switch (command)
                         {
-                            case "EXIT":   { break; }
+                            case "EXIT":   { LED = false; break; }
                             
                             case "FORMAT": { Format(); }
                             

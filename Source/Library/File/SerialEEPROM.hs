@@ -91,8 +91,10 @@ unit BlockStorage
             byte result = Wire.EndTx();
             
             byte bytes2 = Wire.RequestFrom(blockAddress, pageSize);
-            for (uint i = 0; i < bytes2; i++)
+            loop
             {
+                if (bytes2 == 0) { break; }
+                bytes2--;
                 dataBlock[index] = Wire.Read();
                 index++;
             }
