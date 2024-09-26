@@ -1,9 +1,10 @@
 program BlinkRGB
 {
     //uses "/Source/Library/Boards/PimoroniTiny2040"
-    uses "/Source/Library/Boards/PimoroniTiny2350"
+    //uses "/Source/Library/Boards/PimoroniTiny2350"
     //uses "/Source/Library/Boards/SeeedXIAORP2040"
     
+    uses "/Source/Library/Boards/PimoroniPlasma2350"
     
     {
         loop

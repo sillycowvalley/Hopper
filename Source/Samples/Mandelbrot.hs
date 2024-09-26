@@ -7,7 +7,7 @@ program Mandelbrot
     {
         //ClockSpeed = RPClockSpeed.Slow133;
         //ClockSpeed = RPClockSpeed.Default;
-        ClockSpeed = RPClockSpeed.Overclock300;
+        //ClockSpeed = RPClockSpeed.Overclock300;
         
         IO.Clear();
         IO.WriteLn();
