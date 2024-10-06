@@ -1682,9 +1682,22 @@ UInt External_MCUStackFree()
 {
     long result = 0;
 #ifdef RP2040    
+#if !defined(__riscv)
     result = rp2040.getFreeStack();
+#endif
 #endif
     UInt hrlong = hopperLongFromNativeLong(result);
     return hrlong;
+}
+
+UInt External_GetRISCV()
+{
+    UInt result = 0;
+#ifdef RP2040    
+#if defined(__riscv)
+    result = 1;
+#endif
+#endif
+    return result;
 }
 

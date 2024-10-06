@@ -111,6 +111,8 @@ UInt External_MCUStackFree();
 UInt External_MCUClockSpeedGet();
 void External_MCUClockSpeedSet(UInt value);
 
+UInt External_GetRISCV();
+
 
 Bool Serial_IsAvailable_Get();
 Char Serial_ReadChar();

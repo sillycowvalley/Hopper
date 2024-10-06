@@ -403,7 +403,7 @@ program Runtime
     {
         byte b;
         b = byte((value >> 4) & 0x0F); 
-        SerialWriteChar(ToHex(b));
+        SerialWriteChar(HRByte.ToHex(b));
         b = byte(value & 0x0F); 
         SerialWriteChar(HRByte.ToHex(b));
     }
@@ -431,7 +431,7 @@ program Runtime
         else
         {
             b = byte((value >> 4) & 0x0F); 
-            HRString.BuildChar(ref pageBuffer, ToHex(b));
+            HRString.BuildChar(ref pageBuffer, HRByte.ToHex(b));
             b = byte(value & 0x0F); 
             HRString.BuildChar(ref pageBuffer, HRByte.ToHex(b));
         }
@@ -494,6 +494,10 @@ program Runtime
                             if (loaded)
                             {
                                 flgs = flgs | HopperFlags.ProgramLoaded;
+                            }
+                            if (HopperVM.IsRISCV)
+                            {
+                                flgs = flgs | HopperFlags.RISCV;
                             }
 #ifdef CHECKED
                             flgs = flgs | HopperFlags.CheckedBuild;

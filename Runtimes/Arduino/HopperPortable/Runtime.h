@@ -380,14 +380,6 @@ enum Type {
     eList = 0x0019,
 };
 
-enum HopperPinStatus {
-    eLow = 0x0000,
-    eHigh = 0x0001,
-    eChange = 0x0002,
-    eFalling = 0x0003,
-    eRising = 0x0004,
-};
-
 enum LibCall {
     eTimerStart = 0x0000,
     eTimerStop = 0x0001,
@@ -477,11 +469,20 @@ enum DataMode {
     eMode3 = 0x0003,
 };
 
+enum HopperPinStatus {
+    eLow = 0x0000,
+    eHigh = 0x0001,
+    eChange = 0x0002,
+    eFalling = 0x0003,
+    eRising = 0x0004,
+};
+
 enum HopperFlags {
     eProgramLoaded = 0x0001,
     eWarpSpeed = 0x0002,
     eCheckedBuild = 0x0004,
     eSP8Bit = 0x0008,
+    eRISCV = 0x0010,
     eBreakpointsSet = 0x0020,
     eProgramExited = 0x0040,
     eMCUPlatform = 0x0080,
@@ -660,6 +661,7 @@ Byte HopperVM_BP_Get();
 Byte HopperVM_CSP_Get();
 Bool HopperVM_CNP_Get();
 Bool HopperVM_BreakpointExists_Get();
+Bool HopperVM_IsRISCV_Get();
 UInt HopperVM_GetBreakpoint(Byte n);
 UInt HopperVM_GetCS(Byte address);
 UInt HopperVM_Get_R(Byte address, Type & htype);
@@ -1025,6 +1027,7 @@ UInt HRUInt_ToLong(UInt ui);
 UInt HRInt_ToLong(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
+
 
 
 

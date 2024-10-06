@@ -729,6 +729,10 @@ unit Monitor
         if (HopperFlags.MCUPlatform == (hopperFlags & HopperFlags.MCUPlatform))
         {
             info = info + ", MCU";
+            if (HopperFlags.RISCV == (hopperFlags & HopperFlags.RISCV))
+            {
+                info = info + "(RISC-V)";
+            }
         }
         else
         {

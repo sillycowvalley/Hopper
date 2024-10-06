@@ -69,6 +69,7 @@ unit ZP
         CheckedBuild   = 0x04,
         SP8Bit         = 0x08, // always true nowadays
         
+        RISCV          = 0x10,
         BreakpointsSet = 0x20, // breakpoints exist
         ProgramExited  = 0x40, // flag to make checking for program completion (or Die) fast
         MCUPlatform    = 0x80,

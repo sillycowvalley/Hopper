@@ -19,7 +19,7 @@ unit IO
     uses "/Source/System/Keyboard"
     uses "/Source/System/Clipboard"
 
-#ifndef RUNTIME    
+#ifndef RUNTIME
     uses  "/Source/System/String" // for keyboard buffer
 #endif
 
@@ -118,9 +118,17 @@ unit IO
         byte msn;
         byte lsn;
         msn = ((b >> 4) & 0xF);
-        Write(ToHex(msn));
+#ifndef RUNTIME        
+        Write(Byte.ToHex(msn));
+#else
+        Write(HRByte.ToHex(msn));
+#endif
         lsn = b & 0xF;
-        Write(ToHex(lsn));
+#ifndef RUNTIME        
+        Write(Byte.ToHex(lsn));
+#else
+        Write(HRByte.ToHex(lsn));
+#endif        
     }
     WriteHex(uint u)
     {

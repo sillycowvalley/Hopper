@@ -116,6 +116,10 @@ unit HopperVM
     
     bool BreakpointExists { get { return breakpointExists; } }
     
+    bool IsRISCV { get {
+        return External.GetRISCV() != 0;
+    } }
+    
     uint jumpTable; // 2 byte delegate slots for Instruction jumps
     
     ClearBreakpoints(bool includingZero)

@@ -459,6 +459,10 @@ unit External
         return 0;
     }
 #endif    
+    uint GetRISCV()
+    {
+        return 0;
+    }
     byte GetSegmentPages()
     {
         return 0xFF; // size in 256 byte pages: 0xFF for Pi Pico, 0x30 for Wemos D1 Mini

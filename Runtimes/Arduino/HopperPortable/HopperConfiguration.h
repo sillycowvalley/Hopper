@@ -104,7 +104,9 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 #define SPI_INCLUDED
 #define USETIMER // USETIMERSTUBS
 #define USELITTLEFS
+#if !defined(__riscv)
 #define USENEOPIXEL
+#endif
 #endif
 
 // Seems to be "ARDUINO_" + BOARD_NAME when using Pico board manager

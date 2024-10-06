@@ -3,12 +3,18 @@
 #include "HopperWiFi.h"
 #include "HopperTimer.h"
 
-Bool Runtime_loaded = false;
-UInt Runtime_currentCRC = 0;
-Byte Minimal_error = 0;
+
+UInt UInt_gRnd = 0;
 UInt Memory_heapStart = 0x8000;
 UInt Memory_heapSize = 0x4000;
 UInt Memory_freeList = 0;
+Bool IO_echoToLCD = false;
+UInt Screen_defaultForeColour = Colour_MatrixGreen_Get();
+UInt Screen_defaultBackColour = Colour_Black_Get();
+UInt IO_keyboardBufferBase = 0;
+UInt IO_keyboardInPointer = 0;
+UInt IO_keyboardOutPointer = 0;
+Byte Minimal_error = 0;
 UInt HRArray_setSlots = 0;
 UInt HRArray_clearSlots = 0;
 Bool External_interruptsDisabled = false;
@@ -44,13 +50,8 @@ Bool HopperVM_inDebugger = false;
 OpCode HopperVM_opCode = (OpCode)0;
 UInt HopperVM_jumpTable = 0;
 UInt HopperVM_pcStore = 0;
-UInt UInt_gRnd = 0;
-Bool IO_echoToLCD = false;
-UInt IO_keyboardBufferBase = 0;
-UInt IO_keyboardInPointer = 0;
-UInt IO_keyboardOutPointer = 0;
-UInt Screen_defaultForeColour = Colour_MatrixGreen_Get();
-UInt Screen_defaultBackColour = Colour_Black_Get();
+Bool Runtime_loaded = false;
+UInt Runtime_currentCRC = 0;
     
 void HopperEntryPoint()
 {
@@ -428,6 +429,10 @@ void Runtime_DumpPage(Byte iPage)
                     if (Runtime_loaded)
                     {
                         flgs = (HopperFlags)(flgs | HopperFlags::eProgramLoaded);
+                    }
+                    if (HopperVM_IsRISCV_Get())
+                    {
+                        flgs = (HopperFlags)(flgs | HopperFlags::eRISCV);
                     }
                     data = Byte(flgs);
                     break;
@@ -962,6 +967,11 @@ Bool HopperVM_CNP_Get()
 Bool HopperVM_BreakpointExists_Get()
 {
     return HopperVM_breakpointExists;
+}
+
+Bool HopperVM_IsRISCV_Get()
+{
+    return External_GetRISCV() != 0x00;
 }
 
 UInt HopperVM_GetBreakpoint(Byte n)
