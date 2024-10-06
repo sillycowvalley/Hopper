@@ -12,12 +12,19 @@ namespace HopperNET
         [STAThread]
         static void Main()
         {
-            CultureInfo.CurrentCulture = new CultureInfo("en-US");
+            try
+            {
+                CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
 
-            Application.Run(new Hopper());
+                Application.Run(new Hopper());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.StackTrace.ToString(), "Hopper Exception:" + ex.Message);
+            }
         }
     }
 }

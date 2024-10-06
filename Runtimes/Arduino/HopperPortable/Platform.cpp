@@ -1,7 +1,6 @@
 #include <Arduino.h>
 
 #include "Platform.h"
-#include "HopperScreen.h"
 #include "HopperTimer.h"
 #include "HopperFile.h"
 
@@ -9,16 +8,12 @@
 #include <SPI.h>
 
 #ifdef RP2040 // use ARDUINO_ARCH_RP2040?
-#include "pico/stdlib.h"
 
+#ifdef USENEOPIXEL
 #include <Adafruit_NeoPixel.h>
-/*
-#define NEOPIN        16 // On Trinket or Gemma, suggest changing this to 1
-// How many NeoPixels are attached to the Arduino?
-#define NUMPIXELS 1 // Popular NeoPixel ring size
-Adafruit_NeoPixel pixels(NUMPIXELS, NEOPIN, NEO_GRB + NEO_KHZ800);
-*/
 Adafruit_NeoPixel * adafruit_NeoPixel = nullptr;
+#endif
+
 #endif
 
 
@@ -1560,7 +1555,7 @@ Byte HRSPI_GetCSPin(Byte spiController)
 
 void HRNeoPixel_Begin(UInt length, Byte pin, UInt pixelType)
 {
-#ifdef RP2040
+#ifdef USENEOPIXEL
     if (nullptr == adafruit_NeoPixel)
     {
         adafruit_NeoPixel = new Adafruit_NeoPixel(length, pin, pixelType);
@@ -1579,7 +1574,7 @@ void HRNeoPixel_Begin(UInt length, Byte pin, UInt pixelType)
 }
 void HRNeoPixel_SetBrightness(Byte brightness)
 {
-#ifdef RP2040
+#ifdef USENEOPIXEL
     if (nullptr != adafruit_NeoPixel)
     {
         adafruit_NeoPixel->setBrightness(brightness);
@@ -1589,7 +1584,7 @@ void HRNeoPixel_SetBrightness(Byte brightness)
 Byte HRNeoPixel_GetBrightness()
 {
     Byte brightness = 0;
-#ifdef RP2040
+#ifdef USENEOPIXEL
     if (nullptr != adafruit_NeoPixel)
     {
         brightness = adafruit_NeoPixel->getBrightness();
@@ -1599,7 +1594,7 @@ Byte HRNeoPixel_GetBrightness()
 }
 void HRNeoPixel_SetColor(UInt pixel, Byte r, Byte g, Byte b, Byte w)
 {
-#ifdef RP2040
+#ifdef USENEOPIXEL
     if (nullptr != adafruit_NeoPixel)
     {
         adafruit_NeoPixel->setPixelColor(pixel, r, g, b, w);
@@ -1608,7 +1603,7 @@ void HRNeoPixel_SetColor(UInt pixel, Byte r, Byte g, Byte b, Byte w)
 }
 void HRNeoPixel_Show()
 {
-#ifdef RP2040
+#ifdef USENEOPIXEL
     if (nullptr != adafruit_NeoPixel)
     {
         adafruit_NeoPixel->show();
@@ -1618,7 +1613,7 @@ void HRNeoPixel_Show()
 UInt HRNeoPixel_GetLength()
 {
     UInt length = 0;
-#ifdef RP2040
+#ifdef USENEOPIXEL
     if (nullptr != adafruit_NeoPixel)
     {
         length = adafruit_NeoPixel->numPixels();

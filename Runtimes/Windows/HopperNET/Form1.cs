@@ -261,16 +261,20 @@ namespace HopperNET
         }
 
         private void Hopper_ClientSizeChanged(object sender, EventArgs e)
-        {   
-            uint rows    = (uint)(this.ClientRectangle.Height / Console.TextCellHeight);
-            uint columns = (uint)(this.ClientRectangle.Width  / Console.TextCellWidth);
+        {
+            uint rows = (uint)(this.ClientRectangle.Height / Console.TextCellHeight);
+            uint columns = (uint)(this.ClientRectangle.Width / Console.TextCellWidth);
             if ((rows != Console.Rows) || (columns != Console.Columns))
             {
-                Console.Rows    = rows;
+                Console.Rows = rows;
                 Console.Columns = columns;
-                Console.Resize();
-                HopperInvalidate();
+                if (null != Console)
+                {
+                    Console.Resize();
+                    HopperInvalidate();
+                }
             }
+
         }
 
 

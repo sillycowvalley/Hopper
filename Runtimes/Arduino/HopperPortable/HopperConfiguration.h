@@ -96,13 +96,15 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 #define SPI_INCLUDED
 #define USETIMER
 #define USELITTLEFS
+#define USENEOPIXEL
 #endif
 
 #if defined(RP2350PICO2) || defined(CHALLENGER_RP2350_WIFI)
 #define RP2040
 #define SPI_INCLUDED
-#define USETIMER
+#define USETIMER // USETIMERSTUBS
 #define USELITTLEFS
+#define USENEOPIXEL
 #endif
 
 // Seems to be "ARDUINO_" + BOARD_NAME when using Pico board manager

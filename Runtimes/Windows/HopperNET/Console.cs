@@ -56,7 +56,7 @@ namespace HopperNET
         //static uint textRows = 30;
 
         static uint textColumns = 140;
-        static uint textRows = 44;
+        static uint textRows = 40;
 
 
         static public uint TextCellWidth  { get { return textCellWidth; } }
