@@ -3,6 +3,8 @@ program R6502
     //#define EXPERIMENTAL
     //#define CHECKED
     
+    #define ALLOW_EEPROM
+    
     // This cannot be in '/Bin/Options/Configuration.options':
     #define CPU_65C02S  // Rockwell and WDC
     //#define CPU_6502  // MOS
@@ -518,7 +520,8 @@ program R6502
   #ifdef CHECKED
         SMB2 ZP.FLAGS // this is a checked build
   #endif        
-        SMB3 ZP.FLAGS // 8 bit SP and BP        
+        SMB3 ZP.FLAGS // 8 bit SP and BP
+        SMB4 ZP.FLAGS // IsInDebugger    
 #else        
         LDA #0
         STA ZP.CNP
@@ -528,6 +531,7 @@ program R6502
         ORA # 0b00000100  // this is a checked build
   #endif
         ORA # 0b00001000  // 8 bit SP and BP
+        ORA # 0b00010000  // IsInDebugger
         STA ZP.FLAGS      // resets ProgramExited
 #endif                                
     }
@@ -594,12 +598,14 @@ program R6502
             SMB0 ZP.PLUGNPLAY
         }
         
+      #ifdef ALLOW_EEPROM        
         LDA # I2C.SerialEEPROMAddress // EEPROM?
         I2C.Scan();
         if (Z)
         {
             SMB1 ZP.PLUGNPLAY
         }
+      #endif
     #endif        
 #else
         LDA # 0
@@ -614,6 +620,7 @@ program R6502
             STA ZP.PLUGNPLAY
         }
         
+      #ifdef ALLOW_EEPROM        
         LDA # I2C.SerialEEPROMAddress // EEPROM?
         I2C.Scan();
         if (Z)
@@ -622,6 +629,7 @@ program R6502
             ORA # 0b00000010
             STA ZP.PLUGNPLAY
         }
+      #endif
     #endif
 #endif        
            
@@ -824,8 +832,8 @@ program R6502
        {
            return;
        }
-  #endif        
-
+  #endif    
+  
         // BeginTx
         LDA # (I2C.SerialEEPROMAddress << 1)
         STA ZP.OutB
@@ -856,12 +864,13 @@ program R6502
             
 #ifdef CPU_65C02S
             SMB0 ZP.FLAGS                // program is loaded
+            RMB4 ZP.FLAGS                // !IsInDebugger
 #else
             LDA ZP.FLAGS
             ORA # 0b00000001             // program is loaded
+            AND # 0b11101111             // !IsInDebugger
             STA ZP.FLAGS
 #endif            
-            
             runCommand();
             checkRestart();
         }
@@ -886,6 +895,7 @@ program R6502
         }
     #endif        
 #endif
+
         Utilities.SendSlash(); // ready
         
         loop

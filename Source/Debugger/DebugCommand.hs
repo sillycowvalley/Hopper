@@ -367,7 +367,7 @@ unit DebugCommand
                 break;
             }
             ticks++;
-            if (ticks == 10240)
+            if (ticks == 1024)
             {
                 flushProfilerData(minpc, maxpc, lineTimes, lineHits);
                 ticks = 0;

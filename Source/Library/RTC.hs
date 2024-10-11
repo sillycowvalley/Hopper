@@ -1,19 +1,28 @@
 unit RTC
 {
-    // Features Implemented    DS3231       PCF8523      MCP79410
+    // Features Implemented    DS1307       DS3231       PCF8523      MCP79410
     //
-    // Time and Date           Yes          Yes          Yes
+    // Time and Date           Yes          Yes          Yes          Yes
     //
-    // Alarms                  2            1            2
-    //    Resolution           Seconds      Minutes      Minutes
+    // Alarms                  No           2            1            2
+    //    Resolution                        Seconds      Minutes      Minutes
     //
-    // Countdown Timers        No           2            No  
+    // Countdown Timers        No           No           2            No  
     //
-    // Battery-backed SRAM     No           No           64 bytes  
+    // Battery-backed SRAM     Yes          No           No           64 bytes  
     //
-    // Temperature Sensor      Yes          No           No
-    //             
+    // Temperature Sensor      No           Yes          No           No
+    //    
     
+    // Options:
+    //     RTC_HAS_ALARM
+    //     RTC_HAS_COUNTDOWN   
+    //     RTC_HAS_LOSTPOWER            
+    //     RTC_HAS_TEMPERATURE
+    //     RTC_HAS_RAM
+    
+    
+#ifdef RTC_HAS_ALARM    
     enum AlarmMatch
     {
         None,
@@ -27,6 +36,7 @@ unit RTC
         DateHoursMinutesAndSecondsMatch = 5,
         DateHoursAndMinutesMatch = 5,
     }
+#endif
 
 #if defined(RTC_HAS_COUNTDOWN)        
     enum TimerTickLength
@@ -49,11 +59,13 @@ unit RTC
                 break;
             }
             string dateTime = Runtime.DateTime;
+            //string dateTime = "2024-10-11 11:17:00";
+            
             // "YYYY-MM-DD HH:MM:SS"
             RTC.Date = dateTime.Substring(0, 10);
             RTC.Time = dateTime.Substring(11);
             RTCDriver.resetStatus();
-            WriteLn("Set From Debugger");
+            IO.WriteLn("Set From Debugger");
             success = true;
             break;
         }
@@ -63,6 +75,7 @@ unit RTC
     string Date    { get { return RTCDriver.date;       } set { RTCDriver.date = value; } }
     string Time    { get { return RTCDriver.time;       } set { RTCDriver.time = value; } }
     
+#ifdef RTC_HAS_ALARM    
     bool SetAlarm(byte iAlarm, byte minute, byte hour, AlarmMatch match)
     {
         bool success;
@@ -99,6 +112,7 @@ unit RTC
     bool AlarmWasTriggered(byte iAlarm) { return RTCDriver.alarmWasTriggered(iAlarm); }
     
     ClearInterrupts() { RTCDriver.clearInterrupts(); }
+#endif
     
 #if defined(RTC_HAS_COUNTDOWN)
     bool SetTimer(byte iTimer, byte ticks, TimerTickLength tickLength)

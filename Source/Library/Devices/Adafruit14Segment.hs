@@ -17,7 +17,20 @@ unit Display
     }
     Write(string text)
     {
-        string remainder = text;
+        string remainder;
+        for (uint i=0; i < text.Length; i++)
+        {
+            char ch = text[i];
+            if (i+1 < text.Length)
+            {
+                if ((text[i+1] == '.') || (text[i+1] == ':'))
+                {
+                    ch = char(byte(ch) | 0b10000000);
+                    i++;
+                }
+            }
+            remainder += ch;
+        }
         remainder = remainder.Pad(' ', (modules.Count * 4));
         string current;
         foreach (var module in modules)

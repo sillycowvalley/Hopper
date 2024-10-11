@@ -112,6 +112,9 @@ unit SysCall
         TypesTypeOf           = 0x7E, // TODO
         TypesBoxTypeOf        = 0x81, // TODO
         
+        RuntimeInDebuggerGet  = 0x97,
+        RuntimeDateTimeGet    = 0x98,
+        
         // ....
                 
         ListNew               = 0xF4,
@@ -133,6 +136,75 @@ unit SysCall
         Diagnostics.die();
 #endif
     }
+    
+    inDebuggerGet()
+    {
+        LDX # 0
+#ifdef CPU_65C02S
+        if (BBS4, ZP.FLAGS)
+        {
+            INX
+        }
+#else
+        LDA ZP.FLAGS
+        AND # 0b00010000
+        if (NZ)
+        {
+            INX
+        }
+#endif        
+        Stacks.PushX();
+    }
+    dateTimeGet()
+    {
+        LDA # 0x07 // Bell
+        Serial.WriteChar();
+        LDA # 'D' // DateTime
+        Serial.WriteChar();
+        
+        loop
+        {
+            Serial.IsAvailable();
+            if (NZ) { break; }
+        }
+           
+        String.New();
+        loop
+        {
+            Serial.WaitForChar();
+            CMP # 0x0A // Char.EOL
+            if (Z)
+            {
+                break;
+            }
+            STA ZP.TOPL
+#ifdef CPU_65C02S
+            STZ TOPH
+#else
+            LDA #0
+            STA TOPH
+#endif
+            
+            LDY ZP.SP
+            DEY
+            STY ZP.NEXTL
+#ifdef CPU_65C02S
+            STZ ZP.NEXTH
+#else
+            LDA #0
+            STA ZP.NEXTH
+#endif
+            LDA #Types.Reference
+            Stacks.PushNext();
+            
+            LDA #Types.Char
+            Stacks.PushTop(); // push ch
+            
+            // Build(ref string build, char ch)
+            String.build1();
+        }
+    }
+        
     serialConnect()
     {
         // NOP (we're already connected to serial)
@@ -275,7 +347,17 @@ unit SysCall
 #else
                 missing();
 #endif
-            }            
+            }   
+            
+            case SysCalls.RuntimeInDebuggerGet:
+            {
+                inDebuggerGet();
+            }
+            
+            case SysCalls.RuntimeDateTimeGet:
+            {
+                dateTimeGet();
+            }
             
             case SysCalls.ByteToHex:
             {

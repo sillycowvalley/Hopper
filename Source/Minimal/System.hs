@@ -24,6 +24,8 @@ unit System
     
     uses "Serial"
     uses "Diagnostics"
+    
+    uses "Runtime"
 
 #if defined(BLOCKFILESYSTEM)
     string CurrentDirectory 

@@ -3,6 +3,7 @@ unit RTCDriver
     // The DS3231 is a low-cost, extremely accurate, I2Creal-time clock (RTC).
     
     #define RTC_HAS_TEMPERATURE
+    #define RTC_HAS_ALARM
     
     uses "/Source/System/DateTime"
     uses "/Source/Library/RTC"

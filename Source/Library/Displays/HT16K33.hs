@@ -134,6 +134,8 @@ unit DisplayDriver
         0b00111111, 0b11111111,
     };
     
+    byte[] alphaFont;
+    
     const uint ALPHANUM_SEG_DP = 0b0100000000000000; // Alphanumeric segment decimal point
     
     byte i2cController = Wire.DefaultI2CController;
@@ -182,6 +184,8 @@ unit DisplayDriver
         Wire.Write(DisplayDriver.I2CController, 0x21); // turn on oscillator
         byte result = Wire.EndTx(DisplayDriver.I2CController);
         
+        alphaFont = alphaFontTable; // instance of const
+        
         write(i2cAddress, ' ', ' ', ' ', ' ');
         
         setBlinkRate(i2cAddress, BlinkRate.None);
@@ -189,22 +193,28 @@ unit DisplayDriver
         setBrightness(i2cAddress, 15); // max brightness
     }
     
+    writeCell(char chr)
+    {
+        byte index = byte(chr);
+        byte decimal;
+        if ((index & 0b10000000) != 0)
+        {     
+            index = index & 0b01111111;
+            decimal = byte(ALPHANUM_SEG_DP >> 8);
+        }
+        Wire.Write(DisplayDriver.I2CController, alphaFont[index * 2 + 1]);
+        Wire.Write(DisplayDriver.I2CController, alphaFont[index * 2] | decimal);
+    }
+    
     write(byte i2cAddress, char a, char b, char c, char d)
     {
         Wire.BeginTx(DisplayDriver.I2CController, i2cAddress);
         Wire.Write(DisplayDriver.I2CController, 0);
         
-        Wire.Write(DisplayDriver.I2CController, alphaFontTable[byte(a) * 2 + 1]);
-        Wire.Write(DisplayDriver.I2CController, alphaFontTable[byte(a) * 2]);
-        
-        Wire.Write(DisplayDriver.I2CController, alphaFontTable[byte(b) * 2 + 1]);
-        Wire.Write(DisplayDriver.I2CController, alphaFontTable[byte(b) * 2]);
-        
-        Wire.Write(DisplayDriver.I2CController, alphaFontTable[byte(c) * 2 + 1]);
-        Wire.Write(DisplayDriver.I2CController, alphaFontTable[byte(c) * 2]);
-        
-        Wire.Write(DisplayDriver.I2CController, alphaFontTable[byte(d) * 2 + 1]);
-        Wire.Write(DisplayDriver.I2CController, alphaFontTable[byte(d) * 2]);
+        writeCell(a);
+        writeCell(b);
+        writeCell(c);
+        writeCell(d);
         
         Wire.Write(DisplayDriver.I2CController, 0);
         Wire.Write(DisplayDriver.I2CController, 0);

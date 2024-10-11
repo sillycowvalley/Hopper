@@ -4,12 +4,12 @@ unit DeviceDriver
     uses "/Source/Library/Boards/AdafruitFeather" // avoid modifying the automatically generated Board file
 #endif
     
-    uses "/Source/Library/Displays/EPDSSD1680.hs"
-    
     friend DisplayDriver;
     
     const int pw = 250;
     const int ph = 122;
+    
+    uses "/Source/Library/Displays/EPDSSD1680.hs"
     
     #define EPD_NO_RX
     

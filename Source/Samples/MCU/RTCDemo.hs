@@ -1,9 +1,11 @@
 program RTCDemo
 {
+    uses "/Source/Library/Fonts/Arduino6x8"
+    
     uses "/Source/Library/Boards/AdafruitFeather"
     uses "/Source/Library/Devices/AdafruitDS3231PrecisionRTCFeatherwing"
-    uses "/Source/Library/Devices/AdafruitThinkInk213TriColor"
-    uses "/Source/Library/Fonts/Arduino6x8"
+    uses "/Source/Library/Devices/AdafruitEInk213TriColor"
+    
     
     const byte fontScale = 3;
     drawText(byte col, byte row, string text, uint foreColour, uint backColour)

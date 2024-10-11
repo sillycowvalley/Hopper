@@ -10,7 +10,7 @@ unit ZP
     // Bit 7 - MCU platform
     // Bit 6 - Program exited (ended well or badly via Die)
     // Bit 5 - breakpoint/s exist
-    // Bit 4 - 
+    // Bit 4 - in debugger (Runtime.InDebugger, not FLAGS)
     // Bit 3 - 8 bit SP and BP
     // Bit 2 - checked build
     // Bit 1 - running at Warp (no checks for <ctrl><C>)
