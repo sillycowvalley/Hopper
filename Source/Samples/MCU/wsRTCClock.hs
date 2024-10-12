@@ -28,6 +28,8 @@ program RTCClock
         uint hours;
         uint minutes;
         uint time;
+        
+        uint count;
             
         loop
         {
@@ -35,7 +37,20 @@ program RTCClock
             _ = UInt.TryParse(timeString.Substring(0,2), ref hours);
             _ = UInt.TryParse(timeString.Substring(3,2), ref minutes);
             time = hours * 100 + minutes;
-            Pico8SEGLED.Show(time);
+            if (count > 40)
+            {
+                Pico8SEGLED.DecimalPosition = 0;
+            }
+            else
+            {
+                Pico8SEGLED.DecimalPosition = 3;
+            }
+            Pico8SEGLED.Show(time);  
+            count++;
+            if (count > 99)
+            {
+                count = 0;
+            }
         }
         
     }
