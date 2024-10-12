@@ -2,6 +2,7 @@ unit RTCDriver
 {
     
     #define RTC_HAS_COUNTDOWN
+    #define RTC_HAS_ALARM
     
     uses "/Source/System/DateTime"
     uses "/Source/Library/RTC"

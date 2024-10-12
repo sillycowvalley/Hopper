@@ -1,7 +1,7 @@
 program RTCFeather
 {
-    //uses "/Source/Library/Boards/AdafruitFeather"
-    uses "/Source/Library/Boards/Hopper6502"
+    uses "/Source/Library/Boards/AdafruitFeather"
+    //uses "/Source/Library/Boards/Hopper6502"
     
     //uses "/Source/Library/Devices/AdafruitDS3231PrecisionRTCFeatherwing"
     uses "/Source/Library/Devices/HW111RTC"
@@ -18,7 +18,6 @@ program RTCFeather
             IO.WriteLn("Failed to initialize RTC");
             return;
         }
-        
         Display.Add(0x70);
         if (!Display.Begin())
         {

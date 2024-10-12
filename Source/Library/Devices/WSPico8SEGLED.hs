@@ -91,7 +91,10 @@ unit Pico8SEGLED
         Delay(1);
         DigitalWrite(RClkPin, true);
     }
-    
+    Show(uint value)
+    {
+        Show(long(value));
+    }
     Show(long value)
     {
         if (Hex)

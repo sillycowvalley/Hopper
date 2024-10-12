@@ -2,7 +2,8 @@ program LED14SegmentDemo
 {
    
     //uses "/Source/Library/Boards/PimoroniTiny2350"
-    uses "/Source/Library/Boards/Hopper6502"
+    //uses "/Source/Library/Boards/Hopper6502"
+    uses "/Source/Library/Boards/AdafruitFeather"
     uses "/Source/Library/Devices/Adafruit14Segment"
     
     Scroll(string content)
@@ -37,6 +38,7 @@ program LED14SegmentDemo
             }
         }
         
+        Display.Add(0x71);
         Display.Add(0x70);
         if (!Display.Begin())
         {
@@ -45,7 +47,8 @@ program LED14SegmentDemo
         }
         
         
-        Scroll("CHEESY");
+        //Scroll("CHEESY BYTES");
+        Scroll("Cheesy Bytes");
         
         /*
         Display.Brightness = 15;

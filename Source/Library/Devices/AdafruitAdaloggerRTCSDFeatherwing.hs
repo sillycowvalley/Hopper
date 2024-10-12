@@ -20,10 +20,12 @@ unit RTCDevice
             
             SD.CSPin  = Board.GP10;
             
+            /* Don't fail if there is no SD card in the board:
             if (!SD.Mount())
             {
                 break;
             }
+            */
             
             // Wire defaults should be correct since it is a FeatherWing:
             if (!RTCDriver.begin(Wire.DefaultI2CController, Wire.DefaultI2CSDAPin, Wire.DefaultI2CSCLPin, 0x68))

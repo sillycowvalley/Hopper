@@ -23,7 +23,7 @@ unit Display
             char ch = text[i];
             if (i+1 < text.Length)
             {
-                if ((text[i+1] == '.') || (text[i+1] == ':'))
+                if ((text[i+1] == '.')/* || (text[i+1] == ':')*/)
                 {
                     ch = char(byte(ch) | 0b10000000);
                     i++;
