@@ -1,7 +1,6 @@
 program RTCClock
 {
     uses "/Source/Library/Boards/PiPico2"
-    //uses "/Source/Library/Boards/PiPico"
     uses "/Source/Library/Devices/WSPico8SEGLED"
     uses "/Source/Library/Devices/WSPicoRTCDS3231"
     

@@ -21,7 +21,6 @@ program RTCClock
             IO.WriteLn("Failed to initialize display");
             return;
         }
-        Display.Brightness = 5;
         
         // this will only update the time if we are running in debugger
         _ = RTC.SetFromDebugger();
@@ -31,7 +30,7 @@ program RTCClock
             
         loop
         {
-            timeString = RTC.Time;  
+            timeString = RTC.Time;  // "HH:MM:SS"
             if (count > 1)
             {
                 timeString = timeString.Replace(':', ' ');
@@ -44,6 +43,5 @@ program RTCClock
                 count = 0;
             }
         }
-        
     }
 }
