@@ -52,6 +52,5 @@ program RTCClock
                 count = 0;
             }
         }
-        
     }
 }
