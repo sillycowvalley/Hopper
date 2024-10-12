@@ -56,8 +56,6 @@ unit Board // Pimoroni Tiny2350
     const byte GP5 = 5;   // UART2Rx
     const byte GP6 = 6;   // SPI0SCK
     const byte GP7 = 7;   // SPI0Tx
-    const byte GP12 = 12; // I2CSDA0
-    const byte GP13 = 13; // I2CSCL0
     const byte GP18 = 18; // BuiltInLEDR
     const byte GP19 = 19; // BuiltInLEDG
     const byte GP20 = 20; // BuiltInLEDB
@@ -66,6 +64,8 @@ unit Board // Pimoroni Tiny2350
     const byte GP27 = 27; // SPI1Tx
     const byte GP28 = 28; // SPI1Rx
     const byte GP29 = 29; // SPI1SS
+    const byte GP12 = 12; // I2CSDA0
+    const byte GP13 = 13; // I2CSCL0
 
     uses "/Source/Library/MCU"
 

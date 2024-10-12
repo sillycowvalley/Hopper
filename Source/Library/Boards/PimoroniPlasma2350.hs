@@ -1,9 +1,9 @@
-unit Board // Pimoroni Plasma2040
+unit Board // Pimoroni Plasma2350
 {
-    #define PIMORONI_PLASMA2040
+    #define PIMORONI_PLASMA2050
 
     #define MCU_BOARD_DEFINED
-    #define MCU_BOARD_RP2040
+    #define MCU_BOARD_RP2350
 
     // Note: see Attribution.md (in the same folder as this file)
 
@@ -49,6 +49,6 @@ unit Board // Pimoroni Plasma2040
 
     uses "/Source/Library/MCU"
 
-    string BoardName { get { return "Pimoroni Plasma2040"; } }
+    string BoardName { get { return "Pimoroni Plasma2350"; } }
 
 }
