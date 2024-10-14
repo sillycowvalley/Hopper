@@ -45,6 +45,28 @@ unit Board // Adafruit Feather Adalogger
     const byte UART1Tx = 0;
     const byte UART1Rx = 1;
 
+    const byte GP0 = 0;   // UART1Tx
+    const byte GP1 = 1;   // UART1Rx
+    const byte GP2 = 2;   // I2CSDA1 (STEMMA)
+    const byte GP3 = 3;   // I2CSCL1 (STEMMA)
+    const byte GP6 = 6;   // corrected (physical 6 != D6)
+    const byte GP7 = 7;
+    const byte GP8 = 8;   // SPI0Rx
+    const byte GP9 = 9;
+    const byte GP10 = 10;
+    const byte GP11 = 11;
+    const byte GP12 = 12;
+    const byte GP13 = 13; // SPI0SS
+    const byte GP16 = 16;
+    const byte GP18 = 18; // SPI1SCK
+    const byte GP19 = 19; // SPI1Tx
+    const byte GP20 = 20; // SPI1Rx
+    const byte GP24 = 24;
+    const byte GP25 = 25;
+    const byte GP26 = 26; // A0
+    const byte GP27 = 27; // A1
+    const byte GP28 = 28; // A2
+    const byte GP29 = 29; // A3
 
     uses "/Source/Library/MCU"
 
