@@ -127,43 +127,47 @@ unit NeoPixel
         Clear();
     }
 #endif  
-
-
                            
     SetHue(uint pixel, byte hue)
     {
-        byte sector = hue / 43;  // Divide the hue into 6 sectors (256 / 6 ~ 43)
-        uint remainder = (hue % 43) * 6;
-    
-        byte q = byte(((255 * (255 - remainder)) / 255) & 0xFF);
-        byte t = byte(((255 * remainder) / 255) & 0xFF);
-    
-        // Properly using statement blocks in switch cases
+        // Divide the hue range (0-255) into 6 sectors to represent the transitions 
+        // between primary and secondary colors in the RGB color wheel.
+        
+        byte sector = hue / 43;                // Each sector spans ~43 hues (256 / 6 ~ 43)
+        byte remainder = byte((hue % 43) * 6); // The remainder determines how far into the sector we are.
+        
+        // Use switch to determine the RGB values for each sector:
         switch (sector)
         {
-            case 0:
+            case 0:  // Sector 0: Red (255, 0, 0) to Yellow (255, 255, 0)
             {
-                NeoPixel.SetColor(pixel, 255, t, 0);
+                // Increase green (from 0 to 255), keeping red at 255 and blue at 0.
+                NeoPixel.SetColor(pixel, 255, remainder, 0);  
             }
-            case 1:
+            case 1:  // Sector 1: Yellow (255, 255, 0) to Green (0, 255, 0)
             {
-                NeoPixel.SetColor(pixel, q, 255, 0);
+                // Decrease red (from 255 to 0), keeping green at 255 and blue at 0.
+                NeoPixel.SetColor(pixel, 255 - remainder, 255, 0);  
             }
-            case 2:
+            case 2:  // Sector 2: Green (0, 255, 0) to Cyan (0, 255, 255)
             {
-                NeoPixel.SetColor(pixel, 0, 255, t);
+                // Increase blue (from 0 to 255), keeping green at 255 and red at 0.
+                NeoPixel.SetColor(pixel, 0, 255, remainder);  
             }
-            case 3:
+            case 3:  // Sector 3: Cyan (0, 255, 255) to Blue (0, 0, 255)
             {
-                NeoPixel.SetColor(pixel, 0, q, 255);
+                // Decrease green (from 255 to 0), keeping blue at 255 and red at 0.
+                NeoPixel.SetColor(pixel, 0, 255 - remainder, 255);  
             }
-            case 4:
+            case 4:  // Sector 4: Blue (0, 0, 255) to Magenta (255, 0, 255)
             {
-                NeoPixel.SetColor(pixel, t, 0, 255);
+                // Increase red (from 0 to 255), keeping blue at 255 and green at 0.
+                NeoPixel.SetColor(pixel, remainder, 0, 255);  
             }
-            case 5:
+            case 5:  // Sector 5: Magenta (255, 0, 255) to Red (255, 0, 0)
             {
-                NeoPixel.SetColor(pixel, 255, 0, q);
+                // Decrease blue (from 255 to 0), keeping red at 255 and green at 0.
+                NeoPixel.SetColor(pixel, 255, 0, 255 - remainder);  
             }
         }
     }
