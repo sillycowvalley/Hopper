@@ -86,15 +86,11 @@ unit NeoPixel
 #if defined(BOARD_HAS_NEOPIXEL)
     BuiltIn()
     {
-        BuiltIn(Board.BuiltInNeoPixelLength);
-    }
-    BuiltIn(uint length)
-    {
 #if defined(BOARD_HAS_NEOPIXEL_POWER)        
         MCU.PinMode(Board.BuiltInNeoPixelPower, PinModeOption.Output);
         MCU.DigitalWrite(Board.BuiltInNeoPixelPower, true);
 #endif
-        Begin(length, Board.BuiltInNeoPixel, PixelType.GRB | PixelType.KHz800);
+        Begin(Board.BuiltInNeoPixelLength, Board.BuiltInNeoPixel, PixelType.GRB | PixelType.KHz800);
         Brightness = 10;
         Clear();
     }

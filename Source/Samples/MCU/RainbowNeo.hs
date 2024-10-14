@@ -1,8 +1,8 @@
 program RainbowNeo
 {
-    //uses "/Source/Library/Boards/AdafruitFeatherRP2350Hstx"
+    uses "/Source/Library/Boards/AdafruitFeatherRP2350Hstx"
     //uses "/Source/Library/Boards/WaveshareRP2040Matrix"
-    uses "/Source/Library/Boards/PimoroniPlasma2350"
+    //uses "/Source/Library/Boards/PimoroniPlasma2350"
     
     //#define RAINBOW_LOW
 
@@ -75,7 +75,13 @@ program RainbowNeo
                    NeoPixel.SetHue(pixel,  byte(firstPixelHue + pixel));
                 }        
                 NeoPixel.Show();
-                Time.Delay(100);   
+                Time.Delay(100);
+                uint angle = uint(360.0 * firstPixelHue / 255);
+                IO.WriteLn(angle.ToString());
+                if (angle % 30 == 0)
+                {
+                    int stopHere = 0;
+                }
             }
         }
     }
@@ -83,7 +89,7 @@ program RainbowNeo
     AdafruitMatrix()
     {
         NeoPixel.Begin(8*4, Board.GP6, PixelType.GRB | PixelType.KHz800);
-        NeoPixel.Brightness = 50; // maximum is 255
+        NeoPixel.Brightness = 5; // maximum is 255
         NeoPixel.Clear();
         
 #ifdef RAINBOW_LOW        
@@ -95,7 +101,7 @@ program RainbowNeo
     WaveshareMatrix()
     {
         NeoPixel.BuiltIn();
-        NeoPixel.Brightness = 50; // maximum is 255
+        NeoPixel.Brightness = 10; // maximum is 255
         NeoPixel.Clear();
      
 #ifdef RAINBOW_LOW     
@@ -106,7 +112,7 @@ program RainbowNeo
     }
     PimoroniPlasma()
     {
-        NeoPixel.BuiltIn(10);
+        NeoPixel.Begin(10, Board.BuiltInNeoPixel, PixelType.RGB | PixelType.KHz800);
         NeoPixel.Brightness = 50; // maximum is 255
         NeoPixel.Clear();
 
