@@ -83,6 +83,24 @@ unit NeoPixel
     
     uint Length { get library; }
     
+#if defined(BOARD_HAS_NEOPIXEL)
+    BuiltIn()
+    {
+        BuiltIn(Board.BuiltInNeoPixelLength);
+    }
+    BuiltIn(uint length)
+    {
+#if defined(BOARD_HAS_NEOPIXEL_POWER)        
+        MCU.PinMode(Board.BuiltInNeoPixelPower, PinModeOption.Output);
+        MCU.DigitalWrite(Board.BuiltInNeoPixelPower, true);
+#endif
+        Begin(length, Board.BuiltInNeoPixel, PixelType.GRB | PixelType.KHz800);
+        Brightness = 10;
+        Clear();
+    }
+#endif  
+        
+    
     Clear()
     {
         uint length = Length;
@@ -114,27 +132,12 @@ unit NeoPixel
         }
         Show();
     }
-
-#if defined(BOARD_HAS_NEOPIXEL)
-    BuiltIn()
-    {
-#if defined(BOARD_HAS_NEOPIXEL_POWER)        
-        MCU.PinMode(Board.BuiltInNeoPixelPower, PinModeOption.Output);
-        MCU.DigitalWrite(Board.BuiltInNeoPixelPower, true);
-#endif
-        Begin(Board.BuiltInNeoPixelLength, Board.BuiltInNeoPixel, PixelType.GRB | PixelType.KHz800);
-        Brightness = 10;
-        Clear();
-    }
-#endif  
-    
     SetHue(uint pixel, byte hue)
     {
         // Divide the hue range (0-255) into 6 sectors to represent the transitions 
         // between primary and secondary colors in the RGB color wheel.
-        
-        byte sector = hue / 43;                // Each sector spans ~43 hues (256 / 6 ~ 43)
-        byte remainder = byte((hue % 43) * 6); // The remainder determines how far into the sector we are.
+        byte sector = hue / 43;          // Each sector spans ~43 hues (256 / 6 ~ 43)
+        byte remainder = (hue % 43) * 6; // The remainder determines how far into the sector we are.
         
         // Use switch to determine the RGB values for each sector:
         switch (sector)
