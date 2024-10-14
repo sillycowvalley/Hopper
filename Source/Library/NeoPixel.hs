@@ -126,6 +126,65 @@ unit NeoPixel
         Brightness = 10;
         Clear();
     }
-#endif         
+#endif  
+    HueToRGB(long hue, ref byte r, ref byte g, ref byte b)
+    {
+        // Normalize hue to 0-0xFFFF
+        hue = hue % 0x10000;
+    
+        // Each 1/6th of the range represents a primary color sector
+        uint sector    = uint(hue / 0x2AAA); // 0x10000 / 6 = 0x2AAA
+        uint remainder = uint(hue % 0x2AAA); // Hue within the sector
+    
+        long q = (long(255) * (0x2AAA - remainder)) / 0x2AAA;
+        long t = (long(255) * remainder) / 0x2AAA;
+    
+        switch(sector)
+        {
+            case 0:
+            {
+                // Red to yellow
+                r = 255;
+                g = t.GetByte(0);
+                b = 0;
+            }
+            case 1:
+            {
+                // Yellow to green
+                r = q.GetByte(0);
+                g = 255;
+                b = 0;
+            }
+            case 2:
+            {
+                // Green to cyan
+                r = 0;
+                g = 255;
+                b = t.GetByte(0);
+            }
+            case 3:
+            {
+                // Cyan to blue
+                r = 0;
+                g = q.GetByte(0);
+                b = 255;
+            }
+            case 4:
+            {
+                // Blue to magenta
+                r = t.GetByte(0);
+                g = 0;
+                b = 255;
+            }
+            case 5:
+            {
+                // Magenta to red
+                r = 255;
+                g = 0;
+                b = q.GetByte(0);
+            }
+        }
+    }
+         
 
  }
