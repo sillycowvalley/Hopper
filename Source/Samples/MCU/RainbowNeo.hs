@@ -12,12 +12,9 @@ program RainbowNeo
         NeoPixel.Brightness = 50; // maximum is 255
         NeoPixel.Clear();
         
-        NeoPixel.GenerateHues();
-        
         uint totalPixels = NeoPixel.Length;
         loop
         {   
-            long start = Millis;
             for (uint firstPixelHue = 0; firstPixelHue < 256; firstPixelHue ++) 
             {
                 for (byte pixel = 0; pixel < totalPixels; pixel++)
@@ -29,7 +26,6 @@ program RainbowNeo
                 NeoPixel.Show();
                 Time.Delay(10);
             }
-            IO.WriteLn((Millis - start).ToString());
         }
     }
 }
