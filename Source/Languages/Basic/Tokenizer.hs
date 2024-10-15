@@ -69,24 +69,24 @@ unit Tokenizer
             string source = Source.GetLine(gLineNumber);
             HopperCode.StartNewLine(gLineNumber);
             Tokenize(source, ref localLoopStack, ref localLoopLineStack);
-            if (Condition != Conditions.None) { break; }
+            if (Platform.Condition != Conditions.None) { break; }
             
             gLineNumber = 10001;
             source = Source.GetLine(gLineNumber);
             HopperCode.StartNewLine(gLineNumber);
             Tokenize(source, ref localLoopStack, ref localLoopLineStack);
-            if (Condition != Conditions.None) { break; }
+            if (Platform.Condition != Conditions.None) { break; }
             
             gLineNumber = 10002;
             source = Source.GetLine(gLineNumber);
             HopperCode.StartNewLine(gLineNumber);
             Tokenize(source, ref localLoopStack, ref localLoopLineStack);
-            if (Condition != Conditions.None) { break; }
+            if (Platform.Condition != Conditions.None) { break; }
             
             break;
         } // loop
         
-        if (Condition == Conditions.None)
+        if (Platform.Condition == Conditions.None)
         {
             if (localLoopStack.Count != 0)
             {
@@ -102,7 +102,7 @@ unit Tokenizer
                 }
             }
         }
-        if (Condition == Conditions.None)
+        if (Platform.Condition == Conditions.None)
         {
             HopperCode.Finish(true); // line number fixups and EXIT
         }
@@ -140,7 +140,7 @@ unit Tokenizer
 #endif            
             HopperCode.StartNewLine(gLineNumber);
             Tokenize(Source.GetLine(gLineNumber), ref loopStack, ref loopLineStack);
-            if (Condition != Conditions.None) { break; }
+            if (Platform.Condition != Conditions.None) { break; }
             
 #ifdef DEBUG           
             loop
@@ -155,7 +155,7 @@ unit Tokenizer
 #endif            
         } // loop
         
-        if (Condition == Conditions.None)
+        if (Platform.Condition == Conditions.None)
         {
             if (loopStack.Count != 0)
             {
@@ -171,7 +171,7 @@ unit Tokenizer
                 }
             }
         }
-        if (Condition == Conditions.None)
+        if (Platform.Condition == Conditions.None)
         {
 #ifdef DEBUG            
             long postStart = Millis;
@@ -395,7 +395,7 @@ unit Tokenizer
                 loopLineStack.Remove(loopLineStack.Count-1);
                 HopperCode.InsertBreakCheck();
                 expressionType = ParseExpression(ref content);
-                if (Condition != Conditions.None) { break; }
+                if (Platform.Condition != Conditions.None) { break; }
                 if (expressionType != ExpressionType.Boolean) { Error(23); break; }          // Boolean expression expected
                 uint iA; _ = untilContent.IndexOf('a', ref iA);
                 untilContent = untilContent.Substring(iA+1);
@@ -429,7 +429,7 @@ unit Tokenizer
             {
                 HopperCode.InsertBreakCheck();
                 expressionType = ParseExpression(ref content);
-                if (Condition != Conditions.None) { break; }
+                if (Platform.Condition != Conditions.None) { break; }
                 if (expressionType != ExpressionType.Boolean) { Error(23); break; }          // Boolean expression expected
                 
                 // if false, just go to next line
@@ -485,7 +485,7 @@ unit Tokenizer
                 else
                 {
                     Consume('=', ref content);
-                    if (Condition != Conditions.None) { break; }
+                    if (Platform.Condition != Conditions.None) { break; }
                     if (variableName.StartsWith('$') && content.StartsWith('"'))
                     {
                         // $Z=".,'~=+:;*%&$OXB#@ "
@@ -503,7 +503,7 @@ unit Tokenizer
                     else
                     {
                         expressionType = ParseExpression(ref content);
-                        if (Condition != Conditions.None) { break; }
+                        if (Platform.Condition != Conditions.None) { break; }
                         if (expressionType != ExpressionType.Integer) { Error(15); break; } // Integer expression expected
                         if (basicInstruction == Basic.SetVariableRef)
                         {
@@ -572,7 +572,7 @@ unit Tokenizer
                 loop
                 {
                     expressionType = ParseExpression(ref content);
-                    if (Condition != Conditions.None) { break; }
+                    if (Platform.Condition != Conditions.None) { break; }
                     if (expressionType != ExpressionType.Integer) { Error(15); break; } // Integer expression expected
                     HopperCode.PrintChar(); // assumes LSB = ch, MSB = 0 (null) is on the stack
                     
@@ -591,9 +591,9 @@ unit Tokenizer
                 loop
                 {
                     Consume('=', ref content);
-                    if (Condition != Conditions.None) { break; }
+                    if (Platform.Condition != Conditions.None) { break; }
                     expressionType = ParseExpression(ref content);
-                    if (Condition != Conditions.None) { break; }
+                    if (Platform.Condition != Conditions.None) { break; }
                     if (expressionType != ExpressionType.Integer) { Error(15); break; } // Integer expression expected
                     HopperCode.Seed();
                     break;
@@ -647,7 +647,7 @@ unit Tokenizer
                         
                         // print integer expression
                         expressionType = ParseExpression(ref content);
-                        if (Condition != Conditions.None) { break; }
+                        if (Platform.Condition != Conditions.None) { break; }
                         if (expressionType != ExpressionType.Integer) { Error(15); break; } // Integer expression expected
                         
                         if (basicInstruction == Basic.Print)
@@ -687,7 +687,7 @@ unit Tokenizer
                         break;
                     }
                 } // loop
-                if ((Condition == Conditions.None) && !suppressEOL)
+                if ((Platform.Condition == Conditions.None) && !suppressEOL)
                 {
                     HopperCode.PrintString("" + Char.EOL); // newline
                 }
@@ -701,14 +701,14 @@ unit Tokenizer
                     argumentsExpected = 2;
                 }
                 expressionType = ParseArguments(ref content, argumentsExpected);
-                if (Condition != Conditions.None) { break; }
+                if (Platform.Condition != Conditions.None) { break; }
                 if (expressionType != ExpressionType.Integer) { Error(15); break; } // Integer expression expected
                 
                 Consume('=', ref content);
-                if (Condition != Conditions.None) { break; }
+                if (Platform.Condition != Conditions.None) { break; }
                 
                 expressionType = ParseExpression(ref content);
-                if (Condition != Conditions.None) { break; }
+                if (Platform.Condition != Conditions.None) { break; }
                 if (expressionType != ExpressionType.Integer) { Error(15); break; } // Integer expression expected
                 if (basicInstruction == Basic.PokeW)
                 {
@@ -735,7 +735,7 @@ unit Tokenizer
                 HopperCode.InsertBreakCheck();
                 expressionType = ParseExpression(ref content);
                 if (expressionType != ExpressionType.Integer) { Error(15); break; } // Integer expression expected
-                if (Condition != Conditions.None) { break; }
+                if (Platform.Condition != Conditions.None) { break; }
                 
                 if (noFixup)
                 {

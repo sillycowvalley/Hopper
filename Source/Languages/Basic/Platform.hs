@@ -175,18 +175,18 @@ unit Platform
     
     print(string str)
     {
-        Write(str);
+        IO.Write(str);
     }
     printRef(uint address)
     {
         loop
         {
-            byte b = ReadByte(address);
+            byte b = Memory.ReadByte(address);
             if (b == 0)
             {
                 break;
             }
-            Write(char(b));
+            IO.Write(char(b));
             address++;
         } 
     }

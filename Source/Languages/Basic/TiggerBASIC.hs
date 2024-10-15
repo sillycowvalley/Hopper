@@ -1,13 +1,13 @@
 program TiggerBASIC
 {
     // User knobs and dials:
-    //#define TERSE      // errors are numbers only, no text messages
+    #define TERSE      // errors are numbers only, no text messages
     //#define CHECKED    // runtime checks like stack overflow/underflow and division by zero (also <ctrl><X> functionality)
     #define OPTIMIZER    // peephole optimizer for the byte code generator (slower compile times, smaller faster code)
     #define DYNAMICSTACK // <uint> vs [uint] for GOSUB call stack (use dynamic/list if you don't need extreme GOSUB call depth)
     
     // Development only:
-    //#define DEBUG        // verbose listings showing the IL code, internal system checks
+    #define DEBUG        // verbose listings showing the IL code, internal system checks
     
     #define MCU            // running on a microcontroller (CALLI vs CALL for example)
     #define SERIAL_CONSOLE  // no Keyboard
@@ -161,11 +161,11 @@ program TiggerBASIC
     execute(uint lineNumber)
     {
         HopperCode.Run(lineNumber);
-        if (Condition == Conditions.Error)
+        if (Platform.Condition == Conditions.Error)
         {
             // Error(..) already emitted the error
         }
-        else  if (Condition == Conditions.Break)
+        else  if (Platform.Condition == Conditions.Break)
         {
             WriteLn(); WriteLn("BREAK");
         }
@@ -178,7 +178,7 @@ program TiggerBASIC
         if (CurrentCodeSize == 0)
         {
             Tokenize();
-            if (Condition != Conditions.None)
+            if (Platform.Condition != Conditions.None)
             {
 #ifndef DEBUG
                 HopperCode.Clear(); // discard current incompletely tokenized program
@@ -194,7 +194,7 @@ program TiggerBASIC
         if (CurrentCodeSize == 0)
         {
             Tokenize();
-            if (Condition != Conditions.None)
+            if (Platform.Condition != Conditions.None)
             {
                 HopperCode.Clear(); // discard current incompletely tokenized program
                 return;
@@ -322,7 +322,7 @@ program TiggerBASIC
                     if (Source.LineExists(i))
                     {
                         string content = i.ToString() + " " + Source.GetLine(i);
-                        textFile.Append(content);
+                        textFile.Append(content + Char.EOL);
                     }
                     if (i >= Source.LastLine)
                     {
@@ -345,7 +345,7 @@ program TiggerBASIC
             if (CurrentCodeSize == 0) // not compiled
             {
                 compile();
-                if (Condition != Conditions.None) 
+                if (Platform.Condition != Conditions.None) 
                 { 
                     break; 
                 }
@@ -354,7 +354,7 @@ program TiggerBASIC
             Source.Add(10001, inputLine);
             Source.Add(10002, "END");
             TokenizeImmediate();
-            if (Condition != Conditions.None) 
+            if (Platform.Condition != Conditions.None) 
             { 
                 break; 
             }
@@ -435,7 +435,7 @@ program TiggerBASIC
                         Source.Add(lineNumber, inputLine); // calls HopperCode.Clear()
                         break;
                     }
-                    if ((Condition == Conditions.None) && (inputLine.Length != 0))
+                    if ((Platform.Condition == Conditions.None) && (inputLine.Length != 0))
                     {
                         immediate(inputLine);
                     }
@@ -494,6 +494,7 @@ program TiggerBASIC
         return (result == DisplayState.OK);
     }
     
+    Hopper()
     {
 #ifdef USELCD        
         IO.EchoToLCD = true;

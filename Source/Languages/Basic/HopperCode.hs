@@ -618,7 +618,7 @@ unit HopperCode
             setCodeWord(fix, uoffset);
             //uint realAddress = UserCode + fix;
             //WriteLn("0x" + realAddress.ToHexString(4) + ", line:" + lineNumber.ToString() + " " + offset.ToString());
-            if (Condition != Conditions.None)
+            if (Platform.Condition != Conditions.None)
             {
                 break;
             }
@@ -690,7 +690,7 @@ unit HopperCode
             uint actualAddress = pc;
             byte cd = programCode[pc];
             Instruction opCode = Instruction(cd);
-            string     content = Instructions.ToString(opCode);
+            content = Instructions.ToString(opCode);
             bool isStackOffset; bool isJumpOffset; bool isRET;
             byte operandWidth = Instructions.GetKitchenSinkWidth(opCode, ref isStackOffset, ref isJumpOffset, ref isRET);
         
