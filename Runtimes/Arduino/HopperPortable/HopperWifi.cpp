@@ -78,7 +78,7 @@ void External_WiFiDisconnect()
 }
 
 
-#ifdef RP2040PICOW
+#if defined(RP2040PICOW) || defined(RP2350PICO2W)
 bool WifiConnect()
 {
     bool success = false;

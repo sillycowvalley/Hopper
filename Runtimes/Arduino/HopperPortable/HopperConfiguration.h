@@ -32,6 +32,7 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 //
 #if defined(ARDUINO_RASPBERRY_PI_PICO_2)
 #define RP2350PICO2
+//#define RP2350PICO2W
 #define USESDFS
 #endif
 
