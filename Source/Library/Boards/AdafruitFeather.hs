@@ -21,7 +21,7 @@ unit Board // Adafruit Feather
     #define BOARD_HAS_A2
     #define BOARD_HAS_A3
 
-    const byte BuiltInLED = 13;
+    const byte BuiltInLED = 7;
     const byte BuiltInNeoPixel = 16;
     const byte BuiltInNeoPixelLength = 1;
 

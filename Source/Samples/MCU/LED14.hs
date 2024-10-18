@@ -2,9 +2,9 @@ program LED14SegmentDemo
 {
    
     //uses "/Source/Library/Boards/PimoroniTiny2350"
-    //uses "/Source/Library/Boards/Hopper6502"
+    uses "/Source/Library/Boards/Hopper6502"
     //uses "/Source/Library/Boards/AdafruitFeather"
-    uses "/Source/Library/Boards/Challenger2350WiFi6Ble5"
+    //uses "/Source/Library/Boards/Challenger2350WiFi6Ble5"
     uses "/Source/Library/Devices/Adafruit14Segment"
     
     Scroll(string content)

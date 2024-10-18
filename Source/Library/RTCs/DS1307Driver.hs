@@ -12,7 +12,7 @@ unit RTCDriver
     bool     initialized;
     byte[7] registersRTC;
     
-    bool begin(byte i2cController, byte sdaPin, byte sclPin, byte address)
+    bool Begin(byte i2cController, byte sdaPin, byte sclPin, byte address)
     {        
         
         bool success = Wire.Initialize(i2cController, sdaPin, sclPin);

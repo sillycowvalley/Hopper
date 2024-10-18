@@ -66,6 +66,10 @@ unit RTC
             RTC.Time = dateTime.Substring(11);
             RTCDriver.resetStatus();
             IO.WriteLn("Set From Debugger");
+            
+            string time = RTC.Time;
+            string date = RTC.Date;
+            
             success = true;
             break;
         }
