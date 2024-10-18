@@ -1,17 +1,17 @@
 unit RTC
 {
-    // Features Implemented    DS1307       DS3231       PCF8523      MCP79410
+    // Features Implemented    DS1307       DS1337       DS3231       PCF8523      MCP79410
     //
-    // Time and Date           Yes          Yes          Yes          Yes
+    // Time and Date           Yes          Yes          Yes          Yes          Yes
     //
-    // Alarms                  No           2            1            2
-    //    Resolution                        Seconds      Minutes      Minutes
+    // Alarms                  No           2            2            1            2
+    //    Resolution                        Seconds      Seconds      Minutes      Minutes
     //
-    // Countdown Timers        No           No           2            No  
+    // Countdown Timers        No           No           No           2            No  
     //
-    // Battery-backed SRAM     Yes          No           No           64 bytes  
+    // Battery-backed SRAM     No           No           No           No           64 bytes  
     //
-    // Temperature Sensor      No           Yes          No           No
+    // Temperature Sensor      No           No           Yes          No           No
     //    
     
     // Options:
@@ -59,16 +59,12 @@ unit RTC
                 break;
             }
             string dateTime = Runtime.DateTime;
-            //string dateTime = "2024-10-11 11:17:00";
             
             // "YYYY-MM-DD HH:MM:SS"
             RTC.Date = dateTime.Substring(0, 10);
             RTC.Time = dateTime.Substring(11);
             RTCDriver.resetStatus();
-            IO.WriteLn("Set From Debugger");
-            
-            string time = RTC.Time;
-            string date = RTC.Date;
+            IO.WriteLn("Set From Debugger: " + RTC.Date + " " + RTC.Time);
             
             success = true;
             break;
