@@ -10,8 +10,6 @@ namespace HopperNET
 {
     public partial class Hopper : Form, IHopper
     {
-        WebServer httpServer;
-
         public Hopper()
         {
             InitializeComponent();
@@ -32,7 +30,6 @@ namespace HopperNET
             timer.Tick += Timer_Tick;
             timer.Start();
 
-            httpServer = new WebServer(Runtime, this);
         }
 
         private void Timer_Tick(object sender, EventArgs e)
@@ -235,7 +232,6 @@ namespace HopperNET
                 return;
             }
             Exiting = true;
-            httpServer.Stop();
             Console.ConsoleFree();
             Keyboard.Free();
             Settings.Default.Maximized = (WindowState == FormWindowState.Maximized);

@@ -87,7 +87,6 @@
     <Compile Include="Screen.cs" />
     <Compile Include="HopperSystem.cs" />
     <Compile Include="Serial.cs" />
-    <Compile Include="Server.cs" />
     <Compile Include="Settings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
