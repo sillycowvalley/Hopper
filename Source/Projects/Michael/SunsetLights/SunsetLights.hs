@@ -1,13 +1,15 @@
 program SunsetLights
 {   
+    uses "/Source/Library/Fonts/Verdana5x8"
+    
     uses "/Source/Library/Boards/ChallengerNB2040WiFi"
     
     uses "/Source/Library/Devices/AdafruitEInk213TriColor"
-    uses "/Source/Library/Fonts/Verdana5x8"
     
-//#define HTTP_HEADER_TIME // just use the server time in the HTTP response headers (GMT) 
+    
+#define HTTP_HEADER_TIME // just use the server time in the HTTP response headers (GMT) 
 //#define UTC_TIME         // time server that serves up GMT time and date
-#define COMPLETE_TIME    // time server that serves up UTC, time zone offset, and daylight savings (flag and offset)
+//#define COMPLETE_TIME    // time server that serves up UTC, time zone offset, and daylight savings (flag and offset)
     
     uses "DateTime"
     uses "WebTime"
@@ -136,8 +138,8 @@ program SunsetLights
         WebTime.Disconnect();
     }
     
-        
-    {
+    Hopper() {
+    
         WriteLn();
         
         NeoPixel.BuiltIn();
