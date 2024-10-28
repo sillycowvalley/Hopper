@@ -1,4 +1,4 @@
-//#include <pins_arduino.h>
+#include <pins_arduino.h>
 #include "portmap.h"
 
 ////////////////////////////////////////////////////////////
@@ -109,15 +109,16 @@ void OnClock()
     bool sync = digitalRead(SYNC) != 0;
     //bool rw   = digitalRead(RW)   != 0;
     
-    if (capturing)
+    //if (capturing)
+    if (!sync)
     {
         dlog[dindex] = xDATA_IN();
         alog[dindex] = ADDR();
-        ticks++;
         dindex++;
         if (dindex >= 10240)
         {
             capturing = false;
+            dindex = 0;
         }
     }
     ticks++;
@@ -152,11 +153,11 @@ void loop() {
             Dump();
         }
     }
-    
+  
     ticks = 0;
     digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
     delay(500);                      // wait for a second
     digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
     delay(500);                      // wait for a second
-    Serial.println(ticks);
+    Serial.print("Ticks: "); Serial.println(ticks);
 }
