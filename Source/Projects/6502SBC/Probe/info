@@ -1,0 +1,138 @@
+{
+  "uuid": "07d7b32dfe55cd0e659848f284389bad",
+  "path": "Offline/EEPROM Jig",
+  "name": "EEPROM Jig",
+  "content": "",
+  "created_at": "2024-10-27 16:01:01",
+  "updated_at": "2024-10-27 17:52:35",
+  "stick": "",
+  "documents": [
+    {
+      "uuid": "8d959dd003145c9db76f8e43f38c6bce",
+      "title": "Sheet_1",
+      "description": "",
+      "docType": "1",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "eb8e55cc3eac49dcb7d19b55ec73f537": 2,
+        "81470428b57746d494164754170dc602": 3,
+        "5e32543767ba4a8390c7672964666f14": 1,
+        "72d0ac364d254625a0fcd6dc73e9d9f8": 2
+      },
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ],
+        [
+          "0.1uF",
+          1,
+          "CAP-2.5*4.0 5.0 DEW",
+          "C1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "Mouser",
+            "Supplier Part": "810-FG28X7R1H104KNT6"
+          }
+        ],
+        [
+          "AT28C256F-15PC",
+          2,
+          "PDIP-28_L37.0-W13.5-P2.54-LS15.6-BL",
+          "U1,U2",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "MICROCHIP(美国微芯)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C19382386"
+          }
+        ],
+        [
+          "D0..D8",
+          1,
+          "HDR-TH_8P-P2.54-V-F",
+          "U3",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "hanxia(韩下)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C22438158"
+          }
+        ],
+        [
+          "A0..A7",
+          1,
+          "HDR-TH_8P-P2.54-V-F",
+          "U4",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "hanxia(韩下)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C22438158"
+          }
+        ],
+        [
+          "A8..A15",
+          1,
+          "HDR-TH_8P-P2.54-V-F",
+          "U5",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "hanxia(韩下)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C22438158"
+          }
+        ],
+        [
+          "Control",
+          2,
+          "HDR-TH_4P-P2.54-V-F",
+          "U6,U7",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "hanxia(韩下)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C22438154"
+          }
+        ]
+      ],
+      "updateTime": 1730003712,
+      "createTime": 1729998061,
+      "histories": [],
+      "created_at": "2024-10-27 16:01:01",
+      "updated_at": "2024-10-27 17:35:12"
+    },
+    {
+      "uuid": "2ff726d8b1a6e571c3a3701d409a7c2e",
+      "puuid": "07d7b32dfe55cd0e659848f284389bad",
+      "title": "PCB_EEPROM Jig_2",
+      "filename": "PCB_EEPROM Jig_2.json",
+      "description": "",
+      "docType": "3",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "8f78b31c15d54ef69278fa188fb193ea": 2,
+        "288e6363c2eb4cd0b8a5de5bfb24e8bd": 1,
+        "cf2846522daf4845a6d8d8b8b2e17553": 2,
+        "b716fa3700784db29b7ad404bc6e6844": 3
+      },
+      "BOM": [],
+      "updateTime": 1730004755,
+      "createTime": 1730000518,
+      "histories": [],
+      "created_at": "2024-10-27 16:41:58",
+      "updated_at": "2024-10-27 17:52:35"
+    }
+  ],
+  "sort": [],
+  "title": "EEPROM Jig",
+  "foldername": "EEPROM Jig",
+  "schfilename": "EEPROM Jig.json",
+  "schfilemtime": 1730003712081
+}
