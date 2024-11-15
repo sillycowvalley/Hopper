@@ -69,7 +69,7 @@ unit RTC
             success = true;
             break;
         }
-        return false;
+        return success;
     }
     
     string Date    { get { return RTCDriver.date;       } set { RTCDriver.date = value; } }

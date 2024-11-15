@@ -20,6 +20,7 @@ unit Board // Adafruit Feather RP2350 Hstx
     #define BOARD_HAS_A1
     #define BOARD_HAS_A2
     #define BOARD_HAS_A3
+    #define BOARD_I2C1_IS_DEFAULT
 
     const byte BuiltInLED = 7;
     const byte BuiltInNeoPixel = 21;
@@ -31,8 +32,8 @@ unit Board // Adafruit Feather RP2350 Hstx
     const byte A3 = 29;
     const byte ADCResolution = 12;
 
-    const byte I2CSDA0 = 2;
-    const byte I2CSCL0 = 3;
+    const byte I2CSDA1 = 2;
+    const byte I2CSCL1 = 3;
 
     const byte SPI0Tx = 23;
     const byte SPI0Rx = 20;
