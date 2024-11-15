@@ -2593,8 +2593,7 @@ unit CodePoints
                         {
                             case Instruction.BOOLNOT:
                             {
-                                processImmediate(iIndex, operand1);
-                                iLengths.SetItem(iIndex, 1);
+                                processImmediate(iIndex, (operand1==0) ? 1 : 0);
                                 RemoveInstruction(iIndex-1); // good
                                 modified = true;
                             }
