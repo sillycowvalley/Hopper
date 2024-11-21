@@ -1,14 +1,11 @@
 program ExploreFS
 {
-    uses "/Source/Library/Boards/SparkfunProMicroRP2040"
-    uses "/Source/Library/Devices/Adafruit240x135ColorTFT"
-    
-    uses "/Source/Library/Fonts/Arduino6x8"
+    uses "/Source/Library/Boards/Challenger2350WiFi6Ble5"
     
     WalkDirectory(string folderPath, uint indent)
     {
         string indentString = ("").Pad(' ', indent);
-        WriteLn(indentString + folderPath);
+        IO.WriteLn(indentString + folderPath);
         directory dir = Directory.Open(folderPath);
         if (dir.IsValid())
         {
@@ -27,31 +24,47 @@ program ExploreFS
                 string filePath = dir.GetFile(i);
                 long   size     = File.GetSize(filePath);
                 string fileName = Path.GetFileName(filePath);
-                WriteLn(indentString + fileName);
+                IO.WriteLn(indentString + fileName);
             }
         }
     }
     
+    Hopper()
     {
-        DeviceDriver.SDCS = Board.GP29;
-        DeviceDriver.CS   = Board.SPI0SS;
-        DeviceDriver.DC   = Board.GP28;
+        // Settings for Hopper SD unit:
+        SD.SPIController = 0;
+        SD.ClkPin = SPI0SCK;
+        SD.TxPin  = SPI0Tx;
+        SD.RxPin  = SPI0Rx;
+        SD.CSPin  = SPI0SS; 
         
-        if (!DeviceDriver.Begin())
+        PinMode(GP12, PinModeOption.Input);
+        loop
         {
-            IO.WriteLn("Failed to initialize display");
-            return;
+            bool cardDetected = DigitalRead(GP12);
+            if (cardDetected)
+            {
+                if (!SD.Mount()) // let SD library initialize SPI before call to SPI.Begin() in DisplayDriver.begin()
+                {
+                    IO.WriteLn("Failed to initialize SD");
+                }
+                else
+                {
+                    long start = Millis;
+                    
+                    WalkDirectory("/", 0);
+                    
+                    SD.Eject();
+                
+                    long elapsed = Millis - start;
+                    IO.WriteLn("Elapsed: " + elapsed.ToString() + "ms");
+                }
+            }
+            else
+            {
+                IO.WriteLn("No card detected");
+            }
+            Delay(3000);
         }
-        
-        long start = Millis;
-        
-        EchoToDisplay = true;
-        Screen.Clear();
-        WalkDirectory("/", 0);
-        EchoToDisplay = false;
-        SD.Eject();
-        
-        long elapsed = Millis - start;
-        IO.WriteLn("Elapsed: " + elapsed.ToString() + "ms");
     }
 }

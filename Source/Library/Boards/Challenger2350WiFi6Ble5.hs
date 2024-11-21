@@ -57,6 +57,8 @@ unit Board // Challenger 2350 WiFi6 Ble5
     const byte GP20 = 20; // I2CSDA0
     const byte GP17 = 17; // SPI0SS
     const byte GP16 = 16; // SPI0Rx
+    const byte GP13 = 13;
+    const byte GP12 = 12;
     const byte GP10 = 10; // SPI1SCK
     const byte GP9 = 9;   // SPI1SS
     const byte GP8 = 8;   // SPI1Rx

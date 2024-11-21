@@ -7,8 +7,8 @@ program AnalogRead
     {
         loop
         {
-            uint x = A0;
-            uint y = A1;
+            uint x = AnalogRead(A0);
+            uint y = AnalogRead(A1);
             
             WriteLn(x.ToString() + ", " + y.ToString());
             Delay(50);
