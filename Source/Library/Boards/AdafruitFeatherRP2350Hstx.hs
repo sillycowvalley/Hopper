@@ -38,7 +38,7 @@ unit Board // Adafruit Feather RP2350 Hstx
     const byte SPI0Tx = 23;
     const byte SPI0Rx = 20;
     const byte SPI0SCK = 22;
-    const byte SPI0SS = 21;
+    const byte SPI0SS = 1;
 
     const byte UART1Tx = 0;
     const byte UART1Rx = 1;

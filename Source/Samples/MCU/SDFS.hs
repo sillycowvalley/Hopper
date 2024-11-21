@@ -1,6 +1,7 @@
 program ExploreFS
 {
-    uses "/Source/Library/Boards/Challenger2350WiFi6Ble5"
+    //uses "/Source/Library/Boards/Challenger2350WiFi6Ble5"
+    uses "/Source/Library/Boards/AdafruitFeatherRP2350Hstx"
     
     WalkDirectory(string folderPath, uint indent)
     {
@@ -38,10 +39,11 @@ program ExploreFS
         SD.RxPin  = SPI0Rx;
         SD.CSPin  = SPI0SS; 
         
-        PinMode(GP12, PinModeOption.Input);
+        PinMode(GP0, PinModeOption.Input);
         loop
         {
-            bool cardDetected = DigitalRead(GP12);
+            long start = Millis;
+            bool cardDetected = DigitalRead(GP0);
             if (cardDetected)
             {
                 if (!SD.Mount()) // let SD library initialize SPI before call to SPI.Begin() in DisplayDriver.begin()
@@ -50,20 +52,19 @@ program ExploreFS
                 }
                 else
                 {
-                    long start = Millis;
-                    
+                    IO.WriteLn("SD card detected");
                     WalkDirectory("/", 0);
-                    
                     SD.Eject();
-                
-                    long elapsed = Millis - start;
-                    IO.WriteLn("Elapsed: " + elapsed.ToString() + "ms");
                 }
             }
             else
             {
                 IO.WriteLn("No card detected");
+                WalkDirectory("/", 0);
             }
+            long elapsed = Millis - start;
+            IO.WriteLn("Elapsed: " + elapsed.ToString() + "ms");
+            
             Delay(3000);
         }
     }

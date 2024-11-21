@@ -17,17 +17,42 @@ program AmbiantLog
     
     Save()
     {
-        file f = File.Create("Data.csv");
-        foreach (var log in data)
+        bool cardDetected = DigitalRead(GP0);
+        if (cardDetected)
         {
-            string line = (log.Day).ToString() + "," + (log.Minute).ToString() + "," + (log.Light).ToString();
-            f.Append(line + Char.EOL);
-            IO.WriteLn(line); // debugging
+            if (!SD.Mount()) // let SD library initialize SPI before call to SPI.Begin() in DisplayDriver.begin()
+            {
+                IO.WriteLn("Failed to initialize SD");
+            }
+            else
+            {
+                IO.WriteLn("SD card detected.");
+                file f = File.Create("/SD/Logs/Data.csv");
+                foreach (var log in data)
+                {
+                    string line = (log.Day).ToString() + "," + (log.Minute).ToString() + "," + (log.Light).ToString();
+                    f.Append(line + Char.EOL);
+                    IO.WriteLn(line); // debugging
+                }
+                f.Flush();
+                IO.WriteLn("Saved.");
+            }
         }
-        f.Flush();
+        else
+        {
+            IO.WriteLn("No card detected");
+        }
     }
     Hopper()
     {
+        // Settings for Hopper SD unit:
+        SD.SPIController = 0;
+        SD.ClkPin = SPI0SCK;
+        SD.TxPin  = SPI0Tx;
+        SD.RxPin  = SPI0Rx;
+        SD.CSPin  = SPI0SS; 
+        PinMode(GP0, PinModeOption.Input); // Card Detect
+        
         // on reset, set time from debugger
         if (Runtime.InDebugger)
         {
@@ -59,7 +84,7 @@ program AmbiantLog
                 ticks = 0;
                 totalMinutes++;
                 
-                if (totalMinutes % 15 == 0)
+                if (totalMinutes % 5 == 0)
                 {
                     accumulator /= samples;
                     IO.WriteLn("Day: " + totalDays.ToString() 
