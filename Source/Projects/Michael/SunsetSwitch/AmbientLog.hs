@@ -4,6 +4,8 @@ program AmbiantLog
     
     uses "/Source/System/DateTime"
     
+    const string logPath = "/SD/Logs/Data.csv";
+    const uint   logFrequency = 15; // log every nth minute
     uint totalMinutes;
     uint totalDays;
     
@@ -27,15 +29,27 @@ program AmbiantLog
             else
             {
                 IO.WriteLn("SD card detected.");
-                file f = File.Create("/SD/Logs/Data.csv");
+                file f = File.Create(logPath);
                 foreach (var log in data)
                 {
                     string line = (log.Day).ToString() + "," + (log.Minute).ToString() + "," + (log.Light).ToString();
                     f.Append(line + Char.EOL);
+                    if (!f.IsValid())
+                    {
+                        IO.WriteLn("Append Invalid.");
+                    }
                     IO.WriteLn(line); // debugging
                 }
                 f.Flush();
-                IO.WriteLn("Saved.");
+                if (f.IsValid())
+                {
+                    IO.WriteLn("Flushed.");
+                    SD.Eject();
+                }
+                else
+                {
+                    IO.WriteLn("Flush Invalid.");
+                }
             }
         }
         else
@@ -84,7 +98,7 @@ program AmbiantLog
                 ticks = 0;
                 totalMinutes++;
                 
-                if (totalMinutes % 5 == 0)
+                if (totalMinutes % logFrequency == 0)
                 {
                     accumulator /= samples;
                     IO.WriteLn("Day: " + totalDays.ToString() 

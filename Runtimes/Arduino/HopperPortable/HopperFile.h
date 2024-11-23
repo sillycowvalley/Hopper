@@ -7,8 +7,8 @@
 
 Bool External_FileExists(UInt hrpath);
 void External_FileDelete(UInt hrpath);
-void External_FileWriteAllBytes(UInt hrpath, UInt content, Bool append);
-void External_FileWriteAllCodeBytes(UInt hrpath, UInt codeStart, UInt codeLength);
+UInt External_FileWriteAllBytes(UInt hrpath, UInt content, Bool append);
+UInt External_FileWriteAllCodeBytes(UInt hrpath, UInt codeStart, UInt codeLength);
 Bool External_TryFileReadByte_R(UInt hrpath, UInt seekpos, Byte & b);
 UInt External_TryFileReadBuffer(UInt hrpath, UInt seekpos, UInt hrbuffer, UInt bufferSize);
 UInt External_FileGetSize(UInt hrpath);

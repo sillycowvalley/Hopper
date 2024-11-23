@@ -4,6 +4,7 @@
 #include "HopperTimer.h"
 
 
+
 UInt UInt_gRnd = 0;
 UInt Memory_heapStart = 0x8000;
 UInt Memory_heapSize = 0x4000;
@@ -1327,7 +1328,11 @@ void HRFile_Append(UInt _this, Byte b)
         UInt length = HRString_GetLength(buffer);
         if (length >= 0x0100)
         {
-            External_FileWriteAllBytes(Memory_ReadWord(_this + 6), buffer, true);
+            UInt written = External_FileWriteAllBytes(Memory_ReadWord(_this + 6), buffer, true);
+            if (written != length)
+            {
+                Memory_WriteByte(_this + 2, 0x00);
+            }
             HRString_BuildClear_R(buffer);
         }
         Memory_WriteWord(_this + 12, buffer);
@@ -1345,13 +1350,22 @@ void HRFile_Flush(UInt _this)
         if (Memory_ReadByte(_this + 5) == 0x00)
         {
             UInt content = Memory_ReadWord(_this + 12);
-            External_FileWriteAllBytes(Memory_ReadWord(_this + 6), content, true);
+            UInt length = HRString_GetLength(content);
+            UInt written = External_FileWriteAllBytes(Memory_ReadWord(_this + 6), content, true);
+            if (length != written)
+            {
+                Memory_WriteByte(_this + 2, 0x00);
+            }
             HRString_BuildClear_R(content);
         }
         else
         {
             UInt posLSW = Memory_ReadWord(_this + 8);
-            External_FileWriteAllCodeBytes(Memory_ReadWord(_this + 6), Memory_ReadWord(_this + 12), posLSW);
+            UInt written = External_FileWriteAllCodeBytes(Memory_ReadWord(_this + 6), Memory_ReadWord(_this + 12), posLSW);
+            if (posLSW != written)
+            {
+                Memory_WriteByte(_this + 2, 0x00);
+            }
         }
     }
     else
@@ -7812,7 +7826,11 @@ void HRFile_Append(UInt _this, UInt hrstr)
         UInt length = HRString_GetLength(buffer);
         if (length >= 0x0100)
         {
-            External_FileWriteAllBytes(Memory_ReadWord(_this + 6), buffer, true);
+            UInt written = External_FileWriteAllBytes(Memory_ReadWord(_this + 6), buffer, true);
+            if (length != written)
+            {
+                Memory_WriteByte(_this + 2, 0x00);
+            }
             HRString_BuildClear_R(buffer);
         }
         Memory_WriteWord(_this + 12, buffer);

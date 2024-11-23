@@ -419,7 +419,7 @@ unit External
         return hopperStringFromNativeString(Directory.GetDate(path));
     }
 
-    FileWriteAllBytes(uint hrpath, uint buffer, bool append)
+    uint FileWriteAllBytes(uint hrpath, uint buffer, bool append)
     {
         string path = nativeStringFromHopperString(hrpath);
         file f = File.Create(path);
@@ -431,8 +431,9 @@ unit External
             f.Append(b);
         }
         f.Flush();
+        return length;
     }
-    FileWriteAllCodeBytes(uint hrpath, uint codeStart, uint codeLength)
+    uint FileWriteAllCodeBytes(uint hrpath, uint codeStart, uint codeLength)
     {
         string path = nativeStringFromHopperString(hrpath);
         file f = File.Create(path);
@@ -443,6 +444,7 @@ unit External
             f.Append(b);
         }
         f.Flush();
+        return codeLength;
     }
     
     bool TryFileReadByte(uint hrpath, uint hrseekpos, ref byte b)

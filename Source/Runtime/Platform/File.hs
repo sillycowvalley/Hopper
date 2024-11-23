@@ -118,14 +118,23 @@ unit HRFile
             if (ReadByte(this+fiCode) == 0)
             {
                 uint content = ReadWord(this+fiBuffer);
-                External.FileWriteAllBytes(ReadWord(this+fiPath), content, true);
+                uint length = HRString.GetLength(content);
+                uint written = External.FileWriteAllBytes(ReadWord(this+fiPath), content, true);
+                if (length != written)
+                {
+                    WriteByte(this+fiValid, 0);
+                }
                 HRString.BuildClear(ref content);
             }
             else
             {
                 // isCode: pos is length and buffer is start in codeSegment
                 uint posLSW = ReadWord(this+fiPos); // code is <= 64K, LSW of long should be good
-                External.FileWriteAllCodeBytes(ReadWord(this+fiPath), ReadWord(this+fiBuffer), posLSW);
+                uint written = External.FileWriteAllCodeBytes(ReadWord(this+fiPath), ReadWord(this+fiBuffer), posLSW);
+                if (posLSW != written)
+                {
+                    WriteByte(this+fiValid, 0);
+                }
             }
         }
         else
@@ -142,7 +151,11 @@ unit HRFile
             uint length = HRString.GetLength(buffer);
             if (length >= 256) // auto-Flush the buffer
             {
-                External.FileWriteAllBytes(ReadWord(this+fiPath), buffer, true); // appends if file exists
+                uint written = External.FileWriteAllBytes(ReadWord(this+fiPath), buffer, true); // appends if file exists
+                if (written != length)
+                {
+                    WriteByte(this+fiValid, 0);
+                }
                 HRString.BuildClear(ref buffer);
             }
             WriteWord(this+fiBuffer, buffer);
@@ -162,7 +175,11 @@ unit HRFile
             uint length = HRString.GetLength(buffer);
             if (length >= 256) // auto-Flush the buffer
             {
-                External.FileWriteAllBytes(ReadWord(this+fiPath), buffer, true); // appends if file exists
+                uint written = External.FileWriteAllBytes(ReadWord(this+fiPath), buffer, true); // appends if file exists
+                if (length != written)
+                {
+                    WriteByte(this+fiValid, 0);
+                }
                 HRString.BuildClear(ref buffer);
             }
             WriteWord(this+fiBuffer, buffer);
