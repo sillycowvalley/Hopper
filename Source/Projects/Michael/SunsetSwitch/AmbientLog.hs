@@ -78,6 +78,10 @@ program AmbiantLog
             IO.WriteLn("Time set to " + totalMinutes.ToString() + " minutes");
             IO.WriteLn("Day set to " + totalDays.ToString());
         }
+        else
+        {
+            return; // failed : restarted not in debugger (don't override data)
+        }
         
         
         uint ticks;

@@ -87,7 +87,13 @@ unit MenuBar
         if (cp.ToLower() != pp.ToLower())
         {
             menuProjectPath = pp;
-            titleText2 = Path.GetFileName(pp);
+            titleText2 = "['" + Path.GetFileName(pp) + "']";
+#ifdef DEBUGGER
+            if (COMPort != 4242)
+            {
+                titleText2 += " on COM" + (COMPort).ToString();
+            }
+#endif            
         }
         Draw(this);
     }
@@ -247,7 +253,7 @@ unit MenuBar
                 uint x0 = Panel.GetX0(this);
                 uint y0 = Panel.GetY0(this);
                 uint w = Panel.GetWidth(this);
-                uint tw = titleText2.Length+4;
+                uint tw = titleText2.Length;
                 uint tx = x0 + w - tw;
                 if ((x >= tx) && (x <= tx + tw))
                 {
@@ -328,7 +334,7 @@ unit MenuBar
         uint len = content.Length;
         if (titleText2 != "")
         {
-            len = len + titleText2.Length + 4;
+            len = len + titleText2.Length;
         }
         x = x0 + w - len - 1;
         foreach (var c in content)
@@ -338,7 +344,7 @@ unit MenuBar
         }
         if (titleText2 != "")
         {
-            content = " ['" + titleText2 + "']";
+            content = " " + titleText2;
             foreach (var c in content)
             {
                 DrawChar(x, y, c, Colour.TitlePath, backcolour);

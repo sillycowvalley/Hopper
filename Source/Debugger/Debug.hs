@@ -32,6 +32,8 @@ program Debug
     
     bool interactive;
     bool IsInteractive { get { return interactive; } set { interactive = value; } }
+    uint comPort;
+    uint COMPort { get { return comPort; } }
     
     byte ConsoleWidth
     {
@@ -50,6 +52,8 @@ program Debug
     {
         string filePath;
         bool showHelp;
+        
+        comPort = 4242; // bogus port value
         
         byte consoleWidth = ConsoleWidth;
         Editor.Locate(0, 0, Screen.Columns-consoleWidth, Screen.Rows);
@@ -70,6 +74,15 @@ program Debug
                   case "-g":
                   {
                       IsInteractive = true;
+                  }
+                  case "-p":
+                  {
+                      iArg++;
+                      if ((iArg == rawArgs.Count) || !UInt.TryParse(rawArgs[iArg], ref comPort))
+                      {
+                          args.Clear();
+                          break;
+                      }
                   }
                   default:
                   {
@@ -167,7 +180,7 @@ program Debug
             
             
             // if "Debugger.options" exists, see it has a comPort set by Port.hexe:
-            uint comPort = 4242; // bogus port value
+            
             string baudRate = "56700";
             optionsPath = Path.MakeOptions("Debugger.options");
             if (File.Exists(optionsPath))
@@ -176,7 +189,7 @@ program Debug
                 if (JSON.Read(optionsPath, ref dict))
                 {
                     <string, string> debugOptions = dict["debugoptions"];
-                    if (debugOptions.Contains("comPort"))
+                    if ((comPort == 4242) && (debugOptions.Contains("comPort")))
                     {
                         string value = debugOptions["comPort"];
                         if (UInt.TryParse(value, ref comPort))
