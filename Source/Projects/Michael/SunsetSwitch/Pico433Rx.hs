@@ -4,34 +4,27 @@ program Pico433Rx
     
     Hopper()
     {
+        string captured;
         UART.Setup(57600);
-        PinMode(GP16, PinModeOption.Input);
         PinMode(GP17, PinModeOption.Output);
-        loop
+        
+        loop // reception loop
         {
             if (UART.IsAvailable)
             {
                 char ch = UART.ReadChar();
                 Serial.WriteChar(ch);
+                captured += ch;
                 if (ch == Char.EOL)
-                {
+                {   
+                    // return the content on Char.EOL           
                     DigitalWrite(GP17, true);
-                    Delay(100);
+                    UART.WriteString("Returned: " +captured);
+                    captured = "";
                     DigitalWrite(GP17, false);
                 }
+                
             }    
-        }
-        /*
-        
-        
-        
-        DigitalWrite(GP16, false);
-        
-        loop
-        {
-            bool signal = DigitalRead(GP16);
-            DigitalWrite(GP17, signal);
-        }
-        */
+        } // reception loop 
     }
 }

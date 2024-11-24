@@ -5,10 +5,9 @@ program Pico433Tx
     Hopper()
     {
         UART.Setup(57600);
-        PinMode(GP16, PinModeOption.Output);
         PinMode(GP17, PinModeOption.Output);
         
-        loop
+        loop // transmission loop
         {
             string time = (Millis).ToString();
             DigitalWrite(GP17, true);
@@ -16,29 +15,27 @@ program Pico433Tx
             UART.WriteString(time + Char.EOL);
             DigitalWrite(GP17, false);
             Delay(1000);
-        }
-        /*
-        UART.WriteChar('!');
-        if (UART.IsAvailable)
-        {
-            _ = UART.ReadChar();
-        }
-       
-        
-        
-        
-        DigitalWrite(GP16, false);
-        
-        loop
-        {
-            DigitalWrite(GP16, true);
-            DigitalWrite(GP17, true);
-            Delay(50);
-            DigitalWrite(GP16, false);
-            DigitalWrite(GP17, false);
-            Delay(950);
-            
-        }
-        */
+            if (UART.IsAvailable)
+            {
+                string returned;
+                loop // reception loop
+                {
+                   if (!UART.IsAvailable)
+                   {
+                       returned = "";
+                       break;
+                   }
+                   char ch = UART.ReadChar();
+                   if (ch == Char.EOL)
+                   {
+                       // finish reception on Char.EOL
+                       IO.WriteLn(returned);
+                       returned = "";
+                       break;
+                   }
+                   returned += ch;
+                } // reception loop
+            }
+        } // transmission loop
     }
 }
