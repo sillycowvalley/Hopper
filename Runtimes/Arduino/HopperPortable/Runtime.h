@@ -455,6 +455,15 @@ enum LibCall {
     eSDRxPinSet = 0x0047,
     eSDMount = 0x0048,
     eSDEject = 0x0049,
+    eStorageMediaInitialize = 0x004A,
+    eStorageMediaMount = 0x004B,
+    eStorageMediaUnmount = 0x004C,
+    eStorageMediaReadSector = 0x004D,
+    eStorageMediaWriteSector = 0x004E,
+    eUARTSetup = 0x004F,
+    eUARTIsAvailableGet = 0x0050,
+    eUARTReadChar = 0x0051,
+    eUARTWriteChar = 0x0052,
 };
 
 enum DataOrder {
@@ -1027,6 +1036,9 @@ UInt HRUInt_ToLong(UInt ui);
 UInt HRInt_ToLong(UInt ichunk);
 Byte HRInt_GetByte(UInt ichunk, UInt i);
 UInt HRInt_FromBytes(Byte b0, Byte b1);
+
+
+
 
 
 

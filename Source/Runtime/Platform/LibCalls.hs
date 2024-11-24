@@ -84,6 +84,19 @@ unit LibCalls
         SDRxPinGet,
         SDRxPinSet,
         SDMount,
-        SDEject,
+        SDEject, 
+        
+        // serial EEPROM on 6502
+        StorageMediaInitialize,
+        StorageMediaMount,
+        StorageMediaUnmount,
+        StorageMediaReadSector,
+        StorageMediaWriteSector,
+        
+        UARTSetup,
+        UARTIsAvailableGet,
+        UARTReadChar,
+        UARTWriteChar,
+        
     }
 }

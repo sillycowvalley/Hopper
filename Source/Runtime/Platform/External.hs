@@ -803,4 +803,24 @@ unit External
     {
         WriteWord(jumpTableAddress + (byte(opCode) << 1), uint(instructionDelegate));
     }
+    
+    UART_Setup(uint baud, byte txPin, byte rxPin)
+    {
+        ErrorDump(161); Error = 0x0A;
+    }
+    UART_WriteChar(char ch)
+    {
+        ErrorDump(161); Error = 0x0A;
+    }
+    char UART_ReadChar()
+    {
+        ErrorDump(161); Error = 0x0A;
+        return '?';
+    }
+    
+    bool UART_IsAvailableGet()
+    {
+        ErrorDump(161); Error = 0x0A;
+        return false;
+    }
 }

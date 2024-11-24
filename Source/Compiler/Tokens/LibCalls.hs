@@ -101,6 +101,11 @@ unit LibCalls
         addEntry("StorageMedia.ReadSector");
         addEntry("StorageMedia.WriteSector");
         
+        addEntry("UART.Setup");
+        addEntry("UART.IsAvailable_Get");
+        addEntry("UART.ReadChar");
+        addEntry("UART.WriteChar");
+        
     }
     
     bool TryParseLibCall(string name, ref byte index)

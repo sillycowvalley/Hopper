@@ -5,6 +5,7 @@
 
 
 
+
 UInt UInt_gRnd = 0;
 UInt Memory_heapStart = 0x8000;
 UInt Memory_heapSize = 0x4000;
@@ -7000,6 +7001,36 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         }
         Byte result = HRWire_EndTx(Byte(controller));
         HopperVM_Push(result, Type::eByte);
+        break;
+    }
+    case LibCall::eUARTSetup:
+    {
+        Type rtype = (Type)0;
+        UInt rxPin = HopperVM_Pop_R(rtype);
+        Type ttype = (Type)0;
+        UInt txPin = HopperVM_Pop_R(ttype);
+        Type ctype = (Type)0;
+        UInt baud = HopperVM_Pop_R(ctype);
+        External_UART_Setup(baud, Byte(txPin), Byte(rxPin));
+        break;
+    }
+    case LibCall::eUARTReadChar:
+    {
+        Char data = External_UART_ReadChar();
+        HopperVM_Push(Byte(data), Type::eChar);
+        break;
+    }
+    case LibCall::eUARTWriteChar:
+    {
+        Type ctype = (Type)0;
+        UInt ch = HopperVM_Pop_R(ctype);
+        External_UART_WriteChar(Char(ch));
+        break;
+    }
+    case LibCall::eUARTIsAvailableGet:
+    {
+        Bool data = External_UART_IsAvailableGet();
+        HopperVM_Push((data) ? (0x01) : (0x00), Type::eBool);
         break;
     }
     case LibCall::eMCUPinMode:

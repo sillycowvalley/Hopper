@@ -17,6 +17,7 @@ unit MCU
     uses "/Source/System/Runtime"
     uses "/Source/System/IO"
     
+    uses "UART"
     uses "GPIO"
     uses "SPI"
 #ifdef BITBANG_I2C

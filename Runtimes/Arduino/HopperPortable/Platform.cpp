@@ -276,6 +276,35 @@ Bool Serial_IsAvailable_Get()
     return (Bool)(Serial.available() != 0);
 }
 
+void External_UART_Setup(UInt baud, Byte txPin, byte rxPin)
+{
+    Serial1.setTX(txPin);
+    Serial1.setRX(rxPin);
+    Serial1.begin(baud);
+}
+void External_UART_WriteChar(Char value)
+{
+    char str[2];
+    str[0] = value;
+    str[1] = 0;
+    Serial1.print(str);
+}
+Char External_UART_ReadChar()
+{
+    while (Serial1.available() == 0)
+    {
+        External_WatchDog();
+    }
+    int ch = Serial1.read();
+    return (Char)ch;
+}
+Bool External_UART_IsAvailableGet()
+{
+    External_WatchDog();
+    return (Bool)(Serial1.available() != 0);
+}
+
+
 
 #ifdef CHECKED
 Byte Memory_ReadProgramByte(UInt address)

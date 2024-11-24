@@ -41,10 +41,10 @@ unit Board // PiPicoW
     const byte SPI1SCK = 14;
     const byte SPI1SS = 13;
 
-    const byte UART1Tx = 0;
-    const byte UART1Rx = 1;
-    const byte UART2Tx = 8;
-    const byte UART2Rx = 9;
+    const byte UART0Tx = 0;
+    const byte UART0Rx = 1;
+    const byte UART1Tx = 8;
+    const byte UART1Rx = 9;
 
     const byte GP0 = 0;   // UART1Tx
     const byte GP1 = 1;   // UART1Rx

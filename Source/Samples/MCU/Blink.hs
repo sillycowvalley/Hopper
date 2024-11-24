@@ -1,7 +1,7 @@
 program Blink
 {
     //uses "/Source/Library/Boards/PiPico"
-    //uses "/Source/Library/Boards/PiPicoW"
+    uses "/Source/Library/Boards/PiPicoW"
     //uses "/Source/Library/Boards/PiPico2"
     //uses "/Source/Library/Boards/Challenger2040WiFi"
     //uses "/Source/Library/Boards/Challenger2040SDRTC"
@@ -10,9 +10,10 @@ program Blink
     //uses "/Source/Library/Boards/AdafruitFeatherRP2350Hstx"
     //uses "/Source/Library/Boards/PimoroniTiny2350"
     //uses "/Source/Library/Boards/PimoroniPicoPlus2"
-    uses "/Source/Library/Boards/PimoroniPicoPlus2W"
+    //uses "/Source/Library/Boards/PimoroniPicoPlus2W"
     //uses "/Source/Library/Boards/Hopper6502"
     
+    Hopper()
     {
         loop
         {

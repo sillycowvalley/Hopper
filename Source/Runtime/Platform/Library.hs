@@ -185,6 +185,42 @@ unit Library
                 Push(result, Type.Byte);
             }
             
+            case LibCall.UARTSetup:
+            {
+                Type rtype;
+                uint rxPin = Pop(ref rtype);
+                Type ttype;
+                uint txPin = Pop(ref ttype);
+                Type ctype;
+                uint baud  = Pop(ref ctype);
+#ifdef CHECKED             
+                AssertUInt(ctype, controller);
+                AssertByte(ttype, txPin);
+                AssertByte(rtype, rtype);
+#endif   
+                UART_Setup(baud, byte(txPin), byte(rxPin));
+            }
+            case LibCall.UARTReadChar:
+            {
+                char data = UART_ReadChar();
+                Push(byte(data), Type.Char);
+            }
+            case LibCall.UARTWriteChar:
+            {
+                Type ctype;
+                uint ch = Pop(ref ctype); 
+#ifdef CHECKED             
+                AssertChar(ctype, ch);
+#endif   
+                UART_WriteChar(char(ch));
+            }
+            case LibCall.UARTIsAvailableGet:
+            {
+                bool data = UART_IsAvailableGet();
+                Push(data ? 1 : 0, Type.Bool);
+            }
+            
+            
             case LibCall.MCUPinMode:
             {
                 byte mode  = byte(Pop());
@@ -980,6 +1016,7 @@ unit Library
                 doNext = false;
             }
             
+                       
             default:
             {
                 IO.WriteHex(PC); IO.Write(':'); IO.Write('L'); IO.WriteHex(iLibCall); IO.Write('-'); IO.WriteHex(iOverload);  
