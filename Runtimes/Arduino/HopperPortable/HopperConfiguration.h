@@ -36,6 +36,11 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 #define USESDFS
 #endif
 
+#if defined(ARDUINO_RASPBERRY_PI_PICO_2W)
+#define RP2350PICO2W
+#define USESDFS
+#endif
+
 // Challenger RP2040 WiFi
 // - LittleFS for built-in Flash
 // - WiFiEspAT
@@ -92,7 +97,7 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 // - exit TERM then run HM!
 
 // Just use 'ARDUINO_ARCH_RP2040' ?
-#if defined(RP2040PICO) || defined(RP2040PICOW) || defined(ARDUINONANO_RP2040) || defined(CHALLENGER_RP2040_WIFI)
+#if defined(RP2040PICO) || defined(RP2040PICOW) || defined(RP2350PICO2W) || defined(ARDUINONANO_RP2040) || defined(CHALLENGER_RP2040_WIFI)
 #define RP2040
 #define SPI_INCLUDED
 #define USETIMER

@@ -16,7 +16,7 @@ unit Board // Pimoroni Pico Plus 2 W
     #define BOARD_HAS_A2
     #define BOARD_HAS_A3
 
-    const byte BuiltInLED = 32;
+    const byte BuiltInLED = 64;
 
     const byte A0 = 40;
     const byte A1 = 41;

@@ -30,6 +30,7 @@ bool wifiConnected = false;
 
 Bool IsWiFiConnected() { return wifiConnected; }
 
+WiFiMulti  wifiMulti;
 WiFiClient wifiClient;
 
 UInt External_WiFiStatus()
@@ -44,7 +45,7 @@ UInt External_WiFiStatus()
           status = 0;
           break;
       case WL_CONNECTED:
-          status = 1;
+          status = wifiConnected ? 1 : 4;
           break;
       case WL_CONNECT_FAILED:
           status = 2;
@@ -72,7 +73,7 @@ void External_WiFiDisconnect()
 {
     if (wifiConnected)
     {
-        WiFi.disconnect();
+        wifiMulti.clearAPList();
         wifiConnected = false;
     }
 }
@@ -84,11 +85,14 @@ bool WifiConnect()
     bool success = false;
 
     int status = WL_IDLE_STATUS;
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid.c_str(), password.c_str());
+    
+    //WiFi.mode(WIFI_STA);
+    //WiFi.begin(ssid.c_str(), password.c_str());
+    wifiMulti.addAP(ssid.c_str(), password.c_str());
     for (int count = 0; count < 5; count++)
     {
-        status = WiFi.status();
+        //status = WiFi.status();
+        status = wifiMulti.run();
         if (status == WL_CONNECTED)
         {
 #ifdef DIAGNOSTICS
@@ -209,7 +213,8 @@ bool WebClient_GetRequest(UInt hrurl, UInt& hrcontent)
     {
         url = "/";
     }
-
+    Serial.println(host);
+    Serial.println(url);
     if (wifiClient.connect(host.c_str(), 80))
     {
 #ifdef DIAGNOSTICS      
