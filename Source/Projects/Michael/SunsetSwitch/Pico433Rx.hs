@@ -1,12 +1,19 @@
 program Pico433Rx
 {
     uses "/Source/Library/Boards/PiPicoW"
+    //uses "/Source/Library/Boards/AdaFruitFeatherRP2350HSTX"
+    
+    const byte ledPin = GP17;
+    //const byte ledPin = GP2;
     
     Hopper()
     {
         string captured;
-        UART.Setup(57600);
-        PinMode(GP17, PinModeOption.Output);
+        
+        //PinMode(setPin, PinModeOption.Output);
+        PinMode(ledPin, PinModeOption.Output);
+        
+        UART.Setup(9600);
         
         loop // reception loop
         {
@@ -18,10 +25,11 @@ program Pico433Rx
                 if (ch == Char.EOL)
                 {   
                     // return the content on Char.EOL           
-                    DigitalWrite(GP17, true);
+                    DigitalWrite(ledPin, true);
                     UART.WriteString("Returned: " +captured);
                     captured = "";
-                    DigitalWrite(GP17, false);
+                    Delay(250);
+                    DigitalWrite(ledPin, false);
                 }
                 
             }    

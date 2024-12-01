@@ -2,19 +2,23 @@ program Pico433Tx
 {
     uses "/Source/Library/Boards/PiPicoW"
     
+    const byte ledPin = GP17;
+    
     Hopper()
     {
-        UART.Setup(57600);
-        PinMode(GP17, PinModeOption.Output);
+        PinMode(ledPin, PinModeOption.Output);
+        
+        UART.Setup(9600);
         
         loop // transmission loop
         {
             string time = (Millis).ToString();
-            DigitalWrite(GP17, true);
-            IO.WriteLn("Send: " + time);
+            DigitalWrite(ledPin, true);
+            IO.Write("Sent: " + time);
             UART.WriteString(time + Char.EOL);
-            DigitalWrite(GP17, false);
-            Delay(1000);
+            Delay(250);
+            DigitalWrite(ledPin, false);
+            Delay(750);
             if (UART.IsAvailable)
             {
                 string returned;
@@ -29,13 +33,14 @@ program Pico433Tx
                    if (ch == Char.EOL)
                    {
                        // finish reception on Char.EOL
-                       IO.WriteLn(returned);
+                       IO.Write(", " + returned);
                        returned = "";
                        break;
                    }
                    returned += ch;
                 } // reception loop
             }
+            IO.WriteLn();
         } // transmission loop
     }
 }

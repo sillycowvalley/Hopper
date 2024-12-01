@@ -39,11 +39,11 @@ unit Board // Adafruit Feather RP2350 Hstx
     const byte SPI0SCK = 22;
     const byte SPI0SS = 1;
 
-    const byte UART1Tx = 0;
-    const byte UART1Rx = 1;
+    const byte UART0Tx = 0;
+    const byte UART0Rx = 1;
 
-    const byte GP0 = 0;   // UART1Tx
-    const byte GP1 = 1;   // UART1Rx
+    const byte GP0 = 0;   // UART0Tx
+    const byte GP1 = 1;   // UART0Rx
     const byte GP2 = 2;   // I2CSDA0 (STEMMA)
     const byte GP3 = 3;   // I2CSCL0 (STEMMA)
     const byte GP6 = 6;   // corrected (physical 6 != D6)
