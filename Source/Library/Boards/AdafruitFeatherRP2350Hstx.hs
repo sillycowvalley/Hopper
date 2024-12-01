@@ -13,7 +13,6 @@ unit Board // Adafruit Feather RP2350 Hstx
     #define BOARD_HAS_NEOPIXEL
     #define BOARD_HAS_LED
     #define BOARD_HAS_I2C
-    #define BOARD_HAS_NO_I2C1
     #define BOARD_HAS_NO_SPI1
     #define BOARD_HAS_SPI
     #define BOARD_HAS_A0
