@@ -30,7 +30,9 @@ bool wifiConnected = false;
 
 Bool IsWiFiConnected() { return wifiConnected; }
 
+#ifndef USESWIFIESPAT
 WiFiMulti  wifiMulti;
+#endif
 WiFiClient wifiClient;
 
 UInt External_WiFiStatus()
@@ -73,7 +75,11 @@ void External_WiFiDisconnect()
 {
     if (wifiConnected)
     {
+#ifdef USESWIFIESPAT
+        WiFi.disconnect();
+#else
         wifiMulti.clearAPList();
+#endif
         wifiConnected = false;
     }
 }
@@ -181,7 +187,7 @@ bool WifiConnect()
     }
     return success;
 }
-#endif // CHALLENGER_RP2040_WIFI
+#endif // USESWIFIESPAT
 
 
 
