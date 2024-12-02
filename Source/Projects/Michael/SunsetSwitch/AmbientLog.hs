@@ -1,167 +1,127 @@
-program AmbiantLog
+program AmbientLog
 {
-    //uses "/Source/Library/Boards/AdafruitFeatherRP2350Hstx"
-    uses "/Source/Library/Boards/PiPicoW"
+    #define DIAGNOSTICS
+    
+    uses "/Source/Library/Boards/AdafruitFeatherRP2350Hstx"
+    uses "/Source/Library/Devices/AdafruitAdaloggerRTCSDFeatherwing"
     
     uses "/Source/System/DateTime"
     
-    const byte bh1750Address    = 0x23;
-    const byte bh1750Controller = 0;
-    
     const string logPath = "/SD/Logs/Data.csv";
-    const uint   logFrequency = 2; // log every nth minute
-    uint totalMinutes;
-    uint totalDays;
+    const uint   logFrequency = 2; // log every n-th minute
     
     record Log
     {
         uint Day;
         uint Minute;
         uint Light;
-        uint Light2;
     }
     <Log> data;
     
-    Save()
-    {
-        bool cardDetected = MCU.DigitalRead(GP0);
-        if (cardDetected)
-        {
-            if (!SD.Mount()) // let SD library initialize SPI before call to SPI.Begin() in DisplayDriver.begin()
-            {
-                IO.WriteLn("Failed to initialize SD");
-            }
-            else
-            {
-                IO.WriteLn("SD card detected.");
-                file f = File.Create(logPath);
-                foreach (var log in data)
-                {
-                    string line = (log.Day).ToString() 
-                          + "," + (log.Minute).ToString() 
-                          + "," + (log.Light).ToString() 
-                          + "," + (log.Light).ToString();
-                    f.Append(line + Char.EOL);
-                    if (!f.IsValid())
-                    {
-                        IO.WriteLn("Append Invalid.");
-                    }
-                    IO.WriteLn(line); // debugging
-                }
-                f.Flush();
-                if (f.IsValid())
-                {
-                    IO.WriteLn("Flushed.");
-                    SD.Eject();
-                }
-                else
-                {
-                    IO.WriteLn("Flush Invalid.");
-                }
-            }
-        }
-        else
-        {
-            IO.WriteLn("No card detected");
-        }
-    }
-    uint BH1750Read()
-    {
-        uint lux;
-        
-        Wire.BeginTx(bh1750Controller, bh1750Address);
-        Wire.Write(bh1750Controller, 0x10); //1 lux resolution 120ms
-        byte result = Wire.EndTx(bh1750Controller);
-        
-        Time.Delay(200);
-        
-        Wire.BeginTx(bh1750Controller, bh1750Address);
-        result = Wire.RequestFrom(bh1750Controller, bh1750Address, 2);
-        lux = (Wire.Read(bh1750Controller) << 8) + Wire.Read(bh1750Controller);
-        // /= 1.2?
-        result = Wire.EndTx(bh1750Controller);
-        return lux;
-    }
     Hopper()
     {
-        // Settings for Hopper SD unit:
-        SD.SPIController = 0;
-        SD.ClkPin = SPI0SCK;
-        SD.TxPin  = SPI0Tx;
-        SD.RxPin  = SPI0Rx;
-        SD.CSPin  = SPI0SS; 
-        MCU.PinMode(GP0, PinModeOption.Input); // Card Detect
-        
-        if (!Wire.Initialize(/*bh1750Controller, Board.I2CSDA1, Board.I2CSCL1*/) || !Wire.Begin(bh1750Controller))
+        if (!RTCDevice.Begin())
         {
-            IO.WriteLn("Failed to initialize I2C");
+            IO.WriteLn("Failed to AdaLogger");
+            return;
         }
         
-        // on reset, set time from debugger
-        if (Runtime.InDebugger)
-        {
-            string dateTime = Runtime.DateTime;  
-            string date = dateTime.Substring(0, 10);
-            string time = dateTime.Substring(11);
-            _ = DateTime.TryTimeToMinutes(time, ref totalMinutes);
-            _ = DateTime.TryDateToDays(date, ref totalDays);
-            IO.WriteLn("Time set to " + totalMinutes.ToString() + " minutes");
-            IO.WriteLn("Day set to " + totalDays.ToString());
-        }
-        else
-        {
-            return; // failed : restarted not in debugger (don't override data)
-        }
-        
+        // on reset, set time from debugger (if running in debugger)
+        _ = RTC.SetFromDebugger();
         
         uint ticks;
         long accumulator;
-        long accumulator2;
         uint samples;
         loop
         {
             uint light  = MCU.AnalogRead(A0);
-            uint light2 = BH1750Read();
             accumulator  += light;
-            accumulator2 += light2;
             samples++;
-            IO.WriteLn(ticks.ToString() + ": " + light.ToString() + "," + light2.ToString());
-            //IO.Write(".");
-            Delay(1000);
+#ifdef DIAGNOSTICS
+            IO.WriteLn(ticks.ToString() + ": " + light.ToString());
+#else
+            IO.Write(".");
+#endif
+            Time.Delay(1000);
             ticks++;
             if (ticks == 60)
             {
+                string time = RTC.Time;
+                
+#ifdef DIAGNOSTICS
+                IO.WriteLn("Time: " + time);
+#else
                 IO.WriteLn(".");
+#endif
                 ticks = 0;
-                totalMinutes++;
+                uint totalMinutes;
+                if (!DateTime.TryTimeToMinutes(time, ref totalMinutes))
+                {
+                    IO.WriteLn("Failed to parse '" + time + "'");
+                }
                 
                 if (totalMinutes % logFrequency == 0)
                 {
+                    uint totalDays;
+                    string date = RTC.Date;
+                    if (!DateTime.TryDateToDays(date, ref totalDays))
+                    {
+                        IO.WriteLn("Failed to parse '" + date + "'");
+                    }
+                    
                     accumulator /= samples;
-                    accumulator2 /= samples;
-                    IO.WriteLn("Day: " + totalDays.ToString() 
-                           + ", Time: " + totalMinutes.ToString()
+                    
+                    IO.WriteLn("Day: "     + totalDays.ToString() 
+                           + ", Time: "    + totalMinutes.ToString()
                            + ", Average: " + accumulator.ToString()
-                           + ", Average2: " + accumulator2.ToString()
                            );
                     Log log;
                     log.Day     = totalDays;
                     log.Minute  = totalMinutes;
                     log.Light   = uint(accumulator);
-                    log.Light2  = uint(accumulator2);
                     data.Append(log);
-                    Save();
+                    attemptSave();
                            
                     accumulator = 0;
-                    accumulator2 = 0;
                     samples = 0;
                 }
-                
-                if (totalMinutes >= 1440)
+            }
+        }
+    }
+    
+    attemptSave()
+    {
+        if (!SD.Mount())
+        {
+            IO.WriteLn("Failed to initialize SD");
+        }
+        else
+        {
+            IO.WriteLn("SD card detected.");
+            file f = File.Create(logPath);
+            foreach (var log in data)
+            {
+                string line = (log.Day).ToString() 
+                      + "," + (log.Minute).ToString() 
+                      + "," + (log.Light).ToString();
+                f.Append(line + Char.EOL);
+#ifdef DIAGNOSTICS
+                if (!f.IsValid())
                 {
-                    totalMinutes = 0;
-                    totalDays++;
+                    IO.WriteLn("Append Invalid.");
                 }
+                IO.WriteLn(line); // debugging
+#endif
+            }
+            f.Flush();
+            if (f.IsValid())
+            {
+                IO.WriteLn("Flushed.");
+                SD.Eject();
+            }
+            else
+            {
+                IO.WriteLn("Flush Invalid.");
             }
         }
     }
