@@ -1,0 +1,238 @@
+program GarageBox
+{
+    //#define DIAGNOSTICS
+    
+    uses "/Source/Library/Boards/ChallengerNB2040WiFi"    
+    uses "/Source/Library/Devices/AdafruitAdaloggerRTCSDFeatherwing"
+    uses "/Source/System/DateTime"
+    
+    const byte sensorPin = GP5;
+    const byte relayPin  = GP13;
+    
+    // good defaults for NZ
+    const uint dstStartDay  = 267;
+    const uint dstEndDay    = 97;
+    
+    const uint onMinutes    = 3;
+    
+    const uint sixPMMinutes = 1080;
+    const uint tenPMMinutes = 1320;
+    
+    uint lightTill;
+    
+    long initialHeapFree;
+    long initialStackFree;
+    
+    
+    Hopper()
+    {
+        string command;
+        byte counter;
+        
+        MCU.PinMode(sensorPin, PinModeOption.Input);
+        MCU.PinMode(relayPin,  PinModeOption.Output);
+        MCU.DigitalWrite(relayPin, false);
+        
+        UART.Setup(9600);
+        
+        if (!RTCDevice.Begin())
+        {
+            IO.WriteLn("Failed to AdaLogger");
+            return;
+        }
+        
+        // on reset, set time from debugger (if running in debugger)
+        InitializeRTC();
+        
+        initialHeapFree = MCU.HeapFree();
+        initialStackFree = MCU.StackFree();
+        
+        loop
+        {
+            uint light  = GPIO.A1;     
+            bool doorOpen = MCU.DigitalRead(sensorPin);
+            
+            if (doorOpen && (counter % 10 == 0))
+            {
+                UART.WriteString("OPEN" + Char.EOL);
+            }
+#ifdef DIAGNOSTICS
+            loop
+            {
+                string output = counter.ToString() + ":" + RTC.Date + ", " + RTC.Time;
+                output += ", " + light.ToString();
+                if (doorOpen)
+                {
+                    output += ", OPEN"; 
+                    if (counter % 10 == 0)
+                    {
+                        output += " [pinged]";
+                    }
+                }
+    
+                IO.WriteLn(output);
+                break;
+            }
+#endif
+            CheckLights(doorOpen, light <= 20);
+            
+            Time.Delay(1000);
+            
+            if (UART.IsAvailable)
+            {
+                char ch = UART.ReadChar();
+#ifdef DIAGNOSTICS                
+                Serial.WriteChar(ch);
+#endif
+                if (ch == Char.EOL)
+                {   
+                    // return the content on Char.EOL
+                    switch (command)
+                    {
+                        case "INFO":
+                        {
+                            SendInfo();
+                        }
+                        default:
+                        {
+#ifdef DIAGNOSTICS                            
+                            IO.WriteLn("Command: " + command);
+#endif
+                        }
+                    }
+                    command = "";
+                }
+                else
+                {
+                    command += ch;
+                }
+            }
+            counter++;
+            
+            long currentHeapFree = MCU.HeapFree();            
+            long currentStackFree = MCU.StackFree();
+            if (initialHeapFree != currentHeapFree)
+            {
+                UART.WriteString("HEAP " + (currentHeapFree-initialHeapFree).ToString() + Char.EOL);
+#ifdef DIAGNOSTICS
+                IO.WriteLn("Heap difference = " + (currentHeapFree-initialHeapFree).ToString());
+#endif
+            }
+            if (initialStackFree != currentStackFree)
+            {
+                UART.WriteString("STACK " + (currentStackFree-initialStackFree).ToString() + Char.EOL);
+#ifdef DIAGNOSTICS
+                IO.WriteLn("Stack difference = " + (currentStackFree-initialStackFree).ToString());
+#endif
+            }
+        }
+    }
+    
+    CheckLights(bool doorOpen, bool dark)
+    {
+        string currentTime = RTC.Time;
+        uint currentMinutes;
+        _ = DateTime.TryTimeToMinutes(currentTime, ref currentMinutes);
+#ifdef DIAGNOSTICS
+        IO.WriteLn("Now: " + currentMinutes.ToString() + ", Light Until: " + lightTill.ToString());
+#endif
+        if ((lightTill != 0) && (lightTill >= currentMinutes))
+        {
+#ifdef DIAGNOSTICS
+            IO.WriteLn("LIGHT");
+#endif
+            MCU.DigitalWrite(relayPin, true);
+        }
+        else
+        {
+            lightTill = 0;
+            if (dark)
+            {
+                if (doorOpen)
+                {
+                    lightTill = currentMinutes + onMinutes;
+                    UART.WriteString("ON" + Char.EOL);
+                }
+                else if ((currentMinutes >= sixPMMinutes) && (currentMinutes <= tenPMMinutes + 60))
+                {     
+                    string currentDate = RTC.Date;
+                    uint dayOfYear;
+                    bool dst;
+                    _ = TryDateToDays(currentDate, ref dayOfYear);
+                    _ = TryDSTFromDay(dayOfYear, ref dst);
+                    uint dstOffset = dst ? 60 : 0;
+                    if (currentMinutes + dstOffset >= sixPMMinutes)
+                    {
+                        if (currentMinutes + dstOffset <= tenPMMinutes)
+                        {
+                            lightTill = currentMinutes + onMinutes;
+                            UART.WriteString("ON" + Char.EOL);
+                        }
+                    }
+                }
+            }
+            if (lightTill == 0)
+            {
+                MCU.DigitalWrite(relayPin, false);
+            }
+        }
+    }
+    
+    bool TryDSTFromDay(uint dayOfYear, ref bool dst)
+    {
+        if (dstEndDay < dstStartDay) 
+        {
+            dst = !((dayOfYear > dstEndDay) && (dayOfYear < dstStartDay)); // Southern Hemisphere
+        }
+        else
+        {
+            dst = ((dayOfYear >= dstStartDay) && (dayOfYear <= dstEndDay)); // Northern Hemisphere
+        }
+        return true;
+    }
+    
+    InitializeRTC()
+    {
+        if (RTC.SetFromDebugger())
+        {
+            // this will only update the time if we are running in debugger
+            string currentDate = RTC.Date;
+            uint dayOfYear;
+            bool dst;
+            _ = TryDateToDays(currentDate, ref dayOfYear);
+            _ = TryDSTFromDay(dayOfYear, ref dst);  
+            if (dst)
+            {        
+                // if we are currently on DST, normalize the time in the RTC to standard time (no DST)
+                string currentTime = RTC.Time;
+                uint currentMinutes;
+                _ = DateTime.TryTimeToMinutes(currentTime, ref currentMinutes);
+                if (currentMinutes >= 60)
+                {
+                    currentMinutes -= 60;
+                }
+                else
+                {
+                    currentMinutes += (23 * 60);
+                }
+                uint   hours = currentMinutes / 60;
+                uint minutes = currentMinutes % 60;
+                currentTime = (hours.ToString()).LeftPad('0', 2) + ":" + (minutes.ToString()).LeftPad('0', 2)  + ":" + currentTime.Substring(6,2);
+                RTC.Time = currentTime;
+            }
+            IO.WriteLn("  Set RTC Standard Time: " + RTC.Time + (dst ? " (+1 hour for DST)" : "")); 
+        }
+    }
+    
+    SendInfo()
+    {
+        string currentDate = RTC.Date;
+        uint dayOfYear;
+        bool dst;
+        _ = TryDateToDays(currentDate, ref dayOfYear);
+        _ = TryDSTFromDay(dayOfYear, ref dst);  
+        
+        string info = RTC.Time + "," + (dst ? "DST" : "") + "," + RTC.Date;
+        UART.WriteString("INFO " + info + Char.EOL);
+    }
+}

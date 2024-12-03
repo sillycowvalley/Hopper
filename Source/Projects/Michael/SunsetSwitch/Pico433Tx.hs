@@ -1,6 +1,7 @@
 program Pico433Tx
 {
-    uses "/Source/Library/Boards/PiPicoW"
+    //uses "/Source/Library/Boards/PiPicoW"
+    uses "/Source/Library/Boards/ChallengerNB2040WiFi"    
     
     const byte ledPin = GP17;
     

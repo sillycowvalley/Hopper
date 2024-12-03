@@ -62,6 +62,23 @@ program ThinkInkFeatherwing
         Display.Resume(); 
     }
     
+    DrawRBW()
+    {
+        IO.WriteLn("  DrawRBW");
+        int pw3  = Display.PixelWidth/3;
+        int pw23 = Display.PixelWidth*2/3;
+        int w = pw3;
+        
+        Display.Suspend();
+        FilledRectangle(0,    0, w, Display.PixelHeight, Colour.White);
+        FilledRectangle(pw3,  0, w, Display.PixelHeight, Colour.Red);
+        FilledRectangle(pw23, 0, w, Display.PixelHeight, Colour.Black);
+        
+        Rectangle(0, 0, Display.PixelWidth, Display.PixelHeight, Colour.Black);
+        
+        Display.Resume(); 
+    }
+    
     DrawBoxes(uint colour)
     {
         uint backColour;
@@ -151,11 +168,22 @@ program ThinkInkFeatherwing
             WriteLn("Elapsed: " + elapsed.ToString());
             DelaySeconds(2);
             
+            
+            start = Millis;
+            DrawRBW();
+            elapsed = Millis - start;
+            WriteLn("Elapsed: " + elapsed.ToString());
+            DelaySeconds(2);
+            
             start = Millis;
             DrawShades();
             elapsed = Millis - start;
             WriteLn("Elapsed: " + elapsed.ToString());
             DelaySeconds(2);
+            
+           
+            
+            
             
             start = Millis;
             DrawBoxes(Colour.Black);
