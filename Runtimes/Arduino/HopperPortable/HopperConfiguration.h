@@ -102,7 +102,9 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 #define SPI_INCLUDED
 #define USETIMER
 #define USELITTLEFS
+#if !defined(__riscv)
 #define USENEOPIXEL
+#endif
 #endif
 
 #if defined(RP2350PICO2) || defined(CHALLENGER_RP2350_WIFI)
