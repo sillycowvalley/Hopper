@@ -1,7 +1,8 @@
 unit RTCDriver
 {
-    // The DS3231 is a low-cost, extremely accurate, I2Creal-time clock (RTC).
-    
+    // The DS3232 is a low-cost, extremely accurate, I2Creal-time clock (RTC).
+
+    #define RTC_HAS_RAM
     #define RTC_HAS_TEMPERATURE
     #define RTC_HAS_ALARM
     
@@ -10,12 +11,15 @@ unit RTCDriver
     
     friend RTC, RTCDevice;
     
-    const byte DS3231_TIME        = 0x00;
-    const byte DS3231_ALARM1      = 0x07;
-    const byte DS3231_ALARM2      = 0x0B;
-    const byte DS3231_CONTROL     = 0x0E;
-    const byte DS3231_STATUS      = 0x0F;
-    const byte DS3231_TEMPERATURE = 0x11; // (high byte - low byte is at 0x12), 10-bittemperature value                        
+    const byte DS3232_TIME        = 0x00;
+    const byte DS3232_ALARM1      = 0x07;
+    const byte DS3232_ALARM2      = 0x0B;
+    const byte DS3232_CONTROL     = 0x0E;
+    const byte DS3232_STATUS      = 0x0F;
+    const byte DS3232_TEMPERATURE = 0x11; // (high byte - low byte is at 0x12), 10-bit temperature value                        
+    const byte RAM_LOCATION       = 0x14; // RAM starts at address 0x14
+    
+    const byte RAM_SIZE           = 236;
     
     byte     iControllerRTC;
     byte     addressRTC;
@@ -31,12 +35,12 @@ unit RTCDriver
         // good default : square wave off, alarms disabled
         byte control = 0b00000100;
         Wire.BeginTx(iControllerRTC, addressRTC);
-        Wire.Write(iControllerRTC, DS3231_CONTROL);
+        Wire.Write(iControllerRTC, DS3232_CONTROL);
         Wire.Write(iControllerRTC, control);
         _ = Wire.EndTx(iControllerRTC);
         
         Wire.BeginTx(iControllerRTC, addressRTC);
-        Wire.Write(iControllerRTC, DS3231_STATUS);
+        Wire.Write(iControllerRTC, DS3232_STATUS);
         _ = Wire.EndTx(iControllerRTC);
         _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
         byte status = Wire.Read(iControllerRTC);
@@ -46,7 +50,7 @@ unit RTCDriver
             // clear the flags
             status &= ~0b00000011;
             Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, DS3231_STATUS);
+            Wire.Write(iControllerRTC, DS3232_STATUS);
             Wire.Write(iControllerRTC, status);
             _ = Wire.EndTx(iControllerRTC);
         }
@@ -74,13 +78,13 @@ unit RTCDriver
     clearInterrupts()
     {
         Wire.BeginTx(iControllerRTC, addressRTC);
-        Wire.Write(iControllerRTC, DS3231_STATUS);
+        Wire.Write(iControllerRTC, DS3232_STATUS);
         _ = Wire.EndTx(iControllerRTC);
         _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
         byte status = Wire.Read(iControllerRTC);
         status &= 0b11111100;
         Wire.BeginTx(iControllerRTC, addressRTC);
-        Wire.Write(iControllerRTC, DS3231_STATUS);
+        Wire.Write(iControllerRTC, DS3232_STATUS);
         Wire.Write(iControllerRTC, status);
         _ = Wire.EndTx(iControllerRTC);
     }
@@ -88,13 +92,13 @@ unit RTCDriver
     Dump()
     {
         Wire.BeginTx(iControllerRTC, addressRTC);
-        Wire.Write(iControllerRTC, DS3231_CONTROL);
+        Wire.Write(iControllerRTC, DS3232_CONTROL);
         _ = Wire.EndTx(iControllerRTC);
         _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
         byte control = Wire.Read(iControllerRTC);
         
         Wire.BeginTx(iControllerRTC, addressRTC);
-        Wire.Write(iControllerRTC, DS3231_STATUS);
+        Wire.Write(iControllerRTC, DS3232_STATUS);
         _ = Wire.EndTx(iControllerRTC);
         _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
         byte status = Wire.Read(iControllerRTC);
@@ -106,7 +110,7 @@ unit RTCDriver
     clearLostPower()
     {
         Wire.BeginTx(iControllerRTC, addressRTC);
-        Wire.Write(iControllerRTC, DS3231_STATUS);
+        Wire.Write(iControllerRTC, DS3232_STATUS);
         _ = Wire.EndTx(iControllerRTC);
         _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
         byte status = Wire.Read(iControllerRTC);
@@ -116,7 +120,7 @@ unit RTCDriver
             // clear the flags
             status &= ~0b10000000;
             Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, DS3231_STATUS);
+            Wire.Write(iControllerRTC, DS3232_STATUS);
             Wire.Write(iControllerRTC, status);
             _ = Wire.EndTx(iControllerRTC);
         }
@@ -127,7 +131,7 @@ unit RTCDriver
         get
         { 
             Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, DS3231_STATUS);
+            Wire.Write(iControllerRTC, DS3232_STATUS);
             _ = Wire.EndTx(iControllerRTC);
             _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
             byte status = Wire.Read(iControllerRTC);
@@ -206,7 +210,7 @@ unit RTCDriver
             iDayOfWeek++; // 0..6 -> 1..7 : Sunday is 1, not 0
             
             Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, DS3231_TIME); // set register pointer to 0
+            Wire.Write(iControllerRTC, DS3232_TIME); // set register pointer to 0
             
             Wire.Write(iControllerRTC, toBCD(seconds));
             Wire.Write(iControllerRTC, toBCD(minutes));
@@ -222,13 +226,13 @@ unit RTCDriver
             
             // clear OSF bit
             Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, DS3231_STATUS);
+            Wire.Write(iControllerRTC, DS3232_STATUS);
             _ = Wire.EndTx(iControllerRTC);
             _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
             byte status = Wire.Read(iControllerRTC);
             status &= ~0b10000000; 
             Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, DS3231_STATUS);
+            Wire.Write(iControllerRTC, DS3232_STATUS);
             Wire.Write(iControllerRTC, status);
             _ = Wire.EndTx(iControllerRTC);
             
@@ -249,7 +253,7 @@ unit RTCDriver
             }
             
             Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, DS3231_CONTROL);
+            Wire.Write(iControllerRTC, DS3232_CONTROL);
             _ = Wire.EndTx(iControllerRTC);
             _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
             byte control = Wire.Read(iControllerRTC);
@@ -258,7 +262,7 @@ unit RTCDriver
             // clear the bit
             control &= mask;
             Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, DS3231_CONTROL);
+            Wire.Write(iControllerRTC, DS3232_CONTROL);
             Wire.Write(iControllerRTC, control);
             _ = Wire.EndTx(iControllerRTC);
         
@@ -270,7 +274,7 @@ unit RTCDriver
     bool alarmWasTriggered(byte iAlarm)
     {
         Wire.BeginTx(iControllerRTC, addressRTC);
-        Wire.Write(iControllerRTC, DS3231_STATUS);
+        Wire.Write(iControllerRTC, DS3232_STATUS);
         _ = Wire.EndTx(iControllerRTC);
         _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
         byte status = Wire.Read(iControllerRTC);
@@ -281,7 +285,7 @@ unit RTCDriver
             // clear the flag
             status &= ~mask;
             Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, DS3231_STATUS);
+            Wire.Write(iControllerRTC, DS3232_STATUS);
             Wire.Write(iControllerRTC, status);
             _ = Wire.EndTx(iControllerRTC);
         }
@@ -387,7 +391,7 @@ unit RTCDriver
                 
                 // enable
                 Wire.BeginTx(iControllerRTC, addressRTC);
-                Wire.Write(iControllerRTC, DS3231_CONTROL);
+                Wire.Write(iControllerRTC, DS3232_CONTROL);
                 _ = Wire.EndTx(iControllerRTC);
                 _ = Wire.RequestFrom(iControllerRTC, addressRTC, 1);
                 byte control = Wire.Read(iControllerRTC);
@@ -400,7 +404,7 @@ unit RTCDriver
                     control &= ~alarmOn;
                 }
                 Wire.BeginTx(iControllerRTC, addressRTC);
-                Wire.Write(iControllerRTC, DS3231_CONTROL);
+                Wire.Write(iControllerRTC, DS3232_CONTROL);
                 Wire.Write(iControllerRTC, control);
                 _ = Wire.EndTx(iControllerRTC);
             }
@@ -442,7 +446,7 @@ unit RTCDriver
                     break;
                 }
                 Wire.BeginTx(iControllerRTC, addressRTC);
-                Wire.Write(iControllerRTC, DS3231_TEMPERATURE);
+                Wire.Write(iControllerRTC, DS3232_TEMPERATURE);
                 _ = Wire.EndTx(iControllerRTC);
                 byte bytesReceived = Wire.RequestFrom(iControllerRTC, addressRTC, 2);
                 if (bytesReceived < 2)
@@ -472,7 +476,7 @@ unit RTCDriver
             }
             
             Wire.BeginTx(iControllerRTC, addressRTC);
-            Wire.Write(iControllerRTC, DS3231_TIME); // set register pointer to 0
+            Wire.Write(iControllerRTC, DS3232_TIME); // set register pointer to 0
             _ = Wire.EndTx(iControllerRTC);
             byte bytesReceived = Wire.RequestFrom(iControllerRTC, addressRTC, 19);
             if (bytesReceived < 19)
@@ -561,5 +565,38 @@ unit RTCDriver
             _ = setRTC(date + " " + value);            
         }
     }
+    
+    byte ramCount { get { return RAM_SIZE; } }
+    byte[] ram
+    { 
+        get 
+        { 
+            byte[RAM_SIZE] ram; 
+            Wire.BeginTx(iControllerRTC, addressRTC);
+            Wire.Write(iControllerRTC, RAM_LOCATION);
+            _ = Wire.EndTx(iControllerRTC);
+            byte bytesReceived = Wire.RequestFrom(iControllerRTC, addressRTC, RAM_SIZE);
+            if (bytesReceived == RAM_SIZE)
+            {
+                for (byte i = 0; i < RAM_SIZE; i++)
+                {
+                    ram[i] = Wire.Read(iControllerRTC);
+                }
+            }
+            return ram; 
+        } 
+        set 
+        { 
+            if (value.Count != RAM_SIZE) return; // Ensure input size matches RAM size
+            Wire.BeginTx(iControllerRTC, addressRTC);
+            Wire.Write(iControllerRTC, RAM_LOCATION);
+            for (byte i = 0; i < RAM_SIZE; i++)
+            {
+                Wire.Write(iControllerRTC, value[i]);
+            }
+            _ = Wire.EndTx(iControllerRTC);
+        } 
+    }
+
 
 }
