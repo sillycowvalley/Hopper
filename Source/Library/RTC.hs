@@ -1,18 +1,20 @@
 unit RTC
 {
-    // Features Implemented    DS1307       DS1337       DS3231       PCF8523      MCP79410
+    // Features Implemented    DS1307       DS1337       DS3231       DS3232       PCF8523      MCP79410
     //
-    // Time and Date           Yes          Yes          Yes          Yes          Yes
+    // Time and Date           Yes          Yes          Yes          Yes          Yes          Yes
     //
-    // Alarms                  No           2            2            1            2
-    //    Resolution                        Seconds      Seconds      Minutes      Minutes
+    // Alarms                  No           2            2            2            1            2
+    //    Resolution                        Seconds      Seconds      Seconds      Minutes      Minutes
     //
-    // Countdown Timers        No           No           No           2            No  
+    // Countdown Timers        No           No           No           No           2            No  
     //
-    // Battery-backed SRAM     No           No           No           No           64 bytes  
+    // Battery-backed SRAM     No           No           No           236 bytes    No           64 bytes  
     //
-    // Temperature Sensor      No           No           Yes          No           No
+    // Temperature Sensor      No           No           Yes          Yes          No           No
     //    
+    //                         5V only                   3.3V-5.5V    3.3V-5.5V
+    
     
     // Options:
     //     RTC_HAS_ALARM
