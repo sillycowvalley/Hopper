@@ -1,6 +1,7 @@
 program HouseBox
 {
     //#define DIAGNOSTICS
+    
     uses "/Source/Library/Fonts/Verdana5x8"
     
     uses "/Source/Library/Boards/ChallengerNB2040WiFi"
@@ -145,11 +146,29 @@ program HouseBox
         Screen.SetCursor(3,8);
         Screen.Print("Date:", Colour.Black, Colour.White);
         
+        
+        
         string dst = (parts[1] == "DST") ? " (+1 hour for DST)" : "";
         Screen.SetCursor(14,7);
         Screen.Print(parts[0] + dst, Colour.Red, Colour.White);
         Screen.SetCursor(14,8);
         Screen.Print(parts[2], Colour.Red, Colour.White);
+        
+        if (parts.Count >= 5)
+        {
+            Screen.SetCursor(3,10);
+            Screen.Print("Current:", Colour.Black, Colour.White);
+            Screen.SetCursor(14,10);
+            Screen.Print(parts[3] + " minutes", Colour.Red, Colour.White);
+            
+            if (parts[4] != "0")
+            {
+                Screen.SetCursor(3,11);
+                Screen.Print("Until:", Colour.Black, Colour.White);
+                Screen.SetCursor(14,11);
+                Screen.Print(parts[4] + " minutes", Colour.Red, Colour.White);
+            }
+        }
         
         
         Display.Resume();

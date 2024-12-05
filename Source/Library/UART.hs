@@ -19,6 +19,7 @@ unit UART
         foreach (var ch in str)
         {
             UART.WriteChar(ch);
+            Time.Delay(10);
         }
     }
 }

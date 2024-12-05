@@ -16,11 +16,13 @@ program GarageBox
     const uint dstStartDay  = 267;
     const uint dstEndDay    = 97;
     
-    const uint onMinutes    = 3;
+    const uint onDarkMinutes    = 3;
+    const uint onOpenMinutes    = 10;
     
     const uint sixPMMinutes = 1080;
     const uint tenPMMinutes = 1320;
-    
+
+    uint currentMinutes;    
     uint lightTill;
     
     long initialHeapFree;
@@ -138,7 +140,7 @@ program GarageBox
     CheckLights(bool doorOpen, bool dark)
     {
         string currentTime = RTC.Time;
-        uint currentMinutes;
+        
         _ = DateTime.TryTimeToMinutes(currentTime, ref currentMinutes);
 #ifdef DIAGNOSTICS
         IO.WriteLn("Now: " + currentMinutes.ToString() + ", Light Until: " + lightTill.ToString());
@@ -157,7 +159,7 @@ program GarageBox
             {
                 if (doorOpen)
                 {
-                    lightTill = currentMinutes + onMinutes;
+                    lightTill = currentMinutes + onOpenMinutes;
                     UART.WriteString("ON" + Char.EOL);
                 }
                 else if ((currentMinutes >= sixPMMinutes) && (currentMinutes <= tenPMMinutes + 60))
@@ -172,7 +174,7 @@ program GarageBox
                     {
                         if (currentMinutes + dstOffset <= tenPMMinutes)
                         {
-                            lightTill = currentMinutes + onMinutes;
+                            lightTill = currentMinutes + onDarkMinutes;
                             UART.WriteString("ON" + Char.EOL);
                         }
                     }
@@ -240,6 +242,11 @@ program GarageBox
         _ = TryDSTFromDay(dayOfYear, ref dst);  
         
         string info = RTC.Time + "," + (dst ? "DST" : "") + "," + RTC.Date;
+        info += "," + currentMinutes.ToString();
+        info += "," + lightTill.ToString();
         UART.WriteString("INFO " + info + Char.EOL);
+#ifdef DIAGNOSTICS
+        IO.WriteLn("INFO " + info);
+#endif        
     }
 }
