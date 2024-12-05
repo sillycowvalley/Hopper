@@ -141,6 +141,12 @@ program HouseBox
         Screen.SetCursor(3,2);
         Screen.Print(title, Colour.White, Colour.Red);
         
+        Screen.SetCursor(3,4);
+        Screen.Print("Reset: ", Colour.Black, Colour.White);
+        Screen.Print(parts[3], Colour.Red, Colour.White);
+        Screen.Print("  Power: ", Colour.Black, Colour.White);
+        Screen.Print(parts[4], Colour.Red, Colour.White);
+        
         Screen.SetCursor(3,7);
         Screen.Print("Time:", Colour.Black, Colour.White);
         Screen.SetCursor(3,8);
@@ -154,19 +160,19 @@ program HouseBox
         Screen.SetCursor(14,8);
         Screen.Print(parts[2], Colour.Red, Colour.White);
         
-        if (parts.Count >= 5)
+        if (parts.Count >= 7)
         {
             Screen.SetCursor(3,10);
             Screen.Print("Current:", Colour.Black, Colour.White);
             Screen.SetCursor(14,10);
-            Screen.Print(parts[3] + " minutes", Colour.Red, Colour.White);
+            Screen.Print(parts[5] + " minutes", Colour.Red, Colour.White);
             
-            if (parts[4] != "0")
+            if (parts[6] != "0")
             {
                 Screen.SetCursor(3,11);
                 Screen.Print("Until:", Colour.Black, Colour.White);
                 Screen.SetCursor(14,11);
-                Screen.Print(parts[4] + " minutes", Colour.Red, Colour.White);
+                Screen.Print(parts[6] + " minutes", Colour.Red, Colour.White);
             }
         }
         

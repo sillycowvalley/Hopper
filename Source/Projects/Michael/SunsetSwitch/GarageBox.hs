@@ -21,6 +21,10 @@ program GarageBox
     
     const uint sixPMMinutes = 1080;
     const uint tenPMMinutes = 1320;
+    
+    string resetDate;    // date of last reset
+    string powerDate;    // date of last power cycle
+
 
     uint currentMinutes;    
     uint lightTill;
@@ -230,7 +234,16 @@ program GarageBox
                 RTC.Time = currentTime;
             }
             IO.WriteLn("  Set RTC Standard Time: " + RTC.Time + (dst ? " (+1 hour for DST)" : "")); 
+            resetDate = currentDate; 
+            file rtcFile = File.Create("RTC"); // store the date we last initialized the RTC (in case there is a power cycle)
+            rtcFile.Append(resetDate);
+            rtcFile.Flush();
         }
+        else
+        {
+            _ = File.TryReadAllText("RTC", ref resetDate); // restore the date we last initialized the RTC (in the event of a power cycle)
+        }
+        powerDate = RTC.Date;
     }
     
     SendInfo()
@@ -242,6 +255,8 @@ program GarageBox
         _ = TryDSTFromDay(dayOfYear, ref dst);  
         
         string info = RTC.Time + "," + (dst ? "DST" : "") + "," + RTC.Date;
+        info += "," + resetDate;
+        info += "," + powerDate;
         info += "," + currentMinutes.ToString();
         info += "," + lightTill.ToString();
         UART.WriteString("INFO " + info + Char.EOL);
