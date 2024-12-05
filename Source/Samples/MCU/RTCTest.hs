@@ -1,8 +1,9 @@
 program RTCFeather
 {
-    uses "/Source/Library/Boards/PiPico2"
+    //uses "/Source/Library/Boards/PiPico2"
+    uses "/Source/Library/Boards/ChallengerNB2040WiFi"   
     
-    uses "/Source/Library/RTCs/DS3232Driver"
+    uses "/Source/Library/RTCs/DS3231Driver"
     uses "/Source/Library/Devices/GenericRTC" // can be used with any 'uses "<driver path>" 
     
     Hopper()

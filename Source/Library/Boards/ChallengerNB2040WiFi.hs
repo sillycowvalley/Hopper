@@ -47,7 +47,6 @@ unit Board // Challenger NB 2040 WiFi
     const byte GP0 = 16;  // I2CSDA0
     const byte GP1 = 17;  // I2CSCL0
     const byte GP2 = 24;
-    const byte GP3 = 23;
     const byte GP4 = 22;  // UART1Tx
     const byte GP5 = 2;   // UART1Rx
     const byte GP6 = 3;
@@ -61,7 +60,9 @@ unit Board // Challenger NB 2040 WiFi
     const byte GP14 = 14;
     const byte GP15 = 15;
     const byte GP16 = 18; // UART0Tx
-    const byte GP17 = 20; // UART0Rx
+    const byte GP24 = 20;
+    const byte GP23 = 23;
+    const byte GP25 = 25; // BuiltInA4
 
     uses "/Source/Library/MCU"
 

@@ -2,12 +2,15 @@ program GarageBox
 {
     //#define DIAGNOSTICS
     
-    uses "/Source/Library/Boards/ChallengerNB2040WiFi"    
-    uses "/Source/Library/Devices/AdafruitAdaloggerRTCSDFeatherwing"
+    uses "/Source/Library/Boards/ChallengerNB2040WiFi"   
+    
+    uses "/Source/Library/RTCs/DS3231Driver" 
+    uses "/Source/Library/Devices/GenericRTC"
+    
     uses "/Source/System/DateTime"
     
-    const byte sensorPin = GP5;
-    const byte relayPin  = GP13;
+    const byte sensorPin = GP25; // A4
+    const byte relayPin  = GP5;
     
     // good defaults for NZ
     const uint dstStartDay  = 267;
@@ -31,13 +34,15 @@ program GarageBox
         
         MCU.PinMode(sensorPin, PinModeOption.Input);
         MCU.PinMode(relayPin,  PinModeOption.Output);
+        MCU.PinMode(GP24,  PinModeOption.Output);
+        MCU.PinMode(GP23,  PinModeOption.Output);
         MCU.DigitalWrite(relayPin, false);
         
         UART.Setup(9600);
         
         if (!RTCDevice.Begin())
         {
-            IO.WriteLn("Failed to AdaLogger");
+            IO.WriteLn("Failed to initialize RTC");
             return;
         }
         
@@ -49,8 +54,9 @@ program GarageBox
         
         loop
         {
-            uint light  = GPIO.A1;     
+            uint light  = GPIO.A0;     
             bool doorOpen = MCU.DigitalRead(sensorPin);
+            MCU.DigitalWrite(GP23, doorOpen);
             
             if (doorOpen && (counter % 10 == 0))
             {
@@ -74,6 +80,7 @@ program GarageBox
                 break;
             }
 #endif
+            MCU.DigitalWrite(GP24, light <= 20);
             CheckLights(doorOpen, light <= 20);
             
             Time.Delay(1000);
