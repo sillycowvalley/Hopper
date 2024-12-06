@@ -62,8 +62,25 @@ unit SourceStream
                 break;
             }
             
+            headerFile.Append("#ifndef HOPPERRUNTIME_H" + Char.EOL);
+            headerFile.Append("#define HOPPERRUNTIME_H" + Char.EOL);
+            headerFile.Append("" + Char.EOL);
+            headerFile.Append("#include <Arduino.h>" + Char.EOL);
+            headerFile.Append("#include \"HopperConfiguration.h\"" + Char.EOL);
+            headerFile.Append("" + Char.EOL);
+            headerFile.Append("typedef unsigned char  Byte;" + Char.EOL);
+            headerFile.Append("typedef unsigned char  Char;" + Char.EOL);
+            headerFile.Append("typedef unsigned short UInt;" + Char.EOL);
+            headerFile.Append("typedef   signed short Int;" + Char.EOL);
+            headerFile.Append("typedef   signed char  Int8;" + Char.EOL);
+            headerFile.Append("typedef           bool Bool;" + Char.EOL);
+            headerFile.Append("" + Char.EOL);
+            headerFile.Append("typedef Bool (*InstructionDelegate)();" + Char.EOL);
+            headerFile.Append("typedef UInt PinISRDelegate;" + Char.EOL);
+            headerFile.Append("typedef UInt TimerISRDelegate;" + Char.EOL);
+            headerFile.Append("typedef UInt HandlerDelegate;" + Char.EOL);
+            headerFile.Append("" + Char.EOL);
             
-            headerFile.Append("// method definitions" + Char.EOL);
             foreach (var line in headerStream)
             {
                 headerFile.Append(line + Char.EOL);
@@ -72,13 +89,22 @@ unit SourceStream
                     break;
                 }
             }
+            
+            headerFile.Append("" + Char.EOL);
+            headerFile.Append("#endif // HOPPERRUNTIME_H" + Char.EOL);
+            
             headerFile.Flush();
             if (!headerFile.IsValid())
             {
                 break;
             }
             
+            codeFile.Append("#include \"Platform.h\"" + Char.EOL);
+            codeFile.Append("#include \"HopperFile.h\"" + Char.EOL);
+            codeFile.Append("#include \"HopperWiFi.h\"" + Char.EOL);
+            codeFile.Append("#include \"HopperTimer.h\"" + Char.EOL);
             codeFile.Append("" + Char.EOL);
+            
             foreach (var line in sourceStream)
             {
                 codeFile.Append(line + Char.EOL);

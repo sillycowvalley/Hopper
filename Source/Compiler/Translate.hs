@@ -1186,16 +1186,15 @@ program Translate
     {
         PrintLn("Invalid arguments for TRANSLATE:");
         PrintLn("  TRANSLATE <object json>");
-        PrintLn("    -c : translate to C");
     }
     
+    Hopper()
     {
         bool success = false;
         loop
         {
             <string> rawArgs = System.Arguments;
             <string> args;
-            bool toC = true;
             
             for (uint iArg = 0; iArg < rawArgs.Count; iArg++)
             {
@@ -1218,10 +1217,6 @@ program Translate
                             {
                             }
                             Parser.SetInteractive(byte(col), byte(row));
-                        }
-                        case "-c":
-                        {
-                            toC = false;   
                         }
                         default:
                         {

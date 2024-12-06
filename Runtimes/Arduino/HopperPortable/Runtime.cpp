@@ -3,9 +3,6 @@
 #include "HopperWiFi.h"
 #include "HopperTimer.h"
 
-
-
-
 UInt UInt_gRnd = 0;
 UInt Memory_heapStart = 0x8000;
 UInt Memory_heapSize = 0x4000;
