@@ -74,11 +74,21 @@ program HouseBox
 #endif
                     if (message == "OPEN")
                     {
-                        doorCounter = 40;
+                        // 10 seconds between "OPEN" signals
+                        // = 10
+                        // 250ms per cycles so 4 per second
+                        // = 4 * 10
+                        // add an extra second or two for overlap
+                        // = 4 * (10+2)
+                        doorCounter = 4 * (10+2);
                         doorOpen = true;
                     }
                     else if (message == "ON")
                     {
+                        // 3 minutes between "ON" signals
+                        // = 3 x 60 seconds
+                        // 250ms per cycles so 4 per second
+                        // = 4 x 3 x 60
                         lightsCounter = 4 * 3 * 60;
                         lightsOn = true;
                     }
