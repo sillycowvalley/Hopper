@@ -7597,6 +7597,18 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         doNext = false;
         break;
     }
+    case LibCall::eWiFiBeginAP:
+    {
+        Type ptype = (Type)0;
+        UInt password = HopperVM_Pop_R(ptype);
+        Type stype = (Type)0;
+        UInt ssid = HopperVM_Pop_R(stype);
+        Bool success = External_WiFiBeginAP(ssid, password);
+        GC_Release(ssid);
+        GC_Release(password);
+        HopperVM_Push((success) ? (0x01) : (0x00), Type::eBool);
+        break;
+    }
     case LibCall::eWebServerBegin:
     {
         UInt port = 0x50;

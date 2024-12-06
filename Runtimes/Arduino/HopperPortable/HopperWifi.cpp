@@ -6,6 +6,10 @@ Bool External_WiFiConnect(UInt hrssid, UInt hrpassword)
 {
     return false;
 }
+Bool External_WiFiBeginAP(UInt hrssid, UInt hrpassword)
+{
+    return false;
+}
 void External_WiFiDisconnect()
 {
 }
@@ -86,6 +90,46 @@ void External_WiFiDisconnect()
 
 
 #if defined(RP2040PICOW) || defined(RP2350PICO2W)
+
+IPAddress localIP(192, 168, 4, 1);
+IPAddress gateway(192, 168, 4, 1);
+IPAddress subnet(255, 255, 255, 0);
+
+bool WifiBeginAP()
+{
+    bool success = false;
+
+    WiFi.mode(WIFI_AP);
+    WiFi.softAPConfig(localIP, gateway, subnet);
+
+    Byte max_connections = 5;
+    if (password.length() == 0)
+    {
+        success = WiFi.softAP(ssid.c_str(), nullptr, 1, false, max_connections);
+    }
+    else
+    {
+        success = WiFi.softAP(ssid.c_str(), password.c_str(), 1, false, max_connections);
+    }
+
+    if (success)
+    {
+        success = true;
+#ifdef DIAGNOSTICS
+        Serial.print("Access Point is Created");
+        Serial.print("Access Point IP: ");
+        Serial.println(WiFi.softAPIP());
+#endif
+    }
+    else
+    {
+#ifdef DIAGNOSTICS
+        Serial.println("Unable to Create Access Point");
+#endif
+    }
+    return success;
+}
+
 bool WifiConnect()
 {
     bool success = false;
@@ -183,6 +227,50 @@ bool WifiConnect()
             Serial.print("x");
             delay(1000);
         } 
+        break;
+    }
+    return success;
+}
+
+IPAddress localIP(192, 168, 4, 1);
+IPAddress gateway(192, 168, 4, 1);
+IPAddress subnet(255, 255, 255, 0);
+
+bool WifiBeginAP()
+{
+    bool success = false;
+
+    for (;;)
+    {
+        ESP_SERIAL_PORT.begin(115200);
+        if (!Challenger2040WiFi.reset())
+        {
+            Serial.println(F("Could not reset WiFi chip !"));
+            break;
+        }
+        
+        WiFi.init(ESP_SERIAL_PORT);
+        if (WiFi.status() == WL_NO_MODULE) 
+        {
+            Serial.println("Communication with WiFi module failed!");
+            break;
+        }
+
+        WiFi.softAPConfig(localIP, gateway, subnet);
+
+        Byte max_connections = 5;
+        int status;
+        if (password.length() == 0)
+        {
+            status = WiFi.beginAP(ssid.c_str(), nullptr);
+        }
+        else
+        {
+            status = WiFi.beginAP(ssid.c_str(), password.c_str());
+        }
+        //Serial.print("Access Point:");
+        //Serial.println(status);
+        success = status == WL_AP_LISTENING;
         break;
     }
     return success;
@@ -290,13 +378,43 @@ Bool External_WiFiConnect(UInt hrssid, UInt hrpassword)
     External_WebServerRelease(); // reconnected to WiFi so we can probably clear handlers
     return wifiConnected;
 }
+Bool External_WiFiBeginAP(UInt hrssid, UInt hrpassword)
+{
+    if (!wifiConnected)
+    {
+        UInt length = HRString_GetLength(hrssid);
+        ssid = "";
+        for (UInt i=0; i < length; i++)
+        {
+            ssid += (char)HRString_GetChar(hrssid, i);
+        }
+        length = HRString_GetLength(hrpassword);
+        password = "";
+        for (UInt i=0; i < length; i++)
+        {
+            password += (char)HRString_GetChar(hrpassword, i);
+        }
+        wifiConnected =  WifiBeginAP();
+    }
+    External_WebServerRelease(); // reconnected to WiFi so we can probably clear handlers
+    return wifiConnected;
+}
 
 UInt External_WiFiIP()
 {
     UInt hrip = HRString_New();
     if (wifiConnected)
     {
-        HRString_FromString(hrip, WiFi.localIP().toString());
+#ifdef USESWIFIESPAT      
+        if (WiFi.apIP().isSet())
+        {
+            HRString_FromString(hrip, WiFi.apIP().toString());
+        }
+        else
+#endif
+        {
+            HRString_FromString(hrip, WiFi.localIP().toString());
+        }
     }
     return hrip;
 }

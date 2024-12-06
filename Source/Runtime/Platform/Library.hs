@@ -949,6 +949,28 @@ unit Library
                 Push(success ? 1 : 0, Type.Bool);
                 doNext = false;
             }
+            case LibCall.WiFiBeginAP:
+            {
+#ifdef INCLUDE_WIFI            
+                Type ptype;    
+                uint password = Pop(ref ptype);
+                Type stype;    
+                uint ssid = Pop(ref stype);
+#ifdef CHECKED
+                if ((stype != Type.String) || (ptype != Type.String))
+                {
+                    ErrorDump(258);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif        
+                bool success = External.WiFiBeginAP(ssid, password);
+                GC.Release(ssid);
+                GC.Release(password);
+                Push(success ? 1 : 0, Type.Bool);                
+#else
+                Error = 0x0A;
+#endif
+            }
             case LibCall.WebServerBegin:
             {
                 uint port = 80;

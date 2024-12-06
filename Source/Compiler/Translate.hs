@@ -1287,6 +1287,20 @@ program Translate
                     break;
                 }
                 
+                string headerDestination = Path.GetFileName(headerpath);
+                headerDestination = Path.Combine("/Runtimes/Arduino/HopperPortable", headerDestination);
+                string codeDestination   = Path.GetFileName(codePath);
+                codeDestination = Path.Combine("/Runtimes/Arduino/HopperPortable", codeDestination);
+                
+                if (!File.Copy(headerpath, headerDestination, true))
+                {
+                    break;
+                }
+                if (!File.Copy(codePath, codeDestination, true))
+                {
+                    break;
+                }
+                
                 PrintLn();
                 Print("Success.", Colour.ProgressText, Colour.ProgressFace);
                 long elapsedTime = Millis - startTime;

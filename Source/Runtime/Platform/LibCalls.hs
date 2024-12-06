@@ -66,6 +66,8 @@ unit LibCalls
         
         WebClientGetRequest,
         
+        WiFiBeginAP,
+        
         WebServerBegin,
         WebServerOn,
         WebServerOnNotFound,

@@ -75,12 +75,15 @@ unit LibCalls
         
         addEntry("WebClient.GetRequest");
         
+        addEntry("WiFi.BeginAP");
+        
         addEntry("WebServer.Begin");
         addEntry("WebServer.On");
         addEntry("WebServer.OnNotFound");
         addEntry("WebServer.Events");
         addEntry("WebServer.Close");
         addEntry("WebServer.Send");
+        
         
         addEntry("SD.SPIController_Get");
         addEntry("SD.SPIController_Set");

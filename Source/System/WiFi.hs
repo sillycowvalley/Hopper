@@ -30,6 +30,9 @@ unit WiFi
     }
     
     bool Connect(string ssid, string password) system;
+    bool BeginAP(string ssid, string password) library;
+    bool BeginAP() { return BeginAP("Hopper", ""); }
+    
     Disconnect() system;
     string IP { get system; }
     WiFiStatus Status { get system; }

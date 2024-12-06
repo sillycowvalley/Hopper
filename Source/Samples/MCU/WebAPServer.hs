@@ -1,12 +1,10 @@
-program WebServer
+program WebAPServer
 {
-    //uses "/Source/Library/Boards/PiPicoW"
+    uses "/Source/Library/Boards/PiPicoW"
     //uses "/Source/Library/Boards/PiPico2W"
-    uses "/Source/Library/Boards/PimoroniPicoPlus2W"
+    //uses "/Source/Library/Boards/PimoroniPicoPlus2W"
     //uses "/Source/Library/Boards/Challenger2040WiFi"
     //uses "/Source/Library/Boards/Challenger2350WiFi6Ble5"
-    
-    uses "/Source/Samples/MCU/Secrets2/Connect"
     
     uint counter;
     NotFound(string uri, string method, <string,string> arguments)
@@ -65,17 +63,17 @@ program WebServer
         uint attempts = 0;
         loop
         {
-            bool success = WiFi.Connect(SSID, Password);
+            bool success = WiFi.BeginAP();
             if (success)
             {
-                WriteLn("Connected");
+                WriteLn("Access Point Started");
                 break;
             }
             IO.Write(".");
             attempts++;
             if (attempts >= 5)
             {
-                WriteLn("Failed to Connect");
+                WriteLn("Failed to BeginAP");
                 return;
             }
         }

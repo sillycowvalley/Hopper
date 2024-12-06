@@ -351,7 +351,13 @@ void External_WebServerSend(UInt httpCode, UInt hrheaderContent, UInt hrcontent)
     headerContent = HRDictionary_Clone(hrheaderContent);
 }
 
-void External_WebServerBegin(UInt port) { if (IsWiFiConnected()) { server.begin(); } }
+void External_WebServerBegin(UInt port)
+{
+    if (IsWiFiConnected())
+    {
+        server.begin(port);
+    }
+}
 
 #ifdef ARDUINONANO_RP2040
 void External_WebServerClose() {}

@@ -2,9 +2,9 @@ program WebClient
 {
     //uses "/Source/Library/Boards/PiPicoW"
     //uses "/Source/Library/Boards/PiPico2W"
-    //uses "/Source/Library/Boards/PimoroniPicoPlus2W"
+    uses "/Source/Library/Boards/PimoroniPicoPlus2W"
     //uses "/Source/Library/Boards/Challenger2040WiFi"
-    uses "/Source/Library/Boards/Challenger2350WiFi6Ble5"
+    //uses "/Source/Library/Boards/Challenger2350WiFi6Ble5"
     
     uses "/Source/System/Serialize"
     
@@ -16,7 +16,7 @@ program WebClient
         #error "WiFi capable board required for this sample (see options at top of board file)"
 #endif            
         
-        WriteLn(); 
+        IO.WriteLn(); 
         
         uint attempts = 0;
         loop
@@ -29,18 +29,18 @@ program WebClient
             
             if (success)
             {
-                WriteLn("Connected");
+                IO.WriteLn("Connected");
                 break;
             }
-            Write(".");
+            IO.Write(".");
             attempts++;
             if (attempts >= 10)
             {
-                WriteLn("Failed to Connect");
+                IO.WriteLn("Failed to Connect");
                 return;
             }
         }
-        WriteLn("IP: " + WiFi.IP);
+        IO.WriteLn("IP: " + WiFi.IP);
         
         
         // http://arduino.tips/asciilogo.txt

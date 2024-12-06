@@ -247,6 +247,12 @@ unit External
         string password = nativeStringFromHopperString(hrpassword);
         return WiFi.Connect(ssid, password);
     }
+    bool WiFiBeginAP(uint hrssid, uint hrpassword)
+    {
+        string ssid = nativeStringFromHopperString(hrssid);
+        string password = nativeStringFromHopperString(hrpassword);
+        Error = 0x0A; return false;
+    }
     uint WiFiIP()
     {
         ErrorDump(200); Error = 0x0A; return 0;

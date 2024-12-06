@@ -223,6 +223,7 @@ UInt HRNeoPixel_GetLength();
 Bool External_WebClientGetRequest_R(UInt hrurl, UInt& hrcontent);
 
 Bool External_WiFiConnect(UInt hrssid, UInt hrpassword);
+Bool External_WiFiBeginAP(UInt hrssid, UInt hrpassword);
 void External_WiFiDisconnect();
 UInt External_WiFiIP();
 UInt External_WiFiStatus();
