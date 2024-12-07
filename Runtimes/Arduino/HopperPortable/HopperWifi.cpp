@@ -34,7 +34,7 @@ bool wifiConnected = false;
 
 Bool IsWiFiConnected() { return wifiConnected; }
 
-#ifndef USESWIFIESPAT
+#ifdef USESWIFICYW43
 WiFiMulti  wifiMulti;
 #endif
 WiFiClient wifiClient;
@@ -79,17 +79,17 @@ void External_WiFiDisconnect()
 {
     if (wifiConnected)
     {
-#ifdef USESWIFIESPAT
+#ifdef USESWIFIESP
         WiFi.disconnect();
-#else
+#endif
+#ifdef USESWIFICYW43
         wifiMulti.clearAPList();
 #endif
         wifiConnected = false;
     }
 }
 
-
-#if defined(RP2040PICOW) || defined(RP2350PICO2W)
+#if defined(USESWIFICYW43)
 
 IPAddress localIP(192, 168, 4, 1);
 IPAddress gateway(192, 168, 4, 1);
@@ -185,10 +185,14 @@ bool WifiConnect()
 }
 #endif // ARDUINONANO_RP2040
 
-#ifdef USESWIFIESPAT
+#ifdef USESWIFIESP
+
+bool isAP = false;
+
 bool WifiConnect()
 {
     bool success = false;
+    isAP = false;
 
     for (;;)
     {
@@ -240,6 +244,8 @@ bool WifiBeginAP()
 {
     bool success = false;
 
+    isAP = true;
+
     for (;;)
     {
         ESP_SERIAL_PORT.begin(115200);
@@ -275,7 +281,7 @@ bool WifiBeginAP()
     }
     return success;
 }
-#endif // USESWIFIESPAT
+#endif // USESWIFIESP
 
 
 
@@ -405,16 +411,36 @@ UInt External_WiFiIP()
     UInt hrip = HRString_New();
     if (wifiConnected)
     {
-#ifdef USESWIFIESPAT      
-        if (WiFi.apIP().isSet())
+        for(;;)
         {
-            HRString_FromString(hrip, WiFi.apIP().toString());
-        }
-        else
-#endif
-        {
-            HRString_FromString(hrip, WiFi.localIP().toString());
-        }
+#ifdef USESWIFICYW43          
+            if (localIP.isSet())
+            {
+                HRString_FromString(hrip, WiFi.localIP().toString());
+                break;
+            }
+#endif            
+#ifdef USESWIFIESP   
+            if (isAP)
+            {
+                if (WiFi.apIP().isSet())
+                {
+                    HRString_FromString(hrip, WiFi.apIP().toString());
+                    break;
+                }
+            }
+            else
+            {
+                if (WiFi.localIP().isSet())
+                {
+                    HRString_FromString(hrip, WiFi.localIP().toString());
+                    break;
+                }
+            }
+#endif     
+            HRString_FromString(hrip, "(IP unset)");
+            break;
+        }   
     }
     return hrip;
 }

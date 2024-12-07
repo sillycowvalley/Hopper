@@ -1,10 +1,10 @@
 program WebAPServer
 {
-    uses "/Source/Library/Boards/PiPicoW"
+    //uses "/Source/Library/Boards/PiPicoW"
     //uses "/Source/Library/Boards/PiPico2W"
     //uses "/Source/Library/Boards/PimoroniPicoPlus2W"
     //uses "/Source/Library/Boards/Challenger2040WiFi"
-    //uses "/Source/Library/Boards/Challenger2350WiFi6Ble5"
+    uses "/Source/Library/Boards/Challenger2350WiFi6Ble5"
     
     uint counter;
     NotFound(string uri, string method, <string,string> arguments)

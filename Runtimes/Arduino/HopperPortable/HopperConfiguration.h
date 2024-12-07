@@ -15,6 +15,7 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 #if defined(ARDUINO_RASPBERRY_PI_PICO_W)
 #define RP2040PICOW
 #define USESDFS
+#define USESWIFICYW43
 #endif
 
 // Raspberry Pi Pico
@@ -39,6 +40,7 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 #if defined(ARDUINO_RASPBERRY_PI_PICO_2W)
 #define RP2350PICO2W
 #define USESDFS
+#define USESWIFICYW43
 #endif
 
 // Challenger RP2040 WiFi
@@ -47,13 +49,13 @@ const bool loadAuto = true; // set this to false if you are booting into a bad f
 //
 #if defined(ARDUINO_CHALLENGER_2040_WIFI_RP2040) || defined(ARDUINO_CHALLENGER_2040_WIFI6_BLE_RP2040) || defined(ARDUINO_CHALLENGER_2040_WIFI_BLE_RP2040)
 #define CHALLENGER_RP2040_WIFI
-#define USESWIFIESPAT
+#define USESWIFIESP
 #endif
 
 #if defined(ARDUINO_CHALLENGER_2350_WIFI_BLE_RP2350)
 #define CHALLENGER_RP2350_WIFI
 #define USESDFS
-#define USESWIFIESPAT
+#define USESWIFIESP
 #endif
 
 // Arduino Connect RP2040
