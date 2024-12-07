@@ -268,11 +268,11 @@ bool WifiBeginAP()
         int status;
         if (password.length() == 0)
         {
-            status = WiFi.beginAP(ssid.c_str(), nullptr);
+            status = WiFi.beginAP(ssid.c_str(), nullptr, 1, ENC_TYPE_CCMP, max_connections);
         }
         else
         {
-            status = WiFi.beginAP(ssid.c_str(), password.c_str());
+            status = WiFi.beginAP(ssid.c_str(), password.c_str(), 1, ENC_TYPE_CCMP, max_connections);
         }
         //Serial.print("Access Point:");
         //Serial.println(status);
