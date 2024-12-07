@@ -46,6 +46,7 @@ unit Board // Adafruit Feather RP2350 Hstx
     const byte GP1 = 1;   // UART0Rx
     const byte GP2 = 2;   // I2CSDA0 (STEMMA)
     const byte GP3 = 3;   // I2CSCL0 (STEMMA)
+    const byte GP5 = 5;
     const byte GP6 = 6;   // corrected (physical 6 != D6)
     const byte GP7 = 7;   // BuiltInLED
     const byte GP8 = 8;

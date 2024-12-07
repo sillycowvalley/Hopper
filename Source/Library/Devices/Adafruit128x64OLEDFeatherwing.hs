@@ -25,7 +25,11 @@ unit DeviceDriver
     const byte keyBPin = Board.GP8;
     const byte keyCPin = Board.GP7;
 #endif    
-    
+#if defined(ADAFRUIT_FEATHER_RP2350_HSTX)
+    const byte keyAPin = Board.GP9;
+    const byte keyBPin = Board.GP5;
+    const byte keyCPin = Board.GP6;
+#endif        
     
     bool Begin()
     {

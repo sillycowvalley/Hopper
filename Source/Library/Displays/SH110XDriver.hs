@@ -143,7 +143,7 @@ unit DisplayDriver
             h1  = (Display.PixelHeight-1);
     
             // overclock I2C to 1MHz! (default is 400kHz but 1MHz seens to work)
-            if (!Wire.Initialize(DisplayDriver.I2CController, DisplayDriver.I2CSDAPin, DisplayDriver.I2CSCLPin, 1000)) 
+            if (!Wire.Initialize(DisplayDriver.I2CController, DisplayDriver.I2CSDAPin, DisplayDriver.I2CSCLPin, 400)) 
             {
                 break;
             }

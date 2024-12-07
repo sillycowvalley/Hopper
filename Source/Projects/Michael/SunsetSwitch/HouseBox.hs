@@ -78,9 +78,8 @@ program HouseBox
                         // = 10
                         // 250ms per cycles so 4 per second
                         // = 4 * 10
-                        // add an extra second or two for overlap
-                        // = 4 * (10+2)
-                        doorCounter = 4 * (10+2);
+                        // multiply by 3 to only need every 3rd message
+                        doorCounter = 3 * 4 * 10;
                         doorOpen = true;
                     }
                     else if (message == "ON")
