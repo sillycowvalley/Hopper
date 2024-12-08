@@ -131,7 +131,7 @@ unit GPS
     {
         get
         {
-            return elevation + "m";
+            return elevation;
         }
     }
     
@@ -162,6 +162,58 @@ unit GPS
 
         return dms;
     }
+    string convertToDecimalDegrees(string coordinate)
+    {
+        // Determine degrees dynamically
+        uint separatorIndex;
+        _ = coordinate.IndexOf('.', ref separatorIndex);
+        
+        uint degreesLength = separatorIndex > 4 ? 3 : 2;             // Longitude uses 3 digits for degrees, latitude 2
+        string degreesPart = coordinate.Substring(0, degreesLength); // Extract degrees
+        string minutesPart = coordinate.Substring(degreesLength);    // Extract minutes (MM.MMMM)
+        
+        float minutes;
+        _ = Float.TryParse(minutesPart, ref minutes);
+        minutes /= 60.0;
+        
+        return degreesPart + (minutes.ToString()).Replace("0.", ".");
+    }
+    
+    string convertLatitudeToDecimal(string latitude, string hemisphere)
+    {
+        string decimal = convertToDecimalDegrees(latitude);
+        // Apply the direction (N/S)
+        if (hemisphere == "S")
+        {
+            decimal = "-" + decimal;
+        }
+        return decimal;
+    }
+    
+    string convertLongitudeToDecimal(string longitude, string hemisphere)
+    {
+        string decimal = convertToDecimalDegrees(longitude);
+        // Apply the direction (E/W)
+        if (hemisphere == "W")
+        {
+            decimal = "-" + decimal;
+        }
+        return decimal;
+    }
+    string DecimalLatitude
+    {
+        get
+        {
+            return convertLatitudeToDecimal(latitude, ns);
+        }
+    }
+    string DecimalLongitude
+    {
+        get
+        {
+            return convertLongitudeToDecimal(longitude, ew);
+        }
+    }
     
     string Latitude
     {
@@ -170,7 +222,7 @@ unit GPS
             string content;
             if (latitude.Length != 0)
             {
-                content = convertToDMS(latitude) + ew;
+                content = convertToDMS(latitude) + ns;
             }
             return content;
         }
