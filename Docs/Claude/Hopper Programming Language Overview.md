@@ -1,4 +1,4 @@
-# Hopper Programming Language Documentation
+# Hopper Programming Language Overview
 
 ## Introduction
 
@@ -36,12 +36,11 @@ Hopper is a modern programming language designed to run efficiently on small dev
 3. **List Operations:**
    - No direct indexing with square brackets
    - Use methods: `Append`, `Remove`, `GetItem`, `SetItem`, `Insert`, `Clear`, `Contains`
-   - Example:
-     ```hopper
-     <string> list;
-     list.Append("test");
-     string item = list.GetItem(0);  // Not list[0]
-     ```
+   ```hopper
+   <string> list;
+   list.Append("test");
+   string item = list.GetItem(0);  // Not list[0]
+   ```
 
 4. **Switch Statements:**
    - Never fall through, no `break` required
@@ -74,35 +73,53 @@ Hopper is a modern programming language designed to run efficiently on small dev
    - Only `byte` or `char` arrays can be directly initialized
    - No objects, use `byte[PieceSize * PieceSize] shape;`
 
-10. **Time and Random Numbers:**
-    - Use `Time.Millis` instead of `System.TickCount`
-    - For random numbers: `((Time.Millis).GetByte(0) % ShapeCount)`
-
-11. **Error Handling:**
-    - No exceptions
-    - Use `Diagnostics.Die(byte reason)`:
-      - 0x01: list index out of range
-      - 0x02: array index out of range
-      - 0x03: no entry for key in dictionary
-      - 0x04: division by zero
-      - 0x05: string index out of range
-      - 0x06: call stack overflow
-      - 0x07: argument stack overflow
-      - 0x08: failed dynamic cast
-      - 0x09: invalid variant type
-      - 0x0A: feature not implemented
-      - 0x0B: system failure
-      - 0x0C: memory allocation failure
-      - 0x0D: numeric overflow
-      - 0x0E: child exe error
-      
-12. **System and Library Methods:**
+10. **System and Library Methods:**
     - `system` keyword marks methods implemented by the runtime
     - `library` keyword marks methods implemented only in MCU/6502 runtimes
     - Example:
       ```hopper
       uint Read(file this, byte[] data, uint bufferSize) library;  // MCU/6502 only
       bool IsValid(file this) system;                             // All runtimes
+      ```
+
+11. **Common Method Patterns:**
+    - Try methods return bool with ref output:
+      ```hopper
+      bool TryParse(string content, ref uint returnValue)
+      ```
+    - Default parameter overloads:
+      ```hopper
+      Setup(uint baud, byte txPin, byte rxPin)
+      Setup()
+      Setup(uint baud)
+      ```
+    - Property backing fields:
+      ```hopper
+      uint defaultForeColour = Colour.MatrixGreen;
+      uint ForeColour { get { return defaultForeColour; } set { defaultForeColour = value; }}
+      ```
+
+12. **Platform Abstractions:**
+    - Hardware capabilities defined by conditional compilation:
+      ```hopper
+      #if defined(BOARD_HAS_LED)
+          bool LED { get; set }
+      #endif
+      ```
+    - Different implementations for different platforms:
+      ```hopper
+      #if defined(MCU)
+          Delay(uint ms) system;
+      #else
+          Delay(uint ms)
+          {
+              long endTime = Millis + ms;
+              loop
+              {
+                  if (Millis >= endTime) { break; }
+              }
+          }
+      #endif
       ```
 
 ## Program Structure Example
@@ -131,27 +148,6 @@ program Example
 }
 ```
 
-## Unit Structure Example
-
-```hopper
-unit MCU
-{
-    uses "/Source/System/System"
-    
-    enum PinModeOption
-    {
-        Input         = 0x00,
-        Output        = 0x01,
-        InputPullup   = 0x02,
-        InputPulldown = 0x03,
-    }
-
-    PinMode(byte pin, PinModeOption pinMode) library;
-    bool DigitalRead(byte pin) library;
-    DigitalWrite(byte pin, bool value) library;  // No void return type
-}
-```
-
 ## Records Example
 
 ```hopper
@@ -169,4 +165,4 @@ words.Append(newWord);
 
 ## Conclusion
 
-This document focuses on Hopper's unique features and common pitfalls. For general programming concepts and standard language features, refer to Pascal or C-like language documentation.
+This document focuses on Hopper's unique features and common patterns. For detailed information about standard library units and board support, refer to the Hopper Library Documentation.
