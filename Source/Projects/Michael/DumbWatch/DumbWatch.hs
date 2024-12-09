@@ -191,13 +191,19 @@ program DumbWatch
     
     UpdateDisplay(string time, bool dst, string latitude, string longitude, string elevation)
     {
+        string state = (logging? "On" : "Off");
+        if (Memory.Available() <= 16 * 1024)
+        {
+            state = "Full";
+        }
+        
         Display.Suspend();
         Screen.Clear();
         Screen.PrintLn("Time:  " + AdjustTimeToDST(time, dst));
         Screen.PrintLn("Lat:   " + latitude);
         Screen.PrintLn("Lon:   " + longitude);
         Screen.PrintLn("Elev:  " + elevation);
-        Screen.PrintLn("Log:   " + (log.Count).ToString() + " pts " + (logging? "(On)" : "(Off)"));    
+        Screen.PrintLn("Log:   " + (log.Count).ToString() + " pts (" + state + ")");
         Screen.PrintLn("Set:   " + resetDate);
         Screen.PrintLn("Start: " + powerDate);
         Display.Resume();
@@ -273,12 +279,15 @@ program DumbWatch
                         UpdateDisplay(lastTime, dst, lastLatitude, lastLongitude, lastElevation + "m");
                         if (logging && (lastElevation != "M"))
                         {
-                            Point pt;
-                            pt.latitude  = GPS.DecimalLatitude;
-                            pt.longitude = GPS.DecimalLongitude;
-                            pt.elevation = lastElevation;
-                            pt.time      = lastDate + "T" + (RTC.Time) + nzTimeZone;
-                            log.Append(pt);  
+                            if (Memory.Available() > 16 * 1024)
+                            {
+                                Point pt;
+                                pt.latitude  = GPS.DecimalLatitude;
+                                pt.longitude = GPS.DecimalLongitude;
+                                pt.elevation = lastElevation;
+                                pt.time      = lastDate + "T" + (RTC.Time) + nzTimeZone;
+                                log.Append(pt);  
+                            }
                         }
                     }
                 }

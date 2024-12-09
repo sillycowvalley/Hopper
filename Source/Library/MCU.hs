@@ -15,6 +15,7 @@ unit MCU
 
     uses "/Source/System/System"
     uses "/Source/System/Runtime"
+    uses "/Source/System/Memory"
     uses "/Source/System/IO"
     
     uses "UART"

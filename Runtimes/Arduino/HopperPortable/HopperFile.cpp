@@ -334,6 +334,7 @@ void External_FileDelete(UInt hrpath)
 }
 UInt External_FileWriteAllBytes(UInt hrpath, UInt hrcontent, bool append)
 {
+    // We currently always call this with append==true and the file not existing.
     UInt count = 0;
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
