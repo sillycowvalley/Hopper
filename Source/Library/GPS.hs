@@ -271,7 +271,6 @@ unit GPS
                 string date = parts[9];
                 // '2024-02-28'
                 utcDate = "20" + date.Substring(4,2) + "-" + date.Substring(2,2) + "-" + date.Substring(0,2);
-                IO.WriteLn(utcDate);
             }
             default:
             {

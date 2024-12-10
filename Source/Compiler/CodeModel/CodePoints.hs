@@ -2564,7 +2564,7 @@ unit CodePoints
                             {
                                 int ioperand1 = Int.FromBytes(operand1.GetByte(0), operand1.GetByte(1));
                                 int ioperand2 = Int.FromBytes(operand2.GetByte(0), operand2.GetByte(1));
-                                result = (operand1 < operand2) ? 1 : 0; 
+                                result = (operand2 < operand1) ? 1 : 0; 
                                 process = true; 
                             }
                             case Instruction.BITOR:

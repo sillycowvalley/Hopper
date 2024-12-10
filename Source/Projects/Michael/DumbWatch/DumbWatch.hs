@@ -6,11 +6,12 @@ program DumbWatch
     uses "/Source/Library/Devices/Adafruit128x64OLEDFeatherwing"
     uses "/Source/Library/Devices/AdafruitAdaloggerRTCSDFeatherwing"
     uses "/Source/Library/GPS"
+    uses "/Source/System/DateTime"
     
     // good defaults for NZ
     const uint dstStartDay  = 267;
     const uint dstEndDay    = 97;
-    const string nzTimeZone = "+12:00";
+    const int  nzTimeZone   = 12;
     
     const string logPathA = "/SD/ActivityA.gpx";
     const string logPathB = "/SD/ActivityB.gpx";
@@ -23,13 +24,73 @@ program DumbWatch
         string time;
     }
     
-    string resetDate;    // date of last reset
-    string powerDate;    // date of last power cycle
-    
     bool logging;
     bool doFlush;
     uint points;
     <Point> log;
+    
+    bool TryDSTFromDay(uint dayOfYear, ref bool dst)
+    {
+        if (dstEndDay < dstStartDay) 
+        {
+            dst = !((dayOfYear > dstEndDay) && (dayOfYear < dstStartDay)); // Southern Hemisphere
+        }
+        else
+        {
+            dst = ((dayOfYear >= dstStartDay) && (dayOfYear <= dstEndDay)); // Northern Hemisphere
+        }
+        return true;
+    }
+    
+    string AdjustTimeToDST(string time, bool dst)
+    {
+        string dstTime = time;
+        if (dst)
+        {
+            // if we are currently on DST, normalize the time in the RTC to standard time (no DST)
+            uint currentMinutes;
+            _ = DateTime.TryTimeToMinutes(time, ref currentMinutes);
+            currentMinutes += 60;
+            if (currentMinutes >= 1440) // 24 x 60
+            {
+                currentMinutes -= 1440;
+            }
+            uint   hours = currentMinutes / 60;
+            uint minutes = currentMinutes % 60;
+            dstTime = (hours.ToString()).LeftPad('0', 2) + ":" + (minutes.ToString()).LeftPad('0', 2);
+            if (time.Length > 5)
+            {
+                dstTime = dstTime + ":" + time.Substring(6,2);
+            }
+        }
+        return dstTime;
+    }
+    string AdjustTimeZone(string time, int timeZone)
+    {
+        string adjustedTime;
+        
+        uint currentMinutes;
+        _ = DateTime.TryTimeToMinutes(time, ref currentMinutes);
+        int iMinutes = int(currentMinutes);
+        iMinutes += timeZone * 60;
+        while (iMinutes >= 1440) // 24 x 60
+        {
+            iMinutes -= 1440;
+        }
+        while (iMinutes <= 0)
+        {
+            iMinutes += 1440;
+        }   
+        currentMinutes = uint(iMinutes);
+        uint hours = currentMinutes / 60;
+        uint minutes = currentMinutes % 60;
+        adjustedTime = (hours.ToString()).LeftPad('0', 2) + ":" + (minutes.ToString()).LeftPad('0', 2);
+        if (time.Length > 5)
+        {
+            adjustedTime = adjustedTime + ":" + time.Substring(6,2);
+        }
+        return adjustedTime;
+    }
     
     SaveLog()
     {
@@ -114,130 +175,45 @@ program DumbWatch
             }
         }
     }  
-    
-    string AdjustTimeFromDST(string time, bool dst)
-    {
-        string dstTime = time;
-        if (dst)
-        {
-            // if we are currently on DST, normalize the time in the RTC to standard time (no DST)
-            uint currentMinutes;
-            _ = DateTime.TryTimeToMinutes(time, ref currentMinutes);
-            if (currentMinutes >= 60)
-            {
-                currentMinutes -= 60;
-            }
-            else
-            {
-                currentMinutes += (23 * 60);
-            }
-            uint   hours = currentMinutes / 60;
-            uint minutes = currentMinutes % 60;
-            dstTime = (hours.ToString()).LeftPad('0', 2) + ":" + (minutes.ToString()).LeftPad('0', 2);
-            if (time.Length > 5)
-            {
-                dstTime = dstTime + ":" + time.Substring(6,2);
-            }       
-        }
-        return dstTime;
-    }
-    string AdjustTimeToDST(string time, bool dst)
-    {
-        string dstTime = time;
-        if (dst)
-        {
-            // if we are currently on DST, normalize the time in the RTC to standard time (no DST)
-            uint currentMinutes;
-            _ = DateTime.TryTimeToMinutes(time, ref currentMinutes);
-            currentMinutes += 60;
-            if (currentMinutes >= 1440) // 24 x 60
-            {
-                currentMinutes -= 1440;
-            }
-            uint   hours = currentMinutes / 60;
-            uint minutes = currentMinutes % 60;
-            dstTime = (hours.ToString()).LeftPad('0', 2) + ":" + (minutes.ToString()).LeftPad('0', 2);
-            if (time.Length > 5)
-            {
-                dstTime = dstTime + ":" + time.Substring(6,2);
-            }
-        }
-        return dstTime;
-    }
-    
-    bool TryDSTFromDay(uint dayOfYear, ref bool dst)
-    {
-        if (dstEndDay < dstStartDay) 
-        {
-            dst = !((dayOfYear > dstEndDay) && (dayOfYear < dstStartDay)); // Southern Hemisphere
-        }
-        else
-        {
-            dst = ((dayOfYear >= dstStartDay) && (dayOfYear <= dstEndDay)); // Northern Hemisphere
-        }
-        return true;
-    }
-    
-    InitializeRTC()
-    {
         
-        uint dayOfYear;      // current day of year
-        bool dst;            // are we currently in DST?
-        string currentDate;
-        string currentTime;
-    
-        currentDate = RTC.Date;
-        if (RTC.SetFromDebugger())
-        {
-            // this will only update the time if we are running in debugger
-            currentTime = RTC.Time;
-            _ = TryDateToDays(currentDate, ref dayOfYear);
-            _ = TryDSTFromDay(dayOfYear, ref dst);  
-            currentTime = AdjustTimeFromDST(currentTime, dst);
-            IO.WriteLn("  Set RTC Standard Time: " + currentTime + (dst ? " (+1 hour for DST)" : "")); 
-            RTC.Time = currentTime;
-            resetDate = currentDate; 
-            file rtcFile = File.Create("RTC"); // store the date we last initialized the RTC (in case there is a power cycle)
-            rtcFile.Append(resetDate);
-            rtcFile.Flush();
-        }
-        else
-        {
-            _ = File.TryReadAllText("RTC", ref resetDate); // restore the date we last initialized the RTC (in the event of a power cycle)
-        }
-        powerDate = currentDate;
-    }   
-    
-    UpdateDisplay(string time, bool dst, string latitude, string longitude, string elevation)
+    UpdateDisplay(string time, string date, bool dst, string latitude, string longitude, string elevation)
     {
         string state = (logging? "On" : "Off");
         Display.Suspend();
         Screen.Clear();
         Screen.PrintLn("Time:  " + AdjustTimeToDST(time, dst));
+        Screen.PrintLn("Date:  " + date);
         Screen.PrintLn("Lat:   " + latitude);
         Screen.PrintLn("Lon:   " + longitude);
         Screen.PrintLn("Elev:  " + elevation);
         Screen.PrintLn("Log:   " + points.ToString() + " pts (" + state + ")");
-        Screen.PrintLn("Set:   " + resetDate);
-        Screen.PrintLn("Start: " + powerDate);
         Display.Resume();
     }
     Hopper()
     {
+        // SD card on the AdafruitAdaloggerRTCSDFeatherwing:
+        SD.SPIController = 0;
+        SD.ClkPin = Board.SPI0SCK;
+        SD.TxPin  = Board.SPI0Tx;
+        SD.RxPin  = Board.SPI0Rx;
+        
+        SD.CSPin  = Board.GP10;
+        
+        if (SD.Mount())
+        {
+            File.Delete(logPathA);
+            File.Delete(logPathB);
+            SD.Eject();
+            IO.WriteLn("Log reset");
+        }
+        
+        
         if (!GPS.Begin())
         {
             IO.WriteLn("Failed to initialize Mini GPS");
             return;
         }
-        if (!RTCDevice.Begin())
-        {
-            IO.WriteLn("Failed to initialize RTC");
-            return;
-        }
-        InitializeRTC();
         
-        File.Delete(logPathA);
-        File.Delete(logPathB);
         
         DisplayDriver.FlipX = true;
         PinISRDelegate buttonDelegate = ButtonISR;
@@ -260,31 +236,32 @@ program DumbWatch
         loop
         {
             string sentence;
-            string time = (RTC.Time).Substring(0,5);
-            if (lastDate != RTC.Date)
+            string time = (GPS.UTC).Substring(0,5);
+            time = AdjustTimeZone(time, nzTimeZone);
+            if (lastDate != GPS.Date)
             {
                 // if date changes, update DST
                 uint dayOfYear;      
-                lastDate = RTC.Date;
+                lastDate = GPS.Date;
                 _ = TryDateToDays(lastDate, ref dayOfYear);
                 _ = TryDSTFromDay(dayOfYear, ref dst);  
             }
             if (time != lastTime)
             {
                 lastTime      = time;
-                UpdateDisplay(lastTime, dst, lastLatitude, lastLongitude, lastElevation);
+                UpdateDisplay(lastTime, lastDate, dst, lastLatitude, lastLongitude, lastElevation);
             }
             if (lastLogging != logging)
             {
                 lastLogging = logging;
-                UpdateDisplay(lastTime, dst, lastLatitude, lastLongitude, lastElevation);
+                UpdateDisplay(lastTime, lastDate, dst, lastLatitude, lastLongitude, lastElevation);
             }    
             
             if (GPS.NextSentence(ref sentence))
             {
                 if (GPS.Consume(sentence))
                 {
-                    IO.WriteLn(sentence);  
+                    //IO.WriteLn(sentence);
                     if ((GPS.Latitude  != lastLatitude) 
                      || (GPS.Longitude != lastLongitude) 
                      || (GPS.Elevation != lastElevation)
@@ -299,7 +276,13 @@ program DumbWatch
                             pt.latitude  = GPS.DecimalLatitude;
                             pt.longitude = GPS.DecimalLongitude;
                             pt.elevation = lastElevation;
-                            pt.time      = lastDate + "T" + (RTC.Time) + nzTimeZone;
+                            string timeZoneString = (nzTimeZone).ToString();
+                            timeZoneString = timeZoneString.LeftPad('0', 2);
+                            if (nzTimeZone >= 0)
+                            {
+                                timeZoneString = "+" + timeZoneString;
+                            }
+                            pt.time      = lastDate + "T" + time + timeZoneString + ":00"; // "+12:00"
                             points++;
                             log.Append(pt);
                             if ((log.Count) % 10 == 0)
@@ -307,7 +290,7 @@ program DumbWatch
                                 SaveLog(); 
                             }
                         }
-                        UpdateDisplay(lastTime, dst, lastLatitude, lastLongitude, lastElevation + "m");
+                        UpdateDisplay(lastTime, lastDate, dst, lastLatitude, lastLongitude, lastElevation + "m");
                     }
                 }
             }
