@@ -2560,6 +2560,13 @@ unit CodePoints
                                 result = (operand2 >= operand1) ? 1 : 0; 
                                 process = true;
                             }
+                            case Instruction.LTI:
+                            {
+                                int ioperand1 = Int.FromBytes(operand1.GetByte(0), operand1.GetByte(1));
+                                int ioperand2 = Int.FromBytes(operand2.GetByte(0), operand2.GetByte(1));
+                                result = (operand1 < operand2) ? 1 : 0; 
+                                process = true; 
+                            }
                             case Instruction.BITOR:
                             {
                                 result = operand2 | operand1; 
@@ -2611,6 +2618,11 @@ unit CodePoints
                             case Instruction.BOOLNOT:
                             {
                                 result = (operand1==0) ? 1 : 0;
+                                process = true;
+                            }
+                            case Instruction.BITNOT:
+                            {
+                                result = ~operand1;
                                 process = true;
                             }
                             default:

@@ -109,6 +109,7 @@ unit GPS
     }
     
     string utc;
+    string utcDate;
     string latitude;
     string longitude;
     string ns;
@@ -124,6 +125,13 @@ unit GPS
             string content = utc.Substring(0, dot-4) + ":" + utc.Substring(dot-4, 2) + ":" + utc.Substring(dot-2, 2);
             return content;
                     
+        }
+    }
+    string Date
+    {
+        get
+        {
+            return utcDate;
         }
     }
     
@@ -249,13 +257,25 @@ unit GPS
             case "$GNGGA":
             case "$GPGGA": // Global Positioning System Fix Data
             {
-                newFix = true;
                 utc       = parts[1];
                 ns = parts[3];
                 latitude  = ((ns == "N") || (ns == "S")) ? parts[2] : "";
                 ew = parts[5];
                 longitude = ((ew == "W") || (ew == "E")) ? parts[4] : "";
                 elevation = parts[9];
+                newFix = true;
+            }
+            case "$GNRMC":
+            case "$GPRMC":
+            {
+                string date = parts[9];
+                // '2024-02-28'
+                utcDate = "20" + date.Substring(4,2) + "-" + date.Substring(2,2) + "-" + date.Substring(0,2);
+                IO.WriteLn(utcDate);
+            }
+            default:
+            {
+                //IO.WriteLn(parts[0]);
             }
         }
         return newFix;

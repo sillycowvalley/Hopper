@@ -12,7 +12,8 @@ program DumbWatch
     const uint dstEndDay    = 97;
     const string nzTimeZone = "+12:00";
     
-    const string logPath = "/SD/Activity.gpx";
+    const string logPathA = "/SD/ActivityA.gpx";
+    const string logPathB = "/SD/ActivityB.gpx";
     
     record Point
     {
@@ -25,8 +26,10 @@ program DumbWatch
     string resetDate;    // date of last reset
     string powerDate;    // date of last power cycle
     
-    <Point> log;
     bool logging;
+    bool doFlush;
+    uint points;
+    <Point> log;
     
     SaveLog()
     {
@@ -37,44 +40,60 @@ program DumbWatch
         }
         LED = true;
         IO.WriteLn("SD card detected.");
-        file f = File.Create(logPath);
+        long start = Millis;
         
-        f.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + Char.EOL);
-        f.Append("<gpx xmlns=\"http://www.topografix.com/GPX/1/1\">" + Char.EOL);
-        f.Append("<trk><name>Hopper Log</name><type>running</type><trkseg>" + Char.EOL);
-        
-        foreach (var pt in log)
+        string sourcePath      = logPathA;
+        string destinationPath = logPathB;
+        if (File.Exists(logPathB))
         {
-            string line = "  <trkpt lat=\"" + pt.latitude + '"' +
-                          " lon=\"" + pt.longitude + "\">" +
-                          "<ele>" + pt.elevation + "</ele>" + 
-                          "<time>" + pt.time + "</time></trkpt>";
-            f.Append(line + Char.EOL);
-#ifdef DIAGNOSTICS
-            if (!f.IsValid())
-            {
-                IO.WriteLn("Append Invalid.");
-            }
-            IO.WriteLn(line); // debugging
-#endif
+            sourcePath      = logPathB;
+            destinationPath = logPathA;
         }
         
-        f.Append("</trkseg></trk></gpx>" + Char.EOL);
         
-        f.Flush();
-        if (f.IsValid())
+        file sourceFile      = File.Open  (sourcePath);
+        file destinationFile = File.Create(destinationPath);
+        
+        destinationFile.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + Char.EOL);
+        destinationFile.Append("<gpx xmlns=\"http://www.topografix.com/GPX/1/1\">" + Char.EOL);
+        destinationFile.Append("<trk><name>Hopper Log</name><type>running</type><trkseg>" + Char.EOL);
+        
+        string line;
+        loop
         {
-            IO.WriteLn("Flushed.");
+            line = sourceFile.ReadLine();
+            if (!sourceFile.IsValid()) { break; }
+            if (line.Contains("<trkpt"))
+            {
+                destinationFile.Append(line + Char.EOL);
+            }
+        }
+        foreach (var pt in log)
+        {
+            line = "  <trkpt lat=\"" + pt.latitude + '"' +
+                           " lon=\"" + pt.longitude + "\">" +
+                           "<ele>" + pt.elevation + "</ele>" + 
+                          "<time>" + pt.time + "</time></trkpt>";
+            destinationFile.Append(line + Char.EOL);
+        }
+        destinationFile.Append("</trkseg></trk></gpx>" + Char.EOL);
+        
+        destinationFile.Flush();
+        if (destinationFile.IsValid())
+        {
+            IO.WriteLn("Flushed '" + destinationPath + "'");
+            File.Delete(sourcePath);
             SD.Eject();
         }
         else
         {
             IO.WriteLn("Flush Invalid.");
         }
+        log.Clear();
+        long elapsed = Millis - start;
+        IO.WriteLn("Elapsed: " + elapsed.ToString() + "ms (" + (float(elapsed) / points).ToString() + "ms per point)");
         LED = false;
-
     }
-    
     
     ButtonISR(byte pin, PinStatus status) 
     { 
@@ -91,7 +110,7 @@ program DumbWatch
             }
             case "C":
             {
-                SaveLog();
+                doFlush = true;
             }
         }
     }  
@@ -192,18 +211,13 @@ program DumbWatch
     UpdateDisplay(string time, bool dst, string latitude, string longitude, string elevation)
     {
         string state = (logging? "On" : "Off");
-        if (Memory.Available() <= 16 * 1024)
-        {
-            state = "Full";
-        }
-        
         Display.Suspend();
         Screen.Clear();
         Screen.PrintLn("Time:  " + AdjustTimeToDST(time, dst));
         Screen.PrintLn("Lat:   " + latitude);
         Screen.PrintLn("Lon:   " + longitude);
         Screen.PrintLn("Elev:  " + elevation);
-        Screen.PrintLn("Log:   " + (log.Count).ToString() + " pts (" + state + ")");
+        Screen.PrintLn("Log:   " + points.ToString() + " pts (" + state + ")");
         Screen.PrintLn("Set:   " + resetDate);
         Screen.PrintLn("Start: " + powerDate);
         Display.Resume();
@@ -221,6 +235,9 @@ program DumbWatch
             return;
         }
         InitializeRTC();
+        
+        File.Delete(logPathA);
+        File.Delete(logPathB);
         
         DisplayDriver.FlipX = true;
         PinISRDelegate buttonDelegate = ButtonISR;
@@ -276,21 +293,31 @@ program DumbWatch
                         lastLatitude  = GPS.Latitude;
                         lastLongitude = GPS.Longitude;
                         lastElevation = GPS.Elevation;
-                        UpdateDisplay(lastTime, dst, lastLatitude, lastLongitude, lastElevation + "m");
                         if (logging && (lastElevation != "M"))
                         {
-                            if (Memory.Available() > 16 * 1024)
+                            Point pt;
+                            pt.latitude  = GPS.DecimalLatitude;
+                            pt.longitude = GPS.DecimalLongitude;
+                            pt.elevation = lastElevation;
+                            pt.time      = lastDate + "T" + (RTC.Time) + nzTimeZone;
+                            points++;
+                            log.Append(pt);
+                            if ((log.Count) % 10 == 0)
                             {
-                                Point pt;
-                                pt.latitude  = GPS.DecimalLatitude;
-                                pt.longitude = GPS.DecimalLongitude;
-                                pt.elevation = lastElevation;
-                                pt.time      = lastDate + "T" + (RTC.Time) + nzTimeZone;
-                                log.Append(pt);  
+                                SaveLog(); 
                             }
                         }
+                        UpdateDisplay(lastTime, dst, lastLatitude, lastLongitude, lastElevation + "m");
                     }
                 }
+            }
+            if (doFlush)
+            {
+                if (log.Count != 0)
+                {
+                    SaveLog();
+                }
+                doFlush = false;
             }
         }
     }
