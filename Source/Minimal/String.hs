@@ -361,56 +361,6 @@ unit String
         Build(ref padded, this);
         return padded;
     }
-    <string> Split(string this, string delimiters)
-    {
-        <string> stringList;
-        string current;
-        foreach (var c in this)
-        {
-            if (delimiters.Contains(c))
-            {
-                if (!current.IsEmpty)
-                {
-                    stringList.Append(current);
-                    current = "";
-                }
-            }
-            else
-            {
-                current = current + c;
-            }
-        }
-        if (!current.IsEmpty)
-        {
-            stringList.Append(current);
-        }
-        return stringList;
-    }
-    <string> Split(string this, char delimiter)
-    {
-        <string> stringList;
-        string current;
-        foreach (var c in this)
-        {
-            if (delimiter == c)
-            {
-                if (!current.IsEmpty)
-                {
-                    stringList.Append(current);
-                    current = "";
-                }
-            }
-            else
-            {
-                current = current + c;
-            }
-        }
-        if (!current.IsEmpty)
-        {
-            stringList.Append(current);
-        }
-        return stringList;
-    }
     
     string Substring(string this, uint start) 
     {
@@ -567,5 +517,77 @@ unit String
     ToLower(ref string str)
     {
         str = str.ToLower();
+    }
+    
+    flags StringSplitOptions
+    {
+        None = 0,
+        RemoveEmptyEntries = 1,
+        TrimEntries = 2
+    }
+ 
+    <string> Split(string this, char delimiter)
+    {
+        return Split(this, delimiter.ToString(), StringSplitOptions.None);
+    }
+    <string> Split(string this, char delimiter, StringSplitOptions options)
+    {
+        return Split(this, delimiter.ToString(), options);
+    }
+    <string> Split(string this, string delimiters)
+    {
+        return Split(this, delimiters, StringSplitOptions.None);
+    }
+    <string> Split(string this, string delimiters, StringSplitOptions options)
+    {
+        char c;
+        char d;
+        bool delim;
+        uint i;
+        uint length;
+        uint dlength;
+        <string> stringList;
+        string accumulator;
+        length = this.Length;
+        dlength = delimiters.Length;
+        for (; i < length; i++)
+        {
+            c = this[i];
+            delim = false;
+            for (uint di = 0; di < dlength; di++)
+            {
+                d = delimiters[di];
+                if (c == d)
+                {
+                    delim = true;
+                    break;
+                }
+            }
+            if (delim)
+            {
+                if ((options & StringSplitOptions.TrimEntries) != StringSplitOptions.None)
+                {
+                    accumulator = accumulator.Trim();
+                }
+                if (!accumulator.IsEmpty || ((options & StringSplitOptions.RemoveEmptyEntries) == StringSplitOptions.None))
+                {
+                    stringList.Append(accumulator);
+                    Build(ref accumulator);
+                }
+            }
+            else
+            {
+                Build(ref accumulator, c);
+            }
+        }
+        if ((options & StringSplitOptions.TrimEntries) != StringSplitOptions.None)
+        {
+            accumulator = accumulator.Trim();
+        }
+        if (!accumulator.IsEmpty || ((options & StringSplitOptions.RemoveEmptyEntries) == StringSplitOptions.None))
+        {
+            stringList.Append(accumulator);
+        }
+        return stringList;
     }
 }

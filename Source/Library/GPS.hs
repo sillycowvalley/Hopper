@@ -110,11 +110,12 @@ unit GPS
     
     string utc;
     string utcDate;
+    bool   valid;
     string latitude;
     string longitude;
     string ns;
     string ew;
-    string elevation;
+    float  elevation;
     
     string UTC
     {
@@ -139,27 +140,22 @@ unit GPS
     {
         get
         {
-            return elevation;
+            return valid ? elevation.ToString() : "";
         }
     }
     
     string convertToDMS(string coordinate)
     {
-         // Determine degrees dynamically
-        uint separatorIndex;
-        _ = coordinate.IndexOf('.', ref separatorIndex);
+        <string> parts = coordinate.Split('.');
+        uint whole;
+        uint fraction;
+        _ = UInt.TryParse(parts[0], ref whole);
+        _ = UInt.TryParse(parts[1], ref fraction);
         
-        uint degreesLength = separatorIndex > 4 ? 3 : 2;             // Longitude uses 3 digits for degrees, latitude 2
-        string degreesPart = coordinate.Substring(0, degreesLength); // Extract degrees
-        string minutesPart = coordinate.Substring(degreesLength);    // Extract minutes (MM.MMMM)
-
-        // Parse degrees and minutes
-        uint degrees;
-        _ = UInt.TryParse(degreesPart, ref degrees);
-        float minutes;
-        _ = Float.TryParse(minutesPart, ref minutes);
-
-        // Convert minutes to seconds
+        uint  degrees = whole / 100;
+        float minutes = float(whole % 100) + float(fraction) / 10000.0;
+        
+         // Convert minutes to seconds
         float totalSeconds = minutes * 60.0;
         uint  minutesInDMS = uint(minutes);                      // Minutes for DMS
         float secondsInDMS = totalSeconds - (minutesInDMS*60);   // Seconds for DMS
@@ -172,41 +168,56 @@ unit GPS
     }
     string convertToDecimalDegrees(string coordinate)
     {
-        // Determine degrees dynamically
-        uint separatorIndex;
-        _ = coordinate.IndexOf('.', ref separatorIndex);
+        <string> parts = coordinate.Split('.');
         
-        uint degreesLength = separatorIndex > 4 ? 3 : 2;             // Longitude uses 3 digits for degrees, latitude 2
-        string degreesPart = coordinate.Substring(0, degreesLength); // Extract degrees
-        string minutesPart = coordinate.Substring(degreesLength);    // Extract minutes (MM.MMMM)
+        uint whole;
+        uint fraction;
+        _ = UInt.TryParse(parts[0], ref whole);
+        _ = UInt.TryParse(parts[1], ref fraction);
         
-        float minutes;
-        _ = Float.TryParse(minutesPart, ref minutes);
-        minutes /= 60.0;
+        // round DDMM.MMMM to DDMM.MMM
+        fraction += 5;
+        fraction /= 10;
         
-        return degreesPart + (minutes.ToString()).Replace("0.", ".");
+        uint  degrees = whole / 100;
+        float minutes = float(whole % 100) + float(fraction) / 1000.0;        
+        
+        // round to 5 decimal places:
+        float decimal = minutes / 60.0;
+        decimal += 0.000005;
+        if (decimal >= 1.0)
+        {
+            degrees++;
+            decimal -= 1.0;
+        }
+        string result = degrees.ToString() + (decimal.ToString()).Replace("0.", ".");
+        uint index;
+        _ = result.IndexOf('.', ref index);
+        index += 6;
+        result = result.Substring(0, index);
+        return result;
     }
     
     string convertLatitudeToDecimal(string latitude, string hemisphere)
     {
-        string decimal = convertToDecimalDegrees(latitude);
+        string degrees = convertToDecimalDegrees(latitude);
         // Apply the direction (N/S)
         if (hemisphere == "S")
         {
-            decimal = "-" + decimal;
+            degrees = "-" + degrees;
         }
-        return decimal;
+        return degrees;
     }
     
     string convertLongitudeToDecimal(string longitude, string hemisphere)
     {
-        string decimal = convertToDecimalDegrees(longitude);
+        string degrees = convertToDecimalDegrees(longitude);
         // Apply the direction (E/W)
         if (hemisphere == "W")
         {
-            decimal = "-" + decimal;
+            degrees = "-" + degrees;
         }
-        return decimal;
+        return degrees;
     }
     string DecimalLatitude
     {
@@ -228,7 +239,7 @@ unit GPS
         get
         {
             string content;
-            if (latitude.Length != 0)
+            if (valid)
             {
                 content = convertToDMS(latitude) + ns;
             }
@@ -240,7 +251,7 @@ unit GPS
         get
         {
             string content;
-            if (longitude.Length != 0)
+            if (valid)
             {
                 content = convertToDMS(longitude) + ew;
             }
@@ -251,7 +262,7 @@ unit GPS
     bool Consume(string sentence)
     {
         bool newFix;
-        <string> parts = sentence.Replace(",,", ", ,").Split(',');
+        <string> parts = sentence.Split(',');
         switch (parts[0])
         {
             case "$GNGGA":
@@ -259,18 +270,42 @@ unit GPS
             {
                 utc       = parts[1];
                 ns = parts[3];
-                latitude  = ((ns == "N") || (ns == "S")) ? parts[2] : "";
+                latitude = "";
+                longitude = "";
+                elevation = 0;
+                valid = true;
+                valid = valid && ((ns == "N") || (ns == "S"));
+                if (valid)
+                {
+                    latitude = parts[2];
+                    valid = !latitude.IsEmpty;
+                }
                 ew = parts[5];
-                longitude = ((ew == "W") || (ew == "E")) ? parts[4] : "";
-                elevation = parts[9];
-                newFix = true;
+                valid = valid && ((ew == "W") || (ew == "E"));
+                if (valid)
+                {
+                    longitude = parts[4];
+                    valid = !longitude.IsEmpty;
+                }
+                valid = valid && Float.TryParse(parts[9], ref elevation);
+                if (elevation >= 0)
+                {
+                    elevation = uint(elevation); // precision loss
+                }
+                else
+                {
+                    elevation = -(uint(-elevation)); // precision loss
+                }
+                newFix = valid;
             }
             case "$GNRMC":
             case "$GPRMC":
             {
                 string date = parts[9];
+                //IO.WriteLn(date + " " + sentence);
                 // '2024-02-28'
                 utcDate = "20" + date.Substring(4,2) + "-" + date.Substring(2,2) + "-" + date.Substring(0,2);
+                
             }
             default:
             {

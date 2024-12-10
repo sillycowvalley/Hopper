@@ -131,9 +131,9 @@ program DumbWatch
         }
         foreach (var pt in log)
         {
-            line = "  <trkpt lat=\"" + pt.latitude + '"' +
+            line = "  <trkpt lat=\"" + pt.latitude  + '"' +
                            " lon=\"" + pt.longitude + "\">" +
-                           "<ele>" + pt.elevation + "</ele>" + 
+                           "<ele>"   + pt.elevation + "</ele>" + 
                           "<time>" + pt.time + "</time></trkpt>";
             destinationFile.Append(line + Char.EOL);
         }
@@ -191,6 +191,8 @@ program DumbWatch
     }
     Hopper()
     {
+        logging = true; // default (to avoid pressing 'A')
+        
         // SD card on the AdafruitAdaloggerRTCSDFeatherwing:
         SD.SPIController = 0;
         SD.ClkPin = Board.SPI0SCK;
@@ -236,8 +238,10 @@ program DumbWatch
         loop
         {
             string sentence;
-            string time = (GPS.UTC).Substring(0,5);
-            time = AdjustTimeZone(time, nzTimeZone);
+            string time = GPS.UTC;
+            string timeShort = AdjustTimeZone(time, nzTimeZone);
+            timeShort = timeShort.Substring(0,5);
+            
             if (lastDate != GPS.Date)
             {
                 // if date changes, update DST
@@ -246,9 +250,9 @@ program DumbWatch
                 _ = TryDateToDays(lastDate, ref dayOfYear);
                 _ = TryDSTFromDay(dayOfYear, ref dst);  
             }
-            if (time != lastTime)
+            if (timeShort != lastTime)
             {
-                lastTime      = time;
+                lastTime      = timeShort;
                 UpdateDisplay(lastTime, lastDate, dst, lastLatitude, lastLongitude, lastElevation);
             }
             if (lastLogging != logging)
@@ -262,27 +266,27 @@ program DumbWatch
                 if (GPS.Consume(sentence))
                 {
                     //IO.WriteLn(sentence);
-                    if ((GPS.Latitude  != lastLatitude) 
-                     || (GPS.Longitude != lastLongitude) 
+                    string latitude  = GPS.DecimalLatitude;
+                    string longitude = GPS.DecimalLongitude;
+                    if ((latitude  != lastLatitude) 
+                     || (longitude != lastLongitude) 
                      || (GPS.Elevation != lastElevation)
                        )
                     {
-                        lastLatitude  = GPS.Latitude;
-                        lastLongitude = GPS.Longitude;
+                        lastLatitude  = latitude;
+                        lastLongitude = longitude;
                         lastElevation = GPS.Elevation;
-                        if (logging && (lastElevation != "M"))
+                        if (logging && (lastElevation != "") && (time != "") && (lastDate != ""))
                         {
                             Point pt;
-                            pt.latitude  = GPS.DecimalLatitude;
-                            pt.longitude = GPS.DecimalLongitude;
-                            pt.elevation = lastElevation;
-                            string timeZoneString = (nzTimeZone).ToString();
-                            timeZoneString = timeZoneString.LeftPad('0', 2);
-                            if (nzTimeZone >= 0)
-                            {
-                                timeZoneString = "+" + timeZoneString;
-                            }
-                            pt.time      = lastDate + "T" + time + timeZoneString + ":00"; // "+12:00"
+                            pt.latitude  = latitude;
+                            pt.longitude = longitude;
+                            pt.elevation = GPS.Elevation;
+                            pt.time      = lastDate + "T" + time + "Z";
+                            
+                            IO.WriteLn(pt.latitude + " " + pt.longitude + " " + sentence);
+                            
+                            
                             points++;
                             log.Append(pt);
                             if ((log.Count) % 10 == 0)
