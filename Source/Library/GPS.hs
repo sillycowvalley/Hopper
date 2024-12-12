@@ -121,9 +121,13 @@ unit GPS
     {
         get
         {
-            uint dot;
-            _ = utc.IndexOf('.', ref dot);
-            string content = utc.Substring(0, dot-4) + ":" + utc.Substring(dot-4, 2) + ":" + utc.Substring(dot-2, 2);
+            string content;
+            if (!utc.IsEmpty)
+            {
+                uint dot;
+                _ = utc.IndexOf('.', ref dot);
+                content = utc.Substring(0, dot-4) + ":" + utc.Substring(dot-4, 2) + ":" + utc.Substring(dot-2, 2);
+            }
             return content;
                     
         }
@@ -182,9 +186,11 @@ unit GPS
         uint  degrees = whole / 100;
         float minutes = float(whole % 100) + float(fraction) / 1000.0;        
         
+        // 4 decimal places = 11m precision at equator
+        // 5 decimal places =  2m precision at equator
         // round to 5 decimal places:
         float decimal = minutes / 60.0;
-        decimal += 0.000005;
+        decimal += 0.00005;
         if (decimal >= 1.0)
         {
             degrees++;
@@ -193,7 +199,7 @@ unit GPS
         string result = degrees.ToString() + (decimal.ToString()).Replace("0.", ".");
         uint index;
         _ = result.IndexOf('.', ref index);
-        index += 6;
+        index += 5;
         result = result.Substring(0, index);
         return result;
     }

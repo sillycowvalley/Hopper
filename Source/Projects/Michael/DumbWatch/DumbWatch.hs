@@ -16,18 +16,10 @@ program DumbWatch
     const string logPathA = "/SD/ActivityA.gpx";
     const string logPathB = "/SD/ActivityB.gpx";
     
-    record Point
-    {
-        string latitude;
-        string longitude;
-        string elevation;
-        string time;
-    }
-    
     bool logging;
     bool doFlush;
     uint points;
-    <Point> log;
+    <string> log;
     
     bool TryDSTFromDay(uint dayOfYear, ref bool dst)
     {
@@ -123,7 +115,10 @@ program DumbWatch
         loop
         {
             line = sourceFile.ReadLine();
-            if (!sourceFile.IsValid()) { break; }
+            if (!sourceFile.IsValid())
+            { 
+                break; 
+            }
             if (line.Contains("<trkpt"))
             {
                 destinationFile.Append(line + Char.EOL);
@@ -131,11 +126,7 @@ program DumbWatch
         }
         foreach (var pt in log)
         {
-            line = "  <trkpt lat=\"" + pt.latitude  + '"' +
-                           " lon=\"" + pt.longitude + "\">" +
-                           "<ele>"   + pt.elevation + "</ele>" + 
-                          "<time>" + pt.time + "</time></trkpt>";
-            destinationFile.Append(line + Char.EOL);
+            destinationFile.Append(pt);
         }
         destinationFile.Append("</trkseg></trk></gpx>" + Char.EOL);
         
@@ -278,18 +269,13 @@ program DumbWatch
                         lastElevation = GPS.Elevation;
                         if (logging && (lastElevation != "") && (time != "") && (lastDate != ""))
                         {
-                            Point pt;
-                            pt.latitude  = latitude;
-                            pt.longitude = longitude;
-                            pt.elevation = GPS.Elevation;
-                            pt.time      = lastDate + "T" + time + "Z";
-                            
-                            IO.WriteLn(pt.latitude + " " + pt.longitude + " " + sentence);
-                            
-                            
+                            string pt = "  <trkpt lat=\"" + latitude  + '"' +
+                                        " lon=\""         + longitude + "\">" +
+                                        "<ele>"           + GPS.Elevation + "</ele>" + 
+                                        "<time>"          + lastDate + "T" + time + "Z</time></trkpt>" + Char.EOL;
                             points++;
                             log.Append(pt);
-                            if ((log.Count) % 10 == 0)
+                            if ((log.Count) % 50 == 0)
                             {
                                 SaveLog(); 
                             }

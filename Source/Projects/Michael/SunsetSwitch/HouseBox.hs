@@ -1,6 +1,6 @@
 program HouseBox
 {
-    //#define DIAGNOSTICS
+    #define DIAGNOSTICS
     
     uses "/Source/Library/Fonts/Verdana5x8"
     
@@ -40,6 +40,9 @@ program HouseBox
         uint doorCounter;
         uint lightsCounter;
         bool state;
+#ifdef DIAGNOSTICS
+        long lastMessage;
+#endif
         loop
         {
             if (doorCounter != 0)
@@ -69,8 +72,10 @@ program HouseBox
                 char ch = UART.ReadChar();
                 if (ch == Char.EOL)
                 {
-#ifdef DIAGNOSTICS                    
-                    IO.WriteLn("Message: " + message);
+#ifdef DIAGNOSTICS
+                    long thisMessage = Time.Millis;
+                    IO.WriteLn("Message: '" + message + "' " + thisMessage.ToString() + " " + (thisMessage - lastMessage).ToString());
+                    lastMessage = thisMessage;
 #endif
                     if (message == "OPEN")
                     {
@@ -82,6 +87,7 @@ program HouseBox
                         // = 4 * (10+2)
                         doorCounter = 4 * (10+2);
                         doorOpen = true;
+                        
                     }
                     else if (message == "ON")
                     {
@@ -101,6 +107,14 @@ program HouseBox
                 }
                 else
                 {
+#ifdef DIAGNOSTICS
+                    byte b = byte(ch);
+                    if (b >= 32)
+                    {
+                        IO.Write("'" + ch + "' ");
+                    }
+                    IO.WriteLn((byte(ch)).ToHexString(2));
+#endif                    
                     message += ch;
                 }
             }
