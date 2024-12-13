@@ -122,6 +122,15 @@ Hopper is a modern programming language designed to run efficiently on small dev
       #endif
       ```
 
+13. **Common Syntax Pitfalls to Avoid:**
+   - Don't use `fn` or `func` keywords - methods are declared directly with their return type (or no return type for procedures)
+   - Don't use `var` except as the implied iterator type in `foreach` loops
+   - Always use C-style `for` loops: `for (uint i = 0; i < max; i++)`
+   - Always use parentheses in `while` and `if` conditions: `while (condition)`, `if (condition)`
+   - Use `byte` for pin numbers and small counts (0-255)
+   - Remember Time.SampleMicros is a resolution setting (default 1000), not a counter
+   - Time.Millis returns a `long` timestamp
+
 ## Program Structure Example
 
 ```hopper

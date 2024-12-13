@@ -375,10 +375,22 @@ unit System
 ```hopper
 unit Time
 {
+    // Returns timestamp in millisecond-sized ticks since startup
     long Millis { get }
+    
+    // Returns timestamp in second-sized ticks since startup
     uint Seconds { get }
-    Delay(uint ms)
+    
+    // Number of microseconds per tick of Millis
+    // Default: 1000 (1ms)
+    // Minimum on RP2040: 22
+    // Setting a lower value increases timer resolution but Millis ticks faster
     uint SampleMicros { set; get }
+    
+    // Pause execution for specified number of milliseconds
+    Delay(uint ms)
+    
+    // Pause execution for specified number of seconds
     DelaySeconds(uint s)
 }
 ```
