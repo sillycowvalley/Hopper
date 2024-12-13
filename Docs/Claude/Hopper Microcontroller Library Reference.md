@@ -189,6 +189,79 @@ unit StorageMedia
 
 ## Hardware Control
 
+### MCU
+```hopper
+unit MCU
+{
+    flags PinModeOption
+    {
+        Input         = 0x00,
+        Output        = 0x01,
+        InputPullup   = 0x02,
+        InputPulldown = 0x03,
+    }
+    
+    enum PinStatus
+    {
+        Low = 0,
+        High = 1,
+        Change = 2,
+        Falling = 3,
+        Rising = 4,
+    }
+    
+    delegate PinISRDelegate(byte pin, PinStatus status);
+
+    // Pin configuration and I/O
+    PinMode(byte pin, PinModeOption pinMode) library;
+    bool DigitalRead(byte pin) library;
+    DigitalWrite(byte pin, bool value) library;
+    uint AnalogRead(byte pin) library;
+    AnalogWrite(byte pin, uint value) library;
+    AnalogWriteResolution(byte bits) library;
+    
+    // Tone generation
+    Tone(byte pin, uint frequency, uint duration) library;
+    Tone(byte pin, uint frequency)
+    NoTone(byte pin) library;
+    
+    // Interrupt handling
+    bool AttachToPin(byte pin, PinISRDelegate gpioISR, PinStatus status) library;
+    bool InterruptsEnabled { get library; set library; }
+
+    // RP2040/RP2350 specific features
+#if defined(MCU_BOARD_RP2040) || defined(MCU_BOARD_RP2350)
+    Reboot(bool bootsel) library;
+    long HeapFree() library;
+    long StackFree() library;
+
+    enum RPClockSpeed
+    {
+        Slow48       =  48,
+        Slow50       =  50,
+        Default      = 133,    // RP2040 default
+        Overclock240 = 240,
+        Overclock250 = 250,
+        Overclock270 = 270
+    }
+    
+    RPClockSpeed ClockSpeed { get library; set library; }
+#endif
+
+#if defined(MCU_BOARD_RP2350)
+    enum RPClockSpeed
+    {
+        Slow48       =  48,
+        Slow50       =  50,
+        Slow133      = 133,
+        Default      = 150,    // RP2350 default
+        Overclock300 = 300
+    }
+#endif
+}
+```
+
+
 ### GPIO
 ```hopper
 unit GPIO
