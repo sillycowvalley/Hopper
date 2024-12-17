@@ -1,6 +1,6 @@
 program HouseBox
 {
-    //#define DIAGNOSTICS
+    #define DIAGNOSTICS
     
     uses "/Source/Library/Fonts/Verdana5x8"
     

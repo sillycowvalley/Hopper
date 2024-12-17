@@ -1,8 +1,10 @@
 program SSD1306Demo
 {   
+    uses "/Source/Library/Fonts/Hitachi5x7"
+    
     uses "/Source/Library/Boards/PiPico"
     uses "/Source/Library/Displays/OLEDSSD1306"    
-    uses "/Source/Library/Fonts/Hitachi5x7"
+    
     
     TestDrawRect()
     {
