@@ -21,6 +21,8 @@ program Pico433Tx
         
         UART.Setup(9600);
         
+        //uint loops;
+        
         loop // transmission loop
         {
             string time = (Millis).ToString();
@@ -61,6 +63,15 @@ program Pico433Tx
             Delay(450);
             
             IO.WriteLn();
+            /*
+            loops++;
+            if (loops > 20)
+            {
+                IO.WriteLn("Restarting..");
+                Delay(100);
+                MCU.Reboot(false);
+            }
+            */
         } // transmission loop
     }
 }

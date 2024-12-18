@@ -76,6 +76,7 @@ unit Char
         {
             hex -= 48; // '0'
         }
+        return hex;
     }
     string ToString(char this)
     {
