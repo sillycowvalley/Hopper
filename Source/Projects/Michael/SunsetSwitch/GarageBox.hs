@@ -35,8 +35,10 @@ program GarageBox
     
     Hopper()
     {
-        string command;
         byte counter;
+        bool doorWasOpen;
+        string command;
+        
         
         MCU.PinMode(sensorPin, PinModeOption.Input);
         MCU.PinMode(relayPin,  PinModeOption.Output);
@@ -62,12 +64,32 @@ program GarageBox
         {
             uint light  = GPIO.A0;     
             bool doorOpen = MCU.DigitalRead(sensorPin);
+#ifdef DIAGNOSTICS
+            bool doorShut;
+#endif            
             MCU.DigitalWrite(GP23, doorOpen);
             
-            if (doorOpen && (counter % 10 == 0))
+            if (doorOpen)
             {
-                UART.WriteString("OPEN" + Char.EOL);
+                if (!doorWasOpen)
+                {
+                    counter = 0;
+                }
+                if (counter % 10 == 0)
+                {
+                    UART.WriteString("OPEN" + Char.EOL);
+                }
+                doorWasOpen = true;
             }
+            else if (doorWasOpen)
+            {
+                UART.WriteString("SHUT" + Char.EOL);
+                doorWasOpen = false;
+#ifdef DIAGNOSTICS
+                doorShut = true;
+#endif
+            }
+            
 #ifdef DIAGNOSTICS
             loop
             {
@@ -81,7 +103,11 @@ program GarageBox
                         output += " [pinged]";
                     }
                 }
-    
+                if (doorShut)
+                {
+                    output += ", SHUT [pinged]"; 
+                    doorShut = false;
+                }
                 IO.WriteLn(output);
                 break;
             }

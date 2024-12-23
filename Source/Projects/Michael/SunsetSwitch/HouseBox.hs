@@ -1,6 +1,6 @@
 program HouseBox
 {
-    #define DIAGNOSTICS
+    //#define DIAGNOSTICS
     
     uses "/Source/Library/Fonts/Verdana5x8"
     
@@ -87,7 +87,10 @@ program HouseBox
                         // = 4 * (10*2)
                         doorCounter = 4 * (10*2);
                         doorOpen = true;
-                        
+                    }
+                    else if (message == "SHUT")
+                    {
+                        doorCounter = 0;
                     }
                     else if (message == "ON")
                     {
@@ -108,12 +111,14 @@ program HouseBox
                 else
                 {
 #ifdef DIAGNOSTICS
+                    /*
                     byte b = byte(ch);
                     if (b >= 32)
                     {
                         IO.Write("'" + ch + "' ");
                     }
                     IO.WriteLn((byte(ch)).ToHexString(2));
+                    */
 #endif                    
                     message += ch;
                 }

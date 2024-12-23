@@ -1,9 +1,0 @@
-{
-    "buildoptions": 
-  {
-      "checkedBuild": "false"
-    , "runOptimizer": "false"
-    , "runDisassembler": "true"
-    , "autoSaveOnBuild": "true"
-  }
-}
