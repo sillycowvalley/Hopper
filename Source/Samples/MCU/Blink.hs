@@ -7,8 +7,8 @@ program Blink
     
     Hopper()
     {
-        //bool on;
-        //MCU.PinMode(GP5, MCU.PinModeOption.Output);
+        bool on;
+        MCU.PinMode(GP6, MCU.PinModeOption.Output);
         
         loop
         {
@@ -16,8 +16,8 @@ program Blink
             
             LED = !LED;
             
-            //DigitalWrite(GP5, on);
-            //on = !on;
+            DigitalWrite(GP6, on);
+            on = !on;
             
             WriteLn((Time.Seconds).ToString() + " seconds");
         }

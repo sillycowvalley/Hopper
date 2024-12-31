@@ -4,8 +4,8 @@ program Pico433Tx
     //uses "/Source/Library/Boards/ChallengerNB2040WiFi"    
     uses "/Source/Library/Boards/PimoroniTiny2350"
     
-    const byte ledPin = GP6;
-    const byte ledPinBack = GP7;
+    const byte ledPin = GP5;
+    const byte ledPinBack = GP6;
     
     Hopper()
     {

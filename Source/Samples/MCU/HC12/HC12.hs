@@ -2,10 +2,10 @@ program HC12
 {
     //uses "/Source/Library/Boards/PiPicoW"
     //uses "/Source/Library/Boards/ChallengerNB2040WiFi"    
-    //uses "/Source/Library/Boards/PimoroniTiny2350"
-    uses "/Source/Library/Boards/AdafruitFeatherRP2350Hstx"
+    uses "/Source/Library/Boards/PimoroniTiny2350"
+    //uses "/Source/Library/Boards/AdafruitFeatherRP2350Hstx"
     
-    const byte setPin = GP20;
+    const byte setPin = GP2;
     
     record Settings
     {

@@ -1,16 +1,16 @@
 program Pico433Rx
 {
     //uses "/Source/Library/Boards/PiPicoW"
-    uses "/Source/Library/Boards/AdaFruitFeatherRP2350HSTX"
+    //uses "/Source/Library/Boards/AdaFruitFeatherRP2350HSTX"
     //uses "/Source/Library/Boards/ChallengerNB2040WiFi"    
+    uses "/Source/Library/Boards/PimoroniTiny2350"
     
-    const byte ledPin = GP27; // A1
+    const byte ledPin = GP5;
     
     Hopper()
     {
         string captured;
         
-        //PinMode(setPin, PinModeOption.Output);
         PinMode(ledPin, PinModeOption.Output);
         
         UART.Setup(9600);
