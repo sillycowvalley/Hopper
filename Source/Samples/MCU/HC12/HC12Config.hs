@@ -1,4 +1,4 @@
-program HC12
+program HC12Config
 {
     //uses "/Source/Library/Boards/PiPicoW"
     //uses "/Source/Library/Boards/ChallengerNB2040WiFi"    

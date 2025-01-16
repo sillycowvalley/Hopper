@@ -263,10 +263,18 @@ unit String
         uint i;
         uint length;
         uint dlength;
-        <string> stringList;
         string accumulator;
+        <string> stringList;
+        
+        // Special case: empty input string should return empty list
+        if (this.IsEmpty)
+        {
+            return stringList;
+        }
+        
         length = this.Length;
         dlength = delimiters.Length;
+        
         for (; i < length; i++)
         {
             c = this[i];
@@ -297,6 +305,8 @@ unit String
                 Build(ref accumulator, c);
             }
         }
+        
+        // Handle final accumulator
         if ((options & StringSplitOptions.TrimEntries) != StringSplitOptions.None)
         {
             accumulator = accumulator.Trim();
@@ -305,6 +315,7 @@ unit String
         {
             stringList.Append(accumulator);
         }
+        
         return stringList;
     }
 }

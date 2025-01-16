@@ -13,7 +13,9 @@ unit Constant
     uses "Collection"
     
     string constantOperation(string leftValue, string rightValue, string typeExpected, HopperToken operation)
-    {
+    {   
+        uint ul;
+        uint ur;
         string result;
         long   lresult;
         float  fresult;
@@ -101,26 +103,26 @@ unit Constant
                     {
                         case HopperToken.ShiftLeft:
                         {
-                            uint ul = uint(left);
-                            uint ur = uint(right);
+                            ul = uint(left);
+                            ur = uint(right);
                             lresult = (ul << ur);
                         }
                         case HopperToken.ShiftRight:
                         {
-                            uint ul = uint(left);
-                            uint ur = uint(right);
+                            ul = uint(left);
+                            ur = uint(right);
                             lresult = (ul >> ur);
                         }
                         case HopperToken.BitOr:
                         {
-                            uint ul = uint(left);
-                            uint ur = uint(right);
+                            ul = uint(left);
+                            ur = uint(right);
                             lresult = (ul | ur);
                         }
                         case HopperToken.BitAnd:
                         {
-                            uint ul = uint(left);
-                            uint ur = uint(right);
+                            ul = uint(left);
+                            ur = uint(right);
                             lresult = (ul & ur);
                         }
                         case HopperToken.Add:
@@ -215,6 +217,8 @@ unit Constant
     
     bool validateIntegralConstant(string typeExpected, string identifierType, ref string actualType, string value, <string,string> token)
     {
+        uint ui;
+        int i;
         bool success;
         loop
         {
@@ -239,7 +243,6 @@ unit Constant
                 }
                 case "byte":
                 {
-                    uint ui;
                     if (!UInt.TryParse(value, ref ui) || (ui > 255))   
                     {
                         Parser.ErrorAt(token, "constant out of range");
@@ -249,7 +252,6 @@ unit Constant
                 }
                 case "uint":
                 {
-                    uint ui;
                     if (!UInt.TryParse(value, ref ui))   
                     {
                         Parser.ErrorAt(token, "constant out of range");           
@@ -259,7 +261,6 @@ unit Constant
                 }
                 case "int":
                 {
-                    int i;
                     if (!Int.TryParse(value, ref i))   
                     {
                         Parser.ErrorAt(token, "constant out of range");           

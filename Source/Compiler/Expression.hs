@@ -18,12 +18,14 @@ unit Expression
     
     PushTypeFromString(string typeName)
     {
-        byte b = ToByte(typeName);
+        byte b;
+        b = ToByte(typeName);
         CodeStream.AddInstructionPUSHI(b);
     }
     
     InitializeVariable(string variableType, bool lazy)
     {
+        uint sz;
         string name;
         string recordName;
         // initialize an empty global or local and leave new stack slot at [top]
@@ -35,7 +37,6 @@ unit Expression
         else if (Types.IsArray(variableType))
         {
             // push size
-            uint sz = 0; 
             if (!variableType.Contains("[]"))
             {
                 sz = Types.GetArraySizeFromCollection(variableType); // expect strict size, don't infer
@@ -1590,16 +1591,29 @@ unit Expression
     
     string compileIdentifierPrimary(string expectedType, bool isDotted)
     {
+        uint fdIndex;
+        byte iMember;
+        uint iDot;
+        uint fIndex;
+        bool oneDot;
+        string namespaceAsTypeString;
+        string qualifiedIdentifier;
         string actualType;
+        string qualifiedName;
+        string identifier;
+        string identifierTypeString;
+        string constantIdentifier;
+        <string,string> currentToken;
+        <string> nameSpaces;
         loop
         {
-            <string,string> currentToken = Parser.CurrentToken;
+            currentToken = Parser.CurrentToken;
     
             Parser.Advance();
-            string identifier = currentToken["lexeme"];
+            identifier = currentToken["lexeme"];
             
-            string qualifiedName;
-            string identifierTypeString = Types.GetTypeString(identifier, false, ref qualifiedName);
+            
+            identifierTypeString = Types.GetTypeString(identifier, false, ref qualifiedName);
             if (Parser.HadError)
             {
                 break;
@@ -1633,7 +1647,7 @@ unit Expression
                 }
             }
             
-            string constantIdentifier = Types.QualifyConstantIdentifier(identifier);
+            constantIdentifier = Types.QualifyConstantIdentifier(identifier);
             if (Symbols.ConstantExists(constantIdentifier))
             {
                 if (!IsVisibleConstant(constantIdentifier))
@@ -1654,14 +1668,13 @@ unit Expression
                 break;
             }
             
-            uint fdIndex;
             if (Symbols.GetFunctionDelegateIndex(expectedType, ref fdIndex))
             {
                 actualType = compileDelegateExpression(identifier, fdIndex, expectedType);
                 break;
             }
             
-            <string> nameSpaces = Symbols.GetNameSpaces();
+            nameSpaces = Symbols.GetNameSpaces();
             if (isDotted)
             {
                 // this?
@@ -1703,7 +1716,6 @@ unit Expression
                     }
                     break;
                 }
-                byte iMember;
                 if (Record.FindMember(thisTypeString, functionName, ref iMember, ref actualType))
                 {
                     CodeStream.AddInstructionPushVariable(qualifiedThis);
@@ -1744,7 +1756,6 @@ unit Expression
                     else if (Types.IsEnum(thisTypeString) || Types.IsFlags(thisTypeString))
                     {
                         // like key.ToChar()
-                        uint iDot;
                         if (identifier.IndexOf('.', ref iDot))
                         {
                             thisVariable = identifier.Substring(0, iDot);
@@ -1792,7 +1803,7 @@ unit Expression
                 {
                     // getter?
                     
-                    string namespaceAsTypeString = parts[0];
+                    namespaceAsTypeString = parts[0];
                     qualifiedName = "";
                     foreach (var nameSpace in nameSpaces)
                     {
@@ -1804,7 +1815,6 @@ unit Expression
                     }
                     if (qualifiedName.Length != 0)
                     {
-                        uint fIndex;
                         if (GetFunctionIndex(qualifiedName, ref fIndex))
                         {
                             // qualified by namespace name rather than by variable name:
@@ -1822,7 +1832,7 @@ unit Expression
                     }
                     
                     // enums and flags
-                    bool oneDot = true;
+                    oneDot = true;
                     if (Parser.Check(HopperToken.Dot)) // next token is another '.'
                     {
                         // 2 dot enums like "Keyboard.Key.Delete"
@@ -1895,14 +1905,11 @@ unit Expression
                     // no '(' : getter?
                     identifier = identifier + "_Get";
                 }
-                string qualifiedIdentifier = Types.QualifyMethodName(identifier);
-                bool success = false;
-                uint fIndex;
+                qualifiedIdentifier = Types.QualifyMethodName(identifier);
                 if (GetFunctionIndex(qualifiedIdentifier, ref fIndex))
                 {
                     // unqualified method call: we qualify using namespace scope rules
                     actualType = compileFunctionCall(qualifiedIdentifier, expectedType, "");
-                    success = !Parser.HadError;
                     break;
                 }
             }
