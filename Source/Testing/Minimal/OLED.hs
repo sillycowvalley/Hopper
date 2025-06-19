@@ -1,10 +1,12 @@
 program Test
 {
+    uses "/Source/Library/Fonts/Verdana5x8"
+    
     uses "/Source/Minimal/System"
     uses "/Source/Library/Boards/Hopper6502"
     
     uses "/Source/Library/Displays/OLEDSSD1306"    
-    uses "/Source/Library/Fonts/Verdana5x8"
+    
     
     CrossBox(int x, int y, int size)
     {
