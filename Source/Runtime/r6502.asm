@@ -5,6 +5,8 @@ program R6502
     
     #define ALLOW_EEPROM
     
+    //#define EXPORT_C // uncomment to export for .c for Arduino for RetroShields
+    
     // This cannot be in '/Bin/Options/Configuration.options':
     #define CPU_65C02S  // Rockwell and WDC
     //#define CPU_6502  // MOS

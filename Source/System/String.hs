@@ -195,82 +195,8 @@ unit String
         }
         return this;
     }
- 
-    <string> Split(string this, string delimiters)
-    {
-        char c;
-        char d;
-        bool delim;
-        uint i;
-        uint length;
-        uint dlength;
-        <string> stringList;
-        string accumulator;
-
-        length = this.Length;
-        dlength = delimiters.Length;
-        for (; i < length; i++)
-        {
-            c = this[i];
-            delim = false;
-            for (uint di = 0; di < dlength; di++)
-            {
-                d = delimiters[di];
-                if (c == d)
-                {
-                    delim = true;
-                    break;
-                }
-            }
-            if (delim)
-            {
-                if (accumulator.Length != 0)
-                {
-                    stringList.Append(accumulator);
-                    accumulator = "";
-                }
-            }
-            else
-            {
-                Build(ref accumulator, c);
-            }
-        }
-        if (accumulator.Length != 0)
-        {
-            stringList.Append(accumulator);
-        }
-        return stringList;
-    }
-    <string> Split(string this, char delimiter)
-    {
-        uint i;
-        char ch;
-        uint length;
-        <string> stringList;
-        string accumulator;
-        length = this.Length;
-        for (; i < length; i++)
-        {
-            ch = this[i];
-            if (ch == delimiter)
-            {
-                if (accumulator.Length != 0)
-                {
-                    stringList.Append(accumulator);
-                    Build(ref accumulator); // = ""
-                }
-            }
-            else
-            {
-                Build(ref accumulator, ch);
-            }
-        }
-        if (accumulator.Length != 0)
-        {
-            stringList.Append(accumulator);
-        }
-        return stringList;
-    }
+    
+    
 
     string Substring(string this, uint start) system;
     string Substring(string this, uint start, uint length) system;
@@ -310,4 +236,86 @@ unit String
         return this == other;
     }
     
+    flags StringSplitOptions
+    {
+        None = 0,
+        RemoveEmptyEntries = 1,
+        TrimEntries = 2
+    }
+ 
+    <string> Split(string this, char delimiter)
+    {
+        return Split(this, delimiter.ToString(), StringSplitOptions.None);
+    }
+    <string> Split(string this, char delimiter, StringSplitOptions options)
+    {
+        return Split(this, delimiter.ToString(), options);
+    }
+    <string> Split(string this, string delimiters)
+    {
+        return Split(this, delimiters, StringSplitOptions.None);
+    }
+    <string> Split(string this, string delimiters, StringSplitOptions options)
+    {
+        char c;
+        char d;
+        bool delim;
+        uint i;
+        uint length;
+        uint dlength;
+        string accumulator;
+        <string> stringList;
+        
+        // Special case: empty input string should return empty list
+        if (this.IsEmpty)
+        {
+            return stringList;
+        }
+        
+        length = this.Length;
+        dlength = delimiters.Length;
+        
+        for (; i < length; i++)
+        {
+            c = this[i];
+            delim = false;
+            for (uint di = 0; di < dlength; di++)
+            {
+                d = delimiters[di];
+                if (c == d)
+                {
+                    delim = true;
+                    break;
+                }
+            }
+            if (delim)
+            {
+                if ((options & StringSplitOptions.TrimEntries) != StringSplitOptions.None)
+                {
+                    accumulator = accumulator.Trim();
+                }
+                if (!accumulator.IsEmpty || ((options & StringSplitOptions.RemoveEmptyEntries) == StringSplitOptions.None))
+                {
+                    stringList.Append(accumulator);
+                    Build(ref accumulator);
+                }
+            }
+            else
+            {
+                Build(ref accumulator, c);
+            }
+        }
+        
+        // Handle final accumulator
+        if ((options & StringSplitOptions.TrimEntries) != StringSplitOptions.None)
+        {
+            accumulator = accumulator.Trim();
+        }
+        if (!accumulator.IsEmpty || ((options & StringSplitOptions.RemoveEmptyEntries) == StringSplitOptions.None))
+        {
+            stringList.Append(accumulator);
+        }
+        
+        return stringList;
+    }
 }

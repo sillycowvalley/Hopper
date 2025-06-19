@@ -41,10 +41,10 @@ unit Board // Challenger 2350 WiFi6 Ble5
     const byte SPI1SCK = 10;
     const byte SPI1SS = 9;
 
-    const byte UART1Tx = 12;
-    const byte UART1Rx = 13;
-    const byte UART2Tx = 4;
-    const byte UART2Rx = 5;
+    const byte UART0Tx = 12;
+    const byte UART0Rx = 13;
+    const byte UART1Tx = 20;
+    const byte UART1Rx = 21;
 
     const byte GP26 = 26; // A3
     const byte GP27 = 27; // A2
@@ -57,6 +57,8 @@ unit Board // Challenger 2350 WiFi6 Ble5
     const byte GP20 = 20; // I2CSDA0
     const byte GP17 = 17; // SPI0SS
     const byte GP16 = 16; // SPI0Rx
+    const byte GP13 = 13;
+    const byte GP12 = 12;
     const byte GP10 = 10; // SPI1SCK
     const byte GP9 = 9;   // SPI1SS
     const byte GP8 = 8;   // SPI1Rx

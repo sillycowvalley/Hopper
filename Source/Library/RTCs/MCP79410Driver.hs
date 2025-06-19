@@ -12,6 +12,8 @@ unit RTCDriver
     const byte RTC_CONTROL    = 0x07;
     const byte RTC_LOCATION   = 0x00;  
     const byte RAM_LOCATION   = 0x20;
+    
+    const byte RAM_SIZE       = 64;
       
     byte     iControllerRTC;
     byte     addressRTC;
@@ -511,19 +513,19 @@ unit RTCDriver
         }
     }
     
-    byte ramCount { get { return 64; } }
+    byte ramCount { get { return RAM_SIZE; } }
     byte[] ram
     { 
         get 
         { 
-            byte[64] ram; 
+            byte[RAM_SIZE] ram; 
             Wire.BeginTx(iControllerRTC, addressRTC);
             Wire.Write(iControllerRTC, RAM_LOCATION);
             _ = Wire.EndTx(iControllerRTC);
-            byte bytesReceived = Wire.RequestFrom(iControllerRTC, addressRTC, 64);
-            if (bytesReceived == 64)
+            byte bytesReceived = Wire.RequestFrom(iControllerRTC, addressRTC, RAM_SIZE);
+            if (bytesReceived == RAM_SIZE)
             {
-                for (byte i = 0; i < 64; i++)
+                for (byte i = 0; i < RAM_SIZE; i++)
                 {
                     ram[i] = Wire.Read(iControllerRTC);
                 }
@@ -535,7 +537,7 @@ unit RTCDriver
         { 
             Wire.BeginTx(iControllerRTC, addressRTC);
             Wire.Write(iControllerRTC, RAM_LOCATION);
-            for (byte i = 0; i < 64; i++)
+            for (byte i = 0; i < RAM_SIZE; i++)
             {
                 Wire.Write(iControllerRTC, value[i]);
             }

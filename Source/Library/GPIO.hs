@@ -9,9 +9,13 @@ unit GPIO
     { 
         set 
         { 
-            MCU.PinMode(Board.BuiltInLEDR, MCU.PinModeOption.Output);
-            MCU.DigitalWrite(Board.BuiltInLEDR, value); 
             ledStateR = value;
+            MCU.PinMode(Board.BuiltInLEDR, MCU.PinModeOption.Output);
+#if defined(PIMORONI_TINY2040) || defined(PIMORONI_TINY2350)
+            value = !value; // false = ON?!
+#endif
+            MCU.DigitalWrite(Board.BuiltInLEDR, value); 
+            
         } 
         get
         {
@@ -22,9 +26,12 @@ unit GPIO
     { 
         set 
         { 
-            MCU.PinMode(Board.BuiltInLEDG, MCU.PinModeOption.Output);
-            MCU.DigitalWrite(Board.BuiltInLEDG, value); 
             ledStateG = value;
+            MCU.PinMode(Board.BuiltInLEDG, MCU.PinModeOption.Output);
+#if defined(PIMORONI_TINY2040) || defined(PIMORONI_TINY2350)
+            value = !value; // false = ON?!
+#endif
+            MCU.DigitalWrite(Board.BuiltInLEDG, value); 
         } 
         get
         {
@@ -35,9 +42,12 @@ unit GPIO
     { 
         set 
         { 
-            MCU.PinMode(Board.BuiltInLEDB, MCU.PinModeOption.Output);
-            MCU.DigitalWrite(Board.BuiltInLEDB, value); 
             ledStateB = value;
+            MCU.PinMode(Board.BuiltInLEDB, MCU.PinModeOption.Output);
+#if defined(PIMORONI_TINY2040) || defined(PIMORONI_TINY2350)
+            value = !value; // false = ON?!
+#endif
+            MCU.DigitalWrite(Board.BuiltInLEDB, value); 
         } 
         get
         {

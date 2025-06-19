@@ -1,20 +1,22 @@
 program ThinkInkFeatherwing
 {   
+    uses "/Source/Library/Fonts/Hitachi5x7"
+    
     //uses "/Source/Library/Boards/AdafruitFeather"
-    //uses "/Source/Library/Boards/ChallengerNB2040WiFi"
+    uses "/Source/Library/Boards/ChallengerNB2040WiFi"
     //uses "/Source/Library/Boards/SparkfunThingPlusRP2040"
     //uses "/Source/Library/Boards/SparkfunProMicroRP2040"
     
     //uses "/Source/Library/Devices/AdafruitEInk213Mono"
-    //uses "/Source/Library/Devices/AdafruitEInk213TriColor"
+    uses "/Source/Library/Devices/AdafruitEInk213TriColor"
     //uses "/Source/Library/Devices/AdafruitThinkInk290TriColor"
     //uses "/Source/Library/Devices/AdafruitThinkInk290Gray"
     //uses "/Source/Library/Devices/WSPicoePaper290"
     //uses "/Source/Library/Devices/Adafruit240x135ColorTFT"
     //uses "/Source/Library/Devices/Adafruit160x80ColorTFT"
-    uses "/Source/Library/Devices/Adafruit128x64OLEDFeatherwing"
+    //uses "/Source/Library/Devices/Adafruit128x64OLEDFeatherwing"
     
-    uses "/Source/Library/Fonts/Hitachi5x7"
+    
     
     const string lorumIpsum = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse iaculis tortor vitae imperdiet tempus. Quisque eget sapien ex. Donec molestie tincidunt sem imperdiet condimentum. Nulla facilisi. Class aptent taciti sociosqu ad litora vestibulum.";
 
@@ -57,6 +59,23 @@ program ThinkInkFeatherwing
         FilledRectangle(pw4,  0, w, Display.PixelHeight, Colour.LightGray);
         FilledRectangle(pw2,  0, w, Display.PixelHeight, Colour.DarkGray);
         FilledRectangle(pw34, 0, w, Display.PixelHeight, Colour.Black);
+        Display.Resume(); 
+    }
+    
+    DrawRBW()
+    {
+        IO.WriteLn("  DrawRBW");
+        int pw3  = Display.PixelWidth/3;
+        int pw23 = Display.PixelWidth*2/3;
+        int w = pw3;
+        
+        Display.Suspend();
+        FilledRectangle(0,    0, w, Display.PixelHeight, Colour.White);
+        FilledRectangle(pw3,  0, w, Display.PixelHeight, Colour.Red);
+        FilledRectangle(pw23, 0, w, Display.PixelHeight, Colour.Black);
+        
+        Rectangle(0, 0, Display.PixelWidth, Display.PixelHeight, Colour.Black);
+        
         Display.Resume(); 
     }
     
@@ -149,11 +168,22 @@ program ThinkInkFeatherwing
             WriteLn("Elapsed: " + elapsed.ToString());
             DelaySeconds(2);
             
+            
+            start = Millis;
+            DrawRBW();
+            elapsed = Millis - start;
+            WriteLn("Elapsed: " + elapsed.ToString());
+            DelaySeconds(2);
+            
             start = Millis;
             DrawShades();
             elapsed = Millis - start;
             WriteLn("Elapsed: " + elapsed.ToString());
             DelaySeconds(2);
+            
+           
+            
+            
             
             start = Millis;
             DrawBoxes(Colour.Black);

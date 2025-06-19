@@ -24,6 +24,28 @@ unit DateTime
         return leap;
     }
     
+    bool TryTimeToMinutes(string time, ref uint totalMinutes)
+    {
+        uint hours;
+        uint minutes;
+        uint iT;
+        if (time.IndexOf('T', ref iT)) { time = time.Substring(iT+1); }
+        if (!UInt.TryParse(time.Substring(0, 2), ref hours))
+        {
+            return false;
+        }
+        if (!UInt.TryParse(time.Substring(3, 2), ref minutes))
+        {
+            return false;
+        }
+        if (time.Contains("PM"))
+        {
+            hours += 12;
+        }
+        totalMinutes = hours * 60 + minutes;
+        return true;
+    }
+    
     bool TryDateToDays(string date, ref uint totalDays)
     {
         uint month;

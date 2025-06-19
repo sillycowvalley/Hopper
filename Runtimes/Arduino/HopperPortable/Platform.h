@@ -113,14 +113,15 @@ void External_MCUClockSpeedSet(UInt value);
 
 UInt External_GetRISCV();
 
-
 Bool Serial_IsAvailable_Get();
 Char Serial_ReadChar();
 void Serial_WriteChar(Char value);
 void External_SerialWriteString(UInt hrbuffer);
 
-
-
+void External_UART_Setup(UInt baud, Byte txPin, byte rxPin);
+void External_UART_WriteChar(Char value);
+Char External_UART_ReadChar();
+Bool External_UART_IsAvailableGet();
 
 #ifdef CHECKED
 void Memory_WriteByte(UInt address, Byte value);
@@ -222,6 +223,7 @@ UInt HRNeoPixel_GetLength();
 Bool External_WebClientGetRequest_R(UInt hrurl, UInt& hrcontent);
 
 Bool External_WiFiConnect(UInt hrssid, UInt hrpassword);
+Bool External_WiFiBeginAP(UInt hrssid, UInt hrpassword);
 void External_WiFiDisconnect();
 UInt External_WiFiIP();
 UInt External_WiFiStatus();

@@ -2527,6 +2527,10 @@ unit CodePoints
             {
                 break;
             }
+            
+            bool process;
+            uint result;
+                        
             uint operand2 = iOperands[iIndex-2];
             uint operand1 = iOperands[iIndex-1];
             uint operand0 = iOperands[iIndex];
@@ -2549,14 +2553,19 @@ unit CodePoints
                 {
                     if (!IsTargetOfJumps(iIndex) && !IsTargetOfJumps(iIndex-1))
                     {
-                        bool process;
-                        uint result;
                         switch (opCode0)
                         {
                             case Instruction.GE:
                             {
                                 result = (operand2 >= operand1) ? 1 : 0; 
                                 process = true;
+                            }
+                            case Instruction.LTI:
+                            {
+                                int ioperand1 = Int.FromBytes(operand1.GetByte(0), operand1.GetByte(1));
+                                int ioperand2 = Int.FromBytes(operand2.GetByte(0), operand2.GetByte(1));
+                                result = (operand2 < operand1) ? 1 : 0; 
+                                process = true; 
                             }
                             case Instruction.BITOR:
                             {
@@ -2566,6 +2575,21 @@ unit CodePoints
                             case Instruction.BITAND:
                             {
                                 result = operand2 & operand1; 
+                                process = true;
+                            }
+                            case Instruction.MUL:
+                            {
+                                result = operand2 * operand1; 
+                                process = true;
+                            }
+                            case Instruction.ADD:
+                            {
+                                result = operand2 + operand1; 
+                                process = true;
+                            }
+                            case Instruction.SUB:
+                            {
+                                result = operand2 - operand1; 
                                 process = true;
                             }
                         }
@@ -2578,7 +2602,7 @@ unit CodePoints
                         }
                         if (!process)
                         {
-                            //Print(" A:" + Instructions.ToString(opCode0) +"(0x" + operand2.ToHexString(4) + ",0x" + operand1.ToHexString(4) + ")");
+                            Print(" FOLD:" + Instructions.ToString(opCode0) +"(0x" + operand2.ToHexString(4) + ",0x" + operand1.ToHexString(4) + ")");
                         }
                     }
                 }
@@ -2593,15 +2617,24 @@ unit CodePoints
                         {
                             case Instruction.BOOLNOT:
                             {
-                                processImmediate(iIndex, operand1);
-                                iLengths.SetItem(iIndex, 1);
-                                RemoveInstruction(iIndex-1); // good
-                                modified = true;
+                                result = (operand1==0) ? 1 : 0;
+                                process = true;
+                            }
+                            case Instruction.BITNOT:
+                            {
+                                result = ~operand1;
+                                process = true;
                             }
                             default:
                             {
-                                //Print(" B:" + Instructions.ToString(opCode0) +"(0x" + operand1.ToHexString(4) + ")");
+                                Print(" FOLD:" + Instructions.ToString(opCode0) +"(0x" + operand1.ToHexString(4) + ")");
                             }
+                        }
+                        if (process)
+                        {
+                            processImmediate(iIndex, result);
+                            RemoveInstruction(iIndex-1); // good
+                            modified = true;
                         }
                     }
                 }
@@ -2612,8 +2645,6 @@ unit CodePoints
                 {
                     if (!IsTargetOfJumps(iIndex))
                     {
-                        bool process;
-                        uint result;
                         switch (opCode0)
                         {
                             case Instruction.ADDB:
@@ -2659,8 +2690,6 @@ unit CodePoints
                 {
                     if (!IsTargetOfJumps(iIndex))
                     {
-                        bool process;
-                        uint result;
                         switch (opCode0)
                         {
                             case Instruction.BITANDFF:
@@ -2688,8 +2717,10 @@ unit CodePoints
                     }
                 }
             }
-            
-            iIndex++;
+            if (!process)
+            {
+                iIndex++;
+            }
         } // loop
         return modified;
     }

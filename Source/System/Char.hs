@@ -18,7 +18,24 @@ unit Char
     char ToLower(char this) system;
     
     string ToString(char this) system;
-
+    
+    byte FromHex(char this)
+    {
+        byte hex = byte(this);
+        if (hex > 96) // 'a'
+        {
+            hex -= 87;
+        }
+        else if (hex > 64) // 'A'
+        {
+            hex -= 55;
+        }
+        else
+        {
+            hex -= 48; // '0'
+        }
+        return hex;
+    }
     bool IsLetter(char this)
     {
         byte b;

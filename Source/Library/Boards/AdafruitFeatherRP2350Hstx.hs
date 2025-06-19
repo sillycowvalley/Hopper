@@ -13,13 +13,13 @@ unit Board // Adafruit Feather RP2350 Hstx
     #define BOARD_HAS_NEOPIXEL
     #define BOARD_HAS_LED
     #define BOARD_HAS_I2C
-    #define BOARD_HAS_NO_I2C1
     #define BOARD_HAS_NO_SPI1
     #define BOARD_HAS_SPI
     #define BOARD_HAS_A0
     #define BOARD_HAS_A1
     #define BOARD_HAS_A2
     #define BOARD_HAS_A3
+    #define BOARD_I2C1_IS_DEFAULT
 
     const byte BuiltInLED = 7;
     const byte BuiltInNeoPixel = 21;
@@ -31,21 +31,22 @@ unit Board // Adafruit Feather RP2350 Hstx
     const byte A3 = 29;
     const byte ADCResolution = 12;
 
-    const byte I2CSDA0 = 2;
-    const byte I2CSCL0 = 3;
+    const byte I2CSDA1 = 2;
+    const byte I2CSCL1 = 3;
 
     const byte SPI0Tx = 23;
     const byte SPI0Rx = 20;
     const byte SPI0SCK = 22;
-    const byte SPI0SS = 21;
+    const byte SPI0SS = 1;
 
-    const byte UART1Tx = 0;
-    const byte UART1Rx = 1;
+    const byte UART0Tx = 0;
+    const byte UART0Rx = 1;
 
-    const byte GP0 = 0;   // UART1Tx
-    const byte GP1 = 1;   // UART1Rx
+    const byte GP0 = 0;   // UART0Tx
+    const byte GP1 = 1;   // UART0Rx
     const byte GP2 = 2;   // I2CSDA0 (STEMMA)
     const byte GP3 = 3;   // I2CSCL0 (STEMMA)
+    const byte GP5 = 5;
     const byte GP6 = 6;   // corrected (physical 6 != D6)
     const byte GP7 = 7;   // BuiltInLED
     const byte GP8 = 8;

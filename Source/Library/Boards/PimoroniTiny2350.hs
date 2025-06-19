@@ -43,17 +43,17 @@ unit Board // Pimoroni Tiny2350
     const byte SPI1SCK = 26;
     const byte SPI1SS = 29;
 
-    const byte UART1Tx = 0;
-    const byte UART1Rx = 1;
-    const byte UART2Tx = 4;
-    const byte UART2Rx = 5;
+    const byte UART0Tx = 0;
+    const byte UART0Rx = 1;
+    const byte UART1Tx = 4;
+    const byte UART1Rx = 5;
 
-    const byte GP0 = 0;   // UART1Tx
-    const byte GP1 = 1;   // UART1Rx
+    const byte GP0 = 0;   // UART0Tx
+    const byte GP1 = 1;   // UART0Rx
     const byte GP2 = 2;
     const byte GP3 = 3;
-    const byte GP4 = 4;   // UART2Tx
-    const byte GP5 = 5;   // UART2Rx
+    const byte GP4 = 4;   // UART1Tx
+    const byte GP5 = 5;   // UART1Rx
     const byte GP6 = 6;   // SPI0SCK
     const byte GP7 = 7;   // SPI0Tx
     const byte GP18 = 18; // BuiltInLEDR

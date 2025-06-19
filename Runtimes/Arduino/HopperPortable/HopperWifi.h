@@ -5,7 +5,7 @@
 #include "Runtime.h"
 #include "Platform.h"
 
-#if defined(RP2040PICOW) || defined(ARDUINONANO_RP2040) || defined(USESWIFIESPAT) || defined(RP2350PICO2W)
+#if defined(USESWIFICYW43) || defined(ARDUINONANO_RP2040) || defined(USESWIFIESP)
 #define USEWIFI       // WiFi for Raspberry Pi Pico W
 #define USESERVER
 #endif
@@ -15,10 +15,10 @@
 #define USERSERVERSTUBS
 #endif
 
-#if defined(RP2040PICOW) || defined(RP2350PICO2W)
+#if defined(USESWIFICYW43)
 #include <WiFi.h>
-#include <WiFiClient.h> // added for RP2040W
-#include <WebServer.h>  // added for RP2040W
+#include <WiFiClient.h>
+#include <WebServer.h>
 #endif
 
 #ifdef ARDUINONANO_RP2040
@@ -26,7 +26,7 @@
 #include <WiFiNINA.h>
 #endif
 
-#ifdef USESWIFIESPAT
+#ifdef USESWIFIESP
 #include <ChallengerWiFi.h>
 #include <WiFiEspAT.h>
 #endif

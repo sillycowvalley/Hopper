@@ -413,7 +413,8 @@ namespace HopperNET
                     {
                         string caption = queryObj["Caption"].ToString();
                         // Typically, the COM port is included at the end of the Caption string in the format (COMX)
-                        if (caption.Contains("(COM"))
+                        // but ignore "Standard Serial over Bluetooth link (COM3)"
+                        if (caption.Contains("(COM") && !caption.Contains("Bluetooth"))
                         {
                             int startIndex = caption.IndexOf("(COM") + 1;
                             int endIndex = caption.IndexOf(')', startIndex);

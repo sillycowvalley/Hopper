@@ -86,7 +86,7 @@ unit Wire
     BeginTx(byte address)  library;
     byte EndTx()  library;
     Write(byte data) library;
-    byte RequestFrom(byte address, byte bytes) library;
+    byte RequestFrom(byte address, byte bytes) library; // returns the number of bytes returned from the peripheral device.
     byte Read() library;
     
     // These APIs support more than one I2C controller:
@@ -97,9 +97,18 @@ unit Wire
     Write(byte i2cController, byte[] data, uint startIndex, uint length) library;
     Write(byte i2cController, bool[] data, uint startIndex, uint length) library;
     
-    byte RequestFrom(byte i2cController, byte address, byte bytes) library;
+    byte RequestFrom(byte i2cController, byte address, byte bytes) library; // returns the number of bytes returned from the peripheral device.
     byte Read(byte i2cController) library;
     
     Configure(byte i2cController, byte sdaPin, byte sclPin) library;
     Configure(byte i2cController, byte sdaPin, byte sclPin, uint freqkHz) library;
+    
+    // Possible results from EndTx:
+    //    0: success
+    //    1: busy timeout upon entering endTransmission()
+    //    2: START bit generation timeout
+    //    3: end of address transmission timeout
+    //    4: data byte transfer timeout
+    //    5: data byte transfer succeeded, busy timeout immediately after
+    //    6: timeout waiting for peripheral to clear stop bit
 }

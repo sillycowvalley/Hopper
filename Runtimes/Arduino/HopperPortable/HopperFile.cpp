@@ -8,6 +8,7 @@ Byte sdClkPin;
 Byte sdTxPin;
 Byte sdRxPin;
 bool sdMounted = false;
+bool sdConfigured = false;
 
 Byte External_SDSPIControllerGet()
 {
@@ -331,8 +332,10 @@ void External_FileDelete(UInt hrpath)
         LittleFS.remove(buffer);
     }
 }
-void External_FileWriteAllBytes(UInt hrpath, UInt hrcontent, bool append)
+UInt External_FileWriteAllBytes(UInt hrpath, UInt hrcontent, bool append)
 {
+    // We currently always call this with append==true and the file not existing.
+    UInt count = 0;
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
     File f;
@@ -363,12 +366,15 @@ void External_FileWriteAllBytes(UInt hrpath, UInt hrcontent, bool append)
             Type itype;
             Byte b = (Byte)HRString_GetChar(hrcontent, i);
             f.write(b);
+            count++;
         }
         f.close();
     }
+    return count;
 }
-void External_FileWriteAllCodeBytes(UInt hrpath, UInt codeStart, UInt codeLength)
+UInt External_FileWriteAllCodeBytes(UInt hrpath, UInt codeStart, UInt codeLength)
 {
+    UInt count = 0;
     char buffer[pathBufferSize];
     HRPathToBuffer(hrpath, (char*)&buffer);
 
@@ -394,9 +400,11 @@ void External_FileWriteAllCodeBytes(UInt hrpath, UInt codeStart, UInt codeLength
             Type itype;
             Byte b = Memory_ReadCodeByte(codeStart+i); // External_FileWriteAllCodeBytes
             f.write(b);
+            count++;
         }
         f.close();
     }
+    return count;
 }
 
 Bool External_ReadAllCodeBytes_R(UInt hrpath, UInt loadAddress, UInt & codeLength)
@@ -907,8 +915,15 @@ bool External_SDMount()
     sdSPI->setRX(sdRxPin);
     //sdSPI->setCS(sdCSPin);
         
-    SDFS.setConfig(SDFSConfig(sdCSPin, 4000000 /*SPI_HALF_SPEED*/, *sdSPI));
-    sdMounted = SDFS.begin();
+    sdMounted = false;
+    if (!sdConfigured)
+    {
+        sdConfigured = SDFS.setConfig(SDFSConfig(sdCSPin, 4000000 /*SPI_HALF_SPEED*/, *sdSPI));
+    }
+    if (sdConfigured)
+    {
+        sdMounted = SDFS.begin();
+    }
     return sdMounted;
 #else
     return false;

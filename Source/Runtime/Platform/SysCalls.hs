@@ -215,7 +215,8 @@ unit SysCalls
         StringIndexOf = 0xC3,
         
         FileGetTimeStamp = 0xCC,
-        //IntToBytes       = 0xCD,
+        
+        //UARTSetup = 0xCD,
         
         FileGetTime = 0xCE,
         DirectoryGetTime = 0xCF,
@@ -230,6 +231,10 @@ unit SysCalls
         
         MemoryReadWord  = 0xD7,
         MemoryWriteWord = 0xD8,
+        
+        //UARTIsAvailable = 0xD9,
+        //UARTReadChar    = 0xDA,
+        //UARTWriteChar   = 0xDB,
         
         //MCUPinMode       = 0xD9,
         //MCUDigitalRead   = 0xDA,

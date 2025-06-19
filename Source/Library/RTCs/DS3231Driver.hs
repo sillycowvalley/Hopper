@@ -15,7 +15,7 @@ unit RTCDriver
     const byte DS3231_ALARM2      = 0x0B;
     const byte DS3231_CONTROL     = 0x0E;
     const byte DS3231_STATUS      = 0x0F;
-    const byte DS3231_TEMPERATURE = 0x11; // (high byte - low byte is at 0x12), 10-bittemperature value                        
+    const byte DS3231_TEMPERATURE = 0x11; // (high byte - low byte is at 0x12), 10-bit temperature value                        
     
     byte     iControllerRTC;
     byte     addressRTC;

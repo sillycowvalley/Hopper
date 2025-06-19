@@ -16,29 +16,57 @@ program Edit
     uses "/Source/Compiler/Tokens/Parser" // SetInteractive
     
     string optionsPath;
-    string OptionsPath { get { return optionsPath; } }
-    
+    string OptionsPath { get { return optionsPath; } }    
+    uint   comPort;
+    uint   COMPort { get { return comPort; } }
     Hopper()
     {
-        <string> arguments = System.Arguments;
+        <string> rawArgs = System.Arguments;
+        <string> args;
         
         string filePath;
         bool showHelp;
+        comPort = 4242; // bogus comPort value
         
         Editor.Locate(0, 0, Screen.Columns, Screen.Rows);
         Parser.SetInteractive(Editor.Left+1, Editor.Top + Editor.Height-1);
         
-        foreach (var argument in arguments)
+        for (uint iArg = 0; iArg < rawArgs.Count; iArg++)
         {
-            if (filePath.Length != 0)
-            {
-                showHelp = true;
-                break;
-            }
-            else
-            {
-                filePath = argument;
-            }
+          string arg = rawArgs[iArg];
+          if ((arg.Length == 2) && (arg[0] == '-'))
+          {
+              arg = arg.ToLower();
+              switch (arg)
+              {
+                  case "-p":
+                  {
+                      iArg++;
+                      if ((iArg == rawArgs.Count) || !UInt.TryParse(rawArgs[iArg], ref comPort))
+                      {
+                          args.Clear();
+                          break;
+                      }
+                  }
+                  default:
+                  {
+                      args.Clear();
+                      break;
+                  }
+              }
+          }
+          else
+          {
+              args.Append(arg);
+          }
+        }
+        if (args.Count > 1)
+        {
+            showHelp = true;
+        }
+        else if (args.Count == 1)
+        {
+            filePath = args[0];
         }
         if (filePath.Length == 0)
         {
@@ -117,7 +145,7 @@ program Edit
             }
             if (showHelp)
             {
-                PrintLn("EDIT <filepath>");
+                PrintLn("EDIT <filepath> [-p <comPort>]");
                 break;
             }
             

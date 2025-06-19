@@ -3,7 +3,6 @@
 #include "HopperWiFi.h"
 #include "HopperTimer.h"
 
-
 UInt UInt_gRnd = 0;
 UInt Memory_heapStart = 0x8000;
 UInt Memory_heapSize = 0x4000;
@@ -1327,7 +1326,11 @@ void HRFile_Append(UInt _this, Byte b)
         UInt length = HRString_GetLength(buffer);
         if (length >= 0x0100)
         {
-            External_FileWriteAllBytes(Memory_ReadWord(_this + 6), buffer, true);
+            UInt written = External_FileWriteAllBytes(Memory_ReadWord(_this + 6), buffer, true);
+            if (written != length)
+            {
+                Memory_WriteByte(_this + 2, 0x00);
+            }
             HRString_BuildClear_R(buffer);
         }
         Memory_WriteWord(_this + 12, buffer);
@@ -1345,13 +1348,22 @@ void HRFile_Flush(UInt _this)
         if (Memory_ReadByte(_this + 5) == 0x00)
         {
             UInt content = Memory_ReadWord(_this + 12);
-            External_FileWriteAllBytes(Memory_ReadWord(_this + 6), content, true);
+            UInt length = HRString_GetLength(content);
+            UInt written = External_FileWriteAllBytes(Memory_ReadWord(_this + 6), content, true);
+            if (length != written)
+            {
+                Memory_WriteByte(_this + 2, 0x00);
+            }
             HRString_BuildClear_R(content);
         }
         else
         {
             UInt posLSW = Memory_ReadWord(_this + 8);
-            External_FileWriteAllCodeBytes(Memory_ReadWord(_this + 6), Memory_ReadWord(_this + 12), posLSW);
+            UInt written = External_FileWriteAllCodeBytes(Memory_ReadWord(_this + 6), Memory_ReadWord(_this + 12), posLSW);
+            if (posLSW != written)
+            {
+                Memory_WriteByte(_this + 2, 0x00);
+            }
         }
     }
     else
@@ -6988,6 +7000,36 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         HopperVM_Push(result, Type::eByte);
         break;
     }
+    case LibCall::eUARTSetup:
+    {
+        Type rtype = (Type)0;
+        UInt rxPin = HopperVM_Pop_R(rtype);
+        Type ttype = (Type)0;
+        UInt txPin = HopperVM_Pop_R(ttype);
+        Type ctype = (Type)0;
+        UInt baud = HopperVM_Pop_R(ctype);
+        External_UART_Setup(baud, Byte(txPin), Byte(rxPin));
+        break;
+    }
+    case LibCall::eUARTReadChar:
+    {
+        Char data = External_UART_ReadChar();
+        HopperVM_Push(Byte(data), Type::eChar);
+        break;
+    }
+    case LibCall::eUARTWriteChar:
+    {
+        Type ctype = (Type)0;
+        UInt ch = HopperVM_Pop_R(ctype);
+        External_UART_WriteChar(Char(ch));
+        break;
+    }
+    case LibCall::eUARTIsAvailableGet:
+    {
+        Bool data = External_UART_IsAvailableGet();
+        HopperVM_Push((data) ? (0x01) : (0x00), Type::eBool);
+        break;
+    }
     case LibCall::eMCUPinMode:
     {
         Byte mode = Byte(HopperVM_Pop());
@@ -7555,6 +7597,18 @@ Bool Library_ExecuteLibCall(Byte iLibCall, UInt iOverload)
         doNext = false;
         break;
     }
+    case LibCall::eWiFiBeginAP:
+    {
+        Type ptype = (Type)0;
+        UInt password = HopperVM_Pop_R(ptype);
+        Type stype = (Type)0;
+        UInt ssid = HopperVM_Pop_R(stype);
+        Bool success = External_WiFiBeginAP(ssid, password);
+        GC_Release(ssid);
+        GC_Release(password);
+        HopperVM_Push((success) ? (0x01) : (0x00), Type::eBool);
+        break;
+    }
     case LibCall::eWebServerBegin:
     {
         UInt port = 0x50;
@@ -7812,7 +7866,11 @@ void HRFile_Append(UInt _this, UInt hrstr)
         UInt length = HRString_GetLength(buffer);
         if (length >= 0x0100)
         {
-            External_FileWriteAllBytes(Memory_ReadWord(_this + 6), buffer, true);
+            UInt written = External_FileWriteAllBytes(Memory_ReadWord(_this + 6), buffer, true);
+            if (length != written)
+            {
+                Memory_WriteByte(_this + 2, 0x00);
+            }
             HRString_BuildClear_R(buffer);
         }
         Memory_WriteWord(_this + 12, buffer);

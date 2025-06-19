@@ -247,6 +247,12 @@ unit External
         string password = nativeStringFromHopperString(hrpassword);
         return WiFi.Connect(ssid, password);
     }
+    bool WiFiBeginAP(uint hrssid, uint hrpassword)
+    {
+        string ssid = nativeStringFromHopperString(hrssid);
+        string password = nativeStringFromHopperString(hrpassword);
+        Error = 0x0A; return false;
+    }
     uint WiFiIP()
     {
         ErrorDump(200); Error = 0x0A; return 0;
@@ -419,7 +425,7 @@ unit External
         return hopperStringFromNativeString(Directory.GetDate(path));
     }
 
-    FileWriteAllBytes(uint hrpath, uint buffer, bool append)
+    uint FileWriteAllBytes(uint hrpath, uint buffer, bool append)
     {
         string path = nativeStringFromHopperString(hrpath);
         file f = File.Create(path);
@@ -431,8 +437,9 @@ unit External
             f.Append(b);
         }
         f.Flush();
+        return length;
     }
-    FileWriteAllCodeBytes(uint hrpath, uint codeStart, uint codeLength)
+    uint FileWriteAllCodeBytes(uint hrpath, uint codeStart, uint codeLength)
     {
         string path = nativeStringFromHopperString(hrpath);
         file f = File.Create(path);
@@ -443,6 +450,7 @@ unit External
             f.Append(b);
         }
         f.Flush();
+        return codeLength;
     }
     
     bool TryFileReadByte(uint hrpath, uint hrseekpos, ref byte b)
@@ -800,5 +808,25 @@ unit External
     WriteToJumpTable(OpCode opCode, InstructionDelegate instructionDelegate)
     {
         WriteWord(jumpTableAddress + (byte(opCode) << 1), uint(instructionDelegate));
+    }
+    
+    UART_Setup(uint baud, byte txPin, byte rxPin)
+    {
+        ErrorDump(161); Error = 0x0A;
+    }
+    UART_WriteChar(char ch)
+    {
+        ErrorDump(161); Error = 0x0A;
+    }
+    char UART_ReadChar()
+    {
+        ErrorDump(161); Error = 0x0A;
+        return '?';
+    }
+    
+    bool UART_IsAvailableGet()
+    {
+        ErrorDump(161); Error = 0x0A;
+        return false;
     }
 }

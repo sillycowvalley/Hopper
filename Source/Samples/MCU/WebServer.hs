@@ -1,8 +1,10 @@
 program WebServer
 {
     //uses "/Source/Library/Boards/PiPicoW"
-    uses "/Source/Library/Boards/Challenger2040WiFi"
-    //uses "/Source/Library/Boards/ArduinoNanoConnect"
+    //uses "/Source/Library/Boards/PiPico2W"
+    //uses "/Source/Library/Boards/PimoroniPicoPlus2W"
+    //uses "/Source/Library/Boards/Challenger2040WiFi"
+    uses "/Source/Library/Boards/Challenger2350WiFi6Ble5"
     
     uses "/Source/Samples/MCU/Secrets2/Connect"
     
@@ -10,13 +12,17 @@ program WebServer
     NotFound(string uri, string method, <string,string> arguments)
     {
         WebServer.Send(404, "text/plain", "Not Found");
-        WriteLn("404 : NotFound");
+        IO.WriteLn("404 : NotFound");
     }
     
     Root(string uri, string method, <string,string> arguments)
     {
-        WebServer.Send("Success");
-        WriteLn("200: Root");
+        string content = "Success";
+        content += Char.EOL;
+        content += "Millis: " + (Time.Millis).ToString();
+        content += Char.EOL;
+        WebServer.Send(content);
+        IO.WriteLn("200: Root");
     }
     Reloader(string uri, string method, <string,string> arguments)
     {
@@ -26,7 +32,7 @@ program WebServer
         headerContent["Connection"]   = "close"; // The connection will be closed after completion of the response.
         
         WebServer.Send(200, headerContent, "Reloading .. " + counter.ToString());
-        WriteLn("200: Reloader " +counter.ToString());
+        IO.WriteLn("200: Reloader " +counter.ToString());
         counter++;
     }
     AnyPage(string uri, string method, <string,string> arguments)
@@ -40,14 +46,22 @@ program WebServer
             }
         }
         WebServer.Send(content);
-        WriteLn("200: AnyPage");
+        IO.WriteLn("200: AnyPage");
     }
     
+    Hopper()
     {
+        IO.WriteLn();
+        for (uint i=0; i < 10; i++)
+        {
+            IO.Write('-');
+            Time.Delay(250); // allow debugger to break into reboot
+        }
+        
 #if !defined(BOARD_HAS_WIFI)
         #error "WiFi capable board required for this sample (see options at top of file)"
 #endif                        
-        WriteLn(); 
+        IO.WriteLn(); 
         uint attempts = 0;
         loop
         {
@@ -57,7 +71,7 @@ program WebServer
                 WriteLn("Connected");
                 break;
             }
-            Write(".");
+            IO.Write(".");
             attempts++;
             if (attempts >= 5)
             {
@@ -65,7 +79,7 @@ program WebServer
                 return;
             }
         }
-        WriteLn("IP: " + WiFi.IP);
+        IO.WriteLn("IP: " + WiFi.IP);
         
         WebServer.HandlerDelegate 
         pageHandler = Root;

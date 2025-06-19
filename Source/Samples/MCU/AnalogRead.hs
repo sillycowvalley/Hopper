@@ -1,16 +1,16 @@
 program AnalogRead
 {
-    #define SERIAL_CONSOLE
-    #define RP2040_PICOW
-    uses "/Source/Library/MCU"
+    uses "/Source/Library/Boards/ChallengerNB2040WiFi"
     
     {
         loop
         {
-            uint x = A0;
-            uint y = A1;
+            uint a0 = A0;
+            uint a1 = A1;
+            uint a2 = A2;
+            uint a3 = A3;
             
-            WriteLn(x.ToString() + ", " + y.ToString());
+            WriteLn(a0.ToString() + ", " + a1.ToString() + ", " + a2.ToString() + ", " + a3.ToString());
             Delay(50);
         }
     }

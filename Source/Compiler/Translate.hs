@@ -1186,16 +1186,15 @@ program Translate
     {
         PrintLn("Invalid arguments for TRANSLATE:");
         PrintLn("  TRANSLATE <object json>");
-        PrintLn("    -c : translate to C");
     }
     
+    Hopper()
     {
         bool success = false;
         loop
         {
             <string> rawArgs = System.Arguments;
             <string> args;
-            bool toC = true;
             
             for (uint iArg = 0; iArg < rawArgs.Count; iArg++)
             {
@@ -1218,10 +1217,6 @@ program Translate
                             {
                             }
                             Parser.SetInteractive(byte(col), byte(row));
-                        }
-                        case "-c":
-                        {
-                            toC = false;   
                         }
                         default:
                         {
@@ -1288,6 +1283,20 @@ program Translate
                 }
                 Block.PopBlock();
                 if (!SourceStream.Export(headerpath, codePath))
+                {
+                    break;
+                }
+                
+                string headerDestination = Path.GetFileName(headerpath);
+                headerDestination = Path.Combine("/Runtimes/Arduino/HopperPortable", headerDestination);
+                string codeDestination   = Path.GetFileName(codePath);
+                codeDestination = Path.Combine("/Runtimes/Arduino/HopperPortable", codeDestination);
+                
+                if (!File.Copy(headerpath, headerDestination, true))
+                {
+                    break;
+                }
+                if (!File.Copy(codePath, codeDestination, true))
                 {
                     break;
                 }

@@ -185,6 +185,42 @@ unit Library
                 Push(result, Type.Byte);
             }
             
+            case LibCall.UARTSetup:
+            {
+                Type rtype;
+                uint rxPin = Pop(ref rtype);
+                Type ttype;
+                uint txPin = Pop(ref ttype);
+                Type ctype;
+                uint baud  = Pop(ref ctype);
+#ifdef CHECKED             
+                AssertUInt(ctype, controller);
+                AssertByte(ttype, txPin);
+                AssertByte(rtype, rtype);
+#endif   
+                UART_Setup(baud, byte(txPin), byte(rxPin));
+            }
+            case LibCall.UARTReadChar:
+            {
+                char data = UART_ReadChar();
+                Push(byte(data), Type.Char);
+            }
+            case LibCall.UARTWriteChar:
+            {
+                Type ctype;
+                uint ch = Pop(ref ctype); 
+#ifdef CHECKED             
+                AssertChar(ctype, ch);
+#endif   
+                UART_WriteChar(char(ch));
+            }
+            case LibCall.UARTIsAvailableGet:
+            {
+                bool data = UART_IsAvailableGet();
+                Push(data ? 1 : 0, Type.Bool);
+            }
+            
+            
             case LibCall.MCUPinMode:
             {
                 byte mode  = byte(Pop());
@@ -913,6 +949,28 @@ unit Library
                 Push(success ? 1 : 0, Type.Bool);
                 doNext = false;
             }
+            case LibCall.WiFiBeginAP:
+            {
+#ifdef INCLUDE_WIFI            
+                Type ptype;    
+                uint password = Pop(ref ptype);
+                Type stype;    
+                uint ssid = Pop(ref stype);
+#ifdef CHECKED
+                if ((stype != Type.String) || (ptype != Type.String))
+                {
+                    ErrorDump(258);
+                    Error = 0x0B; // system failure (internal error)
+                }
+#endif        
+                bool success = External.WiFiBeginAP(ssid, password);
+                GC.Release(ssid);
+                GC.Release(password);
+                Push(success ? 1 : 0, Type.Bool);                
+#else
+                Error = 0x0A;
+#endif
+            }
             case LibCall.WebServerBegin:
             {
                 uint port = 80;
@@ -980,6 +1038,7 @@ unit Library
                 doNext = false;
             }
             
+                       
             default:
             {
                 IO.WriteHex(PC); IO.Write(':'); IO.Write('L'); IO.WriteHex(iLibCall); IO.Write('-'); IO.WriteHex(iOverload);  

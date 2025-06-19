@@ -36,6 +36,7 @@ program Generate
         PrintLn("  65GEN <code file>");
         PrintLn("    -g <c> <r> : called from GUI, not console");
         PrintLn("    -b export as .bin rather than .hex");
+        PrintLn("    -c export as .c for RetroShields");
     }
     
     writeMethod(uint methodIndex, <byte> code, uint romAddress)
@@ -335,6 +336,7 @@ program Generate
     
     {
         bool exportBin;
+        bool exportC;
         bool success = false;
         loop
         {
@@ -365,6 +367,10 @@ program Generate
                         case "-b":
                         {
                             exportBin = true;
+                        }
+                        case "-c":
+                        {
+                            exportC = true;
                         }
                         default:
                         {
@@ -446,6 +452,10 @@ program Generate
                 if (DefineExists("EXPORT_BIN"))
                 {
                     exportBin = true;
+                }
+                if (DefineExists("EXPORT_C"))
+                {
+                    exportC = true;
                 }
                 
                 long startAddress = 0x10000 - romSize; 
@@ -535,16 +545,17 @@ program Generate
                 writeIHex(ihexFile, romAddress, output, vectors);
                 
                 // Export for RetroShield:
-                /*
-                string srcPath = ihexPath.Replace(".hex", ".c");
-                file srcFile = File.Create(srcPath);
-                if (!srcFile.IsValid())
+                if (exportC)
                 {
-                    PrintLn("Failed to create '" + srcPath + "'");
-                    break;
+                    string srcPath = ihexPath.Replace(".hex", ".c");
+                    file srcFile = File.Create(srcPath);
+                    if (!srcFile.IsValid())
+                    {
+                        PrintLn("Failed to create '" + srcPath + "'");
+                        break;
+                    }
+                    writeSrc(srcFile, romAddress, output, vectors);
                 }
-                writeSrc(srcFile, romAddress, output, vectors);
-                */
                 
                 // export .bin file for Dave:
                 if (exportBin)

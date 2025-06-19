@@ -2,6 +2,8 @@ program WaveShareLCD144Demo
 {
     uses "/Source/Library/Fonts/Hitachi5x7"
     
+    uses "/Source/Library/Boards/PiPico2"
+    
     uses "/Source/Library/Devices/WSPicoLCD144"
     
     ButtonISR(byte pin, PinStatus status) 

@@ -572,6 +572,13 @@ unit BuildCommand
         string sourcePath = Editor.ProjectPath; 
         arguments.Append(sourcePath); // Debugger takes the .hs source path
         arguments.Append("-g"); // Interactive mode (not launched directly from command line)
+        uint comPort = Edit.COMPort;
+        if (comPort != 4242)
+        {
+            // COM port override:
+            arguments.Append("-p");
+            arguments.Append(comPort.ToString());
+        }
         uint error = runtimeExecute("Debug", arguments);
         Editor.DrawAll();
     }
