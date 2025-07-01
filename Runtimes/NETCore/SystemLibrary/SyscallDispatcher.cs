@@ -135,14 +135,14 @@ namespace HopperRuntime.SystemLibrary
         private void StringLengthGet(byte overload)
         {
             StackValue top = stack.Pop();
-            string content = top.RefValue as string;
+            string content = (top.RefValue as string) ?? String.Empty;
             stack.Push(StackValue.FromUInt((ushort)(content.Length)));
         }
         private void StringGetChar(byte overload)
         {
             ushort index = (ushort)stack.Pop().UIntValue;
             StackValue top = stack.Pop();
-            string content = top.RefValue as string;
+            string content = (top.RefValue as string) ?? String.Empty;
             stack.Push(StackValue.FromChar(content[index]));
         }
         private void StringAppend(byte overload)
@@ -269,11 +269,28 @@ namespace HopperRuntime.SystemLibrary
             // Stack contains: [text, foreColor, backColor] (top to bottom)
             var backColor = stack.Pop();
             var foreColor = stack.Pop();
-            var text      = stack.Pop();
+            var text = stack.Pop();
+            switch (overload)
+            {
+                case 0:
+                    {
+                        char c = (char)text.UIntValue;
+                        screenUnit.Print(c.ToString(),
+                                       foreColor.UIntValue,
+                                       backColor.UIntValue);
 
-            screenUnit.Print(text.RefValue?.ToString() ?? "", 
-                           foreColor.UIntValue, 
-                           backColor.UIntValue);
+                    }
+                    break;
+                case 1:
+                    {
+                        screenUnit.Print(text.RefValue?.ToString() ?? String.Empty,
+                                       foreColor.UIntValue,
+                                       backColor.UIntValue);
+                    }
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
         }
 
         private void ScreenPrintLn(byte overload)

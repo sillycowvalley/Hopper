@@ -205,9 +205,10 @@ namespace HopperRuntime.Core
         /// </summary>
         public StackValue Pop()
         {
+#if DEBUG
             if (stack.Count == 0)
                 throw new InvalidOperationException("Stack underflow");
-
+#endif
             var value = stack[stack.Count - 1];
             stack.RemoveAt(stack.Count - 1);
             return value;
@@ -218,9 +219,10 @@ namespace HopperRuntime.Core
         /// </summary>
         public StackValue Peek()
         {
+#if DEBUG
             if (stack.Count == 0)
                 throw new InvalidOperationException("Stack underflow");
-
+#endif
             return stack[stack.Count - 1];
         }
 
@@ -246,7 +248,7 @@ namespace HopperRuntime.Core
             stack.Clear();
         }
 
-        #endregion
+#endregion
 
         #region Indexed Access
 
@@ -255,9 +257,10 @@ namespace HopperRuntime.Core
         /// </summary>
         public StackValue GetAt(int index)
         {
+#if DEBUG
             if (index < 0 || index >= stack.Count)
                 throw new ArgumentOutOfRangeException(nameof(index), $"Index {index} out of range [0, {stack.Count - 1}]");
-
+#endif
             return stack[index];
         }
 
@@ -266,9 +269,10 @@ namespace HopperRuntime.Core
         /// </summary>
         public void SetAt(int index, StackValue value)
         {
+#if DEBUG
             if (index < 0 || index >= stack.Count)
                 throw new ArgumentOutOfRangeException(nameof(index), $"Index {index} out of range [0, {stack.Count - 1}]");
-
+#endif
             stack[index] = value;
         }
 
@@ -284,7 +288,7 @@ namespace HopperRuntime.Core
             }
         }
 
-        #endregion
+#endregion
 
         #region Global Variable Access
 

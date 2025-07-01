@@ -2,7 +2,7 @@
   "profiles": {
     "NETCore": {
       "commandName": "Project",
-      "commandLineArgs": "Bin\\FiboUInt.hexe\r\n",
+      "commandLineArgs": "Bin\\FiboUInt.hexe -t\r\n",
       "workingDirectory": "D:\\Repos\\Hopper"
     }
   }
