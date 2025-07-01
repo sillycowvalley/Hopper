@@ -15,6 +15,8 @@ namespace HopperRuntime
         {
             LaunchTime = DateTime.Now;
 
+            PowerShellAnsiEnabler.EnableAnsiSupport();
+
             if (args.Length == 0)
             {
                 Console.WriteLine("Usage: Hopper <program.hexe>");
