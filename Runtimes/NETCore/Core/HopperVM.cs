@@ -12,9 +12,7 @@ namespace HopperRuntime.Core
     {
         #region Private Fields
 
-        private readonly Stack<StackValue> stack = new Stack<StackValue>();
-        private readonly Dictionary<uint, StackValue> globals = new Dictionary<uint, StackValue>();
-        private readonly Dictionary<uint, StackValue> locals = new Dictionary<uint, StackValue>();
+        private readonly List<StackValue> stack = new List<StackValue>();
 
         private byte[] program = new byte[0];
         private byte[] constants = new byte[0];
@@ -75,7 +73,65 @@ namespace HopperRuntime.Core
         /// </summary>
         public string GetState()
         {
-            return $"PC: 0x{pc:X4}, BP: {bp}, Stack: {stack.Count} items, Globals: {globals.Count}";
+            return $"PC: 0x{pc:X4}, BP: {bp}, Stack: {stack.Count} items";
+        }
+
+        #endregion
+
+        #region Stack Operations
+
+        /// <summary>
+        /// Push a value onto the stack
+        /// </summary>
+        private void Push(StackValue value)
+        {
+            stack.Add(value);
+        }
+
+        /// <summary>
+        /// Pop a value from the stack
+        /// </summary>
+        private StackValue Pop()
+        {
+            if (stack.Count == 0)
+                throw new InvalidOperationException($"Stack underflow at PC: 0x{pc:X4}");
+
+            var value = stack[stack.Count - 1];
+            stack.RemoveAt(stack.Count - 1);
+            return value;
+        }
+
+        /// <summary>
+        /// Peek at the top stack value without removing it
+        /// </summary>
+        private StackValue Peek()
+        {
+            if (stack.Count == 0)
+                throw new InvalidOperationException($"Stack underflow at PC: 0x{pc:X4}");
+
+            return stack[stack.Count - 1];
+        }
+
+        /// <summary>
+        /// Get stack value at absolute index (0 = bottom)
+        /// </summary>
+        private StackValue GetStackValue(int index)
+        {
+            if (index < 0 || index >= stack.Count)
+                throw new InvalidOperationException($"Invalid stack access at index {index}");
+
+            return stack[index];
+        }
+
+        /// <summary>
+        /// Set stack value at absolute index (0 = bottom)
+        /// </summary>
+        private void SetStackValue(int index, StackValue value)
+        {
+            if (index < 0 || index >= stack.Count)
+                throw new InvalidOperationException($"Invalid stack access at index {index}");
+
+            stack[index] = value;
         }
 
         #endregion
@@ -103,17 +159,16 @@ namespace HopperRuntime.Core
                 Console.WriteLine($"{pc - 1:X4}: {OpCodeInfo.FormatInstruction(opcode, operands)}");
             }
 
-
             switch (opcode)
             {
                 case OpCode.PUSHI0:
-                    stack.Push(StackValue.FromUInt(0));
+                    Push(StackValue.FromUInt(0));
                     break;
 
                 case OpCode.PUSHI:
                     {
                         uint value = ReadUInt16();
-                        stack.Push(StackValue.FromUInt(value));
+                        Push(StackValue.FromUInt(value));
                     }
                     break;
 
@@ -121,32 +176,33 @@ namespace HopperRuntime.Core
                     {
                         byte offset = program[pc++];
                         sbyte signedOffset = (sbyte)offset;
-                        var value = stack.Pop();
+                        var value = Pop();
 
-                        // Store in local variable at BP + signedOffset
+                        // Calculate stack position: BP + signedOffset
                         int stackPosition = (int)bp + signedOffset;
-                        var stackArray = stack.ToArray();
-                        int index = stackArray.Length - stackPosition;
 
-                        // This is complex - you may want to use a different approach for locals
-                        // Consider maintaining a separate locals array per stack frame
+                        if (stackPosition >= 0 && stackPosition < stack.Count)
+                        {
+                            SetStackValue(stackPosition, value);
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException($"Invalid local/parameter access: offset {signedOffset} from BP {bp}");
+                        }
                     }
                     break;
-                case OpCode.PUSHLOCALB:
+
+                case OpCode.PUSHLOCALB: // 0x1C - Push local variable (byte offset)
                     {
                         byte offset = program[pc++];
-                        sbyte signedOffset = (sbyte)offset; // Convert to signed byte
+                        sbyte signedOffset = (sbyte)offset;
 
-                        // Calculate actual stack position: BP + signedOffset
+                        // Calculate stack position: BP + signedOffset
                         int stackPosition = (int)bp + signedOffset;
 
-                        // Convert to index from bottom of stack
-                        var stackArray = stack.ToArray();
-                        int index = stackArray.Length - 1 - stackPosition;
-
-                        if (index >= 0 && index < stackArray.Length)
+                        if (stackPosition >= 0 && stackPosition < stack.Count)
                         {
-                            stack.Push(stackArray[index]);
+                            Push(GetStackValue(stackPosition));
                         }
                         else
                         {
@@ -164,31 +220,24 @@ namespace HopperRuntime.Core
                         sbyte signedOffset1 = (sbyte)offset1;
                         sbyte signedOffset2 = (sbyte)offset2;
 
-                        // Get the current stack as an array for indexing
-                        var stackArray = stack.ToArray();
-
-                        // Calculate actual stack positions: BP + signedOffset
+                        // Calculate stack positions: BP + signedOffset
                         int stackPosition1 = (int)bp + signedOffset1;
                         int stackPosition2 = (int)bp + signedOffset2;
 
-                        // Convert to indices from bottom of stack
-                        int index1 = stackArray.Length - 1 - stackPosition1;
-                        int index2 = stackArray.Length - 1 - stackPosition2;
-
-                        // Validate bounds for first value
-                        if (index1 >= 0 && index1 < stackArray.Length)
+                        // Push first value
+                        if (stackPosition1 >= 0 && stackPosition1 < stack.Count)
                         {
-                            stack.Push(stackArray[index1]);
+                            Push(GetStackValue(stackPosition1));
                         }
                         else
                         {
                             throw new InvalidOperationException($"Invalid local/parameter access: offset {signedOffset1} from BP {bp}");
                         }
 
-                        // Validate bounds for second value  
-                        if (index2 >= 0 && index2 < stackArray.Length)
+                        // Push second value
+                        if (stackPosition2 >= 0 && stackPosition2 < stack.Count)
                         {
-                            stack.Push(stackArray[index2]);
+                            Push(GetStackValue(stackPosition2));
                         }
                         else
                         {
@@ -202,20 +251,33 @@ namespace HopperRuntime.Core
                     }
                     break;
 
-                case OpCode.POPGLOBALB:
+                case OpCode.POPGLOBALB: // 0x1F - Pop to global variable (byte offset)
                     {
-                        byte globalId = program[pc++];
-                        globals[globalId] = stack.Pop();
+                        byte globalOffset = program[pc++];
+                        var value = Pop();
+
+                        // Ensure stack is large enough for this global
+                        while (stack.Count <= globalOffset)
+                        {
+                            stack.Add(StackValue.FromUInt(0));
+                        }
+
+                        SetStackValue(globalOffset, value);
                     }
                     break;
 
-                case OpCode.PUSHGLOBALB:
+                case OpCode.PUSHGLOBALB: // 0x20 - Push global variable (byte offset)
                     {
-                        byte globalId = program[pc++];
-                        if (globals.TryGetValue(globalId, out StackValue value))
-                            stack.Push(value);
+                        byte globalOffset = program[pc++];
+
+                        if (globalOffset < stack.Count)
+                        {
+                            Push(GetStackValue(globalOffset));
+                        }
                         else
-                            stack.Push(StackValue.FromUInt(0)); // Default to 0
+                        {
+                            Push(StackValue.FromUInt(0)); // Default value for uninitialized global
+                        }
                     }
                     break;
 
@@ -224,10 +286,11 @@ namespace HopperRuntime.Core
                         byte localCount = program[pc++];
                         basePointers.Push(bp);
                         bp = (uint)stack.Count;
+
                         // Initialize locals to zero
                         for (int i = 0; i < localCount; i++)
                         {
-                            stack.Push(StackValue.FromUInt(0));
+                            Push(StackValue.FromUInt(0));
                         }
                     }
                     break;
@@ -239,10 +302,10 @@ namespace HopperRuntime.Core
 
                 case OpCode.SWAP:       // 0x43 - Swap top two values
                     {
-                        var a = stack.Pop();
-                        var b = stack.Pop();
-                        stack.Push(a);
-                        stack.Push(b);
+                        var a = Pop();
+                        var b = Pop();
+                        Push(a);
+                        Push(b);
                     }
                     break;
 
@@ -251,7 +314,8 @@ namespace HopperRuntime.Core
                         byte count = program[pc++];
                         for (int i = 0; i < count; i++)
                         {
-                            if (stack.Count > 0) stack.Pop();
+                            if (stack.Count > 0)
+                                stack.RemoveAt(stack.Count - 1);
                         }
                     }
                     break;
@@ -259,14 +323,12 @@ namespace HopperRuntime.Core
                 case OpCode.CAST:       // 0x51 - Type cast
                     {
                         byte targetType = program[pc++];
-                        var value = stack.Pop();
+                        var value = Pop();
                         // For now, just change the type without conversion
                         value.Type = (ValueType)targetType;
-                        stack.Push(value);
+                        Push(value);
                     }
                     break;
-
-
 
                 case OpCode.SYSCALLB0:
                     {
@@ -299,6 +361,7 @@ namespace HopperRuntime.Core
                         }
                     }
                     break;
+
                 case OpCode.CALLI:
                     {
                         uint address = ReadUInt16();
@@ -310,7 +373,7 @@ namespace HopperRuntime.Core
                 case OpCode.JNZB:       // 0x2F - Jump if not zero (byte offset)
                     {
                         byte offset = program[pc++];
-                        var condition = stack.Pop();
+                        var condition = Pop();
                         if (condition.UIntValue != 0)
                         {
                             pc = (uint)((int)pc + (sbyte)offset);
@@ -343,15 +406,16 @@ namespace HopperRuntime.Core
                 case OpCode.RETRESB:    // 0x2B - Return with result and cleanup
                     {
                         byte cleanup = program[pc++];
-                        var result = stack.Pop();
+                        var result = Pop();
 
                         // Clean up locals
                         for (int i = 0; i < cleanup; i++)
                         {
-                            if (stack.Count > 0) stack.Pop();
+                            if (stack.Count > 0)
+                                stack.RemoveAt(stack.Count - 1);
                         }
 
-                        stack.Push(result); // Put result back
+                        Push(result); // Put result back
 
                         if (callStack.Count > 0)
                         {
@@ -372,7 +436,8 @@ namespace HopperRuntime.Core
                         // Clean up locals
                         for (int i = 0; i < cleanup; i++)
                         {
-                            if (stack.Count > 0) stack.Pop();
+                            if (stack.Count > 0)
+                                stack.RemoveAt(stack.Count - 1);
                         }
 
                         if (callStack.Count > 0)
@@ -390,82 +455,85 @@ namespace HopperRuntime.Core
 
                 case OpCode.ADD:        // 0x80 - Add two stack values
                     {
-                        var b = stack.Pop();
-                        var a = stack.Pop();
-                        stack.Push(StackValue.FromUInt(a.UIntValue + b.UIntValue));
+                        var b = Pop();
+                        var a = Pop();
+                        Push(StackValue.FromUInt(a.UIntValue + b.UIntValue));
                     }
                     break;
 
-                case OpCode.SUB:        // 0x82 - Subtract (used as 0x6E SUBB in your code)
+                case OpCode.SUB:        // 0x82 - Subtract two stack values
+                    {
+                        var b = Pop();
+                        var a = Pop();
+                        Push(StackValue.FromUInt(a.UIntValue - b.UIntValue));
+                    }
+                    break;
+
                 case OpCode.SUBB:       // 0x6E - Subtract immediate byte
                     {
                         byte immediate = program[pc++];
-                        var value = stack.Pop();
-                        stack.Push(StackValue.FromUInt(value.UIntValue - immediate));
+                        var value = Pop();
+                        Push(StackValue.FromUInt(value.UIntValue - immediate));
                     }
                     break;
 
                 case OpCode.DIV:        // 0x84 - Divide
                     {
-                        var b = stack.Pop();
-                        var a = stack.Pop();
+                        var b = Pop();
+                        var a = Pop();
                         if (b.UIntValue == 0) throw new DivideByZeroException();
-                        stack.Push(StackValue.FromUInt(a.UIntValue / b.UIntValue));
+                        Push(StackValue.FromUInt(a.UIntValue / b.UIntValue));
                     }
                     break;
 
                 case OpCode.MOD:        // 0x88 - Modulus
                     {
-                        var b = stack.Pop();
-                        var a = stack.Pop();
+                        var b = Pop();
+                        var a = Pop();
                         if (b.UIntValue == 0) throw new DivideByZeroException();
-                        stack.Push(StackValue.FromUInt(a.UIntValue % b.UIntValue));
+                        Push(StackValue.FromUInt(a.UIntValue % b.UIntValue));
                     }
                     break;
 
                 case OpCode.ADDB:       // 0x6D - Add immediate byte
                     {
                         byte immediate = program[pc++];
-                        var value = stack.Pop();
-                        stack.Push(StackValue.FromUInt(value.UIntValue + immediate));
+                        var value = Pop();
+                        Push(StackValue.FromUInt(value.UIntValue + immediate));
                     }
                     break;
 
-
-
                 case OpCode.LT:         // 0x8C - Less than (unsigned)
                     {
-                        var b = stack.Pop();
-                        var a = stack.Pop();
-                        stack.Push(StackValue.FromUInt((uint)(a.UIntValue < b.UIntValue ? 1 : 0)));
+                        var b = Pop();
+                        var a = Pop();
+                        Push(StackValue.FromUInt((uint)(a.UIntValue < b.UIntValue ? 1 : 0)));
                     }
                     break;
 
                 case OpCode.EQ:         // 0x92 - Equality
                     {
-                        var b = stack.Pop();
-                        var a = stack.Pop();
-                        stack.Push(StackValue.FromUInt((uint)(a.UIntValue == b.UIntValue ? 1 : 0)));
+                        var b = Pop();
+                        var a = Pop();
+                        Push(StackValue.FromUInt((uint)(a.UIntValue == b.UIntValue ? 1 : 0)));
                     }
                     break;
 
                 case OpCode.PUSHIBLE:   // 0x6B - Push immediate byte and test ≤
                     {
                         byte immediate = program[pc++];
-                        var value = stack.Pop();
-                        stack.Push(StackValue.FromUInt((uint)(value.UIntValue <= immediate ? 1 : 0)));
+                        var value = Pop();
+                        Push(StackValue.FromUInt((uint)(value.UIntValue <= immediate ? 1 : 0)));
                     }
                     break;
 
                 case OpCode.PUSHIBEQ:   // 0x6C - Push immediate byte and test ==
                     {
                         byte immediate = program[pc++];
-                        var value = stack.Pop();
-                        stack.Push(StackValue.FromUInt((uint)(value.UIntValue == immediate ? 1 : 0)));
+                        var value = Pop();
+                        Push(StackValue.FromUInt((uint)(value.UIntValue == immediate ? 1 : 0)));
                     }
                     break;
-
-
 
                 default:
                     throw new InvalidOperationException($"Unknown opcode: 0x{(byte)opcode:X2} at PC: 0x{pc - 1:X4}");
