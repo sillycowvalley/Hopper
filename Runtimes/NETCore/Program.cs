@@ -26,55 +26,14 @@ namespace HopperRuntime
 
         private SystemCallDispatcher? systemCallDispatcher;
 
-        private void OptimizeCallInstructions()
-        {
-            for (int i = 0; i < program.Length - 2; i++)
-            {
-                if (program[i] == (byte)OpCode.CALL)
-                {
-                    uint methodIndex = (uint)(program[i + 1] | (program[i + 2] << 8));
-                    if (methodTable.TryGetValue(methodIndex, out uint address))
-                    {
-                        // Replace CALL with CALLI and index with address
-                        program[i] = (byte)OpCode.CALLI;
-                        program[i + 1] = (byte)(address & 0xFF);
-                        program[i + 2] = (byte)((address >> 8) & 0xFF);
-                    }
-                }
-            }
-        }
-
         public void LoadProgram(byte[] bytecode)
         {
-            // Parse header
-            //uint version = BitConverter.ToUInt16(bytecode, 0);
-            uint constantOffset = BitConverter.ToUInt16(bytecode, 2);
-            uint entryPoint = BitConverter.ToUInt16(bytecode, 4);
+            // Use BinaryLoader to parse the file
+            var loadedProgram = BinaryLoader.LoadProgram(bytecode);
 
-            // Load method table (between header and constants)
-            uint methodTableStart = 6; // After header
-            uint methodTableEnd = constantOffset;
-            for (uint i = methodTableStart; i < methodTableEnd; i += 4)
-            {
-                uint methodIndex = BitConverter.ToUInt16(bytecode, (int)i);
-                uint methodAddress = BitConverter.ToUInt16(bytecode, (int)i + 2);
-                methodTable[methodIndex] = methodAddress;
-            }
-
-            // Split program and constants
-            long programLength = bytecode.Length - entryPoint;
-            program = new byte[programLength];
-            Array.Copy(bytecode, entryPoint, program, 0, programLength); // Skip header
-
-            long constantLength = entryPoint - constantOffset;
-            constants = new byte[constantLength];
-            if (constantLength != 0)
-            {
-                Array.Copy(bytecode, (int)constantOffset, constants, 0, constantLength);
-            }
-
-            // Optimize CALL instructions to CALLI at load time
-            OptimizeCallInstructions();
+            // Extract the components
+            program = loadedProgram.Program;
+            constants = loadedProgram.Constants;
 
             // Initialize system call dispatcher after constants are loaded
             var screenUnit = new ScreenUnit();
@@ -233,17 +192,7 @@ namespace HopperRuntime
             systemCallDispatcher?.HandleSyscall(syscallId, param);
         }
 
-        private string ReadConstantString(byte offset)
-        {
-            var sb = new StringBuilder();
-            int pos = offset;
-            while (pos < constants.Length && constants[pos] != 0)
-            {
-                sb.Append((char)constants[pos]);
-                pos++;
-            }
-            return sb.ToString();
-        }
+        
     }
 
     

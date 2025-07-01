@@ -10,7 +10,6 @@
 
   <ItemGroup>
     <Folder Include="Core\" />
-    <Folder Include="Platform\" />
     <Folder Include="SystemLibrary\" />
   </ItemGroup>
 
