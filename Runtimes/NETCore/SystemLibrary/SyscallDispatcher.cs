@@ -14,10 +14,10 @@ namespace HopperRuntime.SystemLibrary
         private readonly Dictionary<byte, SystemCall> systemCalls = new Dictionary<byte, SystemCall>();
         private readonly ScreenUnit screenUnit;
         private readonly StringUnit stringUnit;
-        private readonly List<StackValue> stack;
+        private readonly VMStack stack;
         private readonly byte[] constants;
 
-        public SystemCallDispatcher(List<StackValue> vmStack, byte[] constantData, 
+        public SystemCallDispatcher(VMStack vmStack, byte[] constantData, 
                                    ScreenUnit screen, StringUnit strings)
         {
             stack = vmStack;
@@ -67,7 +67,7 @@ namespace HopperRuntime.SystemLibrary
         private void StringNewFromConstant(byte param)
         {
             string str = ReadConstantString(param);
-            stack.Add(StackValue.FromRef(str));
+            stack.Push(StackValue.FromString(str));  // Use Push() instead of Add()
         }
 
         private string ReadConstantString(byte offset)
@@ -89,9 +89,9 @@ namespace HopperRuntime.SystemLibrary
         private void ScreenPrint(byte param)
         {
             // Stack contains: [text, foreColor, backColor] (top to bottom)
-            var backColor = stack[stack.Count - 1];  stack.RemoveAt(stack.Count-1);
-            var foreColor = stack[stack.Count - 1]; stack.RemoveAt(stack.Count - 1);
-            var text      = stack[stack.Count - 1]; stack.RemoveAt(stack.Count - 1);
+            var backColor = stack.Pop();
+            var foreColor = stack.Pop();
+            var text      = stack.Pop();
 
             screenUnit.Print(text.RefValue?.ToString() ?? "", 
                            foreColor.UIntValue, 
