@@ -182,6 +182,14 @@ namespace HopperRuntime.Core
                         HandleSyscall((byte)syscallId, 0);
                     }
                     break;
+                case OpCode.SYSCALLB1:
+                    {
+                        ushort value = program[pc++];
+                        stack.Push(StackValue.FromUInt(value));
+                        byte syscallId = program[pc++];
+                        HandleSyscall((byte)syscallId, 1);
+                    }
+                    break;
 
                 case OpCode.CALL:           // 0x34 - Call function (method table lookup)
                     {
@@ -242,7 +250,8 @@ namespace HopperRuntime.Core
 
                 case OpCode.JZ:             // 0x31 - Jump if zero (16-bit address)
                     {
-                        long address = (long)pc + (short)ReadUInt16() - 3;
+                        short offset = (short)ReadUInt16();
+                        long address = (long)pc + offset - 3;
                         var condition = stack.Pop();
                         if (condition.UIntValue == 0)
                         {
@@ -252,7 +261,8 @@ namespace HopperRuntime.Core
                     break;
                 case OpCode.JZB:
                     {
-                        long address = (long)pc + (sbyte)program[pc++] - 3;
+                        short offset = (sbyte)program[pc++];
+                        long address = (long)pc + offset - 2;
                         var condition = stack.Pop();
                         if (condition.UIntValue == 0)
                         {
@@ -264,7 +274,8 @@ namespace HopperRuntime.Core
 
                 case OpCode.JNZ:            // 0x32 - Jump if not zero (16-bit address)
                     {
-                        long address = (short)ReadUInt16() + (long)pc - 3;
+                        short offset = (short)ReadUInt16();
+                        long address = (long)pc + offset - 3;
                         var condition = stack.Pop();
                         if (condition.UIntValue != 0)
                         {
@@ -274,7 +285,8 @@ namespace HopperRuntime.Core
                     break;
                 case OpCode.JNZB:
                     {
-                        long address = (long)pc + (sbyte)program[pc++] - 3;
+                        short offset = (sbyte)program[pc++];
+                        long address = (long)pc + offset - 2;
                         var condition = stack.Pop();
                         if (condition.UIntValue != 0)
                         {
@@ -285,13 +297,15 @@ namespace HopperRuntime.Core
 
                 case OpCode.J:              // 0x33 - Unconditional jump (16-bit address)
                     {
-                        long address = (short)ReadUInt16() + (long)pc - 3;
+                        short offset = (short)ReadUInt16();
+                        long address = (long)pc + offset - 3;
                         pc = (uint)address;
                     }
                     break;
                 case OpCode.JB:
                     {
-                        long address = (long)pc + (sbyte)program[pc++] - 3;
+                        short offset = (sbyte)program[pc++];
+                        long address = (long)pc + offset - 2;
                         pc = (uint)address;
                     }
                     break;
@@ -301,6 +315,41 @@ namespace HopperRuntime.Core
                         ushort cleanup = ReadUInt16();
                         stack.PopMultiple(cleanup);
 
+                        if (callStack.Count > 0)
+                        {
+                            pc = callStack.Pop();
+                            if (basePointers.Count > 0)
+                            {
+                                bp = basePointers.Pop();
+                            }
+                        }
+                        else
+                        {
+                            pc = (uint)program.Length;
+                        }
+                    }
+                    break;
+                case OpCode.RETB:
+                    {
+                        ushort cleanup = program[pc++];
+                        stack.PopMultiple(cleanup);
+
+                        if (callStack.Count > 0)
+                        {
+                            pc = callStack.Pop();
+                            if (basePointers.Count > 0)
+                            {
+                                bp = basePointers.Pop();
+                            }
+                        }
+                        else
+                        {
+                            pc = (uint)program.Length;
+                        }
+                    }
+                    break;
+                case OpCode.RET0:
+                    {
                         if (callStack.Count > 0)
                         {
                             pc = callStack.Pop();
@@ -357,6 +406,25 @@ namespace HopperRuntime.Core
                         }
                     }
                     break;
+                case OpCode.RETRESB:         // 0x36 - Return with result (16-bit cleanup)
+                    {
+                        ushort cleanup = program[pc++];
+                        var result = stack.Pop();
+                        stack.PopMultiple(cleanup);
+                        stack.Push(result);
+
+                        if (callStack.Count > 0)
+                        {
+                            pc = callStack.Pop();
+                            if (basePointers.Count > 0)
+                                bp = basePointers.Pop();
+                        }
+                        else
+                        {
+                            pc = (uint)program.Length;
+                        }
+                    }
+                    break;
 
                 case OpCode.PUSHI:
                     {
@@ -397,6 +465,53 @@ namespace HopperRuntime.Core
                         stack.SetLocal(bp, signedOffset, value);
                     }
                     break;
+                case OpCode.POPLOCALB:
+                    {
+                        short signedOffset = (sbyte)program[pc++];
+                        if (copyNextPop)
+                        {
+                            // TODO
+                        }
+                        var value = stack.Pop();
+                        stack.SetLocal(bp, signedOffset, value);
+                    }
+                    break;
+                case OpCode.INCLOCALB:
+                    {
+                        short signedOffset = (sbyte)program[pc++];
+
+                        // INCLOCALB is an optimization of "i = i + 1":
+                        // If it were done using ADDI or ADD, then the result pushed on the stack
+                        // would be tInt or tUInt, even if i was a tByte.
+                        // POPLOCALB would then supply the type for the resulting expression.
+                        //
+                        // So, we need to choose between tUInt and tInt for the "pop" if it was tByte .. I choose tUInt
+                        // (we need to avoid munting the type if it is currently a -ve tInt)
+                        var value = stack.GetLocal(bp, signedOffset);
+                        if (value.Type == ValueType.Int)
+                        {
+                            stack.SetLocal(bp, signedOffset, StackValue.FromInt(value.IntValue + 1));
+                        }
+                        else
+                        {
+                            stack.SetLocal(bp, signedOffset, StackValue.FromUInt(value.UIntValue + 1));
+                        }
+                    }
+                    break;
+                case OpCode.DECLOCALB:
+                    {
+                        short signedOffset = (sbyte)program[pc++];
+                        var value = stack.GetLocal(bp, signedOffset);
+                        if (value.Type == ValueType.Int)
+                        {
+                            stack.SetLocal(bp, signedOffset, StackValue.FromInt(value.IntValue - 1));
+                        }
+                        else
+                        {
+                            stack.SetLocal(bp, signedOffset, StackValue.FromUInt(value.UIntValue - 1));
+                        }
+                    }
+                    break;
                 case OpCode.POPLOCALB00:
                     {
                         short signedOffset = 0;
@@ -404,6 +519,16 @@ namespace HopperRuntime.Core
                         {
                             // TODO
                         }
+                        var value = stack.Pop();
+                        stack.SetLocal(bp, signedOffset, value);
+                    }
+                    break;
+                case OpCode.POPCOPYLOCALB:
+                    {
+                        short signedOffset = (sbyte)program[pc++];
+
+                        // TODO : copyNextPop
+
                         var value = stack.Pop();
                         stack.SetLocal(bp, signedOffset, value);
                     }
@@ -495,11 +620,24 @@ namespace HopperRuntime.Core
                         stack.Push(stack.GetGlobal(globalAddress));
                     }
                     break;
+                case OpCode.PUSHGLOBALB:
+                    {
+                        ushort globalAddress = program[pc++];
+                        stack.Push(stack.GetGlobal(globalAddress));
+                    }
+                    break;
 
                 case OpCode.PUSHSTACKADDR:  // 0x3E - Push stack address (16-bit offset)
                     {
-                        ushort offset = ReadUInt16();
-                        uint stackAddress = bp + offset;
+                        short offset = (short)ReadUInt16();
+                        uint stackAddress = (uint)(bp + offset);
+                        stack.Push(StackValue.FromUInt(stackAddress));
+                    }
+                    break;
+                case OpCode.PUSHSTACKADDRB:
+                    {
+                        short offset = (sbyte)program[pc++];
+                        uint stackAddress = (uint)(bp + offset);
                         stack.Push(StackValue.FromUInt(stackAddress));
                     }
                     break;
@@ -546,6 +684,45 @@ namespace HopperRuntime.Core
                         stack.Push(StackValue.FromUInt((uint)(next.UIntValue != top.UIntValue ? 1 : 0)));
                     }
                     break;
+                case OpCode.PUSHILE:
+                    {
+                        // PUSHI    
+                        ushort value = ReadUInt16();
+                        stack.Push(StackValue.FromUInt(value));
+
+                        // LE
+                        var top = stack.Pop();
+                        var next = stack.Pop();
+                        stack.Push(StackValue.FromUInt((uint)(next.UIntValue <= top.UIntValue ? 1 : 0)));
+                    }
+                    break;
+
+                case OpCode.PUSHIBLE:
+                    {
+                        // PUSHIB    
+                        ushort value = program[pc++];
+                        stack.Push(StackValue.FromUInt(value));
+
+                        // LE
+                        var top = stack.Pop();
+                        var next = stack.Pop();
+                        stack.Push(StackValue.FromUInt((uint)(next.UIntValue <= top.UIntValue ? 1 : 0)));
+                    }
+                    break;
+                case OpCode.PUSHIBEQ:
+                    {
+                        // PUSHIB    
+                        ushort value = program[pc++];
+                        stack.Push(StackValue.FromUInt(value));
+
+                        // LE
+                        var top = stack.Pop();
+                        var next = stack.Pop();
+                        stack.Push(StackValue.FromUInt((uint)(next.UIntValue == top.UIntValue ? 1 : 0)));
+                    }
+                    break;
+
+
 
                 case OpCode.SUB:            // 0x82 - Subtract two stack values
                     {
@@ -582,8 +759,35 @@ namespace HopperRuntime.Core
                         stack.Push(StackValue.FromUInt(next.UIntValue % top.UIntValue));
                     }
                     break;
+                case OpCode.INC:
+                    {
+                        var next = stack.Pop();
+                        stack.Push(StackValue.FromUInt(next.UIntValue + 1));
+                    }
+                    break;
+                case OpCode.DEC:
+                    {
+                        var next = stack.Pop();
+                        stack.Push(StackValue.FromUInt(next.UIntValue - 1));
+                    }
+                    break;
 
-                
+                case OpCode.ADDB:
+                    {
+                        ushort top = program[pc++];
+                        var next = stack.Pop();
+                        stack.Push(StackValue.FromUInt(next.UIntValue + top));
+                    }
+                    break;
+
+                case OpCode.SUBB:
+                    {
+                        ushort top = program[pc++];
+                        var next = stack.Pop();
+                        stack.Push(StackValue.FromUInt(next.UIntValue - top));
+                    }
+                    break;
+
 
 
 
