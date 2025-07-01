@@ -26,7 +26,7 @@ namespace HopperRuntime.Core
         File = 0x15,
         Directory = 0x16,
         List = 0x19,
-        ListItem = 0x1A,
+        
     }
 
     /// <summary>
@@ -75,7 +75,6 @@ namespace HopperRuntime.Core
                 ValueType.File => "file",
                 ValueType.Directory => "directory",
                 ValueType.List => "list",
-                ValueType.ListItem => "listitem",
                 _ => $"unknown({(byte)type:X2})"
             };
         }
@@ -228,7 +227,7 @@ namespace HopperRuntime.Core
         /// <summary>
         /// Pop multiple values from the stack
         /// </summary>
-        public void PopMultiple(int count)
+        public void PopMultiple(ushort count)
         {
             for (int i = 0; i < count; i++)
             {
@@ -322,9 +321,13 @@ namespace HopperRuntime.Core
             int stackPosition = (int)basePointer + offset;
 
             if (stackPosition >= 0 && stackPosition < stack.Count)
+            {
                 return stack[stackPosition];
+            }
             else
+            {
                 throw new InvalidOperationException($"Invalid local/parameter access: offset {offset} from BP {basePointer}");
+            }
         }
 
         /// <summary>
@@ -408,6 +411,49 @@ namespace HopperRuntime.Core
         public StackValue[] ToArray()
         {
             return stack.ToArray();
+        }
+
+        internal void Cast(ValueType toType)
+        {
+            StackValue top = Pop();
+            switch (top.Type)
+            {
+                case ValueType.Byte:
+                    switch (toType)
+                    {
+                        case ValueType.Byte:
+                            // NOP
+                            break;
+                        default:
+                            throw new NotImplementedException();
+                    }
+                    break;
+                case ValueType.UInt:
+                    switch (toType)
+                    {
+                        case ValueType.UInt:
+                            // NOP
+                            break;
+                        case ValueType.Byte:
+                            top.UIntValue = top.UIntValue & 0xFF;
+                            top.Type = ValueType.Byte;
+                            break;
+                        default:
+                            throw new NotImplementedException();
+                    }
+                    break;
+                default:
+                    if (top.Type == toType)
+                    {
+                        // NOP
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
+                    break;
+            }
+            Push(top);
         }
 
         #endregion

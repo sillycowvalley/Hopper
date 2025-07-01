@@ -275,7 +275,7 @@ namespace HopperRuntime.Core
             [OpCode.SYSCALL] = new(OpCode.SYSCALL, "SYSCALL", "System call", 1, -1, -1),
 
             [OpCode.DUP] = new(OpCode.DUP, "DUP", "Duplicate stack item", 1, 0, 1),
-            [OpCode.DECSP] = new(OpCode.DECSP, "DECSP", "Decrement stack pointer", 0, 1, 0),
+            [OpCode.DECSP] = new(OpCode.DECSP, "DECSP", "Decrement stack pointer", 1, 1, 0),
 
             [OpCode.DIE] = new(OpCode.DIE, "DIE", "Terminate with error", 1, 0, 0),
 

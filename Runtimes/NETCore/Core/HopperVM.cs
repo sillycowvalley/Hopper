@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using HopperRuntime.SystemLibrary;
 
@@ -94,7 +95,10 @@ namespace HopperRuntime.Core
         private void ExecuteInstruction()
         {
             bool copyNextPop = false;
-
+            if (pc == 0x00A2)
+            {
+                int wtf = 0;
+            }
             OpCode opcode = (OpCode)program[pc++];
 
             if (Program.TraceEnabled)
@@ -111,6 +115,7 @@ namespace HopperRuntime.Core
                 Console.WriteLine($"{pc - 1:X4}: {OpCodeInfo.FormatInstruction(opcode, operands)}");
             }
 
+
             switch (opcode)
             {
                 // Add these 16 cases to your ExecuteInstruction() switch statement:
@@ -121,7 +126,7 @@ namespace HopperRuntime.Core
                 case OpCode.SYSCALL:        // 0x26 - System call (8-bit ID)
                     {
                         byte syscallId = program[pc++];
-                        HandleSyscall((byte)syscallId, 0);
+                        HandleSyscall((byte)syscallId, 3); // "3" means 'Pop the overload'
                     }
                     break;
 
@@ -201,8 +206,8 @@ namespace HopperRuntime.Core
 
                 case OpCode.RET:            // 0x35 - Return from function (16-bit cleanup)
                     {
-                        uint cleanup = ReadUInt16();
-                        stack.PopMultiple((int)cleanup);
+                        ushort cleanup = ReadUInt16();
+                        stack.PopMultiple(cleanup);
 
                         if (callStack.Count > 0)
                         {
@@ -219,11 +224,33 @@ namespace HopperRuntime.Core
                     }
                     break;
 
+                case OpCode.DECSP:
+                    {
+                        byte cleanup = program[pc++];
+                        stack.PopMultiple(cleanup);
+                    }
+                    break;
+                case OpCode.SWAP:
+                    {
+                        var top = stack.Pop();
+                        var next = stack.Pop();
+                        stack.Push(top);
+                        stack.Push(next);
+                    }
+                    break;
+                case OpCode.CAST:
+                    {
+                        ValueType toType = (ValueType)program[pc++];
+                        stack.Cast(toType);
+                    }
+                    break;
+
+
                 case OpCode.RETRES:         // 0x36 - Return with result (16-bit cleanup)
                     {
                         ushort cleanup = ReadUInt16();
                         var result = stack.Pop();
-                        stack.PopMultiple((int)cleanup);
+                        stack.PopMultiple(cleanup);
                         stack.Push(result);
 
                         if (callStack.Count > 0)
@@ -320,6 +347,13 @@ namespace HopperRuntime.Core
                         stack.Push(StackValue.FromUInt((uint)(next.UIntValue <= top.UIntValue ? 1 : 0)));
                     }
                     break;
+                case OpCode.EQ:             // 0x92 - equal
+                    {
+                        var top = stack.Pop();
+                        var next = stack.Pop();
+                        stack.Push(StackValue.FromUInt((uint)(next.UIntValue == top.UIntValue ? 1 : 0)));
+                    }
+                    break;
 
                 case OpCode.NE:             // 0x94 - Not equal
                     {
@@ -343,6 +377,29 @@ namespace HopperRuntime.Core
                         stack.Push(StackValue.FromUInt(next.UIntValue + top.UIntValue));
                     }
                     break;
+                case OpCode.MUL:
+                    {
+                        var top = stack.Pop();
+                        var next = stack.Pop();
+                        stack.Push(StackValue.FromUInt(next.UIntValue * top.UIntValue));
+                    }
+                    break;
+                case OpCode.DIV:
+                    {
+                        var top = stack.Pop();
+                        var next = stack.Pop();
+                        stack.Push(StackValue.FromUInt(next.UIntValue / top.UIntValue));
+                    }
+                    break;
+                case OpCode.MOD:
+                    {
+                        var top = stack.Pop();
+                        var next = stack.Pop();
+                        stack.Push(StackValue.FromUInt(next.UIntValue % top.UIntValue));
+                    }
+                    break;
+
+                
 
 
 

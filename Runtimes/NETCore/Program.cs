@@ -8,10 +8,13 @@ namespace HopperRuntime
 {
     public class Program
     {
+        public static DateTime LaunchTime { get; private set; }
         public static bool TraceEnabled { get; private set; } = false;
 
         public static void Main(string[] args)
         {
+            LaunchTime = DateTime.Now;
+
             if (args.Length == 0)
             {
                 Console.WriteLine("Usage: Hopper <program.hexe>");
@@ -41,6 +44,8 @@ namespace HopperRuntime
             var vm = new HopperVM();
             var bytecode = File.ReadAllBytes(programFile);
             vm.LoadProgram(bytecode);
+
+            
             vm.Run();
         }
     }
