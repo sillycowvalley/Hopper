@@ -2,7 +2,7 @@
   "profiles": {
     "NETCore": {
       "commandName": "Project",
-      "commandLineArgs": "Bin\\Hello.hexe",
+      "commandLineArgs": "Bin\\Hello.hexe -t",
       "workingDirectory": "D:\\Repos\\Hopper"
     }
   }

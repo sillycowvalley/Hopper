@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-
 using HopperRuntime.Core;
 
 namespace HopperRuntime
 {
     public class Program
     {
+        public static bool TraceEnabled { get; private set; } = false;
+
         public static void Main(string[] args)
         {
             if (args.Length == 0)
@@ -17,10 +18,28 @@ namespace HopperRuntime
                 return;
             }
 
+            // Check for trace flag and find program file
+            string? programFile = null;
+            foreach (string arg in args)
+            {
+                if (arg == "-t")
+                {
+                    TraceEnabled = true;
+                }
+                else
+                {
+                    programFile = arg;
+                }
+            }
+
+            if (programFile == null)
+            {
+                Console.WriteLine("Usage: Hopper <program.hexe>");
+                return;
+            }
+
             var vm = new HopperVM();
-
-            var bytecode = File.ReadAllBytes(args[0]);
-
+            var bytecode = File.ReadAllBytes(programFile);
             vm.LoadProgram(bytecode);
             vm.Run();
         }

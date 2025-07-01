@@ -53,8 +53,10 @@ namespace HopperRuntime.Core
             // Start execution at the beginning of the extracted program
             pc = 0;
 
-            // Optional: Print program summary for debugging
-            Console.WriteLine(BinaryLoader.GetProgramSummary(loadedProgram));
+            if (Program.TraceEnabled)
+            {
+                Console.WriteLine(BinaryLoader.GetProgramSummary(loadedProgram));
+            }
         }
 
         /// <summary>
@@ -86,7 +88,21 @@ namespace HopperRuntime.Core
         private void ExecuteInstruction()
         {
             OpCode opcode = (OpCode)program[pc++];
-            Console.WriteLine($"{pc - 1:X4}: {OpCodeInfo.GetName(opcode)}");
+
+            if (Program.TraceEnabled)
+            {
+                // Read operands for formatting without advancing PC
+                byte[]? operands = null;
+                int operandBytes = OpCodeInfo.GetOperandBytes(opcode);
+                if (operandBytes > 0 && pc + operandBytes <= program.Length)
+                {
+                    operands = new byte[operandBytes];
+                    Array.Copy(program, pc, operands, 0, operandBytes);
+                }
+
+                Console.WriteLine($"{pc - 1:X4}: {OpCodeInfo.FormatInstruction(opcode, operands)}");
+            }
+
 
             switch (opcode)
             {
