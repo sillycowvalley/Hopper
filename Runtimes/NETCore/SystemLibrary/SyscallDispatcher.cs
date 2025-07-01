@@ -40,6 +40,7 @@ namespace HopperRuntime.SystemLibrary
             else
             {
                 Console.WriteLine($"Unknown syscall: 0x{syscallId:X2}");
+                throw new NotImplementedException();
             }
         }
 
@@ -49,25 +50,30 @@ namespace HopperRuntime.SystemLibrary
         private void RegisterSystemCalls()
         {
             // String Unit - 0x00-0x0F range
-            systemCalls[0x05] = new SystemCall("String.NewFromConstant", StringNewFromConstant);
+            systemCalls[0x00] = new SystemCall("String.NewFromConstant", StringNewFromConstant);
+            systemCalls[0x02] = new SystemCall("String.New", StringNew);
             
             // Screen Unit - 0x20-0x3F range  
             systemCalls[0x29] = new SystemCall("Screen.Print", ScreenPrint);
             systemCalls[0x2A] = new SystemCall("Screen.PrintLn", ScreenPrintLn);
-            
-            // TODO: Add more system calls as needed
-            // Keyboard Unit - 0x40-0x4F range
-            // File Unit - 0x50-0x5F range
-            // Time Unit - 0x60-0x6F range
-            // etc.
+
+            systemCalls[0x1D] = new SystemCall("Long.New", LongNew);
+
+            systemCalls[0x25] = new SystemCall("Time.MillisGet", TimeMillisGet);
         }
 
         #region String System Calls
 
+        private void StringNew(byte param)
+        {
+            string str = System.String.Empty;
+            stack.Push(StackValue.FromString(str));
+        }
+
         private void StringNewFromConstant(byte param)
         {
             string str = ReadConstantString(param);
-            stack.Push(StackValue.FromString(str));  // Use Push() instead of Add()
+            stack.Push(StackValue.FromString(str));
         }
 
         private string ReadConstantString(byte offset)
@@ -80,6 +86,27 @@ namespace HopperRuntime.SystemLibrary
                 pos++;
             }
             return result.ToString();
+        }
+
+        #endregion
+
+        #region Time System Calls
+
+        static DateTime startTime = DateTime.Now;
+        private void TimeMillisGet(byte param)
+        {
+            DateTime now = DateTime.Now;
+            TimeSpan elapsed = now - startTime;
+            stack.Push(StackValue.FromLong((long)elapsed.TotalMilliseconds));
+        }
+
+        #endregion
+
+        #region Long System Calls
+
+        private void LongNew(byte param)
+        {
+            stack.Push(StackValue.FromLong(0));
         }
 
         #endregion
@@ -161,60 +188,5 @@ namespace HopperRuntime.SystemLibrary
         public override string ToString() => Name;
     }
 
-    /// <summary>
-    /// System call ID ranges for organization
-    /// This helps prevent ID conflicts as we add more system calls
-    /// </summary>
-    public static class SystemCallRanges
-    {
-        // String operations: 0x00-0x0F
-        public const byte StringNewFromConstant = 0x05;
-        
-        // Screen operations: 0x20-0x3F
-        public const byte ScreenPrint = 0x29;
-        public const byte ScreenPrintLn = 0x2A;
-        public const byte ScreenClear = 0x2B;
-        public const byte ScreenSetCursor = 0x2C;
-        
-        // Keyboard operations: 0x40-0x4F
-        public const byte KeyboardIsAvailable = 0x40;
-        public const byte KeyboardReadKey = 0x41;
-        
-        // File operations: 0x50-0x5F
-        public const byte FileOpen = 0x50;
-        public const byte FileRead = 0x51;
-        public const byte FileWrite = 0x52;
-        public const byte FileClose = 0x53;
-        
-        // Time operations: 0x60-0x6F
-        public const byte TimeMillis = 0x60;
-        public const byte TimeDelay = 0x61;
-        
-        // Math operations: 0x70-0x7F
-        public const byte MathSin = 0x70;
-        public const byte MathCos = 0x71;
-        public const byte MathSqrt = 0x72;
-        
-        // List operations: 0x80-0x8F
-        public const byte ListAppend = 0x80;
-        public const byte ListGetItem = 0x81;
-        public const byte ListSetItem = 0x82;
-        public const byte ListCount = 0x83;
-        
-        // Dictionary operations: 0x90-0x9F
-        public const byte DictSet = 0x90;
-        public const byte DictGet = 0x91;
-        public const byte DictContains = 0x92;
-        public const byte DictCount = 0x93;
-        
-        // Runtime operations: 0xA0-0xAF
-        public const byte RuntimeInDebugger = 0xA0;
-        public const byte RuntimeUserCode = 0xA1;
-        
-        // System operations: 0xB0-0xBF
-        public const byte SystemBeep = 0xB0;
-        public const byte SystemArguments = 0xB1;
-        
-        // Reserved for future use: 0xC0-0xFF
-    }
+    
 }

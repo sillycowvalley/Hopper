@@ -292,7 +292,7 @@ namespace HopperRuntime.Core
         /// <summary>
         /// Get a global variable by offset (globals are at absolute stack positions)
         /// </summary>
-        public StackValue GetGlobal(byte offset)
+        public StackValue GetGlobal(UInt16 offset)
         {
             if (offset < stack.Count)
                 return stack[offset];
@@ -303,7 +303,7 @@ namespace HopperRuntime.Core
         /// <summary>
         /// Set a global variable by offset (globals are at absolute stack positions)
         /// </summary>
-        public void SetGlobal(byte offset, StackValue value)
+        public void SetGlobal(UInt16 offset, StackValue value)
         {
             // Ensure stack is large enough for this global
             EnsureSize(offset + 1);
@@ -317,7 +317,7 @@ namespace HopperRuntime.Core
         /// <summary>
         /// Get a local variable or parameter relative to the base pointer
         /// </summary>
-        public StackValue GetLocal(uint basePointer, sbyte offset)
+        public StackValue GetLocal(uint basePointer, short offset)
         {
             int stackPosition = (int)basePointer + offset;
 
@@ -330,7 +330,7 @@ namespace HopperRuntime.Core
         /// <summary>
         /// Set a local variable or parameter relative to the base pointer
         /// </summary>
-        public void SetLocal(uint basePointer, sbyte offset, StackValue value)
+        public void SetLocal(uint basePointer, short offset, StackValue value)
         {
             int stackPosition = (int)basePointer + offset;
 

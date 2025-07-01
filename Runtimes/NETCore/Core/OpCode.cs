@@ -348,16 +348,16 @@ namespace HopperRuntime.Core
             [OpCode.POPCOPYREL] = new(OpCode.POPCOPYREL, "POPCOPYREL", "Pop copy to relative", 2, 1, 0),
             [OpCode.POPCOPYGLOBAL] = new(OpCode.POPCOPYGLOBAL, "POPCOPYGLOBAL", "Pop copy to global", 2, 1, 0),
 
-            [OpCode.POPCOPYLOCALB00] = new(OpCode.POPCOPYLOCALB00, "POPCOPYLOCALB00", "Pop copy to local 0", 0, 1, 0),
-            [OpCode.POPCOPYLOCALB01] = new(OpCode.POPCOPYLOCALB01, "POPCOPYLOCALB01", "Pop copy to local 1", 0, 1, 0),
+            [OpCode.POPCOPYLOCALB00] = new(OpCode.POPCOPYLOCALB00, "POPCOPYLOCALB00", "Pop copy to local BP", 0, 1, 0),
+            [OpCode.POPCOPYLOCALB01] = new(OpCode.POPCOPYLOCALB01, "POPCOPYLOCALB01", "Pop copy to local BP-1", 0, 1, 0),
 
             [OpCode.ENTERB] = new(OpCode.ENTERB, "ENTERB", "Function entry with locals", 1, 0, -1),
 
-            [OpCode.PUSHD] = new(OpCode.PUSHD, "PUSHD", "Push D register", 0, 0, 1),
+            [OpCode.PUSHD] = new(OpCode.PUSHD, "PUSHD", "Push Delegate Index", 2, 0, 1),
 
             [OpCode.RETFAST] = new(OpCode.RETFAST, "RETFAST", "Fast return", 0, 0, 0),
 
-            [OpCode.PUSHDB] = new(OpCode.PUSHDB, "PUSHDB", "Push D register (byte)", 0, 0, 1),
+            [OpCode.PUSHDB] = new(OpCode.PUSHDB, "PUSHDB", "Push Delegate Index (byte)", 1, 0, 1),
             [OpCode.EXIT] = new(OpCode.EXIT, "EXIT", "Exit program", 0, 0, 0),
 
             [OpCode.PUSHILEI] = new(OpCode.PUSHILEI, "PUSHILEI", "Push immediate less equal (I)", 2, 0, 1),
