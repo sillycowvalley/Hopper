@@ -31,6 +31,12 @@ public static class PowerShellAnsiEnabler
 
 public class Screen
 {
+
+    public uint Rows { get { return (uint)Console.WindowHeight; } }
+    public uint Columns { get { return (uint)Console.WindowWidth; } }
+    public uint CursorY { get { return (uint)Console.CursorTop; } }
+    public uint CursorX { get { return (uint)Console.CursorLeft; } }
+
     Color ToColor(uint c444)
     {
         if (c444 == 0)
@@ -100,6 +106,17 @@ public class Screen
     public void PrintLn()
     {
         Console.WriteLine();
+    }
+
+    internal void DrawChar(ushort x, ushort y, char c, uint foreColour, uint backColour)
+    {
+        SetCursor(x, y);
+        Print(c, foreColour, backColour);
+    }
+
+    internal void SetCursor(ushort x, ushort y)
+    {
+        Console.SetCursorPosition(x, y);
     }
 
     /*

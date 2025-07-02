@@ -547,7 +547,7 @@ namespace HopperNET
 
                 if (0 != c)
                 {
-                    break;
+                   break;
                 }
             }
             if (localShow)
