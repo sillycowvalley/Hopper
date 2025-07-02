@@ -1,5 +1,7 @@
+using HopperNET;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using static System.Net.Mime.MediaTypeNames;
 
 public static class PowerShellAnsiEnabler
 {
@@ -29,6 +31,118 @@ public static class PowerShellAnsiEnabler
     }
 }
 
+public struct ConsoleCell
+{
+    public bool isSet;
+    public bool isChanged;
+    public Color background;
+    public Color foreground;
+    public char character;
+}
+
+public class DeviceContext
+{
+    ConsoleCell[,] consoleCells;
+    int width;
+    int height;
+    public DeviceContext()
+    {
+        Clear(Console.WindowWidth, Console.WindowHeight);
+    }
+    public void Clear(int width, int height)
+    {
+        this.width = width;
+        this.height = height;
+        consoleCells = new ConsoleCell[width, height];
+    }
+    public void DrawChar(int x, int y, char c, Color foreground, Color background)
+    {
+        consoleCells[x, y].isSet = true;
+        if (consoleCells[x, y].character != c)
+        {
+            consoleCells[x, y].isChanged = true;
+            consoleCells[x, y].character = c;
+        }
+        if ((consoleCells[x, y].foreground != foreground) && (c != ' '))
+        {
+            consoleCells[x, y].isChanged = true;
+            consoleCells[x, y].foreground = foreground;
+        }
+        if (consoleCells[x, y].background != background)
+        {
+            consoleCells[x, y].isChanged = true;
+            consoleCells[x, y].background = background;
+        }
+    }
+
+    public static void SetForegroundRGB(int r, int g, int b)
+    {
+        Console.Write($"\x1b[38;2;{r};{g};{b}m");
+    }
+    public static void ResetColors()
+    {
+        Console.Write("\x1b[0m");
+    }
+    public static void SetBackgroundRGB(int r, int g, int b)
+    {
+        Console.Write($"\x1b[48;2;{r};{g};{b}m");
+    }
+
+    public void Flush()
+    {
+        bool atLeastOne = false;
+        string cells = String.Empty;
+        int oldX = 0;
+        int oldY = 0;
+        Color? lastBackground = null;
+        Color? lastForeground = null;
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                if (consoleCells[x, y].isSet && consoleCells[x, y].isChanged)
+                {
+                    if (!atLeastOne)
+                    {
+                        oldX = Console.CursorLeft;
+                        oldY = Console.CursorTop;
+                        atLeastOne = true;
+                    }
+                    Console.SetCursorPosition(x, y);
+
+                    Color background = consoleCells[x, y].background;
+                    if (!lastBackground.HasValue || (lastBackground != background))
+                    {
+                        SetBackgroundRGB(background.R, background.G, background.B);
+                        lastBackground = background;
+                    }
+                    Color foreground = consoleCells[x, y].foreground;
+                    if (!lastForeground.HasValue || (lastForeground != foreground))
+                    {
+                        SetForegroundRGB(foreground.R, foreground.G, foreground.B);
+                        lastForeground = foreground;
+                    }
+                    Console.Write(consoleCells[x, y].character);
+                    consoleCells[x, y].isChanged = false;
+                    cells += consoleCells[x, y].character;
+                }
+            }
+        }
+        if (atLeastOne)
+        {
+            ResetColors();
+            Console.SetCursorPosition(oldX, oldY);
+            string display = cells;
+            if (display.Length > 80)
+            {
+                display = display.Substring(0, 80) + "..";
+            }
+            Diagnostics.OutputDebug("\nCells updated: " + cells.Length.ToString() + ", '" + display + "'");
+        }
+    }
+}
+
 public class Screen
 {
 
@@ -37,7 +151,9 @@ public class Screen
     public uint CursorY { get { return (uint)Console.CursorTop; } }
     public uint CursorX { get { return (uint)Console.CursorLeft; } }
 
-    Color ToColor(uint c444)
+    DeviceContext deviceContext = new DeviceContext();
+
+    internal static Color ToColor(uint c444)
     {
         if (c444 == 0)
         {
@@ -124,19 +240,9 @@ public class Screen
     
     internal void DrawChar(ushort x, ushort y, char c, uint foreColour, uint backColour)
     {
-        if (suspendCount == 0)
-        {
-            int wtf = 0;
-        }
         Suspend();
 
-        int oldX = Console.CursorLeft;
-        int oldY = Console.CursorTop;
-
-        SetCursor(x, y);
-        print(c + String.Empty, foreColour, backColour);
-
-        Console.SetCursorPosition(oldX, oldY);
+        deviceContext.DrawChar(x, y, c, ToColor(foreColour), ToColor(backColour));
 
         Resume(false);
     }
@@ -155,6 +261,7 @@ public class Screen
         suspendCount--;
         if (suspendCount == 0)
         {
+            deviceContext.Flush();
             ShowCursor(true);
         }
     }
@@ -162,6 +269,7 @@ public class Screen
     internal void Clear()
     {
         Console.Clear();
+        deviceContext.Clear(Console.WindowWidth, Console.WindowHeight);
     }
 
     internal void ShowCursor(bool show)

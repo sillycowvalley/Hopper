@@ -7466,15 +7466,17 @@ namespace HopperNET
                     }
                     break;
 
-                /*
                 case SysCall.ClipboardHasTextGet:
                     {
-                        uint hasText = (uint)((hopper.HasClipboardText()) ? 1 : 0);
-                        currentContext.RemainingClipboardText = hopper.GetClipboardText();
+                        //uint hasText = (uint)((hopper.HasClipboardText()) ? 1 : 0);
+                        //currentContext.RemainingClipboardText = hopper.GetClipboardText();
+
+                        uint hasText = 0;
                         Push(hasText, HopperType.tBool);
                         hasResult = true;
                     }
                     break;
+                    /*
                 case SysCall.ClipboardGetText:
                     {
                         string clipboardText = hopper.GetClipboardText();
