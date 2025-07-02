@@ -1,6 +1,5 @@
 using System.Drawing;
 using System.Runtime.InteropServices;
-using static System.Net.Mime.MediaTypeNames;
 
 public static class PowerShellAnsiEnabler
 {
@@ -30,7 +29,7 @@ public static class PowerShellAnsiEnabler
     }
 }
 
-public class ScreenUnit
+public class Screen
 {
     Color ToColor(uint c444)
     {
@@ -89,7 +88,15 @@ public class ScreenUnit
         Console.Write(text);
         ResetColors();
     }
-
+    public void PrintLn(string text, uint foreColor, uint backColor)
+    {
+        Print(text, foreColor, backColor);
+        PrintLn();
+    }
+    public void Print(char c, uint foreColor, uint backColor)
+    {
+        Print(c + String.Empty, foreColor, backColor);
+    }
     public void PrintLn()
     {
         Console.WriteLine();
