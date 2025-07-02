@@ -35,12 +35,6 @@ namespace HopperRuntime
 
             PowerShellAnsiEnabler.EnableAnsiSupport();
 
-            if (args.Length == 0)
-            {
-                Console.WriteLine("Usage: Hopper <program.hexe>");
-                return -1;
-            }
-
             // Check for trace flag and find program file
             string programFile = null;
             foreach (string arg in args)
@@ -61,8 +55,7 @@ namespace HopperRuntime
 
             if (String.IsNullOrEmpty(programFile))
             {
-                Console.WriteLine("Usage: Hopper <program.hexe>");
-                return -1;
+                programFile = "Shell"; // default to launching the Hopper shell
             }
             
             

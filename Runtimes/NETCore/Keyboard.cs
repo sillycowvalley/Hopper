@@ -444,20 +444,18 @@ namespace HopperNET
                     return Key.End | hopperModifiers;
                 case ConsoleKey.Home:
                     return Key.Home | hopperModifiers;
-                    /*
-                case ConsoleKey.Left:
+                case ConsoleKey.LeftArrow:
                     return Key.Left | hopperModifiers;
-                case ConsoleKey.Right:
+                case ConsoleKey.RightArrow:
                     return Key.Right | hopperModifiers;
-                case ConsoleKey.Up:
+                case ConsoleKey.UpArrow:
                     return Key.Up | hopperModifiers;
-                case ConsoleKey.Down:
+                case ConsoleKey.DownArrow:
                     return Key.Down | hopperModifiers;
-                case ConsoleKey.Prior:
+                case ConsoleKey.PageUp:
                     return Key.PageUp | hopperModifiers;
-                case ConsoleKey.Next:
+                case ConsoleKey.PageDown:
                     return Key.PageDown | hopperModifiers;
-                    */
                 case ConsoleKey.F1:
                     return Key.F1 | hopperModifiers;
                 case ConsoleKey.F2:

@@ -1417,21 +1417,13 @@ namespace HopperNET
                                 Diagnostics.Die(0x04, this);
                                 break;
                             }
-#if UNDOINLINED
-                        Push(next % top, HopperType.tUInt);
-#else
                             stack[sp2].value = next % top;
                             stack[sp2].type = HopperType.tUInt;
-#endif
                         }
                         break;
 
                     case Instruction.EQ:
                         {
-#if UNDOINLINED
-                            uint top = Pop();
-                            uint next = Pop();
-#else
                             sp--;
                             ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
@@ -1439,21 +1431,12 @@ namespace HopperNET
 #if DEBUG
                             ClearSP();
 #endif
-#endif
-#if UNDOINLINED
-                            PushBool(next == top);
-#else
                             stack[sp2].value = (uint)((next == top) ? 1 : 0);
                             stack[sp2].type = HopperType.tBool;
-#endif
                         }
                         break;
                     case Instruction.NE:
                         {
-#if UNDOINLINED
-                            uint top = Pop();
-                            uint next = Pop();
-#else
                             sp--;
                             ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
@@ -1461,21 +1444,12 @@ namespace HopperNET
 #if DEBUG
                             ClearSP();
 #endif
-#endif
-#if UNDOINLINED
-                            PushBool(next != top);
-#else
                             stack[sp2].value = (uint)((next != top) ? 1 : 0);
                             stack[sp2].type = HopperType.tBool;
-#endif
                         }
                         break;
                     case Instruction.LE:
                         {
-#if UNDOINLINED
-                            uint top = Pop();
-                            uint next = Pop();
-#else
                             sp--;
                             ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
@@ -1483,21 +1457,12 @@ namespace HopperNET
 #if DEBUG
                             ClearSP();
 #endif
-#endif
-#if UNDOINLINED
-                            PushBool(next <= top);
-#else
                             stack[sp2].value = (uint)((next <= top) ? 1 : 0);
                             stack[sp2].type = HopperType.tBool;
-#endif
                         }
                         break;
                     case Instruction.LT:
                         {
-#if UNDOINLINED
-                            uint top = Pop();
-                            uint next = Pop();
-#else
                             sp--;
                             ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
@@ -1505,28 +1470,18 @@ namespace HopperNET
 #if DEBUG
                             ClearSP();
 #endif
-#endif
-#if UNDOINLINED
-                            PushBool(next < top);
-#else
                             stack[sp2].value = (uint)((next < top) ? 1 : 0);
                             stack[sp2].type = HopperType.tBool;
-#endif
                         }
                         break;
                     case Instruction.GE:
                         {
-#if UNDOINLINED
-                uint top = Pop();
-                uint next = Pop();
-#else
                             sp--;
                             ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 #if DEBUG
                             ClearSP();
-#endif
 #endif
 #if UNDOINLINED
                             PushBool(next >= top);
@@ -5920,7 +5875,7 @@ namespace HopperNET
                 case SysCall.SystemArgumentsGet:
                     {
                         HopperList arguments = new HopperList(HopperType.tString);
-                        foreach (string arg in hopperSystem.Arguments)
+                        foreach (string arg in currentContext.Arguments)
                         {
                             arguments.Value.Add(new HopperString(arg));
                         }

@@ -110,23 +110,40 @@ public class Screen
 
     internal void DrawChar(ushort x, ushort y, char c, uint foreColour, uint backColour)
     {
+        int oldX = Console.CursorLeft;
+        int oldY = Console.CursorTop;
+
         SetCursor(x, y);
         Print(c, foreColour, backColour);
+
+        Console.SetCursorPosition(oldX, oldY);
     }
 
     internal void SetCursor(ushort x, ushort y)
     {
-        Console.SetCursorPosition(x, y);
+        if ((x >= 0) && (y >= 0) && (x < Console.BufferWidth) && (y < Console.BufferHeight))
+        {
+            Console.SetCursorPosition(x, y);
+        }
     }
 
+    int suspendCount = 0;
     internal void Suspend()
     {
-        
+        if (suspendCount == 0)
+        {
+            ShowCursor(false);
+        }
+        suspendCount++;
     }
 
     internal void Resume(bool v)
     {
-        
+        suspendCount--;
+        if (suspendCount == 0)
+        {
+            ShowCursor(true);
+        }
     }
 
     internal void Clear()
@@ -136,7 +153,7 @@ public class Screen
 
     internal void ShowCursor(bool show)
     {
-        throw new NotImplementedException();
+        Console.CursorVisible = show;
     }
 
 }
