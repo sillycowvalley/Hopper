@@ -1313,9 +1313,9 @@ namespace HopperNET
                 //Debug.WriteLine("PC: 0x" + pc.ToString("X4"));
                 Instruction opCode = (Instruction)code[pc + currentContext.CodeOffset];
                 instructionPC = pc;
-                if (pc == 0x2C5A)
+                if (pc == 0x0C27)
                 {
-                    //int why = 0;
+                    int why = 0;
                 }
                 if (!inISR && (currentISR != 0))
                 {

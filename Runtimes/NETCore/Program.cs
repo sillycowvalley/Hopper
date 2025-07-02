@@ -8,9 +8,22 @@ namespace HopperRuntime
     {
         public static List<String> Arguments { get; private set; } = new List<String>();
         public static bool TraceEnabled { get; private set; } = false;
-        
+
+        static Screen screen = new Screen();
+        static Keyboard keyboard = new Keyboard();
+
+
+        static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        {
+            // Cancel the termination (prevent immediate exit)
+            e.Cancel = true;
+            keyboard.PushToKeyboardBuffer(Key.ControlC);
+        }
+
         public static int Main(string[] args)
         {
+            Console.CancelKeyPress += Console_CancelKeyPress;
+
             CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
             string exePath = Environment.ProcessPath;
@@ -52,9 +65,7 @@ namespace HopperRuntime
                 return -1;
             }
             
-            Screen screen = new Screen();
-            Keyboard keyboard = new Keyboard();
-
+            
             Runtime runtime = new Runtime(screen, keyboard);
 
             HopperSystem hopperSystem = new HopperSystem();

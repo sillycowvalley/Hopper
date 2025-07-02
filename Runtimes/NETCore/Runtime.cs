@@ -1321,7 +1321,7 @@ namespace HopperNET
                 //Debug.WriteLine("PC: 0x" + pc.ToString("X4"));
                 Instruction opCode = (Instruction)code[pc + currentContext.CodeOffset];
                 instructionPC = pc;
-                if (pc == 0x01C5)
+                if (pc == 0x0773)
                 {
                     int why = 0;
                 }
@@ -1347,10 +1347,6 @@ namespace HopperNET
                 {
                     case Instruction.ADD:
                         {
-#if UNDOINLINED
-                            uint top = Pop();
-                            uint next = Pop();
-#else
                             sp--;
                             ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
@@ -1359,21 +1355,12 @@ namespace HopperNET
                             ClearSP();
 #endif
 
-#endif
-#if UNDOINLINED
-                            Push(next + top, HopperType.tUInt);
-#else
                             stack[sp2].value = next + top;
                             stack[sp2].type = HopperType.tUInt;
-#endif
                         }
                         break;
                     case Instruction.SUB:
                         {
-#if UNDOINLINED
-                            uint top = Pop();
-                            uint next = Pop();
-#else
                             sp--;
                             ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
@@ -1381,21 +1368,12 @@ namespace HopperNET
 #if DEBUG
                             ClearSP();
 #endif
-#endif
-#if UNDOINLINED
-                        Push(next - top, HopperType.tUInt);
-#else
                             stack[sp2].value = next - top;
                             stack[sp2].type = HopperType.tUInt;
-#endif
                         }
                         break;
                     case Instruction.MUL:
                         {
-#if UNDOINLINED
-                uint top = Pop();
-                uint next = Pop();
-#else
                             sp--;
                             ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
@@ -1403,55 +1381,36 @@ namespace HopperNET
 #if DEBUG
                             ClearSP();
 #endif
-#endif
-#if UNDOINLINED
-                        Push(next * top, HopperType.tUInt);
-#else
                             stack[sp2].value = next * top;
                             stack[sp2].type = HopperType.tUInt;
-#endif
                         }
                         break;
                     case Instruction.DIV:
                         {
-#if UNDOINLINED
-                uint top = Pop();
-                uint next = Pop();
-#else
                             sp--;
                             ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 #if DEBUG
                             ClearSP();
-#endif
 #endif
                             if (top == 0)
                             {
                                 Diagnostics.Die(0x04, this);
                                 break;
                             }
-#if UNDOINLINED
-                        Push(next / top, HopperType.tUInt);
-#else
                             stack[sp2].value = next / top;
                             stack[sp2].type = HopperType.tUInt;
-#endif
                         }
                         break;
                     case Instruction.MOD:
                         {
-#if UNDOINLINED
-                uint top = Pop();
-                uint next = Pop();
-#else
                             sp--;
                             ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
                             uint next = stack[sp2].value;
 #if DEBUG
                             ClearSP();
-#endif
 #endif
                             if (top == 0)
                             {
@@ -2164,20 +2123,10 @@ namespace HopperNET
                             // clear the locals and arguments off the stack (return value is already dealt with if needed)
                             ClearStack(operand);
                             int sp2 = sp - 1;
-                            if (type <= HopperType.tLong)
-                            {
-                                stack[sp2].value = value;
-                                stack[sp2].type = type;
-                            }
-                            else
-                            {
-                                if (type <= HopperType.tLong)
-                                {
-                                    type = HopperType.tVariant;
-                                }
-                                stack[sp2].reference = reference;
-                                stack[sp2].type = type;
-                            }
+                            
+                            stack[sp2].value = value;
+                            stack[sp2].reference = reference;
+                            stack[sp2].type = type;
 #endif
 
                             bp = PopCS();
@@ -2247,20 +2196,10 @@ namespace HopperNET
                             // clear the locals and arguments off the stack (return value is already dealt with if needed)
                             ClearStack(operand);
                             int sp2 = (sp) - 1;
-                            if (type <= HopperType.tLong)
-                            {
-                                stack[sp2].value = value;
-                                stack[sp2].type  = type;
-                            }
-                            else
-                            {
-                                if (type <= HopperType.tLong)
-                                {
-                                    type = HopperType.tVariant;
-                                }
-                                stack[sp2].reference = reference;
-                                stack[sp2].type = type;
-                            }
+                            
+                            stack[sp2].value = value;
+                            stack[sp2].reference = reference;
+                            stack[sp2].type = type;
 #endif
 
                             bp = PopCS();
@@ -6092,10 +6031,10 @@ namespace HopperNET
                     hasResult = true;
                     break;
                 case SysCall.ScreenSuspend:
-                    //this.screen.Suspend();
+                    this.screen.Suspend();
                     break;
                 case SysCall.ScreenResume:
-                    //this.screen.Resume(Pop() != 0);
+                    this.screen.Resume(Pop() != 0);
                     break;
                 case SysCall.ScreenDrawChar:
                     {
@@ -6118,19 +6057,18 @@ namespace HopperNET
                         this.screen.SetCursor(x, y);
                     }
                     break;
-                    /*
+                    
                 case SysCall.ScreenShowCursorSet:
                     {
                         ushort show = (ushort)Pop();
-                        this.screen.Console.ShowCursor(show != 0);
+                        this.screen.ShowCursor(show != 0);
                     }
                     break;
-                    */
-                    /*
+                    
                 case SysCall.ScreenClear:
                     this.screen.Clear();
                     break;
-                    */
+                    
                 case SysCall.RuntimePCGet:
                     Push((ushort)this.pc, HopperType.tUInt);
                     hasResult = true;

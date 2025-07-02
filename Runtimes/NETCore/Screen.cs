@@ -119,16 +119,24 @@ public class Screen
         Console.SetCursorPosition(x, y);
     }
 
-    /*
-    // Set cursor position (0-based coordinates)
-    Console.SetCursorPosition(x, y);
+    internal void Suspend()
+    {
+        
+    }
 
-    // Get current cursor position
-    int x = Console.CursorLeft;
-    int y = Console.CursorTop;
+    internal void Resume(bool v)
+    {
+        
+    }
 
-    // Example: Write at specific position
-    Console.SetCursorPosition(10, 5);
-    Console.Write("Hello at (10,5)!");
-    */
+    internal void Clear()
+    {
+        Console.Clear();
+    }
+
+    internal void ShowCursor(bool show)
+    {
+        throw new NotImplementedException();
+    }
+
 }

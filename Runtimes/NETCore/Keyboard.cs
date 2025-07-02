@@ -624,6 +624,7 @@ namespace HopperNET
                 }
             }
         }
+
         internal void Free()
         {
             lock (keyboardBuffer)

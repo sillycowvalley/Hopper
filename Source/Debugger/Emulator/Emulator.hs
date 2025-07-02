@@ -433,7 +433,7 @@ unit Emulator
             
             // shortcut keys
             bool doShortcut = false;
-            if (key == (Key.Alt | Key.F4))
+            if (key == (Key.Alt | Key.ModX))
             {
                 commandLine = "Q";
                 doShortcut = true;
