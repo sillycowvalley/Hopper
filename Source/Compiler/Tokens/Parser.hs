@@ -78,7 +78,9 @@ unit Parser
         if (IsInteractive())
         {
             char c = progressTicks[currentTick];
+            Screen.Suspend();
             DrawChar(tickColumn, tickRow, c, Colour.StatusText, Colour.StatusFace);
+            Screen.Resume(true);
             currentTick++;
             if (currentTick == progressTicks.Length)
             {
@@ -94,7 +96,9 @@ unit Parser
     {
         if (IsInteractive())
         {
+            Screen.Suspend();
             DrawChar(tickColumn, tickRow, ' ', Colour.ProgressText, Colour.ProgressFace);
+            Screen.Resume(true);
         }
     }
         

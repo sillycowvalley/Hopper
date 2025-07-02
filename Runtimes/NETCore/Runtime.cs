@@ -15,6 +15,8 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace HopperNET
 {
+    
+
     public enum StepTypes
     {
         None,
@@ -599,8 +601,9 @@ namespace HopperNET
 
     public class Runtime
     {
-
-
+#if DEBUG
+        static bool stackCheck = false;
+#endif
         static public bool Type_IsValueType(HopperType type)
         {
             /*
@@ -976,7 +979,10 @@ namespace HopperNET
 #endif
             sp--;
 #if DEBUG
-            Diagnostics.ASSERTDIE(stack[sp].reference == null, "value type", this);
+            if (stackCheck)
+            {
+                Diagnostics.ASSERTDIE(stack[sp].reference == null, "value type", this);
+            }
 #endif
             ushort sp2 = sp;
             short result = 0;
@@ -1073,7 +1079,10 @@ namespace HopperNET
             sp--;
             ushort sp2 = sp;
 #if DEBUG
-            Diagnostics.ASSERTDIE(stack[sp2].reference == null, "value type", this);
+            if (stackCheck)
+            {
+                Diagnostics.ASSERTDIE(stack[sp2].reference == null, "value type", this);
+            }
 #endif
             uint value = stack[sp2].value;
 #if DEBUG
@@ -1315,10 +1324,13 @@ namespace HopperNET
                 }
 
 #if DEBUG
-                Diagnostics.ASSERTDIE((stack[sp].value == 0) && (stack[sp].reference == null) && (stack[sp].type == HopperType.tUndefined), "stack not cleared", this);
+                if (stackCheck)
+                {
+                    Diagnostics.ASSERTDIE((stack[sp].value == 0) && (stack[sp].reference == null) && (stack[sp].type == HopperType.tUndefined), "stack not cleared", this);
+                }
 #endif
 
-                //Debug.WriteLine("PC: 0x" + pc.ToString("X4"));
+                    //Debug.WriteLine("PC: 0x" + pc.ToString("X4"));
                 Instruction opCode = (Instruction)code[pc + currentContext.CodeOffset];
                 instructionPC = pc;
                 if (pc == 0x0773)

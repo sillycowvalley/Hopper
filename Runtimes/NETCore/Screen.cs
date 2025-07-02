@@ -85,7 +85,7 @@ public class Screen
         Console.Write($"\x1b[48;2;{r};{g};{b}m");
     }
 
-    public void Print(string text, uint foreColor, uint backColor)
+    private void print(string text, uint foreColor, uint backColor)
     {
         Color rgb = ToColor(backColor);
         SetBackgroundRGB(rgb.R, rgb.G, rgb.B);
@@ -93,6 +93,10 @@ public class Screen
         SetForegroundRGB(rgb.R, rgb.G, rgb.B);
         Console.Write(text);
         ResetColors();
+    }
+    public void Print(string text, uint foreColor, uint backColor)
+    {
+        print(text, foreColor, backColor);
     }
     public void PrintLn(string text, uint foreColor, uint backColor)
     {
@@ -108,17 +112,6 @@ public class Screen
         Console.WriteLine();
     }
 
-    internal void DrawChar(ushort x, ushort y, char c, uint foreColour, uint backColour)
-    {
-        int oldX = Console.CursorLeft;
-        int oldY = Console.CursorTop;
-
-        SetCursor(x, y);
-        Print(c, foreColour, backColour);
-
-        Console.SetCursorPosition(oldX, oldY);
-    }
-
     internal void SetCursor(ushort x, ushort y)
     {
         if ((x >= 0) && (y >= 0) && (x < Console.BufferWidth) && (y < Console.BufferHeight))
@@ -128,6 +121,26 @@ public class Screen
     }
 
     int suspendCount = 0;
+    
+    internal void DrawChar(ushort x, ushort y, char c, uint foreColour, uint backColour)
+    {
+        if (suspendCount == 0)
+        {
+            int wtf = 0;
+        }
+        Suspend();
+
+        int oldX = Console.CursorLeft;
+        int oldY = Console.CursorTop;
+
+        SetCursor(x, y);
+        print(c + String.Empty, foreColour, backColour);
+
+        Console.SetCursorPosition(oldX, oldY);
+
+        Resume(false);
+    }
+
     internal void Suspend()
     {
         if (suspendCount == 0)
@@ -137,7 +150,7 @@ public class Screen
         suspendCount++;
     }
 
-    internal void Resume(bool v)
+    internal void Resume(bool isInteractive)
     {
         suspendCount--;
         if (suspendCount == 0)

@@ -149,21 +149,25 @@ unit PopupMenu
         currentShortcuts.Clear();
         
         <string> menuitems = this["menuitems"];
-        uint x = GetX0(this);
+        uint x0 = GetX0(this);
         uint y = GetY0(this);
         uint w = GetWidth(this);
-        x++;
+        x0++;
 
         < < uint > > listOfAreas;
 
         foreach (var name in menuitems)
         {
-            SetCursor(x, y);
+            uint x = x0;
             if (name.Length == 0)
             {
                 string separator;
                 separator = separator.Pad('-', w-2);
-                Print(separator, Colour.DarkGray, Colour.ButtonFace);
+                foreach (var c in separator)
+                {
+                    DrawChar(x, y, c, Colour.DarkGray, Colour.ButtonFace);
+                    x++;
+                }
             }
             else
             {
@@ -186,13 +190,24 @@ unit PopupMenu
                     {
                         if (keyIndex > 0)
                         {
-                            Print(label.Substring(0, keyIndex), Colour.Black, Colour.ButtonFace);
+                            string sub = label.Substring(0, keyIndex);
+                            foreach (var c in sub)
+                            {
+                                DrawChar(x, y, c, Colour.Black, Colour.ButtonFace);
+                                x++;
+                            }
                         }
                         string shortCut = label.Substring(keyIndex, 1);
-                        Print(shortCut, Colour.AltKey, Colour.ButtonFace);
+                        DrawChar(x, y, shortCut[0], Colour.AltKey, Colour.ButtonFace);
+                        x++;
                         if (keyIndex < label.Length - 1)
                         {
-                            Print(label.Substring(keyIndex+1), Colour.Black, Colour.ButtonFace);
+                            string sub = label.Substring(keyIndex+1);
+                            foreach (var c in sub)
+                            {
+                                DrawChar(x, y, c, Colour.Black, Colour.ButtonFace);
+                                x++;
+                            }
                         }
                         string sc = shortCut.ToUpper();
                         currentShortcuts[sc] = name;
@@ -207,12 +222,20 @@ unit PopupMenu
                     }
                     else
                     {
-                        Print(label, Colour.Black, Colour.ButtonFace);
+                        foreach (var c in label)
+                        {
+                            DrawChar(x, y, c, Colour.Black, Colour.ButtonFace);
+                            x++;
+                        }
                     }
                 }
                 else
                 {
-                    Print(label, Colour.DarkGray, Colour.ButtonFace);
+                    foreach (var c in label)
+                    {
+                        DrawChar(x, y, c, Colour.DarkGray, Colour.ButtonFace);
+                        x++;
+                    }
                 }
             }
             y++;
