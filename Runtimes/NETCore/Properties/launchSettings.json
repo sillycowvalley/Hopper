@@ -1,8 +1,7 @@
 {
   "profiles": {
     "NETCore": {
-      "commandName": "Project",
-      "workingDirectory": "D:\\Repos\\Hopper"
+      "commandName": "Project"
     }
   }
 }

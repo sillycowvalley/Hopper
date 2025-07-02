@@ -7255,7 +7255,7 @@ namespace HopperNET
                     Diagnostics.Die((int)Pop(), this);
                     break;
 
-                    /*
+                    
                 case SysCall.SerialConnect:
                     switch (iOverload)
                     {
@@ -7318,7 +7318,6 @@ namespace HopperNET
                         hasResult = true;
                     }
                     break;
-*/
 
                 // emulation APIs for small devices
                 case SysCall.MemoryReadBit:
