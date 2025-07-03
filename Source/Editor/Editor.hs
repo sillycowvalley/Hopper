@@ -2570,10 +2570,10 @@ unit Editor
         Commands.CommandExecuteDelegate openCommand = Editor.Open;
         Commands.CommandEnabledDelegate openEnabled = Editor.Always;
         key = (Key.Control | Key.ModO);
-        InstallCommand("Open", "&Open..", openCommand, openEnabled, key);
-
         if (!IsDebugger)
         {
+            InstallCommand("Open", "&Open..", openCommand, openEnabled, key);
+        
             Commands.CommandExecuteDelegate saveCommand = Editor.Save;
             Commands.CommandEnabledDelegate saveEnabled = Editor.CanUndo;
             key = (Key.Control | Key.ModS);
