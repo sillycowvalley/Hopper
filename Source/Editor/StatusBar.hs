@@ -85,28 +85,20 @@ unit StatusBar
     Draw(<string, variant> this)
     {
         Suspend();
-        Panel.Draw(this);
         
         clickAreas.Clear();
+        
+        string statusText;
         uint panelWidth = Panel.GetWidth(this);
         uint panelX0 = Panel.GetX0(this);
-        if ((row != 0) || (col != 0))
-        {   
-            uint backColour = Panel.GetBackground(this);
-            string content = "Ln: " + row.ToString() + "  Ch: " + col.ToString();
-            uint x = panelX0 + panelWidth - content.Length - 2;
-            uint y = Panel.GetY0(this);
-            foreach (var c in content)
-            {
-                DrawChar(x, y, c, Colour.StatusText, backColour);
-                x++;
-            }
-        }
+        uint backColour = Panel.GetBackground(this);
+        uint x;
+        uint y;
+        
         if (textContent.Length != 0)
         {
-            uint backColour = Panel.GetBackground(this);
-            uint x = panelX0 + 3;
-            uint y = Panel.GetY0(this);
+            x = panelX0 + 3;
+            y = Panel.GetY0(this);
             
             <uint> area;
             uint cw = 0;
@@ -117,7 +109,7 @@ unit StatusBar
             {
                 if (x < xLimit)
                 {
-                    DrawChar(x, y, c, Colour.StatusText, backColour);
+                    statusText += c;
                 }
                 x++;
                 if ((c == '[') && (clickPath.Length == 0))
@@ -145,6 +137,27 @@ unit StatusBar
             {
                 clickAreas.Append(area);
             }
+        }
+        
+        statusText = "   " + statusText;
+        statusText = statusText.Pad(' ', panelWidth);
+        
+        if ((row != 0) || (col != 0))
+        {   
+            string coordsText = "Ln: " + row.ToString() + "  Ch: " + col.ToString();
+            x = panelWidth - coordsText.Length - 2;
+            statusText = statusText.Substring(0, x);
+            statusText += coordsText;
+            statusText = statusText.Pad(' ', panelWidth);
+        }
+        
+        
+        x = panelX0;
+        y = Panel.GetY0(this);
+        foreach (var c in statusText)
+        {
+            DrawChar(x, y, c, Colour.StatusText, backColour);
+            x++;
         }
         
         Resume(false);

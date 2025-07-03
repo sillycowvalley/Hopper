@@ -91,7 +91,9 @@ public class DeviceContext
     public void Flush()
     {
         bool atLeastOne = false;
+#if DEBUG
         string cells = String.Empty;
+#endif
         int oldX = 0;
         int oldY = 0;
         Color? lastBackground = null;
@@ -125,7 +127,9 @@ public class DeviceContext
                     }
                     Console.Write(consoleCells[x, y].character);
                     consoleCells[x, y].isChanged = false;
+#if DEBUG
                     cells += consoleCells[x, y].character;
+#endif
                 }
             }
         }
@@ -133,12 +137,14 @@ public class DeviceContext
         {
             ResetColors();
             Console.SetCursorPosition(oldX, oldY);
+#if DEBUG
             string display = cells;
             if (display.Length > 80)
             {
                 display = display.Substring(0, 80) + "..";
             }
-            Diagnostics.OutputDebug("\nCells updated: " + cells.Length.ToString() + ", '" + display + "'");
+            //Diagnostics.OutputDebug("\nCells updated: " + cells.Length.ToString() + ", '" + display + "'");
+#endif
         }
     }
 }

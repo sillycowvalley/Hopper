@@ -75,6 +75,7 @@ unit PopupMenu
                     uint wm = area[2];
                     uint hm = area[3]; 
                     uint ki = area[4];           
+                    
                     if ((x >= xm) && (x <= xm + wm))
                     {
                         if ((y >= ym) && (y < ym + hm))
@@ -212,7 +213,7 @@ unit PopupMenu
                         string sc = shortCut.ToUpper();
                         currentShortcuts[sc] = name;
                         <uint> area;
-                        area.Append(x);
+                        area.Append(x0);
                         area.Append(y);
                         area.Append(w-2);
                         area.Append(uint(1));
