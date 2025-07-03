@@ -130,7 +130,7 @@ namespace HopperNET
             runtime.Keyboard.ReadKey();
             runtime.Screen.PrintLn();
 
-            string dumpPath = HopperPath.ToWindowsPath("/Debug/crash.log");
+            string dumpPath = HopperPath.ToPlatformPath("/Debug/crash.log");
             System.IO.File.WriteAllText(dumpPath, sb.ToString());
         }
         static public void OutputDebug(String content)

@@ -27,12 +27,15 @@ namespace HopperRuntime
             CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
             string exePath = Environment.ProcessPath;
+
             FileVersionInfo fileVersionInfo = FileVersionInfo.GetVersionInfo(exePath);
             string versionName = fileVersionInfo.FileVersion;
-            Console.Title = exePath + " [" + versionName + "]";
+            if (!String.IsNullOrEmpty(versionName))
+            {
+                Console.Title = exePath + " [" + versionName + "]";
+            }
 
             HopperPath.InitializeFolders();
-
             PowerShellAnsiEnabler.EnableAnsiSupport();
 
             // Check for trace flag and find program file
@@ -57,11 +60,11 @@ namespace HopperRuntime
             {
                 programFile = "Shell"; // default to launching the Hopper shell
             }
-            
-            
+
             Runtime runtime = new Runtime(screen, keyboard);
 
             HopperSystem hopperSystem = new HopperSystem();
+
             int exitCode = hopperSystem.Load(programFile, Arguments, screen, runtime, false);
             if (exitCode == 0)
             {

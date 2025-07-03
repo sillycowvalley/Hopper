@@ -145,10 +145,12 @@ namespace HopperNET
             {
                 programPath = programPath + ".hexe";
             }
+
             if (!HopperFile.Exists(programPath))
             {
                 programPath = "/Bin/" + programPath;
             }
+
             if (!HopperFile.Exists(programPath))
             {
                 if (dieOnError)

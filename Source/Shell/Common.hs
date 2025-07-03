@@ -59,7 +59,7 @@ unit Common
                 if (File.Exists(binaryname)) { command = binaryname; }
                 else
                 {
-                    binaryname = Path.Combine("/bin", command); // bin folder?
+                    binaryname = Path.Combine("/Bin", command); // bin folder?
                     if (File.Exists(binaryname)) { command = binaryname; }
                 }
             }
@@ -76,7 +76,7 @@ unit Common
                 else if (File.Exists(binaryname + ".cmd"))   { command = binaryname + ".cmd";        }
                 else
                 {
-                    binaryname = Path.Combine("/bin", command); // bin folder?
+                    binaryname = Path.Combine("/Bin", command); // bin folder?
                     if (File.Exists(binaryname + HexeExtension)) { command = binaryname + HexeExtension; }
                     else if (File.Exists(binaryname + ".cmd"))   { command = binaryname + ".cmd";        }
                 }

@@ -5,12 +5,16 @@ namespace HopperNET
     public class HopperPath
     {
         static string hopperRoot;
+
+        static Dictionary<string, string> platformMap = new Dictionary<string, string>();
+
         public static bool InitializeFolders()
         {
             string exePath = Environment.ProcessPath;
             string exeFolder = Path.GetDirectoryName(exePath);
             string subFolder = Path.GetFileName(exeFolder);
             exeFolder = Path.GetDirectoryName(exeFolder);
+
             if (subFolder == "Bin")
             {
                 hopperRoot = exeFolder;
@@ -35,28 +39,74 @@ namespace HopperNET
             {
                 Directory.CreateDirectory(tempFolder);
             }
+            
             string debugFolder = Path.Combine(hopperRoot, "Debug");
             if (!Directory.Exists(debugFolder))
             {
                 Directory.CreateDirectory(debugFolder);
             }
+            
             string objFolder = Path.Combine(debugFolder, "Obj");
             if (!Directory.Exists(objFolder))
             {
                 Directory.CreateDirectory(objFolder);
             }
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                platformMap = new Dictionary<string, string>();
+                foreach (string dir in Directory.EnumerateDirectories(hopperRoot, "*", SearchOption.AllDirectories))
+                {
+                    platformMap[dir.ToLowerInvariant()] = dir;
+                }
+                foreach (string dir in Directory.EnumerateFiles(hopperRoot, "*", SearchOption.AllDirectories))
+                {
+                    platformMap[dir.ToLowerInvariant()] = dir;
+                }
+            }
             return true;
         }
-        public static string ToWindowsPath(string path)
+        
+
+        public static string ToPlatformPath(string path)
         {
             if (!String.IsNullOrEmpty(path) && (path[0] != '/'))
             {
                 path = HopperSystem.CurrentDirectory + path;
             }
-            path = path.Replace("/", @"\");
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+            {
+                path = path.Replace("/", @"\");
+            }
+            
             path = hopperRoot + path;
+
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                if (platformMap.ContainsKey(path.ToLowerInvariant()))
+                {
+                    path = platformMap[path.ToLowerInvariant()];
+                }
+            }
             return path;
         }
+        public static void RemovePath(string path)
+        {
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                if (platformMap.ContainsKey(path.ToLowerInvariant()))
+                {
+                    platformMap.Remove(path.ToLowerInvariant());
+                }
+            }
+        }
+        public static void AddPath(string path)
+        {
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                platformMap[path.ToLowerInvariant()] = path;
+            }
+        }
+    
         public static string ToHopperPath(string path)
         {
             if (!path.Contains(hopperRoot))
@@ -173,16 +223,17 @@ namespace HopperNET
         public static bool Exists(string path)
         {
             if (!HopperPath.ValidatePath(path)) return false;
-            return File.Exists(HopperPath.ToWindowsPath(path));
+            return File.Exists(HopperPath.ToPlatformPath(path));
         }
         public static void Delete(string path)
         {
             if (HopperPath.ValidatePath(path))
             {
-                path = HopperPath.ToWindowsPath(path);
+                path = HopperPath.ToPlatformPath(path);
                 if (File.Exists(path))
                 {
                     File.Delete(path);
+                    HopperPath.RemovePath(path);
                 }
             }
         }
@@ -191,7 +242,7 @@ namespace HopperNET
             long length = 0;
             if (HopperPath.ValidatePath(path))
             {
-                path = HopperPath.ToWindowsPath(path);
+                path = HopperPath.ToPlatformPath(path);
                 if (File.Exists(path))
                 {
                     FileInfo fi = new FileInfo(path);
@@ -309,6 +360,7 @@ namespace HopperNET
             if (writing && isValid)
             {
                 File.WriteAllBytes(path, content.ToArray());
+                HopperPath.AddPath(path);
             }
             else
             {
@@ -325,7 +377,7 @@ namespace HopperNET
             HopperFile hopperFile = new HopperFile();
             if (HopperPath.ValidatePath(path))
             {
-                path = HopperPath.ToWindowsPath(path);
+                path = HopperPath.ToPlatformPath(path);
                 if (File.Exists(path))
                 {
                     hopperFile.bytes = File.ReadAllBytes(path);
@@ -341,7 +393,7 @@ namespace HopperNET
             HopperFile hopperFile = new HopperFile();
             if (HopperPath.ValidatePath(path))
             {
-                path = HopperPath.ToWindowsPath(path);
+                path = HopperPath.ToPlatformPath(path);
                 if (File.Exists(path))
                 {
                     File.Delete(path);
@@ -360,7 +412,7 @@ namespace HopperNET
             long filetime = 0;
             if (HopperPath.ValidatePath(path))
             {
-                path = HopperPath.ToWindowsPath(path);
+                path = HopperPath.ToPlatformPath(path);
                 if (File.Exists(path))
                 {
                     FileInfo fi = new FileInfo(path);
@@ -376,7 +428,7 @@ namespace HopperNET
             HopperString str = new HopperString();
             if (HopperPath.ValidatePath(path))
             {
-                path = HopperPath.ToWindowsPath(path);
+                path = HopperPath.ToPlatformPath(path);
                 if (File.Exists(path))
                 {
                     FileInfo fi = new FileInfo(path);
@@ -391,7 +443,7 @@ namespace HopperNET
             HopperString str = new HopperString();
             if (HopperPath.ValidatePath(path))
             {
-                path = HopperPath.ToWindowsPath(path);
+                path = HopperPath.ToPlatformPath(path);
                 if (File.Exists(path))
                 {
                     FileInfo fi = new FileInfo(path);
@@ -411,7 +463,7 @@ namespace HopperNET
             HopperString str = new HopperString();
             if (HopperPath.ValidatePath(path))
             {
-                path = HopperPath.ToWindowsPath(path);
+                path = HopperPath.ToPlatformPath(path);
                 if (File.Exists(path))
                 {
                     FileInfo fi = new FileInfo(path);
@@ -426,7 +478,7 @@ namespace HopperNET
             HopperString str = new HopperString();
             if (HopperPath.ValidatePath(path))
             {
-                path = HopperPath.ToWindowsPath(path);
+                path = HopperPath.ToPlatformPath(path);
                 if (File.Exists(path))
                 {
                     FileInfo fi = new FileInfo(path);
@@ -460,7 +512,7 @@ namespace HopperNET
         public static bool Exists(string path)
         {
             if (!HopperPath.ValidatePath(path)) return false;
-            return Directory.Exists(HopperPath.ToWindowsPath(path));
+            return Directory.Exists(HopperPath.ToPlatformPath(path));
         }
         public static HopperDirectory Open(string fullDirectoryPath)
         {
@@ -471,7 +523,7 @@ namespace HopperNET
                 {
                     return directory;
                 }
-                string path = HopperPath.ToWindowsPath(fullDirectoryPath);
+                string path = HopperPath.ToPlatformPath(fullDirectoryPath);
                 if (Directory.Exists(path))
                 {
                     directory.isValid = true;
@@ -489,7 +541,7 @@ namespace HopperNET
             HopperDirectory directory = new HopperDirectory();
             if (HopperPath.ValidatePath(path))
             {
-                path = HopperPath.ToWindowsPath(path);
+                path = HopperPath.ToPlatformPath(path);
                 if (Directory.Exists(path))
                 {
                     directory.isValid = true;
@@ -502,6 +554,7 @@ namespace HopperNET
                         DirectoryInfo info = Directory.CreateDirectory(path);
                         directory.path = path;
                         directory.isValid = true;
+                        HopperPath.AddPath(path);
                     }
                     catch (IOException)
                     {
@@ -514,12 +567,13 @@ namespace HopperNET
         {
             if (HopperPath.ValidatePath(path))
             {
-                path = HopperPath.ToWindowsPath(path);
+                path = HopperPath.ToPlatformPath(path);
                 if (Directory.Exists(path))
                 {
                     try
                     {
                         Directory.Delete(path);
+                        HopperPath.RemovePath(path);
                     }
                     catch (IOException)
                     {

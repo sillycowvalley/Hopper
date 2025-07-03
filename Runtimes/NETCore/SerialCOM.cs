@@ -98,25 +98,24 @@ namespace HopperNET
                     portMap[i] = port;
                 }
             }
-            else
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
             {
                 // Linux/macOS - filter for USB serial devices
-                allPorts = allPorts.Where(port =>
-                    port.Contains("ttyUSB") ||     // USB-to-serial adapters
-                    port.Contains("ttyACM") ||     // USB CDC devices (like Pico)
-                    port.Contains("usbserial") ||  // macOS USB serial
-                    port.Contains("usbmodem")      // macOS USB modem (CDC)
-                ).ToArray();
                 uint i = 0;
-                foreach (var port in ports)
+                foreach (string port in allPorts)
                 {
-                    i++;
-                    portMap[i] = port;
-                    ports.Add("COM" + i.ToString());
+                    if (port.Contains("ttyUSB") ||     // USB-to-serial adapters
+                        port.Contains("ttyACM") ||     // USB CDC devices (like Pico)
+                        port.Contains("usbserial") ||  // macOS USB serial
+                        port.Contains("usbmodem")      // macOS USB modem (CDC)
+                       )
+                    {
+                        i++;
+                        portMap[i] = port;
+                        ports.Add("COM" + i.ToString());
+                    }
                 }
             }
-
-            
             return ports;
         }
 
