@@ -11,7 +11,7 @@ unit ExitCommand
         Commands.CommandExecuteDelegate exitCommand = ExitCommand.Execute;
         Commands.CommandEnabledDelegate exitEnabled = ExitCommand.Enabled;
         
-        Key key = (Key.Alt | Key.ModX);
+        Key key = (Key.Alt | Key.F4);
         InstallCommand("Exit", "E&xit", exitCommand, exitEnabled, key);
     }
     Execute()

@@ -53,9 +53,9 @@ unit DebugCommand
         InstallCommand("Debug", "Start With &Debugging", debugCommand, debugEnabled, key);
         key = (Key.F5 | Key.Control | Key.Shift);
         InstallCommand("Reload", "&Reload", reloadCommand, reloadEnabled, key);
-        key = (Key.ModO | Key.Control);
+        key = (Key.F10);
         InstallCommand("StepOver", "Step &Over", stepOverCommand, stepOverEnabled, key);
-        key = (Key.ModI | Key.Control);
+        key = (Key.F11);
         InstallCommand("StepInto", "Step &Into", stepIntoCommand, stepIntoEnabled, key);
         key = (Key.F2);
         InstallCommand("Profile", "Run in &Profiler", profileCommand, profileEnabled, key);

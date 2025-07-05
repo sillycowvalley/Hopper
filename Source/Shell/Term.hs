@@ -116,7 +116,7 @@ program Term
                            continue;
                        }
                     }
-                    else if (key == (Key.Alt | Key.ModX))
+                    else if (key == (Key.Alt | Key.F4))
                     {
                         exitKey = true;
                     }
