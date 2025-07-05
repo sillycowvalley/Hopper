@@ -1,7 +1,10 @@
 using HopperNET;
-using System.Drawing;
+using HopperRuntime;
 using System.Runtime.InteropServices;
 using static System.Net.Mime.MediaTypeNames;
+
+using Terminal.Gui.Drawing;
+using Terminal.Gui.Views;
 
 public static class PowerShellAnsiEnabler
 {
@@ -31,133 +34,44 @@ public static class PowerShellAnsiEnabler
     }
 }
 
-public struct ConsoleCell
-{
-    public bool isSet;
-    public bool isChanged;
-    public Color background;
-    public Color foreground;
-    public char character;
-}
-
-public class DeviceContext
-{
-    ConsoleCell[,] consoleCells;
-    int width;
-    int height;
-    public DeviceContext()
-    {
-        Clear(Console.WindowWidth, Console.WindowHeight);
-    }
-    public void Clear(int width, int height)
-    {
-        this.width = width;
-        this.height = height;
-        consoleCells = new ConsoleCell[width, height];
-    }
-    public void DrawChar(int x, int y, char c, Color foreground, Color background)
-    {
-        consoleCells[x, y].isSet = true;
-        if (consoleCells[x, y].character != c)
-        {
-            consoleCells[x, y].isChanged = true;
-            consoleCells[x, y].character = c;
-        }
-        if ((consoleCells[x, y].foreground != foreground) && (c != ' '))
-        {
-            consoleCells[x, y].isChanged = true;
-            consoleCells[x, y].foreground = foreground;
-        }
-        if (consoleCells[x, y].background != background)
-        {
-            consoleCells[x, y].isChanged = true;
-            consoleCells[x, y].background = background;
-        }
-    }
-
-    public static void SetForegroundRGB(int r, int g, int b)
-    {
-        Console.Write($"\x1b[38;2;{r};{g};{b}m");
-    }
-    public static void ResetColors()
-    {
-        Console.Write("\x1b[0m");
-    }
-    public static void SetBackgroundRGB(int r, int g, int b)
-    {
-        Console.Write($"\x1b[48;2;{r};{g};{b}m");
-    }
-
-    public void Flush()
-    {
-        bool atLeastOne = false;
-#if DEBUG
-        string cells = String.Empty;
-#endif
-        int oldX = 0;
-        int oldY = 0;
-        Color? lastBackground = null;
-        Color? lastForeground = null;
-
-        for (int y = 0; y < height; y++)
-        {
-            for (int x = 0; x < width; x++)
-            {
-                if (consoleCells[x, y].isSet && consoleCells[x, y].isChanged)
-                {
-                    if (!atLeastOne)
-                    {
-                        oldX = Console.CursorLeft;
-                        oldY = Console.CursorTop;
-                        atLeastOne = true;
-                    }
-                    Console.SetCursorPosition(x, y);
-
-                    Color background = consoleCells[x, y].background;
-                    if (!lastBackground.HasValue || (lastBackground != background))
-                    {
-                        SetBackgroundRGB(background.R, background.G, background.B);
-                        lastBackground = background;
-                    }
-                    Color foreground = consoleCells[x, y].foreground;
-                    if (!lastForeground.HasValue || (lastForeground != foreground))
-                    {
-                        SetForegroundRGB(foreground.R, foreground.G, foreground.B);
-                        lastForeground = foreground;
-                    }
-                    Console.Write(consoleCells[x, y].character);
-                    consoleCells[x, y].isChanged = false;
-#if DEBUG
-                    cells += consoleCells[x, y].character;
-#endif
-                }
-            }
-        }
-        if (atLeastOne)
-        {
-            ResetColors();
-            Console.SetCursorPosition(oldX, oldY);
-#if DEBUG
-            string display = cells;
-            if (display.Length > 80)
-            {
-                display = display.Substring(0, 80) + "..";
-            }
-            //Diagnostics.OutputDebug("\nCells updated: " + cells.Length.ToString() + ", '" + display + "'");
-#endif
-        }
-    }
-}
-
 public class Screen
 {
+    private TextGridView textView;
+    ushort x;
+    ushort y;
+    public Screen(TextGridView textView)
+    {
+        this.textView = textView;
+    }
 
-    public uint Rows { get { return (uint)Console.WindowHeight; } }
-    public uint Columns { get { return (uint)Console.WindowWidth; } }
-    public uint CursorY { get { return (uint)Console.CursorTop; } }
-    public uint CursorX { get { return (uint)Console.CursorLeft; } }
-
-    DeviceContext deviceContext = new DeviceContext();
+    public uint Rows 
+    { 
+        get 
+        { 
+            return (uint)textView.Rows; 
+        } 
+    }
+    public uint Columns 
+    { 
+        get 
+        { 
+            return (uint)textView.Columns; 
+        } 
+    }
+    public uint CursorY 
+    { 
+        get 
+        { 
+            return (uint)y; 
+        } 
+    }
+    public uint CursorX 
+    { 
+        get 
+        { 
+            return (uint)x; 
+        } 
+    }
 
     internal static Color ToColor(uint c444)
     {
@@ -192,33 +106,36 @@ public class Screen
         {
             b = (byte)((b << 4) | 0x0F);
         }
-        return Color.FromArgb(r, g, b);
-    }
-    public static void SetForegroundRGB(int r, int g, int b)
-    {
-        Console.Write($"\x1b[38;2;{r};{g};{b}m");
-    }
-    public static void ResetColors()
-    {
-        Console.Write("\x1b[0m");
-    }
-    public static void SetBackgroundRGB(int r, int g, int b)
-    {
-        Console.Write($"\x1b[48;2;{r};{g};{b}m");
+        return new Color(r, g, b);
     }
 
-    private void print(string text, uint foreColor, uint backColor)
+    private void print(char c, uint foreColor, uint backColor)
     {
-        Color rgb = ToColor(backColor);
-        SetBackgroundRGB(rgb.R, rgb.G, rgb.B);
-        rgb = ToColor(foreColor);
-        SetForegroundRGB(rgb.R, rgb.G, rgb.B);
-        Console.Write(text);
-        ResetColors();
+        textView.DrawChar(x, y, c, ToColor(foreColor), ToColor(backColor));
+        x++;
+        if (x == this.Columns)
+        {
+            newline();
+        }
+        this.SetCursor(x, y);
+    }
+    public void newline()
+    {
+        x = 0;
+        y++;
+        if (y == this.Rows)
+        {
+            textView.ScrollUp();
+            y--;
+        }
+        this.SetCursor(x, y);
     }
     public void Print(string text, uint foreColor, uint backColor)
     {
-        print(text, foreColor, backColor);
+        foreach (char c in text)
+        {
+            print(c, foreColor, backColor);
+        }
     }
     public void PrintLn(string text, uint foreColor, uint backColor)
     {
@@ -231,25 +148,25 @@ public class Screen
     }
     public void PrintLn()
     {
-        Console.WriteLine();
+        newline();
     }
 
     internal void SetCursor(ushort x, ushort y)
     {
-        if ((x >= 0) && (y >= 0) && (x < Console.BufferWidth) && (y < Console.BufferHeight))
+        if ((x >= 0) && (y >= 0) && (x < this.Columns) && (y < this.Rows))
         {
-            Console.SetCursorPosition(x, y);
+            this.x = x;
+            this.y = y;
+            textView.SetCursor(x, y);
         }
     }
 
     int suspendCount = 0;
-    
+
     internal void DrawChar(ushort x, ushort y, char c, uint foreColour, uint backColour)
     {
         Suspend();
-
-        deviceContext.DrawChar(x, y, c, ToColor(foreColour), ToColor(backColour));
-
+        textView.DrawChar(x, y, c, ToColor(foreColour), ToColor(backColour));
         Resume(false);
     }
 
@@ -267,20 +184,25 @@ public class Screen
         suspendCount--;
         if (suspendCount == 0)
         {
-            deviceContext.Flush();
-            ShowCursor(true);
+            this.ShowCursor(true);
         }
     }
 
     internal void Clear()
     {
-        Console.Clear();
-        deviceContext.Clear(Console.WindowWidth, Console.WindowHeight);
+        for (ushort row = 0; row < this.Rows; row++)
+        {
+            for (ushort col = 0; col < this.Columns; col++)
+            {
+                textView.DrawChar(col, row, ' ', Color.Black, Color.Black);
+            }
+        }
+        this.SetCursor(0, 0);
     }
 
     internal void ShowCursor(bool show)
     {
-        Console.CursorVisible = show;
+        textView.CursorVisible = show;
     }
 
 }

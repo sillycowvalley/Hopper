@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HopperRuntime;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Xml.Linq;
+using Terminal.Gui.Views;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace HopperNET
@@ -711,6 +713,7 @@ namespace HopperNET
 
         private Screen screen;
         private Keyboard keyboard;
+        private TextGridView textView;
         private ushort[] methodTable;
         private byte[] code;
         
@@ -778,11 +781,13 @@ namespace HopperNET
         HopperSystem hopperSystem = null;
 
         internal Keyboard Keyboard { get { return keyboard; } }
+        internal TextGridView TextView { get { return textView; } }
 
-        public Runtime(Screen screen, Keyboard keyboard)
+        public Runtime(TextGridView textView)
         {
-            this.screen = screen;
-            this.keyboard = keyboard;
+            this.screen = new Screen(textView);
+            this.keyboard = new Keyboard(textView);
+            this.textView = textView;
             hopperSystem = new HopperSystem();
 
             stack = new StackSlot[STACKSIZE];
@@ -795,7 +800,7 @@ namespace HopperNET
 
         public void Load(string programPath, List<string> arguments)
         {
-            hopperSystem.Load(programPath, arguments, screen, this, true);
+            hopperSystem.Load(programPath, arguments, this, true);
         }
         public int Execute(ref ushort setError, bool clean)
         {
@@ -1333,10 +1338,12 @@ namespace HopperNET
                     //Debug.WriteLine("PC: 0x" + pc.ToString("X4"));
                 Instruction opCode = (Instruction)code[pc + currentContext.CodeOffset];
                 instructionPC = pc;
+                /*
                 if (pc == 0x0773)
                 {
                     int why = 0;
                 }
+                */
                 if (!inISR && (currentISR != 0))
                 {
                     if (copyNextPop)

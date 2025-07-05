@@ -137,7 +137,7 @@ namespace HopperNET
         {
             contextStack.Clear();
         }
-        public int Load(string programPath, List<string> arguments, Screen screen, Runtime runtime, bool dieOnError)
+        public int Load(string programPath, List<string> arguments, Runtime runtime, bool dieOnError)
         {
             this.arguments = arguments;
 
@@ -169,7 +169,7 @@ namespace HopperNET
             Context currentContext = contextStack.Peek();
 
             // load the program
-            currentContext.LoadProgram(screen);
+            currentContext.LoadProgram(runtime.Screen);
 
             hexeVersion = (ushort)(currentContext.Code[0] + (currentContext.Code[1] << 8));
 

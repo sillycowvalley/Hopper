@@ -164,6 +164,7 @@ namespace HopperNET
     
     public class Keyboard
     {
+        HopperRuntime.TextGridView textView;
         private bool AnyOfAltControlShift(Key hopperModifiers)
         {
             const Key AnyModifier = Key.Alt | Key.Control | Key.Shift;
@@ -494,8 +495,9 @@ namespace HopperNET
         List<ClickArgs> clickBuffer;
 
         ClickArgs current;
-        public Keyboard()
+        public Keyboard(HopperRuntime.TextGridView textView)
         {
+            this.textView = textView;
             keyboardBuffer = new List<Key>();
             clickBuffer = new List<ClickArgs>();
         }
