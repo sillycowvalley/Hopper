@@ -603,6 +603,10 @@ namespace HopperNET
 
     public class Runtime
     {
+        
+        public string ClipboardText { get; set; }
+        public int ClipboardTextCurrent { get; set; }
+
 #if DEBUG
         static bool stackCheck = false;
 #endif
@@ -796,6 +800,9 @@ namespace HopperNET
                 stack[i] = new StackSlot();
             }
             callstack = new ushort[CALLSTACKSIZE];
+
+            ClipboardText = String.Empty;
+            ClipboardTextCurrent = 0;
         }
 
         public void Load(string programPath, List<string> arguments)
@@ -7475,44 +7482,45 @@ namespace HopperNET
 
                 case SysCall.ClipboardHasTextGet:
                     {
-                        //uint hasText = (uint)((hopper.HasClipboardText()) ? 1 : 0);
-                        //currentContext.RemainingClipboardText = hopper.GetClipboardText();
-
-                        uint hasText = 0;
+                        uint hasText = (uint)((this.ClipboardText.Length != 0) ? 1 : 0);
                         Push(hasText, HopperType.tBool);
+                        this.ClipboardTextCurrent = 0;
                         hasResult = true;
                     }
                     break;
-                    /*
                 case SysCall.ClipboardGetText:
                     {
-                        string clipboardText = hopper.GetClipboardText();
+                        string clipboardText = this.ClipboardText;
                         HopperString ct = new HopperString(clipboardText);
                         Push(ct);
                         hasResult = true;
                     }
                     break;
-                */
+                
                 case SysCall.ClipboardGetChar:
                     {
+                        // assumes:
+                        // - HasText is called first
+                        // - GetChar is called until it returns 0
                         char ch = (char)(0);
-                        if (currentContext.RemainingClipboardText.Length > 0)
+                        if (this.ClipboardTextCurrent < this.ClipboardText.Length)
                         {
-                            ch = currentContext.RemainingClipboardText[0];
-                            currentContext.RemainingClipboardText = currentContext.RemainingClipboardText.Substring(1);
+                            ch = this.ClipboardText[this.ClipboardTextCurrent];
+                            this.ClipboardTextCurrent++;
                         }
                         Push(ch, HopperType.tChar);
                         hasResult = true;
                     }
                     break;
-                    /*
+                    
                 case SysCall.ClipboardSetText:
                     {
                         HopperString ct = (HopperString)PopVariant(HopperType.tString);
-                        hopper.SetClipboardText(ct.Value);
+                        this.ClipboardText = ct.Value;
+                        this.ClipboardTextCurrent = 0;
                     }
                     break;
-                    */
+                    
                 default:
                     Diagnostics.Die(0x0A, this); // not implemented
                     break;

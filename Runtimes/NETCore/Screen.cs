@@ -5,6 +5,7 @@ using static System.Net.Mime.MediaTypeNames;
 
 using Terminal.Gui.Drawing;
 using Terminal.Gui.Views;
+using System.Diagnostics;
 
 public static class PowerShellAnsiEnabler
 {
@@ -184,12 +185,14 @@ public class Screen
         suspendCount--;
         if (suspendCount == 0)
         {
+            textView.UpdateTextCells();
             this.ShowCursor(true);
         }
     }
 
     internal void Clear()
     {
+        Suspend();
         for (ushort row = 0; row < this.Rows; row++)
         {
             for (ushort col = 0; col < this.Columns; col++)
@@ -198,6 +201,7 @@ public class Screen
             }
         }
         this.SetCursor(0, 0);
+        Resume(false);
     }
 
     internal void ShowCursor(bool show)

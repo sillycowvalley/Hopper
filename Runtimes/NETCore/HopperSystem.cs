@@ -8,14 +8,12 @@ namespace HopperNET
         {
             ProgramPath = programPath;
             Arguments = arguments;
-            RemainingClipboardText = "";
-
+            
             // emulation APIs for small devices
             memoryArray = new byte[64 * 1024];
             memoryCodeArray = new byte[64 * 1024];
         }
-        public string RemainingClipboardText { get; set; }
-
+        
         public string ProgramPath { get; }
         public List<string> Arguments { get; }
         public ushort SetError { get; internal set; }

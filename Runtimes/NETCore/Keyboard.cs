@@ -1,4 +1,8 @@
-﻿
+﻿using System.Diagnostics;
+
+using Terminal.Gui.Drivers;
+using Terminal.Gui.Input;
+
 namespace HopperNET
 {
     public enum Key // singular
@@ -191,301 +195,175 @@ namespace HopperNET
 
         internal Key TranslateAsciiToHopperKey(char c, Key hopperModifiers)
         {
-#if DIAG
-            Debug.WriteLine("ASCII '{0}' 0x{1} {2} - {3} {4} {5}",
-                c, ((int)c).ToString("X"), (int)c,
-                (hopperModifiers & Key.Shift) == Key.Shift ? "SHIFT" : "shift",
-                (hopperModifiers & Key.Control) == Key.Control ? "CTRL" : "ctrl",
-                (hopperModifiers & Key.Alt) == Key.Alt ? "ALT" : "alt");
-#endif
-            // 
-            if (c < ' ') 
+            // Support for Gr modifier
+            if (c < ' ')
+            {
                 return Key.NoKey;
+            }
 
-            if (c > '~') 
+            if (c > '~')
+            {
                 return Key.NoKey;
+            }
 
             // Alt Gr key sequence contains both Ctrl & Alt 
             //if (BothControlAndAlt(hopperModifiers))
             //    return Key.NoKey;
-            if (AltXorControl(hopperModifiers)) 
+            if (AltXorControl(hopperModifiers))
+            {
                 return Key.NoKey;
+            }
 
             return (Key)c;
         }
-        /*
-        internal Key TranslateCtrlToHopperKey(Keys ctrlKey, Key hopperModifiers)
+        
+        Key TerminalKeyToHopperKey(Terminal.Gui.Input.Key keyInfo)
         {
-#if DIAG
-            Debug.WriteLine("CTRL '{0}' 0x{1} {2} - {3} {4} {5}",
-                ctrlKey, ((int)ctrlKey).ToString("X"), (int)ctrlKey,
-                (hopperModifiers & Key.Shift) == Key.Shift ? "SHIFT" : "shift",
-                (hopperModifiers & Key.Control) == Key.Control ? "CTRL" : "ctrl",
-                (hopperModifiers & Key.Alt) == Key.Alt ? "ALT" : "alt");
-#endif
-            // Space, allow any modifier
-            if (ctrlKey == Keys.Space && AnyOfAltControlShift(hopperModifiers))
-            {
-                return Key.ModSpace | hopperModifiers;
-            }
+            System.Text.Rune rune = keyInfo.AsRune;
+            KeyCode keyCode = keyInfo.KeyCode;
 
-            if (Char.IsLetter((char)ctrlKey) && AltOrControl(hopperModifiers))
-            {
-                switch (ctrlKey)
-                {
-                    case Keys.A: return Key.ModA | hopperModifiers;
-                    case Keys.B: return Key.ModB | hopperModifiers;
-                    case Keys.C: return Key.ModC | hopperModifiers;
-                    case Keys.D: return Key.ModD | hopperModifiers;
-                    case Keys.E: return Key.ModE | hopperModifiers;
-                    case Keys.F: return Key.ModF | hopperModifiers;
-                    case Keys.G: return Key.ModG | hopperModifiers;
-                    case Keys.H: return Key.ModH | hopperModifiers;
-                    case Keys.I: return Key.ModI | hopperModifiers;
-                    case Keys.J: return Key.ModJ | hopperModifiers;
-                    case Keys.K: return Key.ModK | hopperModifiers;
-                    case Keys.L: return Key.ModL | hopperModifiers;
-                    case Keys.M: return Key.ModM | hopperModifiers;
-                    case Keys.N: return Key.ModN | hopperModifiers;
-                    case Keys.O: return Key.ModO | hopperModifiers;
-                    case Keys.P: return Key.ModP | hopperModifiers;
-                    case Keys.Q: return Key.ModQ | hopperModifiers;
-                    case Keys.R: return Key.ModR | hopperModifiers;
-                    case Keys.S: return Key.ModS | hopperModifiers;
-                    case Keys.T: return Key.ModT | hopperModifiers;
-                    case Keys.U: return Key.ModU | hopperModifiers;
-                    case Keys.V: return Key.ModV | hopperModifiers;
-                    case Keys.W: return Key.ModW | hopperModifiers;
-                    case Keys.X: return Key.ModX | hopperModifiers;
-                    case Keys.Y: return Key.ModY | hopperModifiers;
-                    case Keys.Z: return Key.ModZ | hopperModifiers;
-                }
-            }
-
-            if (Char.IsDigit((char)ctrlKey) && AltOrControl(hopperModifiers))
-            {
-                switch (ctrlKey)
-                {
-                    case Keys.D0: return Key.Mod0 | hopperModifiers;
-                    case Keys.D1: return Key.Mod1 | hopperModifiers;
-                    case Keys.D2: return Key.Mod2 | hopperModifiers;
-                    case Keys.D3: return Key.Mod3 | hopperModifiers;
-                    case Keys.D4: return Key.Mod4 | hopperModifiers;
-                    case Keys.D5: return Key.Mod5 | hopperModifiers;
-                    case Keys.D6: return Key.Mod6 | hopperModifiers;
-                    case Keys.D7: return Key.Mod7 | hopperModifiers;
-                    case Keys.D8: return Key.Mod8 | hopperModifiers;
-                    case Keys.D9: return Key.Mod0 | hopperModifiers;
-                }
-            }
-
-            switch (ctrlKey)
-            {
-                case Keys.Shift:
-                case Keys.ShiftKey:
-                case Keys.LShiftKey:
-                case Keys.RShiftKey:
-                case Keys.Control:
-                case Keys.ControlKey:
-                case Keys.RControlKey:
-                case Keys.LControlKey:
-                case Keys.Menu:
-                case Keys.LMenu:
-                case Keys.RMenu:
-                    break;
-                case Keys.Back:
-                    return NoneOfAltControlShift(hopperModifiers) ? Key.Backspace : Key.ModBackspace | hopperModifiers;
-                case Keys.Tab:
-                    return (Key.Tab | hopperModifiers);
-                case Keys.Return:
-                    return NoneOfAltControlShift(hopperModifiers) ? Key.Enter : Key.ModEnter | hopperModifiers;
-                case Keys.Escape:
-                    return NoneOfAltControlShift(hopperModifiers) ? Key.Esc : Key.ModEsc | hopperModifiers;
-                case Keys.Delete:
-                    return Key.Delete | hopperModifiers;
-                case Keys.Insert:
-                    return Key.ModInsert | hopperModifiers;
-                case Keys.End:
-                    return Key.End | hopperModifiers;
-                case Keys.Home:
-                    return Key.Home | hopperModifiers;
-                case Keys.Left:
-                    return Key.Left | hopperModifiers;
-                case Keys.Right:
-                    return Key.Right | hopperModifiers;
-                case Keys.Up:
-                    return Key.Up | hopperModifiers;
-                case Keys.Down:
-                    return Key.Down | hopperModifiers;
-                case Keys.Prior:
-                    return Key.PageUp | hopperModifiers;
-                case Keys.Next:
-                    return Key.PageDown | hopperModifiers;
-                case Keys.F1:
-                    return Key.F1 | hopperModifiers;
-                case Keys.F2:
-                    return Key.F2 | hopperModifiers;
-                case Keys.F3:
-                    return Key.F3 | hopperModifiers;
-                case Keys.F4:
-                    return Key.F4 | hopperModifiers;
-                case Keys.F5:
-                    return Key.F5 | hopperModifiers;
-                case Keys.F6:
-                    return Key.F6 | hopperModifiers;
-                case Keys.F7:
-                    return Key.F7 | hopperModifiers;
-                case Keys.F8:
-                    return Key.F8 | hopperModifiers;
-                case Keys.F9:
-                    return Key.F9 | hopperModifiers;
-                case Keys.F10:
-                    return Key.F10 | hopperModifiers;
-                case Keys.F11:
-                    return Key.F11 | hopperModifiers;
-                case Keys.F12:
-                    return Key.F12 | hopperModifiers;
-            }
-
-            return Key.NoKey;
-        }
-        */
-
-        Key ConsoleKeyToHopperKey(ConsoleKeyInfo keyInfo)
-        {
+            
             Key hopperModifiers = Key.NoKey;
-            if ((keyInfo.Modifiers & ConsoleModifiers.Control) != ConsoleModifiers.None)
+            if (keyInfo.IsCtrl)
             {
                 hopperModifiers |= Key.Control;
+                keyCode = (keyInfo.KeyCode & ~KeyCode.CtrlMask);
             }
-            if ((keyInfo.Modifiers & ConsoleModifiers.Shift) != ConsoleModifiers.None)
+            if (keyInfo.IsShift)
             {
                 hopperModifiers |= Key.Shift;
+                keyCode = (keyInfo.KeyCode & ~KeyCode.ShiftMask);
             }
-            if ((keyInfo.Modifiers & ConsoleModifiers.Alt) != ConsoleModifiers.None)
+            if (keyInfo.IsAlt)
             {
                 hopperModifiers |= Key.Alt;
+                keyCode = (keyInfo.KeyCode & ~KeyCode.AltMask);
             }
-            if ((keyInfo.Modifiers & ConsoleModifiers.Control) != ConsoleModifiers.None)
+            
+
+            if (keyCode == KeyCode.Null)
             {
-                hopperModifiers |= Key.Control;
+                return Key.NoKey; // <ctrl>, <shift> or <alt> alone
             }
 
             // Space, allow any modifier
-            if ((keyInfo.Key == ConsoleKey.Spacebar) && AnyOfAltControlShift(hopperModifiers))
+            if ((keyCode == KeyCode.Space) && AnyOfAltControlShift(hopperModifiers))
             {
                 return Key.ModSpace | hopperModifiers;
             }
 
-            if (Char.IsLetter((char)keyInfo.Key) && AltOrControl(hopperModifiers))
+            if (Char.IsLetter((char)keyCode) && AltOrControl(hopperModifiers))
             {
-                switch (keyInfo.Key)
+                switch (keyCode)
                 {
-                    case ConsoleKey.A: return Key.ModA | hopperModifiers;
-                    case ConsoleKey.B: return Key.ModB | hopperModifiers;
-                    case ConsoleKey.C: return Key.ModC | hopperModifiers;
-                    case ConsoleKey.D: return Key.ModD | hopperModifiers;
-                    case ConsoleKey.E: return Key.ModE | hopperModifiers;
-                    case ConsoleKey.F: return Key.ModF | hopperModifiers;
-                    case ConsoleKey.G: return Key.ModG | hopperModifiers;
-                    case ConsoleKey.H: return Key.ModH | hopperModifiers;
-                    case ConsoleKey.I: return Key.ModI | hopperModifiers;
-                    case ConsoleKey.J: return Key.ModJ | hopperModifiers;
-                    case ConsoleKey.K: return Key.ModK | hopperModifiers;
-                    case ConsoleKey.L: return Key.ModL | hopperModifiers;
-                    case ConsoleKey.M: return Key.ModM | hopperModifiers;
-                    case ConsoleKey.N: return Key.ModN | hopperModifiers;
-                    case ConsoleKey.O: return Key.ModO | hopperModifiers;
-                    case ConsoleKey.P: return Key.ModP | hopperModifiers;
-                    case ConsoleKey.Q: return Key.ModQ | hopperModifiers;
-                    case ConsoleKey.R: return Key.ModR | hopperModifiers;
-                    case ConsoleKey.S: return Key.ModS | hopperModifiers;
-                    case ConsoleKey.T: return Key.ModT | hopperModifiers;
-                    case ConsoleKey.U: return Key.ModU | hopperModifiers;
-                    case ConsoleKey.V: return Key.ModV | hopperModifiers;
-                    case ConsoleKey.W: return Key.ModW | hopperModifiers;
-                    case ConsoleKey.X: return Key.ModX | hopperModifiers;
-                    case ConsoleKey.Y: return Key.ModY | hopperModifiers;
-                    case ConsoleKey.Z: return Key.ModZ | hopperModifiers;
+                    case KeyCode.A: return Key.ModA | hopperModifiers;
+                    case KeyCode.B: return Key.ModB | hopperModifiers;
+                    case KeyCode.C: return Key.ModC | hopperModifiers;
+                    case KeyCode.D: return Key.ModD | hopperModifiers;
+                    case KeyCode.E: return Key.ModE | hopperModifiers;
+                    case KeyCode.F: return Key.ModF | hopperModifiers;
+                    case KeyCode.G: return Key.ModG | hopperModifiers;
+                    case KeyCode.H: return Key.ModH | hopperModifiers;
+                    case KeyCode.I: return Key.ModI | hopperModifiers;
+                    case KeyCode.J: return Key.ModJ | hopperModifiers;
+                    case KeyCode.K: return Key.ModK | hopperModifiers;
+                    case KeyCode.L: return Key.ModL | hopperModifiers;
+                    case KeyCode.M: return Key.ModM | hopperModifiers;
+                    case KeyCode.N: return Key.ModN | hopperModifiers;
+                    case KeyCode.O: return Key.ModO | hopperModifiers;
+                    case KeyCode.P: return Key.ModP | hopperModifiers;
+                    case KeyCode.Q: return Key.ModQ | hopperModifiers;
+                    case KeyCode.R: return Key.ModR | hopperModifiers;
+                    case KeyCode.S: return Key.ModS | hopperModifiers;
+                    case KeyCode.T: return Key.ModT | hopperModifiers;
+                    case KeyCode.U: return Key.ModU | hopperModifiers;
+                    case KeyCode.V: return Key.ModV | hopperModifiers;
+                    case KeyCode.W: return Key.ModW | hopperModifiers;
+                    case KeyCode.X: return Key.ModX | hopperModifiers;
+                    case KeyCode.Y: return Key.ModY | hopperModifiers;
+                    case KeyCode.Z: return Key.ModZ | hopperModifiers;
                 }
             }
 
-            if (Char.IsDigit((char)keyInfo.Key) && AltOrControl(hopperModifiers))
+            if (Char.IsDigit((char)keyCode) && AltOrControl(hopperModifiers))
             {
-                switch (keyInfo.Key)
+                switch (keyCode)
                 {
-                    case ConsoleKey.D0: return Key.Mod0 | hopperModifiers;
-                    case ConsoleKey.D1: return Key.Mod1 | hopperModifiers;
-                    case ConsoleKey.D2: return Key.Mod2 | hopperModifiers;
-                    case ConsoleKey.D3: return Key.Mod3 | hopperModifiers;
-                    case ConsoleKey.D4: return Key.Mod4 | hopperModifiers;
-                    case ConsoleKey.D5: return Key.Mod5 | hopperModifiers;
-                    case ConsoleKey.D6: return Key.Mod6 | hopperModifiers;
-                    case ConsoleKey.D7: return Key.Mod7 | hopperModifiers;
-                    case ConsoleKey.D8: return Key.Mod8 | hopperModifiers;
-                    case ConsoleKey.D9: return Key.Mod0 | hopperModifiers;
+                    case KeyCode.D0: return Key.Mod0 | hopperModifiers;
+                    case KeyCode.D1: return Key.Mod1 | hopperModifiers;
+                    case KeyCode.D2: return Key.Mod2 | hopperModifiers;
+                    case KeyCode.D3: return Key.Mod3 | hopperModifiers;
+                    case KeyCode.D4: return Key.Mod4 | hopperModifiers;
+                    case KeyCode.D5: return Key.Mod5 | hopperModifiers;
+                    case KeyCode.D6: return Key.Mod6 | hopperModifiers;
+                    case KeyCode.D7: return Key.Mod7 | hopperModifiers;
+                    case KeyCode.D8: return Key.Mod8 | hopperModifiers;
+                    case KeyCode.D9: return Key.Mod0 | hopperModifiers;
                 }
             }
 
-            switch (keyInfo.Key)
+            switch (keyCode)
             {
-                case ConsoleKey.Backspace:
+                case KeyCode.Backspace:
                     return NoneOfAltControlShift(hopperModifiers) ? Key.Backspace : Key.ModBackspace | hopperModifiers;
-                case ConsoleKey.Tab:
+                case KeyCode.Tab:
                     return (Key.Tab | hopperModifiers);
-                case ConsoleKey.Enter:
+                case KeyCode.Enter:
                     return NoneOfAltControlShift(hopperModifiers) ? Key.Enter : Key.ModEnter | hopperModifiers;
-                case ConsoleKey.Escape:
+                case KeyCode.Esc:
                     return NoneOfAltControlShift(hopperModifiers) ? Key.Esc : Key.ModEsc | hopperModifiers;
-                case ConsoleKey.Delete:
+                case KeyCode.Delete:
                     return Key.Delete | hopperModifiers;
-                case ConsoleKey.Insert:
+                case KeyCode.Insert:
                     return Key.ModInsert | hopperModifiers;
-                case ConsoleKey.End:
+                case KeyCode.End:
                     return Key.End | hopperModifiers;
-                case ConsoleKey.Home:
+                case KeyCode.Home:
                     return Key.Home | hopperModifiers;
-                case ConsoleKey.LeftArrow:
+                case KeyCode.CursorLeft:
                     return Key.Left | hopperModifiers;
-                case ConsoleKey.RightArrow:
+                case KeyCode.CursorRight:
                     return Key.Right | hopperModifiers;
-                case ConsoleKey.UpArrow:
+                case KeyCode.CursorUp:
                     return Key.Up | hopperModifiers;
-                case ConsoleKey.DownArrow:
+                case KeyCode.CursorDown:
                     return Key.Down | hopperModifiers;
-                case ConsoleKey.PageUp:
+                case KeyCode.PageUp:
                     return Key.PageUp | hopperModifiers;
-                case ConsoleKey.PageDown:
+                case KeyCode.PageDown:
                     return Key.PageDown | hopperModifiers;
-                case ConsoleKey.F1:
+                case KeyCode.F1:
                     return Key.F1 | hopperModifiers;
-                case ConsoleKey.F2:
+                case KeyCode.F2:
                     return Key.F2 | hopperModifiers;
-                case ConsoleKey.F3:
+                case KeyCode.F3:
                     return Key.F3 | hopperModifiers;
-                case ConsoleKey.F4:
+                case KeyCode.F4:
                     return Key.F4 | hopperModifiers;
-                case ConsoleKey.F5:
+                case KeyCode.F5:
                     return Key.F5 | hopperModifiers;
-                case ConsoleKey.F6:
+                case KeyCode.F6:
                     return Key.F6 | hopperModifiers;
-                case ConsoleKey.F7:
+                case KeyCode.F7:
                     return Key.F7 | hopperModifiers;
-                case ConsoleKey.F8:
+                case KeyCode.F8:
                     return Key.F8 | hopperModifiers;
-                case ConsoleKey.F9:
+                case KeyCode.F9:
                     return Key.F9 | hopperModifiers;
-                case ConsoleKey.F10:
+                case KeyCode.F10:
                     return Key.F10 | hopperModifiers;
-                case ConsoleKey.F11:
+                case KeyCode.F11:
                     return Key.F11 | hopperModifiers;
-                case ConsoleKey.F12:
+                case KeyCode.F12:
                     return Key.F12 | hopperModifiers;
             }
 
-            if (keyInfo.KeyChar != (char)0)
+            if (keyCode != KeyCode.Null)
             {
-                return TranslateAsciiToHopperKey(keyInfo.KeyChar, hopperModifiers);
+                if (rune.IsAscii)
+                {
+                    return TranslateAsciiToHopperKey((char)rune.Value, hopperModifiers);
+                }
             }
 
             return Key.NoKey;
@@ -500,6 +378,7 @@ namespace HopperNET
             this.textView = textView;
             keyboardBuffer = new List<Key>();
             clickBuffer = new List<ClickArgs>();
+            
         }
 
         public ushort ClickX
@@ -526,104 +405,107 @@ namespace HopperNET
             }
         }
 
-        internal bool PushToKeyboardBuffer(Key key)
+        internal void PushToKeyboardBuffer(Terminal.Gui.Input.Key keyInfo)
         {
-            if (key != Key.NoKey)
+            if (keyInfo.KeyCode != KeyCode.Null)
             {
                 lock (keyboardBuffer)
                 {
-                    keyboardBuffer.Add(key);
+                    Key key = TerminalKeyToHopperKey(keyInfo);
+                    if (key != Key.NoKey)
+                    {
+                        //Trace.Write("\nKey: " + keyInfo.ToString());
+                        keyboardBuffer.Add(key);
+                    }
                 }
-                return true;
             }
-
-            return false;
+            keyInfo.Handled = true;
         }
-        /*
-        internal void PushClick(MouseEventArgs e, bool down)
+        
+        internal void PushClick(MouseEventArgs mouseArgs)
         {
-            ClickArgs clickArgs = new ClickArgs();
-            clickArgs.clickX = Console.TransformXtoC((uint)e.X);
-            clickArgs.clickY = Console.TransformYtoR((uint)e.Y);
-            clickArgs.clickUp = !down;
-            clickArgs.clickDouble = false;
-            clickArgs.scrollDelta = 0;
-            if (e.Clicks > 1)
+            for (; ; )
             {
-                clickArgs.clickDouble = true;
-                clickArgs.clickUp = true;
+                if (MouseFlags.ReportMousePosition == (mouseArgs.Flags & MouseFlags.ReportMousePosition))
+                {
+                    break;
+                }
+                //Trace.Write("\nClick: " + mouseArgs.ToString());
+                ClickArgs clickArgs = new ClickArgs();
+                clickArgs.clickX = (ushort)mouseArgs.Position.X;
+                clickArgs.clickY = (ushort)mouseArgs.Position.Y;
+                clickArgs.clickUp = false;
+                clickArgs.clickDouble = false;
+                clickArgs.scrollDelta = 0;
+
+                Key key = Key.NoKey;
+                if (mouseArgs.Flags.HasFlag(MouseFlags.Button1Pressed) | mouseArgs.Flags.HasFlag(MouseFlags.Button1Clicked))
+                {
+                    clickArgs.clickUp = mouseArgs.Flags.HasFlag(MouseFlags.Button1Clicked);
+                    key = Key.Click;
+                }
+                if (mouseArgs.Flags.HasFlag(MouseFlags.Button1DoubleClicked))
+                {
+                    clickArgs.clickUp = true;
+                    clickArgs.clickDouble = true;
+                    key = Key.Click;
+                }
+                if (mouseArgs.Flags.HasFlag(MouseFlags.Button3Pressed) | mouseArgs.Flags.HasFlag(MouseFlags.Button3Clicked))
+                {
+                    clickArgs.clickUp = mouseArgs.Flags.HasFlag(MouseFlags.Button3Clicked);
+                    key = Key.ClickRight;
+                }
+                if (mouseArgs.Flags.HasFlag(MouseFlags.Button3DoubleClicked))
+                {
+                    clickArgs.clickUp = true;
+                    clickArgs.clickDouble = true;
+                    key = Key.ClickRight;
+                }
+                if (mouseArgs.Flags.HasFlag(MouseFlags.WheeledDown))
+                {
+                    clickArgs.scrollDelta = -1;
+                    clickArgs.clickUp = false;
+                    clickArgs.clickDouble = false;
+                    key = Key.Scroll;
+                }
+                if (mouseArgs.Flags.HasFlag(MouseFlags.WheeledUp))
+                {
+                    clickArgs.scrollDelta = +1;
+                    clickArgs.clickUp = false;
+                    clickArgs.clickDouble = false;
+                    key = Key.Scroll;
+                }
+
+                if (key != Key.NoKey)
+                {
+                    /*
+                    if ((CurrentModifiers & Key.Shift) != 0)
+                    {
+                        key |= Key.Shift;
+                    }
+                    if ((CurrentModifiers & Key.Control) != 0)
+                    {
+                        key |= Key.Control;
+                    }
+                    if ((CurrentModifiers & Key.Alt) != 0)
+                    {
+                        key |= Key.Alt;
+                    }
+                    */
+                    
+                    lock (keyboardBuffer)
+                    {
+                        //Trace.Write(" -> " + key.ToString());
+                        keyboardBuffer.Add(key);
+                        clickBuffer.Add(clickArgs);
+                    }
+                }
+                break;
             }
             
-
-            Key key = Key.Click;
-            Keys currentModifierState = Hopper.ModifierKeys;
-            if (e.Button == MouseButtons.Right)
-            {
-                key = Key.ClickRight;
-            }
-            if ((currentModifierState & Keys.Shift) != 0)
-            {
-                key |= Key.Shift;
-            }
-            if ((currentModifierState & Keys.Control) != 0)
-            {
-                key |= Key.Control;
-            }
-            if ((currentModifierState & Keys.Alt) != 0)
-            {
-                key |= Key.Alt;
-            }
-            lock (keyboardBuffer)
-            {
-                keyboardBuffer.Add(key);
-                clickBuffer.Add(clickArgs);
-            }
+            mouseArgs.Handled = true;
         }
-        internal void PushScroll(MouseEventArgs e)
-        {
-            ClickArgs clickArgs = new ClickArgs();
-            clickArgs.clickX = Console.TransformXtoC((uint)e.X);
-            clickArgs.clickY = Console.TransformYtoR((uint)e.Y);
-            clickArgs.scrollDelta = (short)(e.Delta / 120); // WHEEL_DELTA
-            clickArgs.clickUp = false;
-            clickArgs.clickDouble = false;
-
-            Key key = Key.Scroll;
-            Keys currentModifierState = Hopper.ModifierKeys;
-            if ((currentModifierState & Keys.Shift) != 0)
-            {
-                key = (key | Key.Shift);
-            }
-            if ((currentModifierState & Keys.Control) != 0)
-            {
-                key = (key | Key.Control);
-            }
-            if ((currentModifierState & Keys.Alt) != 0)
-            {
-                key = (key | Key.Alt);
-            }
-            lock (keyboardBuffer)
-            {
-                keyboardBuffer.Add(key);
-                clickBuffer.Add(clickArgs);
-            }
-        }
-        */
         
-        private void PumpKeys()
-        {
-            lock (keyboardBuffer)
-            {
-                if (Console.KeyAvailable)
-                {
-                    ConsoleKeyInfo keyInfo = Console.ReadKey(true);
-
-                    Key key = ConsoleKeyToHopperKey(keyInfo);
-                    PushToKeyboardBuffer(key);
-
-                }
-            }
-        }
 
         internal void Free()
         {
@@ -641,10 +523,6 @@ namespace HopperNET
             bool result = false;
             lock (keyboardBuffer)
             {
-                if (keyboardBuffer.Count == 0)
-                {
-                    PumpKeys();
-                }
                 result =  keyboardBuffer.Count != 0;
             }
             return result;
@@ -673,8 +551,6 @@ namespace HopperNET
 
             for (; ; )
             {
-                PumpKeys();
-
                 lock (keyboardBuffer)
                 {
                     // was there a key added to the buffer that needs to be processed
@@ -682,8 +558,6 @@ namespace HopperNET
                     {
                         c = keyboardBuffer[0];
                         keyboardBuffer.RemoveAt(0);
-
-                        //TODO DIAG Debug.WriteLine(c);
 
                         if ((c & Key.Mask) == Key.Click)
                         {

@@ -7,6 +7,7 @@ using HopperNET;
 using Terminal.Gui.App;
 using Terminal.Gui.Configuration;
 using Terminal.Gui.Drawing;
+using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 
@@ -17,6 +18,7 @@ namespace HopperRuntime
 
     struct TextCell
     {
+        public bool isChanged;
         public char c;
         public Terminal.Gui.Drawing.Attribute colors;
     }
@@ -30,18 +32,7 @@ namespace HopperRuntime
 
         TextCell[,] ? textCells;
 
-        public bool CursorVisible 
-        {
-            get
-            {
-                return CursorVisibility != Terminal.Gui.Drivers.CursorVisibility.Invisible;
-            }
-            internal set
-            {
-                CursorVisibility = value ? Terminal.Gui.Drivers.CursorVisibility.Default : Terminal.Gui.Drivers.CursorVisibility.Invisible;
-            }
-        }
-
+        
         public TextGridView()
         {
             Width = Dim.Fill();
@@ -52,9 +43,8 @@ namespace HopperRuntime
             Initialized += TextGridView_Initialized;
             FrameChanged += TextGridView_FrameChanged;
 
-            MouseClick += TextGridView_MouseClick;
-            KeyUp += TextGridView_KeyUp;
-            MouseWheel += TextGridView_MouseWheel;
+            KeyDown += TextGridView_KeyDown;
+            MouseEvent += TextGridView_MouseEvent;
         }
 
         private void TextGridView_FrameChanged(object? sender, EventArgs<Rectangle> e)
@@ -73,10 +63,6 @@ namespace HopperRuntime
             NeedsDraw = true;
         }
 
-        public override Point? PositionCursor()
-        {
-            return new Point(cx, cy);
-        }
         public void DrawChar(ushort x, ushort y, char c, Terminal.Gui.Drawing.Color foreground, Terminal.Gui.Drawing.Color background)
         {
             var colors = new Terminal.Gui.Drawing.Attribute(foreground, background);
@@ -85,11 +71,14 @@ namespace HopperRuntime
             {
                 lock (textCells)
                 {
-                    textCells[x, y].c = c;
-                    textCells[x, y].colors = colors;
+                    if ((textCells[x, y].c != c) || (textCells[x, y].colors != colors))
+                    {
+                        textCells[x, y].isChanged = true;
+                        textCells[x, y].c = c;
+                        textCells[x, y].colors = colors;
+                    }
                 }
             }
-            NeedsDraw = true;
         }
 
         internal void ScrollUp()
@@ -112,9 +101,9 @@ namespace HopperRuntime
                         textCells[x, rows - 1].colors = colors;
                         textCells[x, rows - 1].c = ' ';
                     }
+                    NeedsDraw = true;
                 }
             }
-            NeedsDraw = true;
         }
 
         protected override bool OnDrawingContent(DrawContext? context)
@@ -123,50 +112,77 @@ namespace HopperRuntime
             {
                 lock (textCells)
                 {
+                    var currentColour = new Terminal.Gui.Drawing.Attribute(Terminal.Gui.Drawing.Color.Black, Terminal.Gui.Drawing.Color.Black);
                     for (int y = 0; y < rows; y++)
                     {
                         for (int x = 0; x < columns; x++)
                         {
-                            this.SetAttribute(textCells[x, y].colors);
+                            if (currentColour != textCells[x, y].colors)
+                            {
+                                currentColour = textCells[x, y].colors;
+                                this.SetAttribute(currentColour);
+                            }
                             this.Move(x, y);
                             this.AddRune(textCells[x, y].c);
                         }
                     }
                 }
             }
-
             return true;
         }
         
-        private void TextGridView_MouseWheel(object? sender, Terminal.Gui.Input.MouseEventArgs e)
+
+        private void TextGridView_KeyDown(object? sender, Terminal.Gui.Input.Key key)
         {
-
-        }
-
-        private void TextGridView_MouseClick(object? sender, Terminal.Gui.Input.MouseEventArgs e)
-        {
-            if (e.IsDoubleClicked)
+            if (null != Keyboard)
             {
-
-            }
-            else if (e.IsSingleClicked)
-            {
-
+                Keyboard.PushToKeyboardBuffer(key);
             }
         }
+        
 
-        private void TextGridView_KeyUp(object? sender, Terminal.Gui.Input.Key e)
+        private void TextGridView_MouseEvent(object? sender, MouseEventArgs mouseArgs)
         {
-
+            if (null != Keyboard)
+            {
+                Keyboard.PushClick(mouseArgs);
+            }
         }
+
 
         internal ushort Columns { get { return columns; } }
         internal ushort Rows    { get { return rows; } }
+
+        public Keyboard? Keyboard { get; internal set; }
+
+        public bool CursorVisible
+        {
+            get
+            {
+                return CursorVisibility != Terminal.Gui.Drivers.CursorVisibility.Invisible;
+            }
+            internal set
+            {
+                CursorVisibility = value ? Terminal.Gui.Drivers.CursorVisibility.Default : Terminal.Gui.Drivers.CursorVisibility.Invisible;
+            }
+        }
+
+
+        public override Point? PositionCursor()
+        {
+            //Trace.Write("\nPC: " + cx.ToString() + "," + cy.ToString());
+            return new Point(cx, cy);
+        }
 
         internal void SetCursor(ushort x, ushort y)
         {
             cx = x;
             cy = y;
+            //Trace.Write("\nSC: " + x.ToString() + "," + y.ToString());
+        }
+        internal void UpdateTextCells()
+        {
+            NeedsDraw = true;
         }
         
     }
@@ -189,6 +205,7 @@ namespace HopperRuntime
             }
             
             Runtime runtime = new Runtime(textView);
+            textView.Keyboard = runtime.Keyboard;
 
             runtime.Screen.Clear();
             runtime.Screen.ShowCursor(true);
@@ -210,7 +227,7 @@ namespace HopperRuntime
             CultureInfo.CurrentCulture = new CultureInfo("en-US");
             PowerShellAnsiEnabler.EnableAnsiSupport();
             ParseArguments(args);
-
+            
             Application.Init(null, "v2");
             
             window = new Toplevel();
@@ -231,7 +248,6 @@ namespace HopperRuntime
 
             Application.Run(window);
             Application.Shutdown();
-
             
             return 0;
 
