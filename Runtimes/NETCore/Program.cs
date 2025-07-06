@@ -193,7 +193,7 @@ namespace HopperRuntime
         public static List<String> Arguments { get; private set; } = new List<String>();
         public static String HexePath { get; private set; } = String.Empty;
         public static bool Running { get; set; }
-
+        
         public static BackgroundWorker worker;
         public static TextGridView textView;
         public static Toplevel window;
@@ -225,9 +225,11 @@ namespace HopperRuntime
         public static int Main(string[] args)
         {
             CultureInfo.CurrentCulture = new CultureInfo("en-US");
-            PowerShellAnsiEnabler.EnableAnsiSupport();
+            //PowerShellAnsiEnabler.EnableAnsiSupport();
             ParseArguments(args);
-            
+
+            //Application.Init(null, "NetDriver");
+            //Application.Init(null, "v2net");
             Application.Init(null, "v2");
             
             window = new Toplevel();

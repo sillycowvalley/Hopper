@@ -7,6 +7,7 @@ using Terminal.Gui.Drawing;
 using Terminal.Gui.Views;
 using System.Diagnostics;
 
+/*
 public static class PowerShellAnsiEnabler
 {
     [DllImport("kernel32.dll", SetLastError = true)]
@@ -34,6 +35,7 @@ public static class PowerShellAnsiEnabler
         return SetConsoleMode(handle, mode);
     }
 }
+*/
 
 public class Screen
 {
@@ -133,23 +135,31 @@ public class Screen
     }
     public void Print(string text, uint foreColor, uint backColor)
     {
+        Suspend();
         foreach (char c in text)
         {
             print(c, foreColor, backColor);
         }
+        Resume(false);
     }
     public void PrintLn(string text, uint foreColor, uint backColor)
     {
+        Suspend();
         Print(text, foreColor, backColor);
         PrintLn();
+        Resume(false);
     }
     public void Print(char c, uint foreColor, uint backColor)
     {
+        Suspend();
         Print(c + String.Empty, foreColor, backColor);
+        Resume(false);
     }
     public void PrintLn()
     {
+        Suspend();
         newline();
+        Resume(false);
     }
 
     internal void SetCursor(ushort x, ushort y)
