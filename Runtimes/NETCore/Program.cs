@@ -54,6 +54,10 @@ namespace HopperRuntime
                 columns = (ushort)Frame.Width;
                 rows = (ushort)Frame.Height;
                 textCells = new TextCell[columns, rows];
+                if (null != this.Screen)
+                {
+                    this.Screen.Resize();
+                }
             }
         }
 
@@ -112,10 +116,15 @@ namespace HopperRuntime
             {
                 lock (textCells)
                 {
+
+                    ushort width = ushort.Min(columns, (ushort)Frame.Width);
+                    ushort height = ushort.Min(rows, (ushort)Frame.Height);
+
+
                     var currentColour = new Terminal.Gui.Drawing.Attribute(Terminal.Gui.Drawing.Color.Black, Terminal.Gui.Drawing.Color.Black);
-                    for (int y = 0; y < rows; y++)
+                    for (int y = 0; y < height; y++)
                     {
-                        for (int x = 0; x < columns; x++)
+                        for (int x = 0; x < width; x++)
                         {
                             if (currentColour != textCells[x, y].colors)
                             {
@@ -154,6 +163,7 @@ namespace HopperRuntime
         internal ushort Rows    { get { return rows; } }
 
         public Keyboard? Keyboard { get; internal set; }
+        public Screen?   Screen { get; internal set; }
 
         public bool CursorVisible
         {
@@ -206,6 +216,7 @@ namespace HopperRuntime
             
             Runtime runtime = new Runtime(textView);
             textView.Keyboard = runtime.Keyboard;
+            textView.Screen   = runtime.Screen;
 
             runtime.Screen.Clear();
             runtime.Screen.ShowCursor(true);

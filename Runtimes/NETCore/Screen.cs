@@ -42,38 +42,52 @@ public class Screen
     private TextGridView textView;
     ushort x;
     ushort y;
+    ushort width;
+    ushort height;
     public Screen(TextGridView textView)
     {
         this.textView = textView;
+        Resize();
+    }
+    public void Resize()
+    {
+        x = 0;
+        y = 0;
+        height = (ushort)textView.Rows;
+        width  = (ushort)textView.Columns;
     }
 
-    public uint Rows 
+    public ushort Rows 
     { 
         get 
         { 
-            return (uint)textView.Rows; 
+            return height; 
         } 
     }
-    public uint Columns 
+    public ushort Columns 
     { 
         get 
         { 
-            return (uint)textView.Columns; 
+            return width; 
         } 
     }
-    public uint CursorY 
+    public ushort CursorY 
     { 
         get 
         { 
-            return (uint)y; 
+            return y; 
         } 
     }
-    public uint CursorX 
+    public ushort CursorX 
     { 
         get 
         { 
-            return (uint)x; 
+            return x; 
         } 
+    }
+    private bool contains(ushort x, ushort y)
+    {
+        return ((x >= 0) && (y >= 0) && (x < width) && (y < height));
     }
 
     internal static Color ToColor(uint c444)
@@ -114,7 +128,11 @@ public class Screen
 
     private void print(char c, uint foreColor, uint backColor)
     {
-        textView.DrawChar(x, y, c, ToColor(foreColor), ToColor(backColor));
+        if (contains(x, y))
+        {
+            textView.DrawChar(x, y, c, ToColor(foreColor), ToColor(backColor));
+        }
+        
         x++;
         if (x == this.Columns)
         {
@@ -168,7 +186,10 @@ public class Screen
         {
             this.x = x;
             this.y = y;
-            textView.SetCursor(x, y);
+            if (contains(x, y))
+            {
+                textView.SetCursor(x, y);
+            }
         }
     }
 
@@ -177,7 +198,26 @@ public class Screen
     internal void DrawChar(ushort x, ushort y, char c, uint foreColour, uint backColour)
     {
         Suspend();
-        textView.DrawChar(x, y, c, ToColor(foreColour), ToColor(backColour));
+        if (contains(x, y))
+        {
+            textView.DrawChar(x, y, c, ToColor(foreColour), ToColor(backColour));
+        }
+        Resume(false);
+    }
+    internal void Clear()
+    {
+        Suspend();
+        for (ushort row = 0; row < this.Rows; row++)
+        {
+            for (ushort col = 0; col < this.Columns; col++)
+            {
+                if (contains(col, row))
+                {
+                    textView.DrawChar(col, row, ' ', Color.Black, Color.Black);
+                }
+            }
+        }
+        this.SetCursor(0, 0);
         Resume(false);
     }
 
@@ -200,19 +240,7 @@ public class Screen
         }
     }
 
-    internal void Clear()
-    {
-        Suspend();
-        for (ushort row = 0; row < this.Rows; row++)
-        {
-            for (ushort col = 0; col < this.Columns; col++)
-            {
-                textView.DrawChar(col, row, ' ', Color.Black, Color.Black);
-            }
-        }
-        this.SetCursor(0, 0);
-        Resume(false);
-    }
+    
 
     internal void ShowCursor(bool show)
     {
