@@ -2,7 +2,7 @@
 
 ## Getting Started
 
-The development environment also runs on Windows (10 and 11) and Linux (x64 and ARM).
+The development environment runs on Windows (10 and 11) and Linux (x64 and ARM).
 
 The Hopper Development environment can be rebuilt on Windows (10 and 11):
 - clone the repo
@@ -13,7 +13,7 @@ The Hopper Language playlist on YouTube:
 
 https://www.youtube.com/playlist?list=PLriDPC-IsO2mIq_u9_mh_GN6wfX59X-wY
 
-Here is the TLDR walk though:
+Here is the TLDR walk through:
 
 https://docs.google.com/presentation/d/1ZfqbBSqEAHBDnZLWSe-3sygjJOas6WJYlS9MmkPlFR8/
 
@@ -27,7 +27,7 @@ Although Hopper programs run on desktop machines, like the entire development en
 
 From a security point of view, Hopper is:
 - unable to escape from the root folder of the repo (Hopper thinks that subtree is your entire disc)
-- aside from files in the repro tree, Hopper can only access the console, keyboard, mouse and serial port.
+- aside from files in the repo tree, Hopper can only access the console, keyboard, mouse and serial port.
 
 ## Current State
 
@@ -35,13 +35,13 @@ The primary target for Hopper is small devices. This includes microcontrollers a
 Hopper currently works on the 6502 and on RP2040/RP2350 microcontrollers.
 
 Developing for the 6502 and MCUs is a first class IDE experience: source for both the editor (with syntax highlighting) and
-the full symbolic source-level debugger are included (written in Hopper, of course). The debugger works live on the desktop accross the regular serial connection to your device.
+the full symbolic source-level debugger are included (written in Hopper, of course). The debugger works live on the desktop across the regular serial connection to your device.
 
 ## Toolset
-All of these tools are written in Hopper and run and the Hopper Runtime on the desktop.
+All of these tools are written in Hopper and run on the Hopper Runtime on the desktop.
 
 ### Shell
-The shell is the main windows when running under on the desktop. It is a command line interface written in Hopper that has also been ported to run on RP2040/RP2350 MCUs (via serial).
+The shell is the main window when running on the desktop. It is a command line interface written in Hopper that has also been ported to run on RP2040/RP2350 MCUs (via serial).
 Type `help` or `man` for the list of available commands.
 
 ### Preprocess
@@ -53,7 +53,7 @@ Second compilation phase for Hopper programs compiles the code within the method
 of the Hopper VM instructions. It can be consumed by either the optimizer (`optimize`) or the code generator (`codegen`).
 
 ### Assemble
-Second compilation phase for 6502 assembly programs assebles the code within the methods (the stuff between the curly braces). `assemble` generates `<project.code>` which
+Second compilation phase for 6502 assembly programs assembles the code within the methods (the stuff between the curly braces). `assemble` generates `<project.code>` which
 is an intermediate format of 6502 instructions. It can be consumed by either the 6502 optimizer (`optasm`) or the 6502 code generator (`asmgen`).
 
 ### Optimize
@@ -67,7 +67,7 @@ Transforms the Hopper intermediate format from `<project.code>` into Hopper VM b
 is an MCU or 6502. This Intel HEX is what is uploaded via the serial connection to your device.
 
 ### AsmGen
-Transforms the 6502 intermediate format from `<project.code>` into 6502 executable machine code `<project.hex>`. This output is a Intel HEX file that can be burned to EEPROM or uploaded to the 6502 emulator (`e6502`).
+Transforms the 6502 intermediate format from `<project.code>` into 6502 executable machine code `<project.hex>`. This output is an Intel HEX file that can be burned to EEPROM or uploaded to the 6502 emulator (`e6502`).
 
 ### DASM
 Disassembles Hopper binaries `<project.hexe>` into assembler listings `<project.hasm>`.
@@ -89,9 +89,9 @@ It provides full support for Hopper `Debug` and `HopperMon` via synthesized `COM
 Current state of Hopper on MCUs (via the Arduino IDE) is:
 - tested on dozens of RP2040/RP2350 devices
 - full support for the Hopper `Debug` and `HopperMon` via serial interface
-- seperate configurable 64K code and 64K data segments (unlike 6502 which only has a monolithic 64K segment for code, data and stacks)
+- separate configurable 64K code and 64K data segments (unlike 6502 which only has a monolithic 64K segment for code, data and stacks)
 - GPIO API including digital, PWM, analog and pin interrupts
-- LittleFS for Hopper file system (to store your current program too built-in FLASH)
+- LittleFS for Hopper file system (to store your current program to built-in FLASH)
 - SD support via FAT file system mounted into the Hopper file system under `/SD/`
 - I2C
 - SPI
@@ -103,7 +103,7 @@ Current state of Hopper on MCUs (via the Arduino IDE) is:
 - RTC drivers for 3 different chips (including alarm and timer events)
 
 ### 6502 Runtime
-This is the second generation Hopper runtime for 6502.  Currently it (`r6502`) can be loaded into the emulator (`e6502`) under
+This is the second generation Hopper runtime for 6502. Currently it (`r6502`) can be loaded into the emulator (`e6502`) under
 the desktop environment and you can upload and debug Hopper programs on it using HopperMon (`hm`) or the Hopper debugger (`debug`) via the synthesized `COM0` connection. 
 
 ### Editor
