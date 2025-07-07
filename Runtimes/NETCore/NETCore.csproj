@@ -6,7 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <AssemblyName>Hopper</AssemblyName>
-    <Version>1.0.0.0</Version>
+    <Version>1.0.0.98</Version>
+    <PublishAot>False</PublishAot>
+    <PublishTrimmed>False</PublishTrimmed>
   </PropertyGroup>
 
   <ItemGroup>

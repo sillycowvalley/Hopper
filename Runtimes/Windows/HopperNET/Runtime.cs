@@ -1315,7 +1315,7 @@ namespace HopperNET
                 instructionPC = pc;
                 if (pc == 0x0C27)
                 {
-                    int why = 0;
+//                  int why = 0;
                 }
                 if (!inISR && (currentISR != 0))
                 {
