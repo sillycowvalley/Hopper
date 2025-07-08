@@ -1,6 +1,6 @@
 program TimerDemo
 {
-    uses "/Source/Library/Boards/PiPico"
+    uses "/Source/Library/Boards/Pi"
     
     const byte alarmPin = 16;
     const byte timerPin = 17;
@@ -11,44 +11,37 @@ program TimerDemo
     
     fastTimerCallBack(uint timerID)
     {
-        LED = !LED;
+        Write(".");
     }
     
     timerCallBack(uint timerID)
     {
-        DigitalWrite(timerPin, true);
         timerCount++;
         Write("Timer: " + timerID.ToString() + " : " + timerCount.ToString() + " " + (Millis-start).ToString() + "ms");
         Delay(500);
         WriteLn(" .. done.");
-        DigitalWrite(timerPin, false);
     }
     
     alarmCallBack(uint alarmID)
     {
-        DigitalWrite(alarmPin, true);
         WriteLn("  Alarm: " + alarmID.ToString() + " " + (Millis-start).ToString() + "ms");
         Timer.Cancel(alarmIDToCancel);
-        WriteLn("  Cancel Alarm: " + alarmIDToCancel.ToString());
-        Delay(1000);
-        DigitalWrite(alarmPin, false);
+        Write("  Cancel Alarm: " + alarmIDToCancel.ToString());
+        Delay(500);
+        WriteLn(" .. done.");
     }
     
+    Hopper()
     {
-        LED = false; 
-        MCU.PinMode(alarmPin, PinModeOption.Output); 
-        MCU.DigitalWrite(alarmPin, false);
-        MCU.PinMode(timerPin, PinModeOption.Output); 
-        MCU.DigitalWrite(timerPin, false);
         
         TimerISRDelegate timerISRDelegate;
         timerISRDelegate = fastTimerCallBack;
-        uint timerID = Timer.Start(100, timerISRDelegate);
-        WriteLn("Started 100ms timer: " + timerID.ToString());
+        uint fastTimerID = Timer.Start(100, timerISRDelegate);
+        WriteLn("Started 100ms timer: " + fastTimerID.ToString());
         
         timerISRDelegate = timerCallBack;
         start = Millis;
-        timerID = Timer.Start(2000, timerISRDelegate);
+        uint timerID = Timer.Start(2000, timerISRDelegate);
         WriteLn("Started 2000ms timer: " + timerID.ToString());
         
         timerISRDelegate = alarmCallBack;
@@ -67,6 +60,19 @@ program TimerDemo
                 WriteLn("Stop Timer: " + timerID.ToString());
                 cancelled = true;
             }
+            if (IO.IsAvailable)
+            {
+                break;
+            }
         }
+        if (!cancelled)
+        {
+            Timer.Stop(timerID);
+            WriteLn("Stop Timer: " + timerID.ToString());
+        }
+        WriteLn("Stop Timer: " + fastTimerID.ToString());
+        Timer.Stop(fastTimerID);
+        Delay(3000);
+        WriteLn("Exit");
     }
 }

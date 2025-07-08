@@ -27,6 +27,15 @@ namespace HopperNET
         Over
     }
 
+    public enum InterruptType
+    {
+        eUndefinedInterruptType = 0,
+        ePin,
+        eTimer,
+        eAlarm,
+    };
+
+
     public enum Instruction
     {
         NOP    = 0x00,
@@ -528,10 +537,109 @@ namespace HopperNET
 
     enum LibCall
     {
-        TimerStart = 0x00,
-        TimerStop = 0x01,
-        TimerAlarm = 0x02,
-        TimerCancel = 0x03,
+        TimerStart,
+        TimerStop, 
+        TimerAlarm,
+        TimerCancel,
+
+        // I2C
+        WireBegin,
+        WireBeginTx,
+        WireEndTx,
+        WireWrite,
+        WireConfigure,
+        WireRead,
+        WireRequestFrom,
+
+        // GPIO
+        MCUPinMode,
+        MCUDigitalRead,
+        MCUDigitalWrite,
+        MCUAnalogRead,
+        MCUAnalogWrite,
+        MCUAnalogWriteResolution,
+        MCUTone,
+        MCUNoTone,
+        MCUAttachToPin,
+
+        MCUInterruptsEnabledGet,
+        MCUInterruptsEnabledSet,
+
+        MCUReboot,
+
+        MCUHeapFree,
+        MCUStackFree,
+        MCUClockSpeedGet,
+        MCUClockSpeedSet,
+
+        // SPI
+        SPISettings,
+        SPIBegin,
+        SPIBeginTransaction,
+        SPIEndTransaction,
+        SPIReadByte,
+        SPIReadWord,
+        SPIReadBuffer,
+        SPIWriteByte,
+        SPIWriteBytes,
+        SPIWriteWord,
+        SPIWriteWords,
+        SPIWriteBuffer,
+        SPISetCSPin,
+        SPIGetCSPin,
+        SPISetClkPin,
+        SPISetTxPin,
+        SPISetRxPin,
+
+        SPICSPinGet,
+        SPICSPinSet,
+        SPIClkPinSet,
+        SPITxPinSet,
+        SPIRxPinSet,
+
+        NeoPixelBegin,
+        NeoPixelBrightnessSet,
+        NeoPixelBrightnessGet,
+        NeoPixelSetColor,
+        NeoPixelShow,
+        NeoPixelLengthGet,
+
+        WebClientGetRequest,
+
+        WiFiBeginAP,
+
+        WebServerBegin,
+        WebServerOn,
+        WebServerOnNotFound,
+        WebServerEvents,
+        WebServerClose,
+        WebServerSend,
+
+        // SD card
+        SDSPIControllerGet,
+        SDSPIControllerSet,
+        SDCSPinGet,
+        SDCSPinSet,
+        SDClkPinGet,
+        SDClkPinSet,
+        SDTxPinGet,
+        SDTxPinSet,
+        SDRxPinGet,
+        SDRxPinSet,
+        SDMount,
+        SDEject,
+
+        // serial EEPROM on 6502
+        StorageMediaInitialize,
+        StorageMediaMount,
+        StorageMediaUnmount,
+        StorageMediaReadSector,
+        StorageMediaWriteSector,
+
+        UARTSetup,
+        UARTIsAvailableGet,
+        UARTReadChar,
+        UARTWriteChar,
     };
 
     public enum HopperType // if you change this, look at the end of ToByte(..) in Types.hs
@@ -576,6 +684,15 @@ namespace HopperNET
 
         tList,
 
+    }
+
+    public struct ISRStruct
+    {
+        public InterruptType interruptType;
+        public Byte pin;
+        public ushort timerID;
+        public Byte status;
+        public ushort isrDelegate;
     }
 
     public class StackSlot
@@ -727,12 +844,8 @@ namespace HopperNET
         private ushort cspStore;
         private byte[] codeStore;
         
-        ushort currentISR = 0;
-        ushort preISRcsp  = 0;
-        bool inISR = false;
-
         ushort pc = 0;
-        uint instructionPC = 0;
+        ushort instructionPC = 0;
         ushort sp = 0; // ok
         ushort bp = 0;
         ushort gp = 0;
@@ -748,18 +861,18 @@ namespace HopperNET
         const uint STACKSIZE = 2048;
         const uint CALLSTACKSIZE = 256;
         
-        public uint PC { get { return pc; } }
-        public uint InstructionPC 
+        public ushort PC { get { return pc; } set { pc = value; } }
+        public ushort InstructionPC 
         { 
             get 
             {
-                uint pc = instructionPC;
+                ushort pc = instructionPC;
                 if (codeStore != null)
                 {
-                    uint codeSize = (uint)codeStore.Length;
+                    ushort codeSize = (ushort)codeStore.Length;
                     if (codeSize < pc)
                     {
-                        pc = pc - codeSize; // inline user code PC
+                        pc = (ushort)(pc - codeSize); // inline user code PC
                     }
                 }
                 return pc; 
@@ -1170,19 +1283,6 @@ namespace HopperNET
             }
         }
         
-        public void ISR(ushort handlerIndex)
-        {
-            // don't return from this method until the ISR returns
-            while (currentISR != 0)
-            {
-                Thread.Sleep(1);
-            }
-            currentISR = handlerIndex;
-            while (currentISR != 0)
-            {
-                Thread.Sleep(1);
-            }
-        }
         bool singlestepping;
 
         bool waiting = false;
@@ -1325,6 +1425,9 @@ namespace HopperNET
             bool copyNextPop = false;
             for (; ; )
             {
+
+                ServiceInterrupts(currentContext);
+
                 if (singlestepping)
                 {
                     //Debug.WriteLine("PC: 0x" + pc.ToString("X4") + ", Steps=" + Steps.ToString());
@@ -1351,21 +1454,6 @@ namespace HopperNET
                     int why = 0;
                 }
                 */
-                if (!inISR && (currentISR != 0))
-                {
-                    if (copyNextPop)
-                    {
-                        // don't break this
-                    }
-                    else
-                    {
-                        preISRcsp = csp;
-                        inISR = true;
-                        PushCS(pc);
-                        pc = methodTable[currentISR];
-                        continue;
-                    }
-                }
                 pc++;
                 
 
@@ -1509,20 +1597,12 @@ namespace HopperNET
 #if DEBUG
                             ClearSP();
 #endif
-#if UNDOINLINED
-                            PushBool(next >= top);
-#else
                             stack[sp2].value = (uint)((next >= top) ? 1 : 0);
                             stack[sp2].type = HopperType.tBool;
-#endif
                         }
                         break;
                     case Instruction.GT:
                         {
-#if UNDOINLINED
-                uint top = Pop();
-                uint next = Pop();
-#else
                             sp--;
                             ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
@@ -1530,13 +1610,8 @@ namespace HopperNET
 #if DEBUG
                             ClearSP();
 #endif
-#endif
-#if UNDOINLINED
-                        PushBool(next > top);
-#else
                             stack[sp2].value = (uint)((next > top) ? 1 : 0);
                             stack[sp2].type = HopperType.tBool;
-#endif
                         }
                         break;
 
@@ -1572,10 +1647,6 @@ namespace HopperNET
 
                     case Instruction.BITOR:
                         {
-#if UNDOINLINED
-                uint top = Pop();
-                uint next = Pop();
-#else
                             sp--;
                             ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
@@ -1583,21 +1654,12 @@ namespace HopperNET
 #if DEBUG
                             ClearSP();
 #endif
-#endif
-#if UNDOINLINED
-                        Push(next | top, HopperType.tUInt);
-#else
                             stack[sp2].value = (next | top);
                             stack[sp2].type = HopperType.tUInt;
-#endif
                         }
                         break;
                     case Instruction.BITAND:
                         {
-#if UNDOINLINED
-                uint top = Pop();
-                uint next = Pop();
-#else
                             sp--;
                             ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
@@ -1605,13 +1667,8 @@ namespace HopperNET
 #if DEBUG
                             ClearSP();
 #endif
-#endif
-#if UNDOINLINED
-                        Push(next & top, HopperType.tUInt);
-#else
                             stack[sp2].value = (next & top);
                             stack[sp2].type = HopperType.tUInt;
-#endif
                         }
                         break;
 
@@ -1622,10 +1679,6 @@ namespace HopperNET
 
                     case Instruction.BITSHR:
                         {
-#if UNDOINLINED
-                uint top = Pop();
-                uint next = Pop();
-#else
                             sp--;
                             ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
@@ -1633,23 +1686,14 @@ namespace HopperNET
 #if DEBUG
                             ClearSP();
 #endif
-#endif
                             int lnext = (int)next;
                             lnext = lnext >> (int)top;
-#if UNDOINLINED
-                            Push((ushort)lnext, HopperType.tUInt);
-#else
                             stack[sp2].value = (ushort)lnext;
                             stack[sp2].type = HopperType.tUInt;
-#endif
                         }
                         break;
                     case Instruction.BITSHL:
                         {
-#if UNDOINLINED
-                            uint top = Pop();
-                            uint next = Pop();
-#else
                             sp--;
                             ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
@@ -1657,15 +1701,10 @@ namespace HopperNET
 #if DEBUG
                             ClearSP();
 #endif
-#endif
                             int lnext = (int)next;
                             lnext = lnext << (int)top;
-#if UNDOINLINED
-                            Push((ushort)lnext, HopperType.tUInt);
-#else
                             stack[sp2].value = (ushort)lnext;
                             stack[sp2].type = HopperType.tUInt;
-#endif
                         }
                         break;
 
@@ -1732,10 +1771,6 @@ namespace HopperNET
 
                     case Instruction.BOOLOR:
                         {
-#if UNDOINLINED
-                            uint top = Pop();
-                            uint next = Pop();
-#else
                             sp--;
                             ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
@@ -1743,21 +1778,12 @@ namespace HopperNET
 #if DEBUG
                             ClearSP();
 #endif
-#endif
-#if UNDOINLINED
-                        PushBool(((0 != next) || (0 != top)));
-#else
                             stack[sp2].value = (uint)(((0 != next) || (0 != top)) ? 1 : 0);
                             stack[sp2].type = HopperType.tBool;
-#endif
                         }
                         break;
                     case Instruction.BOOLAND:
                         {
-#if UNDOINLINED
-                            uint top = Pop();
-                            uint next = Pop();
-#else
                             sp--;
                             ushort sp2 = (ushort)((sp) - 1);
                             uint top = stack[sp2 + 1].value;
@@ -1765,13 +1791,8 @@ namespace HopperNET
 #if DEBUG
                             ClearSP();
 #endif
-#endif
-#if UNDOINLINED
-                            PushBool(((0 != next) && (0 != top)));
-#else
                             stack[sp2].value = (uint)(((0 != next) && (0 != top)) ? 1 : 0);
                             stack[sp2].type = HopperType.tBool;
-#endif
                         }
                         break;
 
@@ -1826,21 +1847,21 @@ namespace HopperNET
                         {
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-                            LibraryCall(currentContext, (LibCall)operand);
+                            LibraryCall(currentContext, (LibCall)operand, 0);
                         }
                         break;
                     case Instruction.LIBCALL1:
                         {
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-                            LibraryCall(currentContext, (LibCall)operand);
+                            LibraryCall(currentContext, (LibCall)operand, 1);
                         }
                         break;
                     case Instruction.LIBCALL:
                         {
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-                            SystemCall(currentContext, (SysCall)operand, 2);
+                            LibraryCall(currentContext, (LibCall)operand, 2); // 2 means pop
                         }
                         break;
 
@@ -1857,17 +1878,10 @@ namespace HopperNET
                         {
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-#if UNDOINLINED
-                            Push(operand, HopperType.tByte);
-#else
-                            {
-                                ushort sp2 = sp;
-                                stack[sp2].value = operand;
-                                stack[sp2].type = HopperType.tByte;
-                                sp++;
-                            }
-#endif
-
+                            ushort sp2 = sp;
+                            stack[sp2].value = operand;
+                            stack[sp2].type = HopperType.tByte;
+                            sp++;
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
                             SystemCall(currentContext, (SysCall)operand, 0);
@@ -1878,17 +1892,10 @@ namespace HopperNET
                         {
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-#if UNDOINLINED
-                            Push(operand, HopperType.tByte);
-#else
-                            {
-                                ushort sp2 = sp;
-                                stack[sp2].value = operand;
-                                stack[sp2].type = HopperType.tByte;
-                                sp++;
-                            }
-#endif
-
+                            ushort sp2 = sp;
+                            stack[sp2].value = operand;
+                            stack[sp2].type = HopperType.tByte;
+                            sp++;
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
                             SystemCall(currentContext, (SysCall)operand, 1);
@@ -1956,16 +1963,10 @@ namespace HopperNET
                         {
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-#if UNDOINLINED
-                        Push(operand, HopperType.tByte);
-#else
-                            {
-                                ushort sp2 = sp;
-                                stack[sp2].value = operand;
-                                stack[sp2].type = HopperType.tByte;
-                                sp++;
-                            }
-#endif
+                            ushort sp2 = sp;
+                            stack[sp2].value = operand;
+                            stack[sp2].type = HopperType.tByte;
+                            sp++;
                         }
                         break;
 
@@ -1973,28 +1974,17 @@ namespace HopperNET
                         {
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-#if UNDOINLINED
-                            Push(operand, HopperType.tByte);
-#else
-                            {
-                                ushort sp2 = sp;
-                                stack[sp2].value = operand;
-                                stack[sp2].type = HopperType.tByte;
-                                sp++;
-                            }
-#endif
+                            ushort sp2 = sp;
+                            stack[sp2].value = operand;
+                            stack[sp2].type = HopperType.tByte;
+                            sp++;
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-#if UNDOINLINED
-                            Push(operand, HopperType.tByte);
-#else
-                            {
-                                ushort sp2 = sp;
-                                stack[sp2].value = operand;
-                                stack[sp2].type = HopperType.tByte;
-                                sp++;
-                            }
-#endif
+
+                            sp2 = sp;
+                            stack[sp2].value = operand;
+                            stack[sp2].type = HopperType.tByte;
+                            sp++;
                         }
                         break;
 
@@ -2037,22 +2027,10 @@ namespace HopperNET
                             {
                                 // POP address -> PC                
                                 pc = PopCS();
-#if PROFILE
-                                KeepFnReturn(currentContext, pc);
-#endif
                             }
 
                             // clear the locals and arguments off the stack (return value is already dealt with if needed)
                             ClearStack(operand);
-
-                            if (currentISR != 0)
-                            {
-                                if (preISRcsp == csp)
-                                {
-                                    currentISR = 0; // ISR returned
-                                    inISR = false;
-                                }
-                            }
 
                             if (pc == 0)
                             {
@@ -2071,31 +2049,6 @@ namespace HopperNET
                             // function return value
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-#if UNDOINLINED
-                            uint top = 0;
-                            Variant vtop = null;
-                            HopperType type = GetStackType((ushort)(sp - 1));
-                            bool isValueType = Type_IsValueType(type);
-                            if (isValueType)
-                            {
-                                top = Pop(); 
-                            }
-                            else
-                            {
-                                vtop = PopVariant(HopperType.tUndefined);
-                            }
-                            // clear the locals and arguments off the stack (return value is already dealt with if needed)
-                            ClearStack(operand);
-                            // restore function return value before GC
-                            if (isValueType)
-                            {
-                                Push(top, type);
-                            }
-                            else
-                            {
-                                Push(vtop);
-                            }
-#else
                             int retLocation = sp - 1;
                             HopperType type = stack[retLocation].type;
                             Variant reference = stack[retLocation].reference;
@@ -2108,25 +2061,12 @@ namespace HopperNET
                             stack[sp2].value = value;
                             stack[sp2].reference = reference;
                             stack[sp2].type = type;
-#endif
 
                             bp = PopCS();
                             if (csp != 0) // Main() entry has no return address
                             {
                                 // POP address -> PC                
                                 pc = PopCS();
-#if PROFILE
-                                KeepFnReturn(currentContext, pc);
-#endif
-                            }
-
-                            if (currentISR != 0)
-                            {
-                                if (preISRcsp == csp)
-                                {
-                                    currentISR = 0; // ISR returned
-                                    inISR = false;
-                                }
                             }
 
                             if (csp == 0)
@@ -2144,31 +2084,6 @@ namespace HopperNET
                             pc += 2;
 
 
-#if UNDOINLINED
-                            uint top = 0;
-                            Variant vtop = null;
-                            HopperType type = GetStackType((ushort)(sp - 1));
-                            bool isValueType = Type_IsValueType(type);
-                            if (isValueType)
-                            {
-                                top = Pop(); 
-                            }
-                            else
-                            {
-                                vtop = PopVariant(HopperType.tUndefined);
-                            }
-                            // clear the locals and arguments off the stack (return value is already dealt with if needed)
-                            ClearStack(operand);
-                            // restore function return value before GC
-                            if (isValueType)
-                            {
-                                Push(top, type);
-                            }
-                            else
-                            {
-                                Push(vtop);
-                            }
-#else
                             int retLocation = (sp) - 1;
                             HopperType type = stack[retLocation].type;
                             Variant reference = stack[retLocation].reference;
@@ -2181,25 +2096,12 @@ namespace HopperNET
                             stack[sp2].value = value;
                             stack[sp2].reference = reference;
                             stack[sp2].type = type;
-#endif
 
                             bp = PopCS();
                             if (csp != 0) // Main() entry has no return address
                             {
                                 // POP address -> PC                
                                 pc = PopCS();
-#if PROFILE
-                                KeepFnReturn(currentContext, pc);
-#endif
-                            }
-
-                            if (currentISR != 0)
-                            {
-                                if (preISRcsp == csp)
-                                {
-                                    currentISR = 0; // ISR returned
-                                    inISR = false;
-                                }
                             }
 
                             if (csp == 0)
@@ -2227,9 +2129,6 @@ namespace HopperNET
                         {
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-#if UNDOINLINED
-                            if (Pop() != 0)
-#else
                             sp--;
                             ushort sp2 = sp;
                             uint top = stack[sp2].value;
@@ -2237,7 +2136,6 @@ namespace HopperNET
                             ClearSP();
 #endif
                             if (top != 0)
-#endif
                             {
                                 short offset = (short)operand;
                                 if (offset > 127)
@@ -2504,17 +2402,6 @@ namespace HopperNET
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
 
-#if UNDOINLINED
-                            HopperType type = GetStackType((ushort)(operand + gp));
-                            if (Type_IsValueType(type))
-                            {
-                                Push(GetStack((ushort)(operand + gp)), type);
-                            }
-                            else
-                            {
-                                Push(GetStackVariant((ushort)(operand + gp)));
-                            }
-#else
                             ushort address = (ushort)(operand + gp);
                             HopperType type = stack[address].type;
                             ushort sp2 = sp;
@@ -2533,7 +2420,6 @@ namespace HopperNET
                             }
                             stack[sp2].type = type;
                             sp++;
-#endif
                         }
                         break;
 
@@ -2548,18 +2434,6 @@ namespace HopperNET
                                 offset = (short)(operand - 0x10000); // 0xFFFF -> -1
                             }
 
-#if UNDOINLINED
-                            ushort localAddress = (ushort)(bp + offset);
-                            HopperType type = GetStackType(localAddress);
-                            if (Type_IsValueType(type))
-                            {
-                                Push(GetStack(localAddress), type);
-                            }
-                            else
-                            {
-                                Push(GetStackVariant(localAddress));
-                            }
-#else
                             ushort localAddress2 = (ushort)((bp + offset));
                             HopperType type = stack[localAddress2].type;
                             ushort sp2 = sp;
@@ -2578,7 +2452,6 @@ namespace HopperNET
                             }
                             stack[sp2].type = type;
                             sp++;
-#endif
                         }
                         break;
 
@@ -2592,19 +2465,6 @@ namespace HopperNET
                             {
                                 offset = (short)(offset - 256); // 255 -> -1
                             }
-
-#if UNDOINLINED
-                            ushort localAddress = (ushort)(bp + offset);
-                            HopperType type = GetStackType(localAddress);
-                            if (Type_IsValueType(type))
-                            {
-                                Push(GetStack(localAddress), type);
-                            }
-                            else
-                            {
-                                Push(GetStackVariant(localAddress));
-                            }
-#else
                             ushort localAddress2 = (ushort)((bp + offset));
                             HopperType type = stack[localAddress2].type;
                             ushort sp2 = sp;
@@ -2623,7 +2483,6 @@ namespace HopperNET
                             }
                             stack[sp2].type = type;
                             sp++;
-#endif
                         }
                         break;
 
@@ -2724,22 +2583,11 @@ namespace HopperNET
                             //
                             // So, we need to choose between tUInt and tInt for the "pop" if it was tByte .. I choose tUInt
                             // (we need to avoid munting the type if it is currently a -ve tInt)
-#if UNDOINLINED
-                            ushort localAddress = (ushort)(bp + offset);
-                            HopperType type = GetStackType(localAddress);
-                            if (type == HopperType.tByte)
-                            {
-                                type = HopperType.tUInt;
-                            }
-                            uint value = GetStack(localAddress);
-                            PutStack(localAddress, value + 1, type);
-#else
                             stack[(bp + offset)].value++;
                             if (stack[(bp + offset)].type == HopperType.tByte)
                             {
                                 stack[(bp + offset)].type = HopperType.tUInt;
                             }
-#endif
                         }
                         break;
 
@@ -2753,13 +2601,7 @@ namespace HopperNET
                             {
                                 offset = (short)(offset - 256); // 255 -> -1
                             }
-#if UNDOINLINED
-                            ushort localAddress = (ushort)(bp + offset);
-                            HopperType type = GetStackType(localAddress);
-                            PutStack(localAddress, GetStack(localAddress) - 1, type);
-#else
                             stack[(bp + offset)].value--;
-#endif
                         }
                         break;
 
@@ -2769,9 +2611,6 @@ namespace HopperNET
                             pc++;
 
                             PushCS(pc);
-#if PROFILE
-                            KeepFnCallLog(currentContext, operand, pc);
-#endif
                             pc = methodTable[operand];
                         }
                         break;
@@ -2969,16 +2808,10 @@ namespace HopperNET
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
 
-#if UNDOINLINED
-                            Push(operand, HopperType.tUInt);
-#else
-                            {
-                                ushort sp2 = sp;
-                                stack[sp2].value = operand;
-                                stack[sp2].type = HopperType.tUInt;
-                                sp++;
-                            }
-#endif
+                            ushort sp2 = sp;
+                            stack[sp2].value = operand;
+                            stack[sp2].type = HopperType.tUInt;
+                            sp++;
                         }
                         break;
 
@@ -2990,31 +2823,21 @@ namespace HopperNET
 
 
 
-#if UNDOINLINED
-                            Push(operand, HopperType.tUInt);
-                            uint top = Pop();
-                            uint next = Pop();
-                            PushBool(next <= top);
-#else
-                            {
-                                ushort sp2 = sp;
-                                stack[sp2].value = operand;
-                                stack[sp2].type = HopperType.tUInt;
-                                sp++;
+                            ushort sp2 = sp;
+                            stack[sp2].value = operand;
+                            stack[sp2].type = HopperType.tUInt;
+                            sp++;
 
-                                sp--;
-                                sp2 = (ushort)((sp) - 1);
-                                uint top = stack[sp2 + 1].value;
-                                uint next = stack[sp2].value;
+                            sp--;
+                            sp2 = (ushort)((sp) - 1);
+                            uint top = stack[sp2 + 1].value;
+                            uint next = stack[sp2].value;
 #if DEBUG
-                                ClearSP();
+                            ClearSP();
 #endif
 
-                                stack[sp2].value = (uint)((next <= top) ? 1 : 0);
-                                stack[sp2].type = HopperType.tBool;
-                            }
-#endif
-
+                            stack[sp2].value = (uint)((next <= top) ? 1 : 0);
+                            stack[sp2].type = HopperType.tBool;
                         }
                         break;
                     case Instruction.PUSHIBLE:
@@ -3023,30 +2846,21 @@ namespace HopperNET
                             operand = (ushort)(code[pc + currentContext.CodeOffset]);
                             pc++;
 
-#if UNDOINLINED
-                            Push(operand, HopperType.tUInt);
-                            uint top = Pop();
-                            uint next = Pop();
-                            PushBool(next <= top);
-#else
-                            {
-                                ushort sp2 = sp;
-                                stack[sp2].value = operand;
-                                stack[sp2].type = HopperType.tUInt;
-                                sp++;
+                            ushort sp2 = sp;
+                            stack[sp2].value = operand;
+                            stack[sp2].type = HopperType.tUInt;
+                            sp++;
 
-                                sp--;
-                                sp2 = (ushort)((sp) - 1);
-                                uint top = stack[sp2 + 1].value;
-                                uint next = stack[sp2].value;
+                            sp--;
+                            sp2 = (ushort)((sp) - 1);
+                            uint top = stack[sp2 + 1].value;
+                            uint next = stack[sp2].value;
 #if DEBUG
-                                ClearSP();
+                            ClearSP();
 #endif
 
-                                stack[sp2].value = (uint)((next <= top) ? 1 : 0);
-                                stack[sp2].type = HopperType.tBool;
-                            }
-#endif
+                            stack[sp2].value = (uint)((next <= top) ? 1 : 0);
+                            stack[sp2].type = HopperType.tBool;
 
                         }
                         break;
@@ -3056,31 +2870,21 @@ namespace HopperNET
                             operand = (ushort)(code[pc + currentContext.CodeOffset]);
                             pc++;
 
-#if UNDOINLINED
-                            Push(operand, HopperType.tUInt);
-                            uint top = Pop();
-                            uint next = Pop();
-                            PushBool(next == top);
-#else
-                            {
-                                ushort sp2 = sp;
-                                stack[sp2].value = operand;
-                                stack[sp2].type = HopperType.tUInt;
-                                sp++;
+                            ushort sp2 = sp;
+                            stack[sp2].value = operand;
+                            stack[sp2].type = HopperType.tUInt;
+                            sp++;
 
-                                sp--;
-                                sp2 = (ushort)((sp) - 1);
-                                uint top = stack[sp2 + 1].value;
-                                uint next = stack[sp2].value;
+                            sp--;
+                            sp2 = (ushort)((sp) - 1);
+                            uint top = stack[sp2 + 1].value;
+                            uint next = stack[sp2].value;
 #if DEBUG
-                                ClearSP();
+                            ClearSP();
 #endif
 
-                                stack[sp2].value = (uint)((next == top) ? 1 : 0);
-                                stack[sp2].type = HopperType.tBool;
-                            }
-#endif
-
+                            stack[sp2].value = (uint)((next == top) ? 1 : 0);
+                            stack[sp2].type = HopperType.tBool;
                         }
                         break;
 
@@ -3090,16 +2894,13 @@ namespace HopperNET
                             pc += 2;
 
                             PushCS(pc);
-#if PROFILE
-                            KeepFnCallLog(currentContext, operand, pc);
-#endif
                             if (methodTable.Contains(operand))
                             {
                                 pc = methodTable[operand];
                             }
                             else
                             {
-                                // probably code built for a small devicd
+                                // probably code built for a small device
                                 operand = (ushort)(operand & 0x3FFF);
                                 pc = methodTable[operand];
                             }
@@ -3124,16 +2925,12 @@ namespace HopperNET
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
 
-#if UNDOINLINED
-                            if (Pop() == 0)
-#else
                             sp--;
                             uint top = stack[sp].value;
 #if DEBUG
                             ClearSP();
 #endif
                             if (top == 0)
-#endif
                             {
                                 short offset = (short)operand;
                                 if (offset > 32767)
@@ -3149,16 +2946,12 @@ namespace HopperNET
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
 
-#if UNDOINLINED
-                            if (Pop() != 0)
-#else
                             sp--;
                             uint top = stack[sp].value;
 #if DEBUG
                             ClearSP();
 #endif
                             if (top != 0)
-#endif
                             {
                                 short offset = (short)operand;
                                 if (offset > 32767)
@@ -3174,17 +2967,6 @@ namespace HopperNET
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
 
-#if UNDOINLINED
-                            HopperType type = GetStackType((ushort)(operand + gp));
-                            if (Type_IsValueType(type))
-                            {
-                                Push(GetStack((ushort)(operand + gp)), type);
-                            }
-                            else
-                            {
-                                Push(GetStackVariant((ushort)(operand + gp)));
-                            }
-#else
                             ushort address = (ushort)(operand + gp);
                             HopperType type = stack[address].type;
                             ushort sp2 = sp;
@@ -3203,7 +2985,6 @@ namespace HopperNET
                             }
                             stack[sp2].type = type;
                             sp++;
-#endif
                         }
                         break;
                     case Instruction.POPGLOBAL:
@@ -3257,22 +3038,10 @@ namespace HopperNET
                             {
                                 // POP address -> PC                
                                 pc = PopCS();
-#if PROFILE
-                                KeepFnReturn(currentContext, pc);
-#endif
                             }
 
                             // clear the locals and arguments off the stack (return value is already dealt with if needed)
                             ClearStack(operand);
-
-                            if (currentISR != 0)
-                            {
-                                if (preISRcsp == csp)
-                                {
-                                    currentISR = 0; // ISR returned
-                                    inISR = false;
-                                }
-                            }
 
                             if (pc == 0)
                             {
@@ -3290,12 +3059,8 @@ namespace HopperNET
                         {
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-#if UNDOINLINED
-                            Push(Pop(), (HopperType)operand);
-#else
                             ushort sp2 = (ushort)(sp - 1);
                             stack[sp2].type = (HopperType)operand;
-#endif
                         }
                         break;
 
@@ -3305,16 +3070,9 @@ namespace HopperNET
                             pc++;
                             ushort operand1 = code[pc + currentContext.CodeOffset];
                             pc++;
-#if UNDOINLINED
-                            ushort globalAddress0 = (ushort)(operand0 + gp);
-                            ushort globalAddress1 = (ushort)(operand1 + gp);
-                            HopperType type0 = GetStackType(globalAddress0);
-                            PutStack(globalAddress0, GetStack(globalAddress0) + GetStack(globalAddress1), type0);
-#else
                             ushort address0 = (ushort)(operand0 + gp);
                             ushort address1 = (ushort)(operand1 + gp);
                             stack[address0].value += stack[address1].value;
-#endif
                         }
                         break;
                     
@@ -3330,22 +3088,12 @@ namespace HopperNET
                             //
                             // So, we need to choose between tUInt and tInt for the "pop" if it was tByte .. I choose tUInt
                             // (we need to avoid munting the type if it is currently a -ve tInt)
-#if UNDOINLINED
-                            ushort globalAddress = (ushort)(operand + gp);
-                            HopperType type = GetStackType(globalAddress);
-                            if (type == HopperType.tByte)
-                            {
-                                type = HopperType.tUInt;
-                            }
-                            PutStack(globalAddress, GetStack(globalAddress) + 1, type);
-#else
                             ushort address = (ushort)(operand + gp);
                             stack[address].value++;
                             if (stack[address].type == HopperType.tByte)
                             {
                                 stack[address].type = HopperType.tUInt;
                             }
-#endif
                         }
                         break;
 
@@ -3353,14 +3101,8 @@ namespace HopperNET
                         {
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-#if UNDOINLINED
-                            ushort globalAddress = (ushort)(operand + gp);
-                            HopperType type = GetStackType(globalAddress);
-                            PutStack(globalAddress, GetStack(globalAddress) - 1, type);
-#else
                             ushort address = (ushort)(operand + gp);
                             stack[address].value--;
-#endif
                         }
                         break;
 
@@ -3506,17 +3248,6 @@ namespace HopperNET
                             }
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-#if UNDOINLINED
-                            HopperType type = GetStackType((ushort)(operand + gp));
-                            if (Type_IsValueType(type))
-                            {
-                                Push(GetStack((ushort)(operand + gp)), type);
-                            }
-                            else
-                            {
-                                Push(GetStackVariant((ushort)(operand + gp)));
-                            }
-#else
                             ushort address = (ushort)(operand + gp);
                             HopperType type = stack[address].type;
                             ushort sp2 = sp;
@@ -3535,7 +3266,6 @@ namespace HopperNET
                             }
                             stack[sp2].type = type;
                             sp++;
-#endif
                         }
                         break;
 
@@ -3555,18 +3285,6 @@ namespace HopperNET
                                 offset = (short)(offset - 256); // 255 -> -1
                             }
 
-#if UNDOINLINED
-                            ushort localAddress = (ushort)(bp + offset);
-                            HopperType type = GetStackType(localAddress);
-                            if (Type_IsValueType(type))
-                            {
-                                Push(GetStack(localAddress), type);
-                            }
-                            else
-                            {
-                                Push(GetStackVariant(localAddress));
-                            }
-#else
                             ushort localAddress2 = (ushort)((bp + offset));
                             HopperType type = stack[localAddress2].type;
                             ushort sp2 = sp;
@@ -3585,7 +3303,6 @@ namespace HopperNET
                             }
                             stack[sp2].type = type;
                             sp++;
-#endif
 
                         }
                         break;
@@ -3594,14 +3311,6 @@ namespace HopperNET
                         {
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
-
-
-#if UNDOINLINED
-                            Push(operand, HopperType.tUInt);
-                            uint top = Pop();
-                            uint next = Pop();
-                            PushBool(next < top);
-#else
 
                             ushort sp2 = sp;
                             stack[sp2].value = operand;
@@ -3618,8 +3327,6 @@ namespace HopperNET
 
                             stack[sp2].value = (uint)((next < top) ? 1 : 0);
                             stack[sp2].type = HopperType.tBool;
-
-#endif
                         }
                         break;
 
@@ -3676,16 +3383,10 @@ namespace HopperNET
                             bp = sp;
                             for (ushort i = 0; i < operand; i++)
                             {
-#if UNDOINLINED
-                                Push(0, HopperType.tByte);
-#else
-                                {
-                                    ushort sp2 = sp;
-                                    stack[sp2].value = 0;
-                                    stack[sp2].type = HopperType.tByte;
-                                    sp++;
-                                }
-#endif
+                                ushort sp2 = sp;
+                                stack[sp2].value = 0;
+                                stack[sp2].type = HopperType.tByte;
+                                sp++;
                             }
                         }
                         break;
@@ -3704,9 +3405,6 @@ namespace HopperNET
                                 Diagnostics.Die(0x0F, this); // invalid or uninitialized delegate
                                 break;
                             }
-#if PROFILE
-                            KeepFnCallLog(currentContext, (ushort)methodIndex, pc);
-#endif
                             pc = methodTable[methodIndex];
                         }
                         break;
@@ -3782,17 +3480,6 @@ namespace HopperNET
                             {
                                 // POP address -> PC                
                                 pc = PopCS();
-#if PROFILE
-                                KeepFnReturn(currentContext, pc);
-#endif
-                            }
-                            if (currentISR != 0)
-                            {
-                                if (preISRcsp == csp)
-                                {
-                                    currentISR = 0; // ISR returned
-                                    inISR = false;
-                                }
                             }
 
                             if (pc == 0)
@@ -3810,9 +3497,6 @@ namespace HopperNET
                         {
                             // POP address -> PC                
                             pc = PopCS();
-#if PROFILE
-                            KeepFnReturn(currentContext, pc);
-#endif
                         }
                         break;
 
@@ -3820,16 +3504,10 @@ namespace HopperNET
                         {
                             operand = (ushort)(code[pc + currentContext.CodeOffset]);
                             pc++;
-#if UNDOINLINED
-                            Push(operand, HopperType.tByte);
-#else
-
                             ushort sp2 = sp;
                             stack[sp2].value = operand;
                             stack[sp2].type = HopperType.tByte;
                             sp++;
-
-#endif
                         }
                         break;
 
@@ -3837,42 +3515,29 @@ namespace HopperNET
                         {
                             operand = (ushort)(code[pc + currentContext.CodeOffset] + (code[pc + 1 + currentContext.CodeOffset] << 8));
                             pc += 2;
-#if UNDOINLINED
-                            Push(operand, HopperType.tUInt);
-#else
 
                             ushort sp2 = sp;
                             stack[sp2].value = operand;
                             stack[sp2].type = HopperType.tUInt;
                             sp++;
-                            
-#endif
                         }
                         break;
 
                     case Instruction.PUSHI0:
-#if UNDOINLINED
-                        Push(0, HopperType.tByte);
-#else
                         {
                             ushort sp2 = sp;
                             stack[sp2].value = 0;
                             stack[sp2].type = HopperType.tByte;
                             sp++;
-                            }
-#endif
+                        }
                         break;
                     case Instruction.PUSHI1:
-#if UNDOINLINED
-                        Push(1, HopperType.tByte);
-#else
                         {
                             ushort sp2 = sp;
                             stack[sp2].value = 1;
                             stack[sp2].type = HopperType.tByte;
                             sp++;
                         }
-#endif
                         break;
                     case Instruction.PUSHIM1:
                         {
@@ -3884,18 +3549,6 @@ namespace HopperNET
                     case Instruction.PUSHLOCALB00:
                         {
                             short offset = 0;
-#if UNDOINLINED
-                            ushort localAddress = (ushort)(bp + offset);
-                            HopperType type = GetStackType(localAddress);
-                            if (Type_IsValueType(type))
-                            {
-                                Push(GetStack(localAddress), type);
-                            }
-                            else
-                            {
-                                Push(GetStackVariant(localAddress));
-                            }
-#else
                             ushort localAddress2 = (ushort)((bp + offset));
                             HopperType type = stack[localAddress2].type;
                             ushort sp2 = sp;
@@ -3914,24 +3567,11 @@ namespace HopperNET
                             }
                             stack[sp2].type = type;
                             sp++;
-#endif
                         }
                         break;
                     case Instruction.PUSHLOCALB01:
                         {
                             short offset = 1;
-#if UNDOINLINED
-                            ushort localAddress = (ushort)(bp + offset);
-                            HopperType type = GetStackType(localAddress);
-                            if (Type_IsValueType(type))
-                            {
-                                Push(GetStack(localAddress), type);
-                            }
-                            else
-                            {
-                                Push(GetStackVariant(localAddress));
-                            }
-#else
                             ushort localAddress2 = (ushort)((bp + offset));
                             HopperType type = stack[localAddress2].type;
                             ushort sp2 = sp;
@@ -3950,7 +3590,6 @@ namespace HopperNET
                             }
                             stack[sp2].type = type;
                             sp++;
-#endif
                         }
                         break;
 
@@ -4159,10 +3798,6 @@ namespace HopperNET
                         break;
 
                 }
-#if PROFILE
-                KeepOpCodeLog(currentContext, opCode);
-#endif
-
                 if ((lastError != 0) || Halted)
                 {
                     break;
@@ -4173,229 +3808,216 @@ namespace HopperNET
             return lastError;
         }
 
+        private Queue<ISRStruct> isrQueue = new Queue<ISRStruct>();
+        private bool interruptsEnabled = true;
+        private ushort nextTimerID = 0;
+        private Queue<ushort> freeTimerIDs = new Queue<ushort>();
+        private Dictionary<ushort, System.Threading.Timer> activeTimers = new Dictionary<ushort, System.Threading.Timer>();
 
-
-#if PROFILE
-        private void KeepOpCodeLog(Context currentContext, Instruction opCode)
+        private ushort AllocateTimerID()
         {
-            if (!currentContext.CallStats.ContainsKey(opCode))
+            lock (freeTimerIDs)
             {
-                currentContext.CallStats[opCode] = 0;
-            }
-            currentContext.CallStats[opCode]++;
-        }
-        private void KeepSysCallLog(Context currentContext, SysCall sysCall)
-        {
-            if (!currentContext.SysCallStats.ContainsKey(sysCall))
-            {
-                currentContext.SysCallStats[sysCall] = 0;
-            }
-            currentContext.SysCallStats[sysCall]++;
-        }
-        private void KeepFnReturn(Context currentContext, ushort returnPC)
-        {
-            if (returnPC != 0) // return from "main"?
-            {
-                DateTime returnTime = DateTime.Now;
-                ushort len = (ushort)(currentContext.FnCallTimeReturnPCs.Count);
-                ushort expectedPC = currentContext.FnCallTimeReturnPCs[len - 1];
-                currentContext.FnCallTimeReturnPCs.RemoveAt((ushort)(len - 1));
-                if (returnPC != expectedPC)
+                if (freeTimerIDs.Count > 0)
                 {
-                    throw new InvalidOperationException();
+                    return freeTimerIDs.Dequeue();
                 }
-                DateTime callTime = currentContext.FnCallTimeStack[(ushort)(len - 1)];
-                currentContext.FnCallTimeStack.RemoveAt((ushort)(len - 1));
-                TimeSpan elapsed = returnTime - callTime;
-                ushort fn = currentContext.FnCallTimeStackFn[len - 1];
-                currentContext.FnCallTimeStackFn.RemoveAt((ushort)(len - 1));
-
-                if (!currentContext.FnCallTimeStats.ContainsKey(fn))
-                {
-                    currentContext.FnCallTimeStats[fn] = 0;
-                }
-                currentContext.FnCallTimeStats[fn] += elapsed.TotalMilliseconds;
-                
+                return (ushort)nextTimerID++;
             }
         }
-        private void KeepFnCallLog(Context currentContext, UInt16 fnCall, ushort returnPC)
+        private void FreeTimerID(ushort timerID)
         {
-            if (!currentContext.FnCallStats.ContainsKey(fnCall))
+            lock (freeTimerIDs)
             {
-                currentContext.FnCallStats[fnCall] = 0;
+                freeTimerIDs.Enqueue(timerID);
             }
-            currentContext.FnCallStats[fnCall]++;
-            currentContext.FnCallTimeStackFn.Add(fnCall);
-            currentContext.FnCallTimeStack.Add(DateTime.Now);
-            currentContext.FnCallTimeReturnPCs.Add(returnPC);
         }
-#endif
-        private void LibraryCall(Context currentContext, LibCall libCall)
+
+        private void timerCallback(object state)
         {
-            /*
+            ISRStruct isrStruct = (ISRStruct)state;
+            lock (isrQueue)
+            {
+                isrQueue.Enqueue(isrStruct);
+            }
+
+            if ((isrStruct.interruptType == InterruptType.eAlarm) && activeTimers.ContainsKey(isrStruct.timerID))
+            {
+                System.Threading.Timer timer = activeTimers[isrStruct.timerID];
+                timer.Dispose();
+                activeTimers.Remove(isrStruct.timerID);
+                FreeTimerID(isrStruct.timerID);
+            }
+        }
+
+
+
+        private void ServiceInterrupts(Context currentContext)
+        {
+            for (; ; )
+            {
+                lock (isrQueue)
+                {
+                    if (!interruptsEnabled)
+                    {
+                        break;
+                    }
+
+                    if (isrQueue.Count == 0)
+                    {
+                        break;
+                    }
+                    ISRStruct isrStruct = isrQueue.Dequeue();
+                    ushort methodIndex = isrStruct.isrDelegate;
+                    ushort methodAddress = 0;
+
+                    methodAddress = methodTable[methodIndex];
+
+                    // construct a delegate call
+                    PushCS(PC);
+                    if (isrStruct.interruptType == InterruptType.ePin)
+                    {
+                        // arguments:
+                        //
+                        // delegate PinISRDelegate(byte pin, PinStatus status);
+
+                        Push(isrStruct.pin, HopperType.tByte);
+                        Push(isrStruct.status, HopperType.tByte);
+                    }
+                    else if (isrStruct.interruptType == InterruptType.eTimer)
+                    {
+                        // arguments:
+                        //
+                        // delegate TimerISRDelegate(uint timerID);
+                        Push(isrStruct.timerID, HopperType.tUInt);
+                    }
+                    else if (isrStruct.interruptType == InterruptType.eAlarm)
+                    {
+                        // arguments:
+                        //
+                        // delegate TimerISRDelegate(uint timerID);
+                        Push(isrStruct.timerID, HopperType.tUInt);
+                    }
+                    else
+                    {
+                        Diagnostics.Die(0x0B, this);
+                    }
+
+                    // make the call
+                    PC = methodAddress;
+
+                }
+                break;
+            } // for (;;)
+        }
+
+        private void LibraryCall(Context currentContext, LibCall libCall, byte iOverload)
+        {
+            if (iOverload == 2)
+            {
+                iOverload = (byte)Pop();
+            }
+
             switch (libCall)
             {
-                case LibCall.GraphicsWidthGet:
-                    {
-                        ushort width = (ushort)Console.CanvasWidth;
-                        Push(width, HopperType.tUInt);
-                    }
-                    break;
-                case LibCall.GraphicsHeightGet:
-                    {
-                        ushort height = (ushort)Console.CanvasHeight;
-                        Push(height, HopperType.tUInt);
-                    }
-                    break;
-                case LibCall.GraphicsFlipDisplay:
-                    Console.FlipVertical = (bool)(Pop() != 0);
-                    break;
-                case LibCall.GraphicsClear:
-                    {
-                        ushort color = (ushort)Pop();
-                        screen.Suspend();
-                        screen.Console.GraphicsClear(color);
-                        screen.Resume(false);
-                    }
-                    break;
-                case LibCall.GraphicsSetPixel:
-                    {
-                        ushort colour = (ushort)Pop();
-                        ushort y = (ushort)Pop();
-                        ushort x = (ushort)Pop();
-                        screen.Suspend();
-                        screen.Console.SetPixel(x, y, colour);
-                        screen.Resume(false);
-                    }
+
+                case LibCall.MCUInterruptsEnabledGet:
+                    Push((uint)(interruptsEnabled ? 1: 0), HopperType.tBool);
                     break;
 
-
-                case LibCall.GraphicsLine:
-                    {
-                        ushort colour = (ushort)Pop();
-                        ushort y2 = (ushort)Pop();
-                        ushort x2 = (ushort)Pop();
-                        ushort y1 = (ushort)Pop();
-                        ushort x1 = (ushort)Pop();
-                        screen.Suspend();
-                        screen.Console.Line(x1, y1, x2, y2, colour);
-                        screen.Resume(false);
-                    }
-                    break;
-                case LibCall.GraphicsHorizontalLine:
-                    {
-                        ushort colour = (ushort)Pop();
-                        ushort y2 = (ushort)Pop();
-                        ushort x2 = (ushort)Pop();
-                        ushort y1 = (ushort)Pop();
-                        ushort x1 = (ushort)Pop();
-                        screen.Suspend();
-                        screen.Console.HorizontalLine(x1, y1, x2, y2, colour);
-                        screen.Resume(false);
-                    }
-                    break;
-                case LibCall.GraphicsVerticalLine:
-                    {
-                        ushort colour = (ushort)Pop();
-                        ushort y2 = (ushort)Pop();
-                        ushort x2 = (ushort)Pop();
-                        ushort y1 = (ushort)Pop();
-                        ushort x1 = (ushort)Pop();
-                        screen.Suspend();
-                        screen.Console.VerticalLine(x1, y1, x2, y2, colour);
-                        screen.Resume(false);
-                    }
-                    break;
-                case LibCall.GraphicsRectangle:
-                    {
-                        ushort colour = (ushort)Pop();
-                        ushort h = (ushort)Pop();
-                        ushort w = (ushort)Pop();
-                        ushort y = (ushort)Pop();
-                        ushort x = (ushort)Pop();
-                        screen.Suspend();
-                        screen.Console.Rectangle(x, y, w, h, colour);
-                        screen.Resume(false);
-                    }
-                    break;
-                case LibCall.GraphicsFilledRectangle:
-                    {
-                        ushort colour = (ushort)Pop();
-                        ushort h = (ushort)Pop();
-                        ushort w = (ushort)Pop();
-                        ushort y = (ushort)Pop();
-                        ushort x = (ushort)Pop();
-                        screen.Suspend();
-                        screen.Console.FillRectangle(x, y, w, h, colour);
-                        screen.Resume(false);
-                    }
-                    break;
-                case LibCall.GraphicsCircle:
-                    {
-                        ushort colour = (ushort)Pop();
-                        ushort r = (ushort)Pop();
-                        ushort y = (ushort)Pop();
-                        ushort x = (ushort)Pop();
-                        screen.Suspend();
-                        screen.Console.Circle(x, y, r, colour);
-                        screen.Resume(false);
-                    }
-                    break;
-                case LibCall.GraphicsFilledCircle:
-                    {
-                        ushort colour = (ushort)Pop();
-                        ushort r = (ushort)Pop();
-                        ushort y = (ushort)Pop();
-                        ushort x = (ushort)Pop();
-                        screen.Suspend();
-                        screen.Console.FillCircle(x, y, r, colour);
-                        screen.Resume(false);
-                    }
+                case LibCall.MCUInterruptsEnabledSet:
+                    interruptsEnabled = Pop() != 0;
                     break;
 
-                case LibCall.GraphicsDrawChar:
+                case LibCall.TimerStart:
                     {
-                        bool   antiAlias = (bool)(Pop() != 0);
-                        byte   scale = (byte)Pop();
-                        ushort backColour = (ushort)Pop();
-                        ushort foreColour = (ushort)Pop();
-                        char   chr = (char)Pop();
-                        ushort y = (ushort)Pop();
-                        ushort x = (ushort)Pop();
-                        //screen.Suspend();
-                        throw new NotImplementedException();
-                        //screen.Resume(false);
+                        ISRStruct isrStruct = new ISRStruct();
+                        isrStruct.timerID = AllocateTimerID();
+                        isrStruct.isrDelegate = (ushort)Pop();
+                        isrStruct.interruptType = InterruptType.eTimer;
+                        Int32 msInterval = 0;
+                        switch (iOverload)
+                        {
+                            case 0:
+                                // uint Start(uint msInterval, TimerISRDelegate timerISR) library;
+                                msInterval = (Int32)Pop();
+                                break;
+                            case 1:
+                                // uint Start(long msInterval, TimerISRDelegate timerISR) library;
+                                msInterval = PopLong();
+                                break;
+                        }
+                        lock (activeTimers)
+                        {
+                            activeTimers[isrStruct.timerID] = new System.Threading.Timer(timerCallback, (object)isrStruct, msInterval, msInterval);
+                        }
+                        Push(isrStruct.timerID, HopperType.tUInt);
                     }
-                    //break;
+                    break;
+                case LibCall.TimerStop:
+                    {
+                        // Stop(uint timerID) library;
+                        ushort timerID = (ushort)Pop();
+                        lock (activeTimers)
+                        {
+                            if (activeTimers.ContainsKey(timerID))
+                            {
+                                System.Threading.Timer timer = activeTimers[timerID];
+                                timer.Dispose();
+                                activeTimers.Remove(timerID);
+                                FreeTimerID(timerID);
+                            }
+                        }
+                        break;
+                    }
+                case LibCall.TimerAlarm:
+                    {
+                        ISRStruct isrStruct = new ISRStruct();
+                        isrStruct.timerID = AllocateTimerID();
+                        isrStruct.isrDelegate = (ushort)Pop();
+                        isrStruct.interruptType = InterruptType.eAlarm;
+                        Int32 msInterval = 0;
+                        switch (iOverload)
+                        {
+                            case 0:
+                                // uint Alarm(uint msInterval, TimerISRDelegate timerISR) library;
+                                msInterval = (Int32)Pop();
+                                break;
+                            case 1:
+                                // uint Alarm(long msInterval, TimerISRDelegate timerISR) library;
+                                msInterval = PopLong();
+                                break;
+                        }
+                        lock (activeTimers)
+                        {
+                            activeTimers[isrStruct.timerID] = new System.Threading.Timer(timerCallback, (object)isrStruct, msInterval, System.Threading.Timeout.Infinite);
+                        }
+                        Push(isrStruct.timerID, HopperType.tUInt);
+                    }
+                    break;
+                case LibCall.TimerCancel:
+                    {
+                        // Cancel(uint alarmID) library;
+                        ushort timerID = (ushort)Pop();
+                        lock (activeTimers)
+                        {
+                            if (activeTimers.ContainsKey(timerID))
+                            {
+                                System.Threading.Timer timer = activeTimers[timerID];
+                                timer.Dispose();
+                                activeTimers.Remove(timerID);
+                                FreeTimerID(timerID);
+                            }
+                        }
+                    }
+                    break;
+                default:
+                        Diagnostics.Die(0x0A, this); // not implemented
+                        break;
             }
-        }
-            */
-        switch (libCall)
-        {
-            case LibCall.TimerStart:
-                    // uint Start(uint msInterval, TimerISRDelegate timerISR) library;
-                    // uint Start(long msInterval, TimerISRDelegate timerISR) library;
-                    Diagnostics.Die(0x0A, this); // not implemented
-                    break;
-            case LibCall.TimerStop:
-                    // Stop(uint timerID) library;
-                    Diagnostics.Die(0x0A, this); // not implemented
-                    break;
-            case LibCall.TimerAlarm:
-                    // uint Alarm(uint msInterval, TimerISRDelegate timerISR) library;
-                    // uint Alarm(long msInterval, TimerISRDelegate timerISR) library;
-                    Diagnostics.Die(0x0A, this); // not implemented
-                    break;
-            case LibCall.TimerCancel:
-                    // Cancel(uint alarmID) library;
-                    Diagnostics.Die(0x0A, this); // not implemented
-                    break;
-            default:
-                    Diagnostics.Die(0x0A, this); // not implemented
-                    break;
-        }
     }
 
+        
         private void SystemCall(Context currentContext, SysCall sysCall, byte iOverload)
         {
             bool hasResult = false;
@@ -4406,6 +4028,12 @@ namespace HopperNET
             }
             switch (sysCall)
             {
+                case SysCall.TimeDelay:
+                    {
+                        ushort ms = (ushort)Pop();
+                        System.Threading.Thread.Sleep(ms);
+                    }
+                    break;
                 /*
                 case SysCall.WebServerMethodGet:
                     Push(new HopperString(WebServer.Method));
@@ -5259,17 +4887,11 @@ namespace HopperNET
 
                 case SysCall.ArraySetItem:
                     {
-#if UNDOINLINED
-                        ushort value = (ushort)Pop();
-                        ushort index = (ushort)Pop();
-                        HopperArray _this_ = (HopperArray)PopVariant(HopperType.tArray);
-#else
                         uint sp2 = (uint)(sp);
                         uint value = stack[sp2 - 1].value;
                         uint index = stack[sp2 - 2].value;
                         HopperArray _this_ = stack[sp2 - 3].reference as HopperArray;
                         sp -= 3;
-#endif
                         ushort[] array = _this_.Value;
                         if (index >= array.Length)
                         {
@@ -5281,35 +4903,16 @@ namespace HopperNET
                     break;
                 case SysCall.ArrayGetItem:
                     {
-#if UNDOINLINED
-                        ushort index = (ushort)Pop();
-                        HopperArray _this_ = (HopperArray)PopVariant(HopperType.tArray);
-#else
                         uint sp2 = (uint)(sp);
                         uint index = stack[sp2 - 1].value;
                         HopperArray _this_ = stack[sp2 - 2].reference as HopperArray;
                         sp--;
-#endif
                         ushort[] array = _this_.Value;
                         if (index >= array.Length)
                         {
                             Diagnostics.Die(0x02, this); // array index out of range
                             break;
                         }
-#if UNDOINLINED
-                        if (_this_.VType == HopperType.tInt)
-                        {
-                            // internally in C# we are converting to 32 bits
-                            // ushort will not sign extend, short will
-                            PushInt((short)(array[index]));
-                            hasResult = true;
-                        }
-                        else
-                        {
-                            Push(array[index], _this_.VType);
-                            hasResult = true;
-                        }
-#else
                         if (_this_.VType == HopperType.tInt)
                         {
                             // internally in C# we are converting to 32 bits
@@ -5322,7 +4925,6 @@ namespace HopperNET
                             stack[sp2 - 2].value = array[index];
                         }
                         stack[sp2 - 2].type = _this_.VType;
-#endif
                     }
                     break;
                 case SysCall.ArrayItemTypeGet:
@@ -7525,9 +7127,6 @@ namespace HopperNET
                     Diagnostics.Die(0x0A, this); // not implemented
                     break;
             }
-#if PROFILE
-            KeepSysCallLog(currentContext, sysCall);
-#endif
             // CDECL TODO : Dictionary.Next is a problem : multiple return values
             if (isCDecl)
             {

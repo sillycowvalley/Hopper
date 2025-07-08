@@ -1841,7 +1841,7 @@ namespace HopperNET
                         {
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-                            SystemCall(currentContext, (SysCall)operand, 2);
+                            LibraryCall(currentContext, (SysCall)operand, 2); // "2" means Pop()
                         }
                         break;
 
