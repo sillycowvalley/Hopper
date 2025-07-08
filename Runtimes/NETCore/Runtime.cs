@@ -1,24 +1,8 @@
 ﻿using HopperRuntime;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
-using System.Reflection;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Timers;
-using System.Xml.Linq;
-using Terminal.Gui.Views;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace HopperNET
 {
     
-
     public enum StepTypes
     {
         None,
@@ -3803,10 +3787,18 @@ namespace HopperNET
                     break;
                 }
             } // for (;;)
+
+            if (mcu != null)
+            {
+                mcu.Release();
+            }
+
             waiting = true;
             StepType = StepTypes.None;
             return lastError;
         }
+
+        private MCU mcu = null;
 
         private Queue<ISRStruct> isrQueue = new Queue<ISRStruct>();
         private bool interruptsEnabled = true;
@@ -4009,6 +4001,72 @@ namespace HopperNET
                                 FreeTimerID(timerID);
                             }
                         }
+                    }
+                    break;
+
+                case LibCall.MCUPinMode:
+                    {
+                        if (mcu == null)
+                        {
+                            mcu = new MCU(isrQueue);
+                        }
+                        ushort pinMode = (ushort)Pop();
+                        ushort pin     = (ushort)Pop();
+                        mcu.PinMode(pin, pinMode);
+                    }
+                    break;
+                case LibCall.MCUDigitalRead:
+                    {
+                        if (mcu == null)
+                        {
+                            mcu = new MCU(isrQueue);
+                        }
+                        ushort pin = (ushort)Pop();
+                        Push((uint)(mcu.DigitalRead(pin) ? 1 : 0), HopperType.tBool);
+                    }
+                    break;
+                case LibCall.MCUDigitalWrite:
+                    {
+                        if (mcu == null)
+                        {
+                            mcu = new MCU(isrQueue);
+                        }
+                        ushort value = (ushort)Pop();
+                        ushort pin = (ushort)Pop();
+                        mcu.DigitWrite(pin, value != 0);
+                    }
+                    break;
+                case LibCall.MCUAttachToPin:
+                    {
+                        if (mcu == null)
+                        {
+                            mcu = new MCU(isrQueue);
+                        }
+                        ushort pinStatus = (ushort)Pop();
+                        ushort isrDelegate = (ushort)Pop();
+                        ushort pin = (ushort)Pop();
+                        Push((uint)(mcu.AttachToPin(pin, isrDelegate, pinStatus) ? 1 : 0), HopperType.tBool);
+                    }
+                    break;
+                case LibCall.MCUAnalogWrite:
+                    {
+                        if (mcu == null)
+                        {
+                            mcu = new MCU(isrQueue);
+                        }
+                        ushort value = (ushort)Pop();
+                        ushort pin = (ushort)Pop();
+                        mcu.AnalogWrite((byte)pin, value);
+                    }
+                    break;
+                case LibCall.MCUAnalogWriteResolution:
+                    {
+                        if (mcu == null)
+                        {
+                            mcu = new MCU(isrQueue);
+                        }
+                        ushort bits = (ushort)Pop();
+                        mcu.AnalogWriteResolution(bits);
                     }
                     break;
                 default:
