@@ -1,6 +1,8 @@
 program FiboUInt
 {
-    uses "/Source/Library/Boards/PiPico"
+    //#define NO_PACKED_INSTRUCTIONS
+    
+    uses "/Source/Library/Boards/Pi"
     
     // https://forums.raspberrypi.com/viewtopic.php?t=303458
     
@@ -26,7 +28,8 @@ program FiboUInt
         float seconds = ms / 1000.0;
         WriteLn(name + "(" + arg.ToString() + ") = " + result.ToString() + " in " + (seconds / loops).ToString() + " seconds");
     }
-        
+     
+    Hopper()   
     {
         FiboDelegate fiboDelegate = Fibo;
         Benchmark("Fibo", fiboDelegate, 24, 1); // Fibo(24) = 46368
