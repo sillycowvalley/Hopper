@@ -1827,21 +1827,21 @@ namespace HopperNET
                         {
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-                            LibraryCall(currentContext, (LibCall)operand);
+                            LibraryCall(currentContext, (LibCall)operand, 0);
                         }
                         break;
                     case Instruction.LIBCALL1:
                         {
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-                            LibraryCall(currentContext, (LibCall)operand);
+                            LibraryCall(currentContext, (LibCall)operand, 1);
                         }
                         break;
                     case Instruction.LIBCALL:
                         {
                             operand = code[pc + currentContext.CodeOffset];
                             pc++;
-                            LibraryCall(currentContext, (SysCall)operand, 2); // "2" means Pop()
+                            LibraryCall(currentContext, (LibCall)operand, 2); // "2" means Pop()
                         }
                         break;
 
@@ -4225,8 +4225,13 @@ namespace HopperNET
             currentContext.FnCallTimeReturnPCs.Add(returnPC);
         }
 #endif
-        private void LibraryCall(Context currentContext, LibCall libCall)
+        private void LibraryCall(Context currentContext, LibCall libCall, byte iOverload)
         {
+            if (iOverload == 2)
+            {
+                iOverload = (byte)Pop();
+            }
+
             /*
             switch (libCall)
             {
@@ -4365,7 +4370,7 @@ namespace HopperNET
             }
         }
             */
-        switch (libCall)
+            switch (libCall)
         {
             case LibCall.TimerStart:
                     // uint Start(uint msInterval, TimerISRDelegate timerISR) library;

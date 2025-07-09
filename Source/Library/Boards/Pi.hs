@@ -2,12 +2,14 @@ unit Board // PiPico
 {
     #define RPI
 
-    #define MCU_BOARD_DEFINED
+    #define SBC_BOARD_DEFINED
     #define BOARD_HAS_I2C
     #define BOARD_HAS_SPI
-    
+    #define BOARD_HAS_LED
     
     #define FORMFACTOR_PI
+    
+    const byte BuiltInLED = 4;
     
     const byte I2CSDA0 = 2;
     const byte I2CSCL0 = 3;
@@ -49,10 +51,7 @@ unit Board // PiPico
     const byte GP25 = 25;
     const byte GP26 = 26;
 
-    uses "/Source/System/System"
-    uses "/Source/System/IO"
-    
-    uses "/Source/Library/Timer"
+    uses "/Source/Library/SBC"
     
      string BoardName { get { return "Pi"; } }
 

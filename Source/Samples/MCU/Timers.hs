@@ -2,8 +2,9 @@ program TimerDemo
 {
     uses "/Source/Library/Boards/Pi"
     
-    const byte alarmPin = 16;
-    const byte timerPin = 17;
+    const byte alarmPin = 4;
+    const byte timerPin = 5;
+    const byte timerPin2 = 6;
     
     long start;
     uint timerCount;
@@ -11,33 +12,42 @@ program TimerDemo
     
     fastTimerCallBack(uint timerID)
     {
-        Write(".");
+        DigitalWrite(timerPin, true);
+        Delay(100);
+        DigitalWrite(timerPin, false);
     }
     
     timerCallBack(uint timerID)
     {
+        DigitalWrite(timerPin2, true);
         timerCount++;
         Write("Timer: " + timerID.ToString() + " : " + timerCount.ToString() + " " + (Millis-start).ToString() + "ms");
         Delay(500);
         WriteLn(" .. done.");
+        DigitalWrite(timerPin2, false);
     }
     
     alarmCallBack(uint alarmID)
     {
+        DigitalWrite(alarmPin, true);
         WriteLn("  Alarm: " + alarmID.ToString() + " " + (Millis-start).ToString() + "ms");
         Timer.Cancel(alarmIDToCancel);
         Write("  Cancel Alarm: " + alarmIDToCancel.ToString());
         Delay(500);
         WriteLn(" .. done.");
+        DigitalWrite(alarmPin, false);
     }
     
     Hopper()
     {
+        PinMode(alarmPin, PinModeOption.Output);
+        PinMode(timerPin, PinModeOption.Output);
+        PinMode(timerPin2, PinModeOption.Output);
         
         TimerISRDelegate timerISRDelegate;
         timerISRDelegate = fastTimerCallBack;
-        uint fastTimerID = Timer.Start(100, timerISRDelegate);
-        WriteLn("Started 100ms timer: " + fastTimerID.ToString());
+        uint fastTimerID = Timer.Start(250, timerISRDelegate);
+        WriteLn("Started 250ms timer: " + fastTimerID.ToString());
         
         timerISRDelegate = timerCallBack;
         start = Millis;
@@ -73,6 +83,9 @@ program TimerDemo
         WriteLn("Stop Timer: " + fastTimerID.ToString());
         Timer.Stop(fastTimerID);
         Delay(3000);
+        DigitalWrite(timerPin, false);
+        DigitalWrite(alarmPin, false);
+        DigitalWrite(timerPin2, false);
         WriteLn("Exit");
     }
 }
