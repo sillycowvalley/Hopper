@@ -1,7 +1,7 @@
 unit Screen
 {
     uses "Colour"
-
+    
     byte CursorX { get system; }
     byte CursorY { get system; }
     byte Columns { get system; }

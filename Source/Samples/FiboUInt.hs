@@ -4,6 +4,10 @@ program FiboUInt
     
     uses "/Source/Library/Boards/Pi"
     
+#ifndef MCU    
+    uses "/Source/System/Screen"
+#endif    
+    
     // https://forums.raspberrypi.com/viewtopic.php?t=303458
     
     delegate uint FiboDelegate(uint n);

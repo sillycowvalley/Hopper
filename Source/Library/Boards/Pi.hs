@@ -52,7 +52,7 @@ unit Board // PiPico
     const byte GP26 = 26;
 
     uses "/Source/Library/SBC"
-    
-     string BoardName { get { return "Pi"; } }
+
+    string BoardName { get { return "Pi"; } }
 
 }

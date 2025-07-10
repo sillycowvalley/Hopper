@@ -6,6 +6,10 @@ program Blink
     //uses "/Source/Library/Boards/AdafruitFeatherRP2350Hstx"
     //uses "/Source/Library/Boards/PimoroniTiny2350"
     
+#ifndef MCU    
+    uses "/Source/System/Screen"
+#endif
+    
     Hopper()
     {
         loop

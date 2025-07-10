@@ -4082,6 +4082,156 @@ namespace HopperNET
                         mcu.AnalogWriteResolution(bits);
                     }
                     break;
+                
+                case LibCall.WireBegin:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // bool Begin() library;
+                            PushBool(Wire.Begin());
+                            break;
+                        case 1:
+                            // bool Begin(byte i2cController) library;
+                            byte i2cController = (byte)Pop();
+                            PushBool(Wire.Begin(i2cController));
+                            break;
+                    }
+                    break;
+
+                case LibCall.WireBeginTx:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // BeginTx(byte address) library;
+                            byte address = (byte)Pop();
+                            Wire.BeginTx(address);
+                            break;
+                        case 1:
+                            // BeginTx(byte i2cController, byte address) library;
+                            byte address1 = (byte)Pop();
+                            byte i2cController1 = (byte)Pop();
+                            Wire.BeginTx(i2cController1, address1);
+                            break;
+                    }
+                    break;
+
+                case LibCall.WireEndTx:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // byte EndTx() library;
+                            Push(Wire.EndTx(), HopperType.tByte);
+                            break;
+                        case 1:
+                            // byte EndTx(byte i2cController) library;
+                            byte i2cController2 = (byte)Pop();
+                            Push(Wire.EndTx(i2cController2), HopperType.tByte);
+                            break;
+                    }
+                    break;
+
+                case LibCall.WireWrite:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // Write(byte data) library;
+                            byte data = (byte)Pop();
+                            Wire.Write(data);
+                            break;
+                        case 1:
+                            // Write(byte i2cController, byte data) library;
+                            byte data1 = (byte)Pop();
+                            byte i2cController3 = (byte)Pop();
+                            Wire.Write(i2cController3, data1);
+                            break;
+                        case 2:
+                            // Write(byte i2cController, byte[] data, uint startIndex, uint length) library;
+                            uint length = Pop();
+                            uint startIndex = Pop();
+                            HopperArray dataArray = (HopperArray)PopVariant(HopperType.tArray);
+                            byte i2cController4 = (byte)Pop();
+
+                            // Convert HopperArray to byte array
+                            byte[] byteData = new byte[dataArray.Value.Length];
+                            for (int i = 0; i < dataArray.Value.Length; i++)
+                            {
+                                byteData[i] = (byte)dataArray.Value[i];
+                            }
+                            Wire.Write(i2cController4, byteData, startIndex, length);
+                            break;
+                        case 3:
+                            // Write(byte i2cController, bool[] data, uint startIndex, uint length) library;
+                            uint length3 = Pop();
+                            uint startIndex3 = Pop();
+                            HopperArray boolArray = (HopperArray)PopVariant(HopperType.tArray);
+                            byte i2cController5 = (byte)Pop();
+
+                            // Convert HopperArray to bool array
+                            bool[] boolData = new bool[boolArray.Value.Length];
+                            for (int i = 0; i < boolArray.Value.Length; i++)
+                            {
+                                boolData[i] = boolArray.Value[i] != 0;
+                            }
+                            Wire.Write(i2cController5, boolData, startIndex3, length3);
+                            break;
+                    }
+                    break;
+
+                case LibCall.WireConfigure:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // Configure(byte i2cController, byte sdaPin, byte sclPin) library;
+                            byte sclPin = (byte)Pop();
+                            byte sdaPin = (byte)Pop();
+                            byte i2cController6 = (byte)Pop();
+                            Wire.Configure(i2cController6, sdaPin, sclPin);
+                            break;
+                        case 1:
+                            // Configure(byte i2cController, byte sdaPin, byte sclPin, uint freqkHz) library;
+                            uint freqkHz = Pop();
+                            byte sclPin1 = (byte)Pop();
+                            byte sdaPin1 = (byte)Pop();
+                            byte i2cController7 = (byte)Pop();
+                            Wire.Configure(i2cController7, sdaPin1, sclPin1, freqkHz);
+                            break;
+                    }
+                    break;
+
+                case LibCall.WireRead:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // byte Read() library;
+                            Push(Wire.Read(), HopperType.tByte);
+                            break;
+                        case 1:
+                            // byte Read(byte i2cController) library;
+                            byte i2cController8 = (byte)Pop();
+                            Push(Wire.Read(i2cController8), HopperType.tByte);
+                            break;
+                    }
+                    break;
+
+                case LibCall.WireRequestFrom:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // byte RequestFrom(byte address, byte bytes) library;
+                            byte bytes = (byte)Pop();
+                            byte address2 = (byte)Pop();
+                            Push(Wire.RequestFrom(address2, bytes), HopperType.tByte);
+                            break;
+                        case 1:
+                            // byte RequestFrom(byte i2cController, byte address, byte bytes) library;
+                            byte bytes1 = (byte)Pop();
+                            byte address3 = (byte)Pop();
+                            byte i2cController9 = (byte)Pop();
+                            Push(Wire.RequestFrom(i2cController9, address3, bytes1), HopperType.tByte);
+                            break;
+                    }
+                    break;
+
                 default:
                         Diagnostics.Die(0x0A, this); // not implemented
                         break;

@@ -10,7 +10,7 @@ unit IO
     #define SERIAL_CONSOLE
 #endif
  
-#ifndef MCU
+#if !defined(MCU) && !defined(SBC)
     uses "/Source/System/Screen"
 #else    
     //uses "/Source/Library/Screen" // this breaks screen drivers (like Adafruit128x64OLEDFeatherwing)
