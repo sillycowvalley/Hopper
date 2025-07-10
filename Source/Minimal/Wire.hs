@@ -26,10 +26,15 @@ unit Wire
         scl = sclPin;
         return true;
     }
-#ifdef MCU    
+#if defined(MCU) || defined(SBC)    
     bool lastAck;
     string buffer;
     uint bufferIndex;
+    
+    bool Begin(byte i2cController)
+    {
+        return true;
+    }
     
     BeginTx(byte i2cAddress)
     {
