@@ -227,6 +227,23 @@ unit IO
         {
             Screen.Print(c); // PLATFORM
         }
+#if !defined(RUNTIME) && defined(DISPLAY_DRIVER)
+        if (both)
+        {
+            if (Char.EOL == c)
+            {
+                Display.PrintLn();
+            }
+            else if (Char.Formfeed == c)
+            {
+                Display.Clear();
+            }
+            else
+            {
+                Display.Print(c);
+            }
+        }
+#endif        
     }
     
     
