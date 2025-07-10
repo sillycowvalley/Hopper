@@ -167,6 +167,11 @@ program SSD1306Demo
             IO.WriteLn(elapsed.ToString());
             Display.Resume();
             Delay(500);
+            
+            if (IO.IsAvailable)
+            {
+                break;
+            }
         }
     }
 }
