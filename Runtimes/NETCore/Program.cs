@@ -162,8 +162,8 @@ namespace HopperRuntime
         internal ushort Columns { get { return columns; } }
         internal ushort Rows    { get { return rows; } }
 
-        public Keyboard? Keyboard { get; internal set; }
-        public Screen?   Screen { get; internal set; }
+        public IHopperKeyboard? Keyboard { get; internal set; }
+        public IHopperScreen?   Screen { get; internal set; }
 
         public bool CursorVisible
         {
@@ -208,71 +208,18 @@ namespace HopperRuntime
         public static TextGridView textView;
         public static Toplevel window;
 
-        private static void Worker_DoWork(object sender, DoWorkEventArgs e)
-        {
-            while (!Running)
-            {
-            }
-            
-            Runtime runtime = new Runtime(textView);
-            textView.Keyboard = runtime.Keyboard;
-            textView.Screen   = runtime.Screen;
+        
 
-            runtime.Screen.Clear();
-            runtime.Screen.ShowCursor(true);
-            
-
-            HopperSystem hopperSystem = new HopperSystem();
-            int exitCode = hopperSystem.Load(HexePath, Arguments, runtime, false);
-            if (exitCode == 0)
-            {
-                ushort setError = 0;
-                exitCode = hopperSystem.Execute(runtime, ref setError, false);
-            }
-            Running = false;
-            Application.RequestStop();
-        }
-
-        public static int Main(string[] args)
-        {
-            CultureInfo.CurrentCulture = new CultureInfo("en-US");
-            //PowerShellAnsiEnabler.EnableAnsiSupport();
-            ParseArguments(args);
-
-            //Application.Init(null, "NetDriver");
-            //Application.Init(null, "v2net");
-            Application.Init(null, "v2");
-            
-            window = new Toplevel();
-            textView = new TextGridView
-            {
-                Height = Dim.Fill(),
-                Width = Dim.Fill(),
-            };
-            window.Title = "";
-            window.BorderStyle = LineStyle.None;
-            window.Add(textView);
-
-            window.SizeChanging += Window_SizeChanging;
-            
-            worker = new BackgroundWorker();
-            worker.DoWork += Worker_DoWork;
-            worker.RunWorkerAsync();
-
-            Application.Run(window);
-            Application.Shutdown();
-            
-            return 0;
-
-        }
+        
 
         private static void Window_SizeChanging(object sender, SizeChangedEventArgs e)
         {
             // TODO : deal with top level window resize
         }
 
-        private static void ParseArguments(string[] args)
+        private static bool ParseArguments(string[] args)
         {
+            bool interactive = false;
             string exePath = Environment.ProcessPath;
 
             /*
@@ -302,8 +249,84 @@ namespace HopperRuntime
             if (String.IsNullOrEmpty(programFile))
             {
                 programFile = "Shell"; // default to launching the Hopper shell
+                interactive = true;
             }
             HexePath = programFile;
+            return interactive;
         }
+
+        private static void Worker_DoWork(object sender, DoWorkEventArgs e)
+        {
+            while (!Running)
+            {
+            }
+
+            Runtime runtime = new Runtime(textView);
+            textView.Keyboard = runtime.Keyboard;
+            textView.Screen = runtime.Screen;
+
+            runtime.Screen.Clear();
+            runtime.Screen.ShowCursor(true);
+
+
+            HopperSystem hopperSystem = new HopperSystem();
+            int exitCode = hopperSystem.Load(HexePath, Arguments, runtime, false);
+            if (exitCode == 0)
+            {
+                ushort setError = 0;
+                exitCode = hopperSystem.Execute(runtime, ref setError, false);
+            }
+            Running = false;
+            Application.RequestStop();
+        }
+
+        public static int Main(string[] args)
+        {
+            CultureInfo.CurrentCulture = new CultureInfo("en-US");
+            
+            bool interactive = ParseArguments(args);
+            if (interactive)
+            {
+                //Application.Init(null, "NetDriver");
+                //Application.Init(null, "v2net");
+                Application.Init(null, "v2");
+
+                window = new Toplevel();
+                textView = new TextGridView
+                {
+                    Height = Dim.Fill(),
+                    Width = Dim.Fill(),
+                };
+                window.Title = "";
+                window.BorderStyle = LineStyle.None;
+                window.Add(textView);
+
+                window.SizeChanging += Window_SizeChanging;
+
+                worker = new BackgroundWorker();
+                worker.DoWork += Worker_DoWork;
+                worker.RunWorkerAsync();
+
+                Application.Run(window);
+                Application.Shutdown();
+                return 0;
+            }
+            else
+            {
+                PowerShellAnsiEnabler.EnableAnsiSupport();
+
+                Runtime runtime = new Runtime();
+                HopperSystem hopperSystem = new HopperSystem();
+                int exitCode = hopperSystem.Load(HexePath, Arguments, runtime, false);
+                if (exitCode == 0)
+                {
+                    ushort setError = 0;
+                    exitCode = hopperSystem.Execute(runtime, ref setError, false);
+                }
+                return exitCode;
+            }
+
+        }
+        
     }
 }

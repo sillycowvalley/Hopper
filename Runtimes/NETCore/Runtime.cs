@@ -816,8 +816,8 @@ namespace HopperNET
             }
         }
 
-        private Screen screen;
-        private Keyboard keyboard;
+        private IHopperScreen screen;
+        private IHopperKeyboard keyboard;
         private TextGridView textView;
         private ushort[] methodTable;
         private byte[] code;
@@ -865,7 +865,7 @@ namespace HopperNET
         public uint SP { get { return sp; } } // ok
         public uint BP { get { return bp; } }
         public uint CSP { get { return csp; } }
-        public Screen Screen { get { return screen; } }
+        public IHopperScreen Screen { get { return screen; } }
         public List<UInt16> CallStack
         {
             get
@@ -881,14 +881,27 @@ namespace HopperNET
 
         HopperSystem hopperSystem = null;
 
-        internal Keyboard Keyboard { get { return keyboard; } }
+        internal IHopperKeyboard Keyboard { get { return keyboard; } }
         internal TextGridView TextView { get { return textView; } }
 
         public Runtime(TextGridView textView)
         {
+            // interactive
             this.screen = new Screen(textView);
             this.keyboard = new Keyboard(textView);
             this.textView = textView;
+
+            Initialize();
+        }
+
+        public Runtime()
+        {
+            this.screen = new ConsoleScreen();
+            this.keyboard = new ConsoleKeyboard();
+            Initialize();
+        }
+        private void Initialize()
+        {
             hopperSystem = new HopperSystem();
 
             stack = new StackSlot[STACKSIZE];

@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using HopperRuntime;
+using System.Diagnostics;
 
 namespace HopperNET
 {
@@ -40,7 +41,7 @@ namespace HopperNET
         public ushort spBefore;
         public ushort cspBefore;
 
-        internal void LoadProgram(Screen screen)
+        internal void LoadProgram(IHopperScreen screen)
         {
             long fileSize = HopperFile.GetSize(ProgramPath);
 #if DEBUG
@@ -181,19 +182,19 @@ namespace HopperNET
             int exitCode = 0;
             bool errorShown = false;
             Context currentContext = contextStack.Peek();
-            try
-            {
+            //try
+            //{
                 // run
                 
                 exitCode = runtime.Run(currentContext);
                 errorShown = Diagnostics.ErrorShown;
                 Diagnostics.ErrorShown = false;
-            }
-            catch (Exception /*ex*/)
-            {
-                Diagnostics.Die(0x0B, runtime); // internal error
-                errorShown = true;
-            }
+            //}
+            //catch (Exception /*ex*/)
+            //{
+            //    Diagnostics.Die(0x0B, runtime); // internal error
+            //    errorShown = true;
+            //}
 
             // on exit, display error info if exitCode != 0
             if ((exitCode != 0) && !errorShown)

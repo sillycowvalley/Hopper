@@ -7,6 +7,7 @@ using Terminal.Gui.Drawing;
 using Terminal.Gui.Views;
 using System.Diagnostics;
 
+
 /*
 public static class PowerShellAnsiEnabler
 {
@@ -37,7 +38,7 @@ public static class PowerShellAnsiEnabler
 }
 */
 
-public class Screen
+public class Screen : IHopperScreen
 {
     private TextGridView textView;
     ushort x;
@@ -90,7 +91,7 @@ public class Screen
         return ((x >= 0) && (y >= 0) && (x < width) && (y < height));
     }
 
-    internal static Color ToColor(uint c444)
+    internal static Color ToColor(ushort c444)
     {
         if (c444 == 0)
         {
@@ -126,7 +127,7 @@ public class Screen
         return new Color(r, g, b);
     }
 
-    private void print(char c, uint foreColor, uint backColor)
+    private void print(char c, ushort foreColor, ushort backColor)
     {
         if (contains(x, y))
         {
@@ -151,7 +152,7 @@ public class Screen
         }
         this.SetCursor(x, y);
     }
-    public void Print(string text, uint foreColor, uint backColor)
+    public void Print(string text, ushort foreColor, ushort backColor)
     {
         Suspend();
         foreach (char c in text)
@@ -160,14 +161,14 @@ public class Screen
         }
         Resume(false);
     }
-    public void PrintLn(string text, uint foreColor, uint backColor)
+    public void PrintLn(string text, ushort foreColor, ushort backColor)
     {
         Suspend();
         Print(text, foreColor, backColor);
         PrintLn();
         Resume(false);
     }
-    public void Print(char c, uint foreColor, uint backColor)
+    public void Print(char c, ushort foreColor, ushort backColor)
     {
         Suspend();
         Print(c + String.Empty, foreColor, backColor);
@@ -180,7 +181,7 @@ public class Screen
         Resume(false);
     }
 
-    internal void SetCursor(ushort x, ushort y)
+    public void SetCursor(ushort x, ushort y)
     {
         if ((x >= 0) && (y >= 0) && (x < this.Columns) && (y < this.Rows))
         {
@@ -195,7 +196,7 @@ public class Screen
 
     int suspendCount = 0;
 
-    internal void DrawChar(ushort x, ushort y, char c, uint foreColour, uint backColour)
+    public void DrawChar(ushort x, ushort y, char c, ushort foreColour, ushort backColour)
     {
         Suspend();
         if (contains(x, y))
@@ -204,7 +205,7 @@ public class Screen
         }
         Resume(false);
     }
-    internal void Clear()
+    public void Clear()
     {
         Suspend();
         for (ushort row = 0; row < this.Rows; row++)
@@ -221,7 +222,7 @@ public class Screen
         Resume(false);
     }
 
-    internal void Suspend()
+    public void Suspend()
     {
         if (suspendCount == 0)
         {
@@ -230,7 +231,7 @@ public class Screen
         suspendCount++;
     }
 
-    internal void Resume(bool isInteractive)
+    public void Resume(bool isInteractive)
     {
         suspendCount--;
         if (suspendCount == 0)
@@ -240,9 +241,9 @@ public class Screen
         }
     }
 
-    
 
-    internal void ShowCursor(bool show)
+
+    public void ShowCursor(bool show)
     {
         textView.CursorVisible = show;
     }

@@ -1,9 +1,10 @@
-﻿using System.Diagnostics;
+﻿using HopperRuntime;
+using System.Diagnostics;
 
 using Terminal.Gui.Drivers;
 using Terminal.Gui.Input;
 
-namespace HopperNET
+namespace HopperRuntime
 {
     public enum Key // singular
     {
@@ -166,7 +167,7 @@ namespace HopperNET
         public bool clickDouble;
     }
     
-    public class Keyboard
+    public class Keyboard : IHopperKeyboard
     {
         HopperRuntime.TextGridView textView;
         private bool AnyOfAltControlShift(Key hopperModifiers)
@@ -405,7 +406,7 @@ namespace HopperNET
             }
         }
 
-        internal void PushToKeyboardBuffer(Terminal.Gui.Input.Key keyInfo)
+        public void PushToKeyboardBuffer(Terminal.Gui.Input.Key keyInfo)
         {
             if (keyInfo.KeyCode != KeyCode.Null)
             {
@@ -422,7 +423,7 @@ namespace HopperNET
             keyInfo.Handled = true;
         }
         
-        internal void PushClick(MouseEventArgs mouseArgs)
+        public void PushClick(MouseEventArgs mouseArgs)
         {
             for (; ; )
             {
