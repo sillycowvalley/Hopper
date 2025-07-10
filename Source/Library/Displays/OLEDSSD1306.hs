@@ -7,16 +7,16 @@ unit DisplayDriver
 #ifdef MINIMAL_RUNTIME
     uses "/Source/Minimal/MCU"
 #else    
-
-#ifdef SBC_BOARD_DEFINED
+  #ifdef SBC_BOARD_DEFINED
     uses "/Source/Library/SBC"
-#else
+  #else
     uses "/Source/Library/MCU"
+  #endif
 #endif
-#endif    
+
     uses "/Source/Library/Display"
     
-    friend Display, Screen;
+    friend Display;
     
     //   https://github.com/adafruit/Adafruit_SSD1306/blob/master/Adafruit_SSD1306.cpp
     

@@ -10,7 +10,7 @@ unit IO
     #define SERIAL_CONSOLE
 #endif
  
-#if !defined(MCU) && !defined(SBC)
+#if !defined(MCU)
     uses "/Source/System/Screen"
 #else    
     //uses "/Source/Library/Screen" // this breaks screen drivers (like Adafruit128x64OLEDFeatherwing)
@@ -23,8 +23,7 @@ unit IO
     uses  "/Source/System/String" // for keyboard buffer
 #endif
 
-    bool EchoToLCD     { set { echoToLCD = value; } get { return echoToLCD; } }
-#ifdef MCU
+#if defined(MCU) || defined(SBC)
     bool EchoToDisplay { set { echoToLCD = value; } get { return echoToLCD; } } // for clarity
 #endif    
    
@@ -77,7 +76,7 @@ unit IO
             HRScreen.Clear();
   #endif
   #if !defined(RUNTIME) && defined(DISPLAY_DRIVER)
-            Screen.Clear();
+            Display.Clear();
   #endif
         }
 #else        
@@ -148,15 +147,15 @@ unit IO
         {
             if (Char.EOL == c)
             {
-                Screen.PrintLn();
+                Display.PrintLn();
             }
             else if (Char.Formfeed == c)
             {
-                Screen.Clear();
+                Display.Clear();
             }
             else
             {
-                Screen.Print(c);
+                Display.Print(c);
             }
         }
 #endif

@@ -2,10 +2,19 @@ unit DisplayDriver
 {
     #define DISPLAY_DRIVER
     
+#ifdef MINIMAL_RUNTIME
+    uses "/Source/Minimal/MCU"
+#else    
+  #ifdef SBC_BOARD_DEFINED
+    uses "/Source/Library/SBC"
+  #else
     uses "/Source/Library/MCU"
+  #endif
+#endif
+
     uses "/Source/Library/Display"
     
-    friend Display, Screen;
+    friend Display;
     
     // https://github.com/pimoroni/pimoroni-pico/blob/911cbb710ebb725d83065a21438c35783ef8b19c/drivers/uc8151_legacy/uc8151_legacy.hpp
     

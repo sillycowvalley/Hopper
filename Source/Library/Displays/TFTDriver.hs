@@ -5,10 +5,19 @@ unit DisplayDriver
     #define HAS_FAST_FILLEDRECTANGLE
     #define DISPLAY_IS_RGB565
     
+#ifdef MINIMAL_RUNTIME
+    uses "/Source/Minimal/MCU"
+#else    
+  #ifdef SBC_BOARD_DEFINED
+    uses "/Source/Library/SBC"
+  #else
     uses "/Source/Library/MCU"
+  #endif
+#endif
+    
     uses "/Source/Library/Display"
     
-    friend Display, Screen;
+    friend Display;
     
     const byte TFT_SWRESET    = 0x01;
     

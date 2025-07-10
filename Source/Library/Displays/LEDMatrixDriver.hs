@@ -2,7 +2,16 @@ unit DisplayDriver
 {
     #define DISPLAY_DRIVER
     
+#ifdef MINIMAL_RUNTIME
+    uses "/Source/Minimal/MCU"
+#else    
+  #ifdef SBC_BOARD_DEFINED
+    uses "/Source/Library/SBC"
+  #else
     uses "/Source/Library/MCU"
+  #endif
+#endif
+
     uses "/Source/Library/Display"
     
     // hardcoded till I get a bigger matrix ..

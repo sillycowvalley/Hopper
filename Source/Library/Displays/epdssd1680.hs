@@ -23,10 +23,19 @@ unit DisplayDriver
 
     #define DISPLAY_DRIVER
     
+#ifdef MINIMAL_RUNTIME
+    uses "/Source/Minimal/MCU"
+#else    
+  #ifdef SBC_BOARD_DEFINED
+    uses "/Source/Library/SBC"
+  #else
     uses "/Source/Library/MCU"
+  #endif
+#endif
+
     uses "/Source/Library/Display"
     
-    friend Display, Screen;
+    friend Display;
     
     const byte SSD1680_DRIVER_CONTROL = 0x01;
     const byte SSD1680_GATE_VOLTAGE = 0x03;

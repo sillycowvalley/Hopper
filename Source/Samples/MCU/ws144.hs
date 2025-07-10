@@ -11,8 +11,9 @@ program WaveShareLCD144Demo
         IO.WriteLn("    Pressed: '" + PinToButton(pin) + "'");  
     }
     
+    Hopper()
     {
-        EchoToLCD = true;
+        EchoToDisplay = true;
         
         // Setup code:
         PinISRDelegate buttonDelegate = ButtonISR;
@@ -28,7 +29,7 @@ program WaveShareLCD144Demo
         long laps;
         loop
         {
-            Screen.SetCursor(0,0);
+            Display.SetCursor(0,0);
             WriteLn("Laps: " + laps.ToString());
             laps++;
             

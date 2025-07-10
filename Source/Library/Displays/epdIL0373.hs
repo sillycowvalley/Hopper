@@ -23,10 +23,19 @@ unit DisplayDriver
 
     #define DISPLAY_DRIVER
     
+#ifdef MINIMAL_RUNTIME
+    uses "/Source/Minimal/MCU"
+#else    
+  #ifdef SBC_BOARD_DEFINED
+    uses "/Source/Library/SBC"
+  #else
     uses "/Source/Library/MCU"
+  #endif
+#endif
+
     uses "/Source/Library/Display"
     
-    friend Display, Screen;
+    friend Display;
     
     const byte IL0373_PANEL_SETTING = 0x00;
     const byte IL0373_POWER_SETTING = 0x01;

@@ -9,7 +9,7 @@ program SSD1306Demo
     
     TestDrawRect()
     {
-        Screen.Clear();
+        Display.Clear();
         int ph = Display.PixelHeight;
         int pw = Display.PixelWidth;
         for(int i=0; i< ph / 2; i += 2)
@@ -20,7 +20,7 @@ program SSD1306Demo
 
     TestFillRect()
     {
-        Screen.Clear();
+        Display.Clear();
         int ph = Display.PixelHeight;
         int pw = Display.PixelWidth;
         for(int i=0; i<ph / 2; i += 3)
@@ -36,7 +36,7 @@ program SSD1306Demo
         int ph = Display.PixelHeight;
         int pw = Display.PixelWidth;
         Display.Suspend();
-        Screen.Clear();
+        Display.Clear();
         for(i=0; i<pw; i += 4) 
         {
             Line(0, 0, i, ph-1, Colour.White);
@@ -48,7 +48,7 @@ program SSD1306Demo
         Display.Resume();
         
         Display.Suspend();
-        Screen.Clear();
+        Display.Clear();
         for(i=0; i< pw; i += 4)
         {
             Line(0, ph-1, i, 0, Colour.Red);
@@ -60,7 +60,7 @@ program SSD1306Demo
         Display.Resume();
         
         Display.Suspend(); 
-        Screen.Clear();
+        Display.Clear();
         for(i= pw-1; i>=0; i -= 4)
         {
             Line(pw-1, ph-1, i, 0, Colour.Green);
@@ -72,7 +72,7 @@ program SSD1306Demo
         Display.Resume();
 
         Display.Suspend();
-        Screen.Clear();
+        Display.Clear();
         for(i=0; i< ph; i += 4)
         {
             Line(pw-1, 0, 0, i, Colour.Blue);
@@ -85,6 +85,7 @@ program SSD1306Demo
     }
     
     
+    Hopper()
     {
         // PiPicoW
         //DisplayDriver.I2CController = 1;
@@ -114,12 +115,12 @@ program SSD1306Demo
         long elapsed;
         long laps;
         
-        Screen.Clear();
+        Display.Clear();
         loop
         {
             Display.Suspend();
-            WriteLn("Laps: ");
-            WriteLn(laps.ToString());
+            IO.WriteLn("Laps: ");
+            IO.WriteLn(laps.ToString());
             Display.Resume();
             laps++;
             
@@ -127,21 +128,21 @@ program SSD1306Demo
             Display.Clear(Colour.Black);
             elapsed = Millis - start;
             Display.Suspend();
-            WriteLn("Clear: ");
-            WriteLn(elapsed.ToString());
+            IO.WriteLn("Clear: ");
+            IO.WriteLn(elapsed.ToString());
             Display.Resume();
             Delay(500);
             
-            SetCursor(0,0);
+            Display.SetCursor(0,0);
             
             start = Millis;
             TestDrawRect();
             elapsed = Millis - start;
             Display.Suspend();
-            EchoToLCD = true;
-            WriteLn("TestDrawRect: ");
-            EchoToLCD = false;
-            WriteLn(elapsed.ToString());
+            EchoToDisplay = true;
+            IO.WriteLn("TestDrawRect: ");
+            EchoToDisplay = false;
+            IO.WriteLn(elapsed.ToString());
             Display.Resume();
             Delay(500);
             
@@ -149,10 +150,10 @@ program SSD1306Demo
             TestFillRect();   
             elapsed = Millis - start;
             Display.Suspend();
-            EchoToLCD = true;
-            WriteLn("TestFillRect: ");
-            EchoToLCD = false;
-            WriteLn(elapsed.ToString());
+            EchoToDisplay = true;
+            IO.WriteLn("TestFillRect: ");
+            EchoToDisplay = false;
+            IO.WriteLn(elapsed.ToString());
             Display.Resume();
             Delay(500);
             
@@ -160,10 +161,10 @@ program SSD1306Demo
             TestDrawLines();
             elapsed = Millis - start;
             Display.Suspend();
-            EchoToLCD = true;
-            WriteLn("TestDrawLines: ");
-            EchoToLCD = false;
-            WriteLn(elapsed.ToString());
+            EchoToDisplay = true;
+            IO.WriteLn("TestDrawLines: ");
+            EchoToDisplay = false;
+            IO.WriteLn(elapsed.ToString());
             Display.Resume();
             Delay(500);
         }

@@ -3,7 +3,7 @@ unit DeviceDriver
     // https://www.waveshare.com/wiki/Pico-LCD-1.44
     // Note: Colour.Invert is not supported on this device because there is no MISO / Rx pin for SPI interface
     
-#if !defined(MCU_BOARD_DEFINED)
+#if !defined(MCU_BOARD_DEFINED) && !defined(SBC_BOARD_DEFINED)
     // plugs directly into the Pi Pico so no board defined, assume generic Pi Pico
     uses "/Source/Library/Boards/PiPico"
 #endif

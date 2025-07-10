@@ -3,10 +3,19 @@ unit DisplayDriver
     #define DISPLAY_DRIVER
     #define DISPLAY_IS_MONO
     
+#ifdef MINIMAL_RUNTIME
+    uses "/Source/Minimal/MCU"
+#else    
+  #ifdef SBC_BOARD_DEFINED
+    uses "/Source/Library/SBC"
+  #else
     uses "/Source/Library/MCU"
+  #endif
+#endif
+
     uses "/Source/Library/Display"
     
-    friend Display, Screen;
+    friend Display;
     
     //   https://github.com/adafruit/Adafruit_SH110x/blob/master/Adafruit_SH110X.cpp
     
