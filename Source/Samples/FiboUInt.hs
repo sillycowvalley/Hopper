@@ -2,9 +2,9 @@ program FiboUInt
 {
     //#define NO_PACKED_INSTRUCTIONS
     
-    uses "/Source/Library/Boards/Pi"
+    uses "/Source/Library/Boards/PiPico2W"
     
-#ifndef MCU    
+#if !defined(MCU)
     uses "/Source/System/Screen"
 #endif    
     

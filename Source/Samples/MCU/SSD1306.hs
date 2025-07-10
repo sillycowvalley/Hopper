@@ -88,9 +88,9 @@ program SSD1306Demo
     Hopper()
     {
         // Pi
-        DisplayDriver.I2CController = 1;
-        DisplayDriver.I2CSDAPin = Board.GP2;
-        DisplayDriver.I2CSCLPin = Board.GP3;
+        //DisplayDriver.I2CController = 1;
+        //DisplayDriver.I2CSDAPin = Board.GP2;
+        //DisplayDriver.I2CSCLPin = Board.GP3;
         
         // PiPicoW
         //DisplayDriver.I2CController = 1;
