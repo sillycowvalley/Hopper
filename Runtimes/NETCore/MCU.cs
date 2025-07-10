@@ -44,14 +44,18 @@ namespace HopperNET
             {
                 if (gpio == null)
                 {
+#if !NOEXCEPTIONS
                     try
                     {
+#endif
                         gpio = new GpioController();
+#if !NOEXCEPTIONS
                     }
                     catch (PlatformNotSupportedException)
                     {
                         break;
                     }
+#endif
                 }
                 if (!gpio.IsPinOpen(pin))
                 {
@@ -189,14 +193,18 @@ namespace HopperNET
             {
                 if (gpio == null)
                 {
+#if !NOEXCEPTIONS
                     try
                     {
+#endif
                         gpio = new GpioController();
+#if !NOEXCEPTIONS
                     }
                     catch (PlatformNotSupportedException)
                     {
                         break;
                     }
+#endif
                 }
                 if ((value == 0) && pwmChannels.ContainsKey(pin))
                 {

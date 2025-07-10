@@ -6,7 +6,7 @@ namespace HopperNET
     public static class Wire
     {
         private static Dictionary<byte, I2cBus> _buses = new Dictionary<byte, I2cBus>();
-        private static Dictionary<byte, I2cDevice> _devices = new Dictionary<byte, I2cDevice>();
+        private static Dictionary<ushort, I2cDevice> devices = new Dictionary<ushort, I2cDevice>();
 
         // Default configuration - adjust for your board
         public const byte DefaultI2CController = 0;
@@ -39,15 +39,19 @@ namespace HopperNET
 
         public static bool Initialize(byte i2cController, byte sdaPin, byte sclPin, uint freqkHz)
         {
+#if !NOEXCEPTIONS
             try
             {
+#endif
                 Configure(i2cController, sdaPin, sclPin, freqkHz);
                 return Begin(i2cController);
+#if !NOEXCEPTIONS
             }
             catch
             {
                 return false;
             }
+#endif
         }
 
         public static void Configure(byte i2cController, byte sdaPin, byte sclPin)
@@ -58,7 +62,9 @@ namespace HopperNET
         public static void Configure(byte i2cController, byte sdaPin, byte sclPin, uint freqkHz)
         {
             if (_busInfo.ContainsKey(i2cController))
+            {
                 _busInfo.Remove(i2cController);
+            }
 
             _busInfo[i2cController] = new I2cBusInfo
             {
@@ -76,8 +82,10 @@ namespace HopperNET
 
         public static bool Begin(byte i2cController)
         {
+#if !NOEXCEPTIONS
             try
             {
+#endif
                 if (!_busInfo.ContainsKey(i2cController))
                 {
                     return false;
@@ -89,11 +97,13 @@ namespace HopperNET
                 // The actual I2C bus configuration is handled at the hardware level
 
                 return true;
+#if !NOEXCEPTIONS
             }
             catch
             {
                 return false;
             }
+#endif
         }
 
         public static void BeginTx(byte address)
@@ -119,23 +129,26 @@ namespace HopperNET
         public static byte EndTx(byte i2cController)
         {
             if (!_busInfo.ContainsKey(i2cController))
+            {
                 return 1; // Busy timeout
+            }
 
             var busInfo = _busInfo[i2cController];
-
+#if !NOEXCEPTIONS
             try
             {
+#endif
                 // Get or create I2C device for this address
-                var deviceKey = (byte)((i2cController << 8) | busInfo.CurrentAddress);
+                var deviceKey = (ushort)((i2cController << 8) | busInfo.CurrentAddress);
 
-                if (!_devices.ContainsKey(deviceKey))
+                if (!devices.ContainsKey(deviceKey))
                 {
                     var settings = new I2cConnectionSettings(busInfo.BusId, busInfo.CurrentAddress);
 
-                    _devices[deviceKey] = I2cDevice.Create(settings);
+                    devices[deviceKey] = I2cDevice.Create(settings);
                 }
 
-                var device = _devices[deviceKey];
+                var device = devices[deviceKey];
 
                 if (busInfo.TxBuffer.Count > 0)
                 {
@@ -143,6 +156,7 @@ namespace HopperNET
                 }
 
                 return 0; // Success
+#if !NOEXCEPTIONS
             }
             catch (System.IO.IOException)
             {
@@ -156,6 +170,7 @@ namespace HopperNET
             {
                 return 2; // START bit timeout or other error
             }
+#endif
         }
 
         public static void Write(byte data)
@@ -166,7 +181,9 @@ namespace HopperNET
         public static void Write(byte i2cController, byte data)
         {
             if (!_busInfo.ContainsKey(i2cController))
+            {
                 return;
+            }
 
             _busInfo[i2cController].TxBuffer.Add(data);
         }
@@ -174,13 +191,17 @@ namespace HopperNET
         public static void Write(byte i2cController, byte[] data, uint startIndex, uint length)
         {
             if (!_busInfo.ContainsKey(i2cController))
+            {
                 return;
+            }
 
             var busInfo = _busInfo[i2cController];
             for (uint i = 0; i < length; i++)
             {
                 if (startIndex + i < data.Length)
+                {
                     busInfo.TxBuffer.Add(data[startIndex + i]);
+                }
             }
         }
 
@@ -210,20 +231,21 @@ namespace HopperNET
             var busInfo = _busInfo[i2cController];
             busInfo.RxBuffer.Clear();
             busInfo.RxIndex = 0;
-
+#if !NOEXCEPTIONS
             try
             {
+#endif
                 // Get or create I2C device for this address
-                var deviceKey = (byte)((i2cController << 8) | address);
+                var deviceKey = (ushort)((i2cController << 8) | address);
 
-                if (!_devices.ContainsKey(deviceKey))
+                if (!devices.ContainsKey(deviceKey))
                 {
                     var settings = new I2cConnectionSettings(busInfo.BusId, address);
 
-                    _devices[deviceKey] = I2cDevice.Create(settings);
+                    devices[deviceKey] = I2cDevice.Create(settings);
                 }
 
-                var device = _devices[deviceKey];
+                var device = devices[deviceKey];
 
                 // Read the requested number of bytes
                 byte[] buffer = new byte[bytes];
@@ -233,11 +255,13 @@ namespace HopperNET
                 busInfo.RxBuffer.AddRange(buffer);
 
                 return (byte)busInfo.RxBuffer.Count;
+#if !NOEXCEPTIONS
             }
             catch
             {
                 return 0; // Read failed
             }
+#endif
         }
 
         public static byte Read()
@@ -262,11 +286,11 @@ namespace HopperNET
 
         public static void Dispose()
         {
-            foreach (var device in _devices.Values)
+            foreach (var device in devices.Values)
             {
                 device?.Dispose();
             }
-            _devices.Clear();
+            devices.Clear();
             _busInfo.Clear();
         }
     }

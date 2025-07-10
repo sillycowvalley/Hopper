@@ -68,18 +68,21 @@ namespace HopperNET
             {
                 return; // port doesn't exist so don't waste 60 seconds trying to connect to it
             }
-
+#if !NOEXCEPTIONS
             try
             {
+#endif
                 serialPort.Open();
                 lastPort = portName;
                 lastBaud = baud;
+#if !NOEXCEPTIONS
             }
             catch (Exception ex)
             {
                 serialPort = null;
                 Diagnostics.OutputDebug("connect: " + ex.Message);
             }
+#endif
         }
 
         internal static List<string> GetPorts()
@@ -125,18 +128,22 @@ namespace HopperNET
             if (isAvail)
             {
                 isAvail = false;
+#if !NOEXCEPTIONS
                 try
                 {
+#endif
                     if (serialPort.BytesToRead > 0)
                     {
                         isAvail = true;
                     }
+#if !NOEXCEPTIONS
                 }
                 catch (Exception ex)
                 {
                     serialPort = null;
                     Diagnostics.OutputDebug("IsAvailableGet: " + ex.Message);
                 }
+#endif
             }
             return isAvail;
         }
@@ -144,8 +151,10 @@ namespace HopperNET
         internal static bool IsValid()
         {
             bool isValid = false;
+#if !NOEXCEPTIONS
             try
             {
+#endif
                 if ((null == serialPort) && !String.IsNullOrEmpty(lastPort))
                 {
                     // try reconnecting
@@ -153,11 +162,13 @@ namespace HopperNET
                 }
                 isValid = (null != serialPort) && serialPort.IsOpen;
                 //Diagnostics.OutputDebug("IsValid: " + (isValid ? "True" : "False"));
+#if !NOEXCEPTIONS
             }
             catch (Exception ex)
             {
                 Diagnostics.OutputDebug("IsValid: " + ex.Message);
             }
+#endif
             return isValid;
         }
 
@@ -166,14 +177,18 @@ namespace HopperNET
             char readChar = (char)0;
             if (IsValid())
             {
+#if !NOEXCEPTIONS
                 try
                 {
+#endif
                     readChar = (char)serialPort.ReadChar();
+#if !NOEXCEPTIONS
                 }
                 catch (Exception ex)
                 {
                     Diagnostics.OutputDebug("ReadChar: " + ex.Message);
                 }
+#endif
             }
             //Diagnostics.OutputDebug("\nReadChar: 0x" + ((byte)readChar).ToString("X2") + " " + (readChar >= ' ' ? readChar : ' ') );
             return readChar;
@@ -183,16 +198,20 @@ namespace HopperNET
         {
             if (IsValid())
             {
+#if !NOEXCEPTIONS
                 try
                 {
+#endif
                     byte[] b = new byte[1];
                     b[0] = (byte)outChar;
                     serialPort.Write(b, 0, 1);
+#if !NOEXCEPTIONS
                 }
                 catch (Exception ex)
                 {
                     Diagnostics.OutputDebug("WriteChar: " + ex.Message);
                 }
+#endif
             }
         }
 
@@ -200,19 +219,23 @@ namespace HopperNET
         {
             if (IsValid())
             {
+#if !NOEXCEPTIONS
                 try
                 {
+#endif
                     byte[] b = new byte[str.Value.Length];
                     for (int i = 0; i < str.Value.Length; i++)
                     {
                         b[i] = (byte)str.Value[i];
                     }
                     serialPort.Write(b, 0, b.Length);
+#if !NOEXCEPTIONS
                 }
                 catch (Exception ex)
                 {
                     Diagnostics.OutputDebug("WriteChar: " + ex.Message);
                 }
+#endif
             }
         }
     }

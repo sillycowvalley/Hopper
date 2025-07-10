@@ -182,13 +182,16 @@ namespace HopperNET
             int exitCode = 0;
             bool errorShown = false;
             Context currentContext = contextStack.Peek();
+#if !NOEXCEPTIONS
             try
             {
+#endif
                 // run
-                
+
                 exitCode = runtime.Run(currentContext);
                 errorShown = Diagnostics.ErrorShown;
                 Diagnostics.ErrorShown = false;
+#if !NOEXCEPTIONS
             }
             catch (Exception ex)
             {
@@ -196,6 +199,7 @@ namespace HopperNET
                 Diagnostics.Die(0x0B, runtime); // internal error
                 errorShown = true;
             }
+#endif
 
             // on exit, display error info if exitCode != 0
             if ((exitCode != 0) && !errorShown)

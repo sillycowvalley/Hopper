@@ -549,17 +549,21 @@ namespace HopperNET
                 }
                 else
                 {
+#if !NOEXCEPTIONS
                     try
                     {
+#endif
                         DirectoryInfo info = Directory.CreateDirectory(path);
                         directory.path = path;
                         directory.isValid = true;
                         HopperPath.AddPath(path);
+#if !NOEXCEPTIONS
                     }
                     catch (IOException)
                     {
                         // something went wrong so !isValid
                     }
+#endif
                 }
             }
         }
@@ -570,15 +574,19 @@ namespace HopperNET
                 path = HopperPath.ToPlatformPath(path);
                 if (Directory.Exists(path))
                 {
+#if !NOEXCEPTIONS
                     try
                     {
+#endif
                         Directory.Delete(path);
                         HopperPath.RemovePath(path);
+#if !NOEXCEPTIONS
                     }
                     catch (IOException)
                     {
                         // something went wrong
                     }
+#endif
                 }
             }
         }

@@ -282,6 +282,7 @@ namespace HopperRuntime
 
         public static int Main(string[] args)
         {
+
             CultureInfo.CurrentCulture = new CultureInfo("en-US");
             
             bool interactive = ParseArguments(args);

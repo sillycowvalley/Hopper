@@ -16,7 +16,7 @@ unit MCU
     uses "GPIO"
     
 #if defined(BOARD_HAS_I2C)
-    uses "Wire"
+    uses "/Source/Library/Wire"
 #endif    
 
 #if defined(BOARD_HAS_WIFI)
