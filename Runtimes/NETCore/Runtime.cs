@@ -4232,6 +4232,352 @@ namespace HopperNET
                     }
                     break;
 
+                // SPI Library Call Cases
+
+                case LibCall.SPISetCSPin:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // SetCSPin(byte csPin) library;
+                            byte csPin = (byte)Pop();
+                            SPI.SetCSPin(csPin);
+                            break;
+                        case 1:
+                            // SetCSPin(byte spiController, byte csPin) library;
+                            byte csPin1 = (byte)Pop();
+                            byte spiController1 = (byte)Pop();
+                            SPI.SetCSPin(spiController1, csPin1);
+                            break;
+                    }
+                    break;
+
+                case LibCall.SPISetClkPin:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // SetClkPin(byte clkPin) library;
+                            byte clkPin = (byte)Pop();
+                            SPI.SetClkPin(clkPin);
+                            break;
+                        case 1:
+                            // SetClkPin(byte spiController, byte clkPin) library;
+                            byte clkPin1 = (byte)Pop();
+                            byte spiController2 = (byte)Pop();
+                            SPI.SetClkPin(spiController2, clkPin1);
+                            break;
+                    }
+                    break;
+
+                case LibCall.SPISetTxPin:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // SetTxPin(byte txPin) library;
+                            byte txPin = (byte)Pop();
+                            SPI.SetTxPin(txPin);
+                            break;
+                        case 1:
+                            // SetTxPin(byte spiController, byte txPin) library;
+                            byte txPin1 = (byte)Pop();
+                            byte spiController3 = (byte)Pop();
+                            SPI.SetTxPin(spiController3, txPin1);
+                            break;
+                    }
+                    break;
+
+                case LibCall.SPISetRxPin:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // SetRxPin(byte rxPin) library;
+                            byte rxPin = (byte)Pop();
+                            SPI.SetRxPin(rxPin);
+                            break;
+                        case 1:
+                            // SetRxPin(byte spiController, byte rxPin) library;
+                            byte rxPin1 = (byte)Pop();
+                            byte spiController4 = (byte)Pop();
+                            SPI.SetRxPin(spiController4, rxPin1);
+                            break;
+                    }
+                    break;
+
+                case LibCall.SPISettings:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // Settings(long speedMaximum, DataOrder dataOrder, DataMode dataMode) library;
+                            byte dataMode = (byte)Pop();
+                            byte dataOrder = (byte)Pop();
+                            uint speedMaximum = Pop();
+                            SPI.Settings((int)speedMaximum, (SPI.DataOrder)dataOrder, (SPI.DataMode)dataMode);
+                            break;
+                        case 1:
+                            // Settings(byte spiController, long speedMaximum, DataOrder dataOrder, DataMode dataMode) library;
+                            byte dataMode1 = (byte)Pop();
+                            byte dataOrder1 = (byte)Pop();
+                            uint speedMaximum1 = Pop();
+                            byte spiController5 = (byte)Pop();
+                            SPI.Settings(spiController5, (int)speedMaximum1, (SPI.DataOrder)dataOrder1, (SPI.DataMode)dataMode1);
+                            break;
+                    }
+                    break;
+
+                case LibCall.SPIBegin:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // bool Begin() library;
+                            PushBool(SPI.Begin());
+                            break;
+                        case 1:
+                            // bool Begin(byte spiController) library;
+                            byte spiController6 = (byte)Pop();
+                            PushBool(SPI.Begin(spiController6));
+                            break;
+                    }
+                    break;
+
+                case LibCall.SPIBeginTransaction:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // BeginTransaction() library;
+                            SPI.BeginTransaction();
+                            break;
+                        case 1:
+                            // BeginTransaction(byte spiController) library;
+                            byte spiController7 = (byte)Pop();
+                            SPI.BeginTransaction(spiController7);
+                            break;
+                    }
+                    break;
+
+                case LibCall.SPIEndTransaction:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // EndTransaction() library;
+                            SPI.EndTransaction();
+                            break;
+                        case 1:
+                            // EndTransaction(byte spiController) library;
+                            byte spiController8 = (byte)Pop();
+                            SPI.EndTransaction(spiController8);
+                            break;
+                    }
+                    break;
+
+                case LibCall.SPIReadByte:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // byte ReadByte() library;
+                            Push(SPI.ReadByte(), HopperType.tByte);
+                            break;
+                        case 1:
+                            // byte ReadByte(byte spiController) library;
+                            byte spiController9 = (byte)Pop();
+                            Push(SPI.ReadByte(spiController9), HopperType.tByte);
+                            break;
+                    }
+                    break;
+
+                case LibCall.SPIReadWord:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // uint ReadWord() library;
+                            Push(SPI.ReadWord(), HopperType.tUInt);
+                            break;
+                        case 1:
+                            // uint ReadWord(byte spiController) library;
+                            byte spiController10 = (byte)Pop();
+                            Push(SPI.ReadWord(spiController10), HopperType.tUInt);
+                            break;
+                    }
+                    break;
+
+                case LibCall.SPIReadBuffer:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // ReadBuffer(byte[] data, uint startIndex, uint length) library;
+                            uint length = Pop();
+                            uint startIndex = Pop();
+                            HopperArray dataArray = (HopperArray)PopVariant(HopperType.tArray);
+
+                            // Convert HopperArray to byte array
+                            byte[] byteData = new byte[dataArray.Value.Length];
+                            for (int i = 0; i < dataArray.Value.Length; i++)
+                            {
+                                byteData[i] = (byte)dataArray.Value[i];
+                            }
+                            SPI.ReadBuffer(byteData, startIndex, length);
+
+                            // Copy back to HopperArray
+                            for (int i = 0; i < dataArray.Value.Length; i++)
+                            {
+                                dataArray.Value[i] = byteData[i];
+                            }
+                            break;
+                        case 1:
+                            // ReadBuffer(byte spiController, byte[] data, uint startIndex, uint length) library;
+                            uint length1 = Pop();
+                            uint startIndex1 = Pop();
+                            HopperArray dataArray1 = (HopperArray)PopVariant(HopperType.tArray);
+                            byte spiController11 = (byte)Pop();
+
+                            // Convert HopperArray to byte array
+                            byte[] byteData1 = new byte[dataArray1.Value.Length];
+                            for (int i = 0; i < dataArray1.Value.Length; i++)
+                            {
+                                byteData1[i] = (byte)dataArray1.Value[i];
+                            }
+                            SPI.ReadBuffer(spiController11, byteData1, startIndex1, length1);
+
+                            // Copy back to HopperArray
+                            for (int i = 0; i < dataArray1.Value.Length; i++)
+                            {
+                                dataArray1.Value[i] = byteData1[i];
+                            }
+                            break;
+                    }
+                    break;
+
+                case LibCall.SPIWriteByte:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // WriteByte(byte data) library;
+                            byte data = (byte)Pop();
+                            SPI.WriteByte(data);
+                            break;
+                        case 1:
+                            // WriteByte(byte spiController, byte data) library;
+                            byte data1 = (byte)Pop();
+                            byte spiController12 = (byte)Pop();
+                            SPI.WriteByte(spiController12, data1);
+                            break;
+                    }
+                    break;
+
+                case LibCall.SPIWriteWord:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // WriteWord(uint data) library;
+                            uint data2 = Pop();
+                            SPI.WriteWord((ushort)data2);
+                            break;
+                        case 1:
+                            // WriteWord(byte spiController, uint data) library;
+                            uint data3 = Pop();
+                            byte spiController13 = (byte)Pop();
+                            SPI.WriteWord(spiController13, (ushort)data3);
+                            break;
+                    }
+                    break;
+
+                case LibCall.SPIWriteBytes:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // WriteBytes(byte data, uint count) library;
+                            uint count = Pop();
+                            byte data4 = (byte)Pop();
+                            SPI.WriteBytes(data4, count);
+                            break;
+                        case 1:
+                            // WriteBytes(byte spiController, byte data, uint count) library;
+                            uint count1 = Pop();
+                            byte data5 = (byte)Pop();
+                            byte spiController14 = (byte)Pop();
+                            SPI.WriteBytes(spiController14, data5, count1);
+                            break;
+                    }
+                    break;
+
+                case LibCall.SPIWriteWords:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // WriteWords(uint data, uint count) library;
+                            uint count2 = Pop();
+                            uint data6 = Pop();
+                            SPI.WriteWords((ushort)data6, count2);
+                            break;
+                        case 1:
+                            // WriteWords(byte spiController, uint data, uint count) library;
+                            uint count3 = Pop();
+                            uint data7 = Pop();
+                            byte spiController15 = (byte)Pop();
+                            SPI.WriteWords(spiController15, (ushort)data7, count3);
+                            break;
+                    }
+                    break;
+
+                case LibCall.SPIWriteBuffer:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // WriteBuffer(byte[] data, uint startIndex, uint length) library;
+                            uint length2 = Pop();
+                            uint startIndex2 = Pop();
+                            HopperArray dataArray2 = (HopperArray)PopVariant(HopperType.tArray);
+
+                            // Convert HopperArray to byte array
+                            byte[] byteData2 = new byte[dataArray2.Value.Length];
+                            for (int i = 0; i < dataArray2.Value.Length; i++)
+                            {
+                                byteData2[i] = (byte)dataArray2.Value[i];
+                            }
+                            SPI.WriteBuffer(byteData2, startIndex2, length2);
+                            break;
+                        case 1:
+                            // WriteBuffer(byte spiController, byte[] data, uint startIndex, uint length) library;
+                            uint length3 = Pop();
+                            uint startIndex3 = Pop();
+                            HopperArray dataArray3 = (HopperArray)PopVariant(HopperType.tArray);
+                            byte spiController16 = (byte)Pop();
+
+                            // Convert HopperArray to byte array
+                            byte[] byteData3 = new byte[dataArray3.Value.Length];
+                            for (int i = 0; i < dataArray3.Value.Length; i++)
+                            {
+                                byteData3[i] = (byte)dataArray3.Value[i];
+                            }
+                            SPI.WriteBuffer(spiController16, byteData3, startIndex3, length3);
+                            break;
+                        case 2:
+                            // WriteBuffer(byte spiController, uint[] data, uint startIndex, uint length) library;
+                            uint length4 = Pop();
+                            uint startIndex4 = Pop();
+                            HopperArray dataArray4 = (HopperArray)PopVariant(HopperType.tArray);
+                            byte spiController17 = (byte)Pop();
+
+                            // Convert HopperArray to ushort array
+                            ushort[] ushortData = new ushort[dataArray4.Value.Length];
+                            for (int i = 0; i < dataArray4.Value.Length; i++)
+                            {
+                                ushortData[i] = (ushort)dataArray4.Value[i];
+                            }
+                            SPI.WriteBuffer(spiController17, ushortData, startIndex4, length4);
+                            break;
+                    }
+                    break;
+
+                case LibCall.SPIGetCSPin:
+                    switch (iOverload)
+                    {
+                        case 0:
+                            // byte GetCSPin(byte spiController) library;
+                            byte spiController18 = (byte)Pop();
+                            Push(SPI.GetCSPin(spiController18), HopperType.tByte);
+                            break;
+                    }
+                    break;
+
                 default:
                         Diagnostics.Die(0x0A, this); // not implemented
                         break;
