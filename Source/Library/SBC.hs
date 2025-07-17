@@ -19,6 +19,10 @@ unit MCU
     uses "/Source/Library/Wire"
 #endif    
 
+#if defined(BOARD_HAS_SPI)
+    uses "/Source/Library/SPI"
+#endif
+
 #if defined(BOARD_HAS_WIFI)
     uses "/Source/System/WiFi"
     uses "WebClient"

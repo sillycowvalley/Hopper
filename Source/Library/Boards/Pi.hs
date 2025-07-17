@@ -23,8 +23,8 @@ unit Board // PiPico
     const byte SPI1SCK = 21;
     const byte SPI1SS = 7;
     
-    const byte GP0 = 0;
-    const byte GP1 = 1;
+    //const byte GP0 = 0;
+    //const byte GP1 = 1;
     const byte GP2 = 2;
     const byte GP3 = 3;
     const byte GP4 = 4;
@@ -50,6 +50,7 @@ unit Board // PiPico
     const byte GP24 = 24;
     const byte GP25 = 25;
     const byte GP26 = 26;
+    const byte GP27 = 27;
 
     uses "/Source/Library/SBC"
 
