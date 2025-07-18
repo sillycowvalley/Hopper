@@ -130,7 +130,6 @@ namespace HopperNET
                         break;
                 }
                 isrStruct.status = (byte)status;
-
                 lock (isrQueue)
                 {
                     isrQueue.Enqueue(isrStruct);
@@ -156,12 +155,15 @@ namespace HopperNET
                 {
                     case PinStatus.Rising:
                         eventTypes = PinEventTypes.Rising;
+                        result = true;
                         break;
                     case PinStatus.Falling:
                         eventTypes = PinEventTypes.Falling;
+                        result = true;
                         break;
                     case PinStatus.Change:
                         eventTypes = PinEventTypes.Rising | PinEventTypes.Falling;
+                        result = true;
                         break;
                     default:
                         return false; // Low/High states don't make sense for interrupts
