@@ -5,6 +5,7 @@ unit Board // PiPico
     #define SBC_BOARD_DEFINED
     #define BOARD_HAS_I2C
     #define BOARD_HAS_SPI
+    #define BOARD_HAS_HARDWARE_SPI // no CS
     #define BOARD_HAS_LED
     
     #define FORMFACTOR_PI

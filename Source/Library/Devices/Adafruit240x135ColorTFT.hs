@@ -21,7 +21,7 @@ unit DeviceDriver
     
     byte spiController  = 0;
     int sdCS    = -1;            // SD  (Feather default is GP7)
-    byte blPin  = Board.GP8;     // backlight
+    byte blPin  = Board.GP8;    // backlight
     byte csPin  = Board.SPI0SS;  // TFT (Feather default is GP9)
     byte dcPin  = 10;            // TFT
     int  rstPin  = -1;  

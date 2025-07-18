@@ -1,5 +1,8 @@
 ﻿using System.Device.Spi;
 using System.Device.Gpio;
+using System.Reflection.Metadata;
+using Terminal.Gui.ViewBase;
+using static HopperNET.SPI;
 
 namespace HopperNET
 {
@@ -7,8 +10,7 @@ namespace HopperNET
     {
         private static Dictionary<byte, SpiDevice> devices = new Dictionary<byte, SpiDevice>();
         private static Dictionary<byte, SpiBusInfo> busInfo = new Dictionary<byte, SpiBusInfo>();
-        private static GpioController gpioController;
-
+        
         // Default configuration for SPI0
         public const byte DefaultI2CController0 = 0;
         public const byte DefaultCSPin0 = 8;     // CE0
@@ -52,7 +54,7 @@ namespace HopperNET
 
         static SPI()
         {
-            gpioController = new GpioController();
+            
         }
 
         // SPI0 Default API
@@ -81,19 +83,19 @@ namespace HopperNET
             Settings(0, speedMaximum, dataOrder, dataMode);
         }
 
-        public static bool Begin()
+        public static bool Begin(MCU mcu)
         {
-            return Begin(0);
+            return Begin(mcu, 0);
         }
 
-        public static void BeginTransaction()
+        public static void BeginTransaction(MCU mcu)
         {
-            BeginTransaction(0);
+            BeginTransaction(mcu, 0);
         }
 
-        public static void EndTransaction()
+        public static void EndTransaction(MCU mcu)
         {
-            EndTransaction(0);
+            EndTransaction(mcu, 0);
         }
 
         public static byte ReadByte()
@@ -176,7 +178,7 @@ namespace HopperNET
             info.SettingsConfigured = true;
         }
 
-        public static bool Begin(byte spiController)
+        public static bool Begin(MCU mcu, byte spiController)
         {
 #if !NOEXCEPTIONS
             try
@@ -191,20 +193,22 @@ namespace HopperNET
 
                 if (!info.SettingsConfigured)
                 {
-                    return false;
+                    // defaults:
+                    SPI.Settings(0, 4000000, DataOrder.MSBFirst, DataMode.Mode0);
+                    if (!info.SettingsConfigured)
+                    {
+                        return false;
+                    }
                 }
 
                 // Set up CS pin as output
-                if (gpioController != null && !gpioController.IsPinOpen(info.CSPin))
-                {
-                    gpioController.OpenPin(info.CSPin, PinMode.Output);
-                    gpioController.Write(info.CSPin, PinValue.High); // CS starts high (inactive)
-                }
+                //mcu.PinMode(info.CSPin, PinModeOption.Output);
+                //mcu.DigitWrite(info.CSPin, true);
 
                 // Create SPI device if not already created
                 if (!devices.ContainsKey(spiController))
                 {
-                    var connectionSettings = new SpiConnectionSettings(spiController, info.CSPin)
+                    var connectionSettings = new SpiConnectionSettings(spiController, 0)  // Use -1 for device address
                     {
                         ClockFrequency = info.SpeedMaximum,
                         Mode = (SpiMode)info.DataMode,
@@ -221,7 +225,6 @@ namespace HopperNET
 
                     devices[spiController] = SpiDevice.Create(connectionSettings);
                 }
-
                 return true;
 #if !NOEXCEPTIONS
             }
@@ -232,30 +235,24 @@ namespace HopperNET
 #endif
         }
 
-        public static void BeginTransaction(byte spiController)
+        public static void BeginTransaction(MCU mcu, byte spiController)
         {
             if (!busInfo.ContainsKey(spiController))
                 return;
 
             var info = busInfo[spiController];
-            if (!info.InTransaction && gpioController != null)
-            {
-                gpioController.Write(info.CSPin, PinValue.Low); // Assert CS
-                info.InTransaction = true;
-            }
+            //mcu.DigitWrite(info.CSPin, false);
+            info.InTransaction = true;
         }
 
-        public static void EndTransaction(byte spiController)
+        public static void EndTransaction(MCU mcu, byte spiController)
         {
             if (!busInfo.ContainsKey(spiController))
                 return;
 
             var info = busInfo[spiController];
-            if (info.InTransaction && gpioController != null)
-            {
-                gpioController.Write(info.CSPin, PinValue.High); // Deassert CS
-                info.InTransaction = false;
-            }
+            //mcu.DigitWrite(info.CSPin, true);
+            info.InTransaction = false;
         }
 
         public static byte ReadByte(byte spiController)
@@ -271,7 +268,9 @@ namespace HopperNET
         public static ushort ReadWord(byte spiController)
         {
             if (!devices.ContainsKey(spiController))
+            {
                 return 0;
+            }
 
             var buffer = new byte[2];
             devices[spiController].Read(buffer);
@@ -290,7 +289,9 @@ namespace HopperNET
         public static void ReadBuffer(byte spiController, byte[] data, uint startIndex, uint length)
         {
             if (!devices.ContainsKey(spiController) || data == null)
+            {
                 return;
+            }
 
             var buffer = new byte[length];
             devices[spiController].Read(buffer);
@@ -304,7 +305,9 @@ namespace HopperNET
         public static void WriteByte(byte spiController, byte data)
         {
             if (!devices.ContainsKey(spiController))
+            {
                 return;
+            }
 
             var buffer = new byte[] { ReverseBitsIfNeeded(spiController, data) };
             devices[spiController].Write(buffer);
@@ -313,7 +316,9 @@ namespace HopperNET
         public static void WriteWord(byte spiController, ushort data)
         {
             if (!devices.ContainsKey(spiController))
+            {
                 return;
+            }
 
             byte[] buffer;
             if (busInfo[spiController].DataOrder == DataOrder.LSBFirst)
@@ -339,7 +344,9 @@ namespace HopperNET
         public static void WriteBytes(byte spiController, byte data, uint count)
         {
             if (!devices.ContainsKey(spiController))
+            {
                 return;
+            }
 
             var buffer = new byte[count];
             var processedData = ReverseBitsIfNeeded(spiController, data);
@@ -355,7 +362,9 @@ namespace HopperNET
         public static void WriteWords(byte spiController, ushort data, uint count)
         {
             if (!devices.ContainsKey(spiController))
+            {
                 return;
+            }
 
             for (uint i = 0; i < count; i++)
             {
@@ -366,7 +375,9 @@ namespace HopperNET
         public static void WriteBuffer(byte spiController, byte[] data, uint startIndex, uint length)
         {
             if (!devices.ContainsKey(spiController) || data == null)
+            {
                 return;
+            }
 
             var buffer = new byte[length];
             for (uint i = 0; i < length && (startIndex + i) < data.Length; i++)
@@ -380,7 +391,9 @@ namespace HopperNET
         public static void WriteBuffer(byte spiController, ushort[] data, uint startIndex, uint length)
         {
             if (!devices.ContainsKey(spiController) || data == null)
+            {
                 return;
+            }
 
             // Convert ushort array to byte array
             var buffer = new byte[length * 2];
@@ -405,7 +418,9 @@ namespace HopperNET
         public static byte GetCSPin(byte spiController)
         {
             if (!busInfo.ContainsKey(spiController))
+            {
                 return 0;
+            }
 
             return busInfo[spiController].CSPin;
         }
@@ -421,7 +436,7 @@ namespace HopperNET
                     ClkPin = (byte)(spiController == 0 ? DefaultClkPin0 : DefaultClkPin1),
                     TxPin = (byte)(spiController == 0 ? DefaultTxPin0 : DefaultTxPin1),
                     RxPin = (byte)(spiController == 0 ? DefaultRxPin0 : DefaultRxPin1),
-                    SpeedMaximum = 1000000, // Default 1MHz
+                    SpeedMaximum = 4000000, // Default 4MHz
                     DataOrder = DataOrder.MSBFirst,
                     DataMode = DataMode.Mode0,
                     SettingsConfigured = false,
@@ -456,8 +471,6 @@ namespace HopperNET
             }
             devices.Clear();
             busInfo.Clear();
-            gpioController?.Dispose();
-            gpioController = null;
         }
     }
 }

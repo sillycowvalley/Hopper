@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace HopperNET
 {
-    internal enum PinModeOption
+    public enum PinModeOption
     {
         Input = 0x00,
         Output = 0x01,
@@ -17,7 +17,7 @@ namespace HopperNET
         InputPulldown = 0x03,
     }
 
-    internal enum PinStatus
+    public enum PinStatus
     {
         Low = 0,
         High = 1,
@@ -27,7 +27,7 @@ namespace HopperNET
     }
 
 
-    internal class MCU
+    public class MCU
     {
         private GpioController gpio = null;
         private static byte analogWriteResolution = 8;
@@ -69,11 +69,11 @@ namespace HopperNET
             }
             return false;
         }
-        public void PinMode(ushort pin, ushort pinMode)
+        public void PinMode(ushort pin, PinModeOption pinMode)
         {
             if (pinOk(pin))
             {
-                switch ((PinModeOption)pinMode)
+                switch (pinMode)
                 {
                     case PinModeOption.Input:
                         gpio.SetPinMode(pin, System.Device.Gpio.PinMode.Input);
@@ -188,6 +188,7 @@ namespace HopperNET
         {
             if (gpio != null)
             {
+                SPI.Dispose();
                 foreach (var pwm in pwmChannels.Values)
                 {
                     pwm.Stop();

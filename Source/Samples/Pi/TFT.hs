@@ -5,7 +5,8 @@ program TFTandSDdemo
     
     //uses "/Source/Library/Boards/Pi"
     uses "/Source/Library/Boards/PiPico2W"
-    uses "/Source/Library/Devices/Adafruit240x135ColorTFT"
+    //uses "/Source/Library/Devices/Adafruit240x135ColorTFT"
+    uses "/Source/Library/Devices/Adafruit240x240ColorTFTBonnet"
     
     const string lorumIpsum = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse iaculis tortor vitae imperdiet tempus. Quisque eget sapien ex. Donec molestie tincidunt sem imperdiet condimentum. Nulla facilisi. Class aptent taciti sociosqu ad litora vestibulum.";
 
@@ -376,17 +377,15 @@ program TFTandSDdemo
     {
 
 #if defined(RPIPICO2W)
-        // Adafruit240x135ColorTFT
-        DeviceDriver.CS   = Board.SPI0SS;
-        DeviceDriver.DC   = Board.GP12;
+        //DeviceDriver.CS   = Board.SPI0SS;
+        //DeviceDriver.DC   = Board.GP12;
         IsPortrait = true;
-        FlipX = true;
-        FlipY = true;
+        //FlipX = true;
+        //FlipY = true;
 #endif        
 #if defined(RPI)
-        // Adafruit240x135ColorTFT
         DeviceDriver.CS   = Board.SPI0SS;
-        DeviceDriver.DC   = Board.GP12;
+        DeviceDriver.DC   = Board.GP25;
         IsPortrait = true;
         FlipX = true;
         FlipY = true;
@@ -441,7 +440,11 @@ program TFTandSDdemo
             DelaySeconds(1);
             break;
             */
-            //DrawTextScroll();           
+            //DrawTextScroll();
+            if (IO.IsAvailable)
+            {
+                break;
+            }           
         }
     }
 }

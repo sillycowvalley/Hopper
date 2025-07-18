@@ -4025,7 +4025,7 @@ namespace HopperNET
                         }
                         ushort pinMode = (ushort)Pop();
                         ushort pin     = (ushort)Pop();
-                        mcu.PinMode(pin, pinMode);
+                        mcu.PinMode(pin, (PinModeOption)pinMode);
                     }
                     break;
                 case LibCall.MCUDigitalRead:
@@ -4324,47 +4324,66 @@ namespace HopperNET
                     break;
 
                 case LibCall.SPIBegin:
-                    switch (iOverload)
                     {
-                        case 0:
-                            // bool Begin() library;
-                            PushBool(SPI.Begin());
-                            break;
-                        case 1:
-                            // bool Begin(byte spiController) library;
-                            byte spiController6 = (byte)Pop();
-                            PushBool(SPI.Begin(spiController6));
-                            break;
+                        if (mcu == null)
+                        {
+                            mcu = new MCU(isrQueue);
+                        }
+                        switch (iOverload)
+                        {
+                            case 0:
+                                // bool Begin() library;
+
+                                PushBool(SPI.Begin(mcu));
+                                break;
+                            case 1:
+                                // bool Begin(byte spiController) library;
+                                byte spiController6 = (byte)Pop();
+                                PushBool(SPI.Begin(mcu, spiController6));
+                                break;
+                        }
                     }
                     break;
 
                 case LibCall.SPIBeginTransaction:
-                    switch (iOverload)
                     {
-                        case 0:
-                            // BeginTransaction() library;
-                            SPI.BeginTransaction();
-                            break;
-                        case 1:
-                            // BeginTransaction(byte spiController) library;
-                            byte spiController7 = (byte)Pop();
-                            SPI.BeginTransaction(spiController7);
-                            break;
+                        if (mcu == null)
+                        {
+                            mcu = new MCU(isrQueue);
+                        }
+                        switch (iOverload)
+                        {
+                            case 0:
+                                // BeginTransaction() library;
+                                SPI.BeginTransaction(mcu);
+                                break;
+                            case 1:
+                                // BeginTransaction(byte spiController) library;
+                                byte spiController7 = (byte)Pop();
+                                SPI.BeginTransaction(mcu, spiController7);
+                                break;
+                        }
                     }
                     break;
 
                 case LibCall.SPIEndTransaction:
-                    switch (iOverload)
                     {
-                        case 0:
-                            // EndTransaction() library;
-                            SPI.EndTransaction();
-                            break;
-                        case 1:
-                            // EndTransaction(byte spiController) library;
-                            byte spiController8 = (byte)Pop();
-                            SPI.EndTransaction(spiController8);
-                            break;
+                        if (mcu == null)
+                        {
+                            mcu = new MCU(isrQueue);
+                        }
+                        switch (iOverload)
+                        {
+                            case 0:
+                                // EndTransaction() library;
+                                SPI.EndTransaction(mcu);
+                                break;
+                            case 1:
+                                // EndTransaction(byte spiController) library;
+                                byte spiController8 = (byte)Pop();
+                                SPI.EndTransaction(mcu, spiController8);
+                                break;
+                        }
                     }
                     break;
 

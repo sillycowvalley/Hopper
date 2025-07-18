@@ -3,12 +3,13 @@ unit DeviceDriver
     // https://learn.adafruit.com/adafruit-1-3-color-tft-bonnet-for-raspberry-pi
     // Note: Colour.Invert is not supported on this device because there is no MISO / Rx pin for SPI interface
     
-#if !defined(SBC_BOARD_DEFINED)
+#if !defined(SBC_BOARD_DEFINED) && !defined(MCU_BOARD_DEFINED)
     // plugs directly into the Raspberry Pi so no board defined, assume generic Raspberry Pi
     uses "/Source/Library/Boards/Pi"
 #endif
     
     #define ADAFRUIT_TFT_LCD_13
+    #define BUFFER_TEXT
     #define ST77XX_CONTROLLER
     
     uses "/Source/Library/Displays/TFTDriver"
@@ -19,7 +20,7 @@ unit DeviceDriver
     const int ph = 240;
     
     const byte spiController = 0; // this device uses SPI0 on Raspberry Pi
-    byte dcPin   { get { return Board.GP25; } }
+    byte dcPin   { get { return Board.GP12; /*Board.GP25;*/ } }
     byte csPin   { get { return Board.SPI0SS; } }
     byte clkPin  { get { return Board.SPI0SCK; } }
     byte txPin   { get { return Board.SPI0Tx; } }
@@ -51,8 +52,8 @@ unit DeviceDriver
             {
                 madArgument |= MADCTL_MY;
             }
-            xFudge = 52;
-            yFudge = 40;
+            //xFudge = 52;
+            //yFudge = 40;
         }
         else
         {
@@ -65,8 +66,8 @@ unit DeviceDriver
             {
                 madArgument |= MADCTL_MX;
             }
-            xFudge = 40;
-            yFudge = 53;
+            //xFudge = 40;
+            //yFudge = 53;
         }
         return madArgument;
     }
