@@ -203,7 +203,7 @@ unit DisplayDriver
     
     bufferText(byte col, byte row, char c, uint foreColour, uint backColour)
     {
-        uint index = (row * Screen.Columns + col) * 3;
+        uint index = (row * Display.Columns + col) * 3;
         textBuffer[index]   = uint(c);
         textBuffer[index+1] = foreColour;
         textBuffer[index+2] = backColour;
@@ -255,6 +255,11 @@ unit DisplayDriver
             
             if (!SPI.Begin(DeviceDriver.spiController))
             {
+                IO.WriteLn("csPin=" + (DeviceDriver.csPin).ToString());
+                IO.WriteLn("txPin=" + (DeviceDriver.txPin).ToString());
+                IO.WriteLn("clkPin=" + (DeviceDriver.clkPin).ToString());
+                IO.WriteLn("dcPin=" + (DeviceDriver.dcPin).ToString());
+                
                 IO.WriteLn("DeviceDriver.Begin failed in SPI.Begin");
                 break;
             }
@@ -507,7 +512,7 @@ unit DisplayDriver
         // We have a write-only display. In the absense of proper scrolling,
         // let's at least scroll the regular (unscaled) text.
         uint id = 0;
-        uint is = Screen.Columns*3;
+        uint is = Display.Columns*3;
         while (is < textBufferSize)
         {
             textBuffer[id]   = textBuffer[is];
@@ -535,11 +540,11 @@ unit DisplayDriver
             MCU.DigitalWrite(DeviceDriver.csPin, true);
             SPI.EndTransaction(DeviceDriver.spiController);
         }
-        if (Screen.FontDataSet)
+        if (Display.FontDataSet)
         {
             Display.Suspend();
-            byte rows = Screen.Rows;
-            byte cols = Screen.Columns;
+            byte rows = Display.Rows;
+            byte cols = Display.Columns;
             uint index;
             char c;
             byte row;
@@ -557,7 +562,7 @@ unit DisplayDriver
                     
                     if ((c == ' ') && (backColour == Display.BackColour)) { continue; }
                     
-                    Screen.drawBufferChar(col, row, c, foreColour, backColour);
+                    Display.drawBufferChar(col, row, c, foreColour, backColour);
                 }
             }
             Display.Resume();
@@ -582,7 +587,7 @@ unit DisplayDriver
         loop
         {
             if (drow >= Display.PixelHeight) { break; }
-            horizontalLine(0, drow, Display.PixelWidth-1, Screen.BackColour);
+            horizontalLine(0, drow, Display.PixelWidth-1, Display.BackColour);
             drow++;   
         }
 #endif

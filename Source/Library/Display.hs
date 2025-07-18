@@ -6,6 +6,8 @@ unit Display
 
     uses "/Source/System/Colour"
     
+    friend DisplayDriver;
+    
 #ifdef FONT_EXISTS
     const uint cellWidth     = CellWidth  + 1;
     const uint cellHeight    = CellHeight + 1;

@@ -35,6 +35,8 @@ program FiboUInt
      
     Hopper()   
     {
+        //ClockSpeed = RPClockSpeed.Overclock300;  
+                
         FiboDelegate fiboDelegate = Fibo;
         Benchmark("Fibo", fiboDelegate, 24, 1); // Fibo(24) = 46368
     }

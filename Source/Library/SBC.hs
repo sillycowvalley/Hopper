@@ -14,14 +14,13 @@ unit MCU
     
     uses "Timer"
     uses "GPIO"
+    uses "SPI"
+    
+    uses "SD"
     
 #if defined(BOARD_HAS_I2C)
     uses "/Source/Library/Wire"
 #endif    
-
-#if defined(BOARD_HAS_SPI)
-    uses "/Source/Library/SPI"
-#endif
 
 #if defined(BOARD_HAS_WIFI)
     uses "/Source/System/WiFi"

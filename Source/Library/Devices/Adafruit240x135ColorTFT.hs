@@ -1,7 +1,7 @@
 unit DeviceDriver
 {
 
-#if !defined(MCU_BOARD_DEFINED)
+#if !defined(MCU_BOARD_DEFINED) && !defined(SBC_BOARD_DEFINED)
     uses "/Source/Library/Boards/PiPico"
 #endif
 
@@ -24,7 +24,7 @@ unit DeviceDriver
     byte blPin  = Board.GP8;     // backlight
     byte csPin  = Board.SPI0SS;  // TFT (Feather default is GP9)
     byte dcPin  = 10;            // TFT
-    int  rstPin  = -1;
+    int  rstPin  = -1;  
     byte clkPin = Board.SPI0SCK;
     byte txPin  = Board.SPI0Tx;
     byte rxPin  = Board.SPI0Rx;  // MISO - this is used for the SD card. It isn't used for the TFT display which is write-only. 

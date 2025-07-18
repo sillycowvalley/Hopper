@@ -109,30 +109,38 @@ namespace HopperNET
             }
         }
 
-        private Dictionary<byte, ISRStruct> pinCallbacks = new Dictionary<byte, ISRStruct>();
+        private List<ISRStruct> pinCallbacks = new List<ISRStruct>();
 
         private void OnPinValueChanged(object sender, PinValueChangedEventArgs e)
         {
             byte pin = (byte)e.PinNumber;
-            if (pinCallbacks.TryGetValue(pin, out ISRStruct isrStruct))
+            lock (pinCallbacks)
             {
-                PinStatus status;
-                switch (e.ChangeType)
+                foreach (ISRStruct isrStruct in pinCallbacks)
                 {
-                    case PinEventTypes.Rising:
-                        status = PinStatus.Rising;
-                        break;
-                    case PinEventTypes.Falling:
-                        status = PinStatus.Falling;
-                        break;
-                    default:
-                        status = PinStatus.Change;
-                        break;
-                }
-                isrStruct.status = (byte)status;
-                lock (isrQueue)
-                {
-                    isrQueue.Enqueue(isrStruct);
+                    if (isrStruct.pin == pin)
+                    {
+                        byte status = 0;
+                        switch (e.ChangeType)
+                        {
+                            case PinEventTypes.Rising:
+                                status = (byte)PinStatus.Rising;
+                                break;
+                            case PinEventTypes.Falling:
+                                status = (byte)PinStatus.Falling;
+                                break;
+                            default:
+                                status = (byte)PinStatus.Change;
+                                break;
+                        }
+                        if (0 != (isrStruct.status & status))
+                        {
+                            lock (isrQueue)
+                            {
+                                isrQueue.Enqueue(isrStruct);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -148,7 +156,10 @@ namespace HopperNET
                 isrStruct.interruptType = InterruptType.ePin;
                 isrStruct.status = (byte)pinStatus;
 
-                pinCallbacks[(byte)pin] = isrStruct;
+                lock (pinCallbacks)
+                {
+                    pinCallbacks.Add(isrStruct);
+                }
 
                 PinEventTypes eventTypes = PinEventTypes.None;
                 switch ((PinStatus)pinStatus)
@@ -185,6 +196,12 @@ namespace HopperNET
                 pwmChannels.Clear();
 
                 gpio.Dispose(); // Automatically closes all pins
+
+                lock (pinCallbacks)
+                {
+                    pinCallbacks.Clear();
+                }
+
                 gpio = null;
             }
         }
