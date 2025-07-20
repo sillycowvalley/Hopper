@@ -226,6 +226,24 @@ These symbols control the 6502 start vector address and Intel IHex layout:
 #define CPU_65UINO      // Similar to ROM_4K and CPU_6502
 ```
 
+The compiler automatically generates different code based on CPU capabilities:
+
+```hopper
+#ifdef CPU_65C02S
+    STZ ZP.PORTA      // Use enhanced zero instruction
+    PHX               // Enhanced stack operations
+    if (BBS0, ZP.FLAGS) { /* bit test branch */ }
+#else
+    LDA #0           // Traditional approach
+    STA ZP.PORTA
+    TXA
+    PHA              // Traditional stack save
+    LDA ZP.FLAGS
+    AND #0b00000001
+    if (NZ) { /* equivalent bit test */ }
+#endif
+```
+
 ### Hardware Platform Support
 
 Hopper supports multiple 6502-based hardware platforms through conditional compilation:
@@ -256,7 +274,31 @@ uses "moduleName"           // Import a module
 uses "/path/to/module"      // Import with path
 ```
 
-## Numeric Literals
+### Cross-Module Communication
+
+The Hopper compiler provides sophisticated module linking:
+
+```hopper
+// In main program
+program HopperEcho
+{
+    uses "/Source/Runtime/6502/Serial"
+    
+    Hopper()
+    {
+        Serial.Initialize();    // Automatic function resolution
+        Serial.WriteChar();     // Cross-module method calls
+    }
+}
+```
+
+**Module System Features:**
+- Automatic function resolution and linking
+- Only needed functions are included in final binary
+- Proper JSR instruction generation for method calls
+- Link-time optimization across modules
+
+## Numeric Literals and Data Types
 
 Hopper Assembly uses C-style numeric literals instead of traditional assembly syntax:
 
@@ -273,6 +315,31 @@ LDA #0b11111111 // Binary (C-style)
 LDA #255        // Decimal
 LDA #'A'        // ASCII character
 ```
+
+### String and Data Literals
+
+Hopper supports various data literal types:
+
+```hopper
+const string message = "Hello\nWorld!";   // Null-terminated strings
+const byte[] data = { 0x01, 0x02, 0x03 }; // Byte arrays
+const uint address = 0x1000;              // 16-bit constants
+
+// String usage with indexed addressing
+LDX #0
+loop
+{
+    LDA message, X    // Access string characters
+    if (Z) { break; } // Null terminator check
+    Serial.WriteChar();
+    INX
+}
+```
+
+**String Features:**
+- Escape sequences (`\n`, `\r`, etc.) are automatically converted
+- Strings are stored in ROM and null-terminated
+- Can be accessed using indexed addressing modes
 
 ## Addressing Modes
 
@@ -571,6 +638,22 @@ const byte[] lookup_table = {
 LDY #2
 LDA lookup_table, Y
 ```
+
+### Memory Layout and ROM Configuration
+
+ROM size configuration affects memory layout and vector placement:
+
+```hopper
+#define ROM_4K      // Code at 0xF000-0xFFFF, vectors at 0xFFFA-0xFFFF
+#define ROM_16K     // Code at 0xC000-0xFFFF, vectors at 0xFFFA-0xFFFF  
+#define ROM_32K     // Code at 0x8000-0xFFFF, vectors at 0xFFFA-0xFFFF
+```
+
+**Automatic Features:**
+- Interrupt vectors automatically generated and placed
+- String and constant data stored in ROM
+- Reset vector points to compiler-generated startup code
+- Stack pointer automatically initialized to 0xFF
 
 ## Friend Classes and Access Control
 
