@@ -49,7 +49,7 @@ unit ClickStack
     }
     Load(string location)
     {
-        <string> parts = location.Split(':');
+        <string> parts = location.Split(':', StringSplitOptions.RemoveEmptyEntries);
         if (parts.Count == 2)
         {
             string sourcePath = parts[0];
@@ -58,7 +58,7 @@ unit ClickStack
             uint col;
             bool gotoLine = false;
             bool gotoColumn = false;
-            <string> locationParts = (parts[1]).Split(',');
+            <string> locationParts = (parts[1]).Split(',', StringSplitOptions.RemoveEmptyEntries);
             if (UInt.TryParse(locationParts[0], ref ln))
             {
                 gotoLine = true;

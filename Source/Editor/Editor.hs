@@ -1913,7 +1913,7 @@ unit Editor
                 string ln = TextBuffer.GetLine(currentLine);
                 if (ln.Contains("#define"))
                 {
-                    <string> parts = ln.Split(' ');
+                    <string> parts = ln.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                     // "//#define"        is dealt with
                     // "//", "#define"    is dealt with
                     if ((parts.Count >= 2) && (parts[0] == "#define")) 
@@ -2011,7 +2011,7 @@ unit Editor
                                 break;
                             }
                         }
-                        <string> parts = ln.Split(' ');
+                        <string> parts = ln.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                         long hits = 0;
                         long us = 0;
                         if (Long.TryParse(parts[1], ref us))

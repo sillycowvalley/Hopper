@@ -105,7 +105,7 @@ MyFunction()
     LDA #0x10
     if (Z)
     {
-        STA ZP.VAR1    // Indented within if block
+        STA ZP.TOPL    // Indented within if block
     }
 }
 ```
@@ -226,6 +226,30 @@ These symbols control the 6502 start vector address and Intel IHex layout:
 #define CPU_65UINO      // Similar to ROM_4K and CPU_6502
 ```
 
+### Hardware Platform Support
+
+Hopper supports multiple 6502-based hardware platforms through conditional compilation:
+
+```hopper
+#define BENEATER_IO     // Ben Eater's 6502 computer  
+#define X16_IO          // Commander X16
+#define MECB6502_IO     // Minimal 6502 Computer Board
+#define ZEROPAGE_IO     // Default zero-page mapped I/O (default)
+```
+
+Each platform defines different memory mappings for the same logical devices:
+
+```hopper
+// BENEATER_IO: VIA at 0x6000, ACIA at 0x5000
+// X16_IO: VIA at 0x9F20, ACIA at 0x9F10  
+// MECB6502_IO: VIA at 0xF000, ACIA at 0xF008
+// ZEROPAGE_IO: VIA at 0xF0, ACIA at 0xEC
+
+STA ZP.PORTA    // Automatically maps to correct address for platform
+```
+
+This allows the same code to run on different hardware platforms by simply changing the platform define.
+
 ### Module Imports
 ```hopper
 uses "moduleName"           // Import a module
@@ -269,7 +293,7 @@ STA 0x1000      // Absolute address (no $ prefix)
 ### Indexed Addressing
 ```hopper
 LDA 0x1000, X   // Absolute indexed by X (no $ prefix)
-STA ZP.BUFFER, Y // Zero page indexed by Y
+STA ZP.TOPL, Y  // Zero page indexed by Y
 ```
 
 ### Indirect Addressing (65C02)
@@ -283,15 +307,15 @@ STA [ZP.IDX], Y     // Zero page indirect indexed
 When `CPU_65C02S` is defined, additional bit manipulation instructions are available:
 
 ```hopper
-SMB0 ZP.FLAGS       // Set Memory Bit 0
-RMB1 ZP.FLAGS       // Reset Memory Bit 1
-BBS2 ZP.FLAGS       // Branch if Bit Set 2
-BBR3 ZP.FLAGS       // Branch if Bit Reset 3
+SMB0 ZP.DDRA       // Set Memory Bit 0
+RMB1 ZP.DDRA       // Reset Memory Bit 1
+BBS2 ZP.DDRA       // Branch if Bit Set 2
+BBR3 ZP.DDRA       // Branch if Bit Reset 3
 ```
 
 These are often used in conditional contexts:
 ```hopper
-if (BBS0, ZP.FLAGS)  // if bit 0 is set
+if (BBS0, ZP.DDRA)  // if bit 0 is set
 {
     // code
 }
@@ -301,17 +325,17 @@ if (BBS0, ZP.FLAGS)  // if bit 0 is set
 
 ### Zero Page Indirect Operations
 ```hopper
-LDA [maBEST]        // Load from address in maBEST
-STA [IDY], Y        // Store to address in IDY + Y offset
+LDA [ZP.IDX]        // Load from address in ZP.IDX
+STA [ZP.IDY], Y     // Store to address in ZP.IDY + Y offset
 ```
 
 ### 16-bit Operations
 ```hopper
 // Increment 16-bit value
-INC ZP.COUNTL
+INC ZP.TOPL
 if (Z)
 {
-    INC ZP.COUNTH
+    INC ZP.TOPH
 }
 
 // Or using utility functions
@@ -330,6 +354,7 @@ program MyProgram
     uses "/Source/Runtime/6502/Serial"
     uses "I2C.asm"
     
+    // Optional interrupt handlers (if absent, vectors remain 0x0000)
     IRQ()
     {
         Serial.ISR();
@@ -337,7 +362,8 @@ program MyProgram
     
     NMI()
     {
-        // NMI handler
+        // NMI handler - this is optional
+        // If omitted, NMI vector remains 0x0000
     }
     
     Hopper()  // Main entry point (like main() in C)
@@ -447,30 +473,92 @@ switch (X)
 
 // Enum values can be used like constants
 LDA #StatusFlags.Running
-STA ZP.STATE
+STA ZP.W0
 ```
 
 ## Zero Page Variables and Constants
 
-### Zero Page Variable Declaration
-Declare zero page variables using the `const` keyword:
+### Zero Page Memory Management
+
+Hopper uses a sophisticated zero page allocation system through the `ZP` unit, which maps the entire zero page (0x00-0xFF) into functional regions:
 
 ```hopper
-const byte VAR1 = 0x00;
-const byte VAR2 = 0x01;
-const byte COUNTER = 0x10;
+uses "/Source/Runtime/6502/ZeroPage"
+
+// Runtime system variables (16-bit values use L/H suffix pattern)
+LDA #(1000 % 256)
+STA ZP.TOPL        // Low byte of 16-bit value
+LDA #(1000 / 256)
+STA ZP.TOPH        // High byte of 16-bit value
+
+// Hardware I/O (platform-dependent)
+LDA #0b00000001
+STA ZP.DDRA        // Data direction register A
+STA ZP.PORTA       // Port A output
+
+// Working registers for different subsystems
+LDA #0x3C
+STA ZP.I2CADDR     // I2C device address
+LDA ZP.TICK0       // Timer system access
 ```
 
-### Usage in Code
+### ZP Unit Organization
+
+The ZP unit provides several categories of zero page constants:
+
+**System Variables:**
+- `PC`, `FLAGS`, `SP`, `BP` - Runtime system state
+- `ACC`, `TOP`, `NEXT`, `IDX`, `IDY` - Virtual machine registers with L/H pairs
+
+**Hardware I/O (Platform-Dependent):**
+- `PORTA`, `PORTB`, `DDRA`, `DDRB` - GPIO control
+- `ACIASTATUS`, `ACIADATA` - Serial communication
+- `T1CL`, `T1CH`, `IFR`, `IER` - Timer and interrupt control
+
+**Working Variables by Subsystem:**
+- `W0`-`W7` - General workspace (used by Serial, I2C)
+- `TICK0`-`TICK3`, `TARGET0`-`TARGET3` - Time system
+- `M0`-`M15` - Memory management
+- `F0`-`F15` - General function parameters
+- `U0`-`U7` - UInt operations
+
+### Common Zero Page Patterns
+
+**16-bit Value Handling:**
 ```hopper
-LDA VAR1        // Load from zero page
-STA VAR2        // Store to zero page
-INC COUNTER     // Increment zero page variable
+// Loading 16-bit constants
+LDA #(1000 % 256)     // Low byte
+STA ZP.TOPL
+LDA #(1000 / 256)     // High byte  
+STA ZP.TOPH
 
-// Absolute addressing (no $ prefix)
-LDA 0x2000      // Load from absolute address
-STA 0x3000, X   // Store to absolute address with X offset
+// 16-bit increment
+INC ZP.TOPL
+if (Z)
+{
+    INC ZP.TOPH
+}
 ```
+
+### Alternative: Enum-Based Constants
+
+Instead of the ZP unit approach, you could define zero page locations using enums:
+
+```hopper
+enum ZeroPage
+{
+    PORTA = 0xF1,
+    DDRA  = 0xF3,
+    TOPL  = 0x12,
+    TOPH  = 0x13,
+}
+
+// Usage
+LDA #0xFF
+STA ZeroPage.PORTA
+```
+
+However, the ZP unit approach is preferred as it provides better organization and platform-specific mappings.
 
 ### Constant Arrays
 ```hopper
@@ -484,7 +572,7 @@ LDY #2
 LDA lookup_table, Y
 ```
 
-### Friend Classes and Access Control
+## Friend Classes and Access Control
 
 ### Friend Declaration
 Units can declare other units as "friends" to allow access to private methods:
@@ -533,7 +621,7 @@ The compiler can optimize certain patterns:
 ### Error Handling
 ```hopper
 #ifdef CHECKED
-    BIT TOPH
+    BIT ZP.TOPH
     if (MI) // value > 32767
     {
         LDA #0x0D // Numeric type out of range
@@ -578,6 +666,10 @@ first:
 ```
 
 **Important**: Labels are only valid within the current method scope and cannot be accessed from other methods or units.
+
+## Best Practices
+
+1. **Use structured control flow** over traditional labels and jumps
 2. **Leverage conditional compilation** for different CPU targets
 3. **Use meaningful zero page variable names** (ZP.TOPL vs raw addresses)
 4. **Group related functionality in units** for code organization
@@ -619,7 +711,7 @@ unit I2C
         STA ZP.PORTB
         INC ZP.DDRB      // Set to output == OUT, LOW
         
-        ByteOut();        // Call private method
+        byteOut();        // Call private method
     }
     
     // Public method - stops I2C communication
@@ -640,7 +732,8 @@ unit I2C
 #ifdef CPU_65C02S
         PHX
 #else
-        TXA PHA
+        TXA 
+        PHA
 #endif
         
         LDA #SDA_INV // Set SDA LOW for data byte
@@ -688,7 +781,8 @@ first:
 #ifdef CPU_65C02S
         PLX
 #else
-        PLA TAX
+        PLA 
+        TAX
 #endif
     }
 }
@@ -708,7 +802,7 @@ program I2CExample
         I2C.Start();   // Public method call with qualification
         LDA #0x00
         STA ZP.OutB
-        I2C.byteOut(); // This would be an ERROR - byteOut is private!
+        // I2C.byteOut(); // This would be an ERROR - byteOut is private!
         I2C.Stop();    // Public method call
     }
 }
