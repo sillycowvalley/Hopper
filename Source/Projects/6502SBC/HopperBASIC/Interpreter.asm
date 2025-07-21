@@ -233,6 +233,15 @@ unit Interpreter
     {
         Tokenizer.nextToken();  // Get first token
         
+        LDA #'['
+        Serial.WriteChar();
+        LDA Tokenizer.tkCURRENT_TOK
+        Serial.HexOut();
+        LDA #']'
+        Serial.WriteChar();
+        LDA #' '
+        Serial.WriteChar();
+        
         LDA Tokenizer.tkCURRENT_TOK
         switch (A)
         {

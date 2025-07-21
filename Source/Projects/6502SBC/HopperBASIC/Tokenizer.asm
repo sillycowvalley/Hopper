@@ -40,11 +40,11 @@ unit Tokenizer
         END      = 0x1D,
         
         // Special tokens
-        NUMBER   = 0x80,
-        STRING   = 0x81,
-        IDENT    = 0x82,
-        EOL      = 0x83,
-        EOF      = 0x84,
+        NUMBER     = 0x80,
+        STRING     = 0x81,
+        IDENTIFIER = 0x82,
+        EOL        = 0x83,
+        EOF        = 0x84,
         
         // Operators  
         EQUALS   = 0x90,
@@ -108,7 +108,7 @@ unit Tokenizer
         if (C)  // >= 'a'
         {
             CMP #('z'+1)
-            if (C)  // <= 'z'  
+            if (NC)  // <= 'z'  
             {
                 SBC #('a'-'A'-1)  // Convert to uppercase (carry is set)
             }
@@ -150,7 +150,7 @@ unit Tokenizer
         if (C)  // >= '0'
         {
             CMP #('9'+1)
-            if (C)  // <= '9'
+            if (NC)  // <= '9'
             {
                 LDA #1  // Set Z=0 (is alphanumeric)
                 return;
@@ -160,7 +160,7 @@ unit Tokenizer
         if (C)  // >= 'A'
         {
             CMP #('Z'+1)
-            if (C)  // <= 'Z'
+            if (NC)  // <= 'Z'
             {
                 LDA #1  // Set Z=0 (is alphanumeric)
                 return;
@@ -203,11 +203,23 @@ unit Tokenizer
                     LDA keywords, Y
                     STA ZP.ACCH      // Expected character
                     
+                    // Get actual character from input
+                    LDA tkTOKEN_START
+                    CLC
+                    ADC tkTOKEN_LEN
+                    SEC
+                    SBC tkTOKEN_LEN
+                    CLC
+                    ADC tkTOKEN_LEN
+                    SEC
+                    SBC tkTOKEN_LEN  // Sorry, simpler approach:
+                    
                     TXA
                     CLC
                     ADC tkTOKEN_START
-                    TAX
-                    LDA INPUT_BUFFER, X  // Actual character
+                    TAY
+                    LDA INPUT_BUFFER, Y  // Actual character
+                    TAY
                     makeUppercase();
                     
                     CMP ZP.ACCH
@@ -216,17 +228,24 @@ unit Tokenizer
                         break;
                     }
                     
-                    TXA
-                    SEC 
-                    SBC tkTOKEN_START
-                    TAX
                     INX
+                    TYA  // Restore Y for keywords table
+                    TAY
                     INY
+                }
+                
+                if (Z)  // All characters matched
+                {
+                    LDA ZP.ACCL  // Return token value
+                    return;
                 }
                 
                 // Skip rest of this keyword
                 LDX tkTOKEN_LEN
-                DEX  // We already advanced Y by tokenlen
+                SEC
+                SBC tkTOKEN_LEN  // We already advanced Y by tokenlen+1
+                CLC
+                ADC tkTOKEN_LEN
                 loop
                 {
                     CPX #0
@@ -385,7 +404,7 @@ unit Tokenizer
         if (C)  // >= '0'
         {
             CMP #('9'+1)
-            if (C)  // <= '9'
+            if (NC)  // <= '9'
             {
                 // Scan number
                 loop
@@ -402,7 +421,7 @@ unit Tokenizer
                     if (C)  // >= '0'
                     {
                         CMP #('9'+1)
-                        if (C)  // <= '9'
+                        if (NC)  // <= '9'
                         {
                             continue;
                         }
@@ -434,6 +453,7 @@ unit Tokenizer
         
         // Check if it's a keyword
         findKeyword();
+        
         if (NZ)  // Found keyword
         {
             STA tkCURRENT_TOK
@@ -441,7 +461,7 @@ unit Tokenizer
         }
         
         // It's an identifier
-        LDA #Tokens.IDENT
+        LDA #Tokens.IDENTIFIER
         STA tkCURRENT_TOK
     }
     
