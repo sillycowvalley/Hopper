@@ -33,11 +33,49 @@
 - **AND/OR/NOT** - bitwise operations
 - **PRINT** - debug output
 
-**REPL Commands (9):**
-- **RUN, LIST, NEW** - program execution/management
-- **SAVE/LOAD/DEL** - named program storage to 64K EEPROM
-- **DIR** - list saved programs
-- **VARS, FUNCS** - show variables/functions
+## System Commands (10 total)
+
+### Program Management
+- **`RUN`** - Execute the current program starting from BEGIN/END block
+- **`LIST`** - Display the current program in memory (tokenized back to source)
+- **`NEW`** - Clear current program from memory, reset all variables
+
+### Variable Management
+- **`CLEAR`** - Clear all global variables (but keep program and functions)
+
+### EEPROM File System  
+- **`SAVE "name"`** - Save current program to EEPROM with given name
+- **`LOAD "name"`** - Load named program from EEPROM into memory
+- **`DEL "name"`** - Delete named program from EEPROM
+- **`DIR`** - List all saved programs in EEPROM (shows names + sizes)
+
+### Development/Debug
+- **`VARS`** - Show all global variables and their current values
+- **`FUNCS`** - Show all defined functions and their signatures
+
+## Behavioral Distinctions
+
+- **`NEW`** - Nuclear option: clears program, functions, AND variables
+- **`CLEAR`** - Surgical option: only clears global variables, keeps program/functions intact
+- **`RUN`** - Should automatically CLEAR variables before execution (fresh start)
+
+## Example Usage
+
+```basic
+> LET count = 42
+> LET name$ = "test"
+> VARS
+count         42
+name$         "test"
+> CLEAR
+> VARS
+(no variables defined)
+> RUN
+(program runs with fresh variables)
+```
+
+
+
 
 ## Syntax Examples
 
@@ -127,3 +165,64 @@ $C000-$FFFF: 16K ROM (interpreter)
 **Total Keywords: ~30** (incredibly minimal for full structured language)
 
 This specification delivers **1980s assembly-level performance** using a **high-level structured BASIC** that fits in **16K ROM** and beats every interpreted BASIC from the era.
+
+# Hopper BASIC Architecture Summary
+
+## Key Design Decisions
+
+### Memory Layout (ROM-based interpreter)
+- **$E000-$FFFF**: ROM-based BASIC interpreter (~8K)
+- **$0800-$xxxx**: Dynamic heap for function bodies and data structures
+- **Function-based program storage**: Each function (including "MAIN") stored as separate allocated blocks
+- **Runtime stacks**: 6502 hardware stack + Hopper type/value stacks for expression evaluation
+- **Global variables**: Persistent table that survives program runs
+
+### Execution Strategy: **Threaded Code Interpreter**
+- **Bytecode as jump table indices**: Each bytecode points to optimized 6502 handler routines
+- **Performance**: Near-native speed with bytecode flexibility
+- **Simplicity**: Much easier than full compilation, more efficient than traditional interpretation
+- **Handler-based**: Each BASIC operation becomes a specialized 6502 routine ending in RTS
+
+### Program Organization
+- **Function index table**: Maps function names to tokenized code blocks
+- **Easy redefinition**: Replace function by allocating new block, updating index
+- **Incremental development**: Add handlers one at a time
+- **REPL support**: Immediate statements create temporary functions
+
+### Memory Management
+- **Leverage existing runtime**: Reuse `Allocate.asm`/`Free.asm` from Hopper
+- **Reference types on heap**: Strings/arrays allocated dynamically
+- **Stack frames**: Y register as frame pointer for locals/parameters
+- **No fragmentation concerns**: Existing allocator handles this well
+
+### EEPROM Storage (64K)
+- **Simple file system**: Directory + program data
+- **Function-level storage**: Save/load individual functions or complete programs
+- **Standard commands**: SAVE, LOAD, DIR, DEL
+
+## Why Threaded Code Won
+
+**Rejected full compilation** because:
+- Interactive development complexity
+- Forward reference handling
+- Development time vs. benefit
+
+**Rejected pure bytecode interpretation** because:
+- Performance overhead for compute-heavy operations
+- 6502 deserves closer-to-metal execution
+
+**Threaded code provides**:
+- ✅ 4x+ performance improvement over interpretation
+- ✅ Bytecode simplicity and flexibility  
+- ✅ Easy REPL implementation
+- ✅ Incremental development path
+- ✅ Reuse of existing Hopper runtime components
+
+## Implementation Priority
+1. Basic threaded interpreter loop + simple handlers (LET, PRINT)
+2. Expression evaluation handlers
+3. Control flow (FOR, IF, WHILE)
+4. Function calls and local variables
+5. EEPROM save/load system
+
+This architecture balances performance, simplicity, and development feasibility while staying true to BASIC's interactive nature and the 6502's capabilities.
