@@ -12,7 +12,14 @@ unit Address
     
     const uint I2CInBuffer          = 0x0800;  // 256-byte buffer 0x0800-0x08FF for I2C.RequestFrom
     
+#if defined(HOPPER_BASIC)
+    const uint BasicInputBuffer     = 0x0900;  // 256-byte buffer for BASIC line input
+    const uint HopperData           = 0x0A00;  // start of Hopper RAM (program, then heap)
+#else    
     const uint HopperData           = 0x0900;  // start of Hopper RAM (program, then heap)
+#endif
+    
+    
 
 #if defined(BENEATER_IO)
     const uint RamSize              = 0x5000;  // the IO ports on the Ben Eater 6502 start at 0x5000 ..

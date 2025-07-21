@@ -103,9 +103,26 @@ unit ZP
     const byte TARGET1              = 0x2D;
     const byte TARGET2              = 0x2E;
     const byte TARGET3              = 0x2F;
-#ifndef TIGGERC
+    
+#if !defined(TIGGERC) && !defined(HOPPER_BASIC)
     const byte BRKL                 = 0x30; // .. 0x3F
     const byte BRKH                 = 0x40; // .. 0x4F
+#endif
+
+#if defined(HOPPER_BASIC)                    // 0x30..0x4F available for Hopper BASIC:
+
+    // Current length of input in input buffer (at 0x0900)
+    const byte BasicInputLength     = 0x30;  
+    
+    // Tokenizer workspace
+    const byte TokenizePtr          = 0x31;  // Current position in input during tokenization
+    const byte TokenPtr             = 0x32;  // Current position in token output
+    const byte CurrentToken         = 0x33;  // Current token being processed
+    
+    // File operations (SAVE/LOAD to EEPROM)
+    const byte FileNamePtr          = 0x34;  // Pointer to filename in input buffer
+    const byte FileNameLength       = 0x35;  // Length of filename
+    
 #endif
 
 #ifndef TIGGERC
