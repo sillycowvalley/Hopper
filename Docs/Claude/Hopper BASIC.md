@@ -33,6 +33,40 @@
 - **AND/OR/NOT** - bitwise operations
 - **PRINT** - debug output
 
+## Language Behavior
+
+### Case Sensitivity
+- **Case-insensitive input**: Keywords and variable names can be entered in any case
+- **Tokenization**: All keywords/identifiers converted to uppercase before tokenization
+- **String preservation**: Only string literals (content between quotes) preserve mixed case
+- **LIST output**: Always displays keywords and variables in uppercase for consistency
+
+**Examples:**
+```basic
+Input:    print "Hello World"; count
+Stored:   [TOK_PRINT] [STRING:"Hello World"] [TOK_SEMICOLON] [VAR:COUNT]  
+LIST:     PRINT "Hello World"; COUNT
+```
+
+### Variable Handling
+- **Auto-creation**: Undefined variables automatically created with default values (classic BASIC behavior)
+- **Type inference**: Variable type determined by name suffix or first assignment
+  - No suffix = INT
+  - `$` suffix = STRING  
+  - Explicit declarations override inference
+- **Default values**:
+  - INT/WORD/BYTE: 0
+  - STRING: "" (empty string)
+  - BIT arrays: all bits clear
+- **Strict type checking**: Runtime error if variable used with incompatible type
+
+**Examples:**
+```basic
+PRINT X          // X auto-created as INT = 0, prints: 0
+LET Y$ = "test"  // Y$ auto-created as STRING
+PRINT X + Y$     // Runtime error: TYPE MISMATCH
+```
+
 ## System Commands (10 total)
 
 ### Program Management
@@ -65,8 +99,8 @@
 > LET count = 42
 > LET name$ = "test"
 > VARS
-count         42
-name$         "test"
+COUNT         42
+NAME$         "test"
 > CLEAR
 > VARS
 (no variables defined)
@@ -74,33 +108,30 @@ name$         "test"
 (program runs with fresh variables)
 ```
 
-
-
-
 ## Syntax Examples
 
 **Variable Declarations:**
 ```basic
 CONST LED_PIN = 13
 CONST SIZE = 8190
-BYTE pins[8]
-INT values[10] 
-BIT flags[SIZE]    // Only 1024 bytes storage!
+BYTE PINS[8]
+INT VALUES[10] 
+BIT FLAGS[SIZE]    // Only 1024 bytes storage!
 ```
 
 **Program Structure:**
 ```basic
-FUNC blink(pin, count)
-  FOR i = 1 TO count
-    WRITE pin, 1
+FUNC BLINK(PIN, COUNT)
+  FOR I = 1 TO COUNT
+    WRITE PIN, 1
     DELAY 500
-    WRITE pin, 0
+    WRITE PIN, 0
     DELAY 500
   NEXT
 ENDFUNC
 
 BEGIN
-  blink(LED_PIN, 5)
+  BLINK(LED_PIN, 5)
 END
 ```
 
@@ -160,7 +191,8 @@ $C000-$FFFF: 16K ROM (interpreter)
 3. **Hardware-focused** - designed for microcontroller/embedded use  
 4. **Structured programming** - no line numbers, block-structured syntax
 5. **Single-token keywords** - easier parsing (ENDIF not END IF)
-6. **Forward compatibility** - designed to port back to 6502 assembly
+6. **Classic BASIC behavior** - case-insensitive, auto-creating variables
+7. **Forward compatibility** - designed to port back to 6502 assembly
 
 **Total Keywords: ~30** (incredibly minimal for full structured language)
 
@@ -194,6 +226,12 @@ This specification delivers **1980s assembly-level performance** using a **high-
 - **Reference types on heap**: Strings/arrays allocated dynamically
 - **Stack frames**: Y register as frame pointer for locals/parameters
 - **No fragmentation concerns**: Existing allocator handles this well
+
+### Variable System
+- **Hash-based lookup**: Fast variable resolution using name hashing
+- **Auto-creation with defaults**: Classic BASIC behavior - undefined variables auto-created
+- **Type inference**: From name suffix (`$` = string) or first assignment
+- **Strict runtime typing**: Type mismatch errors prevent silent bugs
 
 ### EEPROM Storage (64K)
 - **Simple file system**: Directory + program data
