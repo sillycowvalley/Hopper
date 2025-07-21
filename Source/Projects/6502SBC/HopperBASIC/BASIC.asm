@@ -1,11 +1,11 @@
-program HopperEcho
+program HopperBASIC
 {
     #define CPU_65C02S
     #define ROM_4K
     
     uses "/Source/Runtime/6502/Serial"
     
-    const string Echo = "\nHopper Echo:\n";
+    const string Echo = "\nHopper BASIC:\n";
     
     IRQ()
     {
@@ -37,3 +37,4 @@ program HopperEcho
         }
     }
 }
+
