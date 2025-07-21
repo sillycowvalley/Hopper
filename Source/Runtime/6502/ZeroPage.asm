@@ -94,7 +94,7 @@ unit ZP
     const byte InB                  = W5;
     const byte LastAck              = W6; // LackAck == 0 means ACK, 1 means NACK
     
-    // used by 'T'ime APIs Millis and Delay
+    // used by Time APIs Millis and Delay
     const byte TICK0                = 0x28;
     const byte TICK1                = 0x29;
     const byte TICK2                = 0x2A;

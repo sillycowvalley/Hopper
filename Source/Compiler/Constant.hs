@@ -288,6 +288,7 @@ unit Constant
         {
             ttype = HopperToken.Identifier;
         }
+        
         loop
         {
             switch(ttype)
@@ -328,9 +329,17 @@ unit Constant
                     actualType = "byte";
                     value = (byte(value[0])).ToString();
 #else
-                    actualType = "char";
+                    if (IsAssembly && weakEnums && (typeExpected == "byte"))
+                    {
+                        actualType = "byte";
+                        value = (byte(value[0])).ToString();
+                    }
+                    else
+                    {
+                        actualType = "char";
+                    }
 #endif
-                }
+                                    }
                 case HopperToken.Float:
                 {
                     float f;
@@ -671,6 +680,7 @@ unit Constant
             } // switch
             break;
         } // loop
+        
         if (!HadError && (typeExpected != actualType))
         {
             if (Types.IsFlags(typeExpected) && Types.IsFlags(actualType))

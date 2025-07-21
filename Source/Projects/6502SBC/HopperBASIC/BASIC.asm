@@ -3,8 +3,6 @@ program HopperBASIC
     #define CPU_65C02S
     #define ROM_8K
     
-    #define HOPPER_BASIC
-    
     uses "/Source/Runtime/6502/Serial"
     uses "/Source/Runtime/6502/ZeroPage"
     uses "/Source/Runtime/6502/Memory"
@@ -12,11 +10,12 @@ program HopperBASIC
     uses "/Source/Runtime/6502/Stacks"
     
     uses "Tools"
+    uses "Tokenizer"
+    uses "Interpreter"
     
     const string Welcome = "\nHopper BASIC v1.0\n";
     const string MemoryMsg = "Memory: ";
     const string KBytes = " bytes available\n";
-    const string Ready = "READY\n> ";
     
     printAvailableMemory()
     {
@@ -26,8 +25,8 @@ program HopperBASIC
         // Pop the typed value - Memory.Available() returns UInt type
         Stacks.PopTop();  // This properly handles the type and puts value in TOP
         
-        // Convert bytes to KB (divide by 1024, approximately by using high byte)
-        PrintDecimalWord();
+        // Print the decimal value
+        Tools.PrintDecimalWord();
     }
     
     initializeSystem()
@@ -35,8 +34,7 @@ program HopperBASIC
         // Initialize the complete runtime system
         
         // Set up program size as minimal (just our BASIC interpreter)
-        LDA #0  // empty for now (not Hopper program)
-        STA ZP.PROGSIZE
+        STZ ZP.PROGSIZE  // empty for now (not Hopper program)
         
         // Initialize memory heap using runtime function
         Memory.InitializeHeapSize();
@@ -77,14 +75,14 @@ program HopperBASIC
         STA ZP.IDXL
         LDA #(Welcome / 256)
         STA ZP.IDXH
-        PrintString();
+        Tools.PrintString();
         
         // Print memory information
         LDA #(MemoryMsg % 256)
         STA ZP.IDXL
         LDA #(MemoryMsg / 256)
         STA ZP.IDXH
-        PrintString();
+        Tools.PrintString();
         
         // Print available memory using runtime function
         printAvailableMemory();
@@ -93,116 +91,9 @@ program HopperBASIC
         STA ZP.IDXL
         LDA #(KBytes / 256)
         STA ZP.IDXH
-        PrintString();
+        Tools.PrintString();
         
-        // Print ready prompt
-        LDA #(Ready % 256)
-        STA ZP.IDXL
-        LDA #(Ready / 256)
-        STA ZP.IDXH
-        PrintString();
-        
-        // Main BASIC interpreter loop
-        loop
-        {
-            // Check for break condition
-            LDA ZP.SerialBreakFlag
-            if (NZ)
-            {
-                STZ ZP.SerialBreakFlag
-                LDA #'^'
-                Serial.WriteChar();
-                LDA #'C'
-                Serial.WriteChar();
-                LDA #'\n'
-                Serial.WriteChar();
-                
-                // Print ready prompt again
-                LDA #(Ready % 256)
-                STA ZP.IDXL
-                LDA #(Ready / 256)
-                STA ZP.IDXH
-                PrintString();
-            }
-            
-            // Check if character available
-            Serial.IsAvailable();
-            if (NZ)
-            {
-                Serial.WaitForChar();
-                
-                // Handle basic commands
-                switch (A)
-                {
-                    case '\r':
-                    case '\n':
-                    {
-                        // Enter pressed - process command line
-                        LDA #'\n'
-                        Serial.WriteChar();
-                        
-                        // TODO: Parse and execute BASIC command/program line
-                        
-                        // For now, just show prompt again
-                        LDA #(Ready % 256)
-                        STA ZP.IDXL
-                        LDA #(Ready / 256)
-                        STA ZP.IDXH
-                        PrintString();
-                    }
-                    case 0x08:  // Backspace
-                    case 0x7F:  // Delete
-                    {
-                        // Handle backspace/delete
-                        LDA #0x08   // Backspace
-                        Serial.WriteChar();
-                        LDA #' '    // Space
-                        Serial.WriteChar();
-                        LDA #0x08   // Backspace again
-                        Serial.WriteChar();
-                    }
-                    case 0x03:  // Ctrl+C
-                    {
-                        // Break command
-                        LDA #'^'
-                        Serial.WriteChar();
-                        LDA #'C'
-                        Serial.WriteChar();
-                        LDA #'\n'
-                        Serial.WriteChar();
-                        
-                        LDA #(Ready % 256)
-                        STA ZP.IDXL
-                        LDA #(Ready / 256)
-                        STA ZP.IDXH
-                        PrintString();
-                    }
-                    default:
-                    {
-                        // Echo printable characters
-                        CMP #' '
-                        if (C)  // >= 32
-                        {
-                            CMP #0x7F
-                            if (NC)  // < 127
-                            {
-                                Serial.WriteChar();
-                                // TODO: Add to input buffer
-                            }
-                        }
-                    }
-                }
-            }
-            
-            // TODO: Add the following BASIC interpreter components:
-            // 1. Line input buffer management
-            // 2. Tokenization of BASIC keywords
-            // 3. Program storage in tokenized form
-            // 4. Variable storage and management
-            // 5. Expression evaluation
-            // 6. Command processing (RUN, LIST, NEW, SAVE, LOAD, etc.)
-            // 7. Statement execution (PRINT, LET, IF, FOR, etc.)
-            // 8. Built-in functions (READ, WRITE, PWM, DELAY, etc.)
-        }
+        // Start the BASIC interpreter
+        Interpreter.Run();
     }
 }
