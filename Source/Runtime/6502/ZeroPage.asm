@@ -111,8 +111,6 @@ unit ZP
 
 #if defined(HOPPER_BASIC)                    // 0x30..0x4F available for Hopper BASIC:
 
-    #if defined(HOPPER_BASIC)                    // 0x30..0x4F dedicated to Hopper BASIC:
-
     // === TOKENIZER WORKSPACE (0x30-0x37) ===
     const byte BasicInputLength     = 0x30;  // Length of current input in buffer (at 0x0900)
     const byte TokenizerPos         = 0x31;  // Current position in input during tokenization
@@ -141,10 +139,14 @@ unit ZP
     const byte FileNamePtr          = 0x44;  // Pointer to filename in EEPROM operations
     const byte FileNameLen          = 0x45;  // Length of filename
     
-    // === AVAILABLE FOR EXPANSION (0x46-0x4F) ===
-    // 10 bytes available for additional BASIC-specific variables
-
-#endif
+    // === INTERPRETER PROGRAM/VARIABLE STORAGE (0x46-0x49) ===
+    const byte PgmListHead          = 0x46;  // Program linked list head (low byte)
+    const byte PgmListHeadHi        = 0x47;  // Program linked list head (high byte)
+    const byte VarListHead          = 0x48;  // Variable linked list head (low byte)
+    const byte VarListHeadHi        = 0x49;  // Variable linked list head (high byte)
+    
+    // === AVAILABLE FOR EXPANSION (0x4A-0x4F) ===
+    // 6 bytes available for additional BASIC-specific variables
     
 #endif
 
@@ -207,6 +209,7 @@ unit ZP
     const byte F14                  = 0x6E;
     const byte F15                  = 0x6F;
     
+  #if !defined(HOPPER_BASIC)     
     // dictionary types (safely unused)
     const byte D0                   = 0x70;
     const byte D1                   = 0x71;
@@ -215,6 +218,7 @@ unit ZP
     const byte D4                   = 0x74;
     const byte D5                   = 0x75;
     const byte D6                   = 0x76;
+  #endif
 #else
     const byte F0                   = 0x05;
 #endif

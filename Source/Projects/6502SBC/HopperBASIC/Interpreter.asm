@@ -21,13 +21,13 @@ unit Interpreter
     
     // Program storage - simple linked list for now
     // Each program line: [length] [line_number_lo] [line_number_hi] [tokenized_data...]
-    const byte pgmLIST_HEAD = ZP.F5;   // Pointer to first program line (16-bit in F5/F6)
-    const byte pgmLIST_HEADH = ZP.F6;
+    const byte pgmLIST_HEAD = ZP.PgmListHead;      // was ZP.F5 - now uses dedicated space
+    const byte pgmLIST_HEADH = ZP.PgmListHeadHi;   // was ZP.F6 - now uses dedicated space
     
     // Variable storage - simple array for now  
     // Each variable: [name_length] [name_chars...] [type] [value_lo] [value_hi]
-    const byte varLIST_HEAD = ZP.F7;   // Pointer to variable list (16-bit in F7/F8)
-    const byte varLIST_HEADH = ZP.F8;
+    const byte varLIST_HEAD = ZP.VarListHead;      // was ZP.F7 - now uses dedicated space
+    const byte varLIST_HEADH = ZP.VarListHeadHi;   // was ZP.F8 - now uses dedicated space
     
     // Messages
     const string msgReady = "READY\n> ";
