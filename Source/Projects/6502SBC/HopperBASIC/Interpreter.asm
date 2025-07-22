@@ -127,7 +127,7 @@ unit Interpreter
             STA ZP.IDYH
             
             // Free current block
-            Memory.Free();  // Frees block at IDX
+            Free();  // Frees block at IDX
             
             // Move to next
             LDA ZP.IDYL
@@ -270,7 +270,7 @@ unit Interpreter
     
     cmdPrint()
     {
-        DumpAllBlocks();
+        DumpHeap();
         
         STZ ZP.TokenizerPos
         BytecodeCompiler.CompileREPLStatement();
@@ -279,7 +279,7 @@ unit Interpreter
         
         FunctionManager.CleanupREPLFunction();
         
-        DumpAllBlocks();
+        DumpHeap();
     }
     
     // Process command line - all commands are immediate in structured BASIC

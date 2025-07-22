@@ -153,6 +153,18 @@ unit Memory
         INY
         STA [ZP.FREELIST], Y
     }
+    
+#ifdef HOPPER_BASIC
+    // don't use the stack versions by mistake
+    Allocate()
+    {
+        Allocate.Allocate();
+    }
+    Free()
+    {
+        Free.Free();
+    }
+#else
     Allocate()
     {
         Stacks.PopACC();      // only care about ACCL and ACCH (not ACCT)
@@ -173,6 +185,7 @@ unit Memory
         Stacks.PopIDX();
         Free.Free();
     }
+
     ReadByte()
     {
         Stacks.PopIDX();
@@ -204,7 +217,8 @@ unit Memory
         STA [IDX], Y
 #endif
     }
-    
+#endif // not HOPPER_BASIC
+
     AvailableACC()
     {
         // uses IDXand ACC

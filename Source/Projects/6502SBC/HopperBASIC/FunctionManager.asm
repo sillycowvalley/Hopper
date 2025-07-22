@@ -36,9 +36,9 @@ unit FunctionManager
     // Allocate a temporary block for compilation (512 bytes should be plenty)
     StartREPLCompilation()
     {
-        LDA #0
+        LDA # 0
         STA ZP.ACCL
-        LDA #2  // 512 bytes (2 pages)
+        LDA # 2  // 512 bytes (2 pages)
         STA ZP.ACCH
         
         Memory.Allocate();  // Returns address in IDX
@@ -210,7 +210,7 @@ unit FunctionManager
         // Perform the copy
         Utilities.CopyBytes();
         
-        // Free the temp buffer (address is still in FSOURCEADDRESS)
+        // Free the temp buffer (address is still in IDX)
         Memory.Free();
         
         // Mark compilation complete
@@ -244,7 +244,7 @@ unit FunctionManager
         // Returns bytecode address in IDX
         CLC
         LDA ZP.CurrentFunc
-        ADC #fhHeaderSize
+        ADC # fhHeaderSize
         STA ZP.IDXL
         LDA ZP.CurrentFuncHi
         ADC #0

@@ -353,7 +353,12 @@ unit Tools
         PLA  // Restore A
     }
     
-    // Debug function to dump the heap free list
+    // Debug function to dump all heap blocks (allocated and free)
+    // Walks through heap sequentially using block size headers
+    // On entry: None
+    // On exit:  A,X,Y preserved
+    // Munts:    ZP.M0, ZP.M1, ZP.M2, ZP.M3, ZP.U0, ZP.U2, ZP.U3, ZP.IDX, ZP.IDY
+    // Uses:     Serial.WriteChar(), Serial.HexOut() for output
     DumpHeap()
     {
         PHA  // Save A
@@ -378,179 +383,13 @@ unit Tools
         Serial.WriteChar();
         LDA #' '
         Serial.WriteChar();
-        LDA #'='
+        LDA #'D'
         Serial.WriteChar();
-        LDA #'='
+        LDA #'U'
         Serial.WriteChar();
-        LDA #'\n'
+        LDA #'M'
         Serial.WriteChar();
-        
-        // Show heap start and size
-        LDA #'S'
-        Serial.WriteChar();
-        LDA #'T'
-        Serial.WriteChar();
-        LDA #'A'
-        Serial.WriteChar();
-        LDA #'R'
-        Serial.WriteChar();
-        LDA #'T'
-        Serial.WriteChar();
-        LDA #':'
-        Serial.WriteChar();
-        LDA ZP.HEAPSTART
-        Serial.HexOut();
-        LDA #'0'
-        Serial.WriteChar();
-        LDA #'0'
-        Serial.WriteChar();
-        LDA #' '
-        Serial.WriteChar();
-        
-        LDA #'S'
-        Serial.WriteChar();
-        LDA #'I'
-        Serial.WriteChar();
-        LDA #'Z'
-        Serial.WriteChar();
-        LDA #'E'
-        Serial.WriteChar();
-        LDA #':'
-        Serial.WriteChar();
-        LDA ZP.HEAPSIZE
-        Serial.HexOut();
-        LDA #'0'
-        Serial.WriteChar();
-        LDA #'0'
-        Serial.WriteChar();
-        LDA #'\n'
-        Serial.WriteChar();
-        
-        // Walk the free list
-        LDA ZP.FREELISTL
-        STA ZP.IDXL
-        LDA ZP.FREELISTH
-        STA ZP.IDXH
-        
-        LDX #0  // Block counter
-        
-        loop
-        {
-            LDA ZP.IDXL
-            ORA ZP.IDXH
-            if (Z) { break; }  // End of free list
-            
-            // Print block number
-            LDA #'['
-            Serial.WriteChar();
-            TXA
-            Serial.HexOut();
-            LDA #']'
-            Serial.WriteChar();
-            LDA #' '
-            Serial.WriteChar();
-            
-            // Print block address
-            LDA ZP.IDXH
-            Serial.HexOut();
-            LDA ZP.IDXL
-            Serial.HexOut();
-            LDA #':'
-            Serial.WriteChar();
-            
-            // Print block size
-            LDY #0
-            LDA [ZP.IDX], Y
-            Serial.HexOut();
-            INY
-            LDA [ZP.IDX], Y
-            Serial.HexOut();
-            LDA #' '
-            Serial.WriteChar();
-            
-            // Print next pointer
-            LDA #'>'
-            Serial.WriteChar();
-            INY
-            LDA [ZP.IDX], Y
-            PHA
-            INY
-            LDA [ZP.IDX], Y
-            Serial.HexOut();
-            PLA
-            Serial.HexOut();
-            LDA #'\n'
-            Serial.WriteChar();
-            
-            // Move to next block
-            DEY
-            LDA [ZP.IDX], Y
-            PHA
-            INY
-            LDA [ZP.IDX], Y
-            STA ZP.IDXH
-            PLA
-            STA ZP.IDXL
-            
-            INX
-            CPX #8  // Limit to 8 blocks to avoid infinite loops
-            if (Z) 
-            { 
-                LDA #'.'
-                Serial.WriteChar();
-                LDA #'.'
-                Serial.WriteChar();
-                LDA #'.'
-                Serial.WriteChar();
-                LDA #'\n'
-                Serial.WriteChar();
-                break; 
-            }
-        }
-        
-        LDA #'\n'
-        Serial.WriteChar();
-        
-        PLY  // Restore Y
-        PLX  // Restore X
-        PLA  // Restore A
-    }
-
-    // Debug function to dump all heap blocks (allocated and free)
-    // Walks through heap sequentially using block size headers
-    DumpAllBlocks()
-    {
-        PHA  // Save A
-        PHX  // Save X  
-        PHY  // Save Y
-        
-        LDA #'\n'
-        Serial.WriteChar();
-        LDA #'='
-        Serial.WriteChar();
-        LDA #'='
-        Serial.WriteChar();
-        LDA #' '
-        Serial.WriteChar();
-        LDA #'A'
-        Serial.WriteChar();
-        LDA #'L'
-        Serial.WriteChar();
-        LDA #'L'
-        Serial.WriteChar();
-        LDA #' '
-        Serial.WriteChar();
-        LDA #'B'
-        Serial.WriteChar();
-        LDA #'L'
-        Serial.WriteChar();
-        LDA #'O'
-        Serial.WriteChar();
-        LDA #'C'
-        Serial.WriteChar();
-        LDA #'K'
-        Serial.WriteChar();
-        LDA #'S'
+        LDA #'P'
         Serial.WriteChar();
         LDA #' '
         Serial.WriteChar();
@@ -726,6 +565,178 @@ unit Tools
             
             LDA #')'
             Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            
+            // Show first 16 bytes of block content (after 2-byte header)
+            
+            // Restore current position for content dump
+            LDA ZP.M2
+            STA ZP.IDXL
+            LDA ZP.M3
+            STA ZP.IDXH
+            
+            // Skip the 2-byte header to get to content
+            CLC
+            LDA ZP.IDXL
+            ADC #2
+            STA ZP.IDXL
+            if (C)
+            {
+                INC ZP.IDXH
+            }
+            
+            // Calculate effective content size (block size - 2 for header)
+            // Block size is in ZP.M0 (low) and ZP.M1 (high)
+            SEC
+            LDA ZP.M0
+            SBC #2
+            STA ZP.U2  // Content size low byte
+            LDA ZP.M1
+            SBC #0
+            STA ZP.U3  // Content size high byte
+            
+            // Limit to max 16 bytes for display
+            LDA ZP.U3
+            if (NZ)  // Size > 255, so limit to 16
+            {
+                LDA #16
+                STA ZP.U2
+                STZ ZP.U3
+            }
+            else
+            {
+                LDA ZP.U2
+                CMP #16
+                if (C)  // Size >= 16, limit to 16
+                {
+                    LDA #16
+                    STA ZP.U2
+                }
+            }
+            
+            // First pass: dump hex bytes with spaces
+            LDY #0
+            loop
+            {
+                CPY ZP.U2
+                if (Z) { break; }
+                
+                LDA [ZP.IDX], Y
+                Serial.HexOut();
+                LDA #' '
+                Serial.WriteChar();
+                
+                INY
+                
+                // Add extra space after 8 bytes
+                CPY #8
+                if (Z)
+                {
+                    CPY ZP.U2  // Don't add space if we're at the end
+                    if (NZ)
+                    {
+                        LDA #' '
+                        Serial.WriteChar();
+                        LDA #' '
+                        Serial.WriteChar();
+                    }
+                }
+            }
+            
+            // Pad hex section to align ASCII (each byte takes 3 chars: "XX ")
+            // Need to reach 16*3 + 2 = 50 characters for full alignment
+            loop
+            {
+                CPY #16
+                if (Z) { break; }
+                
+                LDA #' '
+                Serial.WriteChar();
+                LDA #' '
+                Serial.WriteChar();
+                LDA #' '
+                Serial.WriteChar();
+                
+                INY
+                
+                // Add extra space after 8 bytes for alignment
+                CPY #8
+                if (Z)
+                {
+                    LDA #' '
+                    Serial.WriteChar();
+                    LDA #' '
+                    Serial.WriteChar();
+                }
+            }
+            
+            // Add spacing before ASCII dump
+            LDA #' '
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            
+            // Second pass: dump same bytes as ASCII
+            LDY #0
+            loop
+            {
+                CPY ZP.U2
+                if (Z) { break; }
+                
+                LDA [ZP.IDX], Y
+                
+                // Check if printable (32-127)
+                CMP #32
+                if (C)  // >= 32
+                {
+                    CMP #127
+                    if (NC)  // <= 127
+                    {
+                        Serial.WriteChar();  // Print the character
+                        INY
+                        
+                        // Add space after 8 characters
+                        CPY #8
+                        if (Z)
+                        {
+                            CPY ZP.U2  // Don't add space if we're at the end
+                            if (NZ)
+                            {
+                                LDA #' '
+                                Serial.WriteChar();
+                            }
+                        }
+                        continue;
+                    }
+                }
+                
+                // Not printable, print dot
+                LDA #'.'
+                Serial.WriteChar();
+                INY
+                
+                // Add space after 8 characters
+                CPY #8
+                if (Z)
+                {
+                    CPY ZP.U2  // Don't add space if we're at the end
+                    if (NZ)
+                    {
+                        LDA #' '
+                        Serial.WriteChar();
+                    }
+                }
+            }
+            
             LDA #'\n'
             Serial.WriteChar();
             
