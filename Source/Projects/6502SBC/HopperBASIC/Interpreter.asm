@@ -173,7 +173,7 @@ unit Interpreter
         Tools.PrintString();
         
         STZ ZP.U0  // Clear flag for variables
-        Tools.ListGlobals();  // Use Tools debug function
+        GlobalManager.ListGlobals();
     }
     
     // Show constants
@@ -206,7 +206,7 @@ unit Interpreter
         
         LDA #1  // Set constants flag
         STA ZP.U0
-        Tools.ListGlobals();  // Use Tools debug function
+        GlobalManager.ListGlobals();
     }
     
     // Run program
