@@ -352,6 +352,169 @@ unit Tools
         PLX  // Restore X
         PLA  // Restore A
     }
+    
+    // Debug function to dump the heap free list
+    DumpHeap()
+    {
+        PHA  // Save A
+        PHX  // Save X  
+        PHY  // Save Y
+        
+        LDA #'\n'
+        Serial.WriteChar();
+        LDA #'='
+        Serial.WriteChar();
+        LDA #'='
+        Serial.WriteChar();
+        LDA #' '
+        Serial.WriteChar();
+        LDA #'H'
+        Serial.WriteChar();
+        LDA #'E'
+        Serial.WriteChar();
+        LDA #'A'
+        Serial.WriteChar();
+        LDA #'P'
+        Serial.WriteChar();
+        LDA #' '
+        Serial.WriteChar();
+        LDA #'='
+        Serial.WriteChar();
+        LDA #'='
+        Serial.WriteChar();
+        LDA #'\n'
+        Serial.WriteChar();
+        
+        // Show heap start and size
+        LDA #'S'
+        Serial.WriteChar();
+        LDA #'T'
+        Serial.WriteChar();
+        LDA #'A'
+        Serial.WriteChar();
+        LDA #'R'
+        Serial.WriteChar();
+        LDA #'T'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        LDA ZP.HEAPSTART
+        Serial.HexOut();
+        LDA #'0'
+        Serial.WriteChar();
+        LDA #'0'
+        Serial.WriteChar();
+        LDA #' '
+        Serial.WriteChar();
+        
+        LDA #'S'
+        Serial.WriteChar();
+        LDA #'I'
+        Serial.WriteChar();
+        LDA #'Z'
+        Serial.WriteChar();
+        LDA #'E'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        LDA ZP.HEAPSIZE
+        Serial.HexOut();
+        LDA #'0'
+        Serial.WriteChar();
+        LDA #'0'
+        Serial.WriteChar();
+        LDA #'\n'
+        Serial.WriteChar();
+        
+        // Walk the free list
+        LDA ZP.FREELISTL
+        STA ZP.IDXL
+        LDA ZP.FREELISTH
+        STA ZP.IDXH
+        
+        LDX #0  // Block counter
+        
+        loop
+        {
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z) { break; }  // End of free list
+            
+            // Print block number
+            LDA #'['
+            Serial.WriteChar();
+            TXA
+            Serial.HexOut();
+            LDA #']'
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            
+            // Print block address
+            LDA ZP.IDXH
+            Serial.HexOut();
+            LDA ZP.IDXL
+            Serial.HexOut();
+            LDA #':'
+            Serial.WriteChar();
+            
+            // Print block size
+            LDY #0
+            LDA [ZP.IDX], Y
+            Serial.HexOut();
+            INY
+            LDA [ZP.IDX], Y
+            Serial.HexOut();
+            LDA #' '
+            Serial.WriteChar();
+            
+            // Print next pointer
+            LDA #'>'
+            Serial.WriteChar();
+            INY
+            LDA [ZP.IDX], Y
+            PHA
+            INY
+            LDA [ZP.IDX], Y
+            Serial.HexOut();
+            PLA
+            Serial.HexOut();
+            LDA #'\n'
+            Serial.WriteChar();
+            
+            // Move to next block
+            DEY
+            LDA [ZP.IDX], Y
+            PHA
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDXH
+            PLA
+            STA ZP.IDXL
+            
+            INX
+            CPX #8  // Limit to 8 blocks to avoid infinite loops
+            if (Z) 
+            { 
+                LDA #'.'
+                Serial.WriteChar();
+                LDA #'.'
+                Serial.WriteChar();
+                LDA #'.'
+                Serial.WriteChar();
+                LDA #'\n'
+                Serial.WriteChar();
+                break; 
+            }
+        }
+        
+        LDA #'\n'
+        Serial.WriteChar();
+        
+        PLY  // Restore Y
+        PLX  // Restore X
+        PLA  // Restore A
+    }
 #endif
 
 }

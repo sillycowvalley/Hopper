@@ -62,11 +62,11 @@ unit Tokenizer
     }
     
     // Tokenizer state
-    const byte inputPos    = ZP.D0;   // Current position in input buffer
-    const byte inputLen    = ZP.D1;   // Length of current input
-    const byte tokenStart  = ZP.D2;   // Start of current token
-    const byte tokenLen    = ZP.D3;   // Length of current token
-    const byte currentTok  = ZP.D4;   // Current token value
+    const byte inputPos    = ZP.TokenizerPos;     // Current position in input buffer
+    const byte inputLen    = ZP.BasicInputLength; // Length of current input
+    const byte tokenStart  = ZP.TokenStart;       // Start of current token
+    const byte tokenLen    = ZP.TokenLen;         // Length of current token
+    const byte currentTok  = ZP.CurrentToken;     // Current token value
     
     // Keyword table - each entry is: length, token_value, characters...
     // Stored as: len1, tok1, char1, char2, ..., len2, tok2, char1, char2, ...

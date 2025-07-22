@@ -4,8 +4,6 @@ unit FunctionManager
     uses "/Source/Runtime/6502/Memory"
     uses "/Source/Runtime/6502/Stacks"
     
-    friend Interpreter, BytecodeCompiler, BytecodeExecutor, HopperBASIC;
-    
     // Function memory map:
     //   0000 heap allocator size
     //   xxxx functionID (0 = never assigned)
@@ -24,21 +22,23 @@ unit FunctionManager
     const uint ReplFunctionID = 0xFFFF;
     const uint MainFunctionID = 0x0001;
     
-    // ZeroPage variables for function management
-    const byte funcListHead     = ZP.BasicInputLength;  // 0x30: Head of function linked list
-    const byte funcListHeadHi   = 0x31;                 // High byte
-    const byte funcCount        = 0x32;                 // Number of functions (0-255)
-    const byte currentFunc      = 0x33;                 // Current function being compiled
-    const byte currentFuncHi    = 0x34;                 // High byte
+    // ZeroPage variables for function management - using proper ZP constants
+    const byte funcListHead     = ZP.FuncListHead;    // Head of function linked list
+    const byte funcListHeadHi   = ZP.FuncListHeadHi;  // High byte
+    const byte funcCount        = ZP.FuncCount;       // Number of functions (0-255)
+    const byte currentFunc      = ZP.CurrentFunc;     // Current function being compiled
+    const byte currentFuncHi    = ZP.CurrentFuncHi;   // High byte
     
-    // Compilation state
-    const byte compileState     = 0x35;  // 0=none, 1=compiling, 2=complete
-    const byte tempBlock        = 0x36;  // Temporary compilation block (16-bit)
-    const byte tempBlockHi      = 0x37;
-    const byte writePos         = 0x38;  // Current write position in temp block
-    const byte writePosHi       = 0x39;
-    const byte bytecodeSize     = 0x3A;  // Size of compiled bytecode
-    const byte bytecodeSizeHi   = 0x3B;
+    // Compilation state - using proper ZP constants
+    const byte compileState     = ZP.CompileState;    // 0=none, 1=compiling, 2=complete
+    const byte tempBlock        = ZP.FSOURCEADDRESSL; // Temporary compilation block (16-bit)
+    const byte tempBlockHi      = ZP.FSOURCEADDRESSH; // High byte
+    const byte writePos         = ZP.WritePosLo;      // Current write position in temp block
+    const byte writePosHi       = ZP.WritePosHi;      // High byte
+    
+    // Need additional ZP slots for bytecode size - using available HOPPER_BASIC area
+    const byte bytecodeSize     = ZP.LCOUNTL;         // Size of compiled bytecode
+    const byte bytecodeSizeHi   = ZP.LCOUNTH;         // High byte
     
     Initialize()
     {
@@ -52,7 +52,7 @@ unit FunctionManager
     }
     
     // Allocate a temporary block for compilation (512 bytes should be plenty)
-    startREPLCompilation()
+    StartREPLCompilation()
     {
         LDA #0
         STA ZP.ACCL
@@ -78,11 +78,8 @@ unit FunctionManager
     }
     
     // Emit a single byte to the compilation buffer
-    emitByte()
+    EmitByte()
     {
-        // Value to emit should be in A
-        LDY writePos
-        
         // Calculate address: tempBlock + writePos
         CLC
         LDA tempBlock
@@ -115,7 +112,7 @@ unit FunctionManager
     }
     
     // Emit a 16-bit word (little-endian)
-    emitWord()
+    EmitWord()
     {
         // Word to emit should be in TOP
         Stacks.PopTop();
@@ -127,7 +124,7 @@ unit FunctionManager
         STA ZP.NEXTH
         LDA #Types.Byte
         Stacks.PushNext();
-        emitByte();
+        EmitByte();
         
         // Emit high byte
         LDA ZP.TOPH
@@ -136,69 +133,11 @@ unit FunctionManager
         STA ZP.NEXTH
         LDA #Types.Byte
         Stacks.PushNext();
-        emitByte();
+        EmitByte();
     }
-    
-#ifdef DEBUG    
-    // Debug function to dump bytecode in hex format
-    dumpREPLBytecode()
-    {
-        // Print header
-        LDA #'\n'
-        Serial.WriteChar();
-        LDA #'B'
-        Serial.WriteChar();
-        LDA #'Y'
-        Serial.WriteChar();
-        LDA #'T'
-        Serial.WriteChar();
-        LDA #'E'
-        Serial.WriteChar();
-        LDA #' '
-        Serial.WriteChar();
-        
-        // Get bytecode start address
-        CLC
-        LDA currentFunc
-        ADC #fhHeaderSize
-        STA ZP.IDXL
-        LDA currentFuncHi
-        ADC #0
-        STA ZP.IDXH
-        
-        // Print each byte with address
-        LDX #0
-        loop
-        {
-            CPX bytecodeSize
-            if (Z) { break; }
-            
-            // Print address
-            TXA
-            Serial.HexOut();
-            LDA #':'
-            Serial.WriteChar();
-            
-            // Print byte
-            LDY #0
-            LDA [ZP.IDX], Y
-            Serial.HexOut();
-            LDA #' '
-            Serial.WriteChar();
-            
-            // Next byte
-            INC ZP.IDXL
-            if (Z) { INC ZP.IDXH }
-            INX
-        }
-        
-        LDA #'\n'
-        Serial.WriteChar();
-    }
-#endif    
     
     // Create the REPL function and copy bytecode from temp buffer
-    finishREPLCompilation()
+    FinishREPLCompilation()
     {
         // Calculate total size needed: header + bytecode
         CLC
@@ -259,11 +198,7 @@ unit FunctionManager
         STA [ZP.IDX], Y
         
         // Copy bytecode from temp buffer to final location
-        // Source: tempBlock
-        LDA tempBlock
-        STA ZP.FSOURCEADDRESSL
-        LDA tempBlockHi
-        STA ZP.FSOURCEADDRESSH
+        // Source is already in FSOURCEADDRESS (tempBlock)
         
         // Destination: currentFunc + header size
         CLC
@@ -274,20 +209,18 @@ unit FunctionManager
         ADC #0
         STA ZP.FDESTINATIONADDRESSH
         
-        // Copy size
-        LDA bytecodeSize
-        STA ZP.LCOUNTL
-        LDA bytecodeSizeHi
-        STA ZP.LCOUNTH
+        // Copy size already in LCOUNT (bytecodeSize);
+        
+        // CopyBytes() munts FSOURCEADDRESS, set IDX for Memory.Free() below
+        LDA ZP.FSOURCEADDRESSL
+        STA ZP.IDXL
+        LDA ZP.FSOURCEADDRESSH
+        STA ZP.IDXH
         
         // Perform the copy
         Utilities.CopyBytes();
         
-        // Free the temp buffer
-        LDA tempBlock
-        STA ZP.IDXL
-        LDA tempBlockHi
-        STA ZP.IDXH
+        // Free the temp buffer (address is still in FSOURCEADDRESS)
         Memory.Free();
         
         // Mark compilation complete
@@ -296,7 +229,7 @@ unit FunctionManager
     }
     
     // Clean up the REPL function after execution
-    cleanupREPLFunction()
+    CleanupREPLFunction()
     {
         LDA compileState
         CMP #2
@@ -316,7 +249,7 @@ unit FunctionManager
     }
     
     // Get pointer to bytecode for execution
-    getREPLBytecode()
+    GetREPLBytecode()
     {
         // Returns bytecode address in IDX
         CLC

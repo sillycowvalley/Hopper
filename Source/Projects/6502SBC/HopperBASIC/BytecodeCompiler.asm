@@ -5,13 +5,11 @@ unit BytecodeCompiler
     uses "Tokenizer"
     uses "FunctionManager"
     
-    friend Interpreter;
-    
-    // Bytecode opcodes (start simple)
+    // Bytecode opcodes (updated names)
     enum Opcodes 
     {
         OpNop        = 0x00,
-        OpLoadConst  = 0x01,  // + 2 bytes: 16-bit value
+        OpPushInt    = 0x01,  // + 2 bytes: 16-bit value (was OpLoadConst)
         OpPrintInt   = 0x02,  // Print TOS as integer
         OpPrintStr   = 0x03,  // Print TOS as string literal
         OpPrintNL    = 0x04,  // Print newline
@@ -35,19 +33,19 @@ unit BytecodeCompiler
                 // Get the number value
                 Tokenizer.getTokenNumber();  // Returns value in ZP.TOP
                 
-                // Emit OpLoadConst followed by the 16-bit value
-                LDA #Opcodes.OpLoadConst
+                // Emit OpPushInt followed by the 16-bit value
+                LDA #Opcodes.OpPushInt
                 STA ZP.NEXTL
                 LDA #0
                 STA ZP.NEXTH
                 LDA #Types.Byte
                 Stacks.PushNext();
-                FunctionManager.emitByte();
+                FunctionManager.EmitByte();
                 
                 // Emit the constant value (16-bit)
                 LDA #Types.UInt
                 Stacks.PushTop();
-                FunctionManager.emitWord();
+                FunctionManager.EmitWord();
                 
                 // Emit OpPrintInt
                 LDA #Opcodes.OpPrintInt
@@ -56,7 +54,7 @@ unit BytecodeCompiler
                 STA ZP.NEXTH
                 LDA #Types.Byte
                 Stacks.PushNext();
-                FunctionManager.emitByte();
+                FunctionManager.EmitByte();
             }
             case Tokens.STRING:
             {
@@ -68,7 +66,7 @@ unit BytecodeCompiler
                 STA ZP.NEXTH
                 LDA #Types.Byte
                 Stacks.PushNext();
-                FunctionManager.emitByte();
+                FunctionManager.EmitByte();
             }
             default:
             {
@@ -91,15 +89,15 @@ unit BytecodeCompiler
             STA ZP.NEXTH
             LDA #Types.Byte
             Stacks.PushNext();
-            FunctionManager.emitByte();
+            FunctionManager.EmitByte();
         }
     }
     
     // Compile a complete REPL statement
-    compileREPLStatement()
+    CompileREPLStatement()
     {
         // Start compilation
-        FunctionManager.startREPLCompilation();
+        FunctionManager.StartREPLCompilation();
         
         // Get first token (should be statement type)
         Tokenizer.nextToken();
@@ -120,7 +118,7 @@ unit BytecodeCompiler
                 STA ZP.NEXTH
                 LDA #Types.Byte
                 Stacks.PushNext();
-                FunctionManager.emitByte();
+                FunctionManager.EmitByte();
             }
             default:
             {
@@ -131,7 +129,7 @@ unit BytecodeCompiler
                 STA ZP.NEXTH
                 LDA #Types.Byte
                 Stacks.PushNext();
-                FunctionManager.emitByte();
+                FunctionManager.EmitByte();
             }
         }
         
@@ -142,11 +140,9 @@ unit BytecodeCompiler
         STA ZP.NEXTH
         LDA #Types.Byte
         Stacks.PushNext();
-        FunctionManager.emitByte();
+        FunctionManager.EmitByte();
         
         // Finish compilation
-        FunctionManager.finishREPLCompilation();
-        
-        //FunctionManager.dumpREPLBytecode();
+        FunctionManager.FinishREPLCompilation();
     }
 }

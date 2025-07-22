@@ -7,24 +7,16 @@ unit BytecodeExecutor
     uses "FunctionManager" 
     uses "Tools"
     
-    friend Interpreter, HopperBASIC;
-    
-    // Execution state
-    const byte programCounter    = 0x3C;  // Program counter (16-bit) within bytecode
-    const byte programCounterHi  = 0x3D;
-    const byte bytecodeBase      = 0x3E;  // Base address of current bytecode (16-bit)
-    const byte bytecodeBaseHi    = 0x3F;
-    
     // Fetch next byte from bytecode and advance PC
     fetchByte()
     {
-        // Calculate address: bytecode + PC
+        // Calculate address: CODESTART + PC
         CLC
-        LDA bytecodeBase
-        ADC programCounter
+        LDA ZP.CODESTARTL
+        ADC ZP.PCL
         STA ZP.IDXL
-        LDA bytecodeBaseHi
-        ADC programCounterHi
+        LDA ZP.CODESTARTH
+        ADC ZP.PCH
         STA ZP.IDXH
         
         // Fetch the byte
@@ -32,10 +24,10 @@ unit BytecodeExecutor
         LDA [ZP.IDX], Y
         
         // Advance PC
-        INC programCounter
+        INC ZP.PCL
         if (Z)
         {
-            INC programCounterHi
+            INC ZP.PCH
         }
         
         // Return value in A
@@ -61,7 +53,7 @@ unit BytecodeExecutor
         // Do nothing
     }
     
-    handleLoadConst()
+    handlePushInt()
     {
         // Load 16-bit constant onto value stack
         fetchWord();  // Gets constant into TOP
@@ -106,33 +98,32 @@ unit BytecodeExecutor
     {
         // Return to interpreter - set PC to special value
         LDA #0xFF
-        STA programCounter
-        STA programCounterHi
+        STA ZP.PCL
+        STA ZP.PCH
     }
     
-    // Main execution loop
-    executeREPLFunction()
+    // Main execution loop - Public method
+    ExecuteREPLFunction()
     {
-        // Get bytecode address
-        FunctionManager.getREPLBytecode();  // Returns address in IDX
+        // Get bytecode address and set up execution state
+        FunctionManager.GetREPLBytecode();  // Returns address in IDX
         
-        // Initialize execution state
         LDA ZP.IDXL
-        STA bytecodeBase
+        STA ZP.CODESTARTL
         LDA ZP.IDXH
-        STA bytecodeBaseHi
-        STZ programCounter
-        STZ programCounterHi
+        STA ZP.CODESTARTH
+        STZ ZP.PCL
+        STZ ZP.PCH
         
         // Main interpreter loop
         loop
         {
             // Check for halt condition
-            LDA programCounter
+            LDA ZP.PCL
             CMP #0xFF
             if (Z)
             {
-                LDA programCounterHi
+                LDA ZP.PCH
                 CMP #0xFF
                 if (Z) { break; }  // Halted
             }
@@ -148,9 +139,9 @@ unit BytecodeExecutor
                 {
                     handleNop();
                 }
-                case Opcodes.OpLoadConst:
+                case Opcodes.OpPushInt:
                 {
-                    handleLoadConst();
+                    handlePushInt();
                 }
                 case Opcodes.OpPrintInt:
                 {

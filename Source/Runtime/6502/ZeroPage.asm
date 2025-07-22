@@ -94,7 +94,7 @@ unit ZP
     const byte InB                  = W5;
     const byte LastAck              = W6; // LackAck == 0 means ACK, 1 means NACK
     
-    // used by Time APIs Millis and Delay
+    // used by 'T'ime APIs Millis and Delay
     const byte TICK0                = 0x28;
     const byte TICK1                = 0x29;
     const byte TICK2                = 0x2A;
@@ -111,26 +111,40 @@ unit ZP
 
 #if defined(HOPPER_BASIC)                    // 0x30..0x4F available for Hopper BASIC:
 
-    // Current length of input in input buffer (at 0x0900)
-    const byte BasicInputLength     = 0x30;  
+    #if defined(HOPPER_BASIC)                    // 0x30..0x4F dedicated to Hopper BASIC:
+
+    // === TOKENIZER WORKSPACE (0x30-0x37) ===
+    const byte BasicInputLength     = 0x30;  // Length of current input in buffer (at 0x0900)
+    const byte TokenizerPos         = 0x31;  // Current position in input during tokenization
+    const byte TokenStart           = 0x32;  // Start position of current token
+    const byte TokenLen             = 0x33;  // Length of current token
+    const byte CurrentToken         = 0x34;  // Current token value being processed
+    const byte ExprValueLo          = 0x35;  // Expression evaluation result low byte
+    const byte ExprValueHi          = 0x36;  // Expression evaluation result high byte
+    const byte ExprType             = 0x37;  // Type of current expression result
+
+    // === FUNCTION MANAGER (0x38-0x3F) ===
+    const byte FuncListHead         = 0x38;  // Head of function linked list (low byte)
+    const byte FuncListHeadHi       = 0x39;  // Head of function linked list (high byte)
+    const byte FuncCount            = 0x3A;  // Number of functions (0-255)
+    const byte CurrentFunc          = 0x3B;  // Current function being compiled (low byte)
+    const byte CurrentFuncHi        = 0x3C;  // Current function being compiled (high byte)
+    const byte CompileState         = 0x3D;  // Compilation state (0=none, 1=compiling, 2=complete)
+    const byte WritePosLo           = 0x3E;  // Current write position in temp block (low)
+    const byte WritePosHi           = 0x3F;  // Current write position in temp block (high)
+
+    // === BYTECODE COMPILER (0x40-0x47) ===
+    const byte TempBlockLo          = 0x40;  // Temporary compilation block pointer (low)
+    const byte TempBlockHi          = 0x41;  // Temporary compilation block pointer (high)
+    const byte BytecodeSizeLo       = 0x42;  // Size of compiled bytecode (low byte)
+    const byte BytecodeSizeHi       = 0x43;  // Size of compiled bytecode (high byte)
+    const byte FileNamePtr          = 0x44;  // Pointer to filename in EEPROM operations
+    const byte FileNameLen          = 0x45;  // Length of filename
     
-    // Tokenizer workspace
-    const byte TokenizePtr          = 0x31;  // Current position in input during tokenization
-    const byte TokenPtr             = 0x32;  // Current position in token output
-    const byte CurrentToken         = 0x33;  // Current token being processed
-    
-    const byte TokenBufferPtr       = 0x34;  // Current position in token buffer
-    const byte TokenBufferEnd       = 0x35;  // End of current token buffer
-    
-    // File operations (SAVE/LOAD to EEPROM)
-    const byte FileNamePtr          = 0x36;  // Pointer to filename in input buffer
-    const byte FileNameLength       = 0x37;  // Length of filename
-    
-    // Expression evaluation workspace
-    const byte ExprValueLo          = 0x38;  // Current expression result low byte
-    const byte ExprValueHi          = 0x39;  // Current expression result high byte  
-    const byte ExprType             = 0x3A;  // Type of current expression result
-    
+    // === AVAILABLE FOR EXPANSION (0x46-0x4F) ===
+    // 10 bytes available for additional BASIC-specific variables
+
+#endif
     
 #endif
 

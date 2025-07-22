@@ -4,7 +4,7 @@ program HopperBASIC
     #define ROM_8K
     
     #define HOPPER_BASIC
-    //#define DEBUG
+    #define DEBUG
     
     //#define SMALLCODE // optimize for size: no jump tables for switches
     

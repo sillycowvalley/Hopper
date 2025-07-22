@@ -268,20 +268,18 @@ unit Interpreter
         // Do nothing (for empty lines)
     }
     
-    // Handle PRINT statement by compiling and executing it
     cmdPrint()
     {
-        // Reset tokenizer position to start of line so compiler can reparse
+        DumpHeap();
+        
         STZ Tokenizer.inputPos
+        BytecodeCompiler.CompileREPLStatement();
         
-        // Compile the statement into bytecode
-        BytecodeCompiler.compileREPLStatement();
+        BytecodeExecutor.ExecuteREPLFunction();
         
-        // Execute the compiled bytecode
-        BytecodeExecutor.executeREPLFunction();
+        FunctionManager.CleanupREPLFunction();
         
-        // Clean up the temporary function
-        FunctionManager.cleanupREPLFunction();
+        DumpHeap();
     }
     
     // Process command line - all commands are immediate in structured BASIC
