@@ -22,33 +22,15 @@ unit FunctionManager
     const uint ReplFunctionID = 0xFFFF;
     const uint MainFunctionID = 0x0001;
     
-    // ZeroPage variables for function management - using proper ZP constants
-    const byte funcListHead     = ZP.FuncListHead;    // Head of function linked list
-    const byte funcListHeadHi   = ZP.FuncListHeadHi;  // High byte
-    const byte funcCount        = ZP.FuncCount;       // Number of functions (0-255)
-    const byte currentFunc      = ZP.CurrentFunc;     // Current function being compiled
-    const byte currentFuncHi    = ZP.CurrentFuncHi;   // High byte
-    
-    // Compilation state - using proper ZP constants
-    const byte compileState     = ZP.CompileState;    // 0=none, 1=compiling, 2=complete
-    const byte tempBlock        = ZP.FSOURCEADDRESSL; // Temporary compilation block (16-bit)
-    const byte tempBlockHi      = ZP.FSOURCEADDRESSH; // High byte
-    const byte writePos         = ZP.WritePosLo;      // Current write position in temp block
-    const byte writePosHi       = ZP.WritePosHi;      // High byte
-    
-    // Need additional ZP slots for bytecode size - using available HOPPER_BASIC area
-    const byte bytecodeSize     = ZP.LCOUNTL;         // Size of compiled bytecode
-    const byte bytecodeSizeHi   = ZP.LCOUNTH;         // High byte
-    
     Initialize()
     {
         // Clear function list
-        STZ funcListHead
-        STZ funcListHeadHi
-        STZ funcCount
-        STZ compileState
-        STZ currentFunc
-        STZ currentFuncHi
+        STZ ZP.FuncListHead
+        STZ ZP.FuncListHeadHi
+        STZ ZP.FuncCount
+        STZ ZP.CompileState
+        STZ ZP.CurrentFunc
+        STZ ZP.CurrentFuncHi
     }
     
     // Allocate a temporary block for compilation (512 bytes should be plenty)
@@ -63,18 +45,18 @@ unit FunctionManager
         
         // Store temp block address
         LDA ZP.IDXL
-        STA tempBlock
+        STA ZP.TempBlockLo
         LDA ZP.IDXH
-        STA tempBlockHi
+        STA ZP.TempBlockHi
         
         // Initialize write position
-        STZ writePos
-        STZ writePosHi
-        STZ bytecodeSize
-        STZ bytecodeSizeHi
+        STZ ZP.WritePosLo
+        STZ ZP.WritePosHi
+        STZ ZP.BytecodeSizeLo
+        STZ ZP.BytecodeSizeHi
         
         LDA #1
-        STA compileState  // Now compiling
+        STA ZP.CompileState  // Now compiling
     }
     
     // Emit a single byte to the compilation buffer
@@ -82,11 +64,11 @@ unit FunctionManager
     {
         // Calculate address: tempBlock + writePos
         CLC
-        LDA tempBlock
-        ADC writePos
+        LDA ZP.TempBlockLo
+        ADC ZP.WritePosLo
         STA ZP.IDXL
-        LDA tempBlockHi
-        ADC writePosHi
+        LDA ZP.TempBlockHi
+        ADC ZP.WritePosHi
         STA ZP.IDXH
         
         // Get the byte to emit (should be on stack)  
@@ -97,17 +79,17 @@ unit FunctionManager
         STA [ZP.IDX], Y
         
         // Increment write position
-        INC writePos
+        INC ZP.WritePosLo
         if (Z)
         {
-            INC writePosHi
+            INC ZP.WritePosHi
         }
         
         // Increment bytecode size
-        INC bytecodeSize
+        INC ZP.BytecodeSizeLo
         if (Z)
         {
-            INC bytecodeSizeHi
+            INC ZP.BytecodeSizeHi
         }
     }
     
@@ -142,10 +124,10 @@ unit FunctionManager
         // Calculate total size needed: header + bytecode
         CLC
         LDA #fhHeaderSize
-        ADC bytecodeSize
+        ADC ZP.BytecodeSizeLo
         STA ZP.ACCL
         LDA #0
-        ADC bytecodeSizeHi
+        ADC ZP.BytecodeSizeHi
         STA ZP.ACCH
         
         // Allocate final function block
@@ -153,9 +135,9 @@ unit FunctionManager
         
         // Store as current function
         LDA ZP.IDXL
-        STA currentFunc
+        STA ZP.CurrentFunc
         LDA ZP.IDXH
-        STA currentFuncHi
+        STA ZP.CurrentFuncHi
         
         // Set up function header
         LDY #fhID
@@ -191,25 +173,33 @@ unit FunctionManager
         
         // Set code size
         LDY #fhCodeSize
-        LDA bytecodeSize
+        LDA ZP.BytecodeSizeLo
         STA [ZP.IDX], Y
         INY
-        LDA bytecodeSizeHi
+        LDA ZP.BytecodeSizeHi
         STA [ZP.IDX], Y
         
         // Copy bytecode from temp buffer to final location
-        // Source is already in FSOURCEADDRESS (tempBlock)
+        // Source is tempBlock
+        LDA ZP.TempBlockLo
+        STA ZP.FSOURCEADDRESSL
+        LDA ZP.TempBlockHi
+        STA ZP.FSOURCEADDRESSH
         
         // Destination: currentFunc + header size
         CLC
-        LDA currentFunc
+        LDA ZP.CurrentFunc
         ADC #fhHeaderSize
         STA ZP.FDESTINATIONADDRESSL
-        LDA currentFuncHi
+        LDA ZP.CurrentFuncHi
         ADC #0
         STA ZP.FDESTINATIONADDRESSH
         
-        // Copy size already in LCOUNT (bytecodeSize);
+        // Copy size
+        LDA ZP.BytecodeSizeLo
+        STA ZP.LCOUNTL
+        LDA ZP.BytecodeSizeHi
+        STA ZP.LCOUNTH
         
         // CopyBytes() munts FSOURCEADDRESS, set IDX for Memory.Free() below
         LDA ZP.FSOURCEADDRESSL
@@ -225,27 +215,27 @@ unit FunctionManager
         
         // Mark compilation complete
         LDA #2
-        STA compileState
+        STA ZP.CompileState
     }
     
     // Clean up the REPL function after execution
     CleanupREPLFunction()
     {
-        LDA compileState
+        LDA ZP.CompileState
         CMP #2
         if (NZ) { return; }  // Not compiled
         
         // Free the REPL function
-        LDA currentFunc
+        LDA ZP.CurrentFunc
         STA ZP.IDXL
-        LDA currentFuncHi
+        LDA ZP.CurrentFuncHi
         STA ZP.IDXH
         Memory.Free();
         
         // Reset state
-        STZ compileState
-        STZ currentFunc
-        STZ currentFuncHi
+        STZ ZP.CompileState
+        STZ ZP.CurrentFunc
+        STZ ZP.CurrentFuncHi
     }
     
     // Get pointer to bytecode for execution
@@ -253,10 +243,10 @@ unit FunctionManager
     {
         // Returns bytecode address in IDX
         CLC
-        LDA currentFunc
+        LDA ZP.CurrentFunc
         ADC #fhHeaderSize
         STA ZP.IDXL
-        LDA currentFuncHi
+        LDA ZP.CurrentFuncHi
         ADC #0
         STA ZP.IDXH
     }

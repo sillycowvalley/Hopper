@@ -25,7 +25,7 @@ unit BytecodeCompiler
         Tokenizer.nextToken();
         
         // For now, only support integer literals and string literals
-        LDA Tokenizer.currentTok
+        LDA ZP.CurrentToken
         switch (A)
         {
             case Tokens.NUMBER:
@@ -79,7 +79,7 @@ unit BytecodeCompiler
         Tokenizer.nextToken();
         
         // If we hit EOL, add a newline print
-        LDA Tokenizer.currentTok
+        LDA ZP.CurrentToken
         CMP #Tokens.EOL
         if (Z)
         {
@@ -102,7 +102,7 @@ unit BytecodeCompiler
         // Get first token (should be statement type)
         Tokenizer.nextToken();
         
-        LDA Tokenizer.currentTok
+        LDA ZP.CurrentToken
         switch (A)
         {
             case Tokens.PRINT:

@@ -272,7 +272,7 @@ unit Interpreter
     {
         DumpHeap();
         
-        STZ Tokenizer.inputPos
+        STZ ZP.TokenizerPos
         BytecodeCompiler.CompileREPLStatement();
         
         BytecodeExecutor.ExecuteREPLFunction();
@@ -286,13 +286,13 @@ unit Interpreter
     processCommand()
     {
         // Reset tokenizer to start of input
-        STZ Tokenizer.inputPos
+        STZ ZP.TokenizerPos
         
         Tokenizer.nextToken();  // Get first token
         
         // Note: for this switch to optimize to a small jump table, the constant values of the
         //       case labels should be contiguous (no gaps)
-        LDX Tokenizer.currentTok
+        LDX ZP.CurrentToken
         switch (X)
         {
             case Tokens.BYE:
@@ -374,13 +374,13 @@ unit Interpreter
             printReady();
             
             Tokenizer.ReadLine();  // Read input line
-            LDA Tokenizer.inputLen
+            LDA ZP.BasicInputLength
             if (Z) { continue; }   // Empty line
             
             processCommand();
             
             // Check if BYE was entered
-            LDA Tokenizer.currentTok
+            LDA ZP.CurrentToken
             CMP #Tokens.BYE
             if (Z) { break; }      // Exit the interpreter loop
         }

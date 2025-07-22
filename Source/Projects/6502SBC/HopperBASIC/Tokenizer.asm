@@ -61,13 +61,6 @@ unit Tokenizer
         COMMA    = 0x99,
     }
     
-    // Tokenizer state
-    const byte inputPos    = ZP.TokenizerPos;     // Current position in input buffer
-    const byte inputLen    = ZP.BasicInputLength; // Length of current input
-    const byte tokenStart  = ZP.TokenStart;       // Start of current token
-    const byte tokenLen    = ZP.TokenLen;         // Length of current token
-    const byte currentTok  = ZP.CurrentToken;     // Current token value
-    
     // Keyword table - each entry is: length, token_value, characters...
     // Stored as: len1, tok1, char1, char2, ..., len2, tok2, char1, char2, ...
     const byte[] keywords = {
@@ -119,21 +112,21 @@ unit Tokenizer
     {
         loop
         {
-            LDX inputPos
-            CPX inputLen
+            LDX ZP.TokenizerPos
+            CPX ZP.BasicInputLength
             if (Z) { break; }  // End of input
             
             LDA Address.BasicInputBuffer, X
             CMP #' '
             if (Z)
             {
-                INC inputPos
+                INC ZP.TokenizerPos
                 continue;
             }
             CMP #'\t'
             if (Z)
             {
-                INC inputPos
+                INC ZP.TokenizerPos
                 continue;
             }
             break;  // Non-whitespace found
@@ -188,7 +181,7 @@ unit Tokenizer
             LDA keywords, Y    // Get length of this keyword
             if (Z) { break; }  // End of table
             
-            CMP tokenLen
+            CMP ZP.TokenLen
             if (Z)  // Length matches
             {
                 // Compare characters
@@ -200,7 +193,7 @@ unit Tokenizer
                 LDX #0  // Character index
                 loop
                 {
-                    CPX tokenLen
+                    CPX ZP.TokenLen
                     if (Z)  // All characters matched
                     {
                         LDA ZP.ACCL  // Return token value
@@ -214,7 +207,7 @@ unit Tokenizer
                     PHY              // Save Y (keywords table index)
                     TXA              // Character index
                     CLC
-                    ADC tokenStart // Add token start position  
+                    ADC ZP.TokenStart // Add token start position  
                     TAY              // Use Y for INPUT_BUFFER index
                     LDA Address.BasicInputBuffer, Y
                     makeUppercase();
@@ -235,7 +228,7 @@ unit Tokenizer
                 // Skip to end of this keyword: advance Y by (tokenLen - X - 1) positions
                 loop
                 {
-                    CPX tokenLen       // Have we reached the end?
+                    CPX ZP.TokenLen       // Have we reached the end?
                     if (Z) { break; }     // Yes, Y now points to start of next keyword
                     INX                   // Move to next character position
                     INY                   // Advance Y to next character
@@ -267,18 +260,18 @@ unit Tokenizer
     {
         skipWhitespace();
         
-        LDX inputPos
-        CPX inputLen
+        LDX ZP.TokenizerPos
+        CPX ZP.BasicInputLength
         if (Z)
         {
             LDA #Tokens.EOL
-            STA currentTok
+            STA ZP.CurrentToken
             return;
         }
         
         // Mark start of token
-        STX tokenStart
-        STZ tokenLen
+        STX ZP.TokenStart
+        STZ ZP.TokenLen
         
         LDA Address.BasicInputBuffer, X
         
@@ -287,101 +280,101 @@ unit Tokenizer
         {
             case '=':
             {
-                INC inputPos
+                INC ZP.TokenizerPos
                 LDA #Tokens.EQUALS
-                STA currentTok
+                STA ZP.CurrentToken
                 return;
             }
             case '+':
             {
-                INC inputPos
+                INC ZP.TokenizerPos
                 LDA #Tokens.PLUS
-                STA currentTok
+                STA ZP.CurrentToken
                 return;
             }
             case '-':
             {
-                INC inputPos
+                INC ZP.TokenizerPos
                 LDA #Tokens.MINUS
-                STA currentTok
+                STA ZP.CurrentToken
                 return;
             }
             case '*':
             {
-                INC inputPos
+                INC ZP.TokenizerPos
                 LDA #Tokens.MULTIPLY
-                STA currentTok
+                STA ZP.CurrentToken
                 return;
             }
             case '/':
             {
-                INC inputPos
+                INC ZP.TokenizerPos
                 LDA #Tokens.DIVIDE
-                STA currentTok
+                STA ZP.CurrentToken
                 return;
             }
             case '(':
             {
-                INC inputPos
+                INC ZP.TokenizerPos
                 LDA #Tokens.LPAREN
-                STA currentTok
+                STA ZP.CurrentToken
                 return;
             }
             case ')':
             {
-                INC inputPos
+                INC ZP.TokenizerPos
                 LDA #Tokens.RPAREN
-                STA currentTok
+                STA ZP.CurrentToken
                 return;
             }
             case '[':
             {
-                INC inputPos
+                INC ZP.TokenizerPos
                 LDA #Tokens.LBRACKET
-                STA currentTok
+                STA ZP.CurrentToken
                 return;
             }
             case ']':
             {
-                INC inputPos
+                INC ZP.TokenizerPos
                 LDA #Tokens.RBRACKET
-                STA currentTok
+                STA ZP.CurrentToken
                 return;
             }
             case ',':
             {
-                INC inputPos
+                INC ZP.TokenizerPos
                 LDA #Tokens.COMMA
-                STA currentTok
+                STA ZP.CurrentToken
                 return;
             }
             case '"':
             {
                 // String literal - scan to closing quote
-                INC inputPos  // Skip opening quote
-                STX tokenStart  // Don't include quote in token
+                INC ZP.TokenizerPos  // Skip opening quote
+                STX ZP.TokenStart  // Don't include quote in token
                 
                 loop
                 {
-                    LDX inputPos
-                    CPX inputLen
+                    LDX ZP.TokenizerPos
+                    CPX ZP.BasicInputLength
                     if (Z)  // End of input without closing quote
                     {
                         LDA #Tokens.STRING
-                        STA currentTok
+                        STA ZP.CurrentToken
                         return;
                     }
                     
                     LDA Address.BasicInputBuffer, X
-                    INC inputPos
+                    INC ZP.TokenizerPos
                     CMP #'"'
                     if (Z)  // Found closing quote
                     {
                         LDA #Tokens.STRING
-                        STA currentTok
+                        STA ZP.CurrentToken
                         return;
                     }
-                    INC tokenLen
+                    INC ZP.TokenLen
                 }
             }
         }
@@ -396,11 +389,11 @@ unit Tokenizer
                 // Scan number
                 loop
                 {
-                    INC inputPos
-                    INC tokenLen
+                    INC ZP.TokenizerPos
+                    INC ZP.TokenLen
                     
-                    LDX inputPos
-                    CPX inputLen
+                    LDX ZP.TokenizerPos
+                    CPX ZP.BasicInputLength
                     if (Z) { break; }
                     
                     LDA Address.BasicInputBuffer, X
@@ -417,7 +410,7 @@ unit Tokenizer
                 }
                 
                 LDA #Tokens.NUMBER
-                STA currentTok
+                STA ZP.CurrentToken
                 return;
             }
         }
@@ -426,16 +419,16 @@ unit Tokenizer
         // Scan alphanumeric characters
         loop
         {
-            LDX inputPos
-            CPX inputLen
+            LDX ZP.TokenizerPos
+            CPX ZP.BasicInputLength
             if (Z) { break; }
             
             LDA Address.BasicInputBuffer, X
             isAlphaNum();
             if (Z) { break; }  // Not alphanumeric
             
-            INC inputPos
-            INC tokenLen
+            INC ZP.TokenizerPos
+            INC ZP.TokenLen
         }
         
         // Check if it's a keyword
@@ -443,13 +436,13 @@ unit Tokenizer
         
         if (NZ)  // Found keyword
         {
-            STA currentTok
+            STA ZP.CurrentToken
             return;
         }
         
         // It's an identifier
         LDA #Tokens.IDENTIFIER
-        STA currentTok
+        STA ZP.CurrentToken
     }
     
     // Read a line of input into buffer
@@ -522,19 +515,19 @@ unit Tokenizer
             break;  // End of input
         }
         
-        STX inputLen
-        STZ inputPos
+        STX ZP.BasicInputLength
+        STZ ZP.TokenizerPos
         TXA  // Return length
     }
     
     // Initialize tokenizer
     Initialize()
     {
-        STZ inputPos
-        STZ inputLen
-        STZ tokenStart
-        STZ tokenLen
-        STZ currentTok
+        STZ ZP.TokenizerPos
+        STZ ZP.BasicInputLength
+        STZ ZP.TokenStart
+        STZ ZP.TokenLen
+        STZ ZP.CurrentToken
     }
     
     // Get current token as number (assumes NUMBER)
@@ -544,12 +537,12 @@ unit Tokenizer
         STZ ZP.TOPL
         STZ ZP.TOPH
         
-        LDX tokenStart
+        LDX ZP.TokenStart
         LDY #0
         
         loop
         {
-            CPY tokenLen
+            CPY ZP.TokenLen
             if (Z) { break; }
             
             // TOP = TOP * 10
