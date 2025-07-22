@@ -22,13 +22,13 @@ unit Interpreter
     
     // Program storage - simple linked list for now
     // Each program line: [length] [line_number_lo] [line_number_hi] [tokenized_data...]
-    const byte pgmListHead = ZP.PgmListHead;      // was ZP.F5 - now uses dedicated space
-    const byte pgmListHeadHi = ZP.PgmListHeadHi;   // was ZP.F6 - now uses dedicated space
+    const byte pgmListHead = ZP.PgmListHead;      // Now uses dedicated space
+    const byte pgmListHeadHi = ZP.PgmListHeadHi;
     
     // Variable storage - simple array for now  
     // Each variable: [name_length] [name_chars...] [type] [value_lo] [value_hi]
-    const byte varListHead = ZP.VarListHead;      // was ZP.F7 - now uses dedicated space
-    const byte varListHeadHi = ZP.VarListHeadHi;   // was ZP.F8 - now uses dedicated space
+    const byte varListHead = ZP.VarListHead;      // Now uses dedicated space
+    const byte varListHeadHi = ZP.VarListHeadHi;
     
     // Messages
     const string msgReady = "READY\n> ";
@@ -172,7 +172,7 @@ unit Interpreter
         STA ZP.IDXH
         Tools.PrintString();
         
-        STZ ZP.U0  // Clear flag for variables
+        STZ ZP.BasicFlags  // Clear flag for variables (was U0)
         GlobalManager.ListGlobals();
     }
     
@@ -205,7 +205,7 @@ unit Interpreter
         Tools.PrintString();
         
         LDA #1  // Set constants flag
-        STA ZP.U0
+        STA ZP.BasicFlags
         GlobalManager.ListGlobals();
     }
     
@@ -295,10 +295,10 @@ unit Interpreter
     {
         // Look ahead to see if this is an assignment
         LDX ZP.TokenizerPos
-        STX ZP.U1  // Save current position
+        STX ZP.BasicTempPos  // Save current position (was U1)
         Tokenizer.nextToken();  // Get next token
         LDA ZP.CurrentToken
-        LDX ZP.U1  // Restore position
+        LDX ZP.BasicTempPos  // Restore position
         STX ZP.TokenizerPos
         
         CMP #Tokens.EQUALS
@@ -311,6 +311,7 @@ unit Interpreter
             printSyntaxError();  // Unknown identifier
         }
     }
+    
     // Process command line - all commands are immediate in structured BASIC
     processCommand()
     {
@@ -362,7 +363,7 @@ unit Interpreter
             }
             case Tokens.VARS:
             {
-                STZ ZP.U0  // Clear flag for variables
+                STZ ZP.BasicFlags  // Clear flag for variables
                 cmdVars();
             }
             case Tokens.CONSTS:

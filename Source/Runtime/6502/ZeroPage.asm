@@ -145,8 +145,13 @@ unit ZP
     const byte VarListHead          = 0x48;  // Variable linked list head (low byte)
     const byte VarListHeadHi        = 0x49;  // Variable linked list head (high byte)
     
-    // === AVAILABLE FOR EXPANSION (0x4A-0x4F) ===
-    // 6 bytes available for additional BASIC-specific variables
+    // BASIC workspace variables
+    const byte BasicWorkspace0      = 0x4A;  // Variable name buffer 1
+    const byte BasicWorkspace1      = 0x4B;  // Variable name buffer 2
+    const byte BasicWorkspace2      = 0x4C;  // Function manager workspace
+    const byte BasicFlags           = 0x4D;  // General flags
+    const byte BasicTempPos         = 0x4E;  // Temporary position storage
+    const byte BasicWorkspace3      = 0x4F;  // Additional workspace
     
 #endif
 

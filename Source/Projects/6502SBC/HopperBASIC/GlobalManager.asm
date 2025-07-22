@@ -131,14 +131,14 @@ unit GlobalManager
                 }
                 
                 LDY #ghName
-                STX ZP.U0  // Save X
+                STX ZP.BasicWorkspace3  // Save X (use dedicated BASIC workspace)
                 TXA
                 CLC
                 ADC ghName
                 TAY
                 
                 LDA [ZP.IDX], Y
-                LDX ZP.U0  // Restore X
+                LDX ZP.BasicWorkspace3  // Restore X
                 CMP [ZP.FSOURCEADDRESS], X
                 if (NZ)
                 {
@@ -253,7 +253,7 @@ unit GlobalManager
     }
     
     // Debug function to list globals (variables and constants)
-    // If ZP.U0 = 0, show variables; if ZP.U0 = 1, show constants
+    // If ZP.BasicFlags = 0, show variables; if ZP.BasicFlags = 1, show constants
     ListGlobals()
     {
         // Use GlobalManager's actual list
@@ -267,11 +267,7 @@ unit GlobalManager
         ORA ZP.IDXH
         if (Z)
         {
-            LDA #'D'
-            STA ZP.IDXL
-            LDA #'E'
-            STA ZP.IDXH  // Point to "DEBUG: NO GLOBALS\n" (would need const string)
-            // For now, just return
+            // For now, just return (no globals)
             return;
         }
         
@@ -289,7 +285,7 @@ unit GlobalManager
             LDA ZP.FTYPE
             GlobalManager.IsConstant();  // Returns C=1 if constant
             
-            LDA ZP.U0  // What are we showing? 0=vars, 1=consts
+            LDA ZP.BasicFlags  // What are we showing? 0=vars, 1=consts (was U0)
             if (Z)     // Showing variables
             {
                 if (C) // This is a constant, skip it
@@ -356,7 +352,7 @@ unit GlobalManager
             Serial.WriteChar();
             
             // Print value (already in TOP from GetGlobalValue)
-            PrintDecimalWord();
+            Tools.PrintDecimalWord();
             
             // Print newline
             LDA #'\n'
@@ -397,7 +393,7 @@ unit GlobalManager
                 STA ZP.IDXL
                 LDA ZP.IDYH
                 STA ZP.IDXH
-                PrintString();
+                Tools.PrintString();
                 // Restore IDX
                 PLA
                 STA ZP.IDXH
@@ -419,7 +415,7 @@ unit GlobalManager
                 STA ZP.IDXL
                 LDA ZP.IDYH
                 STA ZP.IDXH
-                PrintString();
+                Tools.PrintString();
                 PLA
                 STA ZP.IDXH
                 PLA
@@ -439,7 +435,7 @@ unit GlobalManager
                 STA ZP.IDXL
                 LDA ZP.IDYH
                 STA ZP.IDXH
-                PrintString();
+                Tools.PrintString();
                 PLA
                 STA ZP.IDXH
                 PLA
@@ -459,7 +455,7 @@ unit GlobalManager
                 STA ZP.IDXL
                 LDA ZP.IDYH
                 STA ZP.IDXH
-                PrintString();
+                Tools.PrintString();
                 PLA
                 STA ZP.IDXH
                 PLA
@@ -479,7 +475,7 @@ unit GlobalManager
                 STA ZP.IDXL
                 LDA ZP.IDYH
                 STA ZP.IDXH
-                PrintString();
+                Tools.PrintString();
                 PLA
                 STA ZP.IDXH
                 PLA
@@ -499,7 +495,7 @@ unit GlobalManager
                 STA ZP.IDXL
                 LDA ZP.IDYH
                 STA ZP.IDXH
-                PrintString();
+                Tools.PrintString();
                 PLA
                 STA ZP.IDXH
                 PLA

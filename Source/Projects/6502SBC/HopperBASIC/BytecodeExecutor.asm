@@ -52,7 +52,7 @@ unit BytecodeExecutor
     fetchVariableName()
     {
         // Read 8-byte variable name into workspace
-        LDA #ZP.W4
+        LDA #ZP.BasicWorkspace2  // Use dedicated BASIC workspace instead of W4
         STA ZP.FSOURCEADDRESSL
         LDA #0
         STA ZP.FSOURCEADDRESSH

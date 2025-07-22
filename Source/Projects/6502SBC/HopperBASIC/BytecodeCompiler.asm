@@ -83,7 +83,7 @@ unit BytecodeCompiler
     compileAssignmentStatement()
     {
         // Get variable name and look it up
-        LDA #ZP.W0  // Use W0 to avoid workspace collision
+        LDA #ZP.BasicWorkspace0  // Use dedicated BASIC workspace instead of W0
         STA ZP.FSOURCEADDRESSL
         LDA #0
         STA ZP.FSOURCEADDRESSH
@@ -184,7 +184,7 @@ unit BytecodeCompiler
         {
             case Tokens.IntType:
             {
-                LDA ZP.U0  // isConst flag
+                LDA ZP.BasicFlags  // isConst flag (was U0)
                 if (Z)
                 {
                     LDA #GlobalManager.GlobalTypes.VarInt
@@ -197,7 +197,7 @@ unit BytecodeCompiler
             }
             case Tokens.WordType:
             {
-                LDA ZP.U0  // isConst flag
+                LDA ZP.BasicFlags  // isConst flag
                 if (Z)
                 {
                     LDA #GlobalManager.GlobalTypes.VarWord
@@ -210,7 +210,7 @@ unit BytecodeCompiler
             }
             case Tokens.ByteType:
             {
-                LDA ZP.U0  // isConst flag
+                LDA ZP.BasicFlags  // isConst flag
                 if (Z)
                 {
                     LDA #GlobalManager.GlobalTypes.VarByte
@@ -223,7 +223,7 @@ unit BytecodeCompiler
             }
             case Tokens.BitType:
             {
-                LDA ZP.U0  // isConst flag
+                LDA ZP.BasicFlags  // isConst flag
                 if (Z)
                 {
                     LDA #GlobalManager.GlobalTypes.VarBit
@@ -236,7 +236,7 @@ unit BytecodeCompiler
             }
             case Tokens.StringType:
             {
-                LDA ZP.U0  // isConst flag
+                LDA ZP.BasicFlags  // isConst flag
                 if (Z)
                 {
                     LDA #GlobalManager.GlobalTypes.VarString
@@ -279,7 +279,7 @@ unit BytecodeCompiler
         }
         
         // Set up name buffer
-        LDA #ZP.W0
+        LDA #ZP.BasicWorkspace0
         STA ZP.FSOURCEADDRESSL
         LDA #0
         STA ZP.FSOURCEADDRESSH
@@ -323,7 +323,7 @@ unit BytecodeCompiler
         else
         {
             // Check if this is a constant without initializer (error)
-            LDA ZP.U0  // isConst flag
+            LDA ZP.BasicFlags  // isConst flag
             if (NZ)
             {
                 // Constants MUST have initializer
@@ -380,7 +380,7 @@ unit BytecodeCompiler
             case Tokens.IDENTIFIER:
             {
                 // Variable reference - look it up and load its value
-                LDA #ZP.W2  // Use different workspace than assignment
+                LDA #ZP.BasicWorkspace1  // Use different workspace than assignment (was W2)
                 STA ZP.FSOURCEADDRESSL
                 LDA #0
                 STA ZP.FSOURCEADDRESSH
@@ -504,7 +504,7 @@ unit BytecodeCompiler
             {
                 // Constant declaration: CONST TYPE NAME = expression
                 LDA #1  // Set isConst flag
-                STA ZP.U0
+                STA ZP.BasicFlags
                 Tokenizer.nextToken();  // Move to type token
                 compileVariableDeclaration();
             }
@@ -515,7 +515,7 @@ unit BytecodeCompiler
             case Tokens.StringType:
             {
                 // Variable declaration: TYPE NAME [= expression]
-                STZ ZP.U0  // Clear isConst flag
+                STZ ZP.BasicFlags  // Clear isConst flag
                 compileVariableDeclaration();
             }
             case Tokens.EOL:

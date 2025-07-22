@@ -171,6 +171,7 @@ unit AsmPoints
                 }
                 case OpCode.STY_nn:
                 case OpCode.STY_z:
+                case OpCode.CPY_n:
                 case OpCode.PHY:
                 {
                     walkStats |= WalkStats.ReadY;
