@@ -9,7 +9,7 @@ unit BytecodeExecutor
     uses "GlobalManager"
     
     // Fetch next byte from bytecode and advance PC
-    fetchByte()
+    executorFetchByte()
     {
         // Calculate address: CODESTART + PC
         CLC
@@ -35,39 +35,46 @@ unit BytecodeExecutor
     }
     
     // Fetch next 16-bit word (little-endian) and advance PC
-    fetchWord()
+    executorFetchWord()
     {
-        // Fetch low byte
-        fetchByte();
+        // Fetch LSB
+        executorFetchByte();
         STA ZP.TOPL
         
-        // Fetch high byte  
-        fetchByte();
+        // Fetch MSB
+        executorFetchByte();
         STA ZP.TOPH
         
         // Return value in TOP
     }
     
-    // Fetch variable name (8 bytes) from bytecode
-    fetchVariableName()
+    // Fix the loop counter bug in executorFetchVariableName()
+    executorFetchVariableName()
     {
-        // Read 8-byte variable name into workspace
-        LDA #ZP.BasicWorkspace2  // Use dedicated BASIC workspace instead of W4
-        STA ZP.FSOURCEADDRESSL
-        LDA #0
-        STA ZP.FSOURCEADDRESSH
+        // Fetch name length
+        executorFetchByte();
+        STA ZP.TokenLen
         
-        LDY #0
+        // We need to set up TokenStart to point to a buffer with the name
+        // For now, we'll use BasicWorkspace0 as a temporary buffer
+        LDA #ZP.BasicWorkspace0
+        STA ZP.TokenStart
+        
+        // Fetch each character into the workspace
+        LDX #0  // X is the loop counter, not Y!
         loop
         {
-            CPY #8
+            CPX ZP.TokenLen  // Compare X (loop counter) with TokenLen
             if (Z) { break; }
             
-            fetchByte();
-            STA [ZP.FSOURCEADDRESS], Y
-            INY
+            executorFetchByte();
+            STA ZP.BasicWorkspace0, X
+            INX  // Increment X (loop counter)
         }
-    }
+        
+        // Now TokenStart points to the name and TokenLen has the length
+        // This allows GlobalManager.FindGlobal() to work with the fetched name
+    } 
     
     // Opcode handlers
     handleNop()
@@ -78,7 +85,20 @@ unit BytecodeExecutor
     handlePushInt()
     {
         // Load 16-bit constant onto value stack
-        fetchWord();  // Gets constant into TOP
+        executorFetchWord();  // Gets constant into TOP
+        
+        // DEBUG: Show what we're pushing
+        LDA #'P'
+        Serial.WriteChar();
+        LDA #'U'
+        Serial.WriteChar();
+        LDA #'S'
+        Serial.WriteChar();
+        LDA #'H'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        DumpVariables();
 
         LDA #Types.UInt
         Stacks.PushTop();
@@ -113,9 +133,9 @@ unit BytecodeExecutor
     handleLoadVar()
     {
         // Fetch variable name from bytecode
-        fetchVariableName();
+        executorFetchVariableName();
         
-        // Look up the variable
+        // Look up the variable using the fetched name
         GlobalManager.FindGlobal();
         if (Z)  // Found
         {
@@ -159,10 +179,23 @@ unit BytecodeExecutor
     
     handleStoreVar()
     {
-        // Fetch variable name from bytecode
-        fetchVariableName();
+        // DEBUG: Show what we're about to store
+        LDA #'S'
+        Serial.WriteChar();
+        LDA #'T'
+        Serial.WriteChar();
+        LDA #'O'
+        Serial.WriteChar();
+        LDA #'R'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        DumpVariables();
         
-        // Look up the variable
+        // Fetch variable name from bytecode
+        executorFetchVariableName();
+        
+        // Look up the variable using the fetched name
         GlobalManager.FindGlobal();
         if (Z)  // Found
         {
@@ -175,13 +208,29 @@ unit BytecodeExecutor
                 // Pop value from stack
                 Stacks.PopTop();
                 
-                // Store the new value (IDX still points to the global)
-                LDY # GlobalManager.ghValue
-                LDA ZP.TOPL
-                STA [ZP.IDX], Y
-                INY
-                LDA ZP.TOPH
-                STA [ZP.IDX], Y
+                // Store the new value
+                // We need to find the variable again since GetGlobalValue munted IDX
+                GlobalManager.FindGlobal();  // Find the variable again
+                if (Z)  // Should always find it since we found it before
+                {
+                    // Find the value offset (skip past null-terminated name)
+                    LDY #GlobalManager.ghName
+                    loop
+                    {
+                        LDA [ZP.IDX], Y
+                        INY
+                        if (Z) { break; }  // Found null terminator
+                    }
+                    // Y now points to type byte, skip to value
+                    INY
+                    
+                    // Store the new value
+                    LDA ZP.TOPL
+                    STA [ZP.IDX], Y
+                    INY
+                    LDA ZP.TOPH
+                    STA [ZP.IDX], Y
+                }
             }
             else
             {
@@ -238,7 +287,7 @@ unit BytecodeExecutor
             }
             
             // Fetch next opcode
-            fetchByte();  // Returns opcode in A
+            executorFetchByte();  // Returns opcode in A
             
             // Dispatch to handler (simple switch for now)
             // Later we can optimize this to a jump table

@@ -146,12 +146,9 @@ unit ZP
     const byte VarListHeadHi        = 0x49;  // Variable linked list head (high byte)
     
     // BASIC workspace variables
-    const byte BasicWorkspace0      = 0x4A;  // Variable name buffer 1
-    const byte BasicWorkspace1      = 0x4B;  // Variable name buffer 2
-    const byte BasicWorkspace2      = 0x4C;  // Function manager workspace
-    const byte BasicFlags           = 0x4D;  // General flags
-    const byte LastErrorL           = 0x4E;  // Low byte of error message pointer
-    const byte LastErrorH           = 0x4F;  // High byte of error message pointer
+    const byte BasicFlags           = 0x4A;  // General flags
+    const byte LastErrorL           = 0x4B;  // Low byte of error message pointer
+    const byte LastErrorH           = 0x4C;  // High byte of error message pointer
     
 #endif
 
@@ -223,6 +220,15 @@ unit ZP
     const byte D4                   = 0x74;
     const byte D5                   = 0x75;
     const byte D6                   = 0x76;
+  #else
+    const byte BasicWorkspace0      = 0x70;
+    const byte BasicWorkspace1      = 0x71;
+    const byte BasicWorkspace2      = 0x72;
+    const byte BasicWorkspace3      = 0x73;
+    const byte BasicWorkspace4      = 0x74;
+    const byte BasicWorkspace5      = 0x75;
+    const byte BasicWorkspace6      = 0x76;
+    const byte BasicWorkspace7      = 0x77;
   #endif
 #else
     const byte F0                   = 0x05;

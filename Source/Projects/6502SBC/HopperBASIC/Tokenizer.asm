@@ -597,44 +597,4 @@ unit Tokenizer
             INY
         }
     }
-    
-    // Get current token as padded name (8 bytes, space-padded)
-    // Output: 8-byte padded name at ZP.FSOURCEADDRESS, actual length in ZP.FLENGTHL
-    getTokenName()
-    {
-        // Store actual length
-        LDA ZP.TokenLen
-        STA ZP.FLENGTHL
-        STZ ZP.FLENGTHH
-        
-        // Copy characters and pad to 8 bytes
-        LDX ZP.TokenStart
-        LDY #0
-        
-        // Copy actual characters
-        loop
-        {
-            CPY ZP.TokenLen
-            if (Z) { break; }  // Copied all characters
-            CPY #8
-            if (Z) { break; }  // Name buffer full
-            
-            LDA Address.BasicInputBuffer, X
-            makeUppercase();
-            STA [ZP.FSOURCEADDRESS], Y
-            INX
-            INY
-        }
-        
-        // Pad with \0 to 8 bytes total
-        loop
-        {
-            CPY # 8
-            if (Z) { break; }
-            
-            LDA # 0
-            STA [ZP.FSOURCEADDRESS], Y
-            INY
-        }
-    }
 }

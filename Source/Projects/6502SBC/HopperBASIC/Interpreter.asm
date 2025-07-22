@@ -79,7 +79,7 @@ unit Interpreter
     {
         // Returns Z=1 if no error, Z=0 if error was printed
         CheckError();
-        if (Z) { return; }  // No error
+        if (NZ) { return; }  // No error
         
         // Print the error message
         LDA ZP.LastErrorL

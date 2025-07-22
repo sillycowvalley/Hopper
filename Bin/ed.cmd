@@ -1,2 +1,2 @@
-cd /source/runtime
-edit r6502
+cd /source/projects/6502sbc/hopperbasic
+edit basic

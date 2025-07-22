@@ -30,16 +30,13 @@ unit GlobalManager
         ConstString = 0x85,
     }
     
-    // Global memory layout (same for vars and constants):
-    //   [nextPtr:2] [name:8] [type:1] [value:2] [flags:1]
-    //   Total: 14 bytes per entry
+    // Global memory layout (variable length):
+    //   [nextPtr:2] [name:null-terminated] [type:1] [value:2] [flags:1]
+    //   Total: 6 + strlen(name) bytes per entry
     
     const uint ghNext = 0;      // 2 bytes: next global pointer
-    const uint ghName = 2;      // 8 bytes: name (space-padded)
-    const uint ghType = 10;     // 1 byte: type (with constant flag)
-    const uint ghValue = 11;    // 2 bytes: value
-    const uint ghFlags = 13;    // 1 byte: flags (future use)
-    const uint ghSize = 14;     // Total size
+    const uint ghName = 2;      // Variable bytes: null-terminated name
+    // ghType, ghValue, ghFlags offsets are dynamic based on name length
     
     Initialize()
     {
@@ -71,13 +68,22 @@ unit GlobalManager
             ORA ZP.IDXH
             if (Z) { break; }
             
+            // Find the type offset (skip past null-terminated name)
+            LDY #ghName
+            loop
+            {
+                LDA [ZP.IDX], Y
+                INY
+                if (Z) { break; }  // Found null terminator
+            }
+            // Y now points to type byte
+            
             // Check if this is a variable (not constant)
-            LDY #ghType
             LDA [ZP.IDX], Y
             IsConstant();  // Returns C=1 if constant
             if (NC)  // It's a variable, reset to default (0)
             {
-                LDY #ghValue
+                INY  // Move to value
                 LDA #0
                 STA [ZP.IDX], Y
                 INY
@@ -96,8 +102,8 @@ unit GlobalManager
         }
     }
     
-    // Find global by name
-    // Input: 8-byte space-padded name at ZP.FSOURCEADDRESS
+    // Find global by token name
+    // Input: Token name from tokenizer (ZP.TokenStart, ZP.TokenLen)
     // Output: Address in ZP.IDX if found, Z=1 if found, Z=0 if not found
     FindGlobal()
     {
@@ -119,33 +125,78 @@ unit GlobalManager
                 break;
             }
             
-            // Compare names (8 bytes exactly)
-            LDX #0
-            LDY #ghName
+            // Compare token with stored name
+            PHX                         // Save X
+            LDX ZP.TokenStart          // Token position in input buffer
+            LDY #ghName                // Stored name position
+            
+            // Compare character by character
             loop
             {
-                CPX #8
-                if (Z)
+                // Get token character (or 0 if past end)
+                TXA
+                SEC
+                SBC ZP.TokenStart      // A = current position - start = offset
+                CMP ZP.TokenLen
+                if (C)                 // offset >= TokenLen
                 {
-                    // All 8 bytes matched
-                    LDA #1  // Found
-                    CMP #1  // Set Z=1
+                    LDA #0             // Past end of token, use null
+                }
+                else
+                {
+                    LDA Address.BasicInputBuffer, X
+                    // Convert to uppercase
+                    CMP #'a'
+                    if (C)             // >= 'a'
+                    {
+                        CMP #('z'+1)
+                        if (NC)        // <= 'z'
+                        {
+                            SBC #('a'-'A'-1)  // Convert to uppercase
+                        }
+                    }
+                }
+                PHA                    // Save token char
+                
+                // Get stored character
+                LDA [ZP.IDX], Y
+                
+                // Compare characters
+                PLA                    // Get token char back
+                CMP [ZP.IDX], Y
+                if (NZ) { break; }     // Characters don't match
+                
+                // Check if both are null (end of both strings)
+                if (Z)                 // Both chars are null - match found!
+                {
+                    PLX                // Restore X
+                    LDA #1
+                    CMP #1             // Set Z=1
                     return;
                 }
                 
-                // Compare byte X
-                LDA [ZP.IDX], Y         // Get stored character
-                CMP [ZP.FSOURCEADDRESS], X  // Compare with search character
-                if (NZ)
-                {
-                    break;  // Mismatch - try next variable
-                }
-                
-                INX
-                INY
+                INX                    // Next token character
+                INY                    // Next stored character
             }
             
-            // Move to next global
+            PLX                        // Restore X
+            
+            // No match - skip to next global
+            // First skip past the variable-length name
+            LDY #ghName
+            loop
+            {
+                LDA [ZP.IDX], Y
+                INY
+                if (Z) { break; }      // Found null terminator
+            }
+            // Skip past type (1), value (2), flags (1) = 4 more bytes
+            INY
+            INY
+            INY
+            INY
+            
+            // Actually, easier to just follow the next pointer
             LDY #ghNext
             LDA [ZP.IDX], Y
             PHA
@@ -156,30 +207,24 @@ unit GlobalManager
             STA ZP.IDXL
         }
         
-        DumpHeap();
-        
         // Not found
         LDA #0
         CMP #1  // Set Z=0
     }
     
     // Add or update global (with automatic redefinition)
-    // Input: 8-byte space-padded name at ZP.FSOURCEADDRESS
+    // Input: Token name from tokenizer (ZP.TokenStart, ZP.TokenLen)
     //        Type in ZP.FTYPE, Value in ZP.TOP
     AddGlobal()
     {
-        // First check if it already exists and remove it
-        FindGlobal();
-        if (Z)  // Found existing - remove it first
-        {
-            // TODO: Remove existing global
-            // For now, we'll allow duplicates
-        }
-        
-        // Allocate memory for new global
-        LDA #ghSize
+        // Calculate total size: 2 (next) + TokenLen + 1 (null) + 1 (type) + 2 (value) + 1 (flags)
+        CLC
+        LDA #7
+        ADC ZP.TokenLen
         STA ZP.ACCL
         STZ ZP.ACCH
+        
+        // Allocate memory for new global
         Memory.Allocate();  // Returns address in IDX
         
         // Link at head of list
@@ -196,35 +241,59 @@ unit GlobalManager
         LDA ZP.IDXH
         STA ZP.VarListHeadHi
         
-        // Copy name (8 bytes from FSOURCEADDRESS)
+        // Copy name (TokenLen bytes + null terminator)
         LDY #ghName
-        LDX #0
+        PHX                            // Save X
+        LDX ZP.TokenStart
+        LDA ZP.TokenLen
+        STA ZP.ACCL                    // Save original TokenLen
+        
         loop
         {
-            CPX #8
-            if (Z) { break; }
+            LDA ZP.TokenLen
+            if (Z) { break; }          // Copied all characters
             
-            LDA [ZP.FSOURCEADDRESS], X
+            LDA Address.BasicInputBuffer, X
+            // Convert to uppercase
+            CMP #'a'
+            if (C)                     // >= 'a'
+            {
+                CMP #('z'+1)
+                if (NC)                // <= 'z'
+                {
+                    SBC #('a'-'A'-1)   // Convert to uppercase
+                }
+            }
             STA [ZP.IDX], Y
+            
             INX
             INY
+            DEC ZP.TokenLen            // Count down characters
         }
         
-        // Store type, value, and flags
-        LDY #ghType
+        PLX                            // Restore X
+        
+        // Add null terminator
+        LDA #0
+        STA [ZP.IDX], Y
+        INY
+        
+        // Store type, value, flags
         LDA ZP.FTYPE
         STA [ZP.IDX], Y
-        
-        LDY #ghValue
+        INY
         LDA ZP.TOPL
         STA [ZP.IDX], Y
         INY
         LDA ZP.TOPH
         STA [ZP.IDX], Y
-        
-        LDY #ghFlags
-        LDA #0
+        INY
+        LDA #0  // flags
         STA [ZP.IDX], Y
+        
+        // Restore original TokenLen
+        LDA ZP.ACCL
+        STA ZP.TokenLen
     }
     
     // Get global value
@@ -232,16 +301,31 @@ unit GlobalManager
     // Output: Value in ZP.TOP, Type in ZP.FTYPE
     GetGlobalValue()
     {
-        LDY #ghType
+        // Find the type offset (skip past null-terminated name)
+        LDY #ghName
+        loop
+        {
+            LDA [ZP.IDX], Y
+            if (Z) 
+            { 
+                INY  // Move past null terminator to type byte
+                break; 
+            }
+            INY
+        }
+        // Y now points to type byte
+        
         LDA [ZP.IDX], Y
         STA ZP.FTYPE
         
-        LDY #ghValue
+        INY  // Move to value
         LDA [ZP.IDX], Y
         STA ZP.TOPL
         INY
         LDA [ZP.IDX], Y
         STA ZP.TOPH
+           
+        DumpVariables();
     }
     
     // Debug function to list globals (variables and constants)
@@ -270,14 +354,25 @@ unit GlobalManager
             ORA ZP.IDXH
             if (Z) { break; }
             
+            // Get type and value - but save IDX first
+            LDA ZP.IDXL
+            PHA
+            LDA ZP.IDXH
+            PHA
             // Get type and value
             GlobalManager.GetGlobalValue();  // Returns type in FTYPE, value in TOP
+            
+            // Restore IDX
+            PLA
+            STA ZP.IDXH
+            PLA
+            STA ZP.IDXL
             
             // Check if this matches what we want to show
             LDA ZP.FTYPE
             GlobalManager.IsConstant();  // Returns C=1 if constant
             
-            LDA ZP.BasicFlags  // What are we showing? 0=vars, 1=consts (was U0)
+            LDA ZP.BasicFlags  // What are we showing? 0=vars, 1=consts
             if (Z)     // Showing variables
             {
                 if (C) // This is a constant, skip it
@@ -317,22 +412,15 @@ unit GlobalManager
             LDA #' '
             Serial.WriteChar();
             
-            // Print name (8 chars, strip trailing spaces and nulls)
+            // Print name (null-terminated)
             LDY #GlobalManager.ghName
-            LDX #0
             loop
             {
-                CPX #8
-                if (Z) { break; }
-                
                 LDA [ZP.IDX], Y
                 if (Z) { break; }    // Stop at null terminator
-                CMP #' '
-                if (Z) { break; }    // Stop at first space
                 
                 Serial.WriteChar();
                 INY
-                INX
             }
             
             // Print " = "
