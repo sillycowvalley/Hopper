@@ -173,7 +173,7 @@ unit Interpreter
         Tools.PrintString();
         
         STZ ZP.U0  // Clear flag for variables
-        listGlobals();  // Helper function
+        Tools.ListGlobals();  // Use Tools debug function
     }
     
     // Show constants
@@ -204,112 +204,9 @@ unit Interpreter
         STA ZP.IDXH
         Tools.PrintString();
         
-        LDA #1  // Show constants flag
+        LDA #1  // Set constants flag
         STA ZP.U0
-        listGlobals();  // Helper function
-    }
-    
-    // Helper function to list globals
-    // If ZP.U0 = 0, show variables; if ZP.U0 = 1, show constants
-    listGlobals()
-    {
-        // Walk the global list
-        LDA ZP.VarListHead
-        STA ZP.IDXL
-        LDA ZP.VarListHeadHi
-        STA ZP.IDXH
-        
-        loop
-        {
-            // Check for end of list
-            LDA ZP.IDXL
-            ORA ZP.IDXH
-            if (Z) { break; }
-            
-            // Get type and value
-            GlobalManager.GetGlobalValue();  // Returns type in FTYPE, value in TOP
-            
-            // Check if this matches what we want to show
-            LDA ZP.FTYPE
-            GlobalManager.IsConstant();  // Returns C=1 if constant
-            
-            LDA ZP.U0  // What are we showing? 0=vars, 1=consts
-            if (Z)     // Showing variables
-            {
-                if (C) // This is a constant, skip it
-                {
-                    // Move to next global
-                    LDY #GlobalManager.ghNext
-                    LDA [ZP.IDX], Y
-                    PHA
-                    INY
-                    LDA [ZP.IDX], Y
-                    STA ZP.IDXH
-                    PLA
-                    STA ZP.IDXL
-                    continue;
-                }
-            }
-            else       // Showing constants
-            {
-                if (NC) // This is a variable, skip it
-                {
-                    // Move to next global
-                    LDY #GlobalManager.ghNext
-                    LDA [ZP.IDX], Y
-                    PHA
-                    INY
-                    LDA [ZP.IDX], Y
-                    STA ZP.IDXH
-                    PLA
-                    STA ZP.IDXL
-                    continue;
-                }
-            }
-            
-            // Print the global: NAME = VALUE
-            // Print name (8 chars, strip trailing spaces)
-            LDY #GlobalManager.ghName
-            LDX #0
-            loop
-            {
-                CPX #8
-                if (Z) { break; }
-                
-                LDA [ZP.IDX], Y
-                CMP #' '
-                if (Z) { break; }  // Stop at first space
-                
-                Serial.WriteChar();
-                INY
-                INX
-            }
-            
-            // Print " = "
-            LDA #' '
-            Serial.WriteChar();
-            LDA #'='
-            Serial.WriteChar();
-            LDA #' '
-            Serial.WriteChar();
-            
-            // Print value (already in TOP from GetGlobalValue)
-            Tools.PrintDecimalWord();
-            
-            // Print newline
-            LDA #'\n'
-            Serial.WriteChar();
-            
-            // Move to next global
-            LDY #GlobalManager.ghNext
-            LDA [ZP.IDX], Y
-            PHA
-            INY
-            LDA [ZP.IDX], Y
-            STA ZP.IDXH
-            PLA
-            STA ZP.IDXL
-        }
+        Tools.ListGlobals();  // Use Tools debug function
     }
     
     // Run program

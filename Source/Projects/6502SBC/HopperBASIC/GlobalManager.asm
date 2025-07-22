@@ -5,7 +5,7 @@ unit GlobalManager
     uses "/Source/Runtime/6502/Stacks"
     uses "/Source/Runtime/6502/Utilities"
     
-    friend Interpreter, BytecodeExecutor;
+    friend Interpreter, BytecodeExecutor, Tools;
     
     // Global entry types
     enum GlobalTypes
