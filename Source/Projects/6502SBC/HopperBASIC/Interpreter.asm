@@ -270,7 +270,7 @@ unit Interpreter
     
     cmdPrint()
     {
-        DumpHeap();
+        DumpAllBlocks();
         
         STZ ZP.TokenizerPos
         BytecodeCompiler.CompileREPLStatement();
@@ -279,7 +279,7 @@ unit Interpreter
         
         FunctionManager.CleanupREPLFunction();
         
-        DumpHeap();
+        DumpAllBlocks();
     }
     
     // Process command line - all commands are immediate in structured BASIC

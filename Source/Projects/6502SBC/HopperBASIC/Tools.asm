@@ -515,6 +515,258 @@ unit Tools
         PLX  // Restore X
         PLA  // Restore A
     }
+
+    // Debug function to dump all heap blocks (allocated and free)
+    // Walks through heap sequentially using block size headers
+    DumpAllBlocks()
+    {
+        PHA  // Save A
+        PHX  // Save X  
+        PHY  // Save Y
+        
+        LDA #'\n'
+        Serial.WriteChar();
+        LDA #'='
+        Serial.WriteChar();
+        LDA #'='
+        Serial.WriteChar();
+        LDA #' '
+        Serial.WriteChar();
+        LDA #'A'
+        Serial.WriteChar();
+        LDA #'L'
+        Serial.WriteChar();
+        LDA #'L'
+        Serial.WriteChar();
+        LDA #' '
+        Serial.WriteChar();
+        LDA #'B'
+        Serial.WriteChar();
+        LDA #'L'
+        Serial.WriteChar();
+        LDA #'O'
+        Serial.WriteChar();
+        LDA #'C'
+        Serial.WriteChar();
+        LDA #'K'
+        Serial.WriteChar();
+        LDA #'S'
+        Serial.WriteChar();
+        LDA #' '
+        Serial.WriteChar();
+        LDA #'='
+        Serial.WriteChar();
+        LDA #'='
+        Serial.WriteChar();
+        LDA #'\n'
+        Serial.WriteChar();
+        
+        // Start at heap beginning: ZP.HEAPSTART is the page number
+        LDA ZP.HEAPSTART
+        STA ZP.IDXH
+        LDA #0
+        STA ZP.IDXL
+        
+        LDX #0  // Block counter
+        
+        loop
+        {
+            // Check if we're past the end of heap
+            // Calculate current page: IDX high byte - HEAPSTART
+            LDA ZP.IDXH
+            SEC
+            SBC ZP.HEAPSTART
+            CMP ZP.HEAPSIZE
+            if (C) { break; }  // Past end of heap
+            
+            // Check for zero block size (corrupted heap)
+            LDY #0
+            LDA [ZP.IDX], Y     // Low byte of size
+            STA ZP.M0
+            INY
+            LDA [ZP.IDX], Y     // High byte of size
+            STA ZP.M1
+            ORA ZP.M0           // Check if size is zero
+            if (Z) 
+            { 
+                LDA #'Z'
+                Serial.WriteChar();
+                LDA #'E'
+                Serial.WriteChar();
+                LDA #'R'
+                Serial.WriteChar();
+                LDA #'O'
+                Serial.WriteChar();
+                LDA #'\n'
+                Serial.WriteChar();
+                break; 
+            }
+            
+            // Print block number
+            LDA #'['
+            Serial.WriteChar();
+            TXA
+            Serial.HexOut();
+            LDA #']'
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            
+            // Print block address
+            LDA ZP.IDXH
+            Serial.HexOut();
+            LDA ZP.IDXL
+            Serial.HexOut();
+            LDA #':'
+            Serial.WriteChar();
+            
+            // Print block size (from header)
+            LDA ZP.M1  // High byte
+            Serial.HexOut();
+            LDA ZP.M0  // Low byte
+            Serial.HexOut();
+            
+            // Check if this block is on the free list
+            LDA #' '
+            Serial.WriteChar();
+            LDA #'('
+            Serial.WriteChar();
+            
+            // Save current position
+            LDA ZP.IDXL
+            STA ZP.M2
+            LDA ZP.IDXH
+            STA ZP.M3
+            
+            // Walk free list to see if this block is free
+            LDA ZP.FREELISTL
+            STA ZP.IDYL
+            LDA ZP.FREELISTH
+            STA ZP.IDYH
+            
+            STZ ZP.U0  // Flag: 0 = not found, 1 = found on free list
+            
+            loop
+            {
+                LDA ZP.IDYL
+                ORA ZP.IDYH
+                if (Z) { break; }  // End of free list
+                
+                // Compare addresses - current block vs free list entry
+                LDA ZP.IDYL
+                CMP ZP.M2
+                if (NZ) 
+                { 
+                    // Move to next free block
+                    LDA ZP.IDYL
+                    STA ZP.IDXL
+                    LDA ZP.IDYH
+                    STA ZP.IDXH
+                    
+                    // Get next pointer
+                    LDY #2
+                    LDA [ZP.IDX], Y
+                    STA ZP.IDYL
+                    INY
+                    LDA [ZP.IDX], Y
+                    STA ZP.IDYH
+                    continue; 
+                }
+                
+                LDA ZP.IDYH
+                CMP ZP.M3
+                if (NZ) 
+                { 
+                    // Move to next free block
+                    LDA ZP.IDYL
+                    STA ZP.IDXL
+                    LDA ZP.IDYH
+                    STA ZP.IDXH
+                    
+                    // Get next pointer
+                    LDY #2
+                    LDA [ZP.IDX], Y
+                    STA ZP.IDYL
+                    INY
+                    LDA [ZP.IDX], Y
+                    STA ZP.IDYH
+                    continue; 
+                }
+                
+                // Found it - this block is free
+                LDA #1
+                STA ZP.U0
+                break;
+            }
+            
+            // Print status based on flag
+            LDA ZP.U0
+            if (NZ)
+            {
+                LDA #'F'
+                Serial.WriteChar();
+                LDA #'R'
+                Serial.WriteChar();
+                LDA #'E'
+                Serial.WriteChar();
+                LDA #'E'
+                Serial.WriteChar();
+            }
+            else
+            {
+                LDA #'U'
+                Serial.WriteChar();
+                LDA #'S'
+                Serial.WriteChar();
+                LDA #'E'
+                Serial.WriteChar();
+                LDA #'D'
+                Serial.WriteChar();
+            }
+            
+            LDA #')'
+            Serial.WriteChar();
+            LDA #'\n'
+            Serial.WriteChar();
+            
+            // Restore current position
+            LDA ZP.M2
+            STA ZP.IDXL
+            LDA ZP.M3
+            STA ZP.IDXH
+            
+            // Move to next block: current address + block size
+            CLC
+            LDA ZP.IDXL
+            ADC ZP.M0  // Add low byte of size
+            STA ZP.IDXL
+            LDA ZP.IDXH
+            ADC ZP.M1  // Add high byte of size
+            STA ZP.IDXH
+            
+            INX
+            CPX #8  // Limit to 8 blocks to avoid infinite loops
+            if (Z) 
+            { 
+                LDA #'.'
+                Serial.WriteChar();
+                LDA #'.'
+                Serial.WriteChar();
+                LDA #'.'
+                Serial.WriteChar();
+                LDA #'\n'
+                Serial.WriteChar();
+                break; 
+            }
+        }
+        
+        LDA #'\n'
+        Serial.WriteChar();
+        
+        PLY  // Restore Y
+        PLX  // Restore X
+        PLA  // Restore A
+    }
 #endif
 
 }
