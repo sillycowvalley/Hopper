@@ -19,7 +19,7 @@
 - **BEGIN/END** - main program block
 - **FUNC/ENDFUNC** - function definitions with explicit parameter types
 - **RETURN** - function return
-- **DIM** - variable declaration without initialization
+- **CONST** - constant declarations with required initialization
 
 **I/O & Hardware (4):**
 - **READ** - digital/analog pin input
@@ -33,6 +33,33 @@
 - **Assignment chaining** - A = B = C = 100 (with type compatibility)
 - **PRINT** - debug output
 
+## Interactive Development Model
+
+Hopper BASIC follows the **FORTH interactive development paradigm** - build up your environment incrementally, test each component immediately, then save the complete working session.
+
+## Variable Scoping and Visibility
+
+### Scope Levels (in resolution order):
+1. **Function locals** - True locals, scoped to individual functions only
+2. **Session globals** - Variables, constants, and functions declared at REPL prompt
+
+### Example Structure:
+```basic
+> CONST INT LED_PIN = 13    # Session global constant
+> INT BLINK_COUNT = 0       # Session global variable  
+> 
+> FUNC BLINK()              # Session global function
+>   WRITE LED_PIN, 1        # Can access session globals
+>   BLINK_COUNT = BLINK_COUNT + 1
+> ENDFUNC
+>
+> BEGIN                     # Main program block
+>   FOR I = 1 TO 5          # I is local to BEGIN function
+>     BLINK()               # Calls session global function
+>   NEXT
+> END
+```
+
 ## Language Behavior
 
 ### Case Sensitivity
@@ -41,17 +68,9 @@
 - **String preservation**: Only string literals (content between quotes) preserve mixed case
 - **LIST output**: Always displays keywords and variables in uppercase for consistency
 
-**Examples:**
-```basic
-Input:    print "Hello World"; count
-Stored:   [TOK_PRINT] [STRING:"Hello World"] [VAR:COUNT]  
-LIST:     PRINT "Hello World"; COUNT
-```
-
 ### Variable Handling
 - **Explicit declarations required**: All variables must be declared before use
-- **Type declarations**: INT A = 42, WORD B, BYTE C = 255, BIT FLAG = 0, STRING NAME = "test"
-- **No auto-creation**: Using undeclared variables is a compile error
+- **Automatic redefinition**: Declaring an existing name automatically forgets the previous definition
 - **Assignment vs declaration**: A = 100 (assignment) vs INT A = 100 (declaration)
 - **Type safety**: BIT type required for IF/WHILE conditions, no implicit conversions
 - **Default values**: INT/WORD/BYTE = 0, BIT = 0, STRING = ""
@@ -60,11 +79,17 @@ LIST:     PRINT "Hello World"; COUNT
 ```basic
 INT COUNT = 42    // Declaration with initialization
 COUNT = 100       // Assignment to existing variable
-PRINT OTHER       // ERROR: Variable OTHER not declared
+INT COUNT = 0     // Redeclaration - automatically forgets previous definition
 IF COUNT          // ERROR: COUNT is INT, need BIT for IF condition
 BIT READY = 1
 IF READY          // OK: READY is BIT type
 ```
+
+### Constants
+- **Declaration required**: `CONST INT LED_PIN = 13` (must have initializer)
+- **Session scope**: Declared at REPL prompt, saved with program
+- **Immutable**: Cannot be modified after declaration
+- **Automatic redefinition**: Redeclaring a constant automatically forgets the previous definition
 
 ### Type System
 - **Strict typing**: No implicit conversions between signed/unsigned (INT vs WORD/BYTE)
@@ -74,21 +99,7 @@ IF READY          // OK: READY is BIT type
   - AND/OR: Logical for BIT, bitwise for BYTE/WORD, illegal for INT/STRING
   - Arithmetic: Promotes BYTE→WORD, BYTE→INT, but INT+WORD is type error
   - Comparisons: Return BIT type (A < B returns BIT, not INT)
-- **Constant literals**: Future +INT type that adapts to context
 - **Boolean context**: Only BIT type allowed in IF/WHILE conditions
-
-**Examples:**
-```basic
-BYTE A = 100
-WORD B = 1000
-WORD RESULT = A + B    // OK: A promotes to WORD
-
-INT C = -50
-RESULT = C + B         // ERROR: signed + unsigned mismatch
-
-BIT FLAG = (A < B)     // OK: comparison returns BIT
-IF (A < B)             // OK: comparison result is BIT type
-```
 
 ### Assignment Chaining
 ```basic
@@ -100,19 +111,20 @@ STRING S = "hello"
 WORD E = S = 5              // ERROR - can't assign number to STRING
 ```
 
-## System Commands (10 total)
+## System Commands
 
 ### Program Management
-- **`RUN`** - Execute the current program starting from BEGIN/END block
-- **`LIST`** - Display the current program in memory (tokenized back to source)
-- **`NEW`** - Clear current program from memory, reset all variables
+- **`RUN`** - Execute BEGIN/END block (automatically resets program variables)
+- **`LIST`** - Display current session in memory (constants, variables, functions, main)
+- **`NEW`** - Nuclear option: clear entire session (constants, variables, functions)
 
 ### Variable Management
-- **`CLEAR`** - Clear all global variables to default values (keeps declarations)
+- **`CLEAR`** - Reset all global variables to their declaration defaults
+- **`FORGET name`** - Selectively remove one definition (constant, variable, or function)
 
 ### EEPROM File System  
-- **`SAVE "name"`** - Save current program to EEPROM with given name
-- **`LOAD "name"`** - Load named program from EEPROM into memory
+- **`SAVE "name"`** - Save complete session to EEPROM
+- **`LOAD "name"`** - Load complete session from EEPROM, replacing current environment
 - **`DEL "name"`** - Delete named program from EEPROM
 - **`DIR`** - List all saved programs in EEPROM (shows names + sizes)
 
@@ -120,46 +132,62 @@ WORD E = S = 5              // ERROR - can't assign number to STRING
 - **`VARS`** - Show all global variables and their current values
 - **`FUNCS`** - Show all defined functions and their signatures
 
+## Persistence and Variable Lifecycle
+
+### Session Management:
+- **`SAVE "name"`** saves **entire session**: all constants, variables, functions, and main program
+- **`LOAD "name"`** restores complete session, replacing current environment  
+- **Automatic redefinition** eliminates need for explicit FORGET before redefining
+
+### Variable Lifecycle:
+- **Session globals** - Persist across RUN calls, reset only by CLEAR or redefinition
+- **Function locals** - Reinitialized every function call
+- **Main program locals** - BEGIN/END executes as a function, locals reinitialized every RUN
+
+### Development Workflow:
+**FORTH-style incremental development:**
+1. Declare constants and variables as needed
+2. Define functions one at a time, test immediately  
+3. Refine by simply redeclaring (automatic forget of previous version)
+4. Create main program in BEGIN/END block
+5. `RUN` to test complete program
+6. `SAVE "name"` when satisfied with complete working environment
+
+**Example refinement cycle:**
+```basic
+> FUNC DELAY_MS(INT MS) ... ENDFUNC   # First version
+> DELAY_MS(1000)                      # Test - too slow!
+> FUNC DELAY_MS(INT MS) ... ENDFUNC   # Just redefine - automatic forget!
+> DELAY_MS(1000)                      # Test - perfect!
+> SAVE "myproject"                    # Save complete session
+```
+
 ## Behavioral Distinctions
 
-- **`NEW`** - Nuclear option: clears program, functions, AND variables
-- **`CLEAR`** - Surgical option: only clears global variable values, keeps declarations
-- **`RUN`** - Should automatically CLEAR variables before execution (fresh start)
-
-## Example Usage
-
-```basic
-> INT COUNT = 42
-> STRING NAME = "test"
-> VARS
-COUNT         42
-NAME          "test"
-> CLEAR
-> VARS
-COUNT         0
-NAME          ""
-> RUN
-(program runs with fresh variables)
-```
+- **`NEW`** - Nuclear option: clears constants, variables, functions, and main program
+- **`CLEAR`** - Surgical option: resets global variables to declaration defaults, keeps all definitions
+- **`RUN`** - Executes main program with fresh local variables (globals unchanged unless modified)
+- **`FORGET`** - Optional selective cleanup (automatic redefinition usually sufficient)
 
 ## Syntax Examples
 
-**Variable Declarations:**
+**Variable and Constant Declarations:**
 ```basic
-INT LED_PIN = 13
-WORD SIZE = 8190
-BYTE PINS[8]        // Array declaration (future)
-INT VALUES[10]      // Array declaration (future)
-BIT FLAGS[SIZE]     // Bit array (future)
+CONST INT LED_PIN = 13      // Constant with required initializer
+INT COUNTER = 0             // Variable with initialization
+WORD SIZE                   // Variable with default value (0)
+BIT ENABLED                 // Boolean with default value (0)
+STRING MESSAGE = "Ready"    // String with initialization
 
-// Declaration without initialization
-INT COUNTER         // COUNTER = 0
-BIT ENABLED         // ENABLED = 0
-STRING MESSAGE      // MESSAGE = ""
+// Redefinition (automatic forget)
+INT COUNTER = 42            // Replaces previous COUNTER definition
 ```
 
 **Program Structure:**
 ```basic
+CONST INT BLINK_COUNT = 5
+INT LED_PIN = 13
+
 FUNC BLINK(INT PIN, INT COUNT)    // Explicit parameter types
   FOR I = 1 TO COUNT
     WRITE PIN, 1
@@ -169,9 +197,8 @@ FUNC BLINK(INT PIN, INT COUNT)    // Explicit parameter types
   NEXT
 ENDFUNC
 
-BEGIN
-  INT LED_PIN = 13
-  BLINK(LED_PIN, 5)
+BEGIN                             // Main program
+  BLINK(LED_PIN, BLINK_COUNT)     // Uses session globals
 END
 ```
 
@@ -195,35 +222,34 @@ BYTE DATA = 0b10101010
 BYTE RESULT = MASK AND DATA  // Bitwise AND for BYTE types
 ```
 
-**File Operations:**
-```basic
-SAVE "blink"       // Save to EEPROM
-LOAD "sensor"      // Load from EEPROM  
-DIR                // List all programs
-DEL "old_prog"     // Delete program
-```
-
 ## Implementation Architecture
 
-**Memory Layout:**
-```
-$0000-$00FF: Zero Page (variables, pointers)
-$0100-$01FF: Stack
-$0200-$02FF: 256 byte serial buffer
-$0300-$08FF: Runtime stacks and buffers
-$0900-$xxxx: Dynamic heap (functions, strings)
-$E000-$FFFF: 8K ROM (interpreter)
-```
+### Memory Layout (ROM-based interpreter)
+- **$E000-$FFFF**: ROM-based BASIC interpreter (~8K)
+- **$0900-$xxxx**: Dynamic heap for function bodies, strings, and symbol tables
+- **Runtime stacks**: 6502 hardware stack + Hopper type/value stacks for expression evaluation
+- **Global variables**: Persistent symbol table with stack-based storage
 
-**8K ROM Contents:**
-- **Core Interpreter** (1K) - bytecode execution engine
-- **Tokenizer** (1K) - lexical analysis and parsing
-- **Expression Evaluator** (1K) - type-safe arithmetic and logic
-- **Variable Manager** (1K) - symbol tables and runtime resolution
-- **I/O Routines** (1K) - serial, EEPROM, GPIO, timers
-- **Bytecode Handlers** (1K) - optimized operation implementations
-- **Built-in Functions** (1K) - string operations, utilities  
-- **Constants/Tables** (1K) - lookup tables, vectors
+### Execution Strategy: **Threaded Code Interpreter**
+- **Bytecode as jump table indices**: Each bytecode points to optimized 6502 handler routines
+- **Performance**: Near-native speed with bytecode flexibility
+- **Handler-based**: Each BASIC operation becomes a specialized 6502 routine ending in RTS
+
+### Variable System: **Runtime Resolution with Caching**
+- **Symbol tables**: Name → (type, stack_index) mapping for globals and locals
+- **Late binding**: First reference resolves name to index, subsequent references use cached index
+- **8-character limit**: Space-padded to exactly 8 chars for consistent storage/comparison
+- **Automatic redefinition**: New declarations replace existing definitions with same name
+
+### Function Management Architecture
+- **Function blocks**: Each function stored as allocated memory block with header + bytecode
+- **Two-phase compilation**: Large temporary blocks during compilation, exact-size final block
+- **Runtime resolution**: Function names resolved at first call, then cached
+
+### EEPROM Storage: **Complete Session Persistence**
+- **Environment-level storage**: SAVE/LOAD entire session (constants, variables, functions, main)
+- **Self-contained programs**: No missing dependencies when loaded
+- **Simple file system**: Directory-based with 16 files maximum
 
 ## Performance Optimizations
 
@@ -231,147 +257,22 @@ $E000-$FFFF: 8K ROM (interpreter)
 - **Immediate tokenization** during program entry
 - **Runtime name resolution** with caching for fast subsequent access
 - **Type checking** at compile time prevents runtime errors
-- **Late binding** with first-use resolution and caching
-
-**Optimized Bytecode:**
-- **OP_LOAD_VAR_CACHED** - cached variable access (5 cycles vs 50+)
-- **OP_BIT_TEST** - optimized boolean operations (10 cycles vs 30+)
-- **OP_TYPE_PROMOTE** - efficient BYTE→WORD promotion (8 cycles vs 25+)
-- **OP_CALL_CACHED** - cached function calls (15 cycles vs 100+)
+- **Automatic redefinition** eliminates namespace conflicts
 
 **Performance Targets:**
 - **Variable access**: 5-10 cycles after first resolution
 - **Function calls**: 15-25 cycles for cached calls
 - **Type operations**: Zero-cost for compatible types
-- **Boolean logic**: Optimized for BIT-only conditional expressions
+- **Redefinition**: Fast replacement without explicit cleanup
 
 ## Key Design Principles
 
-1. **Type safety first** - prevent runtime errors through compile-time checking
-2. **Explicit over implicit** - no mysterious auto-creation or type coercion
-3. **Performance through caching** - fast execution after first resolution
-4. **Structured programming** - no line numbers, block-structured syntax
-5. **Hardware-focused** - designed for microcontroller/embedded use
-6. **Consistent behavior** - same rules in REPL and programs
-7. **Forward compatibility** - designed to port back to 6502 assembly
+1. **FORTH-style interactivity** - incremental development with immediate testing
+2. **Type safety first** - prevent runtime errors through compile-time checking
+3. **Explicit over implicit** - no mysterious auto-creation or type coercion
+4. **Complete session persistence** - save entire working environment
+5. **Automatic redefinition** - natural refinement without manual cleanup
+6. **Performance through caching** - fast execution after first resolution
+7. **Structured programming** - block-structured syntax, no line numbers
 
-**Total Keywords: ~35** (minimal for full structured, type-safe language)
-
-This specification delivers **type-safe, structured programming** with **1980s assembly-level performance** using a **high-level BASIC** that fits in **8K ROM** and provides modern language safety features.
-
-# Hopper BASIC Architecture Summary
-
-## Key Design Decisions
-
-### Memory Layout (ROM-based interpreter)
-- **$E000-$FFFF**: ROM-based BASIC interpreter (~8K)
-- **$0900-$xxxx**: Dynamic heap for function bodies, strings, and symbol tables
-- **Function-based program storage**: Each function (including "MAIN") stored as separate allocated blocks
-- **Runtime stacks**: 6502 hardware stack + Hopper type/value stacks for expression evaluation
-- **Global variables**: Persistent symbol table with stack-based storage
-
-### Execution Strategy: **Threaded Code Interpreter**
-- **Bytecode as jump table indices**: Each bytecode points to optimized 6502 handler routines
-- **Performance**: Near-native speed with bytecode flexibility
-- **Simplicity**: Much easier than full compilation, more efficient than traditional interpretation
-- **Handler-based**: Each BASIC operation becomes a specialized 6502 routine ending in RTS
-
-### Variable System: **Runtime Resolution with Caching**
-- **Symbol tables**: Name → (type, stack_index) mapping for globals and locals
-- **Late binding**: First reference resolves name to index, subsequent references use cached index
-- **Stack-based storage**: Global variables at bottom of value stack (GP=0), locals at BP+offset
-- **Type safety**: Compile-time type checking with runtime type tags
-- **No auto-creation**: All variables must be explicitly declared
-
-**Variable Access Implementation:**
-```hopper
-// Runtime resolution with caching
-OP_LOAD_VAR     = 0x09,  // + cache_slot + name_length + name_chars
-OP_STORE_VAR    = 0x0A,  // + cache_slot + name_length + name_chars
-
-// Cached resolution (fast path)
-handleLoadVar() {
-    cacheSlot = fetchByte();
-    if (resolveCache[cacheSlot].resolved) {
-        stackIndex = resolveCache[cacheSlot].value;
-        pushFromStack(stackIndex);
-    } else {
-        // First-time resolution, then cache result
-        name = fetchName();
-        stackIndex = resolveName(name);
-        cacheResult(cacheSlot, stackIndex);
-        pushFromStack(stackIndex);
-    }
-}
-```
-
-### Type System: **Strict with Smart Promotion**
-- **No auto-creation**: Variables must be declared before use
-- **Explicit types**: INT A = 42, WORD B, BIT FLAG = 0
-- **Type safety**: BIT required for IF/WHILE, no implicit signed/unsigned mixing
-- **Smart promotion**: BYTE→WORD, BYTE→INT, but INT+WORD is error
-- **Operator overloading**: AND/OR logical for BIT, bitwise for BYTE/WORD
-
-### Function Management Architecture
-- **Function blocks**: Each function stored as allocated memory block with header + bytecode
-- **Function limit**: 256 functions maximum (cached lookup table)
-- **Two-phase compilation**: Large temporary blocks during compilation, exact-size final block
-- **Runtime resolution**: Function names resolved at first call, then cached
-
-**Function Header Structure:**
-```hopper
-struct FunctionHeader
-{
-    uint functionID;        // 2 bytes (0 = never assigned)
-    char name[14];          // Null-terminated, 13 chars max + \0
-    uint nextFunction;      // Linked list pointer
-    uint codeSize;          // Size of bytecode that follows
-    byte paramCount;        // Number of parameters
-    byte paramTypes[8];     // Parameter types (max 8 parameters)
-    // Total: 29 bytes + alignment
-    // Followed by: bytecode + literal data
-}
-```
-
-### EEPROM Storage (64K)
-- **Environment-level storage**: SAVE/LOAD entire program (all functions + global declarations)
-- **Simple file system**: Single 256-byte directory block, 16 files maximum
-- **File structure**: 13-char names (8.3 format), 1-byte start block, 2-byte length
-- **Buffered I/O**: 256-byte blocks to match I2C transaction size
-
-### Bytecode Design
-- **Cached operations**: Most variable/function access uses cached indices
-- **Type-aware opcodes**: Operations know expected types for safety
-- **Compact encoding**: 1-byte opcode + minimal operands
-- **Runtime optimization**: First-use resolution, subsequent cached access
-
-## Why This Architecture
-
-**Type Safety Benefits:**
-- ✅ Compile-time error detection
-- ✅ No runtime type mismatches
-- ✅ Predictable operator behavior
-- ✅ Self-documenting code
-
-**Performance Benefits:**
-- ✅ Cached variable access (5-10 cycles)
-- ✅ Cached function calls (15-25 cycles)
-- ✅ Type-specific optimizations
-- ✅ Zero-cost type compatibility
-
-**Development Benefits:**
-- ✅ Clear error messages
-- ✅ No mysterious auto-creation bugs
-- ✅ Consistent REPL/program behavior
-- ✅ Easy debugging and maintenance
-
-## Implementation Priority
-1. Symbol table management and type system
-2. Variable declaration and assignment parsing
-3. Runtime name resolution with caching
-4. Expression evaluation with type checking
-5. Control flow (IF/WHILE with BIT requirements)
-6. Function definitions and calls
-7. EEPROM save/load system
-
-This architecture provides **modern language safety** with **classic BASIC simplicity** and **6502-optimized performance**.
+This specification delivers **interactive development** with **type safety** and **complete session persistence**, providing the **FORTH development experience** with **modern language features** and **6502-optimized performance**.
