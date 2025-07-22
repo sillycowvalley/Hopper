@@ -6,7 +6,7 @@ unit Tokenizer
     uses "/Source/Runtime/6502/MemoryMap"
     uses "/Source/Runtime/6502/Stacks"
     
-    friend Interpreter;
+    friend Interpreter, Tokenizer, BytecodeCompiler;
     
     // Token definitions
     enum Tokens
@@ -61,14 +61,12 @@ unit Tokenizer
         COMMA    = 0x99,
     }
     
-    // Input buffer for command line (128 bytes should be plenty)
-    
     // Tokenizer state
-    const byte tkINPUT_POS   = ZP.D0;   // Current position in input buffer
-    const byte tkINPUT_LEN   = ZP.D1;   // Length of current input
-    const byte tkTOKEN_START = ZP.D2;   // Start of current token
-    const byte tkTOKEN_LEN   = ZP.D3;   // Length of current token
-    const byte tkCURRENT_TOK = ZP.D4;   // Current token value
+    const byte inputPos    = ZP.D0;   // Current position in input buffer
+    const byte inputLen    = ZP.D1;   // Length of current input
+    const byte tokenStart  = ZP.D2;   // Start of current token
+    const byte tokenLen    = ZP.D3;   // Length of current token
+    const byte currentTok  = ZP.D4;   // Current token value
     
     // Keyword table - each entry is: length, token_value, characters...
     // Stored as: len1, tok1, char1, char2, ..., len2, tok2, char1, char2, ...
@@ -121,21 +119,21 @@ unit Tokenizer
     {
         loop
         {
-            LDX tkINPUT_POS
-            CPX tkINPUT_LEN
+            LDX inputPos
+            CPX inputLen
             if (Z) { break; }  // End of input
             
             LDA Address.BasicInputBuffer, X
             CMP #' '
             if (Z)
             {
-                INC tkINPUT_POS
+                INC inputPos
                 continue;
             }
             CMP #'\t'
             if (Z)
             {
-                INC tkINPUT_POS
+                INC inputPos
                 continue;
             }
             break;  // Non-whitespace found
@@ -190,7 +188,7 @@ unit Tokenizer
             LDA keywords, Y    // Get length of this keyword
             if (Z) { break; }  // End of table
             
-            CMP tkTOKEN_LEN
+            CMP tokenLen
             if (Z)  // Length matches
             {
                 // Compare characters
@@ -202,7 +200,7 @@ unit Tokenizer
                 LDX #0  // Character index
                 loop
                 {
-                    CPX tkTOKEN_LEN
+                    CPX tokenLen
                     if (Z)  // All characters matched
                     {
                         LDA ZP.ACCL  // Return token value
@@ -216,7 +214,7 @@ unit Tokenizer
                     PHY              // Save Y (keywords table index)
                     TXA              // Character index
                     CLC
-                    ADC tkTOKEN_START // Add token start position  
+                    ADC tokenStart // Add token start position  
                     TAY              // Use Y for INPUT_BUFFER index
                     LDA Address.BasicInputBuffer, Y
                     makeUppercase();
@@ -234,10 +232,10 @@ unit Tokenizer
                 
                 // If we get here, there was a mismatch  
                 // X = current character position, Y = current character in keyword table
-                // Skip to end of this keyword: advance Y by (tkTOKEN_LEN - X - 1) positions
+                // Skip to end of this keyword: advance Y by (tokenLen - X - 1) positions
                 loop
                 {
-                    CPX tkTOKEN_LEN       // Have we reached the end?
+                    CPX tokenLen       // Have we reached the end?
                     if (Z) { break; }     // Yes, Y now points to start of next keyword
                     INX                   // Move to next character position
                     INY                   // Advance Y to next character
@@ -264,23 +262,23 @@ unit Tokenizer
     }
     
     // Get next token from input buffer
-    // Returns token type in A, updates tkCURRENT_TOK
+    // Returns token type in A, updates currentTok
     nextToken()
     {
         skipWhitespace();
         
-        LDX tkINPUT_POS
-        CPX tkINPUT_LEN
+        LDX inputPos
+        CPX inputLen
         if (Z)
         {
             LDA #Tokens.EOL
-            STA tkCURRENT_TOK
+            STA currentTok
             return;
         }
         
         // Mark start of token
-        STX tkTOKEN_START
-        STZ tkTOKEN_LEN
+        STX tokenStart
+        STZ tokenLen
         
         LDA Address.BasicInputBuffer, X
         
@@ -289,101 +287,101 @@ unit Tokenizer
         {
             case '=':
             {
-                INC tkINPUT_POS
+                INC inputPos
                 LDA #Tokens.EQUALS
-                STA tkCURRENT_TOK
+                STA currentTok
                 return;
             }
             case '+':
             {
-                INC tkINPUT_POS
+                INC inputPos
                 LDA #Tokens.PLUS
-                STA tkCURRENT_TOK
+                STA currentTok
                 return;
             }
             case '-':
             {
-                INC tkINPUT_POS
+                INC inputPos
                 LDA #Tokens.MINUS
-                STA tkCURRENT_TOK
+                STA currentTok
                 return;
             }
             case '*':
             {
-                INC tkINPUT_POS
+                INC inputPos
                 LDA #Tokens.MULTIPLY
-                STA tkCURRENT_TOK
+                STA currentTok
                 return;
             }
             case '/':
             {
-                INC tkINPUT_POS
+                INC inputPos
                 LDA #Tokens.DIVIDE
-                STA tkCURRENT_TOK
+                STA currentTok
                 return;
             }
             case '(':
             {
-                INC tkINPUT_POS
+                INC inputPos
                 LDA #Tokens.LPAREN
-                STA tkCURRENT_TOK
+                STA currentTok
                 return;
             }
             case ')':
             {
-                INC tkINPUT_POS
+                INC inputPos
                 LDA #Tokens.RPAREN
-                STA tkCURRENT_TOK
+                STA currentTok
                 return;
             }
             case '[':
             {
-                INC tkINPUT_POS
+                INC inputPos
                 LDA #Tokens.LBRACKET
-                STA tkCURRENT_TOK
+                STA currentTok
                 return;
             }
             case ']':
             {
-                INC tkINPUT_POS
+                INC inputPos
                 LDA #Tokens.RBRACKET
-                STA tkCURRENT_TOK
+                STA currentTok
                 return;
             }
             case ',':
             {
-                INC tkINPUT_POS
+                INC inputPos
                 LDA #Tokens.COMMA
-                STA tkCURRENT_TOK
+                STA currentTok
                 return;
             }
             case '"':
             {
                 // String literal - scan to closing quote
-                INC tkINPUT_POS  // Skip opening quote
-                STX tkTOKEN_START  // Don't include quote in token
+                INC inputPos  // Skip opening quote
+                STX tokenStart  // Don't include quote in token
                 
                 loop
                 {
-                    LDX tkINPUT_POS
-                    CPX tkINPUT_LEN
+                    LDX inputPos
+                    CPX inputLen
                     if (Z)  // End of input without closing quote
                     {
                         LDA #Tokens.STRING
-                        STA tkCURRENT_TOK
+                        STA currentTok
                         return;
                     }
                     
                     LDA Address.BasicInputBuffer, X
-                    INC tkINPUT_POS
+                    INC inputPos
                     CMP #'"'
                     if (Z)  // Found closing quote
                     {
                         LDA #Tokens.STRING
-                        STA tkCURRENT_TOK
+                        STA currentTok
                         return;
                     }
-                    INC tkTOKEN_LEN
+                    INC tokenLen
                 }
             }
         }
@@ -398,11 +396,11 @@ unit Tokenizer
                 // Scan number
                 loop
                 {
-                    INC tkINPUT_POS
-                    INC tkTOKEN_LEN
+                    INC inputPos
+                    INC tokenLen
                     
-                    LDX tkINPUT_POS
-                    CPX tkINPUT_LEN
+                    LDX inputPos
+                    CPX inputLen
                     if (Z) { break; }
                     
                     LDA Address.BasicInputBuffer, X
@@ -419,7 +417,7 @@ unit Tokenizer
                 }
                 
                 LDA #Tokens.NUMBER
-                STA tkCURRENT_TOK
+                STA currentTok
                 return;
             }
         }
@@ -428,16 +426,16 @@ unit Tokenizer
         // Scan alphanumeric characters
         loop
         {
-            LDX tkINPUT_POS
-            CPX tkINPUT_LEN
+            LDX inputPos
+            CPX inputLen
             if (Z) { break; }
             
             LDA Address.BasicInputBuffer, X
             isAlphaNum();
             if (Z) { break; }  // Not alphanumeric
             
-            INC tkINPUT_POS
-            INC tkTOKEN_LEN
+            INC inputPos
+            INC tokenLen
         }
         
         // Check if it's a keyword
@@ -445,13 +443,13 @@ unit Tokenizer
         
         if (NZ)  // Found keyword
         {
-            STA tkCURRENT_TOK
+            STA currentTok
             return;
         }
         
         // It's an identifier
         LDA #Tokens.IDENTIFIER
-        STA tkCURRENT_TOK
+        STA currentTok
     }
     
     // Read a line of input into buffer
@@ -524,19 +522,19 @@ unit Tokenizer
             break;  // End of input
         }
         
-        STX tkINPUT_LEN
-        STZ tkINPUT_POS
+        STX inputLen
+        STZ inputPos
         TXA  // Return length
     }
     
     // Initialize tokenizer
     Initialize()
     {
-        STZ tkINPUT_POS
-        STZ tkINPUT_LEN
-        STZ tkTOKEN_START
-        STZ tkTOKEN_LEN
-        STZ tkCURRENT_TOK
+        STZ inputPos
+        STZ inputLen
+        STZ tokenStart
+        STZ tokenLen
+        STZ currentTok
     }
     
     // Get current token as number (assumes NUMBER)
@@ -546,12 +544,12 @@ unit Tokenizer
         STZ ZP.TOPL
         STZ ZP.TOPH
         
-        LDX tkTOKEN_START
+        LDX tokenStart
         LDY #0
         
         loop
         {
-            CPY tkTOKEN_LEN
+            CPY tokenLen
             if (Z) { break; }
             
             // TOP = TOP * 10
@@ -576,7 +574,7 @@ unit Tokenizer
             ROL ZP.TOPH
             
             // Add digit
-            LDA INPUT_BUFFER, X
+            LDA Address.BasicInputBuffer, X
             SEC
             SBC #'0'
             CLC

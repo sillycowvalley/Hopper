@@ -15,11 +15,16 @@ program HopperBASIC
     
     uses "Tools"
     uses "Tokenizer"
+    uses "FunctionManager"
+    uses "BytecodeCompiler"
+    uses "BytecodeExecutor"
     uses "Interpreter"
     
     const string Welcome = "\nHopper BASIC v1.0\n";
     const string MemoryMsg = "Memory: ";
     const string KBytes = " bytes available\n";
+    const string TestMsg = "\nTesting bytecode system...\n";
+    const string TestResult = "Test complete!\n";
     
     printAvailableMemory()
     {
@@ -49,6 +54,75 @@ program HopperBASIC
         // Clear flags and set up basic state
         STZ ZP.FLAGS
         SMB0 ZP.FLAGS  // Program loaded flag
+    }
+    
+    // Quick test of our bytecode system
+    testBytecodeSystem()
+    {
+        LDA #(TestMsg % 256)
+        STA ZP.IDXL
+        LDA #(TestMsg / 256)
+        STA ZP.IDXH
+        Tools.PrintString();
+        
+        // Initialize our subsystems
+        FunctionManager.Initialize();
+        
+        // Simulate "PRINT 42" by directly using our APIs
+        FunctionManager.startREPLCompilation();
+        
+        // Emit: OpLoadConst, 42, 0
+        LDA #BytecodeCompiler.Opcodes.OpLoadConst
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        LDA #Types.Byte
+        Stacks.PushNext();
+        FunctionManager.emitByte();
+        
+        LDA #42  // Test value
+        STA ZP.TOPL
+        STZ ZP.TOPH
+        LDA #Types.UInt
+        Stacks.PushTop();
+        FunctionManager.emitWord();
+        
+        // Emit: OpPrintInt
+        LDA #BytecodeCompiler.Opcodes.OpPrintInt
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        LDA #Types.Byte
+        Stacks.PushNext();
+        FunctionManager.emitByte();
+        
+        // Emit: OpPrintNL
+        LDA #BytecodeCompiler.Opcodes.OpPrintNL
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        LDA #Types.Byte
+        Stacks.PushNext();
+        FunctionManager.emitByte();
+        
+        // Emit: OpHalt
+        LDA #BytecodeCompiler.Opcodes.OpHalt
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        LDA #Types.Byte
+        Stacks.PushNext();
+        FunctionManager.emitByte();
+        
+        FunctionManager.finishREPLCompilation();
+        
+        // Execute the bytecode
+        BytecodeExecutor.executeREPLFunction();
+        
+        // Clean up
+        FunctionManager.cleanupREPLFunction();
+        
+        LDA #(TestResult % 256)
+        STA ZP.IDXL
+        LDA #(TestResult / 256)
+        STA ZP.IDXH
+        Tools.PrintString();
     }
     
     IRQ()
@@ -96,6 +170,9 @@ program HopperBASIC
         LDA #(KBytes / 256)
         STA ZP.IDXH
         Tools.PrintString();
+        
+        // Test our bytecode system before starting REPL
+        testBytecodeSystem();
         
         // Start the BASIC interpreter
         Interpreter.Run();

@@ -5,6 +5,9 @@ unit Interpreter
     uses "/Source/Runtime/6502/Memory"
     uses "Tokenizer"
     uses "Tools"
+    uses "FunctionManager"
+    uses "BytecodeCompiler"
+    uses "BytecodeExecutor"
     
     enum ExprTypes
     {
@@ -81,6 +84,9 @@ unit Interpreter
         STZ pgmLIST_HEADH
         STZ varLIST_HEAD
         STZ varLIST_HEADH
+        
+        // Reinitialize function manager
+        FunctionManager.Initialize();
         
         LDA #(msgMemoryCleared % 256)
         STA ZP.IDXL
@@ -248,21 +254,39 @@ unit Interpreter
         STA ZP.IDXH
         printMessage();
     }
+    
     cmdNOP()
     {
+        // Do nothing (for empty lines)
     }
+    
+    // Handle PRINT statement by compiling and executing it
     cmdPrint()
     {
+        // Reset tokenizer position to start of line so compiler can reparse
+        STZ Tokenizer.inputPos
+        
+        // Compile the statement into bytecode
+        BytecodeCompiler.compileREPLStatement();
+        
+        // Execute the compiled bytecode
+        BytecodeExecutor.executeREPLFunction();
+        
+        // Clean up the temporary function
+        FunctionManager.cleanupREPLFunction();
     }
     
     // Process command line - all commands are immediate in structured BASIC
     processCommand()
     {
+        // Reset tokenizer to start of input
+        STZ Tokenizer.inputPos
+        
         Tokenizer.nextToken();  // Get first token
         
         // Note: for this switch to optimize to a small jump table, the constant values of the
         //       case labels should be contiguous (no gaps)
-        LDX Tokenizer.tkCURRENT_TOK
+        LDX Tokenizer.currentTok
         switch (X)
         {
             case Tokens.BYE:
@@ -316,7 +340,7 @@ unit Interpreter
             }
             case Tokens.PRINT:
             {
-                cmdPrint();
+                cmdPrint();  // Now handles bytecode compilation and execution
             }
             default:
             {
@@ -331,6 +355,7 @@ unit Interpreter
     Run()
     {
         Tokenizer.Initialize();
+        FunctionManager.Initialize();
         
         // Clear program and variables
         STZ pgmLIST_HEAD
@@ -343,13 +368,13 @@ unit Interpreter
             printReady();
             
             Tokenizer.ReadLine();  // Read input line
-            LDA Tokenizer.tkINPUT_LEN
+            LDA Tokenizer.inputLen
             if (Z) { continue; }   // Empty line
             
             processCommand();
             
             // Check if BYE was entered
-            LDA Tokenizer.tkCURRENT_TOK
+            LDA Tokenizer.currentTok
             CMP #Tokens.BYE
             if (Z) { break; }      // Exit the interpreter loop
         }
