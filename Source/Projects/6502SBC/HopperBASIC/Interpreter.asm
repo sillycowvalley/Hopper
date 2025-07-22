@@ -291,6 +291,26 @@ unit Interpreter
         FunctionManager.CleanupREPLFunction();
     }
     
+    cmdIdentifier()
+    {
+        // Look ahead to see if this is an assignment
+        LDX ZP.TokenizerPos
+        STX ZP.U1  // Save current position
+        Tokenizer.nextToken();  // Get next token
+        LDA ZP.CurrentToken
+        LDX ZP.U1  // Restore position
+        STX ZP.TokenizerPos
+        
+        CMP #Tokens.EQUALS
+        if (Z)
+        {
+            cmdStatement();  // It's an assignment
+        }
+        else
+        {
+            printSyntaxError();  // Unknown identifier
+        }
+    }
     // Process command line - all commands are immediate in structured BASIC
     processCommand()
     {
@@ -365,10 +385,13 @@ unit Interpreter
             case Tokens.ByteType:
             case Tokens.BitType:
             case Tokens.StringType:
+            {
+                cmdStatement();
+            }
+            
             case Tokens.IDENTIFIER:
             {
-                // All statements handled by BytecodeCompiler
-                cmdStatement();
+                cmdIdentifier();
             }
             default:
             {

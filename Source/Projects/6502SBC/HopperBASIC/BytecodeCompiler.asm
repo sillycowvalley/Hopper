@@ -83,7 +83,7 @@ unit BytecodeCompiler
     compileAssignmentStatement()
     {
         // Get variable name and look it up
-        LDA #ZP.W4  // Use different workspace than interpreter
+        LDA #ZP.W0  // Use W0 to avoid workspace collision
         STA ZP.FSOURCEADDRESSL
         LDA #0
         STA ZP.FSOURCEADDRESSH
@@ -94,7 +94,7 @@ unit BytecodeCompiler
         GlobalManager.FindGlobal();
         if (NZ)  // Not found
         {
-            // TODO: Better error handling - for now just emit NOP
+            // Variable doesn't exist - emit NOP and return
             LDA #Opcodes.OpNop
             STA ZP.NEXTL
             LDA #0
@@ -111,7 +111,7 @@ unit BytecodeCompiler
         GlobalManager.IsConstant();
         if (C)  // It's a constant
         {
-            // TODO: Better error handling - for now just emit NOP
+            // Can't assign to constant - emit NOP and return
             LDA #Opcodes.OpNop
             STA ZP.NEXTL
             LDA #0
@@ -122,9 +122,41 @@ unit BytecodeCompiler
             return;
         }
         
-        // Skip EQUALS token and move to expression
-        Tokenizer.nextToken();  // Should be EQUALS
-        Tokenizer.nextToken();  // Move to expression
+        // Move to next token - should be EQUALS
+        Tokenizer.nextToken();
+        LDA ZP.CurrentToken
+        CMP #Tokens.EQUALS
+        if (NZ)
+        {
+            // Not an assignment - emit NOP and return
+            LDA #Opcodes.OpNop
+            STA ZP.NEXTL
+            LDA #0
+            STA ZP.NEXTH
+            LDA #Types.Byte
+            Stacks.PushNext();
+            FunctionManager.EmitByte();
+            return;
+        }
+        
+        // Move to expression
+        Tokenizer.nextToken();
+        
+        // Check if we have an expression
+        LDA ZP.CurrentToken
+        CMP #Tokens.EOL
+        if (Z)
+        {
+            // Missing expression after = - emit NOP and return
+            LDA #Opcodes.OpNop
+            STA ZP.NEXTL
+            LDA #0
+            STA ZP.NEXTH
+            LDA #Types.Byte
+            Stacks.PushNext();
+            FunctionManager.EmitByte();
+            return;
+        }
         
         // Compile expression (puts result on stack)
         compileExpression();
@@ -348,7 +380,7 @@ unit BytecodeCompiler
             case Tokens.IDENTIFIER:
             {
                 // Variable reference - look it up and load its value
-                LDA #ZP.W4  // Use workspace
+                LDA #ZP.W2  // Use different workspace than assignment
                 STA ZP.FSOURCEADDRESSL
                 LDA #0
                 STA ZP.FSOURCEADDRESSH
@@ -392,18 +424,43 @@ unit BytecodeCompiler
             }
             case Tokens.STRING:
             {
-                // String literal - for now just emit placeholder
-                LDA #Opcodes.OpPrintStr
+                // String literal - for now just emit placeholder (push 0)
+                STZ ZP.TOPL
+                STZ ZP.TOPH
+                
+                LDA #Opcodes.OpPushInt
                 STA ZP.NEXTL
                 LDA #0
                 STA ZP.NEXTH
                 LDA #Types.Byte
                 Stacks.PushNext();
                 FunctionManager.EmitByte();
+                
+                LDA #Types.UInt
+                Stacks.PushTop();
+                FunctionManager.EmitWord();
+            }
+            case Tokens.EOL:
+            {
+                // Missing or invalid expression - push 0
+                STZ ZP.TOPL
+                STZ ZP.TOPH
+                
+                LDA #Opcodes.OpPushInt
+                STA ZP.NEXTL
+                LDA #0
+                STA ZP.NEXTH
+                LDA #Types.Byte
+                Stacks.PushNext();
+                FunctionManager.EmitByte();
+                
+                LDA #Types.UInt
+                Stacks.PushTop();
+                FunctionManager.EmitWord();
             }
             default:
             {
-                // Unknown expression type - push 0
+                // Missing or invalid expression - push 0
                 STZ ZP.TOPL
                 STZ ZP.TOPH
                 
@@ -422,6 +479,7 @@ unit BytecodeCompiler
         }
     }
     
+            
     // Compile a complete REPL statement
     CompileREPLStatement()
     {

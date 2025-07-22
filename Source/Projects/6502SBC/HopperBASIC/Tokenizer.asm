@@ -21,11 +21,10 @@ unit Tokenizer
         DIR      = 0x07,
         DEL      = 0x08,
         VARS     = 0x09,
-        CONSTS   = 0x25,
-        FUNCS    = 0x0A,
-        BYE      = 0x0B,
-        EOL      = 0x0C, // can be empty line in REPL
-        
+        CONSTS   = 0x0A,
+        FUNCS    = 0x0B,
+        BYE      = 0x0C,
+        EOL      = 0x0D, // can be empty line in REPL
         
         // Language tokens (16+)
         LET      = 0x10,
@@ -82,6 +81,7 @@ unit Tokenizer
         3, Tokens.DIR, 'D', 'I', 'R',
         3, Tokens.DEL, 'D', 'E', 'L',
         4, Tokens.VARS, 'V', 'A', 'R', 'S',
+        6, Tokens.CONSTS, 'C', 'O', 'N', 'S', 'T', 'S',
         5, Tokens.FUNCS, 'F', 'U', 'N', 'C', 'S',
         3, Tokens.BYE, 'B', 'Y', 'E',
         3, Tokens.LET, 'L', 'E', 'T',
