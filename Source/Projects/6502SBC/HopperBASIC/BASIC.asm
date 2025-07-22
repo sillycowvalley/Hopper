@@ -4,6 +4,7 @@ program HopperBASIC
     #define ROM_8K
     
     #define HOPPER_BASIC
+    //#define DEBUG
     
     //#define SMALLCODE // optimize for size: no jump tables for switches
     
@@ -45,85 +46,10 @@ program HopperBASIC
         // Set up program size as minimal (just our BASIC interpreter)
         STZ ZP.PROGSIZE  // empty for now (not Hopper program)
         
-        // Initialize memory heap using runtime function
-        Memory.InitializeHeapSize();
-        
-        // Initialize stacks
-        Stacks.Initialize();
-        
-        // Clear flags and set up basic state
-        STZ ZP.FLAGS
-        SMB0 ZP.FLAGS  // Program loaded flag
+        // Let CmdNew() handle all the BASIC-specific initialization
+        Interpreter.CmdNew();
     }
     
-    // Quick test of our bytecode system
-    testBytecodeSystem()
-    {
-        LDA #(TestMsg % 256)
-        STA ZP.IDXL
-        LDA #(TestMsg / 256)
-        STA ZP.IDXH
-        Tools.PrintString();
-        
-        // Initialize our subsystems
-        FunctionManager.Initialize();
-        
-        // Simulate "PRINT 42" by directly using our APIs
-        FunctionManager.startREPLCompilation();
-        
-        // Emit: OpLoadConst, 42, 0
-        LDA #BytecodeCompiler.Opcodes.OpLoadConst
-        STA ZP.NEXTL
-        STZ ZP.NEXTH
-        LDA #Types.Byte
-        Stacks.PushNext();
-        FunctionManager.emitByte();
-        
-        LDA #42  // Test value
-        STA ZP.TOPL
-        STZ ZP.TOPH
-        LDA #Types.UInt
-        Stacks.PushTop();
-        FunctionManager.emitWord();
-        
-        // Emit: OpPrintInt
-        LDA #BytecodeCompiler.Opcodes.OpPrintInt
-        STA ZP.NEXTL
-        STZ ZP.NEXTH
-        LDA #Types.Byte
-        Stacks.PushNext();
-        FunctionManager.emitByte();
-        
-        // Emit: OpPrintNL
-        LDA #BytecodeCompiler.Opcodes.OpPrintNL
-        STA ZP.NEXTL
-        STZ ZP.NEXTH
-        LDA #Types.Byte
-        Stacks.PushNext();
-        FunctionManager.emitByte();
-        
-        // Emit: OpHalt
-        LDA #BytecodeCompiler.Opcodes.OpHalt
-        STA ZP.NEXTL
-        STZ ZP.NEXTH
-        LDA #Types.Byte
-        Stacks.PushNext();
-        FunctionManager.emitByte();
-        
-        FunctionManager.finishREPLCompilation();
-        
-        // Execute the bytecode
-        BytecodeExecutor.executeREPLFunction();
-        
-        // Clean up
-        FunctionManager.cleanupREPLFunction();
-        
-        LDA #(TestResult % 256)
-        STA ZP.IDXL
-        LDA #(TestResult / 256)
-        STA ZP.IDXH
-        Tools.PrintString();
-    }
     
     IRQ()
     {
@@ -170,9 +96,6 @@ program HopperBASIC
         LDA #(KBytes / 256)
         STA ZP.IDXH
         Tools.PrintString();
-        
-        // Test our bytecode system before starting REPL
-        testBytecodeSystem();
         
         // Start the BASIC interpreter
         Interpreter.Run();

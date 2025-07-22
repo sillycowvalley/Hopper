@@ -146,5 +146,7 @@ unit BytecodeCompiler
         
         // Finish compilation
         FunctionManager.finishREPLCompilation();
+        
+        //FunctionManager.dumpREPLBytecode();
     }
 }

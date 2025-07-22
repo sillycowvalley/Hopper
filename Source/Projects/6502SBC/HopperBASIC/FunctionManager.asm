@@ -92,9 +92,8 @@ unit FunctionManager
         ADC writePosHi
         STA ZP.IDXH
         
-        // Get the byte to emit (should be on stack)
-        Stacks.PopTop();
-        LDA ZP.TOPL
+        // Get the byte to emit (should be on stack)  
+        Stacks.PopA();  // Returns byte in A, doesn't touch TOP
         
         // Store it
         LDY #0
@@ -139,6 +138,64 @@ unit FunctionManager
         Stacks.PushNext();
         emitByte();
     }
+    
+#ifdef DEBUG    
+    // Debug function to dump bytecode in hex format
+    dumpREPLBytecode()
+    {
+        // Print header
+        LDA #'\n'
+        Serial.WriteChar();
+        LDA #'B'
+        Serial.WriteChar();
+        LDA #'Y'
+        Serial.WriteChar();
+        LDA #'T'
+        Serial.WriteChar();
+        LDA #'E'
+        Serial.WriteChar();
+        LDA #' '
+        Serial.WriteChar();
+        
+        // Get bytecode start address
+        CLC
+        LDA currentFunc
+        ADC #fhHeaderSize
+        STA ZP.IDXL
+        LDA currentFuncHi
+        ADC #0
+        STA ZP.IDXH
+        
+        // Print each byte with address
+        LDX #0
+        loop
+        {
+            CPX bytecodeSize
+            if (Z) { break; }
+            
+            // Print address
+            TXA
+            Serial.HexOut();
+            LDA #':'
+            Serial.WriteChar();
+            
+            // Print byte
+            LDY #0
+            LDA [ZP.IDX], Y
+            Serial.HexOut();
+            LDA #' '
+            Serial.WriteChar();
+            
+            // Next byte
+            INC ZP.IDXL
+            if (Z) { INC ZP.IDXH }
+            INX
+        }
+        
+        LDA #'\n'
+        Serial.WriteChar();
+    }
+#endif    
     
     // Create the REPL function and copy bytecode from temp buffer
     finishREPLCompilation()

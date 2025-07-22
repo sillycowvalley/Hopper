@@ -73,11 +73,19 @@ unit Interpreter
     }
     
     // Clear all program memory - just reinitialize the heap for clean start
-    cmdNew()
+    CmdNew()
     {
         // Nuclear option: reinitialize the entire heap
         // This wipes everything - programs, variables, functions, etc.
         Memory.InitializeHeapSize();
+        
+        // Initialize stacks
+        Stacks.Initialize(); 
+        
+        // Clear flags and set up basic state
+        STZ ZP.FLAGS
+        SMB0 ZP.FLAGS  // Program loaded flag
+        
         
         // Clear our list heads since everything is gone
         STZ pgmLIST_HEAD
@@ -295,7 +303,7 @@ unit Interpreter
             }
             case Tokens.NEW:
             {
-                cmdNew();
+                CmdNew();
             }
             case Tokens.LIST:
             {

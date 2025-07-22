@@ -65,6 +65,7 @@ unit BytecodeExecutor
     {
         // Load 16-bit constant onto value stack
         fetchWord();  // Gets constant into TOP
+
         LDA #Types.UInt
         Stacks.PushTop();
     }

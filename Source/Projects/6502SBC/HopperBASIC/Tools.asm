@@ -87,5 +87,271 @@ unit Tools
             if (MI) { break; } // Exit when Y goes negative
         }
     }
+    
+
+#ifdef DEBUG    
+    // Debug function to dump key zero page variables
+    DumpVariables()
+    {
+       // Store registers in zero page temporarily so we can display them
+       STA ZP.U2  // Temporarily store A
+       STX ZP.U0  // Temporarily store X
+       STY ZP.U1  // Temporarily store Y
+       
+       LDA #'\n'
+       Serial.WriteChar();
+       LDA #'='
+       Serial.WriteChar();
+       LDA #'='
+       Serial.WriteChar();
+       LDA #' '
+       Serial.WriteChar();
+       LDA #'V'
+       Serial.WriteChar();
+       LDA #'A'
+       Serial.WriteChar();
+       LDA #'R'
+       Serial.WriteChar();
+       LDA #'S'
+       Serial.WriteChar();
+       LDA #' '
+       Serial.WriteChar();
+       LDA #'='
+       Serial.WriteChar();
+       LDA #'='
+       Serial.WriteChar();
+       LDA #'\n'
+       Serial.WriteChar();
+       
+       // A register
+       LDA #'A'
+       Serial.WriteChar();
+       LDA #':'
+       Serial.WriteChar();
+       LDA ZP.U2
+       Serial.HexOut();
+       LDA #' '
+       Serial.WriteChar();
+       
+       // X register
+       LDA #'X'
+       Serial.WriteChar();
+       LDA #':'
+       Serial.WriteChar();
+       LDA ZP.U0
+       Serial.HexOut();
+       LDA #' '
+       Serial.WriteChar();
+       
+       // Y register
+       LDA #'Y'
+       Serial.WriteChar();
+       LDA #':'
+       Serial.WriteChar();
+       LDA ZP.U1
+       Serial.HexOut();
+       LDA #' '
+       Serial.WriteChar();
+       
+       // TOP
+       LDA #'T'
+       Serial.WriteChar();
+       LDA #'O'
+       Serial.WriteChar();
+       LDA #'P'
+       Serial.WriteChar();
+       LDA #':'
+       Serial.WriteChar();
+       LDA ZP.TOPH
+       Serial.HexOut();
+       LDA ZP.TOPL
+       Serial.HexOut();
+       LDA #' '
+       Serial.WriteChar();
+       
+       // NEXT
+       LDA #'N'
+       Serial.WriteChar();
+       LDA #'X'
+       Serial.WriteChar();
+       LDA #'T'
+       Serial.WriteChar();
+       LDA #':'
+       Serial.WriteChar();
+       LDA ZP.NEXTH
+       Serial.HexOut();
+       LDA ZP.NEXTL
+       Serial.HexOut();
+       LDA #' '
+       Serial.WriteChar();
+       
+       // ACC
+       LDA #'A'
+       Serial.WriteChar();
+       LDA #'C'
+       Serial.WriteChar();
+       LDA #'C'
+       Serial.WriteChar();
+       LDA #':'
+       Serial.WriteChar();
+       LDA ZP.ACCH
+       Serial.HexOut();
+       LDA ZP.ACCL
+       Serial.HexOut();
+       LDA #' '
+       Serial.WriteChar();
+       
+       // IDX
+       LDA #'I'
+       Serial.WriteChar();
+       LDA #'D'
+       Serial.WriteChar();
+       LDA #'X'
+       Serial.WriteChar();
+       LDA #':'
+       Serial.WriteChar();
+       LDA ZP.IDXH
+       Serial.HexOut();
+       LDA ZP.IDXL
+       Serial.HexOut();
+       LDA #' '
+       Serial.WriteChar();
+       
+       // IDY
+       LDA #'I'
+       Serial.WriteChar();
+       LDA #'D'
+       Serial.WriteChar();
+       LDA #'Y'
+       Serial.WriteChar();
+       LDA #':'
+       Serial.WriteChar();
+       LDA ZP.IDYH
+       Serial.HexOut();
+       LDA ZP.IDYL
+       Serial.HexOut();
+       LDA #' '
+       Serial.WriteChar();
+       
+       // SP
+       LDA #'S'
+       Serial.WriteChar();
+       LDA #'P'
+       Serial.WriteChar();
+       LDA #':'
+       Serial.WriteChar();
+       LDA ZP.SP
+       Serial.HexOut();
+       
+       LDA #'\n'
+       Serial.WriteChar();
+       
+       // Restore registers
+       LDY ZP.U1  // Restore Y
+       LDX ZP.U0  // Restore X
+       LDA ZP.U2  // Restore A
+    }
+
+    // Debug function to dump the value stack
+    DumpStack()
+    {
+        PHA  // Save A
+        PHX  // Save X  
+        PHY  // Save Y
+        
+        LDA #'\n'
+        Serial.WriteChar();
+        LDA #'='
+        Serial.WriteChar();
+        LDA #'='
+        Serial.WriteChar();
+        LDA #' '
+        Serial.WriteChar();
+        LDA #'S'
+        Serial.WriteChar();
+        LDA #'T'
+        Serial.WriteChar();
+        LDA #'A'
+        Serial.WriteChar();
+        LDA #'C'
+        Serial.WriteChar();
+        LDA #'K'
+        Serial.WriteChar();
+        LDA #' '
+        Serial.WriteChar();
+        LDA #'='
+        Serial.WriteChar();
+        LDA #'='
+        Serial.WriteChar();
+        LDA #'\n'
+        Serial.WriteChar();
+        
+        // SP and BP
+        LDA #'S'
+        Serial.WriteChar();
+        LDA #'P'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        LDA ZP.SP
+        Serial.HexOut();
+        LDA #' '
+        Serial.WriteChar();
+        LDA #'B'
+        Serial.WriteChar();
+        LDA #'P'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        LDA ZP.BP
+        Serial.HexOut();
+        LDA #'\n'
+        Serial.WriteChar();
+        
+        // Dump stack contents (last 8 entries)
+        LDX ZP.SP
+        LDY #8  // Show last 8 entries
+        
+        loop
+        {
+            CPY #0
+            if (Z) { break; }
+            
+            CPX #0
+            if (Z) { break; }
+            
+            DEX
+            
+            // Print index
+            TXA
+            Serial.HexOut();
+            LDA #':'
+            Serial.WriteChar();
+            
+            // Print type
+            LDA Address.TypeStackLSB, X
+            Serial.HexOut();
+            LDA #'/'
+            Serial.WriteChar();
+            
+            // Print value (LSB/MSB)
+            LDA Address.ValueStackMSB, X
+            Serial.HexOut();
+            LDA Address.ValueStackLSB, X
+            Serial.HexOut();
+            LDA #' '
+            Serial.WriteChar();
+            
+            DEY
+        }
+        
+        LDA #'\n'
+        Serial.WriteChar();
+        
+        PLY  // Restore Y
+        PLX  // Restore X
+        PLA  // Restore A
+    }
+#endif
 
 }
