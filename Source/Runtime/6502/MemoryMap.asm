@@ -13,7 +13,9 @@ unit Address
     const uint I2CInBuffer          = 0x0800;  // 256-byte buffer 0x0800-0x08FF for I2C.RequestFrom
     
 #if defined(HOPPER_BASIC)
-    const uint BasicInputBuffer     = 0x0900;  // 256-byte buffer for BASIC line input
+    const uint BasicInputBuffer     = 0x0900;  // 128-byte buffer for BASIC line input
+    const uint BasicInputBufferLength = 120;
+    
     const uint HopperData           = 0x0A00;  // start of Hopper RAM (program, then heap)
 #else    
     const uint HopperData           = 0x0900;  // start of Hopper RAM (program, then heap)

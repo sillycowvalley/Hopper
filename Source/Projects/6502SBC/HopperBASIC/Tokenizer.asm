@@ -62,8 +62,6 @@ unit Tokenizer
     }
     
     // Input buffer for command line (128 bytes should be plenty)
-    const uint INPUT_BUFFER = Address.CallStackLSB;  // Use part of call stack area when not running programs
-    const byte MAX_INPUT_LEN = 120;
     
     // Tokenizer state
     const byte tkINPUT_POS   = ZP.D0;   // Current position in input buffer
@@ -127,7 +125,7 @@ unit Tokenizer
             CPX tkINPUT_LEN
             if (Z) { break; }  // End of input
             
-            LDA INPUT_BUFFER, X
+            LDA Address.BasicInputBuffer, X
             CMP #' '
             if (Z)
             {
@@ -220,7 +218,7 @@ unit Tokenizer
                     CLC
                     ADC tkTOKEN_START // Add token start position  
                     TAY              // Use Y for INPUT_BUFFER index
-                    LDA INPUT_BUFFER, Y
+                    LDA Address.BasicInputBuffer, Y
                     makeUppercase();
                     PLY              // Restore Y (keywords table index) FIRST
                     
@@ -284,7 +282,7 @@ unit Tokenizer
         STX tkTOKEN_START
         STZ tkTOKEN_LEN
         
-        LDA INPUT_BUFFER, X
+        LDA Address.BasicInputBuffer, X
         
         // Check for single character tokens
         switch (A)
@@ -376,7 +374,7 @@ unit Tokenizer
                         return;
                     }
                     
-                    LDA INPUT_BUFFER, X
+                    LDA Address.BasicInputBuffer, X
                     INC tkINPUT_POS
                     CMP #'"'
                     if (Z)  // Found closing quote
@@ -407,7 +405,7 @@ unit Tokenizer
                     CPX tkINPUT_LEN
                     if (Z) { break; }
                     
-                    LDA INPUT_BUFFER, X
+                    LDA Address.BasicInputBuffer, X
                     CMP #'0'
                     if (C)  // >= '0'
                     {
@@ -434,7 +432,7 @@ unit Tokenizer
             CPX tkINPUT_LEN
             if (Z) { break; }
             
-            LDA INPUT_BUFFER, X
+            LDA Address.BasicInputBuffer, X
             isAlphaNum();
             if (Z) { break; }  // Not alphanumeric
             
@@ -511,10 +509,10 @@ unit Tokenizer
                         CMP #0x7F
                         if (NC)  // < 127
                         {
-                            CPX #MAX_INPUT_LEN
+                            CPX # Address.BasicInputBufferLength
                             if (Z) { continue; }  // Buffer full
                             
-                            STA INPUT_BUFFER, X
+                            STA Address.BasicInputBuffer, X
                             INX
                             Serial.WriteChar();  // Echo
                             continue;

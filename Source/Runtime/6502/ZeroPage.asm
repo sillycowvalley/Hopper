@@ -119,9 +119,18 @@ unit ZP
     const byte TokenPtr             = 0x32;  // Current position in token output
     const byte CurrentToken         = 0x33;  // Current token being processed
     
+    const byte TokenBufferPtr       = 0x34;  // Current position in token buffer
+    const byte TokenBufferEnd       = 0x35;  // End of current token buffer
+    
     // File operations (SAVE/LOAD to EEPROM)
-    const byte FileNamePtr          = 0x34;  // Pointer to filename in input buffer
-    const byte FileNameLength       = 0x35;  // Length of filename
+    const byte FileNamePtr          = 0x36;  // Pointer to filename in input buffer
+    const byte FileNameLength       = 0x37;  // Length of filename
+    
+    // Expression evaluation workspace
+    const byte ExprValueLo          = 0x38;  // Current expression result low byte
+    const byte ExprValueHi          = 0x39;  // Current expression result high byte  
+    const byte ExprType             = 0x3A;  // Type of current expression result
+    
     
 #endif
 

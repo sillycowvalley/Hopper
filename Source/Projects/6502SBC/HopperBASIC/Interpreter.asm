@@ -6,6 +6,16 @@ unit Interpreter
     uses "Tokenizer"
     uses "Tools"
     
+    enum ExprTypes
+    {
+        INVALID = 0,
+        INT     = 1,    // 16-bit signed (-32768 to 32767)
+        WORD    = 2,    // 16-bit unsigned (0 to 65535) 
+        BYTE    = 3,    // 8-bit unsigned (0 to 255)
+        BIT     = 4,    // Boolean (0 or 1)
+        STRING  = 5,    // String literals and variables
+    }
+    
     // Program storage - simple linked list for now
     // Each program line: [length] [line_number_lo] [line_number_hi] [tokenized_data...]
     const byte pgmLIST_HEAD = ZP.F5;   // Pointer to first program line (16-bit in F5/F6)
@@ -241,6 +251,9 @@ unit Interpreter
     cmdNOP()
     {
     }
+    cmdPrint()
+    {
+    }
     
     // Process command line - all commands are immediate in structured BASIC
     processCommand()
@@ -300,6 +313,10 @@ unit Interpreter
             {
                 // Empty line - just show ready prompt
                 cmdNOP(); // need method call so this switch is optimized to a jump table
+            }
+            case Tokens.PRINT:
+            {
+                cmdPrint();
             }
             default:
             {
