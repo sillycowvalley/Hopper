@@ -270,16 +270,12 @@ unit Interpreter
     
     cmdPrint()
     {
-        DumpHeap();
-        
         STZ ZP.TokenizerPos
         BytecodeCompiler.CompileREPLStatement();
         
         BytecodeExecutor.ExecuteREPLFunction();
         
         FunctionManager.CleanupREPLFunction();
-        
-        DumpHeap();
     }
     
     // Process command line - all commands are immediate in structured BASIC

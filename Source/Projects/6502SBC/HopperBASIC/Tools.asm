@@ -88,6 +88,63 @@ unit Tools
         }
     }
     
+    // Add this to Tools.asm
+
+    // Copy FLENGTH bytes from FSOURCEADDRESS to FDESTINATIONADDRESS
+    // On entry: FSOURCEADDRESS = source pointer
+    //           FDESTINATIONADDRESS = destination pointer  
+    //           FLENGTH = number of bytes to copy (16-bit)
+    // On exit:  All registers preserved, FSOURCEADDRESS/FDESTINATIONADDRESS/FLENGTH munted
+    // Uses:     Hardware stack for register preservation
+    CopyBytes()
+    {
+        // Save registers we need to preserve
+        PHA          // Save A
+        PHX          // Save X  
+        PHY          // Save Y
+        
+        // Main copy loop
+        loop
+        {
+            // Check if FLENGTH == 0
+            LDA ZP.FLENGTHL
+            ORA ZP.FLENGTHH
+            if (Z) { break; }  // Nothing left to copy
+            
+            // Copy one byte: *FDESTINATIONADDRESS = *FSOURCEADDRESS
+            LDY #0
+            LDA [ZP.FSOURCEADDRESS], Y
+            STA [ZP.FDESTINATIONADDRESS], Y
+            
+            // Increment FSOURCEADDRESS
+            INC ZP.FSOURCEADDRESSL
+            if (Z)
+            {
+                INC ZP.FSOURCEADDRESSH
+            }
+            
+            // Increment FDESTINATIONADDRESS  
+            INC ZP.FDESTINATIONADDRESSL
+            if (Z)
+            {
+                INC ZP.FDESTINATIONADDRESSH
+            }
+            
+            // Decrement FLENGTH
+            LDA ZP.FLENGTHL
+            if (Z)
+            {
+                DEC ZP.FLENGTHH
+            }
+            DEC ZP.FLENGTHL
+        }
+        
+        // Restore registers
+        PLY          // Restore Y from stack
+        PLX          // Restore X from stack
+        PLA          // Restore A from stack
+    }
+    
 
 #ifdef DEBUG    
     // Debug function to dump key zero page variables

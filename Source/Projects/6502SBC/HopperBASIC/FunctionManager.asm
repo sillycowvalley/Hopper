@@ -197,12 +197,12 @@ unit FunctionManager
         
         // LCOUNT = bytecode size
         LDA ZP.BytecodeSizeLo
-        STA ZP.LCOUNTL
+        STA ZP.FLENGTHL
         LDA ZP.BytecodeSizeHi
-        STA ZP.LCOUNTH
+        STA ZP.FLENGTHH
         
         // Perform the copy
-        Utilities.CopyBytes();
+        Tools.CopyBytes();
         
         // Free the temp buffer
         LDA ZP.TempBlockLo
