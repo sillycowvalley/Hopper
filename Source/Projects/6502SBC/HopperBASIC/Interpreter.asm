@@ -10,6 +10,8 @@ unit Interpreter
     uses "BytecodeExecutor"
     uses "GlobalManager"
     
+    friend BytecodeCompiler, BytecodeExecutor;
+    
     enum ExprTypes
     {
         INVALID = 0,
@@ -43,10 +45,55 @@ unit Interpreter
     const string msgVariablesHeader = "VARIABLES:\n";
     const string msgConstantsHeader = "CONSTANTS:\n";
     
+    const string msgUndefinedVariable = "?UNDEFINED VARIABLE\n";
+    const string msgCannotAssignConstant = "?CANNOT ASSIGN TO CONSTANT\n";
+    const string msgMissingExpression = "?MISSING EXPRESSION\n";
+    const string msgUnknownOpcode = "?UNKNOWN OPCODE\n";
+    const string msgExpectedEquals = "?EXPECTED =\n";
+    const string msgInvalidType = "?INVALID TYPE\n";
+    const string msgExpectedIdentifier = "?EXPECTED IDENTIFIER\n";
+    const string msgConstantNeedsValue = "?CONSTANT NEEDS VALUE\n";
+    const string msgUnsupportedStatement = "?UNSUPPORTED STATEMENT\n";
+    const string msgInvalidExpression = "?INVALID EXPRESSION\n";
+    
     printMessage()
     {
         // IDX points to message string
         Tools.PrintString();
+    }
+    
+    clearError()
+    {
+        STZ ZP.LastErrorL
+        STZ ZP.LastErrorH
+    }
+    
+    CheckError()
+    {
+        // Returns Z=0 if error occurred, Z=1 if no error
+        LDA ZP.LastErrorL
+        ORA ZP.LastErrorH
+    }
+    
+    checkAndPrintError()
+    {
+        // Returns Z=1 if no error, Z=0 if error was printed
+        CheckError();
+        if (Z) { return; }  // No error
+        
+        // Print the error message
+        LDA ZP.LastErrorL
+        STA ZP.IDXL
+        LDA ZP.LastErrorH
+        STA ZP.IDXH
+        printMessage();
+        
+        // Clear the error
+        clearError();
+        
+        // Set Z=0 to indicate error was found
+        LDA #1
+        CMP #0
     }
     
     printReady()
@@ -283,10 +330,21 @@ unit Interpreter
     // All statement parsing now handled by BytecodeCompiler
     cmdStatement()
     {
+        clearError();  // Clear any previous error
+        
         STZ ZP.TokenizerPos
         BytecodeCompiler.CompileREPLStatement();
+        checkAndPrintError();
+        if (Z) 
+        {
+            // Compilation error - cleanup and abort
+            FunctionManager.CleanupREPLFunction();
+            return;
+        }
         
         BytecodeExecutor.ExecuteREPLFunction();
+        checkAndPrintError();
+        // Runtime errors don't need special handling since bytecode was created successfully
         
         FunctionManager.CleanupREPLFunction();
     }
@@ -295,10 +353,10 @@ unit Interpreter
     {
         // Look ahead to see if this is an assignment
         LDX ZP.TokenizerPos
-        STX ZP.BasicTempPos  // Save current position (was U1)
+        PHX                     // Save current position
         Tokenizer.nextToken();  // Get next token
         LDA ZP.CurrentToken
-        LDX ZP.BasicTempPos  // Restore position
+        PLX                     // Restore position
         STX ZP.TokenizerPos
         
         CMP #Tokens.EQUALS

@@ -626,13 +626,13 @@ unit Tokenizer
             INY
         }
         
-        // Pad with spaces to 8 bytes total
+        // Pad with \0 to 8 bytes total
         loop
         {
-            CPY #8
+            CPY # 8
             if (Z) { break; }
             
-            LDA #' '
+            LDA # 0
             STA [ZP.FSOURCEADDRESS], Y
             INY
         }

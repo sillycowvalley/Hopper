@@ -115,45 +115,34 @@ unit GlobalManager
             if (Z)
             {
                 LDA #0  // Not found, set Z=0
+                CMP #1  // Set Z=0
                 break;
             }
             
-            // Compare names (8 bytes)
+            // Compare names (8 bytes exactly)
             LDX #0
+            LDY #ghName
             loop
             {
                 CPX #8
                 if (Z)
                 {
-                    LDA #1  // Found - all 8 bytes matched
+                    // All 8 bytes matched
+                    LDA #1  // Found
                     CMP #1  // Set Z=1
                     return;
                 }
                 
-                LDY #ghName
-                STX ZP.BasicWorkspace3  // Save X (use dedicated BASIC workspace)
-                TXA
-                CLC
-                ADC ghName
-                TAY
-                
-                LDA [ZP.IDX], Y
-                LDX ZP.BasicWorkspace3  // Restore X
-                CMP [ZP.FSOURCEADDRESS], X
+                // Compare byte X
+                LDA [ZP.IDX], Y         // Get stored character
+                CMP [ZP.FSOURCEADDRESS], X  // Compare with search character
                 if (NZ)
                 {
-                    break;  // Names don't match
+                    break;  // Mismatch - try next variable
                 }
+                
                 INX
-            }
-            
-            // Check if we found a match
-            CPX #8
-            if (Z)
-            {
-                LDA #1  // Found
-                CMP #1  // Set Z=1
-                return;
+                INY
             }
             
             // Move to next global
@@ -166,6 +155,9 @@ unit GlobalManager
             PLA
             STA ZP.IDXL
         }
+        
+        DumpHeap();
+        
         // Not found
         LDA #0
         CMP #1  // Set Z=0

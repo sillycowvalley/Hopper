@@ -150,8 +150,8 @@ unit ZP
     const byte BasicWorkspace1      = 0x4B;  // Variable name buffer 2
     const byte BasicWorkspace2      = 0x4C;  // Function manager workspace
     const byte BasicFlags           = 0x4D;  // General flags
-    const byte BasicTempPos         = 0x4E;  // Temporary position storage
-    const byte BasicWorkspace3      = 0x4F;  // Additional workspace
+    const byte LastErrorL           = 0x4E;  // Low byte of error message pointer
+    const byte LastErrorH           = 0x4F;  // High byte of error message pointer
     
 #endif
 

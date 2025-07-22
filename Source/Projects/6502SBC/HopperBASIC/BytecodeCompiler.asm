@@ -95,13 +95,10 @@ unit BytecodeCompiler
         if (NZ)  // Not found
         {
             // Variable doesn't exist - emit NOP and return
-            LDA #Opcodes.OpNop
-            STA ZP.NEXTL
-            LDA #0
-            STA ZP.NEXTH
-            LDA #Types.Byte
-            Stacks.PushNext();
-            FunctionManager.EmitByte();
+            LDA #(Interpreter.msgUndefinedVariable % 256)
+            STA ZP.LastErrorL
+            LDA #(Interpreter.msgUndefinedVariable / 256)
+            STA ZP.LastErrorH
             return;
         }
         
@@ -111,14 +108,11 @@ unit BytecodeCompiler
         GlobalManager.IsConstant();
         if (C)  // It's a constant
         {
-            // Can't assign to constant - emit NOP and return
-            LDA #Opcodes.OpNop
-            STA ZP.NEXTL
-            LDA #0
-            STA ZP.NEXTH
-            LDA #Types.Byte
-            Stacks.PushNext();
-            FunctionManager.EmitByte();
+            // Can't assign to constant - set error
+            LDA #(Interpreter.msgCannotAssignConstant % 256)
+            STA ZP.LastErrorL
+            LDA #(Interpreter.msgCannotAssignConstant / 256)
+            STA ZP.LastErrorH
             return;
         }
         
@@ -128,14 +122,11 @@ unit BytecodeCompiler
         CMP #Tokens.EQUALS
         if (NZ)
         {
-            // Not an assignment - emit NOP and return
-            LDA #Opcodes.OpNop
-            STA ZP.NEXTL
-            LDA #0
-            STA ZP.NEXTH
-            LDA #Types.Byte
-            Stacks.PushNext();
-            FunctionManager.EmitByte();
+            // Not an assignment - set error
+            LDA #(Interpreter.msgExpectedEquals % 256)
+            STA ZP.LastErrorL
+            LDA #(Interpreter.msgExpectedEquals / 256)
+            STA ZP.LastErrorH
             return;
         }
         
@@ -147,19 +138,18 @@ unit BytecodeCompiler
         CMP #Tokens.EOL
         if (Z)
         {
-            // Missing expression after = - emit NOP and return
-            LDA #Opcodes.OpNop
-            STA ZP.NEXTL
-            LDA #0
-            STA ZP.NEXTH
-            LDA #Types.Byte
-            Stacks.PushNext();
-            FunctionManager.EmitByte();
+            // Missing expression after = - set error
+            LDA #(Interpreter.msgMissingExpression % 256)
+            STA ZP.LastErrorL
+            LDA #(Interpreter.msgMissingExpression / 256)
+            STA ZP.LastErrorH
             return;
         }
         
         // Compile expression (puts result on stack)
         compileExpression();
+        CheckError();
+        if (Z) { return; }  // Error occurred, exit cleanly
         
         // Emit OpStoreVar followed by the 8-byte variable name
         LDA #Opcodes.OpStoreVar
@@ -178,177 +168,163 @@ unit BytecodeCompiler
     // Current token is the type token, isConst flag indicates if CONST was seen
     compileVariableDeclaration()
     {
-        // Current token is the type - convert to GlobalManager type
-        LDA ZP.CurrentToken
-        switch (A)
-        {
-            case Tokens.IntType:
-            {
-                LDA ZP.BasicFlags  // isConst flag (was U0)
-                if (Z)
-                {
-                    LDA #GlobalManager.GlobalTypes.VarInt
-                }
-                else
-                {
-                    LDA #GlobalManager.GlobalTypes.ConstInt
-                }
-                STA ZP.FTYPE
-            }
-            case Tokens.WordType:
-            {
-                LDA ZP.BasicFlags  // isConst flag
-                if (Z)
-                {
-                    LDA #GlobalManager.GlobalTypes.VarWord
-                }
-                else
-                {
-                    LDA #GlobalManager.GlobalTypes.ConstWord
-                }
-                STA ZP.FTYPE
-            }
-            case Tokens.ByteType:
-            {
-                LDA ZP.BasicFlags  // isConst flag
-                if (Z)
-                {
-                    LDA #GlobalManager.GlobalTypes.VarByte
-                }
-                else
-                {
-                    LDA #GlobalManager.GlobalTypes.ConstByte
-                }
-                STA ZP.FTYPE
-            }
-            case Tokens.BitType:
-            {
-                LDA ZP.BasicFlags  // isConst flag
-                if (Z)
-                {
-                    LDA #GlobalManager.GlobalTypes.VarBit
-                }
-                else
-                {
-                    LDA #GlobalManager.GlobalTypes.ConstBit
-                }
-                STA ZP.FTYPE
-            }
-            case Tokens.StringType:
-            {
-                LDA ZP.BasicFlags  // isConst flag
-                if (Z)
-                {
-                    LDA #GlobalManager.GlobalTypes.VarString
-                }
-                else
-                {
-                    LDA #GlobalManager.GlobalTypes.ConstString
-                }
-                STA ZP.FTYPE
-            }
-            default:
-            {
-                // Invalid type - emit NOP and return
-                LDA #Opcodes.OpNop
-                STA ZP.NEXTL
-                LDA #0
-                STA ZP.NEXTH
-                LDA #Types.Byte
-                Stacks.PushNext();
-                FunctionManager.EmitByte();
-                return;
-            }
-        }
-        
-        // Get variable name
-        Tokenizer.nextToken();
-        LDA ZP.CurrentToken
-        CMP #Tokens.IDENTIFIER
-        if (NZ)
-        {
-            // Invalid syntax - emit NOP and return
-            LDA #Opcodes.OpNop
-            STA ZP.NEXTL
-            LDA #0
-            STA ZP.NEXTH
-            LDA #Types.Byte
-            Stacks.PushNext();
-            FunctionManager.EmitByte();
-            return;
-        }
-        
-        // Set up name buffer
-        LDA #ZP.BasicWorkspace0
-        STA ZP.FSOURCEADDRESSL
-        LDA #0
-        STA ZP.FSOURCEADDRESSH
-        
-        Tokenizer.getTokenName();  // Returns 8-byte padded name at FSOURCEADDRESS
-        
-        // Default value is 0
-        STZ ZP.TOPL
-        STZ ZP.TOPH
-        
-        // Check for optional initializer
-        Tokenizer.nextToken();
-        LDA ZP.CurrentToken
-        CMP #Tokens.EQUALS
-        if (Z)
-        {
-            // Has initializer - compile the expression
-            Tokenizer.nextToken();
-            compileExpression();
-            
-            // The expression result is now on the runtime stack
-            // We need to get it into ZP.TOP for GlobalManager.AddGlobal()
-            // For now, we'll emit code to execute the expression and capture result
-            // This is a bit of a hack - we're mixing compile-time and runtime evaluation
-            
-            // TODO: This needs proper handling
-            // For now, just use a simple number if it was a number token
-            LDA ZP.CurrentToken
-            CMP #Tokens.NUMBER
-            if (Z)
-            {
-                Tokenizer.getTokenNumber(); // Gets value in TOP
-            }
-            else
-            {
-                // For other expressions, default to 0 for now
-                STZ ZP.TOPL
-                STZ ZP.TOPH
-            }
-        }
-        else
-        {
-            // Check if this is a constant without initializer (error)
-            LDA ZP.BasicFlags  // isConst flag
-            if (NZ)
-            {
-                // Constants MUST have initializer
-                LDA #Opcodes.OpNop
-                STA ZP.NEXTL
-                LDA #0
-                STA ZP.NEXTH
-                LDA #Types.Byte
-                Stacks.PushNext();
-                FunctionManager.EmitByte();
-                return;
-            }
-        }
-        
-        // Add the variable/constant to GlobalManager
-        GlobalManager.AddGlobal();
-        
-        // Emit NOP as placeholder (declaration doesn't generate runtime code)
-        LDA #Opcodes.OpNop
-        STA ZP.NEXTL
-        LDA #0
-        STA ZP.NEXTH
-        LDA #Types.Byte
-        Stacks.PushNext();
-        FunctionManager.EmitByte();
+       // Current token is the type - convert to GlobalManager type
+       LDA ZP.CurrentToken
+       switch (A)
+       {
+           case Tokens.IntType:
+           {
+               LDA ZP.BasicFlags  // isConst flag (was U0)
+               if (Z)
+               {
+                   LDA #GlobalManager.GlobalTypes.VarInt
+               }
+               else
+               {
+                   LDA #GlobalManager.GlobalTypes.ConstInt
+               }
+               STA ZP.FTYPE
+           }
+           case Tokens.WordType:
+           {
+               LDA ZP.BasicFlags  // isConst flag
+               if (Z)
+               {
+                   LDA #GlobalManager.GlobalTypes.VarWord
+               }
+               else
+               {
+                   LDA #GlobalManager.GlobalTypes.ConstWord
+               }
+               STA ZP.FTYPE
+           }
+           case Tokens.ByteType:
+           {
+               LDA ZP.BasicFlags  // isConst flag
+               if (Z)
+               {
+                   LDA #GlobalManager.GlobalTypes.VarByte
+               }
+               else
+               {
+                   LDA #GlobalManager.GlobalTypes.ConstByte
+               }
+               STA ZP.FTYPE
+           }
+           case Tokens.BitType:
+           {
+               LDA ZP.BasicFlags  // isConst flag
+               if (Z)
+               {
+                   LDA #GlobalManager.GlobalTypes.VarBit
+               }
+               else
+               {
+                   LDA #GlobalManager.GlobalTypes.ConstBit
+               }
+               STA ZP.FTYPE
+           }
+           case Tokens.StringType:
+           {
+               LDA ZP.BasicFlags  // isConst flag
+               if (Z)
+               {
+                   LDA #GlobalManager.GlobalTypes.VarString
+               }
+               else
+               {
+                   LDA #GlobalManager.GlobalTypes.ConstString
+               }
+               STA ZP.FTYPE
+           }
+           default:
+           {
+               // Invalid type - set error
+               LDA #(Interpreter.msgInvalidType % 256)
+               STA ZP.LastErrorL
+               LDA #(Interpreter.msgInvalidType / 256)
+               STA ZP.LastErrorH
+               return;
+           }
+       }
+       
+       // Get variable name
+       Tokenizer.nextToken();
+       LDA ZP.CurrentToken
+       CMP #Tokens.IDENTIFIER
+       if (NZ)
+       {
+           // Invalid syntax - set error  
+           LDA #(Interpreter.msgExpectedIdentifier % 256)
+           STA ZP.LastErrorL
+           LDA #(Interpreter.msgExpectedIdentifier / 256)
+           STA ZP.LastErrorH
+           return;
+       }
+       
+       // Set up name buffer
+       LDA #ZP.BasicWorkspace0
+       STA ZP.FSOURCEADDRESSL
+       LDA #0
+       STA ZP.FSOURCEADDRESSH
+       
+       Tokenizer.getTokenName();  // Returns 8-byte padded name at FSOURCEADDRESS
+       
+       // Default value is 0 (ALWAYS set this first)
+       STZ ZP.TOPL
+       STZ ZP.TOPH
+       
+       // Check for optional initializer
+       Tokenizer.nextToken();
+       LDA ZP.CurrentToken
+       CMP #Tokens.EQUALS
+       if (Z)
+       {
+           // Has initializer - get the next token (the value)
+           Tokenizer.nextToken();
+           
+           // Check what kind of expression we have
+           LDA ZP.CurrentToken
+           CMP #Tokens.NUMBER
+           if (Z)
+           {
+               // It's a number - get the value directly
+               Tokenizer.getTokenNumber(); // Gets value in TOP
+           }
+           else
+           {
+               // For other expressions, default to 0 for now
+               STZ ZP.TOPL
+               STZ ZP.TOPH
+           }
+       }
+       else
+       {
+           // Check if this is a constant without initializer (error)
+           LDA ZP.BasicFlags  // isConst flag
+           if (NZ)
+           {
+               // Constants MUST have initializer - set error
+               LDA #(Interpreter.msgConstantNeedsValue % 256)
+               STA ZP.LastErrorL
+               LDA #(Interpreter.msgConstantNeedsValue / 256)
+               STA ZP.LastErrorH
+               return;
+           }
+       }
+       
+       // Add the variable/constant to GlobalManager
+       // Parameters: FSOURCEADDRESS = name, FTYPE = type, TOP = value
+       GlobalManager.AddGlobal();
+       
+       // Emit NOP as placeholder (declaration doesn't generate runtime code)
+       LDA #Opcodes.OpNop
+       STA ZP.NEXTL
+       LDA #0
+       STA ZP.NEXTH
+       LDA #Types.Byte
+       Stacks.PushNext();
+       FunctionManager.EmitByte();
     }
     
     // Compile an expression (number, variable, arithmetic, etc.)
@@ -405,21 +381,12 @@ unit BytecodeCompiler
                 }
                 else
                 {
-                    // Variable not found - push 0 as error value
-                    STZ ZP.TOPL
-                    STZ ZP.TOPH
-                    
-                    LDA #Opcodes.OpPushInt
-                    STA ZP.NEXTL
-                    LDA #0
-                    STA ZP.NEXTH
-                    LDA #Types.Byte
-                    Stacks.PushNext();
-                    FunctionManager.EmitByte();
-                    
-                    LDA #Types.UInt
-                    Stacks.PushTop();
-                    FunctionManager.EmitWord();
+                    // Variable not found - set error
+                    LDA #(Interpreter.msgUndefinedVariable % 256)  // Reuse existing message
+                    STA ZP.LastErrorL
+                    LDA #(Interpreter.msgUndefinedVariable / 256)
+                    STA ZP.LastErrorH
+                    return;
                 }
             }
             case Tokens.STRING:
@@ -460,25 +427,35 @@ unit BytecodeCompiler
             }
             default:
             {
-                // Missing or invalid expression - push 0
-                STZ ZP.TOPL
-                STZ ZP.TOPH
-                
-                LDA #Opcodes.OpPushInt
-                STA ZP.NEXTL
-                LDA #0
-                STA ZP.NEXTH
-                LDA #Types.Byte
-                Stacks.PushNext();
-                FunctionManager.EmitByte();
-                
-                LDA #Types.UInt
-                Stacks.PushTop();
-                FunctionManager.EmitWord();
+                // Missing or invalid expression - set error
+                LDA #(Interpreter.msgInvalidExpression % 256)
+                STA ZP.LastErrorL
+                LDA #(Interpreter.msgInvalidExpression / 256)
+                STA ZP.LastErrorH
+                return;
             }
         }
     }
     
+    // Add this helper function to BytecodeCompiler.asm
+    cleanupCompilationOnError()
+    {
+        // Free the temp buffer if it was allocated
+        LDA ZP.CompileState
+        CMP #1  // Currently compiling?
+        if (Z)
+        {
+            // Free temp buffer
+            LDA ZP.TempBlockLo
+            STA ZP.IDXL
+            LDA ZP.TempBlockHi
+            STA ZP.IDXH
+            Memory.Free();
+            
+            // Reset compilation state
+            STZ ZP.CompileState
+        }
+    }
             
     // Compile a complete REPL statement
     CompileREPLStatement()
@@ -531,15 +508,20 @@ unit BytecodeCompiler
             }
             default:
             {
-                // Unsupported statement - emit NOP for now
-                LDA #Opcodes.OpNop
-                STA ZP.NEXTL
-                LDA #0
-                STA ZP.NEXTH
-                LDA #Types.Byte
-                Stacks.PushNext();
-                FunctionManager.EmitByte();
+                // Unsupported statement - set error
+                LDA #(Interpreter.msgUnsupportedStatement % 256)
+                STA ZP.LastErrorL
+                LDA #(Interpreter.msgUnsupportedStatement / 256)
+                STA ZP.LastErrorH
+                return;
             }
+        }
+        CheckError();
+        if (Z) 
+        { 
+            // Error occurred - cleanup temp buffer before returning
+            cleanupCompilationOnError();
+            return; 
         }
         
         // Always end with HALT for REPL
