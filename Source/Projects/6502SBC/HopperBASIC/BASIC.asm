@@ -3,6 +3,8 @@ program HopperBASIC
     #define CPU_65C02S
     #define ROM_8K
     
+    //#define SMALLCODE // optimize for size: no jump tables for switches
+    
     uses "/Source/Runtime/6502/Serial"
     uses "/Source/Runtime/6502/ZeroPage"
     uses "/Source/Runtime/6502/Memory"

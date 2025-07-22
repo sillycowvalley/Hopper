@@ -22,6 +22,9 @@ unit Tokenizer
         DEL      = 0x08,
         VARS     = 0x09,
         FUNCS    = 0x0A,
+        BYE      = 0x0B,
+        EOL      = 0x0C, // can be empty line in REPL
+        
         
         // Language tokens (16+)
         LET      = 0x10,
@@ -43,7 +46,6 @@ unit Tokenizer
         NUMBER     = 0x80,
         STRING     = 0x81,
         IDENTIFIER = 0x82,
-        EOL        = 0x83,
         EOF        = 0x84,
         
         // Operators  
@@ -83,6 +85,7 @@ unit Tokenizer
         3, Tokens.DEL, 'D', 'E', 'L',
         4, Tokens.VARS, 'V', 'A', 'R', 'S',
         5, Tokens.FUNCS, 'F', 'U', 'N', 'C', 'S',
+        3, Tokens.BYE, 'B', 'Y', 'E',
         3, Tokens.LET, 'L', 'E', 'T',
         5, Tokens.PRINT, 'P', 'R', 'I', 'N', 'T',
         2, Tokens.IF, 'I', 'F',
@@ -145,7 +148,7 @@ unit Tokenizer
     isAlphaNum()
     {
         // A contains character to test
-        // Returns Z=1 if alphanumeric, Z=0 if not
+        // Returns Z=0 if alphanumeric, Z=1 if not 
         CMP #'0'
         if (C)  // >= '0'
         {
@@ -166,19 +169,27 @@ unit Tokenizer
                 return;
             }
         }
-        STZ ZP.ACCL  // Set Z=1 (not alphanumeric)
-        LDA ZP.ACCL
+        CMP #'a'
+        if (C)  // >= 'a'
+        {
+            CMP #('z'+1)
+            if (NC)  // <= 'z'
+            {
+                LDA #1  // Set Z=0 (is alphanumeric)
+                return;
+            }
+        }
+        LDA #0  // Set Z=1 (not alphanumeric)
     }
     
     // Find keyword match
     // Returns token in A if found, or 0 if not found
     findKeyword()
     {
-        LDY #0  // Index into keywords table
-        
+        LDY #0  // Initialize Y to start at beginning of keyword table
         loop
         {
-            LDA keywords, Y  // Get length of this keyword
+            LDA keywords, Y    // Get length of this keyword
             if (Z) { break; }  // End of table
             
             CMP tkTOKEN_LEN
@@ -200,74 +211,54 @@ unit Tokenizer
                         return;
                     }
                     
-                    LDA keywords, Y
-                    STA ZP.ACCH      // Expected character
+                    LDA keywords, Y  // Expected character from table
+                    STA ZP.ACCH      
                     
-                    // Get actual character from input
-                    LDA tkTOKEN_START
+                    // Get actual character from input buffer
+                    PHY              // Save Y (keywords table index)
+                    TXA              // Character index
                     CLC
-                    ADC tkTOKEN_LEN
-                    SEC
-                    SBC tkTOKEN_LEN
-                    CLC
-                    ADC tkTOKEN_LEN
-                    SEC
-                    SBC tkTOKEN_LEN  // Sorry, simpler approach:
-                    
-                    TXA
-                    CLC
-                    ADC tkTOKEN_START
-                    TAY
-                    LDA INPUT_BUFFER, Y  // Actual character
-                    TAY
+                    ADC tkTOKEN_START // Add token start position  
+                    TAY              // Use Y for INPUT_BUFFER index
+                    LDA INPUT_BUFFER, Y
                     makeUppercase();
+                    PLY              // Restore Y (keywords table index) FIRST
                     
-                    CMP ZP.ACCH
-                    if (NZ)  // Mismatch
+                    CMP ZP.ACCH      // Compare with expected AFTER restoring Y
+                    if (NZ)          // Mismatch
                     {
                         break;
                     }
                     
-                    INX
-                    TYA  // Restore Y for keywords table
-                    TAY
-                    INY
+                    INX              // Next character
+                    INY              // Next expected character  
                 }
                 
-                if (Z)  // All characters matched
-                {
-                    LDA ZP.ACCL  // Return token value
-                    return;
-                }
-                
-                // Skip rest of this keyword
-                LDX tkTOKEN_LEN
-                SEC
-                SBC tkTOKEN_LEN  // We already advanced Y by tokenlen+1
-                CLC
-                ADC tkTOKEN_LEN
+                // If we get here, there was a mismatch  
+                // X = current character position, Y = current character in keyword table
+                // Skip to end of this keyword: advance Y by (tkTOKEN_LEN - X - 1) positions
                 loop
                 {
-                    CPX #0
-                    if (Z) { break; }
-                    INY
-                    DEX
-                }
+                    CPX tkTOKEN_LEN       // Have we reached the end?
+                    if (Z) { break; }     // Yes, Y now points to start of next keyword
+                    INX                   // Move to next character position
+                    INY                   // Advance Y to next character
+                }            
             }
             else
             {
-                // Skip this keyword (length + 1 for token + length for chars)
-                INY  // Skip token
-                CLC
-                ADC #1  // Length was in A
-                TAX
+                // Skip this keyword (length doesn't match):
+                
+                // A contains the keyword length, Y points to the length byte
+                INY          // Skip past length byte to token byte
+                INY          // Skip past token byte to first character byte
                 loop
                 {
-                    CPX #0
-                    if (Z) { break; }
-                    INY
-                    DEX
+                    if (Z) { break; }    // When A reaches 0, we've skipped all character bytes
+                    INY          // Skip past one character byte  
+                    DEC          // Decrement remaining character count (A--)
                 }
+                // Y now points to the length byte of the next keyword            
             }
         }
         

@@ -34,6 +34,10 @@ program Assemble
     bool is65uino;
     bool Is65uino { get { return is65uino; } }
     
+    bool isOptSize;
+    bool IsOptSize { get { return isOptSize; } }
+    
+    
     uint iCurrentOverload;
     uint iHopper;
     uint iNMI;
@@ -178,7 +182,7 @@ program Assemble
             char registerName = (currentToken["lexeme"]).GetChar(0);
             Parser.Advance();
             
-            tableCandidate = ((registerName == 'X') || (registerName == 'Y')); // JMP nnnn
+            tableCandidate = ((registerName == 'X') || (registerName == 'Y')) && !IsOptSize; // JMP nnnn
             Parser.Consume(HopperToken.RParen);
             if (Parser.HadError)
             {
@@ -1688,6 +1692,9 @@ program Assemble
                 isExperimental       = isExperimental || Symbols.DefineExists("EXPERIMENTAL");
                 Architecture = CPUArchitecture.M6502; 
                 IsTiggerC = Symbols.DefineExists("TIGGERC");
+                
+                isOptSize = Symbols.DefineExists("SMALLCODE");
+                
                 if (Symbols.DefineExists("CPU_65C02S"))
                 {
                     Architecture = CPUArchitecture.W65C02;

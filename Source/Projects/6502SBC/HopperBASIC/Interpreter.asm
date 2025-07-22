@@ -24,6 +24,7 @@ unit Interpreter
     const string msgVariablesCleared = "VARIABLES CLEARED\n";
     const string msgNoProgram = "NO PROGRAM\n";
     const string msgNoVariables = "NO VARIABLES\n";
+    const string msgGoodbye = "GOODBYE\n";
     
     printMessage()
     {
@@ -228,23 +229,33 @@ unit Interpreter
         printOK();
     }
     
+    cmdBye()
+    {
+        // Could print farewell message
+        LDA #(msgGoodbye % 256)
+        STA ZP.IDXL
+        LDA #(msgGoodbye / 256) 
+        STA ZP.IDXH
+        printMessage();
+    }
+    cmdNOP()
+    {
+    }
+    
     // Process command line - all commands are immediate in structured BASIC
     processCommand()
     {
         Tokenizer.nextToken();  // Get first token
         
-        LDA #'['
-        Serial.WriteChar();
-        LDA Tokenizer.tkCURRENT_TOK
-        Serial.HexOut();
-        LDA #']'
-        Serial.WriteChar();
-        LDA #' '
-        Serial.WriteChar();
-        
-        LDA Tokenizer.tkCURRENT_TOK
-        switch (A)
+        // Note: for this switch to optimize to a small jump table, the constant values of the
+        //       case labels should be contiguous (no gaps)
+        LDX Tokenizer.tkCURRENT_TOK
+        switch (X)
         {
+            case Tokens.BYE:
+            {
+                cmdBye();
+            }
             case Tokens.NEW:
             {
                 cmdNew();
@@ -288,7 +299,7 @@ unit Interpreter
             case Tokens.EOL:
             {
                 // Empty line - just show ready prompt
-                return;
+                cmdNOP(); // need method call so this switch is optimized to a jump table
             }
             default:
             {
@@ -319,6 +330,11 @@ unit Interpreter
             if (Z) { continue; }   // Empty line
             
             processCommand();
+            
+            // Check if BYE was entered
+            LDA Tokenizer.tkCURRENT_TOK
+            CMP #Tokens.BYE
+            if (Z) { break; }      // Exit the interpreter loop
         }
     }
 }
