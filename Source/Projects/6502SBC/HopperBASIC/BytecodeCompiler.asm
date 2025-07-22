@@ -6,14 +6,6 @@ unit BytecodeCompiler
     uses "FunctionManager"
     uses "GlobalManager"
     
-    // Check if error occurred
-    CheckError()
-    {
-        // Returns Z=0 if error occurred, Z=1 if no error
-        LDA ZP.LastErrorL
-        ORA ZP.LastErrorH
-    }
-    
     // Bytecode opcodes
     enum Opcodes 
     {
@@ -120,19 +112,22 @@ unit BytecodeCompiler
         LDA ZP.TokenLen  
         STA ZP.BasicWorkspace1    // Save token length
         
-        // Look up the variable for validation - use token directly
+        // Look up the variable - it MUST exist for assignment
         GlobalManager.FindGlobal();
-        if (NZ)  // Not found
+        if (NZ)  // Variable doesn't exist - ERROR!
         {
-            // Variable doesn't exist - set error
+            // Variable not found - set error
             LDA #(Interpreter.msgUndefinedVariable % 256)
             STA ZP.LastErrorL
             LDA #(Interpreter.msgUndefinedVariable / 256)
             STA ZP.LastErrorH
+            
+            LDA #'!'
+            Serial.WriteChar();
             return;
         }
         
-        // Check if it's a constant (can't assign to constants)
+        // Variable exists - check if it's a constant (can't assign to constants)
         GlobalManager.GetGlobalValue();  // Returns type in FTYPE
         LDA ZP.FTYPE
         GlobalManager.IsConstant();
@@ -181,7 +176,7 @@ unit BytecodeCompiler
         CheckError();
         if (NZ) { return; }
         
-        // Now emit OpStoreVar with the SAVED variable name
+        // Emit OpStoreVar with the SAVED variable name
         LDA #Opcodes.OpStoreVar
         STA ZP.NEXTL
         LDA #0
@@ -336,11 +331,9 @@ unit BytecodeCompiler
         
         // Save the variable name token info before advancing
         LDA ZP.TokenStart
-        STA ZP.BasicWorkspace2    // Save identifier token start  
+        STA ZP.BasicWorkspace1    // Save identifier token start  
         LDA ZP.TokenLen
-        STA ZP.BasicWorkspace3    // Save identifier token length
-        
-        // Save token info for GlobalManager.AddGlobal() - token name is in TokenStart/TokenLen
+        STA ZP.BasicWorkspace2    // Save identifier token length
         
         // Default value is 0 (ALWAYS set this first)
         STZ ZP.TOPL
@@ -386,9 +379,9 @@ unit BytecodeCompiler
         }
         
         // Restore the variable name token info for AddGlobal
-        LDA ZP.BasicWorkspace2
+        LDA ZP.BasicWorkspace1
         STA ZP.TokenStart
-        LDA ZP.BasicWorkspace3  
+        LDA ZP.BasicWorkspace2
         STA ZP.TokenLen
         
         // Add the variable/constant to GlobalManager
@@ -462,7 +455,8 @@ unit BytecodeCompiler
             }
             case Tokens.STRING:
             {
-                // String literal - for now just emit placeholder (push 0)
+                // SILENT FAILURE #11: String literal compilation not implemented
+                BRK // String literal compilation not implemented
                 STZ ZP.TOPL
                 STZ ZP.TOPH
                 

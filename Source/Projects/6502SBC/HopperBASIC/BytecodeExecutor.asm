@@ -87,19 +87,8 @@ unit BytecodeExecutor
         // Load 16-bit constant onto value stack
         executorFetchWord();  // Gets constant into TOP
         
-        // DEBUG: Show what we're pushing
-        LDA #'P'
-        Serial.WriteChar();
-        LDA #'U'
-        Serial.WriteChar();
-        LDA #'S'
-        Serial.WriteChar();
-        LDA #'H'
-        Serial.WriteChar();
-        LDA #':'
-        Serial.WriteChar();
-        DumpVariables();
-
+        Tools.DumpVariables(); // DEBUG: Show TOP right after fetch
+        
         LDA #Types.UInt
         Stacks.PushTop();
     }
@@ -113,8 +102,8 @@ unit BytecodeExecutor
     
     handlePrintStr()
     {
-        // TODO: Implement string printing
-        // For now, just print placeholder
+        // SILENT FAILURE #1: String printing not implemented
+        BRK // String printing not implemented
         LDA #'S'
         Serial.WriteChar();
         LDA #'T'
@@ -169,35 +158,26 @@ unit BytecodeExecutor
         }
         else
         {
-            // Variable not found - push 0
             STZ ZP.TOPL
             STZ ZP.TOPH
             LDA #Types.UInt
             Stacks.PushTop();
+            // Variable not found
+            LDA #(Interpreter.msgUndefinedVariable % 256)
+            STA ZP.LastErrorL
+            LDA #(Interpreter.msgUndefinedVariable / 256)
+            STA ZP.LastErrorH
         }
     }
     
     handleStoreVar()
     {
-        // DEBUG: Show what we're about to store
-        LDA #'S'
-        Serial.WriteChar();
-        LDA #'T'
-        Serial.WriteChar();
-        LDA #'O'
-        Serial.WriteChar();
-        LDA #'R'
-        Serial.WriteChar();
-        LDA #':'
-        Serial.WriteChar();
-        DumpVariables();
-        
         // Fetch variable name from bytecode
         executorFetchVariableName();
         
         // Look up the variable using the fetched name
         GlobalManager.FindGlobal();
-        if (Z)  // Found
+        if (NZ)  // Found
         {
             // Check if it's a constant (can't assign to constants)
             GlobalManager.GetGlobalValue();  // Returns type in FTYPE
@@ -218,8 +198,12 @@ unit BytecodeExecutor
                     loop
                     {
                         LDA [ZP.IDX], Y
+                        if (Z) 
+                        { 
+                            INY  // Move past null terminator
+                            break; 
+                        }
                         INY
-                        if (Z) { break; }  // Found null terminator
                     }
                     // Y now points to type byte, skip to value
                     INY
@@ -234,21 +218,31 @@ unit BytecodeExecutor
             }
             else
             {
-                // Can't assign to constant - just pop and ignore
                 Stacks.PopTop();
+                // Can't assign to constant - set error
+                LDA #(Interpreter.msgCannotAssignConstant % 256)
+                STA ZP.LastErrorL
+                LDA #(Interpreter.msgCannotAssignConstant / 256)
+                STA ZP.LastErrorH
+                return;
             }
         }
         else
         {
-            // Variable not found - just pop and ignore
+            // Variable not found
             Stacks.PopTop();
+            LDA #(Interpreter.msgUndefinedVariable % 256)
+            STA ZP.LastErrorL
+            LDA #(Interpreter.msgUndefinedVariable / 256)
+            STA ZP.LastErrorH
+            return;
         }
     }
     
     handleReturn()
     {
         // For REPL, this is same as HALT
-        // TODO: Implement proper function returns later
+        BRK // TODO: Implement proper function returns later
         handleHalt();
     }
     
@@ -334,8 +328,10 @@ unit BytecodeExecutor
                 default:
                 {
                     // Unknown opcode - halt execution
+                    Serial.HexOut();
                     LDA #'?'
                     Serial.WriteChar();
+                    BRK
                     handleHalt();
                     break;
                 }

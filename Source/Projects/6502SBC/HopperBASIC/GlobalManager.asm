@@ -69,7 +69,7 @@ unit GlobalManager
             if (Z) { break; }
             
             // Find the type offset (skip past null-terminated name)
-            LDY #ghName
+            LDY #ghName  // ghName = 2 (after next pointer)
             loop
             {
                 LDA [ZP.IDX], Y
@@ -90,8 +90,8 @@ unit GlobalManager
                 STA [ZP.IDX], Y
             }
             
-            // Move to next global
-            LDY #ghNext
+            // Move to next global - follow the next pointer at offset 0
+            LDY #0  // ghNext should be 0, not 16!
             LDA [ZP.IDX], Y
             PHA
             INY

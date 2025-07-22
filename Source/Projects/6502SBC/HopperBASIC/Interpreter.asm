@@ -70,16 +70,16 @@ unit Interpreter
     
     CheckError()
     {
-        // Returns Z=0 if error occurred, Z=1 if no error
+        // Returns Z if no error, NZ if error occurred
         LDA ZP.LastErrorL
         ORA ZP.LastErrorH
     }
     
     checkAndPrintError()
     {
-        // Returns Z=1 if no error, Z=0 if error was printed
+        // Returns Z if no error, NZ if error was printed
         CheckError();
-        if (NZ) { return; }  // No error
+        if (Z) { return; }  // No error
         
         // Print the error message
         LDA ZP.LastErrorL
@@ -91,7 +91,7 @@ unit Interpreter
         // Clear the error
         clearError();
         
-        // Set Z=0 to indicate error was found
+        // Set NZ to indicate error was found
         LDA #1
         CMP #0
     }
@@ -186,8 +186,8 @@ unit Interpreter
             return;
         }
         
-        // TODO: Implement program listing
-        // For now, just acknowledge
+        // SILENT FAILURE #4: Program listing not implemented
+        BRK // Program listing not implemented
         printOK();
     }
     
@@ -276,39 +276,44 @@ unit Interpreter
             return;
         }
         
-        // TODO: Implement program execution
-        // For now, just acknowledge
+        // SILENT FAILURE #5: Program execution not implemented
+        BRK // Program execution not implemented
         printOK();
     }
     
     // Save/Load/Dir/Del - EEPROM operations (stub for now)
     cmdSave()
     {
-        // TODO: Expect string parameter for filename
+        // SILENT FAILURE #6: Save command not implemented
+        BRK // Save command not implemented
         printOK();
     }
     
     cmdLoad()
     {
-        // TODO: Expect string parameter for filename
+        // SILENT FAILURE #7: Load command not implemented
+        BRK // Load command not implemented
         printOK();
     }
     
     cmdDir()
     {
-        // TODO: List EEPROM directory
+        // SILENT FAILURE #8: Directory command not implemented
+        BRK // Directory command not implemented
         printOK();
     }
     
     cmdDel()
     {
-        // TODO: Expect string parameter for filename
+        // SILENT FAILURE #9: Delete command not implemented
+        BRK // Delete command not implemented
         printOK();
     }
     
     cmdFuncs()
     {
-        // TODO: List defined functions
+        // SILENT FAILURE #10: Functions list not implemented
+        BRK // Functions list not implemented
         printOK();
     }
     
@@ -335,7 +340,7 @@ unit Interpreter
         STZ ZP.TokenizerPos
         BytecodeCompiler.CompileREPLStatement();
         checkAndPrintError();
-        if (Z) 
+        if (NZ) 
         {
             // Compilation error - cleanup and abort
             FunctionManager.CleanupREPLFunction();
