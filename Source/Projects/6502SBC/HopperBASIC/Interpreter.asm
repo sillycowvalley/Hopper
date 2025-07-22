@@ -8,6 +8,7 @@ unit Interpreter
     uses "FunctionManager"
     uses "BytecodeCompiler"
     uses "BytecodeExecutor"
+    uses "GlobalManager"
     
     enum ExprTypes
     {
@@ -21,13 +22,13 @@ unit Interpreter
     
     // Program storage - simple linked list for now
     // Each program line: [length] [line_number_lo] [line_number_hi] [tokenized_data...]
-    const byte pgmLIST_HEAD = ZP.PgmListHead;      // was ZP.F5 - now uses dedicated space
-    const byte pgmLIST_HEADH = ZP.PgmListHeadHi;   // was ZP.F6 - now uses dedicated space
+    const byte pgmListHead = ZP.PgmListHead;      // was ZP.F5 - now uses dedicated space
+    const byte pgmListHeadHi = ZP.PgmListHeadHi;   // was ZP.F6 - now uses dedicated space
     
     // Variable storage - simple array for now  
     // Each variable: [name_length] [name_chars...] [type] [value_lo] [value_hi]
-    const byte varLIST_HEAD = ZP.VarListHead;      // was ZP.F7 - now uses dedicated space
-    const byte varLIST_HEADH = ZP.VarListHeadHi;   // was ZP.F8 - now uses dedicated space
+    const byte varListHead = ZP.VarListHead;      // was ZP.F7 - now uses dedicated space
+    const byte varListHeadHi = ZP.VarListHeadHi;   // was ZP.F8 - now uses dedicated space
     
     // Messages
     const string msgReady = "READY\n> ";
@@ -37,7 +38,10 @@ unit Interpreter
     const string msgVariablesCleared = "VARIABLES CLEARED\n";
     const string msgNoProgram = "NO PROGRAM\n";
     const string msgNoVariables = "NO VARIABLES\n";
+    const string msgNoConstants = "NO CONSTANTS\n";
     const string msgGoodbye = "GOODBYE\n";
+    const string msgVariablesHeader = "VARIABLES:\n";
+    const string msgConstantsHeader = "CONSTANTS:\n";
     
     printMessage()
     {
@@ -86,15 +90,15 @@ unit Interpreter
         STZ ZP.FLAGS
         SMB0 ZP.FLAGS  // Program loaded flag
         
-        
         // Clear our list heads since everything is gone
-        STZ pgmLIST_HEAD
-        STZ pgmLIST_HEADH
-        STZ varLIST_HEAD
-        STZ varLIST_HEADH
+        STZ pgmListHead
+        STZ pgmListHeadHi
+        STZ varListHead
+        STZ varListHeadHi
         
-        // Reinitialize function manager
+        // Reinitialize function and global managers
         FunctionManager.Initialize();
+        GlobalManager.Initialize();
         
         LDA #(msgMemoryCleared % 256)
         STA ZP.IDXL
@@ -106,39 +110,7 @@ unit Interpreter
     // Clear variables only
     cmdClear()
     {
-        // Free all variable blocks  
-        LDA varLIST_HEAD
-        STA ZP.IDXL
-        LDA varLIST_HEADH
-        STA ZP.IDXH
-        
-        loop
-        {
-            LDA ZP.IDXL
-            ORA ZP.IDXH
-            if (Z) { break; }  // End of list
-            
-            // Get next pointer before freeing
-            LDY #0
-            LDA [ZP.IDX], Y
-            STA ZP.IDYL
-            INY
-            LDA [ZP.IDX], Y
-            STA ZP.IDYH
-            
-            // Free current block
-            Free();  // Frees block at IDX
-            
-            // Move to next
-            LDA ZP.IDYL
-            STA ZP.IDXL
-            LDA ZP.IDYH
-            STA ZP.IDXH
-        }
-        
-        // Clear list head
-        STZ varLIST_HEAD
-        STZ varLIST_HEADH
+        GlobalManager.ClearVariables();
         
         LDA #(msgVariablesCleared % 256)
         STA ZP.IDXL
@@ -150,9 +122,9 @@ unit Interpreter
     // List program
     cmdList()
     {
-        LDA pgmLIST_HEAD
+        LDA pgmListHead
         STA ZP.IDXL
-        LDA pgmLIST_HEADH
+        LDA pgmListHeadHi
         STA ZP.IDXH
         
         LDA ZP.IDXL
@@ -175,9 +147,10 @@ unit Interpreter
     // Show variables
     cmdVars()
     {
-        LDA varLIST_HEAD
+        // Walk through globals and show only variables (not constants)
+        LDA ZP.VarListHead
         STA ZP.IDXL
-        LDA varLIST_HEADH
+        LDA ZP.VarListHeadHi
         STA ZP.IDXH
         
         LDA ZP.IDXL
@@ -192,17 +165,159 @@ unit Interpreter
             return;
         }
         
-        // TODO: Implement variable listing
-        // For now, just acknowledge
-        printOK();
+        // Print header
+        LDA #(msgVariablesHeader % 256)
+        STA ZP.IDXL
+        LDA #(msgVariablesHeader / 256)
+        STA ZP.IDXH
+        Tools.PrintString();
+        
+        STZ ZP.U0  // Clear flag for variables
+        listGlobals();  // Helper function
+    }
+    
+    // Show constants
+    cmdConsts()
+    {
+        // Walk through globals and show only constants (not variables)
+        LDA ZP.VarListHead
+        STA ZP.IDXL
+        LDA ZP.VarListHeadHi
+        STA ZP.IDXH
+        
+        LDA ZP.IDXL
+        ORA ZP.IDXH
+        if (Z)
+        {
+            LDA #(msgNoConstants % 256)
+            STA ZP.IDXL
+            LDA #(msgNoConstants / 256)
+            STA ZP.IDXH
+            printMessage();
+            return;
+        }
+        
+        // Print header
+        LDA #(msgConstantsHeader % 256)
+        STA ZP.IDXL
+        LDA #(msgConstantsHeader / 256)
+        STA ZP.IDXH
+        Tools.PrintString();
+        
+        LDA #1  // Show constants flag
+        STA ZP.U0
+        listGlobals();  // Helper function
+    }
+    
+    // Helper function to list globals
+    // If ZP.U0 = 0, show variables; if ZP.U0 = 1, show constants
+    listGlobals()
+    {
+        // Walk the global list
+        LDA ZP.VarListHead
+        STA ZP.IDXL
+        LDA ZP.VarListHeadHi
+        STA ZP.IDXH
+        
+        loop
+        {
+            // Check for end of list
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z) { break; }
+            
+            // Get type and value
+            GlobalManager.GetGlobalValue();  // Returns type in FTYPE, value in TOP
+            
+            // Check if this matches what we want to show
+            LDA ZP.FTYPE
+            GlobalManager.IsConstant();  // Returns C=1 if constant
+            
+            LDA ZP.U0  // What are we showing? 0=vars, 1=consts
+            if (Z)     // Showing variables
+            {
+                if (C) // This is a constant, skip it
+                {
+                    // Move to next global
+                    LDY #GlobalManager.ghNext
+                    LDA [ZP.IDX], Y
+                    PHA
+                    INY
+                    LDA [ZP.IDX], Y
+                    STA ZP.IDXH
+                    PLA
+                    STA ZP.IDXL
+                    continue;
+                }
+            }
+            else       // Showing constants
+            {
+                if (NC) // This is a variable, skip it
+                {
+                    // Move to next global
+                    LDY #GlobalManager.ghNext
+                    LDA [ZP.IDX], Y
+                    PHA
+                    INY
+                    LDA [ZP.IDX], Y
+                    STA ZP.IDXH
+                    PLA
+                    STA ZP.IDXL
+                    continue;
+                }
+            }
+            
+            // Print the global: NAME = VALUE
+            // Print name (8 chars, strip trailing spaces)
+            LDY #GlobalManager.ghName
+            LDX #0
+            loop
+            {
+                CPX #8
+                if (Z) { break; }
+                
+                LDA [ZP.IDX], Y
+                CMP #' '
+                if (Z) { break; }  // Stop at first space
+                
+                Serial.WriteChar();
+                INY
+                INX
+            }
+            
+            // Print " = "
+            LDA #' '
+            Serial.WriteChar();
+            LDA #'='
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            
+            // Print value (already in TOP from GetGlobalValue)
+            Tools.PrintDecimalWord();
+            
+            // Print newline
+            LDA #'\n'
+            Serial.WriteChar();
+            
+            // Move to next global
+            LDY #GlobalManager.ghNext
+            LDA [ZP.IDX], Y
+            PHA
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDXH
+            PLA
+            STA ZP.IDXL
+        }
     }
     
     // Run program
     cmdRun()
     {
-        LDA pgmLIST_HEAD
+        LDA pgmListHead
         STA ZP.IDXL
-        LDA pgmLIST_HEADH
+        LDA pgmListHeadHi
         STA ZP.IDXH
         
         LDA ZP.IDXL
@@ -268,7 +383,8 @@ unit Interpreter
         // Do nothing (for empty lines)
     }
     
-    cmdPrint()
+    // All statement parsing now handled by BytecodeCompiler
+    cmdStatement()
     {
         STZ ZP.TokenizerPos
         BytecodeCompiler.CompileREPLStatement();
@@ -329,7 +445,12 @@ unit Interpreter
             }
             case Tokens.VARS:
             {
+                STZ ZP.U0  // Clear flag for variables
                 cmdVars();
+            }
+            case Tokens.CONSTS:
+            {
+                cmdConsts();
             }
             case Tokens.FUNCS:
             {
@@ -341,13 +462,20 @@ unit Interpreter
                 cmdNOP(); // need method call so this switch is optimized to a jump table
             }
             case Tokens.PRINT:
+            case Tokens.CONST:
+            case Tokens.IntType:
+            case Tokens.WordType:
+            case Tokens.ByteType:
+            case Tokens.BitType:
+            case Tokens.StringType:
+            case Tokens.IDENTIFIER:
             {
-                cmdPrint();  // Now handles bytecode compilation and execution
+                // All statements handled by BytecodeCompiler
+                cmdStatement();
             }
             default:
             {
-                // Could be a program statement (LET, PRINT, etc.) or function definition
-                // For now, treat as syntax error until we implement statement parsing
+                // Unknown command/statement
                 printSyntaxError();
             }
         }
@@ -358,12 +486,13 @@ unit Interpreter
     {
         Tokenizer.Initialize();
         FunctionManager.Initialize();
+        GlobalManager.Initialize();
         
         // Clear program and variables
-        STZ pgmLIST_HEAD
-        STZ pgmLIST_HEADH
-        STZ varLIST_HEAD
-        STZ varLIST_HEADH
+        STZ pgmListHead
+        STZ pgmListHeadHi
+        STZ varListHead
+        STZ varListHeadHi
         
         loop
         {

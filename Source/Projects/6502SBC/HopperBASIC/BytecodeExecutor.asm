@@ -6,6 +6,7 @@ unit BytecodeExecutor
     uses "BytecodeCompiler"
     uses "FunctionManager" 
     uses "Tools"
+    uses "GlobalManager"
     
     // Fetch next byte from bytecode and advance PC
     fetchByte()
@@ -45,6 +46,27 @@ unit BytecodeExecutor
         STA ZP.TOPH
         
         // Return value in TOP
+    }
+    
+    // Fetch variable name (8 bytes) from bytecode
+    fetchVariableName()
+    {
+        // Read 8-byte variable name into workspace
+        LDA #ZP.W4
+        STA ZP.FSOURCEADDRESSL
+        LDA #0
+        STA ZP.FSOURCEADDRESSH
+        
+        LDY #0
+        loop
+        {
+            CPY #8
+            if (Z) { break; }
+            
+            fetchByte();
+            STA [ZP.FSOURCEADDRESS], Y
+            INY
+        }
     }
     
     // Opcode handlers
@@ -88,10 +110,97 @@ unit BytecodeExecutor
         Serial.WriteChar();
     }
     
+    handleLoadVar()
+    {
+        // Fetch variable name from bytecode
+        fetchVariableName();
+        
+        // Look up the variable
+        GlobalManager.FindGlobal();
+        if (Z)  // Found
+        {
+            // Get the variable's value and push it
+            GlobalManager.GetGlobalValue();  // Returns value in TOP, type in FTYPE
+            
+            // Convert GlobalManager type to runtime type
+            LDA ZP.FTYPE
+            AND #0x7F  // Clear constant flag to get base type
+            switch (A)
+            {
+                case GlobalTypes.VarInt:
+                case GlobalTypes.VarWord:
+                {
+                    LDA #Types.UInt
+                }
+                case GlobalTypes.VarByte:
+                {
+                    LDA #Types.Byte
+                }
+                case GlobalTypes.VarBit:
+                {
+                    LDA #Types.Bool
+                }
+                default:
+                {
+                    LDA #Types.UInt  // Default
+                }
+            }
+            Stacks.PushTop();
+        }
+        else
+        {
+            // Variable not found - push 0
+            STZ ZP.TOPL
+            STZ ZP.TOPH
+            LDA #Types.UInt
+            Stacks.PushTop();
+        }
+    }
+    
+    handleStoreVar()
+    {
+        // Fetch variable name from bytecode
+        fetchVariableName();
+        
+        // Look up the variable
+        GlobalManager.FindGlobal();
+        if (Z)  // Found
+        {
+            // Check if it's a constant (can't assign to constants)
+            GlobalManager.GetGlobalValue();  // Returns type in FTYPE
+            LDA ZP.FTYPE
+            GlobalManager.IsConstant();
+            if (NC)  // It's a variable, not a constant
+            {
+                // Pop value from stack
+                Stacks.PopTop();
+                
+                // Store the new value (IDX still points to the global)
+                LDY # GlobalManager.ghValue
+                LDA ZP.TOPL
+                STA [ZP.IDX], Y
+                INY
+                LDA ZP.TOPH
+                STA [ZP.IDX], Y
+            }
+            else
+            {
+                // Can't assign to constant - just pop and ignore
+                Stacks.PopTop();
+            }
+        }
+        else
+        {
+            // Variable not found - just pop and ignore
+            Stacks.PopTop();
+        }
+    }
+    
     handleReturn()
     {
         // For REPL, this is same as HALT
         // TODO: Implement proper function returns later
+        handleHalt();
     }
     
     handleHalt()
@@ -155,6 +264,14 @@ unit BytecodeExecutor
                 {
                     handlePrintNL();
                 }
+                case Opcodes.OpLoadVar:
+                {
+                    handleLoadVar();
+                }
+                case Opcodes.OpStoreVar:
+                {
+                    handleStoreVar();
+                }
                 case Opcodes.OpReturn:
                 {
                     handleReturn();
@@ -170,6 +287,7 @@ unit BytecodeExecutor
                     // Unknown opcode - halt execution
                     LDA #'?'
                     Serial.WriteChar();
+                    handleHalt();
                     break;
                 }
             }

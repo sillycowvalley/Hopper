@@ -11,95 +11,100 @@ unit Tokenizer
     // Token definitions
     enum Tokens
     {
-       // Immediate commands (0-15)
-       NEW      = 0x01,
-       LIST     = 0x02,
-       RUN      = 0x03,
-       CLEAR    = 0x04,
-       SAVE     = 0x05,
-       LOAD     = 0x06,
-       DIR      = 0x07,
-       DEL      = 0x08,
-       VARS     = 0x09,
-       FUNCS    = 0x0A,
-       BYE      = 0x0B,
-       EOL      = 0x0C, // can be empty line in REPL
-       
-       
-       // Language tokens (16+)
-       INT      = 0x10,
-       WORD     = 0x11,
-       BYTE     = 0x12,
-       BIT      = 0x13,
-       STRING   = 0x14,
-       DIM      = 0x15,
-       PRINT    = 0x16,
-       IF       = 0x17,
-       ELSE     = 0x18,
-       ENDIF    = 0x19,
-       FOR      = 0x1A,
-       NEXT     = 0x1B,
-       WHILE    = 0x1C,
-       ENDWHILE = 0x1D,
-       FUNC     = 0x1E,
-       ENDFUNC  = 0x1F,
-       RETURN   = 0x20,
-       BEGIN    = 0x21,
-       END      = 0x22,
-       
-       // Special tokens
-       NUMBER     = 0x80,
-       STRING_LIT = 0x81,
-       IDENTIFIER = 0x82,
-       EOF        = 0x84,
-       
-       // Operators  
-       EQUALS   = 0x90,
-       PLUS     = 0x91,
-       MINUS    = 0x92,
-       MULTIPLY = 0x93,
-       DIVIDE   = 0x94,
-       LPAREN   = 0x95,
-       RPAREN   = 0x96,
-       LBRACKET = 0x97,
-       RBRACKET = 0x98,
-       COMMA    = 0x99,
+        // Immediate commands (0-15)
+        NEW      = 0x01,
+        LIST     = 0x02,
+        RUN      = 0x03,
+        CLEAR    = 0x04,
+        SAVE     = 0x05,
+        LOAD     = 0x06,
+        DIR      = 0x07,
+        DEL      = 0x08,
+        VARS     = 0x09,
+        CONSTS   = 0x25,
+        FUNCS    = 0x0A,
+        BYE      = 0x0B,
+        EOL      = 0x0C, // can be empty line in REPL
+        
+        
+        // Language tokens (16+)
+        LET      = 0x10,
+        PRINT    = 0x11,
+        IF       = 0x12,
+        ELSE     = 0x13,
+        ENDIF    = 0x14,
+        FOR      = 0x15,
+        NEXT     = 0x16,
+        WHILE    = 0x17,
+        ENDWHILE = 0x18,
+        FUNC     = 0x19,
+        ENDFUNC  = 0x1A,
+        RETURN   = 0x1B,
+        BEGIN    = 0x1C,
+        END      = 0x1D,
+        CONST    = 0x1E,
+        
+        // Type tokens
+        IntType    = 0x20,
+        WordType   = 0x21,
+        ByteType   = 0x22,
+        BitType    = 0x23,
+        StringType = 0x24,
+        
+        // Special tokens
+        NUMBER     = 0x80,
+        STRING     = 0x81,
+        IDENTIFIER = 0x82,
+        EOF        = 0x84,
+        
+        // Operators  
+        EQUALS   = 0x90,
+        PLUS     = 0x91,
+        MINUS    = 0x92,
+        MULTIPLY = 0x93,
+        DIVIDE   = 0x94,
+        LPAREN   = 0x95,
+        RPAREN   = 0x96,
+        LBRACKET = 0x97,
+        RBRACKET = 0x98,
+        COMMA    = 0x99,
     }
-
+    
     // Keyword table - each entry is: length, token_value, characters...
     // Stored as: len1, tok1, char1, char2, ..., len2, tok2, char1, char2, ...
     const byte[] keywords = {
-       3, Tokens.NEW, 'N', 'E', 'W',
-       4, Tokens.LIST, 'L', 'I', 'S', 'T', 
-       3, Tokens.RUN, 'R', 'U', 'N',
-       5, Tokens.CLEAR, 'C', 'L', 'E', 'A', 'R',
-       4, Tokens.SAVE, 'S', 'A', 'V', 'E',
-       4, Tokens.LOAD, 'L', 'O', 'A', 'D',
-       3, Tokens.DIR, 'D', 'I', 'R',
-       3, Tokens.DEL, 'D', 'E', 'L',
-       4, Tokens.VARS, 'V', 'A', 'R', 'S',
-       5, Tokens.FUNCS, 'F', 'U', 'N', 'C', 'S',
-       3, Tokens.BYE, 'B', 'Y', 'E',
-       3, Tokens.INT, 'I', 'N', 'T',
-       4, Tokens.WORD, 'W', 'O', 'R', 'D',
-       4, Tokens.BYTE, 'B', 'Y', 'T', 'E',
-       3, Tokens.BIT, 'B', 'I', 'T',
-       6, Tokens.STRING, 'S', 'T', 'R', 'I', 'N', 'G',
-       3, Tokens.DIM, 'D', 'I', 'M',
-       5, Tokens.PRINT, 'P', 'R', 'I', 'N', 'T',
-       2, Tokens.IF, 'I', 'F',
-       4, Tokens.ELSE, 'E', 'L', 'S', 'E',
-       5, Tokens.ENDIF, 'E', 'N', 'D', 'I', 'F',
-       3, Tokens.FOR, 'F', 'O', 'R',
-       4, Tokens.NEXT, 'N', 'E', 'X', 'T',
-       5, Tokens.WHILE, 'W', 'H', 'I', 'L', 'E',
-       8, Tokens.ENDWHILE, 'E', 'N', 'D', 'W', 'H', 'I', 'L', 'E',
-       4, Tokens.FUNC, 'F', 'U', 'N', 'C',
-       7, Tokens.ENDFUNC, 'E', 'N', 'D', 'F', 'U', 'N', 'C',
-       6, Tokens.RETURN, 'R', 'E', 'T', 'U', 'R', 'N',
-       5, Tokens.BEGIN, 'B', 'E', 'G', 'I', 'N',
-       3, Tokens.END, 'E', 'N', 'D',
-       0  // End marker
+        3, Tokens.NEW, 'N', 'E', 'W',
+        4, Tokens.LIST, 'L', 'I', 'S', 'T', 
+        3, Tokens.RUN, 'R', 'U', 'N',
+        5, Tokens.CLEAR, 'C', 'L', 'E', 'A', 'R',
+        4, Tokens.SAVE, 'S', 'A', 'V', 'E',
+        4, Tokens.LOAD, 'L', 'O', 'A', 'D',
+        3, Tokens.DIR, 'D', 'I', 'R',
+        3, Tokens.DEL, 'D', 'E', 'L',
+        4, Tokens.VARS, 'V', 'A', 'R', 'S',
+        5, Tokens.FUNCS, 'F', 'U', 'N', 'C', 'S',
+        3, Tokens.BYE, 'B', 'Y', 'E',
+        3, Tokens.LET, 'L', 'E', 'T',
+        5, Tokens.PRINT, 'P', 'R', 'I', 'N', 'T',
+        2, Tokens.IF, 'I', 'F',
+        4, Tokens.ELSE, 'E', 'L', 'S', 'E',
+        5, Tokens.ENDIF, 'E', 'N', 'D', 'I', 'F',
+        3, Tokens.FOR, 'F', 'O', 'R',
+        4, Tokens.NEXT, 'N', 'E', 'X', 'T',
+        5, Tokens.WHILE, 'W', 'H', 'I', 'L', 'E',
+        8, Tokens.ENDWHILE, 'E', 'N', 'D', 'W', 'H', 'I', 'L', 'E',
+        4, Tokens.FUNC, 'F', 'U', 'N', 'C',
+        7, Tokens.ENDFUNC, 'E', 'N', 'D', 'F', 'U', 'N', 'C',
+        6, Tokens.RETURN, 'R', 'E', 'T', 'U', 'R', 'N',
+        5, Tokens.BEGIN, 'B', 'E', 'G', 'I', 'N',
+        3, Tokens.END, 'E', 'N', 'D',
+        5, Tokens.CONST, 'C', 'O', 'N', 'S', 'T',
+        3, Tokens.IntType, 'I', 'N', 'T',
+        4, Tokens.WordType, 'W', 'O', 'R', 'D',
+        4, Tokens.ByteType, 'B', 'Y', 'T', 'E',
+        3, Tokens.BitType, 'B', 'I', 'T',
+        6, Tokens.StringType, 'S', 'T', 'R', 'I', 'N', 'G',
+        0  // End marker
     };
     
     // Convert character to uppercase (destructive)
@@ -589,6 +594,46 @@ unit Tokenizer
             }
             
             INX
+            INY
+        }
+    }
+    
+    // Get current token as padded name (8 bytes, space-padded)
+    // Output: 8-byte padded name at ZP.FSOURCEADDRESS, actual length in ZP.FLENGTHL
+    getTokenName()
+    {
+        // Store actual length
+        LDA ZP.TokenLen
+        STA ZP.FLENGTHL
+        STZ ZP.FLENGTHH
+        
+        // Copy characters and pad to 8 bytes
+        LDX ZP.TokenStart
+        LDY #0
+        
+        // Copy actual characters
+        loop
+        {
+            CPY ZP.TokenLen
+            if (Z) { break; }  // Copied all characters
+            CPY #8
+            if (Z) { break; }  // Name buffer full
+            
+            LDA Address.BasicInputBuffer, X
+            makeUppercase();
+            STA [ZP.FSOURCEADDRESS], Y
+            INX
+            INY
+        }
+        
+        // Pad with spaces to 8 bytes total
+        loop
+        {
+            CPY #8
+            if (Z) { break; }
+            
+            LDA #' '
+            STA [ZP.FSOURCEADDRESS], Y
             INY
         }
     }

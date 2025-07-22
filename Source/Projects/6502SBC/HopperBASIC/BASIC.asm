@@ -17,6 +17,7 @@ program HopperBASIC
     uses "Tools"
     uses "Tokenizer"
     uses "FunctionManager"
+    uses "GlobalManager"
     uses "BytecodeCompiler"
     uses "BytecodeExecutor"
     uses "Interpreter"

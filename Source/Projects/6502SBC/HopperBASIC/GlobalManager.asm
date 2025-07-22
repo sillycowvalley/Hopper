@@ -5,7 +5,7 @@ unit GlobalManager
     uses "/Source/Runtime/6502/Stacks"
     uses "/Source/Runtime/6502/Utilities"
     
-    friend Interpreter, BytecodeCompiler;
+    friend Interpreter, BytecodeExecutor;
     
     // Global entry types
     enum GlobalTypes
@@ -45,7 +45,48 @@ unit GlobalManager
     {
         // Type in A, returns C=1 if constant, C=0 if variable
         AND #0x80
-        if (NZ) { SEC; } else { CLC; }
+        if (NZ) { SEC } else { CLC }
+    }
+    
+    // Reset all variables to their declaration defaults (keep constants unchanged)
+    ClearVariables()
+    {
+        // Walk the global list
+        LDA ZP.VarListHead
+        STA ZP.IDXL
+        LDA ZP.VarListHeadHi
+        STA ZP.IDXH
+        
+        loop
+        {
+            // Check for end of list
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z) { break; }
+            
+            // Check if this is a variable (not constant)
+            LDY #ghType
+            LDA [ZP.IDX], Y
+            IsConstant();  // Returns C=1 if constant
+            if (NC)  // It's a variable, reset to default (0)
+            {
+                LDY #ghValue
+                LDA #0
+                STA [ZP.IDX], Y
+                INY
+                STA [ZP.IDX], Y
+            }
+            
+            // Move to next global
+            LDY #ghNext
+            LDA [ZP.IDX], Y
+            PHA
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDXH
+            PLA
+            STA ZP.IDXL
+        }
     }
     
     // Find global by name
