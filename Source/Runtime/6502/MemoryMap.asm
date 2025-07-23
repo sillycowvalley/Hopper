@@ -13,16 +13,30 @@ unit Address
     const uint I2CInBuffer          = 0x0800;  // 256-byte buffer 0x0800-0x08FF for I2C.RequestFrom
     
 #if defined(HOPPER_BASIC)
-    const uint BasicInputBuffer       = 0x0900;  // 128-byte work space for BASIC
+    // HopperBASIC buffers
+    const uint BasicInputBuffer       = 0x0900;  // 128 bytes - raw user input
     const uint BasicInputBufferLength = 128;
-    const uint BasicWorkBuffer        = 0x0980;  // 128-byte work space for BASIC
-    const uint BasicWorkBufferLength  = 128;
     
-    const uint HopperData           = 0x0A00;  // start of Hopper RAM (program, then heap)
+    const uint BasicTokenizerBuffer   = 0x0980;  // 256 bytes - token processing workspace
+    const uint BasicTokenizerBufferLength = 256;
+    
+    const uint BasicFunctionDefBuffer = 0x0A80;  // 512 bytes - multi-line function accumulation
+    const uint BasicFunctionDefBufferLength = 512;
+    
+    const uint BasicProcessBuffer1    = 0x0C80;  // 64 bytes - variable/general workspace
+    const uint BasicProcessBuffer1Length = 64;
+    
+    const uint BasicProcessBuffer2    = 0x0CC0;  // 32 bytes - secondary workspace
+    const uint BasicProcessBuffer2Length = 32;
+    
+    const uint BasicProcessBuffer3    = 0x0CE0;  // 32 bytes - tertiary workspace  
+    const uint BasicProcessBuffer3Length = 32;
+    
+    const uint HopperData           = 0x0D00;  // start of Hopper RAM (program, then heap)
+    
 #else    
     const uint HopperData           = 0x0900;  // start of Hopper RAM (program, then heap)
 #endif
-    
     
 
 #if defined(BENEATER_IO)
