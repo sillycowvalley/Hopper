@@ -195,6 +195,60 @@ unit GlobalManager
     //        Type in ZP.FTYPE, Value in ZP.TOP
     AddGlobal()
     {
+        // First check if this global already exists
+        LDA ZP.TokenPtr
+        STA ZP.IDYL
+        LDA ZP.TokenPtrHi
+        STA ZP.IDYH
+        
+        FindGlobal();  // Sets IDX and Z flag
+        if (Z)  // Found existing global
+        {
+            // Save the new value before GetGlobalValue overwrites TOP
+            LDA ZP.TOPL
+            PHA
+            LDA ZP.TOPH
+            PHA
+            
+            // Update existing global's value (but only if it's a variable, not a constant)
+            GetGlobalValue();  // Returns type in FTYPE (overwrites TOP with old value)
+            LDA ZP.FTYPE
+            IsConstant();
+            if (NC)  // It's a variable, not a constant - we can update it
+            {
+                // Find the value offset (skip past null-terminated name)
+                LDY #ghName
+                loop
+                {
+                    LDA [ZP.IDX], Y
+                    if (Z) 
+                    { 
+                        INY  // Move past null terminator
+                        INY  // Skip type byte to get to value
+                        break; 
+                    }
+                    INY
+                }
+                // Y points to the value LOW BYTE position
+                
+                // Restore the new value and update
+                PLA              // Get TOPH back
+                INY              // Move to high byte position  
+                STA [ZP.IDX], Y  // Store high byte
+                DEY              // Back to low byte position
+                PLA              // Get TOPL back
+                STA [ZP.IDX], Y  // Store low byte
+                
+                return; // Done - updated existing variable
+            }
+            else
+            {
+                // It's a constant - restore stack and fall through
+                PLA
+                PLA
+            }
+        }
+        
         // Calculate name length from null-terminated string at TokenPtr
         LDX #0
         loop
