@@ -44,7 +44,7 @@
 ## Phase 1: Programming Language Features (Ultra-Minimal)
 
 ### Basic I/O
-- **`PRINT expr`** - Output single value
+- **`PRINT expr`** - Output single value followed by newline
 
 ### Assignment
 - **`var = expr`** - Assignment to existing variables
@@ -59,6 +59,17 @@
 - **Unary**: `-` (negation)
 - **Comparison**: `= <>` (equal, not equal - returns BIT type)
 - **Parentheses**: `(` `)` for precedence
+
+### Output Formatting Rules
+
+**Phase 1:**
+- `PRINT expression` outputs the value followed by a newline
+
+**Phase 3:**
+- `PRINT expr1, expr2` outputs values separated by spaces, newline at end
+- `PRINT expr1; expr2` outputs values with no separation, newline at end  
+- `PRINT expr1;` outputs value with no newline (cursor stays on line)
+- `PRINT expr1,` outputs value followed by space, no newline
 
 ### Type System Benefits
 - **Type safety**: `IF count` is an error; must use `IF count <> 0`
@@ -96,7 +107,10 @@
 ### Enhanced I/O
 - **`INPUT var`** - Read value from keyboard into variable
 - **`INPUT "prompt",var`** - Read with prompt
-- **`PRINT expr[,expr...]`** - Multiple values, comma/semicolon formatting
+- **`PRINT expr[,expr...]`** - Multiple values separated by spaces, newline at end
+- **`PRINT expr[;expr...]`** - Multiple values with no separation, newline at end
+- **`PRINT expr;`** - Output value with no newline (cursor stays on line)
+- **`PRINT expr,`** - Output value followed by space, no newline
 
 ### Extended Control Flow
 - **`FOR var = start TO end [STEP increment]`** - Counted loops
@@ -158,7 +172,13 @@ statement := variable_decl
 
 assignment := identifier "=" expression
 
-print_statement := PRINT expression [ "," expression ]*
+print_statement := PRINT expression [ print_separator ]
+                  | PRINT expression_list
+
+expression_list := expression print_separator expression_list
+                 | expression [ print_separator ]
+
+print_separator := "," | ";"
 
 if_statement := IF expression THEN statement [ ENDIF ]
 
