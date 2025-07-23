@@ -84,20 +84,49 @@ unit BytecodeExecutor
     }
     
     handlePushInt()
-    {
-        // Load 16-bit constant onto value stack
-        executorFetchWord();  // Gets constant into TOP
-        
-        LDA #Types.UInt
-        Stacks.PushTop();
-    }
+{
+    // Load 16-bit constant and its type onto value stack
+    executorFetchWord();  // Gets constant into TOP
+    
+    // Fetch the type byte
+    executorFetchByte();  // Gets type into A
+    
+    Stacks.PushTop();  // Push value with type from A
+}
     
     handlePrintInt()
+{
+    // Pop integer from stack and print it
+    Stacks.PopTop();  // This gets both value and type
+    
+    // Check the type to determine if we should print as signed or unsigned
+    LDA ZP.TOPT
+    CMP #Types.Int
+    if (Z)  // Signed integer
     {
-        // Pop integer from stack and print it
-        Stacks.PopTop();
-        Tools.PrintDecimalWord();
+        // Check if this is a negative number (bit 15 set)
+        BIT ZP.TOPH
+        if (MI)  // Negative number
+        {
+            // Print minus sign
+            LDA #'-'
+            Serial.WriteChar();
+            
+            // Negate the number: TOP = 0 - TOP
+            SEC
+            LDA #0
+            SBC ZP.TOPL
+            STA ZP.TOPL
+            LDA #0
+            SBC ZP.TOPH
+            STA ZP.TOPH
+        }
     }
+    // For UInt, Byte, Bool - just print as unsigned
+    
+    // Print the (now positive if it was negative) number
+    Tools.PrintDecimalWord();
+}
     
     handlePrintStr()
     {
@@ -119,55 +148,58 @@ unit BytecodeExecutor
     }
     
     handleLoadVar()
+{
+    // Fetch variable name from bytecode
+    executorFetchVariableName();
+    
+    // Look up the variable using the fetched name
+    GlobalManager.FindGlobal();
+    if (Z)  // Found
     {
-        // Fetch variable name from bytecode
-        executorFetchVariableName();
+        // Get the variable's value and push it
+        GlobalManager.GetGlobalValue();  // Returns value in TOP, type in FTYPE
         
-        // Look up the variable using the fetched name
-        GlobalManager.FindGlobal();
-        if (Z)  // Found
+        // Convert GlobalManager type to runtime type
+        LDA ZP.FTYPE
+        AND #0x7F  // Clear constant flag to get base type
+        switch (A)
         {
-            // Get the variable's value and push it
-            GlobalManager.GetGlobalValue();  // Returns value in TOP, type in FTYPE
-            
-            // Convert GlobalManager type to runtime type
-            LDA ZP.FTYPE
-            AND #0x7F  // Clear constant flag to get base type
-            switch (A)
+            case GlobalTypes.VarInt:
             {
-                case GlobalTypes.VarInt:
-                case GlobalTypes.VarWord:
-                {
-                    LDA #Types.UInt
-                }
-                case GlobalTypes.VarByte:
-                {
-                    LDA #Types.Byte
-                }
-                case GlobalTypes.VarBit:
-                {
-                    LDA #Types.Bool
-                }
-                default:
-                {
-                    LDA #Types.UInt  // Default
-                }
+                LDA #Types.Int
             }
-            Stacks.PushTop();
+            case GlobalTypes.VarWord:
+            {
+                LDA #Types.UInt
+            }
+            case GlobalTypes.VarByte:
+            {
+                LDA #Types.Byte
+            }
+            case GlobalTypes.VarBit:
+            {
+                LDA #Types.Bool
+            }
+            default:
+            {
+                LDA #Types.UInt  // Default
+            }
         }
-        else
-        {
-            STZ ZP.TOPL
-            STZ ZP.TOPH
-            LDA #Types.UInt
-            Stacks.PushTop();
-            // Variable not found
-            LDA #(Interpreter.msgUndefinedVariable % 256)
-            STA ZP.LastErrorL
-            LDA #(Interpreter.msgUndefinedVariable / 256)
-            STA ZP.LastErrorH
-        }
+        Stacks.PushTop();
     }
+    else
+    {
+        STZ ZP.TOPL
+        STZ ZP.TOPH
+        LDA #Types.UInt
+        Stacks.PushTop();
+        // Variable not found
+        LDA #(Interpreter.msgUndefinedVariable % 256)
+        STA ZP.LastErrorL
+        LDA #(Interpreter.msgUndefinedVariable / 256)
+        STA ZP.LastErrorH
+    }
+}
     
     handleStoreVar()
     {

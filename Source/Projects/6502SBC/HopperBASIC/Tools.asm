@@ -876,8 +876,7 @@ unit Tools
             Serial.HexOut();
             
             TXA
-            ASL ASL ASL ASL  // X * 16 for line offset
-            NOP
+            ASL ASL ASL ASL
             Serial.HexOut();
             LDA # ':'
             Serial.WriteChar();

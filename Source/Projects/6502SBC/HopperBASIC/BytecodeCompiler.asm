@@ -107,6 +107,95 @@ unit BytecodeCompiler
         }
     }
     
+    // Parse a simple constant expression for variable initialization
+    // Returns value in TOP, sets error if invalid
+    parseConstantExpression()
+    {
+        // Default value is 0
+        STZ ZP.TOPL
+        STZ ZP.TOPH
+        
+        LDA ZP.CurrentToken
+        switch (A)
+        {
+            case Tokens.NUMBER:
+            {
+                // Simple number - get the value directly
+                Tokenizer.getTokenNumber(); // Gets value in TOP
+            }
+            case Tokens.MINUS:
+            {
+                // Negative number - advance to the number token
+                Tokenizer.nextToken();
+                LDA ZP.CurrentToken
+                CMP #Tokens.NUMBER
+                if (Z)
+                {
+                    Tokenizer.getTokenNumber();  // Gets positive value in TOP
+                    
+                    // Negate it: TOP = 0 - TOP
+                    SEC
+                    LDA #0
+                    SBC ZP.TOPL
+                    STA ZP.TOPL
+                    LDA #0
+                    SBC ZP.TOPH
+                    STA ZP.TOPH
+                }
+                else
+                {
+                    // Invalid negative expression
+                    LDA #(Interpreter.msgInvalidExpression % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Interpreter.msgInvalidExpression / 256)
+                    STA ZP.LastErrorH
+                    return;
+                }
+            }
+            case Tokens.IDENTIFIER:
+            {
+                // Variable reference - look up its current value
+                LDA #(Address.BasicWorkBuffer & 0xFF)
+                STA ZP.IDYL
+                LDA #(Address.BasicWorkBuffer >> 8)
+                STA ZP.IDYH
+                
+                GlobalManager.FindGlobal();
+                if (Z)  // Found
+                {
+                    GlobalManager.GetGlobalValue();  // Returns value in TOP
+                }
+                else
+                {
+                    // Variable not found - set error
+                    LDA #(Interpreter.msgUndefinedVariable % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Interpreter.msgUndefinedVariable / 256)
+                    STA ZP.LastErrorH
+                    return;
+                }
+            }
+            case Tokens.EOL:
+            {
+                // Missing expression - set error
+                LDA #(Interpreter.msgMissingExpression % 256)
+                STA ZP.LastErrorL
+                LDA #(Interpreter.msgMissingExpression / 256)
+                STA ZP.LastErrorH
+                return;
+            }
+            default:
+            {
+                // Invalid expression - set error
+                LDA #(Interpreter.msgInvalidExpression % 256)
+                STA ZP.LastErrorL
+                LDA #(Interpreter.msgInvalidExpression / 256)
+                STA ZP.LastErrorH
+                return;
+            }
+        }
+    }
+    
     // Compile variable declaration: [CONST] TYPE NAME [= expression]
     // Current token is the type token, isConst flag indicates if CONST was seen
     compileVariableDeclaration()
@@ -200,7 +289,7 @@ unit BytecodeCompiler
             // Invalid syntax - set error  
             LDA #(Interpreter.msgExpectedIdentifier % 256)
             STA ZP.LastErrorL
-            LDA #(Interpreter.msgInvalidType / 256)
+            LDA #(Interpreter.msgExpectedIdentifier / 256)
             STA ZP.LastErrorH
             return;
         }
@@ -227,23 +316,13 @@ unit BytecodeCompiler
         CMP #Tokens.EQUALS
         if (Z)
         {
-            // Has initializer - get the next token (the value)
+            // Has initializer - move to the expression
             Tokenizer.nextToken();
             
-            // Check what kind of expression we have
-            LDA ZP.CurrentToken
-            CMP #Tokens.NUMBER
-            if (Z)
-            {
-                // It's a number - get the value directly
-                Tokenizer.getTokenNumber(); // Gets value in TOP
-            }
-            else
-            {
-                // For other expressions, default to 0 for now
-                STZ ZP.TOPL
-                STZ ZP.TOPH
-            }
+            // Parse the expression directly to get the value
+            parseConstantExpression();
+            CheckError();
+            if (NZ) { return; }
         }
         else
         {
@@ -444,78 +523,93 @@ unit BytecodeCompiler
     }
 
     compileExpression()
+{
+    LDA ZP.CurrentToken
+    switch (A)
     {
-        LDA ZP.CurrentToken
-        switch (A)
+        case Tokens.NUMBER:
         {
-            case Tokens.NUMBER:
+            // Load number constant
+            Tokenizer.getTokenNumber();  // Gets value in TOP
+            
+            // Emit OpPushInt followed by the 16-bit value and type
+            LDA #Opcodes.OpPushInt
+            STA ZP.NEXTL
+            LDA #0
+            STA ZP.NEXTH
+            LDA #Types.Byte
+            Stacks.PushNext();
+            FunctionManager.EmitByte();
+            
+            // Emit the constant value (16-bit)
+            LDA #Types.UInt
+            Stacks.PushTop();
+            FunctionManager.EmitWord();
+            
+            // Emit the type byte - determine based on value range
+            LDA ZP.TOPH  // Check if value fits in different types
+            if (Z)  // High byte is 0
             {
-                // Load number constant
-                Tokenizer.getTokenNumber();  // Gets value in TOP
-                
-                // Emit OpPushInt followed by the 16-bit value
-                LDA #Opcodes.OpPushInt
-                STA ZP.NEXTL
-                LDA #0
-                STA ZP.NEXTH
-                LDA #Types.Byte
-                Stacks.PushNext();
-                FunctionManager.EmitByte();
-                
-                // Emit the constant value (16-bit)
-                LDA #Types.UInt
-                Stacks.PushTop();
-                FunctionManager.EmitWord();
-            }
-            case Tokens.IDENTIFIER:
-            {
-                // Variable reference - look it up and load its value
-                // Variable name is in BasicWorkBuffer
-                LDA #(Address.BasicWorkBuffer & 0xFF)
-                STA ZP.IDYL
-                LDA #(Address.BasicWorkBuffer >> 8)
-                STA ZP.IDYH
-                
-                GlobalManager.FindGlobal();
-                if (Z)  // Found
+                LDA ZP.TOPL
+                if (Z)  // Value is 0 - could be any type, use Int
                 {
-                    // Emit OpLoadVar followed by the variable name
-                    LDA #Opcodes.OpLoadVar
-                    STA ZP.NEXTL
-                    LDA #0
-                    STA ZP.NEXTH
-                    LDA #Types.Byte
-                    Stacks.PushNext();
-                    FunctionManager.EmitByte();
-                    
-                    // Emit the variable name
-                    emitTokenName();
+                    LDA #Types.Int
                 }
                 else
                 {
-                    // Variable not found - set error
-                    LDA #(Interpreter.msgUndefinedVariable % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Interpreter.msgUndefinedVariable / 256)
-                    STA ZP.LastErrorH
-                    return;
+                    CMP #2
+                    if (NC)  // Value <= 1, could be Bool
+                    {
+                        LDA #Types.Bool
+                    }
+                    else
+                    {
+                        // Value is 2-255, use Byte type
+                        LDA #Types.Byte
+                    }
                 }
             }
-            case Tokens.STRING:
+            else
             {
-                // String literal compilation not implemented - set error
-                LDA #(Interpreter.msgInvalidExpression % 256)
-                STA ZP.LastErrorL
-                LDA #(Interpreter.msgInvalidExpression / 256)
-                STA ZP.LastErrorH
-                return;
+                BIT ZP.TOPH
+                if (MI)  // Negative when viewed as signed
+                {
+                    LDA #Types.Int
+                }
+                else
+                {
+                    LDA #Types.UInt
+                }
             }
-            case Tokens.EOL:
+            
+            STA ZP.NEXTL
+            LDA #0
+            STA ZP.NEXTH
+            LDA #Types.Byte
+            Stacks.PushNext();
+            FunctionManager.EmitByte();
+        }
+        case Tokens.MINUS:
+        {
+            // Handle negative numbers: -NUMBER
+            Tokenizer.nextToken();
+            LDA ZP.CurrentToken
+            CMP #Tokens.NUMBER
+            if (Z)
             {
-                // Missing or invalid expression - push 0
-                STZ ZP.TOPL
-                STZ ZP.TOPH
+                // It's a negative number
+                Tokenizer.getTokenNumber();  // Gets positive value in TOP
                 
+                // Negate the value: TOP = 0 - TOP
+                SEC
+                LDA #0
+                SBC ZP.TOPL
+                STA ZP.TOPL
+                LDA #0
+                SBC ZP.TOPH
+                STA ZP.TOPH
+                
+                // Emit OpPushInt followed by the 16-bit value and type
                 LDA #Opcodes.OpPushInt
                 STA ZP.NEXTL
                 LDA #0
@@ -524,13 +618,23 @@ unit BytecodeCompiler
                 Stacks.PushNext();
                 FunctionManager.EmitByte();
                 
+                // Emit the negative constant value (16-bit)
                 LDA #Types.UInt
                 Stacks.PushTop();
                 FunctionManager.EmitWord();
+                
+                // Negative numbers are always Int type
+                LDA #Types.Int
+                STA ZP.NEXTL
+                LDA #0
+                STA ZP.NEXTH
+                LDA #Types.Byte
+                Stacks.PushNext();
+                FunctionManager.EmitByte();
             }
-            default:
+            else
             {
-                // Missing or invalid expression - set error
+                // Invalid: minus without number - set error
                 LDA #(Interpreter.msgInvalidExpression % 256)
                 STA ZP.LastErrorL
                 LDA #(Interpreter.msgInvalidExpression / 256)
@@ -538,7 +642,69 @@ unit BytecodeCompiler
                 return;
             }
         }
+        case Tokens.IDENTIFIER:
+        {
+            // Variable reference - look it up and load its value
+            // Variable name is in BasicWorkBuffer
+            LDA #(Address.BasicWorkBuffer & 0xFF)
+            STA ZP.IDYL
+            LDA #(Address.BasicWorkBuffer >> 8)
+            STA ZP.IDYH
+            
+            GlobalManager.FindGlobal();
+            if (Z)  // Found
+            {
+                // Emit OpLoadVar followed by the variable name
+                LDA #Opcodes.OpLoadVar
+                STA ZP.NEXTL
+                LDA #0
+                STA ZP.NEXTH
+                LDA #Types.Byte
+                Stacks.PushNext();
+                FunctionManager.EmitByte();
+                
+                // Emit the variable name
+                emitTokenName();
+            }
+            else
+            {
+                // Variable not found - set error
+                LDA #(Interpreter.msgUndefinedVariable % 256)
+                STA ZP.LastErrorL
+                LDA #(Interpreter.msgUndefinedVariable / 256)
+                STA ZP.LastErrorH
+                return;
+            }
+        }
+        case Tokens.STRING:
+        {
+            // String literal compilation not implemented - set error
+            LDA #(Interpreter.msgInvalidExpression % 256)
+            STA ZP.LastErrorL
+            LDA #(Interpreter.msgInvalidExpression / 256)
+            STA ZP.LastErrorH
+            return;
+        }
+        case Tokens.EOL:
+        {
+            // Missing expression - set error instead of defaulting to 0
+            LDA #(Interpreter.msgMissingExpression % 256)
+            STA ZP.LastErrorL
+            LDA #(Interpreter.msgMissingExpression / 256)
+            STA ZP.LastErrorH
+            return;
+        }
+        default:
+        {
+            // Invalid expression - set error
+            LDA #(Interpreter.msgInvalidExpression % 256)
+            STA ZP.LastErrorL
+            LDA #(Interpreter.msgInvalidExpression / 256)
+            STA ZP.LastErrorH
+            return;
+        }
     }
+}
     
     // Cleanup compilation temp buffer on error
     cleanupCompilationOnError()

@@ -243,9 +243,10 @@ unit GlobalManager
             }
             else
             {
-                // It's a constant - restore stack and fall through
+                // It's a constant - restore stack and create new entry anyway
                 PLA
                 PLA
+                // Fall through to create new entry (constants can be redefined)
             }
         }
         
@@ -464,7 +465,9 @@ unit GlobalManager
             PLA
             STA ZP.IDXL
         }
+#ifdef DEBUG        
         DumpHeap();
+#endif
     }
     
     // Helper to print type prefix for globals
