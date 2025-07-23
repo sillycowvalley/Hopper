@@ -12,9 +12,11 @@ unit StatementCompiler
     
     // Check if expression type and value can be assigned to target type
     // Input: expressionType in A, targetType in X, value in TOP
-    // Output: C=1 if compatible, C=0 if not compatible
+    // Output: C if compatible, NC if not compatible
     isCompatibleAssignment()
     {
+        DumpVariables();
+        
         // A = expressionType, X = targetType
         // Compare A with X - need to store one to compare
         STX ZP.BasicWorkspace0    // Store targetType temporarily
@@ -227,7 +229,7 @@ unit StatementCompiler
                 {
                     LDA #GlobalManager.GlobalTypes.VarInt
                 }
-                STA ZP.FTYPE
+                STA ZP.BasicWorkspace0
             }
             case Tokens.WordType:
             {
@@ -239,7 +241,7 @@ unit StatementCompiler
                 {
                     LDA #GlobalManager.GlobalTypes.VarWord
                 }
-                STA ZP.FTYPE
+                STA ZP.BasicWorkspace0
             }
             case Tokens.ByteType:
             {
@@ -251,7 +253,7 @@ unit StatementCompiler
                 {
                     LDA #GlobalManager.GlobalTypes.VarByte
                 }
-                STA ZP.FTYPE
+                STA ZP.BasicWorkspace0
             }
             case Tokens.BitType:
             {
@@ -263,7 +265,7 @@ unit StatementCompiler
                 {
                     LDA #GlobalManager.GlobalTypes.VarBit
                 }
-                STA ZP.FTYPE
+                STA ZP.BasicWorkspace0
             }
             case Tokens.StringType:
             {
@@ -275,7 +277,7 @@ unit StatementCompiler
                 {
                     LDA #GlobalManager.GlobalTypes.VarString
                 }
-                STA ZP.FTYPE
+                STA ZP.BasicWorkspace0
             }
             default:
             {
@@ -332,50 +334,51 @@ unit StatementCompiler
             CheckError();
             if (NZ) { return; }
             
+            DumpStack();
+            
+            // Pop the value and type from stack to get the actual value
+            Stacks.PopTop(); // munts X
+            
             // Check type compatibility for constant expressions
-            // Get target variable type
-            LDX ZP.FTYPE  // Save expression type
-            LDA ZP.FTYPE
+            // Get target variable type and put in X
+            LDA ZP.BasicWorkspace0
             AND #0x7F     // Clear constant flag to get base variable type
             switch (A)
             {
                 case GlobalTypes.VarInt:
                 case GlobalTypes.ConstInt:
                 {
-                    LDA #Types.Int
+                    LDX #Types.Int
                 }
                 case GlobalTypes.VarWord:
                 case GlobalTypes.ConstWord:
                 {
-                    LDA #Types.UInt
+                    LDX #Types.UInt
                 }
                 case GlobalTypes.VarByte:
                 case GlobalTypes.ConstByte:
                 {
-                    LDA #Types.Byte
+                    LDX #Types.Byte
                 }
                 case GlobalTypes.VarBit:
                 case GlobalTypes.ConstBit:
                 {
-                    LDA #Types.Bool
+                    LDX #Types.Bool
                 }
                 case GlobalTypes.VarString:
                 case GlobalTypes.ConstString:
                 {
-                    LDA #Types.String
+                    LDX #Types.String
                 }
                 default:
                 {
-                    LDA #Types.Int  // Default
+                    LDX #Types.Int  // Default
                 }
             }
-            TAX           // targetType in X
-            TXA           // expressionType back in A
-            PHX           // Save targetType
             
-            // Get expression type from FTYPE (set by ParseConstantExpression)
-            LDA ZP.FTYPE
-            PLX           // Restore targetType
+            LDA ZP.TOPT // Get expression type
+            
+            DumpVariables();
             
             // Check compatibility: expressionType in A, targetType in X, value in TOP
             isCompatibleAssignment();
@@ -388,6 +391,8 @@ unit StatementCompiler
                 STA ZP.LastErrorH
                 return;
             }
+            
+            
         }
         else
         {
@@ -410,7 +415,9 @@ unit StatementCompiler
         STA ZP.TokenPtrHi
         
         // Add the variable/constant to GlobalManager
-        // Parameters: Token name at TokenPtr (null-terminated), FTYPE = type, TOP = value
+        // Parameters: Token name at TokenPtr (null-terminated), ZP.BasicWorkspace0 = type, TOP = value
+        LDA ZP.BasicWorkspace0
+        STA ZP.FTYPE
         GlobalManager.AddGlobal();
         
         // Emit NOP as placeholder (declaration doesn't generate runtime code)

@@ -186,6 +186,7 @@ unit ExpressionParser
                     STA ZP.LastErrorL
                     LDA #(Interpreter.msgInvalidExpression / 256)
                     STA ZP.LastErrorH
+                    
                     return;
                 }
             }
@@ -276,16 +277,20 @@ unit ExpressionParser
     ParseConstantExpression()
     {
         ParseExpression();
+        
         CheckError();
-        if (NZ) { return; }  // Expression parsing failed
+        if (NZ)
+        { 
+            return; // Expression parsing failed
+        }  
         
         // Check if expression was constant
         if (BBR1, ZP.BasicFlags)
         {
             // Expression was not constant - set error
-            LDA #( Interpreter.msgInvalidExpression % 256)
+            LDA #( Interpreter.msgConstantExpressionExpected % 256)
             STA ZP.LastErrorL
-            LDA #( Interpreter.msgInvalidExpression / 256)
+            LDA #( Interpreter.msgConstantExpressionExpected / 256)
             STA ZP.LastErrorH
             return;
         }

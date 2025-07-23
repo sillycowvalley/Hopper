@@ -877,6 +877,7 @@ unit Tools
             
             TXA
             ASL ASL ASL ASL
+            NOP
             Serial.HexOut();
             LDA # ':'
             Serial.WriteChar();

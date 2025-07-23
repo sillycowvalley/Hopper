@@ -56,7 +56,7 @@ unit Interpreter
     const string msgUnsupportedStatement = "?UNSUPPORTED STATEMENT\n";
     const string msgInvalidExpression = "?INVALID EXPRESSION\n";
     const string msgTypeConversionError = "?TYPE CONVERSION OUT OF RANGE\n";
-    
+    const string msgConstantExpressionExpected = "?CONST EXPRESSION EXPECTED\n";
     printMessage()
     {
         // IDX points to message string
