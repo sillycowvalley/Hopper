@@ -328,6 +328,77 @@ comment := "//" { character }* end_of_line
 - **Leverage existing code**: Hopper VM runtime provides foundation
 - **Focus on interpreter logic**: Don't reimplement low-level functions
 
+# HopperBASIC Symbol Table Design
+
+## Overview
+
+HopperBASIC uses a unified symbol table to store all program identifiers: variables, constants, and functions (including the main program).
+
+## Design Decisions
+
+### Unified Table Structure
+- **Single table** stores all identifier types (variables, constants, functions)
+- **Shared implementation** reduces code size and complexity
+- **Generic operations** work across all identifier types
+
+### Simple Data Structure
+- **Linked list** implementation
+- Linear search through entries
+- No optimization for lookup speed
+
+### Runtime Resolution
+- **Identifiers stored as strings** during tokenization  
+- **Lookup performed at runtime** when tokens execute
+- **No caching** of resolved addresses
+
+## Rationale
+
+### Why Simple Linear Search?
+- **Small scale**: Typical programs have 5-20 total identifiers
+- **Rare operation**: Lookups only occur during statement execution
+- **6502 performance**: Linear search of 20 items is microseconds
+- **User perception**: No noticeable delay
+
+### Why Runtime Resolution?
+- **Forward references**: Functions can call functions defined later
+- **Dynamic modification**: FORGET and redefinition change symbol meanings
+- **Implementation simplicity**: No cache invalidation or dependency tracking needed
+
+### Why Unified Table?
+- **Code reuse**: Single implementation for all identifier types
+- **FORGET command**: Single lookup covers variables, constants, and functions
+- **Memory efficiency**: Shared allocation and management strategy
+- **Debugging**: One table structure to understand and debug
+
+## Table Operations
+
+### Core Functions
+- `TableLookup(name)` - Find entry by name across all types
+- `TableAdd(name, type, dataType, value)` - Add new entry  
+- `TableRemove(name)` - Remove entry (for FORGET)
+- `TableClear()` - Clear all entries (for NEW)
+- `TableIterate(entryType)` - Iterate by type (for VARS, FUNCS, CONSTS commands)
+
+### Entry Types
+- **VARIABLE** - Mutable values (INT, WORD, BIT, BYTE, STRING, ARRAY)
+- **CONSTANT** - Immutable values (defined with CONST)
+- **FUNCTION** - Executable code blocks (including main program from BEGIN/END)
+
+## Implementation Benefits
+
+1. **Minimal code footprint** - Single table implementation
+2. **Predictable behavior** - Consistent operations across identifier types  
+3. **Easy debugging** - One data structure to inspect and validate
+4. **Flexible execution** - Supports forward references and dynamic redefinition
+5. **Memory efficient** - No duplicate table management code
+
+## Performance Characteristics
+
+- **Lookup time**: O(n) where n ≈ 20 maximum
+- **Memory overhead**: Minimal - simple linked list nodes
+- **Runtime cost**: Negligible on target 6502 systems
+- **Development cost**: Low complexity, easy to implement and maintain
+
 ---
 
 ## Implementation Strategy
