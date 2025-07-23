@@ -928,15 +928,15 @@ unit Tools
         PLA  // Restore A
     }
 
-    // Debug strings for BASIC buffers
+// Debug strings for BASIC buffers
     const string basicBuffersHeader = "\n== BASIC BUFFERS ==\n";
     const string basicInputInfo = "InLen:";
     const string basicTokPosInfo = " TokPos:";
     const string basicCurTokInfo = " CurTok:";
     const string basicErrorInfo = " Err:";
     const string basicCurrentCharInfo = " Char:";
-    const string basicInputBufferLabel = "\nInputBuffer (0x0900) - First 64 bytes:\n";
-    const string basicTokenizerBufferLabel = "\nTokenizerBuffer (0x0980) - First 64 bytes:\n";
+    const string basicInputBufferLabel = "\nInputBuffer - First 64 bytes:\n";
+    const string basicTokenizerBufferLabel = "\nTokenizerBuffer - First 64 bytes:\n";
     const string basicTokenStringLabel = "\nToken string: '";
 
     // Dump the BASIC input and work buffers
@@ -964,7 +964,9 @@ unit Tools
         LDA #(basicTokPosInfo / 256)
         STA ZP.IDXH
         PrintString();
-        LDA ZP.TokenizerPos      // 0x31
+        LDA ZP.TokenizerPosH     // 0x34
+        Serial.HexOut();
+        LDA ZP.TokenizerPosL     // 0x33
         Serial.HexOut();
         
         LDA #(basicCurTokInfo % 256)
@@ -972,7 +974,7 @@ unit Tools
         LDA #(basicCurTokInfo / 256)
         STA ZP.IDXH
         PrintString();
-        LDA ZP.CurrentToken      // 0x32
+        LDA ZP.CurrentToken      // 0x37
         Serial.HexOut();
         
         // Show Error pointers if set
@@ -986,13 +988,13 @@ unit Tools
         LDA ZP.LastErrorL
         Serial.HexOut();
         
-        // Show current character at tokenizer position
+        // Show current character at tokenizer position in INPUT buffer
         LDA #(basicCurrentCharInfo % 256)
         STA ZP.IDXL
         LDA #(basicCurrentCharInfo / 256)
         STA ZP.IDXH
         PrintString();
-        LDX ZP.TokenizerPos
+        LDX ZP.TokenizerPosL     // Use low byte only for input buffer index
         CPX ZP.BasicInputLength
         if (C)  // TokPos < InputLength
         {
@@ -1076,18 +1078,17 @@ unit Tools
         LDA #'\''
         Serial.WriteChar();
         
-        // BasicInputBuffer (0x0900) - First 64 bytes only
+        // BasicInputBuffer - First 64 bytes using constants
         LDA #(basicInputBufferLabel % 256)
         STA ZP.IDXL
         LDA #(basicInputBufferLabel / 256)
         STA ZP.IDXH
         PrintString();
         
-        // Show first 64 bytes of input buffer using DumpPage logic
         PHX
         PHY
         
-        // Set up M0/M1 to point to BasicInputBuffer (0x0900)
+        // Set up M0/M1 to point to BasicInputBuffer using constants
         LDA #(Address.BasicInputBuffer & 0xFF)
         STA ZP.M0
         LDA #(Address.BasicInputBuffer >> 8)
@@ -1178,7 +1179,7 @@ unit Tools
                 Serial.WriteChar();
                 INY
                 
-                // Add space after 8 characters  
+                // Add space after 8 characters
                 CPY #8
                 if (Z)
                 {
@@ -1208,7 +1209,7 @@ unit Tools
         PLY
         PLX
         
-        // BasicTokenizerBuffer (0x0980) - show first 64 bytes
+        // BasicTokenizerBuffer - show first 64 bytes using constants
         LDA #(basicTokenizerBufferLabel % 256)
         STA ZP.IDXL
         LDA #(basicTokenizerBufferLabel / 256)
@@ -1218,7 +1219,7 @@ unit Tools
         PHX
         PHY
         
-        // Set up M0/M1 to point to BasicTokenizerBuffer (0x0980)
+        // Set up M0/M1 to point to BasicTokenizerBuffer using constants
         LDA #(Address.BasicTokenizerBuffer & 0xFF)
         STA ZP.M0
         LDA #(Address.BasicTokenizerBuffer >> 8)

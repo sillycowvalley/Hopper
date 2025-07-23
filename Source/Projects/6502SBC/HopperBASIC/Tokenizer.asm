@@ -4,6 +4,7 @@ unit Tokenizer
     uses "/Source/Runtime/6502/Serial"
     uses "/Source/Runtime/6502/MemoryMap"
     uses "Limits"
+    uses "Messages"
     
     // Phase 1 Token definitions (lean set)
     enum Tokens
@@ -86,17 +87,20 @@ unit Tokenizer
     // Initialize tokenizer state
     Initialize()
     {
-        STZ ZP.TokenizerPos
+        STZ ZP.TokenizerPosL
+        STZ ZP.TokenizerPosH
+        STZ ZP.TokenBufferLengthL
+        STZ ZP.TokenBufferLengthH
         STZ ZP.BasicInputLength
         STZ ZP.CurrentToken
     }
     
-    // Skip whitespace in input buffer
+    // Skip whitespace in input buffer at position X
+    // Updates X to point to next non-whitespace character
     skipWhitespace()
     {
         loop
         {
-            LDX ZP.TokenizerPos
             CPX ZP.BasicInputLength
             if (Z) { break; }  // End of input
             
@@ -104,22 +108,24 @@ unit Tokenizer
             CMP #' '
             if (Z)
             {
-                INC ZP.TokenizerPos
+                INX
                 continue;
             }
             CMP #'\t'
             if (Z)
             {
-                INC ZP.TokenizerPos
+                INX
                 continue;
             }
             break;  // Non-whitespace found
         }
     }
     
+    // Check character type
+    // Input: A = character
+    // Output: A = 0=other, 1=digit, 2=alpha
     getCharType()
     {
-        // Returns: 0=other, 1=digit, 2=alpha, 3=both possible
         CMP #'0'
         if (C)
         {
@@ -141,8 +147,56 @@ unit Tokenizer
         LDA #0  // other
     }
     
-    // Find keyword match
-    // Token stored in BasicTokenizerBuffer, null-terminated
+    // Append byte to token buffer
+    // Input: A = byte to append
+    // Uses: ZP.TokenBufferLength (16-bit)
+    appendToTokenBuffer()
+    {
+        PHA  // Save byte to append
+        PHY  // Save Y
+        
+        // Check if buffer is full
+        LDA ZP.TokenBufferLengthH
+        if (NZ)  // High byte non-zero, definitely full
+        {
+            LDA #(Messages.SyntaxError % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.SyntaxError / 256)
+            STA ZP.LastErrorH
+            PLY
+            PLA
+            return;
+        }
+        
+        LDY ZP.TokenBufferLengthL
+        CPY #(Limits.BasicTokenizerBufferLength & 0xFF)
+        if (Z)  // At max capacity
+        {
+            LDA #(Messages.SyntaxError % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.SyntaxError / 256)
+            STA ZP.LastErrorH
+            PLY
+            PLA
+            return;
+        }
+        
+        // Append the byte
+        PLA  // Restore byte to append
+        STA Address.BasicTokenizerBuffer, Y
+        
+        // Increment length
+        INC ZP.TokenBufferLengthL
+        if (Z)
+        {
+            INC ZP.TokenBufferLengthH
+        }
+        
+        PLY  // Restore Y
+    }
+    
+    // Find keyword match for current identifier in working buffer
+    // Working buffer starts at Address.BasicProcessBuffer1, null-terminated
     // Returns token in A if found, or 0 if not found
     findKeyword()
     {
@@ -159,11 +213,11 @@ unit Tokenizer
             INY
             
             // Compare characters
-            LDX #0  // Character index in our token
+            LDX #0  // Character index in our identifier
             loop
             {
-                LDA Address.BasicTokenizerBuffer, X  // Get char from our token
-                if (Z)  // Hit null terminator in our token
+                LDA Address.BasicProcessBuffer1, X  // Get char from our identifier
+                if (Z)  // Hit null terminator in our identifier
                 {
                     // Check if we've matched the full keyword length
                     CPX ZP.ACCL
@@ -177,7 +231,7 @@ unit Tokenizer
                 
                 // Check if we've exceeded keyword length
                 CPX ZP.ACCL
-                if (Z) { break; }  // Our token is longer than keyword
+                if (Z) { break; }  // Our identifier is longer than keyword
                 
                 CMP keywords, Y  // Compare with expected character
                 if (NZ) { break; } // Mismatch
@@ -199,246 +253,375 @@ unit Tokenizer
         LDA #0  // Not found
     }
     
-    // Get next token from input buffer
-    // Returns token type in A, updates ZP.CurrentToken
-    NextToken()
+    // Tokenize complete line from BasicInputBuffer into BasicTokenizerBuffer
+    // Returns Z if successful, NZ if error (error stored in ZP.LastError)
+    TokenizeLine()
     {
-        skipWhitespace();
+        // Clear token buffer
+        STZ ZP.TokenBufferLengthL
+        STZ ZP.TokenBufferLengthH
+        Messages.ClearError();
         
-        LDX ZP.TokenizerPos
-        CPX ZP.BasicInputLength
+        // Check for empty line
+        LDA ZP.BasicInputLength
         if (Z)
         {
+            // Empty line - add EOL token
             LDA #Tokens.EOL
-            STA ZP.CurrentToken
+            appendToTokenBuffer();
             return;
         }
         
-        LDA Address.BasicInputBuffer, X
+        LDX #0  // Position in input buffer
         
-        // Check for operators and punctuation
-        switch (A)
-        {
-            case '=':
-            {
-                INC ZP.TokenizerPos
-                LDA #Tokens.EQUALS
-                STA ZP.CurrentToken
-                return;
-            }
-            case '+':
-            {
-                INC ZP.TokenizerPos
-                LDA #Tokens.PLUS
-                STA ZP.CurrentToken
-                return;
-            }
-            case '-':
-            {
-                INC ZP.TokenizerPos
-                LDA #Tokens.MINUS
-                STA ZP.CurrentToken
-                return;
-            }
-            case '(':
-            {
-                INC ZP.TokenizerPos
-                LDA #Tokens.LPAREN
-                STA ZP.CurrentToken
-                return;
-            }
-            case ')':
-            {
-                INC ZP.TokenizerPos
-                LDA #Tokens.RPAREN
-                STA ZP.CurrentToken
-                return;
-            }
-            case '<':
-            {
-                // Check for <>
-                LDY ZP.TokenizerPos
-                INY
-                CPY ZP.BasicInputLength
-                if (NZ)
-                {
-                    LDA Address.BasicInputBuffer, Y
-                    CMP #'>'
-                    if (Z)
-                    {
-                        INC ZP.TokenizerPos
-                        INC ZP.TokenizerPos
-                        LDA #Tokens.NOTEQUAL
-                        STA ZP.CurrentToken
-                        return;
-                    }
-                }
-                // Single < not supported in Phase 1
-                LDA #0
-                STA ZP.CurrentToken
-                return;
-            }
-            case '"':
-            {
-                // String literal - copy to BasicTokenizerBuffer
-                INC ZP.TokenizerPos  // Skip opening quote
-                
-                LDX #0  // Index into BasicTokenizerBuffer
-                loop
-                {
-                    LDY ZP.TokenizerPos
-                    CPY ZP.BasicInputLength
-                    if (Z)  
-                    {
-                        // End of input without closing quote
-                        LDA #(Messages.SyntaxError % 256)
-                        STA ZP.LastErrorL
-                        LDA #(Messages.SyntaxError / 256)
-                        STA ZP.LastErrorH
-                        break;
-                    }
-                    
-                    LDA Address.BasicInputBuffer, Y
-                    INC ZP.TokenizerPos
-                    CMP #'"'
-                    if (Z)  // Found closing quote
-                    {
-                        break;
-                    }
-                    
-                    STA Address.BasicTokenizerBuffer, X
-                    INX
-                    CPX # Limits.BasicTokenizerBufferLength
-                    if (Z) 
-                    {
-                        LDA #(Messages.SyntaxError % 256)
-                        STA ZP.LastErrorL
-                        LDA #(Messages.SyntaxError / 256)
-                        STA ZP.LastErrorH
-                        break; // Buffer full
-                    }
-                }
-                
-                // Add null terminator
-                LDA #0
-                STA Address.BasicTokenizerBuffer, X
-                
-                LDA #Tokens.STRING
-                STA ZP.CurrentToken
-                return;
-            }
-        }
-        
-        // Check if it's a number
-        getCharType(); 
-        CMP # 1 // isDigit?
-        if (Z)  
-        {
-            // Scan number and copy to BasicTokenizerBuffer
-            LDX #0  // Index into BasicTokenizerBuffer
-            loop
-            {
-                LDY ZP.TokenizerPos
-                CPY ZP.BasicInputLength
-                if (Z) { break; }
-                
-                LDA Address.BasicInputBuffer, Y
-                getCharType();
-                CMP # 1 // isDigit?
-                if (Z) { break; }  // Not a digit
-                
-                STA Address.BasicTokenizerBuffer, X
-                INC ZP.TokenizerPos
-                INX
-                CPX # Limits.BasicTokenizerBufferLength
-                if (Z) { break; }  // Buffer full
-            }
-            
-            // Add null terminator
-            LDA #0
-            STA Address.BasicTokenizerBuffer, X
-            
-            LDA #Tokens.NUMBER
-            STA ZP.CurrentToken
-            return;
-        }
-        
-        // Must be an identifier or keyword
-        CMP # 2 // isAlpha?
-        if (NZ)
-        {
-            // Invalid character
-            LDA #0
-            STA ZP.CurrentToken
-            return;
-        }
-        
-        
-        // Scan alphanumeric characters and copy to BasicTokenizerBuffer with uppercase conversion
-        LDX #0  // Index into BasicTokenizerBuffer
         loop
         {
-            LDY ZP.TokenizerPos
+            skipWhitespace();  // Updates X
+            CPX ZP.BasicInputLength
+            if (Z) { break; }  // End of input
             
-            CPY ZP.BasicInputLength
-            if (Z) { break; }
+            LDA Address.BasicInputBuffer, X
             
-            LDA Address.BasicInputBuffer, Y
-            getCharType();
-            if (Z) { break; }  // Not alphanumeric
-            
-            // Convert to uppercase and store in BasicTokenizerBuffer
-            LDA Address.BasicInputBuffer, Y
-            CMP #'a'
-            if (C)             // >= 'a'
+            // Check for operators and punctuation
+            switch (A)
             {
-                CMP #('z'+1)
-                if (NC)        // <= 'z'
+                case '=':
                 {
-                    SEC
-                    SBC #('a'-'A')  // Convert to uppercase
+                    LDA #Tokens.EQUALS
+                    appendToTokenBuffer();
+                    Messages.CheckError();
+                    if (NZ) { return; }
+                    INX
+                }
+                case '+':
+                {
+                    LDA #Tokens.PLUS
+                    appendToTokenBuffer();
+                    Messages.CheckError();
+                    if (NZ) { return; }
+                    INX
+                }
+                case '-':
+                {
+                    LDA #Tokens.MINUS
+                    appendToTokenBuffer();
+                    Messages.CheckError();
+                    if (NZ) { return; }
+                    INX
+                }
+                case '(':
+                {
+                    LDA #Tokens.LPAREN
+                    appendToTokenBuffer();
+                    Messages.CheckError();
+                    if (NZ) { return; }
+                    INX
+                }
+                case ')':
+                {
+                    LDA #Tokens.RPAREN
+                    appendToTokenBuffer();
+                    Messages.CheckError();
+                    if (NZ) { return; }
+                    INX
+                }
+                case '<':
+                {
+                    // Check for <>
+                    LDY #1
+                    STY ZP.ACCL  // Temp storage for increment amount
+                    INX
+                    CPX ZP.BasicInputLength
+                    if (NZ)
+                    {
+                        LDA Address.BasicInputBuffer, X
+                        CMP #'>'
+                        if (Z)
+                        {
+                            LDA #Tokens.NOTEQUAL
+                            appendToTokenBuffer();
+                            Messages.CheckError();
+                            if (NZ) { return; }
+                            INX  // Skip both '<' and '>'
+                            continue;
+                        }
+                    }
+                    DEX  // Back up, single < not supported in Phase 1
+                    LDA #(Messages.SyntaxError % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.SyntaxError / 256)
+                    STA ZP.LastErrorH
+                    return;
+                }
+                case '"':
+                {
+                    // String literal - for Phase 1, this is an error
+                    LDA #(Messages.SyntaxError % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.SyntaxError / 256)
+                    STA ZP.LastErrorH
+                    return;
+                }
+                default:
+                {
+                    // Check if it's a number
+                    getCharType(); 
+                    CMP #1 // isDigit?
+                    if (Z)  
+                    {
+                        // Scan number and store inline in token buffer
+                        LDA #Tokens.NUMBER
+                        appendToTokenBuffer();
+                        Messages.CheckError();
+                        if (NZ) { return; }
+                        
+                        // Store number digits inline
+                        loop
+                        {
+                            CPX ZP.BasicInputLength
+                            if (Z) { break; }
+                            
+                            LDA Address.BasicInputBuffer, X
+                            getCharType();
+                            CMP #1 // isDigit?
+                            if (NZ) { break; }  // Not a digit
+                            
+                            LDA Address.BasicInputBuffer, X
+                            appendToTokenBuffer();
+                            Messages.CheckError();
+                            if (NZ) { return; }
+                            INX
+                        }
+                        
+                        // Add null terminator for number
+                        LDA #0
+                        appendToTokenBuffer();
+                        Messages.CheckError();
+                        if (NZ) { return; }
+                        continue;
+                    }
+                    
+                    // Must be an identifier or keyword
+                    CMP #2 // isAlpha?
+                    if (NZ)
+                    {
+                        // Invalid character
+                        LDA #(Messages.SyntaxError % 256)
+                        STA ZP.LastErrorL
+                        LDA #(Messages.SyntaxError / 256)
+                        STA ZP.LastErrorH
+                        return;
+                    }
+                    
+                    // Scan alphanumeric characters into working buffer for keyword lookup
+                    LDY #0  // Index into working buffer
+                    loop
+                    {
+                        CPX ZP.BasicInputLength
+                        if (Z) { break; }
+                        
+                        LDA Address.BasicInputBuffer, X
+                        getCharType();
+                        if (Z) { break; }  // Not alphanumeric
+                        
+                        // Convert to uppercase and store in working buffer
+                        LDA Address.BasicInputBuffer, X
+                        CMP #'a'
+                        if (C)             // >= 'a'
+                        {
+                            CMP #('z'+1)
+                            if (NC)        // <= 'z'
+                            {
+                                SEC
+                                SBC #('a'-'A')  // Convert to uppercase
+                            }
+                        }
+                        STA Address.BasicProcessBuffer1, Y
+                        
+                        INX
+                        INY
+                        CPY #Limits.BasicProcessBuffer1Length
+                        if (Z) 
+                        { 
+                            LDA #(Messages.SyntaxError % 256)
+                            STA ZP.LastErrorL
+                            LDA #(Messages.SyntaxError / 256)
+                            STA ZP.LastErrorH
+                            return;
+                        }
+                    }
+                    
+                    // Add null terminator to working buffer
+                    LDA #0
+                    STA Address.BasicProcessBuffer1, Y
+                    
+                    // Check if it's a keyword
+                    findKeyword();
+                    if (NZ)  // Found keyword
+                    {
+                        
+                        appendToTokenBuffer();
+                        Messages.CheckError();
+                        if (NZ) { return; }
+                    }
+                    else
+                    {
+                        // It's an identifier - store token + inline string
+                        LDA #Tokens.IDENTIFIER
+                        appendToTokenBuffer();
+                        Messages.CheckError();
+                        if (NZ) { return; }
+                        
+                        // Copy identifier from working buffer to token buffer
+                        LDY #0
+                        loop
+                        {
+                            LDA Address.BasicProcessBuffer1, Y
+                            appendToTokenBuffer();
+                            Messages.CheckError();
+                            if (NZ) { return; }
+                            if (Z) { break; }  // Copied null terminator
+                            INY
+                        }
+                    }
                 }
             }
-            STA Address.BasicTokenizerBuffer, X
-            
-            INC ZP.TokenizerPos
-            INX
-            CPX # Limits.BasicTokenizerBufferLength
-            if (Z) { break; }  // Buffer full
         }
         
-        // Add null terminator
-        LDA #0
-        STA Address.BasicTokenizerBuffer, X
+        // Add EOL token
+        LDA #Tokens.EOL
+        appendToTokenBuffer();
+        Messages.CheckError();
+        if (NZ) { return; }
         
-        // Check if it's a keyword
-        findKeyword();
-        if (NZ)  // Found keyword
+        // Reset tokenizer position to start of buffer
+        STZ ZP.TokenizerPosL
+        STZ ZP.TokenizerPosH
+        
+        LDA #0  // Set Z for success
+    }
+    
+    // Get next token from BasicTokenizerBuffer
+    // Returns token type in A, updates ZP.CurrentToken
+    // For literals, advances past the inline data
+    NextToken()
+    {
+        // Check if we're at end of token buffer
+        LDA ZP.TokenizerPosL
+        CMP ZP.TokenBufferLengthL
+        if (NZ)
         {
+            // Not at end, get token
+            LDY ZP.TokenizerPosL
+            LDA Address.BasicTokenizerBuffer, Y
+            STA ZP.CurrentToken
+            
+            // Advance past token
+            INC ZP.TokenizerPosL
+            if (Z)
+            {
+                INC ZP.TokenizerPosH
+            }
+            
+            // If it's a literal token, skip past the inline data
+            LDA ZP.CurrentToken
+            CMP #Tokens.NUMBER
+            if (Z)
+            {
+                skipInlineString();
+                LDA ZP.CurrentToken
+                return;
+            }
+            CMP #Tokens.IDENTIFIER
+            if (Z)
+            {
+                skipInlineString();
+                LDA ZP.CurrentToken
+                return;
+            }
+            CMP #Tokens.STRING
+            if (Z)
+            {
+                skipInlineString();
+                LDA ZP.CurrentToken
+                return;
+            }
+            
+            LDA ZP.CurrentToken
+            return;
+        }
+        
+        LDA ZP.TokenizerPosH
+        CMP ZP.TokenBufferLengthH
+        if (Z)
+        {
+            // At end of buffer
+            LDA #Tokens.EOF
             STA ZP.CurrentToken
             return;
         }
         
-        // It's an identifier
-        LDA #Tokens.IDENTIFIER
+        // Past end (shouldn't happen)
+        LDA #Tokens.EOF
         STA ZP.CurrentToken
     }
     
+    // Skip past null-terminated string at current tokenizer position
+    skipInlineString()
+    {
+        loop
+        {
+            // Check bounds
+            LDA ZP.TokenizerPosL
+            CMP ZP.TokenBufferLengthL
+            if (NZ)
+            {
+                LDY ZP.TokenizerPosL
+                LDA Address.BasicTokenizerBuffer, Y
+                
+                // Advance position
+                INC ZP.TokenizerPosL
+                if (Z)
+                {
+                    INC ZP.TokenizerPosH
+                }
+                
+                if (Z) { break; }  // Found null terminator
+                continue;
+            }
+            
+            LDA ZP.TokenizerPosH  
+            CMP ZP.TokenBufferLengthH
+            if (Z) { break; }  // At end
+            
+            // Past end - shouldn't happen
+            break;
+        }
+    }
+    
     // Get current token as 16-bit number (assumes current token is NUMBER)
-    // Token string is in BasicTokenizerBuffer
+    // Inline number string follows the NUMBER token in buffer
     // Returns 16-bit number in ZP.TOP
     GetTokenNumber()
     {
-        DumpBasicBuffers();
-        
         STZ ZP.TOPL
         STZ ZP.TOPH
         
-        LDX #0
+        // Current position should be pointing at the start of number digits
+        LDY ZP.TokenizerPosL  // We've already consumed the NUMBER token
         
         loop
         {
-            LDA Address.BasicTokenizerBuffer, X
+            // Check bounds
+            CPY ZP.TokenBufferLengthL
+            if (Z)  // At or past end
+            {
+                LDA ZP.TokenizerPosH
+                CMP ZP.TokenBufferLengthH
+                if (Z) { break; }  // Definitely at end
+            }
+            
+            LDA Address.BasicTokenizerBuffer, Y
             if (Z) { break; }  // Hit null terminator
             
             // TOP = TOP * 10 using shifts and adds
@@ -469,7 +652,7 @@ unit Tokenizer
             ROL ZP.TOPH
             
             // Add current digit
-            LDA Address.BasicTokenizerBuffer, X
+            LDA Address.BasicTokenizerBuffer, Y
             SEC
             SBC #'0'
             CLC
@@ -480,7 +663,7 @@ unit Tokenizer
                 INC ZP.TOPH
             }
             
-            INX
+            INY
         }
     }
     
@@ -555,7 +738,6 @@ unit Tokenizer
         }
         
         STX ZP.BasicInputLength
-        STZ ZP.TokenizerPos
         TXA  // Return length
     }
 }

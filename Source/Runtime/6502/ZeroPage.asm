@@ -110,21 +110,25 @@ unit ZP
 #endif
 
 #if defined(HOPPER_BASIC)
-    // HopperBASIC allocation: 0x30..0x4F (40 bytes primary), 0x70..0x77 (8 bytes secondary)
+    // HopperBASIC allocation: 0x30..0x37 (8 bytes primary), 0x70..0x77 (8 bytes secondary)
     
     // === CONSOLE INPUT (0x30) ===
     const byte BasicInputLength     = 0x30;  // Length of current input in BasicInputBuffer
     
-    // === TOKENIZER STATE (0x31-0x32) ===
-    const byte TokenizerPos         = 0x31;  // Current position in input during tokenization
-    const byte CurrentToken         = 0x32;  // Current token type/value from Tokenizer.Tokens enum
+    // === TOKENIZER STATE (0x31-0x34) ===
+    const byte TokenBufferLength    = 0x31;  // Length of tokens in BasicTokenizerBuffer (16-bit)
+    const byte TokenBufferLengthL   = 0x31;  // Low byte
+    const byte TokenBufferLengthH   = 0x32;  // High byte
+    const byte TokenizerPos         = 0x33;  // Current position in token buffer (16-bit)
+    const byte TokenizerPosL        = 0x33;  // Low byte  
+    const byte TokenizerPosH        = 0x34;  // High byte
     
-    // === ERROR HANDLING (0x33-0x34) ===
-    const byte LastErrorL           = 0x33;  // Error message pointer low byte
-    const byte LastErrorH           = 0x34;  // Error message pointer high byte
+    // === ERROR HANDLING (0x35-0x36) ===
+    const byte LastErrorL           = 0x35;  // Error message pointer low byte
+    const byte LastErrorH           = 0x36;  // Error message pointer high byte
     
-    // === AVAILABLE PRIMARY (0x35-0x4F) ===
-    // 35 bytes available for future features
+    // === CURRENT TOKEN CACHE (0x37) ===
+    const byte CurrentToken         = 0x37;  // Current token type/value from token buffer
     
     // === AVAILABLE SECONDARY (0x70-0x77) ===
     // 8 bytes available for overflow/additional features
