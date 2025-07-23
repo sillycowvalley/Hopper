@@ -35,12 +35,6 @@
 - **`FUNCS`** - Show all function signatures (overview)
 - **`FORGET name`** - Remove variable or function
 
-### Storage Commands
-- **`SAVE "name"`** - Save complete session to EEPROM
-- **`LOAD "name"`** - Load complete session from EEPROM
-- **`DIR`** - List saved programs
-- **`DEL "name"`** - Delete saved program
-
 ### System Commands
 - **`MEM`** - Show available memory
 - **`BYE`** - Exit interpreter
@@ -56,7 +50,7 @@
 - **`var = expr`** - Assignment to existing variables
 
 ### Control Flow
-- **`IF expr THEN statement`** - Conditional execution (expr must be BIT type)
+- **`IF expr THEN statement [ENDIF]`** - Conditional execution (expr must be BIT type)
 - **`RETURN [expr]`** - Return from function
 - **`END`** - End main program
 
@@ -73,7 +67,23 @@
 
 ---
 
-## Phase 2: Extended Features
+## Phase 2: Storage and File Management
+
+### Storage Commands
+- **`SAVE "name"`** - Save complete session to EEPROM (tokenized form)
+- **`LOAD "name"`** - Load complete session from EEPROM
+- **`DIR`** - List saved programs
+- **`DEL "name"`** - Delete saved program
+
+### Technical Implementation
+- **Tokenized storage**: Programs saved in tokenized form to save space
+- **Complete sessions**: Variables, functions, and main program all saved together
+- **EEPROM integration**: Use existing I2C buffer and routines for storage
+- **Efficient format**: Minimal overhead for maximum program storage
+
+---
+
+## Phase 3: Extended Features
 
 ### Additional Types
 - **`BYTE name [= value]`** - 8-bit unsigned (0 to 255) for hardware I/O
@@ -91,7 +101,7 @@
 ### Extended Control Flow
 - **`FOR var = start TO end [STEP increment]`** - Counted loops
 - **`NEXT var`** - End of FOR loop
-- **`WHILE expr`...`ENDWHILE`** - Conditional loops
+- **`WHILE expr`...`WEND`** - Conditional loops
 - **`BREAK`** - Exit from loops early
 - **`CONTINUE`** - Skip to next loop iteration
 - **`CONT`** - Continue execution after break (console command)
@@ -102,7 +112,7 @@
 - **Logical**: `AND OR NOT` (BIT operands only)
 
 ### Built-in Functions
-- **Math functions**: `ABS(x)`, `SGN(x)`, `RND(x)`
+- **Math functions**: `ABS(x)`, `RND(x)`
 - **String functions**: `LEN()`, `MID()`, `LEFT()`, `RIGHT()` (if strings added)
 - **Conversion functions**: Type conversion between INT/WORD/BYTE
 
@@ -110,6 +120,156 @@
 - **`READ(pin)`** - Digital pin input
 - **`WRITE(pin, value)`** - Digital pin output
 - **`PWM(pin, value)`** - Analog output
+- **`DELAY(milliseconds)`** - Pause execution
+- **`PINMODE(pin, mode)`** - Configure pin as input/output
+
+---
+
+## Grammar
+
+### Console Commands
+```
+console_command := NEW | LIST | RUN | CLEAR | VARS | FUNCS | MEM | BYE
+                 | FORGET identifier
+                 | SAVE string_literal
+                 | LOAD string_literal  
+                 | DIR
+                 | DEL string_literal
+```
+
+### Variable Declarations
+```
+variable_decl := type_keyword identifier [ "=" expression ]
+type_keyword := INT | WORD | BIT | BYTE | STRING
+```
+
+### Program Structure
+```
+program := { statement }*
+
+statement := variable_decl
+           | assignment
+           | print_statement
+           | if_statement
+           | function_definition
+           | main_program
+           | return_statement
+           | expression_statement
+
+assignment := identifier "=" expression
+
+print_statement := PRINT expression [ "," expression ]*
+
+if_statement := IF expression THEN statement [ ENDIF ]
+
+function_definition := FUNC identifier "(" [ parameter_list ] ")"
+                      { statement }*
+                      ENDFUNC
+
+main_program := BEGIN
+               { statement }*
+               END
+
+return_statement := RETURN [ expression ]
+
+parameter_list := identifier [ "," identifier ]*
+```
+
+### Expressions (Phase 1)
+```
+expression := comparison_expr
+
+comparison_expr := additive_expr [ comparison_op additive_expr ]
+comparison_op := "=" | "<>"
+
+additive_expr := unary_expr [ additive_op unary_expr ]
+additive_op := "+" | "-"
+
+unary_expr := [ "-" ] primary_expr
+
+primary_expr := number
+              | identifier
+              | "(" expression ")"
+              | function_call
+
+function_call := identifier "(" [ argument_list ] ")"
+argument_list := expression [ "," expression ]*
+
+number := decimal_digits
+identifier := letter [ letter | digit ]*
+string_literal := '"' { character }* '"'
+```
+
+### Extended Grammar (Phase 3)
+```
+statement := ... (Phase 1 statements)
+           | for_statement
+           | while_statement
+           | break_statement
+           | continue_statement
+           | const_declaration
+           | array_declaration
+
+for_statement := FOR identifier "=" expression TO expression [ STEP expression ]
+                { statement }*
+                NEXT identifier
+
+while_statement := WHILE expression
+                  { statement }*
+                  WEND
+
+const_declaration := CONST identifier "=" expression
+
+array_declaration := type_keyword identifier "[" number "]" [ "=" array_initializer ]
+array_initializer := "{" expression [ "," expression ]* "}"
+
+comparison_op := "=" | "<>" | "<" | ">" | "<=" | ">="
+additive_op := "+" | "-" | "*" | "/"
+logical_op := AND | OR | NOT
+
+primary_expr := ... (Phase 1 expressions)
+              | array_access
+              | built_in_function
+
+array_access := identifier "[" expression "]"
+built_in_function := ABS "(" expression ")"
+                   | RND "(" expression ")"
+                   | LEN "(" expression ")"
+                   | hardware_function
+
+hardware_function := READ "(" expression ")"
+                   | WRITE "(" expression "," expression ")"
+                   | PWM "(" expression "," expression ")"
+                   | DELAY "(" expression ")"
+                   | PINMODE "(" expression "," expression ")"
+```
+
+### Lexical Elements
+```
+letter := 'A'..'Z' | 'a'..'z'
+digit := '0'..'9'
+decimal_digits := digit { digit }*
+character := any printable ASCII character except '"'
+whitespace := ' ' | '\t'
+comment := "//" { character }* end_of_line
+```
+
+### Type System
+- **INT**: 16-bit signed integer (-32768 to 32767)
+- **WORD**: 16-bit unsigned integer (0 to 65535)  
+- **BIT**: Boolean value (0 or 1)
+- **BYTE**: 8-bit unsigned integer (0 to 255) [Phase 3]
+- **STRING**: Null-terminated character array [Phase 3]
+
+### Operator Precedence (Highest to Lowest)
+1. Function calls, array access, parentheses
+2. Unary minus (-)
+3. Multiplication (*), Division (/) [Phase 3]
+4. Addition (+), Subtraction (-)
+5. Comparison (=, <>, <, >, <=, >=)
+6. Logical NOT [Phase 3]
+7. Logical AND [Phase 3]
+8. Logical OR [Phase 3]
 
 ---
 
@@ -157,9 +317,7 @@
 3. **Phase 1c**: PRINT statement and assignment
 4. **Phase 1d**: IF/THEN control flow
 5. **Phase 1e**: Functions (FUNC/ENDFUNC/RETURN) and main program (BEGIN/END)
-6. **Phase 2**: Add constants, loops, input, additional operators, built-in functions
+6. **Phase 2**: Add tokenized SAVE/LOAD functionality with EEPROM storage
+7. **Phase 3**: Add constants, loops, input, additional operators, built-in functions
 
 This approach maximizes code reuse while delivering a clean, simple BASIC interpreter that feels familiar to users but leverages the robust Hopper VM foundation.
-
-
-

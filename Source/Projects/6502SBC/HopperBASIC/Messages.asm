@@ -24,6 +24,7 @@ unit Messages
     const string StringTooLong  = "STRING TOO LONG";
     const string BadIndex       = "BAD INDEX"; // STRING and ARRAY
     const string UndefinedIdentifier = "UNDEFINED IDENTIFIER"; // FUNC or VAR
+    const string ConstantExpected  = "CONSTANT EXPECTED";
     
     
     ClearError()
