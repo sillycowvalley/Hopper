@@ -429,6 +429,8 @@ unit Tokenizer
     // Returns 16-bit number in ZP.TOP
     GetTokenNumber()
     {
+        DumpBasicBuffers();
+        
         STZ ZP.TOPL
         STZ ZP.TOPH
         

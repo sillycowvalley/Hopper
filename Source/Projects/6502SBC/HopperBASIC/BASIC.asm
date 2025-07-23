@@ -4,7 +4,7 @@ program HopperBASIC
     #define ROM_8K
     #define HOPPER_BASIC
     
-    //#define DEBUG
+    #define DEBUG
     
     uses "/Source/Runtime/6502/Serial"
     uses "/Source/Runtime/6502/ZeroPage"

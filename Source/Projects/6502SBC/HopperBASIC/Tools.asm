@@ -97,8 +97,6 @@ unit Tools
         }
     }
     
-    // Add this to Tools.asm
-
     // Copy FLENGTH bytes from FSOURCEADDRESS to FDESTINATIONADDRESS
     // On entry: FSOURCEADDRESS = source pointer
     //           FDESTINATIONADDRESS = destination pointer  
@@ -398,7 +396,7 @@ unit Tools
     {
         PHA  // Save A
         PHX  // Save X  
-        PHY  // Save Y
+        PLY  // Save Y
         
         LDA ZP.IDXL
         PHA
@@ -935,11 +933,11 @@ unit Tools
     const string basicInputInfo = "InLen:";
     const string basicTokPosInfo = " TokPos:";
     const string basicCurTokInfo = " CurTok:";
-    const string basicExprTypeInfo = " ExprType:";
-    const string basicTokPtrInfo = "\nTokPtr:";
     const string basicErrorInfo = " Err:";
-    const string basicInputBufferLabel = "\nInputBuffer (0x0900):\n";
-    const string basicWorkBufferLabel = "\nWorkBuffer (0x0980) - First 64 bytes:\n";
+    const string basicCurrentCharInfo = " Char:";
+    const string basicInputBufferLabel = "\nInputBuffer (0x0900) - First 64 bytes:\n";
+    const string basicTokenizerBufferLabel = "\nTokenizerBuffer (0x0980) - First 64 bytes:\n";
+    const string basicTokenStringLabel = "\nToken string: '";
 
     // Dump the BASIC input and work buffers
     DumpBasicBuffers()
@@ -988,25 +986,235 @@ unit Tools
         LDA ZP.LastErrorL
         Serial.HexOut();
         
-        // BasicInputBuffer (0x0900, 128 bytes)
+        // Show current character at tokenizer position
+        LDA #(basicCurrentCharInfo % 256)
+        STA ZP.IDXL
+        LDA #(basicCurrentCharInfo / 256)
+        STA ZP.IDXH
+        PrintString();
+        LDX ZP.TokenizerPos
+        CPX ZP.BasicInputLength
+        if (C)  // TokPos < InputLength
+        {
+            LDA Address.BasicInputBuffer, X
+            Serial.HexOut();
+            LDA #'('
+            Serial.WriteChar();
+            LDA Address.BasicInputBuffer, X
+            // Check if printable
+            CMP #32
+            if (C)
+            {
+                CMP #127
+                if (NC)
+                {
+                    Serial.WriteChar();
+                }
+                else
+                {
+                    LDA #'?'
+                    Serial.WriteChar();
+                }
+            }
+            else
+            {
+                LDA #'?'
+                Serial.WriteChar();
+            }
+            LDA #')'
+            Serial.WriteChar();
+        }
+        else
+        {
+            LDA #'E'
+            Serial.WriteChar();
+            LDA #'O'
+            Serial.WriteChar();
+            LDA #'L'
+            Serial.WriteChar();
+        }
+        
+        // Show the current token string from TokenizerBuffer
+        LDA #(basicTokenStringLabel % 256)
+        STA ZP.IDXL
+        LDA #(basicTokenStringLabel / 256)
+        STA ZP.IDXH
+        PrintString();
+        
+        // Print token string from TokenizerBuffer until null terminator
+        LDX #0
+        loop
+        {
+            LDA Address.BasicTokenizerBuffer, X
+            if (Z) { break; }  // Hit null terminator
+            
+            // Check if printable
+            CMP #32
+            if (C)
+            {
+                CMP #127
+                if (NC)
+                {
+                    Serial.WriteChar();
+                }
+                else
+                {
+                    LDA #'?'
+                    Serial.WriteChar();
+                }
+            }
+            else
+            {
+                LDA #'?'
+                Serial.WriteChar();
+            }
+            
+            INX
+            CPX #64  // Safety limit
+            if (Z) { break; }
+        }
+        LDA #'\''
+        Serial.WriteChar();
+        
+        // BasicInputBuffer (0x0900) - First 64 bytes only
         LDA #(basicInputBufferLabel % 256)
         STA ZP.IDXL
         LDA #(basicInputBufferLabel / 256)
         STA ZP.IDXH
         PrintString();
         
-        // Dump the entire page containing BasicInputBuffer
-        LDA #(Address.BasicInputBuffer >> 8)  // Page 0x09
-        DumpPage();
+        // Show first 64 bytes of input buffer using DumpPage logic
+        PHX
+        PHY
         
-        // BasicTokenizerBuffer (0x0980, 256 bytes) - show first 64 bytes
-        LDA #(basicWorkBufferLabel % 256)
+        // Set up M0/M1 to point to BasicInputBuffer (0x0900)
+        LDA #(Address.BasicInputBuffer & 0xFF)
+        STA ZP.M0
+        LDA #(Address.BasicInputBuffer >> 8)
+        STA ZP.M1
+        
+        // Print 4 lines of 16 bytes each (64 bytes total)
+        LDX #0  // Line counter (0-3)
+        
+        loop
+        {
+            // Print address for this line
+            LDA ZP.M1
+            Serial.HexOut();
+            TXA
+            ASL
+            ASL
+            ASL
+            ASL
+            CLC
+            ADC ZP.M0
+            Serial.HexOut();
+            LDA #':'
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            
+            // Print 16 hex bytes
+            LDY #0
+            loop
+            {
+                CPY #16
+                if (Z) { break; }
+                
+                LDA [ZP.M0], Y
+                Serial.HexOut();
+                LDA #' '
+                Serial.WriteChar();
+                
+                INY
+                
+                // Add extra space after 8 bytes
+                CPY #8
+                if (Z)
+                {
+                    LDA #' '
+                    Serial.WriteChar();
+                }
+            }
+            
+            // Add spacing before ASCII dump
+            LDA #' '
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            
+            // Print 16 ASCII characters
+            LDY #0
+            loop
+            {
+                CPY #16
+                if (Z) { break; }
+                
+                LDA [ZP.M0], Y
+                
+                // Check if printable (32-127)
+                CMP #32
+                if (C)  // >= 32
+                {
+                    CMP #127
+                    if (NC)  // <= 127
+                    {
+                        Serial.WriteChar();
+                        INY
+                        
+                        // Add space after 8 characters
+                        CPY #8
+                        if (Z)
+                        {
+                            LDA #' '
+                            Serial.WriteChar();
+                        }
+                        continue;
+                    }
+                }
+                
+                // Not printable, print dot
+                LDA #'.'
+                Serial.WriteChar();
+                INY
+                
+                // Add space after 8 characters  
+                CPY #8
+                if (Z)
+                {
+                    LDA #' '
+                    Serial.WriteChar();
+                }
+            }
+            
+            LDA #'\n'
+            Serial.WriteChar();
+            
+            // Move to next line (add 16 to M0/M1)
+            CLC
+            LDA ZP.M0
+            ADC #16
+            STA ZP.M0
+            if (C)
+            {
+                INC ZP.M1
+            }
+            
+            INX
+            CPX #4
+            if (Z) { break; }  // Done with 4 lines
+        }
+        
+        PLY
+        PLX
+        
+        // BasicTokenizerBuffer (0x0980) - show first 64 bytes
+        LDA #(basicTokenizerBufferLabel % 256)
         STA ZP.IDXL
-        LDA #(basicWorkBufferLabel / 256)
+        LDA #(basicTokenizerBufferLabel / 256)
         STA ZP.IDXH
         PrintString();
         
-        // Show first 64 bytes of work buffer using DumpPage logic
         PHX
         PHY
         

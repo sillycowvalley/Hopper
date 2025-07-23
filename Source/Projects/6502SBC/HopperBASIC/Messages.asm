@@ -38,6 +38,14 @@ unit Messages
         // Returns Z if no error, NZ if error occurred
         LDA ZP.LastErrorL
         ORA ZP.LastErrorH
+        
+        // DEBUG
+        if (NZ)
+        {
+            LDA #'!'
+            Serial.WriteChar();
+            LDA # 1 // set NZ
+        }
     }
     
     CheckAndPrintError()

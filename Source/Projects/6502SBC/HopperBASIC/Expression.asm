@@ -11,14 +11,32 @@ unit Expression
     // Current implementation: simple precedence climbing for +, -, =, <>
     Evaluate()
     {
+        // DEBUG
+        LDA #'<'
+        Serial.WriteChar();
+        LDA #'E'
+        Serial.WriteChar();
+        
         // Start with lowest precedence level
         parseComparison();
+        
+        // DEBUG
+        LDA #'E'
+        Serial.WriteChar();
+        LDA #'>'
+        Serial.WriteChar();
     }
     
     // Parse comparison operators (=, <>)
     // Precedence level 1 (lowest)
     parseComparison()
     {
+        // DEBUG
+        LDA #'<'
+        Serial.WriteChar();
+        LDA #'C'
+        Serial.WriteChar();
+        
         // Parse left operand
         parseAddition();
         Messages.CheckError();
@@ -66,13 +84,23 @@ unit Expression
             break; // No more comparison operators
         }
         
-        LDA #0  // Set Z for success
+        // DEBUG
+        LDA #'C'
+        Serial.WriteChar();
+        LDA #'>'
+        Serial.WriteChar();
     }
     
     // Parse addition and subtraction operators (+, -)
     // Precedence level 2
     parseAddition()
     {
+        // DEBUG
+        LDA #'<'
+        Serial.WriteChar();
+        LDA #'A'
+        Serial.WriteChar();
+        
         // Parse left operand
         parseUnary();
         Messages.CheckError();
@@ -120,13 +148,23 @@ unit Expression
             break; // No more addition/subtraction operators
         }
         
-        LDA #0  // Set Z for success
+        // DEBUG
+        LDA #'A'
+        Serial.WriteChar();
+        LDA #'>'
+        Serial.WriteChar();
     }
     
     // Parse unary operators and primary expressions
     // Precedence level 3 (highest)
     parseUnary()
     {
+        // DEBUG
+        LDA #'<'
+        Serial.WriteChar();
+        LDA #'U'
+        Serial.WriteChar();
+        
         LDA ZP.CurrentToken
         CMP #Tokens.MINUS
         if (Z)
@@ -143,16 +181,35 @@ unit Expression
             
             // Negate the result
             doUnaryMinus();
+            
+            // DEBUG
+            LDA #'U'
+            Serial.WriteChar();
+            LDA #'>'
+            Serial.WriteChar();
+            
             return;
         }
         
         // Not unary, parse primary
         parsePrimary();
+        
+        // DEBUG
+        LDA #'U'
+        Serial.WriteChar();
+        LDA #'>'
+        Serial.WriteChar();
     }
     
     // Parse primary expressions (numbers, identifiers, parentheses)
     parsePrimary()
     {
+        // DEBUG
+        LDA #'<'
+        Serial.WriteChar();
+        LDA #'T'
+        Serial.WriteChar();
+        
         LDA ZP.CurrentToken
         
         switch (A)
@@ -161,6 +218,10 @@ unit Expression
             {
                 // Convert token to number and push to stack
                 Tokenizer.GetTokenNumber();  // Result in ZP.TOP
+                
+                // DEBUG
+                Tools.DumpVariables();
+                
                 Stacks.PushTop();
                 
                 // Get next token
@@ -168,7 +229,12 @@ unit Expression
                 Messages.CheckError();
                 if (NZ) { return; }
                 
-                LDA #0  // Set Z for success
+                // DEBUG
+                LDA #'T'
+                Serial.WriteChar();
+                LDA #'>'
+                Serial.WriteChar();
+                
                 return;
             }
             case Tokens.IDENTIFIER:
@@ -178,7 +244,13 @@ unit Expression
                 STA ZP.LastErrorL
                 LDA #(Messages.UndefinedIdentifier / 256)
                 STA ZP.LastErrorH
-                LDA #1  // Set NZ
+                
+                // DEBUG
+                LDA #'T'
+                Serial.WriteChar();
+                LDA #'>'
+                Serial.WriteChar();
+                
                 BRK
                 return;
             }
@@ -203,7 +275,6 @@ unit Expression
                     STA ZP.LastErrorL
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
-                    LDA #1  // Set NZ
                     return;
                 }
                 
@@ -212,7 +283,12 @@ unit Expression
                 Messages.CheckError();
                 if (NZ) { return; }
                 
-                LDA #0  // Set Z for success
+                // DEBUG
+                LDA #'T'
+                Serial.WriteChar();
+                LDA #'>'
+                Serial.WriteChar();
+                
                 return;
             }
             default:
@@ -222,7 +298,13 @@ unit Expression
                 STA ZP.LastErrorL
                 LDA #(Messages.SyntaxError / 256)
                 STA ZP.LastErrorH
-                LDA #1  // Set NZ
+                
+                // DEBUG
+                LDA #'T'
+                Serial.WriteChar();
+                LDA #'>'
+                Serial.WriteChar();
+                
                 return;
             }
         }
