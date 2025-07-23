@@ -329,14 +329,21 @@ unit BytecodeCompiler
 
     compileAssignmentStatement()
     {
-        // Variable name is in BasicWorkBuffer (null-terminated and uppercase)
-        LDA #(Address.BasicWorkBuffer & 0xFF)
-        STA ZP.IDYL
-        LDA #(Address.BasicWorkBuffer >> 8)
-        STA ZP.IDYH
+        // Save the identifier name from BasicWorkBuffer to safe area
+        LDX #0
+        loop
+        {
+            LDA Address.BasicWorkBuffer, X
+            STA (Address.BasicWorkBuffer + 0x40), X  // Store at safe offset
+            if (Z) { break; }  // Copied null terminator
+            INX
+        }
         
-        // Debug: Show buffer state before FindGlobal
-        Tools.DumpBasicBuffers();
+        // Point IDY to the saved identifier name
+        LDA #((Address.BasicWorkBuffer + 0x40) & 0xFF)
+        STA ZP.IDYL
+        LDA #((Address.BasicWorkBuffer + 0x40) >> 8)
+        STA ZP.IDYH
         
         // Look up the variable - it MUST exist for assignment
         GlobalManager.FindGlobal();
@@ -408,8 +415,41 @@ unit BytecodeCompiler
         Stacks.PushNext();
         FunctionManager.EmitByte();
         
-        // Emit the variable name
-        emitTokenName();
+        // Emit the variable name from the saved location
+        // Calculate string length first
+        LDX #0
+        loop
+        {
+            LDA (Address.BasicWorkBuffer + 0x40), X
+            if (Z) { break; }
+            INX
+        }
+        
+        // Emit length byte first
+        TXA
+        STA ZP.NEXTL
+        LDA #0
+        STA ZP.NEXTH
+        LDA #Types.Byte
+        Stacks.PushNext();
+        FunctionManager.EmitByte();
+        
+        // Emit each character of the saved variable name
+        LDX #0
+        loop
+        {
+            LDA (Address.BasicWorkBuffer + 0x40), X
+            if (Z) { break; }  // Hit null terminator
+            
+            STA ZP.NEXTL
+            LDA #0
+            STA ZP.NEXTH
+            LDA #Types.Byte
+            Stacks.PushNext();
+            FunctionManager.EmitByte();
+            
+            INX
+        }
     }
 
     compileExpression()
