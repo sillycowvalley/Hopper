@@ -117,60 +117,28 @@ unit Tokenizer
         }
     }
     
-    // Check if character is alphabetic
-    isAlpha()
+    getCharType()
     {
-        // A contains character to test
-        // Returns Z=0 if alphabetic, Z=1 if not
-        CMP #'A'
-        if (C)  // >= 'A'
-        {
-            CMP #('Z'+1)
-            if (NC)  // <= 'Z'
-            {
-                LDA #1  // Set NZ (is alphabetic)
-                return;
-            }
-        }
-        CMP #'a'
-        if (C)  // >= 'a'
-        {
-            CMP #('z'+1)
-            if (NC)  // <= 'z'
-            {
-                LDA #1  // Set NZ (is alphabetic)
-                return;
-            }
-        }
-        LDA #0  // Set Z (not alphabetic)
-    }
-    
-    // Check if character is numeric
-    isDigit()
-    {
-        // A contains character to test
-        // Returns Z=0 if digit, Z=1 if not
+        // Returns: 0=other, 1=digit, 2=alpha, 3=both possible
         CMP #'0'
-        if (C)  // >= '0'
+        if (C)
         {
             CMP #('9'+1)
-            if (NC)  // <= '9'
-            {
-                LDA #1  // Set NZ (is digit)
-                return;
-            }
+            if (NC) { LDA #1 return; }  // digit
         }
-        LDA #0  // Set Z (not digit)
-    }
-    
-    // Check if character is alphanumeric
-    isAlphaNum()
-    {
-        // A contains character to test
-        // Returns NZ if alphanumeric, Z if not
-        isAlpha();
-        if (NZ) { return; }  // Is alphabetic
-        isDigit();           // Check if digit
+        CMP #'A'
+        if (C)
+        {
+            CMP #('Z'+1) 
+            if (NC) { LDA #2 return; }  // alpha
+        }
+        CMP #'a'
+        if (C)
+        {
+            CMP #('z'+1)
+            if (NC) { LDA #2 return; }  // alpha  
+        }
+        LDA #0  // other
     }
     
     // Find keyword match
@@ -362,8 +330,9 @@ unit Tokenizer
         }
         
         // Check if it's a number
-        isDigit(); // munts A
-        if (NZ)  // Is a digit
+        getCharType(); 
+        CMP # 1 // isDigit?
+        if (Z)  
         {
             // Scan number and copy to BasicTokenizerBuffer
             LDX #0  // Index into BasicTokenizerBuffer
@@ -374,7 +343,8 @@ unit Tokenizer
                 if (Z) { break; }
                 
                 LDA Address.BasicInputBuffer, Y
-                isDigit();
+                getCharType();
+                CMP # 1 // isDigit?
                 if (Z) { break; }  // Not a digit
                 
                 STA Address.BasicTokenizerBuffer, X
@@ -393,12 +363,9 @@ unit Tokenizer
             return;
         }
         
-        
-        
         // Must be an identifier or keyword
-        LDA Address.BasicInputBuffer, X
-        isAlpha(); // munts A
-        if (Z)
+        CMP # 2 // isAlpha?
+        if (NZ)
         {
             // Invalid character
             LDA #0
@@ -417,7 +384,7 @@ unit Tokenizer
             if (Z) { break; }
             
             LDA Address.BasicInputBuffer, Y
-            isAlphaNum();
+            getCharType();
             if (Z) { break; }  // Not alphanumeric
             
             // Convert to uppercase and store in BasicTokenizerBuffer

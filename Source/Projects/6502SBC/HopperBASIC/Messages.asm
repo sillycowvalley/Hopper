@@ -7,23 +7,22 @@ unit Messages
     const string Welcome = "\nHopper BASIC v2.0\n";
     const string MemoryMsg = "Memory: ";
     const string BytesMsg = " bytes available\n";
-    const string ReadyPrompt = "READY\n> ";
-    const string Goodbye = "GOODBYE\n";
     
     // Status messages
+    const string ReadyPrompt = "READY\n> ";
     const string OK = "OK\n";
-    const string SyntaxError = "?SYNTAX ERROR\n";
-    const string NotImplemented = "NOT IMPLEMENTED\n";
+    
+    // Error messages
+    const string SyntaxError = "SYNTAX ERROR";
+    const string NotImplemented = "NOT IMPLEMENTED";
     
     // Error messages for future use
-    const string UndefinedVariable = "?UNDEFINED VARIABLE\n";
-    const string CannotAssignConstant = "?CANNOT ASSIGN TO CONSTANT\n";
-    const string MissingExpression = "?MISSING EXPRESSION\n";
-    const string ExpectedEquals = "?EXPECTED =\n";
-    const string InvalidType = "?INVALID TYPE\n";
-    const string ExpectedIdentifier = "?EXPECTED IDENTIFIER\n";
-    
-    // Error handling - consistent with v1 pattern
+    const string UndefinedVariable = "UNDEFINED VARIABLE";
+    const string CannotAssignConstant = "CANNOT ASSIGN TO CONSTANT";
+    const string MissingExpression = "MISSING EXPRESSION";
+    const string ExpectedEquals = "EXPECTED =";
+    const string InvalidType = "INVALID TYPE";
+    const string ExpectedIdentifier = "EXPECTED IDENTIFIER";
     
     ClearError()
     {
@@ -45,11 +44,15 @@ unit Messages
         if (Z) { return; }  // No error
         
         // Print the error message
+        LDA #'?'
+        Serial.WriteChar(); // '?' prefix
         LDA ZP.LastErrorL
         STA ZP.IDXL
         LDA ZP.LastErrorH
         STA ZP.IDXH
         Tools.PrintString();
+        LDA #'\n'
+        Serial.WriteChar(); // '\n' suffix
         
         // Clear the error
         ClearError();

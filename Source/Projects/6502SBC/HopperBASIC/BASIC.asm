@@ -3,7 +3,8 @@ program HopperBASIC
     #define CPU_65C02S
     #define ROM_8K
     #define HOPPER_BASIC
-    #define DEBUG
+    
+    //#define DEBUG
     
     uses "/Source/Runtime/6502/Serial"
     uses "/Source/Runtime/6502/ZeroPage"
@@ -21,7 +22,7 @@ program HopperBASIC
     //uses "BASICRuntime"
     
     // Initialize the BASIC system
-    initializeBASIC()
+    InitializeBASIC()
     {
         Messages.ClearError();
         
@@ -45,18 +46,6 @@ program HopperBASIC
         STZ ZP.PROGSIZE
     }
     
-    // Print available memory in decimal format
-    printAvailableMemory()
-    {
-        // Use Hopper VM's Memory.Available() function
-        Memory.Available();  // Pushes available memory (UInt) to stack
-        
-        // Pop the typed value and put it in TOP
-        Stacks.PopTop();  
-        
-        // Print the decimal value using existing utility
-        Tools.PrintDecimalWord();
-    }
     
     // Print startup banner with system information
     printStartupBanner()
@@ -68,20 +57,7 @@ program HopperBASIC
         STA ZP.IDXH
         Tools.PrintString();
         
-        // Memory information
-        LDA #(Messages.MemoryMsg % 256)
-        STA ZP.IDXL
-        LDA #(Messages.MemoryMsg / 256)
-        STA ZP.IDXH
-        Tools.PrintString();
-        
-        printAvailableMemory();
-        
-        LDA #(Messages.BytesMsg % 256)
-        STA ZP.IDXL
-        LDA #(Messages.BytesMsg / 256)
-        STA ZP.IDXH
-        Tools.PrintString();
+        Console.CmdMem();
     }
     
     // Main interpreter loop
@@ -128,7 +104,7 @@ program HopperBASIC
         SEI  // Disable interrupts during initialization
         
         // Initialize the complete BASIC system
-        initializeBASIC();
+        InitializeBASIC();
         
         CLI  // Re-enable interrupts
         
@@ -137,12 +113,5 @@ program HopperBASIC
         
         // Enter the main interpreter loop
         interpreterLoop();
-        
-        // If we get here, user chose to exit
-        LDA #(Messages.Goodbye % 256)
-        STA ZP.IDXL
-        LDA #(Messages.Goodbye / 256)
-        STA ZP.IDXH
-        Tools.PrintString();
     }
 }

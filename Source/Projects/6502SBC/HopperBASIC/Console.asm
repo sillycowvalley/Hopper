@@ -22,7 +22,7 @@ unit Console
     }
     
     // Execute MEM command
-    cmdMem()
+    CmdMem()
     {
         LDA #(MemoryMsg % 256)
         STA ZP.IDXL
@@ -35,9 +35,9 @@ unit Console
         Stacks.PopTop();     // Pop into TOP
         Tools.PrintDecimalWord();
         
-        LDA #(BytesMsg % 256)
+        LDA #(Messages.BytesMsg % 256)
         STA ZP.IDXL
-        LDA #(BytesMsg / 256)
+        LDA #(Messages.BytesMsg / 256)
         STA ZP.IDXH
         Tools.PrintString();
     }
@@ -45,21 +45,14 @@ unit Console
     // Execute BYE command
     cmdBye()
     {
-        LDA #(Goodbye % 256)
-        STA ZP.IDXL
-        LDA #(Goodbye / 256)
-        STA ZP.IDXH
-        Tools.PrintString();
+        // NOP
     }
     
     // Execute NEW command
     cmdNew()
     {
-        // TODO: Clear program and variables
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
+        InitializeBASIC();
+        Messages.PrintOK();
     }
     
     // Execute LIST command
@@ -164,7 +157,7 @@ unit Console
                 }
                 case Tokens.MEM:
                 {
-                    cmdMem();
+                    CmdMem();
                 }
                 case Tokens.BYE:
                 {
