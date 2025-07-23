@@ -283,9 +283,9 @@ unit ExpressionParser
         if (BBR1, ZP.BasicFlags)
         {
             // Expression was not constant - set error
-            LDA #( Interpreter.msgConstantExpressionExpected % 256)
+            LDA #( Interpreter.msgInvalidExpression % 256)
             STA ZP.LastErrorL
-            LDA #( Interpreter.msgConstantExpressionExpected / 256)
+            LDA #( Interpreter.msgInvalidExpression / 256)
             STA ZP.LastErrorH
             return;
         }

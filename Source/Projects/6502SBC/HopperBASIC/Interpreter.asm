@@ -10,7 +10,7 @@ unit Interpreter
     uses "BytecodeExecutor"
     uses "GlobalManager"
     
-    friend BytecodeCompiler, StatementCompiler, ExpressionParser, BytecodeExecutor;
+    friend BytecodeCompiler, BytecodeExecutor, StatementCompiler, ExpressionParser;
     
     enum ExprTypes
     {
@@ -55,7 +55,7 @@ unit Interpreter
     const string msgConstantNeedsValue = "?CONSTANT NEEDS VALUE\n";
     const string msgUnsupportedStatement = "?UNSUPPORTED STATEMENT\n";
     const string msgInvalidExpression = "?INVALID EXPRESSION\n";
-    const string msgConstantExpressionExpected = "?CONSTANT EXPRESSION EXPECTED\n";
+    const string msgTypeConversionError = "?TYPE CONVERSION OUT OF RANGE\n";
     
     printMessage()
     {

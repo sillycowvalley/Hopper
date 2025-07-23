@@ -10,6 +10,125 @@ unit StatementCompiler
     
     friend Interpreter;
     
+    // Check if expression type and value can be assigned to target type
+    // Input: expressionType in A, targetType in X, value in TOP
+    // Output: C=1 if compatible, C=0 if not compatible
+    isCompatibleAssignment()
+    {
+        // A = expressionType, X = targetType
+        // Compare A with X - need to store one to compare
+        STX ZP.BasicWorkspace0    // Store targetType temporarily
+        CMP ZP.BasicWorkspace0    // Compare expressionType with targetType
+        if (Z) 
+        { 
+            SEC  // Same type - always compatible
+            return; 
+        }
+        
+        // Different types - check conversion rules based on targetType
+        LDX ZP.BasicWorkspace0    // Restore targetType to X
+        switch (X)  // targetType
+        {
+            case Types.Bool:
+            case Types.String:
+            {
+                CLC  // Strict - no conversions allowed
+                return;
+            }
+            case Types.Byte:
+            {
+                // Can assign from Int or UInt if value fits in 0-255 and non-negative
+                CMP #Types.Int
+                if (Z) 
+                { 
+                    // Check if INT value fits in BYTE (0-255, no sign bit)
+                    LDA ZP.TOPH
+                    if (NZ)  // High byte must be 0
+                    {
+                        CLC
+                        return;
+                    }
+                    BIT ZP.TOPH  // Check sign bit
+                    if (MI)      // Negative
+                    {
+                        CLC
+                        return;
+                    }
+                    SEC  // Value fits
+                    return;
+                }
+                CMP #Types.UInt
+                if (Z)
+                {
+                    // Check if WORD value fits in BYTE (= 255)
+                    LDA ZP.TOPH
+                    if (NZ)  // High byte must be 0
+                    {
+                        CLC
+                        return;
+                    }
+                    SEC  // Value fits
+                    return;
+                }
+                CLC  // Other types not compatible
+                return;
+            }
+            case Types.UInt:  // WORD
+            {
+                CMP #Types.Byte
+                if (Z) 
+                { 
+                    SEC  // BYTE always fits in WORD
+                    return; 
+                }
+                CMP #Types.Int
+                if (Z)
+                {
+                    // Check if INT value is non-negative
+                    BIT ZP.TOPH
+                    if (MI)  // Negative
+                    {
+                        CLC
+                        return;
+                    }
+                    SEC  // Non-negative INT fits in WORD
+                    return;
+                }
+                CLC  // Other types not compatible
+                return;
+            }
+            case Types.Int:
+            {
+                CMP #Types.Byte
+                if (Z) 
+                { 
+                    SEC  // BYTE always fits in INT
+                    return; 
+                }
+                CMP #Types.UInt
+                if (Z)
+                {
+                    // Check if WORD value fits in signed INT (= 32767)
+                    BIT ZP.TOPH
+                    if (MI)  // Value > 32767
+                    {
+                        CLC
+                        return;
+                    }
+                    SEC  // Value fits in signed INT
+                    return;
+                }
+                CLC  // Other types not compatible
+                return;
+            }
+            default:
+            {
+                CLC  // Unknown target type
+                return;
+            }
+        }
+    }
+    
     // Emit a variable name from a saved location in memory
     emitSavedVariableName()
     {
@@ -212,6 +331,63 @@ unit StatementCompiler
             ExpressionParser.ParseConstantExpression();
             CheckError();
             if (NZ) { return; }
+            
+            // Check type compatibility for constant expressions
+            // Get target variable type
+            LDX ZP.FTYPE  // Save expression type
+            LDA ZP.FTYPE
+            AND #0x7F     // Clear constant flag to get base variable type
+            switch (A)
+            {
+                case GlobalTypes.VarInt:
+                case GlobalTypes.ConstInt:
+                {
+                    LDA #Types.Int
+                }
+                case GlobalTypes.VarWord:
+                case GlobalTypes.ConstWord:
+                {
+                    LDA #Types.UInt
+                }
+                case GlobalTypes.VarByte:
+                case GlobalTypes.ConstByte:
+                {
+                    LDA #Types.Byte
+                }
+                case GlobalTypes.VarBit:
+                case GlobalTypes.ConstBit:
+                {
+                    LDA #Types.Bool
+                }
+                case GlobalTypes.VarString:
+                case GlobalTypes.ConstString:
+                {
+                    LDA #Types.String
+                }
+                default:
+                {
+                    LDA #Types.Int  // Default
+                }
+            }
+            TAX           // targetType in X
+            TXA           // expressionType back in A
+            PHX           // Save targetType
+            
+            // Get expression type from FTYPE (set by ParseConstantExpression)
+            LDA ZP.FTYPE
+            PLX           // Restore targetType
+            
+            // Check compatibility: expressionType in A, targetType in X, value in TOP
+            isCompatibleAssignment();
+            if (NC)  // Not compatible
+            {
+                // Type conversion error
+                LDA #(Interpreter.msgInvalidExpression % 256)
+                STA ZP.LastErrorL
+                LDA #(Interpreter.msgInvalidExpression / 256)
+                STA ZP.LastErrorH
+                return;
+            }
         }
         else
         {
@@ -327,6 +503,9 @@ unit StatementCompiler
         CheckError();
         if (NZ) { return; }
         
+        // For runtime expressions, we can't do compile-time type checking
+        // The bytecode executor will handle type compatibility at runtime
+        
         // Emit OpStoreVar with the variable name
         LDA #OpCode.OpStoreVar
         STA ZP.NEXTL
@@ -419,7 +598,7 @@ unit StatementCompiler
             case Tokens.EOL:
             {
                 // Empty statement - just emit NOP
-                LDA # OpCode.OpNop
+                LDA #OpCode.OpNop
                 STA ZP.NEXTL
                 LDA #0
                 STA ZP.NEXTH
@@ -447,11 +626,11 @@ unit StatementCompiler
         }
         
         // Always end with HALT for REPL
-        LDA # OpCode.OpHalt
+        LDA #OpCode.OpHalt
         STA ZP.NEXTL
-        LDA # 0
+        LDA #0
         STA ZP.NEXTH
-        LDA # Types.Byte
+        LDA #Types.Byte
         Stacks.PushNext();
         FunctionManager.EmitByte();
         
