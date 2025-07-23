@@ -16,9 +16,9 @@ program HopperBASIC
     uses "Tokenizer"
     uses "Console"
     uses "Tools"
+    uses "Statement"
+    uses "Expression"
     //uses "Variables"
-    //uses "Expressions" 
-    //uses "Statements"
     //uses "BASICRuntime"
     
     // Initialize the BASIC system

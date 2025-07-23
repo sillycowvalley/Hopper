@@ -8,6 +8,7 @@ unit Console
     uses "Messages"
     uses "Tools"
     uses "Tokenizer"
+    uses "Statement"
     
     Initialize()
     {
@@ -24,9 +25,9 @@ unit Console
     // Execute MEM command
     CmdMem()
     {
-        LDA #(MemoryMsg % 256)
+        LDA #(Messages.MemoryMsg % 256)
         STA ZP.IDXL
-        LDA #(MemoryMsg / 256)
+        LDA #(Messages.MemoryMsg / 256)
         STA ZP.IDXH
         Tools.PrintString();
         
@@ -93,6 +94,7 @@ unit Console
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
+        BRK
     }
     
     // Execute FUNCS command
@@ -103,6 +105,7 @@ unit Console
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
+        BRK
     }
     
     // Process current input line using tokenizer
@@ -120,13 +123,14 @@ unit Console
         // Get first token
         Tokenizer.NextToken();  // Returns token in A, updates ZP.CurrentToken
         PHA
-        CheckError();
+        Messages.CheckError();
         if (NZ)
         {
             PLA
             return; // error in tokenizer
         }
         PLA
+        
         loop
         {
             switch (A)
@@ -179,26 +183,10 @@ unit Console
                     LDA #(Messages.NotImplemented / 256)
                     STA ZP.LastErrorH
                 }
-                case Tokens.INT:
-                case Tokens.WORD:
-                case Tokens.BIT:
-                case Tokens.PRINT:
-                case Tokens.IF:
-                case Tokens.FUNC:
-                case Tokens.BEGIN:
-                {
-                    LDA #(Messages.NotImplemented % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.NotImplemented / 256)
-                    STA ZP.LastErrorH
-                }
                 default:
                 {
-                    // Unknown token or syntax error
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
+                    // Not a console command, try to execute as a statement
+                    Statement.Execute();
                 }
             }
             LDA #0  // Continue
