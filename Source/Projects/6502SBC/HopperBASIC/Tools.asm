@@ -851,6 +851,247 @@ unit Tools
         PLA  // Restore A
     }
     
+    // Generic function to dump a 256-byte page in hex+ASCII format
+    // On entry: A = page number (high byte of address)
+    // On exit:  A,X,Y corrupted, IDX preserved
+    // Uses:     Serial.WriteChar(), Serial.HexOut() for output, ZP.M0/M1 for addressing
+    DumpPage()
+    {
+        PHA  // Save A
+        PHX  // Save X  
+        PHY  // Save Y
+        
+        // Set up M0/M1 to point to the page (preserve IDX)
+        STA ZP.M1   // Page number in high byte
+        STZ ZP.M0   // Start at offset 0
+        
+        // Print 16 lines of 16 bytes each
+        LDX # 0  // Line counter (0-15)
+        
+        loop
+        {
+            // Print address for this line (page:offset)
+            LDA ZP.M1
+            
+            Serial.HexOut();
+            
+            TXA
+            ASL ASL ASL ASL  // X * 16 for line offset
+            NOP
+            Serial.HexOut();
+            LDA # ':'
+            Serial.WriteChar();
+            LDA # ' '
+            
+            Serial.WriteChar();
+            
+            // Print 16 hex bytes with space after each
+            LDY #0
+            loop
+            {
+                CPY #16
+                if (Z) { break; }
+                
+                LDA [ZP.M0], Y
+                Serial.HexOut();
+                LDA #' '
+                Serial.WriteChar();
+                
+                INY
+                
+                // Add extra space after 8 bytes
+                CPY #8
+                if (Z)
+                {
+                    LDA #' '
+                    Serial.WriteChar();
+                }
+            }
+            
+            // Add spacing before ASCII dump
+            LDA #' '
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            
+            // Print 16 ASCII characters
+            LDY #0
+            loop
+            {
+                CPY #16
+                if (Z) { break; }
+                
+                LDA [ZP.M0], Y
+                
+                // Check if printable (32-127)
+                CMP #32
+                if (C)  // >= 32
+                {
+                    CMP #127
+                    if (NC)  // <= 127
+                    {
+                        Serial.WriteChar();  // Print the character
+                        INY
+                        
+                        // Add space after 8 characters
+                        CPY #8
+                        if (Z)
+                        {
+                            LDA #' '
+                            Serial.WriteChar();
+                        }
+                        continue;
+                    }
+                }
+                
+                // Not printable, print dot
+                LDA #'.'
+                Serial.WriteChar();
+                INY
+                
+                // Add space after 8 characters
+                CPY #8
+                if (Z)
+                {
+                    LDA #' '
+                    Serial.WriteChar();
+                }
+            }
+            
+            LDA #'\n'
+            Serial.WriteChar();
+            
+            // Move to next line (add 16 to M0/M1)
+            CLC
+            LDA ZP.M0
+            ADC #16
+            STA ZP.M0
+            if (C)
+            {
+                INC ZP.M1  // This shouldn't happen within a page
+            }
+            
+            INX
+            CPX #16
+            if (Z) { break; }  // Done with all 16 lines
+        }
+        
+        PLY  // Restore Y
+        PLX  // Restore X
+        PLA  // Restore A
+    }
+
+    // Dump the BASIC input and work buffers
+    DumpBasicBuffers()
+    {
+        PHA  // Save A
+        
+        LDA #'\n'
+        Serial.WriteChar();
+        LDA #'='
+        Serial.WriteChar();
+        LDA #'='
+        Serial.WriteChar();
+        LDA #' '
+        Serial.WriteChar();
+        LDA #'B'
+        Serial.WriteChar();
+        LDA #'A'
+        Serial.WriteChar();
+        LDA #'S'
+        Serial.WriteChar();
+        LDA #'I'
+        Serial.WriteChar();
+        LDA #'C'
+        Serial.WriteChar();
+        LDA #' '
+        Serial.WriteChar();
+        LDA #'B'
+        Serial.WriteChar();
+        LDA #'U'
+        Serial.WriteChar();
+        LDA #'F'
+        Serial.WriteChar();
+        LDA #'F'
+        Serial.WriteChar();
+        LDA #'E'
+        Serial.WriteChar();
+        LDA #'R'
+        Serial.WriteChar();
+        LDA #'S'
+        Serial.WriteChar();
+        LDA #' '
+        Serial.WriteChar();
+        LDA #'='
+        Serial.WriteChar();
+        LDA #'='
+        Serial.WriteChar();
+        LDA #'\n'
+        Serial.WriteChar();
+        
+        // Show buffer lengths and pointers
+        LDA #'I'
+        Serial.WriteChar();
+        LDA #'n'
+        Serial.WriteChar();
+        LDA #'L'
+        Serial.WriteChar();
+        LDA #'e'
+        Serial.WriteChar();
+        LDA #'n'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        LDA ZP.BasicInputLength
+        Serial.HexOut();
+        LDA #' '
+        Serial.WriteChar();
+        LDA #'T'
+        Serial.WriteChar();
+        LDA #'o'
+        Serial.WriteChar();
+        LDA #'k'
+        Serial.WriteChar();
+        LDA #'P'
+        Serial.WriteChar();
+        LDA #'o'
+        Serial.WriteChar();
+        LDA #'s'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        LDA ZP.TokenizerPos
+        Serial.HexOut();
+        LDA #' '
+        Serial.WriteChar();
+        LDA #'C'
+        Serial.WriteChar();
+        LDA #'u'
+        Serial.WriteChar();
+        LDA #'r'
+        Serial.WriteChar();
+        LDA #'T'
+        Serial.WriteChar();
+        LDA #'o'
+        Serial.WriteChar();
+        LDA #'k'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        LDA ZP.CurrentToken
+        Serial.HexOut();
+        LDA #'\n'
+        Serial.WriteChar();
+        
+        // Dump the entire page containing BasicInputBuffer and BasicWorkBuffer
+        LDA #(Address.BasicInputBuffer >> 8)  // Page 0x09
+        DumpPage();
+        
+        LDA #'\n'
+        Serial.WriteChar();
+        
+        PLA  // Restore A
+    }
     
 #endif
 

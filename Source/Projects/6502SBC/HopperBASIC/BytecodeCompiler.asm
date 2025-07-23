@@ -335,6 +335,9 @@ unit BytecodeCompiler
         LDA #(Address.BasicWorkBuffer >> 8)
         STA ZP.IDYH
         
+        // Debug: Show buffer state before FindGlobal
+        Tools.DumpBasicBuffers();
+        
         // Look up the variable - it MUST exist for assignment
         GlobalManager.FindGlobal();
         if (NZ)  // Variable doesn't exist - ERROR!
