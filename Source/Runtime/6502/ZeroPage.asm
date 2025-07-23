@@ -109,50 +109,26 @@ unit ZP
     const byte BRKH                 = 0x40; // .. 0x4F
 #endif
 
-#if defined(HOPPER_BASIC)                    // 0x30..0x4F available for Hopper BASIC:
-
-    // === TOKENIZER WORKSPACE (0x30-0x37) ===
-    const byte BasicInputLength     = 0x30;  // Length of current input in buffer (at 0x0900)
+#if defined(HOPPER_BASIC)
+    // HopperBASIC allocation: 0x30..0x4F (40 bytes primary), 0x70..0x77 (8 bytes secondary)
+    
+    // === CONSOLE INPUT (0x30) ===
+    const byte BasicInputLength     = 0x30;  // Length of current input in BasicInputBuffer
+    
+    // === TOKENIZER STATE (0x31-0x32) ===
     const byte TokenizerPos         = 0x31;  // Current position in input during tokenization
-    const byte TokenStart           = 0x32;  // Start position of current token
-    const byte TokenLen             = 0x33;  // Length of current token
-    const byte CurrentToken         = 0x34;  // Current token value being processed
-    const byte ExprValueLo          = 0x35;  // Expression evaluation result low byte
-    const byte ExprValueHi          = 0x36;  // Expression evaluation result high byte
-    const byte ExprType             = 0x37;  // Type of current expression result
-
-    // === FUNCTION MANAGER (0x38-0x3F) ===
-    const byte FuncListHead         = 0x38;  // Head of function linked list (low byte)
-    const byte FuncListHeadHi       = 0x39;  // Head of function linked list (high byte)
-    const byte FuncCount            = 0x3A;  // Number of functions (0-255)
-    const byte CurrentFunc          = 0x3B;  // Current function being compiled (low byte)
-    const byte CurrentFuncHi        = 0x3C;  // Current function being compiled (high byte)
-    const byte CompileState         = 0x3D;  // Compilation state (0=none, 1=compiling, 2=complete)
-    const byte WritePosLo           = 0x3E;  // Current write position in temp block (low)
-    const byte WritePosHi           = 0x3F;  // Current write position in temp block (high)
-
-    // === BYTECODE COMPILER (0x40-0x47) ===
-    const byte TempBlockLo          = 0x40;  // Temporary compilation block pointer (low)
-    const byte TempBlockHi          = 0x41;  // Temporary compilation block pointer (high)
-    const byte BytecodeSizeLo       = 0x42;  // Size of compiled bytecode (low byte)
-    const byte BytecodeSizeHi       = 0x43;  // Size of compiled bytecode (high byte)
-    const byte FileNamePtr          = 0x44;  // Pointer to filename in EEPROM operations
-    const byte FileNameLen          = 0x45;  // Length of filename
-    const byte ExpressionType       = 0x46;  // Type returned by expression parser
-    const byte TokenPtr             = 0x47;  // Low byte of token pointer (for BasicWorkBuffer access)
-    const byte TokenPtrHi           = 0x48;  // High byte of token pointer (for BasicWorkBuffer access)
+    const byte CurrentToken         = 0x32;  // Current token type/value from Tokenizer.Tokens enum
     
-    // === INTERPRETER PROGRAM/VARIABLE STORAGE (0x49-0x4C) ===
-    const byte PgmListHead          = 0x49;  // Program linked list head (low byte)
-    const byte PgmListHeadHi        = 0x4A;  // Program linked list head (high byte)
-    const byte VarListHead          = 0x4B;  // Variable linked list head (low byte)
-    const byte VarListHeadHi        = 0x4C;  // Variable linked list head (high byte)
+    // === ERROR HANDLING (0x33-0x34) ===
+    const byte LastErrorL           = 0x33;  // Error message pointer low byte
+    const byte LastErrorH           = 0x34;  // Error message pointer high byte
     
-    // BASIC workspace variables
-    const byte BasicFlags           = 0x4D;  // General flags
-    const byte LastErrorL           = 0x4E;  // Low byte of error message pointer
-    const byte LastErrorH           = 0x4F;  // High byte of error message pointer
-
+    // === AVAILABLE PRIMARY (0x35-0x4F) ===
+    // 35 bytes available for future features
+    
+    // === AVAILABLE SECONDARY (0x70-0x77) ===
+    // 8 bytes available for overflow/additional features
+    
 #endif
 
 #ifndef TIGGERC
@@ -223,15 +199,6 @@ unit ZP
     const byte D4                   = 0x74;
     const byte D5                   = 0x75;
     const byte D6                   = 0x76;
-  #else
-    const byte BasicWorkspace0      = 0x70;
-    const byte BasicWorkspace1      = 0x71;
-    const byte BasicWorkspace2      = 0x72;
-    const byte BasicWorkspace3      = 0x73;
-    const byte BasicWorkspace4      = 0x74;
-    const byte BasicWorkspace5      = 0x75;
-    const byte BasicWorkspace6      = 0x76;
-    const byte BasicWorkspace7      = 0x77;
   #endif
 #else
     const byte F0                   = 0x05;
