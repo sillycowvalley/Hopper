@@ -13,16 +13,18 @@ unit Messages
     const string OK = "OK\n";
     
     // Error messages
-    const string SyntaxError = "SYNTAX ERROR";
+    const string SyntaxError    = "SYNTAX ERROR";
     const string NotImplemented = "NOT IMPLEMENTED";
     
-    // Error messages for future use
-    const string UndefinedVariable = "UNDEFINED VARIABLE";
-    const string CannotAssignConstant = "CANNOT ASSIGN TO CONSTANT";
-    const string MissingExpression = "MISSING EXPRESSION";
-    const string ExpectedEquals = "EXPECTED =";
-    const string InvalidType = "INVALID TYPE";
-    const string ExpectedIdentifier = "EXPECTED IDENTIFIER";
+    const string TypeMismatch   = "TYPE MISMATCH";
+    const string OutOfMemory    = "OUT OF MEMORY";
+    const string FileNotFound   = "FILE NOT FOUND";
+    const string NextWithoutFor = "NEXT WITHOUT FOR";
+    const string DivisionByZero = "DIVISION BY ZERO";
+    const string StringTooLong  = "STRING TOO LONG";
+    const string BadIndex       = "BAD INDEX"; // STRING and ARRAY
+    const string UndefinedIdentifier = "UNDEFINED IDENTIFIER"; // FUNC or VAR
+    
     
     ClearError()
     {
