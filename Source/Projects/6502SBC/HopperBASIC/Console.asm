@@ -126,15 +126,14 @@ unit Console
         
         // Get first token
         Tokenizer.NextToken();  // Returns token in A, updates ZP.CurrentToken
+        PHA
         CheckError();
         if (NZ)
         {
+            PLA
             return; // error in tokenizer
         }
-        
-        DumpVariables();
-        DumpBasicBuffers();
-        
+        PLA
         loop
         {
             switch (A)

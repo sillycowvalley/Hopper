@@ -167,7 +167,7 @@ unit Tokenizer
     isAlphaNum()
     {
         // A contains character to test
-        // Returns Z=0 if alphanumeric, Z=1 if not
+        // Returns NZ if alphanumeric, Z if not
         isAlpha();
         if (NZ) { return; }  // Is alphabetic
         isDigit();           // Check if digit
@@ -362,7 +362,7 @@ unit Tokenizer
         }
         
         // Check if it's a number
-        isDigit();
+        isDigit(); // munts A
         if (NZ)  // Is a digit
         {
             // Scan number and copy to BasicTokenizerBuffer
@@ -393,8 +393,11 @@ unit Tokenizer
             return;
         }
         
+        
+        
         // Must be an identifier or keyword
-        isAlpha();
+        LDA Address.BasicInputBuffer, X
+        isAlpha(); // munts A
         if (Z)
         {
             // Invalid character
@@ -403,11 +406,13 @@ unit Tokenizer
             return;
         }
         
+        
         // Scan alphanumeric characters and copy to BasicTokenizerBuffer with uppercase conversion
         LDX #0  // Index into BasicTokenizerBuffer
         loop
         {
             LDY ZP.TokenizerPos
+            
             CPY ZP.BasicInputLength
             if (Z) { break; }
             
@@ -441,7 +446,6 @@ unit Tokenizer
         
         // Check if it's a keyword
         findKeyword();
-        
         if (NZ)  // Found keyword
         {
             STA ZP.CurrentToken
