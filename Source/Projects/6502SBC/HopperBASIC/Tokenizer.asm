@@ -6,7 +6,7 @@ unit Tokenizer
     uses "/Source/Runtime/6502/MemoryMap"
     uses "/Source/Runtime/6502/Stacks"
     
-    friend Interpreter, Tokenizer, BytecodeCompiler;
+    friend Interpreter, Tokenizer, BytecodeCompiler, StatementCompiler, ExpressionParser;
     
     // Token definitions
     enum Tokens

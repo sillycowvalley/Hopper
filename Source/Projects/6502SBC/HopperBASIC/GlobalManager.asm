@@ -346,7 +346,7 @@ unit GlobalManager
     }
     
     // Debug function to list globals (variables and constants)
-    // If ZP.BasicFlags = 0, show variables; if ZP.BasicFlags = 1, show constants
+    // If bit 0 of BasicFlags clear, show variables; if set, show constants
     ListGlobals()
     {
         // Use GlobalManager's actual list
@@ -389,8 +389,7 @@ unit GlobalManager
             LDA ZP.FTYPE
             GlobalManager.IsConstant();  // Returns C=1 if constant
             
-            LDA ZP.BasicFlags  // What are we showing? 0=vars, 1=consts
-            if (Z)     // Showing variables
+            if (BBR0, ZP.BasicFlags) // Showing variables
             {
                 if (C) // This is a constant, skip it
                 {
@@ -406,7 +405,7 @@ unit GlobalManager
                     continue;
                 }
             }
-            else       // Showing constants
+            else // Showing constants
             {
                 if (NC) // This is a variable, skip it
                 {
@@ -422,7 +421,6 @@ unit GlobalManager
                     continue;
                 }
             }
-            
             // Print the global: TYPE NAME = VALUE
             printGlobalTypePrefix();
             

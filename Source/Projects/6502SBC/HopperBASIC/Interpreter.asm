@@ -6,11 +6,11 @@ unit Interpreter
     uses "Tokenizer"
     uses "Tools"
     uses "FunctionManager"
-    uses "BytecodeCompiler"
+    uses "StatementCompiler"
     uses "BytecodeExecutor"
     uses "GlobalManager"
     
-    friend BytecodeCompiler, BytecodeExecutor;
+    friend BytecodeCompiler, StatementCompiler, ExpressionParser, BytecodeExecutor;
     
     enum ExprTypes
     {
@@ -55,6 +55,7 @@ unit Interpreter
     const string msgConstantNeedsValue = "?CONSTANT NEEDS VALUE\n";
     const string msgUnsupportedStatement = "?UNSUPPORTED STATEMENT\n";
     const string msgInvalidExpression = "?INVALID EXPRESSION\n";
+    const string msgConstantExpressionExpected = "?CONSTANT EXPRESSION EXPECTED\n";
     
     printMessage()
     {
@@ -219,7 +220,7 @@ unit Interpreter
         STA ZP.IDXH
         Tools.PrintString();
         
-        STZ ZP.BasicFlags  // Clear flag for variables (was U0)
+        RMB0 ZP.BasicFlags  // Clear flag for variables
         GlobalManager.ListGlobals();
     }
     
@@ -251,8 +252,7 @@ unit Interpreter
         STA ZP.IDXH
         Tools.PrintString();
         
-        LDA #1  // Set constants flag
-        STA ZP.BasicFlags
+        SMB0 ZP.BasicFlags  // Set constants flag
         GlobalManager.ListGlobals();
     }
     
@@ -338,7 +338,7 @@ unit Interpreter
         clearError();  // Clear any previous error
         
         STZ ZP.TokenizerPos
-        BytecodeCompiler.CompileREPLStatement();
+        StatementCompiler.CompileREPLStatement();
         checkAndPrintError();
         if (NZ) 
         {
@@ -426,7 +426,6 @@ unit Interpreter
             }
             case Tokens.VARS:
             {
-                STZ ZP.BasicFlags  // Clear flag for variables
                 cmdVars();
             }
             case Tokens.CONSTS:

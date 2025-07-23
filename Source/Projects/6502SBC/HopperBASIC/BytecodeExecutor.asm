@@ -3,6 +3,7 @@ unit BytecodeExecutor
     uses "/Source/Runtime/6502/ZeroPage"
     uses "/Source/Runtime/6502/Serial"
     uses "/Source/Runtime/6502/Stacks"
+    uses "OpCodes"
     uses "BytecodeCompiler"
     uses "FunctionManager" 
     uses "Tools"
@@ -312,40 +313,40 @@ unit BytecodeExecutor
             // Later we can optimize this to a jump table
             switch (A)
             {
-                case Opcodes.OpNop:
+                case OpCode.OpNop:
                 {
                     handleNop();
                 }
-                case Opcodes.OpPushInt:
+                case OpCode.OpPushInt:
                 {
                     handlePushInt();
                 }
-                case Opcodes.OpPrintInt:
+                case OpCode.OpPrintInt:
                 {
                     handlePrintInt();
                 }
-                case Opcodes.OpPrintStr:
+                case OpCode.OpPrintStr:
                 {
                     handlePrintStr();
                 }
-                case Opcodes.OpPrintNL:
+                case OpCode.OpPrintNL:
                 {
                     handlePrintNL();
                 }
-                case Opcodes.OpLoadVar:
+                case OpCode.OpLoadVar:
                 {
                     handleLoadVar();
                 }
-                case Opcodes.OpStoreVar:
+                case OpCode.OpStoreVar:
                 {
                     handleStoreVar();
                 }
-                case Opcodes.OpReturn:
+                case OpCode.OpReturn:
                 {
                     handleReturn();
                     break;  // Exit loop
                 }
-                case Opcodes.OpHalt:
+                case OpCode.OpHalt:
                 {
                     handleHalt();
                     break;  // Exit loop
