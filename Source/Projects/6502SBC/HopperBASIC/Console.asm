@@ -64,6 +64,7 @@ unit Console
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
+        BRK
     }
     
     // Execute RUN command
@@ -74,6 +75,7 @@ unit Console
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
+        BRK
     }
     
     // Execute CLEAR command
@@ -84,6 +86,7 @@ unit Console
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
+        BRK
     }
     
     // Execute VARS command
@@ -182,6 +185,7 @@ unit Console
                     STA ZP.LastErrorL
                     LDA #(Messages.NotImplemented / 256)
                     STA ZP.LastErrorH
+                    BRK
                 }
                 default:
                 {

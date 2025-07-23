@@ -176,6 +176,7 @@ unit Statement
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
         LDA #1  // Set NZ
+        BRK
     }
     
     // Execute END statement
@@ -187,6 +188,7 @@ unit Statement
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
         LDA #1  // Set NZ
+        BRK
     }
     
     // Execute identifier (assignment or function call)
@@ -198,5 +200,6 @@ unit Statement
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
         LDA #1  // Set NZ
+        BRK
     }
 }

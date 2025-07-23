@@ -179,6 +179,7 @@ unit Expression
                 LDA #(Messages.UndefinedIdentifier / 256)
                 STA ZP.LastErrorH
                 LDA #1  // Set NZ
+                BRK
                 return;
             }
             case Tokens.LPAREN:
