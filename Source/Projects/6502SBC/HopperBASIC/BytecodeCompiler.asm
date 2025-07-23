@@ -205,9 +205,6 @@ unit BytecodeCompiler
             return;
         }
         
-        // Debug point 1: Show state before processing variable
-        Tools.DumpVariables();
-        
         // CRITICAL: Copy the variable name from BasicWorkBuffer to BasicInputBuffer 
         // (which is safe because we've already tokenized the input)
         // This preserves the name while we process the initializer
@@ -269,16 +266,10 @@ unit BytecodeCompiler
         LDA #(Address.BasicInputBuffer >> 8)
         STA ZP.TokenPtrHi
         
-        // Debug point 2: Show state before calling AddGlobal
-        Tools.DumpVariables();
-        
         // Add the variable/constant to GlobalManager
         // Parameters: Token name at TokenPtr (null-terminated), FTYPE = type, TOP = value
         GlobalManager.AddGlobal();
         
-        // Debug point 3: Show state after calling AddGlobal
-        Tools.DumpVariables();       
-                                
         // Emit NOP as placeholder (declaration doesn't generate runtime code)
         LDA #Opcodes.OpNop
         STA ZP.NEXTL
