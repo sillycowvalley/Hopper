@@ -114,8 +114,8 @@ unit ZP
     // === TOKENIZER WORKSPACE (0x30-0x37) ===
     const byte BasicInputLength     = 0x30;  // Length of current input in buffer (at 0x0900)
     const byte TokenizerPos         = 0x31;  // Current position in input during tokenization
-    const byte TokenStart           = 0x32;  // Start position of current token
-    const byte TokenLen             = 0x33;  // Length of current token
+    const byte TokenPtr             = 0x32;  // Pointer to null-terminated token (2 bytes)
+    const byte TokenPtrHi           = 0x33;
     const byte CurrentToken         = 0x34;  // Current token value being processed
     const byte ExprValueLo          = 0x35;  // Expression evaluation result low byte
     const byte ExprValueHi          = 0x36;  // Expression evaluation result high byte

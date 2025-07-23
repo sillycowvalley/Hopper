@@ -69,12 +69,16 @@ unit GlobalManager
             if (Z) { break; }
             
             // Find the type offset (skip past null-terminated name)
-            LDY #ghName  // ghName = 2 (after next pointer)
+            LDY # ghName  // ghName = 2 (after next pointer)
             loop
             {
                 LDA [ZP.IDX], Y
+                if (Z)
+                { 
+                    INY
+                    break; // Found null terminator
+                }  
                 INY
-                if (Z) { break; }  // Found null terminator
             }
             // Y now points to type byte
             
@@ -91,7 +95,7 @@ unit GlobalManager
             }
             
             // Move to next global - follow the next pointer at offset 0
-            LDY #0  // ghNext should be 0, not 16!
+            LDY # ghNext  // ghNext = 0
             LDA [ZP.IDX], Y
             PHA
             INY
@@ -102,8 +106,7 @@ unit GlobalManager
         }
     }
     
-    // Find global by token name
-    // Input: Token name from tokenizer (ZP.TokenStart, ZP.TokenLen)
+    // Find global by name at address IDY (null-terminated)
     // Output: Address in ZP.IDX if found, Z=1 if found, Z=0 if not found
     FindGlobal()
     {
@@ -125,78 +128,53 @@ unit GlobalManager
                 break;
             }
             
-            // Compare token with stored name
+            // Compare null-terminated name at IDY with stored name
             PHX                         // Save X
-            LDX ZP.TokenStart          // Token position in input buffer
-            LDY #ghName                // Stored name position
+            LDX #0                      // Index into name at IDY
+            LDY #ghName                 // Stored name position
             
             // Compare character by character
             loop
             {
-                // Get token character (or 0 if past end)
-                TXA
-                SEC
-                SBC ZP.TokenStart      // A = current position - start = offset
-                CMP ZP.TokenLen
-                if (C)                 // offset >= TokenLen
-                {
-                    LDA #0             // Past end of token, use null
-                }
-                else
-                {
-                    LDA Address.BasicInputBuffer, X
-                    // Convert to uppercase
-                    CMP #'a'
-                    if (C)             // >= 'a'
-                    {
-                        CMP #('z'+1)
-                        if (NC)        // <= 'z'
-                        {
-                            SBC #('a'-'A'-1)  // Convert to uppercase
-                        }
-                    }
-                }
-                PHA                    // Save token char
+                // Get character from name at IDY
+                LDA [ZP.IDY], X
+                PHA                     // Save name char
                 
-                // Get stored character
+                // Get stored character and convert to uppercase
                 LDA [ZP.IDX], Y
                 
+                // Convert name char to uppercase
+                PLA                     // Get name char back
+                CMP #'a'
+                if (C)                  // >= 'a'
+                {
+                    CMP #('z'+1)
+                    if (NC)             // <= 'z'
+                    {
+                        SBC #('a'-'A'-1)  // Convert to uppercase
+                    }
+                }
+                
                 // Compare characters
-                PLA                    // Get token char back
                 CMP [ZP.IDX], Y
-                if (NZ) { break; }     // Characters don't match
+                if (NZ) { break; }      // Characters don't match
                 
                 // Check if both are null (end of both strings)
-                if (Z)                 // Both chars are null - match found!
+                if (Z)                  // Both chars are null - match found!
                 {
-                    PLX                // Restore X
+                    PLX                 // Restore X
                     LDA #1
-                    CMP #1             // Set Z=1
+                    CMP #1              // Set Z=1
                     return;
                 }
                 
-                INX                    // Next token character
-                INY                    // Next stored character
+                INX                     // Next name character
+                INY                     // Next stored character
             }
             
-            PLX                        // Restore X
+            PLX                         // Restore X
             
             // No match - skip to next global
-            // First skip past the variable-length name
-            LDY #ghName
-            loop
-            {
-                LDA [ZP.IDX], Y
-                INY
-                if (Z) { break; }      // Found null terminator
-            }
-            // Skip past type (1), value (2), flags (1) = 4 more bytes
-            INY
-            INY
-            INY
-            INY
-            
-            // Actually, easier to just follow the next pointer
             LDY #ghNext
             LDA [ZP.IDX], Y
             PHA
@@ -213,14 +191,24 @@ unit GlobalManager
     }
     
     // Add or update global (with automatic redefinition)
-    // Input: Token name from tokenizer (ZP.TokenStart, ZP.TokenLen)
+    // Input: Token name at TokenPtr (null-terminated)
     //        Type in ZP.FTYPE, Value in ZP.TOP
     AddGlobal()
     {
-        // Calculate total size: 2 (next) + TokenLen + 1 (null) + 1 (type) + 2 (value) + 1 (flags)
+        // Calculate name length from null-terminated string at TokenPtr
+        LDX #0
+        loop
+        {
+            LDA [ZP.TokenPtr], X
+            if (Z) { break; }
+            INX
+        }
+        // X now contains the length
+        
+        // Calculate total size: 2 (next) + X + 1 (null) + 1 (type) + 2 (value) + 1 (flags)
+        TXA            // Transfer X to A
         CLC
-        LDA #7
-        ADC ZP.TokenLen
+        ADC #7         // Add the fixed overhead
         STA ZP.ACCL
         STZ ZP.ACCH
         
@@ -241,42 +229,22 @@ unit GlobalManager
         LDA ZP.IDXH
         STA ZP.VarListHeadHi
         
-        // Copy name (TokenLen bytes + null terminator)
+        // Copy name directly from TokenPtr (points to Address.BasicWorkBuffer)
         LDY #ghName
-        PHX                            // Save X
-        LDX ZP.TokenStart
-        LDA ZP.TokenLen
-        STA ZP.ACCL                    // Save original TokenLen
-        
+        LDX #0
         loop
         {
-            LDA ZP.TokenLen
-            if (Z) { break; }          // Copied all characters
-            
-            LDA Address.BasicInputBuffer, X
-            // Convert to uppercase
-            CMP #'a'
-            if (C)                     // >= 'a'
-            {
-                CMP #('z'+1)
-                if (NC)                // <= 'z'
-                {
-                    SBC #('a'-'A'-1)   // Convert to uppercase
-                }
-            }
+            LDA [ZP.TokenPtr], X
             STA [ZP.IDX], Y
-            
+            if (Z) 
+            { 
+                INY  // Move past the null terminator we just stored
+                break; 
+            }
             INX
             INY
-            DEC ZP.TokenLen            // Count down characters
         }
-        
-        PLX                            // Restore X
-        
-        // Add null terminator
-        LDA #0
-        STA [ZP.IDX], Y
-        INY
+        // Y now points to the position after the null terminator
         
         // Store type, value, flags
         LDA ZP.FTYPE
@@ -290,10 +258,6 @@ unit GlobalManager
         INY
         LDA #0  // flags
         STA [ZP.IDX], Y
-        
-        // Restore original TokenLen
-        LDA ZP.ACCL
-        STA ZP.TokenLen
     }
     
     // Get global value
@@ -302,7 +266,7 @@ unit GlobalManager
     GetGlobalValue()
     {
         // Find the type offset (skip past null-terminated name)
-        LDY #ghName
+        LDY #ghName  // Start at offset 2
         loop
         {
             LDA [ZP.IDX], Y
@@ -324,8 +288,6 @@ unit GlobalManager
         INY
         LDA [ZP.IDX], Y
         STA ZP.TOPH
-           
-        DumpVariables();
     }
     
     // Debug function to list globals (variables and constants)
@@ -448,11 +410,18 @@ unit GlobalManager
             PLA
             STA ZP.IDXL
         }
+        DumpHeap();
     }
     
     // Helper to print type prefix for globals
     printGlobalTypePrefix()
     {
+        // Save IDX on the stack since Tools.PrintString() will overwrite it
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
         LDA ZP.FTYPE
         AND #0x7F  // Clear constant flag to get base type
         switch (A)
@@ -460,127 +429,57 @@ unit GlobalManager
             case GlobalTypes.VarInt:
             {
                 LDA #(typeInt % 256)
-                STA ZP.IDYL
-                LDA #(typeInt / 256)
-                STA ZP.IDYH
-                // Save current IDX
-                LDA ZP.IDXL
-                PHA
-                LDA ZP.IDXH
-                PHA
-                // Use IDY for PrintString
-                LDA ZP.IDYL
                 STA ZP.IDXL
-                LDA ZP.IDYH
+                LDA #(typeInt / 256)
                 STA ZP.IDXH
                 Tools.PrintString();
-                // Restore IDX
-                PLA
-                STA ZP.IDXH
-                PLA
-                STA ZP.IDXL
             }
             case GlobalTypes.VarWord:
             {
                 LDA #(typeWord % 256)
-                STA ZP.IDYL
-                LDA #(typeWord / 256)
-                STA ZP.IDYH
-                // Save/restore IDX pattern as above
-                LDA ZP.IDXL
-                PHA
-                LDA ZP.IDXH
-                PHA
-                LDA ZP.IDYL
                 STA ZP.IDXL
-                LDA ZP.IDYH
+                LDA #(typeWord / 256)
                 STA ZP.IDXH
                 Tools.PrintString();
-                PLA
-                STA ZP.IDXH
-                PLA
-                STA ZP.IDXL
             }
             case GlobalTypes.VarByte:
             {
                 LDA #(typeByte % 256)
-                STA ZP.IDYL
-                LDA #(typeByte / 256)
-                STA ZP.IDYH
-                LDA ZP.IDXL
-                PHA
-                LDA ZP.IDXH
-                PHA
-                LDA ZP.IDYL
                 STA ZP.IDXL
-                LDA ZP.IDYH
+                LDA #(typeByte / 256)
                 STA ZP.IDXH
                 Tools.PrintString();
-                PLA
-                STA ZP.IDXH
-                PLA
-                STA ZP.IDXL
             }
             case GlobalTypes.VarBit:
             {
                 LDA #(typeBit % 256)
-                STA ZP.IDYL
-                LDA #(typeBit / 256)
-                STA ZP.IDYH
-                LDA ZP.IDXL
-                PHA
-                LDA ZP.IDXH
-                PHA
-                LDA ZP.IDYL
                 STA ZP.IDXL
-                LDA ZP.IDYH
+                LDA #(typeBit / 256)
                 STA ZP.IDXH
                 Tools.PrintString();
-                PLA
-                STA ZP.IDXH
-                PLA
-                STA ZP.IDXL
             }
             case GlobalTypes.VarString:
             {
                 LDA #(typeString % 256)
-                STA ZP.IDYL
-                LDA #(typeString / 256)
-                STA ZP.IDYH
-                LDA ZP.IDXL
-                PHA
-                LDA ZP.IDXH
-                PHA
-                LDA ZP.IDYL
                 STA ZP.IDXL
-                LDA ZP.IDYH
+                LDA #(typeString / 256)
                 STA ZP.IDXH
                 Tools.PrintString();
-                PLA
-                STA ZP.IDXH
-                PLA
-                STA ZP.IDXL
             }
             default:
             {
                 LDA #(typeUnknown % 256)
-                STA ZP.IDYL
-                LDA #(typeUnknown / 256)
-                STA ZP.IDYH
-                LDA ZP.IDXL
-                PHA
-                LDA ZP.IDXH
-                PHA
-                LDA ZP.IDYL
                 STA ZP.IDXL
-                LDA ZP.IDYH
+                LDA #(typeUnknown / 256)
                 STA ZP.IDXH
                 Tools.PrintString();
-                PLA
-                STA ZP.IDXH
-                PLA
-                STA ZP.IDXL
             }
         }
+        
+        // Restore IDX from the stack
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
     }
 }

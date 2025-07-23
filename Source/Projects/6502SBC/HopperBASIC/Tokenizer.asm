@@ -196,73 +196,48 @@ unit Tokenizer
             LDA keywords, Y    // Get length of this keyword
             if (Z) { break; }  // End of table
             
-            CMP ZP.TokenLen
-            if (Z)  // Length matches
+            STA ZP.ACCL        // Save keyword length
+            INY
+            LDA keywords, Y    // Get token value
+            STA ZP.ACCH        // Save token value
+            INY
+            
+            // Compare characters
+            LDX #0  // Character index in our token
+            loop
             {
-                // Compare characters
-                INY
-                LDA keywords, Y  // Get token value
-                STA ZP.ACCL      // Save token value
-                INY
-                
-                LDX #0  // Character index
-                loop
+                LDA Address.BasicWorkBuffer, X  // Get character from our token
+                if (Z)  // Hit null terminator in our token
                 {
-                    CPX ZP.TokenLen
-                    if (Z)  // All characters matched
+                    // Check if we've matched the full keyword length
+                    CPX ZP.ACCL
+                    if (Z)
                     {
-                        LDA ZP.ACCL  // Return token value
+                        LDA ZP.ACCH  // Return token value - exact match!
                         return;
                     }
-                    
-                    LDA keywords, Y  // Expected character from table
-                    STA ZP.ACCH      
-                    
-                    // Get actual character from input buffer
-                    PHY              // Save Y (keywords table index)
-                    TXA              // Character index
-                    CLC
-                    ADC ZP.TokenStart // Add token start position  
-                    TAY              // Use Y for INPUT_BUFFER index
-                    LDA Address.BasicInputBuffer, Y
-                    makeUppercase();
-                    PLY              // Restore Y (keywords table index) FIRST
-                    
-                    CMP ZP.ACCH      // Compare with expected AFTER restoring Y
-                    if (NZ)          // Mismatch
-                    {
-                        break;
-                    }
-                    
-                    INX              // Next character
-                    INY              // Next expected character  
+                    break; // Length mismatch
                 }
                 
-                // If we get here, there was a mismatch  
-                // X = current character position, Y = current character in keyword table
-                // Skip to end of this keyword: advance Y by (tokenLen - X - 1) positions
-                loop
-                {
-                    CPX ZP.TokenLen       // Have we reached the end?
-                    if (Z) { break; }     // Yes, Y now points to start of next keyword
-                    INX                   // Move to next character position
-                    INY                   // Advance Y to next character
-                }            
+                // Check if we've exceeded keyword length
+                CPX ZP.ACCL
+                if (Z) { break; }  // Our token is longer than keyword
+                
+                CMP keywords, Y  // Compare with expected character
+                if (NZ) { break; } // Mismatch
+                
+                INX
+                INY
             }
-            else
+            
+            // If we get here, there was a mismatch
+            // Skip to end of this keyword: Y should advance by (keywordLen - X) positions
+            loop
             {
-                // Skip this keyword (length doesn't match):
-                
-                // A contains the keyword length, Y points to the length byte
-                INY          // Skip past length byte to token byte
-                INY          // Skip past token byte to first character byte
-                loop
-                {
-                    if (Z) { break; }    // When A reaches 0, we've skipped all character bytes
-                    INY          // Skip past one character byte  
-                    DEC          // Decrement remaining character count (A--)
-                }
-                // Y now points to the length byte of the next keyword            
+                CPX ZP.ACCL       // Have we reached the end of keyword?
+                if (Z) { break; } // Yes, Y now points to start of next keyword
+                INX               // Move to next character position
+                INY               // Advance Y to next character
             }
         }
         
@@ -283,10 +258,6 @@ unit Tokenizer
             STA ZP.CurrentToken
             return;
         }
-        
-        // Mark start of token
-        STX ZP.TokenStart
-        STZ ZP.TokenLen
         
         LDA Address.BasicInputBuffer, X
         
@@ -365,32 +336,44 @@ unit Tokenizer
             }
             case '"':
             {
-                // String literal - scan to closing quote
+                // String literal - scan to closing quote and copy to workspace
                 INC ZP.TokenizerPos  // Skip opening quote
-                STX ZP.TokenStart  // Don't include quote in token
                 
+                LDX #0  // Index into workspace
                 loop
                 {
-                    LDX ZP.TokenizerPos
-                    CPX ZP.BasicInputLength
+                    LDY ZP.TokenizerPos  // Use Y for BasicInputBuffer access
+                    CPY ZP.BasicInputLength
                     if (Z)  // End of input without closing quote
                     {
-                        LDA #Tokens.STRING
-                        STA ZP.CurrentToken
-                        return;
+                        break;
                     }
                     
-                    LDA Address.BasicInputBuffer, X
+                    LDA Address.BasicInputBuffer, Y
                     INC ZP.TokenizerPos
                     CMP #'"'
                     if (Z)  // Found closing quote
                     {
-                        LDA #Tokens.STRING
-                        STA ZP.CurrentToken
-                        return;
+                        break;
                     }
-                    INC ZP.TokenLen
+                    
+                    STA Address.BasicWorkBuffer, X
+                    INX
                 }
+                
+                // Add null terminator
+                LDA #0
+                STA Address.BasicWorkBuffer, X
+                
+                // Set TokenPtr to point to the workspace
+                LDA #(Address.BasicWorkBuffer & 0xFF)
+                STA ZP.TokenPtr
+                LDA #(Address.BasicWorkBuffer >> 8)
+                STA ZP.TokenPtrHi
+                
+                LDA #Tokens.STRING
+                STA ZP.CurrentToken
+                return;
             }
         }
         
@@ -401,17 +384,22 @@ unit Tokenizer
             CMP #('9'+1)
             if (NC)  // <= '9'
             {
-                // Scan number
+                // Scan number and copy to workspace
+                LDX #0  // Index into workspace
                 loop
                 {
-                    INC ZP.TokenizerPos
-                    INC ZP.TokenLen
+                    LDY ZP.TokenizerPos  // Use Y for BasicInputBuffer access
+                    LDA Address.BasicInputBuffer, Y
+                    STA Address.BasicWorkBuffer, X
                     
-                    LDX ZP.TokenizerPos
-                    CPX ZP.BasicInputLength
+                    INC ZP.TokenizerPos
+                    INX
+                    
+                    LDY ZP.TokenizerPos
+                    CPY ZP.BasicInputLength
                     if (Z) { break; }
                     
-                    LDA Address.BasicInputBuffer, X
+                    LDA Address.BasicInputBuffer, Y
                     CMP #'0'
                     if (C)  // >= '0'
                     {
@@ -424,6 +412,16 @@ unit Tokenizer
                     break;  // Not a digit
                 }
                 
+                // Add null terminator
+                LDA #0
+                STA Address.BasicWorkBuffer, X
+                
+                // Set TokenPtr to point to the workspace
+                LDA #(Address.BasicWorkBuffer & 0xFF)
+                STA ZP.TokenPtr
+                LDA #(Address.BasicWorkBuffer >> 8)
+                STA ZP.TokenPtrHi
+                
                 LDA #Tokens.NUMBER
                 STA ZP.CurrentToken
                 return;
@@ -431,20 +429,44 @@ unit Tokenizer
         }
         
         // Must be an identifier or keyword
-        // Scan alphanumeric characters
+        // Scan alphanumeric characters and copy to workspace with case conversion
+        LDX #0  // Index into workspace
         loop
         {
-            LDX ZP.TokenizerPos
-            CPX ZP.BasicInputLength
+            LDY ZP.TokenizerPos
+            CPY ZP.BasicInputLength
             if (Z) { break; }
             
-            LDA Address.BasicInputBuffer, X
+            LDA Address.BasicInputBuffer, Y
             isAlphaNum();
             if (Z) { break; }  // Not alphanumeric
             
+            // Convert to uppercase and store in workspace
+            LDA Address.BasicInputBuffer, Y
+            CMP #'a'
+            if (C)             // >= 'a'
+            {
+                CMP #('z'+1)
+                if (NC)        // <= 'z'
+                {
+                    SBC #('a'-'A'-1)  // Convert to uppercase
+                }
+            }
+            STA Address.BasicWorkBuffer, X
+            
             INC ZP.TokenizerPos
-            INC ZP.TokenLen
+            INX
         }
+        
+        // Add null terminator
+        LDA #0
+        STA Address.BasicWorkBuffer, X
+        
+        // Set TokenPtr to point to the workspace
+        LDA #(Address.BasicWorkBuffer & 0xFF)
+        STA ZP.TokenPtr
+        LDA #(Address.BasicWorkBuffer >> 8)
+        STA ZP.TokenPtrHi
         
         // Check if it's a keyword
         findKeyword();
@@ -459,7 +481,6 @@ unit Tokenizer
         LDA #Tokens.IDENTIFIER
         STA ZP.CurrentToken
     }
-    
     // Read a line of input into buffer
     // Returns length in A
     ReadLine()
@@ -540,8 +561,8 @@ unit Tokenizer
     {
         STZ ZP.TokenizerPos
         STZ ZP.BasicInputLength
-        STZ ZP.TokenStart
-        STZ ZP.TokenLen
+        STZ ZP.TokenPtr
+        STZ ZP.TokenPtrHi
         STZ ZP.CurrentToken
     }
     
@@ -552,13 +573,12 @@ unit Tokenizer
         STZ ZP.TOPL
         STZ ZP.TOPH
         
-        LDX ZP.TokenStart
-        LDY #0
+        LDX #0
         
         loop
         {
-            CPY ZP.TokenLen
-            if (Z) { break; }
+            LDA Address.BasicWorkBuffer, X  // Changed from [ZP.TokenPtr], X
+            if (Z) { break; }  // Hit null terminator
             
             // TOP = TOP * 10
             LDA ZP.TOPL
@@ -582,7 +602,7 @@ unit Tokenizer
             ROL ZP.TOPH
             
             // Add digit
-            LDA Address.BasicInputBuffer, X
+            LDA Address.BasicWorkBuffer, X  // Changed from [ZP.TokenPtr], X
             SEC
             SBC #'0'
             CLC
@@ -594,7 +614,6 @@ unit Tokenizer
             }
             
             INX
-            INY
         }
     }
 }

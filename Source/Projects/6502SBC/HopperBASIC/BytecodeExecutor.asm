@@ -48,33 +48,34 @@ unit BytecodeExecutor
         // Return value in TOP
     }
     
-    // Fix the loop counter bug in executorFetchVariableName()
     executorFetchVariableName()
     {
         // Fetch name length
         executorFetchByte();
-        STA ZP.TokenLen
+        STA ZP.BasicWorkspace7    // Temporarily store length
         
-        // We need to set up TokenStart to point to a buffer with the name
-        // For now, we'll use BasicWorkspace0 as a temporary buffer
-        LDA #ZP.BasicWorkspace0
-        STA ZP.TokenStart
-        
-        // Fetch each character into the workspace
-        LDX #0  // X is the loop counter, not Y!
+        // Build null-terminated string in BasicWorkBuffer
+        LDX #0
         loop
         {
-            CPX ZP.TokenLen  // Compare X (loop counter) with TokenLen
+            CPX ZP.BasicWorkspace7    // Compare with stored length
             if (Z) { break; }
             
             executorFetchByte();
-            STA ZP.BasicWorkspace0, X
-            INX  // Increment X (loop counter)
+            STA Address.BasicWorkBuffer, X
+            INX
         }
         
-        // Now TokenStart points to the name and TokenLen has the length
-        // This allows GlobalManager.FindGlobal() to work with the fetched name
-    } 
+        // Add null terminator
+        LDA #0
+        STA Address.BasicWorkBuffer, X
+        
+        // Set IDY to point to the null-terminated name
+        LDA #(Address.BasicWorkBuffer & 0xFF)
+        STA ZP.IDYL
+        LDA #(Address.BasicWorkBuffer >> 8)
+        STA ZP.IDYH
+    }
     
     // Opcode handlers
     handleNop()
@@ -86,8 +87,6 @@ unit BytecodeExecutor
     {
         // Load 16-bit constant onto value stack
         executorFetchWord();  // Gets constant into TOP
-        
-        Tools.DumpVariables(); // DEBUG: Show TOP right after fetch
         
         LDA #Types.UInt
         Stacks.PushTop();
@@ -177,10 +176,10 @@ unit BytecodeExecutor
         
         // Look up the variable using the fetched name
         GlobalManager.FindGlobal();
-        if (NZ)  // Found
+        if (Z)  // Found
         {
             // Check if it's a constant (can't assign to constants)
-            GlobalManager.GetGlobalValue();  // Returns type in FTYPE
+            GlobalManager.GetGlobalValue();  // Returns type in FTYPE, IDX unchanged
             LDA ZP.FTYPE
             GlobalManager.IsConstant();
             if (NC)  // It's a variable, not a constant
@@ -188,33 +187,27 @@ unit BytecodeExecutor
                 // Pop value from stack
                 Stacks.PopTop();
                 
-                // Store the new value
-                // We need to find the variable again since GetGlobalValue munted IDX
-                GlobalManager.FindGlobal();  // Find the variable again
-                if (Z)  // Should always find it since we found it before
+                // Find the value offset (skip past null-terminated name)
+                LDY # GlobalManager.ghName
+                loop
                 {
-                    // Find the value offset (skip past null-terminated name)
-                    LDY #GlobalManager.ghName
-                    loop
-                    {
-                        LDA [ZP.IDX], Y
-                        if (Z) 
-                        { 
-                            INY  // Move past null terminator
-                            break; 
-                        }
-                        INY
+                    LDA [ZP.IDX], Y
+                    if (Z) 
+                    { 
+                        INY  // Move past null terminator
+                        break; 
                     }
-                    // Y now points to type byte, skip to value
                     INY
-                    
-                    // Store the new value
-                    LDA ZP.TOPL
-                    STA [ZP.IDX], Y
-                    INY
-                    LDA ZP.TOPH
-                    STA [ZP.IDX], Y
                 }
+                // Y now points to type byte, skip to value
+                INY
+                
+                // Store the new value
+                LDA ZP.TOPL
+                STA [ZP.IDX], Y
+                INY
+                LDA ZP.TOPH
+                STA [ZP.IDX], Y
             }
             else
             {

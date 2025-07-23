@@ -87,6 +87,14 @@ unit Tools
             DEY             // (table entries are 2 bytes each)
             if (MI) { break; } // Exit when Y goes negative
         }
+        
+        // If we never printed anything (ACCL is still 0), the number was 0
+        LDA ZP.ACCL
+        if (Z)  // Never set padding, so number was 0
+        {
+            LDA #'0'
+            Serial.WriteChar();
+        }
     }
     
     // Add this to Tools.asm
@@ -152,9 +160,9 @@ unit Tools
     DumpVariables()
     {
        // Store registers in zero page temporarily so we can display them
-       STA ZP.U2  // Temporarily store A
-       STX ZP.U0  // Temporarily store X
-       STY ZP.U1  // Temporarily store Y
+       STA ZP.U0  // Temporarily store A
+       STX ZP.U1  // Temporarily store X
+       STY ZP.U2  // Temporarily store Y
        
        LDA #'\n'
        Serial.WriteChar();
@@ -186,7 +194,7 @@ unit Tools
        Serial.WriteChar();
        LDA #':'
        Serial.WriteChar();
-       LDA ZP.U2
+       LDA ZP.U0
        Serial.HexOut();
        LDA #' '
        Serial.WriteChar();
@@ -196,7 +204,7 @@ unit Tools
        Serial.WriteChar();
        LDA #':'
        Serial.WriteChar();
-       LDA ZP.U0
+       LDA ZP.U1
        Serial.HexOut();
        LDA #' '
        Serial.WriteChar();
@@ -206,7 +214,7 @@ unit Tools
        Serial.WriteChar();
        LDA #':'
        Serial.WriteChar();
-       LDA ZP.U1
+       LDA ZP.U2
        Serial.HexOut();
        LDA #' '
        Serial.WriteChar();
@@ -305,9 +313,9 @@ unit Tools
        Serial.WriteChar();
        
        // Restore registers
-       LDY ZP.U1  // Restore Y
-       LDX ZP.U0  // Restore X
-       LDA ZP.U2  // Restore A
+       LDY ZP.U2  // Restore Y
+       LDX ZP.U1  // Restore X
+       LDA ZP.U0  // Restore A
     }
 
     // Debug function to dump the value stack
@@ -509,10 +517,16 @@ unit Tools
             LDA #' '
             Serial.WriteChar();
             
-            // Print block address
-            LDA ZP.IDXH
-            Serial.HexOut();
+            CLC
             LDA ZP.IDXL
+            ADC # 2
+            STA ZP.M2
+            LDA ZP.IDXH
+            ADC # 0
+            
+            // Print Alloc address (block address + 2)
+            Serial.HexOut();
+            LDA ZP.M2
             Serial.HexOut();
             LDA #':'
             Serial.WriteChar();

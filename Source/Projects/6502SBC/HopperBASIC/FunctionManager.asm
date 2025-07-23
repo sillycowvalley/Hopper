@@ -73,22 +73,7 @@ unit FunctionManager
         
         // Get the byte to emit (should be on stack)  
         Stacks.PopA();  // Returns byte in A, doesn't touch TOP
-        
-        // DEBUG: Show what opcode we're emitting
-        PHA
-        LDA #'E'
-        Serial.WriteChar();
-        LDA #'M'
-        Serial.WriteChar();
-        LDA #':'
-        Serial.WriteChar();
-        PLA
-        PHA
-        Serial.HexOut();
-        LDA #' '
-        Serial.WriteChar();
-        PLA
-        
+               
         // Store it
         LDY #0
         STA [ZP.IDX], Y
