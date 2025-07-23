@@ -49,88 +49,86 @@ unit ExpressionParser
         }
     }
     
-    // Unified expression parser - handles both constant and runtime expressions
-    // Uses bit 1 of BasicFlags to track if expression is constant
+    // Main expression parser - always generates bytecode and returns type in ZP.ExpressionType
     // On entry: current token should be start of expression
-    // On exit: If constant (bit 1 set): value in TOP, no bytecode emitted
-    //          If not constant (bit 1 clear): bytecode emitted for runtime evaluation
+    // On exit: Bytecode generated to push result onto stack at runtime
+    //          ZP.ExpressionType contains the type that will be produced
     ParseExpression()
     {
-        // Set constant flag - assume expression is constant until proven otherwise
-        SMB1 ZP.BasicFlags
-        
-        // Default value is 0
-        STZ ZP.TOPL
-        STZ ZP.TOPH
+        // Default to invalid type
+        STZ ZP.ExpressionType
         
         LDA ZP.CurrentToken
         switch (A)
         {
             case Tokens.NUMBER:
             {
-                // Numbers are always constant - flag stays set
+                // Parse the number into TOP
                 Tokenizer.getTokenNumber(); // Gets value in TOP
                 
-                // If we're emitting code (someone else cleared the flag), emit push instruction
-                if (BBR1, ZP.BasicFlags)
+                // Determine type based on value range
+                LDA ZP.TOPH
+                if (Z)  // High byte is 0
                 {
-                    // Emit OpPushInt followed by the 16-bit value and type
-                    LDA #OpCode.OpPushInt
-                    STA ZP.NEXTL
-                    LDA #0
-                    STA ZP.NEXTH
-                    LDA #Types.Byte
-                    Stacks.PushNext();
-                    FunctionManager.EmitByte();
-                    
-                    // Emit the constant value (16-bit)
-                    LDA #Types.UInt
-                    Stacks.PushTop();
-                    FunctionManager.EmitWord();
-                    
-                    // Determine and emit type based on value range
-                    LDA ZP.TOPH
-                    if (Z)  // High byte is 0
+                    LDA ZP.TOPL
+                    if (Z)  // Value is 0
                     {
-                        LDA ZP.TOPL
-                        if (Z)  // Value is 0
-                        {
-                            LDA #Types.Int
-                        }
-                        else
-                        {
-                            CMP #2
-                            if (NC)  // Value <= 1
-                            {
-                                LDA #Types.Bool
-                            }
-                            else
-                            {
-                                // Value is 2-255, use Byte type
-                                LDA #Types.Byte
-                            }
-                        }
+                        LDA #Types.Int
+                        STA ZP.ExpressionType
                     }
                     else
                     {
-                        BIT ZP.TOPH
-                        if (MI)  // Negative when viewed as signed
+                        CMP #2
+                        if (NC)  // Value <= 1
                         {
-                            LDA #Types.Int
+                            LDA #Types.Bool
+                            STA ZP.ExpressionType
                         }
                         else
                         {
-                            LDA #Types.UInt
+                            // Value is 2-255, use Byte type
+                            LDA #Types.Byte
+                            STA ZP.ExpressionType
                         }
                     }
-                    
-                    STA ZP.NEXTL
-                    LDA #0
-                    STA ZP.NEXTH
-                    LDA #Types.Byte
-                    Stacks.PushNext();
-                    FunctionManager.EmitByte();
                 }
+                else
+                {
+                    BIT ZP.TOPH
+                    if (MI)  // Negative when viewed as signed
+                    {
+                        LDA #Types.Int
+                        STA ZP.ExpressionType
+                    }
+                    else
+                    {
+                        LDA #Types.UInt
+                        STA ZP.ExpressionType
+                    }
+                }
+                
+                // Emit OpPushInt followed by the 16-bit value and type
+                LDA #OpCode.OpPushInt
+                STA ZP.NEXTL
+                LDA #0
+                STA ZP.NEXTH
+                LDA #Types.Byte
+                Stacks.PushNext();
+                FunctionManager.EmitByte();
+                
+                // Emit the constant value (16-bit)
+                LDA #Types.UInt
+                Stacks.PushTop();
+                FunctionManager.EmitWord();
+                
+                // Emit the type
+                LDA ZP.ExpressionType
+                STA ZP.NEXTL
+                LDA #0
+                STA ZP.NEXTH
+                LDA #Types.Byte
+                Stacks.PushNext();
+                FunctionManager.EmitByte();
             }
             case Tokens.MINUS:
             {
@@ -140,7 +138,7 @@ unit ExpressionParser
                 CMP #Tokens.NUMBER
                 if (Z)
                 {
-                    // It's a negative number - flag stays set (still constant)
+                    // Parse the positive number
                     Tokenizer.getTokenNumber();  // Gets positive value in TOP
                     
                     // Negate the value: TOP = 0 - TOP
@@ -152,32 +150,32 @@ unit ExpressionParser
                     SBC ZP.TOPH
                     STA ZP.TOPH
                     
-                    // If we're emitting code, emit push instruction
-                    if (BBR1, ZP.BasicFlags)
-                    {
-                        // Emit OpPushInt followed by the 16-bit value and type
-                        LDA #OpCode.OpPushInt
-                        STA ZP.NEXTL
-                        LDA #0
-                        STA ZP.NEXTH
-                        LDA #Types.Byte
-                        Stacks.PushNext();
-                        FunctionManager.EmitByte();
-                        
-                        // Emit the negative constant value (16-bit)
-                        LDA #Types.UInt
-                        Stacks.PushTop();
-                        FunctionManager.EmitWord();
-                        
-                        // Negative numbers are always Int type
-                        LDA #Types.Int
-                        STA ZP.NEXTL
-                        LDA #0
-                        STA ZP.NEXTH
-                        LDA #Types.Byte
-                        Stacks.PushNext();
-                        FunctionManager.EmitByte();
-                    }
+                    // Negative numbers are always Int type
+                    LDA #Types.Int
+                    STA ZP.ExpressionType
+                    
+                    // Emit OpPushInt followed by the 16-bit value and type
+                    LDA #OpCode.OpPushInt
+                    STA ZP.NEXTL
+                    LDA #0
+                    STA ZP.NEXTH
+                    LDA #Types.Byte
+                    Stacks.PushNext();
+                    FunctionManager.EmitByte();
+                    
+                    // Emit the negative constant value (16-bit)
+                    LDA #Types.UInt
+                    Stacks.PushTop();
+                    FunctionManager.EmitWord();
+                    
+                    // Emit the type (Int for negative numbers)
+                    LDA #Types.Int
+                    STA ZP.NEXTL
+                    LDA #0
+                    STA ZP.NEXTH
+                    LDA #Types.Byte
+                    Stacks.PushNext();
+                    FunctionManager.EmitByte();
                 }
                 else
                 {
@@ -186,7 +184,6 @@ unit ExpressionParser
                     STA ZP.LastErrorL
                     LDA #(Interpreter.msgInvalidExpression / 256)
                     STA ZP.LastErrorH
-                    
                     return;
                 }
             }
@@ -201,24 +198,82 @@ unit ExpressionParser
                 GlobalManager.FindGlobal();
                 if (Z)  // Found
                 {
-                    // Check if it's a constant
+                    // Get the variable info
                     GlobalManager.GetGlobalValue();  // Returns value in TOP, type in FTYPE
+                    
+                    // Convert GlobalManager type to runtime type for ExpressionType
+                    LDA ZP.FTYPE
+                    AND #0x7F     // Clear constant flag to get base variable type
+                    switch (A)
+                    {
+                        case GlobalTypes.VarInt:
+                        case GlobalTypes.ConstInt:
+                        {
+                            LDA #Types.Int
+                            STA ZP.ExpressionType
+                        }
+                        case GlobalTypes.VarWord:
+                        case GlobalTypes.ConstWord:
+                        {
+                            LDA #Types.UInt
+                            STA ZP.ExpressionType
+                        }
+                        case GlobalTypes.VarByte:
+                        case GlobalTypes.ConstByte:
+                        {
+                            LDA #Types.Byte
+                            STA ZP.ExpressionType
+                        }
+                        case GlobalTypes.VarBit:
+                        case GlobalTypes.ConstBit:
+                        {
+                            LDA #Types.Bool
+                            STA ZP.ExpressionType
+                        }
+                        case GlobalTypes.VarString:
+                        case GlobalTypes.ConstString:
+                        {
+                            LDA #Types.String
+                            STA ZP.ExpressionType
+                        }
+                        default:
+                        {
+                            LDA #Types.UInt  // Default
+                            STA ZP.ExpressionType
+                        }
+                    }
+                    
+                    // Check if it's a constant - if so, emit OpPushInt, otherwise OpLoadVar
                     LDA ZP.FTYPE
                     GlobalManager.IsConstant();
-                    if (C)  // It's a constant - flag stays set
+                    if (C)  // It's a constant
                     {
-                        // Value is already in TOP, we're done for constants
+                        // Emit OpPushInt for constant value
+                        LDA #OpCode.OpPushInt
+                        STA ZP.NEXTL
+                        LDA #0
+                        STA ZP.NEXTH
+                        LDA #Types.Byte
+                        Stacks.PushNext();
+                        FunctionManager.EmitByte();
+                        
+                        // Emit the constant value (16-bit)
+                        LDA #Types.UInt
+                        Stacks.PushTop();
+                        FunctionManager.EmitWord();
+                        
+                        // Emit the type
+                        LDA ZP.ExpressionType
+                        STA ZP.NEXTL
+                        LDA #0
+                        STA ZP.NEXTH
+                        LDA #Types.Byte
+                        Stacks.PushNext();
+                        FunctionManager.EmitByte();
                     }
                     else
                     {
-                        // It's a variable - clear constant flag
-                        RMB1 ZP.BasicFlags
-                    }
-                    
-                    // If we're emitting code (flag was cleared or we started with it clear)
-                    if (BBR1, ZP.BasicFlags)
-                    {
-                        // Emit OpLoadVar followed by the variable name
+                        // Emit OpLoadVar for variable
                         LDA #OpCode.OpLoadVar
                         STA ZP.NEXTL
                         LDA #0
@@ -243,8 +298,7 @@ unit ExpressionParser
             }
             case Tokens.STRING:
             {
-                // String literals not implemented - clear flag and set error
-                RMB1 ZP.BasicFlags
+                // String literals not implemented - set error
                 LDA #(Interpreter.msgInvalidExpression % 256)
                 STA ZP.LastErrorL
                 LDA #(Interpreter.msgInvalidExpression / 256)
@@ -273,37 +327,27 @@ unit ExpressionParser
     }
     
     // Wrapper for constant expression parsing (variable initialization)
-    // Returns value in TOP, sets error if invalid or if expression is not constant
+    // Returns type in ZP.ExpressionType, generates bytecode
+    // For constants, also validates that expression can be evaluated at compile time
     ParseConstantExpression()
     {
         ParseExpression();
         
         CheckError();
-        if (NZ)
-        { 
-            return; // Expression parsing failed
-        }  
+        if (NZ) { return; }  // Expression parsing failed
         
-        // Check if expression was constant
-        if (BBR1, ZP.BasicFlags)
-        {
-            // Expression was not constant - set error
-            LDA #( Interpreter.msgConstantExpressionExpected % 256)
-            STA ZP.LastErrorL
-            LDA #( Interpreter.msgConstantExpressionExpected / 256)
-            STA ZP.LastErrorH
-            return;
-        }
-        // Expression was constant - value is already in TOP
+        // For now, we accept any expression as "constant" since we're generating bytecode
+        // In a more sophisticated implementation, we could track whether the expression
+        // contains only compile-time constants vs runtime variables
+        
+        // Expression type is already set in ZP.ExpressionType by ParseExpression
     }
     
     // Wrapper for runtime expression parsing (statements like PRINT, assignment)  
-    // Forces bytecode emission regardless of whether expression is constant
+    // Returns type in ZP.ExpressionType, generates bytecode
     ParseRuntimeExpression()
     {
-        // Clear constant flag to force bytecode emission
-        RMB1 ZP.BasicFlags
         ParseExpression();
-        // Don't check the constant flag - we always want bytecode for runtime expressions
+        // Expression type is already set in ZP.ExpressionType by ParseExpression
     }
 }

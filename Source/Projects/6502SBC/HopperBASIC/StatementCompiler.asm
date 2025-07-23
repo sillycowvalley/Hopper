@@ -329,15 +329,10 @@ unit StatementCompiler
             // Has initializer - move to the expression
             Tokenizer.nextToken();
             
-            // Parse the expression directly to get the value
+            // Parse the expression - this generates bytecode and sets ZP.ExpressionType
             ExpressionParser.ParseConstantExpression();
             CheckError();
             if (NZ) { return; }
-            
-            DumpStack();
-            
-            // Pop the value and type from stack to get the actual value
-            Stacks.PopTop(); // munts X
             
             // Check type compatibility for constant expressions
             // Get target variable type and put in X
@@ -376,9 +371,8 @@ unit StatementCompiler
                 }
             }
             
-            LDA ZP.TOPT // Get expression type
-            
-            DumpVariables();
+            // Get expression type from parser result
+            LDA ZP.ExpressionType    // Expression type in A
             
             // Check compatibility: expressionType in A, targetType in X, value in TOP
             isCompatibleAssignment();
@@ -392,7 +386,11 @@ unit StatementCompiler
                 return;
             }
             
-            
+            // For variable declarations with initializers, we don't use the parsed value
+            // The bytecode will handle the assignment at runtime
+            // But we still need to set TOP to 0 for the symbol table
+            STZ ZP.TOPL
+            STZ ZP.TOPH
         }
         else
         {
@@ -415,7 +413,7 @@ unit StatementCompiler
         STA ZP.TokenPtrHi
         
         // Add the variable/constant to GlobalManager
-        // Parameters: Token name at TokenPtr (null-terminated), ZP.BasicWorkspace0 = type, TOP = value
+        // Parameters: Token name at TokenPtr (null-terminated), ZP.BasicWorkspace0 = type, TOP = value (0)
         LDA ZP.BasicWorkspace0
         STA ZP.FTYPE
         GlobalManager.AddGlobal();

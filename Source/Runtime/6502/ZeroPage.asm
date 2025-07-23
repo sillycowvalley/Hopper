@@ -114,8 +114,8 @@ unit ZP
     // === TOKENIZER WORKSPACE (0x30-0x37) ===
     const byte BasicInputLength     = 0x30;  // Length of current input in buffer (at 0x0900)
     const byte TokenizerPos         = 0x31;  // Current position in input during tokenization
-    const byte TokenPtr             = 0x32;  // Pointer to null-terminated token (2 bytes)
-    const byte TokenPtrHi           = 0x33;
+    const byte TokenStart           = 0x32;  // Start position of current token
+    const byte TokenLen             = 0x33;  // Length of current token
     const byte CurrentToken         = 0x34;  // Current token value being processed
     const byte ExprValueLo          = 0x35;  // Expression evaluation result low byte
     const byte ExprValueHi          = 0x36;  // Expression evaluation result high byte
@@ -138,18 +138,21 @@ unit ZP
     const byte BytecodeSizeHi       = 0x43;  // Size of compiled bytecode (high byte)
     const byte FileNamePtr          = 0x44;  // Pointer to filename in EEPROM operations
     const byte FileNameLen          = 0x45;  // Length of filename
+    const byte ExpressionType       = 0x46;  // Type returned by expression parser
+    const byte TokenPtr             = 0x47;  // Low byte of token pointer (for BasicWorkBuffer access)
+    const byte TokenPtrHi           = 0x48;  // High byte of token pointer (for BasicWorkBuffer access)
     
-    // === INTERPRETER PROGRAM/VARIABLE STORAGE (0x46-0x49) ===
-    const byte PgmListHead          = 0x46;  // Program linked list head (low byte)
-    const byte PgmListHeadHi        = 0x47;  // Program linked list head (high byte)
-    const byte VarListHead          = 0x48;  // Variable linked list head (low byte)
-    const byte VarListHeadHi        = 0x49;  // Variable linked list head (high byte)
+    // === INTERPRETER PROGRAM/VARIABLE STORAGE (0x49-0x4C) ===
+    const byte PgmListHead          = 0x49;  // Program linked list head (low byte)
+    const byte PgmListHeadHi        = 0x4A;  // Program linked list head (high byte)
+    const byte VarListHead          = 0x4B;  // Variable linked list head (low byte)
+    const byte VarListHeadHi        = 0x4C;  // Variable linked list head (high byte)
     
     // BASIC workspace variables
-    const byte BasicFlags           = 0x4A;  // General flags
-    const byte LastErrorL           = 0x4B;  // Low byte of error message pointer
-    const byte LastErrorH           = 0x4C;  // High byte of error message pointer
-    
+    const byte BasicFlags           = 0x4D;  // General flags
+    const byte LastErrorL           = 0x4E;  // Low byte of error message pointer
+    const byte LastErrorH           = 0x4F;  // High byte of error message pointer
+
 #endif
 
 #ifndef TIGGERC
