@@ -431,6 +431,15 @@ unit Tools
         PHX  // Save X  
         PHY  // Save Y
         
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
+        
         LDA #'\n'
         Serial.WriteChar();
         LDA #'='
@@ -845,6 +854,15 @@ unit Tools
         
         LDA #'\n'
         Serial.WriteChar();
+        
+        PLA
+        STA ZP.IDYH
+        PLA
+        STA ZP.IDYL
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
         
         PLY  // Restore Y
         PLX  // Restore X

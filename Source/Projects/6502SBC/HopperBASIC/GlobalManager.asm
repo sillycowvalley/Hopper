@@ -129,15 +129,29 @@ unit GlobalManager
             }
             
             // Compare null-terminated name at IDY with stored name
-            PHX                         // Save X
-            LDX #0                      // Index into name at IDY
-            LDY #ghName                 // Stored name position
+            LDY #0                      // Index into name at IDY
+            
+            // Save original IDX and IDY
+            LDA ZP.IDXL
+            PHA
+            LDA ZP.IDXH
+            PHA
+            
+            // Adjust IDX to point to the stored name (IDX + ghName)
+            CLC
+            LDA ZP.IDXL
+            ADC #ghName
+            STA ZP.IDXL
+            if (C)
+            {
+                INC ZP.IDXH
+            }
             
             // Compare character by character
             loop
             {
                 // Get character from name at IDY
-                LDA [ZP.IDY], X
+                LDA [ZP.IDY], Y
                 PHA                     // Save name char
                 
                 // Get stored character and convert to uppercase
@@ -162,20 +176,25 @@ unit GlobalManager
                 // Check if both are null (end of both strings)
                 if (Z)                  // Both chars are null - match found!
                 {
-                    PLX                 // Restore X
+                    // Pop stored IDX
+                    PLA
+                    PLA
+                    
                     LDA #1
                     CMP #1              // Set Z=1
                     return;
                 }
-                
-                INX                     // Next name character
-                INY                     // Next stored character
+                INY                     // Next name character
             }
             
-            PLX                         // Restore X
+            // Restore IDX (no match case)
+            PLA
+            STA ZP.IDXH
+            PLA
+            STA ZP.IDXL
             
             // No match - skip to next global
-            LDY #ghNext
+            LDY # ghNext
             LDA [ZP.IDX], Y
             PHA
             INY
@@ -251,17 +270,17 @@ unit GlobalManager
         }
         
         // Calculate name length from null-terminated string at TokenPtr
-        LDX #0
+        LDY #0
         loop
         {
-            LDA [ZP.TokenPtr], X
+            LDA [ZP.TokenPtr], Y
             if (Z) { break; }
-            INX
+            INY
         }
-        // X now contains the length
+        // Y now contains the length
         
         // Calculate total size: 2 (next) + X + 1 (null) + 1 (type) + 2 (value) + 1 (flags)
-        TXA            // Transfer X to A
+        TYA            // Transfer Y to A
         CLC
         ADC #7         // Add the fixed overhead
         STA ZP.ACCL
@@ -282,23 +301,39 @@ unit GlobalManager
         LDA ZP.IDXL
         STA ZP.VarListHead
         LDA ZP.IDXH
-        STA ZP.VarListHeadHi
+        STA ZP.VarListHeadHi  
         
-        // Copy name directly from TokenPtr (points to Address.BasicWorkBuffer)
-        LDY #ghName
-        LDX #0
+        // Save original IDX
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH  
+        PHA
+        
+        // Adjust IDX to point to the name storage location
+        CLC
+        LDA ZP.IDXL
+        ADC #ghName
+        STA ZP.IDXL
+        if (C)
+        {
+            INC ZP.IDXH
+        }
+        
+        // Copy name directly from TokenPtr
+        LDY #0
         loop
         {
-            LDA [ZP.TokenPtr], X
+            LDA [ZP.TokenPtr], Y
             STA [ZP.IDX], Y
-            if (Z) 
-            { 
-                INY  // Move past the null terminator we just stored
-                break; 
-            }
-            INX
+            if (Z) { break; }
             INY
         }
+        
+        // Restore original IDX
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL        
         // Y now points to the position after the null terminator
         
         // Store type, value, flags

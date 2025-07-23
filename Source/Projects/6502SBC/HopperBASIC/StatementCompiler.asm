@@ -15,8 +15,6 @@ unit StatementCompiler
     // Output: C if compatible, NC if not compatible
     isCompatibleAssignment()
     {
-        DumpVariables();
-        
         // A = expressionType, X = targetType
         // Compare A with X - need to store one to compare
         STX ZP.BasicWorkspace0    // Store targetType temporarily
@@ -290,6 +288,7 @@ unit StatementCompiler
             }
         }
         
+        
         // Get variable name
         Tokenizer.nextToken();
         LDA ZP.CurrentToken
@@ -304,14 +303,14 @@ unit StatementCompiler
             return;
         }
         
-        // CRITICAL: Copy the variable name from BasicWorkBuffer to BasicInputBuffer 
+        // CRITICAL: Copy the variable name from BasicWorkBuffer to safe temp storage
         // (which is safe because we've already tokenized the input)
         // This preserves the name while we process the initializer
         LDX #0
         loop
         {
             LDA Address.BasicWorkBuffer, X
-            STA Address.BasicInputBuffer, X  // Reuse input buffer as temp storage
+            STA (Address.BasicWorkBuffer + 64), X  // Use second half of work buffer
             if (Z) { break; }  // Copied null terminator
             INX
         }
@@ -406,10 +405,10 @@ unit StatementCompiler
             }
         }
         
-        // Set TokenPtr to point to the saved variable name in BasicInputBuffer
-        LDA #(Address.BasicInputBuffer & 0xFF)
+        // Set TokenPtr to point to the saved variable name in temp storage
+        LDA #((Address.BasicWorkBuffer + 64) & 0xFF)
         STA ZP.TokenPtr
-        LDA #(Address.BasicInputBuffer >> 8)
+        LDA #((Address.BasicWorkBuffer + 64) >> 8)
         STA ZP.TokenPtrHi
         
         // Add the variable/constant to GlobalManager

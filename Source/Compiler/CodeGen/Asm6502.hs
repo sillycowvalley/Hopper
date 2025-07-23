@@ -94,9 +94,9 @@ unit Asm6502
         EOR_izY  = 0x51,
         ADC_izX  = 0x61,
         ADC_izY  = 0x71,
-        STA_izX  = 0x81,
+        STA_izX  = 0x81,  // dangerous since we don't parse correctly  [xx, X] vs [xx], X
         STA_izY  = 0x91,
-        LDA_izX  = 0xA1,
+        LDA_izX  = 0xA1,  // dangerous since we don't parse correctly  [xx, X] vs [xx], X
         LDA_izY  = 0xB1,
         CMP_izX  = 0xC1,
         CMP_izY  = 0xD1,
@@ -1332,6 +1332,8 @@ unit Asm6502
         if (addressingMode == AddressingModes.XIndexedZeroPage)
         {
             // XIndexedZeroPage=0x1000,  // [nn,X]
+            NI();
+            /*
             switch (instructionName)
             {
                 case "ADC": { code = OpCode.ADC_izX; }
@@ -1344,6 +1346,7 @@ unit Asm6502
                 case "STA": { code = OpCode.STA_izX; }
                 default: { IE(); }
             }
+            */
         }
         else if (addressingMode == AddressingModes.YIndexedZeroPage)
         {

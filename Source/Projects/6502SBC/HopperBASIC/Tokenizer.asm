@@ -389,6 +389,7 @@ unit Tokenizer
                 loop
                 {
                     LDY ZP.TokenizerPos  // Use Y for BasicInputBuffer access
+                    
                     LDA Address.BasicInputBuffer, Y
                     STA Address.BasicWorkBuffer, X
                     
@@ -429,6 +430,7 @@ unit Tokenizer
         }
         
         // Must be an identifier or keyword
+        
         // Scan alphanumeric characters and copy to workspace with case conversion
         LDX #0  // Index into workspace
         loop
