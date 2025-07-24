@@ -510,12 +510,56 @@ All operations return success/failure status via carry flag:
 
 The symbol table does not set error messages - that's the responsibility of the calling code to check the carry flag and handle appropriately.
 
+## Token Stream Storage Rationale
+
+The core requirement for storing initialization token streams alongside current values is **persistent program state management**:
+
+### SAVE/LOAD Cycle Integrity
+**SAVE**: Store original initialization expressions, not just current values
+**LOAD**: Re-execute all stored token streams to recreate exact program state
+```hopper
+// Original program:
+CONST BYTE WIDTH = 10
+CONST BYTE HEIGHT = WIDTH * 2  
+INT count = WIDTH + HEIGHT
+
+// SAVE stores token streams: "10", "WIDTH * 2", "WIDTH + HEIGHT"
+// LOAD re-evaluates them in order, recreating dependencies correctly
+```
+
+### CLEAR Command Implementation
+**CLEAR**: Re-execute variable initialization expressions to reset to original values
+```hopper
+INT score = 100
+// ... user changes score to 250 during execution ...
+// CLEAR re-evaluates "100" token stream, resets score back to 100
+```
+
+### Dependency Chain Integrity
+Storing only values breaks when constants have dependencies:
+```hopper
+CONST BYTE BASE = 10           // Storing value only: 10
+CONST BYTE DERIVED = BASE * 2  // Storing value only: 20
+
+// Later: FORGET BASE; CONST BYTE BASE = 5
+// Problem: DERIVED still shows 20, but should be 10!
+// Solution: Re-evaluate "BASE * 2" tokens → correctly gets 10
+```
+
+### RUN Command Prerequisites
+**RUN**: Should call CLEAR first to ensure clean, repeatable variable state
+- Constants evaluate once in declaration order
+- Variables reset to their initialization expressions  
+- Program starts with predictable, consistent state
+
 ## Key Features
 
 This design enables:
 - **Rich VARS command**: Can show both current value and original initialization expression
 - **Constant re-evaluation**: Support for constants that depend on other constants
-- **Array size expressions**: Store and re-evaluate size expressions like `BIT FLAGS[LENGTH]`
+- **State persistence**: SAVE/LOAD maintains referential integrity across sessions
+- **Variable reset**: CLEAR restores original initialization values
 - **Debugging support**: Always have access to original source expression
+- **Referential integrity**: Prevents "stale constant" problems in dependency chains
 - **Forward references**: Functions can call functions defined later
 - **Dynamic modification**: FORGET and redefinition change symbol meanings
