@@ -545,14 +545,14 @@ unit Tools
     // Debug function to dump all heap blocks (allocated and free)
     // Walks through heap sequentially using block size headers
     // On entry: None
-    // On exit:  A,X,Y preserved
-    // Munts:    ZP.M0, ZP.M1, ZP.M2, ZP.M3, ZP.U0, ZP.U2, ZP.U3, ZP.IDX, ZP.IDY
+    // On exit:  A,X,Y, ZP.IDX and ZP.IDY preserved
+    // Munts:    ZP.M0, ZP.M1, ZP.M2, ZP.M3, ZP.U0, ZP.U2, ZP.U3
     // Uses:     Serial.WriteChar(), Serial.HexOut() for output
     DumpHeap()
     {
         PHA  // Save A
         PHX  // Save X  
-        PLY  // Save Y
+        PHY  // Save Y
         
         LDA ZP.IDXL
         PHA
@@ -938,6 +938,7 @@ unit Tools
             }
         }
         
+        Serial.WriteChar();
         LDA #'\n'
         Serial.WriteChar();
         

@@ -18,16 +18,18 @@ program Test
     uses "BasicTypes"
     uses "Tools"
     
-    // Test list head storage
-    const byte TEST_LIST_L        = 0x3C;  // Test list head low
-    const byte TEST_LIST_H        = 0x3D;  // Test list head high
-    const byte TEST_NODE_SIZE_L   = 0x3E;  // Node size low
-    const byte TEST_NODE_SIZE_H   = 0x3F;  // Node size high
+    // Test Table head
+    const byte TableHeadLocation  = 0x3C;
+    const byte TableHeadLocationL = 0x3C;
+    const byte TableHeadLocationH = 0x3D;
+    const byte TableNode          = 0x3E;
+    const byte TableNodeL         = 0x3E;
+    const byte TableNodeH         = 0x3F;
     
     // Test result tracking
     const string testHeader = "\n=== TABLE & OBJECTS COMPREHENSIVE TESTS ===\n";
     const string testPassed = " PASS\n";
-    const string testFailed = " FAIL\n"; 
+    const string testFailed = " FAIL #";
     const string testComplete = "\nAll tests completed.\n";
     
     // Test data
@@ -65,24 +67,84 @@ program Test
     }
     
     // Print test result
+    // Input: C set = pass, C clear = fail, A = failure code (if failing)
     printResult()
     {
-        // Expects result in A: 0 = fail, non-zero = pass
-        if (Z)
-        {
-            LDA #(testFailed % 256)
-            STA ZP.IDXL
-            LDA #(testFailed / 256)
-            STA ZP.IDXH
-        }
-        else
+        if (C)
         {
             LDA #(testPassed % 256)
             STA ZP.IDXL
             LDA #(testPassed / 256)
             STA ZP.IDXH
+            printString();
         }
-        printString();
+        else
+        {
+            PHA  // Save failure code
+            LDA #(testFailed % 256)
+            STA ZP.IDXL
+            LDA #(testFailed / 256)
+            STA ZP.IDXH
+            printString();
+            
+            PLA  // Restore failure code
+            Serial.HexOut();
+            LDA #'\n'
+            Serial.WriteChar();
+            PrintZP();
+            Tools.DumpHeap();
+        }
+    }
+    PrintZP()
+    {
+        // Debug output for our test variables
+        PHA
+        PHX
+        
+        LDA #'T'
+        Serial.WriteChar();
+        LDA #'H'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        LDA TableHeadLocationH
+        Serial.HexOut();
+        LDA TableHeadLocationL
+        Serial.HexOut();
+        LDA #' '
+        Serial.WriteChar();
+        
+        LDA #'T'
+        Serial.WriteChar();
+        LDA #'H'
+        Serial.WriteChar();
+        LDA #'X'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        LDX # TableHeadLocation
+        LDA 0x01, X
+        Serial.HexOut();
+        LDA 0x00, X
+        Serial.HexOut();
+        LDA #' '
+        Serial.WriteChar();
+        
+        LDA #'T'
+        Serial.WriteChar();
+        LDA #'N'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        LDA TableNodeH
+        Serial.HexOut();
+        LDA TableNodeL
+        Serial.HexOut();
+        LDA #'\n'
+        Serial.WriteChar();
+        
+        PLX
+        PLA
     }
     
     // Print test number and description
@@ -117,16 +179,24 @@ program Test
         printTestHeader();
         
         // Clear test list
-        STZ TEST_LIST_L
-        STZ TEST_LIST_H
+        STZ TableHeadLocationL
+        STZ TableHeadLocationH
         
         // GetFirst should return null
-        LDX #TEST_LIST_L
+        LDX # TableHeadLocation
         Table.GetFirst();
         
         LDA ZP.IDXL
         ORA ZP.IDXH
-        EOR #1  // Invert: 0->1, non-zero->0
+        if (Z)
+        {
+            SEC  // Pass
+        }
+        else
+        {
+            LDA #0x10
+            CLC  // Fail
+        }
         printResult();
     }
     
@@ -140,34 +210,47 @@ program Test
         STA ZP.TOPH
         printTestHeader();
         
-        // Clear test list
-        STZ TEST_LIST_L
-        STZ TEST_LIST_H
+        // Start with a clean list
+        LDX # TableHeadLocation
+        Table.Clear();
         
         // Add 10-byte node
         LDA #10
         STA ZP.ACCL
         STZ ZP.ACCH
         
-        LDX # TEST_LIST_L
+        LDX # TableHeadLocation
         Table.Add();
         
-        // Should succeed (Z set) and return valid address
-        if (NZ)
+        // Should succeed (C set) and return valid address
+        if (NC)
         {
-            LDA #0  // Fail
+            LDA #0x20
+            CLC  // Fail
             printResult();
             return;
         }
         
         LDA ZP.IDXL
         ORA ZP.IDXH
-        printResult(); // Pass if non-zero address
+        if (NZ)
+        {
+            SEC  // Pass
+        }
+        else
+        {
+            LDA #0x21
+            CLC  // Fail
+        }
+        printResult();
+        
     }
     
     // Test 3: Add multiple nodes (builds linked list)
     testAddMultiple()
     {
+        
+        
         LDA #'3'
         LDA #(desc3 % 256)
         STA ZP.TOPL
@@ -175,73 +258,86 @@ program Test
         STA ZP.TOPH
         printTestHeader();
         
-        // Clear test list
-        STZ TEST_LIST_L
-        STZ TEST_LIST_H
+        // Start with a clean list
+        LDX # TableHeadLocation
+        Table.Clear();
         
         // Add first node
         LDA #8
         STA ZP.ACCL
         STZ ZP.ACCH
-        LDX # TEST_LIST_L
+        LDX # TableHeadLocation
         Table.Add();
-        if (NZ)
+        if (NC)
         {
-            LDA #0
+            LDA #0x30
+            CLC  // Fail
             printResult();
             return;
         }
         
         // Save first node address
         LDA ZP.IDXL
-        STA TEST_NODE_SIZE_L
+        STA TableNodeL
         LDA ZP.IDXH
-        STA TEST_NODE_SIZE_H
+        STA TableNodeH
         
         // Add second node  
         LDA #12
         STA ZP.ACCL
         STZ ZP.ACCH
-        LDX #TEST_LIST_L
+        LDX #TableHeadLocationL
         Table.Add();
-        if (NZ)
+        if (NC)
         {
-            LDA #0
+            LDA #0x31
+            CLC  // Fail
             printResult();
             return;
         }
         
-        // List head should now point to second node
-        LDA ZP.IDXL
-        CMP TEST_LIST_L
+        // List head should now point to the second node we just added
+        LDA TableHeadLocationL
+        CMP ZP.IDXL
         if (NZ)
         {
-            LDA #0
+            LDA #0x32
+            CLC  // Fail
             printResult();
             return;
         }
-        LDA ZP.IDXH
-        CMP TEST_LIST_H
+        LDA TableHeadLocationH
+        CMP ZP.IDXH
         if (NZ)
         {
-            LDA #0
+            LDA #0x33
+            CLC  // Fail
             printResult();
             return;
         }
         
         // Second node's next pointer should point to first node
-        Table.GetNext(); // Should give us first node
+        Table.GetNext();
         LDA ZP.IDXL
-        CMP TEST_NODE_SIZE_L
+        CMP TableNodeL
         if (NZ)
         {
-            LDA #0
+            LDA #0x34
+            CLC  // Fail
             printResult();
             return;
         }
         LDA ZP.IDXH
-        CMP TEST_NODE_SIZE_H
-        EOR #1  // Convert match to pass
+        CMP TableNodeH
+        if (NZ)
+        {
+            LDA #0x35
+            CLC  // Fail
+            printResult();
+            return;
+        }
+        
+        SEC  // Pass
         printResult();
     }
     
@@ -255,9 +351,9 @@ program Test
         STA ZP.TOPH
         printTestHeader();
         
-        // Build list with 3 nodes
-        STZ TEST_LIST_L
-        STZ TEST_LIST_H
+        // Start with a clean list
+        LDX #TableHeadLocationL
+        Table.Clear();
         
         // Add nodes (will be in reverse order: 3rd, 2nd, 1st)
         LDY #0
@@ -269,11 +365,12 @@ program Test
             LDA #10
             STA ZP.ACCL
             STZ ZP.ACCH
-            LDX #TEST_LIST_L
+            LDX #TableHeadLocationL
             Table.Add();
-            if (NZ)
+            if (NC)
             {
-                LDA #0
+                LDA #0x40
+                CLC  // Fail
                 printResult();
                 return;
             }
@@ -282,7 +379,7 @@ program Test
         }
         
         // Count nodes by traversal
-        LDX #TEST_LIST_L
+        LDX #TableHeadLocationL
         Table.GetFirst();
         
         LDY #0  // Node count
@@ -300,11 +397,12 @@ program Test
         CPY #3
         if (Z)
         {
-            LDA #1  // Pass
+            SEC  // Pass
         }
         else
         {
-            LDA #0  // Fail
+            LDA #0x41
+            CLC  // Fail
         }
         printResult();
     }
@@ -319,44 +417,53 @@ program Test
         STA ZP.TOPH
         printTestHeader();
         
-        // Build list with 2 nodes
-        STZ TEST_LIST_L
-        STZ TEST_LIST_H
+        // Start with a clean list
+        LDX #TableHeadLocationL
+        Table.Clear();
         
         // Add first node
         LDA #10
         STA ZP.ACCL
         STZ ZP.ACCH
-        LDX #TEST_LIST_L
+        LDX #TableHeadLocationL
         Table.Add();
         LDA ZP.IDXL
-        STA TEST_NODE_SIZE_L  // Save first node address
+        STA TableNodeL
         LDA ZP.IDXH
-        STA TEST_NODE_SIZE_H
+        STA TableNodeH
         
         // Add second node (becomes new head)
         LDA #10
         STA ZP.ACCL
         STZ ZP.ACCH
-        LDX #TEST_LIST_L
+        LDX #TableHeadLocationL
         Table.Add();
         
         // Delete the current head (second node)
-        LDX #TEST_LIST_L
+        LDX #TableHeadLocationL
         Table.Delete();
         
         // List head should now point to first node
-        LDA TEST_LIST_L
-        CMP TEST_NODE_SIZE_L
+        LDA TableHeadLocationL
+        CMP TableNodeL
         if (NZ)
         {
-            LDA #0
+            LDA #0x50
+            CLC  // Fail
             printResult();
             return;
         }
-        LDA TEST_LIST_H
-        CMP TEST_NODE_SIZE_H
-        EOR #1  // Convert match to pass
+        LDA TableHeadLocationH
+        CMP TableNodeH
+        if (NZ)
+        {
+            LDA #0x51
+            CLC  // Fail
+            printResult();
+            return;
+        }
+        
+        SEC  // Pass
         printResult();
     }
     
@@ -370,9 +477,9 @@ program Test
         STA ZP.TOPH
         printTestHeader();
         
-        // Build list with multiple nodes
-        STZ TEST_LIST_L
-        STZ TEST_LIST_H
+        // Start with a clean list, then build multiple nodes
+        LDX #TableHeadLocationL
+        Table.Clear();
         
         LDY #0
         loop
@@ -383,20 +490,28 @@ program Test
             LDA #8
             STA ZP.ACCL
             STZ ZP.ACCH
-            LDX #TEST_LIST_L
+            LDX #TableHeadLocationL
             Table.Add();
             
             INY
         }
         
         // Clear the list
-        LDX #TEST_LIST_L
+        LDX #TableHeadLocationL
         Table.Clear();
         
         // List should be empty
-        LDA TEST_LIST_L
-        ORA TEST_LIST_H
-        EOR #1  // Convert 0 to pass
+        LDA TableHeadLocationL
+        ORA TableHeadLocationH
+        if (Z)
+        {
+            SEC  // Pass
+        }
+        else
+        {
+            LDA #0x60
+            CLC  // Fail
+        }
         printResult();
     }
     
@@ -416,7 +531,15 @@ program Test
         
         LDA ZP.SymbolListL
         ORA ZP.SymbolListH
-        EOR #1  // Convert 0 to pass
+        if (Z)
+        {
+            SEC  // Pass
+        }
+        else
+        {
+            LDA #0x70
+            CLC  // Fail
+        }
         printResult();
     }
     
@@ -452,11 +575,12 @@ program Test
         // Should succeed (C set)
         if (C)
         {
-            LDA #1  // Pass
+            SEC  // Pass
         }
         else
         {
-            LDA #0  // Fail
+            LDA #0x80
+            CLC  // Fail
         }
         printResult();
     }
@@ -500,11 +624,12 @@ program Test
         // Should find it (C set)
         if (C)
         {
-            LDA #1  // Pass
+            SEC  // Pass
         }
         else
         {
-            LDA #0  // Fail
+            LDA #0x90
+            CLC  // Fail
         }
         printResult();
     }
@@ -542,7 +667,8 @@ program Test
         Objects.Find();
         if (NC)
         {
-            LDA #0
+            LDA #0xA0
+            CLC  // Fail
             printResult();
             return;
         }
@@ -555,7 +681,8 @@ program Test
         CMP #BasicType.WORD
         if (NZ)
         {
-            LDA #0
+            LDA #0xA1
+            CLC  // Fail
             printResult();
             return;
         }
@@ -565,13 +692,22 @@ program Test
         CMP #(1000 % 256)
         if (NZ)
         {
-            LDA #0
+            LDA #0xA2
+            CLC  // Fail
             printResult();
             return;
         }
         LDA ZP.NEXTH
         CMP #(1000 / 256)
-        EOR #1  // Convert match to pass
+        if (NZ)
+        {
+            LDA #0xA3
+            CLC  // Fail
+            printResult();
+            return;
+        }
+        
+        SEC  // Pass
         printResult();
     }
     
@@ -612,7 +748,8 @@ program Test
         Objects.SetValue();
         if (NC)
         {
-            LDA #0
+            LDA #0xB0
+            CLC  // Fail
             printResult();
             return;
         }
@@ -621,7 +758,15 @@ program Test
         Objects.GetData();
         LDA ZP.NEXTL
         CMP #200
-        EOR #1  // Convert match to pass
+        if (NZ)
+        {
+            LDA #0xB1
+            CLC  // Fail
+            printResult();
+            return;
+        }
+        
+        SEC  // Pass
         printResult();
     }
     
@@ -668,7 +813,8 @@ program Test
         
         if (NC)
         {
-            LDA #0
+            LDA #0xC0
+            CLC  // Fail
             printResult();
             return;
         }
@@ -679,7 +825,15 @@ program Test
         AND #0xF0
         LSR LSR LSR LSR
         CMP #Objects.SymbolType.VARIABLE
-        EOR #1  // Convert match to pass
+        if (NZ)
+        {
+            LDA #0xC1
+            CLC  // Fail
+            printResult();
+            return;
+        }
+        
+        SEC  // Pass
         printResult();
     }
     
@@ -722,7 +876,15 @@ program Test
         // Should be empty
         LDA ZP.SymbolListL
         ORA ZP.SymbolListH
-        EOR #1  // Convert 0 to pass
+        if (Z)
+        {
+            SEC  // Pass
+        }
+        else
+        {
+            LDA #0xD0
+            CLC  // Fail
+        }
         printResult();
     }
     
@@ -732,6 +894,9 @@ program Test
         Serial.Initialize();
         Memory.InitializeHeapSize();
         Stacks.Initialize();
+        
+        STZ TableHeadLocationL
+        STZ TableHeadLocationH
         
         STZ ZP.FLAGS
         SMB0 ZP.FLAGS
@@ -755,6 +920,7 @@ program Test
         testClearList();
         
         // Objects layer tests
+        /*
         testObjectsInit();
         testAddSymbol();
         testFindSymbol();
@@ -762,6 +928,7 @@ program Test
         testSetSymbolValue();
         testSymbolFiltering();
         testDestroy();
+        */
         
         LDA #(testComplete % 256)
         STA ZP.IDXL

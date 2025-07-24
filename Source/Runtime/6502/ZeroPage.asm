@@ -473,8 +473,12 @@ unit ZP
     const byte LCOUNT  = F14;
     const byte LCOUNTL = F14;
     const byte LCOUNTH = F15;
-    
+
+#if defined(HOPPER_BASIC)        
+    const byte LHEADX  = F14;
+#else    
     const byte LITYPE  = F14;
+#endif
 
     // used by arrays
     const byte ACARRY   = F14;

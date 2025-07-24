@@ -16,14 +16,16 @@ unit Objects
     }
     
     // Node layout (offsets from node start):
-    // Offset 0: symbolType|dataType (packed byte)
-    // Offset 1: unused (padding)
-    // Offset 2-3: value/address (16-bit)
-    // Offset 4-5: next pointer (managed by Table unit)
+    // Offset 0-1: next pointer (managed by Table unit)
+    // Offset 2: symbolType|dataType (packed byte)
+    // Offset 3: unused (padding)
+    // Offset 4-5: value/address (16-bit)
     // Offset 6+: null-terminated name string
     
-    const byte SYMBOL_OVERHEAD = 6;    // Fixed fields before name
-    const byte NAME_OFFSET = 6;        // Offset to name field in node
+    const byte SYMBOL_OVERHEAD = 6;      // Fixed fields before name (including Table's next pointer)
+    const byte SYMBOL_TYPE_OFFSET = 2;   // Offset to symbolType|dataType field
+    const byte SYMBOL_VALUE_OFFSET = 4;  // Offset to value field
+    const byte NAME_OFFSET = 6;          // Offset to name field in node
     
     // Initialize empty symbol table
     // Output: ZP.SymbolListL/H = 0x0000
@@ -38,12 +40,31 @@ unit Objects
     // Input: ZP.TOP = name pointer, ZP.ACC = symbolType|dataType (packed),
     //        ZP.NEXT = value (16-bit)  
     // Output: ZP.IDX = new symbol node address, C set if successful, NC if allocation failed
-    // Preserves: A, X, Y, ZP.TOP, ZP.ACC, ZP.NEXT
+    // Preserves: A, X, Y
+    // Munts: ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Table.Add call)
     // Uses: ZP.Lxx variables as temporary workspace
     Add()
     {
+        PHA
+        PHX
+        PHY
+        
+        // Save input parameters before Table.Add munts them
+        LDA ZP.ACCL
+        STA ZP.LTYPE        // Save symbolType|dataType
+        
+        LDA ZP.NEXTL
+        STA ZP.LNEXTL       // Save value low
+        LDA ZP.NEXTH
+        STA ZP.LNEXTH       // Save value high
+        
+        LDA ZP.TOPL
+        STA ZP.LPREVIOUSL   // Save name pointer low
+        LDA ZP.TOPH
+        STA ZP.LPREVIOUSH   // Save name pointer high
+        
         // Calculate node size
-        calculateNodeSize(); // Returns size in ZP.LLENGTH
+        calculateNodeSize(); // Returns size in ZP.LLENGTH, uses name at ZP.LPREVIOUS
         
         // Move size to ACC for Table.Add()
         LDA ZP.LLENGTHL
@@ -53,16 +74,21 @@ unit Objects
         
         // Add to table
         LDX #ZP.SymbolListL  // Address of list head pointer
-        Table.Add(); // Returns new node in IDX, Z set if successful
-        if (NZ)  // Allocation failed
+        Table.Add(); // Returns new node in IDX, C set if successful
+        if (NC)  // Allocation failed
         {
-            CLC  // Signal failure
-            return;
+            PLY
+            PLX
+            PLA
+            return;  // C already clear
         }
         
         // Initialize the new node
         initializeNode();
         
+        PLY
+        PLX
+        PLA
         SEC  // Signal success
     }
     
@@ -73,6 +99,10 @@ unit Objects
     // Uses: ZP.Lxx variables as temporary workspace
     Find()
     {
+        PHA
+        PHX
+        PHY
+        
         // Start iteration
         LDX #ZP.SymbolListL
         Table.GetFirst(); // Returns first node in IDX
@@ -84,14 +114,20 @@ unit Objects
             ORA ZP.IDXH
             if (Z)
             {
+                PLY
+                PLX
+                PLA
                 CLC  // Not found
                 return;
             }
             
-            // Compare name at offset 6
+            // Compare name at NAME_OFFSET
             compareNames();
             if (Z) // Names match
             {
+                PLY
+                PLX
+                PLA
                 SEC  // Found
                 return;
             }
@@ -103,8 +139,9 @@ unit Objects
     
     // Remove symbol by node pointer
     // Input: ZP.IDX = symbol node address (from Find)
-    // Output: None (thin wrapper around Table.Delete)  
-    // Preserves: A, Y, ZP.TOP, ZP.NEXT, ZP.ACC
+    // Output: C set if successful, NC if node not found
+    // Preserves: A, X, Y
+    // Munts: ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Table.Delete call)
     // Uses: ZP.Lxx variables as temporary workspace
     Remove()
     {
@@ -118,14 +155,14 @@ unit Objects
     // Preserves: A, X, Y, ZP.IDX, ZP.TOP
     GetData()
     {
-        // Get symbolType|dataType (offset 0)
-        LDY #0
+        // Get symbolType|dataType (offset SYMBOL_TYPE_OFFSET)
+        LDY #SYMBOL_TYPE_OFFSET
         LDA [ZP.IDX], Y
         STA ZP.ACCL
         STZ ZP.ACCH  // Clear high byte
         
-        // Get value (offset 2-3)
-        LDY #2
+        // Get value (offset SYMBOL_VALUE_OFFSET to SYMBOL_VALUE_OFFSET+1)
+        LDY #SYMBOL_VALUE_OFFSET
         LDA [ZP.IDX], Y
         STA ZP.NEXTL
         INY
@@ -139,8 +176,8 @@ unit Objects
     // Preserves: A, X, Y, ZP.IDX, ZP.TOP, ZP.ACC
     SetValue()
     {
-        // Get symbolType (high nibble of packed byte at offset 0)
-        LDY #0
+        // Get symbolType (high nibble of packed byte at SYMBOL_TYPE_OFFSET)
+        LDY #SYMBOL_TYPE_OFFSET
         LDA [ZP.IDX], Y
         AND #0xF0  // Extract high nibble
         LSR LSR LSR LSR  // Shift to low nibble
@@ -151,8 +188,8 @@ unit Objects
             return;
         }
         
-        // Update value (offset 2-3)
-        LDY #2
+        // Update value (offset SYMBOL_VALUE_OFFSET to SYMBOL_VALUE_OFFSET+1)
+        LDY #SYMBOL_VALUE_OFFSET
         LDA ZP.NEXTL
         STA [ZP.IDX], Y
         INY
@@ -168,12 +205,20 @@ unit Objects
     // Preserves: A, X, Y, ZP.TOP, ZP.NEXT, ZP.ACC
     IterateStart()
     {
+        PHA
+        PHX
+        PHY
+        
         // Start at beginning of list
         LDX #ZP.SymbolListL
         Table.GetFirst();
         
         // Find first matching symbol
         findNextMatch();
+        
+        PLY
+        PLX
+        PLA
     }
     
     // Continue iteration
@@ -182,16 +227,25 @@ unit Objects
     // Preserves: A, X, Y, ZP.TOP, ZP.NEXT, ZP.ACC
     IterateNext()
     {
+        PHA
+        PHX
+        PHY
+        
         // Move to next node
         Table.GetNext();
         
         // Find next matching symbol
         findNextMatch();
+        
+        PLY
+        PLX
+        PLA
     }
     
     // Destroy entire symbol table
     // Output: ZP.SymbolListL/H = 0x0000
-    // Preserves: A, X, Y, ZP.IDX, ZP.TOP, ZP.NEXT, ZP.ACC
+    // Preserves: A, X, Y
+    // Munts: ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Table.Clear call)
     Destroy()
     {
         LDX #ZP.SymbolListL
@@ -199,7 +253,7 @@ unit Objects
     }
     
     // Internal helper: Calculate required node size
-    // Input: ZP.TOP = name pointer
+    // Input: ZP.LPREVIOUS = name pointer
     // Output: ZP.LLENGTH = total node size (16-bit)
     calculateNodeSize()
     {
@@ -212,7 +266,7 @@ unit Objects
         LDY #0
         loop
         {
-            LDA [ZP.TOP], Y
+            LDA [ZP.LPREVIOUS], Y
             if (Z) { break; } // Hit null terminator
             
             INC ZP.LLENGTHL
@@ -227,53 +281,54 @@ unit Objects
     }
     
     // Internal helper: Initialize fields in newly allocated node
-    // Input: ZP.IDX = node address, ZP.ACC = packed symbolType|dataType, ZP.NEXT = value, ZP.TOP = name
+    // Input: ZP.IDX = node address, ZP.LTYPE = packed symbolType|dataType, 
+    //        ZP.LNEXT = value, ZP.LPREVIOUS = name pointer
+    // Note: Next pointer at offset 0-1 already initialized by Table.Add()
     initializeNode()
     {
-        // Set symbolType|dataType (offset 0)
-        LDY #0
-        LDA ZP.ACCL
+        // Set symbolType|dataType (offset SYMBOL_TYPE_OFFSET)
+        LDY #SYMBOL_TYPE_OFFSET
+        LDA ZP.LTYPE
         STA [ZP.IDX], Y
         
-        // Clear padding byte (offset 1)
+        // Clear padding byte (offset SYMBOL_TYPE_OFFSET+1)
         INY
         LDA #0
         STA [ZP.IDX], Y
         
-        // Set value (offset 2-3)
-        INY
-        LDA ZP.NEXTL
+        // Set value (offset SYMBOL_VALUE_OFFSET to SYMBOL_VALUE_OFFSET+1)
+        LDY #SYMBOL_VALUE_OFFSET
+        LDA ZP.LNEXTL
         STA [ZP.IDX], Y
         INY
-        LDA ZP.NEXTH
+        LDA ZP.LNEXTH
         STA [ZP.IDX], Y
         
-        // Next pointer (offset 4-5) already set by Table.Add()
-        
-        // Copy name string starting at offset 6
+        // Copy name string starting at NAME_OFFSET
         copyNameToNode();
     }
     
     // Internal helper: Copy name string to node
+    // Input: ZP.IDX = node address, ZP.LPREVIOUS = name pointer
     copyNameToNode()
     {
-        LDY #NAME_OFFSET  // Destination index
-        STZ ZP.LPREVIOUSL // Source index counter
+        LDY #NAME_OFFSET     // Destination index
+        STZ ZP.LCOUNTL       // Source index counter
         
         loop
         {
             // Get character from name
             PHY  // Save destination offset
-            LDY ZP.LPREVIOUSL
-            LDA [ZP.TOP], Y
+            LDY ZP.LCOUNTL
+            LDA [ZP.LPREVIOUS], Y
             PLY  // Restore destination offset
             
             // Store at destination
             STA [ZP.IDX], Y
             if (Z) { break; } // Copied null terminator
             
-            INC ZP.LPREVIOUSL // Increment source index
-            INY              // Increment destination index
+            INC ZP.LCOUNTL       // Increment source index
+            INY                  // Increment destination index
         }
     }
     
@@ -332,8 +387,8 @@ unit Objects
                 return;
             }
             
-            // Get symbol type from current node (high nibble of offset 0)
-            LDY #0
+            // Get symbol type from current node (high nibble of SYMBOL_TYPE_OFFSET)
+            LDY #SYMBOL_TYPE_OFFSET
             LDA [ZP.IDX], Y
             AND #0xF0  // Extract high nibble
             LSR LSR LSR LSR  // Shift to low nibble

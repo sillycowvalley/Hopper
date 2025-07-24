@@ -12,12 +12,14 @@ unit Table
     // Get first node in list
     // Input: X = ZP address of list head pointer
     // Output: ZP.IDX = first node (0x0000 if empty list), C set if found, NC if empty
-    // Preserves: A, Y, ZP.ACC, ZP.TOP, ZP.NEXT
+    // Preserves: A, X, Y, ZP.ACC, ZP.TOP, ZP.NEXT
+    // Uses: ZP.Lxx variables as temporary workspace
     GetFirst()
     {
         PHA
+        PHX
         PHY
-        
+                
         // Load list head pointer from ZP address X into LHEAD
         LDA 0x00, X
         STA ZP.LHEADL
@@ -45,6 +47,7 @@ unit Table
         }
         
         PLY
+        PLX
         PLA
     }
     
@@ -52,9 +55,11 @@ unit Table
     // Input: ZP.IDX = current node
     // Output: ZP.IDX = next node (0x0000 if end of list), C set if found, NC if end
     // Preserves: A, X, Y, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
+    // Uses: ZP.Lxx variables as temporary workspace
     GetNext()
     {
         PHA
+        PHX
         PHY
         
         // Check if current node is null
@@ -64,6 +69,7 @@ unit Table
         { 
             CLC  // Already at end
             PLY
+            PLX
             PLA
             return; 
         }
@@ -91,6 +97,7 @@ unit Table
         }
         
         PLY
+        PLX
         PLA
     }
     
@@ -105,18 +112,12 @@ unit Table
         PHX
         PHY
         
-        // Read list head location into LHEAD
-        LDA 0x00, X
-        STA ZP.LHEADL
-        LDA 0x01, X
-        STA ZP.LHEADH
+        STX ZP.LHEADX
         
         // Read current list head value into LCURRENT
-        LDY #0
-        LDA [ZP.LHEAD], Y
+        LDA 0x00, X
         STA ZP.LCURRENTL
-        INY
-        LDA [ZP.LHEAD], Y
+        LDA 0x01, X
         STA ZP.LCURRENTH
         
         // Allocate memory (size already in ZP.ACC)
@@ -143,24 +144,25 @@ unit Table
         LDA ZP.LCURRENTH
         STA [ZP.IDX], Y
         
-        LDY #0
+        // Update list head to point to new node
+        LDX ZP.LHEADX
         LDA ZP.IDXL
-        STA [ZP.LHEAD], Y
-        INY
+        STA 0x00, X
         LDA ZP.IDXH
-        STA [ZP.LHEAD], Y
+        STA 0x01, X
         
         // Success
         SEC
         PLY
-        PHX
+        PLX
         PLA
     }
     
     // Delete specific node from list
     // Input: X = ZP address of list head pointer, ZP.IDX = node to delete
     // Output: C set if successful, NC if node not found
-    // Preserves: A, Y, ZP.ACC, ZP.TOP, ZP.NEXT
+    // Preserves: A, X, Y
+    // Munts: ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Memory.Free calls)
     // Uses: ZP.Lxx variables as temporary workspace
     Delete()
     {
@@ -168,18 +170,12 @@ unit Table
         PHX
         PHY
         
-        // Read current list head address
-        LDA 0x00, X
-        STA ZP.LHEADL
-        LDA 0x01, X
-        STA ZP.LHEADH
+        STX ZP.LHEADX
         
         // load first node from list head location
-        LDY #0
-        LDA [ZP.LHEAD], Y
+        LDA 0x00, X
         STA ZP.LCURRENTL
-        INY
-        LDA [ZP.LHEAD], Y
+        LDA 0x01, X
         STA ZP.LCURRENTH
         
         // Check if LCURRENT is null (end of empty list)
@@ -204,19 +200,20 @@ unit Table
             if (Z)
             {
                 // Update list head VALUE from the next pointer from first node (could be null)
+                LDX LHEADX
                 LDY #0
                 LDA [ZP.LCURRENT], Y
-                STA [ZP.LHEAD], Y
+                STA 0x00, X
                 INY
                 LDA [ZP.LCURRENT], Y
-                STA [ZP.LHEAD], Y
+                STA 0x01, X
                 
                 // Free the node
                 LDA ZP.IDXL
                 STA ZP.ACCL
                 LDA ZP.IDXH
                 STA ZP.ACCH
-                Memory.Free(); // probably munts everything (except ZP.Lx)
+                Memory.Free(); // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
                 
                 SEC  // Success
                 PLY
@@ -273,7 +270,7 @@ unit Table
                     STA ZP.ACCL
                     LDA ZP.LCURRENTH
                     STA ZP.ACCH
-                    Memory.Free(); // probably munts everything (except ZP.Lx)
+                    Memory.Free(); // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
                     
                     SEC  // Success
                     PLY
@@ -301,27 +298,24 @@ unit Table
     // Clear entire list (free all nodes)
     // Input: X = ZP address of list head pointer
     // Output: C set (always succeeds)
-    // Preserves: A, Y, ZP.IDX, ZP.ACC, ZP.TOP, ZP.NEXT
+    // Preserves: A, X, Y
+    // Munts: ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Memory.Free calls via Delete)
     // Uses: ZP.Lxx variables as temporary workspace
     Clear()
     {
         PHA
+        PHX
         PHY
         
-        // Read current list head address
-        LDA 0x00, X
-        STA ZP.LHEADL
-        LDA 0x01, X
-        STA ZP.LHEADH
-        
+        STX LHEADX
+               
         loop
         {
             // load first node from list head location
-            LDY #0
-            LDA [ZP.LHEAD], Y
+            LDX LHEADX
+            LDA 0x00, X
             STA ZP.IDXL
-            INY
-            LDA [ZP.LHEAD], Y
+            LDA 0x01, X
             STA ZP.IDXH
             
             // delete it
@@ -335,6 +329,7 @@ unit Table
         
         SEC  // Always succeeds
         PLY
+        PLX
         PLA
     }
 }
