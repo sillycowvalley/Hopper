@@ -1,150 +1,105 @@
-# HopperBASIC Symbol Table Design Document
-
-## Overview
-
-HopperBASIC uses a unified symbol table to store all program identifiers: variables, constants, and functions. This design provides a clean foundation for Phase 1 completion and future expansion.
-
-## Architecture Decisions
-
-### Single Unified Table
-- **Decision**: One symbol table for all identifier types (variables, constants, functions)
-- **Rationale**: 
-  - FORGET command works across all types with single lookup
-  - Simpler implementation (one set of list operations)
-  - Unified namespace prevents naming conflicts
-  - Code reuse reduces ROM footprint
-
-### Memory Management
-- **Storage**: Hopper VM heap using `Memory.Allocate()` and `Memory.Free()`
-- **Structure**: Simple linked list (no optimization for lookup speed)
-- **Rationale**: Small scale (5-20 identifiers typical), proven heap implementation
-
-### Node Structure (Fixed Layout)
-
-Each symbol is stored as a heap-allocated node with fixed field offsets:
-
-```
-Heap Node Layout:
-[2-byte heap header] [1-byte symbolType] [1-byte dataType] [2-byte value/address] [2-byte next] [null-terminated name]
-
-Field Offsets from node start:
-- Offset 0: symbolType (VARIABLE/CONSTANT/FUNCTION)
-- Offset 1: dataType (BasicType.INT/WORD/BIT, or 0 for functions) 
-- Offset 2-3: value/address (value for primitives, heap address for objects)
-- Offset 4-5: next pointer (0x0000 = end of list)
-- Offset 6+: null-terminated name string
-```
-
-### Symbol Types
-
-```hopper
-enum SymbolType
-{
-    VARIABLE = 0x01,   // Mutable values (INT, WORD, BIT, future: BYTE, STRING, ARRAY)
-    CONSTANT = 0x02,   // Immutable values (defined with CONST)
-    FUNCTION = 0x03    // Executable code blocks (including main program)
-}
-```
-
-### Value/Address Field Usage
-- **Primitive types** (INT, WORD, BIT): Direct value storage
-- **Object types** (STRING, ARRAY, FUNCTION): Heap address of separately allocated data
-- **Benefits**: Allows re-allocation of objects while keeping symbol table address stable
-
-## Implementation Architecture
-
 ### Two-Layer Design
 
-#### Layer 1: GenericList (Reusable)
-Pure list operations with no symbol-specific knowledge:
+#### Layer 1: Table (Generic Linked List)
+Pure linked list operations with no knowledge of record contents:
 
 ```hopper
-unit GenericList
+unit Table
 {
-    ListCreate();                               // Returns empty list (0x0000)
-    ListAdd(listHead, nodeSize);               // Allocate node, link to list
-    ListRemove(listHead, nodeAddr);            // Unlink and free node  
-    ListClear(listHead);                       // Free entire list
-    ListFind(listHead, nameOffset, targetName); // Find node by name
+    // Get first node in list
+    // Input: ZP.IDY = list head pointer
+    // Output: ZP.LCURRENT = first node (0x0000 if empty list)
+    // Preserves: A, X, Y, ZP.IDX, ZP.ACC, ZP.TOP, ZP.NEXT
+    GetFirst();
+    
+    // Get next node in traversal
+    // Input: ZP.LCURRENT = current node
+    // Output: ZP.LCURRENT = next node (0x0000 if end of list)
+    // Preserves: A, X, Y, ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
+    GetNext();
+    
+    // Add new node to front of list
+    // Input: ZP.IDY = list head pointer, ZP.ACC = node size (16-bit)
+    // Output: ZP.IDX = new node address (0x0000 if failed), ZP.IDY = updated list head
+    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT
+    // Uses: ZP.Lxx variables as temporary workspace
+    Add();
+    
+    // Delete specific node from list
+    // Input: ZP.IDY = list head pointer, ZP.LCURRENT = node to delete
+    // Output: ZP.IDY = updated list head
+    // Preserves: A, X, Y, ZP.IDX, ZP.ACC, ZP.TOP, ZP.NEXT
+    // Uses: ZP.Lxx variables as temporary workspace
+    Delete();
+    
+    // Clear entire list (free all nodes)
+    // Input: ZP.IDY = list head pointer
+    // Output: ZP.IDY = 0x0000 (empty list)
+    // Preserves: A, X, Y, ZP.IDX, ZP.ACC, ZP.TOP, ZP.NEXT
+    // Uses: ZP.Lxx variables as temporary workspace
+    Clear();
 }
 ```
 
-#### Layer 2: SymbolTable (BASIC-Specific)
-Symbol operations using GenericList foundation:
+#### Layer 2: Objects (Symbol Table Implementation)
+Symbol-specific operations using Table foundation:
 
 ```hopper
-unit SymbolTable
+unit Objects
 {
-    SymbolCreate();                            // Initialize empty table
-    SymbolLookup(name);                        // Find symbol by name
-    SymbolAdd(name, symbolType, dataType, value);
-    SymbolRemove(name);                        // Also frees referenced objects
-    SymbolDestroy();                           // Free table + all objects
-    SymbolIterate(symbolType);                 // Type-specific iteration
+    // Initialize empty symbol table
+    // Output: ZP.SymbolListL/H = 0x0000
+    // Preserves: All registers and ZP variables
+    Initialize();
+    
+    // Add new symbol to table
+    // Input: ZP.TOP = name pointer, ZP.NEXT = symbolType|dataType (packed),
+    //        ZP.ACC = value (16-bit)
+    // Output: ZP.IDX = new symbol node address (0x0000 if failed)
+    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT, ZP.ACC
+    // Uses: ZP.Lxx variables as temporary workspace
+    Add();
+    
+    // Find symbol by name
+    // Input: ZP.TOP = name pointer to search for
+    // Output: ZP.IDX = symbol node address (0x0000 if not found)
+    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT, ZP.ACC
+    // Uses: ZP.Lxx variables as temporary workspace
+    Find();
+    
+    // Remove symbol by name
+    // Input: ZP.TOP = name pointer to remove
+    // Output: Z set if removed, NZ if not found
+    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT, ZP.ACC
+    // Uses: ZP.Lxx variables as temporary workspace
+    Remove();
+    
+    // Get symbol data from found node
+    // Input: ZP.IDX = symbol node address (from Find)
+    // Output: ZP.NEXT = symbolType|dataType (packed), ZP.ACC = value
+    // Preserves: A, X, Y, ZP.IDX, ZP.TOP
+    GetData();
+    
+    // Set symbol value (variables only)
+    // Input: ZP.IDX = symbol node address, ZP.ACC = new value
+    // Output: Z set if successful, NZ if not a variable
+    // Preserves: A, X, Y, ZP.IDX, ZP.TOP, ZP.NEXT
+    SetValue();
+    
+    // Start iteration for specific symbol type
+    // Input: ZP.NEXT = symbol type filter (0 = all types)
+    // Output: ZP.IDX = first matching symbol (0x0000 if none)
+    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT, ZP.ACC
+    IterateStart();
+    
+    // Continue iteration
+    // Input: ZP.IDX = current symbol, ZP.NEXT = type filter
+    // Output: ZP.IDX = next matching symbol (0x0000 if done)
+    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT, ZP.ACC
+    IterateNext();
+    
+    // Destroy entire symbol table
+    // Output: ZP.SymbolListL/H = 0x0000
+    // Preserves: A, X, Y, ZP.IDX, ZP.TOP, ZP.NEXT, ZP.ACC
+    Destroy();
 }
-```
-
-## Memory Layout
-
-### Zero Page Allocation
-- **0x3A/0x3B**: SymbolListL/SymbolListH (global symbol table head pointer)
-- **Available slots**: 0x3C-0x3F remain available for future features
-
-### Runtime Resolution
-- **Approach**: Identifiers stored as strings during tokenization
-- **Lookup**: Performed at runtime when statements execute
-- **Rationale**: Supports forward references, dynamic redefinition, simpler implementation
-
-## Object Management Strategy
-
-### Phase 1 (Primitives Only)
-- **Types**: INT, WORD, BIT stored directly in value field
-- **No reference counting needed**
-
-### Phase 3 (Objects)
-- **Ownership**: Simple ownership model - symbol table owns referenced objects
-- **No sharing**: Each object owned by exactly one symbol
-- **Cleanup**: SymbolRemove() and SymbolDestroy() free referenced objects
-- **Future**: Could add reference counting if sharing needed
-
-## Implementation Plan
-
-### Phase 1: Foundation
-1. **GenericList implementation** with comprehensive tests
-2. **SymbolTable layer** using GenericList
-3. **Integration** with BASIC interpreter
-4. **Variable support**: INT, WORD, BIT declarations and assignments
-
-### Testing Strategy
-Standalone test suite covering:
-- Empty list operations
-- Single/multiple node operations  
-- Name-based lookups
-- Memory leak verification
-- Edge cases (duplicate names, empty strings, etc.)
-
-### Phase 1 Integration Points
-- **Variable declarations**: `INT x`, `WORD count`, `BIT flag`
-- **Assignment statements**: `x = expr`
-- **Expression evaluation**: Variable name lookup
-- **Console commands**: `VARS`, `FORGET name`, `CLEAR`
-
-## Benefits
-
-1. **Minimal code footprint** - Single table implementation
-2. **Predictable behavior** - Consistent operations across identifier types
-3. **Easy debugging** - One data structure to inspect
-4. **Flexible execution** - Supports forward references and redefinition
-5. **Memory efficient** - No duplicate management code
-6. **Extensible** - Clean foundation for Phase 3 features
-
-## Performance Characteristics
-
-- **Lookup time**: O(n) where n ≈ 20 maximum
-- **Memory overhead**: Minimal linked list nodes
-- **Runtime cost**: Negligible on 6502 systems
-- **Development cost**: Low complexity, maintainable
-
----
-
-This design provides the foundation needed to complete Phase 1 of HopperBASIC while establishing a clean architecture for future expansion.
