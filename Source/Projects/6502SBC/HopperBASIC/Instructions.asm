@@ -333,14 +333,14 @@ unit Instructions
         if (C)
         {
             INX // count the -ve
-            NegateNext(); // NEXT = -NEXT
+            IntMath.NegateNext(); // NEXT = -NEXT
         }
         LDA ZP.TOPH
         ASL // sign bit into carry
         if (C)
         {
             INX // count the -ve
-            NegateTop(); // TOP = -TOP
+            IntMath.NegateTop(); // TOP = -TOP
         }
         STX ZP.FSIGN // store the sign count
     }
@@ -374,7 +374,7 @@ unit Instructions
             CMP #1
             if (Z)           // 1 negative (not 0 or 2)
             {
-                NegateTop(); // TOP = -TOP
+                IntMath.NegateTop(); // TOP = -TOP
             }
         }
         else
@@ -706,7 +706,6 @@ unit Instructions
         else
         {
             // WORD and BYTE
-            Stacks.PopNext();
             LDX #1 // NEXT <= TOP
             LDA ZP.NEXTH
             CMP ZP.TOPH
