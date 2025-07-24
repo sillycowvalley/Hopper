@@ -308,6 +308,111 @@ unit Variables
 }
 ```
 
+### Layer 4: Functions (Function-Specific Interface)
+Function management building on Objects foundation with argument list support:
+
+#### Function Node Layout
+Functions reuse the existing node structure with specialized field interpretation:
+```
+Offset 0-1: next pointer (managed by Table unit)
+Offset 2:   symbolType|returnType (FUNCTION | INT/WORD/BIT/etc)
+Offset 3-4: arguments list pointer (reuses value field)
+Offset 5-6: function body tokens pointer
+Offset 7+:  null-terminated function name string
+```
+
+#### Arguments List Structure
+Stored as separate allocated block pointed to by arguments list pointer:
+```
+// Each argument: [type byte][name string][null terminator]
+// List ends with [0] (zero type byte)
+// Example for FUNC Add(INT a, WORD b):
+[BasicType.INT]['a'][0][BasicType.WORD]['b'][0][0]
+```
+
+```hopper
+unit Functions
+{
+    // Function management using Objects foundation
+    // Functions reuse value field as arguments list pointer
+    
+    // Declare new function
+    // Input: ZP.ACC = name pointer, ZP.ACCT = FUNCTION|returnType (packed),
+    //        ZP.TOP = arguments list pointer, ZP.NEXT = function body tokens pointer
+    // Output: C set if successful, NC if error (name exists, out of memory)
+    // Uses: Objects.Add() internally
+    Declare();
+    
+    // Find function by name
+    // Input: ZP.ACC = name pointer
+    // Output: ZP.IDX = function node address, C set if found and is function, NC if not found or wrong type
+    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT
+    // Error: Sets LastError if found but wrong type
+    Find();
+    
+    // Get function signature info
+    // Input: ZP.IDX = function node address (from Find)
+    // Output: ZP.ACCT = returnType, ZP.TOP = arguments list pointer, ZP.NEXT = function body tokens
+    // Preserves: A, X, Y, ZP.ACC
+    GetSignature();
+    
+    // Get argument count by walking arguments list
+    // Input: ZP.IDX = function node address (from Find)
+    // Output: ZP.ACCL = argument count, C set if successful
+    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT
+    // Uses: Internal walking of arguments list
+    GetArgumentCount();
+    
+    // Get argument info by index
+    // Input: ZP.IDX = function node address, ZP.ACCL = argument index (0-based)
+    // Output: ZP.ACCT = argument type, ZP.ACC = argument name pointer, C set if valid index
+    // Preserves: X, Y, ZP.TOP, ZP.NEXT
+    // Error: NC if index out of range
+    GetArgument();
+    
+    // Find argument by name for BP offset resolution
+    // Input: ZP.IDX = function node address, ZP.ACC = argument name pointer
+    // Output: ZP.TOPL = argument count, ZP.TOPH = argument index, C set if found
+    //         BP offset = argument count - argument index
+    // Preserves: A, X, Y, ZP.NEXT
+    // Uses: Always walks entire arguments list to get both count and index
+    FindArgument();
+    
+    // Get function body tokens from current node
+    // Input: ZP.IDX = function node address (from Find or iteration)
+    // Output: ZP.NEXT = function body tokens pointer
+    // Preserves: A, X, Y, ZP.TOP, ZP.ACC
+    GetBody();
+    
+    // Get name from current node (same as Variables.GetName)
+    // Input: ZP.IDX = function node address (from Find or iteration)
+    // Output: ZP.ACC = name pointer (points into node data)
+    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT
+    GetName();
+    
+    // Remove function by name
+    // Input: ZP.ACC = name pointer
+    // Output: C set if successful, NC if not found
+    // Uses: Objects.Remove() internally
+    Remove();
+    
+    // Start iteration over functions only (for FUNCS command)
+    // Output: ZP.IDX = first function node, C set if found, NC if none
+    // Sets up iteration state for IterateNext()
+    IterateFunctions();
+    
+    // Continue iteration (use after IterateFunctions)
+    // Input: ZP.IDX = current node, ZP.ACCL = FUNCTION type filter
+    // Output: ZP.IDX = next function node, C set if found, NC if done
+    IterateNext();
+    
+    // Clear all functions (for NEW command)
+    // Output: Empty function table
+    // Uses: Objects iteration and removal internally
+    Clear();
+}
+```
+
 ## Usage Examples
 
 ### Adding a Variable
@@ -376,6 +481,78 @@ loop
 }
 ```
 
+### Declaring a Function with Arguments
+```hopper
+// FUNC Add(INT a, WORD b) -> INT
+// Arguments list: [BasicType.INT]['a'][0][BasicType.WORD]['b'][0][0]
+
+LDA #(functionName % 256)
+STA ZP.ACCL
+LDA #(functionName / 256) 
+STA ZP.ACCH
+
+// Pack symbolType|returnType: FUNCTION(3) in high nibble, INT(2) in low nibble
+LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
+STA ZP.ACCT
+
+LDA #(argumentsList % 256)  // Pointer to arguments list
+STA ZP.TOPL
+LDA #(argumentsList / 256)
+STA ZP.TOPH
+
+LDA #(functionBodyTokens % 256)  // Pointer to function body tokens
+STA ZP.NEXTL
+LDA #(functionBodyTokens / 256)
+STA ZP.NEXTH
+
+Functions.Declare();
+// C set if successful, ZP.IDX contains new node address
+```
+
+### Function Call Validation
+```hopper
+// Calling Add(count, 100) where count is INT
+Functions.Find();  // Find "Add" function
+if (C)
+{
+    Functions.GetArgumentCount();
+    // ZP.ACCL now contains argument count (2)
+    
+    // Validate argument types by walking arguments list
+    LDA #0  // Start with first argument
+    STA ZP.ACCL
+    Functions.GetArgument();
+    // ZP.ACCT contains first argument type (should be INT)
+    
+    LDA #1  // Second argument
+    STA ZP.ACCL
+    Functions.GetArgument();
+    // ZP.ACCT contains second argument type (should be WORD)
+}
+```
+
+### Parameter Resolution During Function Execution
+```hopper
+// Inside function body, resolve "a" parameter to BP offset
+Functions.Find();  // Current function
+LDA #(paramName % 256)  // "a"
+STA ZP.ACCL
+LDA #(paramName / 256)
+STA ZP.ACCH
+
+Functions.FindArgument();
+if (C)
+{
+    // ZP.TOPL = argument count (2)
+    // ZP.TOPH = argument index (0 for "a")
+    // BP offset = argument count - argument index = 2 - 0 = 2
+    SEC
+    LDA ZP.TOPL
+    SBC ZP.TOPH
+    STA ZP.ACCL  // BP offset for parameter "a"
+}
+```
+
 ### Declaring a Variable with Tokens
 ```hopper
 // Declare: INT COUNT = 10 * 5
@@ -403,50 +580,40 @@ Variables.Declare();
 // C set if successful, ZP.IDX contains new node address
 ```
 
-### Finding and Accessing Symbol Data
+### Iterating and Displaying Functions
 ```hopper
-// Find variable "COUNT"
-LDA #(variableName % 256)
-STA ZP.ACCL
-LDA #(variableName / 256)
-STA ZP.ACCH
-
-LDA #SymbolType.VARIABLE
-STA ZP.ACCL
-
-Variables.Find();
-if (C)  // Found
-{
-    Variables.GetValue();
-    // ZP.TOP contains current value, ZP.TOPT contains data type
-    
-    Variables.GetTokens();
-    // ZP.NEXT now points to initialization token stream
-    
-    Variables.GetName();
-    // ZP.ACC now points to name string within node
-}
-```
-
-### Iterating and Displaying Variables
-```hopper
-Variables.IterateVariables();
+Functions.IterateFunctions();
 
 loop
 {
-    if (NC) { break; }  // No more variables
+    if (NC) { break; }  // No more functions
     
-    // ZP.IDX points to current variable node
-    Variables.GetName();
-    // Print name from ZP.ACC
+    // ZP.IDX points to current function node
+    Functions.GetName();
+    // Print function name from ZP.ACC
     
-    Variables.GetValue();
-    // Print value from ZP.TOP
+    Functions.GetSignature();
+    // ZP.ACCT contains return type
     
-    Variables.GetType();
-    // Print type info from ZP.ACCT
+    Functions.GetArgumentCount();
+    // ZP.ACCL contains argument count
     
-    Variables.IterateNext();
+    // Display each argument
+    LDY #0
+    loop
+    {
+        CPY ZP.ACCL
+        if (Z) { break; }  // All arguments processed
+        
+        STY ZP.ACCL
+        Functions.GetArgument();
+        // Print argument type (ZP.ACCT) and name (ZP.ACC)
+        
+        LDY ZP.ACCL
+        INY
+    }
+    
+    Functions.IterateNext();
 }
 ```
 
