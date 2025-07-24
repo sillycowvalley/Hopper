@@ -19,17 +19,15 @@ unit Console
     // Read a line of input and tokenize it
     ReadLine()
     {
-        Tokenizer.ReadLine();     // Read into BasicInputBuffer, sets ZP.BasicInputLength
+        Tokenizer.ReadLine();    // Read into BasicInputBuffer, sets ZP.BasicInputLength
         Tokenizer.TokenizeLine(); // Tokenize into BasicTokenizerBuffer
-       
+        Messages.CheckError();
+        if (NC) { return; }  // Return if tokenization failed
+        
+// Optional debug output (remove when working)
 #ifdef DEBUG
-        CheckError();
-        if (NZ)
-        {
-            LDA # 'T' Serial.WriteChar(); LDA # 'L' Serial.WriteChar(); LDA # '\n' Serial.WriteChar();
-            Tools.DumpBasicBuffers();
-        }
-#endif 
+        Tools.DumpBasicBuffers();
+#endif
     }
     
     // Execute MEM command
@@ -122,12 +120,12 @@ unit Console
     }
     
     // Process current tokenized line
-    // Returns Z if should continue, NZ if should exit
+    // Returns C if should continue, NC if should exit
     ProcessLine()
     {
         // Check for tokenization errors
         Messages.CheckError();
-        if (NZ) { return; }  // Error during tokenization
+        if (NC) { return; }  // Error during tokenization
         
         // Check for empty line (just EOL token)
         LDA ZP.TokenBufferLengthL
@@ -155,7 +153,7 @@ unit Console
         CMP #Tokens.EOL
         if (Z)
         {
-            LDA #0  // Continue (empty line)
+            SEC  // Continue (empty line)
             return;
         }
         
@@ -166,7 +164,7 @@ unit Console
     }
     
     // Process the tokens in BasicTokenizerBuffer
-    // Returns Z to continue, NZ to exit
+    // Returns C to continue, NC to exit
     processTokens()
     {
         // Get first token
@@ -204,7 +202,7 @@ unit Console
             case Tokens.BYE:
             {
                 cmdBye();
-                LDA #1  // Exit
+                CLC  // Exit
                 return;
             }
             case Tokens.EOL:
@@ -231,6 +229,6 @@ unit Console
             }
         }
         
-        LDA #0  // Continue
+        SEC  // Continue
     }
 }

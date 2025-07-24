@@ -1,6 +1,6 @@
 program HopperBASIC
 {
-    #define DEBUG
+    //#define DEBUG
     
     #define CPU_65C02S
     #define HOPPER_BASIC
@@ -83,23 +83,17 @@ program HopperBASIC
             
             // Read and process user input using tokenizer
             Console.ReadLine();
-            CheckError();
-            if (NZ)
-            {
-                Messages.CheckAndPrintError();
-                continue;
-            }
             
             // Check for empty line
             LDA ZP.BasicInputLength
             if (Z) { continue; }  // Empty line, show prompt again
             
             // Parse and execute the command/statement
-            Console.ProcessLine();  // Returns Z to continue, NZ to exit
-            if (NZ) 
+            Console.ProcessLine();  // Returns C to continue, NC to exit
+            if (NC) 
             {
                 CheckError();
-                if (NZ)
+                if (NC)
                 {
                     Messages.CheckAndPrintError();
                 }

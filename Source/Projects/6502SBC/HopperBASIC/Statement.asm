@@ -9,7 +9,7 @@ unit Statement
     
     // Execute a statement starting from current token position
     // Assumes ZP.CurrentToken contains the first token of the statement
-    // Returns Z if successful, NZ if error (error stored in ZP.LastError)
+    // Returns C if successful, NC if error (error stored in ZP.LastError)
     Execute()
     {
 #ifdef DEBUG
@@ -94,6 +94,7 @@ unit Statement
                 LDA #'>'
                 Serial.WriteChar();
 #endif
+                CLC  // Error
                 return;
             }
         }
@@ -114,7 +115,7 @@ unit Statement
         Tokenizer.NextToken();
         
         Messages.CheckError();
-        if (NZ) { return; }
+        if (NC) { return; }
         
         // Check for end of line (PRINT with no arguments)
         LDA ZP.CurrentToken
@@ -132,13 +133,14 @@ unit Statement
             Serial.WriteChar();
 #endif
             
+            SEC  // Success
             return;
         }
         
         // Evaluate the expression
         Expression.Evaluate();
         Messages.CheckError();
-        if (NZ) { return; }
+        if (NC) { return; }
         
         // Top of stack now contains the result
         // For now, assume it's a number and print it
@@ -155,6 +157,8 @@ unit Statement
         LDA #'>'
         Serial.WriteChar();
 #endif
+        
+        SEC  // Success
     }
     
     // Execute IF statement
@@ -171,12 +175,12 @@ unit Statement
         // Get next token (should be start of condition expression)
         Tokenizer.NextToken();
         Messages.CheckError();
-        if (NZ) { return; }
+        if (NC) { return; }
         
         // Evaluate the condition
         Expression.Evaluate();
         Messages.CheckError();
-        if (NZ) { return; }
+        if (NC) { return; }
         
         // Check for THEN keyword
         LDA ZP.CurrentToken
@@ -187,6 +191,7 @@ unit Statement
             STA ZP.LastErrorL
             LDA #(Messages.SyntaxError / 256)
             STA ZP.LastErrorH
+            CLC  // Error
             return;
         }
         
@@ -205,13 +210,14 @@ unit Statement
             LDA #'>'
             Serial.WriteChar();
 #endif
+            SEC  // Success (skip)
             return;
         }
         
         // Condition is true, get next token and execute statement
         Tokenizer.NextToken();
         Messages.CheckError();
-        if (NZ) { return; }
+        if (NC) { return; }
         
         // Recursively execute the statement after THEN
         Execute();
@@ -238,7 +244,7 @@ unit Statement
         // Get next token
         Tokenizer.NextToken();
         Messages.CheckError();
-        if (NZ) { return; }
+        if (NC) { return; }
         
         // Check if there's an expression to return
         LDA ZP.CurrentToken
@@ -256,7 +262,7 @@ unit Statement
             // Evaluate return expression
             Expression.Evaluate();
             Messages.CheckError();
-            if (NZ) { return; }
+            if (NC) { return; }
         }
         
         // TODO: Actually return from function when we have function support
@@ -272,6 +278,7 @@ unit Statement
         Serial.WriteChar();
 #endif
         
+        CLC  // Error
         BRK
     }
     
@@ -283,7 +290,7 @@ unit Statement
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
-        LDA #1  // Set NZ
+        CLC  // Error
         BRK
     }
     
@@ -295,7 +302,7 @@ unit Statement
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
-        LDA #1  // Set NZ
+        CLC  // Error
         BRK
     }
 }

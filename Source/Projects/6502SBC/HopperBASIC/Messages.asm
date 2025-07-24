@@ -36,25 +36,28 @@ unit Messages
     
     CheckError()
     {
-        // Returns Z if no error, NZ if error occurred
+        // Returns C if no error, NC if error occurred
         LDA ZP.LastErrorL
         ORA ZP.LastErrorH
-        
-#ifdef DEBUG
-        if (NZ)
+        if (Z)
         {
+            SEC  // No error
+        }
+        else
+        {
+            CLC  // Error occurred
+#ifdef DEBUG
             LDA #'!'
             Serial.WriteChar();
-            LDA # 1 // set NZ
-        }
 #endif
+        }
     }
     
     CheckAndPrintError()
     {
-        // Returns Z if no error, NZ if error was printed
+        // Returns C if no error, NC if error was printed
         CheckError();
-        if (Z) { return; }  // No error
+        if (C) { return; }  // No error
         
         // Print the error message
         LDA #'?'
@@ -70,9 +73,7 @@ unit Messages
         // Clear the error
         ClearError();
         
-        // Set NZ to indicate error was found
-        LDA #1
-        CMP #0
+        CLC  // Error was found and printed
     }
     
     // Helper functions for clean message printing

@@ -8,7 +8,7 @@ unit Expression
     
     // Evaluate an expression starting from current token
     // Pushes result onto value stack
-    // Returns Z if successful, NZ if error (error stored in ZP.LastError)
+    // Returns C if successful, NC if error (error stored in ZP.LastError)
     // Updated precedence: parseComparison() → parseLogical() → parseAddition() → parseMultiplicative() → parseUnary()
     Evaluate()
     {
@@ -44,7 +44,7 @@ unit Expression
         // Parse left operand
         parseLogical();
         Messages.CheckError();
-        if (NZ) { return; }
+        if (NC) { return; }
         
         loop
         {
@@ -55,12 +55,12 @@ unit Expression
                 // Get next token for right operand
                 Tokenizer.NextToken();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Parse right operand
                 parseLogical();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Perform equality comparison
                 Instructions.Equal();
@@ -73,12 +73,12 @@ unit Expression
                 // Get next token for right operand
                 Tokenizer.NextToken();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Parse right operand
                 parseLogical();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Perform not-equal comparison
                 Instructions.NotEqual();
@@ -91,12 +91,12 @@ unit Expression
                 // Get next token for right operand
                 Tokenizer.NextToken();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Parse right operand
                 parseLogical();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Perform less-than comparison
                 Instructions.LessThan();
@@ -109,12 +109,12 @@ unit Expression
                 // Get next token for right operand
                 Tokenizer.NextToken();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Parse right operand
                 parseLogical();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Perform greater-than comparison
                 Instructions.GreaterThan();
@@ -127,12 +127,12 @@ unit Expression
                 // Get next token for right operand
                 Tokenizer.NextToken();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Parse right operand
                 parseLogical();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Perform less-equal comparison
                 Instructions.LessEqual();
@@ -145,12 +145,12 @@ unit Expression
                 // Get next token for right operand
                 Tokenizer.NextToken();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Parse right operand
                 parseLogical();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Perform greater-equal comparison
                 Instructions.GreaterEqual();
@@ -166,6 +166,8 @@ unit Expression
         LDA #'>'
         Serial.WriteChar();
 #endif
+        
+        SEC  // Success
     }
     
     // Parse logical operators (AND, OR)
@@ -182,7 +184,7 @@ unit Expression
         // Parse left operand (OR has lower precedence, so parse AND first)
         parseLogicalAnd();
         Messages.CheckError();
-        if (NZ) { return; }
+        if (NC) { return; }
         
         loop
         {
@@ -193,12 +195,12 @@ unit Expression
                 // Get next token for right operand
                 Tokenizer.NextToken();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Parse right operand
                 parseLogicalAnd();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Perform logical OR
                 Instructions.Or();
@@ -214,6 +216,8 @@ unit Expression
         LDA #'>'
         Serial.WriteChar();
 #endif
+        
+        SEC  // Success
     }
     
     // Parse logical AND operators (higher precedence than OR)
@@ -222,7 +226,7 @@ unit Expression
         // Parse left operand
         parseAddition();
         Messages.CheckError();
-        if (NZ) { return; }
+        if (NC) { return; }
         
         loop
         {
@@ -233,12 +237,12 @@ unit Expression
                 // Get next token for right operand
                 Tokenizer.NextToken();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Parse right operand
                 parseAddition();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Perform logical AND
                 Instructions.And();
@@ -247,6 +251,8 @@ unit Expression
             
             break; // No more AND operators
         }
+        
+        SEC  // Success
     }
     
     // Parse addition and subtraction operators (+, -)
@@ -263,7 +269,7 @@ unit Expression
         // Parse left operand
         parseMultiplicative();
         Messages.CheckError();
-        if (NZ) { return; }
+        if (NC) { return; }
         
         loop
         {
@@ -274,12 +280,12 @@ unit Expression
                 // Get next token for right operand
                 Tokenizer.NextToken();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Parse right operand
                 parseMultiplicative();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Perform addition
                 Instructions.Addition();
@@ -292,12 +298,12 @@ unit Expression
                 // Get next token for right operand
                 Tokenizer.NextToken();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Parse right operand
                 parseMultiplicative();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Perform subtraction
                 Instructions.Subtraction();
@@ -313,6 +319,8 @@ unit Expression
         LDA #'>'
         Serial.WriteChar();
 #endif
+        
+        SEC  // Success
     }
     
     // Parse multiplicative operators (*, /, MOD)
@@ -329,7 +337,7 @@ unit Expression
         // Parse left operand
         parseUnary();
         Messages.CheckError();
-        if (NZ) { return; }
+        if (NC) { return; }
         
         loop
         {
@@ -340,12 +348,12 @@ unit Expression
                 // Get next token for right operand
                 Tokenizer.NextToken();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Parse right operand
                 parseUnary();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Perform multiplication
                 Instructions.Multiply();
@@ -358,12 +366,12 @@ unit Expression
                 // Get next token for right operand
                 Tokenizer.NextToken();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Parse right operand
                 parseUnary();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Perform division
                 Instructions.Divide();
@@ -376,12 +384,12 @@ unit Expression
                 // Get next token for right operand
                 Tokenizer.NextToken();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Parse right operand
                 parseUnary();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Perform modulo
                 Instructions.Modulo();
@@ -397,6 +405,8 @@ unit Expression
         LDA #'>'
         Serial.WriteChar();
 #endif
+        
+        SEC  // Success
     }
     
     // Parse unary operators and primary expressions
@@ -417,7 +427,7 @@ unit Expression
             // Unary minus
             Tokenizer.NextToken();
             Messages.CheckError();
-            if (NZ) { return; }
+            if (NC) { return; }
             
             // Push zero onto value stack
             STZ ZP.TOPL
@@ -429,7 +439,7 @@ unit Expression
             // Parse the operand
             parsePrimary();
             Messages.CheckError();
-            if (NZ) { return; }
+            if (NC) { return; }
             
             // Negate the result (0 - operand)
             Instructions.Subtraction();
@@ -441,6 +451,7 @@ unit Expression
             Serial.WriteChar();
 #endif
             
+            SEC  // Success
             return;
         }
         
@@ -450,12 +461,12 @@ unit Expression
             // Logical NOT (unary)
             Tokenizer.NextToken();
             Messages.CheckError();
-            if (NZ) { return; }
+            if (NC) { return; }
             
             // Parse the operand
             parsePrimary();
             Messages.CheckError();
-            if (NZ) { return; }
+            if (NC) { return; }
             
             // Perform logical NOT
             Instructions.LogicalNot();
@@ -467,6 +478,7 @@ unit Expression
             Serial.WriteChar();
 #endif
             
+            SEC  // Success
             return;
         }
         
@@ -515,7 +527,7 @@ unit Expression
                 // Get next token
                 Tokenizer.NextToken();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
 #ifdef DEBUG
                 LDA #'T'
@@ -524,6 +536,7 @@ unit Expression
                 Serial.WriteChar();
 #endif
                 
+                SEC  // Success
                 return;
             }
             case Tokens.IDENTIFIER:
@@ -541,6 +554,7 @@ unit Expression
                 Serial.WriteChar();
 #endif
                 
+                CLC  // Error
                 BRK
                 return;
             }
@@ -549,12 +563,12 @@ unit Expression
                 // Get next token (start of sub-expression)
                 Tokenizer.NextToken();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Parse the sub-expression
                 parseComparison();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
                 // Expect closing parenthesis
                 LDA ZP.CurrentToken
@@ -565,13 +579,14 @@ unit Expression
                     STA ZP.LastErrorL
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
+                    CLC  // Error
                     return;
                 }
                 
                 // Get next token
                 Tokenizer.NextToken();
                 Messages.CheckError();
-                if (NZ) { return; }
+                if (NC) { return; }
                 
 #ifdef DEBUG
                 LDA #'T'
@@ -580,6 +595,7 @@ unit Expression
                 Serial.WriteChar();
 #endif
                 
+                SEC  // Success
                 return;
             }
             default:
@@ -597,6 +613,7 @@ unit Expression
                 Serial.WriteChar();
 #endif
                 
+                CLC  // Error
                 return;
             }
         }

@@ -341,9 +341,7 @@ unit Tokenizer
     }
     
     // Tokenize complete line from BasicInputBuffer into BasicTokenizerBuffer
-    // Returns Z if successful, NZ if error (error stored in ZP.LastError)
-    // Tokenize complete line from BasicInputBuffer into BasicTokenizerBuffer
-    // Returns Z if successful, NZ if error (error stored in ZP.LastError)
+    // Returns C if successful, NC if error (error stored in ZP.LastError)
     TokenizeLine()
     {
         // Clear token buffer
@@ -358,6 +356,7 @@ unit Tokenizer
             // Empty line - add EOL token
             LDA #Tokens.EOL
             appendToTokenBuffer();
+            SEC  // Success
             return;
         }
         
@@ -378,7 +377,7 @@ unit Tokenizer
                     LDA #Tokens.EQUALS
                     appendToTokenBuffer();
                     Messages.CheckError();
-                    if (NZ) { return; }
+                    if (NC) { return; }
                     INX
                 }
                 case '+':
@@ -386,7 +385,7 @@ unit Tokenizer
                     LDA #Tokens.PLUS
                     appendToTokenBuffer();
                     Messages.CheckError();
-                    if (NZ) { return; }
+                    if (NC) { return; }
                     INX
                 }
                 case '-':
@@ -394,7 +393,7 @@ unit Tokenizer
                     LDA #Tokens.MINUS
                     appendToTokenBuffer();
                     Messages.CheckError();
-                    if (NZ) { return; }
+                    if (NC) { return; }
                     INX
                 }
                 case '*':
@@ -402,7 +401,7 @@ unit Tokenizer
                     LDA #Tokens.MULTIPLY
                     appendToTokenBuffer();
                     Messages.CheckError();
-                    if (NZ) { return; }
+                    if (NC) { return; }
                     INX
                 }
                 case '/':
@@ -410,7 +409,7 @@ unit Tokenizer
                     LDA #Tokens.DIVIDE
                     appendToTokenBuffer();
                     Messages.CheckError();
-                    if (NZ) { return; }
+                    if (NC) { return; }
                     INX
                 }
                 case '(':
@@ -418,7 +417,7 @@ unit Tokenizer
                     LDA #Tokens.LPAREN
                     appendToTokenBuffer();
                     Messages.CheckError();
-                    if (NZ) { return; }
+                    if (NC) { return; }
                     INX
                 }
                 case ')':
@@ -426,7 +425,7 @@ unit Tokenizer
                     LDA #Tokens.RPAREN
                     appendToTokenBuffer();
                     Messages.CheckError();
-                    if (NZ) { return; }
+                    if (NC) { return; }
                     INX
                 }
                 case '<':
@@ -443,7 +442,7 @@ unit Tokenizer
                             LDA #Tokens.LE
                             appendToTokenBuffer();
                             Messages.CheckError();
-                            if (NZ) { return; }
+                            if (NC) { return; }
                             INX  // Skip both '<' and '='
                             continue;
                         }
@@ -453,7 +452,7 @@ unit Tokenizer
                             LDA #Tokens.NOTEQUAL
                             appendToTokenBuffer();
                             Messages.CheckError();
-                            if (NZ) { return; }
+                            if (NC) { return; }
                             INX  // Skip both '<' and '>'
                             continue;
                         }
@@ -463,7 +462,7 @@ unit Tokenizer
                     LDA #Tokens.LT
                     appendToTokenBuffer();
                     Messages.CheckError();
-                    if (NZ) { return; }
+                    if (NC) { return; }
                     INX  // Move past '<'
                 }
                 case '>':
@@ -480,7 +479,7 @@ unit Tokenizer
                             LDA #Tokens.GE
                             appendToTokenBuffer();
                             Messages.CheckError();
-                            if (NZ) { return; }
+                            if (NC) { return; }
                             INX  // Skip both '>' and '='
                             continue;
                         }
@@ -490,7 +489,7 @@ unit Tokenizer
                     LDA #Tokens.GT
                     appendToTokenBuffer();
                     Messages.CheckError();
-                    if (NZ) { return; }
+                    if (NC) { return; }
                     INX  // Move past '>'
                 }
                 case '"':
@@ -500,6 +499,7 @@ unit Tokenizer
                     STA ZP.LastErrorL
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
+                    CLC  // Error
                     return;
                 }
                 default:
@@ -513,7 +513,7 @@ unit Tokenizer
                         LDA #Tokens.NUMBER
                         appendToTokenBuffer();
                         Messages.CheckError();
-                        if (NZ) { return; }
+                        if (NC) { return; }
                         
                         // Store number digits inline
                         loop
@@ -529,7 +529,7 @@ unit Tokenizer
                             LDA Address.BasicInputBuffer, X
                             appendToTokenBuffer();
                             Messages.CheckError();
-                            if (NZ) { return; }
+                            if (NC) { return; }
                             INX
                         }
                         
@@ -537,7 +537,7 @@ unit Tokenizer
                         LDA #0
                         appendToTokenBuffer();
                         Messages.CheckError();
-                        if (NZ) { return; }
+                        if (NC) { return; }
                         continue;
                     }
                     
@@ -550,6 +550,7 @@ unit Tokenizer
                         STA ZP.LastErrorL
                         LDA #(Messages.SyntaxError / 256)
                         STA ZP.LastErrorH
+                        CLC  // Error
                         return;
                     }
                     
@@ -587,6 +588,7 @@ unit Tokenizer
                             STA ZP.LastErrorL
                             LDA #(Messages.SyntaxError / 256)
                             STA ZP.LastErrorH
+                            CLC  // Error
                             return;
                         }
                     }
@@ -601,7 +603,7 @@ unit Tokenizer
                     {
                         appendToTokenBuffer();
                         Messages.CheckError();
-                        if (NZ) { return; }
+                        if (NC) { return; }
                     }
                     else
                     {
@@ -609,7 +611,7 @@ unit Tokenizer
                         LDA #Tokens.IDENTIFIER
                         appendToTokenBuffer();
                         Messages.CheckError();
-                        if (NZ) { return; }
+                        if (NC) { return; }
                         
                         // Copy identifier from working buffer to token buffer
                         LDY #0  // Reset Y for copying
@@ -618,7 +620,7 @@ unit Tokenizer
                             LDA Address.BasicProcessBuffer1, Y
                             appendToTokenBuffer();
                             Messages.CheckError();
-                            if (NZ) { return; }
+                            if (NC) { return; }
                             if (Z) { break; }  // Copied null terminator
                             INY
                         }
@@ -631,13 +633,13 @@ unit Tokenizer
         LDA #Tokens.EOL
         appendToTokenBuffer();
         Messages.CheckError();
-        if (NZ) { return; }
+        if (NC) { return; }
         
         // Reset tokenizer position to start of buffer
         STZ ZP.TokenizerPosL
         STZ ZP.TokenizerPosH
         
-        LDA #0  // Set Z for success
+        SEC  // Success
     }
     
     // Get next token from BasicTokenizerBuffer using 16-bit addressing
@@ -712,7 +714,7 @@ unit Tokenizer
     
     // Helper function to check if multiplying ZP.TOP by 10 and adding a digit would overflow
     // Input: ZP.TOP contains current 16-bit value, A contains digit to add (0-9)
-    // Output: Z set if operation is safe, NZ set if would overflow
+    // Output: C set if operation is safe, NC set if would overflow
     // Preserves: A (digit), ZP.TOP unchanged
     // Uses: ZP.NEXT for temporary calculations
     checkMultiply10PlusDigitOverflow()
@@ -727,7 +729,7 @@ unit Tokenizer
             if (NZ)  // > 0x19, definitely overflow
             {
                 PLA  // Restore digit
-                LDA #1  // Set NZ
+                CLC  // Overflow
                 return;
             }
             
@@ -740,7 +742,7 @@ unit Tokenizer
                 if (NZ)  // > 6553, overflow
                 {
                     PLA  // Restore digit
-                    LDA #1  // Set NZ
+                    CLC  // Overflow
                     return;
                 }
                 
@@ -749,18 +751,18 @@ unit Tokenizer
                 CMP #6
                 if (C)  // digit >= 6, would overflow
                 {
-                    LDA #1  // Set NZ
+                    CLC  // Overflow
                     return;
                 }
                 
-                LDA #0  // Set Z - safe
+                SEC  // Safe
                 return;
             }
         }
         
         // TOP < 6553, always safe regardless of digit
         PLA  // Restore digit
-        LDA #0  // Set Z - safe
+        SEC  // Safe
     }
     
     // Get current token as 16-bit number (assumes current token is NUMBER)
@@ -809,7 +811,7 @@ unit Tokenizer
             
             // Check for overflow before doing the math
             checkMultiply10PlusDigitOverflow();
-            if (NZ)  // Would overflow
+            if (NC)  // Would overflow
             {
                 LDA #( Messages.NumericOverflow % 256)
                 STA ZP.LastErrorL

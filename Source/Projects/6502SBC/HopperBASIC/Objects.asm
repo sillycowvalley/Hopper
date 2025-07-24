@@ -187,7 +187,7 @@ unit Objects
     
     // Remove object by name
     // Input: ZP.FITEM = name to remove
-    // Output: Z set if removed, NZ if not found
+    // Output: C set if removed, NC if not found
     Remove()
     {
         // First find the object
@@ -198,7 +198,7 @@ unit Objects
         if (Z)
         {
             // Not found
-            LDA #1  // Set NZ
+            CLC  // Not found
             return;
         }
         
@@ -225,7 +225,7 @@ unit Objects
         LDA ZP.LCURRENTH
         STA ZP.SymbolListH
         
-        LDA #0  // Set Z (success)
+        SEC  // Success
     }
     
     // Clean up object data for object types (strings, arrays, functions)
@@ -299,7 +299,7 @@ unit Objects
     
     // Set object value (for variables only)
     // Input: ZP.LCURRENT = object node address, ZP.LCOUNT = new value
-    // Output: Z set if successful, NZ if not a variable
+    // Output: C set if successful, NC if not a variable
     SetValue()
     {
         // Check if it's a variable (not constant or function)
@@ -308,7 +308,7 @@ unit Objects
         CMP #ObjectType.VARIABLE
         if (NZ)
         {
-            LDA #1  // Set NZ (not a variable)
+            CLC  // Not a variable
             return;
         }
         
@@ -320,7 +320,7 @@ unit Objects
         LDA ZP.LCOUNTH
         STA [ZP.LCURRENT], Y
         
-        LDA #0  // Set Z (success)
+        SEC  // Success
     }
     
     // Iterator support for console commands (VARS, FUNCS, etc.)
