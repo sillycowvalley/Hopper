@@ -81,8 +81,19 @@ program HopperBASIC
             
             // Parse and execute the command/statement
             Console.ProcessLine();  // Returns Z to continue, NZ to exit
-            if (NZ) { break; }  // Exit if BYE was entered
-            Messages.CheckAndPrintError();
+            if (NZ) 
+            {
+                CheckError();
+                if (NZ)
+                {
+                    Messages.CheckAndPrintError();
+                }
+                else
+                {
+                    break; // Exit if BYE was entered
+                }
+            }
+            
         }
     }
     

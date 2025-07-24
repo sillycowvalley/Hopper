@@ -17,6 +17,8 @@ unit Statement
         Serial.WriteChar();
         LDA #'S'
         Serial.WriteChar();
+        LDA ZP.CurrentToken
+        Serial.HexOut();
         
         LDA ZP.CurrentToken
         

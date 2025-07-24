@@ -169,7 +169,6 @@ unit Console
     {
         // Get first token
         Tokenizer.NextToken();  // Returns token in A, updates ZP.CurrentToken
-        
         switch (A)
         {
             case Tokens.NEW:
