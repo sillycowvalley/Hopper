@@ -91,8 +91,9 @@ program Test
             Serial.HexOut();
             LDA #'\n'
             Serial.WriteChar();
-            PrintZP();
+            //PrintZP();
             Tools.DumpHeap();
+            loop { }
         }
     }
     PrintZP()
@@ -113,7 +114,7 @@ program Test
         Serial.HexOut();
         LDA #' '
         Serial.WriteChar();
-        
+        /*
         LDA #'T'
         Serial.WriteChar();
         LDA #'H'
@@ -129,7 +130,7 @@ program Test
         Serial.HexOut();
         LDA #' '
         Serial.WriteChar();
-        
+        */
         LDA #'T'
         Serial.WriteChar();
         LDA #'N'
@@ -533,6 +534,7 @@ program Test
         ORA ZP.SymbolListH
         if (Z)
         {
+            Objects.Destroy();
             SEC  // Pass
         }
         else
@@ -575,6 +577,10 @@ program Test
         // Should succeed (C set)
         if (C)
         {
+            DumpHeap();
+            Objects.Destroy();
+            DumpHeap();
+            
             SEC  // Pass
         }
         else
@@ -624,6 +630,7 @@ program Test
         // Should find it (C set)
         if (C)
         {
+            Objects.Destroy();
             SEC  // Pass
         }
         else
@@ -706,7 +713,7 @@ program Test
             printResult();
             return;
         }
-        
+        Objects.Destroy();
         SEC  // Pass
         printResult();
     }
@@ -722,6 +729,7 @@ program Test
         printTestHeader();
         
         Objects.Initialize();
+        DumpHeap();
         
         // Add INT variable "TEMP" = 100
         LDA #(testName4 % 256)
@@ -739,6 +747,8 @@ program Test
         
         Objects.Add();
         Objects.Find();
+        
+        DumpHeap();
         
         // Change value to 200
         LDA #200
@@ -766,6 +776,7 @@ program Test
             return;
         }
         
+        Objects.Destroy();        
         SEC  // Pass
         printResult();
     }
@@ -832,7 +843,7 @@ program Test
             printResult();
             return;
         }
-        
+        Objects.Destroy();
         SEC  // Pass
         printResult();
     }
@@ -920,7 +931,6 @@ program Test
         testClearList();
         
         // Objects layer tests
-        /*
         testObjectsInit();
         testAddSymbol();
         testFindSymbol();
@@ -928,7 +938,6 @@ program Test
         testSetSymbolValue();
         testSymbolFiltering();
         testDestroy();
-        */
         
         LDA #(testComplete % 256)
         STA ZP.IDXL

@@ -73,7 +73,7 @@ unit Objects
         STA ZP.ACCH
         
         // Add to table
-        LDX #ZP.SymbolListL  // Address of list head pointer
+        LDX # ZP.SymbolList  // Address of list head pointer
         Table.Add(); // Returns new node in IDX, C set if successful
         if (NC)  // Allocation failed
         {
@@ -85,6 +85,8 @@ unit Objects
         
         // Initialize the new node
         initializeNode();
+        
+        DumpHeap();
         
         PLY
         PLX
@@ -104,7 +106,7 @@ unit Objects
         PHY
         
         // Start iteration
-        LDX #ZP.SymbolListL
+        LDX # ZP.SymbolList
         Table.GetFirst(); // Returns first node in IDX
         
         loop
@@ -145,7 +147,7 @@ unit Objects
     // Uses: ZP.Lxx variables as temporary workspace
     Remove()
     {
-        LDX #ZP.SymbolListL
+        LDX # ZP.SymbolList
         Table.Delete();
     }
     
@@ -210,7 +212,7 @@ unit Objects
         PHY
         
         // Start at beginning of list
-        LDX #ZP.SymbolListL
+        LDX # ZP.SymbolList
         Table.GetFirst();
         
         // Find first matching symbol
@@ -248,7 +250,7 @@ unit Objects
     // Munts: ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Table.Clear call)
     Destroy()
     {
-        LDX #ZP.SymbolListL
+        LDX # ZP.SymbolList
         Table.Clear();
     }
     
@@ -287,7 +289,7 @@ unit Objects
     initializeNode()
     {
         // Set symbolType|dataType (offset SYMBOL_TYPE_OFFSET)
-        LDY #SYMBOL_TYPE_OFFSET
+        LDY # SYMBOL_TYPE_OFFSET
         LDA ZP.LTYPE
         STA [ZP.IDX], Y
         
@@ -297,7 +299,7 @@ unit Objects
         STA [ZP.IDX], Y
         
         // Set value (offset SYMBOL_VALUE_OFFSET to SYMBOL_VALUE_OFFSET+1)
-        LDY #SYMBOL_VALUE_OFFSET
+        LDY # SYMBOL_VALUE_OFFSET
         LDA ZP.LNEXTL
         STA [ZP.IDX], Y
         INY

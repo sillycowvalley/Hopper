@@ -135,6 +135,7 @@ unit ZP
     const byte TokenLiteralPosH     = 0x39;  // Literal data position high byte
     
     // === AVAILABLE PRIMARY (0x3A-0x3F) ===
+    const byte SymbolList           = 0x3A;
     const byte SymbolListL          = 0x3A;  // Symbol table head pointer low byte
     const byte SymbolListH          = 0x3B;  // Symbol table head pointer high byte
     

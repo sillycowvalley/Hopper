@@ -77,8 +77,8 @@
 | 0x37 | CurrentToken | Tokenizer | Current token type/value | **ALLOCATED** |
 | 0x38 | TokenLiteralPosL | Tokenizer | Literal data position low byte | **ALLOCATED** |
 | 0x39 | TokenLiteralPosH | Tokenizer | Literal data position high byte | **ALLOCATED** |
-| 0x3A | - | Available | - | Unallocated |
-| 0x3B | - | Available | - | Unallocated |
+| 0x3A | SymbolListL | Objects | Symbol table head pointer low byte | **ALLOCATED** |
+| 0x3B | SymbolListH | Objects | Symbol table head pointer high byte | **ALLOCATED** |
 | 0x3C | - | Available | - | Unallocated |
 | 0x3D | - | Available | - | Unallocated |
 | 0x3E | - | Available | - | Unallocated |
@@ -177,11 +177,13 @@
 - **0x37**: CurrentToken (Current token cache)
 - **0x38**: TokenLiteralPosL (Literal data position low)
 - **0x39**: TokenLiteralPosH (Literal data position high)
+- **0x3A**: SymbolListL (Symbol table head pointer low byte)
+- **0x3B**: SymbolListH (Symbol table head pointer high byte)
 
 **Available for Future HopperBASIC Features:**
-- **0x3A-0x3F**: 6 bytes in primary range
+- **0x3C-0x3F**: 4 bytes in primary range
 
-**Total HopperBASIC allocation**: 10 bytes allocated, 6 bytes available
+**Total HopperBASIC allocation**: 12 bytes allocated, 4 bytes available
 
 ## Allocation Guidelines
 

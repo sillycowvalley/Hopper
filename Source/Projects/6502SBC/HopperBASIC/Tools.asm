@@ -569,6 +569,19 @@ unit Tools
         STA ZP.IDXH
         PrintString();
         
+        LDA #'S'
+        Serial.WriteChar();
+        LDA #'L'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        LDA ZP.SymbolListH
+        Serial.HexOut();
+        LDA ZP.SymbolListL
+        Serial.HexOut();
+        LDA #'\n'
+        Serial.WriteChar();
+        
         // Start at heap beginning: ZP.HEAPSTART is the page number
         LDA ZP.HEAPSTART
         STA ZP.IDXH
