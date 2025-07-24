@@ -134,13 +134,24 @@ unit ZP
     const byte TokenLiteralPosL     = 0x38;  // Literal data position low byte
     const byte TokenLiteralPosH     = 0x39;  // Literal data position high byte
     
-    // === AVAILABLE PRIMARY (0x3A-0x3F) ===
-    const byte SymbolList           = 0x3A;
-    const byte SymbolListL          = 0x3A;  // Symbol table head pointer low byte
-    const byte SymbolListH          = 0x3B;  // Symbol table head pointer high byte
+    // === AVAILABLE PRIMARY (0x3A-0x4F) ===
+    // 22 bytes available for additional BASIC features (0x3A-0x4F)
     
-    // === AVAILABLE PRIMARY (0x3A-0x3F) ===
-    // 4 bytes available for additional BASIC features (0x3C-0x3F)
+    // === SYMBOL TABLE & TEMPORARY STORAGE (0x70-0x7F) ===
+    const byte SymbolList           = 0x70;  // Symbol table head pointer (16-bit)
+    const byte SymbolListL          = 0x70;  // Symbol table head pointer low byte
+    const byte SymbolListH          = 0x71;  // Symbol table head pointer high byte
+    
+    const byte SymbolType           = 0x72;  // Storage for symbolType|dataType
+    const byte SymbolValue          = 0x73;  // Storage for symbol value (16-bit)
+    const byte SymbolValueL         = 0x73;  // Storage for symbol value low byte
+    const byte SymbolValueH         = 0x74;  // Storage for symbol value high byte
+    const byte SymbolName           = 0x75;  // Storage for symbol name pointer (16-bit)
+    const byte SymbolNameL          = 0x75;  // Storage for symbol name pointer low byte
+    const byte SymbolNameH          = 0x76;  // Storage for symbol name pointer high byte
+    
+    // === AVAILABLE SYMBOLS (0x77-0x7F) ===
+    // 9 bytes available for additional symbol table features (0x77-0x7F)
     
 #endif
 

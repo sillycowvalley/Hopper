@@ -18,7 +18,7 @@ program Test
     uses "BasicTypes"
     uses "Tools"
     
-    // Test Table head
+    // Test Table headf
     const byte TableHeadLocation  = 0x3C;
     const byte TableHeadLocationL = 0x3C;
     const byte TableHeadLocationH = 0x3D;

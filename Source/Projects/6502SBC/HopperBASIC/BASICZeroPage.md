@@ -77,12 +77,33 @@
 | 0x37 | CurrentToken | Tokenizer | Current token type/value | **ALLOCATED** |
 | 0x38 | TokenLiteralPosL | Tokenizer | Literal data position low byte | **ALLOCATED** |
 | 0x39 | TokenLiteralPosH | Tokenizer | Literal data position high byte | **ALLOCATED** |
-| 0x3A | SymbolListL | Objects | Symbol table head pointer low byte | **ALLOCATED** |
-| 0x3B | SymbolListH | Objects | Symbol table head pointer high byte | **ALLOCATED** |
+| 0x3A | - | Available | - | Unallocated |
+| 0x3B | - | Available | - | Unallocated |
 | 0x3C | - | Available | - | Unallocated |
 | 0x3D | - | Available | - | Unallocated |
 | 0x3E | - | Available | - | Unallocated |
 | 0x3F | - | Available | - | Unallocated |
+
+## Available Range (0x40-0x4F)
+
+| Address | Name | Usage | Purpose | Status |
+|---------|------|-------|---------|---------|
+| 0x40 | - | Available | - | Unallocated |
+| 0x41 | - | Available | - | Unallocated |
+| 0x42 | - | Available | - | Unallocated |
+| 0x43 | - | Available | - | Unallocated |
+| 0x44 | - | Available | - | Unallocated |
+| 0x45 | - | Available | - | Unallocated |
+| 0x46 | - | Available | - | Unallocated |
+| 0x47 | - | Available | - | Unallocated |
+| 0x48 | - | Available | - | Unallocated |
+| 0x49 | - | Available | - | Unallocated |
+| 0x4A | - | Available | - | Unallocated |
+| 0x4B | - | Available | - | Unallocated |
+| 0x4C | - | Available | - | Unallocated |
+| 0x4D | - | Available | - | Unallocated |
+| 0x4E | - | Available | - | Unallocated |
+| 0x4F | - | Available | - | Unallocated |
 
 ## Memory Manager Workspace (0x50-0x5F)
 
@@ -125,6 +146,27 @@
 | 0x6D | F13 | Functions | General syscall functions |
 | 0x6E | F14 | Functions | General syscall functions |
 | 0x6F | F15 | Functions | General syscall functions |
+
+## HopperBASIC Symbol Table & Storage (0x70-0x7F)
+
+| Address | Name | Usage | Purpose | Status |
+|---------|------|-------|---------|---------|
+| 0x70 | SymbolListL | Symbol Table | Symbol table head pointer low byte | **ALLOCATED** |
+| 0x71 | SymbolListH | Symbol Table | Symbol table head pointer high byte | **ALLOCATED** |
+| 0x72 | SymbolType | Symbol Table | Storage for symbolType\|dataType | **ALLOCATED** |
+| 0x73 | SymbolValueL | Symbol Table | Storage for symbol value low byte | **ALLOCATED** |
+| 0x74 | SymbolValueH | Symbol Table | Storage for symbol value high byte | **ALLOCATED** |
+| 0x75 | SymbolNameL | Symbol Table | Storage for symbol name pointer low byte | **ALLOCATED** |
+| 0x76 | SymbolNameH | Symbol Table | Storage for symbol name pointer high byte | **ALLOCATED** |
+| 0x77 | - | Available | - | Unallocated |
+| 0x78 | - | Available | - | Unallocated |
+| 0x79 | - | Available | - | Unallocated |
+| 0x7A | - | Available | - | Unallocated |
+| 0x7B | - | Available | - | Unallocated |
+| 0x7C | - | Available | - | Unallocated |
+| 0x7D | - | Available | - | Unallocated |
+| 0x7E | - | Available | - | Unallocated |
+| 0x7F | - | Available | - | Unallocated |
 
 ## UInt Operations (0x80-0x87)
 
@@ -177,13 +219,20 @@
 - **0x37**: CurrentToken (Current token cache)
 - **0x38**: TokenLiteralPosL (Literal data position low)
 - **0x39**: TokenLiteralPosH (Literal data position high)
-- **0x3A**: SymbolListL (Symbol table head pointer low byte)
-- **0x3B**: SymbolListH (Symbol table head pointer high byte)
+- **0x70**: SymbolListL (Symbol table head pointer low)
+- **0x71**: SymbolListH (Symbol table head pointer high)
+- **0x72**: SymbolType (Symbol type/data type storage)
+- **0x73**: SymbolValueL (Symbol value storage low)
+- **0x74**: SymbolValueH (Symbol value storage high)
+- **0x75**: SymbolNameL (Symbol name pointer low)
+- **0x76**: SymbolNameH (Symbol name pointer high)
 
 **Available for Future HopperBASIC Features:**
-- **0x3C-0x3F**: 4 bytes in primary range
+- **0x3A-0x3F**: 6 bytes in primary range
+- **0x40-0x4F**: 16 bytes in extended range
+- **0x77-0x7F**: 9 bytes in symbol table range
 
-**Total HopperBASIC allocation**: 12 bytes allocated, 4 bytes available
+**Total HopperBASIC allocation**: 17 bytes allocated, 31 bytes available
 
 ## Allocation Guidelines
 
@@ -191,6 +240,16 @@
 - **Core functionality first**: Tokenizer, parser, interpreter state
 - **Group related functions**: Keep related variables together for better locality
 - **16-bit values**: Use consecutive addresses (e.g., 0x38/0x39 for 16-bit value)
+
+### Available Range (0x40-0x4F)
+- **General expansion**: 16 contiguous bytes for future BASIC features
+- **Large structures**: Good for multi-byte temporary storage or buffers
+- **Function parameters**: Suitable for complex function call parameter passing
+
+### Symbol Table Range (0x70-0x7F)
+- **Symbol table management**: Primary symbol table operations and temporary storage
+- **Persistent across Memory.Allocate()**: These locations survive memory allocation calls
+- **Table unit workspace safe**: Separate from ZP.Lxx variables used by Table unit
 
 ### Allocation Process
 1. **Document first**: Update this table before implementing
@@ -204,3 +263,4 @@
 - Always check this document before allocating new variables
 - Update the Status column when variables are allocated/freed
 - HopperBASIC is constrained to avoid conflicts with Hopper VM's extensive zero page usage
+- The 0x70-0x7F range provides dedicated space for symbol table operations that persist across memory allocation calls

@@ -3,6 +3,7 @@ unit Objects
     uses "/Source/Runtime/6502/ZeroPage"
     uses "BasicTypes"
     uses "Table"
+    uses "Tools"
     
     // Symbol table implementation using Table foundation
     // ZP.SymbolListL/H stores the global symbol table head pointer
@@ -18,14 +19,13 @@ unit Objects
     // Node layout (offsets from node start):
     // Offset 0-1: next pointer (managed by Table unit)
     // Offset 2: symbolType|dataType (packed byte)
-    // Offset 3: unused (padding)
-    // Offset 4-5: value/address (16-bit)
-    // Offset 6+: null-terminated name string
+    // Offset 3-4: value/address (16-bit)
+    // Offset 5+: null-terminated name string
     
-    const byte SYMBOL_OVERHEAD = 6;      // Fixed fields before name (including Table's next pointer)
-    const byte SYMBOL_TYPE_OFFSET = 2;   // Offset to symbolType|dataType field
-    const byte SYMBOL_VALUE_OFFSET = 4;  // Offset to value field
-    const byte NAME_OFFSET = 6;          // Offset to name field in node
+    const byte symbolOverhead = 5;       // Fixed fields before name (including Table's next pointer)
+    const byte typeOffset = 2;           // Offset to symbolType|dataType field
+    const byte valueOffset = 3;          // Offset to value field
+    const byte nameOffset = 5;           // Offset to name field in node
     
     // Initialize empty symbol table
     // Output: ZP.SymbolListL/H = 0x0000
@@ -86,7 +86,6 @@ unit Objects
         // Initialize the new node
         initializeNode();
         
-        DumpHeap();
         
         PLY
         PLX
@@ -123,7 +122,7 @@ unit Objects
                 return;
             }
             
-            // Compare name at NAME_OFFSET
+            // Compare name at nameOffset
             compareNames();
             if (Z) // Names match
             {
@@ -157,14 +156,14 @@ unit Objects
     // Preserves: A, X, Y, ZP.IDX, ZP.TOP
     GetData()
     {
-        // Get symbolType|dataType (offset SYMBOL_TYPE_OFFSET)
-        LDY #SYMBOL_TYPE_OFFSET
+        // Get symbolType|dataType (offset typeOffset)
+        LDY #typeOffset
         LDA [ZP.IDX], Y
         STA ZP.ACCL
         STZ ZP.ACCH  // Clear high byte
         
-        // Get value (offset SYMBOL_VALUE_OFFSET to SYMBOL_VALUE_OFFSET+1)
-        LDY #SYMBOL_VALUE_OFFSET
+        // Get value (offset valueOffset to valueOffset+1)
+        LDY #valueOffset
         LDA [ZP.IDX], Y
         STA ZP.NEXTL
         INY
@@ -178,8 +177,8 @@ unit Objects
     // Preserves: A, X, Y, ZP.IDX, ZP.TOP, ZP.ACC
     SetValue()
     {
-        // Get symbolType (high nibble of packed byte at SYMBOL_TYPE_OFFSET)
-        LDY #SYMBOL_TYPE_OFFSET
+        // Get symbolType (high nibble of packed byte at typeOffset)
+        LDY #typeOffset
         LDA [ZP.IDX], Y
         AND #0xF0  // Extract high nibble
         LSR LSR LSR LSR  // Shift to low nibble
@@ -190,8 +189,8 @@ unit Objects
             return;
         }
         
-        // Update value (offset SYMBOL_VALUE_OFFSET to SYMBOL_VALUE_OFFSET+1)
-        LDY #SYMBOL_VALUE_OFFSET
+        // Update value (offset valueOffset to valueOffset+1)
+        LDY #valueOffset
         LDA ZP.NEXTL
         STA [ZP.IDX], Y
         INY
@@ -260,7 +259,7 @@ unit Objects
     calculateNodeSize()
     {
         // Start with fixed overhead
-        LDA #SYMBOL_OVERHEAD
+        LDA #symbolOverhead
         STA ZP.LLENGTHL
         STZ ZP.LLENGTHH
         
@@ -288,25 +287,20 @@ unit Objects
     // Note: Next pointer at offset 0-1 already initialized by Table.Add()
     initializeNode()
     {
-        // Set symbolType|dataType (offset SYMBOL_TYPE_OFFSET)
-        LDY # SYMBOL_TYPE_OFFSET
+        // Set symbolType|dataType (offset typeOffset)
+        LDY # typeOffset
         LDA ZP.LTYPE
         STA [ZP.IDX], Y
         
-        // Clear padding byte (offset SYMBOL_TYPE_OFFSET+1)
-        INY
-        LDA #0
-        STA [ZP.IDX], Y
-        
-        // Set value (offset SYMBOL_VALUE_OFFSET to SYMBOL_VALUE_OFFSET+1)
-        LDY # SYMBOL_VALUE_OFFSET
+        // Set value (offset valueOffset to valueOffset+1)
+        LDY # valueOffset
         LDA ZP.LNEXTL
         STA [ZP.IDX], Y
         INY
         LDA ZP.LNEXTH
         STA [ZP.IDX], Y
         
-        // Copy name string starting at NAME_OFFSET
+        // Copy name string starting at nameOffset
         copyNameToNode();
     }
     
@@ -314,7 +308,7 @@ unit Objects
     // Input: ZP.IDX = node address, ZP.LPREVIOUS = name pointer
     copyNameToNode()
     {
-        LDY #NAME_OFFSET     // Destination index
+        LDY # nameOffset     // Destination index
         STZ ZP.LCOUNTL       // Source index counter
         
         loop
@@ -342,7 +336,7 @@ unit Objects
         // Calculate address of name field in node
         CLC
         LDA ZP.IDXL
-        ADC #NAME_OFFSET
+        ADC #nameOffset
         STA ZP.LNEXTL
         LDA ZP.IDXH
         ADC #0
@@ -389,8 +383,8 @@ unit Objects
                 return;
             }
             
-            // Get symbol type from current node (high nibble of SYMBOL_TYPE_OFFSET)
-            LDY #SYMBOL_TYPE_OFFSET
+            // Get symbol type from current node (high nibble of typeOffset)
+            LDY #typeOffset
             LDA [ZP.IDX], Y
             AND #0xF0  // Extract high nibble
             LSR LSR LSR LSR  // Shift to low nibble
