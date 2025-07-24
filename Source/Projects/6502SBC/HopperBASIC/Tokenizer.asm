@@ -633,6 +633,14 @@ unit Tokenizer
     // Returns 16-bit number in ZP.TOP
     GetTokenNumber()
     {
+        // DEBUG: Show literal position
+        LDA #'@'
+        Serial.WriteChar();
+        LDA ZP.TokenLiteralPosH
+        Serial.HexOut();
+        LDA ZP.TokenLiteralPosL
+        Serial.HexOut();
+        
         STZ ZP.TOPL
         STZ ZP.TOPH
         
@@ -716,14 +724,16 @@ unit Tokenizer
                 
                 LDY #0
                 LDA [ZP.IDX], Y
+                PHA  // Save the character we just read
                 
-                // Advance position first
+                // Advance position
                 INC ZP.TokenizerPosL
                 if (Z)
                 {
                     INC ZP.TokenizerPosH
                 }
                 
+                PLA  // Restore the character
                 if (Z) { break; }  // Found null terminator
                 continue;
             }

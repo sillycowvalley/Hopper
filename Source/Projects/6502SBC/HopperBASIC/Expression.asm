@@ -219,8 +219,15 @@ unit Expression
                 // Convert token to number and push to stack
                 Tokenizer.GetTokenNumber();  // Result in ZP.TOP
                 
-                // DEBUG
-                Tools.DumpVariables();
+                // DEBUG: Show parsed number
+                LDA #'N'
+                Serial.WriteChar();
+                LDA #':'
+                Serial.WriteChar();
+                LDA ZP.TOPH
+                Serial.HexOut();
+                LDA ZP.TOPL
+                Serial.HexOut();
                 
                 Stacks.PushTop();
                 

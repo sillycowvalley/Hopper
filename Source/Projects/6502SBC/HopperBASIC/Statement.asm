@@ -102,6 +102,15 @@ unit Statement
         
         // Get next token (should be start of expression)
         Tokenizer.NextToken();
+        
+        // DEBUG: Show token after PRINT
+        LDA #'['
+        Serial.WriteChar();
+        LDA ZP.CurrentToken
+        Serial.HexOut();
+        LDA #']'
+        Serial.WriteChar();
+        
         Messages.CheckError();
         if (NZ) { return; }
         
