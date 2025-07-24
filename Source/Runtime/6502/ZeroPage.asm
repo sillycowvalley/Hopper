@@ -110,7 +110,7 @@ unit ZP
 #endif
 
 #if defined(HOPPER_BASIC)
-    // HopperBASIC allocation: 0x30..0x37 (8 bytes primary), 0x70..0x77 (8 bytes secondary)
+    // HopperBASIC allocation: 0x30..0x3F (16 bytes primary)
     
     // === CONSOLE INPUT (0x30) ===
     const byte BasicInputLength     = 0x30;  // Length of current input in BasicInputBuffer
@@ -130,8 +130,12 @@ unit ZP
     // === CURRENT TOKEN CACHE (0x37) ===
     const byte CurrentToken         = 0x37;  // Current token type/value from token buffer
     
-    // === AVAILABLE SECONDARY (0x70-0x77) ===
-    // 8 bytes available for overflow/additional features
+    // === LITERAL POSITION TRACKING (0x38-0x39) ===
+    const byte TokenLiteralPosL     = 0x38;  // Literal data position low byte
+    const byte TokenLiteralPosH     = 0x39;  // Literal data position high byte
+    
+    // === AVAILABLE PRIMARY (0x3A-0x3F) ===
+    // 6 bytes available for additional BASIC features
     
 #endif
 

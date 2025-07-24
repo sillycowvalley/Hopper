@@ -22,8 +22,12 @@ unit Console
         Tokenizer.ReadLine();    // Read into BasicInputBuffer, sets ZP.BasicInputLength
         Tokenizer.TokenizeLine(); // Tokenize into BasicTokenizerBuffer
         Messages.CheckError();
+        if (NZ) { return; }  // Return if tokenization failed
         
-        DumpBasicBuffers();
+// Optional debug output (remove when working)
+#ifdef DEBUG
+        Tools.DumpBasicBuffers();
+#endif
     }
     
     // Execute MEM command
@@ -56,7 +60,7 @@ unit Console
     // Execute NEW command
     cmdNew()
     {
-        InitializeBASIC();
+        HopperBASIC.InitializeBASIC();
         Messages.PrintOK();
     }
     
@@ -141,8 +145,11 @@ unit Console
             return;
         }
         
-        // Exactly one token - check if it's EOL
-        LDA Address.BasicTokenizerBuffer
+        // Exactly one token - check if it's EOL by getting first token
+        STZ ZP.TokenizerPosL
+        STZ ZP.TokenizerPosH
+        Tokenizer.NextToken();
+        LDA ZP.CurrentToken
         CMP #Tokens.EOL
         if (Z)
         {
@@ -150,7 +157,9 @@ unit Console
             return;
         }
         
-        // Single non-EOL token, process it
+        // Single non-EOL token, reset position and process it
+        STZ ZP.TokenizerPosL
+        STZ ZP.TokenizerPosH
         processTokens();
     }
     

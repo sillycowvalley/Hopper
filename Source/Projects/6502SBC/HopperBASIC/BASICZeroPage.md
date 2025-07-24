@@ -63,18 +63,26 @@
 | 0x2E | TARGET2 | Time | Timer target byte 2 |
 | 0x2F | TARGET3 | Time | Timer target byte 3 |
 
-## HopperBASIC Allocation (0x30-0x37)
+## HopperBASIC Allocation (0x30-0x3F)
 
 | Address | Name | Usage | Purpose | Status |
 |---------|------|-------|---------|---------|
 | 0x30 | BasicInputLength | Console | Length of current input in buffer | **ALLOCATED** |
-| 0x31 | TokenizerPos | Tokenizer | Current position in input during tokenization | **ALLOCATED** |
-| 0x32 | CurrentToken | Tokenizer | Current token type/value | **ALLOCATED** |
-| 0x33 | LastErrorL | Messages | Error message pointer low byte | **ALLOCATED** |
-| 0x34 | LastErrorH | Messages | Error message pointer high byte | **ALLOCATED** |
-| 0x35 | - | Available | - | Unallocated |
-| 0x36 | - | Available | - | Unallocated |
-| 0x37 | - | Available | - | Unallocated |
+| 0x31 | TokenBufferLengthL | Tokenizer | Token buffer length low byte | **ALLOCATED** |
+| 0x32 | TokenBufferLengthH | Tokenizer | Token buffer length high byte | **ALLOCATED** |
+| 0x33 | TokenizerPosL | Tokenizer | Current position in token buffer low | **ALLOCATED** |
+| 0x34 | TokenizerPosH | Tokenizer | Current position in token buffer high | **ALLOCATED** |
+| 0x35 | LastErrorL | Messages | Error message pointer low byte | **ALLOCATED** |
+| 0x36 | LastErrorH | Messages | Error message pointer high byte | **ALLOCATED** |
+| 0x37 | CurrentToken | Tokenizer | Current token type/value | **ALLOCATED** |
+| 0x38 | TokenLiteralPosL | Tokenizer | Literal data position low byte | **ALLOCATED** |
+| 0x39 | TokenLiteralPosH | Tokenizer | Literal data position high byte | **ALLOCATED** |
+| 0x3A | - | Available | - | Unallocated |
+| 0x3B | - | Available | - | Unallocated |
+| 0x3C | - | Available | - | Unallocated |
+| 0x3D | - | Available | - | Unallocated |
+| 0x3E | - | Available | - | Unallocated |
+| 0x3F | - | Available | - | Unallocated |
 
 ## Memory Manager Workspace (0x50-0x5F)
 
@@ -118,19 +126,6 @@
 | 0x6E | F14 | Functions | General syscall functions |
 | 0x6F | F15 | Functions | General syscall functions |
 
-## HopperBASIC Secondary Allocation (0x70-0x77)
-
-| Address | Name | Usage | Purpose | Status |
-|---------|------|-------|---------|---------|
-| 0x70 | - | Available | - | Unallocated |
-| 0x71 | - | Available | - | Unallocated |
-| 0x72 | - | Available | - | Unallocated |
-| 0x73 | - | Available | - | Unallocated |
-| 0x74 | - | Available | - | Unallocated |
-| 0x75 | - | Available | - | Unallocated |
-| 0x76 | - | Available | - | Unallocated |
-| 0x77 | - | Available | - | Unallocated |
-
 ## UInt Operations (0x80-0x87)
 
 | Address | Name | Usage | Purpose |
@@ -173,28 +168,27 @@
 
 **HopperBASIC Specific Usage:**
 - **0x30**: BasicInputLength (Console module)
-- **0x31**: TokenizerPos (Tokenizer workspace) 
-- **0x32**: CurrentToken (Tokenizer workspace)
-- **0x33**: LastErrorL (Messages error handling)
-- **0x34**: LastErrorH (Messages error handling)
+- **0x31**: TokenBufferLengthL (Tokenizer buffer length low)
+- **0x32**: TokenBufferLengthH (Tokenizer buffer length high) 
+- **0x33**: TokenizerPosL (Tokenizer position low)
+- **0x34**: TokenizerPosH (Tokenizer position high)
+- **0x35**: LastErrorL (Messages error handling)
+- **0x36**: LastErrorH (Messages error handling)
+- **0x37**: CurrentToken (Current token cache)
+- **0x38**: TokenLiteralPosL (Literal data position low)
+- **0x39**: TokenLiteralPosH (Literal data position high)
 
 **Available for Future HopperBASIC Features:**
-- **0x35-0x37**: 3 bytes in primary range  
-- **0x70-0x77**: 8 bytes in secondary range
+- **0x3A-0x3F**: 6 bytes in primary range
 
-**Total HopperBASIC allocation**: 5 bytes allocated, 11 bytes available
+**Total HopperBASIC allocation**: 10 bytes allocated, 6 bytes available
 
 ## Allocation Guidelines
 
-### Primary Range (0x30-0x37)
+### Primary Range (0x30-0x3F)
 - **Core functionality first**: Tokenizer, parser, interpreter state
 - **Group related functions**: Keep related variables together for better locality
-- **16-bit values**: Use consecutive addresses (e.g., 0x34/0x35 for 16-bit value)
-
-### Secondary Range (0x70-0x77)
-- **Overflow space**: Additional workspace when primary range fills up
-- **Temporary calculations**: Short-lived intermediate values
-- **Debug/development**: Variables that may be removed in final version
+- **16-bit values**: Use consecutive addresses (e.g., 0x38/0x39 for 16-bit value)
 
 ### Allocation Process
 1. **Document first**: Update this table before implementing
