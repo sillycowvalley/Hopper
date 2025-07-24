@@ -5,6 +5,7 @@ unit Tokenizer
     uses "/Source/Runtime/6502/MemoryMap"
     uses "Limits"
     uses "Messages"
+    uses "BasicTypes"
     
     // Phase 1 Token definitions (lean set)
     enum Tokens
@@ -698,8 +699,27 @@ unit Tokenizer
             {
                 INC ZP.TOPH
             }
-            
             INY
+        }
+        LDA ZP.TOPH
+        if (Z)
+        {
+            LDA # BasicType.BYTE
+            STA ZP.TOPT
+        }
+        else
+        {
+            AND # 0b10000000 // sign bit - assume INT for now
+            if (NZ)
+            {
+                LDA # BasicType.INT
+                STA ZP.TOPT       
+            }
+            else
+            {
+                LDA # BasicType.WORD
+                STA ZP.TOPT       
+            }
         }
     }
     

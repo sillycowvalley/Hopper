@@ -217,7 +217,7 @@ unit Expression
             case Tokens.NUMBER:
             {
                 // Convert token to number and push to stack
-                Tokenizer.GetTokenNumber();  // Result in ZP.TOP
+                Tokenizer.GetTokenNumber();  // Result in ZP.TOP, type in ZP.TOPT
                 
                 // DEBUG: Show parsed number
                 LDA #'N'
@@ -229,6 +229,7 @@ unit Expression
                 LDA ZP.TOPL
                 Serial.HexOut();
                 
+                LDA ZP.TOPL // type
                 Stacks.PushTop();
                 
                 // Get next token
