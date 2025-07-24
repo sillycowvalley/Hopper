@@ -311,7 +311,7 @@ unit Variables
 ```
 
 ### Layer 4: Functions (Function-Specific Interface)
-Function management building on Objects foundation with nested arguments tables:
+Function management building on Objects foundation with separate Arguments unit:
 
 #### Function Node Layout
 Functions reuse the existing Objects node structure:
@@ -323,109 +323,140 @@ Offset 5-6: function body tokens pointer
 Offset 7+:  null-terminated function name string
 ```
 
-#### Arguments Implementation
-**Nested Table Approach**: Each function has its own arguments table using Objects infrastructure
-
-**Argument Node Structure**: Standard Objects node with ARGUMENT symbol type:
-```
-Offset 0-1: next pointer (managed by Table unit)
-Offset 2:   ARGUMENT|argumentType (packed: SymbolType.ARGUMENT | BasicType.INT/etc)
-Offset 3-4: unused (always 0)
-Offset 5-6: unused (always 0)  
-Offset 7+:  null-terminated argument name
-```
-
-**Memory Trade-off**: 4 bytes wasted per argument vs ~400-600 bytes of duplicate code
-
 ```hopper
 unit Functions
 {
-    // Function management using Objects foundation with nested arguments tables
-    // Arguments are stored as separate Objects tables, one per function
+    // Core function management - no argument handling
     
     // Declare new function
     // Input: ZP.ACC = name pointer, ZP.ACCT = FUNCTION|returnType (packed),
-    //        ZP.TOP = 0 (arguments table created separately), ZP.NEXT = function body tokens pointer
-    // Output: ZP.IDX = function node address, C set if successful, NC if error
-    // Uses: Objects.Add() internally
+    //        ZP.NEXT = function body tokens pointer
+    // Output: ZP.IDX = function node address, C set if successful
+    // Note: Arguments table created separately via Arguments.Create()
     Declare();
     
     // Find function by name
     // Input: ZP.ACC = name pointer
-    // Output: ZP.IDX = function node address, C set if found and is function, NC if not found or wrong type
-    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT
+    // Output: ZP.IDX = function node address, C set if found and is function
     // Error: Sets LastError if found but wrong type
     Find();
     
-    // Create arguments table for function
-    // Input: ZP.IDX = function node address
-    // Output: C set if successful, arguments table created and linked to function
-    // Uses: Objects.Initialize() to create new arguments table, stores head pointer in function node
-    CreateArguments();
-    
-    // Add argument to function's arguments table
-    // Input: ZP.IDX = function node address, ZP.ACCT = argumentType, ZP.ACC = argument name
-    // Output: C set if successful, argument added to function's arguments table
-    // Process: Gets arguments table head, uses Objects.Add() to add ARGUMENT symbol type
-    AddArgument();
-    
-    // Get arguments table head for function
-    // Input: ZP.IDX = function node address  
-    // Output: ZP.IDY = arguments table head pointer, C set if has arguments table
-    // Preserves: A, X, ZP.IDX, ZP.TOP, ZP.NEXT, ZP.ACC
-    GetArguments();
-    
-    // Find argument by name in function's arguments table
-    // Input: ZP.IDX = function node address, ZP.ACC = argument name pointer
-    // Output: ZP.IDY = argument node address, ZP.ACCL = argument index, C set if found
-    // Process: Gets arguments table, iterates to find name and calculate index for BP offset
-    FindArgument();
-    
     // Get function signature info
-    // Input: ZP.IDX = function node address (from Find)
+    // Input: ZP.IDX = function node address
     // Output: ZP.ACCT = returnType, ZP.TOP = arguments table head, ZP.NEXT = function body tokens
-    // Preserves: A, X, Y, ZP.ACC
     GetSignature();
     
-    // Get argument count by walking arguments table
-    // Input: ZP.IDX = function node address (from Find)
-    // Output: ZP.ACCL = argument count, C set if successful
-    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT
-    // Uses: Internal iteration through arguments table
-    GetArgumentCount();
-    
-    // Get function body tokens from current node
-    // Input: ZP.IDX = function node address (from Find or iteration)
+    // Get function body tokens
+    // Input: ZP.IDX = function node address
     // Output: ZP.NEXT = function body tokens pointer
-    // Preserves: A, X, Y, ZP.TOP, ZP.ACC
     GetBody();
     
-    // Get name from current node (same as Variables.GetName)
-    // Input: ZP.IDX = function node address (from Find or iteration)
+    // Get function name
+    // Input: ZP.IDX = function node address
     // Output: ZP.ACC = name pointer (points into node data)
-    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT
     GetName();
+    
+    // Set arguments table head pointer in function node
+    // Input: ZP.IDX = function node address, ZP.TOP = arguments table head
+    // Output: C set if successful
+    SetArguments();
+    
+    // Get arguments table head pointer from function node
+    // Input: ZP.IDX = function node address
+    // Output: ZP.TOP = arguments table head pointer, C set if has arguments table
+    GetArguments();
     
     // Remove function by name
     // Input: ZP.ACC = name pointer
-    // Output: C set if successful, NC if not found
-    // Process: Find function, clear its arguments table, remove function node
+    // Output: C set if successful
+    // Note: Caller must clear arguments table first via Arguments.Clear()
     Remove();
     
-    // Start iteration over functions only (for FUNCS command)
-    // Output: ZP.IDX = first function node, C set if found, NC if none
-    // Sets up iteration state for IterateNext()
+    // Start iteration over functions only
+    // Output: ZP.IDX = first function node, C set if found
     IterateFunctions();
     
-    // Continue iteration (use after IterateFunctions)
-    // Input: ZP.IDX = current node, ZP.ACCL = FUNCTION type filter
-    // Output: ZP.IDX = next function node, C set if found, NC if done
+    // Continue function iteration
+    // Input: ZP.IDX = current node
+    // Output: ZP.IDX = next function node, C set if found
     IterateNext();
     
-    // Clear all functions (for NEW command)
+    // Clear all functions
     // Output: Empty function table
-    // Process: Iterate all functions, clear each arguments table, then clear functions table
+    // Note: Caller must clear all arguments tables first
     Clear();
+}
+```
+
+### Layer 5: Arguments (Argument-Specific Interface)
+Independent argument table management using Table foundation:
+
+#### Argument Node Structure
+Arguments use simplified node structure optimized for argument data:
+```
+Offset 0-1: next pointer (managed by Table unit)
+Offset 2:   argument type (BasicType.INT, WORD, BIT, etc.)
+Offset 3+:  null-terminated argument name
+```
+
+```hopper
+unit Arguments
+{
+    // Argument table management - independent of Functions unit
+    
+    // Create new arguments table
+    // Output: ZP.IDX = arguments table head address, C set if successful
+    Create();
+    
+    // Add argument to arguments table
+    // Input: ZP.IDX = arguments table head address, ZP.ACCT = argument type, ZP.ACC = argument name
+    // Output: C set if successful, argument added to table
+    Add();
+    
+    // Find argument by name in arguments table
+    // Input: ZP.IDX = arguments table head address, ZP.ACC = argument name
+    // Output: ZP.IDY = argument node address, ZP.ACCL = argument index, C set if found
+    Find();
+    
+    // Get argument type from node
+    // Input: ZP.IDY = argument node address
+    // Output: ZP.ACCT = argument type
+    GetType();
+    
+    // Get argument name from node
+    // Input: ZP.IDY = argument node address
+    // Output: ZP.ACC = argument name pointer
+    GetName();
+    
+    // Find argument by index (for BP offset calculation)
+    // Input: ZP.IDX = arguments table head address, ZP.ACCL = argument index
+    // Output: ZP.IDY = argument node address, C set if found
+    FindByIndex();
+    
+    // Get argument count in table
+    // Input: ZP.IDX = arguments table head address
+    // Output: ZP.ACCL = argument count
+    GetCount();
+    
+    // Start iteration over arguments in table
+    // Input: ZP.IDX = arguments table head address
+    // Output: ZP.IDY = first argument node, C set if found
+    IterateStart();
+    
+    // Continue argument iteration
+    // Input: ZP.IDY = current argument node
+    // Output: ZP.IDY = next argument node, C set if found
+    IterateNext();
+    
+    // Clear all arguments in table
+    // Input: ZP.IDX = arguments table head address
+    // Output: Empty arguments table
+    Clear();
+    
+    // Destroy arguments table (free table head storage)
+    // Input: ZP.IDX = arguments table head address
+    // Output: Table head freed
+    Destroy();
 }
 ```
 
@@ -511,9 +542,6 @@ STA ZP.ACCH
 LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
 STA ZP.ACCT
 
-STZ ZP.TOPL  // Arguments table head (will be set by CreateArguments)
-STZ ZP.TOPH
-
 LDA #(functionBodyTokens % 256)  // Pointer to function body tokens
 STA ZP.NEXTL
 LDA #(functionBodyTokens / 256)
@@ -523,24 +551,32 @@ Functions.Declare();
 // ZP.IDX now contains function node address
 
 // Step 2: Create arguments table
-Functions.CreateArguments();
+Arguments.Create();
+// ZP.IDX now contains arguments table head
 
-// Step 3: Add arguments
-LDA #((SymbolType.ARGUMENT << 4) | BasicType.INT)  // INT type
+// Step 3: Link arguments table to function
+LDA ZP.IDXL
+STA ZP.TOPL
+LDA ZP.IDXH
+STA ZP.TOPH
+Functions.SetArguments();
+
+// Step 4: Add arguments to table
+LDA #BasicType.INT
 STA ZP.ACCT
 LDA #(arg1Name % 256)  // "a"
 STA ZP.ACCL
 LDA #(arg1Name / 256)
 STA ZP.ACCH
-Functions.AddArgument();
+Arguments.Add();
 
-LDA #((SymbolType.ARGUMENT << 4) | BasicType.WORD)  // WORD type
+LDA #BasicType.WORD
 STA ZP.ACCT
 LDA #(arg2Name % 256)  // "b"
 STA ZP.ACCL
 LDA #(arg2Name / 256)
 STA ZP.ACCH
-Functions.AddArgument();
+Arguments.Add();
 ```
 
 ### Function Call Validation
@@ -549,37 +585,29 @@ Functions.AddArgument();
 Functions.Find();  // Find "Add" function
 if (C)
 {
-    Functions.GetArgumentCount();
+    Functions.GetArguments();  // Get arguments table head in ZP.TOP
+    
+    LDA ZP.TOPL
+    STA ZP.IDXL
+    LDA ZP.TOPH
+    STA ZP.IDXH
+    
+    Arguments.GetCount();
     // ZP.ACCL now contains argument count (2)
     
-    // Get arguments table and validate each argument type
-    Functions.GetArguments();  // ZP.IDY = arguments table head
-    
-    // Set up for Objects iteration on arguments table
-    LDA ZP.IDYL
-    STA ZP.SymbolListL  // Temporarily point to arguments table
-    LDA ZP.IDYH
-    STA ZP.SymbolListH
-    
-    LDA #SymbolType.ARGUMENT
-    STA ZP.ACCL
-    Objects.IterateStart();
+    // Validate each argument type by iterating
+    Arguments.IterateStart();
     
     // First argument should be INT type
-    Objects.GetData();
+    Arguments.GetType();
     LDA ZP.ACCT
-    AND #0x0F
     CMP #BasicType.INT  // Validate first argument type
     
-    Objects.IterateNext();
+    Arguments.IterateNext();
     // Second argument should be WORD type  
-    Objects.GetData();
+    Arguments.GetType();
     LDA ZP.ACCT
-    AND #0x0F
     CMP #BasicType.WORD  // Validate second argument type
-    
-    // Restore main symbol table pointer
-    // ... restore ZP.SymbolListL/H ...
 }
 ```
 
@@ -587,16 +615,23 @@ if (C)
 ```hopper
 // Inside function body, resolve "a" parameter to BP offset
 Functions.Find();  // Current function
+Functions.GetArguments();  // Get arguments table head in ZP.TOP
+
+LDA ZP.TOPL
+STA ZP.IDXL
+LDA ZP.TOPH
+STA ZP.IDXH
+
 LDA #(paramName % 256)  // "a"
 STA ZP.ACCL
 LDA #(paramName / 256)
 STA ZP.ACCH
 
-Functions.FindArgument();
+Arguments.Find();
 if (C)
 {
-    // ZP.ACCL = argument index (0 for "a")
-    Functions.GetArgumentCount();
+    // ZP.ACCL = argument index (0 for "a") - returned by Find()
+    Arguments.GetCount();
     // ZP.ACCL = argument count (2)
     
     // BP offset = argument count - argument index - 1
@@ -647,35 +682,32 @@ loop
     Functions.GetSignature();
     // ZP.ACCT contains return type
     
-    Functions.GetArgumentCount();
-    // ZP.ACCL contains argument count
-    
-    // Display each argument by iterating arguments table
-    Functions.GetArguments();  // Get arguments table head in ZP.IDY
+    Functions.GetArguments();  // Get arguments table head in ZP.TOP
     if (C)
     {
-        // Temporarily switch to arguments table
-        LDA ZP.IDYL
-        STA ZP.SymbolListL
-        LDA ZP.IDYH 
-        STA ZP.SymbolListH
+        LDA ZP.TOPL
+        STA ZP.IDXL
+        LDA ZP.TOPH
+        STA ZP.IDXH
         
-        LDA #SymbolType.ARGUMENT
-        STA ZP.ACCL
-        Objects.IterateStart();
+        Arguments.GetCount();
+        // ZP.ACCL contains argument count
+        
+        // Display each argument by iterating arguments table
+        Arguments.IterateStart();
         
         loop
         {
             if (NC) { break; }  // No more arguments
             
-            Objects.GetData();
-            // Print argument type (ZP.ACCT & 0x0F) and name (Objects.GetName)
+            Arguments.GetType();
+            // Print argument type (ZP.ACCT)
             
-            Objects.IterateNext();
+            Arguments.GetName();
+            // Print argument name (ZP.ACC)
+            
+            Arguments.IterateNext();
         }
-        
-        // Restore main symbol table
-        // ... restore ZP.SymbolListL/H ...
     }
     
     Functions.IterateNext();
@@ -796,5 +828,5 @@ This design enables:
 - **Referential integrity**: Prevents "stale constant" problems in dependency chains
 - **Forward references**: Functions can call functions defined later
 - **Dynamic modification**: FORGET and redefinition change symbol meanings
-- **Unified argument handling**: Arguments use same Objects infrastructure as other symbols
-- **Memory efficiency**: No duplicate code for argument management, minimal per-argument overhead
+- **Unified argument handling**: Arguments use dedicated unit with optimized node structure  
+- **Memory efficiency**: No duplicate code for argument management, optimized 3-byte argument node overhead
