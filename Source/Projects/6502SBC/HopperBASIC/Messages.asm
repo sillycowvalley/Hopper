@@ -21,6 +21,7 @@ unit Messages
     const string FileNotFound   = "FILE NOT FOUND";
     const string NextWithoutFor = "NEXT WITHOUT FOR";
     const string DivisionByZero = "DIVISION BY ZERO";
+    const string NumericOverflow = "NUMERIC OVERFLOW";
     const string StringTooLong  = "STRING TOO LONG";
     const string BadIndex       = "BAD INDEX"; // STRING and ARRAY
     const string UndefinedIdentifier = "UNDEFINED IDENTIFIER"; // FUNC or VAR

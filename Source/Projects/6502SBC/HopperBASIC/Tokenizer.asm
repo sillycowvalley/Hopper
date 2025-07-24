@@ -629,19 +629,65 @@ unit Tokenizer
         LDA ZP.CurrentToken
     }
     
+    // Helper function to check if multiplying ZP.TOP by 10 and adding a digit would overflow
+    // Input: ZP.TOP contains current 16-bit value, A contains digit to add (0-9)
+    // Output: Z set if operation is safe, NZ set if would overflow
+    // Preserves: A (digit), ZP.TOP unchanged
+    // Uses: ZP.NEXT for temporary calculations
+    checkMultiply10PlusDigitOverflow()
+    {
+        PHA  // Save digit
+        
+        // Check if TOP > 6553 (65535 / 10 = 6553.5, so 6554+ will overflow)
+        LDA ZP.TOPH
+        CMP # 0x19  // 6553 = 0x1999, high byte = 0x19
+        if (C)   // >= 0x19
+        {
+            if (NZ)  // > 0x19, definitely overflow
+            {
+                PLA  // Restore digit
+                LDA #1  // Set NZ
+                return;
+            }
+            
+            // High byte = 0x19, check low byte  
+            LDA ZP.TOPL
+            CMP # 0x99  // 6553 = 0x1999, low byte = 0x99
+            if (C)    // >= 0x99
+            {
+                // TOP >= 6553, check if exactly 6553
+                if (NZ)  // > 6553, overflow
+                {
+                    PLA  // Restore digit
+                    LDA #1  // Set NZ
+                    return;
+                }
+                
+                // TOP = 6553, check if digit > 5 (6553*10 + 6 = 65536)
+                PLA  // Get digit back
+                CMP #6
+                if (C)  // digit >= 6, would overflow
+                {
+                    LDA #1  // Set NZ
+                    return;
+                }
+                
+                LDA #0  // Set Z - safe
+                return;
+            }
+        }
+        
+        // TOP < 6553, always safe regardless of digit
+        PLA  // Restore digit
+        LDA #0  // Set Z - safe
+    }
+    
     // Get current token as 16-bit number (assumes current token is NUMBER)
     // Inline number string follows the NUMBER token in buffer
-    // Returns 16-bit number in ZP.TOP
+    // Returns 16-bit number in ZP.TOP, type in ZP.TOPT
+    // Sets error if number overflows 16-bit range
     GetTokenNumber()
     {
-        // DEBUG: Show literal position
-        LDA #'@'
-        Serial.WriteChar();
-        LDA ZP.TokenLiteralPosH
-        Serial.HexOut();
-        LDA ZP.TokenLiteralPosL
-        Serial.HexOut();
-        
         STZ ZP.TOPL
         STZ ZP.TOPH
         
@@ -661,6 +707,36 @@ unit Tokenizer
             LDA [ZP.IDX], Y
             if (Z) { break; }  // Hit null terminator
             
+            // Check if character is a digit
+            LDA [ZP.IDX], Y
+            getCharType();
+            CMP # 1
+            if (NZ) // not digit
+            {
+                LDA #(Messages.SyntaxError % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.SyntaxError / 256)
+                STA ZP.LastErrorH
+                return;
+            }
+            
+            // Convert to digit value
+            LDA [ZP.IDX], Y
+            SEC
+            SBC #'0'
+            STA ZP.ACCL  // Store digit temporarily
+            
+            // Check for overflow before doing the math
+            checkMultiply10PlusDigitOverflow();
+            if (NZ)  // Would overflow
+            {
+                LDA #( Messages.NumericOverflow % 256)
+                STA ZP.LastErrorL
+                LDA #( Messages.NumericOverflow / 256)
+                STA ZP.LastErrorH
+                return;
+            }
+            
             // TOP = TOP * 10 using shifts and adds
             // Save current value in NEXT
             LDA ZP.TOPL
@@ -675,7 +751,7 @@ unit Tokenizer
             ASL ZP.TOPL
             ROL ZP.TOPH
             
-            // TOP = TOP + NEXT (4 + 1 = 5)
+            //TOP = TOP + NEXT (4 + 1 = 5)
             CLC
             LDA ZP.TOPL
             ADC ZP.NEXTL
@@ -687,11 +763,9 @@ unit Tokenizer
             // TOP = TOP * 2 (5 * 2 = 10)
             ASL ZP.TOPL
             ROL ZP.TOPH
-            
+                      
             // Add current digit
-            LDA [ZP.IDX], Y
-            SEC
-            SBC #'0'
+            LDA ZP.ACCL
             CLC
             ADC ZP.TOPL
             STA ZP.TOPL
@@ -699,8 +773,11 @@ unit Tokenizer
             {
                 INC ZP.TOPH
             }
+            
             INY
         }
+        
+        // Set the type based on the value
         LDA ZP.TOPH
         if (Z)
         {
@@ -709,17 +786,8 @@ unit Tokenizer
         }
         else
         {
-            AND # 0b10000000 // sign bit - assume INT for now
-            if (NZ)
-            {
-                LDA # BasicType.INT
-                STA ZP.TOPT       
-            }
-            else
-            {
-                LDA # BasicType.WORD
-                STA ZP.TOPT       
-            }
+            LDA # BasicType.WORD
+            STA ZP.TOPT       
         }
     }
     

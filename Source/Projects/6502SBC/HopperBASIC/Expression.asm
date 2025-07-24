@@ -4,6 +4,7 @@ unit Expression
     uses "/Source/Runtime/6502/Stacks"
     uses "Messages"
     uses "Tokenizer"
+    uses "Instructions"
     
     // Evaluate an expression starting from current token
     // Pushes result onto value stack
@@ -59,7 +60,7 @@ unit Expression
                 if (NZ) { return; }
                 
                 // Perform equality comparison
-                doEquals();
+                Instructions.Equals();
                 continue;
             }
             
@@ -77,7 +78,7 @@ unit Expression
                 if (NZ) { return; }
                 
                 // Perform not-equal comparison
-                doNotEqual();
+                Instructions.NotEqual();
                 continue;
             }
             
@@ -123,7 +124,7 @@ unit Expression
                 if (NZ) { return; }
                 
                 // Perform addition
-                doAddition();
+                Instructions.Addition();
                 continue;
             }
             
@@ -141,7 +142,7 @@ unit Expression
                 if (NZ) { return; }
                 
                 // Perform subtraction
-                doSubtraction();
+                Instructions.Subtraction();
                 continue;
             }
             
@@ -180,7 +181,7 @@ unit Expression
             if (NZ) { return; }
             
             // Negate the result
-            doUnaryMinus();
+            Instructions.UnaryMinus();
             
             // DEBUG
             LDA #'U'
@@ -229,7 +230,7 @@ unit Expression
                 LDA ZP.TOPL
                 Serial.HexOut();
                 
-                LDA ZP.TOPL // type
+                LDA ZP.TOPT // type
                 Stacks.PushTop();
                 
                 // Get next token
@@ -316,141 +317,5 @@ unit Expression
                 return;
             }
         }
-    }
-    
-    // Arithmetic operations
-    // All operations work on the top two values on the stack
-    
-    doAddition()
-    {
-        // Pop two operands
-        Stacks.PopNext();  // Right operand in ZP.NEXT
-        Stacks.PopTop();   // Left operand in ZP.TOP
-        
-        // Add: TOP = TOP + NEXT
-        CLC
-        LDA ZP.TOPL
-        ADC ZP.NEXTL
-        STA ZP.TOPL
-        LDA ZP.TOPH
-        ADC ZP.NEXTH
-        STA ZP.TOPH
-        
-        // Push result back
-        Stacks.PushTop();
-    }
-    
-    doSubtraction()
-    {
-        // Pop two operands
-        Stacks.PopNext();  // Right operand in ZP.NEXT
-        Stacks.PopTop();   // Left operand in ZP.TOP
-        
-        // Subtract: TOP = TOP - NEXT
-        SEC
-        LDA ZP.TOPL
-        SBC ZP.NEXTL
-        STA ZP.TOPL
-        LDA ZP.TOPH
-        SBC ZP.NEXTH
-        STA ZP.TOPH
-        
-        // Push result back
-        Stacks.PushTop();
-    }
-    
-    doUnaryMinus()
-    {
-        // Pop operand
-        Stacks.PopTop();
-        
-        // Negate: TOP = 0 - TOP
-        SEC
-        LDA #0
-        SBC ZP.TOPL
-        STA ZP.TOPL
-        LDA #0
-        SBC ZP.TOPH
-        STA ZP.TOPH
-        
-        // Push result back
-        Stacks.PushTop();
-    }
-    
-    doEquals()
-    {
-        // Pop two operands
-        Stacks.PopNext();  // Right operand in ZP.NEXT
-        Stacks.PopTop();   // Left operand in ZP.TOP
-        
-        // Compare: result = (TOP == NEXT) ? 1 : 0
-        LDA ZP.TOPL
-        CMP ZP.NEXTL
-        if (NZ)
-        {
-            // Low bytes differ, result is false
-            STZ ZP.TOPL
-            STZ ZP.TOPH
-        }
-        else
-        {
-            LDA ZP.TOPH
-            CMP ZP.NEXTH
-            if (NZ)
-            {
-                // High bytes differ, result is false
-                STZ ZP.TOPL
-                STZ ZP.TOPH
-            }
-            else
-            {
-                // Equal, result is true
-                LDA #1
-                STA ZP.TOPL
-                STZ ZP.TOPH
-            }
-        }
-        
-        // Push result back
-        Stacks.PushTop();
-    }
-    
-    doNotEqual()
-    {
-        // Pop two operands
-        Stacks.PopNext();  // Right operand in ZP.NEXT
-        Stacks.PopTop();   // Left operand in ZP.TOP
-        
-        // Compare: result = (TOP != NEXT) ? 1 : 0
-        LDA ZP.TOPL
-        CMP ZP.NEXTL
-        if (NZ)
-        {
-            // Low bytes differ, result is true
-            LDA #1
-            STA ZP.TOPL
-            STZ ZP.TOPH
-        }
-        else
-        {
-            LDA ZP.TOPH
-            CMP ZP.NEXTH
-            if (NZ)
-            {
-                // High bytes differ, result is true
-                LDA #1
-                STA ZP.TOPL
-                STZ ZP.TOPH
-            }
-            else
-            {
-                // Equal, result is false
-                STZ ZP.TOPL
-                STZ ZP.TOPH
-            }
-        }
-        
-        // Push result back
-        Stacks.PushTop();
     }
 }
