@@ -175,13 +175,20 @@ unit Expression
             Messages.CheckError();
             if (NZ) { return; }
             
+            // Push zero onto value stack
+            STZ ZP.TOPL
+            STZ ZP.TOPH
+            LDA #BasicType.INT
+            STA ZP.TOPT
+            Stacks.PushTop();
+            
             // Parse the operand
             parsePrimary();
             Messages.CheckError();
             if (NZ) { return; }
             
             // Negate the result
-            Instructions.UnaryMinus();
+            Instructions.Subtraction();
             
             // DEBUG
             LDA #'U'
@@ -221,14 +228,11 @@ unit Expression
                 Tokenizer.GetTokenNumber();  // Result in ZP.TOP, type in ZP.TOPT
                 
                 // DEBUG: Show parsed number
-                LDA #'N'
-                Serial.WriteChar();
+                LDA ZP.TOPT
+                Tools.PrintType();
                 LDA #':'
                 Serial.WriteChar();
-                LDA ZP.TOPH
-                Serial.HexOut();
-                LDA ZP.TOPL
-                Serial.HexOut();
+                PrintDecimalWord();
                 
                 LDA ZP.TOPT // type
                 Stacks.PushTop();

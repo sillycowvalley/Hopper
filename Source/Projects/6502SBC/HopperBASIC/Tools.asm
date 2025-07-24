@@ -1,5 +1,109 @@
 unit Tools
 {
+ 
+    uses "BasicTypes"
+
+#ifdef DEBUG       
+    // Print BasicType enum value as readable string
+    // On entry: A = BasicType enum value
+    // Uses:     Serial.WriteChar() for output, ZP.U0 for temp storage
+    PrintType()
+    {
+        PHA
+        PHX
+        PHY
+        
+        
+        switch (A)
+        {
+            case BasicType.INT:     // 0x02
+            {
+                LDA #'I'
+                Serial.WriteChar();
+                LDA #'N'
+                Serial.WriteChar();
+                LDA #'T'
+                Serial.WriteChar();
+            }
+            case BasicType.BYTE:    // 0x03
+            {
+                LDA #'B'
+                Serial.WriteChar();
+                LDA #'Y'
+                Serial.WriteChar();
+                LDA #'T'
+                Serial.WriteChar();
+                LDA #'E'
+                Serial.WriteChar();
+            }
+            case BasicType.WORD:    // 0x04
+            {
+                LDA #'W'
+                Serial.WriteChar();
+                LDA #'O'
+                Serial.WriteChar();
+                LDA #'R'
+                Serial.WriteChar();
+                LDA #'D'
+                Serial.WriteChar();
+            }
+            case BasicType.BIT:     // 0x06
+            {
+                LDA #'B'
+                Serial.WriteChar();
+                LDA #'I'
+                Serial.WriteChar();
+                LDA #'T'
+                Serial.WriteChar();
+            }
+            case BasicType.STRING:  // 0x0F
+            {
+                LDA #'S'
+                Serial.WriteChar();
+                LDA #'T'
+                Serial.WriteChar();
+                LDA #'R'
+                Serial.WriteChar();
+                LDA #'I'
+                Serial.WriteChar();
+                LDA #'N'
+                Serial.WriteChar();
+                LDA #'G'
+                Serial.WriteChar();
+            }
+            case BasicType.ARRAY:   // 0x12
+            {
+                LDA #'A'
+                Serial.WriteChar();
+                LDA #'R'
+                Serial.WriteChar();
+                LDA #'R'
+                Serial.WriteChar();
+                LDA #'A'
+                Serial.WriteChar();
+                LDA #'Y'
+                Serial.WriteChar();
+            }
+            default:
+            {
+                PHA
+                // Unknown type - print as hex
+                LDA #'?'
+                Serial.WriteChar();
+                PLA
+                Serial.HexOut();
+            }
+        }
+        
+        PLY
+        PLX
+        PLA
+    }
+#endif
+    
+    // Usage example:
+    // LDA #Types.WORD
+    // Tools.PrintType();  // Prints "WORD"
     
     // Print null-terminated string to serial output
     // On entry: ZP.IDXL/ZP.IDXH = pointer to null-terminated string
@@ -21,7 +125,6 @@ unit Tools
     
     // Print 16-bit decimal number with no leading zeros
     // On entry: ZP.TOPL/ZP.TOPH = 16-bit number to print (0-65535)
-    // On exit:  A,X,Y corrupted, TOP destroyed, ACCL modified
     // Uses:     Serial.WriteChar() for output
     
     // Original source: https://www.beebwiki.mdfs.net/Number_output_in_6502_machine_code
@@ -37,6 +140,40 @@ unit Tools
     
     PrintDecimalWord()
     {
+        PHA
+        PHX
+        PHY
+        
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.TOPL
+        PHA
+        LDA ZP.TOPH
+        PHA
+        
+        // Check if this is a signed type that's negative
+        LDA ZP.TOPT
+        CMP #BasicType.INT
+        if (Z)  // INT type
+        {
+            BIT ZP.TOPH  // Test sign bit
+            if (MI)      // Negative
+            {
+                // Print minus sign
+                LDA #'-'
+                Serial.WriteChar();
+                
+                // Negate the value: TOP = 0 - TOP
+                SEC
+                LDA #0
+                SBC ZP.TOPL
+                STA ZP.TOPL
+                LDA #0
+                SBC ZP.TOPH
+                STA ZP.TOPH
+            }
+        }
+        
         STZ ZP.ACCL         // Initialize: no padding (suppress leading zeros)
         
         LDY #8              // Offset to powers of ten table
@@ -95,6 +232,17 @@ unit Tools
             LDA #'0'
             Serial.WriteChar();
         }
+        
+        PLA
+        STA ZP.TOPH
+        PLA
+        STA ZP.TOPL
+        PLA
+        STA ZP.ACCL
+        
+        PLY
+        PLX
+        PLA
     }
     
     // Copy FLENGTH bytes from FSOURCEADDRESS to FDESTINATIONADDRESS
@@ -216,6 +364,10 @@ unit Tools
        Serial.WriteChar();
        LDA #':'
        Serial.WriteChar();
+       LDA ZP.TOPT
+       PrintType();
+       LDA #'-'
+       Serial.WriteChar();
        LDA ZP.TOPH
        Serial.HexOut();
        LDA ZP.TOPL
@@ -231,6 +383,10 @@ unit Tools
        LDA #'T'
        Serial.WriteChar();
        LDA #':'
+       Serial.WriteChar();
+       LDA ZP.NEXTT
+       PrintType();
+       LDA #'-'
        Serial.WriteChar();
        LDA ZP.NEXTH
        Serial.HexOut();

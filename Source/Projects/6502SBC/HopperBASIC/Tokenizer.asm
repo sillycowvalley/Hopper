@@ -778,15 +778,15 @@ unit Tokenizer
         }
         
         // Set the type based on the value
-        LDA ZP.TOPH
-        if (Z)
+        BIT ZP.TOPH          // Check high bit
+        if (MI)
         {
-            LDA # BasicType.BYTE
+            LDA #BasicType.WORD   // Large positive (32768-65535)
             STA ZP.TOPT
         }
         else
         {
-            LDA # BasicType.WORD
+            LDA #BasicType.INT    // Medium positive (256-32767)
             STA ZP.TOPT       
         }
     }
