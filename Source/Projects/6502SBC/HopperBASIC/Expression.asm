@@ -9,7 +9,7 @@ unit Expression
     // Evaluate an expression starting from current token
     // Pushes result onto value stack
     // Returns Z if successful, NZ if error (error stored in ZP.LastError)
-    // Current implementation: simple precedence climbing for +, -, =, <>
+    // Updated precedence: parseComparison() → parseLogical() → parseAddition() → parseMultiplicative() → parseUnary()
     Evaluate()
     {
         // DEBUG
@@ -28,7 +28,7 @@ unit Expression
         Serial.WriteChar();
     }
     
-    // Parse comparison operators (=, <>)
+    // Parse comparison operators (=, <>, <, >, <=, >=)
     // Precedence level 1 (lowest)
     parseComparison()
     {
@@ -39,7 +39,7 @@ unit Expression
         Serial.WriteChar();
         
         // Parse left operand
-        parseAddition();
+        parseLogical();
         Messages.CheckError();
         if (NZ) { return; }
         
@@ -55,12 +55,12 @@ unit Expression
                 if (NZ) { return; }
                 
                 // Parse right operand
-                parseAddition();
+                parseLogical();
                 Messages.CheckError();
                 if (NZ) { return; }
                 
                 // Perform equality comparison
-                Instructions.Equals();
+                Instructions.Equal();
                 continue;
             }
             
@@ -73,12 +73,84 @@ unit Expression
                 if (NZ) { return; }
                 
                 // Parse right operand
-                parseAddition();
+                parseLogical();
                 Messages.CheckError();
                 if (NZ) { return; }
                 
                 // Perform not-equal comparison
                 Instructions.NotEqual();
+                continue;
+            }
+            
+            CMP #Tokens.LT
+            if (Z)
+            {
+                // Get next token for right operand
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NZ) { return; }
+                
+                // Parse right operand
+                parseLogical();
+                Messages.CheckError();
+                if (NZ) { return; }
+                
+                // Perform less-than comparison
+                Instructions.LessThan();
+                continue;
+            }
+            
+            CMP #Tokens.GT
+            if (Z)
+            {
+                // Get next token for right operand
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NZ) { return; }
+                
+                // Parse right operand
+                parseLogical();
+                Messages.CheckError();
+                if (NZ) { return; }
+                
+                // Perform greater-than comparison
+                Instructions.GreaterThan();
+                continue;
+            }
+            
+            CMP #Tokens.LE
+            if (Z)
+            {
+                // Get next token for right operand
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NZ) { return; }
+                
+                // Parse right operand
+                parseLogical();
+                Messages.CheckError();
+                if (NZ) { return; }
+                
+                // Perform less-equal comparison
+                Instructions.LessEqual();
+                continue;
+            }
+            
+            CMP #Tokens.GE
+            if (Z)
+            {
+                // Get next token for right operand
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NZ) { return; }
+                
+                // Parse right operand
+                parseLogical();
+                Messages.CheckError();
+                if (NZ) { return; }
+                
+                // Perform greater-equal comparison
+                Instructions.GreaterEqual();
                 continue;
             }
             
@@ -92,8 +164,87 @@ unit Expression
         Serial.WriteChar();
     }
     
+    // Parse logical operators (AND, OR)
+    // Precedence level 2 (AND binds tighter than OR)
+    parseLogical()
+    {
+        // DEBUG
+        LDA #'<'
+        Serial.WriteChar();
+        LDA #'L'
+        Serial.WriteChar();
+        
+        // Parse left operand (OR has lower precedence, so parse AND first)
+        parseLogicalAnd();
+        Messages.CheckError();
+        if (NZ) { return; }
+        
+        loop
+        {
+            LDA ZP.CurrentToken
+            CMP #Tokens.OR
+            if (Z)
+            {
+                // Get next token for right operand
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NZ) { return; }
+                
+                // Parse right operand
+                parseLogicalAnd();
+                Messages.CheckError();
+                if (NZ) { return; }
+                
+                // Perform logical OR
+                Instructions.Or();
+                continue;
+            }
+            
+            break; // No more OR operators
+        }
+        
+        // DEBUG
+        LDA #'L'
+        Serial.WriteChar();
+        LDA #'>'
+        Serial.WriteChar();
+    }
+    
+    // Parse logical AND operators (higher precedence than OR)
+    parseLogicalAnd()
+    {
+        // Parse left operand
+        parseAddition();
+        Messages.CheckError();
+        if (NZ) { return; }
+        
+        loop
+        {
+            LDA ZP.CurrentToken
+            CMP #Tokens.AND
+            if (Z)
+            {
+                // Get next token for right operand
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NZ) { return; }
+                
+                // Parse right operand
+                parseAddition();
+                Messages.CheckError();
+                if (NZ) { return; }
+                
+                // Perform logical AND
+                Instructions.And();
+                continue;
+            }
+            
+            break; // No more AND operators
+        }
+    }
+    
     // Parse addition and subtraction operators (+, -)
-    // Precedence level 2
+    // Precedence level 3
     parseAddition()
     {
         // DEBUG
@@ -103,7 +254,7 @@ unit Expression
         Serial.WriteChar();
         
         // Parse left operand
-        parseUnary();
+        parseMultiplicative();
         Messages.CheckError();
         if (NZ) { return; }
         
@@ -119,7 +270,7 @@ unit Expression
                 if (NZ) { return; }
                 
                 // Parse right operand
-                parseUnary();
+                parseMultiplicative();
                 Messages.CheckError();
                 if (NZ) { return; }
                 
@@ -137,7 +288,7 @@ unit Expression
                 if (NZ) { return; }
                 
                 // Parse right operand
-                parseUnary();
+                parseMultiplicative();
                 Messages.CheckError();
                 if (NZ) { return; }
                 
@@ -156,8 +307,90 @@ unit Expression
         Serial.WriteChar();
     }
     
+    // Parse multiplicative operators (*, /, MOD)
+    // Precedence level 4 (higher than addition)
+    parseMultiplicative()
+    {
+        // DEBUG
+        LDA #'<'
+        Serial.WriteChar();
+        LDA #'M'
+        Serial.WriteChar();
+        
+        // Parse left operand
+        parseUnary();
+        Messages.CheckError();
+        if (NZ) { return; }
+        
+        loop
+        {
+            LDA ZP.CurrentToken
+            CMP #Tokens.MULTIPLY
+            if (Z)
+            {
+                // Get next token for right operand
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NZ) { return; }
+                
+                // Parse right operand
+                parseUnary();
+                Messages.CheckError();
+                if (NZ) { return; }
+                
+                // Perform multiplication
+                Instructions.Multiply();
+                continue;
+            }
+            
+            CMP #Tokens.DIVIDE
+            if (Z)
+            {
+                // Get next token for right operand
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NZ) { return; }
+                
+                // Parse right operand
+                parseUnary();
+                Messages.CheckError();
+                if (NZ) { return; }
+                
+                // Perform division
+                Instructions.Divide();
+                continue;
+            }
+            
+            CMP #Tokens.MOD
+            if (Z)
+            {
+                // Get next token for right operand
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NZ) { return; }
+                
+                // Parse right operand
+                parseUnary();
+                Messages.CheckError();
+                if (NZ) { return; }
+                
+                // Perform modulo
+                Instructions.Modulo();
+                continue;
+            }
+            
+            break; // No more multiplicative operators
+        }
+        
+        // DEBUG
+        LDA #'M'
+        Serial.WriteChar();
+        LDA #'>'
+        Serial.WriteChar();
+    }
+    
     // Parse unary operators and primary expressions
-    // Precedence level 3 (highest)
+    // Precedence level 5 (highest)
     parseUnary()
     {
         // DEBUG
@@ -187,8 +420,33 @@ unit Expression
             Messages.CheckError();
             if (NZ) { return; }
             
-            // Negate the result
+            // Negate the result (0 - operand)
             Instructions.Subtraction();
+            
+            // DEBUG
+            LDA #'U'
+            Serial.WriteChar();
+            LDA #'>'
+            Serial.WriteChar();
+            
+            return;
+        }
+        
+        CMP #Tokens.NOT
+        if (Z)
+        {
+            // Logical NOT (unary)
+            Tokenizer.NextToken();
+            Messages.CheckError();
+            if (NZ) { return; }
+            
+            // Parse the operand
+            parsePrimary();
+            Messages.CheckError();
+            if (NZ) { return; }
+            
+            // Perform logical NOT
+            Instructions.LogicalNot();
             
             // DEBUG
             LDA #'U'

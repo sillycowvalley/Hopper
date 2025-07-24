@@ -7,7 +7,7 @@ unit Tokenizer
     uses "Messages"
     uses "BasicTypes"
     
-    // Phase 1 Token definitions (lean set)
+    // Phase 1 Token definitions (extended set)
     enum Tokens
     {
         // Console commands (1-16)
@@ -41,13 +41,29 @@ unit Tokenizer
         BEGIN    = 0x26,
         END      = 0x27,
         
-        // Operators (64-79)
+        // Logical keywords (48-55)
+        AND      = 0x30,
+        OR       = 0x31,
+        NOT      = 0x32,
+        MOD      = 0x33,
+        
+        // Basic operators (64-79)
         EQUALS   = 0x40,  // =
         PLUS     = 0x41,  // +
         MINUS    = 0x42,  // -
         LPAREN   = 0x43,  // (
         RPAREN   = 0x44,  // )
         NOTEQUAL = 0x45,  // <>
+        
+        // Additional comparison operators (80-87)
+        LT       = 0x50,  // <
+        GT       = 0x51,  // >
+        LE       = 0x52,  // <=
+        GE       = 0x53,  // >=
+        
+        // Arithmetic operators (88-95)
+        MULTIPLY = 0x58,  // *
+        DIVIDE   = 0x59,  // /
         
         // Literals and identifiers (128+)
         NUMBER     = 0x80,
@@ -82,6 +98,10 @@ unit Tokenizer
         6, Tokens.RETURN, 'R', 'E', 'T', 'U', 'R', 'N',
         5, Tokens.BEGIN, 'B', 'E', 'G', 'I', 'N',
         3, Tokens.END, 'E', 'N', 'D',
+        3, Tokens.AND, 'A', 'N', 'D',
+        2, Tokens.OR, 'O', 'R',
+        3, Tokens.NOT, 'N', 'O', 'T',
+        3, Tokens.MOD, 'M', 'O', 'D',
         0  // End marker
     };
     
@@ -368,6 +388,22 @@ unit Tokenizer
                     if (NZ) { return; }
                     INX
                 }
+                case '*':
+                {
+                    LDA #Tokens.MULTIPLY
+                    appendToTokenBuffer();
+                    Messages.CheckError();
+                    if (NZ) { return; }
+                    INX
+                }
+                case '/':
+                {
+                    LDA #Tokens.DIVIDE
+                    appendToTokenBuffer();
+                    Messages.CheckError();
+                    if (NZ) { return; }
+                    INX
+                }
                 case '(':
                 {
                     LDA #Tokens.LPAREN
@@ -386,14 +422,22 @@ unit Tokenizer
                 }
                 case '<':
                 {
-                    // Check for <>
-                    LDY #1
-                    STY ZP.ACCL  // Temp storage for increment amount
+                    // Check for <= or <>
                     INX
                     CPX ZP.BasicInputLength
                     if (NZ)
                     {
                         LDA Address.BasicInputBuffer, X
+                        CMP #'='
+                        if (Z)
+                        {
+                            LDA #Tokens.LE
+                            appendToTokenBuffer();
+                            Messages.CheckError();
+                            if (NZ) { return; }
+                            INX  // Skip both '<' and '='
+                            continue;
+                        }
                         CMP #'>'
                         if (Z)
                         {
@@ -405,12 +449,40 @@ unit Tokenizer
                             continue;
                         }
                     }
-                    DEX  // Back up, single < not supported in Phase 1
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
-                    return;
+                    // Just '<'
+                    DEX  // Back up to point at '<'
+                    LDA #Tokens.LT
+                    appendToTokenBuffer();
+                    Messages.CheckError();
+                    if (NZ) { return; }
+                    INX  // Move past '<'
+                }
+                case '>':
+                {
+                    // Check for >=
+                    INX
+                    CPX ZP.BasicInputLength
+                    if (NZ)
+                    {
+                        LDA Address.BasicInputBuffer, X
+                        CMP #'='
+                        if (Z)
+                        {
+                            LDA #Tokens.GE
+                            appendToTokenBuffer();
+                            Messages.CheckError();
+                            if (NZ) { return; }
+                            INX  // Skip both '>' and '='
+                            continue;
+                        }
+                    }
+                    // Just '>'
+                    DEX  // Back up to point at '>'
+                    LDA #Tokens.GT
+                    appendToTokenBuffer();
+                    Messages.CheckError();
+                    if (NZ) { return; }
+                    INX  // Move past '>'
                 }
                 case '"':
                 {

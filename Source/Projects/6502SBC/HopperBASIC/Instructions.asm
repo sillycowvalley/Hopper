@@ -2,24 +2,30 @@ unit Instructions
 {
     uses "/Source/Runtime/6502/ZeroPage"
     uses "/Source/Runtime/6502/Stacks"
-    
+    uses "Messages"
     uses "BasicTypes"
     
     // Helper function to check if two types are compatible for operations
     // Input: ZP.NEXTT = left operand type, ZP.TOPT = right operand type
     //        ZP.NEXT = left value, ZP.TOP = right value (for WORD/INT range check)
-    //        A = operation type: 0=comparison (BIT allowed), 1=arithmetic (BIT not allowed)
+    //        A = operation mode:
+    //          0 = Equality comparison (=, <>) - BIT types allowed, result is BIT
+    //          1 = Arithmetic (+, -, *, /, %) - BIT types rejected, result is promoted numeric type
+    //          2 = Bitwise/logical (AND, OR) - BIT types allowed, result is operand type or promoted
+    //          3 = Ordering comparison (<, >, <=, >=) - BIT types rejected, result is BIT
     // Output: Z set if compatible, NZ set if TYPE MISMATCH
-    //         ZP.NEXTT = result type (for arithmetic operations)
+    //         ZP.NEXTT = result type (updated based on operation mode and type promotion)
     // Uses: ZP.ACCL for temporary storage
     checkTypeCompatibility()
     {
-        STA ZP.ACCL  // Save operation type (0=comparison, 1=arithmetic)
+        STA ZP.ACCL  // Save operation mode
         
-        // For arithmetic operations, reject BIT types
+        // Mode-specific type restrictions
         LDA ZP.ACCL
-        if (NZ)  // Arithmetic operation
+        CMP #1  // Arithmetic operations
+        if (Z)
         {
+            // Arithmetic: reject BIT types
             LDA ZP.NEXTT
             CMP #BasicType.BIT
             if (Z)
@@ -36,10 +42,41 @@ unit Instructions
                 return;
             }
         }
+        else
+        {
+            LDA ZP.ACCL
+            CMP #3  // Ordering comparison operations
+            if (Z)
+            {
+                // Ordering comparison: reject BIT types
+                LDA ZP.NEXTT
+                CMP #BasicType.BIT
+                if (Z)
+                {
+                    LDA #1  // Set NZ - type mismatch
+                    return;
+                }
+                
+                LDA ZP.TOPT
+                CMP #BasicType.BIT
+                if (Z)
+                {
+                    LDA #1  // Set NZ - type mismatch
+                    return;
+                }
+            }
+            // Modes 0 (equality) and 2 (bitwise/logical) allow BIT types
+        }
         
-        // Check for ARRAY type on either side - always an error
+        // Check for ARRAY and STRING types - not supported in Phase 1
         LDA ZP.NEXTT
         CMP #BasicType.ARRAY
+        if (Z)
+        {
+            LDA #1  // Set NZ - type mismatch
+            return;
+        }
+        CMP #BasicType.STRING
         if (Z)
         {
             LDA #1  // Set NZ - type mismatch
@@ -53,27 +90,41 @@ unit Instructions
             LDA #1  // Set NZ - type mismatch
             return;
         }
+        CMP #BasicType.STRING
+        if (Z)
+        {
+            LDA #1  // Set NZ - type mismatch
+            return;
+        }
         
-        // If both types are the same, always OK
+        // If both types are the same, check compatibility and set result type
         LDA ZP.NEXTT
         CMP ZP.TOPT
         if (Z)
         {
-            // For arithmetic, result type = operand type
-            // For comparison, result type = BIT (set below)
+            // Set result type based on operation mode
             LDA ZP.ACCL
-            if (Z)  // Comparison operation
+            switch (A)
             {
-                LDA #BasicType.BIT
-                STA ZP.NEXTT  // Result type = BIT
+                case 0:  // Equality comparison
+                case 3:  // Ordering comparison
+                {
+                    LDA #BasicType.BIT
+                    STA ZP.NEXTT  // Result type = BIT
+                }
+                case 1:  // Arithmetic operations
+                case 2:  // Bitwise/logical operations
+                {
+                    // Result type = operand type (no change needed)
+                }
             }
             LDA #0  // Set Z - compatible
             return;
         }
         
-        // Different types - check specific compatibility rules
+        // Different types - check specific compatibility rules and apply type promotion
         
-        // BYTE vs INT - always OK
+        // BYTE vs INT - always compatible, promotes to INT
         LDA ZP.NEXTT
         CMP #BasicType.BYTE
         if (Z)
@@ -82,24 +133,13 @@ unit Instructions
             CMP #BasicType.INT
             if (Z)
             {
-                // For mixed types, determine result type
-                LDA ZP.ACCL
-                if (Z)  // Comparison operation
-                {
-                    LDA #BasicType.BIT
-                    STA ZP.NEXTT
-                }
-                else    // Arithmetic operation - promote to INT
-                {
-                    LDA #BasicType.INT
-                    STA ZP.NEXTT
-                }
+                setResultTypeForMixedOperation();
                 LDA #0  // Set Z - compatible
                 return;
             }
         }
         
-        // INT vs BYTE - always OK  
+        // INT vs BYTE - always compatible, promotes to INT  
         LDA ZP.NEXTT
         CMP #BasicType.INT
         if (Z)
@@ -108,24 +148,13 @@ unit Instructions
             CMP #BasicType.BYTE
             if (Z)
             {
-                // For mixed types, determine result type
-                LDA ZP.ACCL
-                if (Z)  // Comparison operation
-                {
-                    LDA #BasicType.BIT
-                    STA ZP.NEXTT
-                }
-                else    // Arithmetic operation - promote to INT
-                {
-                    LDA #BasicType.INT
-                    STA ZP.NEXTT
-                }
+                setResultTypeForMixedOperation();
                 LDA #0  // Set Z - compatible
                 return;
             }
         }
         
-        // BYTE vs WORD - always OK
+        // BYTE vs WORD - always compatible, promotes to WORD
         LDA ZP.NEXTT
         CMP #BasicType.BYTE
         if (Z)
@@ -134,24 +163,15 @@ unit Instructions
             CMP #BasicType.WORD
             if (Z)
             {
-                // For mixed types, determine result type
-                LDA ZP.ACCL
-                if (Z)  // Comparison operation
-                {
-                    LDA #BasicType.BIT
-                    STA ZP.NEXTT
-                }
-                else    // Arithmetic operation - promote to WORD
-                {
-                    LDA #BasicType.WORD
-                    STA ZP.NEXTT
-                }
+                LDA #BasicType.WORD
+                STA ZP.NEXTT  // Promote to WORD for all operations except comparisons
+                setResultTypeForMixedOperation();
                 LDA #0  // Set Z - compatible
                 return;
             }
         }
         
-        // WORD vs BYTE - always OK
+        // WORD vs BYTE - always compatible, promotes to WORD
         LDA ZP.NEXTT
         CMP #BasicType.WORD
         if (Z)
@@ -160,12 +180,14 @@ unit Instructions
             CMP #BasicType.BYTE
             if (Z)
             {
+                // WORD is already the promoted type (no change to ZP.NEXTT needed)
+                setResultTypeForMixedOperation();
                 LDA #0  // Set Z - compatible
                 return;
             }
         }
         
-        // WORD vs INT - OK if INT >= 0 (high bit clear)
+        // WORD vs INT - compatible only if INT >= 0 (non-negative), promotes to WORD
         LDA ZP.NEXTT
         CMP #BasicType.WORD
         if (Z)
@@ -181,24 +203,14 @@ unit Instructions
                     LDA #1   // Set NZ - type mismatch
                     return;
                 }
-                // For mixed types, determine result type
-                LDA ZP.ACCL
-                if (Z)  // Comparison operation
-                {
-                    LDA #BasicType.BIT
-                    STA ZP.NEXTT
-                }
-                else    // Arithmetic operation - promote to WORD
-                {
-                    LDA #BasicType.WORD
-                    STA ZP.NEXTT
-                }
+                // WORD is already the promoted type (no change to ZP.NEXTT needed)
+                setResultTypeForMixedOperation();
                 LDA #0       // Set Z - compatible
                 return;
             }
         }
         
-        // INT vs WORD - OK if INT >= 0 (high bit clear)
+        // INT vs WORD - compatible only if INT >= 0 (non-negative), promotes to WORD
         LDA ZP.NEXTT
         CMP #BasicType.INT
         if (Z)
@@ -214,31 +226,44 @@ unit Instructions
                     LDA #1    // Set NZ - type mismatch
                     return;
                 }
-                // For mixed types, determine result type
-                LDA ZP.ACCL
-                if (Z)  // Comparison operation
-                {
-                    LDA #BasicType.BIT
-                    STA ZP.NEXTT
-                }
-                else    // Arithmetic operation - promote to WORD
-                {
-                    LDA #BasicType.WORD
-                    STA ZP.NEXTT
-                }
+                LDA #BasicType.WORD
+                STA ZP.NEXTT  // Promote to WORD
+                setResultTypeForMixedOperation();
                 LDA #0        // Set Z - compatible
                 return;
             }
         }
         
-        // All other combinations are incompatible
+        // All other combinations are incompatible (STRING with numbers, etc.)
         LDA #1  // Set NZ - type mismatch
     }
     
+    // Helper function to set result type for mixed-type operations
+    // Input: ZP.ACCL = operation mode, ZP.NEXTT = promoted operand type
+    // Output: ZP.NEXTT = final result type
+    setResultTypeForMixedOperation()
+    {
+        LDA ZP.ACCL
+        switch (A)
+        {
+            case 0:  // Equality comparison
+            case 3:  // Ordering comparison  
+            {
+                LDA #BasicType.BIT
+                STA ZP.NEXTT  // Result type = BIT
+            }
+            case 1:  // Arithmetic operations
+            case 2:  // Bitwise/logical operations
+            {
+                // Result type = promoted operand type (ZP.NEXTT already set correctly)
+            }
+        }
+    }
     
+    // Helper for shared subtraction logic
     subShared()
     {
-        LDA #1  // Arithmetic  operation
+        LDA #1  // Arithmetic operation
         checkTypeCompatibility();
         
         if (NZ)  // Type mismatch
@@ -267,7 +292,7 @@ unit Instructions
         // Pop two operands
         Stacks.PopTopNext();
         
-        LDA # 1  // Comparison operation
+        LDA #1  // Arithmetic operation
         checkTypeCompatibility();
         
         if (NZ)  // Type mismatch
@@ -279,7 +304,7 @@ unit Instructions
             return;
         }
         
-        DumpVariables();
+        Tools.DumpVariables();
         
         CLC
         LDA ZP.NEXTL
@@ -291,8 +316,6 @@ unit Instructions
         
         LDA ZP.NEXTT       
         Stacks.PushNext();
-        
-        
     }
         
     Subtraction()
@@ -301,7 +324,84 @@ unit Instructions
         subShared();
     }
     
-    Equals()
+    // Multiplicative operators with stubs
+    Multiply()
+    {
+        // Pop two operands
+        Stacks.PopTopNext();
+        
+        LDA #1  // Arithmetic operation
+        checkTypeCompatibility();
+        
+        if (NZ)  // Type mismatch
+        {
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            return;
+        }
+        
+        // TODO: Implement multiplication
+        LDA #(Messages.NotImplemented % 256)
+        STA ZP.LastErrorL
+        LDA #(Messages.NotImplemented / 256)
+        STA ZP.LastErrorH
+        BRK
+    }
+    
+    Divide()
+    {
+        // Pop two operands
+        Stacks.PopTopNext();
+        
+        LDA #1  // Arithmetic operation
+        checkTypeCompatibility();
+        
+        if (NZ)  // Type mismatch
+        {
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            return;
+        }
+        
+        // TODO: Implement division with zero check
+        LDA #(Messages.NotImplemented % 256)
+        STA ZP.LastErrorL
+        LDA #(Messages.NotImplemented / 256)
+        STA ZP.LastErrorH
+        BRK
+    }
+    
+    Modulo()
+    {
+        // Pop two operands
+        Stacks.PopTopNext();
+        
+        LDA #1  // Arithmetic operation
+        checkTypeCompatibility();
+        
+        if (NZ)  // Type mismatch
+        {
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            return;
+        }
+        
+        // TODO: Implement modulo with zero check
+        LDA #(Messages.NotImplemented % 256)
+        STA ZP.LastErrorL
+        LDA #(Messages.NotImplemented / 256)
+        STA ZP.LastErrorH
+        BRK
+    }
+    
+    // Existing comparison operators
+    Equal()
     {
         Stacks.PopTopNext();  // Gets both values and their types
         
@@ -349,7 +449,7 @@ unit Instructions
             return;
         }
         
-        LDX # 1
+        LDX #1  // Assume not equal
         LDA ZP.NEXTL
         CMP ZP.TOPL
         if (Z)
@@ -358,9 +458,186 @@ unit Instructions
             CMP ZP.TOPH
             if (Z)
             {
-                LDX # 0
+                LDX #0  // Equal
             }
         }
         Stacks.PushX(); // X, type is BasicType.BIT
+    }
+    
+    // Additional comparison operators with stubs
+    LessThan()
+    {
+        // Pop two operands
+        Stacks.PopTopNext();
+        
+        LDA #3  // Ordering comparison operation
+        checkTypeCompatibility();
+        
+        if (NZ)  // Type mismatch
+        {
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            return;
+        }
+        
+        // TODO: Implement less-than comparison
+        LDA #(Messages.NotImplemented % 256)
+        STA ZP.LastErrorL
+        LDA #(Messages.NotImplemented / 256)
+        STA ZP.LastErrorH
+        BRK
+    }
+    
+    GreaterThan()
+    {
+        // Pop two operands
+        Stacks.PopTopNext();
+        
+        LDA #3  // Ordering comparison operation
+        checkTypeCompatibility();
+        
+        if (NZ)  // Type mismatch
+        {
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            return;
+        }
+        
+        // TODO: Implement greater-than comparison
+        LDA #(Messages.NotImplemented % 256)
+        STA ZP.LastErrorL
+        LDA #(Messages.NotImplemented / 256)
+        STA ZP.LastErrorH
+        BRK
+    }
+    
+    LessEqual()
+    {
+        // Pop two operands
+        Stacks.PopTopNext();
+        
+        LDA #3  // Ordering comparison operation
+        checkTypeCompatibility();
+        
+        if (NZ)  // Type mismatch
+        {
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            return;
+        }
+        
+        // TODO: Implement less-than-or-equal comparison
+        LDA #(Messages.NotImplemented % 256)
+        STA ZP.LastErrorL
+        LDA #(Messages.NotImplemented / 256)
+        STA ZP.LastErrorH
+        BRK
+    }
+    
+    GreaterEqual()
+    {
+        // Pop two operands
+        Stacks.PopTopNext();
+        
+        LDA #3  // Ordering comparison operation
+        checkTypeCompatibility();
+        
+        if (NZ)  // Type mismatch
+        {
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            return;
+        }
+        
+        // TODO: Implement greater-than-or-equal comparison
+        LDA #(Messages.NotImplemented % 256)
+        STA ZP.LastErrorL
+        LDA #(Messages.NotImplemented / 256)
+        STA ZP.LastErrorH
+        BRK
+    }
+    
+    // Logical operators with stubs
+    And()
+    {
+        // Pop two operands
+        Stacks.PopTopNext();
+        
+        LDA #2  // Bitwise/logical operation
+        checkTypeCompatibility();
+        
+        if (NZ)  // Type mismatch
+        {
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            return;
+        }
+        
+        // TODO: Implement logical AND
+        LDA #(Messages.NotImplemented % 256)
+        STA ZP.LastErrorL
+        LDA #(Messages.NotImplemented / 256)
+        STA ZP.LastErrorH
+        BRK
+    }
+    
+    Or()
+    {
+        // Pop two operands
+        Stacks.PopTopNext();
+        
+        LDA #2  // Bitwise/logical operation
+        checkTypeCompatibility();
+        
+        if (NZ)  // Type mismatch
+        {
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            return;
+        }
+        
+        // TODO: Implement logical OR
+        LDA #(Messages.NotImplemented % 256)
+        STA ZP.LastErrorL
+        LDA #(Messages.NotImplemented / 256)
+        STA ZP.LastErrorH
+        BRK
+    }
+    
+    LogicalNot()
+    {
+        // Pop single operand
+        Stacks.PopTop();
+        
+        // Check if operand is BIT type (only valid for logical NOT)
+        LDA ZP.TOPT
+        CMP #BasicType.BIT
+        if (NZ)  // Not a BIT type
+        {
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            return;
+        }
+        
+        // [top] ? 0 : 1 -> [top] // assumes Type.Bool (0 or 1)
+        LDA ZP.TOPL
+        EOR # 0x01
+        TAX
+        
+        Stacks.PushX();  // Push result (X) with BIT type
     }
 }
