@@ -279,6 +279,9 @@ unit Tokenizer
     // Returns token in A if found, or 0 if not found
     findKeyword()
     {
+        PHX
+        PHY
+        
         LDY #0  // Start at beginning of keyword table
         loop
         {
@@ -302,6 +305,8 @@ unit Tokenizer
                     CPX ZP.ACCL
                     if (Z)
                     {
+                        PLY
+                        PLX
                         LDA ZP.ACCH  // Return token value - exact match!
                         return;
                     }
@@ -329,9 +334,14 @@ unit Tokenizer
             }
         }
         
+        PLY
+        PLX
+        
         LDA #0  // Not found
     }
     
+    // Tokenize complete line from BasicInputBuffer into BasicTokenizerBuffer
+    // Returns Z if successful, NZ if error (error stored in ZP.LastError)
     // Tokenize complete line from BasicInputBuffer into BasicTokenizerBuffer
     // Returns Z if successful, NZ if error (error stored in ZP.LastError)
     TokenizeLine()
@@ -359,9 +369,8 @@ unit Tokenizer
             CPX ZP.BasicInputLength
             if (Z) { break; }  // End of input
             
-            LDA Address.BasicInputBuffer, X
-            
             // Check for operators and punctuation
+            LDA Address.BasicInputBuffer, X
             switch (A)
             {
                 case '=':
@@ -545,7 +554,7 @@ unit Tokenizer
                     }
                     
                     // Scan alphanumeric characters into working buffer for keyword lookup
-                    LDY #0  // Index into working buffer
+                    LDY #0  // Index into working buffer (FIXED: was using X)
                     loop
                     {
                         CPX ZP.BasicInputLength
@@ -567,10 +576,10 @@ unit Tokenizer
                                 SBC #('a'-'A')  // Convert to uppercase
                             }
                         }
-                        STA Address.BasicProcessBuffer1, Y
+                        STA Address.BasicProcessBuffer1, Y  // FIXED: Use Y for working buffer
                         
-                        INX
-                        INY
+                        INX  // Advance input position
+                        INY  // FIXED: Advance working buffer index separately
                         CPY #Limits.BasicProcessBuffer1Length
                         if (Z) 
                         { 
@@ -584,7 +593,7 @@ unit Tokenizer
                     
                     // Add null terminator to working buffer
                     LDA #0
-                    STA Address.BasicProcessBuffer1, Y
+                    STA Address.BasicProcessBuffer1, Y  // FIXED: Use Y for working buffer
                     
                     // Check if it's a keyword
                     findKeyword();
@@ -603,7 +612,7 @@ unit Tokenizer
                         if (NZ) { return; }
                         
                         // Copy identifier from working buffer to token buffer
-                        LDY #0
+                        LDY #0  // Reset Y for copying
                         loop
                         {
                             LDA Address.BasicProcessBuffer1, Y

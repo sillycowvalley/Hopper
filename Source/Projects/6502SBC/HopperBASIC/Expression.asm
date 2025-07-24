@@ -12,31 +12,34 @@ unit Expression
     // Updated precedence: parseComparison() → parseLogical() → parseAddition() → parseMultiplicative() → parseUnary()
     Evaluate()
     {
-        // DEBUG
+#ifdef DEBUG
         LDA #'<'
         Serial.WriteChar();
         LDA #'E'
         Serial.WriteChar();
+#endif
         
         // Start with lowest precedence level
         parseComparison();
         
-        // DEBUG
+#ifdef DEBUG
         LDA #'E'
         Serial.WriteChar();
         LDA #'>'
         Serial.WriteChar();
+#endif
     }
     
     // Parse comparison operators (=, <>, <, >, <=, >=)
     // Precedence level 1 (lowest)
     parseComparison()
     {
-        // DEBUG
+#ifdef DEBUG
         LDA #'<'
         Serial.WriteChar();
         LDA #'C'
         Serial.WriteChar();
+#endif
         
         // Parse left operand
         parseLogical();
@@ -157,22 +160,24 @@ unit Expression
             break; // No more comparison operators
         }
         
-        // DEBUG
+#ifdef DEBUG
         LDA #'C'
         Serial.WriteChar();
         LDA #'>'
         Serial.WriteChar();
+#endif
     }
     
     // Parse logical operators (AND, OR)
     // Precedence level 2 (AND binds tighter than OR)
     parseLogical()
     {
-        // DEBUG
+#ifdef DEBUG
         LDA #'<'
         Serial.WriteChar();
         LDA #'L'
         Serial.WriteChar();
+#endif
         
         // Parse left operand (OR has lower precedence, so parse AND first)
         parseLogicalAnd();
@@ -203,11 +208,12 @@ unit Expression
             break; // No more OR operators
         }
         
-        // DEBUG
+#ifdef DEBUG
         LDA #'L'
         Serial.WriteChar();
         LDA #'>'
         Serial.WriteChar();
+#endif
     }
     
     // Parse logical AND operators (higher precedence than OR)
@@ -247,11 +253,12 @@ unit Expression
     // Precedence level 3
     parseAddition()
     {
-        // DEBUG
+#ifdef DEBUG
         LDA #'<'
         Serial.WriteChar();
         LDA #'A'
         Serial.WriteChar();
+#endif
         
         // Parse left operand
         parseMultiplicative();
@@ -300,22 +307,24 @@ unit Expression
             break; // No more addition/subtraction operators
         }
         
-        // DEBUG
+#ifdef DEBUG
         LDA #'A'
         Serial.WriteChar();
         LDA #'>'
         Serial.WriteChar();
+#endif
     }
     
     // Parse multiplicative operators (*, /, MOD)
     // Precedence level 4 (higher than addition)
     parseMultiplicative()
     {
-        // DEBUG
+#ifdef DEBUG
         LDA #'<'
         Serial.WriteChar();
         LDA #'M'
         Serial.WriteChar();
+#endif
         
         // Parse left operand
         parseUnary();
@@ -382,22 +391,24 @@ unit Expression
             break; // No more multiplicative operators
         }
         
-        // DEBUG
+#ifdef DEBUG
         LDA #'M'
         Serial.WriteChar();
         LDA #'>'
         Serial.WriteChar();
+#endif
     }
     
     // Parse unary operators and primary expressions
     // Precedence level 5 (highest)
     parseUnary()
     {
-        // DEBUG
+#ifdef DEBUG
         LDA #'<'
         Serial.WriteChar();
         LDA #'U'
         Serial.WriteChar();
+#endif
         
         LDA ZP.CurrentToken
         CMP #Tokens.MINUS
@@ -423,11 +434,12 @@ unit Expression
             // Negate the result (0 - operand)
             Instructions.Subtraction();
             
-            // DEBUG
+#ifdef DEBUG
             LDA #'U'
             Serial.WriteChar();
             LDA #'>'
             Serial.WriteChar();
+#endif
             
             return;
         }
@@ -448,11 +460,12 @@ unit Expression
             // Perform logical NOT
             Instructions.LogicalNot();
             
-            // DEBUG
+#ifdef DEBUG
             LDA #'U'
             Serial.WriteChar();
             LDA #'>'
             Serial.WriteChar();
+#endif
             
             return;
         }
@@ -460,21 +473,23 @@ unit Expression
         // Not unary, parse primary
         parsePrimary();
         
-        // DEBUG
+#ifdef DEBUG
         LDA #'U'
         Serial.WriteChar();
         LDA #'>'
         Serial.WriteChar();
+#endif
     }
     
     // Parse primary expressions (numbers, identifiers, parentheses)
     parsePrimary()
     {
-        // DEBUG
+#ifdef DEBUG
         LDA #'<'
         Serial.WriteChar();
         LDA #'T'
         Serial.WriteChar();
+#endif
         
         LDA ZP.CurrentToken
         
@@ -485,12 +500,14 @@ unit Expression
                 // Convert token to number and push to stack
                 Tokenizer.GetTokenNumber();  // Result in ZP.TOP, type in ZP.TOPT
                 
-                // DEBUG: Show parsed number
+#ifdef DEBUG
+                // Show parsed number
                 LDA ZP.TOPT
                 Tools.PrintType();
                 LDA #':'
                 Serial.WriteChar();
-                PrintDecimalWord();
+                Tools.PrintDecimalWord();
+#endif
                 
                 LDA ZP.TOPT // type
                 Stacks.PushTop();
@@ -500,11 +517,12 @@ unit Expression
                 Messages.CheckError();
                 if (NZ) { return; }
                 
-                // DEBUG
+#ifdef DEBUG
                 LDA #'T'
                 Serial.WriteChar();
                 LDA #'>'
                 Serial.WriteChar();
+#endif
                 
                 return;
             }
@@ -516,11 +534,12 @@ unit Expression
                 LDA #(Messages.UndefinedIdentifier / 256)
                 STA ZP.LastErrorH
                 
-                // DEBUG
+#ifdef DEBUG
                 LDA #'T'
                 Serial.WriteChar();
                 LDA #'>'
                 Serial.WriteChar();
+#endif
                 
                 BRK
                 return;
@@ -554,11 +573,12 @@ unit Expression
                 Messages.CheckError();
                 if (NZ) { return; }
                 
-                // DEBUG
+#ifdef DEBUG
                 LDA #'T'
                 Serial.WriteChar();
                 LDA #'>'
                 Serial.WriteChar();
+#endif
                 
                 return;
             }
@@ -570,11 +590,12 @@ unit Expression
                 LDA #(Messages.SyntaxError / 256)
                 STA ZP.LastErrorH
                 
-                // DEBUG
+#ifdef DEBUG
                 LDA #'T'
                 Serial.WriteChar();
                 LDA #'>'
                 Serial.WriteChar();
+#endif
                 
                 return;
             }

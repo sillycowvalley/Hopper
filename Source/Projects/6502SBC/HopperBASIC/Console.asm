@@ -19,15 +19,17 @@ unit Console
     // Read a line of input and tokenize it
     ReadLine()
     {
-        Tokenizer.ReadLine();    // Read into BasicInputBuffer, sets ZP.BasicInputLength
+        Tokenizer.ReadLine();     // Read into BasicInputBuffer, sets ZP.BasicInputLength
         Tokenizer.TokenizeLine(); // Tokenize into BasicTokenizerBuffer
-        Messages.CheckError();
-        if (NZ) { return; }  // Return if tokenization failed
-        
-// Optional debug output (remove when working)
+       
 #ifdef DEBUG
-        Tools.DumpBasicBuffers();
-#endif
+        CheckError();
+        if (NZ)
+        {
+            LDA # 'T' Serial.WriteChar(); LDA # 'L' Serial.WriteChar(); LDA # '\n' Serial.WriteChar();
+            Tools.DumpBasicBuffers();
+        }
+#endif 
     }
     
     // Execute MEM command

@@ -305,8 +305,6 @@ unit Instructions
             return;
         }
         
-        Tools.DumpVariables();
-        
         CLC
         LDA ZP.NEXTL
         ADC ZP.TOPL

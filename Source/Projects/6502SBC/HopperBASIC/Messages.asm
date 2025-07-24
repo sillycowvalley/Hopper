@@ -40,13 +40,14 @@ unit Messages
         LDA ZP.LastErrorL
         ORA ZP.LastErrorH
         
-        // DEBUG
+#ifdef DEBUG
         if (NZ)
         {
             LDA #'!'
             Serial.WriteChar();
             LDA # 1 // set NZ
         }
+#endif
     }
     
     CheckAndPrintError()
@@ -83,6 +84,4 @@ unit Messages
         STA ZP.IDXH
         Tools.PrintString();
     }
-    
-    
 }

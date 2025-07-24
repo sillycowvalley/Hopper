@@ -1,10 +1,19 @@
 program HopperBASIC
 {
+    #define DEBUG
+    
     #define CPU_65C02S
-    #define ROM_8K
     #define HOPPER_BASIC
     
-    #define DEBUG
+#if defined(DEBUG) 
+    #define ROM_16K
+#endif
+#if !defined(ROM_8K) && !defined(ROM_8K) && !defined(ROM_16K) && !defined(ROM_32K)
+    #define ROM_8K
+#endif
+
+    
+    
     
     uses "/Source/Runtime/6502/Serial"
     uses "/Source/Runtime/6502/ZeroPage"
@@ -74,6 +83,12 @@ program HopperBASIC
             
             // Read and process user input using tokenizer
             Console.ReadLine();
+            CheckError();
+            if (NZ)
+            {
+                Messages.CheckAndPrintError();
+                continue;
+            }
             
             // Check for empty line
             LDA ZP.BasicInputLength

@@ -12,13 +12,14 @@ unit Statement
     // Returns Z if successful, NZ if error (error stored in ZP.LastError)
     Execute()
     {
-        // DEBUG
+#ifdef DEBUG
         LDA #'<'
         Serial.WriteChar();
         LDA #'S'
         Serial.WriteChar();
         LDA ZP.CurrentToken
         Serial.HexOut();
+#endif
         
         LDA ZP.CurrentToken
         
@@ -27,52 +28,57 @@ unit Statement
             case Tokens.PRINT:
             {
                 executePrint();
-                // DEBUG
+#ifdef DEBUG
                 LDA #'S'
                 Serial.WriteChar();
                 LDA #'>'
                 Serial.WriteChar();
+#endif
                 return;
             }
             case Tokens.IF:
             {
                 executeIf();
-                // DEBUG
+#ifdef DEBUG
                 LDA #'S'
                 Serial.WriteChar();
                 LDA #'>'
                 Serial.WriteChar();
+#endif
                 return;
             }
             case Tokens.RETURN:
             {
                 executeReturn();
-                // DEBUG
+#ifdef DEBUG
                 LDA #'S'
                 Serial.WriteChar();
                 LDA #'>'
                 Serial.WriteChar();
+#endif
                 return;
             }
             case Tokens.END:
             {
                 executeEnd();
-                // DEBUG
+#ifdef DEBUG
                 LDA #'S'
                 Serial.WriteChar();
                 LDA #'>'
                 Serial.WriteChar();
+#endif
                 return;
             }
             case Tokens.IDENTIFIER:
             {
                 // Could be assignment or function call
                 executeIdentifier();
-                // DEBUG
+#ifdef DEBUG
                 LDA #'S'
                 Serial.WriteChar();
                 LDA #'>'
                 Serial.WriteChar();
+#endif
                 return;
             }
             default:
@@ -82,11 +88,12 @@ unit Statement
                 STA ZP.LastErrorL
                 LDA #(Messages.SyntaxError / 256)
                 STA ZP.LastErrorH
-                // DEBUG
+#ifdef DEBUG
                 LDA #'S'
                 Serial.WriteChar();
                 LDA #'>'
                 Serial.WriteChar();
+#endif
                 return;
             }
         }
@@ -96,11 +103,12 @@ unit Statement
     // PRINT <expression>
     executePrint()
     {
-        // DEBUG
+#ifdef DEBUG
         LDA #'<'
         Serial.WriteChar();
         LDA #'P'
         Serial.WriteChar();
+#endif
         
         // Get next token (should be start of expression)
         Tokenizer.NextToken();
@@ -117,11 +125,12 @@ unit Statement
             LDA #'\n'
             Serial.WriteChar();
             
-            // DEBUG
+#ifdef DEBUG
             LDA #'P'
             Serial.WriteChar();
             LDA #'>'
             Serial.WriteChar();
+#endif
             
             return;
         }
@@ -140,22 +149,24 @@ unit Statement
         LDA #'\n'
         Serial.WriteChar();
         
-        // DEBUG
+#ifdef DEBUG
         LDA #'P'
         Serial.WriteChar();
         LDA #'>'
         Serial.WriteChar();
+#endif
     }
     
     // Execute IF statement
     // IF <expression> THEN <statement>
     executeIf()
     {
-        // DEBUG
+#ifdef DEBUG
         LDA #'<'
         Serial.WriteChar();
         LDA #'I'
         Serial.WriteChar();
+#endif
         
         // Get next token (should be start of condition expression)
         Tokenizer.NextToken();
@@ -188,11 +199,12 @@ unit Statement
         if (Z)
         {
             // Condition is false, skip to end of line
-            // DEBUG
+#ifdef DEBUG
             LDA #'I'
             Serial.WriteChar();
             LDA #'>'
             Serial.WriteChar();
+#endif
             return;
         }
         
@@ -204,22 +216,24 @@ unit Statement
         // Recursively execute the statement after THEN
         Execute();
         
-        // DEBUG
+#ifdef DEBUG
         LDA #'I'
         Serial.WriteChar();
         LDA #'>'
         Serial.WriteChar();
+#endif
     }
     
     // Execute RETURN statement
     // RETURN [<expression>]
     executeReturn()
     {
-        // DEBUG
+#ifdef DEBUG
         LDA #'<'
         Serial.WriteChar();
         LDA #'R'
         Serial.WriteChar();
+#endif
         
         // Get next token
         Tokenizer.NextToken();
@@ -251,11 +265,12 @@ unit Statement
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
         
-        // DEBUG
+#ifdef DEBUG
         LDA #'R'
         Serial.WriteChar();
         LDA #'>'
         Serial.WriteChar();
+#endif
         
         BRK
     }
