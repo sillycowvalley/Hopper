@@ -332,14 +332,14 @@ unit Instructions
         ASL // sign bit into carry
         if (C)
         {
-            INX // count the -ve
+            INX // count the negative values
             IntMath.NegateNext(); // NEXT = -NEXT
         }
         LDA ZP.TOPH
         ASL // sign bit into carry
         if (C)
         {
-            INX // count the -ve
+            INX // count the negative values
             IntMath.NegateTop(); // TOP = -TOP
         }
         STX ZP.FSIGN // store the sign count
@@ -367,19 +367,19 @@ unit Instructions
         CMP # BasicType.INT
         if (Z)
         {
-            // INT
+            // INT - handle signed multiplication
             doSigns();
             IntMath.MulShared();
             LDA ZP.FSIGN     // load the sign count
             CMP #1
-            if (Z)           // 1 negative (not 0 or 2)
+            if (Z)           // one negative (not zero or two)
             {
                 IntMath.NegateTop(); // TOP = -TOP
             }
         }
         else
         {
-            // WORD or BYTE
+            // WORD or BYTE - unsigned multiplication
             IntMath.MulShared();
             LDA ZP.TOPT
         }
@@ -409,26 +409,27 @@ unit Instructions
         CMP # BasicType.INT
         if (Z)
         {
-            // INT
+            // INT - handle signed division
             doSigns(); // munts X
             IntMath.UtilityDiv();
             
             LDA ZP.FSIGN     // load the sign count
             CMP #1
-            if (Z)           // 1 negative (not 0 or 2)
+            if (Z)           // one negative (not zero or two)
             {
                 IntMath.NegateNext(); // NEXT = -NEXT
             }
         }
         else
         {
-            // BYTE or WORD
+            // BYTE or WORD - unsigned division
             // NEXT = NEXT / TOP
             IntMath.UtilityDiv();
         }
         LDA ZP.NEXTT
         Stacks.PushNext();
     }
+    
     Modulo()
     {
         // Pop two operands
@@ -449,7 +450,7 @@ unit Instructions
         CMP # BasicType.INT
         if (Z)
         {
-            // INT
+            // INT - handle signed modulo
             doSigns();
         }
         // ACC = NEXT % TOP
@@ -460,12 +461,12 @@ unit Instructions
         Stacks.PushACC(); // munts Y, A
     }
     
-    // Existing comparison operators
+    // Comparison operators
     Equal()
     {
         Stacks.PopTopNext();  // Gets both values and their types
         
-        LDA #0  // Comparison operation
+        LDA #0  // Equality comparison operation
         checkTypeCompatibility();
         
         if (NZ)  // Type mismatch
@@ -497,7 +498,7 @@ unit Instructions
     {
         Stacks.PopTopNext();
         
-        LDA #0  // Comparison operation
+        LDA #0  // Equality comparison operation
         checkTypeCompatibility();
         
         if (NZ)  // Type mismatch
@@ -518,14 +519,12 @@ unit Instructions
             CMP ZP.TOPH
             if (Z)
             {
-                LDX #0  // Equal
+                LDX #0  // Actually equal
             }
         }
-        Stacks.PushX(); // X, type is BasicType.BIT
+        Stacks.PushX(); // X as BIT type
     }
     
-        
-    // Additional comparison operators with stubs
     LessThan()
     {
         // Pop two operands
@@ -547,9 +546,8 @@ unit Instructions
         CMP # BasicType.INT
         if (Z)
         {
-            // INT
-            // NEXT < TOP?
-            // TOP - NEXT > 0
+            // INT - signed comparison: NEXT < TOP?
+            // Calculate TOP - NEXT and check if result > 0
             SEC
             LDA ZP.TOPL
             SBC ZP.NEXTL
@@ -560,25 +558,25 @@ unit Instructions
             
             ASL           // sign bit into carry
             
-            LDX #0  // TOP <= 0
+            LDX #0  // Assume NEXT >= TOP
             loop
             {
-                if (C) { break; }
-                //  0 or positive
+                if (C) { break; }  // Negative result means NEXT >= TOP
+                // Zero or positive result
                 LDA ZP.TOPL
                 ORA ZP.TOPH
                 if (Z)
                 {
-                    break;
+                    break;  // Zero result means NEXT == TOP
                 }
-                LDX #1
+                LDX #1  // Positive result means NEXT < TOP
                 break;
             }
         }
         else
         {
-            // WORD and BYTE
-            LDX #1 // NEXT < TOP
+            // WORD and BYTE - unsigned comparison: NEXT < TOP?
+            LDX #1 // Assume NEXT < TOP
             LDA ZP.NEXTH
             CMP ZP.TOPH
             if (Z)
@@ -586,12 +584,12 @@ unit Instructions
                 LDA ZP.NEXTL
                 CMP ZP.TOPL
             }
-            if (C) // NEXT < TOP?
+            if (C) // NEXT >= TOP?
             {
-                LDX #0 // NEXT >= TOP
+                LDX #0 // NEXT not < TOP
             }
         }
-        Stacks.PushX(); // as BOOL
+        Stacks.PushX(); // Result as BIT type
     }
     
     GreaterThan()
@@ -613,7 +611,8 @@ unit Instructions
         CMP # BasicType.INT
         if (Z)
         {
-            // INT
+            // INT - signed comparison: NEXT > TOP?
+            // Calculate NEXT - TOP and check if result > 0
             SEC
             LDA ZP.NEXTL
             SBC ZP.TOPL
@@ -624,25 +623,25 @@ unit Instructions
             
             ASL           // sign bit into carry
             
-            LDX #0  // TOP <= 0
+            LDX #0  // Assume NEXT <= TOP
             loop
             {
-                if (C) { break; }
-                //  0 or positive
+                if (C) { break; }  // Negative result means NEXT <= TOP
+                // Zero or positive result
                 LDA ZP.TOPL
                 ORA ZP.TOPH
                 if (Z)
                 {
-                    break;
+                    break;  // Zero result means NEXT == TOP
                 }
-                LDX #1
+                LDX #1  // Positive result means NEXT > TOP
                 break;
             }
         }
         else
         {
-            // WORD and BYTE
-            LDX #0 // NEXT <= TOP
+            // WORD and BYTE - unsigned comparison: testing !(NEXT <= TOP) which is (NEXT > TOP)
+            LDX #0 // Assume NEXT <= TOP
             LDA ZP.NEXTH
             CMP ZP.TOPH
             if (Z)
@@ -650,15 +649,15 @@ unit Instructions
                 LDA ZP.NEXTL
                 CMP ZP.TOPL
             }
-            if (NZ) // NEXT == TOP (not >) ?
+            if (NZ) // NEXT != TOP?
             {
-                if (C) // NEXT <  TOP (not >)?
+                if (C) // NEXT < TOP?
                 {
                     LDX #1   // NEXT > TOP
                 }
             }
         }
-        Stacks.PushX(); // as BOOL
+        Stacks.PushX(); // Result as BIT type
     }
     
     LessEqual()
@@ -682,10 +681,8 @@ unit Instructions
         CMP # BasicType.INT
         if (Z)
         {
-            // INT
-            // NEXT <= TOP?
-            // TOP - NEXT >= 0
-            
+            // INT - signed comparison: NEXT <= TOP?
+            // Calculate TOP - NEXT and check if result >= 0
             SEC
             LDA ZP.TOPL
             SBC ZP.NEXTL
@@ -696,17 +693,17 @@ unit Instructions
             
             ASL           // sign bit into carry
             
-            LDX #0
+            LDX #0  // Assume NEXT > TOP
             if (NC)
             {
-                // 0 or positive
+                // Zero or positive result means NEXT <= TOP
                 LDX #1
             }
         }
         else
         {
-            // WORD and BYTE
-            LDX #1 // NEXT <= TOP
+            // WORD and BYTE - unsigned comparison: NEXT <= TOP?
+            LDX #1 // Assume NEXT <= TOP
             LDA ZP.NEXTH
             CMP ZP.TOPH
             if (Z)
@@ -714,15 +711,15 @@ unit Instructions
                 LDA ZP.NEXTL
                 CMP ZP.TOPL
             }
-            if (NZ) // NEXT == TOP (not >)?
+            if (NZ) // NEXT != TOP?
             {
-                if (C) // NEXT <  TOP (not >)?
+                if (C) // NEXT < TOP?
                 {
                     LDX #0  // NEXT > TOP
                 }
             }
         }
-        Stacks.PushX(); // as BOOL
+        Stacks.PushX(); // Result as BIT type
     }
     
     GreaterEqual()
@@ -746,8 +743,8 @@ unit Instructions
         CMP # BasicType.INT
         if (Z)
         {
-            // INT
-            LDX #0 // NEXT < TOP
+            // INT - signed comparison: testing !(NEXT < TOP) which is (NEXT >= TOP)
+            LDX #0 // Assume NEXT < TOP
             LDA ZP.NEXTH
             CMP ZP.TOPH
             if (Z)
@@ -757,15 +754,13 @@ unit Instructions
             }
             if (C) // NEXT < TOP?
             {
-                LDX #1   
+                LDX #1   // NEXT >= TOP
             }
         }
         else
         {
-            // WORD and BYTE
-            // NEXT >= TOP?
-            // NEXT - TOP >= 0
-            
+            // WORD and BYTE - unsigned comparison: NEXT >= TOP?
+            // Calculate NEXT - TOP and check if result >= 0
             SEC
             LDA ZP.NEXTL
             SBC ZP.TOPL
@@ -776,17 +771,17 @@ unit Instructions
             
             ASL           // sign bit into carry
             
-            LDX #0
+            LDX #0  // Assume NEXT < TOP
             if (NC)
             {
-                // 0 or positive
+                // Zero or positive result means NEXT >= TOP
                 LDX #1
             }
         }
-        Stacks.PushX(); // as BOOL
+        Stacks.PushX(); // Result as BIT type
     }
     
-    // Logical operators with stubs
+    // Logical operators
     And()
     {
         // Pop two operands
@@ -804,7 +799,7 @@ unit Instructions
             return;
         }
         
-        // [next] &  [top] -> [top]
+        // NEXT & TOP -> NEXT
         LDA ZP.NEXTL
         AND ZP.TOPL
         STA ZP.NEXTL
@@ -833,7 +828,7 @@ unit Instructions
             return;
         }
         
-        // [next] |  [top] -> [top]
+        // NEXT | TOP -> NEXT
         LDA ZP.NEXTL
         ORA ZP.TOPL
         STA ZP.NEXTL
@@ -861,7 +856,7 @@ unit Instructions
             return;
         }
         
-        // [top] ? 0 : 1 -> [top] // assumes Type.Bool (0 or 1)
+        // Logical NOT: convert 0 to 1, and 1 to 0 (assumes BIT type is 0 or 1)
         LDA ZP.TOPL
         EOR # 0x01
         TAX
