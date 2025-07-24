@@ -208,9 +208,91 @@ unit Objects
     
     // Destroy entire symbol table
     // Output: ZP.SymbolListL/H = 0x0000
-    // Preserves: A, X, Y, ZP.IDX, ZP.TOP, ZP.NEXT, ZP.ACC
-    // Munts: ZP.ACC, ZP.TOP, ZP.NEXT (due to Table.Clear call)
+    // Preserves: A, X, Y
+    // Munts: ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Table.Clear call)
     Destroy();
+}
+```
+
+### Layer 3: Variables (High-Level BASIC Interface)
+BASIC-specific variable and constant management:
+
+```hopper
+unit Variables
+{
+    // Variable management using Objects foundation
+    // Two-stage approach: Resolve name to address, then operate on address
+    
+    // Initialize variable system
+    // Output: Symbol table cleared and ready
+    // Preserves: All registers and ZP variables
+    Initialize();
+    
+    // Declare new variable or constant
+    // Input: ZP.TOP = name pointer, ZP.ACC = symbolType|dataType (packed),
+    //        ZP.NEXT = initial value (16-bit)
+    // Output: C set if successful, NC if error (name exists, out of memory)
+    // Uses: Objects.Add() internally
+    Declare();
+    
+    // Resolve variable name to address
+    // Input: ZP.TOP = name pointer, ZP.ACCL = expected symbolType (VARIABLE or CONSTANT, 0 = any)
+    // Output: ZP.IDX = symbol node address, C set if found and correct type, NC if not found or wrong type
+    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT
+    // Error: Sets LastError if found but wrong type
+    Resolve();
+    
+    // Get variable/constant value by address
+    // Input: ZP.IDX = symbol node address (from Resolve)
+    // Output: ZP.NEXT = value, ZP.NEXTT = dataType, C set if successful, NC if error
+    // Preserves: A, X, Y, ZP.TOP, ZP.ACC
+    // Error: Fails if node is not variable or constant
+    GetValue();
+    
+    // Set variable value by address (variables only)
+    // Input: ZP.IDX = symbol node address (from Resolve), ZP.NEXT = new value
+    // Output: C set if successful, NC if error (not a variable, type mismatch)
+    // Preserves: A, X, Y, ZP.TOP, ZP.ACC
+    // Error: Fails if node is not a variable (constants rejected)
+    SetValue();
+    
+    // Get type info by address
+    // Input: ZP.IDX = symbol node address (from Resolve)
+    // Output: ZP.ACC = symbolType|dataType (packed), C set if successful, NC if error
+    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT
+    // Error: Fails if node is not variable or constant
+    GetType();
+    
+    // Remove variable or constant by name
+    // Input: ZP.TOP = name pointer
+    // Output: C set if successful, NC if not found
+    // Uses: Objects.Remove() internally
+    Remove();
+    
+    // Start iteration over variables only (for VARS command)
+    // Output: ZP.IDX = first variable node, C set if found, NC if none
+    // Sets up iteration state for IterateNext()
+    IterateVariables();
+    
+    // Start iteration over constants only (for CONSTS command if added)
+    // Output: ZP.IDX = first constant node, C set if found, NC if none
+    IterateConstants();
+    
+    // Continue iteration (use after IterateVariables/IterateConstants)
+    // Input: ZP.IDX = current node, ZP.ACC = type filter from previous call
+    // Output: ZP.IDX = next matching node, C set if found, NC if done
+    IterateNext();
+    
+    // Get name from current iteration node
+    // Input: ZP.IDX = node from iteration
+    // Output: ZP.TOP = name pointer (points into node data)
+    // Preserves: A, X, Y, ZP.ACC, ZP.NEXT
+    GetIterationName();
+    
+    // Clear all variables and constants (for NEW command)
+    // Output: Empty symbol table
+    // Uses: Objects.Destroy() internally
+    Clear();
 }
 ```
 
@@ -225,7 +307,7 @@ LDA #(testName / 256)
 STA ZP.TOPH
 
 // Pack symbolType|dataType: VARIABLE(1) in high nibble, INT(2) in low nibble
-LDA #((Objects.SymbolType.VARIABLE << 4) | BasicType.INT)
+LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
 STA ZP.ACCL
 STZ ZP.ACCH
 
@@ -260,7 +342,7 @@ if (C)  // Found
 
 ### Iterating Variables Only
 ```hopper
-LDA #Objects.SymbolType.VARIABLE
+LDA #SymbolType.VARIABLE
 STA ZP.ACCL
 Objects.IterateStart();
 
@@ -273,6 +355,49 @@ loop
     // Process variable...
     
     Objects.IterateNext();
+}
+```
+
+## Usage Patterns
+
+### Variable lookup in expressions (two-stage):
+```hopper
+// Stage 1: Resolve name to address
+Tokenizer.GetTokenString(); // Name in ZP.TOP
+LDA #SymbolType.VARIABLE
+STA ZP.ACCL
+Variables.Resolve();
+if (NC) { /* undefined variable error */ }
+
+// Stage 2: Get value by address
+Variables.GetValue(); // ZP.IDX already set from Resolve
+// Value now in ZP.NEXT, type in ZP.NEXTT
+```
+
+### Assignment (two-stage):
+```hopper
+// Stage 1: Resolve variable name
+Tokenizer.GetTokenString(); // Name in ZP.TOP
+LDA #SymbolType.VARIABLE
+STA ZP.ACCL
+Variables.Resolve();
+if (NC) { /* undefined variable error */ }
+
+// Stage 2: Set value by address
+// ... evaluate expression, result in ZP.NEXT ...
+Variables.SetValue(); // ZP.IDX from Resolve, ZP.NEXT has new value
+```
+
+### Type checking (resolve accepts either):
+```hopper
+// For general identifier lookup (could be variable or constant)
+Tokenizer.GetTokenString();
+LDA #0  // Accept any symbol type
+STA ZP.ACCL
+Variables.Resolve();
+if (C)
+{
+    Variables.GetType(); // Get actual type info
 }
 ```
 

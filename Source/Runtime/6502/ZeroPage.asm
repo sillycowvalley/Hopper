@@ -137,10 +137,10 @@ unit ZP
     // === AVAILABLE PRIMARY (0x3A-0x4F) ===
     // 22 bytes available for additional BASIC features (0x3A-0x4F)
     
-    // === SYMBOL TABLE & TEMPORARY STORAGE (0x70-0x7F) ===
+    // === SYMBOL TABLE (0x70-0x7F) ===
     const byte SymbolList           = 0x70;  // Symbol table head pointer (16-bit)
-    const byte SymbolListL          = 0x70;  // Symbol table head pointer low byte
-    const byte SymbolListH          = 0x71;  // Symbol table head pointer high byte
+    const byte SymbolListL          = 0x70;  // low byte
+    const byte SymbolListH          = 0x71;  // high byte
     
     const byte SymbolType           = 0x72;  // Storage for symbolType|dataType
     const byte SymbolValue          = 0x73;  // Storage for symbol value (16-bit)
