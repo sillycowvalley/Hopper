@@ -18,26 +18,38 @@ program Test
     uses "BasicTypes"
     uses "Tools"
     
-    // Test working variables (using BASIC zero page range 0x30-0x4F)
-    const byte TEST_RESULT_L      = 0x3C;  // Result address low
-    const byte TEST_RESULT_H      = 0x3D;  // Result address high
-    const byte TEST_EXPECTED_L    = 0x3E;  // Expected address low
-    const byte TEST_EXPECTED_H    = 0x3F;  // Expected address high
-    const byte TEST_VALUE_L       = 0x40;  // Test value low
-    const byte TEST_VALUE_H       = 0x41;  // Test value high
-    const byte TEST_TYPE          = 0x42;  // Test type storage
-    const byte TEST_DATA_TYPE     = 0x43;  // Test data type storage
+    // Test list head storage
+    const byte TEST_LIST_L        = 0x3C;  // Test list head low
+    const byte TEST_LIST_H        = 0x3D;  // Test list head high
+    const byte TEST_NODE_SIZE_L   = 0x3E;  // Node size low
+    const byte TEST_NODE_SIZE_H   = 0x3F;  // Node size high
     
     // Test result tracking
-    const string testHeader = "\n=== TABLE & OBJECTS TESTS ===\n";
+    const string testHeader = "\n=== TABLE & OBJECTS COMPREHENSIVE TESTS ===\n";
     const string testPassed = " PASS\n";
-    const string testFailed = " FAIL\n";
+    const string testFailed = " FAIL\n"; 
     const string testComplete = "\nAll tests completed.\n";
     
     // Test data
     const string testName1 = "VAR1";
     const string testName2 = "COUNT";
     const string testName3 = "FLAG";
+    const string testName4 = "TEMP";
+    
+    // Test descriptions
+    const string desc1 = "Empty list operations";
+    const string desc2 = "Add single node";
+    const string desc3 = "Add multiple nodes";
+    const string desc4 = "Traverse list";
+    const string desc5 = "Delete first node";
+    const string desc6 = "Clear entire list";
+    const string desc7 = "Objects initialize";
+    const string desc8 = "Add symbol";
+    const string desc9 = "Find symbol";
+    const string desc10 = "Get symbol data";
+    const string desc11 = "Set symbol value";
+    const string desc12 = "Symbol type filtering";
+    const string desc13 = "Destroy symbol table";
     
     // Print null-terminated string using ZP.IDX
     printString()
@@ -52,550 +64,666 @@ program Test
         }
     }
     
-    // Print PASS result
-    printPass()
+    // Print test result
+    printResult()
     {
-        LDA #(testPassed % 256)
-        STA ZP.IDXL
-        LDA #(testPassed / 256)
-        STA ZP.IDXH
+        // Expects result in A: 0 = fail, non-zero = pass
+        if (Z)
+        {
+            LDA #(testFailed % 256)
+            STA ZP.IDXL
+            LDA #(testFailed / 256)
+            STA ZP.IDXH
+        }
+        else
+        {
+            LDA #(testPassed % 256)
+            STA ZP.IDXL
+            LDA #(testPassed / 256)
+            STA ZP.IDXH
+        }
         printString();
     }
     
-    // Print FAIL result
-    printFail()
+    // Print test number and description
+    printTestHeader()
     {
-        LDA #(testFailed % 256)
-        STA ZP.IDXL
-        LDA #(testFailed / 256)
-        STA ZP.IDXH
-        printString();
-    }
-    
-    // Test 1: Create empty list
-    testCreateEmpty()
-    {
-        LDA #'1'
+        // Input: A = test number (ASCII), ZP.TOP = description pointer
         Serial.WriteChar();
         LDA #':'
         Serial.WriteChar();
         LDA #' '
         Serial.WriteChar();
         
-        Table.Create();
-        
-        // Should return empty list (0x0000)
-        LDA ZP.LCURRENTL
-        ORA ZP.LCURRENTH
-        if (Z)
-        {
-            printPass();
-        }
-        else
-        {
-            printFail();
-        }
+        LDA ZP.TOPL
+        STA ZP.IDXL
+        LDA ZP.TOPH
+        STA ZP.IDXH
+        printString();
+        LDA #' '
+        Serial.WriteChar();
     }
     
-    // Test 2: Add single node
+    // === TABLE LAYER TESTS ===
+    
+    // Test 1: Empty list operations
+    testEmptyList()
+    {
+        LDA #'1'
+        LDA #(desc1 % 256)
+        STA ZP.TOPL
+        LDA #(desc1 / 256)
+        STA ZP.TOPH
+        printTestHeader();
+        
+        // Clear test list
+        STZ TEST_LIST_L
+        STZ TEST_LIST_H
+        
+        // GetFirst should return null
+        LDX #TEST_LIST_L
+        Table.GetFirst();
+        
+        LDA ZP.IDXL
+        ORA ZP.IDXH
+        EOR #1  // Invert: 0->1, non-zero->0
+        printResult();
+    }
+    
+    // Test 2: Add single node to empty list
     testAddSingle()
     {
         LDA #'2'
-        Serial.WriteChar();
-        LDA #':'
-        Serial.WriteChar();
-        LDA #' '
-        Serial.WriteChar();
+        LDA #(desc2 % 256)
+        STA ZP.TOPL
+        LDA #(desc2 / 256)
+        STA ZP.TOPH
+        printTestHeader();
         
-        Table.Create();
+        // Clear test list
+        STZ TEST_LIST_L
+        STZ TEST_LIST_H
         
-        // Add a 10-byte node
+        // Add 10-byte node
         LDA #10
-        STA ZP.LLENGTHL
-        STZ ZP.LLENGTHH
+        STA ZP.ACCL
+        STZ ZP.ACCH
         
+        LDX # TEST_LIST_L
         Table.Add();
         
-        // Should get valid address
-        LDA ZP.LCURRENTL
-        ORA ZP.LCURRENTH
+        // Should succeed (Z set) and return valid address
         if (NZ)
         {
-            printPass();
+            LDA #0  // Fail
+            printResult();
+            return;
         }
-        else
-        {
-            printFail();
-        }
+        
+        LDA ZP.IDXL
+        ORA ZP.IDXH
+        printResult(); // Pass if non-zero address
     }
     
-    // Test 3: Find node by name (should not find wrong name)
-    testFindNode()
+    // Test 3: Add multiple nodes (builds linked list)
+    testAddMultiple()
     {
         LDA #'3'
-        Serial.WriteChar();
-        LDA #':'
-        Serial.WriteChar();
-        LDA #' '
-        Serial.WriteChar();
+        LDA #(desc3 % 256)
+        STA ZP.TOPL
+        LDA #(desc3 / 256)
+        STA ZP.TOPH
+        printTestHeader();
         
-        Table.Create();
+        // Clear test list
+        STZ TEST_LIST_L
+        STZ TEST_LIST_H
         
-        // Add node and put "TEST" at name offset
-        LDA #10
-        STA ZP.LLENGTHL
-        STZ ZP.LLENGTHH
+        // Add first node
+        LDA #8
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        LDX # TEST_LIST_L
         Table.Add();
+        if (NZ)
+        {
+            LDA #0
+            printResult();
+            return;
+        }
         
-        // Write "TEST" at offset 6
-        CLC
-        LDA ZP.LCURRENTL
-        ADC #6
-        STA ZP.IDXL
-        LDA ZP.LCURRENTH
-        ADC #0
-        STA ZP.IDXH
+        // Save first node address
+        LDA ZP.IDXL
+        STA TEST_NODE_SIZE_L
+        LDA ZP.IDXH
+        STA TEST_NODE_SIZE_H
         
+        // Add second node  
+        LDA #12
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        LDX #TEST_LIST_L
+        Table.Add();
+        if (NZ)
+        {
+            LDA #0
+            printResult();
+            return;
+        }
+        
+        // List head should now point to second node
+        LDA ZP.IDXL
+        CMP TEST_LIST_L
+        if (NZ)
+        {
+            LDA #0
+            printResult();
+            return;
+        }
+        LDA ZP.IDXH
+        CMP TEST_LIST_H
+        if (NZ)
+        {
+            LDA #0
+            printResult();
+            return;
+        }
+        
+        // Second node's next pointer should point to first node
+        Table.GetNext(); // Should give us first node
+        LDA ZP.IDXL
+        CMP TEST_NODE_SIZE_L
+        if (NZ)
+        {
+            LDA #0
+            printResult();
+            return;
+        }
+        LDA ZP.IDXH
+        CMP TEST_NODE_SIZE_H
+        EOR #1  // Convert match to pass
+        printResult();
+    }
+    
+    // Test 4: Traverse linked list
+    testTraverse()
+    {
+        LDA #'4'
+        LDA #(desc4 % 256)
+        STA ZP.TOPL
+        LDA #(desc4 / 256)
+        STA ZP.TOPH
+        printTestHeader();
+        
+        // Build list with 3 nodes
+        STZ TEST_LIST_L
+        STZ TEST_LIST_H
+        
+        // Add nodes (will be in reverse order: 3rd, 2nd, 1st)
         LDY #0
-        LDA #'T'
-        STA [ZP.IDX], Y
-        INY
-        LDA #'E'
-        STA [ZP.IDX], Y
-        INY
-        LDA #'S'
-        STA [ZP.IDX], Y
-        INY
-        LDA #'T'
-        STA [ZP.IDX], Y
-        INY
-        LDA #0
-        STA [ZP.IDX], Y
+        loop
+        {
+            CPY #3
+            if (Z) { break; }
+            
+            LDA #10
+            STA ZP.ACCL
+            STZ ZP.ACCH
+            LDX #TEST_LIST_L
+            Table.Add();
+            if (NZ)
+            {
+                LDA #0
+                printResult();
+                return;
+            }
+            
+            INY
+        }
         
-        // Search for wrong name "VAR1"
-        LDA #(testName1 % 256)
-        STA ZP.FITEML
-        LDA #(testName1 / 256)
-        STA ZP.FITEMH
-        LDA #6
-        STA ZP.LCOUNTL
-        STZ ZP.LCOUNTH
+        // Count nodes by traversal
+        LDX #TEST_LIST_L
+        Table.GetFirst();
         
-        Table.Find();
+        LDY #0  // Node count
+        loop
+        {
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z) { break; } // End of list
+            
+            INY
+            Table.GetNext();
+        }
         
-        // Should not find it (return 0x0000)
-        LDA ZP.LCURRENTL
-        ORA ZP.LCURRENTH
+        // Should have counted 3 nodes
+        CPY #3
         if (Z)
         {
-            printPass();
+            LDA #1  // Pass
         }
         else
         {
-            printFail();
+            LDA #0  // Fail
         }
+        printResult();
     }
     
-    // Test 4: Remove first node from two-node list
-    testRemoveNode()
+    // Test 5: Delete first node
+    testDeleteFirst()
     {
-        LDA #'4'
-        Serial.WriteChar();
-        LDA #':'
-        Serial.WriteChar();
-        LDA #' '
-        Serial.WriteChar();
+        LDA #'5'
+        LDA #(desc5 % 256)
+        STA ZP.TOPL
+        LDA #(desc5 / 256)
+        STA ZP.TOPH
+        printTestHeader();
         
-        Table.Create();
+        // Build list with 2 nodes
+        STZ TEST_LIST_L
+        STZ TEST_LIST_H
         
         // Add first node
         LDA #10
-        STA ZP.LLENGTHL
-        STZ ZP.LLENGTHH
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        LDX #TEST_LIST_L
         Table.Add();
-        
-        // Save first node address
-        LDA ZP.LCURRENTL
-        STA TEST_EXPECTED_L
-        LDA ZP.LCURRENTH
-        STA TEST_EXPECTED_H
+        LDA ZP.IDXL
+        STA TEST_NODE_SIZE_L  // Save first node address
+        LDA ZP.IDXH
+        STA TEST_NODE_SIZE_H
         
         // Add second node (becomes new head)
         LDA #10
-        STA ZP.LLENGTHL
-        STZ ZP.LLENGTHH
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        LDX #TEST_LIST_L
         Table.Add();
         
-        // Remove the head node (second node)
-        LDA ZP.LCURRENTL
-        STA ZP.FITEML
-        LDA ZP.LCURRENTH
-        STA ZP.FITEMH
+        // Delete the current head (second node)
+        LDX #TEST_LIST_L
+        Table.Delete();
         
-        Table.Remove();
-        
-        // Should now point to first node
-        LDA ZP.LCURRENTL
-        CMP TEST_EXPECTED_L
-        if (Z)
+        // List head should now point to first node
+        LDA TEST_LIST_L
+        CMP TEST_NODE_SIZE_L
+        if (NZ)
         {
-            LDA ZP.LCURRENTH
-            CMP TEST_EXPECTED_H
-            if (Z)
-            {
-                printPass();
-            }
-            else
-            {
-                printFail();
-            }
+            LDA #0
+            printResult();
+            return;
         }
-        else
-        {
-            printFail();
-        }
+        LDA TEST_LIST_H
+        CMP TEST_NODE_SIZE_H
+        EOR #1  // Convert match to pass
+        printResult();
     }
     
-    // Test 5: Clear entire list
+    // Test 6: Clear entire list
     testClearList()
     {
-        LDA #'5'
-        Serial.WriteChar();
-        LDA #':'
-        Serial.WriteChar();
-        LDA #' '
-        Serial.WriteChar();
+        LDA #'6'
+        LDA #(desc6 % 256)
+        STA ZP.TOPL
+        LDA #(desc6 / 256)
+        STA ZP.TOPH
+        printTestHeader();
         
-        Table.Create();
+        // Build list with multiple nodes
+        STZ TEST_LIST_L
+        STZ TEST_LIST_H
         
-        // Add a node
-        LDA #10
-        STA ZP.LLENGTHL
-        STZ ZP.LLENGTHH
-        Table.Add();
+        LDY #0
+        loop
+        {
+            CPY #5
+            if (Z) { break; }
+            
+            LDA #8
+            STA ZP.ACCL
+            STZ ZP.ACCH
+            LDX #TEST_LIST_L
+            Table.Add();
+            
+            INY
+        }
         
         // Clear the list
+        LDX #TEST_LIST_L
         Table.Clear();
         
-        // Should be empty
-        LDA ZP.LCURRENTL
-        ORA ZP.LCURRENTH
-        if (Z)
-        {
-            printPass();
-        }
-        else
-        {
-            printFail();
-        }
+        // List should be empty
+        LDA TEST_LIST_L
+        ORA TEST_LIST_H
+        EOR #1  // Convert 0 to pass
+        printResult();
     }
     
-    // Test 6: Initialize objects
-    testObjects()
+    // === OBJECTS LAYER TESTS ===
+    
+    // Test 7: Initialize Objects
+    testObjectsInit()
     {
-        LDA #'6'
-        Serial.WriteChar();
-        LDA #':'
-        Serial.WriteChar();
-        LDA #' '
-        Serial.WriteChar();
+        LDA #'7'
+        LDA #(desc7 % 256)
+        STA ZP.TOPL
+        LDA #(desc7 / 256)
+        STA ZP.TOPH
+        printTestHeader();
         
         Objects.Initialize();
         
-        // Should be empty
         LDA ZP.SymbolListL
         ORA ZP.SymbolListH
-        if (Z)
-        {
-            printPass();
-        }
-        else
-        {
-            printFail();
-        }
+        EOR #1  // Convert 0 to pass
+        printResult();
     }
     
-    // Test 7: Add object
-    testAddObject()
+    // Test 8: Add symbol to Objects
+    testAddSymbol()
     {
-        LDA #'7'
-        Serial.WriteChar();
-        LDA #':'
-        Serial.WriteChar();
-        LDA #' '
-        Serial.WriteChar();
+        LDA #'8'
+        LDA #(desc8 % 256)
+        STA ZP.TOPL
+        LDA #(desc8 / 256)
+        STA ZP.TOPH
+        printTestHeader();
         
         Objects.Initialize();
         
         // Add INT variable "COUNT" = 42
         LDA #(testName2 % 256)
-        STA ZP.FITEML
+        STA ZP.TOPL
         LDA #(testName2 / 256)
-        STA ZP.FITEMH
-        LDA #Objects.ObjectType.VARIABLE
-        STA ZP.LTYPE
-        LDA #BasicType.INT
-        STA ZP.LITYPE
+        STA ZP.TOPH
+        
+        // Pack symbolType|dataType: VARIABLE(1) in high nibble, INT(2) in low nibble
+        LDA #((Objects.SymbolType.VARIABLE << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
         LDA #42
-        STA ZP.LCOUNTL
-        STZ ZP.LCOUNTH
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
         
         Objects.Add();
         
-        // Should get valid address
-        LDA ZP.LCURRENTL
-        ORA ZP.LCURRENTH
-        if (NZ)
+        // Should succeed (C set)
+        if (C)
         {
-            printPass();
+            LDA #1  // Pass
         }
         else
         {
-            printFail();
+            LDA #0  // Fail
         }
+        printResult();
     }
     
-    // Test 8: Lookup object
-    testLookupObject()
+    // Test 9: Find symbol by name
+    testFindSymbol()
     {
-        LDA #'8'
-        Serial.WriteChar();
-        LDA #':'
-        Serial.WriteChar();
-        LDA #' '
-        Serial.WriteChar();
+        LDA #'9'
+        LDA #(desc9 % 256)
+        STA ZP.TOPL
+        LDA #(desc9 / 256)
+        STA ZP.TOPH
+        printTestHeader();
         
         Objects.Initialize();
         
         // Add BIT variable "FLAG" = 1
         LDA #(testName3 % 256)
-        STA ZP.FITEML
+        STA ZP.TOPL
         LDA #(testName3 / 256)
-        STA ZP.FITEMH
-        LDA #Objects.ObjectType.VARIABLE
-        STA ZP.LTYPE
-        LDA #BasicType.BIT
-        STA ZP.LITYPE
+        STA ZP.TOPH
+        
+        LDA #((Objects.SymbolType.VARIABLE << 4) | BasicType.BIT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
         LDA #1
-        STA ZP.LCOUNTL
-        STZ ZP.LCOUNTH
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
         
         Objects.Add();
         
-        // Lookup the same object
+        // Now find it
         LDA #(testName3 % 256)
-        STA ZP.FITEML
+        STA ZP.TOPL
         LDA #(testName3 / 256)
-        STA ZP.FITEMH
+        STA ZP.TOPH
         
-        Objects.Lookup();
+        Objects.Find();
         
-        // Should find it
-        LDA ZP.LCURRENTL
-        ORA ZP.LCURRENTH
-        if (Z)
+        // Should find it (C set)
+        if (C)
         {
-            printFail();
+            LDA #1  // Pass
+        }
+        else
+        {
+            LDA #0  // Fail
+        }
+        printResult();
+    }
+    
+    // Test 10: Get symbol data
+    testGetSymbolData()
+    {
+        LDA #'A'  // Test 10
+        LDA #(desc10 % 256)
+        STA ZP.TOPL
+        LDA #(desc10 / 256)
+        STA ZP.TOPH
+        printTestHeader();
+        
+        Objects.Initialize();
+        
+        // Add WORD variable "VAR1" = 1000
+        LDA #(testName1 % 256)
+        STA ZP.TOPL
+        LDA #(testName1 / 256)
+        STA ZP.TOPH
+        
+        LDA #((Objects.SymbolType.VARIABLE << 4) | BasicType.WORD)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        LDA #(1000 % 256)
+        STA ZP.NEXTL
+        LDA #(1000 / 256)
+        STA ZP.NEXTH
+        
+        Objects.Add();
+        
+        // Find and get data
+        Objects.Find();
+        if (NC)
+        {
+            LDA #0
+            printResult();
             return;
         }
         
-        // Verify the data
         Objects.GetData();
         
-        // Check object type
-        LDA ZP.LTYPE
-        CMP #Objects.ObjectType.VARIABLE
+        // Check data type (should be WORD = 4)
+        LDA ZP.ACCL
+        AND #0x0F  // Extract data type (low nibble)
+        CMP #BasicType.WORD
         if (NZ)
         {
-            printFail();
+            LDA #0
+            printResult();
             return;
         }
         
-        // Check data type
-        LDA ZP.LITYPE
-        CMP #BasicType.BIT
+        // Check value (should be 1000)
+        LDA ZP.NEXTL
+        CMP #(1000 % 256)
         if (NZ)
         {
-            printFail();
+            LDA #0
+            printResult();
             return;
         }
-        
-        // Check value
-        LDA ZP.LCOUNTL
-        CMP #1
-        if (NZ)
-        {
-            printFail();
-            return;
-        }
-        LDA ZP.LCOUNTH
-        if (NZ)
-        {
-            printFail();
-            return;
-        }
-        
-        printPass();
+        LDA ZP.NEXTH
+        CMP #(1000 / 256)
+        EOR #1  // Convert match to pass
+        printResult();
     }
     
-    // Test 9: Remove object
-    testRemoveObject()
+    // Test 11: Set symbol value
+    testSetSymbolValue()
     {
-        LDA #'9'
-        Serial.WriteChar();
-        LDA #':'
-        Serial.WriteChar();
-        LDA #' '
-        Serial.WriteChar();
+        LDA #'B'  // Test 11
+        LDA #(desc11 % 256)
+        STA ZP.TOPL
+        LDA #(desc11 / 256)
+        STA ZP.TOPH
+        printTestHeader();
         
         Objects.Initialize();
         
-        // Add first object "VAR1"
-        LDA #(testName1 % 256)
-        STA ZP.FITEML
-        LDA #(testName1 / 256)
-        STA ZP.FITEMH
-        LDA #Objects.ObjectType.VARIABLE
-        STA ZP.LTYPE
-        LDA #BasicType.WORD
-        STA ZP.LITYPE
+        // Add INT variable "TEMP" = 100
+        LDA #(testName4 % 256)
+        STA ZP.TOPL
+        LDA #(testName4 / 256)
+        STA ZP.TOPH
+        
+        LDA #((Objects.SymbolType.VARIABLE << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
         LDA #100
-        STA ZP.LCOUNTL
-        STZ ZP.LCOUNTH
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
         
         Objects.Add();
+        Objects.Find();
         
-        // Add second object "COUNT"
-        LDA #(testName2 % 256)
-        STA ZP.FITEML
-        LDA #(testName2 / 256)
-        STA ZP.FITEMH
-        LDA #Objects.ObjectType.VARIABLE
-        STA ZP.LTYPE
-        LDA #BasicType.INT
-        STA ZP.LITYPE
+        // Change value to 200
         LDA #200
-        STA ZP.LCOUNTL
-        STZ ZP.LCOUNTH
-        
-        Objects.Add();
-        
-        // Remove "VAR1"
-        LDA #(testName1 % 256)
-        STA ZP.FITEML
-        LDA #(testName1 / 256)
-        STA ZP.FITEMH
-        
-        Objects.Remove();
-        if (NZ)
-        {
-            printFail();
-            return;
-        }
-        
-        // "VAR1" should be gone
-        LDA #(testName1 % 256)
-        STA ZP.FITEML
-        LDA #(testName1 / 256)
-        STA ZP.FITEMH
-        
-        Objects.Lookup();
-        
-        LDA ZP.LCURRENTL
-        ORA ZP.LCURRENTH
-        if (NZ)
-        {
-            printFail();
-            return;
-        }
-        
-        // "COUNT" should still be there
-        LDA #(testName2 % 256)
-        STA ZP.FITEML
-        LDA #(testName2 / 256)
-        STA ZP.FITEMH
-        
-        Objects.Lookup();
-        
-        LDA ZP.LCURRENTL
-        ORA ZP.LCURRENTH
-        if (Z)
-        {
-            printFail();
-            return;
-        }
-        
-        printPass();
-    }
-    
-    // Test 10: Set object value
-    testSetValue()
-    {
-        LDA #'A'
-        Serial.WriteChar();
-        LDA #':'
-        Serial.WriteChar();
-        LDA #' '
-        Serial.WriteChar();
-        
-        Objects.Initialize();
-        
-        // Add WORD variable "COUNT" = 500
-        LDA #(testName2 % 256)
-        STA ZP.FITEML
-        LDA #(testName2 / 256)
-        STA ZP.FITEMH
-        LDA #Objects.ObjectType.VARIABLE
-        STA ZP.LTYPE
-        LDA #BasicType.WORD
-        STA ZP.LITYPE
-        LDA #(500 % 256)
-        STA ZP.LCOUNTL
-        LDA #(500 / 256)
-        STA ZP.LCOUNTH
-        
-        Objects.Add();
-        
-        // Look it up
-        LDA #(testName2 % 256)
-        STA ZP.FITEML
-        LDA #(testName2 / 256)
-        STA ZP.FITEMH
-        
-        Objects.Lookup();
-        
-        // Change value to 1000
-        LDA #(1000 % 256)
-        STA ZP.LCOUNTL
-        LDA #(1000 / 256)
-        STA ZP.LCOUNTH
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
         
         Objects.SetValue();
-        if (NZ)
+        if (NC)
         {
-            printFail();
+            LDA #0
+            printResult();
             return;
         }
         
         // Verify new value
         Objects.GetData();
+        LDA ZP.NEXTL
+        CMP #200
+        EOR #1  // Convert match to pass
+        printResult();
+    }
+    
+    // Test 12: Symbol type filtering
+    testSymbolFiltering()
+    {
+        LDA #'C'  // Test 12
+        LDA #(desc12 % 256)
+        STA ZP.TOPL
+        LDA #(desc12 / 256)
+        STA ZP.TOPH
+        printTestHeader();
         
-        LDA ZP.LCOUNTL
-        CMP #(1000 % 256)
-        if (NZ)
+        Objects.Initialize();
+        
+        // Add variable
+        LDA #(testName1 % 256)
+        STA ZP.TOPL
+        LDA #(testName1 / 256)
+        STA ZP.TOPH
+        LDA #((Objects.SymbolType.VARIABLE << 4) | BasicType.INT)
+        STA ZP.ACCL
+        LDA #10
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        Objects.Add();
+        
+        // Add constant
+        LDA #(testName2 % 256)
+        STA ZP.TOPL
+        LDA #(testName2 / 256)
+        STA ZP.TOPH
+        LDA #((Objects.SymbolType.CONSTANT << 4) | BasicType.INT)
+        STA ZP.ACCL
+        LDA #20
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        Objects.Add();
+        
+        // Iterate looking for variables only
+        LDA #Objects.SymbolType.VARIABLE
+        STA ZP.ACCL
+        Objects.IterateStart();
+        
+        if (NC)
         {
-            printFail();
+            LDA #0
+            printResult();
             return;
         }
-        LDA ZP.LCOUNTH
-        CMP #(1000 / 256)
-        if (NZ)
+        
+        // Should find the variable
+        Objects.GetData();
+        LDA ZP.ACCL
+        AND #0xF0
+        LSR LSR LSR LSR
+        CMP #Objects.SymbolType.VARIABLE
+        EOR #1  // Convert match to pass
+        printResult();
+    }
+    
+    // Test 13: Destroy symbol table
+    testDestroy()
+    {
+        LDA #'D'  // Test 13
+        LDA #(desc13 % 256)
+        STA ZP.TOPL
+        LDA #(desc13 / 256)
+        STA ZP.TOPH
+        printTestHeader();
+        
+        Objects.Initialize();
+        
+        // Add several symbols
+        LDY #0
+        loop
         {
-            printFail();
-            return;
+            CPY #3
+            if (Z) { break; }
+            
+            LDA #(testName1 % 256)
+            STA ZP.TOPL
+            LDA #(testName1 / 256)
+            STA ZP.TOPH
+            LDA #((Objects.SymbolType.VARIABLE << 4) | BasicType.INT)
+            STA ZP.ACCL
+            LDA #42
+            STA ZP.NEXTL
+            STZ ZP.NEXTH
+            Objects.Add();
+            
+            INY
         }
         
-        printPass();
+        // Destroy the table
+        Objects.Destroy();
+        
+        // Should be empty
+        LDA ZP.SymbolListL
+        ORA ZP.SymbolListH
+        EOR #1  // Convert 0 to pass
+        printResult();
     }
     
     // Initialize test environment
@@ -618,16 +746,22 @@ program Test
     // Run all tests
     runAllTests()
     {
-        testCreateEmpty();
+        // Table layer tests
+        testEmptyList();
         testAddSingle();
-        testFindNode();
-        testRemoveNode();
+        testAddMultiple();
+        testTraverse();
+        testDeleteFirst();
         testClearList();
-        testObjects();
-        testAddObject();
-        testLookupObject();
-        testRemoveObject();
-        testSetValue();
+        
+        // Objects layer tests
+        testObjectsInit();
+        testAddSymbol();
+        testFindSymbol();
+        testGetSymbolData();
+        testSetSymbolValue();
+        testSymbolFiltering();
+        testDestroy();
         
         LDA #(testComplete % 256)
         STA ZP.IDXL

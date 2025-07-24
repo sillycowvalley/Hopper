@@ -286,7 +286,8 @@ unit Diagnostics
         Serial.HexOut();
         LDA LNEXTL
         Serial.HexOut();
-        
+
+#if !defined(HOPPER_BASIC)                
         LDA # ' '
         Serial.WriteChar();
         LDA # 'F'
@@ -297,7 +298,8 @@ unit Diagnostics
         Serial.HexOut();
         LDA FITEML
         Serial.HexOut();
-        
+#endif     
+           
         LDA # ' '
         Serial.WriteChar();
         LDA # 'L'

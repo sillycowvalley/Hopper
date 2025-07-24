@@ -459,9 +459,16 @@ unit ZP
     const byte LCURRENTL = F10;
     const byte LCURRENTH = F11;
 
+    
+#if defined(HOPPER_BASIC)
+    const byte LHEAD  = F12;
+    const byte LHEADL = F12;
+    const byte LHEADH = F13;
+#else
     const byte FITEM  = F12;
     const byte FITEML = F12;
     const byte FITEMH = F13;
+#endif
 
     const byte LCOUNT  = F14;
     const byte LCOUNTL = F14;
