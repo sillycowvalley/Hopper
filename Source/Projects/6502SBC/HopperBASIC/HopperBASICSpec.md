@@ -69,6 +69,9 @@
 - ✅ **Error handling**: Comprehensive error messages and reporting
 - ✅ **Memory management**: Integration with Hopper VM memory system
 - ✅ **Interactive REPL**: Command processing and execution loop
+- ✅ **Number parsing**: 16-bit integers with overflow detection and type determination
+- ✅ **Keyword recognition**: Complete keyword table with uppercase conversion
+- ✅ **Statement framework**: Extensible statement execution with proper error propagation
 
 ### Assignment
 - ❌ **`var = expr`** - Assignment to existing variables
@@ -143,6 +146,10 @@
 - ✅ **Arithmetic Operations**: Full set including multiplication, division, modulo
 - ✅ **Comparison Operations**: All six comparison operators with proper type handling
 - ✅ **Logical Operations**: AND, OR, NOT with BIT type requirements
+- ✅ **Number Tokenization**: Inline storage with overflow detection and automatic type assignment
+- ✅ **Keyword Recognition**: Complete keyword table with uppercase conversion
+- ✅ **Statement Framework**: Extensible statement execution with proper error propagation
+- ✅ **Interactive Loop**: Full REPL with startup banner and graceful error handling
 
 ### Memory Layout (Preserved from Hopper VM)
 - **$0200-$02FF**: Serial input buffer (256 bytes)
@@ -161,8 +168,10 @@
 
 ### Zero Page Usage
 - **Standard Hopper VM allocations**: SP, BP, PC, IDX, IDY, TOP, NEXT, ACC
-- **BASIC-specific (0x30-0x39)**: Input length, tokenizer state, error handling
-- **Available (0x3A-0x3F)**: 6 bytes reserved for future BASIC features
+- **BASIC-specific (0x30-0x39)**: 10 bytes allocated - Input length, tokenizer state, error handling, current token cache, literal position tracking
+- **Available primary (0x3A-0x3F)**: 6 bytes reserved for future BASIC features
+- **Available extended (0x40-0x4F)**: 16 bytes available for general expansion
+- **Symbol Table Range (0x70-0x77)**: 8 bytes allocated for Objects system - symbol table head pointer, type/value/name storage, name length
 
 ---
 
@@ -463,15 +472,17 @@ This approach maximizes code reuse while delivering a clean, simple BASIC interp
 
 ## Current Status Summary
 
-**Phase 1 Progress**: ~40% complete
+**Phase 1 Progress**: ~65% complete
 - ✅ Core expression evaluation system (complete)
-- ✅ Basic console commands (partial)
+- ✅ Basic console commands (partial - NEW, MEM, BYE working)
 - ✅ PRINT statement (basic version)
 - ✅ IF/THEN control flow (basic version)
-- ❌ Variable system (not started)
+- ✅ Complete tokenizer with number parsing and keyword recognition
+- ✅ Statement execution framework with proper error handling
+- ❌ Variable system (not started - next priority)
 - ❌ Function system (stubs only)
 - ❌ Assignment statements (not started)
 
-**Key Achievement**: We have a working expression evaluator that handles all arithmetic, comparison, and logical operations with proper type checking and promotion. This is the foundation for all other language features.
+**Key Achievement**: We have a working expression evaluator that handles all arithmetic, comparison, and logical operations with proper type checking and promotion. Combined with a complete tokenizer system and interactive REPL, this provides the solid foundation for all remaining language features.
 
 **Next Milestone**: Implement the symbol table system to enable variable declarations and assignments, completing the core language functionality.
