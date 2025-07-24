@@ -118,22 +118,24 @@ unit Table
 Symbol-specific operations using Table foundation:
 
 #### Node Layout
-Symbol nodes have a 5-byte fixed header plus variable-length name:
+Symbol nodes now have a 7-byte fixed header plus variable-length name:
 ```
 Offset 0-1: next pointer (managed by Table unit)
 Offset 2:   symbolType|dataType (packed byte)
             High nibble: SymbolType (VARIABLE=1, CONSTANT=2, FUNCTION=3)
             Low nibble:  BasicType (INT=2, BYTE=3, WORD=4, BIT=6, etc.)
-Offset 3-4: value/address (16-bit)
-Offset 5+:  null-terminated name string
+Offset 3-4: value/address (16-bit current value)
+Offset 5-6: tokens pointer (16-bit pointer to initialization token stream)
+Offset 7+:  null-terminated name string
 ```
 
 #### Constants
 ```hopper
-const byte symbolOverhead = 5;       // Fixed fields before name
+const byte symbolOverhead = 7;       // Fixed fields before name
 const byte typeOffset = 2;           // Offset to symbolType|dataType field
 const byte valueOffset = 3;          // Offset to value field
-const byte nameOffset = 5;           // Offset to name field in node
+const byte tokensOffset = 5;         // Offset to tokens pointer field
+const byte nameOffset = 7;           // Offset to name field in node
 ```
 
 #### Zero Page Storage
@@ -159,8 +161,8 @@ unit Objects
     Initialize();
     
     // Add new symbol to table
-    // Input: ZP.TOP = name pointer, ZP.ACC = symbolType|dataType (packed),
-    //        ZP.NEXT = value (16-bit)
+    // Input: ZP.ACC = name pointer, ZP.ACCT = symbolType|dataType (packed),
+    //        ZP.TOP = value (16-bit), ZP.NEXT = tokens pointer (16-bit)
     // Output: ZP.IDX = new symbol node address, C set if successful, NC if allocation failed
     // Preserves: A, X, Y
     // Munts: ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Table.Add call)
@@ -168,7 +170,7 @@ unit Objects
     Add();
     
     // Find symbol by name
-    // Input: ZP.TOP = name pointer to search for
+    // Input: ZP.ACC = name pointer to search for
     // Output: ZP.IDX = symbol node address, C set if found, NC if not found
     // Preserves: A, X, Y, ZP.TOP, ZP.NEXT, ZP.ACC
     // Uses: Available slots in 0x77-0x7F range for temporary operations
@@ -184,24 +186,24 @@ unit Objects
     
     // Get symbol data from found node
     // Input: ZP.IDX = symbol node address (from Find)
-    // Output: ZP.ACC = symbolType|dataType (packed), ZP.NEXT = value
-    // Preserves: A, X, Y, ZP.IDX, ZP.TOP
+    // Output: ZP.ACCT = symbolType|dataType (packed), ZP.TOP = value, ZP.NEXT = tokens pointer
+    // Preserves: A, X, Y, ZP.IDX, ZP.ACC
     GetData();
     
     // Set symbol value (variables only)
-    // Input: ZP.IDX = symbol node address, ZP.NEXT = new value
+    // Input: ZP.IDX = symbol node address, ZP.TOP = new value
     // Output: C set if successful, NC if not a variable
-    // Preserves: A, X, Y, ZP.IDX, ZP.TOP, ZP.ACC
+    // Preserves: A, X, Y, ZP.IDX, ZP.ACC, ZP.NEXT
     SetValue();
     
     // Start iteration for specific symbol type
-    // Input: ZP.ACC = symbol type filter (0 = all types)
+    // Input: ZP.ACCL = symbol type filter (0 = all types)
     // Output: ZP.IDX = first matching symbol, C set if found, NC if none
     // Preserves: A, X, Y, ZP.TOP, ZP.NEXT, ZP.ACC
     IterateStart();
     
     // Continue iteration
-    // Input: ZP.IDX = current symbol, ZP.ACC = type filter
+    // Input: ZP.IDX = current symbol, ZP.ACCL = type filter
     // Output: ZP.IDX = next matching symbol, C set if found, NC if done
     // Preserves: A, X, Y, ZP.TOP, ZP.NEXT, ZP.ACC
     IterateNext();
@@ -221,7 +223,7 @@ BASIC-specific variable and constant management:
 unit Variables
 {
     // Variable management using Objects foundation
-    // Two-stage approach: Resolve name to address, then operate on address
+    // Two-stage approach: Find name to address, then operate on address
     
     // Initialize variable system
     // Output: Symbol table cleared and ready
@@ -229,42 +231,54 @@ unit Variables
     Initialize();
     
     // Declare new variable or constant
-    // Input: ZP.TOP = name pointer, ZP.ACC = symbolType|dataType (packed),
-    //        ZP.NEXT = initial value (16-bit)
+    // Input: ZP.ACC = name pointer, ZP.ACCT = symbolType|dataType (packed),
+    //        ZP.TOP = initial value (16-bit), ZP.NEXT = tokens pointer (16-bit)
     // Output: C set if successful, NC if error (name exists, out of memory)
-    // Uses: Objects.Add() internally
+    // Uses: Objects.Add() internally with extended node layout
     Declare();
     
-    // Resolve variable name to address
-    // Input: ZP.TOP = name pointer, ZP.ACCL = expected symbolType (VARIABLE or CONSTANT, 0 = any)
+    // Find variable/constant name to address
+    // Input: ZP.ACC = name pointer, ZP.ACCL = expected symbolType (VARIABLE or CONSTANT, 0 = any)
     // Output: ZP.IDX = symbol node address, C set if found and correct type, NC if not found or wrong type
     // Preserves: A, X, Y, ZP.TOP, ZP.NEXT
     // Error: Sets LastError if found but wrong type
-    Resolve();
+    Find();
     
     // Get variable/constant value by address
-    // Input: ZP.IDX = symbol node address (from Resolve)
-    // Output: ZP.NEXT = value, ZP.NEXTT = dataType, C set if successful, NC if error
-    // Preserves: A, X, Y, ZP.TOP, ZP.ACC
+    // Input: ZP.IDX = symbol node address (from Find)
+    // Output: ZP.TOP = value, ZP.TOPT = dataType, C set if successful, NC if error
+    // Preserves: A, X, Y, ZP.ACC, ZP.NEXT
     // Error: Fails if node is not variable or constant
     GetValue();
     
     // Set variable value by address (variables only)
-    // Input: ZP.IDX = symbol node address (from Resolve), ZP.NEXT = new value
+    // Input: ZP.IDX = symbol node address (from Find), ZP.TOP = new value
     // Output: C set if successful, NC if error (not a variable, type mismatch)
-    // Preserves: A, X, Y, ZP.TOP, ZP.ACC
+    // Preserves: A, X, Y, ZP.ACC, ZP.NEXT
     // Error: Fails if node is not a variable (constants rejected)
     SetValue();
     
     // Get type info by address
-    // Input: ZP.IDX = symbol node address (from Resolve)
-    // Output: ZP.ACC = symbolType|dataType (packed), C set if successful, NC if error
+    // Input: ZP.IDX = symbol node address (from Find)
+    // Output: ZP.ACCT = symbolType|dataType (packed), C set if successful, NC if error
     // Preserves: A, X, Y, ZP.TOP, ZP.NEXT
     // Error: Fails if node is not variable or constant
     GetType();
     
+    // Get name from current node
+    // Input: ZP.IDX = symbol node address (from Find or iteration)
+    // Output: ZP.ACC = name pointer (points into node data)
+    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT
+    GetName();
+    
+    // Get initialization tokens from current node
+    // Input: ZP.IDX = symbol node address (from Find or iteration)
+    // Output: ZP.NEXT = tokens pointer (points to initialization token stream)
+    // Preserves: A, X, Y, ZP.TOP, ZP.ACC
+    GetTokens();
+    
     // Remove variable or constant by name
-    // Input: ZP.TOP = name pointer
+    // Input: ZP.ACC = name pointer
     // Output: C set if successful, NC if not found
     // Uses: Objects.Remove() internally
     Remove();
@@ -278,16 +292,14 @@ unit Variables
     // Output: ZP.IDX = first constant node, C set if found, NC if none
     IterateConstants();
     
-    // Continue iteration (use after IterateVariables/IterateConstants)
-    // Input: ZP.IDX = current node, ZP.ACC = type filter from previous call
+    // Start iteration over all symbols (for general enumeration)
+    // Output: ZP.IDX = first symbol node, C set if found, NC if none
+    IterateAll();
+    
+    // Continue iteration (use after any Iterate* method)
+    // Input: ZP.IDX = current node, ZP.ACCL = type filter from previous call
     // Output: ZP.IDX = next matching node, C set if found, NC if done
     IterateNext();
-    
-    // Get name from current iteration node
-    // Input: ZP.IDX = node from iteration
-    // Output: ZP.TOP = name pointer (points into node data)
-    // Preserves: A, X, Y, ZP.ACC, ZP.NEXT
-    GetIterationName();
     
     // Clear all variables and constants (for NEW command)
     // Output: Empty symbol table
@@ -302,18 +314,23 @@ unit Variables
 ```hopper
 // Add INT variable "COUNT" = 42
 LDA #(testName % 256)
-STA ZP.TOPL
+STA ZP.ACCL
 LDA #(testName / 256)
-STA ZP.TOPH
+STA ZP.ACCH
 
 // Pack symbolType|dataType: VARIABLE(1) in high nibble, INT(2) in low nibble
 LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-STA ZP.ACCL
-STZ ZP.ACCH
+STA ZP.ACCT
 
 LDA #42
+STA ZP.TOPL
+STZ ZP.TOPH
+
+// Tokens pointer to initialization expression
+LDA #(tokenStream % 256)
 STA ZP.NEXTL
-STZ ZP.NEXTH
+LDA #(tokenStream / 256)
+STA ZP.NEXTH
 
 Objects.Add();
 // C set if successful, ZP.IDX contains new node address
@@ -323,20 +340,21 @@ Objects.Add();
 ```hopper
 // Find symbol "COUNT"
 LDA #(testName % 256)
-STA ZP.TOPL
+STA ZP.ACCL
 LDA #(testName / 256)
-STA ZP.TOPH
+STA ZP.ACCH
 
 Objects.Find();
 if (C)  // Found
 {
     Objects.GetData();
-    // ZP.ACC contains packed type, ZP.NEXT contains value
+    // ZP.ACCT contains packed type, ZP.TOP contains value, ZP.NEXT contains tokens pointer
     
-    LDA ZP.ACCL
+    LDA ZP.ACCT
     AND #0x0F           // Extract data type (low nibble)
     CMP #BasicType.INT
-    // ZP.NEXTL/H contains the value (42)
+    // ZP.TOPL/H contains the value (42)
+    // ZP.NEXTL/H contains tokens pointer
 }
 ```
 
@@ -358,43 +376,117 @@ loop
 }
 ```
 
+### Declaring a Variable with Tokens
+```hopper
+// Declare: INT COUNT = 10 * 5
+// Assume tokens for "10 * 5" are already in token buffer at position tokensPtr
+
+LDA #(variableName % 256)
+STA ZP.ACCL
+LDA #(variableName / 256)
+STA ZP.ACCH
+
+// Pack symbolType|dataType: VARIABLE(1) in high nibble, INT(2) in low nibble
+LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
+STA ZP.ACCT
+
+LDA #50  // Evaluated result of 10 * 5
+STA ZP.TOPL
+STZ ZP.TOPH
+
+LDA #(tokensPtr % 256)  // Pointer to "10 * 5" token stream
+STA ZP.NEXTL
+LDA #(tokensPtr / 256)
+STA ZP.NEXTH
+
+Variables.Declare();
+// C set if successful, ZP.IDX contains new node address
+```
+
+### Finding and Accessing Symbol Data
+```hopper
+// Find variable "COUNT"
+LDA #(variableName % 256)
+STA ZP.ACCL
+LDA #(variableName / 256)
+STA ZP.ACCH
+
+LDA #SymbolType.VARIABLE
+STA ZP.ACCL
+
+Variables.Find();
+if (C)  // Found
+{
+    Variables.GetValue();
+    // ZP.TOP contains current value, ZP.TOPT contains data type
+    
+    Variables.GetTokens();
+    // ZP.NEXT now points to initialization token stream
+    
+    Variables.GetName();
+    // ZP.ACC now points to name string within node
+}
+```
+
+### Iterating and Displaying Variables
+```hopper
+Variables.IterateVariables();
+
+loop
+{
+    if (NC) { break; }  // No more variables
+    
+    // ZP.IDX points to current variable node
+    Variables.GetName();
+    // Print name from ZP.ACC
+    
+    Variables.GetValue();
+    // Print value from ZP.TOP
+    
+    Variables.GetType();
+    // Print type info from ZP.ACCT
+    
+    Variables.IterateNext();
+}
+```
+
 ## Usage Patterns
 
 ### Variable lookup in expressions (two-stage):
 ```hopper
-// Stage 1: Resolve name to address
-Tokenizer.GetTokenString(); // Name in ZP.TOP
+// Stage 1: Find name to address
+Tokenizer.GetTokenString(); // Name in ZP.ACC
 LDA #SymbolType.VARIABLE
 STA ZP.ACCL
-Variables.Resolve();
+Variables.Find();
 if (NC) { /* undefined variable error */ }
 
 // Stage 2: Get value by address
-Variables.GetValue(); // ZP.IDX already set from Resolve
-// Value now in ZP.NEXT, type in ZP.NEXTT
+Variables.GetValue(); // ZP.IDX already set from Find
+// Value now in ZP.TOP, type in ZP.TOPT
 ```
 
 ### Assignment (two-stage):
 ```hopper
-// Stage 1: Resolve variable name
-Tokenizer.GetTokenString(); // Name in ZP.TOP
+// Stage 1: Find variable name
+Tokenizer.GetTokenString(); // Name in ZP.ACC
 LDA #SymbolType.VARIABLE
 STA ZP.ACCL
-Variables.Resolve();
+Variables.Find();
 if (NC) { /* undefined variable error */ }
 
 // Stage 2: Set value by address
-// ... evaluate expression, result in ZP.NEXT ...
-Variables.SetValue(); // ZP.IDX from Resolve, ZP.NEXT has new value
+// ... evaluate expression, result in ZP.TOP ...
+Variables.SetValue(); // ZP.IDX from Find, ZP.TOP has new value
 ```
 
-### Type checking (resolve accepts either):
+### Type checking (find accepts either):
 ```hopper
 // For general identifier lookup (could be variable or constant)
 Tokenizer.GetTokenString();
 LDA #0  // Accept any symbol type
 STA ZP.ACCL
-Variables.Resolve();
+Variables.Find();
 if (C)
 {
     Variables.GetType(); // Get actual type info
@@ -408,7 +500,7 @@ The symbol table integrates with the Hopper VM memory system:
 1. **Allocation**: Uses `Memory.Allocate()` through `Table.Add()`
 2. **Deallocation**: Uses `Memory.Free()` through `Table.Delete()`
 3. **Persistence**: ZP.SymbolType, ZP.SymbolValue, ZP.SymbolName survive memory operations
-4. **Efficiency**: Only allocates space needed for each symbol (5 bytes + name length)
+4. **Efficiency**: Only allocates space needed for each symbol (7 bytes + name length)
 
 ## Error Handling
 
@@ -417,3 +509,13 @@ All operations return success/failure status via carry flag:
 - **C clear**: Operation failed (out of memory, symbol not found, etc.)
 
 The symbol table does not set error messages - that's the responsibility of the calling code to check the carry flag and handle appropriately.
+
+## Key Features
+
+This design enables:
+- **Rich VARS command**: Can show both current value and original initialization expression
+- **Constant re-evaluation**: Support for constants that depend on other constants
+- **Array size expressions**: Store and re-evaluate size expressions like `BIT FLAGS[LENGTH]`
+- **Debugging support**: Always have access to original source expression
+- **Forward references**: Functions can call functions defined later
+- **Dynamic modification**: FORGET and redefinition change symbol meanings
