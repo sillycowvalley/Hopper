@@ -2,6 +2,7 @@ unit Instructions
 {
     uses "/Source/Runtime/6502/ZeroPage"
     uses "/Source/Runtime/6502/Stacks"
+    uses "/Source/Runtime/6502/IntMath"
     uses "Messages"
     uses "BasicTypes"
     
@@ -314,7 +315,7 @@ unit Instructions
         ADC ZP.TOPH
         STA ZP.NEXTH
         
-        LDA ZP.NEXTT       
+        LDA ZP.NEXTT
         Stacks.PushNext();
     }
         
@@ -322,6 +323,26 @@ unit Instructions
     {
         Stacks.PopTopNext();
         subShared();
+    }
+    
+    doSigns()
+    {
+        LDX #0 
+        LDA ZP.NEXTH
+        ASL // sign bit into carry
+        if (C)
+        {
+            INX // count the -ve
+            NegateNext(); // NEXT = -NEXT
+        }
+        LDA ZP.TOPH
+        ASL // sign bit into carry
+        if (C)
+        {
+            INX // count the -ve
+            NegateTop(); // TOP = -TOP
+        }
+        STX ZP.FSIGN // store the sign count
     }
     
     // Multiplicative operators with stubs
@@ -342,12 +363,29 @@ unit Instructions
             return;
         }
         
-        // TODO: Implement multiplication
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BRK
+        LDA ZP.NEXTT
+        CMP # BasicType.INT
+        if (Z)
+        {
+            // INT
+            doSigns();
+            IntMath.MulShared();
+            LDA ZP.FSIGN     // load the sign count
+            CMP #1
+            if (Z)           // 1 negative (not 0 or 2)
+            {
+                NegateTop(); // TOP = -TOP
+            }
+        }
+        else
+        {
+            // WORD or BYTE
+            IntMath.MulShared();
+            LDA ZP.TOPT
+        }
+        
+        LDA ZP.NEXTT
+        Stacks.PushTop();
     }
     
     Divide()
@@ -367,14 +405,30 @@ unit Instructions
             return;
         }
         
-        // TODO: Implement division with zero check
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BRK
+        LDA ZP.NEXTT
+        CMP # BasicType.INT
+        if (Z)
+        {
+            // INT
+            doSigns(); // munts X
+            IntMath.UtilityDiv();
+            
+            LDA ZP.FSIGN     // load the sign count
+            CMP #1
+            if (Z)           // 1 negative (not 0 or 2)
+            {
+                IntMath.NegateNext(); // NEXT = -NEXT
+            }
+        }
+        else
+        {
+            // BYTE or WORD
+            // NEXT = NEXT / TOP
+            IntMath.UtilityDiv();
+        }
+        LDA ZP.NEXTT
+        Stacks.PushNext();
     }
-    
     Modulo()
     {
         // Pop two operands
@@ -391,13 +445,19 @@ unit Instructions
             STA ZP.LastErrorH
             return;
         }
-        
-        // TODO: Implement modulo with zero check
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BRK
+        LDA ZP.NEXTT
+        CMP # BasicType.INT
+        if (Z)
+        {
+            // INT
+            doSigns();
+        }
+        // ACC = NEXT % TOP
+        IntMath.DivMod();
+            
+        LDA ZP.NEXTT
+        STA ZP.ACCT
+        Stacks.PushACC(); // munts Y, A
     }
     
     // Existing comparison operators
@@ -464,6 +524,7 @@ unit Instructions
         Stacks.PushX(); // X, type is BasicType.BIT
     }
     
+        
     // Additional comparison operators with stubs
     LessThan()
     {
@@ -482,17 +543,59 @@ unit Instructions
             return;
         }
         
-        // TODO: Implement less-than comparison
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BRK
+        LDA ZP.NEXTT
+        CMP # BasicType.INT
+        if (Z)
+        {
+            // INT
+            // NEXT < TOP?
+            // TOP - NEXT > 0
+            SEC
+            LDA ZP.TOPL
+            SBC ZP.NEXTL
+            STA ZP.TOPL
+            LDA ZP.TOPH
+            SBC ZP.NEXTH
+            STA ZP.TOPH
+            
+            ASL           // sign bit into carry
+            
+            LDX #0  // TOP <= 0
+            loop
+            {
+                if (C) { break; }
+                //  0 or positive
+                LDA ZP.TOPL
+                ORA ZP.TOPH
+                if (Z)
+                {
+                    break;
+                }
+                LDX #1
+                break;
+            }
+        }
+        else
+        {
+            // WORD and BYTE
+            LDX #1 // NEXT < TOP
+            LDA ZP.NEXTH
+            CMP ZP.TOPH
+            if (Z)
+            {
+                LDA ZP.NEXTL
+                CMP ZP.TOPL
+            }
+            if (C) // NEXT < TOP?
+            {
+                LDX #0 // NEXT >= TOP
+            }
+        }
+        Stacks.PushX(); // as BOOL
     }
     
     GreaterThan()
     {
-        // Pop two operands
         Stacks.PopTopNext();
         
         LDA #3  // Ordering comparison operation
@@ -506,13 +609,56 @@ unit Instructions
             STA ZP.LastErrorH
             return;
         }
-        
-        // TODO: Implement greater-than comparison
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BRK
+        LDA ZP.NEXTT
+        CMP # BasicType.INT
+        if (Z)
+        {
+            // INT
+            SEC
+            LDA ZP.NEXTL
+            SBC ZP.TOPL
+            STA ZP.TOPL
+            LDA ZP.NEXTH
+            SBC ZP.TOPH
+            STA ZP.TOPH
+            
+            ASL           // sign bit into carry
+            
+            LDX #0  // TOP <= 0
+            loop
+            {
+                if (C) { break; }
+                //  0 or positive
+                LDA ZP.TOPL
+                ORA ZP.TOPH
+                if (Z)
+                {
+                    break;
+                }
+                LDX #1
+                break;
+            }
+        }
+        else
+        {
+            // WORD and BYTE
+            LDX #0 // NEXT <= TOP
+            LDA ZP.NEXTH
+            CMP ZP.TOPH
+            if (Z)
+            {
+                LDA ZP.NEXTL
+                CMP ZP.TOPL
+            }
+            if (NZ) // NEXT == TOP (not >) ?
+            {
+                if (C) // NEXT <  TOP (not >)?
+                {
+                    LDX #1   // NEXT > TOP
+                }
+            }
+        }
+        Stacks.PushX(); // as BOOL
     }
     
     LessEqual()
@@ -532,12 +678,52 @@ unit Instructions
             return;
         }
         
-        // TODO: Implement less-than-or-equal comparison
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BRK
+        LDA ZP.NEXTT
+        CMP # BasicType.INT
+        if (Z)
+        {
+            // INT
+            // NEXT <= TOP?
+            // TOP - NEXT >= 0
+            
+            SEC
+            LDA ZP.TOPL
+            SBC ZP.NEXTL
+            STA ZP.TOPL
+            LDA ZP.TOPH
+            SBC ZP.NEXTH
+            STA ZP.TOPH
+            
+            ASL           // sign bit into carry
+            
+            LDX #0
+            if (NC)
+            {
+                // 0 or positive
+                LDX #1
+            }
+        }
+        else
+        {
+            // WORD and BYTE
+            Stacks.PopNext();
+            LDX #1 // NEXT <= TOP
+            LDA ZP.NEXTH
+            CMP ZP.TOPH
+            if (Z)
+            {
+                LDA ZP.NEXTL
+                CMP ZP.TOPL
+            }
+            if (NZ) // NEXT == TOP (not >)?
+            {
+                if (C) // NEXT <  TOP (not >)?
+                {
+                    LDX #0  // NEXT > TOP
+                }
+            }
+        }
+        Stacks.PushX(); // as BOOL
     }
     
     GreaterEqual()
@@ -557,12 +743,48 @@ unit Instructions
             return;
         }
         
-        // TODO: Implement greater-than-or-equal comparison
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BRK
+        LDA ZP.NEXTT
+        CMP # BasicType.INT
+        if (Z)
+        {
+            // INT
+            LDX #0 // NEXT < TOP
+            LDA ZP.NEXTH
+            CMP ZP.TOPH
+            if (Z)
+            {
+                LDA ZP.NEXTL
+                CMP ZP.TOPL
+            }
+            if (C) // NEXT < TOP?
+            {
+                LDX #1   
+            }
+        }
+        else
+        {
+            // WORD and BYTE
+            // NEXT >= TOP?
+            // NEXT - TOP >= 0
+            
+            SEC
+            LDA ZP.NEXTL
+            SBC ZP.TOPL
+            STA ZP.TOPL
+            LDA ZP.NEXTH
+            SBC ZP.TOPH
+            STA ZP.TOPH
+            
+            ASL           // sign bit into carry
+            
+            LDX #0
+            if (NC)
+            {
+                // 0 or positive
+                LDX #1
+            }
+        }
+        Stacks.PushX(); // as BOOL
     }
     
     // Logical operators with stubs
@@ -583,12 +805,16 @@ unit Instructions
             return;
         }
         
-        // TODO: Implement logical AND
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BRK
+        // [next] &  [top] -> [top]
+        LDA ZP.NEXTL
+        AND ZP.TOPL
+        STA ZP.NEXTL
+        LDA ZP.NEXTH
+        AND ZP.TOPH
+        STA ZP.NEXTH
+        
+        LDA ZP.NEXTT
+        Stacks.PushNext();
     }
     
     Or()
@@ -608,17 +834,20 @@ unit Instructions
             return;
         }
         
-        // TODO: Implement logical OR
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BRK
+        // [next] |  [top] -> [top]
+        LDA ZP.NEXTL
+        ORA ZP.TOPL
+        STA ZP.NEXTL
+        LDA ZP.NEXTH
+        ORA ZP.TOPH
+        STA ZP.NEXTH
+        
+        LDA ZP.NEXTT
+        Stacks.PushNext();
     }
     
     LogicalNot()
     {
-        // Pop single operand
         Stacks.PopTop();
         
         // Check if operand is BIT type (only valid for logical NOT)
