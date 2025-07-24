@@ -352,7 +352,7 @@ program Test
         printTestHeader();
         
         // Start with a clean list
-        LDX #TableHeadLocationL
+        LDX # TableHeadLocation
         Table.Clear();
         
         // Add nodes (will be in reverse order: 3rd, 2nd, 1st)
@@ -365,7 +365,7 @@ program Test
             LDA #10
             STA ZP.ACCL
             STZ ZP.ACCH
-            LDX #TableHeadLocationL
+            LDX # TableHeadLocation
             Table.Add();
             if (NC)
             {
@@ -379,7 +379,7 @@ program Test
         }
         
         // Count nodes by traversal
-        LDX #TableHeadLocationL
+        LDX # TableHeadLocation
         Table.GetFirst();
         
         LDY #0  // Node count

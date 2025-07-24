@@ -17,21 +17,11 @@ unit Table
     GetFirst()
     {
         PHA
-        PHX
-        PHY
-                
-        // Load list head pointer from ZP address X into LHEAD
-        LDA 0x00, X
-        STA ZP.LHEADL
-        LDA 0x01, X
-        STA ZP.LHEADH
         
-        // Read the actual pointer value stored at that address
-        LDY #0
-        LDA [ZP.LHEAD], Y
+        // Read the node pointer value stored at that head address
+        LDA 0x00, X
         STA ZP.IDXL
-        INY
-        LDA [ZP.LHEAD], Y
+        LDA 0x01, X
         STA ZP.IDXH
         
         // Set carry based on whether we found a node
@@ -46,8 +36,6 @@ unit Table
             SEC  // Found node
         }
         
-        PLY
-        PLX
         PLA
     }
     
@@ -59,8 +47,6 @@ unit Table
     GetNext()
     {
         PHA
-        PHX
-        PHY
         
         // Check if current node is null
         LDA ZP.IDXL
@@ -68,11 +54,11 @@ unit Table
         if (Z) 
         { 
             CLC  // Already at end
-            PLY
-            PLX
             PLA
             return; 
         }
+        
+        PHY
         
         // Load next pointer: [IDX] -> IDX
         LDY #0
@@ -97,7 +83,6 @@ unit Table
         }
         
         PLY
-        PLX
         PLA
     }
     
