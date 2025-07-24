@@ -149,6 +149,7 @@ unit ZP
     const byte SymbolName           = 0x75;  // Storage for symbol name pointer (16-bit)
     const byte SymbolNameL          = 0x75;  // Storage for symbol name pointer low byte
     const byte SymbolNameH          = 0x76;  // Storage for symbol name pointer high byte
+    const byte SymbolLength         = 0x77;  // Storage for symbol name length
     
     // === AVAILABLE SYMBOLS (0x77-0x7F) ===
     // 9 bytes available for additional symbol table features (0x77-0x7F)

@@ -42,37 +42,31 @@ unit Objects
     // Output: ZP.IDX = new symbol node address, C set if successful, NC if allocation failed
     // Preserves: A, X, Y
     // Munts: ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Table.Add call)
-    // Uses: ZP.Lxx variables as temporary workspace
+    // Uses: ZP.SymbolType, ZP.SymbolValue, ZP.SymbolName, ZP.SymbolLength for temporary storage
     Add()
     {
         PHA
         PHX
         PHY
         
-        // Save input parameters before Table.Add munts them
+        // Save input parameters in dedicated ZP locations that survive Memory.Allocate()
         LDA ZP.ACCL
-        STA ZP.LTYPE        // Save symbolType|dataType
+        STA ZP.SymbolType   // Save symbolType|dataType
         
         LDA ZP.NEXTL
-        STA ZP.LNEXTL       // Save value low
+        STA ZP.SymbolValueL // Save value low
         LDA ZP.NEXTH
-        STA ZP.LNEXTH       // Save value high
+        STA ZP.SymbolValueH // Save value high
         
         LDA ZP.TOPL
-        STA ZP.LPREVIOUSL   // Save name pointer low
+        STA ZP.SymbolNameL  // Save name pointer low
         LDA ZP.TOPH
-        STA ZP.LPREVIOUSH   // Save name pointer high
+        STA ZP.SymbolNameH  // Save name pointer high
         
         // Calculate node size
-        calculateNodeSize(); // Returns size in ZP.LLENGTH, uses name at ZP.LPREVIOUS
+        calculateNodeSize(); // Returns size in ZP.ACC, sets ZP.SymbolLength
         
-        // Move size to ACC for Table.Add()
-        LDA ZP.LLENGTHL
-        STA ZP.ACCL
-        LDA ZP.LLENGTHH
-        STA ZP.ACCH
-        
-        // Add to table
+        // Add to table (size already in ZP.ACC)
         LDX # ZP.SymbolList  // Address of list head pointer
         Table.Add(); // Returns new node in IDX, C set if successful
         if (NC)  // Allocation failed
@@ -83,9 +77,8 @@ unit Objects
             return;  // C already clear
         }
         
-        // Initialize the new node
+        // Initialize the new node using saved parameters
         initializeNode();
-        
         
         PLY
         PLX
@@ -254,50 +247,53 @@ unit Objects
     }
     
     // Internal helper: Calculate required node size
-    // Input: ZP.LPREVIOUS = name pointer
-    // Output: ZP.LLENGTH = total node size (16-bit)
+    // Input: ZP.SymbolName = name pointer
+    // Output: ZP.ACC = total node size (16-bit), ZP.SymbolLength = name length including null
     calculateNodeSize()
     {
         // Start with fixed overhead
         LDA #symbolOverhead
-        STA ZP.LLENGTHL
-        STZ ZP.LLENGTHH
+        STA ZP.ACCL
+        STZ ZP.ACCH
         
-        // Add name length + null terminator
+        // Calculate and store name length + null terminator
         LDY #0
         loop
         {
-            LDA [ZP.LPREVIOUS], Y
+            LDA [ZP.SymbolName], Y
             if (Z) { break; } // Hit null terminator
-            
-            INC ZP.LLENGTHL
-            if (Z) { INC ZP.LLENGTHH }
-            
             INY
         }
         
-        // Add 1 for null terminator
-        INC ZP.LLENGTHL
-        if (Z) { INC ZP.LLENGTHH }
+        // Y now contains string length, add 1 for null terminator
+        INY
+        STY ZP.SymbolLength  // Store total name length (including null) for reuse
+        
+        // Add name length to total size
+        TYA
+        CLC
+        ADC ZP.ACCL
+        STA ZP.ACCL
+        if (C) { INC ZP.ACCH }
     }
     
     // Internal helper: Initialize fields in newly allocated node
-    // Input: ZP.IDX = node address, ZP.LTYPE = packed symbolType|dataType, 
-    //        ZP.LNEXT = value, ZP.LPREVIOUS = name pointer
+    // Input: ZP.IDX = node address, ZP.SymbolType = packed symbolType|dataType, 
+    //        ZP.SymbolValue = value, ZP.SymbolName = name pointer, ZP.SymbolLength = name length
     // Note: Next pointer at offset 0-1 already initialized by Table.Add()
     initializeNode()
     {
         // Set symbolType|dataType (offset typeOffset)
-        LDY # typeOffset
-        LDA ZP.LTYPE
+        LDY #typeOffset
+        LDA ZP.SymbolType
         STA [ZP.IDX], Y
         
         // Set value (offset valueOffset to valueOffset+1)
-        LDY # valueOffset
-        LDA ZP.LNEXTL
+        LDY #valueOffset
+        LDA ZP.SymbolValueL
         STA [ZP.IDX], Y
         INY
-        LDA ZP.LNEXTH
+        LDA ZP.SymbolValueH
         STA [ZP.IDX], Y
         
         // Copy name string starting at nameOffset
@@ -305,27 +301,31 @@ unit Objects
     }
     
     // Internal helper: Copy name string to node
-    // Input: ZP.IDX = node address, ZP.LPREVIOUS = name pointer
+    // Input: ZP.IDX = node address, ZP.SymbolName = name pointer, ZP.SymbolLength = name length
     copyNameToNode()
     {
-        LDY # nameOffset     // Destination index
-        STZ ZP.LCOUNTL       // Source index counter
+        // Set up source address (name pointer)
+        LDA ZP.SymbolNameL
+        STA ZP.FSOURCEADDRESSL
+        LDA ZP.SymbolNameH
+        STA ZP.FSOURCEADDRESSH
         
-        loop
-        {
-            // Get character from name
-            PHY  // Save destination offset
-            LDY ZP.LCOUNTL
-            LDA [ZP.LPREVIOUS], Y
-            PLY  // Restore destination offset
-            
-            // Store at destination
-            STA [ZP.IDX], Y
-            if (Z) { break; } // Copied null terminator
-            
-            INC ZP.LCOUNTL       // Increment source index
-            INY                  // Increment destination index
-        }
+        // Set up destination address (node + nameOffset)
+        CLC
+        LDA ZP.IDXL
+        ADC #nameOffset
+        STA ZP.FDESTINATIONADDRESSL
+        LDA ZP.IDXH
+        ADC #0
+        STA ZP.FDESTINATIONADDRESSH
+        
+        // Use pre-calculated length
+        LDA ZP.SymbolLength
+        STA ZP.FLENGTHL
+        STZ ZP.FLENGTHH
+        
+        // Copy the string using Tools.CopyBytes
+        Tools.CopyBytes();
     }
     
     // Internal helper: Compare names
@@ -333,23 +333,24 @@ unit Objects
     // Output: Z set if equal, NZ if different
     compareNames()
     {
-        // Calculate address of name field in node
+        // Use available ZP slots from our 0x77-0x7F range for temporary storage
+        // Calculate address of name field in node and store in 0x77-0x78
         CLC
         LDA ZP.IDXL
         ADC #nameOffset
-        STA ZP.LNEXTL
+        STA 0x77            // Temporary storage for node name pointer low
         LDA ZP.IDXH
         ADC #0
-        STA ZP.LNEXTH
+        STA 0x78            // Temporary storage for node name pointer high
         
         // Compare strings
         LDY #0
         loop
         {
             LDA [ZP.TOP], Y     // Target name character
-            STA ZP.LTYPE        // Store temporarily
-            LDA [ZP.LNEXT], Y   // Node name character
-            CMP ZP.LTYPE        // Compare
+            STA 0x79            // Temporary storage for comparison
+            LDA [0x77], Y       // Node name character (using temp pointer)
+            CMP 0x79            // Compare
             if (NZ) { return; } // Different characters
             
             // Check if we hit null terminator

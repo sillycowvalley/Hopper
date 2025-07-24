@@ -577,10 +577,7 @@ program Test
         // Should succeed (C set)
         if (C)
         {
-            DumpHeap();
             Objects.Destroy();
-            DumpHeap();
-            
             SEC  // Pass
         }
         else
@@ -729,7 +726,6 @@ program Test
         printTestHeader();
         
         Objects.Initialize();
-        DumpHeap();
         
         // Add INT variable "TEMP" = 100
         LDA #(testName4 % 256)
@@ -747,8 +743,6 @@ program Test
         
         Objects.Add();
         Objects.Find();
-        
-        DumpHeap();
         
         // Change value to 200
         LDA #200
