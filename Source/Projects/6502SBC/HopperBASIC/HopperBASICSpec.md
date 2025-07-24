@@ -107,6 +107,7 @@
 ### Enhanced I/O
 - ❌ **`INPUT var`** - Read value from keyboard into variable
 - ❌ **`INPUT "prompt",var`** - Read with prompt
+- ❌ **`INPUT var1, var2, ...`** - Read multiple values in one statement
 - ❌ **`PRINT expr[,expr...]`** - Multiple values separated by spaces, newline at end
 - ❌ **`PRINT expr[;expr...]`** - Multiple values with no separation, newline at end
 - ❌ **`PRINT expr;`** - Output value with no newline (cursor stays on line)
@@ -116,6 +117,7 @@
 - ❌ **`FOR var = start TO end [STEP increment]`** - Counted loops
 - ❌ **`NEXT var`** - End of FOR loop
 - ❌ **`WHILE expr`...`WEND`** - Conditional loops
+- ❌ **`DO`...`UNTIL expr`** - Post-test conditional loops
 - ❌ **`BREAK`** - Exit from loops early
 - ❌ **`CONTINUE`** - Skip to next loop iteration
 - ❌ **`CONT`** - Continue execution after break (console command)
@@ -269,6 +271,7 @@ string_literal := '"' { character }* '"'
 statement := ... (Phase 1 statements)
            | for_statement
            | while_statement
+           | do_until_statement
            | break_statement
            | continue_statement
            | const_declaration
@@ -281,6 +284,10 @@ for_statement := FOR identifier "=" expression TO expression [ STEP expression ]
 while_statement := WHILE expression
                   { statement }*
                   WEND
+
+do_until_statement := DO
+                     { statement }*
+                     UNTIL expression
 
 const_declaration := CONST identifier "=" expression
 
