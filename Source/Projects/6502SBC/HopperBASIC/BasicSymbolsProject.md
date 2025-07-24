@@ -53,6 +53,7 @@ HopperBASIC uses a unified symbol table to store all program identifiers: variab
 - **VARIABLE** - Mutable values (INT, WORD, BIT, BYTE, STRING, ARRAY)
 - **CONSTANT** - Immutable values (defined with CONST)
 - **FUNCTION** - Executable code blocks (including main program from BEGIN/END)
+- **ARGUMENT** - Function parameters (stored in separate arguments tables)
 
 ## Implementation Benefits
 
@@ -122,7 +123,7 @@ Symbol nodes now have a 7-byte fixed header plus variable-length name:
 ```
 Offset 0-1: next pointer (managed by Table unit)
 Offset 2:   symbolType|dataType (packed byte)
-            High nibble: SymbolType (VARIABLE=1, CONSTANT=2, FUNCTION=3)
+            High nibble: SymbolType (VARIABLE=1, CONSTANT=2, FUNCTION=3, ARGUMENT=4)
             Low nibble:  BasicType (INT=2, BYTE=3, WORD=4, BIT=6, etc.)
 Offset 3-4: value/address (16-bit current value)
 Offset 5-6: tokens pointer (16-bit pointer to initialization token stream)
@@ -152,7 +153,8 @@ unit Objects
     {
         VARIABLE = 0x01,   // Mutable values
         CONSTANT = 0x02,   // Immutable values  
-        FUNCTION = 0x03    // Executable code blocks
+        FUNCTION = 0x03,   // Executable code blocks
+        ARGUMENT = 0x04    // Function parameters
     }
     
     // Initialize empty symbol table
@@ -309,37 +311,42 @@ unit Variables
 ```
 
 ### Layer 4: Functions (Function-Specific Interface)
-Function management building on Objects foundation with argument list support:
+Function management building on Objects foundation with nested arguments tables:
 
 #### Function Node Layout
-Functions reuse the existing node structure with specialized field interpretation:
+Functions reuse the existing Objects node structure:
 ```
 Offset 0-1: next pointer (managed by Table unit)
 Offset 2:   symbolType|returnType (FUNCTION | INT/WORD/BIT/etc)
-Offset 3-4: arguments list pointer (reuses value field)
+Offset 3-4: arguments table head pointer (reuses value field)
 Offset 5-6: function body tokens pointer
 Offset 7+:  null-terminated function name string
 ```
 
-#### Arguments List Structure
-Stored as separate allocated block pointed to by arguments list pointer:
+#### Arguments Implementation
+**Nested Table Approach**: Each function has its own arguments table using Objects infrastructure
+
+**Argument Node Structure**: Standard Objects node with ARGUMENT symbol type:
 ```
-// Each argument: [type byte][name string][null terminator]
-// List ends with [0] (zero type byte)
-// Example for FUNC Add(INT a, WORD b):
-[BasicType.INT]['a'][0][BasicType.WORD]['b'][0][0]
+Offset 0-1: next pointer (managed by Table unit)
+Offset 2:   ARGUMENT|argumentType (packed: SymbolType.ARGUMENT | BasicType.INT/etc)
+Offset 3-4: unused (always 0)
+Offset 5-6: unused (always 0)  
+Offset 7+:  null-terminated argument name
 ```
+
+**Memory Trade-off**: 4 bytes wasted per argument vs ~400-600 bytes of duplicate code
 
 ```hopper
 unit Functions
 {
-    // Function management using Objects foundation
-    // Functions reuse value field as arguments list pointer
+    // Function management using Objects foundation with nested arguments tables
+    // Arguments are stored as separate Objects tables, one per function
     
     // Declare new function
     // Input: ZP.ACC = name pointer, ZP.ACCT = FUNCTION|returnType (packed),
-    //        ZP.TOP = arguments list pointer, ZP.NEXT = function body tokens pointer
-    // Output: C set if successful, NC if error (name exists, out of memory)
+    //        ZP.TOP = 0 (arguments table created separately), ZP.NEXT = function body tokens pointer
+    // Output: ZP.IDX = function node address, C set if successful, NC if error
     // Uses: Objects.Add() internally
     Declare();
     
@@ -350,33 +357,42 @@ unit Functions
     // Error: Sets LastError if found but wrong type
     Find();
     
+    // Create arguments table for function
+    // Input: ZP.IDX = function node address
+    // Output: C set if successful, arguments table created and linked to function
+    // Uses: Objects.Initialize() to create new arguments table, stores head pointer in function node
+    CreateArguments();
+    
+    // Add argument to function's arguments table
+    // Input: ZP.IDX = function node address, ZP.ACCT = argumentType, ZP.ACC = argument name
+    // Output: C set if successful, argument added to function's arguments table
+    // Process: Gets arguments table head, uses Objects.Add() to add ARGUMENT symbol type
+    AddArgument();
+    
+    // Get arguments table head for function
+    // Input: ZP.IDX = function node address  
+    // Output: ZP.IDY = arguments table head pointer, C set if has arguments table
+    // Preserves: A, X, ZP.IDX, ZP.TOP, ZP.NEXT, ZP.ACC
+    GetArguments();
+    
+    // Find argument by name in function's arguments table
+    // Input: ZP.IDX = function node address, ZP.ACC = argument name pointer
+    // Output: ZP.IDY = argument node address, ZP.ACCL = argument index, C set if found
+    // Process: Gets arguments table, iterates to find name and calculate index for BP offset
+    FindArgument();
+    
     // Get function signature info
     // Input: ZP.IDX = function node address (from Find)
-    // Output: ZP.ACCT = returnType, ZP.TOP = arguments list pointer, ZP.NEXT = function body tokens
+    // Output: ZP.ACCT = returnType, ZP.TOP = arguments table head, ZP.NEXT = function body tokens
     // Preserves: A, X, Y, ZP.ACC
     GetSignature();
     
-    // Get argument count by walking arguments list
+    // Get argument count by walking arguments table
     // Input: ZP.IDX = function node address (from Find)
     // Output: ZP.ACCL = argument count, C set if successful
     // Preserves: A, X, Y, ZP.TOP, ZP.NEXT
-    // Uses: Internal walking of arguments list
+    // Uses: Internal iteration through arguments table
     GetArgumentCount();
-    
-    // Get argument info by index
-    // Input: ZP.IDX = function node address, ZP.ACCL = argument index (0-based)
-    // Output: ZP.ACCT = argument type, ZP.ACC = argument name pointer, C set if valid index
-    // Preserves: X, Y, ZP.TOP, ZP.NEXT
-    // Error: NC if index out of range
-    GetArgument();
-    
-    // Find argument by name for BP offset resolution
-    // Input: ZP.IDX = function node address, ZP.ACC = argument name pointer
-    // Output: ZP.TOPL = argument count, ZP.TOPH = argument index, C set if found
-    //         BP offset = argument count - argument index
-    // Preserves: A, X, Y, ZP.NEXT
-    // Uses: Always walks entire arguments list to get both count and index
-    FindArgument();
     
     // Get function body tokens from current node
     // Input: ZP.IDX = function node address (from Find or iteration)
@@ -393,7 +409,7 @@ unit Functions
     // Remove function by name
     // Input: ZP.ACC = name pointer
     // Output: C set if successful, NC if not found
-    // Uses: Objects.Remove() internally
+    // Process: Find function, clear its arguments table, remove function node
     Remove();
     
     // Start iteration over functions only (for FUNCS command)
@@ -408,7 +424,7 @@ unit Functions
     
     // Clear all functions (for NEW command)
     // Output: Empty function table
-    // Uses: Objects iteration and removal internally
+    // Process: Iterate all functions, clear each arguments table, then clear functions table
     Clear();
 }
 ```
@@ -484,8 +500,8 @@ loop
 ### Declaring a Function with Arguments
 ```hopper
 // FUNC Add(INT a, WORD b) -> INT
-// Arguments list: [BasicType.INT]['a'][0][BasicType.WORD]['b'][0][0]
 
+// Step 1: Create function node
 LDA #(functionName % 256)
 STA ZP.ACCL
 LDA #(functionName / 256) 
@@ -495,10 +511,8 @@ STA ZP.ACCH
 LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
 STA ZP.ACCT
 
-LDA #(argumentsList % 256)  // Pointer to arguments list
-STA ZP.TOPL
-LDA #(argumentsList / 256)
-STA ZP.TOPH
+STZ ZP.TOPL  // Arguments table head (will be set by CreateArguments)
+STZ ZP.TOPH
 
 LDA #(functionBodyTokens % 256)  // Pointer to function body tokens
 STA ZP.NEXTL
@@ -506,7 +520,27 @@ LDA #(functionBodyTokens / 256)
 STA ZP.NEXTH
 
 Functions.Declare();
-// C set if successful, ZP.IDX contains new node address
+// ZP.IDX now contains function node address
+
+// Step 2: Create arguments table
+Functions.CreateArguments();
+
+// Step 3: Add arguments
+LDA #((SymbolType.ARGUMENT << 4) | BasicType.INT)  // INT type
+STA ZP.ACCT
+LDA #(arg1Name % 256)  // "a"
+STA ZP.ACCL
+LDA #(arg1Name / 256)
+STA ZP.ACCH
+Functions.AddArgument();
+
+LDA #((SymbolType.ARGUMENT << 4) | BasicType.WORD)  // WORD type
+STA ZP.ACCT
+LDA #(arg2Name % 256)  // "b"
+STA ZP.ACCL
+LDA #(arg2Name / 256)
+STA ZP.ACCH
+Functions.AddArgument();
 ```
 
 ### Function Call Validation
@@ -518,16 +552,34 @@ if (C)
     Functions.GetArgumentCount();
     // ZP.ACCL now contains argument count (2)
     
-    // Validate argument types by walking arguments list
-    LDA #0  // Start with first argument
-    STA ZP.ACCL
-    Functions.GetArgument();
-    // ZP.ACCT contains first argument type (should be INT)
+    // Get arguments table and validate each argument type
+    Functions.GetArguments();  // ZP.IDY = arguments table head
     
-    LDA #1  // Second argument
+    // Set up for Objects iteration on arguments table
+    LDA ZP.IDYL
+    STA ZP.SymbolListL  // Temporarily point to arguments table
+    LDA ZP.IDYH
+    STA ZP.SymbolListH
+    
+    LDA #SymbolType.ARGUMENT
     STA ZP.ACCL
-    Functions.GetArgument();
-    // ZP.ACCT contains second argument type (should be WORD)
+    Objects.IterateStart();
+    
+    // First argument should be INT type
+    Objects.GetData();
+    LDA ZP.ACCT
+    AND #0x0F
+    CMP #BasicType.INT  // Validate first argument type
+    
+    Objects.IterateNext();
+    // Second argument should be WORD type  
+    Objects.GetData();
+    LDA ZP.ACCT
+    AND #0x0F
+    CMP #BasicType.WORD  // Validate second argument type
+    
+    // Restore main symbol table pointer
+    // ... restore ZP.SymbolListL/H ...
 }
 ```
 
@@ -543,13 +595,13 @@ STA ZP.ACCH
 Functions.FindArgument();
 if (C)
 {
-    // ZP.TOPL = argument count (2)
-    // ZP.TOPH = argument index (0 for "a")
-    // BP offset = argument count - argument index = 2 - 0 = 2
-    SEC
-    LDA ZP.TOPL
-    SBC ZP.TOPH
-    STA ZP.ACCL  // BP offset for parameter "a"
+    // ZP.ACCL = argument index (0 for "a")
+    Functions.GetArgumentCount();
+    // ZP.ACCL = argument count (2)
+    
+    // BP offset = argument count - argument index - 1
+    // For "a": offset = 2 - 0 - 1 = 1
+    // For "b": offset = 2 - 1 - 1 = 0
 }
 ```
 
@@ -598,19 +650,32 @@ loop
     Functions.GetArgumentCount();
     // ZP.ACCL contains argument count
     
-    // Display each argument
-    LDY #0
-    loop
+    // Display each argument by iterating arguments table
+    Functions.GetArguments();  // Get arguments table head in ZP.IDY
+    if (C)
     {
-        CPY ZP.ACCL
-        if (Z) { break; }  // All arguments processed
+        // Temporarily switch to arguments table
+        LDA ZP.IDYL
+        STA ZP.SymbolListL
+        LDA ZP.IDYH 
+        STA ZP.SymbolListH
         
-        STY ZP.ACCL
-        Functions.GetArgument();
-        // Print argument type (ZP.ACCT) and name (ZP.ACC)
+        LDA #SymbolType.ARGUMENT
+        STA ZP.ACCL
+        Objects.IterateStart();
         
-        LDY ZP.ACCL
-        INY
+        loop
+        {
+            if (NC) { break; }  // No more arguments
+            
+            Objects.GetData();
+            // Print argument type (ZP.ACCT & 0x0F) and name (Objects.GetName)
+            
+            Objects.IterateNext();
+        }
+        
+        // Restore main symbol table
+        // ... restore ZP.SymbolListL/H ...
     }
     
     Functions.IterateNext();
@@ -668,6 +733,7 @@ The symbol table integrates with the Hopper VM memory system:
 2. **Deallocation**: Uses `Memory.Free()` through `Table.Delete()`
 3. **Persistence**: ZP.SymbolType, ZP.SymbolValue, ZP.SymbolName survive memory operations
 4. **Efficiency**: Only allocates space needed for each symbol (7 bytes + name length)
+5. **Arguments Tables**: Each function has separate arguments table using same Objects infrastructure
 
 ## Error Handling
 
@@ -730,3 +796,5 @@ This design enables:
 - **Referential integrity**: Prevents "stale constant" problems in dependency chains
 - **Forward references**: Functions can call functions defined later
 - **Dynamic modification**: FORGET and redefinition change symbol meanings
+- **Unified argument handling**: Arguments use same Objects infrastructure as other symbols
+- **Memory efficiency**: No duplicate code for argument management, minimal per-argument overhead
