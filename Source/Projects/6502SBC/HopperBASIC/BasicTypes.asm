@@ -2,6 +2,7 @@ unit Types
 {
     enum BasicType
     {
+        VOID   = 0x00, // function return type indicating no return value (internal)
         INT    = 0x02, // Types.Int
         BYTE   = 0x03, // Types.Byte
         WORD   = 0x04, // Types.UInt

@@ -10,14 +10,28 @@ unit TestObjects
     const string testName3 = "FLAG";
     const string testName4 = "TEMP";
     const string testName5 = "CONST1";
+    const string testName6 = "FUNC1";
+    const string testName7 = "MYFUNC";
     
-    // Objects test descriptions
+    // Objects test descriptions - existing
     const string objectsDesc1 = "Add symbol";
     const string objectsDesc2 = "Find symbol";
     const string objectsDesc3 = "Get symbol data";
     const string objectsDesc4 = "Set symbol value";
     const string objectsDesc5 = "Symbol type filtering";
     const string objectsDesc6 = "Destroy symbol table";
+    
+    // Objects test descriptions - new
+    const string objectsDesc7 = "Remove symbol";
+    const string objectsDesc8 = "Get/Set tokens";
+    const string objectsDesc9 = "Mixed symbol types";
+    const string objectsDesc10 = "Symbol not found";
+    const string objectsDesc11 = "Duplicate symbol handling";
+    
+    // Mock token data for testing
+    const uint mockTokensAddr1 = 0x4000;
+    const uint mockTokensAddr2 = 0x4100;
+    const uint mockTokensAddr3 = 0x4200;
     
     // Test: Add symbol to Objects
     testAddSymbol()
@@ -351,6 +365,326 @@ unit TestObjects
         Test.PrintResult();
     }
     
+    // Test: Remove symbol
+    testRemoveSymbol()
+    {
+        LDA #(objectsDesc7 % 256)
+        STA ZP.TOPL
+        LDA #(objectsDesc7 / 256)
+        STA ZP.TOPH
+        Test.PrintTestHeader();
+        
+        // Add multiple symbols
+        LDA #(testName1 % 256)
+        STA ZP.TOPL
+        LDA #(testName1 / 256)
+        STA ZP.TOPH
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
+        STA ZP.ACCL
+        LDA #10
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        STZ ZP.IDYL
+        STZ ZP.IDYH
+        LDX #ZP.VariablesList
+        Objects.Add();
+        
+        if (NC)
+        {
+            LDA #0xA0
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA #(testName2 % 256)
+        STA ZP.TOPL
+        LDA #(testName2 / 256)
+        STA ZP.TOPH
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
+        STA ZP.ACCL
+        LDA #20
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        STZ ZP.IDYL
+        STZ ZP.IDYH
+        LDX #ZP.VariablesList
+        Objects.Add();
+        
+        if (NC)
+        {
+            LDA #0xA1
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Find first symbol to get node address in ZP.IDX
+        LDA #(testName1 % 256)
+        STA ZP.TOPL
+        LDA #(testName1 / 256)
+        STA ZP.TOPH
+        LDX #ZP.VariablesList
+        Objects.Find();
+        
+        if (NC)
+        {
+            LDA #0xA2
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Remove first symbol (now ZP.IDX has node address)
+        LDX #ZP.VariablesList
+        Objects.Remove();
+        
+        if (NC)
+        {
+            LDA #0xA3
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Verify it's gone
+        LDA #(testName1 % 256)
+        STA ZP.TOPL
+        LDA #(testName1 / 256)
+        STA ZP.TOPH
+        LDX #ZP.VariablesList
+        Objects.Find();
+        
+        if (C)
+        {
+            LDA #0xA4  // Should not find it
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Verify second symbol still exists
+        LDA #(testName2 % 256)
+        STA ZP.TOPL
+        LDA #(testName2 / 256)
+        STA ZP.TOPH
+        LDX #ZP.VariablesList
+        Objects.Find();
+        
+        if (NC)
+        {
+            LDA #0xA5
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        LDX #ZP.VariablesList
+        Objects.Destroy();
+        SEC  // Pass
+        Test.PrintResult();
+    }
+    
+    // Test: Get/Set tokens
+    testGetSetTokens()
+    {
+        LDA #(objectsDesc8 % 256)
+        STA ZP.TOPL
+        LDA #(objectsDesc8 / 256)
+        STA ZP.TOPH
+        Test.PrintTestHeader();
+        
+        // Add symbol with tokens
+        LDA #(testName6 % 256)
+        STA ZP.TOPL
+        LDA #(testName6 / 256)
+        STA ZP.TOPH
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.NEXTL
+        STZ ZP.NEXTH
+        LDA #(mockTokensAddr1 % 256)
+        STA ZP.IDYL
+        LDA #(mockTokensAddr1 / 256)
+        STA ZP.IDYH
+        LDX #ZP.VariablesList
+        Objects.Add();
+        
+        if (NC)
+        {
+            LDA #0xB0
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Find and get tokens
+        LDA #(testName6 % 256)
+        STA ZP.TOPL
+        LDA #(testName6 / 256)
+        STA ZP.TOPH
+        LDX #ZP.VariablesList
+        Objects.Find();
+        
+        if (NC)
+        {
+            LDA #0xB1
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        Objects.GetTokens();
+        
+        // Verify tokens address - GetTokens returns in ZP.IDY
+        LDA ZP.IDYL
+        CMP #(mockTokensAddr1 % 256)
+        if (NZ)
+        {
+            LDA #0xB2
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA ZP.IDYH
+        CMP #(mockTokensAddr1 / 256)
+        if (NZ)
+        {
+            LDA #0xB3
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Set new tokens
+        LDA #(mockTokensAddr2 % 256)
+        STA ZP.IDYL
+        LDA #(mockTokensAddr2 / 256)
+        STA ZP.IDYH
+        Objects.SetTokens();
+        
+        // Get tokens again to verify
+        Objects.GetTokens();
+        
+        LDA ZP.IDYL
+        CMP #(mockTokensAddr2 % 256)
+        if (NZ)
+        {
+            LDA #0xB4
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA ZP.IDYH
+        CMP #(mockTokensAddr2 / 256)
+        if (NZ)
+        {
+            LDA #0xB5
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        LDX #ZP.VariablesList
+        Objects.Destroy();
+        SEC  // Pass
+        Test.PrintResult();
+    }
+      
+    // Test: Symbol not found scenarios
+    testSymbolNotFound()
+    {
+        LDA #(objectsDesc10 % 256)
+        STA ZP.TOPL
+        LDA #(objectsDesc10 / 256)
+        STA ZP.TOPH
+        Test.PrintTestHeader();
+        
+        // Try to find in empty table
+        LDA #(testName1 % 256)
+        STA ZP.TOPL
+        LDA #(testName1 / 256)
+        STA ZP.TOPH
+        LDX #ZP.VariablesList
+        Objects.Find();
+        
+        if (C)
+        {
+            LDA #0xE0  // Should not find anything
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Add one symbol
+        LDA #(testName1 % 256)
+        STA ZP.TOPL
+        LDA #(testName1 / 256)
+        STA ZP.TOPH
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
+        STA ZP.ACCL
+        LDA #42
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        STZ ZP.IDYL
+        STZ ZP.IDYH
+        LDX #ZP.VariablesList
+        Objects.Add();
+        
+        if (NC)
+        {
+            LDA #0xE1
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Try to find different symbol
+        LDA #(testName2 % 256)
+        STA ZP.TOPL
+        LDA #(testName2 / 256)
+        STA ZP.TOPH
+        LDX #ZP.VariablesList
+        Objects.Find();
+        
+        if (C)
+        {
+            LDA #0xE2  // Should not find it
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Try to remove non-existent symbol - first try to find it
+        LDA #(testName2 % 256)
+        STA ZP.TOPL
+        LDA #(testName2 / 256)
+        STA ZP.TOPH
+        LDX #ZP.VariablesList
+        Objects.Find();
+        
+        if (C)
+        {
+            // If found (shouldn't happen), try to remove it
+            LDX #ZP.VariablesList
+            Objects.Remove();
+            if (C)
+            {
+                LDA #0xE3  // Should not have found/removed it
+                CLC
+                Test.PrintResult();
+                return;
+            }
+        }
+        
+        LDX #ZP.VariablesList
+        Objects.Destroy();
+        SEC  // Pass
+        Test.PrintResult();
+    }
+    
     // Test: Destroy symbol table
     testDestroy()
     {
@@ -411,6 +745,9 @@ unit TestObjects
         testGetSymbolData();
         testSetSymbolValue();
         testSymbolFiltering();
+        testRemoveSymbol();
+        testGetSetTokens();
+        testSymbolNotFound();
         testDestroy();
     }
 }

@@ -89,8 +89,8 @@ unit Table
     // Add new node to end of list
     // Input: X = ZP address of list head pointer, ZP.ACC = node size (16-bit)
     // Output: ZP.IDX = new node address, C set if successful, NC if allocation failed
-    // Preserves: A, Y, ZP.TOP, ZP.NEXT
-    // Uses: ZP.LCURRENT, ZP.LHEADX, ZP.LPREVIOUS, ZP.LNEXT as temporary workspace
+    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT
+    // Uses: ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT as temporary workspace
     Add()
     {
         PHA
@@ -100,7 +100,6 @@ unit Table
         // Save inputs in ZP.Lxx slots
         STX ZP.LHEADX           // ZP address of list head pointer
         
-        // 1. Allocate new node
         Memory.Allocate();      // Returns address in ZP.IDX, probably munts everything except ZP.Lx
         
         LDA ZP.IDXL
@@ -114,88 +113,60 @@ unit Table
             return;
         }
         
-        LDA ZP.IDXL
-        STA ZP.LCURRENTL        // New node address
-        LDA ZP.IDXH
-        STA ZP.LCURRENTH
-        
-        // New node's next = NULL (it goes at the end)
+        // IDX->NEXT = null
         LDY #0
         LDA #0
-        STA [ZP.LCURRENT], Y
+        STA [IDX], Y
         INY
-        STA [ZP.LCURRENT], Y
+        STA [IDX], Y
         
-        // 2. Find insertion point using pointer-to-pointer pattern
-        // Start with address of list head pointer
+        // load first node from head
         LDX ZP.LHEADX
-        STX ZP.LPREVIOUSL       // Points to insertion location (8-bit ZP address)
-        STZ ZP.LPREVIOUSH       // High byte always 0 for ZP addresses
+        LDA 0x00, X             // Get low byte of pointer to first node
+        STA ZP.LCURRENTL
+        LDA 0x01, X             // Get high byte of pointer to first node
+        STA ZP.LCURRENTH
         
-        loop
-        {
-            // Check if *LPREVIOUS is NULL (insertion point found)
-            LDA ZP.LPREVIOUSH
-            if (Z)
-            {
-                // Zero page address - use ZP addressing
-                LDX ZP.LPREVIOUSL
-                LDA 0x00, X             // Get low byte of pointer
-                STA ZP.LNEXTL
-                LDA 0x01, X             // Get high byte of pointer
-                STA ZP.LNEXTH
-            }
-            else
-            {
-                // Memory address - use indirect addressing
-                LDY #0
-                LDA [ZP.LPREVIOUS], Y
-                STA ZP.LNEXTL
-                INY
-                LDA [ZP.LPREVIOUS], Y
-                STA ZP.LNEXTH
-            }
-            
-            LDA ZP.LNEXTL
-            ORA ZP.LNEXTH
-            if (Z) { break; }        // Found insertion point
-            
-            // LPREVIOUS = &(LNEXT->next)
-            // Since LNEXT is a node address, its next field is at offset 0
-            LDA ZP.LNEXTL
-            STA ZP.LPREVIOUSL       // Low byte of next field address
-            LDA ZP.LNEXTH  
-            STA ZP.LPREVIOUSH       // High byte of next field address
-        }
-        
-        // 3. Insert: *LPREVIOUS = LCURRENT
-        LDA ZP.LPREVIOUSH
+        ORA ZP.LCURRENTL
         if (Z)
         {
-            // Zero page address - use ZP addressing
-            LDX ZP.LPREVIOUSL
-            LDA ZP.LCURRENTL
+            // special case : empty list so HEAD = IDX
+            LDA ZP.IDXL
             STA 0x00, X
-            LDA ZP.LCURRENTH
+            LDA ZP.IDXH
             STA 0x01, X
         }
         else
         {
-            // Regular memory address - use indirect addressing
-            LDY #0
-            LDA ZP.LCURRENTL
-            STA [ZP.LPREVIOUS], Y
-            INY
-            LDA ZP.LCURRENTH
-            STA [ZP.LPREVIOUS], Y
-        }
-        
-        // Restore new node address for return
-        LDA ZP.LCURRENTL
-        STA ZP.IDXL
-        LDA ZP.LCURRENTH
-        STA ZP.IDXH
-        
+            // we need to walk
+            loop
+            {
+                LDY #0
+                LDA [ZP.LCURRENT], Y
+                STA ZP.LNEXTL
+                INY
+                LDA [ZP.LCURRENT], Y
+                STA ZP.LNEXTH
+            
+                ORA ZP.LNEXTL
+                if (Z)
+                {
+                    // LCURRENT is the last node so CURRENT-NEXT = IDX
+                    LDY #0
+                    LDA ZP.IDXL
+                    STA [ZP.LCURRENT], Y
+                    INY
+                    LDA ZP.IDXH
+                    STA [ZP.LCURRENT], Y
+                    break;
+                }
+                // CURRENT = CURRENT->NEXT
+                LDA ZP.LNEXTL
+                STA ZP.LCURRENTL
+                LDA ZP.LNEXTH
+                STA ZP.LCURRENTH
+            } // loop
+        }            
         PLY
         PLX
         PLA
