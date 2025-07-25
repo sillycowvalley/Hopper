@@ -5,11 +5,17 @@ unit TestFunctions
     uses "Functions"
     uses "Arguments"
     uses "BasicTypes"
+    uses "Tools"
     
     // Private test data for Functions tests
     const string funcName1 = "ADD";
     const string funcName2 = "MULTIPLY";
     const string funcName3 = "CALCULATE";
+    const string funcName4 = "NAMETEST";
+    const string funcName5 = "SETARGS";
+    const string funcName6 = "ITER1";
+    const string funcName7 = "ITER2";
+    const string funcName8 = "ITER3";
     const string argName1 = "A";
     const string argName2 = "B";
     const string argName3 = "COUNT";
@@ -25,7 +31,7 @@ unit TestFunctions
         STZ ZP.ACCH
         Memory.Allocate();  // Returns address in ZP.IDX, munts everything
         
-        // Store result in U5|U6 (consistent with Variables/Constants tests)
+        // Store result in U5|U6 (consistent with other test files)
         LDA ZP.IDXL
         STA ZP.U5
         LDA ZP.IDXH
@@ -44,6 +50,9 @@ unit TestFunctions
     const string funcDesc9 = "Duplicate function (should fail)";
     const string funcDesc10 = "Function type filtering";
     const string funcDesc11 = "Clear all functions";
+    const string funcDesc12 = "Get function name";
+    const string funcDesc13 = "Set function arguments";
+    const string funcDesc14 = "Multiple function iteration";
     
     // Test 32: Declare function with no arguments
     testDeclareFunctionNoArgs()
@@ -632,6 +641,273 @@ unit TestFunctions
         Test.PrintResult();
     }
     
+    // Test 41: Get function name
+    testGetFunctionName()
+    {
+        LDA #'f'  // Test 41
+        LDA #(funcDesc12 % 256)
+        STA ZP.TOPL
+        LDA #(funcDesc12 / 256)
+        STA ZP.TOPH
+        Test.PrintTestHeader();
+        
+        // Declare function
+        LDA #(funcName4 % 256)
+        STA ZP.TOPL
+        LDA #(funcName4 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.WORD)
+        STA ZP.ACCL
+        STZ ZP.NEXTL  // No arguments
+        STZ ZP.NEXTH
+        STZ ZP.IDYL   // No tokens for this test
+        STZ ZP.IDYH
+        Functions.Declare();
+        
+        // Find and get name
+        Functions.Find();
+        if (NC)
+        {
+            LDA #0xA6
+            CLC  // Fail - not found
+            Test.PrintResult();
+            return;
+        }
+        
+        Functions.GetName();
+        
+        // Compare name - use ZP.TOP as returned name pointer, ZP.ACC as expected name
+        LDA #(funcName4 % 256)
+        STA ZP.ACCL
+        LDA #(funcName4 / 256)
+        STA ZP.ACCH
+        
+        // Compare strings
+        LDY #0
+        loop
+        {
+            LDA [ZP.ACC], Y      // Expected name character
+            STA ZP.SymbolTemp0   // Temporary storage
+            LDA [ZP.TOP], Y      // Actual name character
+            CMP ZP.SymbolTemp0   // Compare
+            if (NZ)
+            {
+                LDA #0xA7
+                CLC  // Fail - names don't match
+                Test.PrintResult();
+                return;
+            }
+            
+            if (Z) { break; }    // Both null terminators - strings equal
+            INY
+        }
+        
+        Functions.Clear();  // Clean up
+        SEC  // Pass
+        Test.PrintResult();
+    }
+    
+    // Test 42: Set function arguments
+    testSetFunctionArguments()
+    {
+        LDA #'g'  // Test 42
+        LDA #(funcDesc13 % 256)
+        STA ZP.TOPL
+        LDA #(funcDesc13 / 256)
+        STA ZP.TOPH
+        Test.PrintTestHeader();
+        
+        // Allocate test tokens
+        allocateTestTokens();  // Result in ZP.U5|U6
+        
+        // Declare function with no arguments initially
+        LDA #(funcName5 % 256)
+        STA ZP.TOPL
+        LDA #(funcName5 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.NEXTL  // No arguments initially
+        STZ ZP.NEXTH
+        
+        LDA ZP.U5
+        STA ZP.IDYL
+        LDA ZP.U6
+        STA ZP.IDYH
+        
+        Functions.Declare();
+        Functions.Find(); // Sets ZP.IDX to function node
+        
+        // Create an argument to set as arguments list
+        LDA #(argName3 % 256)
+        STA ZP.TOPL
+        LDA #(argName3 / 256)
+        STA ZP.TOPH
+        LDA #BasicType.BIT
+        STA ZP.ACCL
+        Arguments.Add();
+        
+        // Get the new arguments list head
+        Functions.GetArguments();
+        if (NC)
+        {
+            LDA #0xA8
+            CLC  // Fail - should have arguments now
+            Test.PrintResult();
+            return;
+        }
+        
+        // Test SetArguments by setting it to null (clearing arguments)
+        STZ ZP.IDYL
+        STZ ZP.IDYH
+        Functions.SetArguments();
+        if (NC)
+        {
+            LDA #0xA9
+            CLC  // Fail - SetArguments failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Verify arguments list is now empty
+        Functions.GetArguments();
+        if (C)
+        {
+            LDA #0xAA
+            CLC  // Fail - should have no arguments after clearing
+            Test.PrintResult();
+            return;
+        }
+        
+        Functions.Clear();  // Clean up
+        SEC  // Pass
+        Test.PrintResult();
+    }
+    
+    // Test 43: Multiple function iteration
+    testMultipleFunctionIteration()
+    {
+        LDA #'h'  // Test 43
+        LDA #(funcDesc14 % 256)
+        STA ZP.TOPL
+        LDA #(funcDesc14 / 256)
+        STA ZP.TOPH
+        Test.PrintTestHeader();
+        
+        // Add variable (to mix symbol types)
+        LDA #(argName1 % 256)
+        STA ZP.TOPL
+        LDA #(argName1 / 256)
+        STA ZP.TOPH
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
+        STA ZP.ACCL
+        LDA #42
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        STZ ZP.IDYL
+        STZ ZP.IDYH
+        Variables.Declare();
+        
+        // Add first function
+        LDA #(funcName6 % 256)
+        STA ZP.TOPL
+        LDA #(funcName6 / 256)
+        STA ZP.TOPH
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.NEXTL  // No arguments
+        STZ ZP.NEXTH
+        STZ ZP.IDYL   // No tokens
+        STZ ZP.IDYH
+        Functions.Declare();
+        
+        // Add second function
+        LDA #(funcName7 % 256)
+        STA ZP.TOPL
+        LDA #(funcName7 / 256)
+        STA ZP.TOPH
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.WORD)
+        STA ZP.ACCL
+        STZ ZP.NEXTL  // No arguments
+        STZ ZP.NEXTH
+        STZ ZP.IDYL   // No tokens
+        STZ ZP.IDYH
+        Functions.Declare();
+        
+        // Add third function
+        LDA #(funcName8 % 256)
+        STA ZP.TOPL
+        LDA #(funcName8 / 256)
+        STA ZP.TOPH
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.BIT)
+        STA ZP.ACCL
+        STZ ZP.NEXTL  // No arguments
+        STZ ZP.NEXTH
+        STZ ZP.IDYL   // No tokens
+        STZ ZP.IDYH
+        Functions.Declare();
+        
+        // Iterate through all functions and count them
+        Functions.IterateFunctions();
+        if (NC)
+        {
+            LDA #0xAB
+            CLC  // Fail - no functions found
+            Test.PrintResult();
+            return;
+        }
+        
+        
+        // Count functions via iteration
+        LDX #1  // Found first one
+        PHX
+        loop
+        {
+            // Verify each one is actually a function
+            Objects.GetData();
+            LDA ZP.ACCL
+            AND #0xF0
+            LSR LSR LSR LSR
+            CMP # SymbolType.FUNCTION
+            if (NZ)
+            {
+                LDA #0xAC
+                CLC  // Fail - found non-function during function iteration
+                Test.PrintResult();
+                return;
+            }
+            
+            LDA SymbolType.FUNCTION // filter on functions
+            STA ZP.ACCL
+            Functions.IterateNext();
+            if (NC) 
+            {
+                break; // No more functions
+            }  
+            PLX
+            INX
+            PHX
+        }
+        PLX
+        
+        // Should have found exactly 3 functions
+        CPX #3
+        if (NZ)
+        {
+            LDA #0xAD
+            CLC  // Fail - wrong function count
+            Test.PrintResult();
+            return;
+        }
+        
+        Functions.Clear();  // Clean up functions
+        Variables.Clear();  // Clean up variables
+        SEC  // Pass
+        Test.PrintResult();
+    }
+    
     // Run all functions tests
     RunFunctionsTests()
     {
@@ -644,5 +920,8 @@ unit TestFunctions
         testIterateFunctionsOnly();
         testDuplicateFunction();
         testRemoveFunction();
+        testGetFunctionName();
+        testSetFunctionArguments();
+        testMultipleFunctionIteration();
     }
 }

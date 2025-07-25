@@ -446,10 +446,10 @@ unit Objects
             }
             
             // Get symbol type from current node (high nibble of snType)
-            LDY #snType
+            LDY # snType
             LDA [ZP.IDX], Y
             AND #0xF0  // Extract high nibble
-            LSR LSR LSR LSR  // Shift to low nibble
+            LSR LSR LSR LSR  // Shift to low nibble    
             CMP ZP.ACCL
             if (Z)
             {

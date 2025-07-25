@@ -146,7 +146,18 @@ unit Functions
     // Output: C set if successful
     SetArguments()
     {
-        Objects.SetValue();  // Uses ZP.IDY to set the value field (which stores arguments list head)
+        // Clear existing arguments first
+        Arguments.Clear();
+        
+        // Set new arguments list head directly in function node
+        LDY #Objects.snArguments
+        LDA ZP.IDYL
+        STA [ZP.IDX], Y
+        INY
+        LDA ZP.IDYH
+        STA [ZP.IDX], Y
+        
+        SEC  // Success
     }
     
     // Get arguments list head pointer from function node
