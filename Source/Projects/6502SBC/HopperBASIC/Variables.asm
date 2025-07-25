@@ -262,13 +262,13 @@ unit Variables
         // Calculate address of name field in node
         CLC
         LDA ZP.IDXL
-        ADC #Objects.nameOffset
+        ADC # Objects.nameOffset
         STA ZP.ACCL
         LDA ZP.IDXH
         ADC #0
         STA ZP.ACCH
     }
-    
+     
     // Get initialization tokens from current node
     // Input: ZP.IDX = symbol node address (from Find or iteration)
     // Output: ZP.NEXT = tokens pointer (points to initialization token stream)
