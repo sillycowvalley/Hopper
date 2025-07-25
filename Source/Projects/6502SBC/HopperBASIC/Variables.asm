@@ -16,37 +16,9 @@ unit Variables
     // Uses: Objects.Add() internally with extended node layout
     Declare()
     {
-#ifdef DEBUG
-        LDA #'V'
-        Serial.WriteChar();
-        LDA #'D'
-        Serial.WriteChar();
-        LDA #'2'
-        Serial.WriteChar();
-#endif
-        
         PHA
         PHX
         PHY
-        
-#ifdef DEBUG
-        LDA #'V'
-        Serial.WriteChar();
-        LDA #'D'
-        Serial.WriteChar();
-        LDA #'3'
-        Serial.WriteChar();
-        if (C)
-        {
-            LDA #'F'
-            Serial.WriteChar();
-        }
-        else
-        {
-            LDA #'N'
-            Serial.WriteChar();
-        }
-#endif
         
         // Check if symbol already exists
         LDX #ZP.VariablesList
@@ -64,37 +36,9 @@ unit Variables
             return;
         }
         
-#ifdef DEBUG
-        LDA #'V'
-        Serial.WriteChar();
-        LDA #'D'
-        Serial.WriteChar();
-        LDA #'4'
-        Serial.WriteChar();
-#endif
-        
         // Symbol doesn't exist, add it
         LDX #ZP.VariablesList
         Objects.Add();
-        
-#ifdef DEBUG
-        LDA #'V'
-        Serial.WriteChar();
-        LDA #'D'
-        Serial.WriteChar();
-        LDA #'5'
-        Serial.WriteChar();
-        if (C)
-        {
-            LDA #'S'
-            Serial.WriteChar();
-        }
-        else
-        {
-            LDA #'F'
-            Serial.WriteChar();
-        }
-#endif
         
         PLY
         PLX
@@ -135,6 +79,10 @@ unit Variables
             return;
         }
         
+        // Save expected type for comparison
+        LDA ZP.ACCL        // This was the expected type passed in
+        STA ZP.SymbolTemp0 // Temporary storage
+        
         // Get symbol type and check
         Objects.GetData();  // Returns type in ZP.ACC, value in ZP.NEXT, tokens in ZP.IDY
         
@@ -142,17 +90,8 @@ unit Variables
         AND #0xF0  // Extract symbol type (high nibble)
         LSR LSR LSR LSR  // Shift to low nibble
         
-        // Save expected type for comparison
-        LDA ZP.ACCL  // This was the expected type passed in
-        STA 0x7A     // Temporary storage
-        
-        // Get actual type
-        LDA ZP.ACCL
-        AND #0xF0
-        LSR LSR LSR LSR
-        
-        CMP 0x7A     // Compare with expected type
-        if (Z)       // Types match
+        CMP ZP.SymbolTemp0 // Compare with expected type
+        if (Z)             // Types match
         {
             PLY
             PLX

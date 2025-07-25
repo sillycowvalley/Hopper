@@ -138,30 +138,35 @@ unit ZP
     // 22 bytes available for additional BASIC features (0x3A-0x4F)
     
     // === SYMBOL TABLE (0x70-0x7F) ===
+
+    // Table Head Pointers
     const byte VariablesList        = 0x70;  // Variable (and Constant) table head pointer (16-bit)
     const byte VariablesListL       = 0x70;  // low byte
     const byte VariablesListH       = 0x71;  // high byte
+
+    const byte FunctionsList        = 0x72;  // Function (and Argument) table head pointer (16-bit)
+    const byte FunctionsListL       = 0x72;  // low byte
+    const byte FunctionsListH       = 0x73;  // high byte
+
+    // Symbol Node Working Storage (survives Memory.Allocate calls)
+    const byte SymbolType           = 0x74;  // Storage for symbolType|dataType
+    const byte SymbolValue          = 0x75;  // Storage for symbol value (16-bit)
+    const byte SymbolValueL         = 0x75;
+    const byte SymbolValueH         = 0x76;
+    const byte SymbolName           = 0x77;  // Storage for symbol name pointer (16-bit)
+    const byte SymbolNameL          = 0x77;
+    const byte SymbolNameH          = 0x78;
+    const byte SymbolTokens         = 0x79;  // Storage for symbol tokens pointer
+    const byte SymbolTokensL        = 0x79;
+    const byte SymbolTokensH        = 0x7A;
+
+    // Temporary Storage
+    const byte SymbolLength         = 0x7B;  // Storage for symbol name length
+    const byte SymbolTemp0          = 0x7C;  // General temporary storage
+    const byte SymbolTemp1          = 0x7D;  // General temporary storage
     
-    const byte SymbolType           = 0x72;  // Storage for symbolType|dataType
-    const byte SymbolValue          = 0x73;  // Storage for symbol value (16-bit)
-    const byte SymbolValueL         = 0x73;
-    const byte SymbolValueH         = 0x74;
-    const byte SymbolName           = 0x75;  // Storage for symbol name pointer (16-bit)
-    const byte SymbolNameL          = 0x75;
-    const byte SymbolNameH          = 0x76;
-    const byte SymbolLength         = 0x77;  // Storage for symbol name length
-    const byte SymbolTokens         = 0x78;  // Storage for symbol tokens pointer
-    const byte SymbolTokensL        = 0x78;
-    const byte SymbolTokensH        = 0x79;
-    const byte SymbolTemp0          = 0x7A;
-    const byte SymbolTemp1          = 0x7B;
-    
-    const byte FunctionsList        = 0x7C;  // Function (and Argument) table head pointer (16-bit)
-    const byte FunctionsListL       = 0x7C;  // low byte
-    const byte FunctionsListH       = 0x7D;  // high byte
-    
-    // === AVAILABLE SYMBOLS (0x7C-0x7F) ===
-    // 3 bytes available for additional symbol table features (0x7B-0x7F)
+    // === AVAILABLE SYMBOLS (0x7E-0x7F) ===
+    // 2 bytes available for additional symbol table features (0x7E-0x7F)
     
 #endif
 
