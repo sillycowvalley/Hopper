@@ -156,10 +156,31 @@ unit Memory
     
 #ifdef HOPPER_BASIC
     // don't use the stack versions by mistake
+    
+    // Allocate memory block
+    // Input: ZP.ACC = requested size (16-bit) 
+    // Output: ZP.IDX = allocated address (0x0000 if allocation failed)
+    // Preserves: Nothing - all registers and ZP variables may be munted
+    // Munts: A, X, Y, ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT, 
+    //        ZP.M0-M13 (maBEST, maBESTSIZE, maBESTNEXT, maBESTPREV, 
+    //                   maSCRATCH, maNEWHOLE, maNEWHOLESIZE)
+    // Side effects: Modifies ZP.FREELIST, zero-initializes allocated block
+    // Notes: Rounds size up to 16-byte boundary, adds 2 bytes for size header
     Allocate()
     {
         Allocate.Allocate();
     }
+    
+    // Free memory block
+    // Input: ZP.IDX = address to free (must not be 0x0000)
+    // Output: None
+    // Preserves: Nothing - all registers and ZP variables may be munted  
+    // Munts: A, X, Y, ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT,
+    //        ZP.M0-M15 (mfCURRENT, mfPREVIOUS, mfCURRENTSIZE, mfCURRENTNEXT,
+    //                   mfCURRENTPREV, mfFREESLOT, mfGAP*, mfNEXTNEXT, 
+    //                   mfPREVSIZE/mfNEXTSIZE, mfSIZE, mfOFFSET)
+    // Side effects: Modifies ZP.FREELIST, coalesces adjacent free blocks
+    // Notes: Reads size from address-2, performs free list insertion/merging
     Free()
     {
         Free.Free();

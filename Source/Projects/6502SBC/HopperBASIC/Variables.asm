@@ -380,12 +380,11 @@ unit Variables
         PHX
         PHY
         
-        // Walk through all symbols and free their token streams
-        STZ ZP.ACCL  // No filter - get all symbols
-        Objects.IterateStart();
-        
         loop
         {
+            LDX #ZP.SymbolList
+            Table.GetFirst();
+        
             if (NC) { break; }  // No more symbols
             
             // Get tokens pointer
@@ -397,23 +396,18 @@ unit Variables
             if (NZ)  // Non-zero tokens pointer
             {
                 LDA ZP.IDYL
-                STA ZP.ACCL
+                STA ZP.IDXL
                 LDA ZP.IDYH
-                STA ZP.ACCH
+                STA ZP.IDXH
                 Memory.Free();  // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
                 
                 // Re-establish iteration state after Memory.Free munts everything
-                STZ ZP.ACCL  // No filter
-                Objects.IterateStart();  // Restart iteration
-                continue;
+                LDX #ZP.SymbolList
+                Table.GetFirst();
             }
-            
-            // Move to next symbol
-            Objects.IterateNext();
+            LDX #ZP.SymbolList
+            Table.Delete();
         }
-        
-        // Now destroy the symbol table itself
-        Objects.Destroy();
         
         PLY
         PLX
