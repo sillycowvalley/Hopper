@@ -18,7 +18,7 @@ unit Arguments
     const byte anType = 2;          // Argument type field offset
     const byte anName = 3;          // Name field offset (variable length)
     
-    // Add argument to function's arguments list
+    // Add argument to function's arguments list (at the end for correct order)
     // Input: ZP.IDX = function node address, ZP.TOP = argument name, ZP.ACCL = argument type
     // Output: C set if successful, argument added to function's list
     Add()
@@ -26,6 +26,10 @@ unit Arguments
         PHA
         PHX
         PHY
+        
+        LDA #'+'
+        Tools.COut();        // "+" = Arguments.Add called
+        Tools.XOut();        // Show function node address
         
         // Save input parameters
         LDA ZP.ACCL
@@ -58,10 +62,27 @@ unit Arguments
             return;
         }
         
-        // Initialize the new argument node
+        LDA #'@'
+        Tools.COut();        // "@" = Allocated new argument node
+        Tools.XOut();        // Show new argument address
+        
+        // Initialize the new argument node (next pointer will be set below)
         initializeArgumentNode();
         
-        // Get current arguments list head from function node (offset Objects.snArguments)
+        // New node's next pointer is always NULL (it's going at the end)
+        LDY #anNext
+        LDA #0
+        STA [ZP.IDX], Y
+        INY
+        STA [ZP.IDX], Y
+        
+        // Save new node address
+        LDA ZP.IDXL
+        STA ZP.LCURRENTL
+        LDA ZP.IDXH
+        STA ZP.LCURRENTH
+        
+        // Get current arguments list head from function node
         LDA ZP.SymbolTemp0
         STA ZP.LHEADL
         LDA ZP.SymbolTemp1
@@ -69,26 +90,103 @@ unit Arguments
         
         LDY # Objects.snArguments  // Arguments field offset in function node
         LDA [ZP.LHEAD], Y
-        STA ZP.LCURRENTL  // Current first argument
+        STA ZP.LPREVIOUSL    // Use LPREVIOUS to traverse the list
         INY
         LDA [ZP.LHEAD], Y
-        STA ZP.LCURRENTH
+        STA ZP.LPREVIOUSH
         
-        // Set new node's next pointer to current first argument
-        LDY #anNext
-        LDA ZP.LCURRENTL
-        STA [ZP.IDX], Y
-        INY
-        LDA ZP.LCURRENTH
-        STA [ZP.IDX], Y
+        LDA #'H'
+        Tools.COut();        // "H" = Current head pointer
+        LDA ZP.LPREVIOUSH
+        Tools.HOut();
+        LDA ZP.LPREVIOUSL
+        Tools.HOut();
+        LDA #' '
+        Tools.COut();
         
-        // Update function node's arguments field to point to new node
-        LDY # Objects.snArguments
-        LDA ZP.IDXL
-        STA [ZP.LHEAD], Y
-        INY
-        LDA ZP.IDXH
-        STA [ZP.LHEAD], Y
+        // Check if this is the first argument (empty list)
+        LDA ZP.LPREVIOUSL
+        ORA ZP.LPREVIOUSH
+        if (Z)
+        {
+            LDA #'1'
+            Tools.COut();    // "1" = First argument (empty list)
+            
+            // Empty list - new node becomes the head
+            LDY # Objects.snArguments
+            LDA ZP.LCURRENTL
+            STA [ZP.LHEAD], Y
+            INY
+            LDA ZP.LCURRENTH
+            STA [ZP.LHEAD], Y
+        }
+        else
+        {
+            LDA #'2'
+            Tools.COut();    // "2" = Second+ argument (traverse to end)
+            
+            // List is not empty - find the last node
+            loop
+            {
+                LDA #'T'
+                Tools.COut();    // "T" = Traversing
+                LDA ZP.LPREVIOUSH
+                Tools.HOut();
+                LDA ZP.LPREVIOUSL
+                Tools.HOut();
+                LDA #' '
+                Tools.COut();
+                
+                // Save current node as potential last node
+                LDA ZP.LPREVIOUSL
+                STA ZP.LNEXTL
+                LDA ZP.LPREVIOUSH
+                STA ZP.LNEXTH
+                
+                // Get next pointer from current node
+                LDY #anNext
+                LDA [ZP.LPREVIOUS], Y
+                STA ZP.LPREVIOUSL
+                INY
+                LDA [ZP.LPREVIOUS], Y
+                STA ZP.LPREVIOUSH
+                
+                LDA #'>'
+                Tools.COut();    // ">" = Next pointer
+                LDA ZP.LPREVIOUSH
+                Tools.HOut();
+                LDA ZP.LPREVIOUSL
+                Tools.HOut();
+                LDA #' '
+                Tools.COut();
+                
+                // Check if we found the end
+                LDA ZP.LPREVIOUSL
+                ORA ZP.LPREVIOUSH
+                if (Z)
+                {
+                    LDA #'L'
+                    Tools.COut();    // "L" = Found last node, linking
+                    
+                    // LNEXT now points to the last node
+                    // Update its next pointer to point to our new node
+                    LDY #anNext
+                    LDA ZP.LCURRENTL
+                    STA [ZP.LNEXT], Y
+                    INY
+                    LDA ZP.LCURRENTH
+                    STA [ZP.LNEXT], Y
+                    
+                    LDA #'='
+                    Tools.COut();    // "=" = Link complete
+                    Tools.YOut();    // Show what we just linked
+                    break;
+                }
+            }
+        }
+        
+        LDA #'&'
+        Tools.COut();        // "&" = Arguments.Add complete
         
         PLY
         PLX
@@ -381,6 +479,10 @@ unit Arguments
         PHX
         PHY
         
+        LDA #'A'
+        Tools.COut();        // "A" = Arguments.Clear called
+        Tools.XOut();        // Show function node address
+        
         // Save function node address since Memory.Free() will munt ZP.IDX
         LDA ZP.IDXL
         STA ZP.SymbolTemp0
@@ -397,10 +499,19 @@ unit Arguments
             LDA [ZP.SymbolTemp0], Y
             STA ZP.IDXH
             
+            LDA #'G'
+            Tools.COut();        // "G" = Got argument pointer
+            Tools.XOut();        // Show argument address
+            
             // Check if arguments list is empty
             LDA ZP.IDXL
             ORA ZP.IDXH
-            if (Z) { break; }  // No more arguments
+            if (Z) 
+            { 
+                LDA #'E'
+                Tools.COut();    // "E" = Empty, no more arguments
+                break; 
+            }
             
             // Get next pointer from first argument (use IDY instead of IDX)
             LDY #anNext
@@ -409,6 +520,15 @@ unit Arguments
             INY
             LDA [ZP.IDX], Y
             STA ZP.LNEXTH
+            
+            LDA #'N'
+            Tools.COut();        // "N" = Next pointer
+            LDA ZP.LNEXTH
+            Tools.HOut();
+            LDA ZP.LNEXTL
+            Tools.HOut();
+            LDA #' '
+            Tools.COut();
             
             // Store the next pointer as the new head argument
             LDY # Objects.snArguments
@@ -419,8 +539,14 @@ unit Arguments
             STA [ZP.SymbolTemp0], Y
             
             // Free the current argument node
-            Memory.Free();  // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
+            LDA #'F'
+            Tools.COut();        // "F" = About to free
+            Tools.XOut();        // Show argument address being freed
+            Memory.Free();       // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
         }
+        
+        LDA #'D'
+        Tools.COut();            // "D" = Done with Arguments.Clear
         
         // Restore function node address for caller
         LDA ZP.SymbolTemp0

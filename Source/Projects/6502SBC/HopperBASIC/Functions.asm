@@ -217,8 +217,6 @@ unit Functions
         PHX
         PHY
         
-        DumpHeap();
-        
         loop
         {
             LDX # ZP.FunctionsList

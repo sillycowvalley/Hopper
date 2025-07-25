@@ -139,7 +139,13 @@ unit TestFunctions
         STA ZP.TOPL
         LDA #(funcName2 / 256)
         STA ZP.TOPH
-        Functions.Find();
+        Functions.Find(); // This sets ZP.IDX to function node address
+
+        // Save function node address on stack
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
         
         // Add first argument "A" of type INT
         LDA #(argName1 % 256)
@@ -149,6 +155,12 @@ unit TestFunctions
         LDA #BasicType.INT
         STA ZP.ACCL
         Arguments.Add();
+        
+        // Restore function node address from stack
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
         
         // Add second argument "B" of type WORD
         LDA #(argName2 % 256)
@@ -635,7 +647,7 @@ unit TestFunctions
     // Run all functions tests
     RunFunctionsTests()
     {
-        //testDeclareFunctionNoArgs();
+        testDeclareFunctionNoArgs();
         testDeclareFunctionWithArgs();
         testFindFunctionByName();
         testGetFunctionSignature();
