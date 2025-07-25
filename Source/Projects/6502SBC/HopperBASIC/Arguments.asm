@@ -27,7 +27,7 @@ unit Arguments
         PHX
         PHY
         
-        // Save inputs in ZP.Lxx slots
+         // Save function node address IMMEDIATELY (before it gets munted)
         LDA ZP.IDXL
         STA ZP.LHEADL           // Function node address
         LDA ZP.IDXH
@@ -112,6 +112,12 @@ unit Arguments
         LDA ZP.LCURRENTH
         STA [ZP.LPREVIOUS], Y
         
+        // RESTORE original IDX before exit
+        LDA ZP.LHEADL
+        STA ZP.IDXL
+        LDA ZP.LHEADH
+        STA ZP.IDXH
+        
         PLY
         PLX
         PLA
@@ -127,7 +133,7 @@ unit Arguments
         PHX
         PHY
         
-        // Get arguments list head from function node (offset Objects.snArguments)
+        // Get arguments list head from function node (IDX preserved)
         LDY # Objects.snArguments
         LDA [ZP.IDX], Y
         STA ZP.LCURRENTL
@@ -168,23 +174,23 @@ unit Arguments
                 return;
             }
             
-            // Move to next argument - use IDY since we return it anyway
-            LDA ZP.LCURRENTL
-            STA ZP.IDYL
-            LDA ZP.LCURRENTH
-            STA ZP.IDYH
-            
+            // Move to next argument - use LCURRENT throughout
             LDY #anNext
-            LDA [ZP.IDY], Y
-            STA ZP.LCURRENTL
+            LDA [ZP.LCURRENT], Y
+            STA ZP.LNEXTL
             INY
-            LDA [ZP.IDY], Y
+            LDA [ZP.LCURRENT], Y
+            STA ZP.LNEXTH
+            
+            // LCURRENT = LNEXT (never touch IDX)
+            LDA ZP.LNEXTL
+            STA ZP.LCURRENTL
+            LDA ZP.LNEXTH
             STA ZP.LCURRENTH
             
             INC ZP.ACCL  // Increment argument index
         }
-    }
-    
+    }    
     // Get argument type from node
     // Input: ZP.IDY = argument node address
     // Output: ZP.ACCL = argument type
@@ -223,7 +229,7 @@ unit Arguments
         LDA ZP.ACCL
         STA ZP.SymbolTemp0
         
-        // Get arguments list head from function node
+        // Get arguments list head from function node (IDX preserved)
         LDY # Objects.snArguments
         LDA [ZP.IDX], Y
         STA ZP.LCURRENTL
@@ -265,23 +271,23 @@ unit Arguments
                 return;
             }
             
-            // Move to next argument - use IDY since we return it anyway
-            LDA ZP.LCURRENTL
-            STA ZP.IDYL
-            LDA ZP.LCURRENTH
-            STA ZP.IDYH
-            
+            // Move to next argument - use LCURRENT throughout
             LDY #anNext
-            LDA [ZP.IDY], Y
-            STA ZP.LCURRENTL
+            LDA [ZP.LCURRENT], Y
+            STA ZP.LNEXTL
             INY
-            LDA [ZP.IDY], Y
+            LDA [ZP.LCURRENT], Y
+            STA ZP.LNEXTH
+            
+            // LCURRENT = LNEXT (never touch IDX)
+            LDA ZP.LNEXTL
+            STA ZP.LCURRENTL
+            LDA ZP.LNEXTH
             STA ZP.LCURRENTH
             
             INC ZP.ACCL  // Increment current index
         }
-    }
-    
+    }    
     // Get argument count in function's arguments list
     // Input: ZP.IDX = function node address
     // Output: ZP.ACCL = argument count
@@ -290,7 +296,7 @@ unit Arguments
         PHA
         PHX
         
-        // Get arguments list head from function node
+        // Get arguments list head from function node (IDX preserved)
         LDY # Objects.snArguments
         LDA [ZP.IDX], Y
         STA ZP.LCURRENTL
@@ -309,24 +315,25 @@ unit Arguments
             
             INC ZP.ACCL  // Increment count
             
-            // Move to next argument
-            LDA ZP.LCURRENTL
-            STA ZP.IDXL
-            LDA ZP.LCURRENTH
-            STA ZP.IDXH
-            
+            // Move to next argument (use LCURRENT, not IDX)
             LDY #anNext
-            LDA [ZP.IDX], Y
-            STA ZP.LCURRENTL
+            LDA [ZP.LCURRENT], Y
+            STA ZP.LNEXTL        // Use LNEXT as temp
             INY
-            LDA [ZP.IDX], Y
+            LDA [ZP.LCURRENT], Y
+            STA ZP.LNEXTH
+            
+            // LCURRENT = LNEXT (never touch IDX)
+            LDA ZP.LNEXTL
+            STA ZP.LCURRENTL
+            LDA ZP.LNEXTH
             STA ZP.LCURRENTH
         }
         
         PLX
         PLA
-    }
-    
+        // IDX unchanged!
+    }    
     // Start iteration over arguments in function's list
     // Input: ZP.IDX = function node address
     // Output: ZP.IDY = first argument node, C set if found
@@ -334,7 +341,7 @@ unit Arguments
     {
         PHA
         
-        // Get arguments list head from function node
+        // Get arguments list head from function node (IDX preserved)
         LDY # Objects.snArguments
         LDA [ZP.IDX], Y
         STA ZP.IDYL
@@ -355,6 +362,7 @@ unit Arguments
         }
         
         PLA
+        // IDX unchanged - still points to function node
     }
     
     // Continue argument iteration

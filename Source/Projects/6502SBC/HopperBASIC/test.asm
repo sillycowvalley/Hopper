@@ -28,6 +28,7 @@ program Test
     uses "TestVariables"
     uses "TestConstants"
     uses "TestFunctions"
+    uses "TestArguments"
     
     // Test Table head locations
     const byte TableHeadLocation  = 0x3C;
@@ -47,6 +48,7 @@ program Test
     const string variablesSection = "\n--- VARIABLES LAYER TESTS ---\n";
     const string constantsSection = "\n--- CONSTANTS LAYER TESTS ---\n";
     const string functionsSection = "\n--- FUNCTION LAYER TESTS ---\n";
+    const string argumentSection = "\n--- ARGUMENT LAYER TESTS ---\n";
     
     // Print null-terminated string using ZP.IDX
     PrintString()
@@ -272,6 +274,14 @@ program Test
         STA ZP.TOPH
         PrintSectionHeader();
         TestFunctions.RunFunctionsTests();
+        
+        // Argument layer tests
+        LDA #(argumentSection % 256)
+        STA ZP.TOPL
+        LDA #(argumentSection / 256)
+        STA ZP.TOPH
+        PrintSectionHeader();
+        TestArguments.RunArgumentsTests();
         
         LDA #(testComplete % 256)
         STA ZP.IDXL
