@@ -18,7 +18,7 @@ program Test
     uses "BasicTypes"
     uses "Tools"
     
-    // Test Table headf
+    // Test Table head
     const byte TableHeadLocation  = 0x3C;
     const byte TableHeadLocationL = 0x3C;
     const byte TableHeadLocationH = 0x3D;
@@ -114,23 +114,7 @@ program Test
         Serial.HexOut();
         LDA #' '
         Serial.WriteChar();
-        /*
-        LDA #'T'
-        Serial.WriteChar();
-        LDA #'H'
-        Serial.WriteChar();
-        LDA #'X'
-        Serial.WriteChar();
-        LDA #':'
-        Serial.WriteChar();
-        LDX # TableHeadLocation
-        LDA 0x01, X
-        Serial.HexOut();
-        LDA 0x00, X
-        Serial.HexOut();
-        LDA #' '
-        Serial.WriteChar();
-        */
+        
         LDA #'T'
         Serial.WriteChar();
         LDA #'N'
@@ -184,7 +168,7 @@ program Test
         STZ TableHeadLocationH
         
         // GetFirst should return null
-        LDX # TableHeadLocation
+        LDX #TableHeadLocation
         Table.GetFirst();
         
         LDA ZP.IDXL
@@ -212,7 +196,7 @@ program Test
         printTestHeader();
         
         // Start with a clean list
-        LDX # TableHeadLocation
+        LDX #TableHeadLocation
         Table.Clear();
         
         // Add 10-byte node
@@ -220,7 +204,7 @@ program Test
         STA ZP.ACCL
         STZ ZP.ACCH
         
-        LDX # TableHeadLocation
+        LDX #TableHeadLocation
         Table.Add();
         
         // Should succeed (C set) and return valid address
@@ -260,14 +244,14 @@ program Test
         printTestHeader();
         
         // Start with a clean list
-        LDX # TableHeadLocation
+        LDX #TableHeadLocation
         Table.Clear();
         
         // Add first node
         LDA #8
         STA ZP.ACCL
         STZ ZP.ACCH
-        LDX # TableHeadLocation
+        LDX #TableHeadLocation
         Table.Add();
         if (NC)
         {
@@ -353,7 +337,7 @@ program Test
         printTestHeader();
         
         // Start with a clean list
-        LDX # TableHeadLocation
+        LDX #TableHeadLocation
         Table.Clear();
         
         // Add nodes (will be in reverse order: 3rd, 2nd, 1st)
@@ -366,7 +350,7 @@ program Test
             LDA #10
             STA ZP.ACCL
             STZ ZP.ACCH
-            LDX # TableHeadLocation
+            LDX #TableHeadLocation
             Table.Add();
             if (NC)
             {
@@ -380,7 +364,7 @@ program Test
         }
         
         // Count nodes by traversal
-        LDX # TableHeadLocation
+        LDX #TableHeadLocation
         Table.GetFirst();
         
         LDY #0  // Node count
@@ -557,20 +541,26 @@ program Test
         
         Objects.Initialize();
         
-        // Add INT variable "COUNT" = 42
+        // Add INT variable "COUNT" = 42 with tokens pointer
         LDA #(testName2 % 256)
         STA ZP.TOPL
         LDA #(testName2 / 256)
         STA ZP.TOPH
         
         // Pack symbolType|dataType: VARIABLE(1) in high nibble, INT(2) in low nibble
-        LDA #((Objects.SymbolType.VARIABLE << 4) | BasicType.INT)
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
         STA ZP.ACCL
         STZ ZP.ACCH
         
         LDA #42
         STA ZP.NEXTL
         STZ ZP.NEXTH
+        
+        // Dummy tokens pointer
+        LDA #0x10
+        STA ZP.IDYL
+        LDA #0x20
+        STA ZP.IDYH
         
         Objects.Add();
         
@@ -606,13 +596,19 @@ program Test
         LDA #(testName3 / 256)
         STA ZP.TOPH
         
-        LDA #((Objects.SymbolType.VARIABLE << 4) | BasicType.BIT)
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.BIT)
         STA ZP.ACCL
         STZ ZP.ACCH
         
         LDA #1
         STA ZP.NEXTL
         STZ ZP.NEXTH
+        
+        // Dummy tokens pointer
+        LDA #0x30
+        STA ZP.IDYL
+        LDA #0x40
+        STA ZP.IDYH
         
         Objects.Add();
         
@@ -656,7 +652,7 @@ program Test
         LDA #(testName1 / 256)
         STA ZP.TOPH
         
-        LDA #((Objects.SymbolType.VARIABLE << 4) | BasicType.WORD)
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.WORD)
         STA ZP.ACCL
         STZ ZP.ACCH
         
@@ -664,6 +660,12 @@ program Test
         STA ZP.NEXTL
         LDA #(1000 / 256)
         STA ZP.NEXTH
+        
+        // Test tokens pointer
+        LDA #0x12
+        STA ZP.IDYL
+        LDA #0x34
+        STA ZP.IDYH
         
         Objects.Add();
         
@@ -710,6 +712,27 @@ program Test
             printResult();
             return;
         }
+        
+        // Check tokens pointer (should be 0x3412)
+        LDA ZP.IDYL
+        CMP #0x12
+        if (NZ)
+        {
+            LDA #0xA4
+            CLC  // Fail
+            printResult();
+            return;
+        }
+        LDA ZP.IDYH
+        CMP #0x34
+        if (NZ)
+        {
+            LDA #0xA5
+            CLC  // Fail
+            printResult();
+            return;
+        }
+        
         Objects.Destroy();
         SEC  // Pass
         printResult();
@@ -733,13 +756,19 @@ program Test
         LDA #(testName4 / 256)
         STA ZP.TOPH
         
-        LDA #((Objects.SymbolType.VARIABLE << 4) | BasicType.INT)
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
         STA ZP.ACCL
         STZ ZP.ACCH
         
         LDA #100
         STA ZP.NEXTL
         STZ ZP.NEXTH
+        
+        // Dummy tokens pointer
+        LDA #0x56
+        STA ZP.IDYL
+        LDA #0x78
+        STA ZP.IDYH
         
         Objects.Add();
         Objects.Find();
@@ -792,11 +821,13 @@ program Test
         STA ZP.TOPL
         LDA #(testName1 / 256)
         STA ZP.TOPH
-        LDA #((Objects.SymbolType.VARIABLE << 4) | BasicType.INT)
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
         STA ZP.ACCL
         LDA #10
         STA ZP.NEXTL
         STZ ZP.NEXTH
+        STZ ZP.IDYL
+        STZ ZP.IDYH
         Objects.Add();
         
         // Add constant
@@ -804,15 +835,17 @@ program Test
         STA ZP.TOPL
         LDA #(testName2 / 256)
         STA ZP.TOPH
-        LDA #((Objects.SymbolType.CONSTANT << 4) | BasicType.INT)
+        LDA #((SymbolType.CONSTANT << 4) | BasicType.INT)
         STA ZP.ACCL
         LDA #20
         STA ZP.NEXTL
         STZ ZP.NEXTH
+        STZ ZP.IDYL
+        STZ ZP.IDYH
         Objects.Add();
         
         // Iterate looking for variables only
-        LDA #Objects.SymbolType.VARIABLE
+        LDA #SymbolType.VARIABLE
         STA ZP.ACCL
         Objects.IterateStart();
         
@@ -829,7 +862,7 @@ program Test
         LDA ZP.ACCL
         AND #0xF0
         LSR LSR LSR LSR
-        CMP #Objects.SymbolType.VARIABLE
+        CMP #SymbolType.VARIABLE
         if (NZ)
         {
             LDA #0xC1
@@ -865,11 +898,13 @@ program Test
             STA ZP.TOPL
             LDA #(testName1 / 256)
             STA ZP.TOPH
-            LDA #((Objects.SymbolType.VARIABLE << 4) | BasicType.INT)
+            LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
             STA ZP.ACCL
             LDA #42
             STA ZP.NEXTL
             STZ ZP.NEXTH
+            STZ ZP.IDYL
+            STZ ZP.IDYH
             Objects.Add();
             
             INY

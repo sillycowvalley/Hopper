@@ -13,7 +13,7 @@ unit Table
     // Input: X = ZP address of list head pointer
     // Output: ZP.IDX = first node (0x0000 if empty list), C set if found, NC if empty
     // Preserves: A, X, Y, ZP.ACC, ZP.TOP, ZP.NEXT
-    // Uses: ZP.Lxx variables as temporary workspace
+    // Uses: ZP.LCURRENT as temporary workspace
     GetFirst()
     {
         PHA
@@ -90,7 +90,7 @@ unit Table
     // Input: X = ZP address of list head pointer, ZP.ACC = node size (16-bit)
     // Output: ZP.IDX = new node address, C set if successful, NC if allocation failed
     // Preserves: A, Y, ZP.TOP, ZP.NEXT
-    // Uses: ZP.Lxx variables as temporary workspace
+    // Uses: ZP.LCURRENT, ZP.LHEADX as temporary workspace
     Add()
     {
         PHA
@@ -148,7 +148,7 @@ unit Table
     // Output: C set if successful, NC if node not found
     // Preserves: A, X, Y
     // Munts: ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Memory.Free calls)
-    // Uses: ZP.Lxx variables as temporary workspace
+    // Uses: ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX as temporary workspace
     Delete()
     {
         PHA
@@ -185,7 +185,7 @@ unit Table
             if (Z)
             {
                 // Update list head VALUE from the next pointer from first node (could be null)
-                LDX LHEADX
+                LDX ZP.LHEADX
                 LDY #0
                 LDA [ZP.LCURRENT], Y
                 STA 0x00, X
@@ -292,12 +292,12 @@ unit Table
         PHX
         PHY
         
-        STX LHEADX
+        STX ZP.LHEADX
                
         loop
         {
             // load first node from list head location
-            LDX LHEADX
+            LDX ZP.LHEADX
             LDA 0x00, X
             STA ZP.IDXL
             LDA 0x01, X

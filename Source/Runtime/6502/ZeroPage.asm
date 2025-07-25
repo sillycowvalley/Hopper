@@ -144,15 +144,18 @@ unit ZP
     
     const byte SymbolType           = 0x72;  // Storage for symbolType|dataType
     const byte SymbolValue          = 0x73;  // Storage for symbol value (16-bit)
-    const byte SymbolValueL         = 0x73;  // Storage for symbol value low byte
-    const byte SymbolValueH         = 0x74;  // Storage for symbol value high byte
+    const byte SymbolValueL         = 0x73;
+    const byte SymbolValueH         = 0x74;
     const byte SymbolName           = 0x75;  // Storage for symbol name pointer (16-bit)
-    const byte SymbolNameL          = 0x75;  // Storage for symbol name pointer low byte
-    const byte SymbolNameH          = 0x76;  // Storage for symbol name pointer high byte
+    const byte SymbolNameL          = 0x75;
+    const byte SymbolNameH          = 0x76;
     const byte SymbolLength         = 0x77;  // Storage for symbol name length
+    const byte SymbolTokens         = 0x78;  // Storage for symbol tokens pointer
+    const byte SymbolTokensL        = 0x78;
+    const byte SymbolTokensH        = 0x79;
     
-    // === AVAILABLE SYMBOLS (0x77-0x7F) ===
-    // 9 bytes available for additional symbol table features (0x77-0x7F)
+    // === AVAILABLE SYMBOLS (0x7A-0x7F) ===
+    // 5 bytes available for additional symbol table features (0x7B-0x7F)
     
 #endif
 

@@ -13,19 +13,22 @@ unit Objects
     {
         VARIABLE = 0x01,   // Mutable values
         CONSTANT = 0x02,   // Immutable values  
-        FUNCTION = 0x03    // Executable code blocks
+        FUNCTION = 0x03,   // Executable code blocks
+        ARGUMENT = 0x04    // Function parameters
     }
     
     // Node layout (offsets from node start):
     // Offset 0-1: next pointer (managed by Table unit)
     // Offset 2: symbolType|dataType (packed byte)
     // Offset 3-4: value/address (16-bit)
-    // Offset 5+: null-terminated name string
+    // Offset 5-6: tokens pointer (16-bit pointer to initialization token stream)
+    // Offset 7+: null-terminated name string
     
-    const byte symbolOverhead = 5;       // Fixed fields before name (including Table's next pointer)
+    const byte symbolOverhead = 7;       // Fixed fields before name (including Table's next pointer)
     const byte typeOffset = 2;           // Offset to symbolType|dataType field
     const byte valueOffset = 3;          // Offset to value field
-    const byte nameOffset = 5;           // Offset to name field in node
+    const byte tokensOffset = 5;         // Offset to tokens pointer field
+    const byte nameOffset = 7;           // Offset to name field in node
     
     // Initialize empty symbol table
     // Output: ZP.SymbolListL/H = 0x0000
@@ -38,10 +41,10 @@ unit Objects
     
     // Add new symbol to table
     // Input: ZP.TOP = name pointer, ZP.ACC = symbolType|dataType (packed),
-    //        ZP.NEXT = value (16-bit)  
+    //        ZP.NEXT = value (16-bit), ZP.IDY = tokens pointer (16-bit)
     // Output: ZP.IDX = new symbol node address, C set if successful, NC if allocation failed
     // Preserves: A, X, Y
-    // Munts: ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Table.Add call)
+    // Munts: ZP.IDX, ZP.ACC, ZP.TOP, ZP.NEXT, ZP.IDY (due to Table.Add call)
     // Uses: ZP.SymbolType, ZP.SymbolValue, ZP.SymbolName, ZP.SymbolLength for temporary storage
     Add()
     {
@@ -63,11 +66,17 @@ unit Objects
         LDA ZP.TOPH
         STA ZP.SymbolNameH  // Save name pointer high
         
+        // Save tokens pointer using dedicated ZP locations
+        LDA ZP.IDYL
+        STA ZP.SymbolTokensL
+        LDA ZP.IDYH
+        STA ZP.SymbolTokensH
+        
         // Calculate node size
         calculateNodeSize(); // Returns size in ZP.ACC, sets ZP.SymbolLength
         
         // Add to table (size already in ZP.ACC)
-        LDX # ZP.SymbolList  // Address of list head pointer
+        LDX #ZP.SymbolList  // Address of list head pointer
         Table.Add(); // Returns new node in IDX, C set if successful
         if (NC)  // Allocation failed
         {
@@ -98,7 +107,7 @@ unit Objects
         PHY
         
         // Start iteration
-        LDX # ZP.SymbolList
+        LDX #ZP.SymbolList
         Table.GetFirst(); // Returns first node in IDX
         
         loop
@@ -139,13 +148,13 @@ unit Objects
     // Uses: ZP.Lxx variables as temporary workspace
     Remove()
     {
-        LDX # ZP.SymbolList
+        LDX #ZP.SymbolList
         Table.Delete();
     }
     
     // Get symbol data from found node
     // Input: ZP.IDX = symbol node address (from Find)
-    // Output: ZP.ACC = symbolType|dataType (packed), ZP.NEXT = value
+    // Output: ZP.ACC = symbolType|dataType (packed), ZP.NEXT = value, ZP.IDY = tokens pointer
     // Preserves: A, X, Y, ZP.IDX, ZP.TOP
     GetData()
     {
@@ -162,6 +171,14 @@ unit Objects
         INY
         LDA [ZP.IDX], Y
         STA ZP.NEXTH
+        
+        // Get tokens pointer (offset tokensOffset to tokensOffset+1)
+        LDY #tokensOffset
+        LDA [ZP.IDX], Y
+        STA ZP.IDYL
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDYH
     }
     
     // Set symbol value (variables only)
@@ -193,6 +210,38 @@ unit Objects
         SEC  // Success
     }
     
+    // Get tokens pointer from symbol node
+    // Input: ZP.IDX = symbol node address
+    // Output: ZP.IDY = tokens pointer
+    // Preserves: A, X, Y, ZP.IDX, ZP.TOP, ZP.NEXT, ZP.ACC
+    GetTokens()
+    {
+        // Get tokens pointer (offset tokensOffset to tokensOffset+1)
+        LDY #tokensOffset
+        LDA [ZP.IDX], Y
+        STA ZP.IDYL
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDYH
+    }
+    
+    // Set tokens pointer in symbol node
+    // Input: ZP.IDX = symbol node address, ZP.IDY = new tokens pointer
+    // Output: C set if successful
+    // Preserves: A, X, Y, ZP.IDX, ZP.TOP, ZP.NEXT, ZP.ACC
+    SetTokens()
+    {
+        // Set tokens pointer (offset tokensOffset to tokensOffset+1)
+        LDY #tokensOffset
+        LDA ZP.IDYL
+        STA [ZP.IDX], Y
+        INY
+        LDA ZP.IDYH
+        STA [ZP.IDX], Y
+        
+        SEC  // Success
+    }
+    
     // Start iteration for specific symbol type
     // Input: ZP.ACC = symbol type filter (0 = all types)
     // Output: ZP.IDX = first matching symbol, C set if found, NC if none
@@ -204,7 +253,7 @@ unit Objects
         PHY
         
         // Start at beginning of list
-        LDX # ZP.SymbolList
+        LDX #ZP.SymbolList
         Table.GetFirst();
         
         // Find first matching symbol
@@ -242,7 +291,7 @@ unit Objects
     // Munts: ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Table.Clear call)
     Destroy()
     {
-        LDX # ZP.SymbolList
+        LDX #ZP.SymbolList
         Table.Clear();
     }
     
@@ -280,6 +329,7 @@ unit Objects
     // Internal helper: Initialize fields in newly allocated node
     // Input: ZP.IDX = node address, ZP.SymbolType = packed symbolType|dataType, 
     //        ZP.SymbolValue = value, ZP.SymbolName = name pointer, ZP.SymbolLength = name length
+    //        ZP.SymbolTokens = tokens pointer
     // Note: Next pointer at offset 0-1 already initialized by Table.Add()
     initializeNode()
     {
@@ -294,6 +344,14 @@ unit Objects
         STA [ZP.IDX], Y
         INY
         LDA ZP.SymbolValueH
+        STA [ZP.IDX], Y
+        
+        // Set tokens pointer (offset tokensOffset to tokensOffset+1)
+        LDY #tokensOffset
+        LDA ZP.SymbolTokensL
+        STA [ZP.IDX], Y
+        INY
+        LDA ZP.SymbolTokensH
         STA [ZP.IDX], Y
         
         // Copy name string starting at nameOffset
