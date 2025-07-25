@@ -44,10 +44,10 @@
 #### Expressions & Operators (Complete Implementation)
 - ✅ **Arithmetic**: `+ -` (addition, subtraction)
 - ✅ **Multiplicative**: `* / MOD` (multiplication, division, modulo)
-- ✅ **Unary**: `-` (negation)
+- ✅ **Unary**: `-` (negation), `NOT` (logical negation)
 - ✅ **Comparison**: `= <>` (equal, not equal - returns BIT type)
 - ✅ **Ordering**: `< > <= >=` (less than, greater than, less/greater equal)
-- ✅ **Logical**: `AND OR NOT` (BIT operands)
+- ✅ **Logical**: `AND OR NOT` (BIT operands, also bitwise for numeric types)
 - ✅ **Parentheses**: `(` `)` for precedence
 
 #### Type System
@@ -56,9 +56,11 @@
 - ✅ **BIT**: Boolean value (0 or 1)
 - ✅ **Type promotion**: Automatic promotion between compatible types
 - ✅ **Type safety**: Proper type checking with meaningful error messages
+- ✅ **Type compatibility checking**: Comprehensive validation for all operations
+- ✅ **Mixed-type operations**: BYTE↔INT, BYTE↔WORD, INT↔WORD (when non-negative)
 
 #### Control Flow
-- ✅ **`IF expr THEN statement`** - Conditional execution (expr must be BIT type)
+- ✅ **`IF expr THEN statement`** - Conditional execution (expr must evaluate to BIT type)
 - ❌ **`RETURN [expr]`** - Return from function (stub implemented)
 - ❌ **`END`** - End main program (stub implemented)
 
@@ -72,6 +74,12 @@
 - ✅ **Number parsing**: 16-bit integers with overflow detection and type determination
 - ✅ **Keyword recognition**: Complete keyword table with uppercase conversion
 - ✅ **Statement framework**: Extensible statement execution with proper error propagation
+- ✅ **Symbol table foundation**: Complete low-level table operations
+- ✅ **Objects layer**: Symbol management with type checking and memory management
+- ✅ **Variables layer**: Variable and constant declaration/manipulation
+- ✅ **Functions layer**: Function declaration and management infrastructure
+- ✅ **Arguments layer**: Function parameter handling
+- ✅ **Comprehensive testing**: Complete test suites for all symbol table layers
 
 ### Assignment
 - ❌ **`var = expr`** - Assignment to existing variables
@@ -145,14 +153,22 @@
 - ✅ **Memory Integration**: Working with Hopper VM memory management
 - ✅ **Error Handling**: Comprehensive error messages and reporting
 - ✅ **Interactive Console**: REPL with command processing
-- ✅ **Arithmetic Operations**: Full set including multiplication, division, modulo
+- ✅ **Arithmetic Operations**: Complete set including multiplication, division, modulo with signed/unsigned handling
 - ✅ **Comparison Operations**: All six comparison operators with proper type handling
-- ✅ **Logical Operations**: AND, OR, NOT with BIT type requirements
-- ✅ **Symbol Table Foundation**: Low-level table operations and memory management
+- ✅ **Logical Operations**: AND, OR, NOT with BIT type requirements and bitwise operations for numeric types
+- ✅ **Symbol Table Foundation**: Complete 4-layer symbol table system
+  - ✅ **Table Layer**: Generic linked list operations with memory management
+  - ✅ **Objects Layer**: Symbol node management with type/value/name storage
+  - ✅ **Variables Layer**: Variable and constant declaration, find, and manipulation
+  - ✅ **Functions Layer**: Function declaration, signature management, and body storage
+  - ✅ **Arguments Layer**: Function parameter management with ordered lists
 - ✅ **Number Tokenization**: Inline storage with overflow detection and automatic type assignment
 - ✅ **Keyword Recognition**: Complete keyword table with uppercase conversion
 - ✅ **Statement Framework**: Extensible statement execution with proper error propagation
 - ✅ **Interactive Loop**: Full REPL with startup banner and graceful error handling
+- ✅ **Comprehensive Testing**: Complete test suites validating all symbol table layers
+- ✅ **Type Compatibility System**: Full type checking with promotion rules for all operations
+- ✅ **Instruction Set**: Complete arithmetic and logical operations with type safety
 
 ### Memory Layout (Preserved from Hopper VM)
 - **$0200-$02FF**: Serial input buffer (256 bytes)
@@ -170,11 +186,21 @@
 - **$0C00+**: Dynamic heap for BASIC programs/variables
 
 ### Zero Page Usage
-- **Standard Hopper VM allocations**: SP, BP, PC, IDX, IDY, TOP, NEXT, ACC
-- **BASIC-specific (0x30-0x39)**: 10 bytes allocated - Input length, tokenizer state, error handling, current token cache, literal position tracking
-- **Available primary (0x3A-0x3F)**: 6 bytes reserved for future BASIC features
-- **Available extended (0x40-0x4F)**: 16 bytes available for general expansion
-- **Symbol Table Range (0x70-0x77)**: 8 bytes allocated for Objects system - symbol table head pointer, type/value/name storage, name length
+- **Standard Hopper VM allocations**: SP, BP, PC, IDX, IDY, TOP, NEXT, ACC (0x00-0x1F)
+- **Workspace Variables**: W0-W7, TICK0-TICK3, TARGET0-TARGET3 (0x20-0x2F)
+- **BASIC-specific (0x30-0x39)**: 10 bytes allocated
+  - **Console Input**: BasicInputLength (0x30)
+  - **Tokenizer State**: TokenBufferLength (16-bit: 0x31-0x32), TokenizerPos (16-bit: 0x33-0x34)
+  - **Error Handling**: LastError (16-bit: 0x35-0x36)
+  - **Token Cache**: CurrentToken (0x37), TokenLiteralPos (16-bit: 0x38-0x39)
+- **Available Primary (0x3A-0x4F)**: 22 bytes reserved for future BASIC features
+- **Memory Manager Workspace (0x50-0x5F)**: M0-M15 used by Memory.Allocate/Free
+- **Function Workspace (0x60-0x6F)**: F0-F15 used by various system functions
+- **Symbol Table Range (0x70-0x7F)**: 16 bytes allocated for Objects system
+  - **Table Head Pointers**: VariablesList (16-bit: 0x70-0x71), FunctionsList (16-bit: 0x72-0x73)
+  - **Symbol Node Working Storage**: SymbolType (0x74), SymbolValue (16-bit: 0x75-0x76), SymbolName (16-bit: 0x77-0x78), SymbolTokens (16-bit: 0x79-0x7A), SymbolLength (0x7B), SymbolTemp0-1 (0x7C-0x7D)
+- **UInt Operations (0x80-0x87)**: U0-U7 workspace for arithmetic operations
+- **Hardware I/O**: Platform-dependent mappings (0xEC+, 0xF0+)
 
 ---
 
@@ -234,7 +260,7 @@ return_statement := RETURN [ expression ]
 parameter_list := identifier [ "," identifier ]*
 ```
 
-### Expressions (Phase 1)
+### Expressions (Phase 1 - Complete Implementation)
 ```
 expression := comparison_expr
 
@@ -328,14 +354,23 @@ comment := "//" { character }* end_of_line
 - **BYTE**: 8-bit unsigned integer (0 to 255) [Phase 3]
 - **STRING**: Null-terminated character array [Phase 3]
 
+### Type Promotion and Compatibility Rules
+- **BYTE → INT**: Always compatible (unsigned 8-bit fits in signed 16-bit)
+- **BYTE → WORD**: Always compatible (unsigned promotion)
+- **INT → WORD**: Compatible only when INT ≥ 0 (runtime check)
+- **WORD → INT**: Compatible only when WORD ≤ 32767 (runtime check)
+- **BIT operations**: Logical AND/OR/NOT for BIT types, bitwise for numeric types
+- **Comparison results**: All comparisons return BIT type
+- **Operation modes**: Arithmetic (rejects BIT), Equality (allows all), Bitwise (allows all), Ordering (rejects BIT)
+
 ### Operator Precedence (Highest to Lowest)
 1. Function calls, array access, parentheses
 2. Unary minus (-), Logical NOT
 3. Multiplication (*), Division (/), Modulo (MOD)
 4. Addition (+), Subtraction (-)
-5. Comparison (=, <>, <, >, <=, >=)
-6. Logical AND
-7. Logical OR
+5. Logical AND
+6. Logical OR
+7. Comparison (=, <>, <, >, <=, >=)
 
 ### Output Formatting Rules
 
@@ -351,7 +386,8 @@ comment := "//" { character }* end_of_line
 ### Type System Benefits
 - **Type safety**: `IF count` is an error; must use `IF count <> 0`
 - **Clear intent**: BIT variables clearly indicate boolean usage
-- **Automatic promotion**: Compatible types promote safely (BYTE→INT→WORD)
+- **Automatic promotion**: Compatible types promote safely (BYTE→INT→WORD when safe)
+- **Runtime validation**: INT/WORD mixing checked at runtime for safe operations
 
 ---
 
@@ -359,26 +395,70 @@ comment := "//" { character }* end_of_line
 
 ## Overview
 
-HopperBASIC uses a unified symbol table to store all program identifiers: variables, constants, and functions (including the main program).
+HopperBASIC uses a unified symbol table architecture with four distinct layers to store all program identifiers: variables, constants, and functions (including the main program).
+
+## Four-Layer Architecture
+
+### Layer 1: Table (table.asm)
+**Generic linked list operations**
+- Memory allocation and node management
+- Insertion at end of list (preserves declaration order)
+- Traversal and deletion operations
+- Works with any node size and structure
+
+### Layer 2: Objects (objects.asm)
+**Symbol-specific node management**
+- Defines symbol node structure (next, type|dataType, tokens, value, name)
+- Handles symbol type filtering (VARIABLE, CONSTANT, FUNCTION, ARGUMENT)
+- Manages symbol-to-symbol comparisons and lookups
+- Provides iterator support with type filtering
+
+### Layer 3: Variables (variables.asm)
+**Variable and constant operations**
+- Variable declaration with type checking
+- Value get/set with immutability enforcement (constants cannot be modified)
+- Name-based lookup with type filtering
+- Integration with tokenizer for initialization expressions
+
+### Layer 4: Functions (functions.asm)
+**Function-specific operations**
+- Function signature management (name, return type, parameter list)
+- Function body token storage and retrieval  
+- Integration with Arguments layer for parameter handling
+- Function call resolution and type checking
+
+### Supporting Layer: Arguments (arguments.asm)
+**Function parameter management**
+- Ordered parameter lists stored as linked lists
+- Parameter type information and name storage
+- Index-based parameter lookup (for stack frame construction)
+- Automatic cleanup when functions are removed
 
 ## Design Decisions
 
 ### Unified Table Structure
-- **Single table** stores all identifier types (variables, constants, functions)
-- **Shared implementation** reduces code size and complexity
+- **Single implementation** for all linked list operations
+- **Shared memory management** reduces code duplication
 - **Generic operations** work across all identifier types
 
-### Simple Data Structure
-- **Linked list** implementation
-- Linear search through entries
-- No optimization for lookup speed
+### Layered Architecture Benefits
+- **Separation of concerns**: Each layer has a specific responsibility
+- **Code reuse**: Higher layers build on lower layer functionality
+- **Testability**: Each layer can be tested independently
+- **Maintainability**: Clear interfaces between layers
 
 ### Runtime Resolution
 - **Identifiers stored as strings** during tokenization  
 - **Lookup performed at runtime** when tokens execute
-- **No caching** of resolved addresses
+- **No caching** of resolved addresses (simple linear search)
 
 ## Rationale
+
+### Why Four Layers?
+- **Table Layer**: Provides generic linked list operations for any use case
+- **Objects Layer**: Adds symbol-specific knowledge while remaining general
+- **Variables/Functions Layers**: Implement language-specific semantics
+- **Clear separation**: Each layer has distinct responsibilities and can be tested separately
 
 ### Why Simple Linear Search?
 - **Small scale**: Typical programs have 5-20 total identifiers
@@ -391,40 +471,92 @@ HopperBASIC uses a unified symbol table to store all program identifiers: variab
 - **Dynamic modification**: FORGET and redefinition change symbol meanings
 - **Implementation simplicity**: No cache invalidation or dependency tracking needed
 
-### Why Unified Table?
-- **Code reuse**: Single implementation for all identifier types
-- **FORGET command**: Single lookup covers variables, constants, and functions
-- **Memory efficiency**: Shared allocation and management strategy
-- **Debugging**: One table structure to understand and debug
-
 ## Table Operations
 
-### Core Functions
-- `TableLookup(name)` - Find entry by name across all types
-- `TableAdd(name, type, dataType, value)` - Add new entry  
-- `TableRemove(name)` - Remove entry (for FORGET)
-- `TableClear()` - Clear all entries (for NEW)
-- `TableIterate(entryType)` - Iterate by type (for VARS, FUNCS, CONSTS commands)
+### Table Layer Functions
+- `Table.Add(size)` - Allocate and link new node
+- `Table.GetFirst()` - Start iteration
+- `Table.GetNext()` - Continue iteration
+- `Table.Delete(node)` - Remove specific node
+- `Table.Clear()` - Remove all nodes
 
-### Entry Types
-- **VARIABLE** - Mutable values (INT, WORD, BIT, BYTE, STRING, ARRAY)
-- **CONSTANT** - Immutable values (defined with CONST)
-- **FUNCTION** - Executable code blocks (including main program from BEGIN/END)
+### Objects Layer Functions
+- `Objects.Add(name, type, tokens, value)` - Add symbol with all metadata
+- `Objects.Find(name)` - Locate symbol by name
+- `Objects.GetData()` - Extract type/tokens/value from node
+- `Objects.SetValue()` - Update value (variables only)
+- `Objects.IterateStart(filter)` - Begin filtered iteration
+
+### Variables Layer Functions
+- `Variables.Declare(name, type, value, tokens)` - Create variable/constant
+- `Variables.Find(name, expectedType)` - Locate with type checking
+- `Variables.GetValue()` - Retrieve current value and type
+- `Variables.SetValue()` - Update value (variables only, enforces immutability)
+- `Variables.Remove(name)` - Delete and free tokens
+
+### Functions Layer Functions
+- `Functions.Declare(name, returnType, argsListHead, bodyTokens)` - Create function
+- `Functions.Find(name)` - Locate function with type verification
+- `Functions.GetSignature()` - Extract return type, body tokens, and arguments
+- `Functions.GetArguments()` - Get parameter list head pointer
+- `Functions.Remove(name)` - Delete function and all parameters
+
+### Arguments Layer Functions
+- `Arguments.Add(functionNode, argName, argType)` - Add parameter to function
+- `Arguments.Find(functionNode, argName)` - Locate parameter by name
+- `Arguments.FindByIndex(functionNode, index)` - Get parameter by position
+- `Arguments.GetCount(functionNode)` - Count parameters
+- `Arguments.Clear(functionNode)` - Remove all parameters
 
 ## Implementation Benefits
 
-1. **Minimal code footprint** - Single table implementation
+1. **Minimal code footprint** - Shared table implementation across all layers
 2. **Predictable behavior** - Consistent operations across identifier types  
-3. **Easy debugging** - One data structure to inspect and validate
+3. **Easy debugging** - Clear layer boundaries with defined interfaces
 4. **Flexible execution** - Supports forward references and dynamic redefinition
 5. **Memory efficient** - No duplicate table management code
+6. **Comprehensive testing** - Each layer tested independently and in integration
 
 ## Performance Characteristics
 
 - **Lookup time**: O(n) where n ≈ 20 maximum
-- **Memory overhead**: Minimal - simple linked list nodes
+- **Memory overhead**: Minimal - simple linked list nodes with symbol metadata
 - **Runtime cost**: Negligible on target 6502 systems
-- **Development cost**: Low complexity, easy to implement and maintain
+- **Development cost**: Low complexity per layer, easy to implement and maintain
+
+## Memory Management
+
+### Node Structure
+**Variable/Constant Node (Objects layer):**
+```
+Offset 0-1: next pointer (Table layer)
+Offset 2:   symbolType|dataType (VARIABLE|INT, CONSTANT|WORD, etc.)
+Offset 3-4: tokens pointer (initialization expression)
+Offset 5-6: value (16-bit variable/constant value)
+Offset 7+:  null-terminated name string
+```
+
+**Function Node (Objects layer):**
+```
+Offset 0-1: next pointer (Table layer)  
+Offset 2:   symbolType|returnType (FUNCTION|INT, FUNCTION|WORD, etc.)
+Offset 3-4: function body tokens pointer
+Offset 5-6: arguments list head pointer
+Offset 7+:  null-terminated function name string
+```
+
+**Argument Node (Arguments layer):**
+```
+Offset 0-1: next pointer (Arguments layer)
+Offset 2:   argument type (INT, WORD, BIT, etc.)
+Offset 3+:  null-terminated argument name string
+```
+
+### Memory Allocation Strategy
+- **Exact-size allocation**: Nodes allocated to exact size needed (overhead + name length)
+- **Automatic cleanup**: Memory.Free() called when symbols are removed
+- **Token stream management**: Initialization and function body tokens stored separately and freed with symbols
+- **Argument integration**: Function arguments stored as separate linked list, automatically cleaned up with function
 
 ---
 
@@ -445,13 +577,13 @@ HopperBASIC uses a unified symbol table to store all program identifiers: variab
 ## Next Implementation Priorities
 
 ### Immediate (Complete Phase 1)
-1. ✅ **Symbol Table Foundation**: Low-level table operations and memory management
-2. **Variable System Integration**: Parser and language integration for actual BASIC variable usage
-3. **Variable Declarations**: INT, WORD, BIT types with optional initialization
+1. ✅ **Symbol Table Foundation**: Complete 4-layer symbol table system with comprehensive testing
+2. **Variable System Integration**: Connect symbol table to parser and statement execution
+3. **Variable Declarations**: INT, WORD, BIT types with optional initialization in parser
 4. **Assignment Statements**: `var = expr` with type compatibility checking
-5. **Function System**: FUNC/ENDFUNC definitions and RETURN statements
+5. **Function System Integration**: FUNC/ENDFUNC definitions and RETURN statements in parser
 6. **Program Structure**: BEGIN/END main program blocks
-7. **Management Commands**: VARS, FUNCS, LIST, CLEAR, FORGET
+7. **Management Commands**: VARS, FUNCS, LIST, CLEAR, FORGET integration with symbol tables
 
 ### Next Phase (Storage)
 1. **SAVE/LOAD Commands**: Tokenized program storage to EEPROM
@@ -467,13 +599,14 @@ HopperBASIC uses a unified symbol table to store all program identifiers: variab
 
 ## Implementation Strategy
 
-1. **Phase 1a**: Console commands (NEW, LIST, VARS, variable declarations)
-2. **Phase 1b**: Basic expressions (numbers, variables, +, -, unary -, =, <>)
-3. **Phase 1c**: PRINT statement and assignment
-4. **Phase 1d**: IF/THEN control flow
-5. **Phase 1e**: Functions (FUNC/ENDFUNC/RETURN) and main program (BEGIN/END)
-6. **Phase 2**: Add tokenized SAVE/LOAD functionality with EEPROM storage
-7. **Phase 3**: Add constants, loops, input, additional operators, built-in functions
+1. **Phase 1a**: ✅ Console commands (NEW, MEM, BYE working)
+2. **Phase 1b**: ✅ Complete expression system (numbers, operators, precedence, type checking)
+3. **Phase 1c**: ✅ PRINT statement and IF/THEN control flow  
+4. **Phase 1d**: ✅ Complete symbol table foundation (4 layers + comprehensive testing)
+5. **Phase 1e**: **NEXT** - Variable declarations and assignment (connect symbol tables to parser)
+6. **Phase 1f**: Functions (FUNC/ENDFUNC/RETURN) and main program (BEGIN/END)
+7. **Phase 2**: Add tokenized SAVE/LOAD functionality with EEPROM storage
+8. **Phase 3**: Add constants, loops, input, additional operators, built-in functions
 
 This approach maximizes code reuse while delivering a clean, simple BASIC interpreter that feels familiar to users but leverages the robust Hopper VM foundation.
 
@@ -481,18 +614,36 @@ This approach maximizes code reuse while delivering a clean, simple BASIC interp
 
 ## Current Status Summary
 
-**Phase 1 Progress**: ~70% complete
-- ✅ Core expression evaluation system (complete)
-- ✅ Basic console commands (partial - NEW, MEM, BYE working)
-- ✅ PRINT statement (basic version)
-- ✅ IF/THEN control flow (basic version)
+**Phase 1 Progress**: ~85% complete
+- ✅ Core expression evaluation system (complete with all operators and type checking)
+- ✅ Basic console commands (NEW, MEM, BYE working; LIST, VARS, FUNCS, CLEAR, FORGET stubs)
+- ✅ PRINT statement (working for all expression types)
+- ✅ IF/THEN control flow (working with proper BIT type checking)
 - ✅ Complete tokenizer with number parsing and keyword recognition
 - ✅ Statement execution framework with proper error handling
-- ✅ Symbol table foundation (low-level operations complete)
-- ❌ Variable system integration (parser integration not started - next priority)
-- ❌ Function system (stubs only)
-- ❌ Assignment statements (not started)
+- ✅ **Complete symbol table system** (4-layer architecture with comprehensive testing)
+  - ✅ **Table layer**: Generic linked list operations with memory management
+  - ✅ **Objects layer**: Symbol-specific operations with type filtering
+  - ✅ **Variables layer**: Variable/constant declaration and manipulation
+  - ✅ **Functions layer**: Function signature and body management
+  - ✅ **Arguments layer**: Function parameter handling
+  - ✅ **Comprehensive testing**: All layers tested with memory leak detection
+- ✅ **Type system**: Complete type compatibility checking with promotion rules
+- ✅ **Instruction set**: All arithmetic, logical, and comparison operations implemented
+- ❌ **Variable system integration**: Connect symbol tables to parser (next priority)
+- ❌ **Function system integration**: Connect function tables to parser
+- ❌ **Assignment statements**: Variable assignment with type checking
 
-**Key Achievement**: We have a working expression evaluator that handles all arithmetic, comparison, and logical operations with proper type checking and promotion. Combined with a complete tokenizer system and interactive REPL, this provides the solid foundation for all remaining language features.
+**Major Achievement**: We now have a complete, tested symbol table system that can handle variables, constants, and functions with proper memory management, type checking, and comprehensive test coverage. The foundation is solid and ready for integration with the parser.
 
-**Next Milestone**: Implement variable system integration to connect the symbol table foundation with the BASIC parser, enabling variable declarations and assignments to complete the core language functionality.
+**Next Milestone**: Implement variable system integration to connect the completed symbol table foundation with the BASIC parser, enabling variable declarations (`INT name = value`) and assignments (`name = value`) to complete the core language functionality.
+
+**Testing Status**: All symbol table layers have comprehensive test suites with memory leak detection. The system has been validated to properly handle:
+- Variable and constant declaration with type checking
+- Function declaration with parameter management  
+- Symbol lookup with type filtering
+- Memory management with automatic cleanup
+- Type compatibility checking across all operations
+- Error handling with proper error messages
+
+The symbol table foundation is production-ready and provides a robust base for the remaining parser integration work.
