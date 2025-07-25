@@ -47,11 +47,13 @@ unit TestObjects
         STZ ZP.IDYL
         STZ ZP.IDYH
         
+        LDX #ZP.VariablesList
         Objects.Add();
         
         // Should succeed (C set)
         if (C)
         {
+            LDX #ZP.VariablesList
             Objects.Destroy();  // Clean up
             SEC  // Pass
         }
@@ -90,6 +92,7 @@ unit TestObjects
         STZ ZP.IDYL
         STZ ZP.IDYH
         
+        LDX #ZP.VariablesList
         Objects.Add();
         
         // Now find it
@@ -98,11 +101,13 @@ unit TestObjects
         LDA #(testName3 / 256)
         STA ZP.TOPH
         
+        LDX #ZP.VariablesList
         Objects.Find();
         
         // Should find it (C set)
         if (C)
         {
+            LDX #ZP.VariablesList
             Objects.Destroy();  // Clean up
             SEC  // Pass
         }
@@ -142,9 +147,11 @@ unit TestObjects
         STZ ZP.IDYL
         STZ ZP.IDYH
         
+        LDX #ZP.VariablesList
         Objects.Add();
         
         // Find and get data
+        LDX #ZP.VariablesList
         Objects.Find();
         if (NC)
         {
@@ -199,6 +206,7 @@ unit TestObjects
             return;
         }
         
+        LDX #ZP.VariablesList
         Objects.Destroy();  // Clean up
         SEC  // Pass
         Test.PrintResult();
@@ -231,7 +239,9 @@ unit TestObjects
         STZ ZP.IDYL
         STZ ZP.IDYH
         
+        LDX #ZP.VariablesList
         Objects.Add();
+        LDX #ZP.VariablesList
         Objects.Find();
         
         // Change value to 200
@@ -260,6 +270,7 @@ unit TestObjects
             return;
         }
         
+        LDX #ZP.VariablesList
         Objects.Destroy();  // Clean up
         SEC  // Pass
         Test.PrintResult();
@@ -286,6 +297,7 @@ unit TestObjects
         STZ ZP.NEXTH
         STZ ZP.IDYL
         STZ ZP.IDYH
+        LDX #ZP.VariablesList
         Objects.Add();
         
         // Add constant
@@ -300,11 +312,13 @@ unit TestObjects
         STZ ZP.NEXTH
         STZ ZP.IDYL
         STZ ZP.IDYH
+        LDX #ZP.VariablesList
         Objects.Add();
         
         // Iterate looking for variables only
         LDA #SymbolType.VARIABLE
         STA ZP.ACCL
+        LDX #ZP.VariablesList
         Objects.IterateStart();
         
         if (NC)
@@ -329,6 +343,7 @@ unit TestObjects
             return;
         }
         
+        LDX #ZP.VariablesList
         Objects.Destroy();  // Clean up
         SEC  // Pass
         Test.PrintResult();
@@ -361,17 +376,19 @@ unit TestObjects
             STZ ZP.NEXTH
             STZ ZP.IDYL
             STZ ZP.IDYH
+            LDX #ZP.VariablesList
             Objects.Add();
             
             INY
         }
         
         // Destroy the table
+        LDX #ZP.VariablesList
         Objects.Destroy();
         
         // Should be empty
-        LDA ZP.SymbolListL
-        ORA ZP.SymbolListH
+        LDA ZP.VariablesListL
+        ORA ZP.VariablesListH
         if (Z)
         {
             SEC  // Pass - already clean, no additional cleanup needed

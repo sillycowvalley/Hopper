@@ -569,15 +569,27 @@ unit Tools
         STA ZP.IDXH
         PrintString();
         
-        LDA #'S'
+        LDA #'V'
         Serial.WriteChar();
         LDA #'L'
         Serial.WriteChar();
         LDA #':'
         Serial.WriteChar();
-        LDA ZP.SymbolListH
+        LDA ZP.VariablesListH
         Serial.HexOut();
-        LDA ZP.SymbolListL
+        LDA ZP.VariablesListL
+        Serial.HexOut();
+        LDA #' '
+        Serial.WriteChar();
+        LDA #'F'
+        Serial.WriteChar();
+        LDA #'L'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        LDA ZP.FunctionsListH
+        Serial.HexOut();
+        LDA ZP.FunctionsListL
         Serial.HexOut();
         LDA #'\n'
         Serial.WriteChar();

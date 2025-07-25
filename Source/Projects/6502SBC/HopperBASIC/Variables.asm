@@ -16,11 +16,40 @@ unit Variables
     // Uses: Objects.Add() internally with extended node layout
     Declare()
     {
+#ifdef DEBUG
+        LDA #'V'
+        Serial.WriteChar();
+        LDA #'D'
+        Serial.WriteChar();
+        LDA #'2'
+        Serial.WriteChar();
+#endif
+        
         PHA
         PHX
         PHY
         
+#ifdef DEBUG
+        LDA #'V'
+        Serial.WriteChar();
+        LDA #'D'
+        Serial.WriteChar();
+        LDA #'3'
+        Serial.WriteChar();
+        if (C)
+        {
+            LDA #'F'
+            Serial.WriteChar();
+        }
+        else
+        {
+            LDA #'N'
+            Serial.WriteChar();
+        }
+#endif
+        
         // Check if symbol already exists
+        LDX #ZP.VariablesList
         Objects.Find();
         if (C)  // Symbol already exists
         {
@@ -35,8 +64,37 @@ unit Variables
             return;
         }
         
+#ifdef DEBUG
+        LDA #'V'
+        Serial.WriteChar();
+        LDA #'D'
+        Serial.WriteChar();
+        LDA #'4'
+        Serial.WriteChar();
+#endif
+        
         // Symbol doesn't exist, add it
+        LDX #ZP.VariablesList
         Objects.Add();
+        
+#ifdef DEBUG
+        LDA #'V'
+        Serial.WriteChar();
+        LDA #'D'
+        Serial.WriteChar();
+        LDA #'5'
+        Serial.WriteChar();
+        if (C)
+        {
+            LDA #'S'
+            Serial.WriteChar();
+        }
+        else
+        {
+            LDA #'F'
+            Serial.WriteChar();
+        }
+#endif
         
         PLY
         PLX
@@ -55,6 +113,7 @@ unit Variables
         PHY
         
         // Find the symbol
+        LDX #ZP.VariablesList
         Objects.Find();
         if (NC)  // Not found
         {
@@ -309,6 +368,7 @@ unit Variables
         STA 0x7B
         
         // Remove the symbol node
+        LDX #ZP.VariablesList
         Objects.Remove();  // This munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
         if (NC)
         {
@@ -343,6 +403,7 @@ unit Variables
     {
         LDA #SymbolType.VARIABLE
         STA ZP.ACCL
+        LDX #ZP.VariablesList
         Objects.IterateStart();
     }
     
@@ -352,6 +413,7 @@ unit Variables
     {
         LDA #SymbolType.CONSTANT
         STA ZP.ACCL
+        LDX #ZP.VariablesList
         Objects.IterateStart();
     }
     
@@ -360,6 +422,7 @@ unit Variables
     IterateAll()
     {
         STZ ZP.ACCL  // No filter
+        LDX #ZP.VariablesList
         Objects.IterateStart();
     }
     
@@ -382,7 +445,7 @@ unit Variables
         
         loop
         {
-            LDX #ZP.SymbolList
+            LDX #ZP.VariablesList
             Table.GetFirst();
         
             if (NC) { break; }  // No more symbols
@@ -402,10 +465,10 @@ unit Variables
                 Memory.Free();  // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
                 
                 // Re-establish iteration state after Memory.Free munts everything
-                LDX #ZP.SymbolList
+                LDX #ZP.VariablesList
                 Table.GetFirst();
             }
-            LDX #ZP.SymbolList
+            LDX #ZP.VariablesList
             Table.Delete();
         }
         

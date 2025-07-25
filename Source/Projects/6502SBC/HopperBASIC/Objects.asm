@@ -8,7 +8,8 @@ unit Objects
     friend Variables, Functions, Arguments;
     
     // Symbol table implementation using Table foundation
-    // ZP.SymbolListL/H stores the global symbol table head pointer
+    // ZP.VariableListL/H stores the variables/constants table head pointer
+    // ZP.FunctionsListL/H stores the functions table head pointer
     
     // Symbol types
     enum SymbolType
@@ -32,27 +33,32 @@ unit Objects
     const byte tokensOffset = 5;         // Offset to tokens pointer field
     const byte nameOffset = 7;           // Offset to name field in node
     
-    // Initialize empty symbol table
-    // Output: ZP.SymbolListL/H = 0x0000
+    // Initialize empty symbol tables
+    // Output: ZP.VariableListL/H = 0x0000, ZP.FunctionsListL/H = 0x0000
     // Preserves: All registers and ZP variables
     Initialize()
     {
-        STZ ZP.SymbolListL
-        STZ ZP.SymbolListH
+        STZ ZP.VariablesListL
+        STZ ZP.VariablesListH
+        STZ ZP.FunctionsListL
+        STZ ZP.FunctionsListH
     }
     
     // Add new symbol to table
-    // Input: ZP.TOP = name pointer, ZP.ACC = symbolType|dataType (packed),
+    // Input: X = ZP address of table head (ZP.VariableList or ZP.FunctionsList),
+    //        ZP.TOP = name pointer, ZP.ACC = symbolType|dataType (packed),
     //        ZP.NEXT = value (16-bit), ZP.IDY = tokens pointer (16-bit)
     // Output: ZP.IDX = new symbol node address, C set if successful, NC if allocation failed
-    // Preserves: A, X, Y
-    // Munts: ZP.IDX, ZP.ACC, ZP.TOP, ZP.NEXT, ZP.IDY (due to Table.Add call)
+    // Preserves: A, Y
+    // Munts: X, ZP.IDX, ZP.ACC, ZP.TOP, ZP.NEXT, ZP.IDY (due to Table.Add call)
     // Uses: ZP.SymbolType, ZP.SymbolValue, ZP.SymbolName, ZP.SymbolLength for temporary storage
     Add()
     {
         PHA
-        PHX
         PHY
+        
+        // Save table head address
+        STX ZP.SymbolTemp0
         
         // Save input parameters in dedicated ZP locations that survive Memory.Allocate()
         LDA ZP.ACCL
@@ -78,12 +84,11 @@ unit Objects
         calculateNodeSize(); // Returns size in ZP.ACC, sets ZP.SymbolLength
         
         // Add to table (size already in ZP.ACC)
-        LDX #ZP.SymbolList  // Address of list head pointer
+        LDX ZP.SymbolTemp0  // Restore table head address
         Table.Add(); // Returns new node in IDX, C set if successful
         if (NC)  // Allocation failed
         {
             PLY
-            PLX
             PLA
             return;  // C already clear
         }
@@ -92,24 +97,22 @@ unit Objects
         initializeNode();
         
         PLY
-        PLX
         PLA
         SEC  // Signal success
     }
     
     // Find symbol by name
-    // Input: ZP.TOP = name pointer to search for
+    // Input: X = ZP address of table head (ZP.VariableList or ZP.FunctionsList),
+    //        ZP.TOP = name pointer to search for
     // Output: ZP.IDX = symbol node address, C set if found, NC if not found
-    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT, ZP.ACC
+    // Preserves: A, Y, ZP.TOP, ZP.NEXT, ZP.ACC
     // Uses: ZP.Lxx variables as temporary workspace
     Find()
     {
         PHA
-        PHX
         PHY
         
         // Start iteration
-        LDX #ZP.SymbolList
         Table.GetFirst(); // Returns first node in IDX
         
         loop
@@ -120,7 +123,6 @@ unit Objects
             if (Z)
             {
                 PLY
-                PLX
                 PLA
                 CLC  // Not found
                 return;
@@ -131,7 +133,6 @@ unit Objects
             if (Z) // Names match
             {
                 PLY
-                PLX
                 PLA
                 SEC  // Found
                 return;
@@ -143,14 +144,14 @@ unit Objects
     }
     
     // Remove symbol by node pointer
-    // Input: ZP.IDX = symbol node address (from Find)
+    // Input: X = ZP address of table head (ZP.VariableList or ZP.FunctionsList),
+    //        ZP.IDX = symbol node address (from Find)
     // Output: C set if successful, NC if node not found
-    // Preserves: A, X, Y
-    // Munts: ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Table.Delete call)
+    // Preserves: A, Y
+    // Munts: X, ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Table.Delete call)
     // Uses: ZP.Lxx variables as temporary workspace
     Remove()
     {
-        LDX #ZP.SymbolList
         Table.Delete();
     }
     
@@ -245,35 +246,32 @@ unit Objects
     }
     
     // Start iteration for specific symbol type
-    // Input: ZP.ACC = symbol type filter (0 = all types)
+    // Input: X = ZP address of table head (ZP.VariableList or ZP.FunctionsList),
+    //        ZP.ACCL = symbol type filter (0 = all types)
     // Output: ZP.IDX = first matching symbol, C set if found, NC if none
-    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT, ZP.ACC
+    // Preserves: A, Y, ZP.TOP, ZP.NEXT, ZP.ACC
     IterateStart()
     {
         PHA
-        PHX
         PHY
         
         // Start at beginning of list
-        LDX #ZP.SymbolList
         Table.GetFirst();
         
         // Find first matching symbol
         findNextMatch();
         
         PLY
-        PLX
         PLA
     }
     
     // Continue iteration
-    // Input: ZP.IDX = current symbol, ZP.ACC = type filter
+    // Input: ZP.IDX = current symbol, ZP.ACCL = type filter
     // Output: ZP.IDX = next matching symbol, C set if found, NC if done
     // Preserves: A, X, Y, ZP.TOP, ZP.NEXT, ZP.ACC
     IterateNext()
     {
         PHA
-        PHX
         PHY
         
         // Move to next node
@@ -283,17 +281,16 @@ unit Objects
         findNextMatch();
         
         PLY
-        PLX
         PLA
     }
     
     // Destroy entire symbol table
-    // Output: ZP.SymbolListL/H = 0x0000
-    // Preserves: A, X, Y
-    // Munts: ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Table.Clear call)
+    // Input: X = ZP address of table head (ZP.VariableList or ZP.FunctionsList)
+    // Output: Table head set to 0x0000
+    // Preserves: A, Y
+    // Munts: X, ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Table.Clear call)
     Destroy()
     {
-        LDX #ZP.SymbolList
         Table.Clear();
     }
     

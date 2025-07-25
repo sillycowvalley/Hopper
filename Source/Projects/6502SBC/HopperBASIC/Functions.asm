@@ -26,6 +26,7 @@ unit Functions
         PHY
         
         // Check if function already exists
+        LDX #ZP.FunctionsList
         Objects.Find();
         if (C)  // Function already exists
         {
@@ -41,6 +42,7 @@ unit Functions
         }
         
         // Function doesn't exist, add it
+        LDX #ZP.FunctionsList
         Objects.Add();
         
         PLY
@@ -59,6 +61,7 @@ unit Functions
         PHY
         
         // Find the symbol
+        LDX #ZP.FunctionsList
         Objects.Find();
         if (NC)  // Not found
         {
@@ -196,10 +199,12 @@ unit Functions
             Arguments.Destroy();
             
             // Restore function node address for removal
+            LDX #ZP.FunctionsList
             Find();  // Find function again since IDX was changed
         }
         
         // Remove the function
+        LDX #ZP.FunctionsList
         Objects.Remove();
     }
     
@@ -209,6 +214,7 @@ unit Functions
     {
         LDA #SymbolType.FUNCTION
         STA ZP.ACCL
+        LDX #ZP.FunctionsList
         Objects.IterateStart();
     }
     
@@ -260,6 +266,7 @@ unit Functions
         }
         
         // Now clear all function nodes
+        LDX #ZP.FunctionsList
         Objects.Destroy();
     }
 }
