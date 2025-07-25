@@ -407,13 +407,15 @@ unit Objects
         loop
         {
             LDA [ZP.TOP], Y       // Target name character
-            STA ZP.SymbolTemp2       // Temporary storage for comparison
-            LDA [ZP.SymbolTemp0], Y  // Node name character (using temp pointer)
-            CMP ZP.SymbolTemp2       // Compare
-            if (NZ) { return; }   // Different characters
+            if (Z) { // Check if target name ended with null terminator
+                LDA [ZP.SymbolTemp0], Y  // Check if node name also ended
+                return;  // Z set if both ended (strings equal), NZ if lengths differ
+            }
             
-            // Check if we hit null terminator
-            if (Z) { return; }  // Both null terminators - strings equal
+            STA ZP.SymbolTemp2       // Store target character for comparison
+            LDA [ZP.SymbolTemp0], Y  // Node name character (using temp pointer)
+            CMP ZP.SymbolTemp2       // Compare characters
+            if (NZ) { return; }      // Different characters - strings not equal
             
             INY
         }
