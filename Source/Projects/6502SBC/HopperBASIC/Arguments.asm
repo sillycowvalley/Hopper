@@ -27,25 +27,23 @@ unit Arguments
         PHX
         PHY
         
-        // Save input parameters
+        // Save inputs in ZP.Lxx slots
+        LDA ZP.IDXL
+        STA ZP.LHEADL           // Function node address
+        LDA ZP.IDXH
+        STA ZP.LHEADH
+        
         LDA ZP.ACCL
-        STA ZP.SymbolType     // Argument type
+        STA ZP.SymbolType       // Argument type
         
         LDA ZP.TOPL
-        STA ZP.SymbolNameL    // Argument name pointer
+        STA ZP.SymbolNameL      // Argument name pointer
         LDA ZP.TOPH
         STA ZP.SymbolNameH
         
-        LDA ZP.IDXL
-        STA ZP.SymbolTemp0    // Function node address
-        LDA ZP.IDXH
-        STA ZP.SymbolTemp1
-        
-        // Calculate argument node size
-        calculateArgumentNodeSize();  // Returns size in ZP.ACC, sets ZP.SymbolLength
-        
-        // Allocate new argument node
-        Memory.Allocate();  // Returns address in ZP.IDX
+        // 1. Allocate and initialize new node
+        calculateArgumentNodeSize();   // Returns size in ZP.ACC
+        Memory.Allocate();             // Returns address in ZP.IDX
         
         LDA ZP.IDXL
         ORA ZP.IDXH
@@ -58,84 +56,61 @@ unit Arguments
             return;
         }
         
-        // Initialize the new argument node (next pointer will be set below)
-        initializeArgumentNode();
-        
-        // New node's next pointer is always NULL (it's going at the end)
-        LDY #anNext
-        LDA #0
-        STA [ZP.IDX], Y
-        INY
-        STA [ZP.IDX], Y
-        
-        // Save new node address
         LDA ZP.IDXL
-        STA ZP.LCURRENTL
+        STA ZP.LCURRENTL        // New argument node
         LDA ZP.IDXH
         STA ZP.LCURRENTH
         
-        // Get current arguments list head from function node
-        LDA ZP.SymbolTemp0
-        STA ZP.LHEADL
-        LDA ZP.SymbolTemp1
-        STA ZP.LHEADH
+        initializeArgumentNode();
         
-        LDY # Objects.snArguments  // Arguments field offset in function node
-        LDA [ZP.LHEAD], Y
-        STA ZP.LPREVIOUSL    // Use LPREVIOUS to traverse the list
+        // New node's next = NULL
+        LDY #anNext
+        LDA #0
+        STA [ZP.LCURRENT], Y
         INY
-        LDA [ZP.LHEAD], Y
+        STA [ZP.LCURRENT], Y
+        
+        // 2. Find insertion point (pointer-to-pointer pattern)
+        // Start with address of function's arguments field
+        CLC
+        LDA ZP.LHEADL
+        ADC #Objects.snArguments
+        STA ZP.LPREVIOUSL       // Points to insertion location
+        LDA ZP.LHEADH
+        ADC #0
         STA ZP.LPREVIOUSH
         
-        // Check if this is the first argument (empty list)
-        LDA ZP.LPREVIOUSL
-        ORA ZP.LPREVIOUSH
-        if (Z)
+        loop
         {
-            // Empty list - new node becomes the head
-            LDY # Objects.snArguments
-            LDA ZP.LCURRENTL
-            STA [ZP.LHEAD], Y
+            // Check if *LPREVIOUS is NULL (insertion point found)
+            LDY #0
+            LDA [ZP.LPREVIOUS], Y
+            STA ZP.LNEXTL
             INY
-            LDA ZP.LCURRENTH
-            STA [ZP.LHEAD], Y
+            LDA [ZP.LPREVIOUS], Y
+            STA ZP.LNEXTH
+            
+            LDA ZP.LNEXTL
+            ORA ZP.LNEXTH
+            if (Z) { break; }    // Found insertion point
+            
+            // LPREVIOUS = &(LNEXT->next)
+            CLC
+            LDA ZP.LNEXTL
+            ADC #anNext
+            STA ZP.LPREVIOUSL
+            LDA ZP.LNEXTH
+            ADC #0
+            STA ZP.LPREVIOUSH
         }
-        else
-        {
-            // List is not empty - find the last node
-            loop
-            {
-                // Save current node as potential last node
-                LDA ZP.LPREVIOUSL
-                STA ZP.LNEXTL
-                LDA ZP.LPREVIOUSH
-                STA ZP.LNEXTH
-                
-                // Get next pointer from current node
-                LDY #anNext
-                LDA [ZP.LPREVIOUS], Y
-                STA ZP.LPREVIOUSL
-                INY
-                LDA [ZP.LPREVIOUS], Y
-                STA ZP.LPREVIOUSH
-                
-                // Check if we found the end
-                LDA ZP.LPREVIOUSL
-                ORA ZP.LPREVIOUSH
-                if (Z)
-                {
-                    // LNEXT now points to the last node
-                    // Update its next pointer to point to our new node
-                    LDY #anNext
-                    LDA ZP.LCURRENTL
-                    STA [ZP.LNEXT], Y
-                    INY
-                    LDA ZP.LCURRENTH
-                    STA [ZP.LNEXT], Y
-                    break;
-                }
-            }
-        }
+        
+        // 3. Insert: *LPREVIOUS = LCURRENT
+        LDY #0
+        LDA ZP.LCURRENTL
+        STA [ZP.LPREVIOUS], Y
+        INY
+        LDA ZP.LCURRENTH
+        STA [ZP.LPREVIOUS], Y
         
         PLY
         PLX

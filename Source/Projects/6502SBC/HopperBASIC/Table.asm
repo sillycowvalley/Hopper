@@ -86,61 +86,120 @@ unit Table
         PLA
     }
     
-    // Add new node to list
+    // Add new node to end of list
     // Input: X = ZP address of list head pointer, ZP.ACC = node size (16-bit)
     // Output: ZP.IDX = new node address, C set if successful, NC if allocation failed
     // Preserves: A, Y, ZP.TOP, ZP.NEXT
-    // Uses: ZP.LCURRENT, ZP.LHEADX as temporary workspace
+    // Uses: ZP.LCURRENT, ZP.LHEADX, ZP.LPREVIOUS, ZP.LNEXT as temporary workspace
     Add()
     {
         PHA
         PHX
         PHY
         
-        STX ZP.LHEADX
+        // Save inputs in ZP.Lxx slots
+        STX ZP.LHEADX           // ZP address of list head pointer
         
-        // Read current list head value into LCURRENT
-        LDA 0x00, X
-        STA ZP.LCURRENTL
-        LDA 0x01, X
-        STA ZP.LCURRENTH
+        // 1. Allocate new node
+        Memory.Allocate();      // Returns address in ZP.IDX, probably munts everything except ZP.Lx
         
-        // Allocate memory (size already in ZP.ACC)
-        Memory.Allocate(); // Returns address in IDX, probably munts everything (except ZP.Lx)
-        
-        // Check if allocation succeeded
         LDA ZP.IDXL
         ORA ZP.IDXH
         if (Z)
         {
-            // Allocation failed
-            CLC  // Failure
             PLY
             PLX
             PLA
+            CLC  // Allocation failed
             return;
         }
         
-        // Store old list head in next pointer field of new node
-        LDY #0
-        LDA ZP.LCURRENTL
-        STA [ZP.IDX], Y
-        INY
-        LDA ZP.LCURRENTH
-        STA [ZP.IDX], Y
-        
-        // Update list head to point to new node
-        LDX ZP.LHEADX
         LDA ZP.IDXL
-        STA 0x00, X
+        STA ZP.LCURRENTL        // New node address
         LDA ZP.IDXH
-        STA 0x01, X
+        STA ZP.LCURRENTH
         
-        // Success
-        SEC
+        // New node's next = NULL (it goes at the end)
+        LDY #0
+        LDA #0
+        STA [ZP.LCURRENT], Y
+        INY
+        STA [ZP.LCURRENT], Y
+        
+        // 2. Find insertion point using pointer-to-pointer pattern
+        // Start with address of list head pointer
+        LDX ZP.LHEADX
+        STX ZP.LPREVIOUSL       // Points to insertion location (8-bit ZP address)
+        STZ ZP.LPREVIOUSH       // High byte always 0 for ZP addresses
+        
+        loop
+        {
+            // Check if *LPREVIOUS is NULL (insertion point found)
+            LDA ZP.LPREVIOUSH
+            if (Z)
+            {
+                // Zero page address - use ZP addressing
+                LDX ZP.LPREVIOUSL
+                LDA 0x00, X             // Get low byte of pointer
+                STA ZP.LNEXTL
+                LDA 0x01, X             // Get high byte of pointer
+                STA ZP.LNEXTH
+            }
+            else
+            {
+                // Memory address - use indirect addressing
+                LDY #0
+                LDA [ZP.LPREVIOUS], Y
+                STA ZP.LNEXTL
+                INY
+                LDA [ZP.LPREVIOUS], Y
+                STA ZP.LNEXTH
+            }
+            
+            LDA ZP.LNEXTL
+            ORA ZP.LNEXTH
+            if (Z) { break; }        // Found insertion point
+            
+            // LPREVIOUS = &(LNEXT->next)
+            // Since LNEXT is a node address, its next field is at offset 0
+            LDA ZP.LNEXTL
+            STA ZP.LPREVIOUSL       // Low byte of next field address
+            LDA ZP.LNEXTH  
+            STA ZP.LPREVIOUSH       // High byte of next field address
+        }
+        
+        // 3. Insert: *LPREVIOUS = LCURRENT
+        LDA ZP.LPREVIOUSH
+        if (Z)
+        {
+            // Zero page address - use ZP addressing
+            LDX ZP.LPREVIOUSL
+            LDA ZP.LCURRENTL
+            STA 0x00, X
+            LDA ZP.LCURRENTH
+            STA 0x01, X
+        }
+        else
+        {
+            // Regular memory address - use indirect addressing
+            LDY #0
+            LDA ZP.LCURRENTL
+            STA [ZP.LPREVIOUS], Y
+            INY
+            LDA ZP.LCURRENTH
+            STA [ZP.LPREVIOUS], Y
+        }
+        
+        // Restore new node address for return
+        LDA ZP.LCURRENTL
+        STA ZP.IDXL
+        LDA ZP.LCURRENTH
+        STA ZP.IDXH
+        
         PLY
         PLX
         PLA
+        SEC  // Success
     }
     
     // Delete specific node from list
