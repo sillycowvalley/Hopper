@@ -13,6 +13,24 @@ unit TestVariables
     const string testName5 = "CONST1";
     const string testName6 = "INVALID";
     
+    // Allocate test token memory block
+    // Returns address in ZP.SymbolTemp0/1 for use with Variables.Declare()
+    // MUST be called early before other variables are set up!
+    allocateTestTokens()
+    {
+        // Allocate 16 bytes for test token data
+        LDA #16
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        Memory.Allocate();  // Returns address in ZP.IDX, munts everything
+        
+        // Store result in dedicated temporary slots
+        LDA ZP.IDXL
+        STA ZP.SymbolTemp0
+        LDA ZP.IDXH
+        STA ZP.SymbolTemp1
+    }
+    
     // Variables test descriptions
     const string variablesDesc1 = "Variables initialize";
     const string variablesDesc2 = "Declare INT variable";
@@ -34,23 +52,6 @@ unit TestVariables
     const string variablesDesc18 = "Type filtering in Find";
     const string variablesDesc19 = "Variables clear all";
     
-    // Allocate test token memory block
-    // Returns address in ZP.IDY for use with Variables.Declare()
-    allocateTestTokens()
-    {
-        // Allocate 16 bytes for test token data
-        LDA #16
-        STA ZP.ACCL
-        STZ ZP.ACCH
-        Memory.Allocate();  // Returns address in ZP.IDX
-        
-        // Copy to ZP.IDY for Variables.Declare() interface
-        LDA ZP.IDXL
-        STA ZP.IDYL
-        LDA ZP.IDXH
-        STA ZP.IDYH
-    }
-    
     // Test 14: Variables initialize
     testVariablesInit()
     {
@@ -68,7 +69,7 @@ unit TestVariables
         ORA ZP.SymbolListH
         if (Z)
         {
-            SEC  // Pass
+            SEC  // Pass - already empty, no cleanup needed
         }
         else
         {
@@ -88,6 +89,9 @@ unit TestVariables
         STA ZP.TOPH
         Test.PrintTestHeader();
         
+        // Allocate test tokens FIRST
+        allocateTestTokens();  // Result in ZP.SymbolTemp0/1
+        
         Variables.Initialize();
         
         // Declare INT variable "COUNT" = 42
@@ -104,14 +108,17 @@ unit TestVariables
         STA ZP.NEXTL
         STZ ZP.NEXTH
         
-        // Allocate test tokens
-        allocateTestTokens();  // Result in ZP.IDY
+        // Copy tokens pointer from temporary storage
+        LDA ZP.SymbolTemp0
+        STA ZP.IDYL
+        LDA ZP.SymbolTemp1
+        STA ZP.IDYH
         
         Variables.Declare();
         
         if (C)
         {
-            Objects.Destroy();  // Clean up
+            Variables.Clear();  // Clean up
             SEC  // Pass
         }
         else
@@ -132,6 +139,9 @@ unit TestVariables
         STA ZP.TOPH
         Test.PrintTestHeader();
         
+        // Allocate test tokens FIRST
+        allocateTestTokens();  // Result in ZP.SymbolTemp0/1
+        
         Variables.Initialize();
         
         // Declare WORD constant "CONST1" = 1000
@@ -149,14 +159,17 @@ unit TestVariables
         LDA #(1000 / 256)
         STA ZP.NEXTH
         
-        // Allocate test tokens
-        allocateTestTokens();  // Result in ZP.IDY
+        // Copy tokens pointer from temporary storage
+        LDA ZP.SymbolTemp0
+        STA ZP.IDYL
+        LDA ZP.SymbolTemp1
+        STA ZP.IDYH
         
         Variables.Declare();
         
         if (C)
         {
-            Objects.Destroy();  // Clean up
+            Variables.Clear();  // Clean up
             SEC  // Pass
         }
         else
@@ -206,7 +219,7 @@ unit TestVariables
         
         if (C)
         {
-            Objects.Destroy();  // Clean up
+            Variables.Clear();  // Clean up
             SEC  // Pass
         }
         else
@@ -285,7 +298,7 @@ unit TestVariables
             return;
         }
         
-        Objects.Destroy();  // Clean up
+        Variables.Clear();  // Clean up
         SEC  // Pass
         Test.PrintResult();
     }
@@ -346,7 +359,7 @@ unit TestVariables
             return;
         }
         
-        Objects.Destroy();  // Clean up
+        Variables.Clear();  // Clean up
         SEC  // Pass
         Test.PrintResult();
     }
@@ -395,7 +408,7 @@ unit TestVariables
             return;
         }
         
-        Objects.Destroy();  // Clean up
+        Variables.Clear();  // Clean up
         SEC  // Pass (correctly failed)
         Test.PrintResult();
     }
@@ -409,6 +422,9 @@ unit TestVariables
         LDA #(variablesDesc12 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
+        
+        // Allocate test tokens FIRST and save for later comparison
+        allocateTestTokens();  // Result in ZP.SymbolTemp0/1
         
         Variables.Initialize();
         
@@ -425,12 +441,11 @@ unit TestVariables
         LDA #(300 / 256)
         STA ZP.NEXTH
         
-        // Allocate test tokens and save address for comparison
-        allocateTestTokens();  // Result in ZP.IDY
-        LDA ZP.IDYL
-        STA 0x7A  // Temporary storage
-        LDA ZP.IDYH
-        STA 0x7B
+        // Copy tokens pointer from temporary storage
+        LDA ZP.SymbolTemp0
+        STA ZP.IDYL
+        LDA ZP.SymbolTemp1
+        STA ZP.IDYH
         
         Variables.Declare();
         
@@ -441,7 +456,7 @@ unit TestVariables
         
         // Check tokens pointer matches allocated address
         LDA ZP.NEXTL
-        CMP 0x7A
+        CMP ZP.SymbolTemp0
         if (NZ)
         {
             LDA #0x80
@@ -451,7 +466,7 @@ unit TestVariables
         }
         
         LDA ZP.NEXTH
-        CMP 0x7B
+        CMP ZP.SymbolTemp1
         if (NZ)
         {
             LDA #0x81
@@ -460,7 +475,7 @@ unit TestVariables
             return;
         }
         
-        Objects.Destroy();  // Clean up
+        Variables.Clear();  // Clean up
         SEC  // Pass
         Test.PrintResult();
     }
@@ -539,7 +554,7 @@ unit TestVariables
             return;
         }
         
-        Objects.Destroy();  // Clean up
+        Variables.Clear();  // Clean up
         SEC  // Pass
         Test.PrintResult();
     }

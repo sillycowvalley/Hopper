@@ -78,6 +78,9 @@ unit TestTable
         ORA ZP.IDXH
         if (NZ)
         {
+            // Clean up before success
+            LDX #Test.TableHeadLocation
+            Table.Clear();
             SEC  // Pass
         }
         else
@@ -177,6 +180,9 @@ unit TestTable
             return;
         }
         
+        // Clean up before success
+        LDX #Test.TableHeadLocation
+        Table.Clear();
         SEC  // Pass
         Test.PrintResult();
     }
@@ -237,6 +243,9 @@ unit TestTable
         CPY #3
         if (Z)
         {
+            // Clean up before success
+            LDX #Test.TableHeadLocation
+            Table.Clear();
             SEC  // Pass
         }
         else
@@ -303,6 +312,9 @@ unit TestTable
             return;
         }
         
+        // Clean up before success
+        LDX #Test.TableHeadLocation
+        Table.Clear();
         SEC  // Pass
         Test.PrintResult();
     }
@@ -345,7 +357,7 @@ unit TestTable
         ORA Test.TableHeadLocationH
         if (Z)
         {
-            SEC  // Pass
+            SEC  // Pass - already clean, no additional cleanup needed
         }
         else
         {

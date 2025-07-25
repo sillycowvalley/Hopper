@@ -12,20 +12,21 @@ unit TestObjects
     const string testName5 = "CONST1";
     
     // Allocate test token memory block
-    // Returns address in ZP.IDY for use with Objects.Add()
+    // Returns address in ZP.SymbolTemp0/1 for use with Objects.Add()
+    // MUST be called early before other variables are set up!
     allocateTestTokens()
     {
         // Allocate 16 bytes for test token data
         LDA #16
         STA ZP.ACCL
         STZ ZP.ACCH
-        Memory.Allocate();  // Returns address in ZP.IDX
+        Memory.Allocate();  // Returns address in ZP.IDX, munts everything
         
-        // Copy to ZP.IDY for Objects.Add() interface
+        // Store result in dedicated temporary slots
         LDA ZP.IDXL
-        STA ZP.IDYL
+        STA ZP.SymbolTemp0
         LDA ZP.IDXH
-        STA ZP.IDYH
+        STA ZP.SymbolTemp1
     }
     
     // Objects test descriptions
@@ -53,8 +54,7 @@ unit TestObjects
         ORA ZP.SymbolListH
         if (Z)
         {
-            Objects.Destroy();
-            SEC  // Pass
+            SEC  // Pass - already empty, no cleanup needed
         }
         else
         {
@@ -74,6 +74,9 @@ unit TestObjects
         STA ZP.TOPH
         Test.PrintTestHeader();
         
+        // Allocate test tokens FIRST (before setting up other variables)
+        allocateTestTokens();  // Result in ZP.SymbolTemp0/1
+        
         Objects.Initialize();
         
         // Add INT variable "COUNT" = 42 with tokens pointer
@@ -91,15 +94,18 @@ unit TestObjects
         STA ZP.NEXTL
         STZ ZP.NEXTH
         
-        // Allocate test tokens
-        allocateTestTokens();  // Result in ZP.IDY
+        // Copy tokens pointer from temporary storage
+        LDA ZP.SymbolTemp0
+        STA ZP.IDYL
+        LDA ZP.SymbolTemp1
+        STA ZP.IDYH
         
         Objects.Add();
         
         // Should succeed (C set)
         if (C)
         {
-            Objects.Destroy();
+            Objects.Destroy();  // Clean up
             SEC  // Pass
         }
         else
@@ -120,6 +126,9 @@ unit TestObjects
         STA ZP.TOPH
         Test.PrintTestHeader();
         
+        // Allocate test tokens FIRST
+        allocateTestTokens();  // Result in ZP.SymbolTemp0/1
+        
         Objects.Initialize();
         
         // Add BIT variable "FLAG" = 1
@@ -136,8 +145,11 @@ unit TestObjects
         STA ZP.NEXTL
         STZ ZP.NEXTH
         
-        // Allocate test tokens
-        allocateTestTokens();  // Result in ZP.IDY
+        // Copy tokens pointer from temporary storage
+        LDA ZP.SymbolTemp0
+        STA ZP.IDYL
+        LDA ZP.SymbolTemp1
+        STA ZP.IDYH
         
         Objects.Add();
         
@@ -152,7 +164,7 @@ unit TestObjects
         // Should find it (C set)
         if (C)
         {
-            Objects.Destroy();
+            Objects.Destroy();  // Clean up
             SEC  // Pass
         }
         else
@@ -173,6 +185,9 @@ unit TestObjects
         STA ZP.TOPH
         Test.PrintTestHeader();
         
+        // Allocate test tokens FIRST and save for later comparison
+        allocateTestTokens();  // Result in ZP.SymbolTemp0/1
+        
         Objects.Initialize();
         
         // Add WORD variable "VAR1" = 1000
@@ -190,14 +205,11 @@ unit TestObjects
         LDA #(1000 / 256)
         STA ZP.NEXTH
         
-        // Allocate test tokens
-        allocateTestTokens();  // Result in ZP.IDY
-        
-        // Save tokens pointer for later comparison
-        LDA ZP.IDYL
-        STA 0x7A  // Temporary storage
-        LDA ZP.IDYH
-        STA 0x7B
+        // Copy tokens pointer from temporary storage
+        LDA ZP.SymbolTemp0
+        STA ZP.IDYL
+        LDA ZP.SymbolTemp1
+        STA ZP.IDYH
         
         Objects.Add();
         
@@ -247,7 +259,7 @@ unit TestObjects
         
         // Check tokens pointer (should match allocated address)
         LDA ZP.IDYL
-        CMP 0x7A  // Compare with saved address
+        CMP ZP.SymbolTemp0  // Compare with saved address
         if (NZ)
         {
             LDA #0x44
@@ -256,7 +268,7 @@ unit TestObjects
             return;
         }
         LDA ZP.IDYH
-        CMP 0x7B
+        CMP ZP.SymbolTemp1
         if (NZ)
         {
             LDA #0x45
@@ -265,7 +277,7 @@ unit TestObjects
             return;
         }
         
-        Objects.Destroy();
+        Objects.Destroy();  // Clean up
         SEC  // Pass
         Test.PrintResult();
     }
@@ -279,6 +291,9 @@ unit TestObjects
         LDA #(objectsDesc5 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
+        
+        // Allocate test tokens FIRST
+        allocateTestTokens();  // Result in ZP.SymbolTemp0/1
         
         Objects.Initialize();
         
@@ -296,8 +311,11 @@ unit TestObjects
         STA ZP.NEXTL
         STZ ZP.NEXTH
         
-        // Allocate test tokens
-        allocateTestTokens();  // Result in ZP.IDY
+        // Copy tokens pointer from temporary storage
+        LDA ZP.SymbolTemp0
+        STA ZP.IDYL
+        LDA ZP.SymbolTemp1
+        STA ZP.IDYH
         
         Objects.Add();
         Objects.Find();
@@ -328,7 +346,7 @@ unit TestObjects
             return;
         }
         
-        Objects.Destroy();        
+        Objects.Destroy();  // Clean up
         SEC  // Pass
         Test.PrintResult();
     }
@@ -399,7 +417,8 @@ unit TestObjects
             Test.PrintResult();
             return;
         }
-        Objects.Destroy();
+        
+        Objects.Destroy();  // Clean up
         SEC  // Pass
         Test.PrintResult();
     }
@@ -447,7 +466,7 @@ unit TestObjects
         ORA ZP.SymbolListH
         if (Z)
         {
-            SEC  // Pass
+            SEC  // Pass - already clean, no additional cleanup needed
         }
         else
         {

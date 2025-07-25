@@ -16,6 +16,7 @@ program Test
     uses "Table"
     uses "Objects"
     uses "Variables"
+    uses "Functions"
     uses "BasicTypes"
     uses "Tools"
     
@@ -23,6 +24,7 @@ program Test
     uses "TestObjects"
     uses "TestVariables"
     uses "TestConstants"
+    //uses "TestFunctions"
     
     // Test Table head locations
     const byte TableHeadLocation  = 0x3C;
@@ -41,6 +43,7 @@ program Test
     const string objectsSection = "\n--- OBJECTS LAYER TESTS ---\n";
     const string variablesSection = "\n--- VARIABLES LAYER TESTS ---\n";
     const string constantsSection = "\n--- CONSTANTS LAYER TESTS ---\n";
+    const string functionsSection = "\n--- FUNCTION LAYER TESTS ---\n";
     
     // Print null-terminated string using ZP.IDX
     PrintString()
@@ -52,36 +55,6 @@ program Test
             if (Z) { break; }
             Serial.WriteChar();
             INY
-        }
-    }
-    
-    // Print test result
-    // Input: C set = pass, C clear = fail, A = failure code (if failing)
-    PrintResult()
-    {
-        if (C)
-        {
-            LDA #(testPassed % 256)
-            STA ZP.IDXL
-            LDA #(testPassed / 256)
-            STA ZP.IDXH
-            PrintString();
-        }
-        else
-        {
-            PHA  // Save failure code
-            LDA #(testFailed % 256)
-            STA ZP.IDXL
-            LDA #(testFailed / 256)
-            STA ZP.IDXH
-            PrintString();
-            
-            PLA  // Restore failure code
-            Serial.HexOut();
-            LDA #'\n'
-            Serial.WriteChar();
-            Tools.DumpHeap();
-            loop { }
         }
     }
     
@@ -102,6 +75,8 @@ program Test
         PrintString();
         LDA #' '
         Serial.WriteChar();
+        
+        StartMemoryTest();
     }
     
     // Print section header
@@ -113,6 +88,126 @@ program Test
         LDA ZP.TOPH
         STA ZP.IDXH
         PrintString();
+    }
+    
+    // Start memory leak test - call at beginning of each test
+    // Pushes current available memory to hardware stack for later comparison
+    StartMemoryTest()
+    {
+        // Get current available memory
+        Memory.Available();  // Pushes available memory (UInt) to stack
+        Stacks.PopTop();     // Pop into TOP
+        
+        // Push low byte then high byte to hardware stack
+        LDA ZP.TOPL
+        STA ZP.TARGET0
+        LDA ZP.TOPH
+        STA ZP.TARGET1
+    }
+    
+    // End memory leak test - call at end of each test  
+    // Pops expected memory and compares to current memory
+    // Input: C set = test passed, NC clear = test failed, A = failure code (if failing)
+    // Output: C set = no leak, NC clear = memory leak detected, A = 0xFF if leak
+    EndMemoryTest()
+    {
+        if (NC)
+        {
+            return; // prioritize test failures over memory leaks    
+        }
+        
+        // Get current available memory
+        Memory.Available();  // Pushes available memory (UInt) to stack
+        Stacks.PopTop();     // Pop into TOP (current memory)
+                
+        // Compare current memory (TOP) with expected memory (TARGET)
+        LDA ZP.TOPL
+        CMP ZP.TARGET0
+        if (NZ)
+        {
+            // Memory leak detected
+            LDA #0xFF  // Memory leak failure code
+            CLC  // Memory leak detected
+            return;
+        }
+        
+        LDA ZP.TOPH
+        CMP ZP.TARGET1
+        if (NZ)
+        {
+            // Memory leak detected
+            LDA #0xFF  // Memory leak failure code  
+            CLC  // Memory leak detected
+            return;
+        }
+        SEC // no memory leak
+    }
+
+    // Print test result
+    // Input: C set = pass, NC clear = fail, A = failure code (if failing)
+    PrintResult()
+    {
+        // Check for memory leaks first
+        EndMemoryTest();
+        
+        if (C)
+        {
+            LDA #(testPassed % 256)
+            STA ZP.IDXL
+            LDA #(testPassed / 256)
+            STA ZP.IDXH
+            PrintString();
+        }
+        else
+        {
+            PHA  // Save failure code
+            
+            // Check if this is a memory leak
+            CMP #0xFF
+            if (Z)
+            {
+                LDA #(testFailed % 256)
+                STA ZP.IDXL
+                LDA #(testFailed / 256)
+                STA ZP.IDXH
+                PrintString();
+                
+                LDA #'M'
+                Serial.WriteChar();
+                LDA #'E'
+                Serial.WriteChar();
+                LDA #'M'
+                Serial.WriteChar();
+                LDA #'L'
+                Serial.WriteChar();
+                LDA #'E'
+                Serial.WriteChar();
+                LDA #'A'
+                Serial.WriteChar();
+                LDA #'K'
+                Serial.WriteChar();
+                LDA #'\n'
+                Serial.WriteChar();
+            }
+            else
+            {
+                LDA #(testFailed % 256)
+                STA ZP.IDXL
+                LDA #(testFailed / 256)
+                STA ZP.IDXH
+                PrintString();
+                
+                PLA  // Restore failure code
+                Serial.HexOut();
+                PHA  // Save it again
+                LDA #'\n'
+                Serial.WriteChar();
+            }
+            
+            PLA  // Clean up failure code
+            Tools.DumpHeap();
+            loop { }
+        }
     }
     
     // Initialize test environment
@@ -169,6 +264,16 @@ program Test
         STA ZP.TOPH
         PrintSectionHeader();
         TestConstants.RunConstantsTests();
+        
+        /*
+        // Function layer tests
+        LDA #(functionsSection % 256)
+        STA ZP.TOPL
+        LDA #(functionsSection / 256)
+        STA ZP.TOPH
+        PrintSectionHeader();
+        TestFunctions.RunFunctionsTests();
+        */
         
         LDA #(testComplete % 256)
         STA ZP.IDXL

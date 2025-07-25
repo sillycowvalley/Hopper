@@ -153,9 +153,11 @@ unit ZP
     const byte SymbolTokens         = 0x78;  // Storage for symbol tokens pointer
     const byte SymbolTokensL        = 0x78;
     const byte SymbolTokensH        = 0x79;
+    const byte SymbolTemp0          = 0x7A;
+    const byte SymbolTemp1          = 0x7B;
     
-    // === AVAILABLE SYMBOLS (0x7A-0x7F) ===
-    // 5 bytes available for additional symbol table features (0x7B-0x7F)
+    // === AVAILABLE SYMBOLS (0x7C-0x7F) ===
+    // 3 bytes available for additional symbol table features (0x7B-0x7F)
     
 #endif
 
