@@ -193,20 +193,111 @@ I'll perform a thorough analysis of the test coverage by examining each layer's 
 - **Arguments Layer**: 95% coverage - nearly complete!
 - **Variables Layer**: 75% coverage - missing some methods
 
-### Missing Test Coverage
+## Missing Test Coverage
 
 **Variables Layer Gaps:**
-1. BYTE type declarations
-2. GetName() method
-3. Remove() method (only tested for constants)
-4. IterateAll() method
-5. Direct GetType() testing
+1. **BYTE type declarations** - Variables.Declare() with BYTE type never tested
+2. **Variables.GetName()** - Method exists but never directly tested
+3. **Variables.Remove()** - Only tested for constants, not variables
+4. **Variables.IterateAll()** - Method exists but never tested
+5. **Direct Variables.GetType()** - Only tested indirectly through iteration
 
 **Minor Gaps:**
-1. Arguments.Clear() only tested indirectly
-2. Variables.GetType() only tested indirectly
-3. Memory allocation failure scenarios (deferred - infrastructure limitation)
+1. **Arguments.Clear()** - Only tested indirectly through Functions.Clear()
+2. **Memory allocation failure scenarios** - Deferred due to infrastructure limitations
 
-## Overall Assessment
+## Critical Functional Tests Needed for HopperBASIC
 
-The test coverage is much better than initially documented! The Arguments layer has 95% coverage (not 15% as originally stated). The main gaps are in the Variables layer, which still needs tests for BYTE type declarations, GetName(), Remove(), and IterateAll() methods.
+### 1. **Variable Reassignment After Declaration**
+**Purpose**: Test that global variables can be updated multiple times after initial declaration
+**Methods to test**: Variables.Find(), Variables.SetValue(), Variables.GetValue()
+**Test scenario**:
+- Declare INT X = 10
+- Update X = 20 using Variables.SetValue()
+- Update X = 30 using Variables.SetValue()
+- Verify final value is 30
+
+### 2. **CLEAR Command Implementation**
+**Purpose**: Test resetting variables to type defaults while preserving declarations
+**Methods to test**: Variables.IterateVariables(), Variables.SetValue(), Variables.GetType()
+**Test scenario**:
+- Declare INT X = 10, WORD Y = 100, BIT Z = 1
+- Declare CONST PI = 314
+- Modify X = 50, Y = 200, Z = 0
+- Implement CLEAR: iterate variables only, reset each to type default (0 for numeric types)
+- Verify X = 0, Y = 0, Z = 0, PI = 314 (unchanged)
+
+### 3. **Forward Function References**
+**Purpose**: Test runtime resolution of function names
+**Methods to test**: Functions.Find() called during token execution
+**Test scenario**:
+- Declare FUNC A() that references FUNC B()
+- Declare FUNC B() after A()
+- Verify Functions.Find("B") succeeds when called from A's context
+
+### 4. **Main Program Storage**
+**Purpose**: Test storing and retrieving BEGIN/END program blocks
+**Methods to test**: Functions.Declare() with special name, Functions.Find()
+**Test scenario**:
+- Store main program as special function (e.g., "!MAIN")
+- Verify Functions.Find("!MAIN") retrieves it
+- Verify it can be distinguished from user functions
+
+### 5. **FORGET Command Integration**
+**Purpose**: Test complete removal of symbols and their resources
+**Methods to test**: Variables.Remove(), Functions.Remove(), memory verification
+**Test scenario**:
+- Declare INT X = 10 with token stream
+- Declare FUNC FOO() with body tokens
+- FORGET X - verify Variables.Remove() frees token memory
+- FORGET FOO - verify Functions.Remove() frees body tokens and Arguments.Clear()
+- Verify no memory leaks
+
+### 6. **Token Memory Lifecycle**
+**Purpose**: Test proper token memory management across operations
+**Methods to test**: Variables.GetTokens(), Functions.GetBody(), Memory.Free()
+**Test scenario**:
+- Declare INT X = 10 (allocate token memory)
+- Verify Variables.GetTokens() returns valid pointer
+- Variables.Remove("X")
+- Verify token memory was freed (no leak)
+- Similar test for function body tokens
+
+### 7. **LIST Command Data Retrieval**
+**Purpose**: Test ability to reconstruct complete program
+**Methods to test**: Variables.IterateAll(), Functions.IterateFunctions(), Arguments.IterateStart()
+**Test scenario**:
+- Declare mixed variables, constants, and functions
+- Iterate all symbols in declaration order
+- For each function, retrieve signature via Functions.GetSignature()
+- For each function, iterate arguments via Arguments.IterateStart()/IterateNext()
+- Verify all data needed for LIST output is accessible
+
+### 8. **Symbol Table Serialization Readiness**
+**Purpose**: Test preparation for SAVE/LOAD commands
+**Methods to test**: All iteration methods, Objects.GetData(), memory layout verification
+**Test scenario**:
+- Create complex program state with variables, constants, functions
+- Verify consistent iteration order across multiple passes
+- Verify all token streams are accessible and contiguous
+- Calculate total memory footprint for serialization
+
+### 9. **Mixed Global Symbol Usage**
+**Purpose**: Test using multiple global symbols in expressions
+**Methods to test**: Variables.Find() with mixed types
+**Test scenario**:
+- CONST MAX = 100
+- INT COUNT = 0
+- Within function tokens, reference both MAX and COUNT
+- Verify both can be found and values retrieved correctly
+
+### 10. **Duplicate Declaration Protection**
+**Purpose**: Test that redeclaration of existing symbols fails appropriately
+**Methods to test**: Variables.Declare(), Functions.Declare() error paths
+**Test scenario**:
+- Declare INT X = 10
+- Attempt to declare INT X = 20 (should fail)
+- Attempt to declare WORD X = 20 (should fail)
+- Verify original X unchanged
+
+These functional tests focus on real HopperBASIC usage patterns rather than edge cases, ensuring the symbol table system supports the actual needs of the BASIC interpreter.
