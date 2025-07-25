@@ -14,6 +14,7 @@ unit TestVariables
     const string testName6 = "INVALID";
     const string testName7 = "BITVAR";
     const string testName8 = "TESTVAR";
+    const string testName9 = "BYTEVAR";
     
     // Allocate test token memory block
     // Returns address in ZP.U5|U6 for use with Variables.Declare()
@@ -48,6 +49,7 @@ unit TestVariables
     const string variablesDesc12 = "Get variable name";
     const string variablesDesc13 = "Iterate all symbols";
     const string variablesDesc14 = "Iterate constants via Variables";
+    const string variablesDesc15 = "Declare BYTE variable";
     
     // Test: Declare INT variable
     testDeclareIntVariable()
@@ -503,7 +505,7 @@ unit TestVariables
         Test.PrintResult();
     }
     
-    // NEW TEST: Declare BIT variable
+    // Test: Declare BIT variable
     testDeclareBitVariable()
     {
         LDA #(variablesDesc9 % 256)
@@ -550,7 +552,7 @@ unit TestVariables
         Test.PrintResult();
     }
     
-    // NEW TEST: Remove variable
+    // Test: Remove variable
     testRemoveVariable()
     {
         LDA #(variablesDesc10 % 256)
@@ -615,7 +617,7 @@ unit TestVariables
         Test.PrintResult();
     }
     
-    // NEW TEST: Get variable type
+    // Test: Get variable type
     testGetVariableType()
     {
         LDA #(variablesDesc11 % 256)
@@ -690,7 +692,7 @@ unit TestVariables
         Test.PrintResult();
     }
     
-    // NEW TEST: Get variable name
+    // Test: Get variable name
     testGetVariableName()
     {
         LDA #(variablesDesc12 % 256)
@@ -758,7 +760,7 @@ unit TestVariables
         Test.PrintResult();
     }
     
-    // NEW TEST: Iterate all symbols
+    // Test: Iterate all symbols
     testIterateAllSymbols()
     {
         LDA #(variablesDesc13 % 256)
@@ -829,7 +831,7 @@ unit TestVariables
         Test.PrintResult();
     }
     
-    // NEW TEST: Iterate constants via Variables interface
+    // Test: Iterate constants via Variables interface
     testIterateConstants()
     {
         LDA #(variablesDesc14 % 256)
@@ -905,6 +907,99 @@ unit TestVariables
         Test.PrintResult();
     }
     
+    // NEW TEST: Declare BYTE variable - addresses the main gap
+    testDeclareByteVariable()
+    {
+        LDA #(variablesDesc15 % 256)
+        STA ZP.TOPL
+        LDA #(variablesDesc15 / 256)
+        STA ZP.TOPH
+        Test.PrintTestHeader();
+        
+        // Allocate test tokens FIRST
+        allocateTestTokens();  // Result in ZP.U5|U6
+        
+        // Declare BYTE variable "BYTEVAR" = 255 (max BYTE value)
+        LDA #(testName9 % 256)
+        STA ZP.TOPL
+        LDA #(testName9 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.BYTE)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        LDA #255  // Max BYTE value
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        
+        // Copy tokens pointer from temporary storage
+        LDA ZP.U5
+        STA ZP.IDYL
+        LDA ZP.U6
+        STA ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x10
+            CLC  // Fail - declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Find the variable and verify its properties
+        STZ ZP.ACCL  // Any type
+        Variables.Find();
+        if (NC)
+        {
+            LDA #0x11
+            CLC  // Fail - not found after declaration
+            Test.PrintResult();
+            return;
+        }
+        
+        // Check type
+        Variables.GetType();
+        LDA ZP.ACCL
+        AND #0x0F  // Extract data type
+        CMP #BasicType.BYTE
+        if (NZ)
+        {
+            LDA #0x12
+            CLC  // Fail - wrong data type
+            Test.PrintResult();
+            return;
+        }
+        
+        // Check value
+        Variables.GetValue();
+        LDA ZP.TOPL
+        CMP #255
+        if (NZ)
+        {
+            LDA #0x13
+            CLC  // Fail - wrong value
+            Test.PrintResult();
+            return;
+        }
+        
+        // Check that type returned by GetValue matches
+        LDA ZP.TOPT
+        CMP #BasicType.BYTE
+        if (NZ)
+        {
+            LDA #0x14
+            CLC  // Fail - GetValue returned wrong type
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.Clear();  // Clean up
+        SEC  // Pass
+        Test.PrintResult();
+    }
+    
     // Run all variables tests
     RunVariablesTests()
     {
@@ -922,5 +1017,6 @@ unit TestVariables
         testGetVariableName();
         testIterateAllSymbols();
         testIterateConstants();
+        testDeclareByteVariable();  // NEW - addresses the BYTE type gap
     }
 }
