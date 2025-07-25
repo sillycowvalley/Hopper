@@ -2,15 +2,14 @@ unit Arguments
 {
     uses "/Source/Runtime/6502/ZeroPage"
     uses "/Source/Runtime/6502/Memory"
-    uses "Table"
     uses "BasicTypes"
     uses "Tools"
     
-    // Argument table management - independent of Functions unit
-    // Arguments use simplified node structure optimized for argument data
+    // Argument table management - arguments list head stored directly in function node
+    // No separate "table head storage" - function node field points directly to first argument
     
     // Argument Node Structure:
-    // Offset 0-1: next pointer (managed by Table unit)
+    // Offset 0-1: next pointer
     // Offset 2:   argument type (BasicType.INT, WORD, BIT, etc.)
     // Offset 3+:  null-terminated argument name
     
@@ -18,38 +17,9 @@ unit Arguments
     const byte argTypeOffset = 2;   // Offset to argument type field
     const byte argNameOffset = 3;   // Offset to name field in argument node
     
-    // Create new arguments table
-    // Output: ZP.IDX = arguments table head address, C set if successful
-    Create()
-    {
-        // Allocate space for table head pointer (2 bytes)
-        LDA #2
-        STA ZP.ACCL
-        STZ ZP.ACCH
-        
-        Memory.Allocate();  // Returns address in ZP.IDX
-        
-        LDA ZP.IDXL
-        ORA ZP.IDXH
-        if (Z)
-        {
-            CLC  // Allocation failed
-            return;
-        }
-        
-        // Initialize table head to empty (0x0000)
-        LDY #0
-        LDA #0
-        STA [ZP.IDX], Y
-        INY
-        STA [ZP.IDX], Y
-        
-        SEC  // Success
-    }
-    
-    // Add argument to arguments table
-    // Input: ZP.IDX = arguments table head address, ZP.TOP = argument name, ZP.ACCL = argument type
-    // Output: C set if successful, argument added to table
+    // Add argument to function's arguments list
+    // Input: ZP.IDX = function node address, ZP.TOP = argument name, ZP.ACCL = argument type
+    // Output: C set if successful, argument added to function's list
     Add()
     {
         PHA
@@ -58,35 +28,66 @@ unit Arguments
         
         // Save input parameters
         LDA ZP.ACCL
-        STA ZP.SymbolType     // Reuse for argument type
+        STA ZP.SymbolType     // Argument type
         
         LDA ZP.TOPL
-        STA ZP.SymbolNameL
+        STA ZP.SymbolNameL    // Argument name pointer
         LDA ZP.TOPH
         STA ZP.SymbolNameH
         
-        // Save table head address
         LDA ZP.IDXL
-        STA ZP.SymbolTokensL  // Reuse for table head
+        STA ZP.SymbolTemp0    // Function node address
         LDA ZP.IDXH
-        STA ZP.SymbolTokensH
+        STA ZP.SymbolTemp1
         
         // Calculate argument node size
         calculateArgumentNodeSize();  // Returns size in ZP.ACC, sets ZP.SymbolLength
         
-        // Add to arguments table
-        LDX #ZP.SymbolTokens  // Address of table head pointer
-        Table.Add();  // Returns new node in IDX, C set if successful
-        if (NC)  // Allocation failed
+        // Allocate new argument node
+        Memory.Allocate();  // Returns address in ZP.IDX
+        
+        LDA ZP.IDXL
+        ORA ZP.IDXH
+        if (Z)
         {
             PLY
             PLX
             PLA
-            return;  // C already clear
+            CLC  // Allocation failed
+            return;
         }
         
         // Initialize the new argument node
         initializeArgumentNode();
+        
+        // Get current arguments list head from function node (offset 3-4)
+        LDA ZP.SymbolTemp0
+        STA ZP.LHEADL
+        LDA ZP.SymbolTemp1
+        STA ZP.LHEADH
+        
+        LDY #3  // Arguments field offset in function node
+        LDA [ZP.LHEAD], Y
+        STA ZP.LCURRENTL  // Current first argument
+        INY
+        LDA [ZP.LHEAD], Y
+        STA ZP.LCURRENTH
+        
+        // Set new node's next pointer to current first argument
+        LDY #0
+        LDA ZP.LCURRENTL
+        STA [ZP.IDX], Y
+        INY
+        LDA ZP.LCURRENTH
+        STA [ZP.IDX], Y
+        
+        // Update function node's arguments field to point to new node
+        LDY #3
+        LDA ZP.IDXL
+        STA [ZP.LHEAD], Y
+        INY
+        LDA ZP.IDXH
+        STA [ZP.LHEAD], Y
         
         PLY
         PLX
@@ -94,8 +95,8 @@ unit Arguments
         SEC  // Success
     }
     
-    // Find argument by name in arguments table
-    // Input: ZP.IDX = arguments table head address, ZP.TOP = argument name
+    // Find argument by name in function's arguments list
+    // Input: ZP.IDX = function node address, ZP.TOP = argument name
     // Output: ZP.IDY = argument node address, ZP.ACCL = argument index, C set if found
     Find()
     {
@@ -103,23 +104,21 @@ unit Arguments
         PHX
         PHY
         
-        // Save table head address
-        LDA ZP.IDXL
-        STA ZP.SymbolTokensL
-        LDA ZP.IDXH
-        STA ZP.SymbolTokensH
-        
-        // Start iteration through arguments table
-        LDX #ZP.SymbolTokens
-        Table.GetFirst();  // Returns first argument node in IDX
+        // Get arguments list head from function node (offset 3-4)
+        LDY #3
+        LDA [ZP.IDX], Y
+        STA ZP.LCURRENTL
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.LCURRENTH
         
         STZ ZP.ACCL  // Argument index counter
         
         loop
         {
             // Check if we've reached end of list
-            LDA ZP.IDXL
-            ORA ZP.IDXH
+            LDA ZP.LCURRENTL
+            ORA ZP.LCURRENTH
             if (Z)
             {
                 PLY
@@ -134,9 +133,9 @@ unit Arguments
             if (Z)  // Names match
             {
                 // Copy node address to IDY
-                LDA ZP.IDXL
+                LDA ZP.LCURRENTL
                 STA ZP.IDYL
-                LDA ZP.IDXH
+                LDA ZP.LCURRENTH
                 STA ZP.IDYH
                 
                 PLY
@@ -147,8 +146,19 @@ unit Arguments
             }
             
             // Move to next argument
-            Table.GetNext();  // Updates IDX
-            INC ZP.ACCL       // Increment argument index
+            LDA ZP.LCURRENTL
+            STA ZP.IDXL
+            LDA ZP.LCURRENTH
+            STA ZP.IDXH
+            
+            LDY #0
+            LDA [ZP.IDX], Y
+            STA ZP.LCURRENTL
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.LCURRENTH
+            
+            INC ZP.ACCL  // Increment argument index
         }
     }
     
@@ -178,7 +188,7 @@ unit Arguments
     }
     
     // Find argument by index (for BP offset calculation)
-    // Input: ZP.IDX = arguments table head address, ZP.ACCL = argument index
+    // Input: ZP.IDX = function node address, ZP.ACCL = argument index
     // Output: ZP.IDY = argument node address, C set if found
     FindByIndex()
     {
@@ -188,19 +198,23 @@ unit Arguments
         
         // Save target index
         LDA ZP.ACCL
-        STA 0x7A  // Temporary storage
+        STA ZP.SymbolTemp0
         
-        // Start iteration
-        LDX #ZP.IDX  // Table head address already in IDX
-        Table.GetFirst();
+        // Get arguments list head from function node
+        LDY #3
+        LDA [ZP.IDX], Y
+        STA ZP.LCURRENTL
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.LCURRENTH
         
         STZ ZP.ACCL  // Current index counter
         
         loop
         {
             // Check if we've reached end of list
-            LDA ZP.IDXL
-            ORA ZP.IDXH
+            LDA ZP.LCURRENTL
+            ORA ZP.LCURRENTH
             if (Z)
             {
                 PLY
@@ -212,13 +226,13 @@ unit Arguments
             
             // Check if current index matches target
             LDA ZP.ACCL
-            CMP 0x7A
+            CMP ZP.SymbolTemp0
             if (Z)  // Found the target index
             {
                 // Copy node address to IDY
-                LDA ZP.IDXL
+                LDA ZP.LCURRENTL
                 STA ZP.IDYL
-                LDA ZP.IDXH
+                LDA ZP.LCURRENTH
                 STA ZP.IDYH
                 
                 PLY
@@ -229,60 +243,80 @@ unit Arguments
             }
             
             // Move to next argument
-            Table.GetNext();
+            LDA ZP.LCURRENTL
+            STA ZP.IDXL
+            LDA ZP.LCURRENTH
+            STA ZP.IDXH
+            
+            LDY #0
+            LDA [ZP.IDX], Y
+            STA ZP.LCURRENTL
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.LCURRENTH
+            
             INC ZP.ACCL  // Increment current index
         }
     }
     
-    // Get argument count in table
-    // Input: ZP.IDX = arguments table head address
+    // Get argument count in function's arguments list
+    // Input: ZP.IDX = function node address
     // Output: ZP.ACCL = argument count
     GetCount()
     {
         PHA
         PHX
         
-        // Start iteration
-        LDX #ZP.IDX  // Table head address already in IDX
-        Table.GetFirst();
+        // Get arguments list head from function node
+        LDY #3
+        LDA [ZP.IDX], Y
+        STA ZP.LCURRENTL
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.LCURRENTH
         
         STZ ZP.ACCL  // Argument count
         
         loop
         {
             // Check if we've reached end of list
-            LDA ZP.IDXL
-            ORA ZP.IDXH
+            LDA ZP.LCURRENTL
+            ORA ZP.LCURRENTH
             if (Z) { break; }  // End of list
             
             INC ZP.ACCL  // Increment count
-            Table.GetNext();
+            
+            // Move to next argument
+            LDA ZP.LCURRENTL
+            STA ZP.IDXL
+            LDA ZP.LCURRENTH
+            STA ZP.IDXH
+            
+            LDY #0
+            LDA [ZP.IDX], Y
+            STA ZP.LCURRENTL
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.LCURRENTH
         }
         
         PLX
         PLA
     }
     
-    // Start iteration over arguments in table
-    // Input: ZP.IDX = arguments table head address
+    // Start iteration over arguments in function's list
+    // Input: ZP.IDX = function node address
     // Output: ZP.IDY = first argument node, C set if found
     IterateStart()
     {
         PHA
         
-        // Save table head address
-        LDA ZP.IDXL
-        STA ZP.SymbolTokensL
-        LDA ZP.IDXH
-        STA ZP.SymbolTokensH
-        
-        LDX #ZP.SymbolTokens
-        Table.GetFirst();
-        
-        // Copy result to IDY
-        LDA ZP.IDXL
+        // Get arguments list head from function node
+        LDY #3
+        LDA [ZP.IDX], Y
         STA ZP.IDYL
-        LDA ZP.IDXH
+        INY
+        LDA [ZP.IDX], Y
         STA ZP.IDYH
         
         // Set carry based on result
@@ -307,18 +341,18 @@ unit Arguments
     {
         PHA
         
-        // Copy IDY to IDX for Table.GetNext()
-        LDA ZP.IDYL
-        STA ZP.IDXL
-        LDA ZP.IDYH
-        STA ZP.IDXH
+        // Get next pointer from current argument node
+        LDY #0
+        LDA [ZP.IDY], Y
+        STA ZP.LCURRENTL
+        INY
+        LDA [ZP.IDY], Y
+        STA ZP.LCURRENTH
         
-        Table.GetNext();
-        
-        // Copy result back to IDY
-        LDA ZP.IDXL
+        // Copy to IDY
+        LDA ZP.LCURRENTL
         STA ZP.IDYL
-        LDA ZP.IDXH
+        LDA ZP.LCURRENTH
         STA ZP.IDYH
         
         // Set carry based on result
@@ -336,32 +370,77 @@ unit Arguments
         PLA
     }
     
-    // Clear all arguments in table
-    // Input: ZP.IDX = arguments table head address
-    // Output: Empty arguments table
+    // Clear all arguments in function's list
+    // Input: ZP.IDX = function node address
+    // Output: Function's arguments field set to null, all argument nodes freed
     Clear()
     {
-        LDX #ZP.IDX  // Table head address already in IDX
-        Table.Clear();
-    }
-    
-    // Destroy arguments table (free table head storage)
-    // Input: ZP.IDX = arguments table head address
-    // Output: Table head freed
-    Destroy()
-    {
         PHA
+        PHX
+        PHY
         
-        // First clear all arguments
-        Clear();
-        
-        // Then free the table head storage itself
+        // Save function node address
         LDA ZP.IDXL
-        STA ZP.ACCL
+        STA ZP.SymbolTemp0
         LDA ZP.IDXH
-        STA ZP.ACCH
-        Memory.Free();
+        STA ZP.SymbolTemp1
         
+        loop
+        {
+            // Get first argument from function node
+            LDA ZP.SymbolTemp0
+            STA ZP.IDXL
+            LDA ZP.SymbolTemp1
+            STA ZP.IDXH
+            
+            LDY #3
+            LDA [ZP.IDX], Y
+            STA ZP.LCURRENTL
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.LCURRENTH
+            
+            // Check if arguments list is empty
+            LDA ZP.LCURRENTL
+            ORA ZP.LCURRENTH
+            if (Z) { break; }  // No more arguments
+            
+            // Get next pointer from first argument
+            LDA ZP.LCURRENTL
+            STA ZP.IDXL
+            LDA ZP.LCURRENTH
+            STA ZP.IDXH
+            
+            LDY #0
+            LDA [ZP.IDX], Y
+            STA ZP.LNEXTL
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.LNEXTH
+            
+            // Update function node's arguments field to point to second argument
+            LDA ZP.SymbolTemp0
+            STA ZP.IDXL
+            LDA ZP.SymbolTemp1
+            STA ZP.IDXH
+            
+            LDY #3
+            LDA ZP.LNEXTL
+            STA [ZP.IDX], Y
+            INY
+            LDA ZP.LNEXTH
+            STA [ZP.IDX], Y
+            
+            // Free the first argument node
+            LDA ZP.LCURRENTL
+            STA ZP.ACCL
+            LDA ZP.LCURRENTH
+            STA ZP.ACCH
+            Memory.Free();  // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
+        }
+        
+        PLY
+        PLX
         PLA
     }
     
@@ -399,7 +478,7 @@ unit Arguments
     // Internal helper: Initialize fields in newly allocated argument node
     // Input: ZP.IDX = node address, ZP.SymbolType = argument type,
     //        ZP.SymbolName = name pointer, ZP.SymbolLength = name length
-    // Note: Next pointer at offset 0-1 already initialized by Table.Add()
+    // Note: Next pointer will be set by caller
     initializeArgumentNode()
     {
         // Set argument type (offset argTypeOffset)
@@ -440,31 +519,31 @@ unit Arguments
     }
     
     // Internal helper: Compare argument names
-    // Input: ZP.IDX = argument node address, ZP.TOP = target name
+    // Input: ZP.LCURRENT = argument node address, ZP.TOP = target name
     // Output: Z set if equal, NZ if different
     compareArgumentNames()
     {
         // Calculate address of name field in argument node
         CLC
-        LDA ZP.IDXL
+        LDA ZP.LCURRENTL
         ADC #argNameOffset
-        STA 0x7B            // Temporary storage for argument name pointer low
-        LDA ZP.IDXH
+        STA ZP.LPREVIOUSL    // Use LPREVIOUS for argument name pointer
+        LDA ZP.LCURRENTH
         ADC #0
-        STA 0x7C            // Temporary storage for argument name pointer high
+        STA ZP.LPREVIOUSH
         
         // Compare strings
         LDY #0
         loop
         {
-            LDA [ZP.TOP], Y     // Target name character
-            STA 0x7D            // Temporary storage for comparison
-            LDA [0x7B], Y       // Argument name character (using temp pointer)
-            CMP 0x7D            // Compare
-            if (NZ) { return; } // Different characters
+            LDA [ZP.TOP], Y      // Target name character
+            STA ZP.LNEXTL        // Temporary storage for comparison
+            LDA [ZP.LPREVIOUS], Y // Argument name character
+            CMP ZP.LNEXTL        // Compare
+            if (NZ) { return; }  // Different characters
             
             // Check if we hit null terminator
-            if (Z) { return; }  // Both null terminators - strings equal
+            if (Z) { return; }   // Both null terminators - strings equal
             
             INY
         }

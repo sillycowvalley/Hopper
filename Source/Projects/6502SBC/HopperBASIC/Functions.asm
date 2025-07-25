@@ -6,19 +6,18 @@ unit Functions
     uses "BasicTypes"
     uses "Messages"
     
-    // Function management building on Objects foundation with separate Arguments unit
-    // Functions reuse the existing Objects node structure:
+    // Function management building on Objects foundation
+    // Functions use the existing Objects node structure:
     // Offset 0-1: next pointer (managed by Table unit)
     // Offset 2:   symbolType|returnType (FUNCTION | INT/WORD/BIT/etc)
-    // Offset 3-4: arguments table head pointer (reuses value field)
+    // Offset 3-4: arguments list head pointer (points directly to first argument node)
     // Offset 5-6: function body tokens pointer
     // Offset 7+:  null-terminated function name string
     
     // Declare new function
     // Input: ZP.TOP = name pointer, ZP.ACC = FUNCTION|returnType (packed),
-    //        ZP.NEXT = arguments table head pointer, ZP.IDY = function body tokens pointer
+    //        ZP.NEXT = arguments list head pointer, ZP.IDY = function body tokens pointer
     // Output: ZP.IDX = function node address, C set if successful
-    // Note: Arguments table created separately via Arguments.Create()
     Declare()
     {
         PHA
@@ -103,7 +102,7 @@ unit Functions
     
     // Get function signature info
     // Input: ZP.IDX = function node address
-    // Output: ZP.ACCL = returnType, ZP.NEXT = arguments table head, ZP.IDY = function body tokens
+    // Output: ZP.ACCL = returnType, ZP.NEXT = arguments list head, ZP.IDY = function body tokens
     GetSignature()
     {
         Objects.GetData();  // Returns type in ZP.ACC, value in ZP.NEXT, tokens in ZP.IDY
@@ -113,7 +112,7 @@ unit Functions
         AND #0x0F
         STA ZP.ACCL
         
-        // ZP.NEXT already contains arguments table head pointer
+        // ZP.NEXT already contains arguments list head pointer
         // ZP.IDY already contains function body tokens pointer
     }
     
@@ -140,38 +139,38 @@ unit Functions
         STA ZP.TOPH
     }
     
-    // Set arguments table head pointer in function node
-    // Input: ZP.IDX = function node address, ZP.NEXT = arguments table head
+    // Set arguments list head pointer in function node
+    // Input: ZP.IDX = function node address, ZP.NEXT = arguments list head
     // Output: C set if successful
     SetArguments()
     {
-        Objects.SetValue();  // Uses ZP.NEXT to set the value field (which stores arguments table head)
+        Objects.SetValue();  // Uses ZP.NEXT to set the value field (which stores arguments list head)
     }
     
-    // Get arguments table head pointer from function node
+    // Get arguments list head pointer from function node
     // Input: ZP.IDX = function node address
-    // Output: ZP.NEXT = arguments table head pointer, C set if has arguments table
+    // Output: ZP.NEXT = arguments list head pointer, C set if has arguments
     GetArguments()
     {
         Objects.GetData();  // Returns type in ZP.ACC, value in ZP.NEXT, tokens in ZP.IDY
         
-        // Check if arguments table head is non-zero
+        // Check if arguments list head is non-zero
         LDA ZP.NEXTL
         ORA ZP.NEXTH
         if (Z)
         {
-            CLC  // No arguments table
+            CLC  // No arguments
         }
         else
         {
-            SEC  // Has arguments table
+            SEC  // Has arguments
         }
     }
     
     // Remove function by name
     // Input: ZP.TOP = name pointer
     // Output: C set if successful
-    // Note: Caller must clear arguments table first via Arguments.Clear()
+    // Note: This automatically clears all arguments since they're referenced from the function node
     Remove()
     {
         // Find the function first
@@ -181,27 +180,8 @@ unit Functions
             return;  // C already clear
         }
         
-        // Get arguments table head before removing function
-        GetArguments();
-        if (C)  // Has arguments table
-        {
-            // Save arguments table head
-            LDA ZP.NEXTL
-            STA ZP.SymbolTokensL
-            LDA ZP.NEXTH
-            STA ZP.SymbolTokensH
-            
-            // Clear and destroy arguments table
-            LDA ZP.SymbolTokensL
-            STA ZP.IDXL
-            LDA ZP.SymbolTokensH
-            STA ZP.IDXH
-            Arguments.Destroy();
-            
-            // Restore function node address for removal
-            LDX #ZP.FunctionsList
-            Find();  // Find function again since IDX was changed
-        }
+        // Clear all arguments before removing function
+        Arguments.Clear();
         
         // Remove the function
         LDX #ZP.FunctionsList
@@ -228,45 +208,48 @@ unit Functions
     
     // Clear all functions
     // Output: Empty function table
-    // Note: Caller must clear all arguments tables first
+    // Note: This clears all arguments and function body tokens before destroying function nodes
     Clear()
     {
-        // Iterate through all functions and clear their arguments tables
-        IterateFunctions();
+        PHA
+        PHX
+        PHY
         
         loop
         {
+            LDX #ZP.FunctionsList
+            Table.GetFirst();
+        
             if (NC) { break; }  // No more functions
             
-            // Clear arguments table for this function
-            GetArguments();
-            if (C)  // Has arguments table
+            // Clear all arguments for this function
+            Arguments.Clear();
+            
+            // Get function body tokens pointer and free it if non-zero
+            Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
+            
+            LDA ZP.IDYL
+            ORA ZP.IDYH
+            if (NZ)  // Non-zero tokens pointer
             {
-                // Save function node address
-                LDA ZP.IDXL
-                STA ZP.SymbolTokensL
-                LDA ZP.IDXH
-                STA ZP.SymbolTokensH
+                LDA ZP.IDYL
+                STA ZP.ACCL
+                LDA ZP.IDYH
+                STA ZP.ACCH
+                Memory.Free();  // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
                 
-                // Get and destroy arguments table
-                LDA ZP.NEXTL
-                STA ZP.IDXL
-                LDA ZP.NEXTH
-                STA ZP.IDXH
-                Arguments.Destroy();
-                
-                // Restore function node address
-                LDA ZP.SymbolTokensL
-                STA ZP.IDXL
-                LDA ZP.SymbolTokensH
-                STA ZP.IDXH
+                // Re-establish function node address after Memory.Free munts everything
+                LDX #ZP.FunctionsList
+                Table.GetFirst();
             }
             
-            IterateNext();
+            // Delete the function node
+            LDX #ZP.FunctionsList
+            Table.Delete();
         }
         
-        // Now clear all function nodes
-        LDX #ZP.FunctionsList
-        Objects.Destroy();
+        PLY
+        PLX
+        PLA
     }
 }

@@ -15,7 +15,7 @@ unit TestFunctions
     const string argName3 = "COUNT";
     
     // Allocate test token memory block
-    // Returns address in ZP.SymbolTemp0/1 for use with Functions.Declare()
+    // Returns address in ZP.U3|U4 for use with Functions.Declare()
     // MUST be called early before other variables are set up!
     allocateTestTokens()
     {
@@ -25,11 +25,11 @@ unit TestFunctions
         STZ ZP.ACCH
         Memory.Allocate();  // Returns address in ZP.IDX, munts everything
         
-        // Store result in dedicated temporary slots
+        // Store result in U3|U4 (consistent with Variables/Constants tests)
         LDA ZP.IDXL
-        STA ZP.SymbolTemp0
+        STA ZP.U3
         LDA ZP.IDXH
-        STA ZP.SymbolTemp1
+        STA ZP.U4
     }
     
     // Test descriptions
@@ -38,7 +38,7 @@ unit TestFunctions
     const string funcDesc3 = "Find function by name";
     const string funcDesc4 = "Get function signature";
     const string funcDesc5 = "Get function body tokens";
-    const string funcDesc6 = "Get function arguments table";
+    const string funcDesc6 = "Get function arguments";
     const string funcDesc7 = "Remove function";
     const string funcDesc8 = "Iterate functions only";
     const string funcDesc9 = "Duplicate function (should fail)";
@@ -56,9 +56,7 @@ unit TestFunctions
         Test.PrintTestHeader();
         
         // Allocate test tokens FIRST
-        allocateTestTokens();  // Result in ZP.SymbolTemp0/1
-        
-        
+        allocateTestTokens();  // Result in ZP.U3|U4
         
         // Declare INT function "ADD" with no arguments
         LDA #(funcName1 % 256)
@@ -70,13 +68,13 @@ unit TestFunctions
         STA ZP.ACCL
         STZ ZP.ACCH
         
-        STZ ZP.NEXTL  // No arguments table
+        STZ ZP.NEXTL  // No arguments list
         STZ ZP.NEXTH
         
         // Copy tokens pointer from temporary storage
-        LDA ZP.SymbolTemp0
+        LDA ZP.U3
         STA ZP.IDYL
-        LDA ZP.SymbolTemp1
+        LDA ZP.U4
         STA ZP.IDYH
         
         Functions.Declare();
@@ -105,25 +103,43 @@ unit TestFunctions
         Test.PrintTestHeader();
         
         // Allocate test tokens FIRST
-        allocateTestTokens();  // Result in ZP.SymbolTemp0/1
+        allocateTestTokens();  // Result in ZP.U3|U4
         
+        // Declare WORD function "MULTIPLY" with no arguments initially
+        LDA #(funcName2 % 256)
+        STA ZP.TOPL
+        LDA #(funcName2 / 256)
+        STA ZP.TOPH
         
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.WORD)
+        STA ZP.ACCL
+        STZ ZP.ACCH
         
-        // Create arguments table
-        Arguments.Create();
+        STZ ZP.NEXTL  // No arguments initially
+        STZ ZP.NEXTH
+        
+        // Copy tokens pointer from temporary storage
+        LDA ZP.U3
+        STA ZP.IDYL
+        LDA ZP.U4
+        STA ZP.IDYH
+        
+        Functions.Declare();
         if (NC)
         {
             LDA #0xB0
-            CLC  // Fail - couldn't create arguments table
+            CLC  // Fail - function declaration failed
             Test.PrintResult();
             return;
         }
         
-        // Save arguments table head
-        LDA ZP.IDXL
-        STA 0x7A  // Temporary storage
-        LDA ZP.IDXH
-        STA 0x7B
+        // Now add arguments to the function
+        // Find the function we just created
+        LDA #(funcName2 % 256)
+        STA ZP.TOPL
+        LDA #(funcName2 / 256)
+        STA ZP.TOPH
+        Functions.Find();
         
         // Add first argument "A" of type INT
         LDA #(argName1 % 256)
@@ -143,45 +159,8 @@ unit TestFunctions
         STA ZP.ACCL
         Arguments.Add();
         
-        // Restore arguments table head
-        LDA 0x7A
-        STA ZP.IDXL
-        LDA 0x7B
-        STA ZP.IDXH
-        
-        // Declare WORD function "MULTIPLY" with arguments
-        LDA #(funcName2 % 256)
-        STA ZP.TOPL
-        LDA #(funcName2 / 256)
-        STA ZP.TOPH
-        
-        LDA #((SymbolType.FUNCTION << 4) | BasicType.WORD)
-        STA ZP.ACCL
-        STZ ZP.ACCH
-        
-        LDA ZP.IDXL  // Arguments table head
-        STA ZP.NEXTL
-        LDA ZP.IDXH
-        STA ZP.NEXTH
-        
-        // Copy tokens pointer from temporary storage
-        LDA ZP.SymbolTemp0
-        STA ZP.IDYL
-        LDA ZP.SymbolTemp1
-        STA ZP.IDYH
-        
-        Functions.Declare();
-        
-        if (C)
-        {
-            Functions.Clear();  // Clean up (includes arguments table)
-            SEC  // Pass
-        }
-        else
-        {
-            LDA #0xB1
-            CLC  // Fail
-        }
+        Functions.Clear();  // Clean up
+        SEC  // Pass
         Test.PrintResult();
     }
     
@@ -194,8 +173,6 @@ unit TestFunctions
         LDA #(funcDesc3 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
-        
-        
         
         // Declare function first
         LDA #(funcName3 % 256)
@@ -243,25 +220,7 @@ unit TestFunctions
         Test.PrintTestHeader();
         
         // Allocate test tokens FIRST
-        allocateTestTokens();  // Result in ZP.SymbolTemp0/1
-        
-        
-        
-        // Create simple arguments table
-        Arguments.Create();
-        if (NC)
-        {
-            LDA #0xD0
-            CLC  // Fail
-            Test.PrintResult();
-            return;
-        }
-        
-        // Save arguments table head
-        LDA ZP.IDXL
-        STA 0x7A
-        LDA ZP.IDXH
-        STA 0x7B
+        allocateTestTokens();  // Result in ZP.U3|U4
         
         // Declare function with known signature
         LDA #(funcName1 % 256)
@@ -272,15 +231,13 @@ unit TestFunctions
         LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
         STA ZP.ACCL
         
-        LDA 0x7A  // Arguments table head
-        STA ZP.NEXTL
-        LDA 0x7B
-        STA ZP.NEXTH
+        STZ ZP.NEXTL  // No arguments for this test
+        STZ ZP.NEXTH
         
         // Copy tokens pointer from temporary storage
-        LDA ZP.SymbolTemp0
+        LDA ZP.U3
         STA ZP.IDYL
-        LDA ZP.SymbolTemp1
+        LDA ZP.U4
         STA ZP.IDYH
         
         Functions.Declare();
@@ -308,30 +265,20 @@ unit TestFunctions
             return;
         }
         
-        // Check arguments table head matches
+        // Check arguments list head (should be null for this test)
         LDA ZP.NEXTL
-        CMP 0x7A
+        ORA ZP.NEXTH
         if (NZ)
         {
             LDA #0xD3
-            CLC  // Fail - wrong arguments table low
-            Test.PrintResult();
-            return;
-        }
-        
-        LDA ZP.NEXTH
-        CMP 0x7B
-        if (NZ)
-        {
-            LDA #0xD4
-            CLC  // Fail - wrong arguments table high
+            CLC  // Fail - should have no arguments
             Test.PrintResult();
             return;
         }
         
         // Check function body tokens match
         LDA ZP.IDYL
-        CMP ZP.SymbolTemp0
+        CMP ZP.U3
         if (NZ)
         {
             LDA #0xD5
@@ -341,7 +288,7 @@ unit TestFunctions
         }
         
         LDA ZP.IDYH
-        CMP ZP.SymbolTemp1
+        CMP ZP.U4
         if (NZ)
         {
             LDA #0xD6
@@ -366,9 +313,7 @@ unit TestFunctions
         Test.PrintTestHeader();
         
         // Allocate test tokens FIRST
-        allocateTestTokens();  // Result in ZP.SymbolTemp0/1
-        
-        
+        allocateTestTokens();  // Result in ZP.U3|U4
         
         // Declare function
         LDA #(funcName2 % 256)
@@ -382,9 +327,9 @@ unit TestFunctions
         STZ ZP.NEXTH
         
         // Copy tokens pointer from temporary storage
-        LDA ZP.SymbolTemp0
+        LDA ZP.U3
         STA ZP.IDYL
-        LDA ZP.SymbolTemp1
+        LDA ZP.U4
         STA ZP.IDYH
         
         Functions.Declare();
@@ -393,9 +338,9 @@ unit TestFunctions
         Functions.Find();
         Functions.GetBody();
         
-        // Check tokens pointer matches
+        // Check tokens pointer matches (Functions.GetBody() returns in ZP.IDY)
         LDA ZP.IDYL
-        CMP ZP.SymbolTemp0
+        CMP ZP.U3
         if (NZ)
         {
             LDA #0xE0
@@ -405,7 +350,7 @@ unit TestFunctions
         }
         
         LDA ZP.IDYH
-        CMP ZP.SymbolTemp1
+        CMP ZP.U4
         if (NZ)
         {
             LDA #0xE1
@@ -419,16 +364,81 @@ unit TestFunctions
         Test.PrintResult();
     }
     
-    // Test 37: Iterate functions only
+    // Test 37: Get function arguments
+    testGetFunctionArguments()
+    {
+        LDA #'\\' // Test 37
+        LDA #(funcDesc6 % 256)
+        STA ZP.TOPL
+        LDA #(funcDesc6 / 256)
+        STA ZP.TOPH
+        Test.PrintTestHeader();
+        
+        // Declare function with no arguments initially
+        LDA #(funcName1 % 256)
+        STA ZP.TOPL
+        LDA #(funcName1 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
+        STA ZP.ACCL
+        
+        STZ ZP.NEXTL  // No arguments initially
+        STZ ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens for this test
+        STZ ZP.IDYH
+        
+        Functions.Declare();
+        
+        // Find the function
+        Functions.Find();
+        
+        // Add an argument to the function
+        LDA #(argName1 % 256)
+        STA ZP.TOPL
+        LDA #(argName1 / 256)
+        STA ZP.TOPH
+        LDA #BasicType.INT
+        STA ZP.ACCL
+        Arguments.Add();
+        
+        // Get arguments and check if it has arguments now
+        Functions.GetArguments();
+        
+        if (NC)
+        {
+            LDA #0xE9
+            CLC  // Fail - should have arguments now
+            Test.PrintResult();
+            return;
+        }
+        
+        // Check that arguments list head is non-zero
+        LDA ZP.NEXTL
+        ORA ZP.NEXTH
+        if (Z)
+        {
+            LDA #0xEA
+            CLC  // Fail - arguments list head should be non-zero
+            Test.PrintResult();
+            return;
+        }
+        
+        Functions.Clear();  // Clean up
+        SEC  // Pass
+        Test.PrintResult();
+    }
+    
+    // Test 38: Iterate functions only
     testIterateFunctionsOnly()
     {
+        LDA #']'  // Test 38
         LDA #(funcDesc8 % 256)
         STA ZP.TOPL
         LDA #(funcDesc8 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
-        
-        
         
         // Add variable (to mix symbol types)
         LDA #(argName1 % 256)
@@ -491,22 +501,21 @@ unit TestFunctions
             return;
         }
         
-        Functions.Clear();  // Clean up (includes variables)
+        Functions.Clear();  // Clean up functions
+        Variables.Clear();  // Clean up variables
         SEC  // Pass
         Test.PrintResult();
     }
     
-    // Test 38: Duplicate function declaration (should fail)
+    // Test 39: Duplicate function declaration (should fail)
     testDuplicateFunction()
     {
-        LDA #']'  // Test 38
+        LDA #'^'  // Test 39
         LDA #(funcDesc9 % 256)
         STA ZP.TOPL
         LDA #(funcDesc9 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
-        
-        
         
         // Declare first function
         LDA #(funcName3 % 256)
@@ -557,6 +566,70 @@ unit TestFunctions
         Test.PrintResult();
     }
     
+    // Test 40: Remove function by name
+    testRemoveFunction()
+    {
+        LDA #'_'  // Test 40
+        LDA #(funcDesc7 % 256)
+        STA ZP.TOPL
+        LDA #(funcDesc7 / 256)
+        STA ZP.TOPH
+        Test.PrintTestHeader();
+        
+        // Declare function first
+        LDA #(funcName1 % 256)
+        STA ZP.TOPL
+        LDA #(funcName1 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.NEXTL  // No arguments
+        STZ ZP.NEXTH
+        STZ ZP.IDYL   // No tokens
+        STZ ZP.IDYH
+        Functions.Declare();
+        
+        // Verify it exists
+        Functions.Find();
+        if (NC)
+        {
+            LDA #0xA3
+            CLC  // Fail - function not found after declaration
+            Test.PrintResult();
+            return;
+        }
+        
+        // Remove it
+        LDA #(funcName1 % 256)
+        STA ZP.TOPL
+        LDA #(funcName1 / 256)
+        STA ZP.TOPH
+        Functions.Remove();
+        
+        if (NC)
+        {
+            LDA #0xA4
+            CLC  // Fail - remove failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Verify it's gone
+        Functions.Find();
+        if (C)
+        {
+            LDA #0xA5
+            CLC  // Fail - function still exists after removal
+            Test.PrintResult();
+            return;
+        }
+        
+        Functions.Clear();  // Clean up
+        SEC  // Pass
+        Test.PrintResult();
+    }
+    
     // Run all functions tests
     RunFunctionsTests()
     {
@@ -565,7 +638,9 @@ unit TestFunctions
         testFindFunctionByName();
         testGetFunctionSignature();
         testGetFunctionBody();
+        testGetFunctionArguments();
         testIterateFunctionsOnly();
         testDuplicateFunction();
+        testRemoveFunction();
     }
 }

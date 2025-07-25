@@ -164,7 +164,8 @@ unit ZP
     const byte SymbolLength         = 0x7B;  // Storage for symbol name length
     const byte SymbolTemp0          = 0x7C;  // General temporary storage
     const byte SymbolTemp1          = 0x7D;  // General temporary storage
-    
+    const byte SymbolTemp2          = 0x7E;  // General temporary storage
+
     // === AVAILABLE SYMBOLS (0x7E-0x7F) ===
     // 2 bytes available for additional symbol table features (0x7E-0x7F)
     
