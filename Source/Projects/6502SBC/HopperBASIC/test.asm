@@ -22,6 +22,7 @@ program Test
     uses "TestTable"
     uses "TestObjects"
     uses "TestVariables"
+    uses "TestConstants"
     
     // Test Table head locations
     const byte TableHeadLocation  = 0x3C;
@@ -32,10 +33,14 @@ program Test
     const byte TableNodeH         = 0x3F;
     
     // Test result tracking
-    const string testHeader = "\n=== TABLE & OBJECTS COMPREHENSIVE TESTS ===\n";
+    const string testHeader = "\n=== COMPREHENSIVE SYMBOL TABLE TESTS ===\n";
     const string testPassed = " PASS\n";
     const string testFailed = " FAIL #";
     const string testComplete = "\nAll tests completed.\n";
+    const string tableSection = "\n--- TABLE LAYER TESTS ---\n";
+    const string objectsSection = "\n--- OBJECTS LAYER TESTS ---\n";
+    const string variablesSection = "\n--- VARIABLES LAYER TESTS ---\n";
+    const string constantsSection = "\n--- CONSTANTS LAYER TESTS ---\n";
     
     // Print null-terminated string using ZP.IDX
     PrintString()
@@ -99,6 +104,17 @@ program Test
         Serial.WriteChar();
     }
     
+    // Print section header
+    PrintSectionHeader()
+    {
+        // Input: ZP.TOP = section header pointer
+        LDA ZP.TOPL
+        STA ZP.IDXL
+        LDA ZP.TOPH
+        STA ZP.IDXH
+        PrintString();
+    }
+    
     // Initialize test environment
     InitializeTest()
     {
@@ -123,13 +139,36 @@ program Test
     RunAllTests()
     {
         // Table layer tests
+        LDA #(tableSection % 256)
+        STA ZP.TOPL
+        LDA #(tableSection / 256)
+        STA ZP.TOPH
+        PrintSectionHeader();
         TestTable.RunTableTests();
         
         // Objects layer tests
+        LDA #(objectsSection % 256)
+        STA ZP.TOPL
+        LDA #(objectsSection / 256)
+        STA ZP.TOPH
+        PrintSectionHeader();
         TestObjects.RunObjectsTests();
         
         // Variables layer tests
+        LDA #(variablesSection % 256)
+        STA ZP.TOPL
+        LDA #(variablesSection / 256)
+        STA ZP.TOPH
+        PrintSectionHeader();
         TestVariables.RunVariablesTests();
+        
+        // Constants layer tests
+        LDA #(constantsSection % 256)
+        STA ZP.TOPL
+        LDA #(constantsSection / 256)
+        STA ZP.TOPH
+        PrintSectionHeader();
+        TestConstants.RunConstantsTests();
         
         LDA #(testComplete % 256)
         STA ZP.IDXL

@@ -3,15 +3,47 @@ unit TestObjects
     uses "/Source/Runtime/6502/ZeroPage"
     uses "Objects"
     uses "BasicTypes"
-    uses "TestConstants"
+    
+    // Private test data for Objects tests
+    const string testName1 = "VAR1";
+    const string testName2 = "COUNT";
+    const string testName3 = "FLAG";
+    const string testName4 = "TEMP";
+    const string testName5 = "CONST1";
+    
+    // Allocate test token memory block
+    // Returns address in ZP.IDY for use with Objects.Add()
+    allocateTestTokens()
+    {
+        // Allocate 16 bytes for test token data
+        LDA #16
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        Memory.Allocate();  // Returns address in ZP.IDX
+        
+        // Copy to ZP.IDY for Objects.Add() interface
+        LDA ZP.IDXL
+        STA ZP.IDYL
+        LDA ZP.IDXH
+        STA ZP.IDYH
+    }
+    
+    // Objects test descriptions
+    const string objectsDesc1 = "Objects initialize";
+    const string objectsDesc2 = "Add symbol";
+    const string objectsDesc3 = "Find symbol";
+    const string objectsDesc4 = "Get symbol data";
+    const string objectsDesc5 = "Set symbol value";
+    const string objectsDesc6 = "Symbol type filtering";
+    const string objectsDesc7 = "Destroy symbol table";
     
     // Test 7: Initialize Objects
     testObjectsInit()
     {
         LDA #'7'
-        LDA #(TestConstants.objectsDesc1 % 256)
+        LDA #(objectsDesc1 % 256)
         STA ZP.TOPL
-        LDA #(TestConstants.objectsDesc1 / 256)
+        LDA #(objectsDesc1 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
@@ -36,18 +68,18 @@ unit TestObjects
     testAddSymbol()
     {
         LDA #'8'
-        LDA #(TestConstants.objectsDesc2 % 256)
+        LDA #(objectsDesc2 % 256)
         STA ZP.TOPL
-        LDA #(TestConstants.objectsDesc2 / 256)
+        LDA #(objectsDesc2 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
         Objects.Initialize();
         
         // Add INT variable "COUNT" = 42 with tokens pointer
-        LDA #(TestConstants.testName2 % 256)
+        LDA #(testName2 % 256)
         STA ZP.TOPL
-        LDA #(TestConstants.testName2 / 256)
+        LDA #(testName2 / 256)
         STA ZP.TOPH
         
         // Pack symbolType|dataType: VARIABLE(1) in high nibble, INT(2) in low nibble
@@ -59,11 +91,8 @@ unit TestObjects
         STA ZP.NEXTL
         STZ ZP.NEXTH
         
-        // Dummy tokens pointer
-        LDA #(TestConstants.testTokens1 % 256)
-        STA ZP.IDYL
-        LDA #(TestConstants.testTokens1 / 256)
-        STA ZP.IDYH
+        // Allocate test tokens
+        allocateTestTokens();  // Result in ZP.IDY
         
         Objects.Add();
         
@@ -85,18 +114,18 @@ unit TestObjects
     testFindSymbol()
     {
         LDA #'9'
-        LDA #(TestConstants.objectsDesc3 % 256)
+        LDA #(objectsDesc3 % 256)
         STA ZP.TOPL
-        LDA #(TestConstants.objectsDesc3 / 256)
+        LDA #(objectsDesc3 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
         Objects.Initialize();
         
         // Add BIT variable "FLAG" = 1
-        LDA #(TestConstants.testName3 % 256)
+        LDA #(testName3 % 256)
         STA ZP.TOPL
-        LDA #(TestConstants.testName3 / 256)
+        LDA #(testName3 / 256)
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.BIT)
@@ -107,18 +136,15 @@ unit TestObjects
         STA ZP.NEXTL
         STZ ZP.NEXTH
         
-        // Dummy tokens pointer
-        LDA #(TestConstants.testTokens2 % 256)
-        STA ZP.IDYL
-        LDA #(TestConstants.testTokens2 / 256)
-        STA ZP.IDYH
+        // Allocate test tokens
+        allocateTestTokens();  // Result in ZP.IDY
         
         Objects.Add();
         
         // Now find it
-        LDA #(TestConstants.testName3 % 256)
+        LDA #(testName3 % 256)
         STA ZP.TOPL
-        LDA #(TestConstants.testName3 / 256)
+        LDA #(testName3 / 256)
         STA ZP.TOPH
         
         Objects.Find();
@@ -141,18 +167,18 @@ unit TestObjects
     testGetSymbolData()
     {
         LDA #'A'  // Test 10
-        LDA #(TestConstants.objectsDesc4 % 256)
+        LDA #(objectsDesc4 % 256)
         STA ZP.TOPL
-        LDA #(TestConstants.objectsDesc4 / 256)
+        LDA #(objectsDesc4 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
         Objects.Initialize();
         
         // Add WORD variable "VAR1" = 1000
-        LDA #(TestConstants.testName1 % 256)
+        LDA #(testName1 % 256)
         STA ZP.TOPL
-        LDA #(TestConstants.testName1 / 256)
+        LDA #(testName1 / 256)
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.WORD)
@@ -164,11 +190,14 @@ unit TestObjects
         LDA #(1000 / 256)
         STA ZP.NEXTH
         
-        // Test tokens pointer
-        LDA #(TestConstants.testTokens3 % 256)
-        STA ZP.IDYL
-        LDA #(TestConstants.testTokens3 / 256)
-        STA ZP.IDYH
+        // Allocate test tokens
+        allocateTestTokens();  // Result in ZP.IDY
+        
+        // Save tokens pointer for later comparison
+        LDA ZP.IDYL
+        STA 0x7A  // Temporary storage
+        LDA ZP.IDYH
+        STA 0x7B
         
         Objects.Add();
         
@@ -216,9 +245,9 @@ unit TestObjects
             return;
         }
         
-        // Check tokens pointer (should match testTokens3)
+        // Check tokens pointer (should match allocated address)
         LDA ZP.IDYL
-        CMP #(TestConstants.testTokens3 % 256)
+        CMP 0x7A  // Compare with saved address
         if (NZ)
         {
             LDA #0x44
@@ -227,7 +256,7 @@ unit TestObjects
             return;
         }
         LDA ZP.IDYH
-        CMP #(TestConstants.testTokens3 / 256)
+        CMP 0x7B
         if (NZ)
         {
             LDA #0x45
@@ -245,18 +274,18 @@ unit TestObjects
     testSetSymbolValue()
     {
         LDA #'B'  // Test 11
-        LDA #(TestConstants.objectsDesc5 % 256)
+        LDA #(objectsDesc5 % 256)
         STA ZP.TOPL
-        LDA #(TestConstants.objectsDesc5 / 256)
+        LDA #(objectsDesc5 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
         Objects.Initialize();
         
         // Add INT variable "TEMP" = 100
-        LDA #(TestConstants.testName4 % 256)
+        LDA #(testName4 % 256)
         STA ZP.TOPL
-        LDA #(TestConstants.testName4 / 256)
+        LDA #(testName4 / 256)
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
@@ -267,11 +296,8 @@ unit TestObjects
         STA ZP.NEXTL
         STZ ZP.NEXTH
         
-        // Dummy tokens pointer
-        LDA #(TestConstants.testTokens1 % 256)
-        STA ZP.IDYL
-        LDA #(TestConstants.testTokens1 / 256)
-        STA ZP.IDYH
+        // Allocate test tokens
+        allocateTestTokens();  // Result in ZP.IDY
         
         Objects.Add();
         Objects.Find();
@@ -311,18 +337,18 @@ unit TestObjects
     testSymbolFiltering()
     {
         LDA #'C'  // Test 12
-        LDA #(TestConstants.objectsDesc6 % 256)
+        LDA #(objectsDesc6 % 256)
         STA ZP.TOPL
-        LDA #(TestConstants.objectsDesc6 / 256)
+        LDA #(objectsDesc6 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
         Objects.Initialize();
         
         // Add variable
-        LDA #(TestConstants.testName1 % 256)
+        LDA #(testName1 % 256)
         STA ZP.TOPL
-        LDA #(TestConstants.testName1 / 256)
+        LDA #(testName1 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
         STA ZP.ACCL
@@ -334,9 +360,9 @@ unit TestObjects
         Objects.Add();
         
         // Add constant
-        LDA #(TestConstants.testName2 % 256)
+        LDA #(testName2 % 256)
         STA ZP.TOPL
-        LDA #(TestConstants.testName2 / 256)
+        LDA #(testName2 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.CONSTANT << 4) | BasicType.INT)
         STA ZP.ACCL
@@ -382,9 +408,9 @@ unit TestObjects
     testDestroy()
     {
         LDA #'D'  // Test 13
-        LDA #(TestConstants.objectsDesc7 % 256)
+        LDA #(objectsDesc7 % 256)
         STA ZP.TOPL
-        LDA #(TestConstants.objectsDesc7 / 256)
+        LDA #(objectsDesc7 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
@@ -397,9 +423,9 @@ unit TestObjects
             CPY #3
             if (Z) { break; }
             
-            LDA #(TestConstants.testName1 % 256)
+            LDA #(testName1 % 256)
             STA ZP.TOPL
-            LDA #(TestConstants.testName1 / 256)
+            LDA #(testName1 / 256)
             STA ZP.TOPH
             LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
             STA ZP.ACCL

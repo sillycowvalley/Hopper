@@ -2,15 +2,22 @@ unit TestTable
 {
     uses "/Source/Runtime/6502/ZeroPage"
     uses "Table"
-    uses "TestConstants"
+    
+    // Private test descriptions for Table tests
+    const string tableDesc1 = "Empty list operations";
+    const string tableDesc2 = "Add single node";
+    const string tableDesc3 = "Add multiple nodes";
+    const string tableDesc4 = "Traverse list";
+    const string tableDesc5 = "Delete first node";
+    const string tableDesc6 = "Clear entire list";
     
     // Test 1: Empty list operations
     testEmptyList()
     {
         LDA #'1'
-        LDA #(TestConstants.tableDesc1 % 256)
+        LDA #(tableDesc1 % 256)
         STA ZP.TOPL
-        LDA #(TestConstants.tableDesc1 / 256)
+        LDA #(tableDesc1 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
@@ -40,9 +47,9 @@ unit TestTable
     testAddSingle()
     {
         LDA #'2'
-        LDA #(TestConstants.tableDesc2 % 256)
+        LDA #(tableDesc2 % 256)
         STA ZP.TOPL
-        LDA #(TestConstants.tableDesc2 / 256)
+        LDA #(tableDesc2 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
@@ -85,9 +92,9 @@ unit TestTable
     testAddMultiple()
     {
         LDA #'3'
-        LDA #(TestConstants.tableDesc3 % 256)
+        LDA #(tableDesc3 % 256)
         STA ZP.TOPL
-        LDA #(TestConstants.tableDesc3 / 256)
+        LDA #(tableDesc3 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
@@ -178,9 +185,9 @@ unit TestTable
     testTraverse()
     {
         LDA #'4'
-        LDA #(TestConstants.tableDesc4 % 256)
+        LDA #(tableDesc4 % 256)
         STA ZP.TOPL
-        LDA #(TestConstants.tableDesc4 / 256)
+        LDA #(tableDesc4 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
@@ -244,9 +251,9 @@ unit TestTable
     testDeleteFirst()
     {
         LDA #'5'
-        LDA #(TestConstants.tableDesc5 % 256)
+        LDA #(tableDesc5 % 256)
         STA ZP.TOPL
-        LDA #(TestConstants.tableDesc5 / 256)
+        LDA #(tableDesc5 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
@@ -304,9 +311,9 @@ unit TestTable
     testClearList()
     {
         LDA #'6'
-        LDA #(TestConstants.tableDesc6 % 256)
+        LDA #(tableDesc6 % 256)
         STA ZP.TOPL
-        LDA #(TestConstants.tableDesc6 / 256)
+        LDA #(tableDesc6 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
