@@ -13,6 +13,8 @@ unit Functions
     // Offset 3-4: arguments list head pointer (points directly to first argument node)
     // Offset 5-6: function body tokens pointer
     // Offset 7+:  null-terminated function name string
+    //
+    // Arguments list is stored separately and managed by Arguments unit
     
     // Declare new function
     // Input: ZP.TOP = name pointer, ZP.ACC = FUNCTION|returnType (packed),
@@ -112,8 +114,8 @@ unit Functions
         AND #0x0F
         STA ZP.ACCL
         
-        // ZP.NEXT already contains arguments list head pointer
         // ZP.IDY already contains function body tokens pointer
+        // ZP.NEXT already contains arguments list head pointer
     }
     
     // Get function body tokens
@@ -217,16 +219,16 @@ unit Functions
         
         loop
         {
-            LDX #ZP.FunctionsList
+            LDX # ZP.FunctionsList
             Table.GetFirst();
-        
+            
             if (NC) { break; }  // No more functions
             
-            // Clear all arguments for this function
+            // Clear all arguments for this function (NOP if arguments list head pointer is null)
             Arguments.Clear();
             
             // Get function body tokens pointer and free it if non-zero
-            Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
+            Functions.GetBody();  // Returns tokens pointer in ZP.IDY (correct for function nodes!)
             
             LDA ZP.IDYL
             ORA ZP.IDYH
@@ -236,8 +238,21 @@ unit Functions
                 STA ZP.ACCL
                 LDA ZP.IDYH
                 STA ZP.ACCH
-                Memory.Free();  // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
                 
+                // Before Memory.Free()
+                LDA #'T'
+                Serial.WriteChar();
+                LDA #':'
+                Serial.WriteChar();
+                LDA ZP.ACCH
+                Serial.HexOut();
+                LDA ZP.ACCL
+                Serial.HexOut();
+                LDA #' '
+                Serial.WriteChar();
+                
+                Memory.Free();  // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
+                               
                 // Re-establish function node address after Memory.Free munts everything
                 LDX #ZP.FunctionsList
                 Table.GetFirst();

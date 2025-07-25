@@ -15,7 +15,7 @@ unit TestFunctions
     const string argName3 = "COUNT";
     
     // Allocate test token memory block
-    // Returns address in ZP.U3|U4 for use with Functions.Declare()
+    // Returns address in ZP.U5|U6 for use with Functions.Declare()
     // MUST be called early before other variables are set up!
     allocateTestTokens()
     {
@@ -25,11 +25,11 @@ unit TestFunctions
         STZ ZP.ACCH
         Memory.Allocate();  // Returns address in ZP.IDX, munts everything
         
-        // Store result in U3|U4 (consistent with Variables/Constants tests)
+        // Store result in U5|U6 (consistent with Variables/Constants tests)
         LDA ZP.IDXL
-        STA ZP.U3
+        STA ZP.U5
         LDA ZP.IDXH
-        STA ZP.U4
+        STA ZP.U6
     }
     
     // Test descriptions
@@ -56,7 +56,7 @@ unit TestFunctions
         Test.PrintTestHeader();
         
         // Allocate test tokens FIRST
-        allocateTestTokens();  // Result in ZP.U3|U4
+        allocateTestTokens();  // Result in ZP.U5|U6
         
         // Declare INT function "ADD" with no arguments
         LDA #(funcName1 % 256)
@@ -72,9 +72,9 @@ unit TestFunctions
         STZ ZP.NEXTH
         
         // Copy tokens pointer from temporary storage
-        LDA ZP.U3
+        LDA ZP.U5
         STA ZP.IDYL
-        LDA ZP.U4
+        LDA ZP.U6
         STA ZP.IDYH
         
         Functions.Declare();
@@ -103,7 +103,7 @@ unit TestFunctions
         Test.PrintTestHeader();
         
         // Allocate test tokens FIRST
-        allocateTestTokens();  // Result in ZP.U3|U4
+        allocateTestTokens();  // Result in ZP.U5|U6
         
         // Declare WORD function "MULTIPLY" with no arguments initially
         LDA #(funcName2 % 256)
@@ -119,9 +119,9 @@ unit TestFunctions
         STZ ZP.NEXTH
         
         // Copy tokens pointer from temporary storage
-        LDA ZP.U3
+        LDA ZP.U5
         STA ZP.IDYL
-        LDA ZP.U4
+        LDA ZP.U6
         STA ZP.IDYH
         
         Functions.Declare();
@@ -220,7 +220,7 @@ unit TestFunctions
         Test.PrintTestHeader();
         
         // Allocate test tokens FIRST
-        allocateTestTokens();  // Result in ZP.U3|U4
+        allocateTestTokens();  // Result in ZP.U5|U6
         
         // Declare function with known signature
         LDA #(funcName1 % 256)
@@ -235,9 +235,9 @@ unit TestFunctions
         STZ ZP.NEXTH
         
         // Copy tokens pointer from temporary storage
-        LDA ZP.U3
+        LDA ZP.U5
         STA ZP.IDYL
-        LDA ZP.U4
+        LDA ZP.U6
         STA ZP.IDYH
         
         Functions.Declare();
@@ -278,7 +278,7 @@ unit TestFunctions
         
         // Check function body tokens match
         LDA ZP.IDYL
-        CMP ZP.U3
+        CMP ZP.U5
         if (NZ)
         {
             LDA #0xD5
@@ -288,7 +288,7 @@ unit TestFunctions
         }
         
         LDA ZP.IDYH
-        CMP ZP.U4
+        CMP ZP.U6
         if (NZ)
         {
             LDA #0xD6
@@ -313,7 +313,7 @@ unit TestFunctions
         Test.PrintTestHeader();
         
         // Allocate test tokens FIRST
-        allocateTestTokens();  // Result in ZP.U3|U4
+        allocateTestTokens();  // Result in ZP.U5|U6
         
         // Declare function
         LDA #(funcName2 % 256)
@@ -327,9 +327,9 @@ unit TestFunctions
         STZ ZP.NEXTH
         
         // Copy tokens pointer from temporary storage
-        LDA ZP.U3
+        LDA ZP.U5
         STA ZP.IDYL
-        LDA ZP.U4
+        LDA ZP.U6
         STA ZP.IDYH
         
         Functions.Declare();
@@ -340,7 +340,7 @@ unit TestFunctions
         
         // Check tokens pointer matches (Functions.GetBody() returns in ZP.IDY)
         LDA ZP.IDYL
-        CMP ZP.U3
+        CMP ZP.U5
         if (NZ)
         {
             LDA #0xE0
@@ -350,7 +350,7 @@ unit TestFunctions
         }
         
         LDA ZP.IDYH
-        CMP ZP.U4
+        CMP ZP.U6
         if (NZ)
         {
             LDA #0xE1

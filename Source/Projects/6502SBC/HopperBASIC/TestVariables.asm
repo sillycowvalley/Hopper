@@ -14,7 +14,7 @@ unit TestVariables
     const string testName6 = "INVALID";
     
     // Allocate test token memory block
-    // Returns address in ZP.U3|U4 for use with Variables.Declare() (we can use U0 and U1 because these tests don't use IntMath functions)
+    // Returns address in ZP.U5|U6 for use with Variables.Declare()
     // MUST be called early before other variables are set up!
     allocateTestTokens()
     {
@@ -26,9 +26,9 @@ unit TestVariables
         
         // Store result in dedicated temporary slots
         LDA ZP.IDXL
-        STA ZP.U3
+        STA ZP.U5
         LDA ZP.IDXH
-        STA ZP.U4
+        STA ZP.U6
     }
     
     // Variables test descriptions
@@ -51,7 +51,7 @@ unit TestVariables
         Test.PrintTestHeader();
         
         // Allocate test tokens FIRST
-        allocateTestTokens();  // Result in ZP.U3|U4
+        allocateTestTokens();  // Result in ZP.U5|U6
         
         // Declare INT variable "COUNT" = 42
         LDA #(testName2 % 256)
@@ -68,9 +68,9 @@ unit TestVariables
         STZ ZP.NEXTH
         
         // Copy tokens pointer from temporary storage
-        LDA ZP.U3
+        LDA ZP.U5
         STA ZP.IDYL
-        LDA ZP.U4
+        LDA ZP.U6
         STA ZP.IDYH
         
         Variables.Declare();
@@ -98,7 +98,7 @@ unit TestVariables
         Test.PrintTestHeader();
         
         // Allocate test tokens FIRST
-        allocateTestTokens();  // Result in U0|U1        
+        allocateTestTokens();  // Result in U5|U6        
         // Declare WORD constant "CONST1" = 1000
         LDA #(testName5 % 256)
         STA ZP.TOPL
@@ -115,9 +115,9 @@ unit TestVariables
         STA ZP.NEXTH
         
         // Copy tokens pointer from temporary storage
-        LDA ZP.U3
+        LDA ZP.U5
         STA ZP.IDYL
-        LDA ZP.U4
+        LDA ZP.U6
         STA ZP.IDYH
         
         Variables.Declare();
@@ -365,7 +365,7 @@ unit TestVariables
         Test.PrintTestHeader();
         
         // Allocate test tokens FIRST and save for later comparison
-        allocateTestTokens();  // Result in U0|U1 
+        allocateTestTokens();  // Result in U5|U6 
         
         // Declare variable with specific tokens pointer
         LDA #(testName1 % 256)
@@ -381,9 +381,9 @@ unit TestVariables
         STA ZP.NEXTH
         
         // Copy tokens pointer from temporary storage
-        LDA ZP.U3
+        LDA ZP.U5
         STA ZP.IDYL
-        LDA ZP.U4
+        LDA ZP.U6
         STA ZP.IDYH
         
         Variables.Declare();
@@ -395,7 +395,7 @@ unit TestVariables
         
         // Check tokens pointer matches allocated address
         LDA ZP.NEXTL
-        CMP ZP.U3
+        CMP ZP.U5
         if (NZ)
         {
             LDA #0x80
@@ -405,7 +405,7 @@ unit TestVariables
         }
         
         LDA ZP.NEXTH
-        CMP ZP.U4
+        CMP ZP.U6
         if (NZ)
         {
             LDA #0x81

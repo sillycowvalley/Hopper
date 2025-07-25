@@ -373,13 +373,14 @@ unit Arguments
     // Clear all arguments in function's list
     // Input: ZP.IDX = function node address
     // Output: Function's arguments field set to null, all argument nodes freed
+    // Preserves: ZP.IDX (function node address)
     Clear()
     {
         PHA
         PHX
         PHY
         
-        // Save function node address
+        // Save function node address since Memory.Free() will munt ZP.IDX
         LDA ZP.IDXL
         STA ZP.SymbolTemp0
         LDA ZP.IDXH
@@ -387,57 +388,44 @@ unit Arguments
         
         loop
         {
-            // Get first argument from function node
-            LDA ZP.SymbolTemp0
-            STA ZP.IDXL
-            LDA ZP.SymbolTemp1
-            STA ZP.IDXH
-            
+            // Get first argument from function node (use saved address)
             LDY #3
-            LDA [ZP.IDX], Y
-            STA ZP.LCURRENTL
+            LDA [ZP.SymbolTemp0], Y
+            STA ZP.ACCL
             INY
-            LDA [ZP.IDX], Y
-            STA ZP.LCURRENTH
+            LDA [ZP.SymbolTemp1], Y
+            STA ZP.ACCH
             
             // Check if arguments list is empty
-            LDA ZP.LCURRENTL
-            ORA ZP.LCURRENTH
+            LDA ZP.ACCL
+            ORA ZP.ACCH
             if (Z) { break; }  // No more arguments
             
-            // Get next pointer from first argument
-            LDA ZP.LCURRENTL
-            STA ZP.IDXL
-            LDA ZP.LCURRENTH
-            STA ZP.IDXH
-            
+            // Get next pointer from first argument (use IDY instead of IDX)
             LDY #0
-            LDA [ZP.IDX], Y
+            LDA [ZP.ACC], Y
             STA ZP.LNEXTL
             INY
-            LDA [ZP.IDX], Y
+            LDA [ZP.ACC], Y
             STA ZP.LNEXTH
             
-            // Update function node's arguments field to point to second argument
-            LDA ZP.SymbolTemp0
-            STA ZP.IDXL
-            LDA ZP.SymbolTemp1
-            STA ZP.IDXH
-            
+            // Store the next pointer as the new head argument
             LDY #3
             LDA ZP.LNEXTL
-            STA [ZP.IDX], Y
+            STA [ZP.SymbolTemp0], Y
             INY
             LDA ZP.LNEXTH
-            STA [ZP.IDX], Y
+            STA [ZP.SymbolTemp1], Y
             
-            // Free the first argument node
-            LDA ZP.LCURRENTL
-            STA ZP.ACCL
-            LDA ZP.LCURRENTH
-            STA ZP.ACCH
+            // Free the current argument node
             Memory.Free();  // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
         }
+        
+        // Restore function node address for caller
+        LDA ZP.SymbolTemp0
+        STA ZP.IDXL
+        LDA ZP.SymbolTemp1
+        STA ZP.IDXH
         
         PLY
         PLX

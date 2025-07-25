@@ -198,6 +198,19 @@ unit Table
                 STA ZP.ACCL
                 LDA ZP.IDXH
                 STA ZP.ACCH
+                
+                // Before Memory.Free()
+                LDA #'D'
+                Serial.WriteChar();
+                LDA #':'
+                Serial.WriteChar();
+                LDA ZP.ACCH
+                Serial.HexOut();
+                LDA ZP.ACCL
+                Serial.HexOut();
+                LDA #' '
+                Serial.WriteChar();
+                
                 Memory.Free(); // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
                 
                 SEC  // Success

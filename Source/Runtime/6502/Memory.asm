@@ -169,6 +169,20 @@ unit Memory
     Allocate()
     {
         Allocate.Allocate();
+#ifdef MEMDEBUG        
+        LDA # '\n'
+        Serial.WriteChar();
+        LDA # 'A'
+        Serial.WriteChar();
+        LDA # ':'
+        Serial.WriteChar();
+        LDA ZP.IDXH
+        Serial.HexOut();
+        LDA ZP.IDXL
+        Serial.HexOut();
+        LDA # ' '
+        Serial.WriteChar();
+#endif
     }
     
     // Free memory block
@@ -182,7 +196,21 @@ unit Memory
     // Side effects: Modifies ZP.FREELIST, coalesces adjacent free blocks
     // Notes: Reads size from address-2, performs free list insertion/merging
     Free()
-    {
+    {   
+#ifdef MEMDEBUG        
+        LDA # '\n'
+        Serial.WriteChar();
+        LDA # 'F'
+        Serial.WriteChar();
+        LDA # ':'
+        Serial.WriteChar();
+        LDA ZP.IDXH
+        Serial.HexOut();
+        LDA ZP.IDXL
+        Serial.HexOut();
+        LDA # ' '
+        Serial.WriteChar();
+#endif        
         Free.Free();
     }
 #else

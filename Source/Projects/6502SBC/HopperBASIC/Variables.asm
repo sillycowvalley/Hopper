@@ -384,10 +384,13 @@ unit Variables
         
         loop
         {
-            LDX #ZP.VariablesList
+            LDX # ZP.VariablesList
             Table.GetFirst();
         
-            if (NC) { break; }  // No more symbols
+            if (NC) 
+            { 
+                break; // No more symbols
+            }
             
             // Get tokens pointer
             Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
@@ -401,6 +404,7 @@ unit Variables
                 STA ZP.IDXL
                 LDA ZP.IDYH
                 STA ZP.IDXH
+                
                 Memory.Free();  // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
                 
                 // Re-establish iteration state after Memory.Free munts everything

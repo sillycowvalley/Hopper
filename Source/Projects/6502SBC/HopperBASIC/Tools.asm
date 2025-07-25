@@ -319,6 +319,11 @@ unit Tools
        STX ZP.U1  // Temporarily store X
        STY ZP.U2  // Temporarily store Y
        
+       LDA ZP.IDXL
+       STA ZP.U3
+       LDA ZP.IDXH
+       STA ZP.U4
+       
        LDA #(debugVarsHeader % 256)
        STA ZP.IDXL
        LDA #(debugVarsHeader / 256)
@@ -420,9 +425,9 @@ unit Tools
        Serial.WriteChar();
        LDA #':'
        Serial.WriteChar();
-       LDA ZP.IDXH
+       LDA ZP.U4
        Serial.HexOut();
-       LDA ZP.IDXL
+       LDA ZP.U3
        Serial.HexOut();
        LDA #' '
        Serial.WriteChar();
@@ -455,6 +460,11 @@ unit Tools
        
        LDA #'\n'
        Serial.WriteChar();
+       
+       LDA ZP.U4
+       STA ZP.IDXH
+       LDA ZP.U3
+       STA ZP.IDXL
        
        // Restore registers
        LDY ZP.U2  // Restore Y

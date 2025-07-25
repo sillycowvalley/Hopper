@@ -12,7 +12,7 @@ unit TestConstants
     const string invalidName = "NONEXISTENT";
     
     // Allocate test token memory block
-    // Returns address in ZP.U3|U4 for use with Variables.Declare()
+    // Returns address in ZP.U5|U6 for use with Variables.Declare()
     // MUST be called early before other variables are set up!
     allocateTestTokens()
     {
@@ -24,9 +24,9 @@ unit TestConstants
         
         // Store result in dedicated temporary slots
         LDA ZP.IDXL
-        STA ZP.U3
+        STA ZP.U5
         LDA ZP.IDXH
-        STA ZP.U4
+        STA ZP.U6
     }
     
     // Test descriptions
@@ -54,7 +54,7 @@ unit TestConstants
         Test.PrintTestHeader();
         
         // Allocate test tokens FIRST
-        allocateTestTokens();  // Result in ZP.U3|U4
+        allocateTestTokens();  // Result in ZP.U5|U6
         
         // Declare INT constant "PI" = 314
         LDA #(constName1 % 256)
@@ -72,9 +72,9 @@ unit TestConstants
         STA ZP.NEXTH
         
         // Copy tokens pointer from temporary storage
-        LDA ZP.U3
+        LDA ZP.U5
         STA ZP.IDYL
-        LDA ZP.U4
+        LDA ZP.U6
         STA ZP.IDYH
         
         Variables.Declare();
@@ -103,7 +103,7 @@ unit TestConstants
         Test.PrintTestHeader();
         
         // Allocate test tokens FIRST
-        allocateTestTokens();  // Result in ZP.U3|U4
+        allocateTestTokens();  // Result in ZP.U5|U6
         
         // Declare WORD constant "MAX_SIZE" = 65000
         LDA #(constName2 % 256)
@@ -121,9 +121,9 @@ unit TestConstants
         STA ZP.NEXTH
         
         // Copy tokens pointer from temporary storage
-        LDA ZP.U3
+        LDA ZP.U5
         STA ZP.IDYL
-        LDA ZP.U4
+        LDA ZP.U6
         STA ZP.IDYH
         
         Variables.Declare();
@@ -152,7 +152,7 @@ unit TestConstants
         Test.PrintTestHeader();
         
         // Allocate test tokens FIRST
-        allocateTestTokens();  // Result in ZP.U3|U4
+        allocateTestTokens();  // Result in ZP.U5|U6
         
         // Declare BIT constant "DEBUG_FLAG" = 1
         LDA #(constName3 % 256)
@@ -169,9 +169,9 @@ unit TestConstants
         STZ ZP.NEXTH
         
         // Copy tokens pointer from temporary storage
-        LDA ZP.U3
+        LDA ZP.U5
         STA ZP.IDYL
-        LDA ZP.U4
+        LDA ZP.U6
         STA ZP.IDYH
         
         Variables.Declare();
@@ -377,7 +377,7 @@ unit TestConstants
         Test.PrintTestHeader();
         
         // Allocate test tokens FIRST and save for later comparison
-        allocateTestTokens();  // Result in ZP.U3|U4
+        allocateTestTokens();  // Result in ZP.U5|U6
         
         // Declare constant with specific tokens pointer
         LDA #(constName3 % 256)
@@ -392,9 +392,9 @@ unit TestConstants
         STZ ZP.NEXTH
         
         // Copy tokens pointer from temporary storage
-        LDA ZP.U3
+        LDA ZP.U5
         STA ZP.IDYL
-        LDA ZP.U4
+        LDA ZP.U6
         STA ZP.IDYH
         
         Variables.Declare();
@@ -406,7 +406,7 @@ unit TestConstants
         
         // Check tokens pointer matches allocated address
         LDA ZP.NEXTL
-        CMP ZP.U3
+        CMP ZP.U5
         if (NZ)
         {
             LDA #0xA1
@@ -416,7 +416,7 @@ unit TestConstants
         }
         
         LDA ZP.NEXTH
-        CMP ZP.U4
+        CMP ZP.U6
         if (NZ)
         {
             LDA #0xA2
