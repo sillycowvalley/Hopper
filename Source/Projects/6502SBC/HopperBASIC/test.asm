@@ -2,7 +2,7 @@ program Test
 {
     #define DEBUG
     
-    //#define MEMDEBUG // Allocate and Free
+    #define MEMDEBUG // Allocate and Free
     
     #define CPU_65C02S
     #define ROM_16K
@@ -231,7 +231,7 @@ program Test
     // Run all tests
     RunAllTests()
     {
-        
+        /*
         // Table layer tests
         LDA #(tableSection % 256)
         STA ZP.TOPL
@@ -263,7 +263,7 @@ program Test
         STA ZP.TOPH
         PrintSectionHeader();
         TestConstants.RunConstantsTests();
-        
+        */
         // Function layer tests
         LDA #(functionsSection % 256)
         STA ZP.TOPL

@@ -302,9 +302,9 @@ unit Variables
         
         // Save tokens pointer for freeing
         LDA ZP.IDYL
-        STA 0x7A  // Temporary storage
+        STA ZP.SymbolTemp0  // Temporary storage
         LDA ZP.IDYH
-        STA 0x7B
+        STA ZP.SymbolTemp1
         
         // Remove the symbol node
         LDX #ZP.VariablesList
@@ -318,14 +318,14 @@ unit Variables
         }
         
         // Free tokens if non-zero
-        LDA 0x7A
-        ORA 0x7B
+        LDA ZP.SymbolTemp0
+        ORA ZP.SymbolTemp1
         if (NZ)  // Non-zero tokens pointer
         {
-            LDA 0x7A
-            STA ZP.ACCL
-            LDA 0x7B
-            STA ZP.ACCH
+            LDA ZP.SymbolTemp0
+            STA ZP.IDXL
+            LDA ZP.SymbolTemp1
+            STA ZP.IDXH
             Memory.Free();  // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
         }
         

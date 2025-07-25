@@ -1538,6 +1538,107 @@ unit Tools
         PLA  // Restore A
     }
     
+    // Debug helpers that preserve the carry flag
+    // These are safe to use in critical sections where flag state matters
+    
+    // Write character preserving carry flag
+    // Input: A = character to output
+    // Preserves: All registers and flags (including carry)
+    COut()
+    {
+        PHP  // Push processor status (including carry flag)
+        Serial.WriteChar();
+        PLP  // Pull processor status (restore carry flag)
+    }
+    
+    // Output hex byte preserving carry flag  
+    // Input: A = byte to output as hex
+    // Preserves: All registers and flags (including carry)
+    HOut()
+    {
+        PHP  // Push processor status (including carry flag)
+        Serial.HexOut();
+        PLP  // Pull processor status (restore carry flag)
+    }
+    // Output IDX register as " IDX:hhll" preserving carry flag
+    // Input: ZP.IDX = 16-bit value to output
+    // Preserves: All registers and flags (including carry)
+    XOut()
+    {
+        PHP  // Push processor status (including carry flag)
+        PHA  // Save A register
+        
+        LDA #'I'
+        Serial.WriteChar();
+        LDA #'D'
+        Serial.WriteChar();
+        LDA #'X'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        LDA ZP.IDXH
+        Serial.HexOut();
+        LDA ZP.IDXL
+        Serial.HexOut();
+        LDA #' '
+        Serial.WriteChar();
+        
+        PLA  // Restore A register
+        PLP  // Pull processor status (restore carry flag)
+    }
+    // Output IDY register as " IDY:hhll" preserving carry flag
+    // Input: ZP.IDY = 16-bit value to output
+    // Preserves: All registers and flags (including carry)
+    YOut()
+    {
+        PHP  // Push processor status (including carry flag)
+        PHA  // Save A register
+        
+        LDA #'I'
+        Serial.WriteChar();
+        LDA #'D'
+        Serial.WriteChar();
+        LDA #'Y'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        LDA ZP.IDYH
+        Serial.HexOut();
+        LDA ZP.IDYL
+        Serial.HexOut();
+        LDA #' '
+        Serial.WriteChar();
+        
+        PLA  // Restore A register
+        PLP  // Pull processor status (restore carry flag)
+    }
+    // Output ACC register as " ACC:hhll" preserving carry flag
+    // Input: ZP.ACC = 16-bit value to output
+    // Preserves: All registers and flags (including carry)
+    AOut()
+    {
+        PHP  // Push processor status (including carry flag)
+        PHA  // Save A register
+        
+        LDA #'A'
+        Serial.WriteChar();
+        LDA #'C'
+        Serial.WriteChar();
+        LDA #'C'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        LDA ZP.ACCH
+        Serial.HexOut();
+        LDA ZP.ACCL
+        Serial.HexOut();
+        LDA #' '
+        Serial.WriteChar();
+        
+        PLA  // Restore A register
+        PLP  // Pull processor status (restore carry flag)
+    }
+    
 #endif
 
 }

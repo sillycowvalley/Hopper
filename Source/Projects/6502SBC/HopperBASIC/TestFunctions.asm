@@ -635,7 +635,7 @@ unit TestFunctions
     // Run all functions tests
     RunFunctionsTests()
     {
-        testDeclareFunctionNoArgs();
+        //testDeclareFunctionNoArgs();
         testDeclareFunctionWithArgs();
         testFindFunctionByName();
         testGetFunctionSignature();

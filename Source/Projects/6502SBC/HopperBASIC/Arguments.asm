@@ -61,13 +61,13 @@ unit Arguments
         // Initialize the new argument node
         initializeArgumentNode();
         
-        // Get current arguments list head from function node (offset Objects.snValue)
+        // Get current arguments list head from function node (offset Objects.snArguments)
         LDA ZP.SymbolTemp0
         STA ZP.LHEADL
         LDA ZP.SymbolTemp1
         STA ZP.LHEADH
         
-        LDY #Objects.snValue  // Arguments field offset in function node
+        LDY # Objects.snArguments  // Arguments field offset in function node
         LDA [ZP.LHEAD], Y
         STA ZP.LCURRENTL  // Current first argument
         INY
@@ -83,7 +83,7 @@ unit Arguments
         STA [ZP.IDX], Y
         
         // Update function node's arguments field to point to new node
-        LDY #Objects.snValue
+        LDY # Objects.snArguments
         LDA ZP.IDXL
         STA [ZP.LHEAD], Y
         INY
@@ -105,8 +105,8 @@ unit Arguments
         PHX
         PHY
         
-        // Get arguments list head from function node (offset Objects.snValue)
-        LDY #Objects.snValue
+        // Get arguments list head from function node (offset Objects.snArguments)
+        LDY # Objects.snArguments
         LDA [ZP.IDX], Y
         STA ZP.LCURRENTL
         INY
@@ -202,7 +202,7 @@ unit Arguments
         STA ZP.SymbolTemp0
         
         // Get arguments list head from function node
-        LDY #Objects.snValue
+        LDY # Objects.snArguments
         LDA [ZP.IDX], Y
         STA ZP.LCURRENTL
         INY
@@ -269,7 +269,7 @@ unit Arguments
         PHX
         
         // Get arguments list head from function node
-        LDY #Objects.snValue
+        LDY # Objects.snArguments
         LDA [ZP.IDX], Y
         STA ZP.LCURRENTL
         INY
@@ -313,7 +313,7 @@ unit Arguments
         PHA
         
         // Get arguments list head from function node
-        LDY #Objects.snValue
+        LDY # Objects.snArguments
         LDA [ZP.IDX], Y
         STA ZP.IDYL
         INY
@@ -390,33 +390,33 @@ unit Arguments
         loop
         {
             // Get first argument from function node (use saved address)
-            LDY #Objects.snValue
+            LDY # Objects.snArguments
             LDA [ZP.SymbolTemp0], Y
-            STA ZP.ACCL
+            STA ZP.IDXL
             INY
-            LDA [ZP.SymbolTemp1], Y
-            STA ZP.ACCH
+            LDA [ZP.SymbolTemp0], Y
+            STA ZP.IDXH
             
             // Check if arguments list is empty
-            LDA ZP.ACCL
-            ORA ZP.ACCH
+            LDA ZP.IDXL
+            ORA ZP.IDXH
             if (Z) { break; }  // No more arguments
             
             // Get next pointer from first argument (use IDY instead of IDX)
             LDY #anNext
-            LDA [ZP.ACC], Y
+            LDA [ZP.IDX], Y
             STA ZP.LNEXTL
             INY
-            LDA [ZP.ACC], Y
+            LDA [ZP.IDX], Y
             STA ZP.LNEXTH
             
             // Store the next pointer as the new head argument
-            LDY #Objects.snValue
+            LDY # Objects.snArguments
             LDA ZP.LNEXTL
             STA [ZP.SymbolTemp0], Y
             INY
             LDA ZP.LNEXTH
-            STA [ZP.SymbolTemp1], Y
+            STA [ZP.SymbolTemp0], Y
             
             // Free the current argument node
             Memory.Free();  // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT

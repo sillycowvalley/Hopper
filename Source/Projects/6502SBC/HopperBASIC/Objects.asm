@@ -32,6 +32,7 @@ unit Objects
     const byte snType = 2;               // symbolType|dataType field offset
     const byte snTokens = 3;             // Tokens pointer field offset (2 bytes)
     const byte snValue = 5;              // Value/args field offset (2 bytes)
+    const byte snArguments = 5;          // same slot as Values, better name for Function arguments
     const byte snName = 7;               // Name field offset (variable length)
     
     // Initialize empty symbol tables
@@ -396,20 +397,20 @@ unit Objects
         CLC
         LDA ZP.IDXL
         ADC #snName
-        STA 0x77            // Temporary storage for node name pointer low
+        STA ZP.SymbolTemp0            // Temporary storage for node name pointer low
         LDA ZP.IDXH
         ADC #0
-        STA 0x78            // Temporary storage for node name pointer high
+        STA ZP.SymbolTemp1            // Temporary storage for node name pointer high
         
         // Compare strings
         LDY #0
         loop
         {
-            LDA [ZP.TOP], Y     // Target name character
-            STA 0x79            // Temporary storage for comparison
-            LDA [0x77], Y       // Node name character (using temp pointer)
-            CMP 0x79            // Compare
-            if (NZ) { return; } // Different characters
+            LDA [ZP.TOP], Y       // Target name character
+            STA ZP.SymbolTemp2       // Temporary storage for comparison
+            LDA [ZP.SymbolTemp0], Y  // Node name character (using temp pointer)
+            CMP ZP.SymbolTemp2       // Compare
+            if (NZ) { return; }   // Different characters
             
             // Check if we hit null terminator
             if (Z) { return; }  // Both null terminators - strings equal

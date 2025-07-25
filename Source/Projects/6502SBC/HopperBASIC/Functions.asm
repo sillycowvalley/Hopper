@@ -6,6 +6,7 @@ unit Functions
     uses "BasicTypes"
     uses "Messages"
     
+    
     // Function management building on Objects foundation
     // Functions use the existing Objects node structure:
     // Offset 0-1: next pointer (managed by Table unit)
@@ -18,6 +19,7 @@ unit Functions
     // Input: ZP.TOP = name pointer, ZP.ACC = FUNCTION|returnType (packed),
     //        ZP.NEXT = arguments list head pointer, ZP.IDY = function body tokens pointer
     // Output: ZP.IDX = function node address, C set if successful
+    
     Declare()
     {
         PHA
@@ -132,7 +134,7 @@ unit Functions
         // Calculate address of name field in node
         CLC
         LDA ZP.IDXL
-        ADC #Objects.snName
+        ADC # Objects.snName
         STA ZP.TOPL
         LDA ZP.IDXH
         ADC #0
@@ -215,6 +217,8 @@ unit Functions
         PHX
         PHY
         
+        DumpHeap();
+        
         loop
         {
             LDX # ZP.FunctionsList
@@ -233,17 +237,15 @@ unit Functions
             if (NZ)  // Non-zero tokens pointer
             {
                 LDA ZP.IDYL
-                STA ZP.ACCL
+                STA ZP.IDXL
                 LDA ZP.IDYH
-                STA ZP.ACCH
-                
+                STA ZP.IDXH
                 Memory.Free();  // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
                                
                 // Re-establish function node address after Memory.Free munts everything
                 LDX #ZP.FunctionsList
                 Table.GetFirst();
             }
-            
             // Delete the function node
             LDX #ZP.FunctionsList
             Table.Delete();

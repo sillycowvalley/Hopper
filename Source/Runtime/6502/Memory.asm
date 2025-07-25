@@ -170,18 +170,13 @@ unit Memory
     {
         Allocate.Allocate();
 #ifdef MEMDEBUG        
-        LDA # '\n'
-        Serial.WriteChar();
+        /*
         LDA # 'A'
-        Serial.WriteChar();
+        Tools.COut();
         LDA # ':'
-        Serial.WriteChar();
-        LDA ZP.IDXH
-        Serial.HexOut();
-        LDA ZP.IDXL
-        Serial.HexOut();
-        LDA # ' '
-        Serial.WriteChar();
+        Tools.COut();
+        Tools.XOut();
+        */
 #endif
     }
     
@@ -198,18 +193,11 @@ unit Memory
     Free()
     {   
 #ifdef MEMDEBUG        
-        LDA # '\n'
-        Serial.WriteChar();
         LDA # 'F'
-        Serial.WriteChar();
+        Tools.COut();
         LDA # ':'
-        Serial.WriteChar();
-        LDA ZP.IDXH
-        Serial.HexOut();
-        LDA ZP.IDXL
-        Serial.HexOut();
-        LDA # ' '
-        Serial.WriteChar();
+        Tools.COut();
+        Tools.XOut();
 #endif        
         Free.Free();
     }

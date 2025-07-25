@@ -47,7 +47,7 @@ unit Allocate
         Utilities.IncACC();
         Utilities.IncACC();
         
-        // round size up to the next 16 byte boundary
+        // round size up to the next 8 byte boundary
         LDA ACCL       // Load the low byte
         CLC            // Clear carry
         ADC # 0x07     // Add 7
