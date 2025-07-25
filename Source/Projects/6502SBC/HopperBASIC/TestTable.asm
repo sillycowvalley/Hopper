@@ -338,7 +338,7 @@ unit TestTable
     }
     
     // Test 6: Clear entire list
-    testClearList()
+    testClearList() 
     {
         LDA #'6'
         LDA #(tableDesc6 % 256)
