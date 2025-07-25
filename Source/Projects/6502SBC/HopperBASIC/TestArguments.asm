@@ -488,12 +488,6 @@ unit TestArguments
         Functions.Declare();
         Functions.Find(); // Sets ZP.IDX to function node
         
-        // Save function node address
-        LDA ZP.IDXL
-        STA ZP.SymbolTemp0
-        LDA ZP.IDXH
-        STA ZP.SymbolTemp1
-        
         // Add first argument "ARG1" of type INT
         LDA #(argName1 % 256)
         STA ZP.TOPL
@@ -502,12 +496,6 @@ unit TestArguments
         LDA #BasicType.INT
         STA ZP.ACCL
         Arguments.Add();
-        
-        // Restore function node address
-        LDA ZP.SymbolTemp0
-        STA ZP.IDXL
-        LDA ZP.SymbolTemp1
-        STA ZP.IDXH
         
         // Add second argument "ARG2" of type WORD
         LDA #(argName2 % 256)
@@ -518,21 +506,9 @@ unit TestArguments
         STA ZP.ACCL
         Arguments.Add();
         
-        // Restore function node address
-        LDA ZP.SymbolTemp0
-        STA ZP.IDXL
-        LDA ZP.SymbolTemp1
-        STA ZP.IDXH
-        
-        LDA #'S'
-        Tools.COut();
-        Tools.XOut();
-        
         // Find argument by index 0 (should be ARG1)
         LDA #0
         STA ZP.ACCL
-        LDA #'0'
-        Tools.COut();
         Arguments.FindByIndex();
         if (NC)
         {
@@ -542,16 +518,9 @@ unit TestArguments
             return;
         }
         
-        LDA #'0'
-        Tools.COut();
-        LDA #'F'
-        Tools.COut();
-        Tools.YOut();
-        
         // Get type to verify it's the first argument (INT)
         Arguments.GetType();
         LDA ZP.ACCL
-        Tools.HOut();
         CMP #BasicType.INT
         if (NZ)
         {
@@ -561,21 +530,9 @@ unit TestArguments
             return;
         }
         
-        // Restore function node address
-        LDA ZP.SymbolTemp0
-        STA ZP.IDXL
-        LDA ZP.SymbolTemp1
-        STA ZP.IDXH
-        
-        LDA #'1'
-        Tools.COut();
-        Tools.XOut();
-        
         // Find argument by index 1 (should be ARG2)
         LDA #1
         STA ZP.ACCL
-        LDA #'1'
-        Tools.COut();
         Arguments.FindByIndex();
         if (NC)
         {
@@ -584,12 +541,6 @@ unit TestArguments
             Test.PrintResult();
             return;
         }
-        
-        LDA #'1'
-        Tools.COut();
-        LDA #'F'
-        Tools.COut();
-        Tools.YOut();
         
         // Get type to verify it's the second argument (WORD)
         Arguments.GetType();
