@@ -141,9 +141,10 @@ const byte nameOffset = 7;           // Offset to name field in node
 
 #### Zero Page Storage
 Dedicated zero page locations that persist across `Memory.Allocate()` calls:
-- **ZP.SymbolType** (0x72): symbolType|dataType packed byte
-- **ZP.SymbolValueL/H** (0x73-0x74): 16-bit symbol value
-- **ZP.SymbolNameL/H** (0x75-0x76): Pointer to symbol name string
+- **ZP.SymbolType**: symbolType|dataType packed byte
+- **ZP.SymbolValueL/H**: 16-bit symbol value
+- **ZP.SymbolNameL/H**: Pointer to symbol name string
+- **ZP.SymbolLength**: Name length including null terminator
 
 ```hopper
 unit Objects
@@ -175,7 +176,7 @@ unit Objects
     // Input: ZP.ACC = name pointer to search for
     // Output: ZP.IDX = symbol node address, C set if found, NC if not found
     // Preserves: A, X, Y, ZP.TOP, ZP.NEXT, ZP.ACC
-    // Uses: Available slots in 0x77-0x7F range for temporary operations
+    // Uses: Available ZP slots for temporary operations
     Find();
     
     // Remove symbol by node pointer
@@ -330,7 +331,7 @@ unit Functions
     
     // Declare new function
     // Input: ZP.ACC = name pointer, ZP.ACCT = FUNCTION|returnType (packed),
-    //        ZP.NEXT = function body tokens pointer
+    //        ZP.TOP = arguments table head pointer, ZP.NEXT = function body tokens pointer
     // Output: ZP.IDX = function node address, C set if successful
     // Note: Arguments table created separately via Arguments.Create()
     Declare();
@@ -409,7 +410,7 @@ unit Arguments
     Create();
     
     // Add argument to arguments table
-    // Input: ZP.IDX = arguments table head address, ZP.ACCT = argument type, ZP.ACC = argument name
+    // Input: ZP.IDX = arguments table head address, ZP.ACC = argument name, ZP.ACCT = argument type
     // Output: C set if successful, argument added to table
     Add();
     
@@ -532,7 +533,28 @@ loop
 ```hopper
 // FUNC Add(INT a, WORD b) -> INT
 
-// Step 1: Create function node
+// Step 1: Create arguments table
+Arguments.Create();
+// ZP.IDX now contains arguments table head
+
+// Step 2: Add arguments to table
+LDA #(arg1Name % 256)  // "a"
+STA ZP.ACCL
+LDA #(arg1Name / 256)
+STA ZP.ACCH
+LDA #BasicType.INT
+STA ZP.ACCT
+Arguments.Add();
+
+LDA #(arg2Name % 256)  // "b"
+STA ZP.ACCL
+LDA #(arg2Name / 256)
+STA ZP.ACCH
+LDA #BasicType.WORD
+STA ZP.ACCT
+Arguments.Add();
+
+// Step 3: Create function node
 LDA #(functionName % 256)
 STA ZP.ACCL
 LDA #(functionName / 256) 
@@ -542,6 +564,11 @@ STA ZP.ACCH
 LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
 STA ZP.ACCT
 
+LDA ZP.IDXL  // Arguments table head (saved from step 1)
+STA ZP.TOPL
+LDA ZP.IDXH
+STA ZP.TOPH
+
 LDA #(functionBodyTokens % 256)  // Pointer to function body tokens
 STA ZP.NEXTL
 LDA #(functionBodyTokens / 256)
@@ -549,39 +576,16 @@ STA ZP.NEXTH
 
 Functions.Declare();
 // ZP.IDX now contains function node address
-
-// Step 2: Create arguments table
-Arguments.Create();
-// ZP.IDX now contains arguments table head
-
-// Step 3: Link arguments table to function
-LDA ZP.IDXL
-STA ZP.TOPL
-LDA ZP.IDXH
-STA ZP.TOPH
-Functions.SetArguments();
-
-// Step 4: Add arguments to table
-LDA #BasicType.INT
-STA ZP.ACCT
-LDA #(arg1Name % 256)  // "a"
-STA ZP.ACCL
-LDA #(arg1Name / 256)
-STA ZP.ACCH
-Arguments.Add();
-
-LDA #BasicType.WORD
-STA ZP.ACCT
-LDA #(arg2Name % 256)  // "b"
-STA ZP.ACCL
-LDA #(arg2Name / 256)
-STA ZP.ACCH
-Arguments.Add();
 ```
 
 ### Function Call Validation
 ```hopper
 // Calling Add(count, 100) where count is INT
+LDA #(functionName % 256)
+STA ZP.ACCL
+LDA #(functionName / 256)
+STA ZP.ACCH
+
 Functions.Find();  // Find "Add" function
 if (C)
 {
