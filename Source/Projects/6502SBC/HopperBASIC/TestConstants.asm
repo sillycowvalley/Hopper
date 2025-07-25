@@ -9,6 +9,9 @@ unit TestConstants
     const string constName2 = "MAX_SIZE";
     const string constName3 = "DEBUG_FLAG";
     const string constName4 = "VERSION";
+    const string constName5 = "TYPETEST";
+    const string constName6 = "NAMETEST";
+    const string constName7 = "REMOVETEST";
     const string invalidName = "NONEXISTENT";
     
     // Allocate test token memory block
@@ -42,6 +45,9 @@ unit TestConstants
     const string constDesc10 = "Iterate constants only";
     const string constDesc11 = "Duplicate constant (should fail)";
     const string constDesc12 = "Constant type filtering";
+    const string constDesc13 = "Get constant type via Variables";
+    const string constDesc14 = "Get constant name via Variables";
+    const string constDesc15 = "Remove constant via Variables";
     
     // Test 23: Declare INT constant
     testDeclareIntConstant()
@@ -568,6 +574,217 @@ unit TestConstants
         Test.PrintResult();
     }
     
+    // NEW TEST: Get constant type via Variables interface
+    testGetConstantType()
+    {
+        LDA #'W'  // Test 32
+        LDA #(constDesc13 % 256)
+        STA ZP.TOPL
+        LDA #(constDesc13 / 256)
+        STA ZP.TOPH
+        Test.PrintTestHeader();
+        
+        // Declare BIT constant
+        LDA #(constName5 % 256)
+        STA ZP.TOPL
+        LDA #(constName5 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.CONSTANT << 4) | BasicType.BIT)
+        STA ZP.ACCL
+        LDA #1
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        STZ ZP.IDYL  // No tokens for this test
+        STZ ZP.IDYH
+        Variables.Declare();
+        
+        // Find and get type
+        STZ ZP.ACCL  // Any type
+        Variables.Find();
+        if (NC)
+        {
+            LDA #0xA3
+            CLC  // Fail - not found
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.GetType();
+        if (NC)
+        {
+            LDA #0xA4
+            CLC  // Fail - GetType failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Check symbolType (high nibble)
+        LDA ZP.ACCL
+        AND #0xF0
+        LSR LSR LSR LSR
+        CMP #SymbolType.CONSTANT
+        if (NZ)
+        {
+            LDA #0xA5
+            CLC  // Fail - wrong symbol type
+            Test.PrintResult();
+            return;
+        }
+        
+        // Check dataType (low nibble)
+        LDA ZP.ACCL
+        AND #0x0F
+        CMP #BasicType.BIT
+        if (NZ)
+        {
+            LDA #0xA6
+            CLC  // Fail - wrong data type
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.Clear();  // Clean up
+        SEC  // Pass
+        Test.PrintResult();
+    }
+    
+    // NEW TEST: Get constant name via Variables interface
+    testGetConstantName()
+    {
+        LDA #'X'  // Test 33
+        LDA #(constDesc14 % 256)
+        STA ZP.TOPL
+        LDA #(constDesc14 / 256)
+        STA ZP.TOPH
+        Test.PrintTestHeader();
+        
+        // Declare constant
+        LDA #(constName6 % 256)
+        STA ZP.TOPL
+        LDA #(constName6 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.CONSTANT << 4) | BasicType.WORD)
+        STA ZP.ACCL
+        LDA #123
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        STZ ZP.IDYL  // No tokens for this test
+        STZ ZP.IDYH
+        Variables.Declare();
+        
+        // Find and get name
+        STZ ZP.ACCL  // Any type
+        Variables.Find();
+        if (NC)
+        {
+            LDA #0xA7
+            CLC  // Fail - not found
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.GetName();
+        
+        // Compare name - use ZP.ACC as returned name pointer, ZP.TOP as expected name
+        LDA #(constName6 % 256)
+        STA ZP.TOPL
+        LDA #(constName6 / 256)
+        STA ZP.TOPH
+        
+        // Compare strings
+        LDY #0
+        loop
+        {
+            LDA [ZP.TOP], Y      // Expected name character
+            STA ZP.SymbolTemp0   // Temporary storage
+            LDA [ZP.ACC], Y      // Actual name character
+            CMP ZP.SymbolTemp0   // Compare
+            if (NZ)
+            {
+                LDA #0xA8
+                CLC  // Fail - names don't match
+                Test.PrintResult();
+                return;
+            }
+            
+            if (Z) { break; }    // Both null terminators - strings equal
+            INY
+        }
+        
+        Variables.Clear();  // Clean up
+        SEC  // Pass
+        Test.PrintResult();
+    }
+    
+    // NEW TEST: Remove constant via Variables interface
+    testRemoveConstant()
+    {
+        LDA #'Y'  // Test 34
+        LDA #(constDesc15 % 256)
+        STA ZP.TOPL
+        LDA #(constDesc15 / 256)
+        STA ZP.TOPH
+        Test.PrintTestHeader();
+        
+        // Declare constant first
+        LDA #(constName7 % 256)
+        STA ZP.TOPL
+        LDA #(constName7 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.CONSTANT << 4) | BasicType.INT)
+        STA ZP.ACCL
+        LDA # (456 % 255)
+        STA ZP.NEXTL
+        LDA # (456 / 256)
+        STA ZP.NEXTH
+        STZ ZP.IDYL  // No tokens for this test
+        STZ ZP.IDYH
+        Variables.Declare();
+        
+        // Verify it exists
+        STZ ZP.ACCL  // Any type
+        Variables.Find();
+        if (NC)
+        {
+            LDA #0xA9
+            CLC  // Fail - constant not found after declaration
+            Test.PrintResult();
+            return;
+        }
+        
+        // Remove it
+        LDA #(constName7 % 256)
+        STA ZP.TOPL
+        LDA #(constName7 / 256)
+        STA ZP.TOPH
+        Variables.Remove();
+        
+        if (NC)
+        {
+            LDA #0xAA
+            CLC  // Fail - remove failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Verify it's gone
+        Variables.Find();
+        if (C)
+        {
+            LDA #0xAB
+            CLC  // Fail - constant still exists after removal
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.Clear();  // Clean up
+        SEC  // Pass
+        Test.PrintResult();
+    }
+    
     // Run all constants tests
     RunConstantsTests()
     {
@@ -580,5 +797,8 @@ unit TestConstants
         testGetConstantTokens();
         testIterateConstantsOnly();
         testDuplicateConstant();
+        testGetConstantType();
+        testGetConstantName();
+        testRemoveConstant();
     }
 }

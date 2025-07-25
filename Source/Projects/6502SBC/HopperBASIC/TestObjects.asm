@@ -966,10 +966,6 @@ unit TestObjects
             return;
         }
         
-        // Debug: Show table has 1 symbol after adding VAR1
-        LDA #0x01
-        Tools.HOut();
-        
         // Now add VAR2 to the same table
         LDA #(varName2 % 256)  // "VAR2"
         STA ZP.TOPL
@@ -996,12 +992,6 @@ unit TestObjects
             return;
         }
         
-        // Debug: Show table has 2 symbols after adding VAR2
-        LDA #0x02
-        Tools.HOut();
-        
-        DumpHeap();
-        
         // Test finding VAR2 - should get value 20
         LDA #(varName2 % 256)  // "VAR2"
         STA ZP.TOPL
@@ -1020,11 +1010,7 @@ unit TestObjects
             return;
         }
         
-        // Debug: Show what value we actually got from VAR2 find
         Objects.GetData();
-        LDA ZP.IDYL
-        Tools.HOut();  // Should be 0x14 (20 decimal)
-        
         LDA ZP.IDYL
         CMP #20
         if (NZ)
@@ -1098,7 +1084,6 @@ unit TestObjects
     // Run all objects tests
     RunObjectsTests()
     {
-        /*
         testAddSymbol();
         testFindSymbol();
         testGetSymbolData();
@@ -1108,7 +1093,6 @@ unit TestObjects
         testGetSetTokens();
         testSymbolNotFound();
         testMixedSymbolIteration();
-        */
         testSimilarNameComparison();
         testDestroy();
     }
