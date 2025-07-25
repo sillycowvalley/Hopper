@@ -213,91 +213,94 @@ I'll perform a thorough analysis of the test coverage by examining each layer's 
 **Methods to test**: Variables.Find(), Variables.SetValue(), Variables.GetValue()
 **Test scenario**:
 - Declare INT X = 10
+- Use Variables.Find("X", 0) to locate variable
 - Update X = 20 using Variables.SetValue()
 - Update X = 30 using Variables.SetValue()
-- Verify final value is 30
+- Verify final value is 30 with Variables.GetValue()
 
 ### 2. **CLEAR Command Implementation**
 **Purpose**: Test resetting variables to type defaults while preserving declarations
-**Methods to test**: Variables.IterateVariables(), Variables.SetValue(), Variables.GetType()
+**Methods to test**: Variables.IterateVariables(), Variables.GetType(), Variables.SetValue()
 **Test scenario**:
 - Declare INT X = 10, WORD Y = 100, BIT Z = 1
 - Declare CONST PI = 314
-- Modify X = 50, Y = 200, Z = 0
-- Implement CLEAR: iterate variables only, reset each to type default (0 for numeric types)
-- Verify X = 0, Y = 0, Z = 0, PI = 314 (unchanged)
+- Use Variables.Find() to locate and modify: X = 50, Y = 200, Z = 0
+- Implement CLEAR: Variables.IterateVariables(), for each get type and reset to 0
+- Verify X = 0, Y = 0, Z = 0, PI = 314 (constants unchanged)
 
-### 3. **Forward Function References**
-**Purpose**: Test runtime resolution of function names
-**Methods to test**: Functions.Find() called during token execution
+### 3. **Main Program Storage (BEGIN/END)**
+**Purpose**: Test storing and retrieving main program block
+**Methods to test**: Functions.Declare() with "main", Functions.Find()
 **Test scenario**:
-- Declare FUNC A() that references FUNC B()
-- Declare FUNC B() after A()
-- Verify Functions.Find("B") succeeds when called from A's context
+- Store BEGIN/END block as Functions.Declare() with name "main"
+- Use type FUNCTION|VOID to indicate no return value
+- Store main program tokens in function body
+- Verify Functions.Find("main") retrieves it for RUN command
+- Verify "main" cannot be created by user (lowercase protected)
 
-### 4. **Main Program Storage**
-**Purpose**: Test storing and retrieving BEGIN/END program blocks
-**Methods to test**: Functions.Declare() with special name, Functions.Find()
-**Test scenario**:
-- Store main program as special function (e.g., "!MAIN")
-- Verify Functions.Find("!MAIN") retrieves it
-- Verify it can be distinguished from user functions
-
-### 5. **FORGET Command Integration**
+### 4. **FORGET Command Integration**
 **Purpose**: Test complete removal of symbols and their resources
-**Methods to test**: Variables.Remove(), Functions.Remove(), memory verification
+**Methods to test**: Variables.Find(), Variables.Remove(), Functions.Find(), Functions.Remove()
 **Test scenario**:
 - Declare INT X = 10 with token stream
 - Declare FUNC FOO() with body tokens
-- FORGET X - verify Variables.Remove() frees token memory
-- FORGET FOO - verify Functions.Remove() frees body tokens and Arguments.Clear()
-- Verify no memory leaks
+- FORGET X: Use Variables.Find("X", 0) first, then Variables.Remove()
+- FORGET FOO: Use Functions.Find("FOO"), then Functions.Remove()
+- Verify proper cleanup including token memory and arguments
 
-### 6. **Token Memory Lifecycle**
-**Purpose**: Test proper token memory management across operations
-**Methods to test**: Variables.GetTokens(), Functions.GetBody(), Memory.Free()
+### 5. **Token Memory Lifecycle**
+**Purpose**: Test proper token memory management across symbol removal
+**Methods to test**: Variables.GetTokens(), Variables.Remove(), Functions.GetBody(), Functions.Remove()
 **Test scenario**:
 - Declare INT X = 10 (allocate token memory)
-- Verify Variables.GetTokens() returns valid pointer
-- Variables.Remove("X")
-- Verify token memory was freed (no leak)
-- Similar test for function body tokens
+- Use Variables.Find(), then Variables.GetTokens() to get pointer
+- Variables.Remove("X") should free token memory
+- Similar test for function: Functions.Find(), Functions.GetBody(), Functions.Remove()
+- Verify no memory leaks after removal
 
-### 7. **LIST Command Data Retrieval**
-**Purpose**: Test ability to reconstruct complete program
-**Methods to test**: Variables.IterateAll(), Functions.IterateFunctions(), Arguments.IterateStart()
+### 6. **LIST Command Data Retrieval**
+**Purpose**: Test ability to reconstruct complete program for display
+**Methods to test**: Variables.IterateAll(), Functions.IterateFunctions(), Functions.GetSignature(), Arguments.IterateStart()
 **Test scenario**:
-- Declare mixed variables, constants, and functions
-- Iterate all symbols in declaration order
-- For each function, retrieve signature via Functions.GetSignature()
-- For each function, iterate arguments via Arguments.IterateStart()/IterateNext()
-- Verify all data needed for LIST output is accessible
+- Declare variables: INT X = 10, CONST MAX = 100
+- Declare functions: FUNC ADD(A, B), FUNC PRINT()
+- Declare main: BEGIN ... END (as "main" function)
+- Use Variables.IterateAll() to list all variables/constants
+- Use Functions.IterateFunctions() to list all functions
+- For each function, use Functions.GetSignature() and Arguments.IterateStart()/Next()
+- Verify all data accessible in declaration order
 
-### 8. **Symbol Table Serialization Readiness**
-**Purpose**: Test preparation for SAVE/LOAD commands
-**Methods to test**: All iteration methods, Objects.GetData(), memory layout verification
+### 7. **Symbol Table Serialization Readiness (SAVE/LOAD)**
+**Purpose**: Test preparation for saving complete session state
+**Methods to test**: All iteration methods, GetTokens(), GetBody()
 **Test scenario**:
-- Create complex program state with variables, constants, functions
-- Verify consistent iteration order across multiple passes
-- Verify all token streams are accessible and contiguous
-- Calculate total memory footprint for serialization
+- Create program with variables, constants, functions, and main
+- Iterate all symbols using Variables.IterateAll() and Functions.IterateFunctions()
+- For each symbol, verify access to: type, value/tokens, name
+- Calculate total size needed for EEPROM storage
+- Verify consistent iteration order for reliable save/restore
 
-### 9. **Mixed Global Symbol Usage**
-**Purpose**: Test using multiple global symbols in expressions
-**Methods to test**: Variables.Find() with mixed types
+### 8. **Mixed Global Symbol Usage**
+**Purpose**: Test accessing multiple global symbols from function context
+**Methods to test**: Variables.Find() with different symbol types
 **Test scenario**:
 - CONST MAX = 100
 - INT COUNT = 0
-- Within function tokens, reference both MAX and COUNT
-- Verify both can be found and values retrieved correctly
+- FUNC INCREMENT(): Use Variables.Find("COUNT", 0) and Variables.Find("MAX", 0)
+- Verify both symbols found with correct types and values
+- Demonstrates typical BASIC pattern of global access
 
-### 10. **Duplicate Declaration Protection**
-**Purpose**: Test that redeclaration of existing symbols fails appropriately
-**Methods to test**: Variables.Declare(), Functions.Declare() error paths
+### 9. **Safe Symbol Creation Pattern**
+**Purpose**: Test HopperBASIC's pattern of checking before creating
+**Methods to test**: Variables.Find(), Functions.Find(), then Declare()
 **Test scenario**:
-- Declare INT X = 10
-- Attempt to declare INT X = 20 (should fail)
-- Attempt to declare WORD X = 20 (should fail)
-- Verify original X unchanged
+- Attempt to create INT X:
+  - First Variables.Find("X", 0) - not found
+  - Then Functions.Find("X") - not found
+  - Safe to Variables.Declare("X", INT, 10)
+- Attempt to create FUNC X:
+  - First Variables.Find("X", 0) - found!
+  - Don't create function, report error to user
+- Demonstrates responsible API usage pattern
 
-These functional tests focus on real HopperBASIC usage patterns rather than edge cases, ensuring the symbol table system supports the actual needs of the BASIC interpreter.
+These functional tests simulate actual HopperBASIC usage patterns, where the interpreter always checks for existing symbols before creating new ones, properly manages the special "main" function, and maintains clean resource management throughout the session lifecycle.
