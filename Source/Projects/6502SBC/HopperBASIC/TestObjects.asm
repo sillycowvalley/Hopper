@@ -13,6 +13,13 @@ unit TestObjects
     const string testName6 = "FUNC1";
     const string testName7 = "MYFUNC";
     
+    // Additional test names for new tests
+    const string testName8 = "VAR2";
+    const string testName9 = "VARA";
+    const string testName10 = "VARB";
+    const string testName11 = "CONST2";
+    const string testName12 = "FUNC2";
+    
     // Objects test descriptions - existing
     const string objectsDesc1 = "Add symbol";
     const string objectsDesc2 = "Find symbol";
@@ -20,13 +27,13 @@ unit TestObjects
     const string objectsDesc4 = "Set symbol value";
     const string objectsDesc5 = "Symbol type filtering";
     const string objectsDesc6 = "Destroy symbol table";
-    
-    // Objects test descriptions - new
     const string objectsDesc7 = "Remove symbol";
     const string objectsDesc8 = "Get/Set tokens";
-    const string objectsDesc9 = "Mixed symbol types";
-    const string objectsDesc10 = "Symbol not found";
-    const string objectsDesc11 = "Duplicate symbol handling";
+    const string objectsDesc9 = "Symbol not found";
+    
+    // New test descriptions
+    const string objectsDesc10 = "Mixed symbol iteration";
+    const string objectsDesc11 = "Similar name comparison";
     
     // Mock token data for testing
     const uint mockTokensAddr1 = 0x4000;
@@ -88,46 +95,49 @@ unit TestObjects
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        // Add BIT variable "FLAG" = 1
+        // Add a symbol first
         LDA #(testName3 % 256)
         STA ZP.TOPL
         LDA #(testName3 / 256)
         STA ZP.TOPH
-        
-        LDA #((SymbolType.VARIABLE << 4) | BasicType.BIT)
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.BYTE)
         STA ZP.ACCL
         STZ ZP.ACCH
-        
-        LDA #1
+        LDA #255
         STA ZP.NEXTL
         STZ ZP.NEXTH
-        
-        // No tokens for basic Objects test
         STZ ZP.IDYL
         STZ ZP.IDYH
-        
         LDX #ZP.VariablesList
         Objects.Add();
+        
+        if (NC)
+        {
+            LDA #0x30
+            CLC  // Fail - couldn't add
+            Test.PrintResult();
+            return;
+        }
         
         // Now find it
         LDA #(testName3 % 256)
         STA ZP.TOPL
         LDA #(testName3 / 256)
         STA ZP.TOPH
-        
         LDX #ZP.VariablesList
         Objects.Find();
         
-        // Should find it (C set)
         if (C)
         {
             LDX #ZP.VariablesList
-            Objects.Destroy();  // Clean up
+            Objects.Destroy();
             SEC  // Pass
         }
         else
         {
-            LDA #0x30
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0x31
             CLC  // Fail
         }
         Test.PrintResult();
@@ -301,14 +311,15 @@ unit TestObjects
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        // Add variable
+        // Add a variable
         LDA #(testName1 % 256)
         STA ZP.TOPL
         LDA #(testName1 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
         STA ZP.ACCL
-        LDA #10
+        STZ ZP.ACCH
+        LDA #42
         STA ZP.NEXTL
         STZ ZP.NEXTH
         STZ ZP.IDYL
@@ -316,14 +327,23 @@ unit TestObjects
         LDX #ZP.VariablesList
         Objects.Add();
         
-        // Add constant
-        LDA #(testName2 % 256)
+        if (NC)
+        {
+            LDA #0x60
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Add a constant
+        LDA #(testName5 % 256)
         STA ZP.TOPL
-        LDA #(testName2 / 256)
+        LDA #(testName5 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.CONSTANT << 4) | BasicType.INT)
         STA ZP.ACCL
-        LDA #20
+        STZ ZP.ACCH
+        LDA #100
         STA ZP.NEXTL
         STZ ZP.NEXTH
         STZ ZP.IDYL
@@ -331,7 +351,17 @@ unit TestObjects
         LDX #ZP.VariablesList
         Objects.Add();
         
-        // Iterate looking for variables only
+        if (NC)
+        {
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0x61
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Start iteration for variables only
         LDA #SymbolType.VARIABLE
         STA ZP.ACCL
         LDX #ZP.VariablesList
@@ -339,8 +369,10 @@ unit TestObjects
         
         if (NC)
         {
-            LDA #0x60
-            CLC  // Fail
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0x62
+            CLC
             Test.PrintResult();
             return;
         }
@@ -349,18 +381,19 @@ unit TestObjects
         Objects.GetData();
         LDA ZP.ACCL
         AND #0xF0
-        LSR LSR LSR LSR
-        CMP #SymbolType.VARIABLE
+        CMP #(SymbolType.VARIABLE << 4)
         if (NZ)
         {
-            LDA #0x61
-            CLC  // Fail
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0x63
+            CLC
             Test.PrintResult();
             return;
         }
         
         LDX #ZP.VariablesList
-        Objects.Destroy();  // Clean up
+        Objects.Destroy();
         SEC  // Pass
         Test.PrintResult();
     }
@@ -374,14 +407,15 @@ unit TestObjects
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        // Add multiple symbols
+        // Add two symbols
         LDA #(testName1 % 256)
         STA ZP.TOPL
         LDA #(testName1 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
         STA ZP.ACCL
-        LDA #10
+        STZ ZP.ACCH
+        LDA #42
         STA ZP.NEXTL
         STZ ZP.NEXTH
         STZ ZP.IDYL
@@ -391,7 +425,7 @@ unit TestObjects
         
         if (NC)
         {
-            LDA #0xA0
+            LDA #0xD0
             CLC
             Test.PrintResult();
             return;
@@ -403,7 +437,8 @@ unit TestObjects
         STA ZP.TOPH
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
         STA ZP.ACCL
-        LDA #20
+        STZ ZP.ACCH
+        LDA #99
         STA ZP.NEXTL
         STZ ZP.NEXTH
         STZ ZP.IDYL
@@ -413,13 +448,15 @@ unit TestObjects
         
         if (NC)
         {
-            LDA #0xA1
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xD1
             CLC
             Test.PrintResult();
             return;
         }
         
-        // Find first symbol to get node address in ZP.IDX
+        // Remove first symbol
         LDA #(testName1 % 256)
         STA ZP.TOPL
         LDA #(testName1 / 256)
@@ -429,25 +466,28 @@ unit TestObjects
         
         if (NC)
         {
-            LDA #0xA2
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xD2
             CLC
             Test.PrintResult();
             return;
         }
         
-        // Remove first symbol (now ZP.IDX has node address)
         LDX #ZP.VariablesList
         Objects.Remove();
         
         if (NC)
         {
-            LDA #0xA3
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xD3
             CLC
             Test.PrintResult();
             return;
         }
         
-        // Verify it's gone
+        // Verify first symbol is gone
         LDA #(testName1 % 256)
         STA ZP.TOPL
         LDA #(testName1 / 256)
@@ -457,7 +497,9 @@ unit TestObjects
         
         if (C)
         {
-            LDA #0xA4  // Should not find it
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xD4  // Should not find it
             CLC
             Test.PrintResult();
             return;
@@ -473,7 +515,9 @@ unit TestObjects
         
         if (NC)
         {
-            LDA #0xA5
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xD5  // Should find it
             CLC
             Test.PrintResult();
             return;
@@ -499,8 +543,9 @@ unit TestObjects
         STA ZP.TOPL
         LDA #(testName6 / 256)
         STA ZP.TOPH
-        LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.VOID)
         STA ZP.ACCL
+        STZ ZP.ACCH
         STZ ZP.NEXTL
         STZ ZP.NEXTH
         LDA #(mockTokensAddr1 % 256)
@@ -512,7 +557,7 @@ unit TestObjects
         
         if (NC)
         {
-            LDA #0xB0
+            LDA #0xE0
             CLC
             Test.PrintResult();
             return;
@@ -528,7 +573,9 @@ unit TestObjects
         
         if (NC)
         {
-            LDA #0xB1
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xE1
             CLC
             Test.PrintResult();
             return;
@@ -536,12 +583,14 @@ unit TestObjects
         
         Objects.GetTokens();
         
-        // Verify tokens address - GetTokens returns in ZP.IDY
+        // Verify original tokens
         LDA ZP.IDYL
         CMP #(mockTokensAddr1 % 256)
         if (NZ)
         {
-            LDA #0xB2
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xE2
             CLC
             Test.PrintResult();
             return;
@@ -551,7 +600,9 @@ unit TestObjects
         CMP #(mockTokensAddr1 / 256)
         if (NZ)
         {
-            LDA #0xB3
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xE3
             CLC
             Test.PrintResult();
             return;
@@ -564,14 +615,16 @@ unit TestObjects
         STA ZP.IDYH
         Objects.SetTokens();
         
-        // Get tokens again to verify
+        // Get tokens again and verify
         Objects.GetTokens();
         
         LDA ZP.IDYL
         CMP #(mockTokensAddr2 % 256)
         if (NZ)
         {
-            LDA #0xB4
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xE4
             CLC
             Test.PrintResult();
             return;
@@ -581,7 +634,9 @@ unit TestObjects
         CMP #(mockTokensAddr2 / 256)
         if (NZ)
         {
-            LDA #0xB5
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xE5
             CLC
             Test.PrintResult();
             return;
@@ -592,56 +647,17 @@ unit TestObjects
         SEC  // Pass
         Test.PrintResult();
     }
-      
+    
     // Test: Symbol not found scenarios
     testSymbolNotFound()
     {
-        LDA #(objectsDesc10 % 256)
+        LDA #(objectsDesc9 % 256)
         STA ZP.TOPL
-        LDA #(objectsDesc10 / 256)
+        LDA #(objectsDesc9 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
         // Try to find in empty table
-        LDA #(testName1 % 256)
-        STA ZP.TOPL
-        LDA #(testName1 / 256)
-        STA ZP.TOPH
-        LDX #ZP.VariablesList
-        Objects.Find();
-        
-        if (C)
-        {
-            LDA #0xE0  // Should not find anything
-            CLC
-            Test.PrintResult();
-            return;
-        }
-        
-        // Add one symbol
-        LDA #(testName1 % 256)
-        STA ZP.TOPL
-        LDA #(testName1 / 256)
-        STA ZP.TOPH
-        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
-        LDA #42
-        STA ZP.NEXTL
-        STZ ZP.NEXTH
-        STZ ZP.IDYL
-        STZ ZP.IDYH
-        LDX #ZP.VariablesList
-        Objects.Add();
-        
-        if (NC)
-        {
-            LDA #0xE1
-            CLC
-            Test.PrintResult();
-            return;
-        }
-        
-        // Try to find different symbol
         LDA #(testName2 % 256)
         STA ZP.TOPL
         LDA #(testName2 / 256)
@@ -677,6 +693,445 @@ unit TestObjects
                 Test.PrintResult();
                 return;
             }
+        }
+        
+        LDX #ZP.VariablesList
+        Objects.Destroy();
+        SEC  // Pass
+        Test.PrintResult();
+    }
+    
+    // Test: Mixed symbol iteration
+    testMixedSymbolIteration()
+    {
+        LDA #(objectsDesc10 % 256)
+        STA ZP.TOPL
+        LDA #(objectsDesc10 / 256)
+        STA ZP.TOPH
+        Test.PrintTestHeader();
+        
+        // Add variable
+        LDA #(testName1 % 256)
+        STA ZP.TOPL
+        LDA #(testName1 / 256)
+        STA ZP.TOPH
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        LDA #42
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        STZ ZP.IDYL
+        STZ ZP.IDYH
+        LDX #ZP.VariablesList
+        Objects.Add();
+        
+        if (NC)
+        {
+            LDA #0xF0
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Add constant
+        LDA #(testName11 % 256)
+        STA ZP.TOPL
+        LDA #(testName11 / 256)
+        STA ZP.TOPH
+        LDA #((SymbolType.CONSTANT << 4) | BasicType.WORD)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        LDA #100
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        STZ ZP.IDYL
+        STZ ZP.IDYH
+        LDX #ZP.VariablesList
+        Objects.Add();
+        
+        if (NC)
+        {
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xF1
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Add function
+        LDA #(testName12 % 256)
+        STA ZP.TOPL
+        LDA #(testName12 / 256)
+        STA ZP.TOPH
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.VOID)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        STZ ZP.NEXTL
+        STZ ZP.NEXTH
+        LDA #(mockTokensAddr1 % 256)
+        STA ZP.IDYL
+        LDA #(mockTokensAddr1 / 256)
+        STA ZP.IDYH
+        LDX #ZP.VariablesList
+        Objects.Add();
+        
+        if (NC)
+        {
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xF2
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Test iteration with VARIABLE filter
+        LDA #SymbolType.VARIABLE
+        STA ZP.ACCL
+        LDX #ZP.VariablesList
+        Objects.IterateStart();
+        
+        if (NC)
+        {
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xF3
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Should find variable
+        Objects.GetData();
+        LDA ZP.ACCL
+        AND #0xF0
+        CMP #(SymbolType.VARIABLE << 4)
+        if (NZ)
+        {
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xF4
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Try IterateNext for variables - should find none more
+        Objects.IterateNext();
+        if (C)
+        {
+            // Found another variable when should only be one
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xF5
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Test iteration with CONSTANT filter
+        LDA #SymbolType.CONSTANT
+        STA ZP.ACCL
+        LDX #ZP.VariablesList
+        Objects.IterateStart();
+        
+        if (NC)
+        {
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xF6
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Should find constant
+        Objects.GetData();
+        LDA ZP.ACCL
+        AND #0xF0
+        CMP #(SymbolType.CONSTANT << 4)
+        if (NZ)
+        {
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xF7
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Test iteration with FUNCTION filter
+        LDA #SymbolType.FUNCTION
+        STA ZP.ACCL
+        LDX #ZP.VariablesList
+        Objects.IterateStart();
+        
+        if (NC)
+        {
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xF8
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Should find function
+        Objects.GetData();
+        LDA ZP.ACCL
+        AND #0xF0
+        CMP #(SymbolType.FUNCTION << 4)
+        if (NZ)
+        {
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xF9
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        LDX #ZP.VariablesList
+        Objects.Destroy();
+        SEC  // Pass
+        Test.PrintResult();
+    }
+    
+    // Test: Similar name comparison
+    testSimilarNameComparison()
+    {
+        LDA #(objectsDesc11 % 256)
+        STA ZP.TOPL
+        LDA #(objectsDesc11 / 256)
+        STA ZP.TOPH
+        Test.PrintTestHeader();
+        
+        // Add VAR1
+        LDA #(testName1 % 256)  // "VAR1"
+        STA ZP.TOPL
+        LDA #(testName1 / 256)
+        STA ZP.TOPH
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        LDA #10
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        STZ ZP.IDYL
+        STZ ZP.IDYH
+        LDX #ZP.VariablesList
+        Objects.Add();
+        
+        if (NC)
+        {
+            LDA #0xA0
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Add VAR2
+        LDA #(testName8 % 256)  // "VAR2"
+        STA ZP.TOPL
+        LDA #(testName8 / 256)
+        STA ZP.TOPH
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        LDA #20
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        STZ ZP.IDYL
+        STZ ZP.IDYH
+        LDX #ZP.VariablesList
+        Objects.Add();
+        
+        if (NC)
+        {
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xA1
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Add VARA
+        LDA #(testName9 % 256)  // "VARA"
+        STA ZP.TOPL
+        LDA #(testName9 / 256)
+        STA ZP.TOPH
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        LDA #30
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        STZ ZP.IDYL
+        STZ ZP.IDYH
+        LDX #ZP.VariablesList
+        Objects.Add();
+        
+        if (NC)
+        {
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xA2
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Add VARB
+        LDA #(testName10 % 256)  // "VARB"
+        STA ZP.TOPL
+        LDA #(testName10 / 256)
+        STA ZP.TOPH
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        LDA #40
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        STZ ZP.IDYL
+        STZ ZP.IDYH
+        LDX #ZP.VariablesList
+        Objects.Add();
+        
+        if (NC)
+        {
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xA3
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Test finding VAR1 - should get value 10
+        LDA #(testName1 % 256)  // "VAR1"
+        STA ZP.TOPL
+        LDA #(testName1 / 256)
+        STA ZP.TOPH
+        LDX #ZP.VariablesList
+        Objects.Find();
+        
+        if (NC)
+        {
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xA4
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        Objects.GetData();
+        LDA ZP.NEXTL
+        CMP #10
+        if (NZ)
+        {
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xA5
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Test finding VAR2 - should get value 20
+        LDA #(testName8 % 256)  // "VAR2"
+        STA ZP.TOPL
+        LDA #(testName8 / 256)
+        STA ZP.TOPH
+        LDX #ZP.VariablesList
+        Objects.Find();
+        
+        if (NC)
+        {
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xA6
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        Objects.GetData();
+        LDA ZP.NEXTL
+        CMP #20
+        if (NZ)
+        {
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xA7
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Test finding VARA - should get value 30
+        LDA #(testName9 % 256)  // "VARA"
+        STA ZP.TOPL
+        LDA #(testName9 / 256)
+        STA ZP.TOPH
+        LDX #ZP.VariablesList
+        Objects.Find();
+        
+        if (NC)
+        {
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xA8
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        Objects.GetData();
+        LDA ZP.NEXTL
+        CMP #30
+        if (NZ)
+        {
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xA9
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        // Test finding VARB - should get value 40
+        LDA #(testName10 % 256)  // "VARB"
+        STA ZP.TOPL
+        LDA #(testName10 / 256)
+        STA ZP.TOPH
+        LDX #ZP.VariablesList
+        Objects.Find();
+        
+        if (NC)
+        {
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xAA
+            CLC
+            Test.PrintResult();
+            return;
+        }
+        
+        Objects.GetData();
+        LDA ZP.NEXTL
+        CMP #40
+        if (NZ)
+        {
+            LDX #ZP.VariablesList
+            Objects.Destroy();
+            LDA #0xAB
+            CLC
+            Test.PrintResult();
+            return;
         }
         
         LDX #ZP.VariablesList
@@ -748,6 +1203,8 @@ unit TestObjects
         testRemoveSymbol();
         testGetSetTokens();
         testSymbolNotFound();
+        testMixedSymbolIteration();
+        testSimilarNameComparison();
         testDestroy();
     }
 }
