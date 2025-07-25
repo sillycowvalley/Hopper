@@ -11,24 +11,6 @@ unit TestObjects
     const string testName4 = "TEMP";
     const string testName5 = "CONST1";
     
-    // Allocate test token memory block
-    // Returns address in ZP.SymbolTemp0/1 for use with Objects.Add()
-    // MUST be called early before other variables are set up!
-    allocateTestTokens()
-    {
-        // Allocate 16 bytes for test token data
-        LDA #16
-        STA ZP.ACCL
-        STZ ZP.ACCH
-        Memory.Allocate();  // Returns address in ZP.IDX, munts everything
-        
-        // Store result in dedicated temporary slots
-        LDA ZP.IDXL
-        STA ZP.SymbolTemp0
-        LDA ZP.IDXH
-        STA ZP.SymbolTemp1
-    }
-    
     // Objects test descriptions
     const string objectsDesc1 = "Add symbol";
     const string objectsDesc2 = "Find symbol";
@@ -46,10 +28,7 @@ unit TestObjects
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        // Allocate test tokens FIRST (before setting up other variables)
-        allocateTestTokens();  // Result in ZP.SymbolTemp0/1
-        
-        // Add INT variable "COUNT" = 42 with tokens pointer
+        // Add INT variable "COUNT" = 42 with null tokens pointer
         LDA #(testName2 % 256)
         STA ZP.TOPL
         LDA #(testName2 / 256)
@@ -64,11 +43,9 @@ unit TestObjects
         STA ZP.NEXTL
         STZ ZP.NEXTH
         
-        // Copy tokens pointer from temporary storage
-        LDA ZP.SymbolTemp0
-        STA ZP.IDYL
-        LDA ZP.SymbolTemp1
-        STA ZP.IDYH
+        // No tokens for basic Objects test
+        STZ ZP.IDYL
+        STZ ZP.IDYH
         
         Objects.Add();
         
@@ -95,9 +72,6 @@ unit TestObjects
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        // Allocate test tokens FIRST
-        allocateTestTokens();  // Result in ZP.SymbolTemp0/1
-        
         // Add BIT variable "FLAG" = 1
         LDA #(testName3 % 256)
         STA ZP.TOPL
@@ -112,11 +86,9 @@ unit TestObjects
         STA ZP.NEXTL
         STZ ZP.NEXTH
         
-        // Copy tokens pointer from temporary storage
-        LDA ZP.SymbolTemp0
-        STA ZP.IDYL
-        LDA ZP.SymbolTemp1
-        STA ZP.IDYH
+        // No tokens for basic Objects test
+        STZ ZP.IDYL
+        STZ ZP.IDYH
         
         Objects.Add();
         
@@ -151,9 +123,6 @@ unit TestObjects
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        // Allocate test tokens FIRST and save for later comparison
-        allocateTestTokens();  // Result in ZP.SymbolTemp0/1
-        
         // Add WORD variable "VAR1" = 1000
         LDA #(testName1 % 256)
         STA ZP.TOPL
@@ -169,11 +138,9 @@ unit TestObjects
         LDA #(1000 / 256)
         STA ZP.NEXTH
         
-        // Copy tokens pointer from temporary storage
-        LDA ZP.SymbolTemp0
-        STA ZP.IDYL
-        LDA ZP.SymbolTemp1
-        STA ZP.IDYH
+        // Use null tokens pointer for this test
+        STZ ZP.IDYL
+        STZ ZP.IDYH
         
         Objects.Add();
         
@@ -221,22 +188,13 @@ unit TestObjects
             return;
         }
         
-        // Check tokens pointer (should match allocated address)
+        // Check tokens pointer (should be null for this test)
         LDA ZP.IDYL
-        CMP ZP.SymbolTemp0  // Compare with saved address
+        ORA ZP.IDYH
         if (NZ)
         {
             LDA #0x44
-            CLC  // Fail
-            Test.PrintResult();
-            return;
-        }
-        LDA ZP.IDYH
-        CMP ZP.SymbolTemp1
-        if (NZ)
-        {
-            LDA #0x45
-            CLC  // Fail
+            CLC  // Fail - should be null
             Test.PrintResult();
             return;
         }
@@ -255,9 +213,6 @@ unit TestObjects
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        // Allocate test tokens FIRST
-        allocateTestTokens();  // Result in ZP.SymbolTemp0/1
-        
         // Add INT variable "TEMP" = 100
         LDA #(testName4 % 256)
         STA ZP.TOPL
@@ -272,11 +227,9 @@ unit TestObjects
         STA ZP.NEXTL
         STZ ZP.NEXTH
         
-        // Copy tokens pointer from temporary storage
-        LDA ZP.SymbolTemp0
-        STA ZP.IDYL
-        LDA ZP.SymbolTemp1
-        STA ZP.IDYH
+        // No tokens for basic Objects test
+        STZ ZP.IDYL
+        STZ ZP.IDYH
         
         Objects.Add();
         Objects.Find();
