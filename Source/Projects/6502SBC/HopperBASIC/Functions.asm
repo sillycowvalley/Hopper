@@ -10,11 +10,9 @@ unit Functions
     // Functions use the existing Objects node structure:
     // Offset 0-1: next pointer (managed by Table unit)
     // Offset 2:   symbolType|returnType (FUNCTION | INT/WORD/BIT/etc)
-    // Offset 3-4: arguments list head pointer (points directly to first argument node)
-    // Offset 5-6: function body tokens pointer
+    // Offset 3-4: function body tokens pointer
+    // Offset 5-6: arguments list head pointer (points directly to first argument node)
     // Offset 7+:  null-terminated function name string
-    //
-    // Arguments list is stored separately and managed by Arguments unit
     
     // Declare new function
     // Input: ZP.TOP = name pointer, ZP.ACC = FUNCTION|returnType (packed),
@@ -74,7 +72,7 @@ unit Functions
         }
         
         // Check if it's a function
-        Objects.GetData();  // Returns type in ZP.ACC, value in ZP.NEXT, tokens in ZP.IDY
+        Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value/args in ZP.IDY
         
         LDA ZP.ACCL
         AND #0xF0  // Extract symbol type (high nibble)
@@ -104,18 +102,18 @@ unit Functions
     
     // Get function signature info
     // Input: ZP.IDX = function node address
-    // Output: ZP.ACCL = returnType, ZP.NEXT = arguments list head, ZP.IDY = function body tokens
+    // Output: ZP.ACCL = returnType, ZP.NEXT = function body tokens, ZP.IDY = arguments list head
     GetSignature()
     {
-        Objects.GetData();  // Returns type in ZP.ACC, value in ZP.NEXT, tokens in ZP.IDY
+        Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value/args in ZP.IDY
         
         // Extract return type (low nibble)
         LDA ZP.ACCL
         AND #0x0F
         STA ZP.ACCL
         
-        // ZP.IDY already contains function body tokens pointer
-        // ZP.NEXT already contains arguments list head pointer
+        // ZP.NEXT already contains function body tokens pointer
+        // ZP.IDY already contains arguments list head pointer
     }
     
     // Get function body tokens
@@ -134,7 +132,7 @@ unit Functions
         // Calculate address of name field in node
         CLC
         LDA ZP.IDXL
-        ADC #Objects.nameOffset
+        ADC #Objects.snName
         STA ZP.TOPL
         LDA ZP.IDXH
         ADC #0
@@ -142,23 +140,23 @@ unit Functions
     }
     
     // Set arguments list head pointer in function node
-    // Input: ZP.IDX = function node address, ZP.NEXT = arguments list head
+    // Input: ZP.IDX = function node address, ZP.IDY = arguments list head
     // Output: C set if successful
     SetArguments()
     {
-        Objects.SetValue();  // Uses ZP.NEXT to set the value field (which stores arguments list head)
+        Objects.SetValue();  // Uses ZP.IDY to set the value field (which stores arguments list head)
     }
     
     // Get arguments list head pointer from function node
     // Input: ZP.IDX = function node address
-    // Output: ZP.NEXT = arguments list head pointer, C set if has arguments
+    // Output: ZP.IDY = arguments list head pointer, C set if has arguments
     GetArguments()
     {
-        Objects.GetData();  // Returns type in ZP.ACC, value in ZP.NEXT, tokens in ZP.IDY
+        Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value/args in ZP.IDY
         
         // Check if arguments list head is non-zero
-        LDA ZP.NEXTL
-        ORA ZP.NEXTH
+        LDA ZP.IDYL
+        ORA ZP.IDYH
         if (Z)
         {
             CLC  // No arguments
@@ -228,7 +226,7 @@ unit Functions
             Arguments.Clear();
             
             // Get function body tokens pointer and free it if non-zero
-            Functions.GetBody();  // Returns tokens pointer in ZP.IDY (correct for function nodes!)
+            Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
             
             LDA ZP.IDYL
             ORA ZP.IDYH
@@ -238,18 +236,6 @@ unit Functions
                 STA ZP.ACCL
                 LDA ZP.IDYH
                 STA ZP.ACCH
-                
-                // Before Memory.Free()
-                LDA #'T'
-                Serial.WriteChar();
-                LDA #':'
-                Serial.WriteChar();
-                LDA ZP.ACCH
-                Serial.HexOut();
-                LDA ZP.ACCL
-                Serial.HexOut();
-                LDA #' '
-                Serial.WriteChar();
                 
                 Memory.Free();  // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
                                

@@ -253,6 +253,7 @@ unit TestFunctions
         }
         
         Functions.GetSignature();
+        // NEW INTERFACE: ZP.ACCL = returnType, ZP.NEXT = function body tokens, ZP.IDY = arguments list head
         
         // Check return type (should be INT = 2)
         LDA ZP.ACCL
@@ -266,8 +267,8 @@ unit TestFunctions
         }
         
         // Check arguments list head (should be null for this test)
-        LDA ZP.NEXTL
-        ORA ZP.NEXTH
+        LDA ZP.IDYL
+        ORA ZP.IDYH
         if (NZ)
         {
             LDA #0xD3
@@ -277,7 +278,7 @@ unit TestFunctions
         }
         
         // Check function body tokens match
-        LDA ZP.IDYL
+        LDA ZP.NEXTL
         CMP ZP.U5
         if (NZ)
         {
@@ -287,7 +288,7 @@ unit TestFunctions
             return;
         }
         
-        LDA ZP.IDYH
+        LDA ZP.NEXTH
         CMP ZP.U6
         if (NZ)
         {
@@ -405,6 +406,7 @@ unit TestFunctions
         
         // Get arguments and check if it has arguments now
         Functions.GetArguments();
+        // NEW INTERFACE: Returns ZP.IDY = arguments list head pointer
         
         if (NC)
         {
@@ -415,8 +417,8 @@ unit TestFunctions
         }
         
         // Check that arguments list head is non-zero
-        LDA ZP.NEXTL
-        ORA ZP.NEXTH
+        LDA ZP.IDYL
+        ORA ZP.IDYH
         if (Z)
         {
             LDA #0xEA

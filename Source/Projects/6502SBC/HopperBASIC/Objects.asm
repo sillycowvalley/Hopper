@@ -20,18 +20,19 @@ unit Objects
         ARGUMENT = 0x04    // Function parameters
     }
     
-    // Node layout (offsets from node start):
+    // Symbol node memory map:
     // Offset 0-1: next pointer (managed by Table unit)
-    // Offset 2: symbolType|dataType (packed byte)
-    // Offset 3-4: value/address (16-bit)
-    // Offset 5-6: tokens pointer (16-bit pointer to initialization token stream)
-    // Offset 7+: null-terminated name string
+    // Offset 2:   symbolType|dataType (packed byte)
+    // Offset 3-4: tokens pointer (16-bit pointer to initialization/body token stream)
+    // Offset 5-6: value/address (16-bit - value for variables/constants, args list for functions)
+    // Offset 7+:  null-terminated name string
     
     const byte symbolOverhead = 7;       // Fixed fields before name (including Table's next pointer)
-    const byte typeOffset = 2;           // Offset to symbolType|dataType field
-    const byte valueOffset = 3;          // Offset to value field
-    const byte tokensOffset = 5;         // Offset to tokens pointer field
-    const byte nameOffset = 7;           // Offset to name field in node
+    const byte snNext = 0;               // Next pointer offset (2 bytes)
+    const byte snType = 2;               // symbolType|dataType field offset
+    const byte snTokens = 3;             // Tokens pointer field offset (2 bytes)
+    const byte snValue = 5;              // Value/args field offset (2 bytes)
+    const byte snName = 7;               // Name field offset (variable length)
     
     // Initialize empty symbol tables
     // Output: ZP.VariableListL/H = 0x0000, ZP.FunctionsListL/H = 0x0000
@@ -47,7 +48,7 @@ unit Objects
     // Add new symbol to table
     // Input: X = ZP address of table head (ZP.VariableList or ZP.FunctionsList),
     //        ZP.TOP = name pointer, ZP.ACC = symbolType|dataType (packed),
-    //        ZP.NEXT = value (16-bit), ZP.IDY = tokens pointer (16-bit)
+    //        ZP.IDY = tokens pointer (16-bit), ZP.NEXT = value/args (16-bit)
     // Output: ZP.IDX = new symbol node address, C set if successful, NC if allocation failed
     // Preserves: A, Y
     // Munts: X, ZP.IDX, ZP.ACC, ZP.TOP, ZP.NEXT, ZP.IDY (due to Table.Add call)
@@ -65,9 +66,9 @@ unit Objects
         STA ZP.SymbolType   // Save symbolType|dataType
         
         LDA ZP.NEXTL
-        STA ZP.SymbolValueL // Save value low
+        STA ZP.SymbolValueL // Save value/args low
         LDA ZP.NEXTH
-        STA ZP.SymbolValueH // Save value high
+        STA ZP.SymbolValueH // Save value/args high
         
         LDA ZP.TOPL
         STA ZP.SymbolNameL  // Save name pointer low
@@ -128,7 +129,7 @@ unit Objects
                 return;
             }
             
-            // Compare name at nameOffset
+            // Compare name at snName offset
             compareNames();
             if (Z) // Names match
             {
@@ -157,26 +158,26 @@ unit Objects
     
     // Get symbol data from found node
     // Input: ZP.IDX = symbol node address (from Find)
-    // Output: ZP.ACC = symbolType|dataType (packed), ZP.NEXT = value, ZP.IDY = tokens pointer
+    // Output: ZP.ACC = symbolType|dataType (packed), ZP.NEXT = tokens pointer, ZP.IDY = value/args
     // Preserves: A, X, Y, ZP.IDX, ZP.TOP
     GetData()
     {
-        // Get symbolType|dataType (offset typeOffset)
-        LDY #typeOffset
+        // Get symbolType|dataType (offset snType)
+        LDY #snType
         LDA [ZP.IDX], Y
         STA ZP.ACCL
         STZ ZP.ACCH  // Clear high byte
         
-        // Get value (offset valueOffset to valueOffset+1)
-        LDY #valueOffset
+        // Get tokens pointer (offset snTokens to snTokens+1)
+        LDY #snTokens
         LDA [ZP.IDX], Y
         STA ZP.NEXTL
         INY
         LDA [ZP.IDX], Y
         STA ZP.NEXTH
         
-        // Get tokens pointer (offset tokensOffset to tokensOffset+1)
-        LDY #tokensOffset
+        // Get value/args (offset snValue to snValue+1)
+        LDY #snValue
         LDA [ZP.IDX], Y
         STA ZP.IDYL
         INY
@@ -185,13 +186,13 @@ unit Objects
     }
     
     // Set symbol value (variables only)
-    // Input: ZP.IDX = symbol node address, ZP.NEXT = new value
+    // Input: ZP.IDX = symbol node address, ZP.IDY = new value/args
     // Output: C set if successful, NC if not a variable
     // Preserves: A, X, Y, ZP.IDX, ZP.TOP, ZP.ACC
     SetValue()
     {
-        // Get symbolType (high nibble of packed byte at typeOffset)
-        LDY #typeOffset
+        // Get symbolType (high nibble of packed byte at snType)
+        LDY #snType
         LDA [ZP.IDX], Y
         AND #0xF0  // Extract high nibble
         LSR LSR LSR LSR  // Shift to low nibble
@@ -202,12 +203,12 @@ unit Objects
             return;
         }
         
-        // Update value (offset valueOffset to valueOffset+1)
-        LDY #valueOffset
-        LDA ZP.NEXTL
+        // Update value (offset snValue to snValue+1)
+        LDY #snValue
+        LDA ZP.IDYL
         STA [ZP.IDX], Y
         INY
-        LDA ZP.NEXTH
+        LDA ZP.IDYH
         STA [ZP.IDX], Y
         
         SEC  // Success
@@ -219,8 +220,8 @@ unit Objects
     // Preserves: A, X, Y, ZP.IDX, ZP.TOP, ZP.NEXT, ZP.ACC
     GetTokens()
     {
-        // Get tokens pointer (offset tokensOffset to tokensOffset+1)
-        LDY #tokensOffset
+        // Get tokens pointer (offset snTokens to snTokens+1)
+        LDY #snTokens
         LDA [ZP.IDX], Y
         STA ZP.IDYL
         INY
@@ -234,8 +235,8 @@ unit Objects
     // Preserves: A, X, Y, ZP.IDX, ZP.TOP, ZP.NEXT, ZP.ACC
     SetTokens()
     {
-        // Set tokens pointer (offset tokensOffset to tokensOffset+1)
-        LDY #tokensOffset
+        // Set tokens pointer (offset snTokens to snTokens+1)
+        LDY #snTokens
         LDA ZP.IDYL
         STA [ZP.IDX], Y
         INY
@@ -332,28 +333,28 @@ unit Objects
     // Note: Next pointer at offset 0-1 already initialized by Table.Add()
     initializeNode()
     {
-        // Set symbolType|dataType (offset typeOffset)
-        LDY #typeOffset
+        // Set symbolType|dataType (offset snType)
+        LDY #snType
         LDA ZP.SymbolType
         STA [ZP.IDX], Y
         
-        // Set value (offset valueOffset to valueOffset+1)
-        LDY #valueOffset
-        LDA ZP.SymbolValueL
-        STA [ZP.IDX], Y
-        INY
-        LDA ZP.SymbolValueH
-        STA [ZP.IDX], Y
-        
-        // Set tokens pointer (offset tokensOffset to tokensOffset+1)
-        LDY #tokensOffset
+        // Set tokens pointer (offset snTokens to snTokens+1)
+        LDY #snTokens
         LDA ZP.SymbolTokensL
         STA [ZP.IDX], Y
         INY
         LDA ZP.SymbolTokensH
         STA [ZP.IDX], Y
         
-        // Copy name string starting at nameOffset
+        // Set value (offset snValue to snValue+1)
+        LDY #snValue
+        LDA ZP.SymbolValueL
+        STA [ZP.IDX], Y
+        INY
+        LDA ZP.SymbolValueH
+        STA [ZP.IDX], Y
+        
+        // Copy name string starting at snName
         copyNameToNode();
     }
     
@@ -367,10 +368,10 @@ unit Objects
         LDA ZP.SymbolNameH
         STA ZP.FSOURCEADDRESSH
         
-        // Set up destination address (node + nameOffset)
+        // Set up destination address (node + snName)
         CLC
         LDA ZP.IDXL
-        ADC #nameOffset
+        ADC #snName
         STA ZP.FDESTINATIONADDRESSL
         LDA ZP.IDXH
         ADC #0
@@ -394,7 +395,7 @@ unit Objects
         // Calculate address of name field in node and store in 0x77-0x78
         CLC
         LDA ZP.IDXL
-        ADC #nameOffset
+        ADC #snName
         STA 0x77            // Temporary storage for node name pointer low
         LDA ZP.IDXH
         ADC #0
@@ -441,8 +442,8 @@ unit Objects
                 return;
             }
             
-            // Get symbol type from current node (high nibble of typeOffset)
-            LDY #typeOffset
+            // Get symbol type from current node (high nibble of snType)
+            LDY #snType
             LDA [ZP.IDX], Y
             AND #0xF0  // Extract high nibble
             LSR LSR LSR LSR  // Shift to low nibble

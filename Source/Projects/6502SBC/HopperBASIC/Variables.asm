@@ -84,7 +84,7 @@ unit Variables
         STA ZP.SymbolTemp0 // Temporary storage
         
         // Get symbol type and check
-        Objects.GetData();  // Returns type in ZP.ACC, value in ZP.NEXT, tokens in ZP.IDY
+        Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
         
         LDA ZP.ACCL
         AND #0xF0  // Extract symbol type (high nibble)
@@ -119,7 +119,7 @@ unit Variables
     // Error: Fails if node is not variable or constant
     GetValue()
     {
-        Objects.GetData();  // Returns type in ZP.ACC, value in ZP.NEXT, tokens in ZP.IDY
+        Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
         
         // Check if it's a variable or constant
         LDA ZP.ACCL
@@ -129,10 +129,10 @@ unit Variables
         CMP #SymbolType.VARIABLE
         if (Z)
         {
-            // Copy value to TOP and extract data type
-            LDA ZP.NEXTL
+            // Copy value to TOP and extract data type - value is now in ZP.IDY
+            LDA ZP.IDYL
             STA ZP.TOPL
-            LDA ZP.NEXTH
+            LDA ZP.IDYH
             STA ZP.TOPH
             
             LDA ZP.ACCL
@@ -146,10 +146,10 @@ unit Variables
         CMP #SymbolType.CONSTANT
         if (Z)
         {
-            // Copy value to TOP and extract data type
-            LDA ZP.NEXTL
+            // Copy value to TOP and extract data type - value is now in ZP.IDY
+            LDA ZP.IDYL
             STA ZP.TOPL
-            LDA ZP.NEXTH
+            LDA ZP.IDYH
             STA ZP.TOPH
             
             LDA ZP.ACCL
@@ -178,7 +178,7 @@ unit Variables
         PHA
         
         // Get current symbol info
-        Objects.GetData();  // Returns type in ZP.ACC, value in ZP.NEXT, tokens in ZP.IDY
+        Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
         
         // Check if it's a variable
         LDA ZP.ACCL
@@ -197,13 +197,13 @@ unit Variables
             return;
         }
         
-        // It's a variable, set the new value
+        // It's a variable, set the new value - Objects.SetValue expects value in ZP.IDY
         LDA ZP.TOPL
-        STA ZP.NEXTL
+        STA ZP.IDYL
         LDA ZP.TOPH
-        STA ZP.NEXTH
+        STA ZP.IDYH
         
-        Objects.SetValue();  // This will use ZP.NEXT
+        Objects.SetValue();  // This will use ZP.IDY
         
         PLA
     }
@@ -215,7 +215,7 @@ unit Variables
     // Error: Fails if node is not variable or constant
     GetType()
     {
-        Objects.GetData();  // Returns type in ZP.ACC, value in ZP.NEXT, tokens in ZP.IDY
+        Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
         
         // Check if it's a variable or constant
         LDA ZP.ACCL
@@ -253,7 +253,7 @@ unit Variables
         // Calculate address of name field in node
         CLC
         LDA ZP.IDXL
-        ADC #Objects.nameOffset
+        ADC #Objects.snName
         STA ZP.ACCL
         LDA ZP.IDXH
         ADC #0

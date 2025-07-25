@@ -162,6 +162,7 @@ unit TestObjects
         }
         
         Objects.GetData();
+        // NEW INTERFACE: ZP.ACC = symbolType|dataType, ZP.NEXT = tokens pointer, ZP.IDY = value
         
         // Check data type (should be WORD = 4)
         LDA ZP.ACCL
@@ -175,8 +176,8 @@ unit TestObjects
             return;
         }
         
-        // Check value (should be 1000)
-        LDA ZP.NEXTL
+        // Check value (should be 1000) - now in ZP.IDY instead of ZP.NEXT
+        LDA ZP.IDYL
         CMP #(1000 % 256)
         if (NZ)
         {
@@ -185,7 +186,7 @@ unit TestObjects
             Test.PrintResult();
             return;
         }
-        LDA ZP.NEXTH
+        LDA ZP.IDYH
         CMP #(1000 / 256)
         if (NZ)
         {
@@ -195,9 +196,9 @@ unit TestObjects
             return;
         }
         
-        // Check tokens pointer (should be null for this test)
-        LDA ZP.IDYL
-        ORA ZP.IDYH
+        // Check tokens pointer (should be null for this test) - now in ZP.NEXT instead of ZP.IDY
+        LDA ZP.NEXTL
+        ORA ZP.NEXTH
         if (NZ)
         {
             LDA #0x44
@@ -246,8 +247,8 @@ unit TestObjects
         
         // Change value to 200
         LDA #200
-        STA ZP.NEXTL
-        STZ ZP.NEXTH
+        STA ZP.IDYL
+        STZ ZP.IDYH
         
         Objects.SetValue();
         if (NC)
@@ -260,7 +261,8 @@ unit TestObjects
         
         // Verify new value
         Objects.GetData();
-        LDA ZP.NEXTL
+        // NEW INTERFACE: value now in ZP.IDY
+        LDA ZP.IDYL
         CMP #200
         if (NZ)
         {

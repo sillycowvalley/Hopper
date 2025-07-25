@@ -14,8 +14,9 @@ unit Arguments
     // Offset 3+:  null-terminated argument name
     
     const byte argOverhead = 3;     // Fixed fields before name
-    const byte argTypeOffset = 2;   // Offset to argument type field
-    const byte argNameOffset = 3;   // Offset to name field in argument node
+    const byte anNext = 0;          // Next pointer offset (2 bytes)
+    const byte anType = 2;          // Argument type field offset
+    const byte anName = 3;          // Name field offset (variable length)
     
     // Add argument to function's arguments list
     // Input: ZP.IDX = function node address, ZP.TOP = argument name, ZP.ACCL = argument type
@@ -60,13 +61,13 @@ unit Arguments
         // Initialize the new argument node
         initializeArgumentNode();
         
-        // Get current arguments list head from function node (offset 3-4)
+        // Get current arguments list head from function node (offset Objects.snValue)
         LDA ZP.SymbolTemp0
         STA ZP.LHEADL
         LDA ZP.SymbolTemp1
         STA ZP.LHEADH
         
-        LDY #3  // Arguments field offset in function node
+        LDY #Objects.snValue  // Arguments field offset in function node
         LDA [ZP.LHEAD], Y
         STA ZP.LCURRENTL  // Current first argument
         INY
@@ -74,7 +75,7 @@ unit Arguments
         STA ZP.LCURRENTH
         
         // Set new node's next pointer to current first argument
-        LDY #0
+        LDY #anNext
         LDA ZP.LCURRENTL
         STA [ZP.IDX], Y
         INY
@@ -82,7 +83,7 @@ unit Arguments
         STA [ZP.IDX], Y
         
         // Update function node's arguments field to point to new node
-        LDY #3
+        LDY #Objects.snValue
         LDA ZP.IDXL
         STA [ZP.LHEAD], Y
         INY
@@ -104,8 +105,8 @@ unit Arguments
         PHX
         PHY
         
-        // Get arguments list head from function node (offset 3-4)
-        LDY #3
+        // Get arguments list head from function node (offset Objects.snValue)
+        LDY #Objects.snValue
         LDA [ZP.IDX], Y
         STA ZP.LCURRENTL
         INY
@@ -145,17 +146,17 @@ unit Arguments
                 return;
             }
             
-            // Move to next argument
+            // Move to next argument - use IDY since we return it anyway
             LDA ZP.LCURRENTL
-            STA ZP.IDXL
+            STA ZP.IDYL
             LDA ZP.LCURRENTH
-            STA ZP.IDXH
+            STA ZP.IDYH
             
-            LDY #0
-            LDA [ZP.IDX], Y
+            LDY #anNext
+            LDA [ZP.IDY], Y
             STA ZP.LCURRENTL
             INY
-            LDA [ZP.IDX], Y
+            LDA [ZP.IDY], Y
             STA ZP.LCURRENTH
             
             INC ZP.ACCL  // Increment argument index
@@ -167,7 +168,7 @@ unit Arguments
     // Output: ZP.ACCL = argument type
     GetType()
     {
-        LDY #argTypeOffset
+        LDY #anType
         LDA [ZP.IDY], Y
         STA ZP.ACCL
     }
@@ -180,7 +181,7 @@ unit Arguments
         // Calculate address of name field in argument node
         CLC
         LDA ZP.IDYL
-        ADC #argNameOffset
+        ADC #anName
         STA ZP.TOPL
         LDA ZP.IDYH
         ADC #0
@@ -201,7 +202,7 @@ unit Arguments
         STA ZP.SymbolTemp0
         
         // Get arguments list head from function node
-        LDY #3
+        LDY #Objects.snValue
         LDA [ZP.IDX], Y
         STA ZP.LCURRENTL
         INY
@@ -242,17 +243,17 @@ unit Arguments
                 return;
             }
             
-            // Move to next argument
+            // Move to next argument - use IDY since we return it anyway
             LDA ZP.LCURRENTL
-            STA ZP.IDXL
+            STA ZP.IDYL
             LDA ZP.LCURRENTH
-            STA ZP.IDXH
+            STA ZP.IDYH
             
-            LDY #0
-            LDA [ZP.IDX], Y
+            LDY #anNext
+            LDA [ZP.IDY], Y
             STA ZP.LCURRENTL
             INY
-            LDA [ZP.IDX], Y
+            LDA [ZP.IDY], Y
             STA ZP.LCURRENTH
             
             INC ZP.ACCL  // Increment current index
@@ -268,7 +269,7 @@ unit Arguments
         PHX
         
         // Get arguments list head from function node
-        LDY #3
+        LDY #Objects.snValue
         LDA [ZP.IDX], Y
         STA ZP.LCURRENTL
         INY
@@ -292,7 +293,7 @@ unit Arguments
             LDA ZP.LCURRENTH
             STA ZP.IDXH
             
-            LDY #0
+            LDY #anNext
             LDA [ZP.IDX], Y
             STA ZP.LCURRENTL
             INY
@@ -312,7 +313,7 @@ unit Arguments
         PHA
         
         // Get arguments list head from function node
-        LDY #3
+        LDY #Objects.snValue
         LDA [ZP.IDX], Y
         STA ZP.IDYL
         INY
@@ -342,7 +343,7 @@ unit Arguments
         PHA
         
         // Get next pointer from current argument node
-        LDY #0
+        LDY #anNext
         LDA [ZP.IDY], Y
         STA ZP.LCURRENTL
         INY
@@ -389,7 +390,7 @@ unit Arguments
         loop
         {
             // Get first argument from function node (use saved address)
-            LDY #3
+            LDY #Objects.snValue
             LDA [ZP.SymbolTemp0], Y
             STA ZP.ACCL
             INY
@@ -402,7 +403,7 @@ unit Arguments
             if (Z) { break; }  // No more arguments
             
             // Get next pointer from first argument (use IDY instead of IDX)
-            LDY #0
+            LDY #anNext
             LDA [ZP.ACC], Y
             STA ZP.LNEXTL
             INY
@@ -410,7 +411,7 @@ unit Arguments
             STA ZP.LNEXTH
             
             // Store the next pointer as the new head argument
-            LDY #3
+            LDY #Objects.snValue
             LDA ZP.LNEXTL
             STA [ZP.SymbolTemp0], Y
             INY
@@ -469,12 +470,12 @@ unit Arguments
     // Note: Next pointer will be set by caller
     initializeArgumentNode()
     {
-        // Set argument type (offset argTypeOffset)
-        LDY #argTypeOffset
+        // Set argument type (offset anType)
+        LDY #anType
         LDA ZP.SymbolType
         STA [ZP.IDX], Y
         
-        // Copy name string starting at argNameOffset
+        // Copy name string starting at anName
         copyArgumentNameToNode();
     }
     
@@ -488,10 +489,10 @@ unit Arguments
         LDA ZP.SymbolNameH
         STA ZP.FSOURCEADDRESSH
         
-        // Set up destination address (node + argNameOffset)
+        // Set up destination address (node + anName)
         CLC
         LDA ZP.IDXL
-        ADC #argNameOffset
+        ADC #anName
         STA ZP.FDESTINATIONADDRESSL
         LDA ZP.IDXH
         ADC #0
@@ -514,7 +515,7 @@ unit Arguments
         // Calculate address of name field in argument node
         CLC
         LDA ZP.LCURRENTL
-        ADC #argNameOffset
+        ADC #anName
         STA ZP.LPREVIOUSL    // Use LPREVIOUS for argument name pointer
         LDA ZP.LCURRENTH
         ADC #0
