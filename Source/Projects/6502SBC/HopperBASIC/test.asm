@@ -5,7 +5,7 @@ program Test
     //#define MEMDEBUG // Allocate and Free
     
     #define CPU_65C02S
-    #define ROM_16K
+    #define ROM_32K
     
     #define HOPPER_BASIC
     
