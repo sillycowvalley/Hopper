@@ -56,7 +56,7 @@ unit TestConstants
         // Allocate test tokens FIRST
         allocateTestTokens();  // Result in ZP.SymbolTemp0/1
         
-        Variables.Initialize();
+        
         
         // Declare INT constant "PI" = 314
         LDA #(constName1 % 256)
@@ -107,7 +107,7 @@ unit TestConstants
         // Allocate test tokens FIRST
         allocateTestTokens();  // Result in ZP.SymbolTemp0/1
         
-        Variables.Initialize();
+        
         
         // Declare WORD constant "MAX_SIZE" = 65000
         LDA #(constName2 % 256)
@@ -158,7 +158,7 @@ unit TestConstants
         // Allocate test tokens FIRST
         allocateTestTokens();  // Result in ZP.SymbolTemp0/1
         
-        Variables.Initialize();
+        
         
         // Declare BIT constant "DEBUG_FLAG" = 1
         LDA #(constName3 % 256)
@@ -205,7 +205,7 @@ unit TestConstants
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        Variables.Initialize();
+        
         
         // Declare constant first
         LDA #(constName4 % 256)
@@ -255,7 +255,7 @@ unit TestConstants
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        Variables.Initialize();
+        
         
         // Declare INT constant "PI" = 314
         LDA #(constName1 % 256)
@@ -339,7 +339,7 @@ unit TestConstants
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        Variables.Initialize();
+        
         
         // Declare constant
         LDA #(constName2 % 256)
@@ -391,7 +391,7 @@ unit TestConstants
         // Allocate test tokens FIRST and save for later comparison
         allocateTestTokens();  // Result in ZP.SymbolTemp0/1
         
-        Variables.Initialize();
+        
         
         // Declare constant with specific tokens pointer
         LDA #(constName3 % 256)
@@ -454,7 +454,7 @@ unit TestConstants
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        Variables.Initialize();
+        
         
         // Add variable
         LDA #(constName1 % 256)
@@ -533,7 +533,7 @@ unit TestConstants
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        Variables.Initialize();
+        
         
         // Declare first constant
         LDA #(constName1 % 256)

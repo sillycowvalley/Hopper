@@ -24,7 +24,7 @@ program Test
     uses "TestObjects"
     uses "TestVariables"
     uses "TestConstants"
-    //uses "TestFunctions"
+    uses "TestFunctions"
     
     // Test Table head locations
     const byte TableHeadLocation  = 0x3C;
@@ -61,13 +61,7 @@ program Test
     // Print test number and description
     PrintTestHeader()
     {
-        // Input: A = test number (ASCII), ZP.TOP = description pointer
-        Serial.WriteChar();
-        LDA #':'
-        Serial.WriteChar();
-        LDA #' '
-        Serial.WriteChar();
-        
+        // Input: ZP.TOP = description pointer
         LDA ZP.TOPL
         STA ZP.IDXL
         LDA ZP.TOPH
@@ -210,12 +204,13 @@ program Test
         }
     }
     
-    // Initialize test environment
+    // Initialize test environment - ONLY place Objects.Initialize() is called
     InitializeTest()
     {
         Serial.Initialize();
         Memory.InitializeHeapSize();
         Stacks.Initialize();
+        Objects.Initialize();
         
         STZ TableHeadLocationL
         STZ TableHeadLocationH
@@ -265,7 +260,6 @@ program Test
         PrintSectionHeader();
         TestConstants.RunConstantsTests();
         
-        /*
         // Function layer tests
         LDA #(functionsSection % 256)
         STA ZP.TOPL
@@ -273,7 +267,6 @@ program Test
         STA ZP.TOPH
         PrintSectionHeader();
         TestFunctions.RunFunctionsTests();
-        */
         
         LDA #(testComplete % 256)
         STA ZP.IDXL
@@ -297,7 +290,7 @@ program Test
     Hopper()
     {
         SEI
-        InitializeTest();
+        InitializeTest();  // Objects.Initialize() called only here
         CLI
         RunAllTests();
         loop { }

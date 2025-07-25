@@ -58,7 +58,7 @@ unit TestFunctions
         // Allocate test tokens FIRST
         allocateTestTokens();  // Result in ZP.SymbolTemp0/1
         
-        Functions.Initialize();
+        
         
         // Declare INT function "ADD" with no arguments
         LDA #(funcName1 % 256)
@@ -107,7 +107,7 @@ unit TestFunctions
         // Allocate test tokens FIRST
         allocateTestTokens();  // Result in ZP.SymbolTemp0/1
         
-        Functions.Initialize();
+        
         
         // Create arguments table
         Arguments.Create();
@@ -195,7 +195,7 @@ unit TestFunctions
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        Functions.Initialize();
+        
         
         // Declare function first
         LDA #(funcName3 % 256)
@@ -245,7 +245,7 @@ unit TestFunctions
         // Allocate test tokens FIRST
         allocateTestTokens();  // Result in ZP.SymbolTemp0/1
         
-        Functions.Initialize();
+        
         
         // Create simple arguments table
         Arguments.Create();
@@ -368,7 +368,7 @@ unit TestFunctions
         // Allocate test tokens FIRST
         allocateTestTokens();  // Result in ZP.SymbolTemp0/1
         
-        Functions.Initialize();
+        
         
         // Declare function
         LDA #(funcName2 % 256)
@@ -428,7 +428,7 @@ unit TestFunctions
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        Functions.Initialize();
+        
         
         // Add variable (to mix symbol types)
         LDA #(argName1 % 256)
@@ -506,7 +506,7 @@ unit TestFunctions
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        Functions.Initialize();
+        
         
         // Declare first function
         LDA #(funcName3 % 256)

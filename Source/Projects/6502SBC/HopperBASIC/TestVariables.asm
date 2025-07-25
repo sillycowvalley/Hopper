@@ -32,67 +32,26 @@ unit TestVariables
     }
     
     // Variables test descriptions
-    const string variablesDesc1 = "Variables initialize";
-    const string variablesDesc2 = "Declare INT variable";
-    const string variablesDesc3 = "Declare WORD constant";
-    const string variablesDesc4 = "Find variable by name";
-    const string variablesDesc5 = "Find constant by name";
-    const string variablesDesc6 = "Get variable value";
-    const string variablesDesc7 = "Get constant value";
-    const string variablesDesc8 = "Set variable value";
-    const string variablesDesc9 = "Set constant value (should fail)";
-    const string variablesDesc10 = "Get variable type";
-    const string variablesDesc11 = "Get variable name";
-    const string variablesDesc12 = "Get variable tokens";
-    const string variablesDesc13 = "Remove variable";
-    const string variablesDesc14 = "Iterate variables only";
-    const string variablesDesc15 = "Iterate constants only";
-    const string variablesDesc16 = "Iterate all symbols";
-    const string variablesDesc17 = "Duplicate declaration (should fail)";
-    const string variablesDesc18 = "Type filtering in Find";
-    const string variablesDesc19 = "Variables clear all";
+    const string variablesDesc1 = "Declare INT variable";
+    const string variablesDesc2 = "Declare WORD constant";
+    const string variablesDesc3 = "Find variable by name";
+    const string variablesDesc4 = "Get variable value";
+    const string variablesDesc5 = "Set variable value";
+    const string variablesDesc6 = "Set constant value (should fail)";
+    const string variablesDesc7 = "Get variable tokens";
+    const string variablesDesc8 = "Iterate variables only";
     
-    // Test 14: Variables initialize
-    testVariablesInit()
+    // Test: Declare INT variable
+    testDeclareIntVariable()
     {
-        LDA #'E'  // Test 14
         LDA #(variablesDesc1 % 256)
         STA ZP.TOPL
         LDA #(variablesDesc1 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        Variables.Initialize();
-        
-        // Should have empty symbol table
-        LDA ZP.SymbolListL
-        ORA ZP.SymbolListH
-        if (Z)
-        {
-            SEC  // Pass - already empty, no cleanup needed
-        }
-        else
-        {
-            LDA #0x10
-            CLC  // Fail
-        }
-        Test.PrintResult();
-    }
-    
-    // Test 15: Declare INT variable
-    testDeclareIntVariable()
-    {
-        LDA #'F'  // Test 15
-        LDA #(variablesDesc2 % 256)
-        STA ZP.TOPL
-        LDA #(variablesDesc2 / 256)
-        STA ZP.TOPH
-        Test.PrintTestHeader();
-        
         // Allocate test tokens FIRST
         allocateTestTokens();  // Result in ZP.SymbolTemp0/1
-        
-        Variables.Initialize();
         
         // Declare INT variable "COUNT" = 42
         LDA #(testName2 % 256)
@@ -129,20 +88,17 @@ unit TestVariables
         Test.PrintResult();
     }
     
-    // Test 16: Declare WORD constant
+    // Test: Declare WORD constant
     testDeclareWordConstant()
     {
-        LDA #'G'  // Test 16
-        LDA #(variablesDesc3 % 256)
+        LDA #(variablesDesc2 % 256)
         STA ZP.TOPL
-        LDA #(variablesDesc3 / 256)
+        LDA #(variablesDesc2 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
         // Allocate test tokens FIRST
         allocateTestTokens();  // Result in ZP.SymbolTemp0/1
-        
-        Variables.Initialize();
         
         // Declare WORD constant "CONST1" = 1000
         LDA #(testName5 % 256)
@@ -180,17 +136,14 @@ unit TestVariables
         Test.PrintResult();
     }
     
-    // Test 17: Find variable by name
+    // Test: Find variable by name
     testFindVariableByName()
     {
-        LDA #'H'  // Test 17
-        LDA #(variablesDesc4 % 256)
+        LDA #(variablesDesc3 % 256)
         STA ZP.TOPL
-        LDA #(variablesDesc4 / 256)
+        LDA #(variablesDesc3 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
-        
-        Variables.Initialize();
         
         // Declare variable first
         LDA #(testName1 % 256)
@@ -230,17 +183,14 @@ unit TestVariables
         Test.PrintResult();
     }
     
-    // Test 18: Get variable value
+    // Test: Get variable value
     testGetVariableValue()
     {
-        LDA #'I'  // Test 18
-        LDA #(variablesDesc6 % 256)
+        LDA #(variablesDesc4 % 256)
         STA ZP.TOPL
-        LDA #(variablesDesc6 / 256)
+        LDA #(variablesDesc4 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
-        
-        Variables.Initialize();
         
         // Declare INT variable "TEMP" = 255
         LDA #(testName4 % 256)
@@ -303,17 +253,14 @@ unit TestVariables
         Test.PrintResult();
     }
     
-    // Test 19: Set variable value
+    // Test: Set variable value
     testSetVariableValue()
     {
-        LDA #'J'  // Test 19
-        LDA #(variablesDesc8 % 256)
+        LDA #(variablesDesc5 % 256)
         STA ZP.TOPL
-        LDA #(variablesDesc8 / 256)
+        LDA #(variablesDesc5 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
-        
-        Variables.Initialize();
         
         // Declare variable
         LDA #(testName2 % 256)
@@ -364,17 +311,14 @@ unit TestVariables
         Test.PrintResult();
     }
     
-    // Test 20: Set constant value (should fail)
+    // Test: Set constant value (should fail)
     testSetConstantValue()
     {
-        LDA #'K'  // Test 20
-        LDA #(variablesDesc9 % 256)
+        LDA #(variablesDesc6 % 256)
         STA ZP.TOPL
-        LDA #(variablesDesc9 / 256)
+        LDA #(variablesDesc6 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
-        
-        Variables.Initialize();
         
         // Declare constant
         LDA #(testName5 % 256)
@@ -413,20 +357,17 @@ unit TestVariables
         Test.PrintResult();
     }
     
-    // Test 21: Get variable tokens
+    // Test: Get variable tokens
     testGetVariableTokens()
     {
-        LDA #'L'  // Test 21
-        LDA #(variablesDesc12 % 256)
+        LDA #(variablesDesc7 % 256)
         STA ZP.TOPL
-        LDA #(variablesDesc12 / 256)
+        LDA #(variablesDesc7 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
         // Allocate test tokens FIRST and save for later comparison
         allocateTestTokens();  // Result in ZP.SymbolTemp0/1
-        
-        Variables.Initialize();
         
         // Declare variable with specific tokens pointer
         LDA #(testName1 % 256)
@@ -480,17 +421,14 @@ unit TestVariables
         Test.PrintResult();
     }
     
-    // Test 22: Iterate variables only
+    // Test: Iterate variables only
     testIterateVariablesOnly()
     {
-        LDA #'M'  // Test 22
-        LDA #(variablesDesc14 % 256)
+        LDA #(variablesDesc8 % 256)
         STA ZP.TOPL
-        LDA #(variablesDesc14 / 256)
+        LDA #(variablesDesc8 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
-        
-        Variables.Initialize();
         
         // Add variable
         LDA #(testName1 % 256)
@@ -562,7 +500,6 @@ unit TestVariables
     // Run all variables tests
     RunVariablesTests()
     {
-        testVariablesInit();
         testDeclareIntVariable();
         testDeclareWordConstant();
         testFindVariableByName();

@@ -30,54 +30,24 @@ unit TestObjects
     }
     
     // Objects test descriptions
-    const string objectsDesc1 = "Objects initialize";
-    const string objectsDesc2 = "Add symbol";
-    const string objectsDesc3 = "Find symbol";
-    const string objectsDesc4 = "Get symbol data";
-    const string objectsDesc5 = "Set symbol value";
-    const string objectsDesc6 = "Symbol type filtering";
-    const string objectsDesc7 = "Destroy symbol table";
+    const string objectsDesc1 = "Add symbol";
+    const string objectsDesc2 = "Find symbol";
+    const string objectsDesc3 = "Get symbol data";
+    const string objectsDesc4 = "Set symbol value";
+    const string objectsDesc5 = "Symbol type filtering";
+    const string objectsDesc6 = "Destroy symbol table";
     
-    // Test 7: Initialize Objects
-    testObjectsInit()
+    // Test: Add symbol to Objects
+    testAddSymbol()
     {
-        LDA #'7'
         LDA #(objectsDesc1 % 256)
         STA ZP.TOPL
         LDA #(objectsDesc1 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        Objects.Initialize();
-        
-        LDA ZP.SymbolListL
-        ORA ZP.SymbolListH
-        if (Z)
-        {
-            SEC  // Pass - already empty, no cleanup needed
-        }
-        else
-        {
-            LDA #0x10
-            CLC  // Fail
-        }
-        Test.PrintResult();
-    }
-    
-    // Test 8: Add symbol to Objects
-    testAddSymbol()
-    {
-        LDA #'8'
-        LDA #(objectsDesc2 % 256)
-        STA ZP.TOPL
-        LDA #(objectsDesc2 / 256)
-        STA ZP.TOPH
-        Test.PrintTestHeader();
-        
         // Allocate test tokens FIRST (before setting up other variables)
         allocateTestTokens();  // Result in ZP.SymbolTemp0/1
-        
-        Objects.Initialize();
         
         // Add INT variable "COUNT" = 42 with tokens pointer
         LDA #(testName2 % 256)
@@ -116,20 +86,17 @@ unit TestObjects
         Test.PrintResult();
     }
     
-    // Test 9: Find symbol by name
+    // Test: Find symbol by name
     testFindSymbol()
     {
-        LDA #'9'
-        LDA #(objectsDesc3 % 256)
+        LDA #(objectsDesc2 % 256)
         STA ZP.TOPL
-        LDA #(objectsDesc3 / 256)
+        LDA #(objectsDesc2 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
         // Allocate test tokens FIRST
         allocateTestTokens();  // Result in ZP.SymbolTemp0/1
-        
-        Objects.Initialize();
         
         // Add BIT variable "FLAG" = 1
         LDA #(testName3 % 256)
@@ -175,20 +142,17 @@ unit TestObjects
         Test.PrintResult();
     }
     
-    // Test 10: Get symbol data
+    // Test: Get symbol data
     testGetSymbolData()
     {
-        LDA #'A'  // Test 10
-        LDA #(objectsDesc4 % 256)
+        LDA #(objectsDesc3 % 256)
         STA ZP.TOPL
-        LDA #(objectsDesc4 / 256)
+        LDA #(objectsDesc3 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
         // Allocate test tokens FIRST and save for later comparison
         allocateTestTokens();  // Result in ZP.SymbolTemp0/1
-        
-        Objects.Initialize();
         
         // Add WORD variable "VAR1" = 1000
         LDA #(testName1 % 256)
@@ -282,20 +246,17 @@ unit TestObjects
         Test.PrintResult();
     }
     
-    // Test 11: Set symbol value
+    // Test: Set symbol value
     testSetSymbolValue()
     {
-        LDA #'B'  // Test 11
-        LDA #(objectsDesc5 % 256)
+        LDA #(objectsDesc4 % 256)
         STA ZP.TOPL
-        LDA #(objectsDesc5 / 256)
+        LDA #(objectsDesc4 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
         
         // Allocate test tokens FIRST
         allocateTestTokens();  // Result in ZP.SymbolTemp0/1
-        
-        Objects.Initialize();
         
         // Add INT variable "TEMP" = 100
         LDA #(testName4 % 256)
@@ -351,17 +312,14 @@ unit TestObjects
         Test.PrintResult();
     }
     
-    // Test 12: Symbol type filtering
+    // Test: Symbol type filtering
     testSymbolFiltering()
     {
-        LDA #'C'  // Test 12
-        LDA #(objectsDesc6 % 256)
+        LDA #(objectsDesc5 % 256)
         STA ZP.TOPL
-        LDA #(objectsDesc6 / 256)
+        LDA #(objectsDesc5 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
-        
-        Objects.Initialize();
         
         // Add variable
         LDA #(testName1 % 256)
@@ -423,17 +381,14 @@ unit TestObjects
         Test.PrintResult();
     }
     
-    // Test 13: Destroy symbol table
+    // Test: Destroy symbol table
     testDestroy()
     {
-        LDA #'D'  // Test 13
-        LDA #(objectsDesc7 % 256)
+        LDA #(objectsDesc6 % 256)
         STA ZP.TOPL
-        LDA #(objectsDesc7 / 256)
+        LDA #(objectsDesc6 / 256)
         STA ZP.TOPH
         Test.PrintTestHeader();
-        
-        Objects.Initialize();
         
         // Add several symbols
         LDY #0
@@ -479,7 +434,6 @@ unit TestObjects
     // Run all objects tests
     RunObjectsTests()
     {
-        testObjectsInit();
         testAddSymbol();
         testFindSymbol();
         testGetSymbolData();

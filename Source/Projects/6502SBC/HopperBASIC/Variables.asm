@@ -1,20 +1,13 @@
 unit Variables
 {
     uses "/Source/Runtime/6502/ZeroPage"
+    uses "/Source/Runtime/6502/Memory"
     uses "Objects"
     uses "BasicTypes"
     uses "Messages"
     
     // Variable management using Objects foundation
     // Two-stage approach: Find name to address, then operate on address
-    
-    // Initialize variable system
-    // Output: Symbol table cleared and ready
-    // Preserves: All registers and ZP variables
-    Initialize()
-    {
-        Objects.Initialize();
-    }
     
     // Declare new variable or constant
     // Input: ZP.TOP = name pointer, ZP.ACC = symbolType|dataType (packed),
@@ -262,7 +255,7 @@ unit Variables
         // Calculate address of name field in node
         CLC
         LDA ZP.IDXL
-        ADC # Objects.nameOffset
+        ADC #Objects.nameOffset
         STA ZP.ACCL
         LDA ZP.IDXH
         ADC #0
@@ -288,18 +281,59 @@ unit Variables
     // Input: ZP.TOP = name pointer
     // Output: C set if successful, NC if not found
     // Uses: Objects.Remove() internally
+    // Note: Also frees token stream if non-zero
     Remove()
     {
+        PHA
+        PHX
+        PHY
+        
         // Find the symbol first
         STZ ZP.ACCL  // Accept any type
         Find();
         if (NC)  // Not found
         {
+            PLY
+            PLX
+            PLA
             return;  // C already clear
         }
         
-        // Remove it
-        Objects.Remove();
+        // Get tokens pointer before removing symbol
+        Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
+        
+        // Save tokens pointer for freeing
+        LDA ZP.IDYL
+        STA 0x7A  // Temporary storage
+        LDA ZP.IDYH
+        STA 0x7B
+        
+        // Remove the symbol node
+        Objects.Remove();  // This munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
+        if (NC)
+        {
+            PLY
+            PLX
+            PLA
+            return;  // C already clear
+        }
+        
+        // Free tokens if non-zero
+        LDA 0x7A
+        ORA 0x7B
+        if (NZ)  // Non-zero tokens pointer
+        {
+            LDA 0x7A
+            STA ZP.ACCL
+            LDA 0x7B
+            STA ZP.ACCH
+            Memory.Free();  // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
+        }
+        
+        PLY
+        PLX
+        PLA
+        SEC  // Success
     }
     
     // Start iteration over variables only (for VARS command)
@@ -339,9 +373,50 @@ unit Variables
     
     // Clear all variables and constants (for NEW command)
     // Output: Empty symbol table
-    // Uses: Objects.Destroy() internally
+    // Note: Frees all token streams before destroying symbols
     Clear()
     {
+        PHA
+        PHX
+        PHY
+        
+        // Walk through all symbols and free their token streams
+        STZ ZP.ACCL  // No filter - get all symbols
+        Objects.IterateStart();
+        
+        loop
+        {
+            if (NC) { break; }  // No more symbols
+            
+            // Get tokens pointer
+            Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
+            
+            // Free tokens if non-zero
+            LDA ZP.IDYL
+            ORA ZP.IDYH
+            if (NZ)  // Non-zero tokens pointer
+            {
+                LDA ZP.IDYL
+                STA ZP.ACCL
+                LDA ZP.IDYH
+                STA ZP.ACCH
+                Memory.Free();  // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
+                
+                // Re-establish iteration state after Memory.Free munts everything
+                STZ ZP.ACCL  // No filter
+                Objects.IterateStart();  // Restart iteration
+                continue;
+            }
+            
+            // Move to next symbol
+            Objects.IterateNext();
+        }
+        
+        // Now destroy the symbol table itself
         Objects.Destroy();
+        
+        PLY
+        PLX
+        PLA
     }
 }
