@@ -242,13 +242,14 @@ unit TestArguments
         PLA
         STA ZP.IDXL
         
+        
         // Find the argument by name
         LDA #(argName4 % 256)
         STA ZP.TOPL
         LDA #(argName4 / 256)
         STA ZP.TOPH
-        Arguments.Find();
         
+        Arguments.Find();
         if (C)
         {
             // Check that index is 0 (first argument)

@@ -46,8 +46,8 @@ unit Arguments
             STA ZP.SymbolNameH
             
             // 1. Allocate and initialize new node
-            calculateArgumentNodeSize();   // Returns size in ZP.ACC
-            Memory.Allocate();             // Returns address in ZP.IDX
+            calculateNodeSize();       // Returns size in ZP.ACC
+            Memory.Allocate();         // Returns address in ZP.IDX
             
             LDA ZP.IDXL
             ORA ZP.IDXH
@@ -62,7 +62,7 @@ unit Arguments
             LDA ZP.IDXH
             STA ZP.LCURRENTH
             
-            initializeArgumentNode();
+            initializeNode();
             
             // New node's next = NULL
             LDY #anNext
@@ -162,16 +162,14 @@ unit Arguments
                 }
                 
                 // Compare argument name
-                compareArgumentNames();
-                if (Z)  // Names match
+                compareNames();
+                if (C)  // Names match
                 {
                     // Copy node address to IDY
                     LDA ZP.LCURRENTL
                     STA ZP.IDYL
                     LDA ZP.LCURRENTH
                     STA ZP.IDYH
-                    
-                    SEC  // Found
                     break;
                 }
                 
@@ -205,10 +203,14 @@ unit Arguments
     // Munts: -
     GetType()
     {
+        PHA
+        
         LDY #anType
         LDA [ZP.IDY], Y
         STA ZP.ACCL
         SEC  // Always succeeds
+        
+        PLA
     }
     
     // Get argument name pointer from argument node
@@ -496,7 +498,7 @@ unit Arguments
     // Input: ZP.SymbolName = argument name pointer
     // Output: ZP.ACC = total node size (16-bit), ZP.SymbolLength = name length including null
     // Munts: -
-    calculateArgumentNodeSize()
+    calculateNodeSize()
     {
         // Start with fixed overhead
         LDA #argOverhead
@@ -529,7 +531,7 @@ unit Arguments
     //        ZP.SymbolName = name pointer, ZP.SymbolLength = name length
     // Note: Next pointer will be set by caller
     // Munts: -
-    initializeArgumentNode()
+    initializeNode()
     {
         // Set argument type (offset anType)
         LDY #anType
@@ -537,13 +539,13 @@ unit Arguments
         STA [ZP.IDX], Y
         
         // Copy name string starting at anName
-        copyArgumentNameToNode();
+        copyNameToNode();
     }
     
     // Internal helper: Copy argument name string to node
     // Input: ZP.IDX = node address, ZP.SymbolName = name pointer, ZP.SymbolLength = name length
     // Munts: ZP.FSOURCEADDRESSL/H, ZP.FDESTINATIONADDRESSL/H, ZP.FLENGTHL/H
-    copyArgumentNameToNode()
+    copyNameToNode()
     {
         // Set up source address (name pointer)
         LDA ZP.SymbolNameL
@@ -571,33 +573,36 @@ unit Arguments
     
     // Internal helper: Compare argument names
     // Input: ZP.LCURRENT = argument node address, ZP.TOP = target name
-    // Output: Z set if equal, NZ if different
-    // Munts: ZP.LPREVIOUS, ZP.LNEXT
-    compareArgumentNames()
+    // Output: C if names match, NC if different
+    // Munts: ZP.NEXT (temporarily)
+    compareNames()
     {
+        PHA
+        
+        // Save ZP.NEXT since StringCompare uses it
+        LDA ZP.NEXTL
+        PHA
+        LDA ZP.NEXTH
+        PHA
+        
         // Calculate address of name field in argument node
         CLC
         LDA ZP.LCURRENTL
         ADC #anName
-        STA ZP.LPREVIOUSL    // Use LPREVIOUS for argument name pointer
+        STA ZP.NEXTL         // Use NEXT for string2 pointer
         LDA ZP.LCURRENTH
         ADC #0
-        STA ZP.LPREVIOUSH
+        STA ZP.NEXTH
         
-        // Compare strings
-        LDY #0
-        loop
-        {
-            LDA [ZP.TOP], Y      // Target name character
-            STA ZP.LNEXTL        // Temporary storage for comparison
-            LDA [ZP.LPREVIOUS], Y // Argument name character
-            CMP ZP.LNEXTL        // Compare
-            if (NZ) { return; }  // Different characters
-            
-            // Check if we hit null terminator
-            if (Z) { return; }   // Both null terminators - strings equal
-            
-            INY
-        }
+        // Compare strings using Tools utility
+        Tools.StringCompare();  // Returns C set if match, NC if different
+        
+        // Restore ZP.NEXT
+        PLA
+        STA ZP.NEXTH
+        PLA
+        STA ZP.NEXTL
+        
+        PLA
     }
 }

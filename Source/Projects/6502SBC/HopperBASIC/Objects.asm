@@ -171,7 +171,6 @@ unit Objects
                 compareNames();
                 if (C) // Names match
                 {
-                    SEC  // Found
                     break;
                 }
                 
