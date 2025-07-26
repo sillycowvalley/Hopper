@@ -7,6 +7,8 @@ unit Statement
     uses "Expression"
     uses "Tools"
     
+    uses "Variables"
+    
     // Execute a statement starting from current token position
     // Assumes ZP.CurrentToken contains the first token of the statement
     // Returns C if successful, NC if error (error stored in ZP.LastError)
@@ -81,6 +83,21 @@ unit Statement
 #endif
                 return;
             }
+            
+            case Tokens.INT:
+            case Tokens.WORD:
+            case Tokens.BIT:
+            {
+                executeVariableDeclaration();
+#ifdef DEBUG
+                LDA #'S'
+                Serial.WriteChar();
+                LDA #'>'
+                Serial.WriteChar();
+#endif
+                return;
+            }
+            
             default:
             {
                 // Unexpected token for statement
@@ -304,5 +321,196 @@ unit Statement
         STA ZP.LastErrorH
         CLC  // Error
         BRK
+    }
+    
+    
+    // Execute variable declaration
+    // INT/WORD/BIT identifier [= expression]
+    executeVariableDeclaration()
+    {
+#ifdef DEBUG
+        LDA #'<'
+        Serial.WriteChar();
+        LDA #'V'
+        Serial.WriteChar();
+        LDA #'D'
+        Serial.WriteChar();
+#endif
+        
+        // Save the data type
+        LDA ZP.CurrentToken
+        PHA  // Save type token
+        
+        // Get next token (should be identifier)
+        Tokenizer.NextToken();
+        Messages.CheckError();
+        if (NC) 
+        { 
+            PLA  // Clean up stack
+            return; 
+        }
+        
+        // Check that we have an identifier
+        LDA ZP.CurrentToken
+        CMP #Tokens.IDENTIFIER
+        if (NZ)
+        {
+            LDA #(Messages.SyntaxError % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.SyntaxError / 256)
+            STA ZP.LastErrorH
+            PLA  // Clean up stack
+            CLC  // Error
+            return;
+        }
+        
+        // Get the identifier string
+        Tokenizer.GetTokenString();  // Returns pointer in ZP.TOP
+        
+        // Save name pointer
+        LDA ZP.TOPL
+        PHA
+        LDA ZP.TOPH
+        PHA
+        
+        // Get next token
+        Tokenizer.NextToken();
+        Messages.CheckError();
+        if (NC) 
+        { 
+            PLA  // Clean up stack
+            PLA
+            PLA
+            return; 
+        }
+        
+        // Check for optional initialization
+        LDA ZP.CurrentToken
+        CMP #Tokens.EQUALS
+        if (Z)
+        {
+            // Has initialization - save current tokenizer position as start of expression
+            LDA ZP.TokenizerPosL
+            PHA
+            LDA ZP.TokenizerPosH
+            PHA
+            
+            // Get next token (start of expression)
+            Tokenizer.NextToken();
+            Messages.CheckError();
+            if (NC) 
+            { 
+                PLA  // Clean up stack
+                PLA
+                PLA
+                PLA
+                PLA
+                return; 
+            }
+            
+            // Evaluate the initialization expression
+            Expression.Evaluate();
+            Messages.CheckError();
+            if (NC) 
+            { 
+                PLA  // Clean up stack
+                PLA
+                PLA
+                PLA
+                PLA
+                return; 
+            }
+            
+            // Pop the result into TOP
+            Stacks.PopTop();  // Result in ZP.TOP, type in ZP.TOPT
+            
+            // Calculate tokens pointer (saved position + BasicTokenizerBuffer base)
+            PLA  // Saved TokenizerPosH
+            STA ZP.IDYH
+            PLA  // Saved TokenizerPosL
+            STA ZP.IDYL
+            
+            CLC
+            LDA #(Address.BasicTokenizerBuffer & 0xFF)
+            ADC ZP.IDYL
+            STA ZP.IDYL
+            LDA #(Address.BasicTokenizerBuffer >> 8)
+            ADC ZP.IDYH
+            STA ZP.IDYH
+        }
+        else
+        {
+            // No initialization - set default value 0 and null tokens pointer
+            STZ ZP.TOPL
+            STZ ZP.TOPH
+            STZ ZP.IDYL
+            STZ ZP.IDYH
+        }
+        
+        // Now we have:
+        // - Name pointer on stack (2 bytes)
+        // - Type token on stack (1 byte)
+        // - Value in ZP.TOP
+        // - Tokens pointer in ZP.IDY
+        
+        // Restore name pointer
+        PLA
+        STA ZP.TOPH
+        PLA
+        STA ZP.TOPL
+        
+        // Build packed symbolType|dataType byte
+        PLA  // Get type token
+        
+        // Convert token to BasicType
+        LDX #BasicType.INT  // Default
+        CMP #Tokens.INT
+        if (Z)
+        {
+            LDX #BasicType.INT
+        }
+        else
+        {
+            CMP #Tokens.WORD
+            if (Z)
+            {
+                LDX #BasicType.WORD
+            }
+            else
+            {
+                CMP #Tokens.BIT
+                if (Z)
+                {
+                    LDX #BasicType.BIT
+                }
+            }
+        }
+        
+        // Pack symbolType|dataType: VARIABLE(1) in high nibble, dataType in low nibble
+        TXA  // dataType in A
+        ORA #(SymbolType.VARIABLE << 4)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        // Move value from TOP to NEXT (Variables.Declare expects it there)
+        LDA ZP.TOPL
+        STA ZP.NEXTL
+        LDA ZP.TOPH
+        STA ZP.NEXTH
+        
+        // Call Variables.Declare
+        // Input: ZP.TOP = name pointer, ZP.ACC = symbolType|dataType (packed),
+        //        ZP.NEXT = initial value (16-bit), ZP.IDY = tokens pointer (16-bit)
+        Variables.Declare();
+        Messages.CheckError();
+        
+#ifdef DEBUG
+        LDA #'V'
+        Serial.WriteChar();
+        LDA #'D'
+        Serial.WriteChar();
+        LDA #'>'
+        Serial.WriteChar();
+#endif
     }
 }

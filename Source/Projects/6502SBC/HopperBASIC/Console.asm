@@ -10,10 +10,15 @@ unit Console
     uses "Tokenizer"
     uses "Statement"
     
+    uses "Objects"
+    
     Initialize()
     {
         // Initialize tokenizer
         Tokenizer.Initialize();
+        
+        // Initialize symbol tables
+        Objects.Initialize();
     }
     
     // Read a line of input and tokenize it

@@ -992,4 +992,20 @@ unit Tokenizer
         STX ZP.BasicInputLength
         TXA  // Return length
     }
+    
+    // Get pointer to current token's string (for IDENTIFIER, NUMBER, STRING tokens)
+    // Assumes current token is a literal token with inline data
+    // Returns pointer in ZP.TOP
+    GetTokenString()
+    {
+        // Set up pointer to saved literal position in token buffer
+        CLC
+        LDA #(Address.BasicTokenizerBuffer & 0xFF)
+        ADC ZP.TokenLiteralPosL
+        STA ZP.TOPL
+        LDA #(Address.BasicTokenizerBuffer >> 8)
+        ADC ZP.TokenLiteralPosH
+        STA ZP.TOPH
+    }
+    
 }
