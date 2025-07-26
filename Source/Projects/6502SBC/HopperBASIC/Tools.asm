@@ -300,6 +300,68 @@ unit Tools
         PLA          // Restore A from stack
     }
     
+    // Get string length
+    // Input: X,Y = string pointer (low,high)
+    // Output: A = string length (not including null terminator)
+    // Preserves: X, Y
+    StringLength()
+    {
+        PHX
+        PHY
+        
+        STX ZP.TOPL
+        STY ZP.TOPH
+        
+        LDY #0
+        loop
+        {
+            LDA [ZP.TOP], Y
+            if (Z) { break; }
+            INY
+        }
+        
+        TYA  // Length in A
+        
+        PLY
+        PLX
+    }
+    
+    // Compare two strings
+    // Input: ZP.TOP = first string pointer, ZP.NEXT = second string pointer
+    // Output: C set if strings match, NC if different
+    StringCompare()
+    {
+        PHA
+        PHY
+        
+        LDY #0
+        loop
+        {
+            LDA [ZP.TOP], Y
+            CMP [ZP.NEXT], Y
+            if (NZ) 
+            { 
+                // Characters don't match
+                CLC  // Set NC for mismatch
+                break; 
+            }
+            
+            // Characters matched - check if we hit end of string
+            LDA [ZP.TOP], Y
+            if (Z) 
+            { 
+                // Both chars are null (since they matched in CMP above)
+                // Strings are equal
+                SEC  // Set C for match
+                break; 
+            }
+            
+            INY
+        }
+        
+        PLY
+        PLA
+    } 
 
 #ifdef DEBUG    
 
@@ -552,13 +614,109 @@ unit Tools
         PLA  // Restore A
     }
     
+    // Lightweight heap summary for use during iteration
+    // Only shows critical info without walking the heap
+    // Preserves: All registers and ZP variables
+    DumpHeapSummary()
+    {
+        PHA
+        
+        // Just show the list heads
+        LDA #'V'
+        Tools.COut();
+        LDA #'L'
+        Tools.COut();
+        LDA #':'
+        Tools.COut();
+        LDA ZP.VariablesListH
+        Tools.HOut();
+        LDA ZP.VariablesListL
+        Tools.HOut();
+        LDA #' '
+        Tools.COut();
+        
+        LDA #'F'
+        Tools.COut();
+        LDA #'L'
+        Tools.COut();
+        LDA #':'
+        Tools.COut();
+        LDA ZP.FunctionsListH
+        Tools.HOut();
+        LDA ZP.FunctionsListL
+        Tools.HOut();
+        LDA #' '
+        Tools.COut();
+        
+        PLA
+    }
+
+    // Debug output for iteration state
+    // Shows current node pointer and type
+    // Preserves: All registers and ZP variables
+    DumpIterationState()
+    {
+        PHA
+        
+        LDA #'I'
+        Tools.COut();
+        LDA #'T'
+        Tools.COut();
+        LDA #':'
+        Tools.COut();
+        LDA ZP.IDXH
+        Tools.HOut();
+        LDA ZP.IDXL
+        Tools.HOut();
+        LDA #' '
+        Tools.COut();
+        
+        PLA
+    }
+    DumpHeap()
+    {
+        PHA
+        PHX
+        PHY
+        
+        // Save iteration-critical state
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
+        // Save any other state that might be important
+        LDA ZP.LCURRENTL
+        PHA
+        LDA ZP.LCURRENTH
+        PHA
+        
+        // Call the internal dumpHeap
+        dumpHeap();
+        
+        // Restore saved state
+        PLA
+        STA ZP.LCURRENTH
+        PLA
+        STA ZP.LCURRENTL
+        
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
+        PLY
+        PLX
+        PLA
+    }
+    
     // Debug function to dump all heap blocks (allocated and free)
     // Walks through heap sequentially using block size headers
     // On entry: None
     // On exit:  A,X,Y, ZP.IDX and ZP.IDY preserved
     // Munts:    ZP.M0, ZP.M1, ZP.M2, ZP.M3, ZP.U0, ZP.U2, ZP.U3
     // Uses:     Serial.WriteChar(), Serial.HexOut() for output
-    DumpHeap()
+    dumpHeap()
     {
         PHA  // Save A
         PHX  // Save X  

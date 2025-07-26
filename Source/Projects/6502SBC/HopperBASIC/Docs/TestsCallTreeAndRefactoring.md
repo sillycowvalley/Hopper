@@ -1,4 +1,4 @@
-# HopperBASIC Refactoring Best Practices and Rules
+# HopperBASIC Refactoring Best Practices and Rules (Updated)
 
 ## Core Principles
 
@@ -21,12 +21,66 @@
 - **Key variables**: Preserve ZP.IDX and ZP.ACC by default unless they are outputs
 - **Don't list outputs** in the "Munts" section - it's redundant
 - **Don't care about**: ZP.M0-M15 slots (used by Memory management)
+- **Internal workspace**: Don't list internal ZP slots (like ZP.Symbol*) in public API munts lists
 
 ### 4. Optimization Rules
 - Only skip preservation if:
   1. A called function already preserves it, AND
   2. You don't modify it yourself between/after the calls
 - Remove redundant push/pop only when you can prove the value isn't changed
+- Be careful about preservation in iterative functions that modify state
+
+Yes, several of those rules should definitely be added to the best practices! Here are the ones that make sense to include:
+
+## Additional Rules from Project Guidelines
+
+### Silent Failure Prevention (RULE #1)
+- **NEVER allow silent failures** - always signal errors clearly
+- BRK is acceptable for unimplemented features (emulator throws exception)
+- Good pattern for TODO:
+```asm
+// TODO: Show variables
+LDA #(Messages.NotImplemented % 256)
+STA ZP.LastErrorL
+LDA #(Messages.NotImplemented / 256)
+STA ZP.LastErrorH
+BRK
+```
+
+### Zero Page Usage (RULE #2)
+- **Don't use undocumented ZP slots** without asking first
+- Always check ZeroPage.asm before using any ZP location
+- For temporary values over short sections, prefer stack operations (PHX, PHY, PHA) over zero page variables
+- This preserves precious ZP space and avoids conflicts
+
+### Flag Comments (RULE #3)
+- **Don't use '0' and '1'** in flag comments
+- Use clear comments like:
+  - `// Set Z` or `// Set NZ`
+  - `// Set C` or `// Set NC`
+- Much easier to understand, especially for dyslexic developers
+
+### Complete Code Generation (RULE #4)
+- **NEVER use partial code placeholders** like:
+```asm
+// Rest of the function remains the same...
+```
+- Always generate complete methods to avoid cut-and-paste errors
+- Prevents loss of good working code
+
+### Debug-First Approach (RULE #5)
+- When debugging, **don't start by generating tons of code**
+- First suggest where to insert debug output (DumpXXX methods)
+- Analyze the problem before jumping to solutions
+- "Thoughts?" is shorthand for "analyze, don't generate code yet"
+
+### Identifier Naming (RULE #8)
+- Avoid ALL_CAPS_WITH_UNDERSCORES style
+- Prefer CamelCase or camelCase for readability
+- More consistent with modern coding standards
+
+
+
 
 ## Code Patterns
 
@@ -102,13 +156,15 @@ SimpleFunctionName()
 - **C | NC**: Preferred for success/failure status
   - C (Carry Set) = Success
   - NC (Carry Clear) = Failure
-- **Z | NZ**: Use for comparisons
+- **Z | NZ**: Avoid for return values - too easy to accidentally modify
+  - Reserve for comparisons only
   - Comment as "Set Z" or "Set NZ" (not "0" or "1")
 
 ## Error Handling
 - Set error messages in ZP.LastErrorL/H before returning NC
 - Use meaningful error messages from Messages unit
 - Never fail silently - always set an error or use BRK with TODO pattern
+- When a caller checks a flag incorrectly (Z instead of C), bugs are hard to find
 
 ## Enum Usage
 - Use direct enum syntax: `LDA #SymbolType.VARIABLE`
@@ -118,15 +174,42 @@ SimpleFunctionName()
 - Memory.Allocate() munts: ZP.IDY, ZP.TOP, ZP.NEXT (preserves ZP.ACC)
 - Memory.Free() munts: ZP.IDY, ZP.TOP, ZP.NEXT (preserves ZP.IDX, ZP.ACC)
 - Both preserve all registers (A, X, Y)
+- Watch for memory leaks in iterative operations
+
+## Helper Functions
+- Create helper functions for common operations (StringLength, StringCompare, CopyBytes)
+- Document helper function APIs clearly
+- Use consistent parameter passing (X,Y for addresses, ZP locations for complex params)
+- Helpers improve code clarity and provide optimization opportunities
+
+## Common Pitfalls
+1. **Using Z flag for return values** - Too fragile, use C instead
+2. **Manufacturing new ZP slots** - Always check ZeroPage.asm first
+3. **Forgetting to preserve iteration state** - IterateNext needs consistent state from IterateStart
+4. **Not checking actual tool parameters** - Tools.CopyBytes might use different params than expected
+5. **Missing preservation around complex operations** - Nested calls can munt unexpected variables
+
+## Testing and Debugging
+- Always test memory leak detection with complex operations
+- Add debug output when tracking down issues
+- Heap dumps are invaluable for understanding memory state
+- Check both success and failure paths for proper cleanup
+
+## Client Code Benefits
+- Clean APIs allow removal of redundant preservation in client code
+- Example: TestTable became much simpler after Table APIs were refactored
+- Focus on test/business logic rather than defensive preservation
+- Trust the API contracts
 
 ## Summary
 The goal is to create consistent, well-documented APIs that:
 1. Clearly state their contracts (inputs/outputs/side effects)
 2. Preserve key working variables unless they're outputs
 3. Use single exit points for complex logic
-4. Return consistent success/failure indicators
+4. Return consistent success/failure indicators (prefer C/NC)
 5. Can be optimized by removing only truly redundant operations
-
+6. Avoid fragile flag usage (Z) for return values
+7. Provide clear helper functions for common operations
 
 
 ```

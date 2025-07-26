@@ -114,6 +114,8 @@ unit TestObjects
         LDX #ZP.VariablesList
         Objects.Add();
         
+        
+        
         if (NC)
         {
             LDA #0x30
@@ -138,6 +140,7 @@ unit TestObjects
         }
         else
         {
+            DumpHeap();
             LDX #ZP.VariablesList
             Objects.Destroy();
             LDA #0x31
@@ -387,6 +390,9 @@ unit TestObjects
         CMP #(SymbolType.VARIABLE << 4)
         if (NZ)
         {
+            DumpVariables();
+            DumpHeap();
+            
             LDX #ZP.VariablesList
             Objects.Destroy();
             LDA #0x63

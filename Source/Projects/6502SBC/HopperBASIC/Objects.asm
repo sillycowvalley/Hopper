@@ -37,7 +37,6 @@ unit Objects
     
     // Initialize empty symbol tables
     // Output: ZP.VariableListL/H = 0x0000, ZP.FunctionsListL/H = 0x0000
-    // Preserves: All registers and ZP variables
     Initialize()
     {
         STZ ZP.VariablesListL
@@ -51,107 +50,134 @@ unit Objects
     //        ZP.TOP = name pointer, ZP.ACC = symbolType|dataType (packed),
     //        ZP.IDY = tokens pointer (16-bit), ZP.NEXT = value/args (16-bit)
     // Output: ZP.IDX = new symbol node address, C set if successful, NC if allocation failed
-    // Preserves: A, Y
-    // Munts: X, ZP.IDX, ZP.ACC, ZP.TOP, ZP.NEXT, ZP.IDY (due to Table.Add call)
-    // Uses: ZP.SymbolType, ZP.SymbolValue, ZP.SymbolName, ZP.SymbolLength for temporary storage
+    // Munts: ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT
     Add()
     {
         PHA
+        PHX
         PHY
         
-        // Save table head address
-        STX ZP.SymbolTemp0
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
         
-        // Save input parameters in dedicated ZP locations that survive Memory.Allocate()
         LDA ZP.ACCL
-        STA ZP.SymbolType   // Save symbolType|dataType
+        PHA
+        LDA ZP.ACCH
+        PHA
         
-        LDA ZP.NEXTL
-        STA ZP.SymbolValueL // Save value/args low
-        LDA ZP.NEXTH
-        STA ZP.SymbolValueH // Save value/args high
-        
-        LDA ZP.TOPL
-        STA ZP.SymbolNameL  // Save name pointer low
-        LDA ZP.TOPH
-        STA ZP.SymbolNameH  // Save name pointer high
-        
-        // Save tokens pointer using dedicated ZP locations
-        LDA ZP.IDYL
-        STA ZP.SymbolTokensL
-        LDA ZP.IDYH
-        STA ZP.SymbolTokensH
-        
-        // Calculate node size
-        calculateNodeSize(); // Returns size in ZP.ACC, sets ZP.SymbolLength
-        
-        // Add to table (size already in ZP.ACC)
-        LDX ZP.SymbolTemp0  // Restore table head address
-        Table.Add(); // Returns new node in IDX, C set if successful
-        if (NC)  // Allocation failed
+        loop // start of single exit block
         {
-            PLY
-            PLA
-            return;  // C already clear
-        }
+            // Save table head address
+            STX ZP.SymbolTemp0
+            
+            // Save input parameters in dedicated ZP locations that survive Memory.Allocate()
+            LDA ZP.ACCL
+            STA ZP.SymbolType   // Save symbolType|dataType
+            
+            LDA ZP.NEXTL
+            STA ZP.SymbolValueL // Save value/args low
+            LDA ZP.NEXTH
+            STA ZP.SymbolValueH // Save value/args high
+            
+            LDA ZP.TOPL
+            STA ZP.SymbolNameL  // Save name pointer low
+            LDA ZP.TOPH
+            STA ZP.SymbolNameH  // Save name pointer high
+            
+            // Save tokens pointer using dedicated ZP locations
+            LDA ZP.IDYL
+            STA ZP.SymbolTokensL
+            LDA ZP.IDYH
+            STA ZP.SymbolTokensH
+            
+            // Calculate node size
+            calculateNodeSize(); // Returns size in ZP.ACC, sets ZP.SymbolLength
+            
+            // Add to table (size already in ZP.ACC)
+            LDX ZP.SymbolTemp0  // Restore table head address
+            Table.Add(); // Returns new node in IDX, C set if successful
+            if (NC)  // Allocation failed
+            {
+                CLC  // Already clear
+                break;
+            }
+            
+            // Initialize the new node using saved parameters
+            initializeNode();
+            
+            SEC  // Success
+            break;
+        } // end of single exit block
         
-        // Initialize the new node using saved parameters
-        initializeNode();
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
         
         PLY
+        PLX
         PLA
-        SEC  // Signal success
     }
     
     // Find symbol by name
     // Input: X = ZP address of table head (ZP.VariableList or ZP.FunctionsList),
     //        ZP.TOP = name pointer to search for
     // Output: ZP.IDX = symbol node address, C set if found, NC if not found
-    // Preserves: A, Y, ZP.TOP, ZP.NEXT, ZP.ACC
-    // Uses: ZP.Lxx variables as temporary workspace
+    // Munts: ZP.LCURRENT, ZP.LNEXT
     Find()
     {
         PHA
+        PHX
         PHY
         
-        // Start iteration
-        Table.GetFirst(); // Returns first node in IDX
-        
-        loop
+        loop // start of single exit block
         {
-            // Check if we've reached end of list
-            LDA ZP.IDXL
-            ORA ZP.IDXH
-            if (Z)
+            // Start iteration
+            Table.GetFirst(); // Returns first node in IDX
+            
+            loop
             {
-                PLY
-                PLA
-                CLC  // Not found
-                return;
+                // Check if we've reached end of list
+                LDA ZP.IDXL
+                ORA ZP.IDXH
+                if (Z)
+                {
+                    CLC  // Not found
+                    break;
+                }
+                
+                // Compare name at snName offset
+                compareNames();
+                if (C) // Names match
+                {
+                    SEC  // Found
+                    break;
+                }
+                
+                // Move to next node
+                Table.GetNext(); // Updates IDX
             }
             
-            // Compare name at snName offset
-            compareNames();
-            if (Z) // Names match
-            {
-                PLY
-                PLA
-                SEC  // Found
-                return;
-            }
-            
-            // Move to next node
-            Table.GetNext(); // Updates IDX
-        }
+            break;
+        } // end of single exit block
+        
+        PLY
+        PLX
+        PLA
     }
     
     // Remove symbol by node pointer
     // Input: X = ZP address of table head (ZP.VariableList or ZP.FunctionsList),
     //        ZP.IDX = symbol node address (from Find)
     // Output: C set if successful, NC if node not found
-    // Preserves: A, Y
-    // Munts: X, ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Table.Delete call)
-    // Uses: ZP.Lxx variables as temporary workspace
+    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX
     Remove()
     {
         Table.Delete();
@@ -160,9 +186,10 @@ unit Objects
     // Get symbol data from found node
     // Input: ZP.IDX = symbol node address (from Find)
     // Output: ZP.ACC = symbolType|dataType (packed), ZP.NEXT = tokens pointer, ZP.IDY = value/args
-    // Preserves: A, X, Y, ZP.IDX, ZP.TOP
     GetData()
     {
+        PHY
+        
         // Get symbolType|dataType (offset snType)
         LDY #snType
         LDA [ZP.IDX], Y
@@ -184,43 +211,55 @@ unit Objects
         INY
         LDA [ZP.IDX], Y
         STA ZP.IDYH
+        
+        PLY
     }
     
     // Set symbol value (variables only)
     // Input: ZP.IDX = symbol node address, ZP.IDY = new value/args
     // Output: C set if successful, NC if not a variable
-    // Preserves: A, X, Y, ZP.IDX, ZP.TOP, ZP.ACC
     SetValue()
     {
-        // Get symbolType (high nibble of packed byte at snType)
-        LDY #snType
-        LDA [ZP.IDX], Y
-        AND #0xF0  // Extract high nibble
-        LSR LSR LSR LSR  // Shift to low nibble
-        CMP #SymbolType.VARIABLE
-        if (NZ)
+        PHA
+        PHY
+        
+        loop // start of single exit block
         {
-            CLC  // Not a variable
-            return;
-        }
+            // Get symbolType (high nibble of packed byte at snType)
+            LDY #snType
+            LDA [ZP.IDX], Y
+            AND #0xF0  // Extract high nibble
+            LSR LSR LSR LSR  // Shift to low nibble
+            CMP #SymbolType.VARIABLE
+            if (NZ)
+            {
+                CLC  // Not a variable
+                break;
+            }
+            
+            // Update value (offset snValue to snValue+1)
+            LDY #snValue
+            LDA ZP.IDYL
+            STA [ZP.IDX], Y
+            INY
+            LDA ZP.IDYH
+            STA [ZP.IDX], Y
+            
+            SEC  // Success
+            break;
+        } // end of single exit block
         
-        // Update value (offset snValue to snValue+1)
-        LDY #snValue
-        LDA ZP.IDYL
-        STA [ZP.IDX], Y
-        INY
-        LDA ZP.IDYH
-        STA [ZP.IDX], Y
-        
-        SEC  // Success
+        PLY
+        PLA
     }
     
     // Get tokens pointer from symbol node
     // Input: ZP.IDX = symbol node address
-    // Output: ZP.IDY = tokens pointer
-    // Preserves: A, X, Y, ZP.IDX, ZP.TOP, ZP.NEXT, ZP.ACC
+    // Output: ZP.IDY = tokens pointer (16-bit)
     GetTokens()
     {
+        PHY
+        
         // Get tokens pointer (offset snTokens to snTokens+1)
         LDY #snTokens
         LDA [ZP.IDX], Y
@@ -228,15 +267,18 @@ unit Objects
         INY
         LDA [ZP.IDX], Y
         STA ZP.IDYH
+        
+        PLY
     }
     
-    // Set tokens pointer in symbol node
+    // Set tokens pointer for symbol node
     // Input: ZP.IDX = symbol node address, ZP.IDY = new tokens pointer
-    // Output: C set if successful
-    // Preserves: A, X, Y, ZP.IDX, ZP.TOP, ZP.NEXT, ZP.ACC
     SetTokens()
     {
-        // Set tokens pointer (offset snTokens to snTokens+1)
+        PHA
+        PHY
+        
+        // Store tokens pointer (offset snTokens to snTokens+1)
         LDY #snTokens
         LDA ZP.IDYL
         STA [ZP.IDX], Y
@@ -244,181 +286,94 @@ unit Objects
         LDA ZP.IDYH
         STA [ZP.IDX], Y
         
-        SEC  // Success
-    }
-    
-    // Start iteration for specific symbol type
-    // Input: X = ZP address of table head (ZP.VariableList or ZP.FunctionsList),
-    //        ZP.ACCL = symbol type filter (0 = all types)
-    // Output: ZP.IDX = first matching symbol, C set if found, NC if none
-    // Preserves: A, Y, ZP.TOP, ZP.NEXT, ZP.ACC
-    IterateStart()
-    {
-        // Start at beginning of list
-        Table.GetFirst();
-        
-        // Find first matching symbol
-        findNextMatch();
-    }
-    
-    // Continue iteration
-    // Input: ZP.IDX = current symbol, ZP.ACCL = type filter
-    // Output: ZP.IDX = next matching symbol, C set if found, NC if done
-    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT, ZP.ACC
-    IterateNext()
-    {
-        // Move to next node
-        Table.GetNext();
-        
-        // Find next matching symbol
-        findNextMatch();
+        PLY
+        PLA
     }
     
     // Destroy entire symbol table
     // Input: X = ZP address of table head (ZP.VariableList or ZP.FunctionsList)
-    // Output: Table head set to 0x0000
-    // Preserves: A, Y
-    // Munts: X, ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Table.Clear call)
+    // Output: C set (always succeeds)
+    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX
     Destroy()
     {
         Table.Clear();
     }
     
-    // Internal helper: Calculate required node size
-    // Input: ZP.SymbolName = name pointer
-    // Output: ZP.ACC = total node size (16-bit), ZP.SymbolLength = name length including null
-    calculateNodeSize()
-    {
-        // Start with fixed overhead
-        LDA #symbolOverhead
-        STA ZP.ACCL
-        STZ ZP.ACCH
-        
-        // Calculate and store name length + null terminator
-        LDY #0
-        loop
-        {
-            LDA [ZP.SymbolName], Y
-            if (Z) { break; } // Hit null terminator
-            INY
-        }
-        
-        // Y now contains string length, add 1 for null terminator
-        INY
-        STY ZP.SymbolLength  // Store total name length (including null) for reuse
-        
-        // Add name length to total size
-        TYA
-        CLC
-        ADC ZP.ACCL
-        STA ZP.ACCL
-        if (C) { INC ZP.ACCH }
-    }
-    
-    // Internal helper: Initialize fields in newly allocated node
-    // Input: ZP.IDX = node address, ZP.SymbolType = packed symbolType|dataType, 
-    //        ZP.SymbolValue = value, ZP.SymbolName = name pointer, ZP.SymbolLength = name length
-    //        ZP.SymbolTokens = tokens pointer
-    // Note: Next pointer at offset 0-1 already initialized by Table.Add()
-    initializeNode()
-    {
-        // Set symbolType|dataType (offset snType)
-        LDY #snType
-        LDA ZP.SymbolType
-        STA [ZP.IDX], Y
-        
-        // Set tokens pointer (offset snTokens to snTokens+1)
-        LDY #snTokens
-        LDA ZP.SymbolTokensL
-        STA [ZP.IDX], Y
-        INY
-        LDA ZP.SymbolTokensH
-        STA [ZP.IDX], Y
-        
-        // Set value (offset snValue to snValue+1)
-        LDY #snValue
-        LDA ZP.SymbolValueL
-        STA [ZP.IDX], Y
-        INY
-        LDA ZP.SymbolValueH
-        STA [ZP.IDX], Y
-        
-        // Copy name string starting at snName
-        copyNameToNode();
-    }
-    
-    // Internal helper: Copy name string to node
-    // Input: ZP.IDX = node address, ZP.SymbolName = name pointer, ZP.SymbolLength = name length
-    copyNameToNode()
-    {
-        // Set up source address (name pointer)
-        LDA ZP.SymbolNameL
-        STA ZP.FSOURCEADDRESSL
-        LDA ZP.SymbolNameH
-        STA ZP.FSOURCEADDRESSH
-        
-        // Set up destination address (node + snName)
-        CLC
-        LDA ZP.IDXL
-        ADC #snName
-        STA ZP.FDESTINATIONADDRESSL
-        LDA ZP.IDXH
-        ADC #0
-        STA ZP.FDESTINATIONADDRESSH
-        
-        // Use pre-calculated length
-        LDA ZP.SymbolLength
-        STA ZP.FLENGTHL
-        STZ ZP.FLENGTHH
-        
-        // Copy the string using Tools.CopyBytes
-        Tools.CopyBytes();
-    }
-    
-    // Internal helper: Compare names
-    // Input: ZP.IDX = node address, ZP.TOP = target name
-    // Output: Z set if equal, NZ if different
-    compareNames()
-    {
-        // Use available ZP slots from our 0x77-0x7F range for temporary storage
-        // Calculate address of name field in node and store in 0x77-0x78
-        CLC
-        LDA ZP.IDXL
-        ADC #snName
-        STA ZP.SymbolTemp0            // Temporary storage for node name pointer low
-        LDA ZP.IDXH
-        ADC #0
-        STA ZP.SymbolTemp1            // Temporary storage for node name pointer high
-        
-        // Compare strings
-        LDY #0
-        loop
-        {
-            LDA [ZP.TOP], Y       // Target name character
-            if (Z) { // Check if target name ended with null terminator
-                LDA [ZP.SymbolTemp0], Y  // Check if node name also ended
-                return;  // Z set if both ended (strings equal), NZ if lengths differ
-            }
-            
-            STA ZP.SymbolTemp2       // Store target character for comparison
-            LDA [ZP.SymbolTemp0], Y  // Node name character (using temp pointer)
-            CMP ZP.SymbolTemp2       // Compare characters
-            if (NZ) { return; }      // Different characters - strings not equal
-            
-            INY
-        }
-    }
-    
-    // Internal helper: Find next matching symbol in iteration
-    // Input: ZP.IDX = current position, ZP.ACC = type filter (0 = all)
-    // Output: ZP.IDX = next matching symbol, C set if found, NC if none
-    findNextMatch()
+    // Start iteration with type filter
+    // Input: X = ZP address of table head, ZP.ACC = filter (0 = all, or specific symbolType)
+    // Output: ZP.IDX = first matching symbol (0x0000 if none), C set if found
+    // Munts: ZP.LCURRENT, ZP.LNEXT
+    IterateStart()
     {
         PHA
+        PHX
         PHY
         
-        loop
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
+        loop // start of single exit block
         {
+            // Filter is already in ZP.ACCL
+            
+            // Get first node
+            Table.GetFirst(); // Returns first node in IDX
+            
+            // Check if list is empty
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z)
+            {
+                CLC  // Empty list
+                break;
+            }
+            
+            // Check if first node matches filter
+            findNextMatch();
+            break;
+        } // end of single exit block
+        
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
+        PLY
+        PLX
+        PLA
+    }
+    
+    // Continue iteration with filter
+    // Input: None (uses saved filter from IterateStart)
+    // Output: ZP.IDX = next matching symbol (0x0000 if no more), C set if found
+    // Munts: ZP.LCURRENT, ZP.LNEXT
+    IterateNext()
+    {
+        PHA
+        PHX
+        PHY
+        
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
+        loop // start of single exit block
+        {
+            // Check if we're already at end
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z)
+            {
+                CLC  // Already at end
+                break;
+            }
+            
+            // Move to next node
+            Table.GetNext(); // Updates IDX
+            
             // Check if we've reached end
             LDA ZP.IDXL
             ORA ZP.IDXH
@@ -428,30 +383,213 @@ unit Objects
                 break;
             }
             
-            // Check type filter
+            // Check if node matches filter
+            findNextMatch();
+            break;
+        } // end of single exit block
+        
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
+        PLY
+        PLX
+        PLA
+    }
+    
+    
+    // Private: Calculate required node size
+    // Input: ZP.SymbolNameL/H = name pointer
+    // Output: ZP.ACC = total node size (16-bit), ZP.SymbolLength = name length
+    calculateNodeSize()
+    {
+        PHX
+        PHY
+        
+        // Get name length
+        LDX ZP.SymbolNameL
+        LDY ZP.SymbolNameH
+        Tools.StringLength(); // Returns length in A, preserves X,Y
+        STA ZP.SymbolLength
+        
+        // Add name length to fixed overhead
+        CLC
+        ADC #symbolOverhead
+        STA ZP.ACCL
+        
+        LDA #0
+        ADC #0  // Add carry
+        STA ZP.ACCH
+        
+        // Add 1 for null terminator
+        INC ZP.ACCL
+        if (Z)
+        {
+            INC ZP.ACCH
+        }
+        
+        PLY
+        PLX
+    }
+    
+    // Private: Initialize node fields
+    // Input: ZP.IDX = new node address, ZP.Symbol* = saved parameters
+    initializeNode()
+    {
+        PHY
+        
+        // Store symbolType|dataType (offset snType)
+        LDA ZP.SymbolType
+        LDY #snType
+        STA [ZP.IDX], Y
+        
+        // Store tokens pointer (offset snTokens to snTokens+1)
+        LDA ZP.SymbolTokensL
+        LDY #snTokens
+        STA [ZP.IDX], Y
+        LDA ZP.SymbolTokensH
+        INY
+        STA [ZP.IDX], Y
+        
+        // Store value/args (offset snValue to snValue+1)
+        LDA ZP.SymbolValueL
+        LDY #snValue
+        STA [ZP.IDX], Y
+        LDA ZP.SymbolValueH
+        INY
+        STA [ZP.IDX], Y
+        
+        // Copy name to node
+        copyNameToNode();
+        
+        PLY
+    }
+    
+    // Private: Copy name string to node
+    // Input: ZP.IDX = node address, ZP.SymbolNameL/H = source name, ZP.SymbolLength = length
+    copyNameToNode()
+    {
+        PHA
+        PHX
+        PHY
+        
+        // Set up for copy
+        LDA ZP.SymbolNameL
+        STA ZP.FSOURCEADDRESSL
+        LDA ZP.SymbolNameH
+        STA ZP.FSOURCEADDRESSH
+        
+        // Calculate destination address (node + snName)
+        CLC
+        LDA ZP.IDXL
+        ADC #snName
+        STA ZP.FDESTINATIONADDRESSL
+        LDA ZP.IDXH
+        ADC #0
+        STA ZP.FDESTINATIONADDRESSH
+        
+        // Copy length (already in ZP.SymbolLength)
+        LDA ZP.SymbolLength
+        STA ZP.FLENGTHL
+        STZ ZP.FLENGTHH
+        
+        // Add 1 for null terminator
+        INC ZP.FLENGTHL
+        if (Z)
+        {
+            INC ZP.FLENGTHH
+        }
+        
+        Tools.CopyBytes(); // FSOURCEADDRESS=src, FDESTINATIONADDRESS=dst, FLENGTH=count
+        
+        PLY
+        PLX
+        PLA
+    }
+    
+    // Private: Compare symbol name with search name
+    // Input: ZP.IDX = current node, ZP.TOP = search name
+    // Output: C if names match, NC if different
+    compareNames()
+    {
+        PHA
+        PHX
+        PHY
+        
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
+        // Calculate address of name in node (node + snName)
+        CLC
+        LDA ZP.IDXL
+        ADC #snName
+        STA ZP.NEXTL
+        LDA ZP.IDXH
+        ADC #0
+        STA ZP.NEXTH
+        
+        // Compare strings
+        Tools.StringCompare(); // TOP vs NEXT, sets C if equal
+        
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        PLY
+        PLX
+        PLA
+    }
+    
+    // Private: Find next node matching filter
+    // Input: ZP.IDX = current node, ZP.ACCL = filter
+    // Output: ZP.IDX = matching node or next node, C set if match found
+    findNextMatch()
+    {
+        PHY
+        
+        loop
+        {
+            // Check if filter is 0 (match all)
             LDA ZP.ACCL
-            if (Z)  // No filter
+            if (Z)
             {
-                SEC  // Return current
+                SEC  // Match all
                 break;
             }
             
-            // Get symbol type from current node (high nibble of snType)
-            LDY # snType
+            // Get symbol type from current node
+            LDY #snType
             LDA [ZP.IDX], Y
             AND #0xF0  // Extract high nibble
-            LSR LSR LSR LSR  // Shift to low nibble    
+            LSR LSR LSR LSR  // Shift to low nibble
+            
+            // Compare with filter
             CMP ZP.ACCL
             if (Z)
             {
-                SEC  // Found matching type
+                SEC  // Match found
                 break;
             }
             
-            // Move to next node
+            // No match, try next node
             Table.GetNext();
+            
+            // Check if we've reached end
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z)
+            {
+                CLC  // End of list
+                break;
+            }
+            
+            // Continue searching
         }
+        
         PLY
-        PLA
     }
 }
