@@ -1321,30 +1321,349 @@ unit TestScenarios
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        // TODO: Implement safe symbol creation pattern test
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        CLC  // Not implemented yet
+        // Step 1: Test safe variable creation - check both Variables and Functions namespaces
+        // Try to create INT X - should succeed since "X" doesn't exist anywhere
+        
+        // First check Variables namespace for "X"
+        LDA #(varName1 % 256)  // "X"
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter  // Any type - checking for existence
+        
+        Variables.Find();
+        if (C)
+        {
+            LDA #0x60
+            CLC  // Fail - X should not exist in Variables yet
+            Test.PrintResult();
+            return;
+        }
+        
+        // Then check Functions namespace for "X"
+        LDA #(varName1 % 256)  // "X"
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        
+        Functions.Find();
+        if (C)
+        {
+            LDA #0x61
+            CLC  // Fail - X should not exist in Functions yet
+            Test.PrintResult();
+            return;
+        }
+        
+        // Both namespaces clear - safe to create INT X = 10
+        LDA #(varName1 % 256)  // "X"
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        LDA #10
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens for this test
+        STZ ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x62
+            CLC  // Fail - variable declaration should have succeeded
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 2: Verify variable "X" was created successfully
+        LDA #(varName1 % 256)  // "X"
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter  // Any type
+        
+        Variables.Find();
+        if (NC)
+        {
+            LDA #0x63
+            CLC  // Fail - X should now exist in Variables
+            Test.PrintResult();
+            return;
+        }
+        
+        // Verify it has correct value
+        Variables.GetValue();
+        if (NC)
+        {
+            LDA #0x64
+            CLC  // Fail - GetValue failed
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA ZP.TOPL
+        CMP #10
+        if (NZ)
+        {
+            LDA #0x65
+            CLC  // Fail - wrong value
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA ZP.TOPT
+        CMP #BasicType.INT
+        if (NZ)
+        {
+            LDA #0x66
+            CLC  // Fail - wrong type
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 3: Test conflict detection - attempt to create FUNC X (should fail)
+        // HopperBASIC responsible pattern: check Variables first
+        LDA #(varName1 % 256)  // "X"
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter  // Any type
+        
+        Variables.Find();
+        if (NC)
+        {
+            LDA #0x67
+            CLC  // Fail - X should exist in Variables from step 1
+            Test.PrintResult();
+            return;
+        }
+        
+        // Variable "X" found - should NOT attempt to create function "X"
+        // This simulates proper HopperBASIC interpreter behavior
+        // In real interpreter: error message "Name already in use" would be shown
+        
+        // Verify we can still find the original variable (not corrupted)
+        Variables.GetValue();
+        LDA ZP.TOPL
+        CMP #10
+        if (NZ)
+        {
+            LDA #0x68
+            CLC  // Fail - variable X value changed during conflict check
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 4: Test the reverse - try to create variable with same name as existing function
+        // First create a function "STATUS"
+        allocateTestTokens();  // Tokens in ZP.U5|U6
+        
+        LDA #(varName3 % 256)  // "STATUS"
+        STA ZP.TOPL
+        LDA #(varName3 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        STZ ZP.NEXTL  // No arguments for this test
+        STZ ZP.NEXTH
+        
+        LDA ZP.U5
+        STA ZP.IDYL
+        LDA ZP.U6
+        STA ZP.IDYH
+        
+        Functions.Declare();
+        if (NC)
+        {
+            LDA #0x69
+            CLC  // Fail - function declaration should have succeeded
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 5: Verify function "STATUS" exists
+        LDA #(varName3 % 256)  // "STATUS"
+        STA ZP.TOPL
+        LDA #(varName3 / 256)
+        STA ZP.TOPH
+        
+        Functions.Find();
+        if (NC)
+        {
+            LDA #0x6A
+            CLC  // Fail - STATUS function should exist
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 6: Now attempt to create variable "STATUS" - should detect conflict
+        // HopperBASIC responsible pattern: check Variables first, then Functions
+        LDA #(varName3 % 256)  // "STATUS"
+        STA ZP.TOPL
+        LDA #(varName3 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter  // Any type
+        
+        Variables.Find();
+        if (C)
+        {
+            LDA #0x6B
+            CLC  // Fail - STATUS should not exist in Variables yet
+            Test.PrintResult();
+            return;
+        }
+        
+        // Check Functions namespace for "STATUS" - should find it
+        LDA #(varName3 % 256)  // "STATUS"
+        STA ZP.TOPL
+        LDA #(varName3 / 256)
+        STA ZP.TOPH
+        
+        Functions.Find();
+        if (NC)
+        {
+            LDA #0x6C
+            CLC  // Fail - STATUS function should be found
+            Test.PrintResult();
+            return;
+        }
+        
+        // Function "STATUS" found - should NOT attempt to create variable "STATUS"
+        // In real interpreter: error message "Name already in use" would be shown
+        
+        // Step 7: Test creating symbol with unique name (should succeed)
+        // Check both namespaces for "COUNTER" - should be clear
+        LDA #(varName2 % 256)  // "COUNTER"
+        STA ZP.TOPL
+        LDA #(varName2 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter  // Any type
+        
+        Variables.Find();
+        if (C)
+        {
+            LDA #0x6D
+            CLC  // Fail - COUNTER should not exist in Variables
+            Test.PrintResult();
+            return;
+        }
+        
+        Functions.Find();
+        if (C)
+        {
+            LDA #0x6E
+            CLC  // Fail - COUNTER should not exist in Functions
+            Test.PrintResult();
+            return;
+        }
+        
+        // Both namespaces clear - safe to create WORD COUNTER = 0
+        LDA #(varName2 % 256)  // "COUNTER"
+        STA ZP.TOPL
+        LDA #(varName2 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.WORD)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        STZ ZP.NEXTL  // Value = 0
+        STZ ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens
+        STZ ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x6F
+            CLC  // Fail - COUNTER variable declaration should have succeeded
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 8: Verify all three symbols coexist properly
+        // Check X (variable)
+        LDA #(varName1 % 256)  // "X"
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter
+        
+        Variables.Find();
+        if (NC)
+        {
+            Variables.Clear();
+            Functions.Clear();
+            LDA #0x60  // Reuse 0x60 as final verification step
+            CLC  // Fail - X variable missing in final check
+            Test.PrintResult();
+            return;
+        }
+        
+        // Check STATUS (function)
+        LDA #(varName3 % 256)  // "STATUS"
+        STA ZP.TOPL
+        LDA #(varName3 / 256)
+        STA ZP.TOPH
+        
+        Functions.Find();
+        if (NC)
+        {
+            Variables.Clear();
+            Functions.Clear();
+            LDA #0x61  // Reuse 0x61 as final verification step
+            CLC  // Fail - STATUS function missing in final check
+            Test.PrintResult();
+            return;
+        }
+        
+        // Check COUNTER (variable)
+        LDA #(varName2 % 256)  // "COUNTER"
+        STA ZP.TOPL
+        LDA #(varName2 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter
+        
+        Variables.Find();
+        if (NC)
+        {
+            Variables.Clear();
+            Functions.Clear();
+            LDA #0x62  // Reuse 0x62 as final verification step
+            CLC  // Fail - COUNTER variable missing in final check
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.Clear();  // Clean up all variables
+        Functions.Clear();  // Clean up all functions
+        SEC  // Pass
         Test.PrintResult();
     }
     
     // Run all scenario tests
     RunScenarioTests()
     {
-        /*
         testClearCommandImplementation();
         testVariableReassignmentAfterDeclaration();
         testMainProgramStorage();
-        */
         testForgetCommandIntegration();
         /*
         testTokenMemoryLifecycle();
         testListCommandDataRetrieval();
         testSymbolTableSerializationReadiness();
         testMixedGlobalSymbolUsage();
-        testSafeSymbolCreationPattern();
         */
+        testSafeSymbolCreationPattern();
     }
 }
