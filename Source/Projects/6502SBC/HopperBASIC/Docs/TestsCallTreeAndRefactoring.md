@@ -166,14 +166,14 @@ Test.Hopper()
 │   │           │       ├── Memory.Available()
 │   │           │       └── Stacks.PopTop()
 │   │           ├── [Test-specific Table operations]
-│   │           │   ├── Table.GetFirst()
-│   │           │   ├── Table.GetNext()
-│   │           │   ├── Table.Add()
-│   │           │   │   └── Memory.Allocate()
-│   │           │   ├── Table.Delete()
-│   │           │   │   └── Memory.Free()
-│   │           │   └── Table.Clear()
-│   │           │       └── Table.Delete() [loop]
+│   │           │   ├── Table.GetFirst() √
+│   │           │   ├── Table.GetNext() √
+│   │           │   ├── Table.Add() √
+│   │           │   │   └── Memory.Allocate() √
+│   │           │   ├── Table.Delete() √
+│   │           │   │   └── Memory.Free() √
+│   │           │   └── Table.Clear() √
+│   │           │       └── Table.Delete() [loop] √
 │   │           └── Test.PrintResult()
 │   │               ├── Test.EndMemoryTest()
 │   │               │   ├── Memory.Available()
@@ -199,11 +199,11 @@ Test.Hopper()
 │   │       └── [Each test uses]:
 │   │           ├── Objects.Add()
 │   │           │   ├── Objects.Find()
-│   │           │   │   ├── Table.GetFirst()
+│   │           │   │   ├── Table.GetFirst() √
 │   │           │   │   ├── Objects.compareNames()
-│   │           │   │   └── Table.GetNext()
+│   │           │   │   └── Table.GetNext() √
 │   │           │   ├── Objects.calculateNodeSize()
-│   │           │   ├── Table.Add()
+│   │           │   ├── Table.Add() √
 │   │           │   └── Objects.initializeNode()
 │   │           │       ├── Objects.copyNameToNode()
 │   │           │       └── Tools.CopyBytes()
@@ -212,15 +212,15 @@ Test.Hopper()
 │   │           ├── Objects.GetTokens()
 │   │           ├── Objects.SetTokens()
 │   │           ├── Objects.Remove()
-│   │           │   └── Table.Delete()
+│   │           │   └── Table.Delete() √
 │   │           ├── Objects.IterateStart()
-│   │           │   ├── Table.GetFirst()
+│   │           │   ├── Table.GetFirst() √
 │   │           │   └── Objects.findNextMatch()
 │   │           ├── Objects.IterateNext()
-│   │           │   ├── Table.GetNext()
+│   │           │   ├── Table.GetNext() √
 │   │           │   └── Objects.findNextMatch()
 │   │           └── Objects.Destroy()
-│   │               └── Table.Clear()
+│   │               └── Table.Clear() √
 │   │
 │   ├── Test.PrintSectionHeader() [variablesSection]
 │   ├── TestVariables.RunVariablesTests()
@@ -241,7 +241,7 @@ Test.Hopper()
 │   │   └── testDeclareByteVariable()
 │   │       └── [Each test uses]:
 │   │           ├── TestVariables.allocateTestTokens()
-│   │           │   └── Memory.Allocate()
+│   │           │   └── Memory.Allocate() √
 │   │           ├── Variables.Declare()
 │   │           │   ├── Objects.Find()
 │   │           │   └── Objects.Add()
@@ -262,7 +262,7 @@ Test.Hopper()
 │   │           │   ├── Variables.Find()
 │   │           │   ├── Objects.GetTokens()
 │   │           │   ├── Objects.Remove()
-│   │           │   └── Memory.Free()
+│   │           │   └── Memory.Free() √
 │   │           ├── Variables.IterateVariables()
 │   │           │   └── Objects.IterateStart()
 │   │           ├── Variables.IterateConstants()
@@ -272,10 +272,10 @@ Test.Hopper()
 │   │           ├── Variables.IterateNext()
 │   │           │   └── Objects.IterateNext()
 │   │           └── Variables.Clear()
-│   │               ├── Table.GetFirst()
+│   │               ├── Table.GetFirst() √
 │   │               ├── Objects.GetTokens()
-│   │               ├── Memory.Free()
-│   │               └── Table.Delete()
+│   │               ├── Memory.Free() √
+│   │               └── Table.Delete() √
 │   │
 │   ├── Test.PrintSectionHeader() [constantsSection]
 │   ├── TestConstants.RunConstantsTests()
@@ -315,20 +315,20 @@ Test.Hopper()
 │   │           ├── Functions.Remove()
 │   │           │   ├── Functions.Find()
 │   │           │   ├── Arguments.Clear()
-│   │           │   │   ├── Table.GetFirst()
-│   │           │   │   ├── Table.Delete()
-│   │           │   │   └── Memory.Free()
+│   │           │   │   ├── Table.GetFirst() √
+│   │           │   │   ├── Table.Delete() √
+│   │           │   │   └── Memory.Free() √
 │   │           │   └── Objects.Remove()
 │   │           ├── Functions.IterateFunctions()
 │   │           │   └── Objects.IterateStart()
 │   │           ├── Functions.IterateNext()
 │   │           │   └── Objects.IterateNext()
 │   │           └── Functions.Clear()
-│   │               ├── Table.GetFirst()
+│   │               ├── Table.GetFirst() √
 │   │               ├── Arguments.Clear()
 │   │               ├── Objects.GetTokens()
-│   │               ├── Memory.Free()
-│   │               └── Table.Delete()
+│   │               ├── Memory.Free() √
+│   │               └── Table.Delete() √
 │   │
 │   ├── Test.PrintSectionHeader() [argumentSection]
 │   ├── TestArguments.RunArgumentsTests()
@@ -342,7 +342,7 @@ Test.Hopper()
 │   │           ├── TestArguments.allocateTestTokens()
 │   │           ├── Arguments.Add()
 │   │           │   ├── Arguments.calculateArgumentNodeSize()
-│   │           │   ├── Memory.Allocate()
+│   │           │   ├── Memory.Allocate() √
 │   │           │   └── Arguments.initializeArgumentNode()
 │   │           │       ├── Arguments.copyArgumentNameToNode()
 │   │           │       └── Tools.CopyBytes()
@@ -389,13 +389,13 @@ Here's a table of the APIs improved so far:
 
 | Qualified Name | Inputs | Outputs | Munts |
 |----------------|--------|---------|-------|
-| **Table.GetFirst** | X = ZP address of list head pointer | ZP.IDX = first node address<br>C = set if found, clear if empty | - |
-| **Table.GetNext** | ZP.IDX = current node | ZP.IDX = next node address<br>C = set if found, clear if end | - |
-| **Table.Add** | X = ZP address of list head pointer<br>ZP.ACC = node size (16-bit) | ZP.IDX = new node address<br>C = set if successful, clear if allocation failed | ZP.IDY, ZP.TOP, ZP.NEXT<br>ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT |
-| **Table.Delete** | X = ZP address of list head pointer<br>ZP.IDX = node to delete | C = set if successful, clear if not found | ZP.IDY, ZP.TOP, ZP.NEXT<br>ZP.LCURRENT, ZP.LPREVIOUS<br>ZP.LNEXT, ZP.LHEADX |
-| **Table.Clear** | X = ZP address of list head pointer | C = set (always succeeds)<br>List head = 0x0000 | ZP.IDY, ZP.TOP, ZP.NEXT<br>ZP.LCURRENT, ZP.LPREVIOUS<br>ZP.LNEXT, ZP.LHEADX |
-| **Memory.Allocate** | ZP.ACC = requested size (16-bit) | ZP.IDX = allocated address<br>(0x0000 if failed) | ZP.IDY, ZP.TOP, ZP.NEXT |
-| **Memory.Free** | ZP.IDX = address to free<br>(must not be 0x0000) | - | ZP.IDY, ZP.TOP, ZP.NEXT |
+| **Table.GetFirst** √ | X = ZP address of list head pointer | ZP.IDX = first node address<br>C = set if found, clear if empty | - |
+| **Table.GetNext** √ | ZP.IDX = current node | ZP.IDX = next node address<br>C = set if found, clear if end | - |
+| **Table.Add** √ | X = ZP address of list head pointer<br>ZP.ACC = node size (16-bit) | ZP.IDX = new node address<br>C = set if successful, clear if allocation failed | ZP.IDY, ZP.TOP, ZP.NEXT<br>ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT |
+| **Table.Delete** √ | X = ZP address of list head pointer<br>ZP.IDX = node to delete | C = set if successful, clear if not found | ZP.IDY, ZP.TOP, ZP.NEXT<br>ZP.LCURRENT, ZP.LPREVIOUS<br>ZP.LNEXT, ZP.LHEADX |
+| **Table.Clear** √ | X = ZP address of list head pointer | C = set (always succeeds)<br>List head = 0x0000 | ZP.IDY, ZP.TOP, ZP.NEXT<br>ZP.LCURRENT, ZP.LPREVIOUS<br>ZP.LNEXT, ZP.LHEADX |
+| **Memory.Allocate** √ | ZP.ACC = requested size (16-bit) | ZP.IDX = allocated address<br>(0x0000 if failed) | ZP.IDY, ZP.TOP, ZP.NEXT |
+| **Memory.Free** √ | ZP.IDX = address to free<br>(must not be 0x0000) | - | ZP.IDY, ZP.TOP, ZP.NEXT |
 
 Notes:
 - All APIs preserve registers (A, X, Y) unless otherwise noted
