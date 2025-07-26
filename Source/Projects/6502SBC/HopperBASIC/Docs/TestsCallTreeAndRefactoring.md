@@ -77,6 +77,10 @@ BRK
 - Prefer CamelCase or camelCase for readability
 - More consistent with modern coding standards
 
+### Enum Usage (RULE #9)
+- Use direct enum syntax: `LDA #SymbolType.VARIABLE`
+- Don't qualify with namespace: ~~`LDA #Objects.SymbolType.VARIABLE`~~
+
 ## Code Patterns
 
 ### Standard Function Template
@@ -160,10 +164,6 @@ SimpleFunctionName()
 - Use meaningful error messages from Messages unit
 - Never fail silently - always set an error or use BRK with TODO pattern
 - When a caller checks a flag incorrectly (Z instead of C), bugs are hard to find
-
-## Enum Usage
-- Use direct enum syntax: `LDA #SymbolType.VARIABLE`
-- Don't qualify with namespace: ~~`LDA #Objects.SymbolType.VARIABLE`~~
 
 ## Memory Management Integration
 - Memory.Allocate() munts: ZP.IDY, ZP.TOP, ZP.NEXT (preserves ZP.ACC)
@@ -290,6 +290,7 @@ Test.Hopper()
 │   │           │   ├── Objects.Find() ✓
 │   │           │   │   ├── Table.GetFirst() ✓
 │   │           │   │   ├── Objects.compareNames() ✓
+│   │           │   │   │   └── Tools.StringCompare()
 │   │           │   │   └── Table.GetNext() ✓
 │   │           │   ├── Objects.calculateNodeSize() ✓
 │   │           │   ├── Table.Add() ✓
@@ -331,40 +332,40 @@ Test.Hopper()
 │   │       └── [Each test uses]:
 │   │           ├── TestVariables.allocateTestTokens()
 │   │           │   └── Memory.Allocate() ✓
-│   │           ├── Variables.Declare()
+│   │           ├── Variables.Declare() ✓
 │   │           │   ├── Objects.Find() ✓
 │   │           │   └── Objects.Add() ✓
-│   │           ├── Variables.Find()
+│   │           ├── Variables.Find() ✓
 │   │           │   ├── Objects.Find() ✓
 │   │           │   └── Objects.GetData() ✓
-│   │           ├── Variables.GetValue()
+│   │           ├── Variables.GetValue() ✓
 │   │           │   └── Objects.GetData() ✓
-│   │           ├── Variables.SetValue()
+│   │           ├── Variables.SetValue() ✓
 │   │           │   ├── Objects.GetData() ✓
 │   │           │   └── Objects.SetValue() ✓
-│   │           ├── Variables.GetType()
+│   │           ├── Variables.GetType() ✓
 │   │           │   └── Objects.GetData() ✓
-│   │           ├── Variables.GetName()
-│   │           ├── Variables.GetTokens()
+│   │           ├── Variables.GetName() ✓
+│   │           ├── Variables.GetTokens() ✓
 │   │           │   └── Objects.GetTokens() ✓
-│   │           ├── Variables.Remove()
-│   │           │   ├── Variables.Find()
+│   │           ├── Variables.Remove() ✓
+│   │           │   ├── Variables.Find() ✓
 │   │           │   ├── Objects.GetTokens() ✓
 │   │           │   ├── Objects.Remove() ✓
 │   │           │   └── Memory.Free() ✓
-│   │           ├── Variables.IterateVariables()
+│   │           ├── Variables.IterateVariables() ✓
 │   │           │   └── Objects.IterateStart() ✓
-│   │           ├── Variables.IterateConstants()
+│   │           ├── Variables.IterateConstants() ✓
 │   │           │   └── Objects.IterateStart() ✓
-│   │           ├── Variables.IterateAll()
+│   │           ├── Variables.IterateAll() ✓
 │   │           │   └── Objects.IterateStart() ✓
-│   │           ├── Variables.IterateNext()
+│   │           ├── Variables.IterateNext() ✓
 │   │           │   └── Objects.IterateNext() ✓
-│   │           └── Variables.Clear()
+│   │           └── Variables.Clear() ✓
 │   │               ├── Table.GetFirst() ✓
 │   │               ├── Objects.GetTokens() ✓
-│   │               ├── Memory.Free() ✓
-│   │               └── Table.Delete() ✓
+│   │               ├── Table.Delete() ✓
+│   │               └── Memory.Free() ✓
 │   │
 │   ├── Test.PrintSectionHeader() [constantsSection]
 │   ├── TestConstants.RunConstantsTests()
@@ -403,9 +404,7 @@ Test.Hopper()
 │   │           │   └── Objects.GetData() ✓
 │   │           ├── Functions.Remove()
 │   │           │   ├── Functions.Find()
-│   │           │   ├── Arguments.Clear()
-│   │           │   │   ├── Table.GetFirst() ✓
-│   │           │   │   ├── Table.Delete() ✓
+│   │           │   ├── Arguments.Clear() ✓
 │   │           │   │   └── Memory.Free() ✓
 │   │           │   └── Objects.Remove() ✓
 │   │           ├── Functions.IterateFunctions()
@@ -414,7 +413,7 @@ Test.Hopper()
 │   │           │   └── Objects.IterateNext() ✓
 │   │           └── Functions.Clear()
 │   │               ├── Table.GetFirst() ✓
-│   │               ├── Arguments.Clear()
+│   │               ├── Arguments.Clear() ✓
 │   │               ├── Objects.GetTokens() ✓
 │   │               ├── Memory.Free() ✓
 │   │               └── Table.Delete() ✓
@@ -429,20 +428,21 @@ Test.Hopper()
 │   │   └── testIterateFunctionArguments()
 │   │       └── [Each test uses]:
 │   │           ├── TestArguments.allocateTestTokens()
-│   │           ├── Arguments.Add()
-│   │           │   ├── Arguments.calculateArgumentNodeSize()
+│   │           ├── Arguments.Add() ✓
+│   │           │   ├── Arguments.calculateNodeSize() ✓
 │   │           │   ├── Memory.Allocate() ✓
-│   │           │   └── Arguments.initializeArgumentNode()
-│   │           │       ├── Arguments.copyArgumentNameToNode()
+│   │           │   └── Arguments.initializeNode() ✓
+│   │           │       ├── Arguments.copyNameToNode() ✓
 │   │           │       └── Tools.CopyBytes()
-│   │           ├── Arguments.Find()
-│   │           │   └── Arguments.compareArgumentNames()
-│   │           ├── Arguments.GetType()
-│   │           ├── Arguments.GetName()
-│   │           ├── Arguments.FindByIndex()
-│   │           ├── Arguments.GetCount()
-│   │           ├── Arguments.IterateStart()
-│   │           └── Arguments.IterateNext()
+│   │           ├── Arguments.Find() ✓
+│   │           │   └── Arguments.compareNames() ✓
+│   │           │       └── Tools.StringCompare()
+│   │           ├── Arguments.GetType() ✓
+│   │           ├── Arguments.GetName() ✓
+│   │           ├── Arguments.FindByIndex() ✓
+│   │           ├── Arguments.GetCount() ✓
+│   │           ├── Arguments.IterateStart() ✓
+│   │           └── Arguments.IterateNext() ✓
 │   │
 │   ├── Test.PrintSectionHeader() [scenarioSection]
 │   ├── TestScenarios.RunScenarioTests()
@@ -497,6 +497,28 @@ This call tree shows the complete test system structure, with each unique call p
 | **Objects.Destroy** ✓ | X = ZP address of table head | C = set (always succeeds) | ZP.IDY, ZP.TOP, ZP.NEXT<br>ZP.LCURRENT, ZP.LPREVIOUS<br>ZP.LNEXT, ZP.LHEADX |
 | **Objects.IterateStart** ✓ | X = ZP address of table head<br>ZP.ACC = filter (0=all) | ZP.IDX = first match<br>C = set if found | ZP.LCURRENT, ZP.LNEXT |
 | **Objects.IterateNext** ✓ | - | ZP.IDX = next match<br>C = set if found | ZP.LCURRENT, ZP.LNEXT |
+| **Variables.Declare** ✓ | ZP.TOP = name pointer<br>ZP.ACC = symbolType\|dataType<br>ZP.NEXT = initial value<br>ZP.IDY = tokens pointer | C = set if successful | ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT |
+| **Variables.Find** ✓ | ZP.TOP = name pointer<br>ZP.SymbolIteratorFilter = expected type | ZP.IDX = symbol node<br>C = set if found | ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0 |
+| **Variables.GetValue** ✓ | ZP.IDX = symbol node | ZP.TOP = value<br>ZP.TOPT = dataType<br>C = set if successful | - |
+| **Variables.SetValue** ✓ | ZP.IDX = symbol node<br>ZP.TOP = new value | C = set if successful | - |
+| **Variables.GetType** ✓ | ZP.IDX = symbol node | ZP.ACC = symbolType\|dataType<br>C = set if successful | - |
+| **Variables.GetName** ✓ | ZP.IDX = symbol node | ZP.ACC = name pointer<br>C = set (always succeeds) | - |
+| **Variables.GetTokens** ✓ | ZP.IDX = symbol node | ZP.NEXT = tokens pointer<br>C = set (always succeeds) | - |
+| **Variables.Remove** ✓ | ZP.TOP = name pointer | C = set if successful | ZP.IDY, ZP.TOP, ZP.NEXT<br>ZP.LCURRENT, ZP.LPREVIOUS<br>ZP.LNEXT, ZP.LHEADX<br>ZP.SymbolTemp0, ZP.SymbolTemp1 |
+| **Variables.IterateVariables** ✓ | - | ZP.IDX = first variable<br>C = set if found | ZP.LCURRENT, ZP.LNEXT |
+| **Variables.IterateConstants** ✓ | - | ZP.IDX = first constant<br>C = set if found | ZP.LCURRENT, ZP.LNEXT |
+| **Variables.IterateAll** ✓ | - | ZP.IDX = first symbol<br>C = set if found | ZP.LCURRENT, ZP.LNEXT |
+| **Variables.IterateNext** ✓ | - | ZP.IDX = next symbol<br>C = set if found | ZP.LCURRENT, ZP.LNEXT |
+| **Variables.Clear** ✓ | - | C = set (always succeeds) | ZP.IDY, ZP.TOP, ZP.NEXT<br>ZP.LCURRENT, ZP.LPREVIOUS<br>ZP.LNEXT, ZP.LHEADX |
+| **Arguments.Add** ✓ | ZP.IDX = function node<br>ZP.TOP = argument name<br>ZP.ACCL = argument type | C = set if successful | ZP.IDY, ZP.TOP, ZP.NEXT<br>ZP.LCURRENT, ZP.LHEADX<br>ZP.LNEXT, ZP.LPREVIOUS<br>ZP.SymbolType, ZP.SymbolNameL/H<br>ZP.SymbolLength |
+| **Arguments.Find** ✓ | ZP.IDX = function node<br>ZP.TOP = argument name | ZP.IDY = argument node<br>ZP.ACCL = argument index<br>C = set if found | ZP.LCURRENT, ZP.LNEXT |
+| **Arguments.GetType** ✓ | ZP.IDY = argument node | ZP.ACCL = argument type<br>C = set (always succeeds) | - |
+| **Arguments.GetName** ✓ | ZP.IDY = argument node | ZP.TOP = name pointer<br>C = set (always succeeds) | - |
+| **Arguments.FindByIndex** ✓ | ZP.IDX = function node<br>ZP.ACCL = argument index | ZP.IDY = argument node<br>C = set if found | ZP.LCURRENT, ZP.LNEXT<br>ZP.SymbolTemp0 |
+| **Arguments.GetCount** ✓ | ZP.IDX = function node | ZP.ACCL = argument count<br>C = set (always succeeds) | ZP.LCURRENT, ZP.LNEXT |
+| **Arguments.IterateStart** ✓ | ZP.IDX = function node | ZP.IDY = first argument<br>C = set if found | - |
+| **Arguments.IterateNext** ✓ | ZP.IDY = current argument | ZP.IDY = next argument<br>C = set if found | ZP.LCURRENT |
+| **Arguments.Clear** ✓ | ZP.IDX = function node | C = set (always succeeds) | ZP.IDY, ZP.TOP, ZP.NEXT<br>ZP.LCURRENT, ZP.LNEXT<br>ZP.SymbolTemp0, ZP.SymbolTemp1 |
 
 ### Notes:
 - All APIs preserve registers (A, X, Y) unless otherwise noted
@@ -505,3 +527,4 @@ This call tree shows the complete test system structure, with each unique call p
 - ZP.M0-M15 slots are munted by Memory operations but are not listed as we don't care about them
 - Outputs are never listed under Munts (per the refinement rules)
 - Internal workspace variables (ZP.Symbol*) are not listed in public API documentation
+```
