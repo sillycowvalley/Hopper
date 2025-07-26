@@ -2,10 +2,10 @@ unit TestFunctions
 {
     uses "/Source/Runtime/6502/ZeroPage"
     uses "/Source/Runtime/6502/Memory"
-    uses "Functions"
-    uses "Arguments"
-    uses "BasicTypes"
-    uses "Tools"
+    uses "../Functions"
+    uses "../Arguments"
+    uses "../BasicTypes"
+    uses "../Tools"
     
     // Private test data for Functions tests
     const string funcName1 = "ADD";

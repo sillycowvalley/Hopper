@@ -2,9 +2,9 @@ unit TestScenarios
 {
     uses "/Source/Runtime/6502/ZeroPage"
     uses "/Source/Runtime/6502/Memory"
-    uses "Variables"
-    uses "Functions"
-    uses "BasicTypes"
+    uses "../Variables"
+    uses "../Functions"
+    uses "../BasicTypes"
     
     // Test data for integration scenarios
     const string varName1 = "X";

@@ -1,7 +1,7 @@
 unit TestTable
 {
     uses "/Source/Runtime/6502/ZeroPage"
-    uses "Table"
+    uses "../Table"
     
     // Private test descriptions for Table tests
     const string tableDesc1 = "Empty list operations";

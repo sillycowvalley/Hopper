@@ -16,12 +16,12 @@ program Test
     uses "/Source/Runtime/6502/Utilities"
     uses "/Source/Runtime/6502/Stacks"
     
-    uses "Table"
-    uses "Objects"
-    uses "Variables"
-    uses "Functions"
-    uses "BasicTypes"
-    uses "Tools"
+    uses "../Table"
+    uses "../Objects"
+    uses "../Variables"
+    uses "../Functions"
+    uses "../BasicTypes"
+    uses "../Tools"
     
     uses "TestTable"
     uses "TestObjects"

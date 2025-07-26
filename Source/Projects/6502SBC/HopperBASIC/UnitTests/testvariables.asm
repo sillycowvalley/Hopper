@@ -2,8 +2,8 @@ unit TestVariables
 {
     uses "/Source/Runtime/6502/ZeroPage"
     uses "/Source/Runtime/6502/Memory"
-    uses "Variables"
-    uses "BasicTypes"
+    uses "../Variables"
+    uses "../BasicTypes"
     
     // Private test data for Variables tests
     const string testName1 = "VAR1";

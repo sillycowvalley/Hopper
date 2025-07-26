@@ -2,9 +2,9 @@ unit TestArguments
 {
     uses "/Source/Runtime/6502/ZeroPage"
     uses "/Source/Runtime/6502/Memory"
-    uses "Functions"
-    uses "Arguments"
-    uses "BasicTypes"
+    uses "../Functions"
+    uses "../Arguments"
+    uses "../BasicTypes"
     
     // Private test data for Arguments tests
     const string funcName1 = "TESTFUNC";

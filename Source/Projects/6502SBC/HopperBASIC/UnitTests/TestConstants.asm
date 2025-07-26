@@ -1,8 +1,8 @@
 unit TestConstants
 {
     uses "/Source/Runtime/6502/ZeroPage"
-    uses "Variables"
-    uses "BasicTypes"
+    uses "../Variables"
+    uses "../BasicTypes"
     
     // Private test data for constants tests
     const string constName1 = "PI";

@@ -1,8 +1,8 @@
 unit TestObjects
 {
     uses "/Source/Runtime/6502/ZeroPage"
-    uses "Objects"
-    uses "BasicTypes"
+    uses "../Objects"
+    uses "../BasicTypes"
     
     // Private test data for Objects tests
     const string testName1 = "VAR1";
