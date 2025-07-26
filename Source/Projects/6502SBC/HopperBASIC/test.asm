@@ -29,6 +29,7 @@ program Test
     uses "TestConstants"
     uses "TestFunctions"
     uses "TestArguments"
+    uses "TestScenarios"
     
     // Test Table head locations
     const byte TableHeadLocation  = 0x3C;
@@ -49,6 +50,7 @@ program Test
     const string constantsSection = "\n--- CONSTANTS LAYER TESTS ---\n";
     const string functionsSection = "\n--- FUNCTION LAYER TESTS ---\n";
     const string argumentSection = "\n--- ARGUMENT LAYER TESTS ---\n";
+    const string scenarioSection = "\n--- INTEGRATION SCENARIO TESTS ---\n";
     
     // Print null-terminated string using ZP.IDX
     PrintString()
@@ -282,6 +284,14 @@ program Test
         STA ZP.TOPH
         PrintSectionHeader();
         TestArguments.RunArgumentsTests();
+        
+        // Integration scenario tests
+        LDA #(scenarioSection % 256)
+        STA ZP.TOPL
+        LDA #(scenarioSection / 256)
+        STA ZP.TOPH
+        PrintSectionHeader();
+        TestScenarios.RunScenarioTests();
         
         LDA #(testComplete % 256)
         STA ZP.IDXL

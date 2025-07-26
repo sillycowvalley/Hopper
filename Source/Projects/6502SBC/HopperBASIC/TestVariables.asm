@@ -1017,6 +1017,6 @@ unit TestVariables
         testGetVariableName();
         testIterateAllSymbols();
         testIterateConstants();
-        testDeclareByteVariable();  // NEW - addresses the BYTE type gap
+        testDeclareByteVariable();
     }
 }
