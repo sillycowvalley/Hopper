@@ -18,99 +18,104 @@ unit Arguments
     const byte anType = 2;          // Argument type field offset
     const byte anName = 3;          // Name field offset (variable length)
     
-    // Add argument to function's arguments list (at the end for correct order)
+    // Add argument to function's arguments list at the end for correct order
     // Input: ZP.IDX = function node address, ZP.TOP = argument name, ZP.ACCL = argument type
-    // Output: C set if successful, argument added to function's list
+    // Output: C set if successful, NC if allocation failed
+    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT, ZP.LPREVIOUS, 
+    //        ZP.SymbolType, ZP.SymbolNameL/H, ZP.SymbolLength
     Add()
     {
         PHA
         PHX
         PHY
         
-         // Save function node address IMMEDIATELY (before it gets munted)
-        LDA ZP.IDXL
-        STA ZP.LHEADL           // Function node address
-        LDA ZP.IDXH
-        STA ZP.LHEADH
-        
-        LDA ZP.ACCL
-        STA ZP.SymbolType       // Argument type
-        
-        LDA ZP.TOPL
-        STA ZP.SymbolNameL      // Argument name pointer
-        LDA ZP.TOPH
-        STA ZP.SymbolNameH
-        
-        // 1. Allocate and initialize new node
-        calculateArgumentNodeSize();   // Returns size in ZP.ACC
-        Memory.Allocate();             // Returns address in ZP.IDX
-        
-        LDA ZP.IDXL
-        ORA ZP.IDXH
-        if (Z)
+        loop // start of single exit block
         {
-            PLY
-            PLX
-            PLA
-            CLC  // Allocation failed
-            return;
-        }
-        
-        LDA ZP.IDXL
-        STA ZP.LCURRENTL        // New argument node
-        LDA ZP.IDXH
-        STA ZP.LCURRENTH
-        
-        initializeArgumentNode();
-        
-        // New node's next = NULL
-        LDY #anNext
-        LDA #0
-        STA [ZP.LCURRENT], Y
-        INY
-        STA [ZP.LCURRENT], Y
-        
-        // 2. Find insertion point (pointer-to-pointer pattern)
-        // Start with address of function's arguments field
-        CLC
-        LDA ZP.LHEADL
-        ADC #Objects.snArguments
-        STA ZP.LPREVIOUSL       // Points to insertion location
-        LDA ZP.LHEADH
-        ADC #0
-        STA ZP.LPREVIOUSH
-        
-        loop
-        {
-            // Check if *LPREVIOUS is NULL (insertion point found)
-            LDY #0
-            LDA [ZP.LPREVIOUS], Y
-            STA ZP.LNEXTL
+            // Save function node address IMMEDIATELY (before it gets munted)
+            LDA ZP.IDXL
+            STA ZP.LHEADL           // Function node address
+            LDA ZP.IDXH
+            STA ZP.LHEADH
+            
+            LDA ZP.ACCL
+            STA ZP.SymbolType       // Argument type
+            
+            LDA ZP.TOPL
+            STA ZP.SymbolNameL      // Argument name pointer
+            LDA ZP.TOPH
+            STA ZP.SymbolNameH
+            
+            // 1. Allocate and initialize new node
+            calculateArgumentNodeSize();   // Returns size in ZP.ACC
+            Memory.Allocate();             // Returns address in ZP.IDX
+            
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z)
+            {
+                CLC  // Allocation failed
+                break;
+            }
+            
+            LDA ZP.IDXL
+            STA ZP.LCURRENTL        // New argument node
+            LDA ZP.IDXH
+            STA ZP.LCURRENTH
+            
+            initializeArgumentNode();
+            
+            // New node's next = NULL
+            LDY #anNext
+            LDA #0
+            STA [ZP.LCURRENT], Y
             INY
-            LDA [ZP.LPREVIOUS], Y
-            STA ZP.LNEXTH
+            STA [ZP.LCURRENT], Y
             
-            LDA ZP.LNEXTL
-            ORA ZP.LNEXTH
-            if (Z) { break; }    // Found insertion point
-            
-            // LPREVIOUS = &(LNEXT->next)
+            // 2. Find insertion point (pointer-to-pointer pattern)
+            // Start with address of function's arguments field
             CLC
-            LDA ZP.LNEXTL
-            ADC #anNext
-            STA ZP.LPREVIOUSL
-            LDA ZP.LNEXTH
+            LDA ZP.LHEADL
+            ADC #Objects.snArguments
+            STA ZP.LPREVIOUSL       // Points to insertion location
+            LDA ZP.LHEADH
             ADC #0
             STA ZP.LPREVIOUSH
-        }
-        
-        // 3. Insert: *LPREVIOUS = LCURRENT
-        LDY #0
-        LDA ZP.LCURRENTL
-        STA [ZP.LPREVIOUS], Y
-        INY
-        LDA ZP.LCURRENTH
-        STA [ZP.LPREVIOUS], Y
+            
+            loop
+            {
+                // Check if *LPREVIOUS is NULL (insertion point found)
+                LDY #0
+                LDA [ZP.LPREVIOUS], Y
+                STA ZP.LNEXTL
+                INY
+                LDA [ZP.LPREVIOUS], Y
+                STA ZP.LNEXTH
+                
+                LDA ZP.LNEXTL
+                ORA ZP.LNEXTH
+                if (Z) { break; }    // Found insertion point
+                
+                // LPREVIOUS = &(LNEXT->next)
+                CLC
+                LDA ZP.LNEXTL
+                ADC #anNext
+                STA ZP.LPREVIOUSL
+                LDA ZP.LNEXTH
+                ADC #0
+                STA ZP.LPREVIOUSH
+            }
+            
+            // 3. Insert: *LPREVIOUS = LCURRENT
+            LDY #0
+            LDA ZP.LCURRENTL
+            STA [ZP.LPREVIOUS], Y
+            INY
+            LDA ZP.LCURRENTH
+            STA [ZP.LPREVIOUS], Y
+            
+            SEC  // Success
+            break;
+        } // end of single exit block
         
         // RESTORE original IDX before exit
         LDA ZP.LHEADL
@@ -121,91 +126,99 @@ unit Arguments
         PLY
         PLX
         PLA
-        SEC  // Success
     }
     
     // Find argument by name in function's arguments list
     // Input: ZP.IDX = function node address, ZP.TOP = argument name
-    // Output: ZP.IDY = argument node address, ZP.ACCL = argument index, C set if found
+    // Output: ZP.IDY = argument node address, ZP.ACCL = argument index, C set if found, NC if not found
+    // Munts: ZP.LCURRENT, ZP.LNEXT
     Find()
     {
         PHA
         PHX
         PHY
         
-        // Get arguments list head from function node (IDX preserved)
-        LDY # Objects.snArguments
-        LDA [ZP.IDX], Y
-        STA ZP.LCURRENTL
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.LCURRENTH
-        
-        STZ ZP.ACCL  // Argument index counter
-        
-        loop
+        loop // start of single exit block
         {
-            // Check if we've reached end of list
-            LDA ZP.LCURRENTL
-            ORA ZP.LCURRENTH
-            if (Z)
-            {
-                PLY
-                PLX
-                PLA
-                CLC  // Not found
-                return;
-            }
-            
-            // Compare argument name
-            compareArgumentNames();
-            if (Z)  // Names match
-            {
-                // Copy node address to IDY
-                LDA ZP.LCURRENTL
-                STA ZP.IDYL
-                LDA ZP.LCURRENTH
-                STA ZP.IDYH
-                
-                PLY
-                PLX
-                PLA
-                SEC  // Found
-                return;
-            }
-            
-            // Move to next argument - use LCURRENT throughout
-            LDY #anNext
-            LDA [ZP.LCURRENT], Y
-            STA ZP.LNEXTL
-            INY
-            LDA [ZP.LCURRENT], Y
-            STA ZP.LNEXTH
-            
-            // LCURRENT = LNEXT (never touch IDX)
-            LDA ZP.LNEXTL
+            // Get arguments list head from function node (IDX preserved)
+            LDY #Objects.snArguments
+            LDA [ZP.IDX], Y
             STA ZP.LCURRENTL
-            LDA ZP.LNEXTH
+            INY
+            LDA [ZP.IDX], Y
             STA ZP.LCURRENTH
             
-            INC ZP.ACCL  // Increment argument index
-        }
-    }    
-    // Get argument type from node
+            STZ ZP.ACCL  // Argument index counter
+            
+            loop
+            {
+                // Check if we've reached end of list
+                LDA ZP.LCURRENTL
+                ORA ZP.LCURRENTH
+                if (Z)
+                {
+                    CLC  // Not found
+                    break;
+                }
+                
+                // Compare argument name
+                compareArgumentNames();
+                if (Z)  // Names match
+                {
+                    // Copy node address to IDY
+                    LDA ZP.LCURRENTL
+                    STA ZP.IDYL
+                    LDA ZP.LCURRENTH
+                    STA ZP.IDYH
+                    
+                    SEC  // Found
+                    break;
+                }
+                
+                // Move to next argument - use LCURRENT throughout
+                LDY #anNext
+                LDA [ZP.LCURRENT], Y
+                STA ZP.LNEXTL
+                INY
+                LDA [ZP.LCURRENT], Y
+                STA ZP.LNEXTH
+                
+                // LCURRENT = LNEXT (never touch IDX)
+                LDA ZP.LNEXTL
+                STA ZP.LCURRENTL
+                LDA ZP.LNEXTH
+                STA ZP.LCURRENTH
+                
+                INC ZP.ACCL  // Increment argument index
+            }
+            break;  // Only one path through outer loop
+        } // end of single exit block
+        
+        PLY
+        PLX
+        PLA
+    }
+    
+    // Get argument type from argument node
     // Input: ZP.IDY = argument node address
-    // Output: ZP.ACCL = argument type
+    // Output: ZP.ACCL = argument type, C set (always succeeds)
+    // Munts: -
     GetType()
     {
         LDY #anType
         LDA [ZP.IDY], Y
         STA ZP.ACCL
+        SEC  // Always succeeds
     }
     
-    // Get argument name from node
+    // Get argument name pointer from argument node
     // Input: ZP.IDY = argument node address
-    // Output: ZP.TOP = argument name pointer
+    // Output: ZP.TOP = argument name pointer, C set (always succeeds)
+    // Munts: -
     GetName()
     {
+        PHA
+        
         // Calculate address of name field in argument node
         CLC
         LDA ZP.IDYL
@@ -214,90 +227,99 @@ unit Arguments
         LDA ZP.IDYH
         ADC #0
         STA ZP.TOPH
+        
+        SEC  // Always succeeds
+        
+        PLA
     }
     
-    // Find argument by index (for BP offset calculation)
+    // Find argument by index for BP offset calculation
     // Input: ZP.IDX = function node address, ZP.ACCL = argument index
-    // Output: ZP.IDY = argument node address, C set if found
+    // Output: ZP.IDY = argument node address, C set if found, NC if index out of range
+    // Munts: ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0
     FindByIndex()
     {
         PHA
         PHX
         PHY
         
-        // Save target index
-        LDA ZP.ACCL
-        STA ZP.SymbolTemp0
-        
-        // Get arguments list head from function node (IDX preserved)
-        LDY # Objects.snArguments
-        LDA [ZP.IDX], Y
-        STA ZP.LCURRENTL
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.LCURRENTH
-        
-        STZ ZP.ACCL  // Current index counter
-        
-        loop
+        loop // start of single exit block
         {
-            // Check if we've reached end of list
-            LDA ZP.LCURRENTL
-            ORA ZP.LCURRENTH
-            if (Z)
-            {
-                PLY
-                PLX
-                PLA
-                CLC  // Not found
-                return;
-            }
-            
-            // Check if current index matches target
+            // Save target index
             LDA ZP.ACCL
-            CMP ZP.SymbolTemp0
-            if (Z)  // Found the target index
-            {
-                // Copy node address to IDY
-                LDA ZP.LCURRENTL
-                STA ZP.IDYL
-                LDA ZP.LCURRENTH
-                STA ZP.IDYH
-                
-                PLY
-                PLX
-                PLA
-                SEC  // Found
-                return;
-            }
+            STA ZP.SymbolTemp0
             
-            // Move to next argument - use LCURRENT throughout
-            LDY #anNext
-            LDA [ZP.LCURRENT], Y
-            STA ZP.LNEXTL
-            INY
-            LDA [ZP.LCURRENT], Y
-            STA ZP.LNEXTH
-            
-            // LCURRENT = LNEXT (never touch IDX)
-            LDA ZP.LNEXTL
+            // Get arguments list head from function node (IDX preserved)
+            LDY #Objects.snArguments
+            LDA [ZP.IDX], Y
             STA ZP.LCURRENTL
-            LDA ZP.LNEXTH
+            INY
+            LDA [ZP.IDX], Y
             STA ZP.LCURRENTH
             
-            INC ZP.ACCL  // Increment current index
-        }
-    }    
+            STZ ZP.ACCL  // Current index counter
+            
+            loop
+            {
+                // Check if we've reached end of list
+                LDA ZP.LCURRENTL
+                ORA ZP.LCURRENTH
+                if (Z)
+                {
+                    CLC  // Not found
+                    break;
+                }
+                
+                // Check if current index matches target
+                LDA ZP.ACCL
+                CMP ZP.SymbolTemp0
+                if (Z)  // Found the target index
+                {
+                    // Copy node address to IDY
+                    LDA ZP.LCURRENTL
+                    STA ZP.IDYL
+                    LDA ZP.LCURRENTH
+                    STA ZP.IDYH
+                    
+                    SEC  // Found
+                    break;
+                }
+                
+                // Move to next argument - use LCURRENT throughout
+                LDY #anNext
+                LDA [ZP.LCURRENT], Y
+                STA ZP.LNEXTL
+                INY
+                LDA [ZP.LCURRENT], Y
+                STA ZP.LNEXTH
+                
+                // LCURRENT = LNEXT (never touch IDX)
+                LDA ZP.LNEXTL
+                STA ZP.LCURRENTL
+                LDA ZP.LNEXTH
+                STA ZP.LCURRENTH
+                
+                INC ZP.ACCL  // Increment current index
+            }
+            break;  // Only one path through outer loop
+        } // end of single exit block
+        
+        PLY
+        PLX
+        PLA
+    }
+    
     // Get argument count in function's arguments list
     // Input: ZP.IDX = function node address
-    // Output: ZP.ACCL = argument count
+    // Output: ZP.ACCL = argument count, C set (always succeeds)
+    // Munts: ZP.LCURRENT, ZP.LNEXT
     GetCount()
     {
         PHA
         PHX
         
         // Get arguments list head from function node (IDX preserved)
-        LDY # Objects.snArguments
+        LDY #Objects.snArguments
         LDA [ZP.IDX], Y
         STA ZP.LCURRENTL
         INY
@@ -330,19 +352,23 @@ unit Arguments
             STA ZP.LCURRENTH
         }
         
+        SEC  // Always succeeds
+        
         PLX
         PLA
         // IDX unchanged!
-    }    
+    }
+    
     // Start iteration over arguments in function's list
     // Input: ZP.IDX = function node address
-    // Output: ZP.IDY = first argument node, C set if found
+    // Output: ZP.IDY = first argument node, C set if found, NC if no arguments
+    // Munts: -
     IterateStart()
     {
         PHA
         
         // Get arguments list head from function node (IDX preserved)
-        LDY # Objects.snArguments
+        LDY #Objects.snArguments
         LDA [ZP.IDX], Y
         STA ZP.IDYL
         INY
@@ -367,7 +393,8 @@ unit Arguments
     
     // Continue argument iteration
     // Input: ZP.IDY = current argument node
-    // Output: ZP.IDY = next argument node, C set if found
+    // Output: ZP.IDY = next argument node, C set if found, NC if end of arguments
+    // Munts: ZP.LCURRENT
     IterateNext()
     {
         PHA
@@ -401,10 +428,10 @@ unit Arguments
         PLA
     }
     
-    // Clear all arguments in function's list
+    // Clear all arguments in function's list with proper memory cleanup
     // Input: ZP.IDX = function node address
-    // Output: Function's arguments field set to null, all argument nodes freed
-    // Preserves: ZP.IDX (function node address)
+    // Output: Function's arguments field set to null, all argument nodes freed, C set (always succeeds)
+    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
     Clear()
     {
         PHA
@@ -420,7 +447,7 @@ unit Arguments
         loop
         {
             // Get first argument from function node (use saved address)
-            LDY # Objects.snArguments
+            LDY #Objects.snArguments
             LDA [ZP.SymbolTemp0], Y
             STA ZP.IDXL
             INY
@@ -441,7 +468,7 @@ unit Arguments
             STA ZP.LNEXTH
             
             // Store the next pointer as the new head argument
-            LDY # Objects.snArguments
+            LDY #Objects.snArguments
             LDA ZP.LNEXTL
             STA [ZP.SymbolTemp0], Y
             INY
@@ -458,6 +485,8 @@ unit Arguments
         LDA ZP.SymbolTemp1
         STA ZP.IDXH
         
+        SEC  // Always succeeds
+        
         PLY
         PLX
         PLA
@@ -466,6 +495,7 @@ unit Arguments
     // Internal helper: Calculate required argument node size
     // Input: ZP.SymbolName = argument name pointer
     // Output: ZP.ACC = total node size (16-bit), ZP.SymbolLength = name length including null
+    // Munts: -
     calculateArgumentNodeSize()
     {
         // Start with fixed overhead
@@ -498,6 +528,7 @@ unit Arguments
     // Input: ZP.IDX = node address, ZP.SymbolType = argument type,
     //        ZP.SymbolName = name pointer, ZP.SymbolLength = name length
     // Note: Next pointer will be set by caller
+    // Munts: -
     initializeArgumentNode()
     {
         // Set argument type (offset anType)
@@ -511,6 +542,7 @@ unit Arguments
     
     // Internal helper: Copy argument name string to node
     // Input: ZP.IDX = node address, ZP.SymbolName = name pointer, ZP.SymbolLength = name length
+    // Munts: ZP.FSOURCEADDRESSL/H, ZP.FDESTINATIONADDRESSL/H, ZP.FLENGTHL/H
     copyArgumentNameToNode()
     {
         // Set up source address (name pointer)
@@ -540,6 +572,7 @@ unit Arguments
     // Internal helper: Compare argument names
     // Input: ZP.LCURRENT = argument node address, ZP.TOP = target name
     // Output: Z set if equal, NZ if different
+    // Munts: ZP.LPREVIOUS, ZP.LNEXT
     compareArgumentNames()
     {
         // Calculate address of name field in argument node
