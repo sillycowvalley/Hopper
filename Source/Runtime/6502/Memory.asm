@@ -160,15 +160,20 @@ unit Memory
     // Allocate memory block
     // Input: ZP.ACC = requested size (16-bit) 
     // Output: ZP.IDX = allocated address (0x0000 if allocation failed)
-    // Preserves: Nothing - all registers and ZP variables may be munted
-    // Munts: A, X, Y, ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT, 
-    //        ZP.M0-M13 (maBEST, maBESTSIZE, maBESTNEXT, maBESTPREV, 
-    //                   maSCRATCH, maNEWHOLE, maNEWHOLESIZE)
-    // Side effects: Modifies ZP.FREELIST, zero-initializes allocated block
-    // Notes: Rounds size up to 16-byte boundary, adds 2 bytes for size header
+    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.M0-M13
     Allocate()
     {
+        PHA
+        PHX
+        PHY
+        
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
         Allocate.Allocate();
+        
 #ifdef MEMDEBUG        
         /*
         LDA # 'A'
@@ -178,20 +183,37 @@ unit Memory
         Tools.XOut();
         */
 #endif
+        
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
+        PLY
+        PLX
+        PLA
     }
     
     // Free memory block
     // Input: ZP.IDX = address to free (must not be 0x0000)
     // Output: None
-    // Preserves: Nothing - all registers and ZP variables may be munted  
-    // Munts: A, X, Y, ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT,
-    //        ZP.M0-M15 (mfCURRENT, mfPREVIOUS, mfCURRENTSIZE, mfCURRENTNEXT,
-    //                   mfCURRENTPREV, mfFREESLOT, mfGAP*, mfNEXTNEXT, 
-    //                   mfPREVSIZE/mfNEXTSIZE, mfSIZE, mfOFFSET)
-    // Side effects: Modifies ZP.FREELIST, coalesces adjacent free blocks
-    // Notes: Reads size from address-2, performs free list insertion/merging
+    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.M0-M15
     Free()
     {   
+        PHA
+        PHX
+        PHY
+        
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
 #ifdef MEMDEBUG        
         LDA # 'F'
         Tools.COut();
@@ -199,7 +221,22 @@ unit Memory
         Tools.COut();
         Tools.XOut();
 #endif        
+        
         Free.Free();
+        
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        PLY
+        PLX
+        PLA
     }
 #else
     Allocate()
