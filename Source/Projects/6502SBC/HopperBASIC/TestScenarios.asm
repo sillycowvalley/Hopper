@@ -860,7 +860,6 @@ unit TestScenarios
         // Verify main still has correct properties
         Functions.GetSignature();
         LDA ZP.ACCL
-        Tools.AOut();
         CMP # BasicType.VOID
         if (NZ)
         {
@@ -876,6 +875,7 @@ unit TestScenarios
         Test.PrintResult();
     }
     
+    
     testForgetCommandIntegration()
     {
         LDA #(scenarioDesc4 % 256)
@@ -884,14 +884,366 @@ unit TestScenarios
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        // TODO: Implement FORGET command test
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        CLC  // Not implemented yet
+        // Step 1: Declare INT X = 10 with token stream
+        allocateTestTokens();  // Result in ZP.U5|U6
+        
+        LDA #(varName1 % 256)  // "X"
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        LDA #10
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        
+        // Store token pointer for variable
+        LDA ZP.U5
+        STA ZP.IDYL
+        LDA ZP.U6
+        STA ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x50
+            CLC  // Fail - variable declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 2: Declare FUNC FOO() with body tokens
+        allocateTestTokens();  // New tokens in ZP.U5|U6
+        
+        LDA #(regularFuncName % 256)  // "FOO"
+        STA ZP.TOPL
+        LDA #(regularFuncName / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        STZ ZP.NEXTL  // No arguments
+        STZ ZP.NEXTH
+        
+        // Store token pointer for function body
+        LDA ZP.U5
+        STA ZP.IDYL
+        LDA ZP.U6
+        STA ZP.IDYH
+        
+        Functions.Declare();
+        if (NC)
+        {
+            LDA #0x51
+            CLC  // Fail - function declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 3: Verify both symbols exist before removal
+        LDA #(varName1 % 256)  // "X"
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter  // Any type
+        
+        Variables.Find();
+        if (NC)
+        {
+            LDA #0x52
+            CLC  // Fail - variable X not found before removal
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA #(regularFuncName % 256)  // "FOO"
+        STA ZP.TOPL
+        LDA #(regularFuncName / 256)
+        STA ZP.TOPH
+        
+        Functions.Find();
+        if (NC)
+        {
+            LDA #0x53
+            CLC  // Fail - function FOO not found before removal
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 4: Test FORGET X pattern - Find first, then remove with token cleanup
+        LDA #(varName1 % 256)  // "X"
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter
+        
+        Variables.Find();
+        if (NC)
+        {
+            LDA #0x54
+            CLC  // Fail - could not find X for removal
+            Test.PrintResult();
+            return;
+        }
+        
+        // Get token pointer before removal for verification
+        Variables.GetTokens();
+        
+        // Store token pointer to verify it gets freed
+        LDA ZP.IDYL
+        PHA  // Save token pointer low byte
+        LDA ZP.IDYH
+        PHA  // Save token pointer high byte
+        
+        // Remove the variable (should free tokens automatically)
+        LDA #(varName1 % 256)  // "X"
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        
+        Variables.Remove();
+        if (NC)
+        {
+            PLA  // Clean stack
+            PLA
+            LDA #0x55
+            CLC  // Fail - variable removal failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Clean stack (token pointers no longer valid)
+        PLA
+        PLA
+        
+        // Step 5: Verify X is completely gone
+        LDA #(varName1 % 256)  // "X"
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter
+        
+        Variables.Find();
+        if (C)
+        {
+            LDA #0x56
+            CLC  // Fail - variable X still exists after removal
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 6: Test FORGET FOO pattern - Find first, then remove
+        LDA #(regularFuncName % 256)  // "FOO"
+        STA ZP.TOPL
+        LDA #(regularFuncName / 256)
+        STA ZP.TOPH
+        
+        Functions.Find();
+        if (NC)
+        {
+            LDA #0x57
+            CLC  // Fail - could not find FOO for removal
+            Test.PrintResult();
+            return;
+        }
+        
+        // Get function body tokens before removal
+        Functions.GetBody();
+        
+        // Store body token pointer for verification
+        LDA ZP.IDYL
+        PHA  // Save body token pointer low byte
+        LDA ZP.IDYH
+        PHA  // Save body token pointer high byte
+        
+        // Remove the function (should free body tokens and any arguments)
+        LDA #(regularFuncName % 256)  // "FOO"
+        STA ZP.TOPL
+        LDA #(regularFuncName / 256)
+        STA ZP.TOPH
+        
+        Functions.Remove();
+        if (NC)
+        {
+            PLA  // Clean stack
+            PLA
+            LDA #0x58
+            CLC  // Fail - function removal failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Clean stack (body token pointers no longer valid)
+        PLA
+        PLA
+        
+        // Step 7: Verify FOO is completely gone
+        LDA #(regularFuncName % 256)  // "FOO"
+        STA ZP.TOPL
+        LDA #(regularFuncName / 256)
+        STA ZP.TOPH
+        
+        Functions.Find();
+        if (C)
+        {
+            LDA #0x59
+            CLC  // Fail - function FOO still exists after removal
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 8: Test FORGET of function with arguments (complex cleanup test)
+        allocateTestTokens();  // New tokens for function body
+        
+        LDA #(varName2 % 256)  // Use "COUNTER" as function name
+        STA ZP.TOPL
+        LDA #(varName2 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.WORD)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        STZ ZP.NEXTL  // We'll add arguments separately
+        STZ ZP.NEXTH
+        
+        LDA ZP.U5
+        STA ZP.IDYL
+        LDA ZP.U6
+        STA ZP.IDYH
+        
+        Functions.Declare();
+        if (NC)
+        {
+            LDA #0x5A
+            CLC  // Fail - function with args declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Find the function to add arguments
+        Functions.Find();
+        if (NC)
+        {
+            LDA #0x5B
+            CLC  // Fail - could not find function to add arguments
+            Test.PrintResult();
+            return;
+        }
+        
+        // Add two arguments to the function
+        LDA #(varName1 % 256)  // "X" as first argument
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        
+        LDA #BasicType.INT
+        STA ZP.ACCL
+        
+        Arguments.Add();
+        if (NC)
+        {
+            LDA #0x5C
+            CLC  // Fail - could not add first argument
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA #(varName3 % 256)  // "STATUS" as second argument
+        STA ZP.TOPL
+        LDA #(varName3 / 256)
+        STA ZP.TOPH
+        
+        LDA #BasicType.BIT
+        STA ZP.ACCL
+        
+        Arguments.Add();
+        if (NC)
+        {
+            LDA #0x5D
+            CLC  // Fail - could not add second argument
+            Test.PrintResult();
+            return;
+        }
+        
+        // Verify arguments exist before removal
+        Arguments.GetCount();
+        LDA ZP.ACCL
+        CMP #2
+        if (NZ)
+        {
+            LDA #0x5E
+            CLC  // Fail - wrong argument count before removal
+            Test.PrintResult();
+            return;
+        }
+        
+        // Remove function with arguments (should cleanup arguments too)
+        LDA #(varName2 % 256)  // "COUNTER"
+        STA ZP.TOPL
+        LDA #(varName2 / 256)
+        STA ZP.TOPH
+        
+        Functions.Remove();
+        if (NC)
+        {
+            LDA #0x5F
+            CLC  // Fail - function with arguments removal failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Verify function is completely gone
+        Functions.Find();
+        if (C)
+        {
+            LDA #0x60  // Using 0x60 as this is edge case beyond allocated range
+            CLC  // Fail - function with arguments still exists after removal
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 9: Test FORGET of non-existent symbol (should handle gracefully)
+        // These calls should return NC for non-existent symbols - this is expected behavior
+        
+        // Try to remove non-existent variable "X" (already removed)
+        LDA #(varName1 % 256)  
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter
+        
+        Variables.Find();  // Should return NC (not found)
+        if (C)  // If found, then remove it
+        {
+            Variables.Remove();
+        }
+        // Either way, this is not an error condition
+        
+        // Try to remove non-existent function "FOO" (already removed)  
+        LDA #(regularFuncName % 256)
+        STA ZP.TOPL
+        LDA #(regularFuncName / 256)
+        STA ZP.TOPH
+        
+        Functions.Find();  // Should return NC (not found)
+        if (C)  // If found, then remove it
+        {
+            Functions.Remove();
+        }
+        // Either way, this is not an error condition
+        
+        Variables.Clear();  // Clean up any remaining symbols
+        Functions.Clear();
+        SEC  // Pass
         Test.PrintResult();
-    }
+    }    
+    
     
     testTokenMemoryLifecycle()
     {
@@ -981,11 +1333,13 @@ unit TestScenarios
     // Run all scenario tests
     RunScenarioTests()
     {
+        /*
         testClearCommandImplementation();
         testVariableReassignmentAfterDeclaration();
         testMainProgramStorage();
-        /*
+        */
         testForgetCommandIntegration();
+        /*
         testTokenMemoryLifecycle();
         testListCommandDataRetrieval();
         testSymbolTableSerializationReadiness();

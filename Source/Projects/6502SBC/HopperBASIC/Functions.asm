@@ -258,7 +258,7 @@ unit Functions
         loop // start of single exit block
         {
             // Find the function first
-            Find();
+            Find(); //returns IDX
             if (NC)  // Not found
             {
                 CLC  // Not found
@@ -266,18 +266,17 @@ unit Functions
             }
             
             // Clear all arguments before removing function
-            Arguments.Clear();  // munts ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
-            
-            // Restore function node address and remove the function
-            PLA
-            STA ZP.IDXH
-            PLA
-            STA ZP.IDXL
+            Arguments.Clear();  // preserves IDX munts ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
             
             LDX #ZP.FunctionsList
             Objects.Remove();  // munts ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX
             break;
         } // end of single exit block
+    
+        PLA
+        STA ZP.IDXH
+        PLA   
+        STA ZP.IDXL
         
         PLY
         PLX

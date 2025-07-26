@@ -319,6 +319,11 @@ unit Variables
         PHX
         PHY
         
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
         loop // start of single exit block
         {
             // Find the symbol first
@@ -363,6 +368,11 @@ unit Variables
             SEC  // Success
             break;
         } // end of single exit block
+        
+        PLA
+        STA ZP.IDXH
+        PLA   
+        STA ZP.IDXL
         
         PLY
         PLX
