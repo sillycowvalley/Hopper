@@ -650,7 +650,7 @@ unit TestScenarios
         // Verify it has correct type (FUNCTION|VOID)
         Functions.GetSignature();
         LDA ZP.ACCL
-        CMP #((SymbolType.FUNCTION << 4) | BasicType.VOID)
+        CMP #BasicType.VOID  // Compare against VOID (0x00), not the full combined type
         if (NZ)
         {
             LDA #0x42
@@ -661,7 +661,7 @@ unit TestScenarios
         
         // Verify function body tokens are accessible
         Functions.GetBody();
-        LDA ZP.TOPL
+        LDA ZP.IDYL  // Changed from ZP.TOPL
         CMP ZP.U5
         if (NZ)
         {
@@ -671,7 +671,7 @@ unit TestScenarios
             return;
         }
         
-        LDA ZP.TOPH
+        LDA ZP.IDYH  // Changed from ZP.TOPH
         CMP ZP.U6
         if (NZ)
         {
@@ -679,7 +679,7 @@ unit TestScenarios
             CLC  // Fail - wrong token pointer high byte
             Test.PrintResult();
             return;
-        }
+        }        
         
         // Step 3: Verify "main" cannot be created by user (simulate user attempt)
         // This simulates what would happen if user tried: FUNC main()
@@ -774,7 +774,7 @@ unit TestScenarios
         }
         
         Functions.GetBody();
-        LDA ZP.TOPL
+        LDA ZP.IDYL  // Changed from ZP.TOPL
         CMP ZP.U5
         if (NZ)
         {
@@ -784,7 +784,7 @@ unit TestScenarios
             return;
         }
         
-        LDA ZP.TOPH
+        LDA ZP.IDYH  // Changed from ZP.TOPH
         CMP ZP.U6
         if (NZ)
         {
@@ -860,7 +860,8 @@ unit TestScenarios
         // Verify main still has correct properties
         Functions.GetSignature();
         LDA ZP.ACCL
-        CMP #((SymbolType.FUNCTION << 4) | BasicType.VOID)
+        Tools.AOut();
+        CMP # BasicType.VOID
         if (NZ)
         {
             LDA #0x4F

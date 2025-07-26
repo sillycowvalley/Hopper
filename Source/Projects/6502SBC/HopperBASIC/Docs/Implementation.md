@@ -5,7 +5,7 @@ We are implementing 9 critical functional tests in `testscenarios.asm` that vali
 
 ## Implementation Status
 
-### ✅ COMPLETED (2/9)
+### ✅ COMPLETED (3/9)
 1. **testVariableReassignmentAfterDeclaration()** - ✅ DONE
    - Tests multiple variable updates after initial declaration
    - Validates Find/SetValue/GetValue pattern preservation
@@ -16,10 +16,13 @@ We are implementing 9 critical functional tests in `testscenarios.asm` that vali
    - Verifies constants remain unchanged during CLEAR
    - Validates proper iteration through variables only
 
+3. **testMainProgramStorage()** - ✅ DONE
+   - Tests storing
+
 ### 🔄 TO IMPLEMENT (7/9)
 
 #### High Priority - Core Language Features
-3. **testMainProgramStorage()** - TODO
+3. **testMainProgramStorage()** - ✅ DONE
    - **Purpose**: Store/retrieve main program block (BEGIN/END)
    - **Methods**: Functions.Declare() with "main", Functions.Find()
    - **Pattern**: Store main program as special function with lowercase name
