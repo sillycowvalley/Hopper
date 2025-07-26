@@ -49,7 +49,7 @@ unit Variables
         PLA
     }
     
-    // Find variable/constant name to address
+    // Find variable/constant by name with optional type filtering
     // Input: ZP.TOP = name pointer, ZP.SymbolIteratorFilter = expected symbolType (VARIABLE or CONSTANT, 0 = any)
     // Output: ZP.IDX = symbol node address, C set if found and correct type, NC if not found or wrong type
     // Munts: ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0
@@ -111,9 +111,10 @@ unit Variables
         PLA
     }
     
-    // Get variable/constant value by address
+    // Get variable/constant value and type
     // Input: ZP.IDX = symbol node address (from Find)
     // Output: ZP.TOP = value, ZP.TOPT = dataType, C set if successful, NC if error
+    // Munts: -
     GetValue()
     {
         PHA
@@ -125,57 +126,42 @@ unit Variables
             // Check if it's a variable or constant
             LDA ZP.ACCL
             AND #0xF0  // Extract symbol type (high nibble)
-            LSR LSR LSR LSR  // Shift to low nibble
-            
-            CMP #SymbolType.VARIABLE
-            if (Z)
-            {
-                // Copy value to TOP and extract data type - value is now in ZP.IDY
-                LDA ZP.IDYL
-                STA ZP.TOPL
-                LDA ZP.IDYH
-                STA ZP.TOPH
-                
-                LDA ZP.ACCL
-                AND #0x0F  // Extract data type (low nibble)
-                STA ZP.TOPT
-                
-                SEC  // Success
-                break;
+            CMP # (SymbolType.VARIABLE << 4)
+            if (NZ)
+            { 
+                CMP # (SymbolType.CONSTANT << 4)
+                if (NZ)
+                {
+                    // Not a variable or constant
+                    LDA #(Messages.TypeMismatch % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.TypeMismatch / 256)
+                    STA ZP.LastErrorH
+                    CLC  // Error
+                    break;
+                }
             }
+            // Copy value to TOP and extract data type - value is now in ZP.IDY
+            LDA ZP.IDYL
+            STA ZP.TOPL
+            LDA ZP.IDYH
+            STA ZP.TOPH
             
-            CMP #SymbolType.CONSTANT
-            if (Z)
-            {
-                // Copy value to TOP and extract data type - value is now in ZP.IDY
-                LDA ZP.IDYL
-                STA ZP.TOPL
-                LDA ZP.IDYH
-                STA ZP.TOPH
-                
-                LDA ZP.ACCL
-                AND #0x0F  // Extract data type (low nibble)
-                STA ZP.TOPT
-                
-                SEC  // Success
-                break;
-            }
+            LDA ZP.ACCL
+            AND #0x0F  // Extract data type (low nibble)
+            STA ZP.TOPT
             
-            // Not a variable or constant
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            CLC  // Error
+            SEC  // Success
             break;
         } // end of single exit block
         
         PLA
     }
     
-    // Set variable value by address (variables only)
+    // Set variable value (variables only, constants are immutable)
     // Input: ZP.IDX = symbol node address (from Find), ZP.TOP = new value
     // Output: C set if successful, NC if error (not a variable)
+    // Munts: -
     SetValue()
     {
         PHA
@@ -241,11 +227,14 @@ unit Variables
         PLA
     }
     
-    // Get type info by address
+    // Get type information for variable/constant
     // Input: ZP.IDX = symbol node address (from Find)
-    // Output: ZP.ACC = symbolType|dataType (packed), C set if successful
+    // Output: ZP.ACC = symbolType|dataType (packed), C set if successful, NC if error
+    // Munts: -
     GetType()
     {
+        PHA
+        
         loop // start of single exit block
         {
             Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
@@ -277,13 +266,18 @@ unit Variables
             CLC  // Error
             break;
         } // end of single exit block
+        
+        PLA
     }
     
-    // Get name from current node
+    // Get name pointer from symbol node
     // Input: ZP.IDX = symbol node address (from Find or iteration)
-    // Output: ZP.ACC = name pointer (points into node data)
+    // Output: ZP.ACC = name pointer (points into node data), C set (always succeeds)
+    // Munts: -
     GetName()
     {
+        PHA
+        
         // Calculate address of name field in node
         CLC
         LDA ZP.IDXL
@@ -292,11 +286,16 @@ unit Variables
         LDA ZP.IDXH
         ADC #0
         STA ZP.ACCH
+        
+        SEC  // Always succeeds
+        
+        PLA
     }
      
-    // Get initialization tokens from current node
+    // Get initialization tokens pointer from symbol node
     // Input: ZP.IDX = symbol node address (from Find or iteration)
-    // Output: ZP.NEXT = tokens pointer (points to initialization token stream)
+    // Output: ZP.NEXT = tokens pointer, C set (always succeeds)
+    // Munts: -
     GetTokens()
     {
         Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
@@ -306,9 +305,11 @@ unit Variables
         STA ZP.NEXTL
         LDA ZP.IDYH
         STA ZP.NEXTH
+        
+        SEC  // Always succeeds
     }
     
-    // Remove variable or constant by name
+    // Remove variable or constant by name with token cleanup
     // Input: ZP.TOP = name pointer
     // Output: C set if successful, NC if not found
     // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX, ZP.SymbolTemp0, ZP.SymbolTemp1
@@ -385,7 +386,7 @@ unit Variables
         PLA
     }
     
-    // Start iteration over constants only (for CONSTS command if added)
+    // Start iteration over constants only (for CONSTS command)
     // Output: ZP.IDX = first constant node, C set if found, NC if none
     // Munts: ZP.LCURRENT, ZP.LNEXT
     IterateConstants()
@@ -402,7 +403,7 @@ unit Variables
         PLA
     }
     
-    // Start iteration over all symbols (for general enumeration)
+    // Start iteration over all symbols (for LIST command)
     // Output: ZP.IDX = first symbol node, C set if found, NC if none
     // Munts: ZP.LCURRENT, ZP.LNEXT
     IterateAll()
@@ -426,8 +427,8 @@ unit Variables
         Objects.IterateNext();
     }
     
-    // Clear all variables and constants (for NEW command)
-    // Output: Empty symbol table
+    // Clear all variables and constants with token cleanup (for NEW command)
+    // Output: Empty symbol table, C set (always succeeds)
     // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX
     Clear()
     {
