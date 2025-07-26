@@ -254,17 +254,11 @@ unit Objects
     // Preserves: A, Y, ZP.TOP, ZP.NEXT, ZP.ACC
     IterateStart()
     {
-        PHA
-        PHY
-        
         // Start at beginning of list
         Table.GetFirst();
         
         // Find first matching symbol
         findNextMatch();
-        
-        PLY
-        PLA
     }
     
     // Continue iteration
@@ -273,17 +267,11 @@ unit Objects
     // Preserves: A, X, Y, ZP.TOP, ZP.NEXT, ZP.ACC
     IterateNext()
     {
-        PHA
-        PHY
-        
         // Move to next node
         Table.GetNext();
         
         // Find next matching symbol
         findNextMatch();
-        
-        PLY
-        PLA
     }
     
     // Destroy entire symbol table
@@ -426,6 +414,9 @@ unit Objects
     // Output: ZP.IDX = next matching symbol, C set if found, NC if none
     findNextMatch()
     {
+        PHA
+        PHY
+        
         loop
         {
             // Check if we've reached end
@@ -434,7 +425,7 @@ unit Objects
             if (Z)
             {
                 CLC  // End of list
-                return;
+                break;
             }
             
             // Check type filter
@@ -442,7 +433,7 @@ unit Objects
             if (Z)  // No filter
             {
                 SEC  // Return current
-                return;
+                break;
             }
             
             // Get symbol type from current node (high nibble of snType)
@@ -454,11 +445,13 @@ unit Objects
             if (Z)
             {
                 SEC  // Found matching type
-                return;
+                break;
             }
             
             // Move to next node
             Table.GetNext();
         }
+        PLY
+        PLA
     }
 }

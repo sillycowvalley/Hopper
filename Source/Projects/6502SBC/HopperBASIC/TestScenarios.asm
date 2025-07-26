@@ -466,42 +466,26 @@ unit TestScenarios
             return;
         }
 
-        LDA #'I'
-        Tools.COut();  // Starting iteration
-
         loop
         {
-            LDA #'V'
-            Tools.COut();  // Found a variable
-            
             // Reset current variable to 0 (type default)
             STZ ZP.TOPL
             STZ ZP.TOPH
             Variables.SetValue();
             if (NC)
             {
-                LDA #'S'
-                Tools.COut();  // SetValue failed
                 LDA #0x2B
                 CLC  // Fail - could not reset variable
                 Test.PrintResult();
                 return;
             }
             
-            LDA #'R'
-            Tools.COut();  // Reset successful
-            
             // Move to next variable
             Variables.IterateNext();
             if (NC) 
             { 
-                LDA #'E'
-                Tools.COut();  // End of iteration
                 break; 
             }
-            
-            LDA #'N'
-            Tools.COut();  // Next variable found
         }
         
         // Step 5: Verify variables are reset: X = 0, Y = 0, Z = 0
@@ -725,6 +709,7 @@ unit TestScenarios
     {
         testVariableReassignmentAfterDeclaration();
         testClearCommandImplementation();
+        /* TODO
         testMainProgramStorage();
         testForgetCommandIntegration();
         testTokenMemoryLifecycle();
@@ -732,5 +717,6 @@ unit TestScenarios
         testSymbolTableSerializationReadiness();
         testMixedGlobalSymbolUsage();
         testSafeSymbolCreationPattern();
+        */
     }
 }

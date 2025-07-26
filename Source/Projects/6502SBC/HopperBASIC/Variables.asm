@@ -191,6 +191,12 @@ unit Variables
         LDA ZP.IDXH
         PHA
         
+        // Save ZP.ACC (contains iteration filter)
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH  
+        PHA
+        
         loop // start of single exit block
         {
             // Get current symbol info
@@ -223,10 +229,16 @@ unit Variables
             break;
         } // end of single exit block
         
+        // Restore ZP.ACC
         PLA
-        LDA ZP.IDXH
+        STA ZP.ACCH
         PLA
-        LDA ZP.IDXL
+        STA ZP.ACCL
+        
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
         
         PLY
         PLX
@@ -365,29 +377,45 @@ unit Variables
     // Sets up iteration state for IterateNext()
     IterateVariables()
     {
+        PHA
+        PHX
+        
         LDA #SymbolType.VARIABLE
         STA ZP.ACCL
         LDX #ZP.VariablesList
         Objects.IterateStart();
+        
+        PLX
+        PLA
     }
     
     // Start iteration over constants only (for CONSTS command if added)
     // Output: ZP.IDX = first constant node, C set if found, NC if none
     IterateConstants()
     {
+        PHA
+        PHX
+        
         LDA #SymbolType.CONSTANT
         STA ZP.ACCL
         LDX #ZP.VariablesList
         Objects.IterateStart();
+        
+        PLX
+        PLA
     }
     
     // Start iteration over all symbols (for general enumeration)
     // Output: ZP.IDX = first symbol node, C set if found, NC if none
     IterateAll()
     {
+        PHX
+        
         STZ ZP.ACCL  // No filter
         LDX #ZP.VariablesList
         Objects.IterateStart();
+        
+        PLX
     }
     
     // Continue iteration (use after any Iterate* method)
