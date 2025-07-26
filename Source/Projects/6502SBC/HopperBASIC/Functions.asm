@@ -205,10 +205,14 @@ unit Functions
     // Output: ZP.IDX = first function node, C set if found
     IterateFunctions()
     {
+        PHA
+        
         LDA #SymbolType.FUNCTION
-        STA ZP.ACCL
+        STA ZP.SymbolIteratorFilter
         LDX #ZP.FunctionsList
         Objects.IterateStart();
+        
+        PLA
     }
     
     // Continue function iteration
@@ -216,7 +220,11 @@ unit Functions
     // Output: ZP.IDX = next function node, C set if found
     IterateNext()
     {
+        PHA
+        
         Objects.IterateNext();
+        
+        PLA
     }
     
     // Clear all functions
@@ -255,6 +263,7 @@ unit Functions
                 LDX #ZP.FunctionsList
                 Table.GetFirst();
             }
+            
             // Delete the function node
             LDX #ZP.FunctionsList
             Table.Delete();

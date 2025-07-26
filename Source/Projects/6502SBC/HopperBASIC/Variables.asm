@@ -25,6 +25,7 @@ unit Variables
             // Check if symbol already exists
             LDX #ZP.VariablesList
             Objects.Find();
+            
             if (C)  // Symbol already exists
             {
                 LDA #(Messages.SyntaxError % 256)
@@ -381,7 +382,7 @@ unit Variables
         PHX
         
         LDA #SymbolType.VARIABLE
-        STA ZP.ACCL
+        STA ZP.SymbolIteratorFilter
         LDX #ZP.VariablesList
         Objects.IterateStart();
         
@@ -397,10 +398,10 @@ unit Variables
         PHX
         
         LDA #SymbolType.CONSTANT
-        STA ZP.ACCL
+        STA ZP.SymbolIteratorFilter
         LDX #ZP.VariablesList
-        Objects.IterateStart();
-        
+        Objects.IterateStart(); 
+               
         PLX
         PLA
     }
@@ -411,7 +412,7 @@ unit Variables
     {
         PHX
         
-        STZ ZP.ACCL  // No filter
+        STZ ZP.SymbolIteratorFilter  // No filter
         LDX #ZP.VariablesList
         Objects.IterateStart();
         
@@ -419,7 +420,7 @@ unit Variables
     }
     
     // Continue iteration (use after any Iterate* method)
-    // Input: ZP.IDX = current node, ZP.ACCL = type filter from previous call
+    // Input: ZP.IDX = current node, ZP.SymbolIteratorFilter = type filter from previous call
     // Output: ZP.IDX = next matching node, C set if found, NC if done
     IterateNext()
     {

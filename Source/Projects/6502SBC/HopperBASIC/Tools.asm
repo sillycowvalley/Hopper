@@ -5,14 +5,15 @@ unit Tools
 
 #ifdef DEBUG       
     // Print BasicType enum value as readable string
-    // On entry: A = BasicType enum value
-    // Uses:     Serial.WriteChar() for output, ZP.U0 for temp storage
+    // Input: A = BasicType enum value
+    // Output: Type name printed to serial
+    // Preserves: X, Y, flags
     PrintType()
     {
+        PHP  // Save flags
         PHA
         PHX
         PHY
-        
         
         switch (A)
         {
@@ -98,17 +99,15 @@ unit Tools
         PLY
         PLX
         PLA
+        PLP  // Restore flags
     }
 #endif
     
-    // Usage example:
-    // LDA #Types.WORD
-    // Tools.PrintType();  // Prints "WORD"
-    
     // Print null-terminated string to serial output
-    // On entry: ZP.IDXL/ZP.IDXH = pointer to null-terminated string
-    // On exit:  A,Y corrupted, IDX preserved
-    // Uses:     Serial.WriteChar() for output
+    // Input: ZP.IDX = pointer to null-terminated string
+    // Output: String printed to serial
+    // Preserves: X, ZP.IDX
+    // Munts: A, Y
     PrintString()
     {
         LDY #0              // Initialize string index
@@ -124,20 +123,11 @@ unit Tools
     }
     
     // Print 16-bit decimal number with no leading zeros
-    // On entry: ZP.TOPL/ZP.TOPH = 16-bit number to print (0-65535)
-    // Uses:     Serial.WriteChar() for output
-    
-    // Original source: https://www.beebwiki.mdfs.net/Number_output_in_6502_machine_code
-    
-    // Powers of 10 table (little-endian format)
-    const byte[] PrDec16Tens = { 
-        0x01, 0x00,  // 1 (little-endian)
-        0x0A, 0x00,  // 10
-        0x64, 0x00,  // 100  
-        0xE8, 0x03,  // 1000
-        0x10, 0x27   // 10000
-    };
-    
+    // Input: ZP.TOP = 16-bit number to print (0-65535)
+    //        ZP.TOPT = type (for signed/unsigned determination)
+    // Output: Decimal number printed to serial
+    // Preserves: None
+    // Munts: ZP.TOP (used as working register)
     PrintDecimalWord()
     {
         PHA
@@ -245,20 +235,28 @@ unit Tools
         PLA
     }
     
-    // Copy FLENGTH bytes from FSOURCEADDRESS to FDESTINATIONADDRESS
-    // On entry: FSOURCEADDRESS = source pointer
-    //           FDESTINATIONADDRESS = destination pointer  
-    //           FLENGTH = number of bytes to copy (16-bit)
-    // On exit:  All registers preserved, FSOURCEADDRESS/FDESTINATIONADDRESS/FLENGTH munted
-    // Uses:     Hardware stack for register preservation
+    // Powers of 10 table for PrintDecimalWord (little-endian format)
+    const byte[] PrDec16Tens = { 
+        0x01, 0x00,  // 1 (little-endian)
+        0x0A, 0x00,  // 10
+        0x64, 0x00,  // 100  
+        0xE8, 0x03,  // 1000
+        0x10, 0x27   // 10000
+    };
+    
+    // Copy bytes from source to destination
+    // Input: ZP.FSOURCEADDRESS = source pointer
+    //        ZP.FDESTINATIONADDRESS = destination pointer  
+    //        ZP.FLENGTH = number of bytes to copy (16-bit)
+    // Output: Data copied
+    // Preserves: A, X, Y
+    // Munts: ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, ZP.FLENGTH
     CopyBytes()
     {
-        // Save registers we need to preserve
-        PHA          // Save A
-        PHX          // Save X  
-        PHY          // Save Y
+        PHA
+        PHX
+        PHY
         
-        // Main copy loop
         loop
         {
             // Check if FLENGTH == 0
@@ -294,16 +292,16 @@ unit Tools
             DEC ZP.FLENGTHL
         }
         
-        // Restore registers
-        PLY          // Restore Y from stack
-        PLX          // Restore X from stack
-        PLA          // Restore A from stack
+        PLY
+        PLX
+        PLA
     }
     
     // Get string length
-    // Input: X,Y = string pointer (low,high)
+    // Input: X = string pointer low byte, Y = string pointer high byte
     // Output: A = string length (not including null terminator)
     // Preserves: X, Y
+    // Munts: ZP.TOP
     StringLength()
     {
         PHX
@@ -329,6 +327,7 @@ unit Tools
     // Compare two strings
     // Input: ZP.TOP = first string pointer, ZP.NEXT = second string pointer
     // Output: C set if strings match, NC if different
+    // Preserves: A, Y
     StringCompare()
     {
         PHA
@@ -373,9 +372,15 @@ unit Tools
     const string debugZeroBlock = "ZERO\n";
     const string debugEllipsis = "...\n";
     
-    // Debug function to dump key zero page variables
+    // Dump key zero page variables
+    // Input: None
+    // Output: Variables printed to serial
+    // Preserves: A, X, Y, flags
+    // Munts: ZP.U0-U4 (temporary storage)
     DumpVariables()
     {
+       PHP  // Save flags
+       
        // Store registers in zero page temporarily so we can display them
        STA ZP.U0  // Temporarily store A
        STX ZP.U1  // Temporarily store X
@@ -532,14 +537,20 @@ unit Tools
        LDY ZP.U2  // Restore Y
        LDX ZP.U1  // Restore X
        LDA ZP.U0  // Restore A
+       
+       PLP  // Restore flags
     }
 
-    // Debug function to dump the value stack
+    // Dump the value stack
+    // Input: None
+    // Output: Stack contents printed to serial
+    // Preserves: A, X, Y, flags
     DumpStack()
     {
-        PHA  // Save A
-        PHX  // Save X  
-        PHY  // Save Y
+        PHP  // Save flags
+        PHA
+        PHX
+        PHY
         
         LDA #(debugStackHeader % 256)
         STA ZP.IDXL
@@ -609,72 +620,85 @@ unit Tools
         LDA #'\n'
         Serial.WriteChar();
         
-        PLY  // Restore Y
-        PLX  // Restore X
-        PLA  // Restore A
+        PLY
+        PLX
+        PLA
+        PLP  // Restore flags
     }
     
     // Lightweight heap summary for use during iteration
-    // Only shows critical info without walking the heap
-    // Preserves: All registers and ZP variables
+    // Input: None
+    // Output: List head pointers printed to serial
+    // Preserves: A, X, Y, flags, all ZP variables
     DumpHeapSummary()
     {
+        PHP  // Save flags
         PHA
         
         // Just show the list heads
         LDA #'V'
-        Tools.COut();
+        Serial.WriteChar();
         LDA #'L'
-        Tools.COut();
+        Serial.WriteChar();
         LDA #':'
-        Tools.COut();
+        Serial.WriteChar();
         LDA ZP.VariablesListH
-        Tools.HOut();
+        Serial.HexOut();
         LDA ZP.VariablesListL
-        Tools.HOut();
+        Serial.HexOut();
         LDA #' '
-        Tools.COut();
+        Serial.WriteChar();
         
         LDA #'F'
-        Tools.COut();
+        Serial.WriteChar();
         LDA #'L'
-        Tools.COut();
+        Serial.WriteChar();
         LDA #':'
-        Tools.COut();
+        Serial.WriteChar();
         LDA ZP.FunctionsListH
-        Tools.HOut();
+        Serial.HexOut();
         LDA ZP.FunctionsListL
-        Tools.HOut();
+        Serial.HexOut();
         LDA #' '
-        Tools.COut();
+        Serial.WriteChar();
         
         PLA
+        PLP  // Restore flags
     }
 
     // Debug output for iteration state
-    // Shows current node pointer and type
-    // Preserves: All registers and ZP variables
+    // Input: None
+    // Output: Current IDX pointer printed to serial
+    // Preserves: A, X, Y, flags, all ZP variables
     DumpIterationState()
     {
+        PHP  // Save flags
         PHA
         
         LDA #'I'
-        Tools.COut();
+        Serial.WriteChar();
         LDA #'T'
-        Tools.COut();
+        Serial.WriteChar();
         LDA #':'
-        Tools.COut();
+        Serial.WriteChar();
         LDA ZP.IDXH
-        Tools.HOut();
+        Serial.HexOut();
         LDA ZP.IDXL
-        Tools.HOut();
+        Serial.HexOut();
         LDA #' '
-        Tools.COut();
+        Serial.WriteChar();
         
         PLA
+        PLP  // Restore flags
     }
+    
+    // Dump heap with extra state preservation
+    // Input: None
+    // Output: Heap contents printed to serial
+    // Preserves: A, X, Y, flags, ZP.IDX, ZP.IDY, ZP.ACC, ZP.LCURRENT
     DumpHeap()
     {
+        PHP  // Save flags
         PHA
         PHX
         PHY
@@ -708,19 +732,19 @@ unit Tools
         PLY
         PLX
         PLA
+        PLP  // Restore flags
     }
     
-    // Debug function to dump all heap blocks (allocated and free)
-    // Walks through heap sequentially using block size headers
-    // On entry: None
-    // On exit:  A,X,Y, ZP.IDX and ZP.IDY preserved
-    // Munts:    ZP.M0, ZP.M1, ZP.M2, ZP.M3, ZP.U0, ZP.U2, ZP.U3
-    // Uses:     Serial.WriteChar(), Serial.HexOut() for output
+    // Internal heap dump implementation
+    // Input: None
+    // Output: Heap contents printed to serial
+    // Preserves: ZP.IDX, ZP.IDY
+    // Munts: ZP.M0-M3, ZP.U0, ZP.U2, ZP.U3
     dumpHeap()
     {
-        PHA  // Save A
-        PHX  // Save X  
-        PHY  // Save Y
+        PHA
+        PHX
+        PHY
         
         LDA ZP.IDXL
         PHA
@@ -1144,19 +1168,21 @@ unit Tools
         PLA
         STA ZP.IDXL
         
-        PLY  // Restore Y
-        PLX  // Restore X
-        PLA  // Restore A
+        PLY
+        PLX
+        PLA
     }
     
-    // Generic function to dump a 256-byte page in hex+ASCII format
-    // On entry: A = page number (high byte of address)
-    // Uses:     Serial.WriteChar(), Serial.HexOut() for output, ZP.M0/M1 for addressing
+    // Dump a 256-byte page in hex+ASCII format
+    // Input: A = page number (high byte of address)
+    // Output: Page contents printed to serial
+    // Preserves: None
+    // Munts: ZP.M0, ZP.M1
     DumpPage()
     {
-        PHA  // Save A
-        PHX  // Save X  
-        PHY  // Save Y
+        PHA
+        PHX
+        PHY
         
         // Set up M0/M1 to point to the page (preserve IDX)
         STA ZP.M1   // Page number in high byte
@@ -1169,7 +1195,6 @@ unit Tools
         {
             // Print address for this line (page:offset)
             LDA ZP.M1
-            
             Serial.HexOut();
             
             TXA
@@ -1179,7 +1204,6 @@ unit Tools
             LDA # ':'
             Serial.WriteChar();
             LDA # ' '
-            
             Serial.WriteChar();
             
             // Print 16 hex bytes with space after each
@@ -1273,12 +1297,12 @@ unit Tools
             if (Z) { break; }  // Done with all 16 lines
         }
         
-        PLY  // Restore Y
-        PLX  // Restore X
-        PLA  // Restore A
+        PLY
+        PLX
+        PLA
     }
 
-// Debug strings for BASIC buffers
+    // Debug strings for BASIC buffers
     const string basicBuffersHeader = "\n== BASIC BUFFERS ==\n";
     const string basicInputInfo = "InLen:";
     const string basicTokPosInfo = " TokPos:";
@@ -1289,10 +1313,15 @@ unit Tools
     const string basicTokenizerBufferLabel = "\nTokenizerBuffer - First 64 bytes:\n";
     const string basicTokenStringLabel = "\nToken string: '";
 
-    // Dump the BASIC input and work buffers
+    // Dump the BASIC input and tokenizer buffers
+    // Input: None
+    // Output: Buffer contents printed to serial
+    // Preserves: A, flags
+    // Munts: ZP.M0, ZP.M1
     DumpBasicBuffers()
     {
-        PHA  // Save A
+        PHP  // Save flags
+        PHA
         
         LDA #(basicBuffersHeader % 256)
         STA ZP.IDXL
@@ -1693,15 +1722,24 @@ unit Tools
         LDA #'\n'
         Serial.WriteChar();
         
-        PLA  // Restore A
+        PLA
+        PLP  // Restore flags
     }
     
-    // Debug helpers that preserve the carry flag
-    // These are safe to use in critical sections where flag state matters
+    // Write '\n' preserving carry flag
+    // Output: '\n' printed to serial
+    // Preserves: A, X, Y, flags (including carry)
+    NL()
+    {
+        PHP  // Push processor status (including carry flag)
+        LDA #'\n' Serial.WriteChar();
+        PLP  // Pull processor status (restore carry flag)
+    }
     
     // Write character preserving carry flag
     // Input: A = character to output
-    // Preserves: All registers and flags (including carry)
+    // Output: Character printed to serial
+    // Preserves: A, X, Y, flags (including carry)
     COut()
     {
         PHP  // Push processor status (including carry flag)
@@ -1711,16 +1749,19 @@ unit Tools
     
     // Output hex byte preserving carry flag  
     // Input: A = byte to output as hex
-    // Preserves: All registers and flags (including carry)
+    // Output: Hex byte printed to serial
+    // Preserves: A, X, Y, flags (including carry)
     HOut()
     {
         PHP  // Push processor status (including carry flag)
         Serial.HexOut();
         PLP  // Pull processor status (restore carry flag)
     }
-    // Output IDX register as " IDX:hhll" preserving carry flag
-    // Input: ZP.IDX = 16-bit value to output
-    // Preserves: All registers and flags (including carry)
+    
+    // Output IDX register as "IDX:hhll "
+    // Input: None (uses ZP.IDX)
+    // Output: IDX value printed to serial
+    // Preserves: A, X, Y, flags (including carry)
     XOut()
     {
         PHP  // Push processor status (including carry flag)
@@ -1744,9 +1785,11 @@ unit Tools
         PLA  // Restore A register
         PLP  // Pull processor status (restore carry flag)
     }
-    // Output IDY register as " IDY:hhll" preserving carry flag
-    // Input: ZP.IDY = 16-bit value to output
-    // Preserves: All registers and flags (including carry)
+    
+    // Output IDY register as "IDY:hhll "
+    // Input: None (uses ZP.IDY)
+    // Output: IDY value printed to serial
+    // Preserves: A, X, Y, flags (including carry)
     YOut()
     {
         PHP  // Push processor status (including carry flag)
@@ -1770,9 +1813,33 @@ unit Tools
         PLA  // Restore A register
         PLP  // Pull processor status (restore carry flag)
     }
-    // Output ACC register as " ACC:hhll" preserving carry flag
-    // Input: ZP.ACC = 16-bit value to output
-    // Preserves: All registers and flags (including carry)
+    
+    // Output ZP.SymbolIteratorFilter as "I:ll "
+    // Input: None (uses ZP.IDY)
+    // Output: ZP.SymbolIteratorFilter value printed to serial
+    // Preserves: A, X, Y, flags (including carry)
+    IOut()
+    {
+        PHP  // Push processor status (including carry flag)
+        PHA  // Save A register
+        
+        LDA #'I'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        LDA ZP.SymbolIteratorFilter
+        Serial.HexOut();
+        LDA #' '
+        Serial.WriteChar();
+        
+        PLA  // Restore A register
+        PLP  // Pull processor status (restore carry flag)
+    }
+    
+    // Output ACC register as "ACC:hhll "
+    // Input: None (uses ZP.ACC)
+    // Output: ACC value printed to serial
+    // Preserves: A, X, Y, flags (including carry)
     AOut()
     {
         PHP  // Push processor status (including carry flag)
@@ -1788,6 +1855,90 @@ unit Tools
         Serial.WriteChar();
         LDA ZP.ACCH
         Serial.HexOut();
+        LDA ZP.ACCL
+        Serial.HexOut();
+        LDA #' '
+        Serial.WriteChar();
+        
+        PLA  // Restore A register
+        PLP  // Pull processor status (restore carry flag)
+    }
+    // Output NEXT register as "NEXT:hhll "
+    // Input: None (uses ZP.NEXT)
+    // Output: NEXT value printed to serial
+    // Preserves: A, X, Y, flags (including carry)
+    NOut()
+    {
+        PHP  // Push processor status (including carry flag)
+        PHA  // Save A register
+        
+        LDA #'N'
+        Serial.WriteChar();
+        LDA #'E'
+        Serial.WriteChar();
+        LDA #'X'
+        Serial.WriteChar();
+        LDA #'T'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        LDA ZP.NEXTH
+        Serial.HexOut();
+        LDA ZP.NEXTL
+        Serial.HexOut();
+        LDA #' '
+        Serial.WriteChar();
+        
+        PLA  // Restore A register
+        PLP  // Pull processor status (restore carry flag)
+    }
+    // Output TOP register as "TOP:hhll "
+    // Input: None (uses ZP.TOP)
+    // Output: TOP value printed to serial
+    // Preserves: A, X, Y, flags (including carry)
+    TOut()
+    {
+        PHP  // Push processor status (including carry flag)
+        PHA  // Save A register
+        
+        LDA #'T'
+        Serial.WriteChar();
+        LDA #'O'
+        Serial.WriteChar();
+        LDA #'P'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        LDA ZP.TOPH
+        Serial.HexOut();
+        LDA ZP.TOPL
+        Serial.HexOut();
+        LDA #' '
+        Serial.WriteChar();
+        
+        PLA  // Restore A register
+        PLP  // Pull processor status (restore carry flag)
+    }
+    
+    // Output ACCL register as "ACCL:ll "
+    // Input: None (uses ZP.ACC)
+    // Output: ACCL value printed to serial
+    // Preserves: A, X, Y, flags (including carry)
+    ALOut()
+    {
+        PHP  // Push processor status (including carry flag)
+        PHA  // Save A register
+        
+        LDA #'A'
+        Serial.WriteChar();
+        LDA #'C'
+        Serial.WriteChar();
+        LDA #'C'
+        Serial.WriteChar();
+        LDA #'L'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
         LDA ZP.ACCL
         Serial.HexOut();
         LDA #' '

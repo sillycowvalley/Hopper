@@ -50,7 +50,7 @@ unit Objects
     //        ZP.TOP = name pointer, ZP.ACC = symbolType|dataType (packed),
     //        ZP.IDY = tokens pointer (16-bit), ZP.NEXT = value/args (16-bit)
     // Output: ZP.IDX = new symbol node address, C set if successful, NC if allocation failed
-    // Munts: ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT
+    // Munts: ZP.LCURRENT, ZP.LHEADX
     Add()
     {
         PHA
@@ -65,6 +65,11 @@ unit Objects
         LDA ZP.ACCL
         PHA
         LDA ZP.ACCH
+        PHA
+        
+        LDA ZP.NEXTH
+        PHA
+        LDA ZP.NEXTL
         PHA
         
         loop // start of single exit block
@@ -112,6 +117,11 @@ unit Objects
         } // end of single exit block
         
         PLA
+        STA ZP.NEXTL
+        PLA
+        LDA ZP.NEXTH
+        
+        PLA
         STA ZP.ACCH
         PLA
         STA ZP.ACCL
@@ -130,18 +140,22 @@ unit Objects
     // Input: X = ZP address of table head (ZP.VariableList or ZP.FunctionsList),
     //        ZP.TOP = name pointer to search for
     // Output: ZP.IDX = symbol node address, C set if found, NC if not found
-    // Munts: ZP.LCURRENT, ZP.LNEXT
+    // Munts: ZP.LCURRENT
     Find()
     {
         PHA
         PHX
         PHY
         
+        LDA ZP.NEXTH
+        PHA
+        LDA ZP.NEXTL
+        PHA
+        
         loop // start of single exit block
         {
             // Start iteration
             Table.GetFirst(); // Returns first node in IDX
-            
             loop
             {
                 // Check if we've reached end of list
@@ -167,6 +181,11 @@ unit Objects
             
             break;
         } // end of single exit block
+        
+        PLA
+        STA ZP.NEXTL
+        PLA
+        LDA ZP.NEXTH
         
         PLY
         PLX
@@ -300,7 +319,7 @@ unit Objects
     }
     
     // Start iteration with type filter
-    // Input: X = ZP address of table head, ZP.ACC = filter (0 = all, or specific symbolType)
+    // Input: X = ZP address of table head, ZP.SymbolIteratorFilter = filter (0 = all, or specific symbolType)
     // Output: ZP.IDX = first matching symbol (0x0000 if none), C set if found
     // Munts: ZP.LCURRENT, ZP.LNEXT
     IterateStart()
@@ -316,8 +335,6 @@ unit Objects
         
         loop // start of single exit block
         {
-            // Filter is already in ZP.ACCL
-            
             // Get first node
             Table.GetFirst(); // Returns first node in IDX
             
@@ -329,8 +346,7 @@ unit Objects
                 CLC  // Empty list
                 break;
             }
-            
-            // Check if first node matches filter
+            // Check if first node matches filter (Filter is already in ZP.SymbolIteratorFilter)
             findNextMatch();
             break;
         } // end of single exit block
@@ -383,7 +399,7 @@ unit Objects
                 break;
             }
             
-            // Check if node matches filter
+            // Check if node matches filter (Filter is already in ZP.SymbolIteratorFilter)
             findNextMatch();
             break;
         } // end of single exit block
@@ -522,6 +538,11 @@ unit Objects
         LDA ZP.IDXH
         PHA
         
+        LDA ZP.NEXTL
+        PHA
+        LDA ZP.NEXTH
+        PHA
+        
         // Calculate address of name in node (node + snName)
         CLC
         LDA ZP.IDXL
@@ -535,6 +556,11 @@ unit Objects
         Tools.StringCompare(); // TOP vs NEXT, sets C if equal
         
         PLA
+        STA ZP.NEXTH
+        PLA
+        STA ZP.NEXTL
+        
+        PLA
         STA ZP.IDXH
         PLA
         STA ZP.IDXL
@@ -545,7 +571,7 @@ unit Objects
     }
     
     // Private: Find next node matching filter
-    // Input: ZP.IDX = current node, ZP.ACCL = filter
+    // Input: ZP.IDX = current node, ZP.SymbolIteratorFilter = filter
     // Output: ZP.IDX = matching node or next node, C set if match found
     findNextMatch()
     {
@@ -554,7 +580,7 @@ unit Objects
         loop
         {
             // Check if filter is 0 (match all)
-            LDA ZP.ACCL
+            LDA ZP.SymbolIteratorFilter
             if (Z)
             {
                 SEC  // Match all
@@ -568,7 +594,7 @@ unit Objects
             LSR LSR LSR LSR  // Shift to low nibble
             
             // Compare with filter
-            CMP ZP.ACCL
+            CMP ZP.SymbolIteratorFilter
             if (Z)
             {
                 SEC  // Match found

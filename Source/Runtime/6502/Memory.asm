@@ -163,6 +163,7 @@ unit Memory
     // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.M0-M13
     Allocate()
     {
+        PHP  // Push processor status (including carry flag)
         PHA
         PHX
         PHY
@@ -192,6 +193,7 @@ unit Memory
         PLY
         PLX
         PLA
+        PLP  // Pull processor status (restore carry flag)
     }
     
     // Free memory block
@@ -200,6 +202,7 @@ unit Memory
     // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.M0-M15
     Free()
     {   
+        PHP  // Push processor status (including carry flag)
         PHA
         PHX
         PHY
@@ -234,9 +237,12 @@ unit Memory
         PLA
         STA ZP.IDXL
         
+        SEC // success
+        
         PLY
         PLX
         PLA
+        PLP  // Pull processor status (restore carry flag)
     }
 #else
     Allocate()

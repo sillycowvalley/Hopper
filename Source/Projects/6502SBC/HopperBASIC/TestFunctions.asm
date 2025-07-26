@@ -787,305 +787,125 @@ unit TestFunctions
     }
     
     // Test 43: Multiple function iteration
-testMultipleFunctionIteration()
-{
-    LDA #'h'  // Test 43
-    LDA #(funcDesc14 % 256)
-    STA ZP.TOPL
-    LDA #(funcDesc14 / 256)
-    STA ZP.TOPH
-    Test.PrintTestHeader();
-    
-    // Debug: Initial state
-    LDA #'I'
-    Tools.COut();
-    LDA #':'
-    Tools.COut();
-    Tools.DumpHeap();
-    
-    // Add variable (to mix symbol types)
-    LDA #(argName1 % 256)
-    STA ZP.TOPL
-    LDA #(argName1 / 256)
-    STA ZP.TOPH
-    LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-    STA ZP.ACCL
-    LDA #42
-    STA ZP.NEXTL
-    STZ ZP.NEXTH
-    STZ ZP.IDYL
-    STZ ZP.IDYH
-    Variables.Declare();
-    
-    // Debug: After variable
-    LDA #'V'
-    Tools.COut();
-    LDA #':'
-    Tools.COut();
-    Tools.DumpHeap();
-    
-    // Add first function
-    LDA #(funcName6 % 256)
-    STA ZP.TOPL
-    LDA #(funcName6 / 256)
-    STA ZP.TOPH
-    LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
-    STA ZP.ACCL
-    STZ ZP.NEXTL  // No arguments
-    STZ ZP.NEXTH
-    STZ ZP.IDYL   // No tokens
-    STZ ZP.IDYH
-    Functions.Declare();
-    
-    // Debug: After first function
-    LDA #'1'
-    Tools.COut();
-    LDA #':'
-    Tools.COut();
-    Tools.DumpHeap();
-    
-    // Add second function
-    LDA #(funcName7 % 256)
-    STA ZP.TOPL
-    LDA #(funcName7 / 256)
-    STA ZP.TOPH
-    LDA #((SymbolType.FUNCTION << 4) | BasicType.WORD)
-    STA ZP.ACCL
-    STZ ZP.NEXTL  // No arguments
-    STZ ZP.NEXTH
-    STZ ZP.IDYL   // No tokens
-    STZ ZP.IDYH
-    Functions.Declare();
-    
-    // Debug: After second function
-    LDA #'2'
-    Tools.COut();
-    LDA #':'
-    Tools.COut();
-    Tools.DumpHeap();
-    
-    // Add third function
-    LDA #(funcName8 % 256)
-    STA ZP.TOPL
-    LDA #(funcName8 / 256)
-    STA ZP.TOPH
-    LDA #((SymbolType.FUNCTION << 4) | BasicType.BIT)
-    STA ZP.ACCL
-    STZ ZP.NEXTL  // No arguments
-    STZ ZP.NEXTH
-    STZ ZP.IDYL   // No tokens
-    STZ ZP.IDYH
-    Functions.Declare();
-    
-    // Debug: After third function
-    LDA #'3'
-    Tools.COut();
-    LDA #':'
-    Tools.COut();
-    Tools.DumpHeap();
-    
-    // Debug: Before iteration
-    LDA #'B'
-    Tools.COut();
-    LDA #':'
-    Tools.COut();
-    LDA ZP.FunctionsListL
-    Tools.HOut();
-    LDA ZP.FunctionsListH
-    Tools.HOut();
-    LDA #' '
-    Tools.COut();
-    
-    // Iterate through all functions and count them
-    Functions.IterateFunctions();
-    if (NC)
+    testMultipleFunctionIteration()
     {
-        LDA #'N'
-        Tools.COut();
-        LDA #'F'
-        Tools.COut();
-        LDA #0xAB
-        CLC  // Fail - no functions found
-        Test.PrintResult();
-        return;
-    }
-    
-    // Debug: First function found
-    LDA #'F'
-    Tools.COut();
-    LDA #'1'
-    Tools.COut();
-    LDA #':'
-    Tools.COut();
-    LDA ZP.IDXH
-    Tools.HOut();
-    LDA ZP.IDXL
-    Tools.HOut();
-    LDA #' '
-    Tools.COut();
-    
-    // Count functions via iteration
-    LDX #1  // Found first one
-    PHX
-    loop
-    {
-        // Debug: Before GetData
-        LDA #'G'
-        Tools.COut();
-        LDA #':'
-        Tools.COut();
-        LDA ZP.IDXH
-        Tools.HOut();
-        LDA ZP.IDXL
-        Tools.HOut();
-        LDA #' '
-        Tools.COut();
+        LDA #'h'  // Test 43
+        LDA #(funcDesc14 % 256)
+        STA ZP.TOPL
+        LDA #(funcDesc14 / 256)
+        STA ZP.TOPH
+        Test.PrintTestHeader();
         
-        // Verify each one is actually a function
-        Objects.GetData();
+        // Add variable (to mix symbol types)
+        LDA #(argName1 % 256)
+        STA ZP.TOPL
+        LDA #(argName1 / 256)
+        STA ZP.TOPH
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
+        STA ZP.ACCL
+        LDA #42
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        STZ ZP.IDYL
+        STZ ZP.IDYH
+        Variables.Declare();
         
-        // Debug: After GetData
-        LDA #'D'
-        Tools.COut();
-        LDA #':'
-        Tools.COut();
-        LDA ZP.ACCL
-        Tools.HOut();
-        LDA #' '
-        Tools.COut();
-        LDA ZP.IDXH
-        Tools.HOut();
-        LDA ZP.IDXL
-        Tools.HOut();
-        LDA #' '
-        Tools.COut();
+        // Add first function
+        LDA #(funcName6 % 256)
+        STA ZP.TOPL
+        LDA #(funcName6 / 256)
+        STA ZP.TOPH
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.NEXTL  // No arguments
+        STZ ZP.NEXTH
+        STZ ZP.IDYL   // No tokens
+        STZ ZP.IDYH
+        Functions.Declare();
+         
+        // Add second function
+        LDA #(funcName7 % 256)
+        STA ZP.TOPL
+        LDA #(funcName7 / 256)
+        STA ZP.TOPH
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.WORD)
+        STA ZP.ACCL
+        STZ ZP.NEXTL  // No arguments
+        STZ ZP.NEXTH
+        STZ ZP.IDYL   // No tokens
+        STZ ZP.IDYH
+        Functions.Declare();
         
-        LDA ZP.ACCL
-        AND #0xF0
-        LSR LSR LSR LSR
-        CMP #SymbolType.FUNCTION
-        if (NZ)
+        // Add third function
+        LDA #(funcName8 % 256)
+        STA ZP.TOPL
+        LDA #(funcName8 / 256)
+        STA ZP.TOPH
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.BIT)
+        STA ZP.ACCL
+        STZ ZP.NEXTL  // No arguments
+        STZ ZP.NEXTH
+        STZ ZP.IDYL   // No tokens
+        STZ ZP.IDYH
+        Functions.Declare();
+        
+        // Iterate through all functions and count them
+        Functions.IterateFunctions();
+        if (NC)
         {
-            PLX  // Clean up stack
-            LDA #'T'
-            Tools.COut();
-            LDA #'E'
-            Tools.COut();
-            LDA #':'
-            Tools.COut();
-            LDA ZP.ACCL
-            Tools.HOut();
-            LDA #0xAC
-            CLC  // Fail - found non-function during function iteration
+            LDA #0xAB
+            CLC  // Fail - no functions found
             Test.PrintResult();
             return;
         }
         
-        // Debug: Before IterateNext
-        LDA #'N'
-        Tools.COut();
-        LDA #':'
-        Tools.COut();
-        PLX
+        // Count functions via iteration
+        LDX #1  // Found first one
         PHX
-        TXA
-        Tools.HOut();
-        LDA #' '
-        Tools.COut();
-        
-        LDA #SymbolType.FUNCTION // filter on functions
-        STA ZP.ACCL
-        Functions.IterateNext();
-        
-        // Debug: After IterateNext
-        LDA #'A'
-        Tools.COut();
-        LDA #':'
-        Tools.COut();
-        if (C) 
+        loop
         {
-            LDA #'C'
-            Tools.COut();
-            LDA ZP.IDXH
-            Tools.HOut();
-            LDA ZP.IDXL
-            Tools.HOut();
+            // Verify each one is actually a function
+            Objects.GetData();
+            LDA ZP.ACCL
+            AND #0xF0
+            LSR LSR LSR LSR
+            CMP #SymbolType.FUNCTION
+            if (NZ)
+            {
+                PLX  // Clean up stack
+                LDA #0xAC
+                CLC  // Fail - found non-function during function iteration
+                Test.PrintResult();
+                return;
+            }
+            
+            Functions.IterateNext();
+            if (NC) 
+            {
+                break; // No more functions
+            }  
+            PLX
+            INX
+            PHX
         }
-        else
-        {
-            LDA #'E'
-            Tools.COut();
-        }
-        LDA #' '
-        Tools.COut();
-        
-        if (NC) 
-        {
-            break; // No more functions
-        }  
         PLX
-        INX
-        PHX
-    }
-    PLX
-    
-    // Debug: Final count
-    LDA #'C'
-    Tools.COut();
-    LDA #'T'
-    Tools.COut();
-    LDA #':'
-    Tools.COut();
-    TXA
-    Tools.HOut();
-    LDA #' '
-    Tools.COut();
-    
-    // Should have found exactly 3 functions
-    CPX #3
-    if (NZ)
-    {
-        LDA #0xAD
-        CLC  // Fail - wrong function count
+        
+        // Should have found exactly 3 functions
+        CPX #3
+        if (NZ)
+        {
+            LDA #0xAD
+            CLC  // Fail - wrong function count
+            Test.PrintResult();
+            return;
+        }
+        
+        Functions.Clear();  // Clean up functions
+        Variables.Clear();  // Clean up variables
+        
+        SEC  // Pass
         Test.PrintResult();
-        return;
     }
-    
-    // Debug: Before cleanup
-    LDA #'P'
-    Tools.COut();
-    LDA #'1'
-    Tools.COut();
-    LDA #':'
-    Tools.COut();
-    Tools.DumpHeap();
-    
-    Functions.Clear();  // Clean up functions
-    
-    // Debug: After Functions.Clear
-    LDA #'P'
-    Tools.COut();
-    LDA #'2'
-    Tools.COut();
-    LDA #':'
-    Tools.COut();
-    Tools.DumpHeap();
-    
-    Variables.Clear();  // Clean up variables
-    
-    // Debug: After Variables.Clear
-    LDA #'P'
-    Tools.COut();
-    LDA #'3'
-    Tools.COut();
-    LDA #':'
-    Tools.COut();
-    Tools.DumpHeap();
-    
-    SEC  // Pass
-    Test.PrintResult();
-}
-    
     // Run all functions tests
     RunFunctionsTests()
     {

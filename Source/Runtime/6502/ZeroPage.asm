@@ -159,15 +159,14 @@ unit ZP
     const byte SymbolTokens         = 0x79;  // Storage for symbol tokens pointer
     const byte SymbolTokensL        = 0x79;
     const byte SymbolTokensH        = 0x7A;
+    const byte SymbolIteratorFilter = 0x7B;
 
     // Temporary Storage
-    const byte SymbolLength         = 0x7B;  // Storage for symbol name length
-    const byte SymbolTemp0          = 0x7C;  // General temporary storage
-    const byte SymbolTemp1          = 0x7D;  // General temporary storage
-    const byte SymbolTemp2          = 0x7E;  // General temporary storage
+    const byte SymbolLength         = 0x7C;  // Storage for symbol name length
+    const byte SymbolTemp0          = 0x7D;  // General temporary storage
+    const byte SymbolTemp1          = 0x7E;  // General temporary storage
+    const byte SymbolTemp2          = 0x7F;  // General temporary storage
 
-    // === AVAILABLE SYMBOLS (0x7E-0x7F) ===
-    // 2 bytes available for additional symbol table features (0x7E-0x7F)
     
 #endif
 

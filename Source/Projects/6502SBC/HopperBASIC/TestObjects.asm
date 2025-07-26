@@ -369,7 +369,7 @@ unit TestObjects
         
         // Start iteration for variables only
         LDA #SymbolType.VARIABLE
-        STA ZP.ACCL
+        STA ZP.SymbolIteratorFilter
         LDX #ZP.VariablesList
         Objects.IterateStart();
         
@@ -390,9 +390,6 @@ unit TestObjects
         CMP #(SymbolType.VARIABLE << 4)
         if (NZ)
         {
-            DumpVariables();
-            DumpHeap();
-            
             LDX #ZP.VariablesList
             Objects.Destroy();
             LDA #0x63
@@ -798,7 +795,7 @@ unit TestObjects
         
         // Test iteration with VARIABLE filter
         LDA #SymbolType.VARIABLE
-        STA ZP.ACCL
+        STA ZP.SymbolIteratorFilter
         LDX #ZP.VariablesList
         Objects.IterateStart();
         
@@ -842,7 +839,7 @@ unit TestObjects
         
         // Test iteration with CONSTANT filter
         LDA #SymbolType.CONSTANT
-        STA ZP.ACCL
+        STA ZP.SymbolIteratorFilter
         LDX #ZP.VariablesList
         Objects.IterateStart();
         
@@ -873,7 +870,7 @@ unit TestObjects
         
         // Test iteration with FUNCTION filter
         LDA #SymbolType.FUNCTION
-        STA ZP.ACCL
+        STA ZP.SymbolIteratorFilter
         LDX #ZP.VariablesList
         Objects.IterateStart();
         

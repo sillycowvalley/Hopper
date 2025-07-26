@@ -363,6 +363,7 @@ unit TestScenarios
         STZ ZP.IDYH
         
         Variables.Declare();
+        
         if (NC)
         {
             LDA #0x23
@@ -559,6 +560,8 @@ unit TestScenarios
             return;
         }
         
+        
+        
         Variables.GetValue();
         LDA ZP.TOPL
         CMP #(314 % 256)
@@ -707,8 +710,9 @@ unit TestScenarios
     // Run all scenario tests
     RunScenarioTests()
     {
-        testVariableReassignmentAfterDeclaration();
         testClearCommandImplementation();
+        testVariableReassignmentAfterDeclaration();
+        
         /* TODO
         testMainProgramStorage();
         testForgetCommandIntegration();
