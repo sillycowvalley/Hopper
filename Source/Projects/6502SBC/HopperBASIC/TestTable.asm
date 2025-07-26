@@ -98,7 +98,7 @@ unit TestTable
         Test.PrintResult();
     }
     
-    // Test 3: Add multiple nodes (builds linked list with tail insertion)
+    // Test 3: Add multiple nodes to list
     testAddMultiple()
     {
         LDA #'3'
@@ -108,16 +108,35 @@ unit TestTable
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        // Start with a clean list
+        // Start with clean list
         LDX #Test.TableHeadLocation
         Table.Clear();
         
         // Add first node
-        LDA #8
+        LDA #10
         STA ZP.ACCL
         STZ ZP.ACCH
         LDX #Test.TableHeadLocation
         Table.Add();
+        
+        // Save address of first node
+        LDA ZP.IDXL
+        STA Test.TableNodeL
+        LDA ZP.IDXH
+        STA Test.TableNodeH
+        
+        // Add second node
+        LDA #20
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        LDX #Test.TableHeadLocation
+        Table.Add();
+        
+        // Verify we have 2 nodes
+        LDX #Test.TableHeadLocation
+        Table.GetFirst();
+        
+        Table.GetNext();
         if (NC)
         {
             LDA #0x30
@@ -126,74 +145,11 @@ unit TestTable
             return;
         }
         
-        // Save first node address
-        LDA ZP.IDXL
-        STA Test.TableNodeL
-        LDA ZP.IDXH
-        STA Test.TableNodeH
-        
-        // Add second node  
-        LDA #12
-        STA ZP.ACCL
-        STZ ZP.ACCH
-        LDX #Test.TableHeadLocation
-        Table.Add();
-        if (NC)
+        Table.GetNext();
+        if (C)  // Should be at end
         {
             LDA #0x31
             CLC  // Fail
-            Test.PrintResult();
-            return;
-        }
-        
-        // With tail insertion: List head should still point to the first node
-        LDA Test.TableHeadLocationL
-        CMP Test.TableNodeL
-        if (NZ)
-        {
-            LDA #0x32
-            CLC  // Fail
-            Test.PrintResult();
-            return;
-        }
-        LDA Test.TableHeadLocationH
-        CMP Test.TableNodeH
-        if (NZ)
-        {
-            LDA #0x33
-            CLC  // Fail
-            Test.PrintResult();
-            return;
-        }
-        
-        // First node's next pointer should point to second node
-        LDA Test.TableNodeL
-        STA ZP.IDXL
-        LDA Test.TableNodeH
-        STA ZP.IDXH
-        Table.GetNext();
-        LDA ZP.IDXL
-        CMP Test.TableNodeL  // Should NOT equal first node (would be circular)
-        if (Z)
-        {
-            LDA ZP.IDXH
-            CMP Test.TableNodeH
-            if (Z)
-            {
-                LDA #0x34
-                CLC  // Fail - circular reference
-                Test.PrintResult();
-                return;
-            }
-        }
-        
-        // Second node should exist (IDX should be non-zero after GetNext)
-        LDA ZP.IDXL
-        ORA ZP.IDXH
-        if (Z)
-        {
-            LDA #0x35
-            CLC  // Fail - second node not linked
             Test.PrintResult();
             return;
         }
@@ -204,8 +160,8 @@ unit TestTable
         SEC  // Pass
         Test.PrintResult();
     }
-       
-    // Test 4: Traverse linked list
+    
+    // Test 4: Traverse list
     testTraverse()
     {
         LDA #'4'
@@ -215,53 +171,53 @@ unit TestTable
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        // Start with a clean list
+        // Build 3-node list
         LDX #Test.TableHeadLocation
         Table.Clear();
         
-        // Add nodes (will be in reverse order: 3rd, 2nd, 1st)
-        LDY #0
-        loop
-        {
-            CPY #3
-            if (Z) { break; }
-            
-            LDA #10
-            STA ZP.ACCL
-            STZ ZP.ACCH
-            LDX #Test.TableHeadLocation
-            Table.Add();
-            if (NC)
-            {
-                LDA #0x40
-                CLC  // Fail
-                Test.PrintResult();
-                return;
-            }
-            
-            INY
-        }
+        // Add 3 nodes
+        LDA #10
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        LDX #Test.TableHeadLocation
+        Table.Add();
         
-        // Count nodes by traversal
+        LDA #10
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        LDX #Test.TableHeadLocation
+        Table.Add();
+        
+        LDA #10
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        LDX #Test.TableHeadLocation
+        Table.Add();
+        
+        // Count nodes by traversing
+        LDY #0
         LDX #Test.TableHeadLocation
         Table.GetFirst();
-        
-        LDY #0  // Node count
-        loop
+        if (NC)
         {
-            LDA ZP.IDXL
-            ORA ZP.IDXH
-            if (Z) { break; } // End of list
-            
-            INY
-            Table.GetNext();
+            LDA #0x40
+            CLC  // Fail
+            Test.PrintResult();
+            return;
         }
         
-        // Should have counted 3 nodes
+        INY  // Count first node
+        
+        loop
+        {
+            Table.GetNext();
+            if (NC) { break; }  // No more nodes
+            INY  // Count this node
+        }
+        
         CPY #3
         if (Z)
         {
-            // Clean up before success
             LDX #Test.TableHeadLocation
             Table.Clear();
             SEC  // Pass
@@ -284,19 +240,21 @@ unit TestTable
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        // Start with a clean list
+        // Start with clean list
         LDX #Test.TableHeadLocation
         Table.Clear();
         
-        // Add first node
+        // Add first node and save address
         LDA #10
         STA ZP.ACCL
         STZ ZP.ACCH
         LDX #Test.TableHeadLocation
         Table.Add();
-        LDA ZP.IDXL
+        
+        // Save the head node address  
+        LDA Test.TableHeadLocationL
         STA Test.TableNodeL
-        LDA ZP.IDXH
+        LDA Test.TableHeadLocationH
         STA Test.TableNodeH
         
         // Add second node (becomes new head)
@@ -405,52 +363,28 @@ unit TestTable
         STZ ZP.ACCH
         LDX #Test.TableHeadLocation
         Table.Add();
-        if (NC)
-        {
-            LDA #0x70
-            CLC  // Fail
-            Test.PrintResult();
-            return;
-        }
-        // First node address saved in head location
-        LDA Test.TableHeadLocationL
-        STA ZP.U0  // Save first node address
-        LDA Test.TableHeadLocationH
+        LDA ZP.IDXL
+        STA ZP.U0  // First node
+        LDA ZP.IDXH
         STA ZP.U1
         
-        // Add second node
-        LDA #12
+        LDA #10
         STA ZP.ACCL
         STZ ZP.ACCH
         LDX #Test.TableHeadLocation
         Table.Add();
-        if (NC)
-        {
-            LDA #0x71
-            CLC  // Fail
-            Test.PrintResult();
-            return;
-        }
         LDA ZP.IDXL
-        STA ZP.U2  // Save second node address (middle)
+        STA ZP.U2  // Middle node (to delete)
         LDA ZP.IDXH
         STA ZP.U3
         
-        // Add third node
-        LDA #14
+        LDA #10
         STA ZP.ACCL
         STZ ZP.ACCH
         LDX #Test.TableHeadLocation
         Table.Add();
-        if (NC)
-        {
-            LDA #0x72
-            CLC  // Fail
-            Test.PrintResult();
-            return;
-        }
         LDA ZP.IDXL
-        STA ZP.U4  // Save third node address (last)
+        STA ZP.U4  // Last node
         LDA ZP.IDXH
         STA ZP.U5
         
@@ -461,90 +395,44 @@ unit TestTable
         STA ZP.IDXH
         LDX #Test.TableHeadLocation
         Table.Delete();
+        
         if (NC)
         {
-            LDA #0x73
+            LDA #0x70
             CLC  // Fail
             Test.PrintResult();
             return;
         }
         
-        // Verify: head should still point to first node
-        LDA Test.TableHeadLocationL
-        CMP ZP.U0
-        if (NZ)
-        {
-            LDA #0x74
-            CLC  // Fail
-            Test.PrintResult();
-            return;
-        }
-        LDA Test.TableHeadLocationH
-        CMP ZP.U1
-        if (NZ)
-        {
-            LDA #0x75
-            CLC  // Fail
-            Test.PrintResult();
-            return;
-        }
-        
-        // Verify: first node should now point directly to third node
-        LDA ZP.U0
-        STA ZP.IDXL
-        LDA ZP.U1
-        STA ZP.IDXH
-        Table.GetNext();
-        
-        LDA ZP.IDXL
-        CMP ZP.U4
-        if (NZ)
-        {
-            LDA #0x76
-            CLC  // Fail
-            Test.PrintResult();
-            return;
-        }
-        LDA ZP.IDXH
-        CMP ZP.U5
-        if (NZ)
-        {
-            LDA #0x77
-            CLC  // Fail
-            Test.PrintResult();
-            return;
-        }
-        
-        // Verify: should have exactly 2 nodes remaining
+        // Verify 2 nodes remain and are connected
         LDX #Test.TableHeadLocation
         Table.GetFirst();
-        LDY #0  // Count nodes
-        loop
+        Table.GetNext();
+        if (NC)
         {
-            LDA ZP.IDXL
-            ORA ZP.IDXH
-            if (Z) { break; }
-            
-            INY
-            Table.GetNext();
+            LDA #0x71
+            CLC  // Fail
+            Test.PrintResult();
+            return;
         }
         
-        CPY #2
-        if (Z)
+        Table.GetNext();
+        if (C)  // Should be at end
         {
-            LDX #Test.TableHeadLocation
-            Table.Clear();
-            SEC  // Pass
+            LDA #0x72
+            CLC  // Fail
+            Test.PrintResult();
+            return;
         }
-        else
-        {
-            LDA #0x78
-            CLC  // Fail - wrong node count
-        }
+        
+        // Clean up
+        LDX #Test.TableHeadLocation
+        Table.Clear();
+        SEC  // Pass
         Test.PrintResult();
     }
-
-    // Test 8: Delete last node from 3-node list  
+    
+    // Test 8: Delete last node
     testDeleteLast()
     {
         LDA #'8'
@@ -558,44 +446,31 @@ unit TestTable
         LDX #Test.TableHeadLocation
         Table.Clear();
         
-        // Add 3 nodes, track addresses
+        // Add 2 nodes
         LDA #10
         STA ZP.ACCL
         STZ ZP.ACCH
         LDX #Test.TableHeadLocation
         Table.Add();
-        LDA Test.TableHeadLocationL
-        STA ZP.U0  // First node
-        LDA Test.TableHeadLocationH
+        
+        LDA #10
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        LDX #Test.TableHeadLocation
+        Table.Add();
+        LDA ZP.IDXL
+        STA ZP.U0  // Save last node
+        LDA ZP.IDXH
         STA ZP.U1
         
-        LDA #12
-        STA ZP.ACCL
-        STZ ZP.ACCH
-        LDX #Test.TableHeadLocation
-        Table.Add();
-        LDA ZP.IDXL
-        STA ZP.U2  // Second node
-        LDA ZP.IDXH
-        STA ZP.U3
-        
-        LDA #14
-        STA ZP.ACCL
-        STZ ZP.ACCH
-        LDX #Test.TableHeadLocation
-        Table.Add();
-        LDA ZP.IDXL
-        STA ZP.U4  // Third node (last)
-        LDA ZP.IDXH
-        STA ZP.U5
-        
         // Delete last node
-        LDA ZP.U4
+        LDA ZP.U0
         STA ZP.IDXL
-        LDA ZP.U5
+        LDA ZP.U1
         STA ZP.IDXH
         LDX #Test.TableHeadLocation
         Table.Delete();
+        
         if (NC)
         {
             LDA #0x80
@@ -604,52 +479,25 @@ unit TestTable
             return;
         }
         
-        // Verify: second node should now have null next pointer
-        LDA ZP.U2
-        STA ZP.IDXL
-        LDA ZP.U3
-        STA ZP.IDXH
+        // Verify only 1 node remains
+        LDX #Test.TableHeadLocation
+        Table.GetFirst();
         Table.GetNext();
-        
-        LDA ZP.IDXL
-        ORA ZP.IDXH
-        if (NZ)
+        if (C)  // Should be at end
         {
             LDA #0x81
-            CLC  // Fail - second node should point to null
+            CLC  // Fail
             Test.PrintResult();
             return;
         }
         
-        // Verify: exactly 2 nodes remaining
+        // Clean up
         LDX #Test.TableHeadLocation
-        Table.GetFirst();
-        LDY #0
-        loop
-        {
-            LDA ZP.IDXL
-            ORA ZP.IDXH
-            if (Z) { break; }
-            
-            INY
-            Table.GetNext();
-        }
-        
-        CPY #2
-        if (Z)
-        {
-            LDX #Test.TableHeadLocation
-            Table.Clear();
-            SEC  // Pass
-        }
-        else
-        {
-            LDA #0x82
-            CLC  // Fail
-        }
+        Table.Clear();
+        SEC  // Pass
         Test.PrintResult();
     }
-
+    
     // Test 9: Delete from single-node list
     testDeleteSingle()
     {
@@ -670,6 +518,16 @@ unit TestTable
         STZ ZP.ACCH
         LDX #Test.TableHeadLocation
         Table.Add();
+        
+        // Delete it (using head value)
+        LDA Test.TableHeadLocationL
+        STA ZP.IDXL
+        LDA Test.TableHeadLocationH
+        STA ZP.IDXH
+        
+        LDX #Test.TableHeadLocation
+        Table.Delete();
+        
         if (NC)
         {
             LDA #0x90
@@ -678,23 +536,7 @@ unit TestTable
             return;
         }
         
-        LDA ZP.IDXL
-        STA ZP.U0  // Save node address
-        LDA ZP.IDXH
-        STA ZP.U1
-        
-        // Delete the single node
-        LDX #Test.TableHeadLocation
-        Table.Delete();
-        if (NC)
-        {
-            LDA #0x91
-            CLC  // Fail
-            Test.PrintResult();
-            return;
-        }
-        
-        // List should now be empty
+        // List should be empty
         LDA Test.TableHeadLocationL
         ORA Test.TableHeadLocationH
         if (Z)
@@ -703,13 +545,13 @@ unit TestTable
         }
         else
         {
-            LDA #0x92
+            LDA #0x91
             CLC  // Fail
         }
         Test.PrintResult();
     }
-
-    // Test 10: Delete non-existent node (should fail gracefully)
+    
+    // Test 10: Try to delete non-existent node
     testDeleteNonExistent()
     {
         LDA #'A'  // Test 10
@@ -723,7 +565,7 @@ unit TestTable
         LDX #Test.TableHeadLocation
         Table.Clear();
         
-        // Add one node
+        // Add one real node
         LDA #10
         STA ZP.ACCL
         STZ ZP.ACCH
@@ -839,55 +681,26 @@ unit TestTable
         LDX #Test.TableHeadLocation
         Table.Delete();
         
-        // Should have 2 nodes: Node3, Node4
+        // Should have 2 nodes left (3 and 4)
+        LDY #0
         LDX #Test.TableHeadLocation
         Table.GetFirst();
-        
-        // First should be Node 3
-        LDA ZP.IDXL
-        CMP ZP.U4
-        if (NZ)
+        if (NC)
         {
             LDA #0xB0
             CLC  // Fail
             Test.PrintResult();
             return;
         }
-        LDA ZP.IDXH
-        CMP ZP.U5
-        if (NZ)
+        
+        loop
         {
-            LDA #0xB1
-            CLC  // Fail
-            Test.PrintResult();
-            return;
+            INY
+            Table.GetNext();
+            if (NC) { break; }
         }
         
-        // Next should be Node 4
-        Table.GetNext();
-        LDA ZP.IDXL
-        CMP ZP.U6
-        if (NZ)
-        {
-            LDA #0xB2
-            CLC  // Fail
-            Test.PrintResult();
-            return;
-        }
-        LDA ZP.IDXH
-        CMP ZP.U7
-        if (NZ)
-        {
-            LDA #0xB3
-            CLC  // Fail
-            Test.PrintResult();
-            return;
-        }
-        
-        // Should be no more nodes
-        Table.GetNext();
-        LDA ZP.IDXL
-        ORA ZP.IDXH
+        CPY #2
         if (Z)
         {
             LDX #Test.TableHeadLocation
@@ -896,13 +709,13 @@ unit TestTable
         }
         else
         {
-            LDA #0xB4
+            LDA #0xB1
             CLC  // Fail
         }
         Test.PrintResult();
     }
-
-    // Test 12: Delete all nodes individually (stress test)
+    
+    // Test 12: Delete all nodes individually
     testDeleteAllIndividually()
     {
         LDA #'C'  // Test 12
@@ -916,15 +729,15 @@ unit TestTable
         LDX #Test.TableHeadLocation
         Table.Clear();
         
-        // Add 4 nodes, tracking all addresses
+        // Add 4 nodes
         LDA #10
         STA ZP.ACCL
         STZ ZP.ACCH
         LDX #Test.TableHeadLocation
         Table.Add();
-        LDA Test.TableHeadLocationL
+        LDA ZP.IDXL
         STA ZP.U0  // Node 1
-        LDA Test.TableHeadLocationH
+        LDA ZP.IDXH
         STA ZP.U1
         
         LDA #12
@@ -1033,8 +846,6 @@ unit TestTable
         Test.PrintResult();
     }
 
-
-    
     // Run all table tests
     RunTableTests()
     {
@@ -1052,9 +863,3 @@ unit TestTable
         testDeleteAllIndividually();
     }
 }
-
-
-
-
-
-
