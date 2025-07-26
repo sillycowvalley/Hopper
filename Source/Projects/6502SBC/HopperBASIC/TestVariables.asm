@@ -175,7 +175,7 @@ unit TestVariables
         LDA #(testName1 / 256)
         STA ZP.TOPH
         LDA # SymbolType.VARIABLE
-        STA ZP.ACCL
+        STA ZP.SymbolIteratorFilter
         
         Variables.Find();
         if (C)
@@ -216,7 +216,7 @@ unit TestVariables
         Variables.Declare();
         
         // Find and get value
-        STZ ZP.ACCL  // Any type
+        STZ ZP.SymbolIteratorFilter  // Any type
         Variables.Find();
         if (NC)
         {
@@ -286,7 +286,7 @@ unit TestVariables
         Variables.Declare();
         
         // Find it
-        STZ ZP.ACCL
+        STZ ZP.SymbolIteratorFilter
         Variables.Find();
         
         // Set new value
@@ -344,7 +344,7 @@ unit TestVariables
         Variables.Declare();
         
         // Find it
-        STZ ZP.ACCL
+        STZ ZP.SymbolIteratorFilter
         Variables.Find();
         
         // Try to set value (should fail)
@@ -399,7 +399,7 @@ unit TestVariables
         Variables.Declare();
         
         // Find and get tokens
-        STZ ZP.ACCL
+        STZ ZP.SymbolIteratorFilter
         Variables.Find();
         Variables.GetTokens();
         
@@ -577,7 +577,7 @@ unit TestVariables
         Variables.Declare();
         
         // Verify it exists
-        STZ ZP.ACCL  // Any type
+        STZ ZP.SymbolIteratorFilter  // Any type
         Variables.Find();
         if (NC)
         {
@@ -643,7 +643,7 @@ unit TestVariables
         Variables.Declare();
         
         // Find and get type
-        STZ ZP.ACCL  // Any type
+        STZ ZP.SymbolIteratorFilter  // Any type
         Variables.Find();
         if (NC)
         {
@@ -717,7 +717,7 @@ unit TestVariables
         Variables.Declare();
         
         // Find and get name
-        STZ ZP.ACCL  // Any type
+        STZ ZP.SymbolIteratorFilter  // Any type
         Variables.Find();
         if (NC)
         {
@@ -949,7 +949,7 @@ unit TestVariables
         }
         
         // Find the variable and verify its properties
-        STZ ZP.ACCL  // Any type
+        STZ ZP.SymbolIteratorFilter  // Any type
         Variables.Find();
         if (NC)
         {

@@ -226,7 +226,7 @@ unit TestConstants
         LDA #(constName4 / 256)
         STA ZP.TOPH
         LDA #SymbolType.CONSTANT
-        STA ZP.ACCL
+        STA ZP.SymbolIteratorFilter 
         
         Variables.Find();
         
@@ -270,7 +270,7 @@ unit TestConstants
         Variables.Declare();
         
         // Find and get value
-        STZ ZP.ACCL  // Any type
+        STZ ZP.SymbolIteratorFilter  // Any type
         Variables.Find();
         if (NC)
         {
@@ -351,7 +351,7 @@ unit TestConstants
         Variables.Declare();
         
         // Find it
-        STZ ZP.ACCL
+        STZ ZP.SymbolIteratorFilter 
         Variables.Find();
         
         // Try to set value (should fail)
@@ -406,7 +406,7 @@ unit TestConstants
         Variables.Declare();
         
         // Find and get tokens
-        STZ ZP.ACCL
+        STZ ZP.SymbolIteratorFilter 
         Variables.Find();
         Variables.GetTokens();
         
@@ -600,7 +600,7 @@ unit TestConstants
         Variables.Declare();
         
         // Find and get type
-        STZ ZP.ACCL  // Any type
+        STZ ZP.SymbolIteratorFilter  // Any type
         Variables.Find();
         if (NC)
         {
@@ -675,7 +675,7 @@ unit TestConstants
         Variables.Declare();
         
         // Find and get name
-        STZ ZP.ACCL  // Any type
+        STZ ZP.SymbolIteratorFilter  // Any type
         Variables.Find();
         if (NC)
         {
@@ -745,7 +745,7 @@ unit TestConstants
         Variables.Declare();
         
         // Verify it exists
-        STZ ZP.ACCL  // Any type
+        STZ ZP.SymbolIteratorFilter  // Any type
         Variables.Find();
         if (NC)
         {

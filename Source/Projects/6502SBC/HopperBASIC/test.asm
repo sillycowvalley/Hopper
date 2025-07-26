@@ -239,14 +239,6 @@ program Test
     RunAllTests()
     {
         
-        // Integration scenario tests
-        LDA #(scenarioSection % 256)
-        STA ZP.TOPL
-        LDA #(scenarioSection / 256)
-        STA ZP.TOPH
-        PrintSectionHeader();
-        TestScenarios.RunScenarioTests();
-        
         // Table layer tests
         LDA #(tableSection % 256)
         STA ZP.TOPL
@@ -295,6 +287,13 @@ program Test
         PrintSectionHeader();
         TestArguments.RunArgumentsTests();
         
+        // Integration scenario tests
+        LDA #(scenarioSection % 256)
+        STA ZP.TOPL
+        LDA #(scenarioSection / 256)
+        STA ZP.TOPH
+        PrintSectionHeader();
+        TestScenarios.RunScenarioTests();
         
         
         LDA #(testComplete % 256)

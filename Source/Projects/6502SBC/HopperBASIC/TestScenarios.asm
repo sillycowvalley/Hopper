@@ -89,7 +89,7 @@ unit TestScenarios
         STA ZP.TOPL
         LDA #(varName1 / 256)
         STA ZP.TOPH
-        STZ ZP.ACCL  // Any type
+        STZ ZP.SymbolIteratorFilter  // Any type
         
         Variables.Find();
         if (NC)
@@ -378,7 +378,7 @@ unit TestScenarios
         STA ZP.TOPL
         LDA #(varName1 / 256)
         STA ZP.TOPH
-        STZ ZP.ACCL  // Any type
+        STZ ZP.SymbolIteratorFilter  // Any type
         
         Variables.Find();
         if (NC)
@@ -406,7 +406,7 @@ unit TestScenarios
         STA ZP.TOPL
         LDA #(varName2 / 256)
         STA ZP.TOPH
-        STZ ZP.ACCL  // Any type
+        STZ ZP.SymbolIteratorFilter  // Any type
         
         Variables.Find();
         if (NC)
@@ -434,7 +434,7 @@ unit TestScenarios
         STA ZP.TOPL
         LDA #(varName3 / 256)
         STA ZP.TOPH
-        STZ ZP.ACCL  // Any type
+        STZ ZP.SymbolIteratorFilter  // Any type
         
         Variables.Find();
         if (NC)
@@ -549,7 +549,7 @@ unit TestScenarios
         STA ZP.TOPL
         LDA #(constName1 / 256)
         STA ZP.TOPH
-        STZ ZP.ACCL
+        STZ ZP.SymbolIteratorFilter
         
         Variables.Find();
         if (NC)

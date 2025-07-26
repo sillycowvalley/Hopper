@@ -5,6 +5,7 @@ unit Variables
     uses "Objects"
     uses "BasicTypes"
     uses "Messages"
+    uses "Table"
     
     // Variable management using Objects foundation
     // Two-stage approach: Find name to address, then operate on address
@@ -13,7 +14,7 @@ unit Variables
     // Input: ZP.TOP = name pointer, ZP.ACC = symbolType|dataType (packed),
     //        ZP.NEXT = initial value (16-bit), ZP.IDY = tokens pointer (16-bit)
     // Output: C set if successful, NC if error (name exists, out of memory)
-    // Uses: Objects.Add() internally with extended node layout
+    // Munts: ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT
     Declare()
     {
         PHA
@@ -39,19 +40,19 @@ unit Variables
             // Symbol doesn't exist, add it
             LDX #ZP.VariablesList
             Objects.Add();
-            SEC // Success
+            // Flag already set by Objects.Add() - C for success, NC for failure
             break;
         } // end of single exit block
+        
         PLY
         PLX
         PLA
     }
     
     // Find variable/constant name to address
-    // Input: ZP.TOP = name pointer, ZP.ACCL = expected symbolType (VARIABLE or CONSTANT, 0 = any)
+    // Input: ZP.TOP = name pointer, ZP.SymbolIteratorFilter = expected symbolType (VARIABLE or CONSTANT, 0 = any)
     // Output: ZP.IDX = symbol node address, C set if found and correct type, NC if not found or wrong type
-    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT
-    // Error: Sets LastError if found but wrong type
+    // Munts: ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0
     Find()
     {
         PHA
@@ -60,7 +61,6 @@ unit Variables
         
         loop // start of single exit block
         {
-        
             // Find the symbol
             LDX #ZP.VariablesList
             Objects.Find();
@@ -71,7 +71,7 @@ unit Variables
             }
             
             // Check if type filtering is requested
-            LDA ZP.ACCL
+            LDA ZP.SymbolIteratorFilter
             if (Z)  // No type filter
             {
                 SEC  // Found
@@ -79,8 +79,8 @@ unit Variables
             }
             
             // Save expected type for comparison
-            LDA ZP.ACCL        // This was the expected type passed in
-            STA ZP.SymbolTemp0 // Temporary storage
+            LDA ZP.SymbolIteratorFilter
+            STA ZP.SymbolTemp0  // Temporary storage
             
             // Get symbol type and check
             Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
@@ -89,8 +89,8 @@ unit Variables
             AND #0xF0  // Extract symbol type (high nibble)
             LSR LSR LSR LSR  // Shift to low nibble
             
-            CMP ZP.SymbolTemp0 // Compare with expected type
-            if (Z)             // Types match
+            CMP ZP.SymbolTemp0  // Compare with expected type
+            if (Z)              // Types match
             {
                 SEC  // Found and correct type
                 break;
@@ -105,6 +105,7 @@ unit Variables
             CLC  // Error
             break;
         } // end of single exit block
+        
         PLY
         PLX
         PLA
@@ -113,13 +114,10 @@ unit Variables
     // Get variable/constant value by address
     // Input: ZP.IDX = symbol node address (from Find)
     // Output: ZP.TOP = value, ZP.TOPT = dataType, C set if successful, NC if error
-    // Preserves: A, X, Y, ZP.ACC, ZP.NEXT
-    // Error: Fails if node is not variable or constant
     GetValue()
     {
         PHA
-        PHX
-        PHY
+        
         loop // start of single exit block
         {
             Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
@@ -171,16 +169,13 @@ unit Variables
             CLC  // Error
             break;
         } // end of single exit block
-        PLY
-        PLX
+        
         PLA
     }
     
     // Set variable value by address (variables only)
     // Input: ZP.IDX = symbol node address (from Find), ZP.TOP = new value
-    // Output: C set if successful, NC if error (not a variable, type mismatch)
-    // Preserves: A, X, Y, ZP.ACC, ZP.NEXT
-    // Error: Fails if node is not a variable (constants rejected)
+    // Output: C set if successful, NC if error (not a variable)
     SetValue()
     {
         PHA
@@ -226,7 +221,7 @@ unit Variables
             STA ZP.IDYH
             
             Objects.SetValue();  // This will use ZP.IDY
-            SEC
+            SEC  // Success
             break;
         } // end of single exit block
         
@@ -248,44 +243,45 @@ unit Variables
     
     // Get type info by address
     // Input: ZP.IDX = symbol node address (from Find)
-    // Output: ZP.ACC = symbolType|dataType (packed), C set if successful, NC if error
-    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT
-    // Error: Fails if node is not variable or constant
+    // Output: ZP.ACC = symbolType|dataType (packed), C set if successful
     GetType()
     {
-        Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
-        
-        // Check if it's a variable or constant
-        LDA ZP.ACCL
-        AND #0xF0  // Extract symbol type (high nibble)
-        LSR LSR LSR LSR  // Shift to low nibble
-        
-        CMP #SymbolType.VARIABLE
-        if (Z)
+        loop // start of single exit block
         {
-            SEC  // Success
-            return;
-        }
-        
-        CMP #SymbolType.CONSTANT
-        if (Z)
-        {
-            SEC  // Success
-            return;
-        }
-        
-        // Not a variable or constant
-        LDA #(Messages.TypeMismatch % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.TypeMismatch / 256)
-        STA ZP.LastErrorH
-        CLC  // Error
+            Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
+            
+            // Check if it's a variable or constant
+            LDA ZP.ACCL
+            AND #0xF0  // Extract symbol type (high nibble)
+            LSR LSR LSR LSR  // Shift to low nibble
+            
+            CMP #SymbolType.VARIABLE
+            if (Z)
+            {
+                SEC  // Success
+                break;
+            }
+            
+            CMP #SymbolType.CONSTANT
+            if (Z)
+            {
+                SEC  // Success
+                break;
+            }
+            
+            // Not a variable or constant
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            CLC  // Error
+            break;
+        } // end of single exit block
     }
     
     // Get name from current node
     // Input: ZP.IDX = symbol node address (from Find or iteration)
     // Output: ZP.ACC = name pointer (points into node data)
-    // Preserves: A, X, Y, ZP.TOP, ZP.NEXT
     GetName()
     {
         // Calculate address of name field in node
@@ -301,7 +297,6 @@ unit Variables
     // Get initialization tokens from current node
     // Input: ZP.IDX = symbol node address (from Find or iteration)
     // Output: ZP.NEXT = tokens pointer (points to initialization token stream)
-    // Preserves: A, X, Y, ZP.TOP, ZP.ACC
     GetTokens()
     {
         Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
@@ -316,66 +311,66 @@ unit Variables
     // Remove variable or constant by name
     // Input: ZP.TOP = name pointer
     // Output: C set if successful, NC if not found
-    // Uses: Objects.Remove() internally
-    // Note: Also frees token stream if non-zero
+    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX, ZP.SymbolTemp0, ZP.SymbolTemp1
     Remove()
     {
         PHA
         PHX
         PHY
         
-        // Find the symbol first
-        STZ ZP.ACCL  // Accept any type
-        Find();
-        if (NC)  // Not found
+        loop // start of single exit block
         {
-            PLY
-            PLX
-            PLA
-            return;  // C already clear
-        }
-        
-        // Get tokens pointer before removing symbol
-        Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
-        
-        // Save tokens pointer for freeing
-        LDA ZP.IDYL
-        STA ZP.SymbolTemp0  // Temporary storage
-        LDA ZP.IDYH
-        STA ZP.SymbolTemp1
-        
-        // Remove the symbol node
-        LDX #ZP.VariablesList
-        Objects.Remove();  // This munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
-        if (NC)
-        {
-            PLY
-            PLX
-            PLA
-            return;  // C already clear
-        }
-        
-        // Free tokens if non-zero
-        LDA ZP.SymbolTemp0
-        ORA ZP.SymbolTemp1
-        if (NZ)  // Non-zero tokens pointer
-        {
+            // Find the symbol first
+            STZ ZP.SymbolIteratorFilter  // Accept any type
+            Find();
+            if (NC)  // Not found
+            {
+                CLC  // Not found
+                break;
+            }
+            
+            // Get tokens pointer before removing symbol
+            Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
+            
+            // Save tokens pointer for freeing
+            LDA ZP.IDYL
+            STA ZP.SymbolTemp0  // Temporary storage
+            LDA ZP.IDYH
+            STA ZP.SymbolTemp1
+            
+            // Remove the symbol node
+            LDX #ZP.VariablesList
+            Objects.Remove();  // This munts ZP.IDY, ZP.TOP, ZP.NEXT
+            if (NC)
+            {
+                CLC  // Failed to remove
+                break;
+            }
+            
+            // Free tokens if non-zero
             LDA ZP.SymbolTemp0
-            STA ZP.IDXL
-            LDA ZP.SymbolTemp1
-            STA ZP.IDXH
-            Memory.Free();  // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
-        }
+            ORA ZP.SymbolTemp1
+            if (NZ)  // Non-zero tokens pointer
+            {
+                LDA ZP.SymbolTemp0
+                STA ZP.IDXL
+                LDA ZP.SymbolTemp1
+                STA ZP.IDXH
+                Memory.Free();  // munts ZP.IDY, ZP.TOP, ZP.NEXT
+            }
+            
+            SEC  // Success
+            break;
+        } // end of single exit block
         
         PLY
         PLX
         PLA
-        SEC  // Success
     }
     
     // Start iteration over variables only (for VARS command)
     // Output: ZP.IDX = first variable node, C set if found, NC if none
-    // Sets up iteration state for IterateNext()
+    // Munts: ZP.LCURRENT, ZP.LNEXT
     IterateVariables()
     {
         PHA
@@ -392,6 +387,7 @@ unit Variables
     
     // Start iteration over constants only (for CONSTS command if added)
     // Output: ZP.IDX = first constant node, C set if found, NC if none
+    // Munts: ZP.LCURRENT, ZP.LNEXT
     IterateConstants()
     {
         PHA
@@ -408,8 +404,10 @@ unit Variables
     
     // Start iteration over all symbols (for general enumeration)
     // Output: ZP.IDX = first symbol node, C set if found, NC if none
+    // Munts: ZP.LCURRENT, ZP.LNEXT
     IterateAll()
     {
+        PHA
         PHX
         
         STZ ZP.SymbolIteratorFilter  // No filter
@@ -417,11 +415,12 @@ unit Variables
         Objects.IterateStart();
         
         PLX
+        PLA
     }
     
     // Continue iteration (use after any Iterate* method)
-    // Input: ZP.IDX = current node, ZP.SymbolIteratorFilter = type filter from previous call
     // Output: ZP.IDX = next matching node, C set if found, NC if done
+    // Munts: ZP.LCURRENT, ZP.LNEXT
     IterateNext()
     {
         Objects.IterateNext();
@@ -429,7 +428,7 @@ unit Variables
     
     // Clear all variables and constants (for NEW command)
     // Output: Empty symbol table
-    // Note: Frees all token streams before destroying symbols
+    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX
     Clear()
     {
         PHA
@@ -438,7 +437,7 @@ unit Variables
         
         loop
         {
-            LDX # ZP.VariablesList
+            LDX #ZP.VariablesList
             Table.GetFirst();
         
             if (NC) 
@@ -449,28 +448,33 @@ unit Variables
             // Get tokens pointer
             Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
             
-            // Free tokens if non-zero
+            // Save tokens pointer for later freeing
             LDA ZP.IDYL
-            ORA ZP.IDYH
+            PHA
+            LDA ZP.IDYH
+            PHA
+            
+            // Delete the node from the table
+            LDX #ZP.VariablesList
+            Table.Delete();  // munts ZP.IDY, ZP.TOP, ZP.NEXT
+            
+            // Restore tokens pointer and free if non-zero
+            PLA
+            STA ZP.IDXH
+            PLA
+            STA ZP.IDXL
+            
+            LDA ZP.IDXL
+            ORA ZP.IDXH
             if (NZ)  // Non-zero tokens pointer
             {
-                LDA ZP.IDYL
-                STA ZP.IDXL
-                LDA ZP.IDYH
-                STA ZP.IDXH
-                
-                Memory.Free();  // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
-                
-                // Re-establish iteration state after Memory.Free munts everything
-                LDX #ZP.VariablesList
-                Table.GetFirst();
+                Memory.Free();  // munts ZP.IDY, ZP.TOP, ZP.NEXT
             }
-            LDX #ZP.VariablesList
-            Table.Delete();
         }
         
         PLY
         PLX
         PLA
+        SEC  // Always succeeds
     }
 }
