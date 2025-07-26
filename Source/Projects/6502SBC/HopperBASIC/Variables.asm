@@ -20,26 +20,27 @@ unit Variables
         PHX
         PHY
         
-        // Check if symbol already exists
-        LDX #ZP.VariablesList
-        Objects.Find();
-        if (C)  // Symbol already exists
+        loop // start of single exit block
         {
-            LDA #(Messages.SyntaxError % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.SyntaxError / 256)
-            STA ZP.LastErrorH
-            CLC  // Error
-            PLY
-            PLX
-            PLA
-            return;
-        }
-        
-        // Symbol doesn't exist, add it
-        LDX #ZP.VariablesList
-        Objects.Add();
-        
+            // Check if symbol already exists
+            LDX #ZP.VariablesList
+            Objects.Find();
+            if (C)  // Symbol already exists
+            {
+                LDA #(Messages.SyntaxError % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.SyntaxError / 256)
+                STA ZP.LastErrorH
+                CLC  // Error
+                break;
+            }
+            
+            // Symbol doesn't exist, add it
+            LDX #ZP.VariablesList
+            Objects.Add();
+            SEC // Success
+            break;
+        } // end of single exit block
         PLY
         PLX
         PLA
@@ -56,60 +57,56 @@ unit Variables
         PHX
         PHY
         
-        // Find the symbol
-        LDX #ZP.VariablesList
-        Objects.Find();
-        if (NC)  // Not found
+        loop // start of single exit block
         {
-            PLY
-            PLX
-            PLA
-            CLC
-            return;
-        }
         
-        // Check if type filtering is requested
-        LDA ZP.ACCL
-        if (Z)  // No type filter
-        {
-            PLY
-            PLX
-            PLA
-            SEC  // Found
-            return;
-        }
-        
-        // Save expected type for comparison
-        LDA ZP.ACCL        // This was the expected type passed in
-        STA ZP.SymbolTemp0 // Temporary storage
-        
-        // Get symbol type and check
-        Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
-        
-        LDA ZP.ACCL
-        AND #0xF0  // Extract symbol type (high nibble)
-        LSR LSR LSR LSR  // Shift to low nibble
-        
-        CMP ZP.SymbolTemp0 // Compare with expected type
-        if (Z)             // Types match
-        {
-            PLY
-            PLX
-            PLA
-            SEC  // Found and correct type
-            return;
-        }
-        
-        // Wrong type
-        LDA #(Messages.TypeMismatch % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.TypeMismatch / 256)
-        STA ZP.LastErrorH
-        
+            // Find the symbol
+            LDX #ZP.VariablesList
+            Objects.Find();
+            if (NC)  // Not found
+            {
+                CLC
+                break;
+            }
+            
+            // Check if type filtering is requested
+            LDA ZP.ACCL
+            if (Z)  // No type filter
+            {
+                SEC  // Found
+                break;
+            }
+            
+            // Save expected type for comparison
+            LDA ZP.ACCL        // This was the expected type passed in
+            STA ZP.SymbolTemp0 // Temporary storage
+            
+            // Get symbol type and check
+            Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
+            
+            LDA ZP.ACCL
+            AND #0xF0  // Extract symbol type (high nibble)
+            LSR LSR LSR LSR  // Shift to low nibble
+            
+            CMP ZP.SymbolTemp0 // Compare with expected type
+            if (Z)             // Types match
+            {
+                SEC  // Found and correct type
+                break;
+            }
+            
+            // Wrong type
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            
+            CLC  // Error
+            break;
+        } // end of single exit block
         PLY
         PLX
         PLA
-        CLC  // Error
     }
     
     // Get variable/constant value by address
@@ -122,64 +119,60 @@ unit Variables
         PHA
         PHX
         PHY
-        
-        Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
-        
-        // Check if it's a variable or constant
-        LDA ZP.ACCL
-        AND #0xF0  // Extract symbol type (high nibble)
-        LSR LSR LSR LSR  // Shift to low nibble
-        
-        CMP #SymbolType.VARIABLE
-        if (Z)
+        loop // start of single exit block
         {
-            // Copy value to TOP and extract data type - value is now in ZP.IDY
-            LDA ZP.IDYL
-            STA ZP.TOPL
-            LDA ZP.IDYH
-            STA ZP.TOPH
+            Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
             
+            // Check if it's a variable or constant
             LDA ZP.ACCL
-            AND #0x0F  // Extract data type (low nibble)
-            STA ZP.TOPT
+            AND #0xF0  // Extract symbol type (high nibble)
+            LSR LSR LSR LSR  // Shift to low nibble
             
-            PLY
-            PLX
-            PLA
-            SEC  // Success
-            return;
-        }
-        
-        CMP #SymbolType.CONSTANT
-        if (Z)
-        {
-            // Copy value to TOP and extract data type - value is now in ZP.IDY
-            LDA ZP.IDYL
-            STA ZP.TOPL
-            LDA ZP.IDYH
-            STA ZP.TOPH
+            CMP #SymbolType.VARIABLE
+            if (Z)
+            {
+                // Copy value to TOP and extract data type - value is now in ZP.IDY
+                LDA ZP.IDYL
+                STA ZP.TOPL
+                LDA ZP.IDYH
+                STA ZP.TOPH
+                
+                LDA ZP.ACCL
+                AND #0x0F  // Extract data type (low nibble)
+                STA ZP.TOPT
+                
+                SEC  // Success
+                break;
+            }
             
-            LDA ZP.ACCL
-            AND #0x0F  // Extract data type (low nibble)
-            STA ZP.TOPT
+            CMP #SymbolType.CONSTANT
+            if (Z)
+            {
+                // Copy value to TOP and extract data type - value is now in ZP.IDY
+                LDA ZP.IDYL
+                STA ZP.TOPL
+                LDA ZP.IDYH
+                STA ZP.TOPH
+                
+                LDA ZP.ACCL
+                AND #0x0F  // Extract data type (low nibble)
+                STA ZP.TOPT
+                
+                SEC  // Success
+                break;
+            }
             
-            PLY
-            PLX
-            PLA
-            SEC  // Success
-            return;
-        }
-        
-        // Not a variable or constant
-        LDA #(Messages.TypeMismatch % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.TypeMismatch / 256)
-        STA ZP.LastErrorH
-        
+            // Not a variable or constant
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            CLC  // Error
+            break;
+        } // end of single exit block
         PLY
         PLX
         PLA
-        CLC  // Error
     }
     
     // Set variable value by address (variables only)
@@ -193,35 +186,47 @@ unit Variables
         PHX
         PHY
         
-        // Get current symbol info
-        Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
         
-        // Check if it's a variable
-        LDA ZP.ACCL
-        AND #0xF0  // Extract symbol type (high nibble)
-        LSR LSR LSR LSR  // Shift to low nibble
-        
-        CMP #SymbolType.VARIABLE
-        if (NZ)  // Not a variable
+        loop // start of single exit block
         {
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            PLY
-            PLX
-            PLA
-            CLC  // Error
-            return;
-        }
+            // Get current symbol info
+            Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
+            
+            // Check if it's a variable
+            LDA ZP.ACCL
+            AND #0xF0  // Extract symbol type (high nibble)
+            LSR LSR LSR LSR  // Shift to low nibble
+            
+            CMP #SymbolType.VARIABLE
+            if (NZ)  // Not a variable
+            {
+                LDA #(Messages.TypeMismatch % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.TypeMismatch / 256)
+                STA ZP.LastErrorH
+                CLC  // Error
+                break;
+            }
+            
+            // It's a variable, set the new value - Objects.SetValue expects value in ZP.IDY
+            LDA ZP.TOPL
+            STA ZP.IDYL
+            LDA ZP.TOPH
+            STA ZP.IDYH
+            
+            Objects.SetValue();  // This will use ZP.IDY
+            SEC
+            break;
+        } // end of single exit block
         
-        // It's a variable, set the new value - Objects.SetValue expects value in ZP.IDY
-        LDA ZP.TOPL
-        STA ZP.IDYL
-        LDA ZP.TOPH
-        STA ZP.IDYH
-        
-        Objects.SetValue();  // This will use ZP.IDY
+        PLA
+        LDA ZP.IDXH
+        PLA
+        LDA ZP.IDXL
         
         PLY
         PLX

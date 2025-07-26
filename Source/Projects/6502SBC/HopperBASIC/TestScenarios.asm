@@ -10,6 +10,7 @@ unit TestScenarios
     const string varName1 = "X";
     const string varName2 = "COUNTER";
     const string varName3 = "STATUS";
+    const string constName1 = "PI";
     
     // Test descriptions
     const string scenarioDesc1 = "Variable reassignment after declaration";
@@ -209,89 +210,50 @@ unit TestScenarios
         }
         
         // Test multiple rapid updates to simulate real usage
-    // ZP.IDX still valid from original Find()
-    LDX #100  // Start value
-    LDY #5    // Number of updates
-
-    LDA #'S'
-    Tools.COut();  // Signal start of rapid updates
-    TYA
-    Tools.HOut();  // Show initial Y value
-
-    loop
-    {
-        LDA #'L'
-        Tools.COut();  // Show we're in the loop
-        TYA
-        Tools.HOut();  // Show current Y value
+        // ZP.IDX still valid from original Find()
+        LDX #100  // Start value
+        LDY #5    // Number of updates
         
-        // Set value to X register value
-        TXA
-        STA ZP.TOPL
-        STZ ZP.TOPH
-        Variables.SetValue();
-        if (NC)
+        loop
         {
-            LDA #'F'
-            Tools.COut();  // SetValue failed
-            LDA #0x1C
-            CLC  // Fail - rapid update failed
-            Test.PrintResult();
-            return;
+            // Set value to X register value
+            TXA
+            STA ZP.TOPL
+            STZ ZP.TOPH
+            Variables.SetValue();
+            if (NC)
+            {
+                LDA #0x1C
+                CLC  // Fail - rapid update failed
+                Test.PrintResult();
+                return;
+            }
+            
+            // Verify the value matches
+            Variables.GetValue();
+            if (NC)
+            {
+                LDA #0x1D
+                CLC  // Fail - rapid GetValue failed
+                Test.PrintResult();
+                return;
+            }
+            
+            TXA
+            CMP ZP.TOPL
+            if (NZ)
+            {
+                LDA #0x1E
+                CLC  // Fail - rapid update value mismatch
+                Test.PrintResult();
+                return;
+            }
+            
+            INX  // Next value
+            DEY
+            if (NZ) { continue; }
+            break;
         }
-        
-        LDA #'G'
-        Tools.COut();  // SetValue succeeded
-        
-        // Verify the value matches
-        Variables.GetValue();
-        if (NC)
-        {
-            LDA #'H'
-            Tools.COut();  // GetValue failed
-            LDA #0x1D
-            CLC  // Fail - rapid GetValue failed
-            Test.PrintResult();
-            return;
-        }
-        
-        LDA #'V'
-        Tools.COut();  // GetValue succeeded
-        
-        TXA
-        CMP ZP.TOPL
-        if (NZ)
-        {
-            LDA #'M'
-            Tools.COut();  // Value mismatch
-            LDA #0x1E
-            CLC  // Fail - rapid update value mismatch
-            Test.PrintResult();
-            return;
-        }
-        
-        LDA #'O'
-        Tools.COut();  // Values match
-        
-        INX  // Next value
-        DEY
-        
-        LDA #'D'
-        Tools.COut();  // Decremented Y
-        TYA
-        Tools.HOut();  // Show Y after decrement
-        
-        if (NZ) 
-        { 
-            LDA #'C'
-            Tools.COut();  // Continuing loop
-            continue; 
-        }
-        
-        LDA #'E'
-        Tools.COut();  // Exiting loop
-        break;
-    }
         
         Variables.Clear();  // Clean up
         SEC  // Pass
@@ -309,12 +271,333 @@ unit TestScenarios
         STA ZP.TOPH
         Test.PrintTestHeader();
         
-        // TODO: Implement CLEAR command test
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        CLC  // Not implemented yet
+        // Allocate test tokens for declarations
+        allocateTestTokens();  // Result in ZP.U5|U6
+        
+        // Step 1: Declare INT X = 10, WORD Y = 100, BIT Z = 1
+        LDA #(varName1 % 256)
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
+        STA ZP.ACCL
+        LDA #10
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        
+        LDA ZP.U5
+        STA ZP.IDYL
+        LDA ZP.U6
+        STA ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x20
+            CLC  // Fail - X declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA #(varName2 % 256)
+        STA ZP.TOPL
+        LDA #(varName2 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.WORD)
+        STA ZP.ACCL
+        LDA #100
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens for this variable
+        STZ ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x21
+            CLC  // Fail - Y declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA #(varName3 % 256)
+        STA ZP.TOPL
+        LDA #(varName3 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.BIT)
+        STA ZP.ACCL
+        LDA #1
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens for this variable
+        STZ ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x22
+            CLC  // Fail - Z declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 2: Declare CONST PI = 314
+        LDA #(constName1 % 256)
+        STA ZP.TOPL
+        LDA #(constName1 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.CONSTANT << 4) | BasicType.INT)
+        STA ZP.ACCL
+        LDA #(314 % 256)
+        STA ZP.NEXTL
+        LDA #(314 / 256)
+        STA ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens for this constant
+        STZ ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x23
+            CLC  // Fail - PI declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 3: Modify variables to non-default values
+        // Modify X = 50
+        LDA #(varName1 % 256)
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        STZ ZP.ACCL  // Any type
+        
+        Variables.Find();
+        if (NC)
+        {
+            LDA #0x24
+            CLC  // Fail - could not find X
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA #50
+        STA ZP.TOPL
+        STZ ZP.TOPH
+        Variables.SetValue();
+        if (NC)
+        {
+            LDA #0x25
+            CLC  // Fail - could not set X
+            Test.PrintResult();
+            return;
+        }
+        
+        // Modify Y = 200
+        LDA #(varName2 % 256)
+        STA ZP.TOPL
+        LDA #(varName2 / 256)
+        STA ZP.TOPH
+        STZ ZP.ACCL  // Any type
+        
+        Variables.Find();
+        if (NC)
+        {
+            LDA #0x26
+            CLC  // Fail - could not find Y
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA #200
+        STA ZP.TOPL
+        STZ ZP.TOPH
+        Variables.SetValue();
+        if (NC)
+        {
+            LDA #0x27
+            CLC  // Fail - could not set Y
+            Test.PrintResult();
+            return;
+        }
+        
+        // Modify Z = 0
+        LDA #(varName3 % 256)
+        STA ZP.TOPL
+        LDA #(varName3 / 256)
+        STA ZP.TOPH
+        STZ ZP.ACCL  // Any type
+        
+        Variables.Find();
+        if (NC)
+        {
+            LDA #0x28
+            CLC  // Fail - could not find Z
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA #0
+        STA ZP.TOPL
+        STZ ZP.TOPH
+        Variables.SetValue();
+        if (NC)
+        {
+            LDA #0x29
+            CLC  // Fail - could not set Z
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 4: Implement CLEAR - iterate through variables and reset to 0
+        Variables.IterateVariables();
+        if (NC)
+        {
+            LDA #0x2A
+            CLC  // Fail - no variables found for clearing
+            Test.PrintResult();
+            return;
+        }
+
+        LDA #'I'
+        Tools.COut();  // Starting iteration
+
+        loop
+        {
+            LDA #'V'
+            Tools.COut();  // Found a variable
+            
+            // Reset current variable to 0 (type default)
+            STZ ZP.TOPL
+            STZ ZP.TOPH
+            Variables.SetValue();
+            if (NC)
+            {
+                LDA #'S'
+                Tools.COut();  // SetValue failed
+                LDA #0x2B
+                CLC  // Fail - could not reset variable
+                Test.PrintResult();
+                return;
+            }
+            
+            LDA #'R'
+            Tools.COut();  // Reset successful
+            
+            // Move to next variable
+            Variables.IterateNext();
+            if (NC) 
+            { 
+                LDA #'E'
+                Tools.COut();  // End of iteration
+                break; 
+            }
+            
+            LDA #'N'
+            Tools.COut();  // Next variable found
+        }
+        
+        // Step 5: Verify variables are reset: X = 0, Y = 0, Z = 0
+        LDA #(varName1 % 256)
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        STZ ZP.ACCL
+        
+        Variables.Find();
+        Variables.GetValue();
+        LDA ZP.TOPL
+        ORA ZP.TOPH
+        if (NZ)
+        {
+            LDA #0x2C
+            CLC  // Fail - X not reset to 0
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA #(varName2 % 256)
+        STA ZP.TOPL
+        LDA #(varName2 / 256)
+        STA ZP.TOPH
+        STZ ZP.ACCL
+        
+        Variables.Find();
+        Variables.GetValue();
+        LDA ZP.TOPL
+        ORA ZP.TOPH
+        if (NZ)
+        {
+            LDA #0x2D
+            CLC  // Fail - Y not reset to 0
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA #(varName3 % 256)
+        STA ZP.TOPL
+        LDA #(varName3 / 256)
+        STA ZP.TOPH
+        STZ ZP.ACCL
+        
+        Variables.Find();
+        Variables.GetValue();
+        LDA ZP.TOPL
+        ORA ZP.TOPH
+        if (NZ)
+        {
+            LDA #0x2E
+            CLC  // Fail - Z not reset to 0
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 6: Verify constant PI = 314 (unchanged)
+        LDA #(constName1 % 256)
+        STA ZP.TOPL
+        LDA #(constName1 / 256)
+        STA ZP.TOPH
+        STZ ZP.ACCL
+        
+        Variables.Find();
+        if (NC)
+        {
+            LDA #0x2F
+            CLC  // Fail - could not find PI constant
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.GetValue();
+        LDA ZP.TOPL
+        CMP #(314 % 256)
+        if (NZ)
+        {
+            LDA #0x30
+            CLC  // Fail - PI low byte changed
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA ZP.TOPH
+        CMP #(314 / 256)
+        if (NZ)
+        {
+            LDA #0x31
+            CLC  // Fail - PI high byte changed
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.Clear();  // Clean up
+        SEC  // Pass
         Test.PrintResult();
     }
     
