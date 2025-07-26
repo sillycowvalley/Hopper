@@ -209,50 +209,89 @@ unit TestScenarios
         }
         
         // Test multiple rapid updates to simulate real usage
-        // ZP.IDX still valid from original Find()
-        LDX #100  // Start value
-        LDY #5    // Number of updates
+    // ZP.IDX still valid from original Find()
+    LDX #100  // Start value
+    LDY #5    // Number of updates
+
+    LDA #'S'
+    Tools.COut();  // Signal start of rapid updates
+    TYA
+    Tools.HOut();  // Show initial Y value
+
+    loop
+    {
+        LDA #'L'
+        Tools.COut();  // Show we're in the loop
+        TYA
+        Tools.HOut();  // Show current Y value
         
-        loop
+        // Set value to X register value
+        TXA
+        STA ZP.TOPL
+        STZ ZP.TOPH
+        Variables.SetValue();
+        if (NC)
         {
-            // Set value to X register value
-            TXA
-            STA ZP.TOPL
-            STZ ZP.TOPH
-            Variables.SetValue();
-            if (NC)
-            {
-                LDA #0x1C
-                CLC  // Fail - rapid update failed
-                Test.PrintResult();
-                return;
-            }
-            
-            // Verify the value matches
-            Variables.GetValue();
-            if (NC)
-            {
-                LDA #0x1D
-                CLC  // Fail - rapid GetValue failed
-                Test.PrintResult();
-                return;
-            }
-            
-            TXA
-            CMP ZP.TOPL
-            if (NZ)
-            {
-                LDA #0x1E
-                CLC  // Fail - rapid update value mismatch
-                Test.PrintResult();
-                return;
-            }
-            
-            INX  // Next value
-            DEY
-            if (NZ) { continue; }
-            break;
+            LDA #'F'
+            Tools.COut();  // SetValue failed
+            LDA #0x1C
+            CLC  // Fail - rapid update failed
+            Test.PrintResult();
+            return;
         }
+        
+        LDA #'G'
+        Tools.COut();  // SetValue succeeded
+        
+        // Verify the value matches
+        Variables.GetValue();
+        if (NC)
+        {
+            LDA #'H'
+            Tools.COut();  // GetValue failed
+            LDA #0x1D
+            CLC  // Fail - rapid GetValue failed
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA #'V'
+        Tools.COut();  // GetValue succeeded
+        
+        TXA
+        CMP ZP.TOPL
+        if (NZ)
+        {
+            LDA #'M'
+            Tools.COut();  // Value mismatch
+            LDA #0x1E
+            CLC  // Fail - rapid update value mismatch
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA #'O'
+        Tools.COut();  // Values match
+        
+        INX  // Next value
+        DEY
+        
+        LDA #'D'
+        Tools.COut();  // Decremented Y
+        TYA
+        Tools.HOut();  // Show Y after decrement
+        
+        if (NZ) 
+        { 
+            LDA #'C'
+            Tools.COut();  // Continuing loop
+            continue; 
+        }
+        
+        LDA #'E'
+        Tools.COut();  // Exiting loop
+        break;
+    }
         
         Variables.Clear();  // Clean up
         SEC  // Pass

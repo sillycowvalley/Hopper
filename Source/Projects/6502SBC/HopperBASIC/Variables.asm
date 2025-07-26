@@ -119,6 +119,10 @@ unit Variables
     // Error: Fails if node is not variable or constant
     GetValue()
     {
+        PHA
+        PHX
+        PHY
+        
         Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
         
         // Check if it's a variable or constant
@@ -139,6 +143,9 @@ unit Variables
             AND #0x0F  // Extract data type (low nibble)
             STA ZP.TOPT
             
+            PLY
+            PLX
+            PLA
             SEC  // Success
             return;
         }
@@ -156,6 +163,9 @@ unit Variables
             AND #0x0F  // Extract data type (low nibble)
             STA ZP.TOPT
             
+            PLY
+            PLX
+            PLA
             SEC  // Success
             return;
         }
@@ -165,6 +175,10 @@ unit Variables
         STA ZP.LastErrorL
         LDA #(Messages.TypeMismatch / 256)
         STA ZP.LastErrorH
+        
+        PLY
+        PLX
+        PLA
         CLC  // Error
     }
     
@@ -176,6 +190,8 @@ unit Variables
     SetValue()
     {
         PHA
+        PHX
+        PHY
         
         // Get current symbol info
         Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
@@ -192,6 +208,8 @@ unit Variables
             STA ZP.LastErrorL
             LDA #(Messages.TypeMismatch / 256)
             STA ZP.LastErrorH
+            PLY
+            PLX
             PLA
             CLC  // Error
             return;
@@ -205,6 +223,8 @@ unit Variables
         
         Objects.SetValue();  // This will use ZP.IDY
         
+        PLY
+        PLX
         PLA
     }
     
