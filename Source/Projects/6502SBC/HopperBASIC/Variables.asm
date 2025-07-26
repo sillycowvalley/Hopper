@@ -270,6 +270,48 @@ unit Variables
         PLA
     }
     
+    // Get variable/constant signature info
+    // Input: ZP.IDX = symbol node address (from Find or iteration)
+    // Output: ZP.ACC = symbolType|dataType (packed), ZP.NEXT = tokens pointer, ZP.IDY = value, C set if successful, NC if error
+    // Munts: -
+    GetSignature()
+    {
+        PHA
+        
+        loop // start of single exit block
+        {
+            Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
+            
+            // Check if it's a variable or constant
+            LDA ZP.ACCL
+            AND #0xF0  // Extract symbol type (high nibble)
+            LSR LSR LSR LSR  // Shift to low nibble
+            
+            CMP #SymbolType.VARIABLE
+            if (Z)
+            {
+                SEC  // Success - ZP.ACC, ZP.NEXT, ZP.IDY already set by Objects.GetData()
+                break;
+            }
+            
+            CMP #SymbolType.CONSTANT
+            if (Z)
+            {
+                SEC  // Success - ZP.ACC, ZP.NEXT, ZP.IDY already set by Objects.GetData()
+                break;
+            }
+            
+            // Not a variable or constant
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            CLC  // Error
+            break;
+        } // end of single exit block
+        
+        PLA
+    }    
     // Get name pointer from symbol node
     // Input: ZP.IDX = symbol node address (from Find or iteration)
     // Output: ZP.ACC = name pointer (points into node data), C set (always succeeds)

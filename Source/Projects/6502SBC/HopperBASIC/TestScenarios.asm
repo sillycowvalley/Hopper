@@ -1244,58 +1244,6 @@ unit TestScenarios
         Test.PrintResult();
     }    
     
-    
-    testListCommandDataRetrieval()
-    {
-        LDA #(scenarioDesc6 % 256)
-        STA ZP.TOPL
-        LDA #(scenarioDesc6 / 256)
-        STA ZP.TOPH
-        Test.PrintTestHeader();
-        
-        // TODO: Implement LIST command data retrieval test
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        CLC  // Not implemented yet
-        Test.PrintResult();
-    }
-    
-    testSymbolTableSerializationReadiness()
-    {
-        LDA #(scenarioDesc7 % 256)
-        STA ZP.TOPL
-        LDA #(scenarioDesc7 / 256)
-        STA ZP.TOPH
-        Test.PrintTestHeader();
-        
-        // TODO: Implement serialization readiness test
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        CLC  // Not implemented yet
-        Test.PrintResult();
-    }
-    
-    testMixedGlobalSymbolUsage()
-    {
-        LDA #(scenarioDesc8 % 256)
-        STA ZP.TOPL
-        LDA #(scenarioDesc8 / 256)
-        STA ZP.TOPH
-        Test.PrintTestHeader();
-        
-        // TODO: Implement mixed global symbol usage test
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        CLC  // Not implemented yet
-        Test.PrintResult();
-    }
-    
     testSafeSymbolCreationPattern()
     {
         LDA #(scenarioDesc9 % 256)
@@ -1634,554 +1582,1243 @@ unit TestScenarios
         Test.PrintResult();
     }
     
-testTokenMemoryLifecycle()
-{
-    LDA #(scenarioDesc5 % 256)
-    STA ZP.TOPL
-    LDA #(scenarioDesc5 / 256)
-    STA ZP.TOPH
-    Test.PrintTestHeader();
-    
-    // Step 1: Allocate token memory and declare variable with tokens
-    allocateTestTokens();  // Result in ZP.U5|U6
-    
-    // Store original token pointer for verification
-    LDA ZP.U5
-    STA ZP.W0  // Save original token pointer low byte
-    LDA ZP.U6
-    STA ZP.W1  // Save original token pointer high byte
-    
-    // Declare INT X = 42 with allocated token stream
-    LDA #(varName1 % 256)  // "X"
-    STA ZP.TOPL
-    LDA #(varName1 / 256)
-    STA ZP.TOPH
-    
-    LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-    STA ZP.ACCL
-    STZ ZP.ACCH
-    
-    LDA #42
-    STA ZP.NEXTL
-    STZ ZP.NEXTH
-    
-    // Use allocated token pointer
-    LDA ZP.U5
-    STA ZP.IDYL
-    LDA ZP.U6
-    STA ZP.IDYH
-    
-    Variables.Declare();
-    if (NC)
+    testTokenMemoryLifecycle()
     {
-        LDA #0x70
-        CLC  // Fail - variable declaration with tokens failed
+        LDA #(scenarioDesc5 % 256)
+        STA ZP.TOPL
+        LDA #(scenarioDesc5 / 256)
+        STA ZP.TOPH
+        Test.PrintTestHeader();
+        
+        // Step 1: Allocate token memory and declare variable with tokens
+        allocateTestTokens();  // Result in ZP.U5|U6
+        
+        // Store original token pointer for verification
+        LDA ZP.U5
+        STA ZP.W0  // Save original token pointer low byte
+        LDA ZP.U6
+        STA ZP.W1  // Save original token pointer high byte
+        
+        // Declare INT X = 42 with allocated token stream
+        LDA #(varName1 % 256)  // "X"
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        LDA #42
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        
+        // Use allocated token pointer
+        LDA ZP.U5
+        STA ZP.IDYL
+        LDA ZP.U6
+        STA ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x70
+            CLC  // Fail - variable declaration with tokens failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 2: Verify token memory is properly stored in variable
+        LDA #(varName1 % 256)  // "X"
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter  // Any type
+        
+        Variables.Find();
+        if (NC)
+        {
+            LDA #0x71
+            CLC  // Fail - could not find declared variable
+            Test.PrintResult();
+            return;
+        }
+        
+        // Get token pointer from variable
+        Variables.GetTokens();
+        if (NC)
+        {
+            LDA #0x72
+            CLC  // Fail - GetTokens failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Verify token pointer matches what we allocated
+        LDA ZP.W1  // Original token pointer high byte
+        CMP ZP.IDYH
+        if (NZ)
+        {
+            LDA #0x73
+            CLC  // Fail - token pointer high byte mismatch
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA ZP.W0  // Original token pointer low byte
+        CMP ZP.IDYL
+        if (NZ)
+        {
+            LDA #0x74
+            CLC  // Fail - token pointer low byte mismatch
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 3: Test token memory preservation across multiple operations
+        // Store current token pointer for comparison
+        LDA ZP.IDYL
+        STA ZP.W2  // Save current token pointer low byte
+        LDA ZP.IDYH
+        STA ZP.W3  // Save current token pointer high byte
+        
+        // Multiple GetTokens() calls should return same pointer
+        Variables.GetTokens();
+        if (NC)
+        {
+            LDA #0x75
+            CLC  // Fail - second GetTokens failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Verify pointer is still the same
+        LDA ZP.W3  // Saved high byte
+        CMP ZP.IDYH
+        if (NZ)
+        {
+            LDA #0x76
+            CLC  // Fail - token pointer changed after multiple calls
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA ZP.W2  // Saved low byte
+        CMP ZP.IDYL
+        if (NZ)
+        {
+            LDA #0x77
+            CLC  // Fail - token pointer changed after multiple calls
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 4: Test that GetValue/SetValue preserve token pointer access
+        Variables.GetValue();
+        if (NC)
+        {
+            LDA #0x78
+            CLC  // Fail - GetValue failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Verify original value
+        LDA ZP.TOPL
+        CMP #42
+        if (NZ)
+        {
+            LDA #0x79
+            CLC  // Fail - wrong value retrieved
+            Test.PrintResult();
+            return;
+        }
+        
+        // Set new value
+        LDA #84
+        STA ZP.TOPL
+        STZ ZP.TOPH
+        Variables.SetValue();
+        if (NC)
+        {
+            LDA #0x7A
+            CLC  // Fail - SetValue failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Verify tokens still accessible after value change
+        Variables.GetTokens();
+        if (NC)
+        {
+            LDA #0x7B
+            CLC  // Fail - GetTokens failed after SetValue
+            Test.PrintResult();
+            return;
+        }
+        
+        // Verify pointer unchanged after value modification
+        LDA ZP.W3  // Saved high byte
+        CMP ZP.IDYH
+        if (NZ)
+        {
+            LDA #0x7C
+            CLC  // Fail - token pointer changed after SetValue
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA ZP.W2  // Saved low byte
+        CMP ZP.IDYL
+        if (NZ)
+        {
+            LDA #0x7D
+            CLC  // Fail - token pointer changed after SetValue
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 5: Test token memory cleanup during Variables.Remove()
+        // Store the token pointer for post-removal verification
+        LDA ZP.IDYL
+        STA ZP.W4  // Save token pointer low byte for cleanup test
+        LDA ZP.IDYH
+        STA ZP.W5  // Save token pointer high byte for cleanup test
+        
+        // Remove the variable (should automatically free token memory)
+        LDA #(varName1 % 256)  // "X"
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        
+        Variables.Remove();
+        if (NC)
+        {
+            LDA #0x7E
+            CLC  // Fail - variable removal failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 6: Verify variable is completely gone
+        LDA #(varName1 % 256)  // "X"
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter
+        
+        Variables.Find();
+        if (C)
+        {
+            LDA #0x7F
+            CLC  // Fail - variable still exists after removal
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 7: Test function token memory lifecycle
+        allocateTestTokens();  // New tokens for function body
+        
+        // Store function token pointer for verification
+        LDA ZP.U5
+        STA ZP.W6  // Save function token pointer low byte
+        LDA ZP.U6
+        STA ZP.W7  // Save function token pointer high byte
+        
+        // Declare function with token body
+        LDA #(regularFuncName % 256)  // "FOO"
+        STA ZP.TOPL
+        LDA #(regularFuncName / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.WORD)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        STZ ZP.NEXTL  // No arguments for this test
+        STZ ZP.NEXTH
+        
+        LDA ZP.U5
+        STA ZP.IDYL
+        LDA ZP.U6
+        STA ZP.IDYH
+        
+        Functions.Declare();
+        if (NC)
+        {
+            LDA #0x70  // Reuse 0x70 for function section
+            CLC  // Fail - function declaration with tokens failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 8: Verify function body tokens are properly stored
+        LDA #(regularFuncName % 256)  // "FOO"
+        STA ZP.TOPL
+        LDA #(regularFuncName / 256)
+        STA ZP.TOPH
+        
+        Functions.Find();
+        if (NC)
+        {
+            LDA #0x71  // Reuse for function section
+            CLC  // Fail - could not find declared function
+            Test.PrintResult();
+            return;
+        }
+        
+        // Get function body tokens
+        Functions.GetBody();
+        if (NC)
+        {
+            LDA #0x72  // Reuse for function section
+            CLC  // Fail - GetBody failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Verify body token pointer matches what we allocated
+        LDA ZP.W7  // Original function token pointer high byte
+        CMP ZP.IDYH
+        if (NZ)
+        {
+            LDA #0x73  // Reuse for function section
+            CLC  // Fail - function token pointer high byte mismatch
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA ZP.W6  // Original function token pointer low byte
+        CMP ZP.IDYL
+        if (NZ)
+        {
+            LDA #0x74  // Reuse for function section
+            CLC  // Fail - function token pointer low byte mismatch
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 9: Test function token memory cleanup during Functions.Remove()
+        // Store body token pointer for cleanup verification
+        LDA ZP.IDYL
+        STA ZP.U0  // Save body token pointer low byte
+        LDA ZP.IDYH
+        STA ZP.U1  // Save body token pointer high byte
+        
+        // Remove the function (should automatically free body tokens)
+        LDA #(regularFuncName % 256)  // "FOO"
+        STA ZP.TOPL
+        LDA #(regularFuncName / 256)
+        STA ZP.TOPH
+        
+        Functions.Remove();
+        if (NC)
+        {
+            LDA #0x75  // Reuse for function section
+            CLC  // Fail - function removal failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 10: Verify function is completely gone
+        LDA #(regularFuncName % 256)  // "FOO"
+        STA ZP.TOPL
+        LDA #(regularFuncName / 256)
+        STA ZP.TOPH
+        
+        Functions.Find();
+        if (C)
+        {
+            LDA #0x76  // Reuse for function section
+            CLC  // Fail - function still exists after removal
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 11: Test complex token memory scenario - variable with tokens + function with tokens
+        // Create both simultaneously to test memory management
+        allocateTestTokens();  // Tokens for variable
+        
+        LDA ZP.U5
+        STA ZP.U0  // Save variable token pointer low
+        LDA ZP.U6
+        STA ZP.U1  // Save variable token pointer high
+        
+        LDA #(varName2 % 256)  // "COUNTER"
+        STA ZP.TOPL
+        LDA #(varName2 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.WORD)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        LDA #200
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        
+        LDA ZP.U5
+        STA ZP.IDYL
+        LDA ZP.U6
+        STA ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x77  // Reuse for complex section
+            CLC  // Fail - complex variable declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        allocateTestTokens();  // New tokens for function
+        
+        LDA ZP.U5
+        STA ZP.U2  // Save function token pointer low
+        LDA ZP.U6
+        STA ZP.U3  // Save function token pointer high
+        
+        LDA #(varName3 % 256)  // "STATUS"
+        STA ZP.TOPL
+        LDA #(varName3 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.BIT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        STZ ZP.NEXTL  // No arguments
+        STZ ZP.NEXTH
+        
+        LDA ZP.U5
+        STA ZP.IDYL
+        LDA ZP.U6
+        STA ZP.IDYH
+        
+        Functions.Declare();
+        if (NC)
+        {
+            LDA #0x78  // Reuse for complex section
+            CLC  // Fail - complex function declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 12: Verify both symbols exist with correct token pointers
+        // Check variable tokens
+        LDA #(varName2 % 256)  // "COUNTER"
+        STA ZP.TOPL
+        LDA #(varName2 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter
+        
+        Variables.Find();
+        Variables.GetTokens();
+        
+        // Compare with saved variable token pointer
+        LDA ZP.U1  // Variable token high byte
+        CMP ZP.IDYH
+        if (NZ)
+        {
+            LDA #0x79  // Reuse for complex section
+            CLC  // Fail - variable token pointer mismatch in complex test
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA ZP.U0  // Variable token low byte
+        CMP ZP.IDYL
+        if (NZ)
+        {
+            LDA #0x7A  // Reuse for complex section
+            CLC  // Fail - variable token pointer mismatch in complex test
+            Test.PrintResult();
+            return;
+        }
+        
+        // Check function tokens
+        LDA #(varName3 % 256)  // "STATUS"
+        STA ZP.TOPL
+        LDA #(varName3 / 256)
+        STA ZP.TOPH
+        
+        Functions.Find();
+        Functions.GetBody();
+        
+        // Compare with saved function token pointer
+        LDA ZP.U3  // Function token high byte
+        CMP ZP.IDYH
+        if (NZ)
+        {
+            LDA #0x7B  // Reuse for complex section
+            CLC  // Fail - function token pointer mismatch in complex test
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA ZP.U2  // Function token low byte
+        CMP ZP.IDYL
+        if (NZ)
+        {
+            LDA #0x7C  // Reuse for complex section
+            CLC  // Fail - function token pointer mismatch in complex test
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 13: Remove both symbols (test cleanup of multiple token streams)
+        LDA #(varName2 % 256)  // "COUNTER"
+        STA ZP.TOPL
+        LDA #(varName2 / 256)
+        STA ZP.TOPH
+        
+        Variables.Remove();
+        if (NC)
+        {
+            LDA #0x7D  // Reuse for complex section
+            CLC  // Fail - complex variable removal failed
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA #(varName3 % 256)  // "STATUS"
+        STA ZP.TOPL
+        LDA #(varName3 / 256)
+        STA ZP.TOPH
+        
+        Functions.Remove();
+        if (NC)
+        {
+            LDA #0x7E  // Reuse for complex section
+            CLC  // Fail - complex function removal failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 14: Verify both symbols are completely gone
+        LDA #(varName2 % 256)  // "COUNTER"
+        STA ZP.TOPL
+        LDA #(varName2 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter
+        
+        Variables.Find();
+        if (C)
+        {
+            LDA #0x7F  // Final error code
+            CLC  // Fail - variable should be gone after complex cleanup
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA #(varName3 % 256)  // "STATUS"
+        STA ZP.TOPL
+        LDA #(varName3 / 256)
+        STA ZP.TOPH
+        
+        Functions.Find();
+        if (C)
+        {
+            LDA #0x70  // Wrap back to start of range for final check
+            CLC  // Fail - function should be gone after complex cleanup
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.Clear();  // Clean up any remaining symbols
+        Functions.Clear();
+        SEC  // Pass
         Test.PrintResult();
-        return;
     }
-    
-    // Step 2: Verify token memory is properly stored in variable
-    LDA #(varName1 % 256)  // "X"
-    STA ZP.TOPL
-    LDA #(varName1 / 256)
-    STA ZP.TOPH
-    STZ ZP.SymbolIteratorFilter  // Any type
-    
-    Variables.Find();
-    if (NC)
+
+
+    testMixedGlobalSymbolUsage()
     {
-        LDA #0x71
-        CLC  // Fail - could not find declared variable
+        LDA #(scenarioDesc8 % 256)
+        STA ZP.TOPL
+        LDA #(scenarioDesc8 / 256)
+        STA ZP.TOPH
+        Test.PrintTestHeader();
+        
+        // Simulate pattern: function accesses global variables and constants
+        // This is the core lookup pattern used throughout HopperBASIC interpreter
+        
+        // Step 1: Create mixed global symbol environment
+        // INT counter = 1
+        LDA #(varName2 % 256)  // "COUNTER"
+        STA ZP.TOPL
+        LDA #(varName2 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        LDA #1
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens for this test
+        STZ ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x80
+            CLC  // Fail - INT variable declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // WORD status = 200
+        LDA #(varName3 % 256)  // "STATUS"
+        STA ZP.TOPL
+        LDA #(varName3 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.WORD)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        LDA #200
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens
+        STZ ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x81
+            CLC  // Fail - WORD variable declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // BIT flag = 1
+        LDA #(varName1 % 256)  // "X" used as flag name
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.BIT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        LDA #1
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens
+        STZ ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x82
+            CLC  // Fail - BIT variable declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // CONST MAX_SIZE = 1024
+        LDA #(constName1 % 256)  // "PI" repurposed as MAX_SIZE
+        STA ZP.TOPL
+        LDA #(constName1 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.CONSTANT << 4) | BasicType.WORD)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        LDA #(1024 % 256)
+        STA ZP.NEXTL
+        LDA #(1024 / 256)
+        STA ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens
+        STZ ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            // Debug output for constant creation failure
+            LDA #'C'  // Debug marker for constant 
+            LDA #0x83
+            CLC  // Fail - CONST declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // CONST ERROR_CODE = -1 (INT constant)
+        LDA #(mainProgName % 256)  // "main" repurposed as ERROR_CODE
+        STA ZP.TOPL
+        LDA #(mainProgName / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.CONSTANT << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        LDA #(65535 % 256)  // -1 as unsigned 16-bit
+        STA ZP.NEXTL
+        LDA #(65535 / 256)
+        STA ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens
+        STZ ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            // Debug output for INT constant creation failure  
+            LDA #'I'  // Debug marker for INT constant
+            LDA #0x84
+            CLC  // Fail - INT constant declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 2: Create function that will access these globals
+        allocateTestTokens();  // Body tokens for function
+        
+        LDA #(regularFuncName % 256)  // "FOO"
+        STA ZP.TOPL
+        LDA #(regularFuncName / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        STZ ZP.NEXTL  // No arguments for this test
+        STZ ZP.NEXTH
+        
+        LDA ZP.U5
+        STA ZP.IDYL
+        LDA ZP.U6
+        STA ZP.IDYH
+        
+        Functions.Declare();
+        if (NC)
+        {
+            LDA #0x85
+            CLC  // Fail - function declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 3: Simulate function execution context - global variable access patterns
+        // Pattern 1: Access INT variable (typical arithmetic usage)
+        LDA #(varName2 % 256)  // "COUNTER"
+        STA ZP.TOPL
+        LDA #(varName2 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter  // Any symbol type
+        
+        Variables.Find();
+        if (NC)
+        {
+            LDA #0x86
+            CLC  // Fail - could not find INT variable from function context
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.GetValue();
+        if (NC)
+        {
+            LDA #0x87
+            CLC  // Fail - could not get INT variable value
+            Test.PrintResult();
+            return;
+        }
+        
+        // Verify correct value and type
+        LDA ZP.TOPL
+        CMP #1
+        if (NZ)
+        {
+            LDA #0x88
+            CLC  // Fail - wrong INT variable value
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA ZP.TOPT
+        CMP #BasicType.INT
+        if (NZ)
+        {
+            LDA #0x89
+            CLC  // Fail - wrong INT variable type
+            Test.PrintResult();
+            return;
+        }
+        
+        // Pattern 2: Modify variable from function (simulates assignment statement)
+        LDA #5  // New value
+        STA ZP.TOPL
+        STZ ZP.TOPH
+        Variables.SetValue();  // ZP.IDX preserved from Find() above
+        if (NC)
+        {
+            LDA #0x8A
+            CLC  // Fail - could not modify INT variable from function
+            Test.PrintResult();
+            return;
+        }
+        
+        // Verify modification worked
+        Variables.GetValue();
+        LDA ZP.TOPL
+        CMP #5
+        if (NZ)
+        {
+            LDA #0x8B
+            CLC  // Fail - INT variable modification failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Pattern 3: Access WORD variable (different type)
+        LDA #(varName3 % 256)  // "STATUS"
+        STA ZP.TOPL
+        LDA #(varName3 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter  // Any symbol type
+        
+        Variables.Find();
+        if (NC)
+        {
+            LDA #0x8C
+            CLC  // Fail - could not find WORD variable
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.GetValue();
+        LDA ZP.TOPL
+        CMP #200
+        if (NZ)
+        {
+            LDA #0x8D
+            CLC  // Fail - wrong WORD variable value
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA ZP.TOPT
+        CMP #BasicType.WORD
+        if (NZ)
+        {
+            LDA #0x8E
+            CLC  // Fail - wrong WORD variable type
+            Test.PrintResult();
+            return;
+        }
+        
+        // Pattern 4: Access BIT variable (boolean logic context)
+        LDA #(varName1 % 256)  // "X" (flag)
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter
+        
+        Variables.Find();
+        if (NC)
+        {
+            LDA #0x8F
+            CLC  // Fail - could not find BIT variable
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.GetValue();
+        LDA ZP.TOPL
+        CMP #1
+        if (NZ)
+        {
+            LDA #0x80  // Wrap back for BIT error codes
+            CLC  // Fail - wrong BIT variable value
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA ZP.TOPT
+        CMP #BasicType.BIT
+        if (NZ)
+        {
+            LDA #0x81  // Continue wrapped codes
+            CLC  // Fail - wrong BIT variable type
+            Test.PrintResult();
+            return;
+        }
+        
+        // Pattern 5: Access WORD constant (typical in expressions)
+        LDA #(constName1 % 256)  // "PI" (MAX_SIZE)
+        STA ZP.TOPL
+        LDA #(constName1 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter
+        
+        Variables.Find();
+        if (NC)
+        {
+            LDA #0x82  // Continue wrapped codes
+            CLC  // Fail - could not find WORD constant
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.GetValue();
+        LDA ZP.TOPL
+        CMP #(1024 % 256)
+        if (NZ)
+        {
+            LDA #0x83
+            CLC  // Fail - wrong WORD constant value low byte
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA ZP.TOPH
+        CMP #(1024 / 256)
+        if (NZ)
+        {
+            LDA #0x84
+            CLC  // Fail - wrong WORD constant value high byte
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA ZP.TOPT
+        CMP #BasicType.WORD
+        if (NZ)
+        {
+            LDA #0x85
+            CLC  // Fail - wrong WORD constant type
+            Test.PrintResult();
+            return;
+        }
+        
+        // Pattern 6: Access INT constant (negative values)
+        LDA #(mainProgName % 256)  // "main" (ERROR_CODE)
+        STA ZP.TOPL
+        LDA #(mainProgName / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter
+        
+        Variables.Find();
+        if (NC)
+        {
+            LDA #0x86
+            CLC  // Fail - could not find INT constant
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.GetValue();
+        LDA ZP.TOPL
+        CMP #(65535 % 256)  // -1 as unsigned
+        if (NZ)
+        {
+            LDA #0x87
+            CLC  // Fail - wrong INT constant value low byte
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA ZP.TOPH
+        CMP #(65535 / 256)
+        if (NZ)
+        {
+            LDA #0x88
+            CLC  // Fail - wrong INT constant value high byte
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA ZP.TOPT
+        CMP #BasicType.INT
+        if (NZ)
+        {
+            LDA #0x89
+            CLC  // Fail - wrong INT constant type
+            Test.PrintResult();
+            return;
+        }
+        
+        // Pattern 7: Test constant immutability (should fail)
+        LDA #42  // Try to change constant
+        STA ZP.TOPL
+        STZ ZP.TOPH
+        Variables.SetValue();  // ZP.IDX still points to INT constant
+        if (C)
+        {
+            LDA #0x8A
+            CLC  // Fail - should not have been able to modify constant
+            Test.PrintResult();
+            return;
+        }
+        
+        // Verify constant value unchanged
+        Variables.GetValue();
+        LDA ZP.TOPL
+        CMP #(65535 % 256)  // Still -1
+        if (NZ)
+        {
+            LDA #0x8B
+            CLC  // Fail - constant value changed when it shouldn't have
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 4: Test mixed symbol iteration (simulates VARS command)
+        // Count variables vs constants
+        LDX #0  // Variable counter
+        LDY #0  // Constant counter
+        
+        Variables.IterateAll();  // Start with all symbols
+        if (NC)
+        {
+            LDA #0x8C
+            CLC  // Fail - no symbols found for iteration
+            Test.PrintResult();
+            return;
+        }
+        
+        loop
+        {
+            // Check if current symbol is variable or constant
+            Variables.GetSignature();
+            LDA ZP.ACCL
+            AND #0xF0  // Extract symbol type (high nibble)
+            CMP #(SymbolType.VARIABLE << 4)
+            if (Z)
+            {
+                INX  // Count variable
+            }
+            else
+            {
+                CMP #(SymbolType.CONSTANT << 4)
+                if (Z)
+                {
+                    INY  // Count constant
+                }
+            }
+            
+            Variables.IterateNext();
+            if (NC) 
+            { 
+                break; 
+            }
+        }
+        
+        // Verify counts: 3 variables + 2 constants = 5 total
+        TXA  // Variable count
+        CMP #3
+        if (NZ)
+        {
+            LDA #0x8D
+            CLC  // Fail - wrong variable count
+            Test.PrintResult();
+            return;
+        }
+        
+        TYA  // Constant count
+        CMP #2
+        if (NZ)
+        {
+            LDA #0x8E
+            CLC  // Fail - wrong constant count
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 5: Test cross-namespace lookup (variable vs function names)
+        // Find the function we created
+        LDA #(regularFuncName % 256)  // "FOO"
+        STA ZP.TOPL
+        LDA #(regularFuncName / 256)
+        STA ZP.TOPH
+        
+        Functions.Find();
+        if (NC)
+        {
+            LDA #0x8F
+            CLC  // Fail - could not find function from mixed context
+            Test.PrintResult();
+            return;
+        }
+        
+        // Verify function still accessible
+        Functions.GetSignature();
+        LDA ZP.ACCL
+        CMP #BasicType.INT  // Return type
+        if (NZ)
+        {
+            LDA #0x80  // Final wrap
+            CLC  // Fail - wrong function return type
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 6: Test symbol name conflict detection 
+        // Try to create variable "FOO" (should work - different namespace)
+        LDA #(regularFuncName % 256)  // "FOO"
+        STA ZP.TOPL
+        LDA #(regularFuncName / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.WORD)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        LDA #99
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens
+        STZ ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x81
+            CLC  // Fail - should be able to create variable "FOO" (different namespace)
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 7: Verify both "FOO" symbols coexist
+        // Find variable "FOO"
+        LDA #(regularFuncName % 256)  // "FOO"
+        STA ZP.TOPL
+        LDA #(regularFuncName / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter
+        
+        Variables.Find();
+        if (NC)
+        {
+            LDA #0x82
+            CLC  // Fail - variable FOO not found
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.GetValue();
+        LDA ZP.TOPL
+        CMP #99
+        if (NZ)
+        {
+            LDA #0x83
+            CLC  // Fail - wrong variable FOO value
+            Test.PrintResult();
+            return;
+        }
+        
+        // Find function "FOO"
+        LDA #(regularFuncName % 256)  // "FOO"
+        STA ZP.TOPL
+        LDA #(regularFuncName / 256)
+        STA ZP.TOPH
+        
+        Functions.Find();
+        if (NC)
+        {
+            LDA #0x84
+            CLC  // Fail - function FOO not found after variable creation
+            Test.PrintResult();
+            return;
+        }
+        
+        Functions.GetSignature();
+        LDA ZP.ACCL
+        CMP #BasicType.INT
+        if (NZ)
+        {
+            LDA #0x85
+            CLC  // Fail - function FOO signature changed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 8: Test realistic expression evaluation pattern
+        // Simulate: result = counter + MAX_SIZE - 1
+        // This tests the typical global symbol lookup pattern in expressions
+        
+        // Get counter value (5 from earlier modification)
+        LDA #(varName2 % 256)  // "COUNTER"
+        STA ZP.TOPL
+        LDA #(varName2 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter
+        
+        Variables.Find();
+        Variables.GetValue();
+        
+        // Store counter value temporarily
+        LDA ZP.TOPL
+        PHA  // Save counter value (5)
+        
+        // Get MAX_SIZE constant value (1024)
+        LDA #(constName1 % 256)  // "PI" (MAX_SIZE)
+        STA ZP.TOPL
+        LDA #(constName1 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter
+        
+        Variables.Find();
+        Variables.GetValue();
+        
+        // Add counter + MAX_SIZE
+        PLA  // Restore counter value (5)
+        CLC
+        ADC ZP.TOPL  // Add MAX_SIZE low byte
+        STA ZP.U0    // Store result low byte
+        
+        LDA #0
+        ADC ZP.TOPH  // Add MAX_SIZE high byte with carry
+        STA ZP.U1    // Store result high byte
+        
+        // Subtract 1: result = counter + MAX_SIZE - 1 = 5 + 1024 - 1 = 1028
+        LDA ZP.U0
+        SEC
+        SBC #1
+        STA ZP.U0
+        
+        LDA ZP.U1
+        SBC #0
+        STA ZP.U1
+        
+        // Verify result: 1028 = 0x0404
+        LDA ZP.U0
+        CMP #(1028 % 256)
+        if (NZ)
+        {
+            LDA #0x86
+            CLC  // Fail - wrong expression result low byte
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA ZP.U1
+        CMP #(1028 / 256)
+        if (NZ)
+        {
+            LDA #0x87
+            CLC  // Fail - wrong expression result high byte
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.Clear();  // Clean up all variables and constants
+        Functions.Clear();  // Clean up all functions
+        SEC  // Pass
         Test.PrintResult();
-        return;
     }
-    
-    // Get token pointer from variable
-    Variables.GetTokens();
-    if (NC)
-    {
-        LDA #0x72
-        CLC  // Fail - GetTokens failed
-        Test.PrintResult();
-        return;
-    }
-    
-    // Verify token pointer matches what we allocated
-    LDA ZP.W1  // Original token pointer high byte
-    CMP ZP.IDYH
-    if (NZ)
-    {
-        LDA #0x73
-        CLC  // Fail - token pointer high byte mismatch
-        Test.PrintResult();
-        return;
-    }
-    
-    LDA ZP.W0  // Original token pointer low byte
-    CMP ZP.IDYL
-    if (NZ)
-    {
-        LDA #0x74
-        CLC  // Fail - token pointer low byte mismatch
-        Test.PrintResult();
-        return;
-    }
-    
-    // Step 3: Test token memory preservation across multiple operations
-    // Store current token pointer for comparison
-    LDA ZP.IDYL
-    STA ZP.W2  // Save current token pointer low byte
-    LDA ZP.IDYH
-    STA ZP.W3  // Save current token pointer high byte
-    
-    // Multiple GetTokens() calls should return same pointer
-    Variables.GetTokens();
-    if (NC)
-    {
-        LDA #0x75
-        CLC  // Fail - second GetTokens failed
-        Test.PrintResult();
-        return;
-    }
-    
-    // Verify pointer is still the same
-    LDA ZP.W3  // Saved high byte
-    CMP ZP.IDYH
-    if (NZ)
-    {
-        LDA #0x76
-        CLC  // Fail - token pointer changed after multiple calls
-        Test.PrintResult();
-        return;
-    }
-    
-    LDA ZP.W2  // Saved low byte
-    CMP ZP.IDYL
-    if (NZ)
-    {
-        LDA #0x77
-        CLC  // Fail - token pointer changed after multiple calls
-        Test.PrintResult();
-        return;
-    }
-    
-    // Step 4: Test that GetValue/SetValue preserve token pointer access
-    Variables.GetValue();
-    if (NC)
-    {
-        LDA #0x78
-        CLC  // Fail - GetValue failed
-        Test.PrintResult();
-        return;
-    }
-    
-    // Verify original value
-    LDA ZP.TOPL
-    CMP #42
-    if (NZ)
-    {
-        LDA #0x79
-        CLC  // Fail - wrong value retrieved
-        Test.PrintResult();
-        return;
-    }
-    
-    // Set new value
-    LDA #84
-    STA ZP.TOPL
-    STZ ZP.TOPH
-    Variables.SetValue();
-    if (NC)
-    {
-        LDA #0x7A
-        CLC  // Fail - SetValue failed
-        Test.PrintResult();
-        return;
-    }
-    
-    // Verify tokens still accessible after value change
-    Variables.GetTokens();
-    if (NC)
-    {
-        LDA #0x7B
-        CLC  // Fail - GetTokens failed after SetValue
-        Test.PrintResult();
-        return;
-    }
-    
-    // Verify pointer unchanged after value modification
-    LDA ZP.W3  // Saved high byte
-    CMP ZP.IDYH
-    if (NZ)
-    {
-        LDA #0x7C
-        CLC  // Fail - token pointer changed after SetValue
-        Test.PrintResult();
-        return;
-    }
-    
-    LDA ZP.W2  // Saved low byte
-    CMP ZP.IDYL
-    if (NZ)
-    {
-        LDA #0x7D
-        CLC  // Fail - token pointer changed after SetValue
-        Test.PrintResult();
-        return;
-    }
-    
-    // Step 5: Test token memory cleanup during Variables.Remove()
-    // Store the token pointer for post-removal verification
-    LDA ZP.IDYL
-    STA ZP.W4  // Save token pointer low byte for cleanup test
-    LDA ZP.IDYH
-    STA ZP.W5  // Save token pointer high byte for cleanup test
-    
-    // Remove the variable (should automatically free token memory)
-    LDA #(varName1 % 256)  // "X"
-    STA ZP.TOPL
-    LDA #(varName1 / 256)
-    STA ZP.TOPH
-    
-    Variables.Remove();
-    if (NC)
-    {
-        LDA #0x7E
-        CLC  // Fail - variable removal failed
-        Test.PrintResult();
-        return;
-    }
-    
-    // Step 6: Verify variable is completely gone
-    LDA #(varName1 % 256)  // "X"
-    STA ZP.TOPL
-    LDA #(varName1 / 256)
-    STA ZP.TOPH
-    STZ ZP.SymbolIteratorFilter
-    
-    Variables.Find();
-    if (C)
-    {
-        LDA #0x7F
-        CLC  // Fail - variable still exists after removal
-        Test.PrintResult();
-        return;
-    }
-    
-    // Step 7: Test function token memory lifecycle
-    allocateTestTokens();  // New tokens for function body
-    
-    // Store function token pointer for verification
-    LDA ZP.U5
-    STA ZP.W6  // Save function token pointer low byte
-    LDA ZP.U6
-    STA ZP.W7  // Save function token pointer high byte
-    
-    // Declare function with token body
-    LDA #(regularFuncName % 256)  // "FOO"
-    STA ZP.TOPL
-    LDA #(regularFuncName / 256)
-    STA ZP.TOPH
-    
-    LDA #((SymbolType.FUNCTION << 4) | BasicType.WORD)
-    STA ZP.ACCL
-    STZ ZP.ACCH
-    
-    STZ ZP.NEXTL  // No arguments for this test
-    STZ ZP.NEXTH
-    
-    LDA ZP.U5
-    STA ZP.IDYL
-    LDA ZP.U6
-    STA ZP.IDYH
-    
-    Functions.Declare();
-    if (NC)
-    {
-        LDA #0x70  // Reuse 0x70 for function section
-        CLC  // Fail - function declaration with tokens failed
-        Test.PrintResult();
-        return;
-    }
-    
-    // Step 8: Verify function body tokens are properly stored
-    LDA #(regularFuncName % 256)  // "FOO"
-    STA ZP.TOPL
-    LDA #(regularFuncName / 256)
-    STA ZP.TOPH
-    
-    Functions.Find();
-    if (NC)
-    {
-        LDA #0x71  // Reuse for function section
-        CLC  // Fail - could not find declared function
-        Test.PrintResult();
-        return;
-    }
-    
-    // Get function body tokens
-    Functions.GetBody();
-    if (NC)
-    {
-        LDA #0x72  // Reuse for function section
-        CLC  // Fail - GetBody failed
-        Test.PrintResult();
-        return;
-    }
-    
-    // Verify body token pointer matches what we allocated
-    LDA ZP.W7  // Original function token pointer high byte
-    CMP ZP.IDYH
-    if (NZ)
-    {
-        LDA #0x73  // Reuse for function section
-        CLC  // Fail - function token pointer high byte mismatch
-        Test.PrintResult();
-        return;
-    }
-    
-    LDA ZP.W6  // Original function token pointer low byte
-    CMP ZP.IDYL
-    if (NZ)
-    {
-        LDA #0x74  // Reuse for function section
-        CLC  // Fail - function token pointer low byte mismatch
-        Test.PrintResult();
-        return;
-    }
-    
-    // Step 9: Test function token memory cleanup during Functions.Remove()
-    // Store body token pointer for cleanup verification
-    LDA ZP.IDYL
-    STA ZP.U0  // Save body token pointer low byte
-    LDA ZP.IDYH
-    STA ZP.U1  // Save body token pointer high byte
-    
-    // Remove the function (should automatically free body tokens)
-    LDA #(regularFuncName % 256)  // "FOO"
-    STA ZP.TOPL
-    LDA #(regularFuncName / 256)
-    STA ZP.TOPH
-    
-    Functions.Remove();
-    if (NC)
-    {
-        LDA #0x75  // Reuse for function section
-        CLC  // Fail - function removal failed
-        Test.PrintResult();
-        return;
-    }
-    
-    // Step 10: Verify function is completely gone
-    LDA #(regularFuncName % 256)  // "FOO"
-    STA ZP.TOPL
-    LDA #(regularFuncName / 256)
-    STA ZP.TOPH
-    
-    Functions.Find();
-    if (C)
-    {
-        LDA #0x76  // Reuse for function section
-        CLC  // Fail - function still exists after removal
-        Test.PrintResult();
-        return;
-    }
-    
-    // Step 11: Test complex token memory scenario - variable with tokens + function with tokens
-    // Create both simultaneously to test memory management
-    allocateTestTokens();  // Tokens for variable
-    
-    LDA ZP.U5
-    STA ZP.U0  // Save variable token pointer low
-    LDA ZP.U6
-    STA ZP.U1  // Save variable token pointer high
-    
-    LDA #(varName2 % 256)  // "COUNTER"
-    STA ZP.TOPL
-    LDA #(varName2 / 256)
-    STA ZP.TOPH
-    
-    LDA #((SymbolType.VARIABLE << 4) | BasicType.WORD)
-    STA ZP.ACCL
-    STZ ZP.ACCH
-    
-    LDA #200
-    STA ZP.NEXTL
-    STZ ZP.NEXTH
-    
-    LDA ZP.U5
-    STA ZP.IDYL
-    LDA ZP.U6
-    STA ZP.IDYH
-    
-    Variables.Declare();
-    if (NC)
-    {
-        LDA #0x77  // Reuse for complex section
-        CLC  // Fail - complex variable declaration failed
-        Test.PrintResult();
-        return;
-    }
-    
-    allocateTestTokens();  // New tokens for function
-    
-    LDA ZP.U5
-    STA ZP.U2  // Save function token pointer low
-    LDA ZP.U6
-    STA ZP.U3  // Save function token pointer high
-    
-    LDA #(varName3 % 256)  // "STATUS"
-    STA ZP.TOPL
-    LDA #(varName3 / 256)
-    STA ZP.TOPH
-    
-    LDA #((SymbolType.FUNCTION << 4) | BasicType.BIT)
-    STA ZP.ACCL
-    STZ ZP.ACCH
-    
-    STZ ZP.NEXTL  // No arguments
-    STZ ZP.NEXTH
-    
-    LDA ZP.U5
-    STA ZP.IDYL
-    LDA ZP.U6
-    STA ZP.IDYH
-    
-    Functions.Declare();
-    if (NC)
-    {
-        LDA #0x78  // Reuse for complex section
-        CLC  // Fail - complex function declaration failed
-        Test.PrintResult();
-        return;
-    }
-    
-    // Step 12: Verify both symbols exist with correct token pointers
-    // Check variable tokens
-    LDA #(varName2 % 256)  // "COUNTER"
-    STA ZP.TOPL
-    LDA #(varName2 / 256)
-    STA ZP.TOPH
-    STZ ZP.SymbolIteratorFilter
-    
-    Variables.Find();
-    Variables.GetTokens();
-    
-    // Compare with saved variable token pointer
-    LDA ZP.U1  // Variable token high byte
-    CMP ZP.IDYH
-    if (NZ)
-    {
-        LDA #0x79  // Reuse for complex section
-        CLC  // Fail - variable token pointer mismatch in complex test
-        Test.PrintResult();
-        return;
-    }
-    
-    LDA ZP.U0  // Variable token low byte
-    CMP ZP.IDYL
-    if (NZ)
-    {
-        LDA #0x7A  // Reuse for complex section
-        CLC  // Fail - variable token pointer mismatch in complex test
-        Test.PrintResult();
-        return;
-    }
-    
-    // Check function tokens
-    LDA #(varName3 % 256)  // "STATUS"
-    STA ZP.TOPL
-    LDA #(varName3 / 256)
-    STA ZP.TOPH
-    
-    Functions.Find();
-    Functions.GetBody();
-    
-    // Compare with saved function token pointer
-    LDA ZP.U3  // Function token high byte
-    CMP ZP.IDYH
-    if (NZ)
-    {
-        LDA #0x7B  // Reuse for complex section
-        CLC  // Fail - function token pointer mismatch in complex test
-        Test.PrintResult();
-        return;
-    }
-    
-    LDA ZP.U2  // Function token low byte
-    CMP ZP.IDYL
-    if (NZ)
-    {
-        LDA #0x7C  // Reuse for complex section
-        CLC  // Fail - function token pointer mismatch in complex test
-        Test.PrintResult();
-        return;
-    }
-    
-    // Step 13: Remove both symbols (test cleanup of multiple token streams)
-    LDA #(varName2 % 256)  // "COUNTER"
-    STA ZP.TOPL
-    LDA #(varName2 / 256)
-    STA ZP.TOPH
-    
-    Variables.Remove();
-    if (NC)
-    {
-        LDA #0x7D  // Reuse for complex section
-        CLC  // Fail - complex variable removal failed
-        Test.PrintResult();
-        return;
-    }
-    
-    LDA #(varName3 % 256)  // "STATUS"
-    STA ZP.TOPL
-    LDA #(varName3 / 256)
-    STA ZP.TOPH
-    
-    Functions.Remove();
-    if (NC)
-    {
-        LDA #0x7E  // Reuse for complex section
-        CLC  // Fail - complex function removal failed
-        Test.PrintResult();
-        return;
-    }
-    
-    // Step 14: Verify both symbols are completely gone
-    LDA #(varName2 % 256)  // "COUNTER"
-    STA ZP.TOPL
-    LDA #(varName2 / 256)
-    STA ZP.TOPH
-    STZ ZP.SymbolIteratorFilter
-    
-    Variables.Find();
-    if (C)
-    {
-        LDA #0x7F  // Final error code
-        CLC  // Fail - variable should be gone after complex cleanup
-        Test.PrintResult();
-        return;
-    }
-    
-    LDA #(varName3 % 256)  // "STATUS"
-    STA ZP.TOPL
-    LDA #(varName3 / 256)
-    STA ZP.TOPH
-    
-    Functions.Find();
-    if (C)
-    {
-        LDA #0x70  // Wrap back to start of range for final check
-        CLC  // Fail - function should be gone after complex cleanup
-        Test.PrintResult();
-        return;
-    }
-    
-    Variables.Clear();  // Clean up any remaining symbols
-    Functions.Clear();
-    SEC  // Pass
-    Test.PrintResult();
-}
 
     
     // Run all scenario tests
@@ -2193,10 +2830,6 @@ testTokenMemoryLifecycle()
         testForgetCommandIntegration();
         testSafeSymbolCreationPattern();
         testTokenMemoryLifecycle();
-        /*
-        testListCommandDataRetrieval();
-        testSymbolTableSerializationReadiness();
         testMixedGlobalSymbolUsage();
-        */
     }
 }
