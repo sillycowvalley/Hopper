@@ -14,30 +14,23 @@ unit Table
     // Output: ZP.IDX = first node (0x0000 if empty list), C set if found, NC if empty
     GetFirst()
     {
-        PHA
+        // Read the node pointer value stored at that head address
+        LDA 0x00, X
+        STA ZP.IDXL
+        LDA 0x01, X
+        STA ZP.IDXH
         
-        loop // start of single exit block
+        // Set carry based on whether we found a node
+        LDA ZP.IDXL
+        ORA ZP.IDXH
+        if (Z)
         {
-            // Read the node pointer value stored at that head address
-            LDA 0x00, X
-            STA ZP.IDXL
-            LDA 0x01, X
-            STA ZP.IDXH
-            
-            // Set carry based on whether we found a node
-            LDA ZP.IDXL
-            ORA ZP.IDXH
-            if (Z)
-            {
-                CLC  // Empty list
-                break;
-            }
-            
+            CLC  // Empty list
+        }
+        else
+        {
             SEC  // Found node
-            break;
-        } // end of single exit block
-        
-        PLA
+        }
     }
     
     // Get next node in traversal
@@ -45,51 +38,47 @@ unit Table
     // Output: ZP.IDX = next node (0x0000 if end of list), C set if found, NC if end
     GetNext()
     {
-        PHA
         PHY
         
-        loop // start of single exit block
+        // Check if current node is null
+        LDA ZP.IDXL
+        ORA ZP.IDXH
+        if (Z) 
+        { 
+            CLC  // Already at end
+            PLY
+            return;
+        }
+        
+        // Load next pointer: [IDX] -> IDX
+        LDY #0
+        LDA [ZP.IDX], Y
+        PHA
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        // Set carry based on whether we found a next node
+        LDA ZP.IDXL
+        ORA ZP.IDXH
+        if (Z)
         {
-            // Check if current node is null
-            LDA ZP.IDXL
-            ORA ZP.IDXH
-            if (Z) 
-            { 
-                CLC  // Already at end
-                break; 
-            }
-            
-            // Load next pointer: [IDX] -> IDX
-            LDY #0
-            LDA [ZP.IDX], Y
-            PHA
-            INY
-            LDA [ZP.IDX], Y
-            STA ZP.IDXH
-            PLA
-            STA ZP.IDXL
-            
-            // Set carry based on whether we found a next node
-            LDA ZP.IDXL
-            ORA ZP.IDXH
-            if (Z)
-            {
-                CLC  // End of list
-                break;
-            }
-            
+            CLC  // End of list
+        }
+        else
+        {
             SEC  // Found next node
-            break;
-        } // end of single exit block
+        }
         
         PLY
-        PLA
     }
     
     // Add new node to end of list
     // Input: X = ZP address of list head pointer, ZP.ACC = node size (16-bit)
     // Output: ZP.IDX = new node address, C set if successful, NC if allocation failed
-    // Munts: ZP.TOP, ZP.NEXT, ZP.IDY, ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT
+    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT
     Add()
     {
         PHA
@@ -101,7 +90,7 @@ unit Table
             // Save inputs in ZP.Lxx slots
             STX ZP.LHEADX           // ZP address of list head pointer
             
-            Memory.Allocate();      // Returns address in ZP.IDX, munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
+            Memory.Allocate();      // Returns address in ZP.IDX, munts ZP.IDY, ZP.TOP, ZP.NEXT
             
             LDA ZP.IDXL
             ORA ZP.IDXH
@@ -179,7 +168,6 @@ unit Table
     // Input: X = ZP address of list head pointer, ZP.IDX = node to delete
     // Output: C set if successful, NC if node not found
     // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX
-    // Preserves: ZP.IDX, ZP.ACC (when successful, munted by Memory.Free on success)
     Delete()
     {
         PHA
@@ -251,7 +239,7 @@ unit Table
             PLA
             STA ZP.IDXL
             
-            Memory.Free(); // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
+            Memory.Free(); // munts ZP.IDY, ZP.TOP, ZP.NEXT
             
             // Push dummy values back for consistent exit
             LDA #0
@@ -322,7 +310,7 @@ unit Table
                 PLA
                 STA ZP.IDXL
                 
-                Memory.Free(); // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
+                Memory.Free(); // munts ZP.IDY, ZP.TOP, ZP.NEXT
                 
                 // Push dummy values back for consistent exit
                 LDA #0
@@ -372,65 +360,48 @@ unit Table
     // Input: X = ZP address of list head pointer
     // Output: C set (always succeeds), list head set to 0x0000
     // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX
-    // Preserves: ZP.IDX, ZP.ACC
     Clear()
     {
         PHA
         PHX
-        PHY
         
         LDA ZP.IDXL
         PHA
         LDA ZP.IDXH
         PHA
         
-        LDA ZP.ACCL
-        PHA
-        LDA ZP.ACCH
-        PHA
-        
-        loop // start of single exit block
+        STX ZP.LHEADX
+               
+        loop
         {
-            STX ZP.LHEADX
-                   
-            loop
+            // load first node from list head location
+            LDX ZP.LHEADX
+            LDA 0x00, X
+            STA ZP.IDXL
+            LDA 0x01, X
+            STA ZP.IDXH
+            
+            // Check if list is empty
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z)
             {
-                // load first node from list head location
-                LDX ZP.LHEADX
-                LDA 0x00, X
-                STA ZP.IDXL
-                LDA 0x01, X
-                STA ZP.IDXH
-                
-                // Check if list is empty
-                LDA ZP.IDXL
-                ORA ZP.IDXH
-                if (Z)
-                {
-                    // List is empty, we're done
-                    break;
-                }
-                
-                // delete first node
-                Delete();
-                // Delete always succeeds when node exists, no need to check carry
+                // List is empty, we're done
+                break;
             }
             
-            SEC  // Always succeeds
-            break;
-        } // end of single exit block
+            // delete first node
+            Delete();
+            // Delete always succeeds when node exists, no need to check carry
+        }
         
-        PLA
-        STA ZP.ACCH
-        PLA
-        STA ZP.ACCL
+        SEC  // Always succeeds
         
         PLA
         STA ZP.IDXH
         PLA
         STA ZP.IDXL
         
-        PLY
         PLX
         PLA
     }
