@@ -65,8 +65,11 @@
 | `IterateFunctions()` | testIterateFunctionsOnly, testMultipleFunctionIteration | ✅ Excellent | Multiple iteration scenarios |
 | `IterateNext()` | testIterateFunctionsOnly, testMultipleFunctionIteration | ✅ Excellent | Iteration continuation tested |
 | `Clear()` | All tests (cleanup) | ✅ Excellent | Used extensively for cleanup |
+| `SetBody()` | **testUpdateFunctionBody** | 🔲 **Needs Test** | **Update function body with memory management** |
+| `GetReturnType()` | **testGetFunctionReturnType** | 🔲 **Needs Test** | **Extract return type only** |
+| `ValidateType()` | **testValidateFunctionType** | 🔲 **Needs Test** | **Validate packed type byte** |
 
-**Assessment: 100% Coverage**
+**Assessment: 81% Coverage (11/14 methods tested)**
 
 ## Arguments Layer (arguments.asm) - Function Parameter Management
 
