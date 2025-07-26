@@ -140,7 +140,6 @@ unit TestObjects
         }
         else
         {
-            DumpHeap();
             LDX #ZP.VariablesList
             Objects.Destroy();
             LDA #0x31

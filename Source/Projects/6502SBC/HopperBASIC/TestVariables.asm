@@ -16,6 +16,15 @@ unit TestVariables
     const string testName8 = "TESTVAR";
     const string testName9 = "BYTEVAR";
     
+    const string varName1 = "X";
+    const string varName2 = "COUNTER";
+    const string varName3 = "STATUS";
+    const string constName1 = "PI";
+    const string mainProgName = "main";
+    const string regularFuncName = "FOO";
+        
+    const string variablesDesc16 = "Simple Variables.Find() debugging";
+    
     // Allocate test token memory block
     // Returns address in ZP.U5|U6 for use with Variables.Declare()
     // MUST be called early before other variables are set up!

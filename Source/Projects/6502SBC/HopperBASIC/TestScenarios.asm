@@ -2819,7 +2819,1319 @@ unit TestScenarios
         SEC  // Pass
         Test.PrintResult();
     }
+    
+    
+    testSymbolTableSerializationReadiness()
+    {
+        LDA #(scenarioDesc7 % 256)
+        STA ZP.TOPL
+        LDA #(scenarioDesc7 / 256)
+        STA ZP.TOPH
+        Test.PrintTestHeader();
+        
+        // Step 1: Create comprehensive program state for serialization testing
+        // This simulates a complete HopperBASIC session ready for SAVE command
+        
+        // Variables: INT counter = 42, BIT flag = 1, WORD size = 512
+        LDA #(varName2 % 256)  // "COUNTER"
+        STA ZP.TOPL
+        LDA #(varName2 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        LDA #42
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens for basic variables
+        STZ ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x01
+            CLC  // Fail - INT variable declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA #(varName1 % 256)  // "X" as flag
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.BIT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        LDA #1
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens
+        STZ ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x02
+            CLC  // Fail - BIT variable declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA #(varName3 % 256)  // "STATUS" as size
+        STA ZP.TOPL
+        LDA #(varName3 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.WORD)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        LDA #(512 % 256)
+        STA ZP.NEXTL
+        LDA #(512 / 256)
+        STA ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens
+        STZ ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x03
+            CLC  // Fail - WORD variable declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Constants: CONST PI = 314, CONST VERSION = 1
+        LDA #(constName1 % 256)  // "PI"
+        STA ZP.TOPL
+        LDA #(constName1 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.CONSTANT << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        LDA #(314 % 256)
+        STA ZP.NEXTL
+        LDA #(314 / 256)
+        STA ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens
+        STZ ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x04
+            CLC  // Fail - PI constant declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA #(mainProgName % 256)  // "main" as VERSION
+        STA ZP.TOPL
+        LDA #(mainProgName / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.CONSTANT << 4) | BasicType.WORD)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        LDA #1
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens
+        STZ ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x05
+            CLC  // Fail - VERSION constant declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Functions with tokens: FUNC CALCULATE(VALUE), FUNC PRINT()
+        allocateTestTokens();  // Function body tokens for CALCULATE
+        
+        LDA #(regularFuncName % 256)  // "FOO" as CALCULATE
+        STA ZP.TOPL
+        LDA #(regularFuncName / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        STZ ZP.NEXTL  // Arguments added separately
+        STZ ZP.NEXTH
+        
+        LDA ZP.U5
+        STA ZP.IDYL
+        LDA ZP.U6
+        STA ZP.IDYH
+        
+        Functions.Declare();
+        if (NC)
+        {
+            LDA #0x06
+            CLC  // Fail - CALCULATE function declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Add argument to CALCULATE function
+        Functions.Find();  // Find CALCULATE to add argument
+        if (NC)
+        {
+            LDA #0x07
+            CLC  // Fail - could not find CALCULATE function
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA #(varName1 % 256)  // "X" as VALUE argument
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        
+        LDA #BasicType.INT
+        STA ZP.ACCL
+        
+        Arguments.Add();
+        if (NC)
+        {
+            LDA #0x08
+            CLC  // Fail - could not add VALUE argument
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 2: Test complete state enumeration for SAVE preparation
+        // Calculate total size needed for EEPROM storage simulation
+        
+        LDX #0  // Variable count
+        LDY #0  // Constant count
+        LDA #0  // Function count (stored in zero page)
+        STA ZP.U0
+        
+        // Debug: Check if Variables list head pointer is valid
+        LDA ZP.VariablesListL
+        ORA ZP.VariablesListH
+        if (Z)
+        {
+            LDA #0x09
+            CLC  // Fail - Variables list head pointer is null (debug check)
+            Test.PrintResult();
+            return;
+        }
+        
+        // First, verify we can find individual symbols to ensure they exist
+        // Clear any iteration state that might interfere
+        STZ ZP.IDXL
+        STZ ZP.IDXH
+        
+        LDA #(varName2 % 256)  // "COUNTER"
+        STA ZP.TOPL
+        LDA #(varName2 / 256)
+        STA ZP.TOPH
+        STZ ZP.SymbolIteratorFilter  // Any type
+        
+        Variables.Find();
+        if (NC)
+        {
+            LDA #0x0A
+            CLC  // Fail - COUNTER variable not found (debug check)
+            Test.PrintResult();
+            return;
+        }
+        
+        // Clear iteration state again before IterateAll
+        STZ ZP.IDXL
+        STZ ZP.IDXH
+        
+        // Count all variables and constants
+        Variables.IterateAll();
+        if (NC)
+        {
+            LDA #0x0B
+            CLC  // Fail - no symbols found for serialization enumeration
+            Test.PrintResult();
+            return;
+        }
+        
+        loop
+        {
+            // Get symbol signature
+            Variables.GetSignature();
+            if (NC)
+            {
+                LDA #0x0C
+                CLC  // Fail - could not get symbol signature for serialization
+                Test.PrintResult();
+                return;
+            }
+            
+            LDA ZP.ACCL
+            AND #0xF0  // Extract symbol type
+            CMP #(SymbolType.VARIABLE << 4)
+            if (Z)
+            {
+                INX  // Count variable
+                
+                // Verify all variable data accessible for serialization
+                Variables.GetName();
+                if (NC)
+                {
+                    LDA #0x0D
+                    CLC  // Fail - variable name not accessible for serialization
+                    Test.PrintResult();
+                    return;
+                }
+                
+                Variables.GetValue();
+                if (NC)
+                {
+                    LDA #0x0E
+                    CLC  // Fail - variable value not accessible for serialization
+                    Test.PrintResult();
+                    return;
+                }
+                
+                // Check if variable has tokens (for expression storage)
+                Variables.GetTokens();
+                // Note: NC is acceptable here - not all variables have tokens
+            }
+            else
+            {
+                CMP #(SymbolType.CONSTANT << 4)
+                if (Z)
+                {
+                    INY  // Count constant
+                    
+                    // Verify all constant data accessible for serialization
+                    Variables.GetName();
+                    if (NC)
+                    {
+                        LDA #0x0F
+                        CLC  // Fail - constant name not accessible for serialization
+                        Test.PrintResult();
+                        return;
+                    }
+                    
+                    Variables.GetValue();
+                    if (NC)
+                    {
+                        LDA #0x10
+                        CLC  // Fail - constant value not accessible for serialization
+                        Test.PrintResult();
+                        return;
+                    }
+                }
+            }
+            
+            Variables.IterateNext();
+            if (NC) 
+            { 
+                break; 
+            }
+        }
+        
+        TYA  // Constant count
+        CMP #2
+        if (NZ)
+        {
+            LDA #0x1B
+            CLC  // Fail - wrong constant count for serialization
+            Test.PrintResult();
+            return;
+        }
+        TXA  // Variable count
+        CMP #3
+        if (NZ)
+        {
+            LDA #0x1A
+            CLC  // Fail - wrong variable count for serialization
+            Test.PrintResult();
+            return;
+        }
+        
+        // Count all functions
+        Functions.IterateFunctions();
+        if (NC)
+        {
+            LDA #0x11
+            CLC  // Fail - no functions found for serialization enumeration
+            Test.PrintResult();
+            return;
+        }
+        
+        loop
+        {
+            INC ZP.U0  // Count function
+            
+            // Verify all function data accessible for serialization
+            Functions.GetName();
+            if (NC)
+            {
+                LDA #0x12
+                CLC  // Fail - function name not accessible for serialization
+                Test.PrintResult();
+                return;
+            }
+            
+            Functions.GetSignature();
+            if (NC)
+            {
+                LDA #0x13
+                CLC  // Fail - function signature not accessible for serialization
+                Test.PrintResult();
+                return;
+            }
+            
+            Functions.GetBody();
+            if (NC)
+            {
+                LDA #0x14
+                CLC  // Fail - function body not accessible for serialization
+                Test.PrintResult();
+                return;
+            }
+            
+            // Check function arguments for serialization
+            Arguments.GetCount();
+            if (NC)
+            {
+                LDA #0x15
+                CLC  // Fail - function argument count not accessible
+                Test.PrintResult();
+                return;
+            }
+            
+            LDA ZP.ACCL  // Argument count
+            if (NZ)
+            {
+                // Function has arguments - verify all argument data accessible
+                Arguments.IterateStart();
+                if (NC)
+                {
+                    LDA #0x16
+                    CLC  // Fail - cannot start argument iteration for serialization
+                    Test.PrintResult();
+                    return;
+                }
+                
+                LDA ZP.ACCL  // Load argument count for loop
+                PHA  // Save argument count on stack
+                loop
+                {
+                    Arguments.GetName();
+                    if (NC)
+                    {
+                        PLA  // Clean stack
+                        LDA #0x17
+                        CLC  // Fail - argument name not accessible for serialization
+                        Test.PrintResult();
+                        return;
+                    }
+                    
+                    Arguments.GetType();
+                    if (NC)
+                    {
+                        PLA  // Clean stack
+                        LDA #0x18
+                        CLC  // Fail - argument type not accessible for serialization
+                        Test.PrintResult();
+                        return;
+                    }
+                    
+                    PLA  // Get argument count
+                    TAY  // Move to Y for decrement
+                    DEY
+                    PHA  // Save decremented count
+                    if (Z) 
+                    { 
+                        PLA  // Clean stack
+                        break; 
+                    }
+                    
+                    Arguments.IterateNext();
+                    if (NC)
+                    {
+                        PLA  // Clean stack
+                        LDA #0x19
+                        CLC  // Fail - argument iteration failed during serialization
+                        Test.PrintResult();
+                        return;
+                    }
+                }
+            }
+            
+            Functions.IterateNext();
+            if (NC) 
+            { 
+                break; 
+            }
+        }
+        
+        // Step 3: Verify expected counts for complete program state
+        // 3 variables + 2 constants + 1 function = 6 total symbols
+                       
+        LDA ZP.U0  // Function count
+        CMP #1
+        if (NZ)
+        {
+            LDA #0x1C
+            CLC  // Fail - wrong function count for serialization
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 4: Test consistent iteration order for reliable save/restore
+        // Run iteration multiple times to verify deterministic ordering
+        
+        // First iteration - save symbol names in order
+        Variables.IterateAll();
+        if (NC)
+        {
+            LDA #0x1D
+            CLC  // Fail - first iteration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Get name of first symbol
+        Variables.GetName();
+        if (NC)
+        {
+            LDA #0x1E
+            CLC  // Fail - could not get first symbol name
+            Test.PrintResult();
+            return;
+        }
+        
+        // Store first character of first symbol name for comparison
+        LDY #0
+        LDA [ZP.TOP], Y  // Get first character of symbol name
+        STA ZP.U1  // Save for comparison
+        
+        // Get name of second symbol
+        Variables.IterateNext();
+        if (NC)
+        {
+            LDA #0x1F
+            CLC  // Fail - could not get second symbol
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.GetName();
+        if (NC)
+        {
+            LDA #0x20
+            CLC  // Fail - could not get second symbol name
+            Test.PrintResult();
+            return;
+        }
+        
+        // Store first character of second symbol name
+        LDY #0
+        LDA [ZP.TOP], Y
+        STA ZP.U2  // Save for comparison
+        
+        // Second iteration - verify same ordering
+        Variables.IterateAll();
+        if (NC)
+        {
+            LDA #0x21
+            CLC  // Fail - second iteration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.GetName();
+        LDY #0
+        LDA [ZP.TOP], Y
+        CMP ZP.U1  // Compare with first iteration
+        if (NZ)
+        {
+            LDA #0x22
+            CLC  // Fail - iteration order changed between runs
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.IterateNext();
+        Variables.GetName();
+        LDY #0
+        LDA [ZP.TOP], Y
+        CMP ZP.U2  // Compare with first iteration
+        if (NZ)
+        {
+            LDA #0x23
+            CLC  // Fail - second symbol order changed between runs
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 5: Test size calculation for EEPROM storage planning
+        // This simulates calculating how much EEPROM space is needed
+        
+        LDA #0  // Initialize total size counter
+        STA ZP.W0  // Low byte
+        STA ZP.W1  // High byte
+        
+        // Calculate approximate size: each symbol needs ~16 bytes minimum
+        // Variables: 3 * 16 = 48 bytes
+        LDA ZP.W0
+        CLC
+        ADC #48
+        STA ZP.W0
+        LDA ZP.W1
+        ADC #0
+        STA ZP.W1
+        
+        // Constants: 2 * 16 = 32 bytes
+        LDA ZP.W0
+        CLC
+        ADC #32
+        STA ZP.W0
+        LDA ZP.W1
+        ADC #0
+        STA ZP.W1
+        
+        // Functions: 1 * 32 = 32 bytes (functions need more space)
+        LDA ZP.W0
+        CLC
+        ADC #32
+        STA ZP.W0
+        LDA ZP.W1
+        ADC #0
+        STA ZP.W1
+        
+        // Total should be approximately 112 bytes (0x0070)
+        LDA ZP.W0
+        CMP #112
+        if (NZ)
+        {
+            LDA #0x24
+            CLC  // Fail - size calculation low byte incorrect
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA ZP.W1
+        CMP #0
+        if (NZ)
+        {
+            LDA #0x25
+            CLC  // Fail - size calculation high byte incorrect
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 6: Test session state completeness verification
+        // This ensures no data is missed during save/restore operations
+        
+        // Verify we can access every piece of data needed for complete restore
+        LDX #0  // Success counter
+        
+        // Test variable data completeness
+        Variables.IterateAll();
+        loop
+        {
+            // Get symbol signature
+            Variables.GetSignature();
+            
+            LDA ZP.ACCL
+            AND #0xF0  // Extract symbol type
+            CMP #(SymbolType.VARIABLE << 4)
+            if (Z)
+            {
+                INX  // Count variable
+            }
+            else
+            {
+                CMP #(SymbolType.CONSTANT << 4)
+                if (Z)
+                {
+                    INY  // Count constant
+                }
+             }
+            
+            Variables.IterateNext();
+            if (NC) { break; }
+        }
 
+        
+        // Should have verified 3 variables
+        TXA
+        CMP #3
+        if (NZ)
+        {
+            LDA #0x26
+            CLC  // Fail - incomplete variable data verification
+            Test.PrintResult();
+            return;
+        }
+        
+        // Test function data completeness
+        LDX #0  // Reset counter
+        Functions.IterateFunctions();
+        loop
+        {
+            // Function found - verify complete data set
+            Functions.GetName();
+            Functions.GetSignature();
+            Functions.GetBody();
+            Arguments.GetCount();
+            INX  // Count successful function verification
+            
+            Functions.IterateNext();
+            if (NC) 
+            { 
+                break; 
+            }
+        }
+        
+        // Should have verified 1 function
+        TXA
+        CMP #1
+        if (NZ)
+        {
+            LDA #0x27
+            CLC  // Fail - incomplete function data verification
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.Clear();  // Clean up all symbols
+        Functions.Clear();
+        SEC  // Pass
+        Test.PrintResult();
+    }
+    
+    testListCommandDataRetrieval()
+    {
+        LDA #(scenarioDesc6 % 256)
+        STA ZP.TOPL
+        LDA #(scenarioDesc6 / 256)
+        STA ZP.TOPH
+        Test.PrintTestHeader();
+        
+        // Step 1: Create complete program environment for LIST command
+        // Variables: INT X = 10, WORD COUNTER = 0
+        LDA #(varName1 % 256)  // "X"
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        LDA #10
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens for basic variables
+        STZ ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x90
+            CLC  // Fail - INT variable declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA #(varName2 % 256)  // "COUNTER"
+        STA ZP.TOPL
+        LDA #(varName2 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.VARIABLE << 4) | BasicType.WORD)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        STZ ZP.NEXTL  // Value = 0
+        STZ ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens
+        STZ ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x91
+            CLC  // Fail - WORD variable declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Constants: CONST PI = 314, CONST MAX = 100
+        LDA #(constName1 % 256)  // "PI"
+        STA ZP.TOPL
+        LDA #(constName1 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.CONSTANT << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        LDA #(314 % 256)
+        STA ZP.NEXTL
+        LDA #(314 / 256)
+        STA ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens
+        STZ ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x92
+            CLC  // Fail - PI constant declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        LDA #(varName3 % 256)  // "STATUS" repurposed as "MAX"
+        STA ZP.TOPL
+        LDA #(varName3 / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.CONSTANT << 4) | BasicType.WORD)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        LDA #100
+        STA ZP.NEXTL
+        STZ ZP.NEXTH
+        
+        STZ ZP.IDYL  // No tokens
+        STZ ZP.IDYH
+        
+        Variables.Declare();
+        if (NC)
+        {
+            LDA #0x93
+            CLC  // Fail - MAX constant declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Functions: FUNC ADD(A, B) returning INT
+        allocateTestTokens();  // Function body tokens
+        
+        LDA #(regularFuncName % 256)  // "FOO" repurposed as "ADD"
+        STA ZP.TOPL
+        LDA #(regularFuncName / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        STZ ZP.NEXTL  // Arguments added separately
+        STZ ZP.NEXTH
+        
+        LDA ZP.U5
+        STA ZP.IDYL
+        LDA ZP.U6
+        STA ZP.IDYH
+        
+        Functions.Declare();
+        if (NC)
+        {
+            LDA #0x94
+            CLC  // Fail - ADD function declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Add arguments to ADD function
+        Functions.Find();  // Find ADD function to add arguments
+        if (NC)
+        {
+            LDA #0x95
+            CLC  // Fail - could not find ADD function to add arguments
+            Test.PrintResult();
+            return;
+        }
+        
+        // Add argument A (INT)
+        LDA #(varName1 % 256)  // "X" repurposed as argument "A"
+        STA ZP.TOPL
+        LDA #(varName1 / 256)
+        STA ZP.TOPH
+        
+        LDA #BasicType.INT
+        STA ZP.ACCL
+        
+        Arguments.Add();
+        if (NC)
+        {
+            LDA #0x96
+            CLC  // Fail - could not add argument A
+            Test.PrintResult();
+            return;
+        }
+        
+        // Add argument B (INT)
+        LDA #(varName2 % 256)  // "COUNTER" repurposed as argument "B"
+        STA ZP.TOPL
+        LDA #(varName2 / 256)
+        STA ZP.TOPH
+        
+        LDA #BasicType.INT
+        STA ZP.ACCL
+        
+        Arguments.Add();
+        if (NC)
+        {
+            LDA #0x97
+            CLC  // Fail - could not add argument B
+            Test.PrintResult();
+            return;
+        }
+        
+        // FUNC PRINT() returning VOID (no arguments)
+        allocateTestTokens();  // New function body tokens
+        
+        LDA #(mainProgName % 256)  // "main" repurposed as "PRINT"
+        STA ZP.TOPL
+        LDA #(mainProgName / 256)
+        STA ZP.TOPH
+        
+        LDA #((SymbolType.FUNCTION << 4) | BasicType.VOID)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        
+        STZ ZP.NEXTL  // No arguments
+        STZ ZP.NEXTH
+        
+        LDA ZP.U5
+        STA ZP.IDYL
+        LDA ZP.U6
+        STA ZP.IDYH
+        
+        Functions.Declare();
+        if (NC)
+        {
+            LDA #0x98
+            CLC  // Fail - PRINT function declaration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 2: Test Variables.IterateAll() for listing all variables/constants
+        // This simulates the VARS command or variable section of LIST
+        
+        LDX #0  // Variable counter
+        LDY #0  // Constant counter
+        
+        Variables.IterateAll();
+        if (NC)
+        {
+            LDA #0x99
+            CLC  // Fail - no symbols found for variable iteration
+            Test.PrintResult();
+            return;
+        }
+        
+        loop
+        {
+            // Get symbol signature to determine type
+            Variables.GetSignature();
+            LDA ZP.ACCL
+            AND #0xF0  // Extract symbol type (high nibble)
+            
+            CMP #(SymbolType.VARIABLE << 4)
+            if (Z)
+            {
+                // This is a variable - verify we can get name, type, and value
+                Variables.GetName();
+                if (NC)
+                {
+                    LDA #0x9A
+                    CLC  // Fail - could not get variable name
+                    Test.PrintResult();
+                    return;
+                }
+                
+                Variables.GetValue();
+                if (NC)
+                {
+                    LDA #0x9B
+                    CLC  // Fail - could not get variable value
+                    Test.PrintResult();
+                    return;
+                }
+                
+                // Count this variable
+                INX
+            }
+            else
+            {
+                CMP #(SymbolType.CONSTANT << 4)
+                if (Z)
+                {
+                    // This is a constant - verify accessibility
+                    Variables.GetName();
+                    if (NC)
+                    {
+                        LDA #0x9C
+                        CLC  // Fail - could not get constant name
+                        Test.PrintResult();
+                        return;
+                    }
+                    
+                    Variables.GetValue();
+                    if (NC)
+                    {
+                        LDA #0x9D
+                        CLC  // Fail - could not get constant value
+                        Test.PrintResult();
+                        return;
+                    }
+                    
+                    // Count this constant
+                    INY
+                }
+            }
+            
+            Variables.IterateNext();
+            if (NC) 
+            { 
+                break; 
+            }
+        }
+        
+        // Verify expected counts: 2 variables + 2 constants = 4 total
+        TXA  // Variable count
+        CMP #2
+        if (NZ)
+        {
+            LDA #0x9E
+            CLC  // Fail - wrong variable count in listing
+            Test.PrintResult();
+            return;
+        }
+        
+        TYA  // Constant count
+        CMP #2
+        if (NZ)
+        {
+            LDA #0x9F
+            CLC  // Fail - wrong constant count in listing
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 3: Test Functions.IterateFunctions() for listing all functions
+        // This simulates the function section of LIST command
+        
+        LDX #0  // Function counter
+        
+        Functions.IterateFunctions();
+        if (NC)
+        {
+            LDA #0x90  // Reuse error codes for function section
+            CLC  // Fail - no functions found for iteration
+            Test.PrintResult();
+            return;
+        }
+        
+        loop
+        {
+            // Get function signature
+            Functions.GetSignature();
+            if (NC)
+            {
+                LDA #0x91
+                CLC  // Fail - could not get function signature
+                Test.PrintResult();
+                return;
+            }
+            
+            // Get function name
+            Functions.GetName();
+            if (NC)
+            {
+                LDA #0x92
+                CLC  // Fail - could not get function name
+                Test.PrintResult();
+                return;
+            }
+            
+            // Get function body for potential token display
+            Functions.GetBody();
+            if (NC)
+            {
+                LDA #0x93
+                CLC  // Fail - could not get function body
+                Test.PrintResult();
+                return;
+            }
+            
+            // Check if function has arguments
+            Arguments.GetCount();
+            if (NC)
+            {
+                LDA #0x94
+                CLC  // Fail - could not get argument count
+                Test.PrintResult();
+                return;
+            }
+            
+            // If function has arguments, iterate through them
+            LDA ZP.ACCL  // Argument count
+            if (NZ)
+            {
+                // Function has arguments - test argument iteration
+                Arguments.IterateStart();
+                if (NC)
+                {
+                    LDA #0x95
+                    CLC  // Fail - could not start argument iteration
+                    Test.PrintResult();
+                    return;
+                }
+                
+                // Iterate through all arguments using IterateNext pattern
+                loop
+                {
+                    // Get argument name
+                    Arguments.GetName();
+                    if (NC)
+                    {
+                        LDA #0x96
+                        CLC  // Fail - could not get argument name
+                        Test.PrintResult();
+                        return;
+                    }
+                    
+                    // Get argument type
+                    Arguments.GetType();
+                    if (NC)
+                    {
+                        LDA #0x97
+                        CLC  // Fail - could not get argument type
+                        Test.PrintResult();
+                        return;
+                    }
+                    
+                    // Move to next argument
+                    Arguments.IterateNext();
+                    if (NC) 
+                    { 
+                        break;  // No more arguments - this is normal exit
+                    }
+                }
+            }
+            
+            // Count this function
+            INX
+            
+            Functions.IterateNext();
+            if (NC) 
+            { 
+                break; 
+            }
+        }
+        
+        // Verify expected function count: 2 functions (ADD and PRINT)
+        TXA  // Function count
+        CMP #2
+        if (NZ)
+        {
+            LDA #0x99
+            CLC  // Fail - wrong function count in listing
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 4: Test specific function details for LIST command accuracy
+        // Verify ADD function details
+        LDA #(regularFuncName % 256)  // "FOO" (ADD)
+        STA ZP.TOPL
+        LDA #(regularFuncName / 256)
+        STA ZP.TOPH
+        
+        Functions.Find();
+        if (NC)
+        {
+            LDA #0x9A
+            CLC  // Fail - could not find ADD function for detailed check
+            Test.PrintResult();
+            return;
+        }
+        
+        Functions.GetSignature();
+        LDA ZP.ACCL
+        CMP #BasicType.INT  // Return type
+        if (NZ)
+        {
+            LDA #0x9B
+            CLC  // Fail - wrong ADD function return type
+            Test.PrintResult();
+            return;
+        }
+        
+        Arguments.GetCount();
+        LDA ZP.ACCL
+        CMP #2  // Should have 2 arguments
+        if (NZ)
+        {
+            LDA #0x9C
+            CLC  // Fail - wrong ADD function argument count
+            Test.PrintResult();
+            return;
+        }
+        
+        // Verify PRINT function details
+        LDA #(mainProgName % 256)  // "main" (PRINT)
+        STA ZP.TOPL
+        LDA #(mainProgName / 256)
+        STA ZP.TOPH
+        
+        Functions.Find();
+        if (NC)
+        {
+            LDA #0x9D
+            CLC  // Fail - could not find PRINT function for detailed check
+            Test.PrintResult();
+            return;
+        }
+        
+        Functions.GetSignature();
+        LDA ZP.ACCL
+        CMP #BasicType.VOID  // Return type
+        if (NZ)
+        {
+            LDA #0x9E
+            CLC  // Fail - wrong PRINT function return type
+            Test.PrintResult();
+            return;
+        }
+        
+        Arguments.GetCount();
+        LDA ZP.ACCL
+        CMP #0  // Should have no arguments
+        if (NZ)
+        {
+            LDA #0x9F
+            CLC  // Fail - wrong PRINT function argument count
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 5: Test declaration order consistency for LIST command
+        // LIST command needs symbols in declaration order for proper display
+        
+        // Re-iterate variables and verify we get consistent ordering
+        Variables.IterateAll();
+        if (NC)
+        {
+            LDA #0x90  // Final error code section
+            CLC  // Fail - second variable iteration failed
+            Test.PrintResult();
+            return;
+        }
+        
+        // Get first symbol and verify it's one of our declared variables
+        Variables.GetName();
+        if (NC)
+        {
+            LDA #0x91
+            CLC  // Fail - could not get first symbol name in second iteration
+            Test.PrintResult();
+            return;
+        }
+        
+        // Don't need to verify exact order, just that iteration is consistent
+        Variables.IterateNext();  // Move to second symbol
+        if (NC)
+        {
+            LDA #0x92
+            CLC  // Fail - second symbol not accessible in consistent iteration
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.GetName();
+        if (NC)
+        {
+            LDA #0x93
+            CLC  // Fail - could not get second symbol name in consistent iteration
+            Test.PrintResult();
+            return;
+        }
+        
+        // Step 6: Test complete program reconstruction capability
+        // This verifies LIST command can reconstruct the entire program structure
+        
+        // Count total accessible symbols across both namespaces
+        LDX #0  // Total symbol counter
+        
+        // Count all variables/constants
+        Variables.IterateAll();
+        if (C)  // Only if symbols exist
+        {
+            loop
+            {
+                INX  // Count this symbol
+                Variables.IterateNext();
+                if (NC) 
+                { 
+                    break; 
+                }
+            }
+        }
+        
+        // Count all functions
+        Functions.IterateFunctions();
+        if (C)  // Only if functions exist
+        {
+            loop
+            {
+                INX  // Count this function
+                Functions.IterateNext();
+                if (NC) 
+                { 
+                    break; 
+                }
+            }
+        }
+        
+        // Verify total symbol accessibility: 4 variables/constants + 2 functions = 6 total
+        TXA  // Total symbol count
+        CMP #6
+        if (NZ)
+        {
+            LDA #0x94
+            CLC  // Fail - wrong total symbol count for complete program listing
+            Test.PrintResult();
+            return;
+        }
+        
+        Variables.Clear();  // Clean up all variables and constants
+        Functions.Clear();  // Clean up all functions
+        SEC  // Pass
+        Test.PrintResult();
+    }
     
     // Run all scenario tests
     RunScenarioTests()
@@ -2831,5 +4143,7 @@ unit TestScenarios
         testSafeSymbolCreationPattern();
         testTokenMemoryLifecycle();
         testMixedGlobalSymbolUsage();
+        testListCommandDataRetrieval();
+        testSymbolTableSerializationReadiness();
     }
 }

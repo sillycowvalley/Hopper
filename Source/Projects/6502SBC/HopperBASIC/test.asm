@@ -261,7 +261,7 @@ program Test
         STA ZP.TOPH
         PrintSectionHeader();
         TestVariables.RunVariablesTests();
-        
+ 
         // Constants layer tests
         LDA #(constantsSection % 256)
         STA ZP.TOPL

@@ -1143,7 +1143,7 @@ unit Tools
             STA ZP.IDXH
             
             INX
-            CPX #8  // Limit to 8 blocks to avoid infinite loops
+            CPX #20  // Limit to 8 blocks to avoid infinite loops
             if (Z) 
             { 
                 LDA #(debugEllipsis % 256)
