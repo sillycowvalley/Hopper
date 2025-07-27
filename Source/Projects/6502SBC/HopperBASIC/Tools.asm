@@ -1304,8 +1304,9 @@ unit Tools
 
     // Debug strings for BASIC buffers
     const string basicBuffersHeader = "\n== BASIC BUFFERS ==\n";
-    const string basicInputInfo = "InLen:";
+    const string basicInputInfo = "InBufLen:";
     const string basicTokPosInfo = " TokPos:";
+    const string basicTokLenInfo = " TokBufLen:";
     const string basicCurTokInfo = " CurTok:";
     const string basicErrorInfo = " Err:";
     const string basicCurrentCharInfo = " Char:";
@@ -1348,6 +1349,17 @@ unit Tools
         LDA ZP.TokenizerPosL     // 0x33
         Serial.HexOut();
         
+        LDA #(basicTokLenInfo % 256)
+        STA ZP.IDXL
+        LDA #(basicTokLenInfo / 256)
+        STA ZP.IDXH
+        PrintString();
+        LDA ZP.TokenBufferLengthH
+        Serial.HexOut();
+        LDA ZP.TokenBufferLengthL
+        Serial.HexOut();
+        
+        
         LDA #(basicCurTokInfo % 256)
         STA ZP.IDXL
         LDA #(basicCurTokInfo / 256)
@@ -1378,32 +1390,9 @@ unit Tools
         if (C)  // TokPos < InputLength
         {
             LDA Address.BasicInputBuffer, X
-            Serial.HexOut();
-            LDA #'('
             Serial.WriteChar();
             LDA Address.BasicInputBuffer, X
-            // Check if printable
-            CMP #32
-            if (C)
-            {
-                CMP #127
-                if (NC)
-                {
-                    Serial.WriteChar();
-                }
-                else
-                {
-                    LDA #'?'
-                    Serial.WriteChar();
-                }
-            }
-            else
-            {
-                LDA #'?'
-                Serial.WriteChar();
-            }
-            LDA #')'
-            Serial.WriteChar();
+            Serial.WriteChar(); // writes [xx] if not printable
         }
         else
         {
