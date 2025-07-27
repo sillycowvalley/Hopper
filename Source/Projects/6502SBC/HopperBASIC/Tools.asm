@@ -744,7 +744,7 @@ unit Tools
     // Dump heap with state preservation for debugging
     // Input: None
     // Output: Heap contents printed to serial
-    // Preserves: Everything
+    // Modifies: ZP.M* scratch space (internal to heap analysis operations)
     DumpHeap()
     {
         PHP  // Save flags
@@ -787,7 +787,7 @@ unit Tools
     // Internal heap dump implementation
     // Input: None
     // Output: Heap contents printed to serial
-    // Modifies: ZP.M0-M3, ZP.U0, ZP.U2, ZP.U3, ZP.IDX, ZP.IDY, A, X, Y
+    // Modifies: ZP.M0-M3, ZP.U0, ZP.U2, ZP.U3, ZP.IDX, ZP.IDY, A, X, Y (internal operations)
     dumpHeap()
     {
         PHA
@@ -1223,7 +1223,7 @@ unit Tools
     // Dump a 256-byte page in hex+ASCII format for debugging
     // Input: A = page number (high byte of address)
     // Output: Page contents printed to serial
-    // Modifies: ZP.M0, ZP.M1
+    // Modifies: ZP.M0, ZP.M1 (internal operations)
     DumpPage()
     {
         PHA
@@ -1363,7 +1363,7 @@ unit Tools
     // Dump the BASIC input and tokenizer buffers for debugging
     // Input: None
     // Output: Buffer contents printed to serial
-    // Modifies: ZP.M0, ZP.M1, ZP.IDX, A, X, Y
+    // Modifies: ZP.M0, ZP.M1, ZP.IDX, A, X, Y (internal operations)
     DumpBasicBuffers()
     {
         PHP  // Save flags

@@ -3,6 +3,13 @@ unit Table
     uses "/Source/Runtime/6502/ZeroPage"
     uses "/Source/Runtime/6502/Memory"
     
+    // API Status: Clean
+    // All public methods preserve caller state except for documented outputs
+    // Uses ZP.L* scratch space for legitimate Table operations (does not leak beyond method boundaries)
+    
+    // Legitimate scratch space for Table operations:
+    // ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX - Internal linked list traversal
+    
     // Generic linked list operations using ZP.Lxx workspace
     // Lists are represented by a pointer stored at a ZP address
     // Empty list = 0x0000
@@ -78,7 +85,7 @@ unit Table
     // Add new node to end of list
     // Input: X = ZP address of list head pointer, ZP.ACC = node size (16-bit)
     // Output: ZP.IDX = new node address, C set if successful, NC if allocation failed
-    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT
+    // Modifies: ZP.L* scratch space (internal to Table operations)
     Add()
     {
         PHA
@@ -87,10 +94,10 @@ unit Table
         
         loop // start of single exit block
         {
-            // Save inputs in ZP.Lxx slots
+            // Save inputs in ZP.Lxx slots (legitimate scratch space)
             STX ZP.LHEADX           // ZP address of list head pointer
             
-            Memory.Allocate();      // Returns address in ZP.IDX, munts ZP.IDY, ZP.TOP, ZP.NEXT
+            Memory.Allocate();      // Clean API - preserves everything except ZP.IDX, flags
             
             LDA ZP.IDXL
             ORA ZP.IDXH
@@ -167,7 +174,7 @@ unit Table
     // Delete specific node from list
     // Input: X = ZP address of list head pointer, ZP.IDX = node to delete
     // Output: C set if successful, NC if node not found
-    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX
+    // Modifies: ZP.L* scratch space (internal to Table operations)
     Delete()
     {
         PHA
@@ -239,7 +246,7 @@ unit Table
             PLA
             STA ZP.IDXL
             
-            Memory.Free(); // munts ZP.IDY, ZP.TOP, ZP.NEXT
+            Memory.Free(); // Clean API - preserves everything except flags
             
             // Push dummy values back for consistent exit
             LDA #0
@@ -310,7 +317,7 @@ unit Table
                 PLA
                 STA ZP.IDXL
                 
-                Memory.Free(); // munts ZP.IDY, ZP.TOP, ZP.NEXT
+                Memory.Free(); // Clean API - preserves everything except flags
                 
                 // Push dummy values back for consistent exit
                 LDA #0
@@ -359,7 +366,7 @@ unit Table
     // Clear entire list (free all nodes)
     // Input: X = ZP address of list head pointer
     // Output: C set (always succeeds), list head set to 0x0000
-    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX
+    // Modifies: ZP.L* scratch space (internal to Table operations)
     Clear()
     {
         PHA

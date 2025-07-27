@@ -157,10 +157,14 @@ unit Memory
 #ifdef HOPPER_BASIC
     // don't use the stack versions by mistake
     
+    // API Status: Clean
+    // All public methods preserve caller state except for documented outputs
+    // Uses ZP.M* scratch space for memory management (internal operations only)
+
     // Allocate memory block
     // Input: ZP.ACC = requested size (16-bit) 
     // Output: ZP.IDX = allocated address (0x0000 if allocation failed)
-    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.M0-M13
+    // Modifies: ZP.M* scratch space (internal to memory management operations)
     Allocate()
     {
         PHP  // Push processor status (including carry flag)
@@ -198,8 +202,8 @@ unit Memory
     
     // Free memory block
     // Input: ZP.IDX = address to free (must not be 0x0000)
-    // Output: None
-    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.M0-M15
+    // Output: C set (success)
+    // Modifies: ZP.M* scratch space (internal to memory management operations)
     Free()
     {   
         PHP  // Push processor status (including carry flag)
