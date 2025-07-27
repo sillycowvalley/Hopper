@@ -524,39 +524,56 @@ unit Statement
             }
             
             // type check ZP.TOPT against X, value is in ZP.NEXT
-            LDA ZP.TOPL
-            PHA
-            LDA ZP.TOPH
-            PHA
-            
-            // left value and type
-            LDA ZP.TOPT
-            STA ZP.NEXTT
-            
-            // right 'value' and variable type
-            STZ ZP.TOPL
-            STZ ZP.TOPH
-            STX ZP.TOPT
-            switch (X)
+            CPX # #BasicType.BIT
+            if (Z)
             {
-                case Tokens.BIT:
+                // special case for BIT
+                LDA ZP.NEXTH
+                CMP #0
+                if (NZ)
                 {
-                    LDA #0  // Equality comparison mode
+                    CLC    
                 }
-                default:
+                else
                 {
-                    LDA #1  // Arithmetic operation mode
+                    LDA ZP.NEXTL
+                    CMP # 0
+                    if (NZ)
+                    {
+                        CMP # 1
+                        if (NZ)
+                        {
+                            CLC
+                        }
+                    } 
                 }
             }
-            Instructions.CheckTypeCompatibility();
-            if (NZ)
+            else
             {
-                CLC
+                LDA ZP.TOPL
+                PHA
+                LDA ZP.TOPH
+                PHA
+                
+                // left value and type
+                LDA ZP.TOPT
+                STA ZP.NEXTT
+                
+                // right 'value' and variable type
+                STZ ZP.TOPL
+                STZ ZP.TOPH
+                STX ZP.TOPT
+                LDA #1  // Arithmetic operation mode
+                Instructions.CheckTypeCompatibility();
+                if (NZ)
+                {
+                    CLC
+                }
+                PLA
+                STA ZP.TOPH
+                PLA 
+                STA ZP.TOPL
             }
-            PLA
-            STA ZP.TOPH
-            PLA 
-            STA ZP.TOPL
             
             if (NC)
             {
