@@ -9,6 +9,16 @@ unit Statement
     
     uses "Variables"
     
+    // Private Statement layer storage - BasicProcessBuffer2 (32 bytes at 0x09C0-0x09DF)
+    const uint stmtNamePtr     = Address.BasicProcessBuffer2;      // 0x09C0: 2 bytes - identifier name pointer
+    const uint stmtValue       = Address.BasicProcessBuffer2 + 2;  // 0x09C2: 2 bytes - initial/evaluated value
+    const uint stmtTokensPtr   = Address.BasicProcessBuffer2 + 4;  // 0x09C4: 2 bytes - tokens pointer  
+    const uint stmtTypeInfo    = Address.BasicProcessBuffer2 + 6;  // 0x09C6: 2 bytes - type information
+    const uint stmtTokPos      = Address.BasicProcessBuffer2 + 8;  // 0x09C8: 2 bytes - saved tokenizer position
+    const uint stmtTokLen      = Address.BasicProcessBuffer2 + 10; // 0x09CA: 2 bytes - token stream length
+    // 20 bytes available for future statement needs (0x09CC-0x09DF)
+
+    
     // Execute a statement starting from current token position
     // Assumes ZP.CurrentToken contains the first token of the statement
     // Returns C if successful, NC if error (error stored in ZP.LastError)

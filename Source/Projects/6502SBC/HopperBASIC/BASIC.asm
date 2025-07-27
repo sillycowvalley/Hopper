@@ -4,16 +4,7 @@ program HopperBASIC
     
     #define CPU_65C02S
     #define HOPPER_BASIC
-    
-#if defined(DEBUG) 
-    #define ROM_16K
-#endif
-#if !defined(ROM_8K) && !defined(ROM_8K) && !defined(ROM_16K) && !defined(ROM_32K)
-    #define ROM_8K
-#endif
-
-    
-    
+    #define ROM_32K
     
     uses "/Source/Runtime/6502/Serial"
     uses "/Source/Runtime/6502/ZeroPage"
