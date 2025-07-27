@@ -417,20 +417,48 @@ unit Statement
                 {
                     case Tokens.EQUALS:
                     {
+                        // Save tokenizer position before expression
+                        LDA ZP.TokenizerPosL
+                        PHA
+                        LDA ZP.TokenizerPosH
+                        PHA
+                        
                         // Get next token (start of expression)
                         Tokenizer.NextToken();
                         Messages.CheckError();
+                        if (C)
+                        {
+                            Expression.Evaluate();
+                            Messages.CheckError();
+                        }
+                        
+                        // Restore tokenizer position before expression
+                        PLA
+                        STA ZP.FSOURCEADDRESSH
+                        PLA
+                        STA ZP.FSOURCEADDRESSL
+                        
                         if (NC) { break; } // error exit
                         
-                        Expression.Evaluate();
-                        Messages.CheckError();
+                        // subtract current tokenizer position
+                        SEC
+                        LDA ZP.TokenizerPosL
+                        SBC ZP.FSOURCEADDRESSL
+                        STA ZP.FLENGTHL  // Length low
+                        LDA ZP.TokenizerPosH
+                        SBC ZP.FSOURCEADDRESSH
+                        STA ZP.FLENGTHH  // Length high
+                        createTokenStream();
                         if (NC) { break; } // error exit
+                        
+                        // Set tokens pointer to the new stream
+                        LDA ZP.FDESTINATIONADDRESSL
+                        STA ZP.IDYL
+                        LDA ZP.FDESTINATIONADDRESSH
+                        STA ZP.IDYH
                      
-                        // initial value   
-                        LDA ZP.TOPL
-                        STA ZP.NEXTL
-                        LDA ZP.TOPH
-                        STA ZP.NEXTH
+                        // Pop the result into NEXT
+                        Stacks.PopNext();  // Result in ZP.NEXT, type in ZP.NEXTT
                         
                         expectEOF();
                         if (NC) { break; }
@@ -495,18 +523,56 @@ unit Statement
                 }
             }
             
+            // type check ZP.TOPT against X, value is in ZP.NEXT
+            LDA ZP.TOPL
+            PHA
+            LDA ZP.TOPH
+            PHA
+            
+            // left value and type
+            LDA ZP.TOPT
+            STA ZP.NEXTT
+            
+            // right 'value' and variable type
+            STZ ZP.TOPL
+            STZ ZP.TOPH
+            STX ZP.TOPT
+            switch (X)
+            {
+                case Tokens.BIT:
+                {
+                    LDA #0  // Equality comparison mode
+                }
+                default:
+                {
+                    LDA #1  // Arithmetic operation mode
+                }
+            }
+            Instructions.CheckTypeCompatibility();
+            if (NZ)
+            {
+                CLC
+            }
+            PLA
+            STA ZP.TOPH
+            PLA 
+            STA ZP.TOPL
+            
+            if (NC)
+            {
+                LDA #(Messages.TypeMismatch % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.TypeMismatch / 256)
+                STA ZP.LastErrorH
+                break;
+            }
+            
             // Pack symbolType|dataType: VARIABLE(1) in high nibble, dataType in low nibble
             TXA  // dataType in A
             ORA #(SymbolType.VARIABLE << 4)
             STA ZP.ACCL
             STZ ZP.ACCH
     
-#ifdef DEBUG
-            Tools.TOut();  // Show TOP (name pointer)
-            Tools.AOut();  // Show ACC (type)
-            Tools.NOut();  // Show NEXT (value)
-            Tools.YOut();  // Show IDY (tokens)
-#endif
             // Call Variables.Declare
             // Input: ZP.TOP = name pointer, ZP.ACC = symbolType|dataType (packed),
             //        ZP.NEXT = initial value (16-bit), ZP.IDY = tokens pointer (16-bit)
@@ -555,6 +621,83 @@ unit Statement
             STA ZP.LastErrorH
         }
         
+        PLA
+    }
+    
+    // source in FSOURCEADDRESS, length in FLENGTH
+    // resulting stream in FDESTINATIONADDRESS
+    // munts FSOURCEADDRESS
+    createTokenStream()
+    {
+        PHA
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
+        loop
+        {
+            // Allocate memory for token stream
+            LDA ZP.FLENGTHL
+            STA ZP.ACCL
+            LDA ZP.FLENGTHH
+            STA ZP.ACCH
+            Memory.Allocate();  // Returns address in ZP.IDX
+            
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z)
+            {
+                // Allocation failed
+                LDA #(Messages.OutOfMemory % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.OutOfMemory / 256)
+                STA ZP.LastErrorH
+                CLC
+                break;
+            }
+            
+            // Set up copy: source = BasicTokenizerBuffer + saved position
+            CLC
+            LDA # ( Address.BasicTokenizerBuffer & 0xFF)
+            ADC ZP.FSOURCEADDRESSL
+            STA ZP.FSOURCEADDRESSL
+            LDA # ( Address.BasicTokenizerBuffer >> 8)
+            ADC ZP.FSOURCEADDRESSH
+            STA ZP.FSOURCEADDRESSH
+            
+            // Destination = allocated memory
+            LDA ZP.IDXL
+            STA ZP.FDESTINATIONADDRESSL
+            LDA ZP.IDXH
+            STA ZP.FDESTINATIONADDRESSH
+            
+            // Copy the token stream
+            Tools.CopyBytes();
+            
+            // Destination = allocated memory
+            LDA ZP.IDXL
+            STA ZP.FDESTINATIONADDRESSL
+            LDA ZP.IDXH
+            STA ZP.FDESTINATIONADDRESSH
+            
+            SEC
+            
+            break;
+        } // loop    
+        
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        PLA
+        STA ZP.IDXH    
+        PLA
+        STA ZP.IDXL
         PLA
     }
 }

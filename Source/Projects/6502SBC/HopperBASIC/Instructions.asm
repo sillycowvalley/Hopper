@@ -17,7 +17,7 @@ unit Instructions
     // Output: Z set if compatible, NZ set if TYPE MISMATCH
     //         ZP.NEXTT = result type (updated based on operation mode and type promotion)
     // Uses: ZP.ACCL for temporary storage
-    checkTypeCompatibility()
+    CheckTypeCompatibility()
     {
         STA ZP.ACCL  // Save operation mode
         
@@ -265,7 +265,7 @@ unit Instructions
     subShared()
     {
         LDA #1  // Arithmetic operation
-        checkTypeCompatibility();
+        CheckTypeCompatibility();
         
         if (NZ)  // Type mismatch
         {
@@ -294,7 +294,7 @@ unit Instructions
         Stacks.PopTopNext();
         
         LDA #1  // Arithmetic operation
-        checkTypeCompatibility();
+        CheckTypeCompatibility();
         
         if (NZ)  // Type mismatch
         {
@@ -350,7 +350,7 @@ unit Instructions
         Stacks.PopTopNext();
         
         LDA #1  // Arithmetic operation
-        checkTypeCompatibility();
+        CheckTypeCompatibility();
         
         if (NZ)  // Type mismatch
         {
@@ -392,7 +392,7 @@ unit Instructions
         Stacks.PopTopNext();
         
         LDA #1  // Arithmetic operation
-        checkTypeCompatibility();
+        CheckTypeCompatibility();
         
         if (NZ)  // Type mismatch
         {
@@ -434,7 +434,7 @@ unit Instructions
         Stacks.PopTopNext();
         
         LDA #1  // Arithmetic operation
-        checkTypeCompatibility();
+        CheckTypeCompatibility();
         
         if (NZ)  // Type mismatch
         {
@@ -465,7 +465,7 @@ unit Instructions
         Stacks.PopTopNext();  // Gets both values and their types
         
         LDA #0  // Equality comparison operation
-        checkTypeCompatibility();
+        CheckTypeCompatibility();
         
         if (NZ)  // Type mismatch
         {
@@ -497,7 +497,7 @@ unit Instructions
         Stacks.PopTopNext();
         
         LDA #0  // Equality comparison operation
-        checkTypeCompatibility();
+        CheckTypeCompatibility();
         
         if (NZ)  // Type mismatch
         {
@@ -529,7 +529,7 @@ unit Instructions
         Stacks.PopTopNext();
         
         LDA #3  // Ordering comparison operation
-        checkTypeCompatibility();
+        CheckTypeCompatibility();
         
         if (NZ)  // Type mismatch
         {
@@ -595,7 +595,7 @@ unit Instructions
         Stacks.PopTopNext();
         
         LDA #3  // Ordering comparison operation
-        checkTypeCompatibility();
+        CheckTypeCompatibility();
         
         if (NZ)  // Type mismatch
         {
@@ -664,7 +664,7 @@ unit Instructions
         Stacks.PopTopNext();
         
         LDA #3  // Ordering comparison operation
-        checkTypeCompatibility();
+        CheckTypeCompatibility();
         
         if (NZ)  // Type mismatch
         {
@@ -726,7 +726,7 @@ unit Instructions
         Stacks.PopTopNext();
         
         LDA #3  // Ordering comparison operation
-        checkTypeCompatibility();
+        CheckTypeCompatibility();
         
         if (NZ)  // Type mismatch
         {
@@ -786,7 +786,7 @@ unit Instructions
         Stacks.PopTopNext();
         
         LDA #2  // Bitwise/logical operation
-        checkTypeCompatibility();
+        CheckTypeCompatibility();
         
         if (NZ)  // Type mismatch
         {
@@ -815,7 +815,7 @@ unit Instructions
         Stacks.PopTopNext();
         
         LDA #2  // Bitwise/logical operation
-        checkTypeCompatibility();
+        CheckTypeCompatibility();
         
         if (NZ)  // Type mismatch
         {
