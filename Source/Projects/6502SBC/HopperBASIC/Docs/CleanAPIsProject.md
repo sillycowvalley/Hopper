@@ -17,6 +17,47 @@ Convert HopperBASIC codebase to "Clean API" standards where:
 
 ---
 
+## Clean API Documentation Standards
+
+### File Header
+All converted files must include:
+```hopper
+// API Status: Clean
+// All public methods preserve caller state except for documented outputs
+// No accidental side effects or register corruption
+```
+
+### Method Documentation
+Use this format for all public methods:
+```hopper
+// Method description
+// Input: Parameter requirements
+// Output: What the method returns/produces
+// Modifies: Only list if method modifies something beyond its output
+```
+
+### Documentation Rules
+1. **Default assumption**: Methods preserve everything and modify nothing
+2. **Only document exceptions**: Include "Modifies:" only when method changes state beyond its intended output
+3. **Use "Modifies" not "Munts"**: Professional terminology
+4. **Be specific**: "Modifies: ZP.LastError (cleared if error found)" not "Modifies: error state"
+
+### Examples
+```hopper
+// Good - no redundant documentation
+PrintString()  // Preserves everything, so no extra docs needed
+
+// Good - documents the exception
+// Modifies: ZP.LastError (cleared if error was printed)
+CheckAndPrintError()
+
+// Good - documents expected side effect
+// Modifies: Processor flags only
+CheckError()
+```
+
+---
+
 ## Complete Call Tree Analysis
 
 ### Level 0: Entry Point
@@ -280,21 +321,24 @@ Instructions.CheckRHSTypeCompatibility()
 
 ## Leaf Node Identification
 
-### Pure Leaf Methods (No Dependencies)
+### Completed: Clean API ✅
 ```
 Messages.ClearError()              ✅ CLEAN
 Messages.CheckError()              ✅ CLEAN  
 Messages.CheckAndPrintError()      ✅ CLEAN
 Messages.PrintOK()                 ✅ CLEAN
+```
 
-Tokenizer.Initialize()             ✅ CLEAN
-Tokenizer.compareTokenizerPosToLength()  ✅ CLEAN
-Tokenizer.getCharType()            ✅ CLEAN
-Console.cmdBye()                   ✅ CLEAN (NOP)
-Objects.Initialize()               ✅ CLEAN
+### Pure Leaf Methods (No Dependencies)
+```
+Tokenizer.Initialize()             ❌ NEEDS REVIEW
+Tokenizer.compareTokenizerPosToLength()  ❌ NEEDS REVIEW
+Tokenizer.getCharType()            ❌ NEEDS REVIEW
+Console.cmdBye()                   ❌ NEEDS REVIEW (NOP)
+Objects.Initialize()               ❌ NEEDS REVIEW
 
-Instructions.CheckTypeCompatibility()     ✅ CLEAN
-Instructions.doSigns()                    ✅ CLEAN
+Instructions.CheckTypeCompatibility()     ❌ NEEDS REVIEW
+Instructions.doSigns()                    ❌ NEEDS REVIEW
 
 Table.GetFirst()                   ❌ NEEDS REVIEW
 Table.GetNext()                    ❌ NEEDS REVIEW
@@ -302,16 +346,16 @@ Table.GetNext()                    ❌ NEEDS REVIEW
 
 ### Utility Leaf Methods (Need Clean API Treatment)
 ```
-Tokenizer.incrementTokenizerPos()        ❌ MUNTS: Nothing (only affects intended output)
-Tokenizer.incrementTokenBufferLength()   ❌ MUNTS: Nothing (only affects intended output) 
-Tokenizer.setTokenizerPointer()          ❌ MUNTS: ZP.IDX (but that's the output)
-Tokenizer.setTokenBufferEndPointer()     ❌ MUNTS: ZP.IDX (but that's the output)
+Tokenizer.incrementTokenizerPos()        ❌ MODIFIES: Nothing (only affects intended output)
+Tokenizer.incrementTokenBufferLength()   ❌ MODIFIES: Nothing (only affects intended output) 
+Tokenizer.setTokenizerPointer()          ❌ MODIFIES: ZP.IDX (but that's the output)
+Tokenizer.setTokenBufferEndPointer()     ❌ MODIFIES: ZP.IDX (but that's the output)
 
-Tools.StringLength()                     ❌ MUNTS: ZP.TOP (accidental side effect)
-Tools.StringCompare()                    ❌ MUNTS: A, Y (should preserve)
-Tools.CopyBytes()                        ❌ MUNTS: Multiple (should preserve registers)
-Tools.PrintString()                      ❌ MUNTS: A, Y (should preserve)
-Tools.PrintDecimalWord()                 ❌ MUNTS: Multiple (should preserve registers)
+Tools.StringLength()                     ❌ MODIFIES: ZP.TOP (accidental side effect)
+Tools.StringCompare()                    ❌ MODIFIES: A, Y (should preserve)
+Tools.CopyBytes()                        ❌ MODIFIES: Multiple (should preserve registers)
+Tools.PrintString()                      ❌ MODIFIES: A, Y (should preserve)
+Tools.PrintDecimalWord()                 ❌ MODIFIES: Multiple (should preserve registers)
 ```
 
 ### Complex Leaf Methods (Need Scratch Space Analysis)
@@ -333,12 +377,13 @@ Tokenizer.skipInlineString()        ❌ USES: Multiple ZP locations
 ### Phase 1: Pure Utility Leaf Methods (High Impact, Low Risk)
 **Target Files:** `Tools.asm`, simple `Tokenizer.asm` methods
 
-1. **Tools.StringLength()** - Convert to preserve ZP.TOP, use stack instead
-2. **Tools.StringCompare()** - Preserve A, Y registers  
-3. **Tools.PrintString()** - Preserve A, Y registers
-4. **Tools.PrintDecimalWord()** - Preserve registers, use stack for scratch
-5. **Tools.CopyBytes()** - Preserve registers
-6. **Tokenizer increment methods** - Add register preservation if needed
+1. ✅ **Messages.asm** - COMPLETED with clean documentation standards
+2. **Tools.StringLength()** - Convert to preserve ZP.TOP, use stack instead
+3. **Tools.StringCompare()** - Preserve A, Y registers  
+4. **Tools.PrintString()** - Preserve A, Y registers
+5. **Tools.PrintDecimalWord()** - Preserve registers, use stack for scratch
+6. **Tools.CopyBytes()** - Preserve registers
+7. **Tokenizer increment methods** - Add register preservation if needed
 
 **Success Criteria:** All utility functions preserve caller state
 **File Status:** Add `// API Status: Clean` comments
@@ -433,9 +478,9 @@ When converting a file to Clean API standards:
 - [ ] Verify scratch space scope is appropriate
 
 ### 4. Update Documentation
-- [ ] Add "API Status: Clean" comment block
-- [ ] Document any scratch space used
-- [ ] Update method contracts in comments
+- [ ] Add "API Status: Clean" comment block at file level
+- [ ] Use clean documentation format for all public methods
+- [ ] Follow "Modifies:" documentation rules
 - [ ] Note any preserved exceptions
 
 ### 5. Test Integration
