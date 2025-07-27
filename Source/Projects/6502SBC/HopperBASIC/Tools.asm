@@ -1,5 +1,8 @@
 unit Tools
 {
+    // API Status: Clean
+    // All public methods preserve caller state except for documented outputs
+    // No accidental side effects or register corruption
  
     uses "BasicTypes"
 
@@ -106,9 +109,11 @@ unit Tools
     // Print null-terminated string to serial output
     // Input: ZP.IDX = pointer to null-terminated string
     // Output: String printed to serial
-    // Munts: A, Y
     PrintString()
     {
+        PHA
+        PHY
+        
         LDY #0              // Initialize string index
         
         loop                // Print each character until null terminator
@@ -119,21 +124,28 @@ unit Tools
             Serial.WriteChar(); // Print the character
             INY             // Move to next character
         }
+        
+        PLY
+        PLA
     }
     
     // Print 16-bit decimal number with no leading zeros
     // Input: ZP.TOP = 16-bit number to print (0-65535)
     //        ZP.TOPT = type (for signed/unsigned determination)
     // Output: Decimal number printed to serial
-    // Munts: ZP.TOP, ZP.ACC, A, X, Y
     PrintDecimalWord()
     {
         PHA
         PHX
         PHY
         
+        // Save ZP.ACC since we'll use it as working space
         LDA ZP.ACCL
         PHA
+        LDA ZP.ACCH
+        PHA
+        
+        // Save ZP.TOP since we'll modify it during conversion
         LDA ZP.TOPL
         PHA
         LDA ZP.TOPH
@@ -221,10 +233,15 @@ unit Tools
             Serial.WriteChar();
         }
         
+        // Restore ZP.TOP
         PLA
         STA ZP.TOPH
         PLA
         STA ZP.TOPL
+        
+        // Restore ZP.ACC
+        PLA
+        STA ZP.ACCH
         PLA
         STA ZP.ACCL
         
@@ -247,12 +264,25 @@ unit Tools
     //        ZP.FDESTINATIONADDRESS = destination pointer  
     //        ZP.FLENGTH = number of bytes to copy (16-bit)
     // Output: Data copied from source to destination
-    // Munts: ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, ZP.FLENGTH, A, X, Y
     CopyBytes()
     {
         PHA
         PHX
         PHY
+        
+        // Save the input parameters that we'll modify during the copy
+        LDA ZP.FSOURCEADDRESSL
+        PHA
+        LDA ZP.FSOURCEADDRESSH
+        PHA
+        LDA ZP.FDESTINATIONADDRESSL
+        PHA
+        LDA ZP.FDESTINATIONADDRESSH
+        PHA
+        LDA ZP.FLENGTHL
+        PHA
+        LDA ZP.FLENGTHH
+        PHA
         
         loop
         {
@@ -289,6 +319,20 @@ unit Tools
             DEC ZP.FLENGTHL
         }
         
+        // Restore the input parameters in reverse order
+        PLA
+        STA ZP.FLENGTHH
+        PLA
+        STA ZP.FLENGTHL
+        PLA
+        STA ZP.FDESTINATIONADDRESSH
+        PLA
+        STA ZP.FDESTINATIONADDRESSL
+        PLA
+        STA ZP.FSOURCEADDRESSH
+        PLA
+        STA ZP.FSOURCEADDRESSL
+        
         PLY
         PLX
         PLA
@@ -297,11 +341,16 @@ unit Tools
     // Get string length
     // Input: X = string pointer low byte, Y = string pointer high byte
     // Output: A = string length (not including null terminator)
-    // Munts: ZP.TOP
     StringLength()
     {
         PHX
         PHY
+        
+        // Use stack to preserve caller's ZP.TOP instead of corrupting it
+        LDA ZP.TOPL
+        PHA
+        LDA ZP.TOPH  
+        PHA
         
         STX ZP.TOPL
         STY ZP.TOPH
@@ -316,6 +365,12 @@ unit Tools
         
         TYA  // Length in A
         
+        // Restore caller's ZP.TOP
+        PLA
+        STA ZP.TOPH
+        PLA
+        STA ZP.TOPL
+        
         PLY
         PLX
     }
@@ -323,7 +378,6 @@ unit Tools
     // Compare two strings
     // Input: ZP.TOP = first string pointer, ZP.NEXT = second string pointer
     // Output: C set if strings match, NC if different
-    // Munts: A, Y
     StringCompare()
     {
         PHA
@@ -733,7 +787,7 @@ unit Tools
     // Internal heap dump implementation
     // Input: None
     // Output: Heap contents printed to serial
-    // Munts: ZP.M0-M3, ZP.U0, ZP.U2, ZP.U3, ZP.IDX, ZP.IDY, A, X, Y
+    // Modifies: ZP.M0-M3, ZP.U0, ZP.U2, ZP.U3, ZP.IDX, ZP.IDY, A, X, Y
     dumpHeap()
     {
         PHA
@@ -1169,7 +1223,7 @@ unit Tools
     // Dump a 256-byte page in hex+ASCII format for debugging
     // Input: A = page number (high byte of address)
     // Output: Page contents printed to serial
-    // Munts: ZP.M0, ZP.M1
+    // Modifies: ZP.M0, ZP.M1
     DumpPage()
     {
         PHA
@@ -1309,7 +1363,7 @@ unit Tools
     // Dump the BASIC input and tokenizer buffers for debugging
     // Input: None
     // Output: Buffer contents printed to serial
-    // Munts: ZP.M0, ZP.M1, ZP.IDX, A, X, Y
+    // Modifies: ZP.M0, ZP.M1, ZP.IDX, A, X, Y
     DumpBasicBuffers()
     {
         PHP  // Save flags
@@ -1712,7 +1766,8 @@ unit Tools
     NL()
     {
         PHP  // Push processor status (including carry flag)
-        LDA #'\n' Serial.WriteChar();
+        LDA #'\n' 
+        Serial.WriteChar();
         PLP  // Pull processor status (restore carry flag)
     }
     
