@@ -3,6 +3,10 @@ unit Messages
     uses "/Source/Runtime/6502/ZeroPage"
     uses "Tools"
     
+    // API Status: Clean
+    // All public methods preserve caller state except for documented outputs
+    // No accidental side effects or register corruption
+    
     // System messages
     const string Welcome = "\nHopper BASIC v2.0\n";
     const string MemoryMsg = "Memory: ";
@@ -32,7 +36,6 @@ unit Messages
     // Clear error state
     // Input: None
     // Output: ZP.LastError cleared (set to 0x0000)
-    // Preserves: Everything
     ClearError()
     {
         STZ ZP.LastErrorL
@@ -42,7 +45,7 @@ unit Messages
     // Check if error has occurred
     // Input: None
     // Output: C set if no error, NC if error occurred
-    // Preserves: Everything
+    // Modifies: Processor flags only
     CheckError()
     {
         PHA
@@ -69,12 +72,35 @@ unit Messages
     // Input: None
     // Output: C set if no error, NC if error was printed
     //         Error cleared after printing
-    // Munts: ZP.IDX, ZP.LastError (cleared if error printed)
+    // Modifies: ZP.LastError (cleared if error was printed)
     CheckAndPrintError()
     {
+        PHA  // Preserve A register
+        PHX  // Preserve X register  
+        PHY  // Preserve Y register
+        
+        // Preserve ZP.IDX since we'll use it temporarily
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
         // Returns C if no error, NC if error was printed
         CheckError();
-        if (C) { return; }  // No error
+        if (C) 
+        { 
+            // Restore ZP.IDX
+            PLA
+            STA ZP.IDXH
+            PLA
+            STA ZP.IDXL
+            
+            // Restore registers
+            PLY
+            PLX
+            PLA
+            return;  // No error
+        }
         
         // Print the error message
         LDA #'?'
@@ -90,19 +116,45 @@ unit Messages
         // Clear the error
         ClearError();
         
+        // Restore ZP.IDX
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        // Restore registers
+        PLY
+        PLX
+        PLA
+        
         CLC  // Error was found and printed
     }
     
     // Print OK message
     // Input: None
     // Output: "OK\n" printed to serial
-    // Munts: ZP.IDX
     PrintOK()
     {
+        PHA  // Preserve A register
+        
+        // Preserve ZP.IDX since we'll use it temporarily
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
         LDA #(OK % 256)
         STA ZP.IDXL
         LDA #(OK / 256)
         STA ZP.IDXH
         Tools.PrintString();
+        
+        // Restore ZP.IDX
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        PLA  // Restore A register
     }
 }
