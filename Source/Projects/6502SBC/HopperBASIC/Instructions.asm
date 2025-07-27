@@ -6,6 +6,61 @@ unit Instructions
     uses "Messages"
     uses "BasicTypes"
     
+    // RHS in TOP
+    // LHS type in NEXTT
+    CheckRHSTypeCompatibility()
+    {
+        LDA ZP.NEXTT
+        CMP # #BasicType.BIT
+        if (Z)
+        {
+            // special case for BIT
+            SEC
+            LDA ZP.TOPH
+            CMP #0
+            if (NZ)
+            {
+                CLC    
+            }
+            else
+            {
+                LDA ZP.TOPL
+                CMP # 0
+                if (NZ)
+                {
+                    CMP # 1
+                    if (NZ)
+                    {
+                        CLC
+                    }
+                } 
+            }
+        }
+        else
+        {
+#ifdef DEBUG
+            //NOut();
+            //TOut();
+#endif            
+            LDA #1  // Arithmetic operation mode
+            Instructions.CheckTypeCompatibility();
+            if (NZ)
+            {
+#ifdef DEBUG
+                //LDA #'N' COut(); LDA #' ' COut();
+#endif
+                CLC
+            }
+            else
+            {
+#ifdef DEBUG
+                //LDA #'Y' COut(); LDA #' ' COut();
+#endif
+                SEC
+            }
+        }
+    }
+    
     // Helper function to check if two types are compatible for operations
     // Input: ZP.NEXTT = left operand type, ZP.TOPT = right operand type
     //        ZP.NEXT = left value, ZP.TOP = right value (for WORD/INT range check)
@@ -205,6 +260,29 @@ unit Instructions
                     return;
                 }
                 // WORD is already the promoted type (no change to ZP.NEXTT needed)
+                setResultTypeForMixedOperation();
+                LDA #0       // Set Z - compatible
+                return;
+            }
+        }
+        
+        // INT vs WORD - compatible only if WORD <= 32767 (fits in signed range), promotes to INT
+        LDA ZP.NEXTT
+        CMP #BasicType.INT
+        if (Z)
+        {
+            LDA ZP.TOPT
+            CMP #BasicType.WORD
+            if (Z)
+            {
+                // Check if WORD (right operand) fits in signed INT range (<= 32767)
+                BIT ZP.TOPH  // Test high bit of WORD value
+                if (MI)      // High bit set - value >= 32768, too large for INT
+                {
+                    LDA #1   // Set NZ - type mismatch
+                    return;
+                }
+                // WORD fits in INT range, INT is already the target type (no change to ZP.NEXTT needed)
                 setResultTypeForMixedOperation();
                 LDA #0       // Set Z - compatible
                 return;

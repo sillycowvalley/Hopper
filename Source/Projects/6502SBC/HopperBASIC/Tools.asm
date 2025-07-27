@@ -1871,6 +1871,10 @@ unit Tools
         Serial.WriteChar();
         LDA #':'
         Serial.WriteChar();
+        LDA ZP.NEXTT
+        PrintType();
+        LDA #'-'
+        Serial.WriteChar();
         LDA ZP.NEXTH
         Serial.HexOut();
         LDA ZP.NEXTL
@@ -1897,6 +1901,10 @@ unit Tools
         LDA #'P'
         Serial.WriteChar();
         LDA #':'
+        Serial.WriteChar();
+        LDA ZP.TOPT
+        PrintType();
+        LDA #'-'
         Serial.WriteChar();
         LDA ZP.TOPH
         Serial.HexOut();

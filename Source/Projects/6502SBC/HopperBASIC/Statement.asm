@@ -523,57 +523,38 @@ unit Statement
                 }
             }
             
-            // type check ZP.TOPT against X, value is in ZP.NEXT
-            CPX # #BasicType.BIT
-            if (Z)
-            {
-                // special case for BIT
-                LDA ZP.NEXTH
-                CMP #0
-                if (NZ)
-                {
-                    CLC    
-                }
-                else
-                {
-                    LDA ZP.NEXTL
-                    CMP # 0
-                    if (NZ)
-                    {
-                        CMP # 1
-                        if (NZ)
-                        {
-                            CLC
-                        }
-                    } 
-                }
-            }
-            else
-            {
-                LDA ZP.TOPL
-                PHA
-                LDA ZP.TOPH
-                PHA
-                
-                // left value and type
-                LDA ZP.TOPT
-                STA ZP.NEXTT
-                
-                // right 'value' and variable type
-                STZ ZP.TOPL
-                STZ ZP.TOPH
-                STX ZP.TOPT
-                LDA #1  // Arithmetic operation mode
-                Instructions.CheckTypeCompatibility();
-                if (NZ)
-                {
-                    CLC
-                }
-                PLA
-                STA ZP.TOPH
-                PLA 
-                STA ZP.TOPL
-            }
+            PHX
+            LDA ZP.TOPL
+            PHA
+            LDA ZP.TOPH
+            PHA
+            LDA ZP.NEXTL
+            PHA
+            LDA ZP.NEXTH
+            PHA
+            
+            LDA ZP.NEXTL
+            STA ZP.TOPL
+            LDA ZP.NEXTH
+            STA ZP.TOPH
+            LDA ZP.NEXTT
+            STA ZP.TOPT
+            
+            STX ZP.NEXTT // LHS type
+            
+            // RHS in TOP
+            // LHS type in NEXTT
+            CheckRHSTypeCompatibility();
+            
+            PLA
+            STA ZP.NEXTH
+            PLA 
+            STA ZP.NEXTL
+            PLA
+            STA ZP.TOPH
+            PLA 
+            STA ZP.TOPL
+            PLX
             
             if (NC)
             {
@@ -595,11 +576,27 @@ unit Statement
             //        ZP.NEXT = initial value (16-bit), ZP.IDY = tokens pointer (16-bit)
             Variables.Declare();
             Messages.CheckError();
+            if (C)
+            {
+                STZ ZP.IDYL
+                STZ ZP.IDYH
+            }
         
             break;
         } // loop
         
-#ifdef DEBUG        
+        LDA ZP.IDYL
+        ORA ZP.IDYH
+        if (NZ)
+        {
+            LDA ZP.IDYL
+            STA ZP.IDXL
+            LDA ZP.IDYH
+            STA ZP.IDXH
+            Memory.Free();
+        }
+        
+#ifdef DEBUG
         //DumpBasicBuffers();
         //DumpHeap();
 #endif
