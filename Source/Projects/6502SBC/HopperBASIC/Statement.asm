@@ -336,6 +336,7 @@ unit Statement
         LDA #'D'
         Serial.WriteChar();
 #endif
+        DumpBasicBuffers();
         
         // Save the data type
         LDA ZP.CurrentToken

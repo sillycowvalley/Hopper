@@ -232,46 +232,55 @@ unit Tokenizer
     // Uses: ZP.TokenBufferLength (16-bit), ZP.IDX for addressing
     appendToTokenBuffer()
     {
+        PHY
         PHA  // Save byte to append
-        
-        // 16-bit boundary check: if (TokenBufferLength >= 512) return error
-        LDA ZP.TokenBufferLengthH
-        CMP #(Limits.BasicTokenizerBufferLength >> 8)  // Compare high byte (2)
-        if (C)  // >= 2
+        loop
         {
-            if (NZ)  // > 2, definitely full
+            // 16-bit boundary check: if (TokenBufferLength >= 512) return error
+            LDA ZP.TokenBufferLengthH
+            CMP #(Limits.BasicTokenizerBufferLength >> 8)  // Compare high byte (2)
+            if (C)  // >= 2
             {
-                LDA #(Messages.SyntaxError % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.SyntaxError / 256)
-                STA ZP.LastErrorH
-                PLA
-                return;
+                if (NZ)  // > 2, definitely full
+                {
+                    LDA #(Messages.SyntaxError % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.SyntaxError / 256)
+                    STA ZP.LastErrorH
+                    CLC
+                    break;
+                }
+                // High byte = 2, check low byte
+                LDA ZP.TokenBufferLengthL
+                CMP #(Limits.BasicTokenizerBufferLength & 0xFF)  // Compare low byte (0)
+                if (C)  // >= 512, buffer full
+                {
+                    LDA #(Messages.SyntaxError % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.SyntaxError / 256)
+                    STA ZP.LastErrorH
+                    CLC
+                    break;
+                }
             }
-            // High byte = 2, check low byte
-            LDA ZP.TokenBufferLengthL
-            CMP #(Limits.BasicTokenizerBufferLength & 0xFF)  // Compare low byte (0)
-            if (C)  // >= 512, buffer full
-            {
-                LDA #(Messages.SyntaxError % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.SyntaxError / 256)
-                STA ZP.LastErrorH
-                PLA
-                return;
-            }
+            
+            // Set up 16-bit pointer to end of buffer
+            setTokenBufferEndPointer();
+            SEC // all good
+            break;
         }
-        
-        // Set up 16-bit pointer to end of buffer
-        setTokenBufferEndPointer();
-        
         // Store byte using indirect addressing
         PLA  // Get byte to store
-        LDY #0
-        STA [ZP.IDX], Y
-        
-        // Increment 16-bit length
-        incrementTokenBufferLength();
+        if (C) 
+        {
+            LDY #0
+            STA [ZP.IDX], Y
+            
+            // Increment 16-bit length
+            incrementTokenBufferLength();
+            SEC // all good
+        }
+        PLY
     }
     
     // Find keyword match for current identifier in working buffer
@@ -618,12 +627,20 @@ unit Tokenizer
                         loop
                         {
                             LDA Address.BasicProcessBuffer1, Y
+                            STA ZP.ACCL 
                             appendToTokenBuffer();
                             Messages.CheckError();
-                            if (NC) { return; }
-                            if (Z) { break; }  // Copied null terminator
+                            if (NC) 
+                            { 
+                                return; 
+                            }
+                            LDA ZP.ACCL // set Z
+                            if (Z) 
+                            { 
+                                break;   // Copied null terminator
+                            }
                             INY
-                        }
+                        } // loop
                     }
                 }
             }
