@@ -668,7 +668,7 @@ unit Tokenizer
         compareTokenizerPosToLength();
         if (C)  // TokenizerPos >= TokenBufferLength
         {
-            LDA #Tokens.EOF
+            LDA # Tokens.EOF
             STA ZP.CurrentToken
             return;
         }

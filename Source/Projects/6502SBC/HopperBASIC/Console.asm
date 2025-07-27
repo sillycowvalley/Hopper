@@ -28,11 +28,6 @@ unit Console
         Tokenizer.TokenizeLine(); // Tokenize into BasicTokenizerBuffer
         Messages.CheckError();
         if (NC) { return; }  // Return if tokenization failed
-        
-// Optional debug output (remove when working)
-#ifdef DEBUG
-        Tools.DumpBasicBuffers();
-#endif
     }
     
     // Execute MEM command
@@ -172,6 +167,8 @@ unit Console
     // Returns C to continue, NC to exit
     processTokens()
     {
+        SEC  // not BYE
+        
         // Get first token
         Tokenizer.NextToken();  // Returns token in A, updates ZP.CurrentToken
         switch (A)
@@ -233,7 +230,5 @@ unit Console
                 Statement.Execute();
             }
         }
-        
-        SEC  // Continue
     }
 }

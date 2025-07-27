@@ -17,6 +17,8 @@ unit Messages
     const string NotImplemented = "NOT IMPLEMENTED";
     
     const string TypeMismatch   = "TYPE MISMATCH";
+    const string FunctionExists = "FUNCTION EXISTS";
+    const string ConstantExists = "CONSTANT EXISTS";
     const string OutOfMemory    = "OUT OF MEMORY";
     const string FileNotFound   = "FILE NOT FOUND";
     const string NextWithoutFor = "NEXT WITHOUT FOR";
@@ -28,6 +30,7 @@ unit Messages
     const string ConstantExpected  = "CONSTANT EXPECTED";
     
     
+    
     ClearError()
     {
         STZ ZP.LastErrorL
@@ -36,6 +39,8 @@ unit Messages
     
     CheckError()
     {
+        PHA
+        
         // Returns C if no error, NC if error occurred
         LDA ZP.LastErrorL
         ORA ZP.LastErrorH
@@ -51,6 +56,7 @@ unit Messages
             Serial.WriteChar();
 #endif
         }
+        PLA
     }
     
     CheckAndPrintError()

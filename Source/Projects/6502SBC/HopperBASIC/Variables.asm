@@ -354,7 +354,7 @@ unit Variables
     // Remove variable or constant by name with token cleanup
     // Input: ZP.TOP = name pointer
     // Output: C set if successful, NC if not found
-    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX, ZP.SymbolTemp0, ZP.SymbolTemp1
+    // Munts: ZP.IDY, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX, ZP.SymbolTemp0, ZP.SymbolTemp1
     Remove()
     {
         PHA
@@ -364,6 +364,10 @@ unit Variables
         LDA ZP.IDXL
         PHA
         LDA ZP.IDXH
+        PHA
+        LDA ZP.TOPL
+        PHA
+        LDA ZP.TOPH
         PHA
         
         loop // start of single exit block
@@ -411,6 +415,10 @@ unit Variables
             break;
         } // end of single exit block
         
+        PLA
+        STA ZP.TOPH
+        PLA   
+        STA ZP.TOPL
         PLA
         STA ZP.IDXH
         PLA   
