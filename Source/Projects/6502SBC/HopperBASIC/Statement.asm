@@ -543,7 +543,7 @@ unit Statement
                 }
                 case Tokens.INT:
                 {
-                    LDX #BasicType.INT
+                    LDX # BasicType.INT
                 }
                 case Tokens.BIT:
                 {
@@ -618,6 +618,8 @@ unit Statement
                 STZ ZP.IDYL
                 STZ ZP.IDYH
             }
+            
+            DumpHeap();
         
             break;
         } // loop
