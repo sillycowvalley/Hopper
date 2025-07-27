@@ -54,14 +54,16 @@ Memory.InitializeHeapSize()
 Memory.Allocate() [HOPPER_BASIC version]
 // Input: ZP.ACC = requested size (16-bit)
 // Output: ZP.IDX = allocated address (0x0000 if allocation failed)
-// Modifies: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.M0-M13 (documented scratch space)
+// Modifies: ZP.M* scratch space (internal to memory management operations)
 // Note: Preserves ZP.ACC, A, X, Y, processor flags via stack
+// API Status: Clean - follows clean API standards with proper register preservation
 
 Memory.Free() [HOPPER_BASIC version]
 // Input: ZP.IDX = address to free (must not be 0x0000)
-// Output: Memory block returned to free list, always sets SEC (success)
-// Modifies: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.M0-M15 (documented scratch space)
+// Output: C set (success)
+// Modifies: ZP.M* scratch space (internal to memory management operations)
 // Note: Preserves ZP.IDX, ZP.ACC, A, X, Y, processor flags via stack
+// API Status: Clean - follows clean API standards with proper register preservation
 
 Memory.Available()
 // Input: None
