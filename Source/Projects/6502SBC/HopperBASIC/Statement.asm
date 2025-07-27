@@ -20,8 +20,11 @@ unit Statement
 
     
     // Execute a statement starting from current token position
-    // Assumes ZP.CurrentToken contains the first token of the statement
-    // Returns C if successful, NC if error (error stored in ZP.LastError)
+    // Input: ZP.CurrentToken = first token of statement
+    // Output: Statement executed, stack may contain results
+    //         ZP.CurrentToken = token after statement
+    // Munts: Stack, ZP.CurrentToken, all parsing and execution variables
+    // Error: Sets ZP.LastError if statement execution fails
     Execute()
     {
 #ifdef DEBUG
@@ -128,7 +131,11 @@ unit Statement
     }
     
     // Execute PRINT statement
-    // PRINT <expression>
+    // Input: ZP.CurrentToken = PRINT token
+    // Output: Expression result printed to serial with newline
+    //         ZP.CurrentToken = token after PRINT statement
+    // Munts: Stack, ZP.CurrentToken, ZP.TOP, ZP.TOPT, all parsing variables
+    // Error: Sets ZP.LastError if expression evaluation fails
     executePrint()
     {
 #ifdef DEBUG
@@ -189,7 +196,11 @@ unit Statement
     }
     
     // Execute IF statement
-    // IF <expression> THEN <statement>
+    // Input: ZP.CurrentToken = IF token
+    // Output: Conditional statement executed if condition is true
+    //         ZP.CurrentToken = token after IF statement
+    // Munts: Stack, ZP.CurrentToken, ZP.TOP, ZP.TOPT, all parsing variables
+    // Error: Sets ZP.LastError if syntax error or expression evaluation fails
     executeIf()
     {
 #ifdef DEBUG
@@ -257,8 +268,11 @@ unit Statement
 #endif
     }
     
-    // Execute RETURN statement
-    // RETURN [<expression>]
+    // Execute RETURN statement (stub implementation)
+    // Input: ZP.CurrentToken = RETURN token
+    // Output: Error (not implemented)
+    // Munts: ZP.LastError, ZP.CurrentToken, stack if expression provided
+    // Error: Always sets ZP.LastError (not implemented)
     executeReturn()
     {
 #ifdef DEBUG
@@ -309,7 +323,11 @@ unit Statement
         BRK
     }
     
-    // Execute END statement
+    // Execute END statement (stub implementation)
+    // Input: ZP.CurrentToken = END token
+    // Output: Error (not implemented)
+    // Munts: ZP.LastError
+    // Error: Always sets ZP.LastError (not implemented)
     executeEnd()
     {
         // TODO: End program execution when we have program support
@@ -321,7 +339,11 @@ unit Statement
         BRK
     }
     
-    // Execute identifier (assignment or function call)
+    // Execute identifier statement (assignment or function call - stub implementation)
+    // Input: ZP.CurrentToken = IDENTIFIER token
+    // Output: Error (not implemented)
+    // Munts: ZP.LastError
+    // Error: Always sets ZP.LastError (not implemented)
     executeIdentifier()
     {
         // TODO: Handle variable assignment and function calls
@@ -334,8 +356,13 @@ unit Statement
     }
     
     
-    // Execute variable declaration
-    // INT/WORD/BIT identifier [= expression]
+    // Execute variable declaration statement
+    // Input: ZP.CurrentToken = type token (INT, WORD, BIT)
+    // Output: Variable declared and added to symbol table
+    //         ZP.CurrentToken = token after declaration
+    // Munts: Stack, ZP.CurrentToken, symbol tables, memory allocation, 
+    //        all statement buffer locations, all parsing variables
+    // Error: Sets ZP.LastError if syntax error, type mismatch, name conflict, or memory allocation fails
     executeVariableDeclaration()
     {
 #ifdef DEBUG
@@ -621,6 +648,11 @@ unit Statement
 #endif
     }
     
+    // Expect EOF token at current position
+    // Input: ZP.CurrentToken = current token
+    // Output: ZP.CurrentToken = EOF or next token after EOF
+    // Munts: ZP.CurrentToken, ZP.LastError if not EOF
+    // Error: Sets ZP.LastError if current token is not EOF
     expectEOF()
     {
         PHA
@@ -648,9 +680,12 @@ unit Statement
         PLA
     }
     
-    // source in FSOURCEADDRESS, length in FLENGTH
-    // resulting stream in FDESTINATIONADDRESS
-    // munts FSOURCEADDRESS
+    // Create token stream from tokenizer buffer slice
+    // Input: ZP.FSOURCEADDRESS = start position in BasicTokenizerBuffer
+    //        ZP.FLENGTH = length of token stream to copy
+    // Output: ZP.FDESTINATIONADDRESS = pointer to allocated token stream copy
+    // Munts: ZP.IDXL, ZP.IDXH, ZP.ACCL, ZP.ACCH, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS
+    // Error: Sets ZP.LastError if memory allocation fails
     createTokenStream()
     {
         PHA

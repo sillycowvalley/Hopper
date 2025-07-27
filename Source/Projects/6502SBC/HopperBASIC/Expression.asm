@@ -7,9 +7,11 @@ unit Expression
     uses "Instructions"
     
     // Evaluate an expression starting from current token
-    // Pushes result onto value stack
-    // Returns C if successful, NC if error (error stored in ZP.LastError)
-    // Updated precedence: parseComparison() → parseLogical() → parseAddition() → parseMultiplicative() → parseUnary()
+    // Input: ZP.CurrentToken = first token of expression
+    // Output: Expression result pushed onto value stack
+    //         ZP.CurrentToken = token after expression
+    // Munts: Stack, ZP.CurrentToken, all ZP variables used by parsing
+    // Error: Sets ZP.LastError if syntax error or type mismatch
     Evaluate()
     {
 #ifdef DEBUG
@@ -31,7 +33,11 @@ unit Expression
     }
     
     // Parse comparison operators (=, <>, <, >, <=, >=)
-    // Precedence level 1 (lowest)
+    // Input: ZP.CurrentToken = current token
+    // Output: Comparison result (BIT type) pushed to stack
+    //         ZP.CurrentToken = token after comparison expression
+    // Munts: Stack, ZP.CurrentToken, parsing variables
+    // Error: Sets ZP.LastError if syntax error
     parseComparison()
     {
 #ifdef DEBUG
@@ -170,8 +176,12 @@ unit Expression
         SEC  // Success
     }
     
-    // Parse logical operators (AND, OR)
-    // Precedence level 2 (AND binds tighter than OR)
+    // Parse logical OR operators (lowest precedence logical operator)
+    // Input: ZP.CurrentToken = current token
+    // Output: Logical result pushed to stack
+    //         ZP.CurrentToken = token after logical expression
+    // Munts: Stack, ZP.CurrentToken, parsing variables
+    // Error: Sets ZP.LastError if syntax error
     parseLogical()
     {
 #ifdef DEBUG
@@ -221,6 +231,11 @@ unit Expression
     }
     
     // Parse logical AND operators (higher precedence than OR)
+    // Input: ZP.CurrentToken = current token
+    // Output: Logical result pushed to stack
+    //         ZP.CurrentToken = token after AND expression
+    // Munts: Stack, ZP.CurrentToken, parsing variables
+    // Error: Sets ZP.LastError if syntax error
     parseLogicalAnd()
     {
         // Parse left operand
@@ -256,7 +271,11 @@ unit Expression
     }
     
     // Parse addition and subtraction operators (+, -)
-    // Precedence level 3
+    // Input: ZP.CurrentToken = current token
+    // Output: Arithmetic result pushed to stack
+    //         ZP.CurrentToken = token after additive expression
+    // Munts: Stack, ZP.CurrentToken, parsing variables
+    // Error: Sets ZP.LastError if syntax error
     parseAddition()
     {
 #ifdef DEBUG
@@ -324,7 +343,11 @@ unit Expression
     }
     
     // Parse multiplicative operators (*, /, MOD)
-    // Precedence level 4 (higher than addition)
+    // Input: ZP.CurrentToken = current token
+    // Output: Arithmetic result pushed to stack
+    //         ZP.CurrentToken = token after multiplicative expression
+    // Munts: Stack, ZP.CurrentToken, parsing variables
+    // Error: Sets ZP.LastError if syntax error
     parseMultiplicative()
     {
 #ifdef DEBUG
@@ -409,8 +432,12 @@ unit Expression
         SEC  // Success
     }
     
-    // Parse unary operators and primary expressions
-    // Precedence level 5 (highest)
+    // Parse unary operators and delegate to primary expressions
+    // Input: ZP.CurrentToken = current token (-, NOT, or start of primary expression)
+    // Output: Expression result pushed to stack
+    //         ZP.CurrentToken = token after unary expression
+    // Munts: Stack, ZP.CurrentToken, ZP.TOP, ZP.TOPT, parsing variables
+    // Error: Sets ZP.LastError if syntax error
     parseUnary()
     {
 #ifdef DEBUG
@@ -494,6 +521,11 @@ unit Expression
     }
     
     // Parse primary expressions (numbers, identifiers, parentheses)
+    // Input: ZP.CurrentToken = current token (NUMBER, IDENTIFIER, LPAREN, etc.)
+    // Output: Primary value pushed to stack
+    //         ZP.CurrentToken = token after primary expression
+    // Munts: Stack, ZP.CurrentToken, ZP.TOP, ZP.TOPT, parsing variables
+    // Error: Sets ZP.LastError if syntax error or undefined identifier
     parsePrimary()
     {
 #ifdef DEBUG

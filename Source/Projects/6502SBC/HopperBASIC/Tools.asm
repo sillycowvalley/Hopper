@@ -7,7 +7,7 @@ unit Tools
     // Print BasicType enum value as readable string
     // Input: A = BasicType enum value
     // Output: Type name printed to serial
-    // Preserves: X, Y, flags
+    // Preserves: Everything
     PrintType()
     {
         PHP  // Save flags
@@ -106,7 +106,6 @@ unit Tools
     // Print null-terminated string to serial output
     // Input: ZP.IDX = pointer to null-terminated string
     // Output: String printed to serial
-    // Preserves: X, ZP.IDX
     // Munts: A, Y
     PrintString()
     {
@@ -126,8 +125,7 @@ unit Tools
     // Input: ZP.TOP = 16-bit number to print (0-65535)
     //        ZP.TOPT = type (for signed/unsigned determination)
     // Output: Decimal number printed to serial
-    // Preserves: None
-    // Munts: ZP.TOP (used as working register)
+    // Munts: ZP.TOP, ZP.ACC, A, X, Y
     PrintDecimalWord()
     {
         PHA
@@ -248,9 +246,8 @@ unit Tools
     // Input: ZP.FSOURCEADDRESS = source pointer
     //        ZP.FDESTINATIONADDRESS = destination pointer  
     //        ZP.FLENGTH = number of bytes to copy (16-bit)
-    // Output: Data copied
-    // Preserves: A, X, Y
-    // Munts: ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, ZP.FLENGTH
+    // Output: Data copied from source to destination
+    // Munts: ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, ZP.FLENGTH, A, X, Y
     CopyBytes()
     {
         PHA
@@ -300,7 +297,6 @@ unit Tools
     // Get string length
     // Input: X = string pointer low byte, Y = string pointer high byte
     // Output: A = string length (not including null terminator)
-    // Preserves: X, Y
     // Munts: ZP.TOP
     StringLength()
     {
@@ -327,7 +323,7 @@ unit Tools
     // Compare two strings
     // Input: ZP.TOP = first string pointer, ZP.NEXT = second string pointer
     // Output: C set if strings match, NC if different
-    // Preserves: A, Y
+    // Munts: A, Y
     StringCompare()
     {
         PHA
@@ -372,11 +368,10 @@ unit Tools
     const string debugZeroBlock = "ZERO\n";
     const string debugEllipsis = "...\n";
     
-    // Dump key zero page variables
+    // Dump key zero page variables for debugging
     // Input: None
     // Output: Variables printed to serial
-    // Preserves: A, X, Y, flags
-    // Munts: ZP.U0-U4 (temporary storage)
+    // Preserves: Everything
     DumpVariables()
     {
        PHP  // Save flags
@@ -541,10 +536,10 @@ unit Tools
        PLP  // Restore flags
     }
 
-    // Dump the value stack
+    // Dump the value stack for debugging
     // Input: None
     // Output: Stack contents printed to serial
-    // Preserves: A, X, Y, flags
+    // Preserves: Everything
     DumpStack()
     {
         PHP  // Save flags
@@ -629,7 +624,7 @@ unit Tools
     // Lightweight heap summary for use during iteration
     // Input: None
     // Output: List head pointers printed to serial
-    // Preserves: A, X, Y, flags, all ZP variables
+    // Preserves: Everything
     DumpHeapSummary()
     {
         PHP  // Save flags
@@ -669,7 +664,7 @@ unit Tools
     // Debug output for iteration state
     // Input: None
     // Output: Current IDX pointer printed to serial
-    // Preserves: A, X, Y, flags, all ZP variables
+    // Preserves: Everything
     DumpIterationState()
     {
         PHP  // Save flags
@@ -692,10 +687,10 @@ unit Tools
         PLP  // Restore flags
     }
     
-    // Dump heap with extra state preservation
+    // Dump heap with state preservation for debugging
     // Input: None
     // Output: Heap contents printed to serial
-    // Preserves: A, X, Y, flags, ZP.IDX, ZP.IDY, ZP.ACC, ZP.LCURRENT
+    // Preserves: Everything
     DumpHeap()
     {
         PHP  // Save flags
@@ -738,8 +733,7 @@ unit Tools
     // Internal heap dump implementation
     // Input: None
     // Output: Heap contents printed to serial
-    // Preserves: ZP.IDX, ZP.IDY
-    // Munts: ZP.M0-M3, ZP.U0, ZP.U2, ZP.U3
+    // Munts: ZP.M0-M3, ZP.U0, ZP.U2, ZP.U3, ZP.IDX, ZP.IDY, A, X, Y
     dumpHeap()
     {
         PHA
@@ -1143,7 +1137,7 @@ unit Tools
             STA ZP.IDXH
             
             INX
-            CPX #20  // Limit to 8 blocks to avoid infinite loops
+            CPX #20  // Limit to 20 blocks to avoid infinite loops
             if (Z) 
             { 
                 LDA #(debugEllipsis % 256)
@@ -1155,7 +1149,6 @@ unit Tools
             }
         }
         
-        Serial.WriteChar();
         LDA #'\n'
         Serial.WriteChar();
         
@@ -1173,10 +1166,9 @@ unit Tools
         PLA
     }
     
-    // Dump a 256-byte page in hex+ASCII format
+    // Dump a 256-byte page in hex+ASCII format for debugging
     // Input: A = page number (high byte of address)
     // Output: Page contents printed to serial
-    // Preserves: None
     // Munts: ZP.M0, ZP.M1
     DumpPage()
     {
@@ -1314,11 +1306,10 @@ unit Tools
     const string basicTokenizerBufferLabel = "\nTokenizerBuffer - First 64 bytes:\n";
     const string basicTokenStringLabel = "\nToken string: '";
 
-    // Dump the BASIC input and tokenizer buffers
+    // Dump the BASIC input and tokenizer buffers for debugging
     // Input: None
     // Output: Buffer contents printed to serial
-    // Preserves: A, flags
-    // Munts: ZP.M0, ZP.M1
+    // Munts: ZP.M0, ZP.M1, ZP.IDX, A, X, Y
     DumpBasicBuffers()
     {
         PHP  // Save flags
@@ -1717,7 +1708,7 @@ unit Tools
     
     // Write '\n' preserving carry flag
     // Output: '\n' printed to serial
-    // Preserves: A, X, Y, flags (including carry)
+    // Preserves: Everything
     NL()
     {
         PHP  // Push processor status (including carry flag)
@@ -1728,7 +1719,7 @@ unit Tools
     // Write character preserving carry flag
     // Input: A = character to output
     // Output: Character printed to serial
-    // Preserves: A, X, Y, flags (including carry)
+    // Preserves: Everything
     COut()
     {
         PHP  // Push processor status (including carry flag)
@@ -1739,7 +1730,7 @@ unit Tools
     // Output hex byte preserving carry flag  
     // Input: A = byte to output as hex
     // Output: Hex byte printed to serial
-    // Preserves: A, X, Y, flags (including carry)
+    // Preserves: Everything
     HOut()
     {
         PHP  // Push processor status (including carry flag)
@@ -1750,7 +1741,7 @@ unit Tools
     // Output IDX register as "IDX:hhll "
     // Input: None (uses ZP.IDX)
     // Output: IDX value printed to serial
-    // Preserves: A, X, Y, flags (including carry)
+    // Preserves: Everything
     XOut()
     {
         PHP  // Push processor status (including carry flag)
@@ -1778,7 +1769,7 @@ unit Tools
     // Output IDY register as "IDY:hhll "
     // Input: None (uses ZP.IDY)
     // Output: IDY value printed to serial
-    // Preserves: A, X, Y, flags (including carry)
+    // Preserves: Everything
     YOut()
     {
         PHP  // Push processor status (including carry flag)
@@ -1804,9 +1795,9 @@ unit Tools
     }
     
     // Output ZP.SymbolIteratorFilter as "I:ll "
-    // Input: None (uses ZP.IDY)
+    // Input: None (uses ZP.SymbolIteratorFilter)
     // Output: ZP.SymbolIteratorFilter value printed to serial
-    // Preserves: A, X, Y, flags (including carry)
+    // Preserves: Everything
     IOut()
     {
         PHP  // Push processor status (including carry flag)
@@ -1828,7 +1819,7 @@ unit Tools
     // Output ACC register as "ACC:hhll "
     // Input: None (uses ZP.ACC)
     // Output: ACC value printed to serial
-    // Preserves: A, X, Y, flags (including carry)
+    // Preserves: Everything
     AOut()
     {
         PHP  // Push processor status (including carry flag)
@@ -1852,10 +1843,11 @@ unit Tools
         PLA  // Restore A register
         PLP  // Pull processor status (restore carry flag)
     }
-    // Output NEXT register as "NEXT:hhll "
+    
+    // Output NEXT register as "NEXT:type-hhll "
     // Input: None (uses ZP.NEXT)
     // Output: NEXT value printed to serial
-    // Preserves: A, X, Y, flags (including carry)
+    // Preserves: Everything
     NOut()
     {
         PHP  // Push processor status (including carry flag)
@@ -1885,10 +1877,11 @@ unit Tools
         PLA  // Restore A register
         PLP  // Pull processor status (restore carry flag)
     }
-    // Output TOP register as "TOP:hhll "
+    
+    // Output TOP register as "TOP:type-hhll "
     // Input: None (uses ZP.TOP)
     // Output: TOP value printed to serial
-    // Preserves: A, X, Y, flags (including carry)
+    // Preserves: Everything
     TOut()
     {
         PHP  // Push processor status (including carry flag)
@@ -1918,9 +1911,9 @@ unit Tools
     }
     
     // Output ACCL register as "ACCL:ll "
-    // Input: None (uses ZP.ACC)
+    // Input: None (uses ZP.ACCL)
     // Output: ACCL value printed to serial
-    // Preserves: A, X, Y, flags (including carry)
+    // Preserves: Everything
     ALOut()
     {
         PHP  // Push processor status (including carry flag)

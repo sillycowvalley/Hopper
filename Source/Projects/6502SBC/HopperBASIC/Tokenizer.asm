@@ -106,6 +106,9 @@ unit Tokenizer
     };
     
     // Initialize tokenizer state
+    // Input: None
+    // Output: Tokenizer state cleared and ready for use
+    // Munts: ZP.TokenizerPos, ZP.TokenBufferLength, ZP.BasicInputLength, ZP.CurrentToken, ZP.TokenLiteralPos
     Initialize()
     {
         STZ ZP.TokenizerPosL
@@ -118,7 +121,10 @@ unit Tokenizer
         STZ ZP.TokenLiteralPosH
     }
     
-    // Helper: Set IDX = BasicTokenizerBuffer + TokenizerPos
+    // Set IDX = BasicTokenizerBuffer + TokenizerPos
+    // Input: None (uses ZP.TokenizerPos)
+    // Output: ZP.IDX = pointer to current position in token buffer
+    // Munts: ZP.IDX
     setTokenizerPointer()
     {
         CLC
@@ -130,7 +136,10 @@ unit Tokenizer
         STA ZP.IDXH
     }
     
-    // Helper: Set IDX = BasicTokenizerBuffer + TokenBufferLength
+    // Set IDX = BasicTokenizerBuffer + TokenBufferLength
+    // Input: None (uses ZP.TokenBufferLength)
+    // Output: ZP.IDX = pointer to end of token buffer
+    // Munts: ZP.IDX
     setTokenBufferEndPointer()
     {
         CLC
@@ -142,7 +151,10 @@ unit Tokenizer
         STA ZP.IDXH
     }
     
-    // Helper: Increment 16-bit TokenizerPos
+    // Increment 16-bit TokenizerPos
+    // Input: None (uses ZP.TokenizerPos)
+    // Output: ZP.TokenizerPos incremented by 1
+    // Munts: ZP.TokenizerPos
     incrementTokenizerPos()
     {
         INC ZP.TokenizerPosL
@@ -152,7 +164,10 @@ unit Tokenizer
         }
     }
     
-    // Helper: Increment 16-bit TokenBufferLength
+    // Increment 16-bit TokenBufferLength
+    // Input: None (uses ZP.TokenBufferLength)
+    // Output: ZP.TokenBufferLength incremented by 1
+    // Munts: ZP.TokenBufferLength
     incrementTokenBufferLength()
     {
         INC ZP.TokenBufferLengthL
@@ -162,8 +177,10 @@ unit Tokenizer
         }
     }
     
-    // Helper: Compare 16-bit values - TokenizerPos vs TokenBufferLength
-    // Returns: Z set if equal, C set if TokenizerPos >= TokenBufferLength
+    // Compare 16-bit values - TokenizerPos vs TokenBufferLength
+    // Input: None (uses ZP.TokenizerPos, ZP.TokenBufferLength)
+    // Output: Z set if equal, C set if TokenizerPos >= TokenBufferLength
+    // Preserves: Everything
     compareTokenizerPosToLength()
     {
         LDA ZP.TokenizerPosH
@@ -176,7 +193,9 @@ unit Tokenizer
     }
     
     // Skip whitespace in input buffer at position X
-    // Updates X to point to next non-whitespace character
+    // Input: X = position in BasicInputBuffer
+    // Output: X = position of next non-whitespace character (or end of buffer)
+    // Munts: X, A
     skipWhitespace()
     {
         loop
@@ -204,6 +223,7 @@ unit Tokenizer
     // Check character type
     // Input: A = character
     // Output: A = 0=other, 1=digit, 2=alpha
+    // Preserves: Everything except A
     getCharType()
     {
         CMP #'0'
@@ -229,7 +249,9 @@ unit Tokenizer
     
     // Append byte to token buffer using 16-bit addressing
     // Input: A = byte to append
-    // Uses: ZP.TokenBufferLength (16-bit), ZP.IDX for addressing
+    // Output: C set if successful, NC if buffer full (error set in ZP.LastError)
+    // Munts: ZP.TokenBufferLength, ZP.IDX, A, Y
+    // Error: Sets ZP.LastError if buffer overflow
     appendToTokenBuffer()
     {
         PHY
@@ -284,8 +306,9 @@ unit Tokenizer
     }
     
     // Find keyword match for current identifier in working buffer
-    // Working buffer starts at Address.BasicProcessBuffer1, null-terminated
-    // Returns token in A if found, or 0 if not found
+    // Input: Working buffer at Address.BasicProcessBuffer1, null-terminated
+    // Output: A = token value if found, or 0 if not found
+    // Munts: A, X, Y, ZP.ACC
     findKeyword()
     {
         PHX
@@ -350,7 +373,11 @@ unit Tokenizer
     }
     
     // Tokenize complete line from BasicInputBuffer into BasicTokenizerBuffer
-    // Returns C if successful, NC if error (error stored in ZP.LastError)
+    // Input: BasicInputBuffer contains raw input, ZP.BasicInputLength = input length
+    // Output: Tokens stored in BasicTokenizerBuffer, ZP.TokenBufferLength = total length
+    //         ZP.TokenizerPos reset to 0
+    // Munts: ZP.TokenBufferLength, ZP.TokenizerPos, ZP.IDX, A, X, Y
+    // Error: Sets ZP.LastError if tokenization fails
     TokenizeLine()
     {
         // Clear token buffer
@@ -660,8 +687,11 @@ unit Tokenizer
     }
     
     // Get next token from BasicTokenizerBuffer using 16-bit addressing
-    // Returns token type in A, updates ZP.CurrentToken
-    // For literals, advances past the inline data
+    // Input: ZP.TokenizerPos = current position in token buffer
+    // Output: A = token type, ZP.CurrentToken = token type
+    //         For literals, ZP.TokenLiteralPos = position of inline data
+    //         ZP.TokenizerPos advanced past token and any inline data
+    // Munts: ZP.CurrentToken, ZP.TokenizerPos, ZP.TokenLiteralPos, ZP.IDX, A, Y
     NextToken()
     {
         // 16-bit comparison: if (TokenizerPos >= TokenBufferLength)
@@ -729,11 +759,11 @@ unit Tokenizer
         LDA ZP.CurrentToken
     }
     
-    // Helper function to check if multiplying ZP.TOP by 10 and adding a digit would overflow
-    // Input: ZP.TOP contains current 16-bit value, A contains digit to add (0-9)
+    // Check if multiplying ZP.TOP by 10 and adding a digit would overflow
+    // Input: ZP.TOP = current 16-bit value, A = digit to add (0-9)
     // Output: C set if operation is safe, NC set if would overflow
     // Preserves: A (digit), ZP.TOP unchanged
-    // Uses: ZP.NEXT for temporary calculations
+    // Munts: ZP.NEXT (temporarily)
     checkMultiply10PlusDigitOverflow()
     {
         PHA  // Save digit
@@ -783,9 +813,10 @@ unit Tokenizer
     }
     
     // Get current token as 16-bit number (assumes current token is NUMBER)
-    // Inline number string follows the NUMBER token in buffer
-    // Returns 16-bit number in ZP.TOP, type in ZP.TOPT
-    // Sets error if number overflows 16-bit range
+    // Input: ZP.TokenLiteralPos = position of number string in token buffer
+    // Output: ZP.TOP = 16-bit number value, ZP.TOPT = determined type (INT or WORD)
+    // Munts: ZP.TOP, ZP.TOPT, ZP.IDX, ZP.NEXT, ZP.ACC, A, Y
+    // Error: Sets ZP.LastError if number is invalid or overflows
     GetTokenNumber()
     {
         STZ ZP.TOPL
@@ -892,6 +923,9 @@ unit Tokenizer
     }
     
     // Skip past null-terminated string at current tokenizer position
+    // Input: ZP.TokenizerPos = current position in token buffer
+    // Output: ZP.TokenizerPos advanced past null terminator
+    // Munts: ZP.TokenizerPos, ZP.IDX, A, Y
     skipInlineString()
     {
         loop
@@ -937,7 +971,10 @@ unit Tokenizer
     }
     
     // Read a line of input into BasicInputBuffer
-    // Returns length in A, sets ZP.BasicInputLength
+    // Input: None (reads from serial)
+    // Output: A = length of input, ZP.BasicInputLength = input length
+    //         Line stored in BasicInputBuffer (null-terminated not required)
+    // Munts: ZP.BasicInputLength, A, X
     ReadLine()
     {
         LDX #0  // Buffer position
@@ -1011,8 +1048,9 @@ unit Tokenizer
     }
     
     // Get pointer to current token's string (for IDENTIFIER, NUMBER, STRING tokens)
-    // Assumes current token is a literal token with inline data
-    // Returns pointer in ZP.TOP
+    // Input: ZP.TokenLiteralPos = position of literal data in token buffer
+    // Output: ZP.TOP = pointer to null-terminated string in token buffer
+    // Munts: ZP.TOP
     GetTokenString()
     {
         // Set up pointer to saved literal position in token buffer

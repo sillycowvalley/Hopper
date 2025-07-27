@@ -6,8 +6,10 @@ unit Instructions
     uses "Messages"
     uses "BasicTypes"
     
-    // RHS in TOP
-    // LHS type in NEXTT
+    // Check if RHS value is compatible with LHS type
+    // Input: ZP.TOP = RHS value, ZP.TOPT = RHS type, ZP.NEXTT = LHS type
+    // Output: C set if compatible, NC if incompatible
+    // Munts: A
     CheckRHSTypeCompatibility()
     {
         LDA ZP.NEXTT
@@ -63,7 +65,7 @@ unit Instructions
         }
     }
     
-    // Helper function to check if two types are compatible for operations
+    // Check if two types are compatible for operations
     // Input: ZP.NEXTT = left operand type, ZP.TOPT = right operand type
     //        ZP.NEXT = left value, ZP.TOP = right value (for WORD/INT range check)
     //        A = operation mode:
@@ -73,7 +75,7 @@ unit Instructions
     //          3 = Ordering comparison (<, >, <=, >=) - BIT types rejected, result is BIT
     // Output: C set if compatible, NC set if TYPE MISMATCH
     //         ZP.NEXTT = result type (updated based on operation mode and type promotion)
-    // Uses: ZP.ACCL for temporary storage
+    // Munts: ZP.ACCL
     CheckTypeCompatibility()
     {
         STA ZP.ACCL  // Save operation mode
@@ -319,9 +321,10 @@ unit Instructions
         CLC  // Set NC - type mismatch
     }
     
-    // Helper function to set result type for mixed-type operations
+    // Set result type for mixed-type operations
     // Input: ZP.ACCL = operation mode, ZP.NEXTT = promoted operand type
     // Output: ZP.NEXTT = final result type
+    // Preserves: Everything
     setResultTypeForMixedOperation()
     {
         LDA ZP.ACCL
@@ -341,7 +344,12 @@ unit Instructions
         }
     }
     
-    // Helper for shared subtraction logic
+    // Shared subtraction logic helper
+    // Input: ZP.NEXT = left operand, ZP.TOP = right operand (both popped from stack)
+    //        ZP.NEXTT = left type, ZP.TOPT = right type
+    // Output: Result pushed to stack
+    // Munts: ZP.NEXT, ZP.NEXTT, stack
+    // Error: Sets ZP.LastError if type mismatch
     subShared()
     {
         LDA #1  // Arithmetic operation
@@ -368,6 +376,11 @@ unit Instructions
         Stacks.PushNext();
     }
     
+    // Addition operation (pops two operands, pushes result)
+    // Input: Stack contains two operands (right operand on top)
+    // Output: Sum pushed to stack
+    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT
+    // Error: Sets ZP.LastError if type mismatch
     Addition()
     {
         // Pop two operands
@@ -397,12 +410,22 @@ unit Instructions
         Stacks.PushNext();
     }
         
+    // Subtraction operation (pops two operands, pushes result)
+    // Input: Stack contains two operands (right operand on top)
+    // Output: Difference (left - right) pushed to stack
+    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT
+    // Error: Sets ZP.LastError if type mismatch
     Subtraction()
     {
         Stacks.PopTopNext();
         subShared();
     }
     
+    // Handle sign extraction for signed operations
+    // Input: ZP.NEXT = left operand, ZP.TOP = right operand
+    // Output: ZP.FSIGN = count of negative operands (0, 1, or 2)
+    //         ZP.NEXT and ZP.TOP converted to positive values
+    // Munts: ZP.FSIGN, ZP.NEXT, ZP.TOP, X, A
     doSigns()
     {
         LDX #0 
@@ -423,7 +446,11 @@ unit Instructions
         STX ZP.FSIGN // store the sign count
     }
     
-    // Multiplicative operators with stubs
+    // Multiplication operation (pops two operands, pushes result)
+    // Input: Stack contains two operands (right operand on top)
+    // Output: Product pushed to stack
+    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.FSIGN
+    // Error: Sets ZP.LastError if type mismatch
     Multiply()
     {
         // Pop two operands
@@ -466,6 +493,11 @@ unit Instructions
         Stacks.PushTop();
     }
     
+    // Division operation (pops two operands, pushes result)
+    // Input: Stack contains two operands (right operand on top)
+    // Output: Quotient (left / right) pushed to stack
+    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.FSIGN
+    // Error: Sets ZP.LastError if type mismatch or division by zero
     Divide()
     {
         // Pop two operands
@@ -508,6 +540,11 @@ unit Instructions
         Stacks.PushNext();
     }
     
+    // Modulo operation (pops two operands, pushes result)
+    // Input: Stack contains two operands (right operand on top)
+    // Output: Remainder (left % right) pushed to stack
+    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.ACC, ZP.ACCT, ZP.TOPT, ZP.NEXTT, ZP.FSIGN
+    // Error: Sets ZP.LastError if type mismatch or division by zero
     Modulo()
     {
         // Pop two operands
@@ -539,7 +576,11 @@ unit Instructions
         Stacks.PushACC(); // munts Y, A
     }
     
-    // Comparison operators
+    // Equality comparison operation (pops two operands, pushes BIT result)
+    // Input: Stack contains two operands (right operand on top)
+    // Output: BIT value (0 or 1) pushed to stack
+    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, X
+    // Error: Sets ZP.LastError if type mismatch
     Equal()
     {
         Stacks.PopTopNext();  // Gets both values and their types
@@ -572,6 +613,11 @@ unit Instructions
         Stacks.PushX();  // Push result (X) with BIT type
     }
     
+    // Not-equal comparison operation (pops two operands, pushes BIT result)
+    // Input: Stack contains two operands (right operand on top)
+    // Output: BIT value (0 or 1) pushed to stack
+    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, X
+    // Error: Sets ZP.LastError if type mismatch
     NotEqual()
     {
         Stacks.PopTopNext();
@@ -603,6 +649,11 @@ unit Instructions
         Stacks.PushX(); // X as BIT type
     }
     
+    // Less-than comparison operation (pops two operands, pushes BIT result)
+    // Input: Stack contains two operands (right operand on top)
+    // Output: BIT value (0 or 1) pushed to stack representing (left < right)
+    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, X
+    // Error: Sets ZP.LastError if type mismatch
     LessThan()
     {
         // Pop two operands
@@ -670,6 +721,11 @@ unit Instructions
         Stacks.PushX(); // Result as BIT type
     }
     
+    // Greater-than comparison operation (pops two operands, pushes BIT result)
+    // Input: Stack contains two operands (right operand on top)
+    // Output: BIT value (0 or 1) pushed to stack representing (left > right)
+    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, X
+    // Error: Sets ZP.LastError if type mismatch
     GreaterThan()
     {
         Stacks.PopTopNext();
@@ -738,6 +794,11 @@ unit Instructions
         Stacks.PushX(); // Result as BIT type
     }
     
+    // Less-than-or-equal comparison operation (pops two operands, pushes BIT result)
+    // Input: Stack contains two operands (right operand on top)
+    // Output: BIT value (0 or 1) pushed to stack representing (left <= right)
+    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, X
+    // Error: Sets ZP.LastError if type mismatch
     LessEqual()
     {
         // Pop two operands
@@ -800,6 +861,11 @@ unit Instructions
         Stacks.PushX(); // Result as BIT type
     }
     
+    // Greater-than-or-equal comparison operation (pops two operands, pushes BIT result)
+    // Input: Stack contains two operands (right operand on top)
+    // Output: BIT value (0 or 1) pushed to stack representing (left >= right)
+    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, X
+    // Error: Sets ZP.LastError if type mismatch
     GreaterEqual()
     {
         // Pop two operands
@@ -859,7 +925,11 @@ unit Instructions
         Stacks.PushX(); // Result as BIT type
     }
     
-    // Logical operators
+    // Bitwise/logical AND operation (pops two operands, pushes result)
+    // Input: Stack contains two operands (right operand on top)
+    // Output: Bitwise AND result pushed to stack
+    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT
+    // Error: Sets ZP.LastError if type mismatch
     And()
     {
         // Pop two operands
@@ -889,6 +959,11 @@ unit Instructions
         Stacks.PushNext();
     }
     
+    // Bitwise/logical OR operation (pops two operands, pushes result)
+    // Input: Stack contains two operands (right operand on top)
+    // Output: Bitwise OR result pushed to stack
+    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT
+    // Error: Sets ZP.LastError if type mismatch
     Or()
     {
         // Pop two operands
@@ -918,6 +993,11 @@ unit Instructions
         Stacks.PushNext();
     }
     
+    // Logical NOT operation (pops one operand, pushes BIT result)
+    // Input: Stack contains BIT operand on top
+    // Output: Logical NOT result (BIT) pushed to stack
+    // Munts: Stack, ZP.TOP, ZP.TOPT, X
+    // Error: Sets ZP.LastError if operand is not BIT type
     LogicalNot()
     {
         Stacks.PopTop();
