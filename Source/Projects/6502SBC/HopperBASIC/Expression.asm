@@ -709,6 +709,20 @@ unit Expression
         PHX
         PHY
         
+        LDY ZP.ACCT
+        PHY
+        
+#ifdef DEBUG
+        PHA
+        LDA #'<'
+        Tools.COut();
+        LDA #'R'
+        Tools.COut();
+        LDA #':'
+        Tools.COut();
+        PLA
+#endif 
+        
         loop // Single exit block for clean error handling
         {
             // Get the identifier name for lookup
@@ -719,8 +733,9 @@ unit Expression
             Tokenizer.IsKeyword();
             if (C)
             {
+#ifdef DEBUG
                 LDA #'K' Tools.COut();
-                
+#endif
                 LDA # IdentifierType.Keyword
                 break; // success
             }
@@ -729,21 +744,25 @@ unit Expression
             Variables.Find(); // ZP.IDX = symbol node address
             if (C) // Symbol found
             {
+                // Get symbol type and check
+                Variables.GetType();
                 LDA ZP.ACCT
                 AND #0xF0  // Extract symbol type (high nibble)
                 CMP # (SymbolType.VARIABLE << 4)
                 if (Z)
                 { 
+#ifdef DEBUG
                     LDA # 'V' Tools.COut();
-                    
+#endif
                     LDA # IdentifierType.Global
                     break; // success
                 }
                 CMP # (SymbolType.CONSTANT << 4)
                 if (Z)
                 { 
+#ifdef DEBUG
                     LDA # 'C' Tools.COut();
-                    
+#endif        
                     LDA # IdentifierType.Constant
                     break; // success
                 }
@@ -765,16 +784,17 @@ unit Expression
             Objects.Find();
             if (C)  
             {
+#ifdef DEBUG
                 LDA #'F' Tools.COut();
-                
+#endif    
                 LDA # IdentifierType.Function
                 break; // success
             }
             Messages.CheckError();
             if (NC) { break; }
-            
+#ifdef DEBUG
             LDA #'U' Tools.COut();
-            
+#endif
             LDA #(Messages.UndefinedIdentifier % 256)
             STA ZP.LastErrorL
             LDA #(Messages.UndefinedIdentifier / 256)
@@ -786,6 +806,16 @@ unit Expression
             CLC  // undefined identifier
             break;
         } // end of single exit block
+#ifdef DEBUG
+        PHA
+        LDA #'R'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+        PLA
+#endif        
+        PLY
+        STY ZP.ACCT
         
         PLY
         PLX

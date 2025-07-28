@@ -62,6 +62,9 @@ unit Variables
         PHX
         PHY
         
+        LDA ZP.ACCT
+        PHA
+        
         loop // start of single exit block
         {
             // Find the symbol
@@ -110,6 +113,9 @@ unit Variables
             CLC  // Error
             break;
         } // end of single exit block
+        
+        PLA
+        STA ZP.ACCT
         
         PLY
         PLX
