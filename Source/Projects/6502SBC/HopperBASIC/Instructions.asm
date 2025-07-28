@@ -543,6 +543,89 @@ unit Instructions
         PLA  // Restore A
     }
     
+    // Fixed UnaryMinus operation (specialized for parseUnary)
+// Input: Stack contains one operand (the value to negate)
+// Output: Negated value pushed to stack with INT type
+// Modifies: Stack interface (ZP.TOP, ZP.TOPT, ZP.SP, stack memory)
+UnaryMinus()
+{
+    PHA  // Preserve A register
+    PHX  // Preserve X register
+    PHY  // Preserve Y register
+    
+    loop // Single exit point for cleanup
+    {
+        // Pop the operand to negate
+        Stacks.PopTop(); // Pop operand, modifies X
+        
+        // Check if this is WORD 32768 (special case for -32768)
+        LDA ZP.TOPT
+        CMP #BasicType.WORD
+        if (Z)
+        {
+            LDA ZP.TOPH
+            CMP #0x80
+            if (Z)
+            {
+                LDA ZP.TOPL
+                if (Z)  // Exactly 32768
+                {
+                    // Convert WORD 32768 to INT -32768 directly
+                    LDA #BasicType.INT
+                    STA ZP.TOPT
+                    // Value 0x8000 is correct for -32768
+                    // **FIX: Load type into A register before PushTop**
+                    LDA #BasicType.INT
+                    Stacks.PushTop(); // Push result, modifies Y
+                    break; // Success exit
+                }
+            }
+        }
+        
+        // Handle normal cases
+        LDA ZP.TOPT
+        CMP #BasicType.INT
+        if (Z)
+        {
+            // INT - negate using two's complement
+            SEC
+            LDA #0
+            SBC ZP.TOPL
+            STA ZP.TOPL
+            LDA #0
+            SBC ZP.TOPH
+            STA ZP.TOPH
+            // Type remains INT
+        }
+        else
+        {
+            // WORD/BYTE - convert to two's complement (will become INT)
+            SEC
+            LDA #0
+            SBC ZP.TOPL
+            STA ZP.TOPL
+            LDA #0
+            SBC ZP.TOPH
+            STA ZP.TOPH
+            
+            // Force result type to INT (all negative numbers are INT)
+            LDA #BasicType.INT
+            STA ZP.TOPT
+        }
+        
+        // **FIX: Always load INT type into A register before PushTop**
+        LDA #BasicType.INT
+        Stacks.PushTop(); // Push result, modifies Y
+        
+        break; // Success exit
+    } // Single exit loop
+    
+    // Restore registers
+    PLY  // Restore Y register
+    PLX  // Restore X register
+    PLA  // Restore A register
+}
+    
     // Multiplication operation (pops two operands, pushes result)
     // Input: Stack contains two operands (right operand on top)
     // Output: Product pushed to stack
@@ -817,12 +900,376 @@ unit Instructions
         PLA  // Restore A register
     }
     
-    // Less-than comparison operation (pops two operands, pushes BIT result)
+    
+    // doSignedCompare() with debug instrumentation
+// Replace the existing doSignedCompare() method with this version
+
+// Private helper: Signed 16-bit comparison of NEXT vs TOP
+// Input: ZP.NEXT, ZP.TOP (16-bit signed values)
+// Output: ZP.ACC = comparison result:
+//         0 = NEXT < TOP
+//         1 = NEXT == TOP  
+//         2 = NEXT > TOP
+// Modifies: ZP.ACC, processor flags
+doSignedCompare()
+{
+    PHA
+    
+    // Debug: Show input values
+    LDA #'N'
+    Tools.COut();
+    LDA #':'
+    Tools.COut();
+    LDA ZP.NEXTH
+    Tools.HOut();
+    LDA ZP.NEXTL
+    Tools.HOut();
+    LDA #' '
+    Tools.COut();
+    LDA #'T'
+    Tools.COut();
+    LDA #':'
+    Tools.COut();
+    LDA ZP.TOPH
+    Tools.HOut();
+    LDA ZP.TOPL
+    Tools.HOut();
+    LDA #' '
+    Tools.COut();
+    
+    LDA ZP.NEXTH
+    CMP ZP.TOPH
+    if (Z)
+    {
+        // Debug: Same high bytes
+        LDA #'S'
+        Tools.COut();
+        LDA #'H'
+        Tools.COut();
+        LDA #' '
+        Tools.COut();
+        
+        // High bytes equal, compare low bytes unsigned
+        LDA ZP.NEXTL
+        CMP ZP.TOPL
+        if (Z)
+        {
+            LDA #1      // NEXT == TOP
+            STA ZP.ACC
+        }
+        else if (C)
+        {
+            LDA #2      // NEXT > TOP
+            STA ZP.ACC
+        }
+        else
+        {
+            LDA #0      // NEXT < TOP
+            STA ZP.ACC
+        }
+    }
+    else
+    {
+        // Debug: Different high bytes
+        LDA #'D'
+        Tools.COut();
+        LDA #'H'
+        Tools.COut();
+        LDA #' '
+        Tools.COut();
+        
+        // High bytes different - signed comparison needed
+        // Need to preserve the comparison result and check signs properly
+        PHP             // Save comparison flags
+        LDA ZP.NEXTH    // Get NEXT high byte
+        EOR ZP.TOPH     // XOR with TOP high byte to check if signs differ
+        if (MI)         // Signs differ
+        {
+            // Debug: Different signs
+            LDA #'D'
+            Tools.COut();
+            LDA #'S'
+            Tools.COut();
+            LDA #' '
+            Tools.COut();
+            
+            BIT ZP.NEXTH
+            if (MI)     // NEXT is negative, TOP is positive
+            {
+                // Debug: NEXT negative, TOP positive
+                LDA #'N'
+                Tools.COut();
+                LDA #'-'
+                Tools.COut();
+                LDA #' '
+                Tools.COut();
+                
+                LDA #0  // NEXT < TOP (negative < positive)
+            }
+            else        // NEXT is positive, TOP is negative
+            {
+                // Debug: NEXT positive, TOP negative  
+                LDA #'N'
+                Tools.COut();
+                LDA #'+'
+                Tools.COut();
+                LDA #' '
+                Tools.COut();
+                
+                LDA #2  // NEXT > TOP (positive > negative)
+            }
+            STA ZP.ACC
+        }
+        else
+        {
+            // Debug: Same signs
+            LDA #'S'
+            Tools.COut();
+            LDA #'S'
+            Tools.COut();
+            LDA #' '
+            Tools.COut();
+            
+            // Same signs, use the original comparison result
+            PLP         // Restore comparison flags
+            if (C)      // NEXT >= TOP (unsigned when same signs)
+            {
+                LDA #2  // NEXT > TOP
+            }
+            else
+            {
+                LDA #0  // NEXT < TOP
+            }
+            STA ZP.ACC
+        }
+        PLP             // Clean up stack if we didn't use it
+    }
+    
+    // Debug: Show final result
+    LDA #'A'
+    Tools.COut();
+    LDA #':'
+    Tools.COut();
+    LDA ZP.ACC
+    Tools.HOut();
+    LDA #' '
+    Tools.COut();
+    
+    PLA
+}
+    
+    // Private helper: Unsigned 16-bit comparison of NEXT vs TOP
+    // Input: ZP.NEXT, ZP.TOP (16-bit unsigned values)
+    // Output: ZP.ACC = comparison result:
+    //         0 = NEXT < TOP
+    //         1 = NEXT == TOP  
+    //         2 = NEXT > TOP
+    // Modifies: ZP.ACC, processor flags
+    doUnsignedCompare()
+    {
+        PHA
+        
+        LDA ZP.NEXTH
+        CMP ZP.TOPH
+        if (Z)
+        {
+            // High bytes equal, compare low bytes
+            LDA ZP.NEXTL
+            CMP ZP.TOPL
+            if (Z)
+            {
+                LDA #1      // NEXT == TOP
+                STA ZP.ACC
+            }
+            else if (C)
+            {
+                LDA #2      // NEXT > TOP
+                STA ZP.ACC
+            }
+            else
+            {
+                LDA #0      // NEXT < TOP
+                STA ZP.ACC
+            }
+        }
+        else
+        {
+            // High bytes different
+            if (C)
+            {
+                LDA #2      // NEXT > TOP
+                STA ZP.ACC
+            }
+            else
+            {
+                LDA #0      // NEXT < TOP
+                STA ZP.ACC
+            }
+        }
+        
+        PLA
+    }
+    
+    // Enhanced debug output for LessThan() type decision
+// Add this debug code right after CheckTypeCompatibility() and before the type decision
+
+LessThan()
+{
+    PHA  // Preserve A register
+    PHX  // Preserve X register
+    PHY  // Preserve Y register
+    
+    loop // Single exit point for cleanup
+    {
+        // Pop two operands
+        Stacks.PopTopNext(); // Pop operands, modifies X
+        
+        LDA #3  // Ordering comparison operation
+        CheckTypeCompatibility();
+        
+        if (NC)  // Type mismatch
+        {
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            break; // Error exit
+        }
+        
+        // **NEW DEBUG: Show types before decision**
+        LDA #'T'
+        Tools.COut();
+        LDA #'Y'
+        Tools.COut();
+        LDA #'P'
+        Tools.COut();
+        LDA #':'
+        Tools.COut();
+        LDA ZP.NEXTT  // Left operand type
+        Tools.HOut();
+        LDA #'/'
+        Tools.COut();
+        LDA ZP.TOPT   // Right operand type  
+        Tools.HOut();
+        LDA #' '
+        Tools.COut();
+        
+        // **NEW DEBUG: Show the type decision logic**
+        LDA ZP.NEXTT
+        CMP #BasicType.INT
+        if (Z)
+        {
+            // **NEW DEBUG: Show we're choosing signed**
+            LDA #'C'
+            Tools.COut();
+            LDA #'H'
+            Tools.COut();
+            LDA #'O'
+            Tools.COut();
+            LDA #'I'
+            Tools.COut();
+            LDA #'C'
+            Tools.COut();
+            LDA #'E'
+            Tools.COut();
+            LDA #':'
+            Tools.COut();
+            LDA #'S'
+            Tools.COut();
+            LDA #'I'
+            Tools.COut();
+            LDA #'G'
+            Tools.COut();
+            LDA #' '
+            Tools.COut();
+            
+            // INT - signed comparison
+            doSignedCompare();
+        }
+        else
+        {
+            // **NEW DEBUG: Show we're choosing unsigned and why**
+            LDA #'C'
+            Tools.COut();
+            LDA #'H'
+            Tools.COut();
+            LDA #'O'
+            Tools.COut();
+            LDA #'I'
+            Tools.COut();
+            LDA #'C'
+            Tools.COut();
+            LDA #'E'
+            Tools.COut();
+            LDA #':'
+            Tools.COut();
+            LDA #'U'
+            Tools.COut();
+            LDA #'N'
+            Tools.COut();
+            LDA #'S'
+            Tools.COut();
+            LDA #' '
+            Tools.COut();
+            LDA #'('
+            Tools.COut();
+            LDA ZP.NEXTT  // Show what type caused unsigned choice
+            Tools.HOut();
+            LDA #')'
+            Tools.COut();
+            LDA #' '
+            Tools.COut();
+            
+            // WORD and BYTE - unsigned comparison
+            doUnsignedCompare();
+        }
+        
+        // Debug: Show comparison result
+        LDA #'R'
+        Tools.COut();
+        LDA #':'
+        Tools.COut();
+        LDA ZP.ACC
+        Tools.HOut();
+        LDA #' '
+        Tools.COut();
+        
+        // Check if result is NEXT < TOP (ZP.ACC == 0)
+        LDX #0          // Assume false
+        LDA ZP.ACC
+        if (Z)          // Result was 0 (NEXT < TOP)
+        {
+            LDX #1      // True
+        }
+        
+        // Debug: Show final decision
+        LDA #'F'
+        Tools.COut();
+        LDA #':'
+        Tools.COut();
+        TXA
+        Tools.HOut();
+        LDA #' '
+        Tools.COut();
+        
+        Stacks.PushX(); // Push BIT result, modifies Y
+        
+        break; // Success exit
+    } // Single exit loop
+    
+    // Restore registers
+    PLY  // Restore Y register
+    PLX  // Restore X register
+    PLA  // Restore A register
+}
+     
+       
+    // Greater-than comparison operation (pops two operands, pushes BIT result)
     // Input: Stack contains two operands (right operand on top)
-    // Output: BIT value (0 or 1) pushed to stack representing (left < right)
+    // Output: BIT value (0 or 1) pushed to stack representing (left > right)
     // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
     //          Error state (ZP.LastError if type mismatch occurs)
-    LessThan()
+    GreaterThan()
     {
         PHA  // Preserve A register
         PHX  // Preserve X register
@@ -849,166 +1296,22 @@ unit Instructions
             CMP #BasicType.INT
             if (Z)
             {
-                // INT - signed comparison: NEXT < TOP?
-                LDX #0  // Assume NEXT >= TOP (not less than)
-                LDA ZP.NEXTH
-                CMP ZP.TOPH
-                if (Z)
-                {
-                    // High bytes equal, compare low bytes unsigned
-                    LDA ZP.NEXTL
-                    CMP ZP.TOPL
-                    if (C)  // NEXT < TOP
-                    {
-                        LDX #1  // NEXT < TOP
-                    }
-                }
-                else
-                {
-                    // High bytes different - need signed comparison
-                    EOR ZP.TOPH    // XOR to check if signs differ
-                    if (MI)        // Signs differ
-                    {
-                        // If signs differ, check NEXT's sign
-                        BIT ZP.NEXTH
-                        if (MI)    // NEXT is negative, TOP is positive
-                        {
-                            LDX #1  // NEXT < TOP
-                        }
-                        // else NEXT is positive, TOP is negative: NEXT > TOP (X stays 0)
-                    }
-                    else
-                    {
-                        // Same signs, use carry from high byte comparison
-                        if (C)     // NEXT >= TOP (unsigned when same signs)
-                        {
-                            // X stays 0 (NEXT >= TOP)
-                        }
-                        else
-                        {
-                            LDX #1  // NEXT < TOP
-                        }
-                    }
-                }
+                // INT - signed comparison
+                doSignedCompare();
             }
             else
             {
-                // WORD and BYTE - unsigned comparison: NEXT < TOP?
-                LDX #1 // Assume NEXT < TOP
-                LDA ZP.NEXTH
-                CMP ZP.TOPH
-                if (Z)
-                {
-                    LDA ZP.NEXTL
-                    CMP ZP.TOPL
-                }
-                if (C) // NEXT >= TOP?
-                {
-                    LDX #0 // NEXT not < TOP
-                }
+                // WORD and BYTE - unsigned comparison
+                doUnsignedCompare();
             }
             
-            Stacks.PushX(); // Push BIT result, modifies Y
-            
-            break; // Success exit
-        } // Single exit loop
-        
-        // Restore registers
-        PLY  // Restore Y register
-        PLX  // Restore X register
-        PLA  // Restore A register
-    }
-    
-    // Greater-than comparison operation (pops two operands, pushes BIT result)
-    // Input: Stack contains two operands (right operand on top)
-    // Output: BIT value (0 or 1) pushed to stack representing (left > right)
-    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
-    //          Error state (ZP.LastError if type mismatch occurs)
-    GreaterThan()
-    {
-        PHA  // Preserve A register
-        PHX  // Preserve X register
-        PHY  // Preserve Y register
-        
-        loop // Single exit point for cleanup
-        {
-            Stacks.PopTopNext(); // Pop operands, modifies X
-            
-            LDA #3  // Ordering comparison operation
-            CheckTypeCompatibility();
-            
-            if (NC)  // Type mismatch
+            // Check if result is NEXT > TOP (ZP.ACC == 2)
+            LDX #0          // Assume false
+            LDA ZP.ACC
+            CMP #2
+            if (Z)          // Result was 2 (NEXT > TOP)
             {
-                LDA #(Messages.TypeMismatch % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.TypeMismatch / 256)
-                STA ZP.LastErrorH
-                break; // Error exit
-            }
-            
-            LDA ZP.NEXTT
-            CMP #BasicType.INT
-            if (Z)
-            {
-                // INT - signed comparison: NEXT > TOP?
-                LDX #0  // Assume NEXT <= TOP (not greater than)
-                LDA ZP.NEXTH
-                CMP ZP.TOPH
-                if (Z)
-                {
-                    // High bytes equal, compare low bytes unsigned
-                    LDA ZP.NEXTL
-                    CMP ZP.TOPL
-                    if (NZ)     // NEXT != TOP?
-                    {
-                        if (C)  // NEXT >= TOP, and we know NEXT != TOP, so NEXT > TOP
-                        {
-                            LDX #1  // NEXT > TOP
-                        }
-                    }
-                }
-                else
-                {
-                    // High bytes different - need signed comparison
-                    EOR ZP.TOPH    // XOR to check if signs differ
-                    if (MI)        // Signs differ
-                    {
-                        // If signs differ, check TOP's sign  
-                        BIT ZP.TOPH
-                        if (MI)    // TOP is negative, NEXT is positive
-                        {
-                            LDX #1  // NEXT > TOP
-                        }
-                        // else TOP is positive, NEXT is negative: NEXT < TOP (X stays 0)
-                    }
-                    else
-                    {
-                        // Same signs, use carry from high byte comparison
-                        if (C)     // NEXT >= TOP (unsigned when same signs)
-                        {
-                            LDX #1  // NEXT > TOP (since high bytes differ)
-                        }
-                    }
-                }
-            }
-            else
-            {
-                // WORD and BYTE - unsigned comparison: testing !(NEXT <= TOP) which is (NEXT > TOP)
-                LDX #0 // Assume NEXT <= TOP
-                LDA ZP.NEXTH
-                CMP ZP.TOPH
-                if (Z)
-                {
-                    LDA ZP.NEXTL
-                    CMP ZP.TOPL
-                }
-                if (NZ) // NEXT != TOP?
-                {
-                    if (C) // NEXT >= TOP?
-                    {
-                        LDX #1   // NEXT > TOP
-                    }
-                }
+                LDX #1      // True
             }
             
             Stacks.PushX(); // Push BIT result, modifies Y
@@ -1054,43 +1357,22 @@ unit Instructions
             CMP #BasicType.INT
             if (Z)
             {
-                // INT - signed comparison: NEXT <= TOP?
-                // Calculate TOP - NEXT and check if result >= 0
-                SEC
-                LDA ZP.TOPL
-                SBC ZP.NEXTL
-                STA ZP.TOPL
-                LDA ZP.TOPH
-                SBC ZP.NEXTH
-                STA ZP.TOPH
-                
-                ASL           // sign bit into carry
-                
-                LDX #0  // Assume NEXT > TOP
-                if (NC)
-                {
-                    // Zero or positive result means NEXT <= TOP
-                    LDX #1
-                }
+                // INT - signed comparison
+                doSignedCompare();
             }
             else
             {
-                // WORD and BYTE - unsigned comparison: NEXT <= TOP?
-                LDX #1 // Assume NEXT <= TOP
-                LDA ZP.NEXTH
-                CMP ZP.TOPH
-                if (Z)
-                {
-                    LDA ZP.NEXTL
-                    CMP ZP.TOPL
-                }
-                if (NZ) // NEXT != TOP?
-                {
-                    if (C) // NEXT >= TOP?
-                    {
-                        LDX #0  // NEXT > TOP
-                    }
-                }
+                // WORD and BYTE - unsigned comparison
+                doUnsignedCompare();
+            }
+            
+            // Check if result is NEXT <= TOP (ZP.ACC == 0 OR ZP.ACC == 1)
+            LDX #0          // Assume false
+            LDA ZP.ACC
+            CMP #2
+            if (NZ)         // Result was not 2 (so NEXT <= TOP)
+            {
+                LDX #1      // True
             }
             
             Stacks.PushX(); // Push BIT result, modifies Y
@@ -1136,40 +1418,21 @@ unit Instructions
             CMP #BasicType.INT
             if (Z)
             {
-                // INT - signed comparison: testing !(NEXT < TOP) which is (NEXT >= TOP)
-                LDX #1 // Assume NEXT >= TOP
-                LDA ZP.NEXTH
-                CMP ZP.TOPH
-                if (Z)
-                {
-                    LDA ZP.NEXTL
-                    CMP ZP.TOPL
-                }
-                if (NC) // NEXT < TOP?
-                {
-                    LDX #0   // NEXT < TOP, so not >= 
-                }
+                // INT - signed comparison
+                doSignedCompare();
             }
             else
             {
-                // WORD and BYTE - unsigned comparison: NEXT >= TOP?
-                // Calculate NEXT - TOP and check if result >= 0
-                SEC
-                LDA ZP.NEXTL
-                SBC ZP.TOPL
-                STA ZP.TOPL
-                LDA ZP.NEXTH
-                SBC ZP.TOPH
-                STA ZP.TOPH
-                
-                ASL           // sign bit into carry
-                
-                LDX #1  // Assume NEXT >= TOP
-                if (C)
-                {
-                    // Negative result means NEXT < TOP
-                    LDX #0
-                }
+                // WORD and BYTE - unsigned comparison
+                doUnsignedCompare();
+            }
+            
+            // Check if result is NEXT >= TOP (ZP.ACC == 1 OR ZP.ACC == 2)
+            LDX #0          // Assume false
+            LDA ZP.ACC
+            if (NZ)         // Result was not 0 (so NEXT >= TOP)
+            {
+                LDX #1      // True
             }
             
             Stacks.PushX(); // Push BIT result, modifies Y
@@ -1182,6 +1445,7 @@ unit Instructions
         PLX  // Restore X register
         PLA  // Restore A register
     }
+    
     
     // Bitwise AND operation (pops two operands, pushes result)
     // Input: Stack contains two operands (right operand on top)

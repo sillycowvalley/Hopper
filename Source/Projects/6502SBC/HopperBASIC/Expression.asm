@@ -511,85 +511,40 @@ unit Expression
         SEC  // Success
     }
     
-    // Parse unary operators and delegate to primary expressions
-    // Input: ZP.CurrentToken = current token (-, NOT, or start of primary expression)
-    // Output: Expression result pushed to stack
-    //         ZP.CurrentToken = token after unary expression
-    // Munts: Stack, ZP.CurrentToken, ZP.TOP, ZP.TOPT, parsing variables
-    // Error: Sets ZP.LastError if syntax error
-    parseUnary()
+    // Updated parseUnary() method for Expression.asm
+// Replace the existing parseUnary() method with this corrected version
+
+// Parse unary operators and delegate to primary expressions
+// Input: ZP.CurrentToken = current token (-, NOT, or start of primary expression)
+// Output: Expression result pushed to stack
+//         ZP.CurrentToken = token after unary expression
+// Munts: Stack, ZP.CurrentToken, ZP.TOP, ZP.TOPT, parsing variables
+// Error: Sets ZP.LastError if syntax error
+parseUnary()
+{
+#ifdef DEBUG
+    LDA #'<'
+    Serial.WriteChar();
+    LDA #'U'
+    Serial.WriteChar();
+#endif
+    
+    LDA ZP.CurrentToken
+    CMP #Tokens.MINUS
+    if (Z)
     {
-#ifdef DEBUG
-        LDA #'<'
-        Serial.WriteChar();
-        LDA #'U'
-        Serial.WriteChar();
-#endif
+        // Unary minus
+        Tokenizer.NextToken();
+        Messages.CheckError();
+        if (NC) { return; }
         
-        LDA ZP.CurrentToken
-        CMP #Tokens.MINUS
-        if (Z)
-        {
-            // Unary minus
-            Tokenizer.NextToken();
-            Messages.CheckError();
-            if (NC) { return; }
-            
-            // Push zero onto value stack
-            STZ ZP.TOPL
-            STZ ZP.TOPH
-            LDA #BasicType.INT
-            STA ZP.TOPT
-            Stacks.PushTop(); // Push value to stack, modifies Y
-            
-            // Parse the operand
-            parsePrimary();
-            Messages.CheckError();
-            if (NC) { return; }
-            
-            // Negate the result (0 - operand)
-            Instructions.Subtraction();
-            
-#ifdef DEBUG
-            LDA #'U'
-            Serial.WriteChar();
-            LDA #'>'
-            Serial.WriteChar();
-#endif
-            
-            SEC  // Success
-            return;
-        }
-        
-        CMP #Tokens.NOT
-        if (Z)
-        {
-            // Logical NOT (unary)
-            Tokenizer.NextToken();
-            Messages.CheckError();
-            if (NC) { return; }
-            
-            // Parse the operand
-            parsePrimary();
-            Messages.CheckError();
-            if (NC) { return; }
-            
-            // Perform logical NOT
-            Instructions.LogicalNot();
-            
-#ifdef DEBUG
-            LDA #'U'
-            Serial.WriteChar();
-            LDA #'>'
-            Serial.WriteChar();
-#endif
-            
-            SEC  // Success
-            return;
-        }
-        
-        // Not unary, parse primary
+        // Parse the operand first
         parsePrimary();
+        Messages.CheckError();
+        if (NC) { return; }
+        
+        // Apply unary minus with proper type handling
+        Instructions.UnaryMinus();
         
 #ifdef DEBUG
         LDA #'U'
@@ -597,7 +552,48 @@ unit Expression
         LDA #'>'
         Serial.WriteChar();
 #endif
+        
+        SEC  // Success
+        return;
     }
+    
+    CMP #Tokens.NOT
+    if (Z)
+    {
+        // Logical NOT (unary)
+        Tokenizer.NextToken();
+        Messages.CheckError();
+        if (NC) { return; }
+        
+        // Parse the operand
+        parsePrimary();
+        Messages.CheckError();
+        if (NC) { return; }
+        
+        // Perform logical NOT
+        Instructions.LogicalNot();
+        
+#ifdef DEBUG
+        LDA #'U'
+        Serial.WriteChar();
+        LDA #'>'
+        Serial.WriteChar();
+#endif
+        
+        SEC  // Success
+        return;
+    }
+    
+    // Not unary, parse primary
+    parsePrimary();
+    
+#ifdef DEBUG
+    LDA #'U'
+    Serial.WriteChar();
+    LDA #'>'
+    Serial.WriteChar();
+#endif
+}
     
     // Parse primary expressions (numbers, identifiers, parentheses)
     // Input: ZP.CurrentToken = current token (NUMBER, IDENTIFIER, LPAREN, etc.)

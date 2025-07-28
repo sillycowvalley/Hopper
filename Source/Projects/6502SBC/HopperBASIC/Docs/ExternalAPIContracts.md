@@ -1,79 +1,5 @@
-// External Hopper VM Function Contracts
-// These are established, stable functions from /Source/Runtime/6502/
-// Documented based on actual source code analysis
-
-//==============================================================================
-// SERIAL COMMUNICATION (/Source/Runtime/6502/Serial)
-//==============================================================================
-
-Serial.Initialize()
-// Input: None
-// Output: Serial hardware initialized, buffers cleared
-// Modifies: ZP.SerialInWritePointer, ZP.SerialInReadPointer, ZP.SerialBreakFlag (all set to 0)
-// Modifies: Hardware state via SerialDevice.initialize()
-
-Serial.IsAvailable()
-// Input: None
-// Output: Z flag clear if character available, Z set if not
-// Modifies: Processor flags only
-// Note: Disables/enables interrupts briefly
-
-Serial.WaitForChar()
-// Input: None (waits for user input)
-// Output: A = received character
-// Modifies: A register, ZP.W1 (on 6502), ZP.SerialInReadPointer, processor flags
-// Note: Preserves X register using stack on CPU_65C02S
-
-Serial.WriteChar()
-// Input: A = character to transmit
-// Output: Character transmitted to serial port
-// Modifies: Hardware state only, may call SerialDevice.pollRead() which modifies registers
-
-Serial.HexOut()
-// Input: A = byte to output as hexadecimal
-// Output: Two hex digits transmitted (e.g., A=0x42 outputs "42")
-// Modifies: CPU stack (uses PHA/PLA), calls WriteChar() twice
-// Note: Restores A register to original value
-
-Serial.HexIn()
-// Input: None (waits for two hex characters)
-// Output: A = assembled byte value
-// Modifies: A register, ZP.W0 (WorkSpaceHexIn), calls WaitForChar() and Utilities.MakeNibble()
-
-//==============================================================================
-// MEMORY MANAGEMENT (/Source/Runtime/6502/Memory)
-//==============================================================================
-
-Memory.InitializeHeapSize()
-// Input: ZP.PROGSIZE = program size in pages
-// Output: Heap initialized, ZP.HEAPSTART and ZP.HEAPSIZE set, heap memory cleared
-// Modifies: ZP.HEAPSTART, ZP.HEAPSIZE, ZP.FREELISTL, ZP.FREELISTH
-// Modifies: A, X, Y, ZP.IDXL, ZP.IDXH (via Utilities.ClearPages)
-// Note: May call probeRAM() which modifies additional registers
-
-Memory.Allocate() [HOPPER_BASIC version]
-// Input: ZP.ACC = requested size (16-bit)
-// Output: ZP.IDX = allocated address (0x0000 if allocation failed)
-// Modifies: ZP.M* scratch space (internal to memory management operations)
-// Note: Preserves ZP.ACC, A, X, Y, processor flags via stack
-// API Status: Clean - follows clean API standards with proper register preservation
-
-Memory.Free() [HOPPER_BASIC version]
-// Input: ZP.IDX = address to free (must not be 0x0000)
-// Output: C set (success)
-// Modifies: ZP.M* scratch space (internal to memory management operations)
-// Note: Preserves ZP.IDX, ZP.ACC, A, X, Y, processor flags via stack
-// API Status: Clean - follows clean API standards with proper register preservation
-
-Memory.Available()
-// Input: None
-// Output: Available memory (UInt) pushed to value stack
-// Modifies: Value stack, ZP.SP, calls AvailableACC() then Stacks.PushACC()
-
-Memory.AvailableACC()
-// Input: None
-// Output: ZP.ACC = available memory (16-bit)
-// Modifies: ZP.ACC, ZP.IDX, ZP.IDY (working registers for free list traversal)
+# External Hopper VM Function Contracts
+Documented based on actual source code analysis from /Source/Runtime/6502/
 
 //==============================================================================
 // STACK OPERATIONS (/Source/Runtime/6502/Stacks)
@@ -99,27 +25,28 @@ Stacks.PopTopNext()
 // Input: Value stack must have at least 2 entries
 // Output: ZP.TOP = top value, ZP.NEXT = next value, types in ZP.TOPT/ZP.NEXTT
 // Modifies: ZP.TOP, ZP.TOPT, ZP.NEXT, ZP.NEXTT, ZP.SP (decremented by 2)
-// Note: May use X register as index (preserved in INLINE_EXPANSIONS version)
+// Note: Uses X register as index, may preserve X in INLINE_EXPANSIONS version
 
 Stacks.PushTop()
-// Input: ZP.TOP = value, ZP.TOPT = type, A = type (parameter)
-// Output: Value pushed to stack, ZP.SP incremented
-// Modifies: ZP.SP, value stack memory, Y (used as index)
+// Input: ZP.TOP = value (16-bit), A = type
+// Output: Value and type pushed to stack, ZP.SP incremented
+// Modifies: ZP.SP, value stack memory, type stack memory, Y (used as index)
 
 Stacks.PushNext()
-// Input: ZP.NEXT = value, ZP.NEXTT = type, A = type (parameter)
-// Output: Value pushed to stack, ZP.SP incremented
-// Modifies: ZP.SP, value stack memory, Y (used as index)
+// Input: ZP.NEXT = value (16-bit), A = type
+// Output: Value and type pushed to stack, ZP.SP incremented
+// Modifies: ZP.SP, value stack memory, type stack memory, Y (used as index)
 
 Stacks.PushX()
-// Input: X = value to push (8-bit)
+// Input: X = value to push (8-bit, 0 or 1)
 // Output: Value pushed to stack as Types.Bool, ZP.SP incremented
-// Modifies: ZP.NEXT (X->NEXTL, 0->NEXTH), ZP.NEXTT, ZP.SP, calls PushNext()
+// Modifies: ZP.NEXT (X->NEXTL, 0->NEXTH), ZP.NEXTT (set to Types.Bool), ZP.SP
+// Note: Calls PushNext() internally with A = Types.Bool
 
 Stacks.PushACC()
-// Input: ZP.ACC = value, ZP.ACCT = type
-// Output: Value pushed to stack, ZP.SP incremented
-// Modifies: ZP.SP, value stack memory, Y (used as index)
+// Input: ZP.ACC = value (16-bit), ZP.ACCT = type
+// Output: Value and type pushed to stack, ZP.SP incremented
+// Modifies: ZP.SP, value stack memory, type stack memory, Y (used as index)
 
 Stacks.PopACC()
 // Input: Value stack must not be empty
@@ -133,13 +60,46 @@ Stacks.PopIDX()
 // Modifies: ZP.IDX, ZP.SP, Y (used as index)
 
 //==============================================================================
+// MEMORY MANAGEMENT (/Source/Runtime/6502/Memory) - HOPPER_BASIC VERSION
+//==============================================================================
+
+Memory.InitializeHeapSize()
+// Input: ZP.PROGSIZE = program size in pages
+// Output: Heap initialized, ZP.HEAPSTART and ZP.HEAPSIZE set, heap memory cleared
+// Modifies: ZP.HEAPSTART, ZP.HEAPSIZE, ZP.FREELISTL, ZP.FREELISTH
+// Modifies: A, X, Y, ZP.IDXL, ZP.IDXH (via Utilities.ClearPages and probeRAM)
+// Note: May call probeRAM() which modifies additional registers
+
+Memory.Allocate()
+// Input: ZP.ACC = requested size (16-bit)
+// Output: ZP.IDX = allocated address (0x0000 if allocation failed)
+// Modifies: ZP.M* scratch space (internal to memory management operations)
+// Preserves: ZP.ACC, A, X, Y, processor flags (via stack)
+
+Memory.Free()
+// Input: ZP.IDX = address to free (must not be 0x0000)
+// Output: C set (success)
+// Modifies: ZP.M* scratch space (internal to memory management operations)
+// Preserves: ZP.IDX, ZP.ACC, A, X, Y, processor flags (via stack)
+
+Memory.Available()
+// Input: None
+// Output: Available memory (UInt) pushed to value stack
+// Modifies: Value stack, ZP.SP, calls AvailableACC() then Stacks.PushACC()
+
+Memory.AvailableACC()
+// Input: None
+// Output: ZP.ACC = available memory (16-bit)
+// Modifies: ZP.ACC, ZP.IDX, ZP.IDY (working registers for free list traversal)
+
+//==============================================================================
 // INTEGER MATH (/Source/Runtime/6502/IntMath)
 //==============================================================================
 
 IntMath.MulShared()
 // Input: ZP.NEXT = left operand, ZP.TOP = right operand (both positive)
 // Output: ZP.TOP = product (16-bit), ZP.TOPT = Types.UInt
-// Modifies: ZP.TOP (result), ZP.TOPT, ZP.UWIDE0-UWIDE3 (scratch space)
+// Modifies: ZP.TOP (result), ZP.TOPT (set to Types.UInt), ZP.UWIDE0-UWIDE3 (scratch)
 // Note: Optimized for common cases (powers of 2, small numbers, 8x8 multiplication)
 
 IntMath.UtilityDiv()
@@ -165,6 +125,44 @@ IntMath.NegateNext()
 // Modifies: ZP.NEXT only
 
 //==============================================================================
+// SERIAL COMMUNICATION (/Source/Runtime/6502/Serial)
+//==============================================================================
+
+Serial.Initialize()
+// Input: None
+// Output: Serial hardware initialized, buffers cleared
+// Modifies: ZP.SerialInWritePointer, ZP.SerialInReadPointer, ZP.SerialBreakFlag (all set to 0)
+// Modifies: Hardware state via SerialDevice.initialize()
+
+Serial.IsAvailable()
+// Input: None
+// Output: Z flag clear if character available, Z set if not
+// Modifies: Processor flags only
+// Note: Disables/enables interrupts briefly, may call SerialDevice.pollRead()
+
+Serial.WaitForChar()
+// Input: None (waits for user input)
+// Output: A = received character
+// Modifies: A register, X register temporarily (preserved via stack on 65C02S)
+// Note: Uses ZP.W1 on non-65C02S systems as workspace
+
+Serial.WriteChar()
+// Input: A = character to transmit
+// Output: Character transmitted to serial port
+// Modifies: Hardware state only, may call SerialDevice.pollRead()
+
+Serial.HexOut()
+// Input: A = byte to output as hexadecimal
+// Output: Two hex digits transmitted (e.g., A=0x42 outputs "42")
+// Modifies: CPU stack (uses PHA/PLA), calls WriteChar() twice
+// Preserves: A register (restored to original value)
+
+Serial.HexIn()
+// Input: None (waits for two hex characters)
+// Output: A = assembled byte value
+// Modifies: A register, ZP.W0 (WorkSpaceHexIn), calls WaitForChar() and Utilities.MakeNibble()
+
+//==============================================================================
 // UTILITIES (/Source/Runtime/6502/Utilities)
 //==============================================================================
 
@@ -172,7 +170,7 @@ Utilities.ClearPages()
 // Input: ZP.IDX = start address, X = number of 256-byte pages to clear
 // Output: Memory cleared (filled with zeros)
 // Modifies: A (used as value to store), X (decremented), Y (page offset), ZP.IDXH (incremented)
-// Note: Does NOT modify ZP.IDXL (documented behavior)
+// Preserves: ZP.IDXL (documented behavior - does NOT modify)
 
 Utilities.MakeNibble()
 // Input: A = character ('0'-'9' or 'A'-'F')
