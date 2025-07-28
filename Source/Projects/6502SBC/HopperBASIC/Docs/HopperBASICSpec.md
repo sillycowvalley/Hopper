@@ -1,4 +1,4 @@
-# Hopper BASIC Specification v2.0
+# Hopper BASIC Specification v2.1
 
 ## Project Objectives
 
@@ -40,6 +40,13 @@
 #### Basic I/O
 - ✅ **`PRINT expr`** - Output single value followed by newline
 - ✅ **`PRINT`** - Output empty line (no arguments)
+
+#### Statement Separators
+- ❌ **Colon (`:`) separator** - Multiple statements on one line
+  - **Usage**: `PRINT 10 : PRINT 20` executes both print statements
+  - **Classic BASIC compatibility** - Standard behavior for multiple commands
+  - **Tokenizer support** - Colon recognized as statement boundary token
+  - **Parser integration** - Line processor splits on colons and executes each statement
 
 #### Comments
 - ❌ **`REM [comment]`** - Full-form comment (traditional BASIC)
@@ -176,6 +183,12 @@
 - ✅ **Type Compatibility System**: Full type checking with promotion rules for all operations
 - ✅ **Instruction Set**: Complete arithmetic, bitwise, logical, and comparison operations with type safety
 
+### Required Additions for Colon Separator
+- ❌ **Colon Token Recognition**: Add COLON token to tokenizer keyword table
+- ❌ **Statement Boundary Processing**: Update line processor to split on colon tokens
+- ❌ **Multi-Statement Execution**: Execute each statement separately with proper error handling
+- ❌ **Token Stream Management**: Handle token boundaries across multiple statements in one line
+
 ### Memory Layout (Preserved from Hopper VM)
 - **$0200-$02FF**: Serial input buffer (256 bytes)
 - **$0300-$03FF**: Call stack LSB (256 bytes)
@@ -241,6 +254,8 @@ statement := variable_decl
            | return_statement
            | comment_statement
            | expression_statement
+
+statement_line := statement [ ":" statement ]*
 
 assignment := identifier "=" expression
 
@@ -360,8 +375,19 @@ digit := '0'..'9'
 decimal_digits := digit { digit }*
 character := any printable ASCII character except '"'
 whitespace := ' ' | '\t'
+statement_separator := ":"
 comment := REM any_characters_to_end_of_line
          | "'" any_characters_to_end_of_line
+```
+
+### Token Types
+```
+NUMBER := decimal_digits
+IDENTIFIER := letter [ letter | digit ]*
+KEYWORD := predefined language keywords (PRINT, IF, THEN, etc.)
+OPERATOR := "+" | "-" | "*" | "/" | "=" | "<>" | "<" | ">" | "<=" | ">=" | "&" | "|" | "(" | ")" | MOD | AND | OR | NOT
+SEPARATOR := ":" | "," | ";"
+COMMENT := REM | "'"
 ```
 
 ### Type System
@@ -406,6 +432,23 @@ REM This is a full comment line
 PRINT "Hello"  REM This is an end-of-line comment
 ' Short form comment
 INT count = 0  ' Initialize counter
+```
+
+### Statement Separator Rules
+
+**Colon Separator (`:`):**
+- **Multiple statements per line**: `PRINT 10 : PRINT 20`
+- **Classic BASIC compatibility**: Standard behavior across all BASIC dialects
+- **Execution order**: Left to right, each statement executes completely before next
+- **Error handling**: If any statement fails, execution stops at that point
+- **Whitespace**: Spaces around colons are optional: `PRINT 10:PRINT 20` works
+
+**Usage Examples:**
+```basic
+PRINT 10 : PRINT 20
+INT x = 5 : PRINT x : x = x + 1 : PRINT x
+IF x > 0 THEN PRINT "positive" : PRINT "done"
+PRINT "start" : REM this is a comment
 ```
 
 ### Output Formatting Rules
@@ -615,13 +658,14 @@ Offset 3+:  null-terminated argument name string
 
 ### Immediate (Complete Phase 1)
 1. ✅ **Symbol Table Foundation**: Complete 4-layer symbol table system with comprehensive testing
-2. **Variable System Integration**: Connect symbol table to parser and statement execution
-3. **Variable Declarations**: INT, WORD, BIT types with optional initialization in parser
-4. **Assignment Statements**: `var = expr` with type compatibility checking
-5. **Function System Integration**: FUNC/ENDFUNC definitions and RETURN statements in parser
-6. **Program Structure**: BEGIN/END main program blocks
-7. **Management Commands**: VARS, FUNCS, LIST, CLEAR, FORGET integration with symbol tables
-8. **Comment Support**: REM and ' comment recognition and parsing
+2. ❌ **Colon Separator Support**: Add colon token recognition and multi-statement line processing
+3. **Variable System Integration**: Connect symbol table to parser and statement execution
+4. **Variable Declarations**: INT, WORD, BIT types with optional initialization in parser
+5. **Assignment Statements**: `var = expr` with type compatibility checking
+6. **Function System Integration**: FUNC/ENDFUNC definitions and RETURN statements in parser
+7. **Program Structure**: BEGIN/END main program blocks
+8. **Management Commands**: VARS, FUNCS, LIST, CLEAR, FORGET integration with symbol tables
+9. **Comment Support**: REM and ' comment recognition and parsing
 
 ### Next Phase (Storage)
 1. **SAVE/LOAD Commands**: Tokenized program storage to EEPROM
@@ -641,11 +685,12 @@ Offset 3+:  null-terminated argument name string
 2. **Phase 1b**: ✅ Complete expression system (numbers, operators, precedence, type checking)
 3. **Phase 1c**: ✅ PRINT statement and IF/THEN control flow  
 4. **Phase 1d**: ✅ Complete symbol table foundation (4 layers + comprehensive testing)
-5. **Phase 1e**: **NEXT** - Variable declarations and assignment (connect symbol tables to parser)
-6. **Phase 1f**: Functions (FUNC/ENDFUNC/RETURN) and main program (BEGIN/END)
-7. **Phase 1g**: Comment support (REM and ' tokens)
-8. **Phase 2**: Add tokenized SAVE/LOAD functionality with EEPROM storage
-9. **Phase 3**: Add constants, loops, input, additional operators, built-in functions
+5. **Phase 1e**: **NEXT** - Colon separator support for multi-statement lines
+6. **Phase 1f**: Variable declarations and assignment (connect symbol tables to parser)
+7. **Phase 1g**: Functions (FUNC/ENDFUNC/RETURN) and main program (BEGIN/END)
+8. **Phase 1h**: Comment support (REM and ' tokens)
+9. **Phase 2**: Add tokenized SAVE/LOAD functionality with EEPROM storage
+10. **Phase 3**: Add constants, loops, input, additional operators, built-in functions
 
 This approach maximizes code reuse while delivering a clean, simple BASIC interpreter that feels familiar to users but leverages the robust Hopper VM foundation.
 
@@ -669,14 +714,15 @@ This approach maximizes code reuse while delivering a clean, simple BASIC interp
   - ✅ **Comprehensive testing**: All layers tested with memory leak detection
 - ✅ **Type system**: Complete type compatibility checking with promotion rules
 - ✅ **Instruction set**: All arithmetic, bitwise, logical, and comparison operations implemented
-- ❌ **Variable system integration**: Connect symbol tables to parser (next priority)
+- ❌ **Colon separator support**: Multi-statement line processing (immediate priority)
+- ❌ **Variable system integration**: Connect symbol tables to parser
 - ❌ **Function system integration**: Connect function tables to parser
 - ❌ **Assignment statements**: Variable assignment with type checking
 - ❌ **Comment support**: REM and ' comment tokens
 
 **Major Achievement**: We now have a complete, tested symbol table system that can handle variables, constants, and functions with proper memory management, type checking, and comprehensive test coverage. The foundation is solid and ready for integration with the parser.
 
-**Next Milestone**: Implement variable system integration to connect the completed symbol table foundation with the BASIC parser, enabling variable declarations (`INT name = value`) and assignments (`name = value`) to complete the core language functionality.
+**Next Milestone**: Implement colon separator support to enable classic BASIC multi-statement lines (`PRINT 10 : PRINT 20`), then continue with variable system integration to connect the completed symbol table foundation with the BASIC parser.
 
 **Testing Status**: All symbol table layers have comprehensive test suites with memory leak detection. The system has been validated to properly handle:
 - Variable and constant declaration with type checking
