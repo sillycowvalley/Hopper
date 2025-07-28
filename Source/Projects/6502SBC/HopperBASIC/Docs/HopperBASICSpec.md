@@ -1,4 +1,4 @@
-# Hopper BASIC Specification v2.3
+# Hopper BASIC Specification v2.4
 
 ## Project Objectives
 
@@ -97,7 +97,7 @@
 - ✅ **Comprehensive testing**: Complete test suites for all symbol table layers
 
 ### Assignment
-- ❌ **`var = expr`** - Assignment to existing variables
+- ✅ **`var = expr`** - Assignment to existing variables **(IMPLEMENTED)**
 
 ---
 
@@ -181,8 +181,8 @@
   - ✅ **Table Layer**: Generic linked list operations with memory management
   - ✅ **Objects Layer**: Symbol node management with type/value/name storage
   - ✅ **Variables Layer**: Variable and constant declaration, find, and manipulation
-  - ✅ **Functions Layer**: Function declaration, signature management, and body storage
-  - ✅ **Arguments Layer**: Function parameter management with ordered lists
+  - ✅ **Functions Layer**: Function declaration and management infrastructure
+  - ✅ **Arguments Layer**: Function parameter handling
 - ✅ **Number Tokenization**: Inline storage with overflow detection and automatic type assignment
 - ✅ **Keyword Recognition**: Complete keyword table with uppercase conversion
 - ✅ **Statement Framework**: Extensible statement execution with proper error propagation
@@ -194,21 +194,22 @@
 - ✅ **Comment Support**: REM and single-quote comments with inline text storage
 - ✅ **Variable Declaration Framework**: Parser support for INT, WORD, BIT with optional initialization
 - ✅ **Constant Declaration System**: CONST keyword support with constant expression validation and immutability
+- ✅ **Assignment Statement System**: Complete `var = expr` processing with type checking and immutability enforcement
 
-### Recently Completed (Since v2.2)
-- ✅ **Colon Token Recognition**: COLON token added to tokenizer and console processor
-- ✅ **Statement Boundary Processing**: Console processor splits on colon tokens and executes each statement
-- ✅ **Multi-Statement Execution**: Each statement executes separately with proper error handling
-- ✅ **Comment Token Support**: Both REM and ' (single quote) comments recognized and processed
-- ✅ **Variable Declaration Parsing**: Statement.executeVariableDeclaration() processes type tokens and identifiers
-- ✅ **Symbol Table Integration**: Variables.Declare() and Variables.Find() connected to parser
+### Recently Completed (Since v2.3)
 - ✅ **Constant Declaration System**: executeConstantDeclaration() fully implemented with constant expression validation
+- ✅ **Assignment Statement System**: executeIdentifier() fully implemented with complete `var = expr` processing
+- ✅ **ResolveIdentifier System**: Complete identifier resolution for variables, constants, keywords, and functions
+- ✅ **Type Compatibility Integration**: Assignment statements use full type checking and promotion system
+- ✅ **Immutability Enforcement**: Comprehensive protection preventing assignment to constants
 - ✅ **Console Commands Implementation**: NEW, CLEAR, VARS, MEM, BYE fully implemented
 - ✅ **Variable Display System**: VARS command shows variable types, names, and current values
+- ✅ **Symbol Table Integration**: Variables.Declare() and Variables.Find() connected to parser
+- ✅ **Constant Expression Validation**: Proper validation of constant expressions during CONST declaration
+- ✅ **Constant Evaluation in Expressions**: Constants can be used as operands in expressions
 - ✅ **Symbol Table Iteration**: Variables.IterateAll(), IterateVariables(), IterateConstants() working
 
 ### Required Additions for Complete Phase 1
-- ❌ **Assignment Statement Processing**: Connect executeIdentifier() to symbol table for `var = expr`
 - ❌ **Function System Integration**: FUNC/ENDFUNC definitions and RETURN statements in parser
 - ❌ **Program Structure**: BEGIN/END main program blocks (special case of FUNC)
 - ❌ **Management Commands**: LIST, RUN, FUNCS, FORGET integration with symbol tables
@@ -690,10 +691,10 @@ Offset 3+:  null-terminated argument name string
 3. ✅ **Comment Support**: REM and ' comment recognition and parsing
 4. ✅ **Variable Declaration Framework**: Parser support for INT, WORD, BIT with optional initialization
 5. ✅ **Constant Declaration System**: CONST keyword support with constant expression validation and immutability
-6. **Assignment Statement Processing**: Connect executeIdentifier() to symbol table for `var = expr`
+6. ✅ **Assignment Statement Processing**: Connect executeIdentifier() to symbol table for `var = expr`
 7. **Function System Integration**: FUNC/ENDFUNC definitions and RETURN statements in parser
 8. **Program Structure**: BEGIN/END main program blocks
-9. **Management Commands**: VARS, FUNCS, LIST, CLEAR, FORGET integration with symbol tables
+9. **Management Commands**: LIST, RUN, FUNCS, FORGET integration with symbol tables
 
 ### Next Phase (Storage)
 1. **SAVE/LOAD Commands**: Tokenized program storage to EEPROM
@@ -714,9 +715,9 @@ Offset 3+:  null-terminated argument name string
 3. **Phase 1c**: ✅ PRINT statement and IF/THEN control flow  
 4. **Phase 1d**: ✅ Complete symbol table foundation (4 layers + comprehensive testing)
 5. **Phase 1e**: ✅ Colon separator support for multi-statement lines
-6. ✅ **Phase 1f**: ✅ Comment support (REM and ' tokens) + ✅ Variable declaration framework + ✅ Console commands (NEW, CLEAR, VARS) + ✅ Constant declaration system
-7. **Phase 1g**: **NEXT** - Assignment statements (`var = expr`) and identifier resolution
-8. **Phase 1h**: Functions (FUNC/ENDFUNC/RETURN) and main program (BEGIN/END)
+6. **Phase 1f**: ✅ Comment support (REM and ' tokens) + ✅ Variable declaration framework + ✅ Console commands (NEW, CLEAR, VARS) + ✅ Constant declaration system
+7. **Phase 1g**: ✅ Assignment statements (`var = expr`) and identifier resolution
+8. **Phase 1h**: **NEXT** - Functions (FUNC/ENDFUNC/RETURN) and main program (BEGIN/END)
 9. **Phase 1i**: Remaining management commands (LIST, RUN, FUNCS, FORGET)
 10. **Phase 2**: Add tokenized SAVE/LOAD functionality with EEPROM storage
 11. **Phase 3**: Add constants, loops, input, additional operators, built-in functions
@@ -727,9 +728,9 @@ This approach maximizes code reuse while delivering a clean, simple BASIC interp
 
 ## Current Status Summary
 
-**Phase 1 Progress**: ~95% complete
+**Phase 1 Progress**: ~99% complete
 - ✅ Core expression evaluation system (complete with all operators and type checking)
-- ✅ Basic console commands (NEW, MEM, BYE working; LIST, VARS, FUNCS, CLEAR, FORGET stubs)
+- ✅ Basic console commands (NEW, CLEAR, VARS, MEM, BYE working; LIST, RUN, FUNCS, FORGET stubs)
 - ✅ PRINT statement (working for all expression types)
 - ✅ Complete tokenizer with number parsing and keyword recognition
 - ✅ Statement execution framework with proper error propagation
@@ -746,14 +747,17 @@ This approach maximizes code reuse while delivering a clean, simple BASIC interp
 - ✅ **Comment support**: REM and single-quote comments with inline text storage
 - ✅ **Variable declaration framework**: Parser support for INT, WORD, BIT with optional initialization
 - ✅ **Constant declaration system**: CONST keyword with constant expression validation, immutability enforcement, and symbol table integration
+- ✅ **Assignment statement system**: Complete `var = expr` processing with type checking and immutability enforcement
+- ✅ **ResolveIdentifier system**: Complete identifier resolution distinguishing variables, constants, keywords, and functions
+- ✅ **Variables.SetValue integration**: Full variable assignment with immutability validation
+- ✅ **Type promotion in assignment**: Assignment statements use complete type compatibility checking
 - ✅ **Management commands**: NEW, CLEAR, VARS, MEM, BYE implemented (LIST, RUN, FUNCS, FORGET stubs)
-- ❌ **Assignment statements**: Variable assignment with type checking (executeIdentifier stub)
 - ❌ **Function system integration**: Connect function tables to parser
 - ❌ **Program structure**: BEGIN/END main program blocks
 
-**Major Recent Achievement**: Console commands (NEW, CLEAR, VARS, MEM, BYE) are now fully implemented alongside colon separator support and comment processing, enabling classic BASIC multi-statement lines like `PRINT 10 : PRINT 20` and comprehensive variable management. The VARS command provides complete variable display with types and values. **CONST declaration is fully operational** with proper constant expression validation, immutability enforcement, and integration with the expression evaluator - constants can be declared, evaluated in expressions, and displayed via VARS.
+**Major Recent Achievement**: **Assignment statements are fully operational** with complete `var = expr` processing, type checking, and immutability enforcement. Combined with the CONST declaration system, this provides a complete variable manipulation framework. The executeIdentifier() function handles variable assignment with proper type promotion and prevents assignment to constants.
 
-**Next Milestone**: Complete assignment statement processing by implementing executeIdentifier() to handle `var = expr` statements, connecting the existing symbol table system to variable assignment operations.
+**Next Milestone**: Function system integration - implementing FUNC/ENDFUNC definitions and RETURN statements to complete the core language functionality.
 
 **Testing Status**: All symbol table layers have comprehensive test suites with memory leak detection. The system has been validated to properly handle:
 - Variable and constant declaration with type checking
@@ -766,6 +770,7 @@ This approach maximizes code reuse while delivering a clean, simple BASIC interp
 - Multi-statement line processing with colon separators
 - Comment processing with both REM and ' syntax
 - Constant evaluation in expressions (constants can be used as operands)
+- **Assignment statement processing**: Complete `var = expr` with type checking, promotion, and immutability enforcement
 
 The symbol table foundation and core parsing infrastructure are production-ready and provide a robust base for completing the remaining assignment and function integration work.
 
