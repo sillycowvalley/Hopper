@@ -22,7 +22,7 @@ unit Messages
     
     const string TypeMismatch   = "TYPE MISMATCH";
     const string FunctionExists = "FUNCTION EXISTS";
-    const string ConstantExists = "CONSTANT EXISTS";
+    //const string ConstantExists = "CONSTANT EXISTS";
     const string OutOfMemory    = "OUT OF MEMORY";
     const string FileNotFound   = "FILE NOT FOUND";
     const string NextWithoutFor = "NEXT WITHOUT FOR";
@@ -32,6 +32,7 @@ unit Messages
     const string BadIndex       = "BAD INDEX"; // STRING and ARRAY
     const string UndefinedIdentifier = "UNDEFINED IDENTIFIER"; // FUNC or VAR
     const string ConstantExpected  = "CONSTANT EXPECTED";
+    const string ConstantExpressionExpected  = "CONSTANT EXPRESSION EXPECTED";
     const string IllegalVariableName  = "ILLEGAL VARIABLE NAME";
     
     // Clear error state

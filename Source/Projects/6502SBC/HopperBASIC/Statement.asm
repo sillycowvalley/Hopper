@@ -9,15 +9,35 @@ unit Statement
     
     uses "Variables"
     
+    
     // Private Statement layer storage - BasicProcessBuffer2 (32 bytes at 0x09C0-0x09DF)
     const uint stmtNamePtr     = Address.BasicProcessBuffer2;      // 0x09C0: 2 bytes - identifier name pointer
     const uint stmtValue       = Address.BasicProcessBuffer2 + 2;  // 0x09C2: 2 bytes - initial/evaluated value
     const uint stmtTokensPtr   = Address.BasicProcessBuffer2 + 4;  // 0x09C4: 2 bytes - tokens pointer  
-    const uint stmtTypeInfo    = Address.BasicProcessBuffer2 + 6;  // 0x09C6: 2 bytes - type information
     const uint stmtTokPos      = Address.BasicProcessBuffer2 + 8;  // 0x09C8: 2 bytes - saved tokenizer position
     const uint stmtTokLen      = Address.BasicProcessBuffer2 + 10; // 0x09CA: 2 bytes - token stream length
-    // 20 bytes available for future statement needs (0x09CC-0x09DF)
+    const uint stmtSymbol      = Address.BasicProcessBuffer2 + 12; // 0x09CC: 1 byte  - symbol information
+    const uint stmtType        = Address.BasicProcessBuffer2 + 13; // 0x09CD: 1 byte  - type information
+    const uint stmtIsConstant  = Address.BasicProcessBuffer2 + 14; // 0x09CE: 1 byte  - current expression is const
+    
+    // 17 bytes available for future statement needs (0x09CF-0x09DF)
 
+    SetIsConstant()
+    {
+        STA stmtIsConstant
+    }
+    IsConstant()
+    {
+        LDA stmtIsConstant
+        if (Z)
+        {
+            CLC // not constant (stmtISConstant == 0)
+        }   
+        else
+        {
+            SEC // constant (stmtISConstant == 1)
+        }
+    }
     
     // Execute a statement starting from current token position
     // Input: ZP.CurrentToken = first token of statement
@@ -35,115 +55,79 @@ unit Statement
         LDA ZP.CurrentToken
         Tools.HOut();
 #endif
-        
-        LDA ZP.CurrentToken
-        
-        switch (A)
+        loop
         {
-            case Tokens.REM:
-            case Tokens.COMMENT:
+            LDA ZP.CurrentToken
+            switch (A)
             {
-                // Comments are no-ops - just advance to next token
-                Tokenizer.NextToken();
+                case Tokens.REM:
+                case Tokens.COMMENT:
+                {
+                    // Comments are no-ops - just advance to next token
+                    Tokenizer.NextToken();
+                    SEC  // Success
+                    break;
+                }
+                case Tokens.PRINT:
+                {
+                    executePrint();
+                    break;
+                }
+                case Tokens.IF:
+                {
+                    executeIf();
+                    break;
+                }
+                case Tokens.RETURN:
+                {
+                    executeReturn();
+                    break;
+                }
+                case Tokens.END:
+                {
+                    executeEnd();
+                    break;
+                }
+                case Tokens.IDENTIFIER:
+                {
+                    // Could be assignment or function call
+                    executeIdentifier();
+                    break;
+                }
                 
-        #ifdef DEBUG
-                LDA #'S'
-                Tools.COut();
-                LDA #'>'
-                Tools.COut();
-        #endif
+                case Tokens.CONST:
+                {
+                    executeConstantDeclaration();
+                }
+                case Tokens.INT:
+                case Tokens.WORD:
+                case Tokens.BIT:
+                {
+                    executeVariableDeclaration();
+                    break;
+                }
                 
-                SEC  // Success
-                return;
-            }
-            case Tokens.PRINT:
-            {
-                executePrint();
+                default:
+                {
+                    // Unexpected token for statement
+                    LDA #(Messages.SyntaxError % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.SyntaxError / 256)
+                    STA ZP.LastErrorH
+    
+                    CLC  // Error
+                    break;
+                }
+            } // switch
+            break;
+        } // loop - single exit
+        
 #ifdef DEBUG
-                LDA #'S'
-                Tools.COut();
-                LDA #'>'
-                Tools.COut();
+        LDA #'S'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
 #endif
-                return;
-            }
-            case Tokens.IF:
-            {
-                executeIf();
-#ifdef DEBUG
-                LDA #'S'
-                Tools.COut();
-                LDA #'>'
-                Tools.COut();
-#endif
-                return;
-            }
-            case Tokens.RETURN:
-            {
-                executeReturn();
-#ifdef DEBUG
-                LDA #'S'
-                Tools.COut();
-                LDA #'>'
-                Tools.COut();
-#endif
-                return;
-            }
-            case Tokens.END:
-            {
-                executeEnd();
-#ifdef DEBUG
-                LDA #'S'
-                Tools.COut();
-                LDA #'>'
-                Tools.COut();
-#endif
-                return;
-            }
-            case Tokens.IDENTIFIER:
-            {
-                // Could be assignment or function call
-                executeIdentifier();
-#ifdef DEBUG
-                LDA #'S'
-                Tools.COut();
-                LDA #'>'
-                Tools.COut();
-#endif
-                return;
-            }
-            
-            case Tokens.INT:
-            case Tokens.WORD:
-            case Tokens.BIT:
-            {
-                executeVariableDeclaration();
-#ifdef DEBUG
-                LDA #'S'
-                Tools.COut();
-                LDA #'>'
-                Tools.COut();
-#endif
-                return;
-            }
-            
-            default:
-            {
-                // Unexpected token for statement
-                LDA #(Messages.SyntaxError % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.SyntaxError / 256)
-                STA ZP.LastErrorH
-#ifdef DEBUG
-                LDA #'S'
-                Tools.COut();
-                LDA #'>'
-                Tools.COut();
-#endif
-                CLC  // Error
-                return;
-            }
-        }
     }
     
     // Execute PRINT statement
@@ -371,6 +355,40 @@ unit Statement
         BRK
     }
     
+    // Input: ZP.CurrentToken = CONST
+    executeConstantDeclaration()
+    {
+#ifdef DEBUG
+        LDA #'<'
+        Tools.COut();
+        LDA #'C'
+        Tools.COut();
+        LDA #'D'
+        Tools.COut();
+#endif        
+        loop
+        {
+            Tokenizer.NextToken(); // consume 'CONST'
+            if (NC) { break; } // error exit
+            
+            // we want a constant expression
+            LDA #1
+            SetIsConstant();
+            
+            LDA #(SymbolType.CONSTANT << 4)
+            STA stmtSymbol
+            processSingleSymbolDeclaration();
+            break;
+        } // single exit
+#ifdef DEBUG
+        LDA #'C'
+        Tools.COut();
+        LDA #'D'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+#endif        
+    }
     
     // Execute variable declaration statement
     // Input: ZP.CurrentToken = type token (INT, WORD, BIT)
@@ -388,12 +406,37 @@ unit Statement
         Tools.COut();
         LDA #'D'
         Tools.COut();
+#endif        
+        LDA #(SymbolType.VARIABLE << 4)
+        STA stmtSymbol
+        processSingleSymbolDeclaration();
+#ifdef DEBUG
+        LDA #'V'
+        Tools.COut();
+        LDA #'D'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+#endif        
+    }
+    
+    processSingleSymbolDeclaration()
+    {
+#ifdef DEBUG
+        LDA #'<'
+        Tools.COut();
+        LDA #'S'
+        Tools.COut();
+        LDA #'D'
+        Tools.COut();
 #endif
 
         loop
         {
             LDA ZP.CurrentToken
-            PHA  // Save type token
+            STA stmtType
+            
+            //Tools.HOut();
         
             Tokenizer.NextToken();
             Messages.CheckError();
@@ -453,9 +496,12 @@ unit Statement
                 Variables.Find();
                 if (C)
                 {
+                    /* 
+                    
+                    // Should we ever want constants not to be re-definable:
                     Variables.GetType();
                     if (NC) { break; }
-                    LDA ZP.ACCL
+                    LDA ZP.ACCT
                     AND #0xF0
                     CMP #(SymbolType.CONSTANT << 4)
                     if (Z)
@@ -467,7 +513,10 @@ unit Statement
                         CLC  // Error
                         break;
                     }
-                    // must be a variable, delete it (name ptr in TOP)
+                    
+                    */
+                    
+                    // delete it (name ptr in TOP)
                     Variables.Remove();
                     if (NC) { break; }
                 }
@@ -524,9 +573,38 @@ unit Statement
                      
                         // Pop the result into NEXT
                         Stacks.PopNext();  // Result in ZP.NEXT, type in ZP.NEXTT,  modifies X
+                        
+                        LDA stmtSymbol
+                        CMP # (SymbolType.CONSTANT << 4)
+                        if (Z)
+                        {
+                            IsConstant();
+                            if (NC)
+                            {
+                                LDA #(Messages.ConstantExpressionExpected % 256)
+                                STA ZP.LastErrorL
+                                LDA #(Messages.ConstantExpressionExpected / 256)
+                                STA ZP.LastErrorH
+                                CLC
+                                break; // error exit
+                            }
+                        }
                     }
                     case Tokens.EOL:
+                    case Tokens.COLON:
                     {
+                        LDA stmtSymbol
+                        CMP # (SymbolType.CONSTANT << 4)
+                        if (Z)
+                        {
+                            // constants must be initialized
+                            LDA #(Messages.ConstantExpressionExpected % 256)
+                            STA ZP.LastErrorL
+                            LDA #(Messages.ConstantExpressionExpected / 256)
+                            STA ZP.LastErrorH
+                            CLC
+                            break; // error exit
+                        }
                         // initial value
                         STZ ZP.NEXTL
                         STZ ZP.NEXTH
@@ -556,7 +634,7 @@ unit Statement
             break;
         } // loop
         
-        PLX  // Get type token
+        LDX stmtType
         loop
         {
             if (NC) { break; } // error exit
@@ -629,7 +707,7 @@ unit Statement
             
             // Pack symbolType|dataType: VARIABLE(1) in high nibble, dataType in low nibble
             TXA  // dataType in A
-            ORA #(SymbolType.VARIABLE << 4)
+            ORA stmtSymbol // high nibble is VARIABLE<<4 of CONSTANT<<4
             STA ZP.ACCT
             
             // Call Variables.Declare
@@ -663,7 +741,7 @@ unit Statement
 #endif
         
 #ifdef DEBUG
-        LDA #'V'
+        LDA #'S'
         Tools.COut();
         LDA #'D'
         Tools.COut();

@@ -716,8 +716,6 @@ unit Expression
             STZ ZP.SymbolIteratorFilter  // Accept any symbol type (variable or constant)
             Variables.Find(); // ZP.IDX = symbol node address
             
-            Tools.XOut();
-            
             if (NC)  // Symbol not found
             {
                 LDA #(Messages.UndefinedIdentifier % 256)
@@ -744,6 +742,10 @@ unit Expression
             Tokenizer.NextToken();
             Messages.CheckError();
             if (NC) { break; }
+            
+            // no longer a const expression
+            LDA #0
+            SetIsConstant();
             
             SEC  // Set C - success
             break;

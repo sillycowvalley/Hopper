@@ -32,6 +32,7 @@ unit Tokenizer
         INT      = 0x11,
         WORD     = 0x12,
         BIT      = 0x13,
+        CONST    = 0x14, 
         
         // Language keywords (32-47)
         PRINT    = 0x20,
@@ -100,6 +101,7 @@ unit Tokenizer
         3, Tokens.INT, 'I', 'N', 'T',
         4, Tokens.WORD, 'W', 'O', 'R', 'D',
         3, Tokens.BIT, 'B', 'I', 'T',
+        5, Tokens.CONST, 'C', 'O', 'N', 'S', 'T', 
         5, Tokens.PRINT, 'P', 'R', 'I', 'N', 'T',
         2, Tokens.IF, 'I', 'F',
         4, Tokens.THEN, 'T', 'H', 'E', 'N',
