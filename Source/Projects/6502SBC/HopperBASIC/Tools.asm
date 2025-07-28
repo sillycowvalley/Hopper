@@ -660,7 +660,7 @@ unit Tools
             Serial.HexOut();
             LDA Address.ValueStackLSB, X
             Serial.HexOut();
-            LDA #' '
+            LDA #'\n'
             Serial.WriteChar();
             
             DEY

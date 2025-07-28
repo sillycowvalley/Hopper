@@ -174,7 +174,7 @@ unit Statement
         {
             // Just print a newline
             LDA #'\n'
-            Tools.COut();
+            Serial.WriteChar();
             
 #ifdef DEBUG
             LDA #'P'
@@ -199,7 +199,7 @@ unit Statement
         
         // Print newline
         LDA #'\n'
-        Tools.COut();
+        Serial.WriteChar();
         
 #ifdef DEBUG
         LDA #'P'

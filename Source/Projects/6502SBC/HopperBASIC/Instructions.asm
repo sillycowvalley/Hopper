@@ -74,7 +74,7 @@ unit Instructions
     //          3 = Ordering comparison (<, >, <=, >=) - BIT types rejected, result is BIT
     //          4 = Logical (AND, OR) - Only BIT types allowed, result is BIT
     // Output: C set if compatible, NC set if TYPE MISMATCH
-    //         ZP.NEXTT = result type (updated based on operation mode and type promotion)
+    //         ZP.NEXTT = operands type (updated based on operation mode and type promotion)
     // Modifies: processor flags
     CheckTypeCompatibility()
     {
@@ -186,7 +186,6 @@ unit Instructions
             {
                 // Same types are always compatible
                 LDA ZP.ACCT
-                setResultTypeForSameType();
                 SEC  // Set C - compatible
                 break;
             }
@@ -202,8 +201,10 @@ unit Instructions
                 CMP #BasicType.INT
                 if (Z)
                 {
+                    LDA #BasicType.INT
+                    STA ZP.NEXTT
+                    
                     LDA ZP.ACCT
-                    setResultTypeForMixedOperation();
                     SEC  // Set C - compatible
                     break;
                 }
@@ -219,7 +220,6 @@ unit Instructions
                 if (Z)
                 {
                     LDA ZP.ACCT
-                    setResultTypeForMixedOperation();
                     SEC  // Set C - compatible
                     break;
                 }
@@ -237,7 +237,6 @@ unit Instructions
                     LDA #BasicType.WORD
                     STA ZP.NEXTT  // Promote to WORD for all operations except comparisons
                     LDA ZP.ACCT
-                    setResultTypeForMixedOperation();
                     SEC  // Set C - compatible
                     break;
                 }
@@ -254,7 +253,6 @@ unit Instructions
                 {
                     // WORD is already the promoted type (no change to ZP.NEXTT needed)
                     LDA ZP.ACCT
-                    setResultTypeForMixedOperation();
                     SEC  // Set C - compatible
                     break;
                 }
@@ -276,9 +274,11 @@ unit Instructions
                         CLC  // Set NC - incompatible
                         break;
                     }
+                    LDA #BasicType.WORD
+                    STA ZP.NEXTT
+                    
                     // INT is non-negative, compatible with WORD
                     LDA ZP.ACCT
-                    setResultTypeForMixedOperation();
                     SEC  // Set C - compatible
                     break;
                 }
@@ -313,7 +313,6 @@ unit Instructions
                     }
                     // WORD = 32767, compatible with INT
                     LDA ZP.ACCT
-                    setResultTypeForMixedOperation();
                     SEC  // Set C - compatible
                     break;
                 }
@@ -331,63 +330,7 @@ unit Instructions
         PLA
     }
     
-    // Set result type for same-type operations
-    // Input: A = operation mode (0=equality, 1=arithmetic, 2=bitwise, 3=ordering, 4=logical)
-    //        ZP.NEXTT = operand type (both operands have same type)
-    // Output: ZP.NEXTT = final result type
-    setResultTypeForSameType()
-    {
-        PHA
-        
-        switch (A)
-        {
-            case 0:  // Equality comparison (=, <>)
-            case 3:  // Ordering comparison (<, >, <=, >=)
-            {
-                LDA #BasicType.BIT
-                STA ZP.NEXTT  // Result type = BIT (comparisons always return BIT)
-            }
-            case 1:  // Arithmetic operations (+, -, *, /, MOD)
-            case 2:  // Bitwise operations (&, |)
-            case 4:  // Logical operations (AND, OR) - only for BIT types
-            {
-                // Result type = same as operand type (ZP.NEXTT unchanged)
-                // For arithmetic: INT + INT = INT, WORD + WORD = WORD, etc.
-                // For bitwise: INT & INT = INT, WORD & WORD = WORD, etc.
-                // For logical: BIT AND BIT = BIT, BIT OR BIT = BIT
-            }
-        }
-        
-        PLA
-    }
-    
-    // Set result type for mixed-type operations
-    // Input: A = operation mode (0=equality, 1=arithmetic, 2=bitwise, 3=ordering, 4=logical)
-    //        ZP.NEXTT = promoted operand type
-    // Output: ZP.NEXTT = final result type
-    setResultTypeForMixedOperation()
-    {
-        PHA
-        
-        switch (A)
-        {
-            case 0:  // Equality comparison
-            case 3:  // Ordering comparison  
-            {
-                LDA #BasicType.BIT
-                STA ZP.NEXTT  // Result type = BIT
-            }
-            case 1:  // Arithmetic operations
-            case 2:  // Bitwise operations
-            case 4:  // Logical operations
-            {
-                // Result type = promoted operand type (ZP.NEXTT already set correctly)
-            }
-        }
-        
-        PLA
-    }
-    
+      
     // Shared subtraction logic helper
     // Input: ZP.NEXT = left operand, ZP.TOP = right operand (both popped from stack)
     //        ZP.NEXTT = left type, ZP.TOPT = right type
@@ -934,6 +877,7 @@ unit Instructions
                     LDA #2  // NEXT > TOP (positive > negative)
                 }
                 STA ZP.ACC
+                PLP             // Clean up stack if we didn't use it
             }
             else
             {
@@ -949,9 +893,7 @@ unit Instructions
                 }
                 STA ZP.ACC
             }
-            PLP             // Clean up stack if we didn't use it
         }
-        
         PLA
     }
     
