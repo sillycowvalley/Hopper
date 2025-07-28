@@ -510,24 +510,20 @@ unit Expression
         
         SEC  // Success
     }
-    
-    // Updated parseUnary() method for Expression.asm
-// Replace the existing parseUnary() method with this corrected version
-
+  
 // Parse unary operators and delegate to primary expressions
 // Input: ZP.CurrentToken = current token (-, NOT, or start of primary expression)
 // Output: Expression result pushed to stack
 //         ZP.CurrentToken = token after unary expression
-// Munts: Stack, ZP.CurrentToken, ZP.TOP, ZP.TOPT, parsing variables
+// Modifies: Stack, ZP.CurrentToken, ZP.TOP, ZP.TOPT, parsing variables
 // Error: Sets ZP.LastError if syntax error
 parseUnary()
 {
-#ifdef DEBUG
+    // Debug: Show parseUnary start
     LDA #'<'
-    Serial.WriteChar();
+    Tools.COut();
     LDA #'U'
-    Serial.WriteChar();
-#endif
+    Tools.COut();
     
     LDA ZP.CurrentToken
     CMP #Tokens.MINUS
@@ -546,12 +542,11 @@ parseUnary()
         // Apply unary minus with proper type handling
         Instructions.UnaryMinus();
         
-#ifdef DEBUG
+        // Debug: Show parseUnary end
         LDA #'U'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'>'
-        Serial.WriteChar();
-#endif
+        Tools.COut();
         
         SEC  // Success
         return;
@@ -573,12 +568,11 @@ parseUnary()
         // Perform logical NOT
         Instructions.LogicalNot();
         
-#ifdef DEBUG
+        // Debug: Show parseUnary end
         LDA #'U'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'>'
-        Serial.WriteChar();
-#endif
+        Tools.COut();
         
         SEC  // Success
         return;
@@ -587,13 +581,13 @@ parseUnary()
     // Not unary, parse primary
     parsePrimary();
     
-#ifdef DEBUG
+    // Debug: Show parseUnary end
     LDA #'U'
-    Serial.WriteChar();
+    Tools.COut();
     LDA #'>'
-    Serial.WriteChar();
-#endif
-}
+    Tools.COut();
+}      
+
     
     // Parse primary expressions (numbers, identifiers, parentheses)
     // Input: ZP.CurrentToken = current token (NUMBER, IDENTIFIER, LPAREN, etc.)

@@ -67,6 +67,8 @@ unit Instructions
         PLA  // Restore A register
     }
     
+    
+    
     // Check if two types are compatible for operations
     // Input: ZP.NEXTT = left operand type, ZP.TOPT = right operand type
     //        ZP.NEXT = left value, ZP.TOP = right value (for WORD/INT range check)
@@ -84,6 +86,49 @@ unit Instructions
         PHA
         PHX
         
+        // Debug: Show CheckTypeCompatibility entry
+        LDA #'<'
+        Tools.COut();
+        LDA #'C'
+        Tools.COut();
+        LDA #'T'
+        Tools.COut();
+        LDA #'C'
+        Tools.COut();
+        LDA #' '
+        Tools.COut();
+        
+        // Debug: Show input parameters
+        LDA #'M'
+        Tools.COut();
+        LDA #'O'
+        Tools.COut();
+        LDA #'D'
+        Tools.COut();
+        LDA #'E'
+        Tools.COut();
+        LDA #':'
+        Tools.COut();
+        Tools.HOut();  // A register contains operation mode
+        LDA #'/'
+        Tools.COut();
+        LDA #'L'
+        Tools.COut();
+        LDA #':'
+        Tools.COut();
+        LDA ZP.NEXTT
+        Tools.HOut();
+        LDA #'/'
+        Tools.COut();
+        LDA #'R'
+        Tools.COut();
+        LDA #':'
+        Tools.COut();
+        LDA ZP.TOPT
+        Tools.HOut();
+        LDA #' '
+        Tools.COut();
+        
         // Save original ZP.ACCT value
         LDX ZP.ACCT
         
@@ -92,15 +137,72 @@ unit Instructions
         
         loop // Single exit point for all compatibility checks
         {
+            // Debug: Show operation mode analysis
+            LDA #'A'
+            Tools.COut();
+            LDA #'N'
+            Tools.COut();
+            LDA #'A'
+            Tools.COut();
+            LDA #'L'
+            Tools.COut();
+            LDA #'Y'
+            Tools.COut();
+            LDA #'Z'
+            Tools.COut();
+            LDA #'E'
+            Tools.COut();
+            LDA #':'
+            Tools.COut();
+            LDA ZP.ACCT
+            Tools.HOut();
+            LDA #' '
+            Tools.COut();
+            
             // Mode-specific type restrictions
+            LDA ZP.ACCT
             CMP #1  // Arithmetic operations
             if (Z)
             {
+                // Debug: Arithmetic mode
+                LDA #'A'
+                Tools.COut();
+                LDA #'R'
+                Tools.COut();
+                LDA #'I'
+                Tools.COut();
+                LDA #'T'
+                Tools.COut();
+                LDA #'H'
+                Tools.COut();
+                LDA #' '
+                Tools.COut();
+                
                 // Arithmetic: reject BIT types
                 LDA ZP.NEXTT
                 CMP #BasicType.BIT
                 if (Z)
                 {
+                    // Debug: Left operand is BIT - reject
+                    LDA #'L'
+                    Tools.COut();
+                    LDA #'E'
+                    Tools.COut();
+                    LDA #'F'
+                    Tools.COut();
+                    LDA #'T'
+                    Tools.COut();
+                    LDA #'B'
+                    Tools.COut();
+                    LDA #'I'
+                    Tools.COut();
+                    LDA #'T'
+                    Tools.COut();
+                    LDA #'!'
+                    Tools.COut();
+                    LDA #' '
+                    Tools.COut();
+                    
                     CLC  // Set NC - type mismatch
                     break;
                 }
@@ -109,6 +211,28 @@ unit Instructions
                 CMP #BasicType.BIT
                 if (Z)
                 {
+                    // Debug: Right operand is BIT - reject
+                    LDA #'R'
+                    Tools.COut();
+                    LDA #'I'
+                    Tools.COut();
+                    LDA #'G'
+                    Tools.COut();
+                    LDA #'H'
+                    Tools.COut();
+                    LDA #'T'
+                    Tools.COut();
+                    LDA #'B'
+                    Tools.COut();
+                    LDA #'I'
+                    Tools.COut();
+                    LDA #'T'
+                    Tools.COut();
+                    LDA #'!'
+                    Tools.COut();
+                    LDA #' '
+                    Tools.COut();
+                    
                     CLC  // Set NC - type mismatch
                     break;
                 }
@@ -119,34 +243,72 @@ unit Instructions
                 CMP #2  // Bitwise operations
                 if (Z)
                 {
-                    // Bitwise: reject BIT types (numeric only)
-                    LDA ZP.NEXTT
-                    CMP #BasicType.BIT
-                    if (Z)
-                    {
-                        CLC  // Set NC - type mismatch
-                        break;
-                    }
+                    // Debug: Bitwise mode
+                    LDA #'B'
+                    Tools.COut();
+                    LDA #'I'
+                    Tools.COut();
+                    LDA #'T'
+                    Tools.COut();
+                    LDA #'W'
+                    Tools.COut();
+                    LDA #'I'
+                    Tools.COut();
+                    LDA #'S'
+                    Tools.COut();
+                    LDA #'E'
+                    Tools.COut();
+                    LDA #' '
+                    Tools.COut();
                     
-                    LDA ZP.TOPT
-                    CMP #BasicType.BIT
-                    if (Z)
-                    {
-                        CLC  // Set NC - type mismatch
-                        break;
-                    }
+                    // Bitwise: allow all types including BIT
+                    // (No type restrictions for bitwise operations)
                 }
                 else
                 {
-                    LDA ZP.ACCT  // Get operation mode again
-                    CMP #3  // Ordering comparison operations
+                    LDA ZP.ACCT
+                    CMP #3  // Ordering comparison
                     if (Z)
                     {
-                        // Ordering comparison: reject BIT types
+                        // Debug: Ordering comparison mode
+                        LDA #'O'
+                        Tools.COut();
+                        LDA #'R'
+                        Tools.COut();
+                        LDA #'D'
+                        Tools.COut();
+                        LDA #'E'
+                        Tools.COut();
+                        LDA #'R'
+                        Tools.COut();
+                        LDA #' '
+                        Tools.COut();
+                        
+                        // Ordering: reject BIT types
                         LDA ZP.NEXTT
                         CMP #BasicType.BIT
                         if (Z)
                         {
+                            // Debug: Left operand is BIT - reject
+                            LDA #'L'
+                            Tools.COut();
+                            LDA #'E'
+                            Tools.COut();
+                            LDA #'F'
+                            Tools.COut();
+                            LDA #'T'
+                            Tools.COut();
+                            LDA #'B'
+                            Tools.COut();
+                            LDA #'I'
+                            Tools.COut();
+                            LDA #'T'
+                            Tools.COut();
+                            LDA #'!'
+                            Tools.COut();
+                            LDA #' '
+                            Tools.COut();
+                            
                             CLC  // Set NC - type mismatch
                             break;
                         }
@@ -155,21 +317,87 @@ unit Instructions
                         CMP #BasicType.BIT
                         if (Z)
                         {
+                            // Debug: Right operand is BIT - reject
+                            LDA #'R'
+                            Tools.COut();
+                            LDA #'I'
+                            Tools.COut();
+                            LDA #'G'
+                            Tools.COut();
+                            LDA #'H'
+                            Tools.COut();
+                            LDA #'T'
+                            Tools.COut();
+                            LDA #'B'
+                            Tools.COut();
+                            LDA #'I'
+                            Tools.COut();
+                            LDA #'T'
+                            Tools.COut();
+                            LDA #'!'
+                            Tools.COut();
+                            LDA #' '
+                            Tools.COut();
+                            
                             CLC  // Set NC - type mismatch
                             break;
                         }
                     }
                     else
                     {
-                        LDA ZP.ACCT  // Get operation mode again
+                        LDA ZP.ACCT
                         CMP #4  // Logical operations
                         if (Z)
                         {
+                            // Debug: Logical mode
+                            LDA #'L'
+                            Tools.COut();
+                            LDA #'O'
+                            Tools.COut();
+                            LDA #'G'
+                            Tools.COut();
+                            LDA #'I'
+                            Tools.COut();
+                            LDA #'C'
+                            Tools.COut();
+                            LDA #'A'
+                            Tools.COut();
+                            LDA #'L'
+                            Tools.COut();
+                            LDA #' '
+                            Tools.COut();
+                            
                             // Logical: only BIT types allowed
                             LDA ZP.NEXTT
                             CMP #BasicType.BIT
                             if (NZ)
                             {
+                                // Debug: Left operand is not BIT - reject
+                                LDA #'L'
+                                Tools.COut();
+                                LDA #'E'
+                                Tools.COut();
+                                LDA #'F'
+                                Tools.COut();
+                                LDA #'T'
+                                Tools.COut();
+                                LDA #'N'
+                                Tools.COut();
+                                LDA #'O'
+                                Tools.COut();
+                                LDA #'T'
+                                Tools.COut();
+                                LDA #'B'
+                                Tools.COut();
+                                LDA #'I'
+                                Tools.COut();
+                                LDA #'T'
+                                Tools.COut();
+                                LDA #'!'
+                                Tools.COut();
+                                LDA #' '
+                                Tools.COut();
+                                
                                 CLC  // Set NC - type mismatch
                                 break;
                             }
@@ -178,71 +406,136 @@ unit Instructions
                             CMP #BasicType.BIT
                             if (NZ)
                             {
+                                // Debug: Right operand is not BIT - reject
+                                LDA #'R'
+                                Tools.COut();
+                                LDA #'I'
+                                Tools.COut();
+                                LDA #'G'
+                                Tools.COut();
+                                LDA #'H'
+                                Tools.COut();
+                                LDA #'T'
+                                Tools.COut();
+                                LDA #'N'
+                                Tools.COut();
+                                LDA #'O'
+                                Tools.COut();
+                                LDA #'T'
+                                Tools.COut();
+                                LDA #'B'
+                                Tools.COut();
+                                LDA #'I'
+                                Tools.COut();
+                                LDA #'T'
+                                Tools.COut();
+                                LDA #'!'
+                                Tools.COut();
+                                LDA #' '
+                                Tools.COut();
+                                
                                 CLC  // Set NC - type mismatch
                                 break;
                             }
+                            
+                            // Both are BIT - set result type and compatible flag
+                            LDA #BasicType.BIT
+                            STA ZP.NEXTT
+                            SEC  // Set C - compatible
+                            break;
                         }
-                        // Mode 0 (equality) allows BIT types
+                        else
+                        {
+                            // Debug: Equality comparison mode (mode 0)
+                            LDA #'E'
+                            Tools.COut();
+                            LDA #'Q'
+                            Tools.COut();
+                            LDA #'U'
+                            Tools.COut();
+                            LDA #'A'
+                            Tools.COut();
+                            LDA #'L'
+                            Tools.COut();
+                            LDA #' '
+                            Tools.COut();
+                            
+                            // Equality: all types allowed, result is BIT
+                            // (No type restrictions - fall through to compatibility checks)
+                        }
                     }
                 }
             }
             
-            // Check for ARRAY and STRING types - not supported in Phase 1
-            LDA ZP.NEXTT
-            CMP #BasicType.ARRAY
-            if (Z)
-            {
-                CLC  // Set NC - type mismatch
-                break;
-            }
-            CMP #BasicType.STRING
-            if (Z)
-            {
-                CLC  // Set NC - type mismatch
-                break;
-            }
+            // Debug: Now check type compatibility
+            LDA #'C'
+            Tools.COut();
+            LDA #'O'
+            Tools.COut();
+            LDA #'M'
+            Tools.COut();
+            LDA #'P'
+            Tools.COut();
+            LDA #'A'
+            Tools.COut();
+            LDA #'T'
+            Tools.COut();
+            LDA #' '
+            Tools.COut();
             
-            LDA ZP.TOPT
-            CMP #BasicType.ARRAY
-            if (Z)
-            {
-                CLC  // Set NC - type mismatch
-                break;
-            }
-            CMP #BasicType.STRING
-            if (Z)
-            {
-                CLC  // Set NC - type mismatch
-                break;
-            }
-            
-            // If both types are the same, check compatibility and set result type
+            // Same type check
             LDA ZP.NEXTT
             CMP ZP.TOPT
             if (Z)
             {
-                // Set result type based on operation mode
+                // Debug: Same types
+                LDA #'S'
+                Tools.COut();
+                LDA #'A'
+                Tools.COut();
+                LDA #'M'
+                Tools.COut();
+                LDA #'E'
+                Tools.COut();
+                LDA #'T'
+                Tools.COut();
+                LDA #'Y'
+                Tools.COut();
+                LDA #'P'
+                Tools.COut();
+                LDA #'E'
+                Tools.COut();
+                LDA #' '
+                Tools.COut();
+                
+                // Same types are always compatible
                 LDA ZP.ACCT  // Get operation mode
-                switch (A)
-                {
-                    case 0:  // Equality comparison
-                    case 3:  // Ordering comparison
-                    {
-                        LDA #BasicType.BIT
-                        STA ZP.NEXTT  // Result type = BIT
-                    }
-                    case 1:  // Arithmetic operations
-                    case 2:  // Bitwise operations
-                    case 4:  // Logical operations
-                    {
-                        // Result type = operand type (no change needed)
-                    }
-                }
+                setResultTypeForSameType();
                 SEC  // Set C - compatible
                 break;
             }
             
-            // Different types - check specific compatibility rules and apply type promotion
+            // Debug: Different types, check specific compatibility rules
+            LDA #'D'
+            Tools.COut();
+            LDA #'I'
+            Tools.COut();
+            LDA #'F'
+            Tools.COut();
+            LDA #'F'
+            Tools.COut();
+            LDA #'T'
+            Tools.COut();
+            LDA #'Y'
+            Tools.COut();
+            LDA #'P'
+            Tools.COut();
+            LDA #'E'
+            Tools.COut();
+            LDA #' '
+            Tools.COut();
+            
+            // Different types - apply specific compatibility rules and type promotion
             
             // BYTE vs INT - always compatible, promotes to INT
             LDA ZP.NEXTT
@@ -253,6 +546,26 @@ unit Instructions
                 CMP #BasicType.INT
                 if (Z)
                 {
+                    // Debug: BYTE vs INT
+                    LDA #'B'
+                    Tools.COut();
+                    LDA #'Y'
+                    Tools.COut();
+                    LDA #'T'
+                    Tools.COut();
+                    LDA #'E'
+                    Tools.COut();
+                    LDA #'+'
+                    Tools.COut();
+                    LDA #'I'
+                    Tools.COut();
+                    LDA #'N'
+                    Tools.COut();
+                    LDA #'T'
+                    Tools.COut();
+                    LDA #' '
+                    Tools.COut();
+                    
                     LDA ZP.ACCT  // Get operation mode
                     setResultTypeForMixedOperation();
                     SEC  // Set C - compatible
@@ -269,6 +582,26 @@ unit Instructions
                 CMP #BasicType.BYTE
                 if (Z)
                 {
+                    // Debug: INT vs BYTE
+                    LDA #'I'
+                    Tools.COut();
+                    LDA #'N'
+                    Tools.COut();
+                    LDA #'T'
+                    Tools.COut();
+                    LDA #'+'
+                    Tools.COut();
+                    LDA #'B'
+                    Tools.COut();
+                    LDA #'Y'
+                    Tools.COut();
+                    LDA #'T'
+                    Tools.COut();
+                    LDA #'E'
+                    Tools.COut();
+                    LDA #' '
+                    Tools.COut();
+                    
                     LDA ZP.ACCT  // Get operation mode
                     setResultTypeForMixedOperation();
                     SEC  // Set C - compatible
@@ -285,6 +618,28 @@ unit Instructions
                 CMP #BasicType.WORD
                 if (Z)
                 {
+                    // Debug: BYTE vs WORD
+                    LDA #'B'
+                    Tools.COut();
+                    LDA #'Y'
+                    Tools.COut();
+                    LDA #'T'
+                    Tools.COut();
+                    LDA #'E'
+                    Tools.COut();
+                    LDA #'+'
+                    Tools.COut();
+                    LDA #'W'
+                    Tools.COut();
+                    LDA #'O'
+                    Tools.COut();
+                    LDA #'R'
+                    Tools.COut();
+                    LDA #'D'
+                    Tools.COut();
+                    LDA #' '
+                    Tools.COut();
+                    
                     LDA #BasicType.WORD
                     STA ZP.NEXTT  // Promote to WORD for all operations except comparisons
                     LDA ZP.ACCT  // Get operation mode
@@ -303,6 +658,28 @@ unit Instructions
                 CMP #BasicType.BYTE
                 if (Z)
                 {
+                    // Debug: WORD vs BYTE
+                    LDA #'W'
+                    Tools.COut();
+                    LDA #'O'
+                    Tools.COut();
+                    LDA #'R'
+                    Tools.COut();
+                    LDA #'D'
+                    Tools.COut();
+                    LDA #'+'
+                    Tools.COut();
+                    LDA #'B'
+                    Tools.COut();
+                    LDA #'Y'
+                    Tools.COut();
+                    LDA #'T'
+                    Tools.COut();
+                    LDA #'E'
+                    Tools.COut();
+                    LDA #' '
+                    Tools.COut();
+                    
                     // WORD is already the promoted type (no change to ZP.NEXTT needed)
                     LDA ZP.ACCT  // Get operation mode
                     setResultTypeForMixedOperation();
@@ -311,31 +688,7 @@ unit Instructions
                 }
             }
             
-            // WORD vs INT - compatible only if INT >= 0 (non-negative), promotes to WORD
-            LDA ZP.NEXTT
-            CMP #BasicType.WORD
-            if (Z)
-            {
-                LDA ZP.TOPT
-                CMP #BasicType.INT
-                if (Z)
-                {
-                    // Check if INT (right operand) is non-negative
-                    BIT ZP.TOPH  // Test sign bit of INT value
-                    if (MI)      // High bit set - negative INT
-                    {
-                        CLC      // Set NC - type mismatch
-                        break;
-                    }
-                    // WORD is already the promoted type (no change to ZP.NEXTT needed)
-                    LDA ZP.ACCT  // Get operation mode
-                    setResultTypeForMixedOperation();
-                    SEC          // Set C - compatible
-                    break;
-                }
-            }
-            
-            // INT vs WORD - compatible only if INT >= 0 (non-negative), promotes to WORD
+            // INT vs WORD - runtime compatibility check required
             LDA ZP.NEXTT
             CMP #BasicType.INT
             if (Z)
@@ -344,32 +697,269 @@ unit Instructions
                 CMP #BasicType.WORD
                 if (Z)
                 {
-                    // Check if INT (left operand) is non-negative
-                    BIT ZP.NEXTH  // Test high bit of INT value
-                    if (MI)       // High bit set - negative INT
+                    // Debug: INT vs WORD
+                    LDA #'I'
+                    Tools.COut();
+                    LDA #'N'
+                    Tools.COut();
+                    LDA #'T'
+                    Tools.COut();
+                    LDA #'+'
+                    Tools.COut();
+                    LDA #'W'
+                    Tools.COut();
+                    LDA #'O'
+                    Tools.COut();
+                    LDA #'R'
+                    Tools.COut();
+                    LDA #'D'
+                    Tools.COut();
+                    LDA #' '
+                    Tools.COut();
+                    
+                    // INT vs WORD: check if INT is non-negative
+                    BIT ZP.NEXTH  // Check sign bit of NEXT (INT value)
+                    if (MI)       // Negative INT
                     {
-                        CLC       // Set NC - type mismatch
+                        // Debug: INT is negative
+                        LDA #'N'
+                        Tools.COut();
+                        LDA #'E'
+                        Tools.COut();
+                        LDA #'G'
+                        Tools.COut();
+                        LDA #'!'
+                        Tools.COut();
+                        LDA #' '
+                        Tools.COut();
+                        
+                        CLC  // Set NC - incompatible
                         break;
                     }
-                    LDA #BasicType.WORD
-                    STA ZP.NEXTT  // Promote to WORD
+                    // INT is non-negative, compatible with WORD
                     LDA ZP.ACCT  // Get operation mode
                     setResultTypeForMixedOperation();
-                    SEC           // Set C - compatible
+                    SEC  // Set C - compatible
                     break;
                 }
             }
             
-            // All other combinations are incompatible (STRING with numbers, etc.)
-            CLC  // Set NC - type mismatch
+            // WORD vs INT - runtime compatibility check required
+            LDA ZP.NEXTT
+            CMP #BasicType.WORD
+            if (Z)
+            {
+                LDA ZP.TOPT
+                CMP #BasicType.INT
+                if (Z)
+                {
+                    // Debug: WORD vs INT
+                    LDA #'W'
+                    Tools.COut();
+                    LDA #'O'
+                    Tools.COut();
+                    LDA #'R'
+                    Tools.COut();
+                    LDA #'D'
+                    Tools.COut();
+                    LDA #'+'
+                    Tools.COut();
+                    LDA #'I'
+                    Tools.COut();
+                    LDA #'N'
+                    Tools.COut();
+                    LDA #'T'
+                    Tools.COut();
+                    LDA #' '
+                    Tools.COut();
+                    
+                    // WORD vs INT: check if WORD fits in INT range (= 32767)
+                    LDA ZP.NEXTH  // Check high byte of NEXT (WORD value)
+                    CMP #0x80     // Compare with 32768 high byte
+                    if (C)        // WORD = 32768
+                    {
+                        if (Z)    // Exactly 32768?
+                        {
+                            LDA ZP.NEXTL
+                            if (Z)  // Exactly 32768
+                            {
+                                // Debug: WORD is exactly 32768
+                                LDA #'3'
+                                Tools.COut();
+                                LDA #'2'
+                                Tools.COut();
+                                LDA #'7'
+                                Tools.COut();
+                                LDA #'6'
+                                Tools.COut();
+                                LDA #'8'
+                                Tools.COut();
+                                LDA #'!'
+                                Tools.COut();
+                                LDA #' '
+                                Tools.COut();
+                                
+                                CLC  // Set NC - incompatible
+                                break;
+                            }
+                        }
+                        // WORD > 32767
+                        
+                        // Debug: WORD too large
+                        LDA #'T'
+                        Tools.COut();
+                        LDA #'O'
+                        Tools.COut();
+                        LDA #'O'
+                        Tools.COut();
+                        LDA #'B'
+                        Tools.COut();
+                        LDA #'I'
+                        Tools.COut();
+                        LDA #'G'
+                        Tools.COut();
+                        LDA #'!'
+                        Tools.COut();
+                        LDA #' '
+                        Tools.COut();
+                        
+                        CLC  // Set NC - incompatible
+                        break;
+                    }
+                    // WORD = 32767, compatible with INT
+                    LDA ZP.ACCT  // Get operation mode
+                    setResultTypeForMixedOperation();
+                    SEC  // Set C - compatible
+                    break;
+                }
+            }
+            
+            // No other compatibility rules matched
+            // Debug: Incompatible types
+            LDA #'I'
+            Tools.COut();
+            LDA #'N'
+            Tools.COut();
+            LDA #'C'
+            Tools.COut();
+            LDA #'O'
+            Tools.COut();
+            LDA #'M'
+            Tools.COut();
+            LDA #'P'
+            Tools.COut();
+            LDA #'A'
+            Tools.COut();
+            LDA #'T'
+            Tools.COut();
+            LDA #'!'
+            Tools.COut();
+            LDA #' '
+            Tools.COut();
+            
+            CLC  // Set NC - incompatible
             break;
         } // end of single exit loop
         
-        // Restore ZP.ACCT
+        // Debug: Show result and restore original ZP.ACCT
+        PHP  // Save result flags
+        
+        LDA #'R'
+        Tools.COut();
+        LDA #'E'
+        Tools.COut();
+        LDA #'S'
+        Tools.COut();
+        LDA #':'
+        Tools.COut();
+        PLP  // Restore flags to check them
+        PHP  // Save them again
+        if (C)
+        {
+            LDA #'O'
+            Tools.COut();
+            LDA #'K'
+            Tools.COut();
+        }
+        else
+        {
+            LDA #'F'
+            Tools.COut();
+            LDA #'A'
+            Tools.COut();
+            LDA #'I'
+            Tools.COut();
+            LDA #'L'
+            Tools.COut();
+        }
+        LDA #'/'
+        Tools.COut();
+        LDA #'T'
+        Tools.COut();
+        LDA #'Y'
+        Tools.COut();
+        LDA #'P'
+        Tools.COut();
+        LDA #':'
+        Tools.COut();
+        LDA ZP.NEXTT
+        Tools.HOut();
+        LDA #' '
+        Tools.COut();
+        
+        // Restore original ZP.ACCT
         STX ZP.ACCT
+        
+        // Debug: Show CheckTypeCompatibility exit
+        LDA #'C'
+        Tools.COut();
+        LDA #'T'
+        Tools.COut();
+        LDA #'C'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+        LDA #' '
+        Tools.COut();
+        
+        PLP  // Restore final result flags
         PLX
         PLA
     }
+    
+    
+    
+    // Set result type for same-type operations
+    // Input: A = operation mode (0=equality, 1=arithmetic, 2=bitwise, 3=ordering, 4=logical)
+    //        ZP.NEXTT = operand type (both operands have same type)
+    // Output: ZP.NEXTT = final result type
+    setResultTypeForSameType()
+    {
+        PHA  // Preserve A register
+        
+        switch (A)
+        {
+            case 0:  // Equality comparison (=, <>)
+            case 3:  // Ordering comparison (<, >, <=, >=)
+            {
+                LDA #BasicType.BIT
+                STA ZP.NEXTT  // Result type = BIT (comparisons always return BIT)
+            }
+            case 1:  // Arithmetic operations (+, -, *, /, MOD)
+            case 2:  // Bitwise operations (&, |)
+            case 4:  // Logical operations (AND, OR) - only for BIT types
+            {
+                // Result type = same as operand type (ZP.NEXTT unchanged)
+                // For arithmetic: INT + INT = INT, WORD + WORD = WORD, etc.
+                // For bitwise: INT & INT = INT, WORD & WORD = WORD, etc.
+                // For logical: BIT AND BIT = BIT, BIT OR BIT = BIT
+            }
+        }
+        
+        PLA  // Restore A register
+    }
+    
+    
     
     // Set result type for mixed-type operations
     // Input: A = operation mode (0=equality, 1=arithmetic, 2=bitwise, 3=ordering, 4=logical)
@@ -542,8 +1132,8 @@ unit Instructions
         PLX  // Restore X
         PLA  // Restore A
     }
-    
-    // Fixed UnaryMinus operation (specialized for parseUnary)
+
+// UnaryMinus operation with debug instrumentation
 // Input: Stack contains one operand (the value to negate)
 // Output: Negated value pushed to stack with INT type
 // Modifies: Stack interface (ZP.TOP, ZP.TOPT, ZP.SP, stack memory)
@@ -553,10 +1143,36 @@ UnaryMinus()
     PHX  // Preserve X register
     PHY  // Preserve Y register
     
+    // Debug: Show UnaryMinus start
+    LDA #'U'
+    Tools.COut();
+    LDA #'M'
+    Tools.COut();
+    LDA #':'
+    Tools.COut();
+    
     loop // Single exit point for cleanup
     {
         // Pop the operand to negate
         Stacks.PopTop(); // Pop operand, modifies X
+        
+        // Debug: Show input type and value
+        LDA #'I'
+        Tools.COut();
+        LDA #'N'
+        Tools.COut();
+        LDA #':'
+        Tools.COut();
+        LDA ZP.TOPT  // Show input type
+        Tools.HOut();
+        LDA #'-'
+        Tools.COut();
+        LDA ZP.TOPH  // Show input value high
+        Tools.HOut();
+        LDA ZP.TOPL  // Show input value low  
+        Tools.HOut();
+        LDA #' '
+        Tools.COut();
         
         // Check if this is WORD 32768 (special case for -32768)
         LDA ZP.TOPT
@@ -574,7 +1190,35 @@ UnaryMinus()
                     LDA #BasicType.INT
                     STA ZP.TOPT
                     // Value 0x8000 is correct for -32768
-                    // **FIX: Load type into A register before PushTop**
+                    
+                    // Debug: Show special case
+                    LDA #'S'
+                    Tools.COut();
+                    LDA #'P'
+                    Tools.COut();
+                    LDA #' '
+                    Tools.COut();
+                    
+                    // Debug: Show output before push
+                    LDA #'O'
+                    Tools.COut();
+                    LDA #'U'
+                    Tools.COut();
+                    LDA #'T'
+                    Tools.COut();
+                    LDA #':'
+                    Tools.COut();
+                    LDA ZP.TOPT
+                    Tools.HOut();
+                    LDA #'-'
+                    Tools.COut();
+                    LDA ZP.TOPH
+                    Tools.HOut();
+                    LDA ZP.TOPL
+                    Tools.HOut();
+                    LDA #' '
+                    Tools.COut();
+                    
                     LDA #BasicType.INT
                     Stacks.PushTop(); // Push result, modifies Y
                     break; // Success exit
@@ -587,6 +1231,16 @@ UnaryMinus()
         CMP #BasicType.INT
         if (Z)
         {
+            // Debug: Show INT case
+            LDA #'I'
+            Tools.COut();
+            LDA #'N'
+            Tools.COut();
+            LDA #'T'
+            Tools.COut();
+            LDA #' '
+            Tools.COut();
+            
             // INT - negate using two's complement
             SEC
             LDA #0
@@ -599,6 +1253,16 @@ UnaryMinus()
         }
         else
         {
+            // Debug: Show WORD/BYTE case
+            LDA #'W'
+            Tools.COut();
+            LDA #'R'
+            Tools.COut();
+            LDA #'D'
+            Tools.COut();
+            LDA #' '
+            Tools.COut();
+            
             // WORD/BYTE - convert to two's complement (will become INT)
             SEC
             LDA #0
@@ -613,7 +1277,26 @@ UnaryMinus()
             STA ZP.TOPT
         }
         
-        // **FIX: Always load INT type into A register before PushTop**
+        // Debug: Show output before push
+        LDA #'O'
+        Tools.COut();
+        LDA #'U'
+        Tools.COut();
+        LDA #'T'
+        Tools.COut();
+        LDA #':'
+        Tools.COut();
+        LDA ZP.TOPT
+        Tools.HOut();
+        LDA #'-'
+        Tools.COut();
+        LDA ZP.TOPH
+        Tools.HOut();
+        LDA ZP.TOPL
+        Tools.HOut();
+        LDA #' '
+        Tools.COut();
+        
         LDA #BasicType.INT
         Stacks.PushTop(); // Push result, modifies Y
         
@@ -625,6 +1308,7 @@ UnaryMinus()
     PLX  // Restore X register
     PLA  // Restore A register
 }
+
     
     // Multiplication operation (pops two operands, pushes result)
     // Input: Stack contains two operands (right operand on top)
@@ -1110,161 +1794,382 @@ doSignedCompare()
         PLA
     }
     
-    // Enhanced debug output for LessThan() type decision
-// Add this debug code right after CheckTypeCompatibility() and before the type decision
-
-LessThan()
-{
-    PHA  // Preserve A register
-    PHX  // Preserve X register
-    PHY  // Preserve Y register
     
-    loop // Single exit point for cleanup
+    
+// Less-than comparison operation (pops two operands, pushes BIT result)
+    // Input: Stack contains two operands (right operand on top)
+    // Output: BIT value (0 or 1) pushed to stack representing (left < right)
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
+    //          Error state (ZP.LastError if type mismatch occurs)
+    LessThan()
     {
-        // Pop two operands
-        Stacks.PopTopNext(); // Pop operands, modifies X
+        PHA  // Preserve A register
+        PHX  // Preserve X register
+        PHY  // Preserve Y register
         
-        LDA #3  // Ordering comparison operation
-        CheckTypeCompatibility();
-        
-        if (NC)  // Type mismatch
-        {
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            break; // Error exit
-        }
-        
-        // **NEW DEBUG: Show types before decision**
+        // Debug: Show LessThan entry
+        LDA #'<'
+        Tools.COut();
+        LDA #'L'
+        Tools.COut();
         LDA #'T'
         Tools.COut();
-        LDA #'Y'
-        Tools.COut();
-        LDA #'P'
-        Tools.COut();
-        LDA #':'
-        Tools.COut();
-        LDA ZP.NEXTT  // Left operand type
-        Tools.HOut();
-        LDA #'/'
-        Tools.COut();
-        LDA ZP.TOPT   // Right operand type  
-        Tools.HOut();
         LDA #' '
         Tools.COut();
         
-        // **NEW DEBUG: Show the type decision logic**
-        LDA ZP.NEXTT
-        CMP #BasicType.INT
-        if (Z)
+        loop // Single exit point for cleanup
         {
-            // **NEW DEBUG: Show we're choosing signed**
-            LDA #'C'
-            Tools.COut();
-            LDA #'H'
-            Tools.COut();
-            LDA #'O'
-            Tools.COut();
-            LDA #'I'
-            Tools.COut();
-            LDA #'C'
-            Tools.COut();
-            LDA #'E'
-            Tools.COut();
-            LDA #':'
-            Tools.COut();
-            LDA #'S'
-            Tools.COut();
-            LDA #'I'
-            Tools.COut();
-            LDA #'G'
-            Tools.COut();
-            LDA #' '
-            Tools.COut();
+            // Pop two operands
+            Stacks.PopTopNext(); // Pop operands, modifies X
             
-            // INT - signed comparison
-            doSignedCompare();
-        }
-        else
-        {
-            // **NEW DEBUG: Show we're choosing unsigned and why**
-            LDA #'C'
-            Tools.COut();
-            LDA #'H'
-            Tools.COut();
-            LDA #'O'
-            Tools.COut();
-            LDA #'I'
-            Tools.COut();
-            LDA #'C'
+            // Debug: Show operands before type compatibility check
+            LDA #'B'
             Tools.COut();
             LDA #'E'
             Tools.COut();
-            LDA #':'
+            LDA #'F'
             Tools.COut();
-            LDA #'U'
+            LDA #':'
             Tools.COut();
             LDA #'N'
             Tools.COut();
-            LDA #'S'
+            LDA #'='
             Tools.COut();
+            LDA ZP.NEXTT
+            Tools.HOut();
+            LDA #':'
+            Tools.COut();
+            LDA ZP.NEXTH
+            Tools.HOut();
+            LDA ZP.NEXTL
+            Tools.HOut();
+            LDA #'/'
+            Tools.COut();
+            LDA #'T'
+            Tools.COut();
+            LDA #'='
+            Tools.COut();
+            LDA ZP.TOPT
+            Tools.HOut();
+            LDA #':'
+            Tools.COut();
+            LDA ZP.TOPH
+            Tools.HOut();
+            LDA ZP.TOPL
+            Tools.HOut();
             LDA #' '
             Tools.COut();
-            LDA #'('
+            
+            LDA #3  // Ordering comparison operation
+            CheckTypeCompatibility();
+            
+            if (NC)  // Type mismatch
+            {
+                // Debug: Show type compatibility failure
+                LDA #'T'
+                Tools.COut();
+                LDA #'C'
+                Tools.COut();
+                LDA #'F'
+                Tools.COut();
+                LDA #'A'
+                Tools.COut();
+                LDA #'I'
+                Tools.COut();
+                LDA #'L'
+                Tools.COut();
+                LDA #' '
+                Tools.COut();
+                
+                LDA #(Messages.TypeMismatch % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.TypeMismatch / 256)
+                STA ZP.LastErrorH
+                break; // Error exit
+            }
+            
+            // Debug: Show operands after type compatibility check
+            LDA #'A'
             Tools.COut();
-            LDA ZP.NEXTT  // Show what type caused unsigned choice
+            LDA #'F'
+            Tools.COut();
+            LDA #'T'
+            Tools.COut();
+            LDA #':'
+            Tools.COut();
+            LDA #'N'
+            Tools.COut();
+            LDA #'='
+            Tools.COut();
+            LDA ZP.NEXTT
             Tools.HOut();
-            LDA #')'
+            LDA #':'
+            Tools.COut();
+            LDA ZP.NEXTH
+            Tools.HOut();
+            LDA ZP.NEXTL
+            Tools.HOut();
+            LDA #'/'
+            Tools.COut();
+            LDA #'T'
+            Tools.COut();
+            LDA #'='
+            Tools.COut();
+            LDA ZP.TOPT
+            Tools.HOut();
+            LDA #':'
+            Tools.COut();
+            LDA ZP.TOPH
+            Tools.HOut();
+            LDA ZP.TOPL
+            Tools.HOut();
+            LDA #' '
+            Tools.COut();
+            
+            // Debug: Show the critical type decision point
+            LDA #'D'
+            Tools.COut();
+            LDA #'E'
+            Tools.COut();
+            LDA #'C'
+            Tools.COut();
+            LDA #'I'
+            Tools.COut();
+            LDA #'S'
+            Tools.COut();
+            LDA #'I'
+            Tools.COut();
+            LDA #'O'
+            Tools.COut();
+            LDA #'N'
+            Tools.COut();
+            LDA #':'
+            Tools.COut();
+            LDA ZP.NEXTT
+            Tools.HOut();
+            LDA #'='
+            Tools.COut();
+            LDA #'='
+            Tools.COut();
+            LDA #BasicType.INT
+            Tools.HOut();
+            LDA #'?'
             Tools.COut();
             LDA #' '
             Tools.COut();
             
-            // WORD and BYTE - unsigned comparison
-            doUnsignedCompare();
-        }
+            // Show the actual comparison result
+            LDA ZP.NEXTT
+            CMP #BasicType.INT
+            PHP  // Save the comparison flags
+            
+            // Debug: Show comparison result
+            LDA #'C'
+            Tools.COut();
+            LDA #'M'
+            Tools.COut();
+            LDA #'P'
+            Tools.COut();
+            LDA #':'
+            Tools.COut();
+            PLP  // Restore flags to check them
+            PHP  // Save them again for the actual decision
+            if (Z)
+            {
+                LDA #'E'
+                Tools.COut();
+                LDA #'Q'
+                Tools.COut();
+                LDA #'U'
+                Tools.COut();
+                LDA #'A'
+                Tools.COut();
+                LDA #'L'
+                Tools.COut();
+            }
+            else
+            {
+                LDA #'N'
+                Tools.COut();
+                LDA #'O'
+                Tools.COut();
+                LDA #'T'
+                Tools.COut();
+                LDA #'E'
+                Tools.COut();
+                LDA #'Q'
+                Tools.COut();
+            }
+            LDA #' '
+            Tools.COut();
+            
+            PLP  // Restore flags for actual decision
+            if (Z)
+            {
+                // Debug: Show we're choosing signed comparison
+                LDA #'C'
+                Tools.COut();
+                LDA #'H'
+                Tools.COut();
+                LDA #'O'
+                Tools.COut();
+                LDA #'I'
+                Tools.COut();
+                LDA #'C'
+                Tools.COut();
+                LDA #'E'
+                Tools.COut();
+                LDA #':'
+                Tools.COut();
+                LDA #'S'
+                Tools.COut();
+                LDA #'I'
+                Tools.COut();
+                LDA #'G'
+                Tools.COut();
+                LDA #'N'
+                Tools.COut();
+                LDA #'E'
+                Tools.COut();
+                LDA #'D'
+                Tools.COut();
+                LDA #' '
+                Tools.COut();
+                
+                // INT - signed comparison
+                doSignedCompare();
+            }
+            else
+            {
+                // Debug: Show we're choosing unsigned and why
+                LDA #'C'
+                Tools.COut();
+                LDA #'H'
+                Tools.COut();
+                LDA #'O'
+                Tools.COut();
+                LDA #'I'
+                Tools.COut();
+                LDA #'C'
+                Tools.COut();
+                LDA #'E'
+                Tools.COut();
+                LDA #':'
+                Tools.COut();
+                LDA #'U'
+                Tools.COut();
+                LDA #'N'
+                Tools.COut();
+                LDA #'S'
+                Tools.COut();
+                LDA #'I'
+                Tools.COut();
+                LDA #'G'
+                Tools.COut();
+                LDA #'N'
+                Tools.COut();
+                LDA #'E'
+                Tools.COut();
+                LDA #'D'
+                Tools.COut();
+                LDA #' '
+                Tools.COut();
+                LDA #'('
+                Tools.COut();
+                LDA #'N'
+                Tools.COut();
+                LDA #'E'
+                Tools.COut();
+                LDA #'X'
+                Tools.COut();
+                LDA #'T'
+                Tools.COut();
+                LDA #'T'
+                Tools.COut();
+                LDA #'='
+                Tools.COut();
+                LDA ZP.NEXTT  // Show what type caused unsigned choice
+                Tools.HOut();
+                LDA #')'
+                Tools.COut();
+                LDA #' '
+                Tools.COut();
+                
+                // WORD and BYTE - unsigned comparison
+                doUnsignedCompare();
+            }
+            
+            // Debug: Show comparison result
+            LDA #'R'
+            Tools.COut();
+            LDA #'E'
+            Tools.COut();
+            LDA #'S'
+            Tools.COut();
+            LDA #'U'
+            Tools.COut();
+            LDA #'L'
+            Tools.COut();
+            LDA #'T'
+            Tools.COut();
+            LDA #':'
+            Tools.COut();
+            LDA ZP.ACC
+            Tools.HOut();
+            LDA #' '
+            Tools.COut();
+            
+            // Check if result is NEXT < TOP (ZP.ACC == 0)
+            LDX #0          // Assume false
+            LDA ZP.ACC
+            if (Z)          // Result was 0 (NEXT < TOP)
+            {
+                LDX #1      // True
+            }
+            
+            // Debug: Show final boolean result
+            LDA #'F'
+            Tools.COut();
+            LDA #'I'
+            Tools.COut();
+            LDA #'N'
+            Tools.COut();
+            LDA #'A'
+            Tools.COut();
+            LDA #'L'
+            Tools.COut();
+            LDA #':'
+            Tools.COut();
+            TXA
+            Tools.HOut();
+            LDA #' '
+            Tools.COut();
+            
+            Stacks.PushX(); // Push BIT result, modifies Y
+            
+            break; // Success exit
+        } // Single exit loop
         
-        // Debug: Show comparison result
-        LDA #'R'
+        // Debug: Show LessThan exit
+        LDA #'L'
         Tools.COut();
-        LDA #':'
+        LDA #'T'
         Tools.COut();
-        LDA ZP.ACC
-        Tools.HOut();
+        LDA #'>'
+        Tools.COut();
         LDA #' '
         Tools.COut();
         
-        // Check if result is NEXT < TOP (ZP.ACC == 0)
-        LDX #0          // Assume false
-        LDA ZP.ACC
-        if (Z)          // Result was 0 (NEXT < TOP)
-        {
-            LDX #1      // True
-        }
-        
-        // Debug: Show final decision
-        LDA #'F'
-        Tools.COut();
-        LDA #':'
-        Tools.COut();
-        TXA
-        Tools.HOut();
-        LDA #' '
-        Tools.COut();
-        
-        Stacks.PushX(); // Push BIT result, modifies Y
-        
-        break; // Success exit
-    } // Single exit loop
+        // Restore registers
+        PLY  // Restore Y register
+        PLX  // Restore X register
+        PLA  // Restore A register
+    }    
     
-    // Restore registers
-    PLY  // Restore Y register
-    PLX  // Restore X register
-    PLA  // Restore A register
-}
-     
+    
        
-    // Greater-than comparison operation (pops two operands, pushes BIT result)
+       
+// Greater-than comparison operation (pops two operands, pushes BIT result)
     // Input: Stack contains two operands (right operand on top)
     // Output: BIT value (0 or 1) pushed to stack representing (left > right)
     // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
@@ -1275,16 +2180,80 @@ LessThan()
         PHX  // Preserve X register
         PHY  // Preserve Y register
         
+        // Debug: Show GreaterThan entry
+        LDA #'<'
+        Tools.COut();
+        LDA #'G'
+        Tools.COut();
+        LDA #'T'
+        Tools.COut();
+        LDA #' '
+        Tools.COut();
+        
         loop // Single exit point for cleanup
         {
             // Pop two operands
             Stacks.PopTopNext(); // Pop operands, modifies X
+            
+            // Debug: Show operands before type compatibility check
+            LDA #'B'
+            Tools.COut();
+            LDA #'E'
+            Tools.COut();
+            LDA #'F'
+            Tools.COut();
+            LDA #':'
+            Tools.COut();
+            LDA #'N'
+            Tools.COut();
+            LDA #'='
+            Tools.COut();
+            LDA ZP.NEXTT
+            Tools.HOut();
+            LDA #':'
+            Tools.COut();
+            LDA ZP.NEXTH
+            Tools.HOut();
+            LDA ZP.NEXTL
+            Tools.HOut();
+            LDA #'/'
+            Tools.COut();
+            LDA #'T'
+            Tools.COut();
+            LDA #'='
+            Tools.COut();
+            LDA ZP.TOPT
+            Tools.HOut();
+            LDA #':'
+            Tools.COut();
+            LDA ZP.TOPH
+            Tools.HOut();
+            LDA ZP.TOPL
+            Tools.HOut();
+            LDA #' '
+            Tools.COut();
             
             LDA #3  // Ordering comparison operation
             CheckTypeCompatibility();
             
             if (NC)  // Type mismatch
             {
+                // Debug: Show type compatibility failure
+                LDA #'T'
+                Tools.COut();
+                LDA #'C'
+                Tools.COut();
+                LDA #'F'
+                Tools.COut();
+                LDA #'A'
+                Tools.COut();
+                LDA #'I'
+                Tools.COut();
+                LDA #'L'
+                Tools.COut();
+                LDA #' '
+                Tools.COut();
+                
                 LDA #(Messages.TypeMismatch % 256)
                 STA ZP.LastErrorL
                 LDA #(Messages.TypeMismatch / 256)
@@ -1292,18 +2261,236 @@ LessThan()
                 break; // Error exit
             }
             
+            // Debug: Show operands after type compatibility check
+            LDA #'A'
+            Tools.COut();
+            LDA #'F'
+            Tools.COut();
+            LDA #'T'
+            Tools.COut();
+            LDA #':'
+            Tools.COut();
+            LDA #'N'
+            Tools.COut();
+            LDA #'='
+            Tools.COut();
+            LDA ZP.NEXTT
+            Tools.HOut();
+            LDA #':'
+            Tools.COut();
+            LDA ZP.NEXTH
+            Tools.HOut();
+            LDA ZP.NEXTL
+            Tools.HOut();
+            LDA #'/'
+            Tools.COut();
+            LDA #'T'
+            Tools.COut();
+            LDA #'='
+            Tools.COut();
+            LDA ZP.TOPT
+            Tools.HOut();
+            LDA #':'
+            Tools.COut();
+            LDA ZP.TOPH
+            Tools.HOut();
+            LDA ZP.TOPL
+            Tools.HOut();
+            LDA #' '
+            Tools.COut();
+            
+            // Debug: Show the critical type decision point
+            LDA #'D'
+            Tools.COut();
+            LDA #'E'
+            Tools.COut();
+            LDA #'C'
+            Tools.COut();
+            LDA #'I'
+            Tools.COut();
+            LDA #'S'
+            Tools.COut();
+            LDA #'I'
+            Tools.COut();
+            LDA #'O'
+            Tools.COut();
+            LDA #'N'
+            Tools.COut();
+            LDA #':'
+            Tools.COut();
+            LDA ZP.NEXTT
+            Tools.HOut();
+            LDA #'='
+            Tools.COut();
+            LDA #'='
+            Tools.COut();
+            LDA #BasicType.INT
+            Tools.HOut();
+            LDA #'?'
+            Tools.COut();
+            LDA #' '
+            Tools.COut();
+            
+            // Show the actual comparison result
             LDA ZP.NEXTT
             CMP #BasicType.INT
+            PHP  // Save the comparison flags
+            
+            // Debug: Show comparison result
+            LDA #'C'
+            Tools.COut();
+            LDA #'M'
+            Tools.COut();
+            LDA #'P'
+            Tools.COut();
+            LDA #':'
+            Tools.COut();
+            PLP  // Restore flags to check them
+            PHP  // Save them again for the actual decision
             if (Z)
             {
+                LDA #'E'
+                Tools.COut();
+                LDA #'Q'
+                Tools.COut();
+                LDA #'U'
+                Tools.COut();
+                LDA #'A'
+                Tools.COut();
+                LDA #'L'
+                Tools.COut();
+            }
+            else
+            {
+                LDA #'N'
+                Tools.COut();
+                LDA #'O'
+                Tools.COut();
+                LDA #'T'
+                Tools.COut();
+                LDA #'E'
+                Tools.COut();
+                LDA #'Q'
+                Tools.COut();
+            }
+            LDA #' '
+            Tools.COut();
+            
+            PLP  // Restore flags for actual decision
+            if (Z)
+            {
+                // Debug: Show we're choosing signed comparison
+                LDA #'C'
+                Tools.COut();
+                LDA #'H'
+                Tools.COut();
+                LDA #'O'
+                Tools.COut();
+                LDA #'I'
+                Tools.COut();
+                LDA #'C'
+                Tools.COut();
+                LDA #'E'
+                Tools.COut();
+                LDA #':'
+                Tools.COut();
+                LDA #'S'
+                Tools.COut();
+                LDA #'I'
+                Tools.COut();
+                LDA #'G'
+                Tools.COut();
+                LDA #'N'
+                Tools.COut();
+                LDA #'E'
+                Tools.COut();
+                LDA #'D'
+                Tools.COut();
+                LDA #' '
+                Tools.COut();
+                
                 // INT - signed comparison
                 doSignedCompare();
             }
             else
             {
+                // Debug: Show we're choosing unsigned and why
+                LDA #'C'
+                Tools.COut();
+                LDA #'H'
+                Tools.COut();
+                LDA #'O'
+                Tools.COut();
+                LDA #'I'
+                Tools.COut();
+                LDA #'C'
+                Tools.COut();
+                LDA #'E'
+                Tools.COut();
+                LDA #':'
+                Tools.COut();
+                LDA #'U'
+                Tools.COut();
+                LDA #'N'
+                Tools.COut();
+                LDA #'S'
+                Tools.COut();
+                LDA #'I'
+                Tools.COut();
+                LDA #'G'
+                Tools.COut();
+                LDA #'N'
+                Tools.COut();
+                LDA #'E'
+                Tools.COut();
+                LDA #'D'
+                Tools.COut();
+                LDA #' '
+                Tools.COut();
+                LDA #'('
+                Tools.COut();
+                LDA #'N'
+                Tools.COut();
+                LDA #'E'
+                Tools.COut();
+                LDA #'X'
+                Tools.COut();
+                LDA #'T'
+                Tools.COut();
+                LDA #'T'
+                Tools.COut();
+                LDA #'='
+                Tools.COut();
+                LDA ZP.NEXTT  // Show what type caused unsigned choice
+                Tools.HOut();
+                LDA #')'
+                Tools.COut();
+                LDA #' '
+                Tools.COut();
+                
                 // WORD and BYTE - unsigned comparison
                 doUnsignedCompare();
             }
+            
+            // Debug: Show comparison result
+            LDA #'R'
+            Tools.COut();
+            LDA #'E'
+            Tools.COut();
+            LDA #'S'
+            Tools.COut();
+            LDA #'U'
+            Tools.COut();
+            LDA #'L'
+            Tools.COut();
+            LDA #'T'
+            Tools.COut();
+            LDA #':'
+            Tools.COut();
+            LDA ZP.ACC
+            Tools.HOut();
+            LDA #' '
+            Tools.COut();
             
             // Check if result is NEXT > TOP (ZP.ACC == 2)
             LDX #0          // Assume false
@@ -1314,17 +2501,44 @@ LessThan()
                 LDX #1      // True
             }
             
+            // Debug: Show final boolean result
+            LDA #'F'
+            Tools.COut();
+            LDA #'I'
+            Tools.COut();
+            LDA #'N'
+            Tools.COut();
+            LDA #'A'
+            Tools.COut();
+            LDA #'L'
+            Tools.COut();
+            LDA #':'
+            Tools.COut();
+            TXA
+            Tools.HOut();
+            LDA #' '
+            Tools.COut();
+            
             Stacks.PushX(); // Push BIT result, modifies Y
             
             break; // Success exit
         } // Single exit loop
         
+        // Debug: Show GreaterThan exit
+        LDA #'G'
+        Tools.COut();
+        LDA #'T'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+        LDA #' '
+        Tools.COut();
+        
         // Restore registers
         PLY  // Restore Y register
         PLX  // Restore X register
         PLA  // Restore A register
-    }
-    
+    }    
     // Less-than-or-equal comparison operation (pops two operands, pushes BIT result)
     // Input: Stack contains two operands (right operand on top)
     // Output: BIT value (0 or 1) pushed to stack representing (left <= right)
