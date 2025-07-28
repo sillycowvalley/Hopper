@@ -6,7 +6,7 @@ unit Tools
  
     uses "BasicTypes"
 
-#ifdef DEBUG       
+       
     // Print BasicType enum value as readable string
     // Input: A = BasicType enum value
     // Output: Type name printed to serial
@@ -103,30 +103,6 @@ unit Tools
         PLX
         PLA
         PLP  // Restore flags
-    }
-#endif
-    
-    // Print null-terminated string to serial output
-    // Input: ZP.IDX = pointer to null-terminated string
-    // Output: String printed to serial
-    printStringIDX()
-    {
-        PHA
-        PHY
-        
-        LDY #0              // Initialize string index
-        
-        loop                // Print each character until null terminator
-        {
-            LDA [ZP.IDX], Y // Load character from string
-            if (Z) { break; } // Exit if null terminator found
-            
-            Serial.WriteChar(); // Print the character
-            INY             // Move to next character
-        }
-        
-        PLY
-        PLA
     }
     
     // Print null-terminated string to serial output
@@ -449,6 +425,28 @@ unit Tools
     } 
 
 #ifdef DEBUG    
+    // Print null-terminated string to serial output
+    // Input: ZP.IDX = pointer to null-terminated string
+    // Output: String printed to serial
+    printStringIDX()
+    {
+        PHA
+        PHY
+        
+        LDY #0              // Initialize string index
+        
+        loop                // Print each character until null terminator
+        {
+            LDA [ZP.IDX], Y // Load character from string
+            if (Z) { break; } // Exit if null terminator found
+            
+            Serial.WriteChar(); // Print the character
+            INY             // Move to next character
+        }
+        
+        PLY
+        PLA
+    }
 
     // Debug strings
     const string debugVarsHeader = "\n== VARS ==\n";
@@ -560,6 +558,10 @@ unit Tools
        LDA #'C'
        Serial.WriteChar();
        LDA #':'
+       LDA ZP.ACCT
+       PrintType();
+       LDA #'-'
+       Serial.WriteChar();
        Serial.WriteChar();
        LDA ZP.ACCH
        Serial.HexOut();
@@ -1917,6 +1919,34 @@ unit Tools
         LDA ZP.ACCH
         Serial.HexOut();
         LDA ZP.ACCL
+        Serial.HexOut();
+        LDA #' '
+        Serial.WriteChar();
+        
+        PLA  // Restore A register
+        PLP  // Pull processor status (restore carry flag)
+    }
+    
+    // Output ACC register as "ACC:hhll "
+    // Input: None (uses ZP.ACCT)
+    // Output: ACCT value printed to serial
+    // Preserves: Everything
+    ATOut()
+    {
+        PHP  // Push processor status (including carry flag)
+        PHA  // Save A register
+        
+        LDA #'A'
+        Serial.WriteChar();
+        LDA #'C'
+        Serial.WriteChar();
+        LDA #'C'
+        Serial.WriteChar();
+        LDA #'T'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        LDA ZP.ACCT
         Serial.HexOut();
         LDA #' '
         Serial.WriteChar();

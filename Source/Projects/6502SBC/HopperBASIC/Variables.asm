@@ -52,7 +52,7 @@ unit Variables
     // Find variable/constant by name with optional type filtering
     // Input: ZP.TOP = name pointer, ZP.SymbolIteratorFilter = expected symbolType (VARIABLE or CONSTANT, 0 = any)
     // Output: ZP.IDX = symbol node address, C set if found and correct type, NC if not found or wrong type
-    // Munts: ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0
+    // Munts: ZP.LCURRENT, ZP.SymbolTemp0
     Find()
     {
         PHA
@@ -83,7 +83,7 @@ unit Variables
             STA ZP.SymbolTemp0  // Temporary storage
             
             // Get symbol type and check
-            Objects.GetData();  // Returns type in ZP.ACCT, tokens in ZP.NEXT, value in ZP.IDY
+            Variables.GetType();
             
             LDA ZP.ACCT
             AND #0xF0  // Extract symbol type (high nibble)
@@ -235,37 +235,51 @@ unit Variables
     {
         PHA
         
-        loop // start of single exit block
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
+        
+        LDA ZP.NEXTL
+        PHA
+        LDA ZP.NEXTH  
+        PHA
+        
+        Objects.GetData();  // Returns type in ZP.ACCT, tokens in ZP.NEXT, value in ZP.IDY
+        
+        // Check if it's a variable or constant
+        LDA ZP.ACCT
+        AND #0xF0  // Extract symbol type (high nibble)
+        switch (A)
         {
-            Objects.GetData();  // Returns type in ZP.ACCT, tokens in ZP.NEXT, value in ZP.IDY
-            
-            // Check if it's a variable or constant
-            LDA ZP.ACCT
-            AND #0xF0  // Extract symbol type (high nibble)
-            LSR LSR LSR LSR  // Shift to low nibble
-            
-            CMP #SymbolType.VARIABLE
-            if (Z)
+            case (SymbolType.VARIABLE << 4):
             {
                 SEC  // Success
-                break;
             }
-            
-            CMP #SymbolType.CONSTANT
-            if (Z)
+            case (SymbolType.CONSTANT << 4):
             {
                 SEC  // Success
-                break;
             }
-            
-            // Not a variable or constant
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            CLC  // Error
-            break;
-        } // end of single exit block
+            default:
+            {
+                // Not a variable or constant
+                LDA #(Messages.TypeMismatch % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.TypeMismatch / 256)
+                STA ZP.LastErrorH
+                CLC  // Error
+            }
+        }
+        
+        PLA
+        STA ZP.NEXTH
+        PLA
+        STA ZP.NEXTL
+        
+        PLA
+        STA ZP.IDYH
+        PLA
+        STA ZP.IDYL
         
         PLA
     }

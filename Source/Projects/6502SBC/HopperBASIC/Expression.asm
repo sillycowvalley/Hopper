@@ -511,73 +511,76 @@ unit Expression
         SEC  // Success
     }
   
-// Parse unary operators and delegate to primary expressions
-// Input: ZP.CurrentToken = current token (-, NOT, or start of primary expression)
-// Output: Expression result pushed to stack
-//         ZP.CurrentToken = token after unary expression
-// Modifies: Stack, ZP.CurrentToken, ZP.TOP, ZP.TOPT, parsing variables
-// Error: Sets ZP.LastError if syntax error
-parseUnary()
-{
+    // Parse unary operators and delegate to primary expressions
+    // Input: ZP.CurrentToken = current token (-, NOT, or start of primary expression)
+    // Output: Expression result pushed to stack
+    //         ZP.CurrentToken = token after unary expression
+    // Modifies: Stack, ZP.CurrentToken, ZP.TOP, ZP.TOPT, parsing variables
+    // Error: Sets ZP.LastError if syntax error
+    parseUnary()
+    {
 #ifdef DEBUG
-    LDA #'<' Tools.COut(); LDA #'U' Tools.COut();
+        LDA #'<' Tools.COut(); LDA #'U' Tools.COut();
 #endif    
-    
-    LDA ZP.CurrentToken
-    CMP #Tokens.MINUS
-    if (Z)
-    {
-        // Unary minus
-        Tokenizer.NextToken();
-        Messages.CheckError();
-        if (NC) { return; }
         
-        // Parse the operand first
-        parsePrimary();
-        Messages.CheckError();
-        if (NC) { return; }
-        
-        // Apply unary minus with proper type handling
-        Instructions.UnaryMinus();
-        
+        LDA ZP.CurrentToken
+        CMP #Tokens.MINUS
+        if (Z)
+        {
+            // Unary minus
+            Tokenizer.NextToken();
+            Messages.CheckError();
+            if (NC) { return; }
+            
+            // Parse the operand first
+            parsePrimary();
+            Messages.CheckError();
+            if (NC) { return; }
+            
+            // Apply unary minus with proper type handling
+            Instructions.UnaryMinus();
+            
 #ifdef DEBUG
-        LDA #'U' Tools.COut();LDA #'>' Tools.COut();
+            LDA #'U' Tools.COut();LDA #'>' Tools.COut();
 #endif
+            
+            SEC  // Success
+            return;
+        }
         
-        SEC  // Success
-        return;
-    }
-    
-    CMP #Tokens.NOT
-    if (Z)
-    {
-        // Logical NOT (unary)
-        Tokenizer.NextToken();
-        Messages.CheckError();
-        if (NC) { return; }
-        
-        // Parse the operand
-        parsePrimary();
-        Messages.CheckError();
-        if (NC) { return; }
-        
-        // Perform logical NOT
-        Instructions.LogicalNot();
-        
+        CMP #Tokens.NOT
+        if (Z)
+        {
+            // Logical NOT (unary)
+            Tokenizer.NextToken();
+            Messages.CheckError();
+            if (NC) { return; }
+            
+            // Parse the operand
+            parsePrimary();
+            Messages.CheckError();
+            if (NC) { return; }
+            
+            // Perform logical NOT
+            Instructions.LogicalNot();
+            
 #ifdef DEBUG
-        LDA #'U' Tools.COut();LDA #'>' Tools.COut();
+            LDA #'U' Tools.COut();LDA #'>' Tools.COut();
 #endif        
-        SEC  // Success
-        return;
-    }
-    
-    // Not unary, parse primary
-    parsePrimary();
-    
+            SEC  // Success
+            return;
+        }
+        
+        // Not unary, parse primary
+        parsePrimary();
+        
 #ifdef DEBUG
         LDA #'U' Tools.COut();LDA #'>' Tools.COut();
 #endif
-      }      
+    }      
+    
+    
+        
 
     
     // Parse primary expressions (numbers, identifiers, parentheses)
@@ -588,125 +591,166 @@ parseUnary()
     // Error: Sets ZP.LastError if syntax error or undefined identifier
     parsePrimary()
     {
-#ifdef DEBUG
+    #ifdef DEBUG
         LDA #'<'
         Tools.COut();
         LDA #'T'
         Tools.COut();
-#endif
+    #endif
         
-        LDA ZP.CurrentToken
+        // Assume success initially
+        SEC
         
-        switch (A)
+        loop // single exit
         {
-            case Tokens.NUMBER:
+            LDA ZP.CurrentToken
+            switch (A)
             {
-                // Convert token to number and push to stack
-                Tokenizer.GetTokenNumber();  // Result in ZP.TOP, type in ZP.TOPT
-                
-#ifdef DEBUG
-                // Show parsed number
-                LDA #' ' Tools.COut();
-                LDA ZP.TOPT Tools.PrintType();
-                LDA #':' Tools.COut();
-                Tools.PrintDecimalWord();
-#endif
-                
-                LDA ZP.TOPT // type
-                Stacks.PushTop(); // Push value to stack, modifies Y
-                
-                // Get next token
-                Tokenizer.NextToken();
-                Messages.CheckError();
-                if (NC) { return; }
-                
-#ifdef DEBUG
-                LDA #'T'
-                Tools.COut();
-                LDA #'>'
-                Tools.COut();
-#endif
-                
-                SEC  // Success
-                return;
+                case Tokens.NUMBER:
+                {
+                    // Convert token to number and push to stack
+                    Tokenizer.GetTokenNumber();  // Result in ZP.TOP, type in ZP.TOPT
+                    
+        #ifdef DEBUG
+                    // Show parsed number
+                    LDA #' ' Tools.COut();
+                    LDA ZP.TOPT Tools.PrintType();
+                    LDA #':' Tools.COut();
+                    Tools.PrintDecimalWord();
+        #endif
+                    
+                    LDA ZP.TOPT // type
+                    Stacks.PushTop(); // Push value to stack, modifies Y
+                    
+                    // Get next token
+                    Tokenizer.NextToken();
+                    Messages.CheckError();
+                    break;
+                }
+                case Tokens.IDENTIFIER:
+                {
+                    parseIdentifier();
+                    break;
+                }
+                case Tokens.LPAREN:
+                {
+                    // Get next token (start of sub-expression)
+                    Tokenizer.NextToken();
+                    Messages.CheckError();
+                    if (NC) 
+                    { 
+                        // Error from NextToken - flag already set
+                        break; 
+                    }
+                    
+                    // Parse the sub-expression
+                    parseComparison();
+                    Messages.CheckError();
+                    if (NC) 
+                    { 
+                        // Error from parseComparison - flag already set
+                        break; 
+                    }
+                    
+                    // Expect closing parenthesis
+                    LDA ZP.CurrentToken
+                    CMP #Tokens.RPAREN
+                    if (NZ)
+                    {
+                        LDA #(Messages.SyntaxError % 256)
+                        STA ZP.LastErrorL
+                        LDA #(Messages.SyntaxError / 256)
+                        STA ZP.LastErrorH
+                        CLC  // Error
+                        break;
+                    }
+                    
+                    // Get next token
+                    Tokenizer.NextToken();
+                    Messages.CheckError();
+                    break;
+                }
+                default:
+                {
+                    // Unexpected token
+                    LDA #(Messages.SyntaxError % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.SyntaxError / 256)
+                    STA ZP.LastErrorH
+                    
+                    CLC  // Error
+                    break;
+                }
             }
-            case Tokens.IDENTIFIER:
+
+            
+            CLC  // Error(we should never get here)
+            break;
+        } // Single exit point
+    #ifdef DEBUG
+        LDA #'T'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+    #endif
+    }
+    
+    // Helper: Parse identifier (variable or constant lookup)
+    // Input: ZP.CurrentToken = Tokens.IDENTIFIER
+    // Output: Identifier value pushed to stack, ZP.CurrentToken advanced
+    // Modifies: Stack, ZP.CurrentToken, ZP.TOP, ZP.TOPT, parsing variables
+    // Error: Sets ZP.LastError if identifier not found or wrong type
+    parseIdentifier()
+    {
+        PHA
+        PHX
+        PHY
+        
+        loop // Single exit block for clean error handling
+        {
+            // Get the identifier name for lookup
+            Tokenizer.GetTokenString();  // Result in ZP.TOP
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            STZ ZP.SymbolIteratorFilter  // Accept any symbol type (variable or constant)
+            Variables.Find(); // ZP.IDX = symbol node address
+            
+            Tools.XOut();
+            
+            if (NC)  // Symbol not found
             {
-                // TODO: Variable lookup when we have variables
                 LDA #(Messages.UndefinedIdentifier % 256)
                 STA ZP.LastErrorL
                 LDA #(Messages.UndefinedIdentifier / 256)
                 STA ZP.LastErrorH
                 
-#ifdef DEBUG
-                LDA #'T'
-                Tools.COut();
-                LDA #'>'
-                Tools.COut();
-#endif
-                
-                CLC  // Error
-                BRK
-                return;
+                CLC  // Set NC
+                break;
             }
-            case Tokens.LPAREN:
+            
+            // Get the value and type from found symbol
+            Variables.GetValue();  // Returns value in ZP.TOP, type in ZP.TOPT
+            if (NC)
             {
-                // Get next token (start of sub-expression)
-                Tokenizer.NextToken();
-                Messages.CheckError();
-                if (NC) { return; }
-                
-                // Parse the sub-expression
-                parseComparison();
-                Messages.CheckError();
-                if (NC) { return; }
-                
-                // Expect closing parenthesis
-                LDA ZP.CurrentToken
-                CMP #Tokens.RPAREN
-                if (NZ)
-                {
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
-                    CLC  // Error
-                    return;
-                }
-                
-                // Get next token
-                Tokenizer.NextToken();
-                Messages.CheckError();
-                if (NC) { return; }
-                
-#ifdef DEBUG
-                LDA #'T'
-                Tools.COut();
-                LDA #'>'
-                Tools.COut();
-#endif
-                
-                SEC  // Success
-                return;
+                CLC  // Set NC - error already set by GetValue
+                break;
             }
-            default:
-            {
-                // Unexpected token
-                LDA #(Messages.SyntaxError % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.SyntaxError / 256)
-                STA ZP.LastErrorH
-                
-#ifdef DEBUG
-                LDA #'T'
-                Tools.COut();
-                LDA #'>'
-                Tools.COut();
-#endif
-                
-                CLC  // Error
-                return;
-            }
-        }
+            
+            LDA ZP.TOPT  // type
+            Stacks.PushTop();
+            
+            // Get next token
+            Tokenizer.NextToken();
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            SEC  // Set C - success
+            break;
+        } // end of single exit block
+        
+        PLY
+        PLX
+        PLA
     }
 }

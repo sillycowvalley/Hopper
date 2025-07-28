@@ -17,9 +17,6 @@ unit Console
     // String constants for VARS command
     const string noVariablesMsg = "No variables defined\n";
     const string constTypeMsg = "CONST";
-    const string intTypeMsg = "INT";
-    const string wordTypeMsg = "WORD";
-    const string bitTypeMsg = "BIT";
     
     Initialize()
     {
@@ -127,8 +124,6 @@ unit Console
     {
         Tokenizer.NextToken(); // consume 'VARS'
         
-        //DumpHeap();
-        
         // Track if we found any variables or constants
         LDX #0  // Counter for total symbols found
         
@@ -140,13 +135,11 @@ unit Console
             
             // Get symbol type and data type
             Variables.GetType();
-            LDA ZP.ACCL
-            PHA  // Save packed type for later
             
             // Print symbol type (VAR or CONST)
+            LDA ZP.ACCT
             AND #0xF0  // Extract symbol type (high nibble)
-            LSR LSR LSR LSR  // Shift to low nibble
-            CMP #SymbolType.VARIABLE
+            CMP # (SymbolType.VARIABLE << 4)
             if (NZ)
             {
                 // CONST
@@ -161,39 +154,10 @@ unit Console
             }
             
             // Get packed type back and extract data type
-            PLA
-            AND #0x0F  // Extract data type (low nibble)
-            CMP #BasicType.INT
-            if (Z)
-            {
-                LDA #(intTypeMsg % 256)
-                STA ZP.ACCL
-                LDA #(intTypeMsg / 256)
-                STA ZP.ACCH
-                Tools.PrintStringACC();
-            }
-            else
-            {
-                CMP #BasicType.WORD
-                if (Z)
-                {
-                    LDA #(wordTypeMsg % 256)
-                    STA ZP.ACCL
-                    LDA #(wordTypeMsg / 256)
-                    STA ZP.ACCH
-                    Tools.PrintStringACC();
-                }
-                else
-                {
-                    // Must be BIT
-                    LDA #(bitTypeMsg % 256)
-                    STA ZP.ACCL
-                    LDA #(bitTypeMsg / 256)
-                    STA ZP.ACCH
-                    Tools.PrintStringACC();
-                }
-            }
-            
+            LDA ZP.ACCT
+            AND # 0x0F
+            Tools.PrintType();
+                        
             // Print space
             LDA #' '
             Serial.WriteChar();
@@ -320,13 +284,9 @@ unit Console
                 }
                 case Tokens.NEW:
                 {
-                    DumpBasicBuffers();
-                    
                     cmdNew();
                     Messages.CheckError();
                     if (NC) { return; }
-                    
-                    DumpBasicBuffers();
                 }
                 case Tokens.CLEAR:
                 {
