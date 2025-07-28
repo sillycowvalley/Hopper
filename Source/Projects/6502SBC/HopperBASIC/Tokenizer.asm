@@ -24,14 +24,14 @@ unit Tokenizer
         DEL      = 0x0B,
         MEM      = 0x0C,
         BYE      = 0x0D,
-        REM      = 0x0E,  // REM comment
-        COMMENT  = 0x0F,  // ' comment (single quote)
-        EOL      = 0x10,  // End of line/empty line (moved from 0x0E)
+        REM      = 0x0E,
+        COMMENT  = 0x0F,
+        EOL      = 0x10,
         
         // Type declarations (17-31)  
-        INT      = 0x11,  // Moved from 0x10
-        WORD     = 0x12,  // Moved from 0x11
-        BIT      = 0x13,  // Moved from 0x12
+        INT      = 0x11,
+        WORD     = 0x12,
+        BIT      = 0x13,
         
         // Language keywords (32-47)
         PRINT    = 0x20,
@@ -49,6 +49,9 @@ unit Tokenizer
         NOT      = 0x32,
         MOD      = 0x33,
         
+        // Sentinel marking end of keywords
+        lastKeyword = 0x33,
+        
         // Basic operators (64-79)
         EQUALS   = 0x40,  // =
         PLUS     = 0x41,  // +
@@ -58,7 +61,7 @@ unit Tokenizer
         NOTEQUAL = 0x45,  // <>
         
         // Additional comparison operators (80-87)
-        LT       = 0x50,  // <
+        LT       = 0x50,  // 
         GT       = 0x51,  // >
         LE       = 0x52,  // <=
         GE       = 0x53,  // >=
@@ -111,6 +114,23 @@ unit Tokenizer
         3, Tokens.MOD, 'M', 'O', 'D',
         0  // End marker
     };
+    
+    // Check if a token value represents a keyword
+    // Input: A = token value to check
+    // Output: C set if token is a keyword, NC if not a keyword  
+    // Modifies: Processor flags only
+    IsKeyword()
+    {
+        CMP #(Tokens.lastKeyword + 1)
+        if (C)  // >= lastKeyword + 1
+        {
+            CLC  // Not a keyword
+        }
+        else
+        {
+            SEC  // Is a keyword
+        }
+    }
     
     // Initialize tokenizer state
     // Input: None

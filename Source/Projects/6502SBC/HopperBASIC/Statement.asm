@@ -404,10 +404,22 @@ unit Statement
             CMP #Tokens.IDENTIFIER
             if (NZ)
             {
-                LDA #(Messages.SyntaxError % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.SyntaxError / 256)
-                STA ZP.LastErrorH
+                Tokenizer.IsKeyword();
+                if (C)
+                {
+                    LDA #(Messages.IllegalVariableName  % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.IllegalVariableName  / 256)
+                    STA ZP.LastErrorH
+                }
+                else
+                {
+                    LDA #(Messages.SyntaxError % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.SyntaxError / 256)
+                    STA ZP.LastErrorH
+                }
+                
                 CLC
                 break; // error exit
             }
