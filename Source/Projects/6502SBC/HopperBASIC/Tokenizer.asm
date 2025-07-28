@@ -1031,22 +1031,16 @@ unit Tokenizer
             INY
         }
         
-        Tools.TOut();  // DEBUG
-        
         // Set the type based on the value
         BIT ZP.TOPH          // Check high bit
         if (MI)
         {
-            LDA #'W' Tools.COut();  // DEBUG
-            
             LDA #BasicType.WORD   // Large positive (32768-65535)
             STA ZP.TOPT
         }
         else
         {
          
-            LDA #'I' Tools.COut(); // DEBUG
-            
             LDA #BasicType.INT    // Medium positive (256-32767)
             STA ZP.TOPT       
         }

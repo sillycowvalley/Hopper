@@ -16,9 +16,9 @@ unit Expression
     {
 #ifdef DEBUG
         LDA #'<'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'E'
-        Serial.WriteChar();
+        Tools.COut();
 #endif
         
         // Start with lowest precedence level
@@ -26,9 +26,9 @@ unit Expression
         
 #ifdef DEBUG
         LDA #'E'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'>'
-        Serial.WriteChar();
+        Tools.COut();
 #endif
     }
     
@@ -42,9 +42,9 @@ unit Expression
     {
 #ifdef DEBUG
         LDA #'<'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'C'
-        Serial.WriteChar();
+        Tools.COut();
 #endif
         
         // Parse left operand
@@ -168,9 +168,9 @@ unit Expression
         
 #ifdef DEBUG
         LDA #'C'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'>'
-        Serial.WriteChar();
+        Tools.COut();
 #endif
         
         SEC  // Success
@@ -186,9 +186,9 @@ unit Expression
     {
 #ifdef DEBUG
         LDA #'<'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'L'
-        Serial.WriteChar();
+        Tools.COut();
 #endif
         
         // Parse left operand (OR has lower precedence, so parse AND first)
@@ -222,9 +222,9 @@ unit Expression
         
 #ifdef DEBUG
         LDA #'L'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'>'
-        Serial.WriteChar();
+        Tools.COut();
 #endif
         
         SEC  // Success
@@ -359,9 +359,9 @@ unit Expression
     {
 #ifdef DEBUG
         LDA #'<'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'A'
-        Serial.WriteChar();
+        Tools.COut();
 #endif
         
         // Parse left operand
@@ -413,9 +413,9 @@ unit Expression
         
 #ifdef DEBUG
         LDA #'A'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'>'
-        Serial.WriteChar();
+        Tools.COut();
 #endif
         
         SEC  // Success
@@ -431,9 +431,9 @@ unit Expression
     {
 #ifdef DEBUG
         LDA #'<'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'M'
-        Serial.WriteChar();
+        Tools.COut();
 #endif
         
         // Parse left operand
@@ -503,9 +503,9 @@ unit Expression
         
 #ifdef DEBUG
         LDA #'M'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'>'
-        Serial.WriteChar();
+        Tools.COut();
 #endif
         
         SEC  // Success
@@ -519,11 +519,9 @@ unit Expression
 // Error: Sets ZP.LastError if syntax error
 parseUnary()
 {
-    // Debug: Show parseUnary start
-    LDA #'<'
-    Tools.COut();
-    LDA #'U'
-    Tools.COut();
+#ifdef DEBUG
+    LDA #'<' Tools.COut(); LDA #'U' Tools.COut();
+#endif    
     
     LDA ZP.CurrentToken
     CMP #Tokens.MINUS
@@ -542,11 +540,9 @@ parseUnary()
         // Apply unary minus with proper type handling
         Instructions.UnaryMinus();
         
-        // Debug: Show parseUnary end
-        LDA #'U'
-        Tools.COut();
-        LDA #'>'
-        Tools.COut();
+#ifdef DEBUG
+        LDA #'U' Tools.COut();LDA #'>' Tools.COut();
+#endif
         
         SEC  // Success
         return;
@@ -568,12 +564,9 @@ parseUnary()
         // Perform logical NOT
         Instructions.LogicalNot();
         
-        // Debug: Show parseUnary end
-        LDA #'U'
-        Tools.COut();
-        LDA #'>'
-        Tools.COut();
-        
+#ifdef DEBUG
+        LDA #'U' Tools.COut();LDA #'>' Tools.COut();
+#endif        
         SEC  // Success
         return;
     }
@@ -581,12 +574,10 @@ parseUnary()
     // Not unary, parse primary
     parsePrimary();
     
-    // Debug: Show parseUnary end
-    LDA #'U'
-    Tools.COut();
-    LDA #'>'
-    Tools.COut();
-}      
+#ifdef DEBUG
+        LDA #'U' Tools.COut();LDA #'>' Tools.COut();
+#endif
+      }      
 
     
     // Parse primary expressions (numbers, identifiers, parentheses)
@@ -599,9 +590,9 @@ parseUnary()
     {
 #ifdef DEBUG
         LDA #'<'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'T'
-        Serial.WriteChar();
+        Tools.COut();
 #endif
         
         LDA ZP.CurrentToken
@@ -615,10 +606,9 @@ parseUnary()
                 
 #ifdef DEBUG
                 // Show parsed number
-                LDA ZP.TOPT
-                Tools.PrintType();
-                LDA #':'
-                Serial.WriteChar();
+                LDA #' ' Tools.OutC();
+                LDA ZP.TOPT Tools.PrintType();
+                LDA #':' Tools.OutC
                 Tools.PrintDecimalWord();
 #endif
                 
@@ -632,9 +622,9 @@ parseUnary()
                 
 #ifdef DEBUG
                 LDA #'T'
-                Serial.WriteChar();
+                Tools.COut();
                 LDA #'>'
-                Serial.WriteChar();
+                Tools.COut();
 #endif
                 
                 SEC  // Success
@@ -650,9 +640,9 @@ parseUnary()
                 
 #ifdef DEBUG
                 LDA #'T'
-                Serial.WriteChar();
+                Tools.COut();
                 LDA #'>'
-                Serial.WriteChar();
+                Tools.COut();
 #endif
                 
                 CLC  // Error
@@ -691,9 +681,9 @@ parseUnary()
                 
 #ifdef DEBUG
                 LDA #'T'
-                Serial.WriteChar();
+                Tools.COut();
                 LDA #'>'
-                Serial.WriteChar();
+                Tools.COut();
 #endif
                 
                 SEC  // Success
@@ -709,9 +699,9 @@ parseUnary()
                 
 #ifdef DEBUG
                 LDA #'T'
-                Serial.WriteChar();
+                Tools.COut();
                 LDA #'>'
-                Serial.WriteChar();
+                Tools.COut();
 #endif
                 
                 CLC  // Error

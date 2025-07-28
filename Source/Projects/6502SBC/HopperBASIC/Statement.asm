@@ -29,11 +29,11 @@ unit Statement
     {
 #ifdef DEBUG
         LDA #'<'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'S'
-        Serial.WriteChar();
+        Tools.COut();
         LDA ZP.CurrentToken
-        Serial.HexOut();
+        Tools.HOut();
 #endif
         
         LDA ZP.CurrentToken
@@ -48,9 +48,9 @@ unit Statement
                 
         #ifdef DEBUG
                 LDA #'S'
-                Serial.WriteChar();
+                Tools.COut();
                 LDA #'>'
-                Serial.WriteChar();
+                Tools.COut();
         #endif
                 
                 SEC  // Success
@@ -61,9 +61,9 @@ unit Statement
                 executePrint();
 #ifdef DEBUG
                 LDA #'S'
-                Serial.WriteChar();
+                Tools.COut();
                 LDA #'>'
-                Serial.WriteChar();
+                Tools.COut();
 #endif
                 return;
             }
@@ -72,9 +72,9 @@ unit Statement
                 executeIf();
 #ifdef DEBUG
                 LDA #'S'
-                Serial.WriteChar();
+                Tools.COut();
                 LDA #'>'
-                Serial.WriteChar();
+                Tools.COut();
 #endif
                 return;
             }
@@ -83,9 +83,9 @@ unit Statement
                 executeReturn();
 #ifdef DEBUG
                 LDA #'S'
-                Serial.WriteChar();
+                Tools.COut();
                 LDA #'>'
-                Serial.WriteChar();
+                Tools.COut();
 #endif
                 return;
             }
@@ -94,9 +94,9 @@ unit Statement
                 executeEnd();
 #ifdef DEBUG
                 LDA #'S'
-                Serial.WriteChar();
+                Tools.COut();
                 LDA #'>'
-                Serial.WriteChar();
+                Tools.COut();
 #endif
                 return;
             }
@@ -106,9 +106,9 @@ unit Statement
                 executeIdentifier();
 #ifdef DEBUG
                 LDA #'S'
-                Serial.WriteChar();
+                Tools.COut();
                 LDA #'>'
-                Serial.WriteChar();
+                Tools.COut();
 #endif
                 return;
             }
@@ -120,9 +120,9 @@ unit Statement
                 executeVariableDeclaration();
 #ifdef DEBUG
                 LDA #'S'
-                Serial.WriteChar();
+                Tools.COut();
                 LDA #'>'
-                Serial.WriteChar();
+                Tools.COut();
 #endif
                 return;
             }
@@ -136,9 +136,9 @@ unit Statement
                 STA ZP.LastErrorH
 #ifdef DEBUG
                 LDA #'S'
-                Serial.WriteChar();
+                Tools.COut();
                 LDA #'>'
-                Serial.WriteChar();
+                Tools.COut();
 #endif
                 CLC  // Error
                 return;
@@ -156,9 +156,9 @@ unit Statement
     {
 #ifdef DEBUG
         LDA #'<'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'P'
-        Serial.WriteChar();
+        Tools.COut();
 #endif
         
         // Get next token (should be start of expression)
@@ -174,13 +174,13 @@ unit Statement
         {
             // Just print a newline
             LDA #'\n'
-            Serial.WriteChar();
+            Tools.COut();
             
 #ifdef DEBUG
             LDA #'P'
-            Serial.WriteChar();
+            Tools.COut();
             LDA #'>'
-            Serial.WriteChar();
+            Tools.COut();
 #endif
             
             SEC  // Success
@@ -199,13 +199,13 @@ unit Statement
         
         // Print newline
         LDA #'\n'
-        Serial.WriteChar();
+        Tools.COut();
         
 #ifdef DEBUG
         LDA #'P'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'>'
-        Serial.WriteChar();
+        Tools.COut();
 #endif
         
         SEC  // Success
@@ -221,9 +221,9 @@ unit Statement
     {
 #ifdef DEBUG
         LDA #'<'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'I'
-        Serial.WriteChar();
+        Tools.COut();
 #endif
         
         // Get next token (should be start of condition expression)
@@ -260,9 +260,9 @@ unit Statement
             // Condition is false, skip to end of line
 #ifdef DEBUG
             LDA #'I'
-            Serial.WriteChar();
+            Tools.COut();
             LDA #'>'
-            Serial.WriteChar();
+            Tools.COut();
 #endif
             SEC  // Success (skip)
             return;
@@ -278,9 +278,9 @@ unit Statement
         
 #ifdef DEBUG
         LDA #'I'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'>'
-        Serial.WriteChar();
+        Tools.COut();
 #endif
     }
     
@@ -293,9 +293,9 @@ unit Statement
     {
 #ifdef DEBUG
         LDA #'<'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'R'
-        Serial.WriteChar();
+        Tools.COut();
 #endif
         
         // Get next token
@@ -330,9 +330,9 @@ unit Statement
         
 #ifdef DEBUG
         LDA #'R'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'>'
-        Serial.WriteChar();
+        Tools.COut();
 #endif
         
         CLC  // Error
@@ -383,11 +383,11 @@ unit Statement
     {
 #ifdef DEBUG
         LDA #'<'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'V'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'D'
-        Serial.WriteChar();
+        Tools.COut();
 #endif
 
         loop
@@ -653,11 +653,11 @@ unit Statement
         
 #ifdef DEBUG
         LDA #'V'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'D'
-        Serial.WriteChar();
+        Tools.COut();
         LDA #'>'
-        Serial.WriteChar();
+        Tools.COut();
 #endif
     }
       
