@@ -278,7 +278,7 @@ statement := variable_decl
            | main_program
            | return_statement
            | comment_statement
-           | expression_statement
+           | function_call
 
 statement_line := statement [ ":" statement ]*
 
