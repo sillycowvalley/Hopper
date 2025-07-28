@@ -6,6 +6,16 @@ unit Instructions
     uses "Messages"
     uses "BasicTypes"
     
+    // API Status: Clean
+    // All public methods preserve caller state except for documented outputs
+    // 
+    // Legitimate modifications by instruction methods:
+    // - Stack interface: ZP.TOP, ZP.TOPT, ZP.NEXT, ZP.NEXTT, ZP.SP, value stack memory
+    // - Error handling: ZP.LastErrorL, ZP.LastErrorH (when type mismatches occur)
+    // - Type checking: ZP.NEXTT (updated to result type for operations)
+    // - Arithmetic scratch: ZP.FSIGN (sign tracking), ZP.UWIDE0-UWIDE3 (via IntMath), ZP.ACC (remainder operations)
+    // - Temporary: ZP.ACCT (type checking workspace, always restored)
+    
     // Check if RHS value is compatible with LHS type
     // Input: ZP.TOP = RHS value, ZP.TOPT = RHS type, ZP.NEXTT = LHS type
     // Output: C set if compatible, NC if incompatible
@@ -950,97 +960,121 @@ unit Instructions
     // Bitwise/logical AND operation (pops two operands, pushes result)
     // Input: Stack contains two operands (right operand on top)
     // Output: Bitwise AND result pushed to stack
-    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT
     // Error: Sets ZP.LastError if type mismatch
     And()
     {
-        // Pop two operands
-        Stacks.PopTopNext();
+        PHA
         
-        LDA #2  // Bitwise/logical operation
-        CheckTypeCompatibility();
-        
-        if (NC)  // Type mismatch
+        loop // Single exit point for cleanup
         {
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            return;
+            Stacks.PopTopNext();
+            
+            LDA #2  // Bitwise/logical operation
+            CheckTypeCompatibility();
+            
+            if (NC)  // Type mismatch
+            {
+                LDA #(Messages.TypeMismatch % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.TypeMismatch / 256)
+                STA ZP.LastErrorH
+                break; // Error exit
+            }
+            
+            // NEXT & TOP -> NEXT
+            LDA ZP.NEXTL
+            AND ZP.TOPL
+            STA ZP.NEXTL
+            LDA ZP.NEXTH
+            AND ZP.TOPH
+            STA ZP.NEXTH
+            
+            LDA ZP.NEXTT
+            Stacks.PushNext();
+            
+            break; // Success exit
         }
         
-        // NEXT & TOP -> NEXT
-        LDA ZP.NEXTL
-        AND ZP.TOPL
-        STA ZP.NEXTL
-        LDA ZP.NEXTH
-        AND ZP.TOPH
-        STA ZP.NEXTH
-        
-        LDA ZP.NEXTT
-        Stacks.PushNext();
+        PLA
     }
     
     // Bitwise/logical OR operation (pops two operands, pushes result)
     // Input: Stack contains two operands (right operand on top)
     // Output: Bitwise OR result pushed to stack
-    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT
     // Error: Sets ZP.LastError if type mismatch
     Or()
     {
-        // Pop two operands
-        Stacks.PopTopNext();
+        PHA
         
-        LDA #2  // Bitwise/logical operation
-        CheckTypeCompatibility();
-        
-        if (NC)  // Type mismatch
+        loop // Single exit point for cleanup
         {
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            return;
+            Stacks.PopTopNext();
+            
+            LDA #2  // Bitwise/logical operation
+            CheckTypeCompatibility();
+            
+            if (NC)  // Type mismatch
+            {
+                LDA #(Messages.TypeMismatch % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.TypeMismatch / 256)
+                STA ZP.LastErrorH
+                break; // Error exit
+            }
+            
+            // NEXT | TOP -> NEXT
+            LDA ZP.NEXTL
+            ORA ZP.TOPL
+            STA ZP.NEXTL
+            LDA ZP.NEXTH
+            ORA ZP.TOPH
+            STA ZP.NEXTH
+            
+            LDA ZP.NEXTT
+            Stacks.PushNext();
+            
+            break; // Success exit
         }
         
-        // NEXT | TOP -> NEXT
-        LDA ZP.NEXTL
-        ORA ZP.TOPL
-        STA ZP.NEXTL
-        LDA ZP.NEXTH
-        ORA ZP.TOPH
-        STA ZP.NEXTH
-        
-        LDA ZP.NEXTT
-        Stacks.PushNext();
+        PLA
     }
     
     // Logical NOT operation (pops one operand, pushes BIT result)
     // Input: Stack contains BIT operand on top
     // Output: Logical NOT result (BIT) pushed to stack
-    // Munts: Stack, ZP.TOP, ZP.TOPT, X
     // Error: Sets ZP.LastError if operand is not BIT type
     LogicalNot()
     {
-        Stacks.PopTop();
+        PHA
+        PHX
         
-        // Check if operand is BIT type (only valid for logical NOT)
-        LDA ZP.TOPT
-        CMP #BasicType.BIT
-        if (NZ)  // Not a BIT type
+        loop // Single exit point for cleanup
         {
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            return;
+            Stacks.PopTop();
+            
+            // Check if operand is BIT type (only valid for logical NOT)
+            LDA ZP.TOPT
+            CMP #BasicType.BIT
+            if (NZ)
+            {
+                LDA #(Messages.TypeMismatch % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.TypeMismatch / 256)
+                STA ZP.LastErrorH
+                break; // Error exit
+            }
+            
+            // Logical NOT: convert 0 to 1, and 1 to 0
+            LDA ZP.TOPL
+            EOR # 0x01
+            TAX
+            
+            Stacks.PushX();  // Push result (X) with BIT type
+            
+            break; // Success exit
         }
         
-        // Logical NOT: convert 0 to 1, and 1 to 0 (assumes BIT type is 0 or 1)
-        LDA ZP.TOPL
-        EOR # 0x01
-        TAX
-        
-        Stacks.PushX();  // Push result (X) with BIT type
+        PLX
+        PLA
     }
 }
