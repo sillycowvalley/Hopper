@@ -9,7 +9,6 @@ unit Statement
     
     uses "Variables"
     
-    
     // Private Statement layer storage - BasicProcessBuffer2 (32 bytes at 0x09C0-0x09DF)
     const uint stmtNamePtr     = Address.BasicProcessBuffer2;      // 0x09C0: 2 bytes - identifier name pointer
     const uint stmtValue       = Address.BasicProcessBuffer2 + 2;  // 0x09C2: 2 bytes - initial/evaluated value
@@ -19,8 +18,9 @@ unit Statement
     const uint stmtSymbol      = Address.BasicProcessBuffer2 + 12; // 0x09CC: 1 byte  - symbol information
     const uint stmtType        = Address.BasicProcessBuffer2 + 13; // 0x09CD: 1 byte  - type information
     const uint stmtIsConstant  = Address.BasicProcessBuffer2 + 14; // 0x09CE: 1 byte  - current expression is const
+    const uint stmtObjectPtr   = Address.BasicProcessBuffer2 + 15; // 0x09CF: 2 bytes - object node pointer
     
-    // 17 bytes available for future statement needs (0x09CF-0x09DF)
+    // 15 bytes available for future statement needs (0x09D1-0x09DF)
 
     SetIsConstant()
     {
@@ -349,25 +349,171 @@ unit Statement
         BRK
     }
     
-    // Execute identifier statement (assignment or function call - stub implementation)
-    // Input: ZP.CurrentToken = IDENTIFIER token
-    // Output: Error (not implemented)
-    // Munts: ZP.LastError
-    // Error: Always sets ZP.LastError (not implemented)
+    // Execute identifier statement (assignment or function call)
+    // Input: A = ZP.CurrentToken = IDENTIFIER token
+    // Output: C set if successful, NC if error
+    // Munts: Stack, ZP.CurrentToken, symbol tables, expression evaluation
+    // Error: Sets ZP.LastError if undefined variable, type mismatch, or syntax error
     executeIdentifier()
     {
-        // TODO: Handle variable assignment and function calls
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        
-        Messages.StorePC(); // 6502 PC -> IDY
-        
-        CLC  // Error
-        BRK
-    }
+    #ifdef DEBUG
+        PHA
+        LDA #'<'
+        Tools.COut();
+        LDA #'I'
+        Tools.COut();
+        LDA #'D'
+        Tools.COut();
+        PLA
+    #endif
     
+        loop // Single exit block for clean error handling
+        {
+            // Use ResolveIdentifier to determine what we have
+            ResolveIdentifier(); // symbol or function in IDX, A = IdentifierType
+            Messages.CheckError();
+            if (NC) { break; } // Error - identifier not found or other error
+            
+            // Handle different identifier types
+            switch (A)
+            {
+                case IdentifierType.Global:
+                {
+                    // This is a variable - save the node address in statement storage
+                    LDA ZP.IDXL
+                    STA (stmtObjectPtr + 0)
+                    LDA ZP.IDXH
+                    STA (stmtObjectPtr + 1)
+                    
+                    // Move to next token - should be '=' for assignment
+                    Tokenizer.NextToken();
+                    Messages.CheckError();
+                    if (NC) { break; }
+                    
+                    // Check for assignment operator
+                    LDA ZP.CurrentToken
+                    CMP #Tokens.EQUALS
+                    if (NZ)
+                    {
+                        // Not an assignment - this might be a function call or syntax error
+                        LDA #(Messages.SyntaxError % 256)
+                        STA ZP.LastErrorL
+                        LDA #(Messages.SyntaxError / 256)
+                        STA ZP.LastErrorH
+                        
+                        Messages.StorePC(); // 6502 PC -> IDY
+                        
+                        CLC
+                        break;
+                    }
+                    
+                    // Move past the '=' token
+                    Tokenizer.NextToken();
+                    Messages.CheckError();
+                    if (NC) { break; }
+                    
+                    // Evaluate the expression on the right side
+                    Expression.Evaluate();
+                    Messages.CheckError();
+                    if (NC) { break; }
+                    
+                    // Pop the expression result from the value stack
+                    Stacks.PopTop(); // Result in ZP.TOP, type in ZP.TOPT
+                    Messages.CheckError();
+                    if (NC) { break; }
+                    
+                    // Restore the variable node address from statement storage
+                    LDA (stmtObjectPtr + 0)
+                    STA ZP.IDXL
+                    LDA (stmtObjectPtr + 1)
+                    STA ZP.IDXH
+                    
+                    // Get the variable's declared type for type checking
+                    Variables.GetType(); // Returns type in ZP.ACCT
+                    Messages.CheckError();
+                    if (NC) { break; }
+                    
+                    LDA ZP.ACCT
+                    AND #0x0F  // Extract data type (low nibble)
+                    STA ZP.ACCT // Variable's declared type
+                    
+                    // Check type compatibility
+                    LDA ZP.TOPT // Expression result type
+                    CMP ZP.ACCT // Variable's declared type
+                    if (NZ)
+                    {
+                        // Type mismatch - check for valid type promotion
+                        // Use Instructions.CheckTypeCompatibility if available
+                        Instructions.CheckTypeCompatibility(); // ZP.TOPT = source, ZP.ACCT = target
+                        Messages.CheckError();
+                        if (NC) { break; } // Type promotion failed
+                    }
+                    
+                    // Assign the value to the variable
+                    Variables.SetValue(); // ZP.IDX = node, ZP.TOP = value
+                    Messages.CheckError();
+                    if (NC) { break; }
+                    
+                    SEC // Success
+                    break;
+                }
+                
+                case IdentifierType.Constant:
+                {
+                    // Constants cannot be assigned to
+                    LDA #(Messages.IllegalAssignment % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.IllegalAssignment / 256)
+                    STA ZP.LastErrorH
+                    
+                    Messages.StorePC(); // 6502 PC -> IDY
+                    
+                    CLC
+                    break;
+                }
+                
+                case IdentifierType.Keyword:
+                {
+                    // Keywords should not appear as statements
+                    LDA #(Messages.SyntaxError % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.SyntaxError / 256)
+                    STA ZP.LastErrorH
+                    
+                    Messages.StorePC(); // 6502 PC -> IDY
+                    
+                    CLC
+                    break;
+                }
+                
+                default:
+                {
+                    // TODO: Handle function calls when functions are implemented
+                    LDA #(Messages.NotImplemented % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.NotImplemented / 256)
+                    STA ZP.LastErrorH
+                    
+                    Messages.StorePC(); // 6502 PC -> IDY
+                    
+                    CLC
+                    break;
+                }
+            }
+            
+            break; // Exit the outer loop
+        } // end single exit block
+        
+    #ifdef DEBUG
+        LDA #'I'
+        Tools.COut();
+        LDA #'D'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+    #endif
+    }
+        
     // Input: ZP.CurrentToken = CONST
     executeConstantDeclaration()
     {
