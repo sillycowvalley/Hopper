@@ -258,32 +258,6 @@ unit Instructions
                 }
             }
             
-            // INT vs WORD - runtime compatibility check required
-            LDA ZP.NEXTT
-            CMP #BasicType.INT
-            if (Z)
-            {
-                LDA ZP.TOPT
-                CMP #BasicType.WORD
-                if (Z)
-                {
-                    // INT vs WORD: check if INT is non-negative
-                    BIT ZP.NEXTH  // Check sign bit of NEXT (INT value)
-                    if (MI)       // Negative INT
-                    {
-                        CLC  // Set NC - incompatible
-                        break;
-                    }
-                    LDA #BasicType.WORD
-                    STA ZP.NEXTT
-                    
-                    // INT is non-negative, compatible with WORD
-                    LDA ZP.ACCT
-                    SEC  // Set C - compatible
-                    break;
-                }
-            }
-            
             // WORD vs INT - runtime compatibility check required
             LDA ZP.NEXTT
             CMP #BasicType.WORD
@@ -293,7 +267,50 @@ unit Instructions
                 CMP #BasicType.INT
                 if (Z)
                 {
-                    // WORD vs INT: check if WORD fits in INT range (= 32767)
+                    // Check if this is a comparison operation
+                    LDA ZP.ACCT
+                    CMP #3  // Ordering comparison
+                    if (Z)
+                    {
+                        // For comparisons: check INT sign to determine promotion direction
+                        BIT ZP.TOPH  // Check sign bit of INT value (ZP.TOP)
+                        if (MI)      // Negative INT
+                        {
+                            // INT < 0: promote WORD to INT if WORD = 32767
+                            LDA ZP.NEXTH  // Check WORD high byte
+                            CMP #0x80     // Compare with 32768 high byte
+                            if (C)        // WORD = 32768
+                            {
+                                if (Z)    // Exactly 32768?
+                                {
+                                    LDA ZP.NEXTL
+                                    if (Z)  // Exactly 32768
+                                    {
+                                        CLC  // Set NC - incompatible
+                                        break;
+                                    }
+                                }
+                                // WORD > 32767
+                                CLC  // Set NC - incompatible
+                                break;
+                            }
+                            // WORD = 32767: promote to INT for signed comparison
+                            LDA #BasicType.INT
+                            STA ZP.NEXTT
+                            SEC  // Set C - compatible
+                            break;
+                        }
+                        else
+                        {
+                            // INT = 0: promote to WORD for unsigned comparison
+                            LDA #BasicType.WORD
+                            STA ZP.NEXTT
+                            SEC  // Set C - compatible
+                            break;
+                        }
+                    }
+                    
+                    // For non-comparison operations: use existing range-check logic
                     LDA ZP.NEXTH  // Check high byte of NEXT (WORD value)
                     CMP #0x80     // Compare with 32768 high byte
                     if (C)        // WORD = 32768
@@ -316,7 +333,76 @@ unit Instructions
                     SEC  // Set C - compatible
                     break;
                 }
-            }
+            } // WORD vs INT
+            
+            // INT vs WORD - runtime compatibility check required
+            LDA ZP.NEXTT
+            CMP #BasicType.INT
+            if (Z)
+            {
+                LDA ZP.TOPT
+                CMP #BasicType.WORD
+                if (Z)
+                {
+                    // Check if this is a comparison operation
+                    LDA ZP.ACCT
+                    CMP #3  // Ordering comparison
+                    if (Z)
+                    {
+                        // For comparisons: check INT sign to determine promotion direction
+                        BIT ZP.NEXTH  // Check sign bit of INT value (ZP.NEXT)
+                        if (MI)       // Negative INT
+                        {
+                            // INT < 0: promote WORD to INT if WORD = 32767
+                            LDA ZP.TOPH   // Check WORD high byte
+                            CMP #0x80     // Compare with 32768 high byte
+                            if (C)        // WORD = 32768
+                            {
+                                if (Z)    // Exactly 32768?
+                                {
+                                    LDA ZP.TOPL
+                                    if (Z)  // Exactly 32768
+                                    {
+                                        CLC  // Set NC - incompatible
+                                        break;
+                                    }
+                                }
+                                // WORD > 32767
+                                CLC  // Set NC - incompatible
+                                break;
+                            }
+                            // WORD = 32767: promote to INT for signed comparison
+                            LDA #BasicType.INT
+                            STA ZP.NEXTT
+                            SEC  // Set C - compatible
+                            break;
+                        }
+                        else
+                        {
+                            // INT = 0: promote to WORD for unsigned comparison
+                            LDA #BasicType.WORD
+                            STA ZP.NEXTT
+                            SEC  // Set C - compatible
+                            break;
+                        }
+                    }
+                    
+                    // For non-comparison operations: use existing logic
+                    BIT ZP.NEXTH  // Check sign bit of NEXT (INT value)
+                    if (MI)       // Negative INT
+                    {
+                        CLC  // Set NC - incompatible
+                        break;
+                    }
+                    LDA #BasicType.WORD
+                    STA ZP.NEXTT
+                    
+                    // INT is non-negative, compatible with WORD
+                    LDA ZP.ACCT
+                    SEC  // Set C - compatible
+                    break;
+                }
+            } // INT vs WORD
             
             // No other compatibility rules matched
             CLC  // Set NC - incompatible
