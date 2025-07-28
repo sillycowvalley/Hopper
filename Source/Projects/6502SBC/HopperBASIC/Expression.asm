@@ -701,9 +701,8 @@ unit Expression
     }
     
         
-    // Input: A ZP.CurrentToken == Tokens.IDENTIFIER
-    // Output: symbol or function in IDX, A = IndentifierType
-    
+    // Typically called when ZP.CurrentToken is Tokens.IDENTIFIER, or a keyword
+    // Output: symbol or function in IDX, A = IdentifierType
     ResolveIdentifier()
     {
         PHX
@@ -725,11 +724,6 @@ unit Expression
         
         loop // Single exit block for clean error handling
         {
-            // Get the identifier name for lookup
-            Tokenizer.GetTokenString();  // Result in ZP.TOP
-            Messages.CheckError();
-            if (NC) { break; }
-            
             Tokenizer.IsKeyword();
             if (C)
             {
@@ -739,6 +733,11 @@ unit Expression
                 LDA # IdentifierType.Keyword
                 break; // success
             }
+            
+            // Get the identifier name for lookup
+            Tokenizer.GetTokenString();  // Result in ZP.TOP
+            Messages.CheckError();
+            if (NC) { break; }
             
             STZ ZP.SymbolIteratorFilter  // Accept any symbol type (variable or constant)
             Variables.Find(); // ZP.IDX = symbol node address

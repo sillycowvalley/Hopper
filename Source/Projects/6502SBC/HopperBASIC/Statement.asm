@@ -497,7 +497,7 @@ unit Statement
                 
                 // function by same name exists? name pointer in TOP
                 LDX #ZP.FunctionsList
-                Objects.Find();
+                Objects.Find(); // ZP.IDX = symbol node address
                 if (C)  
                 {
                     LDA #(Messages.FunctionExists % 256)
@@ -513,7 +513,7 @@ unit Statement
                 
                 // if it already exists, try to delete it
                 STZ ZP.SymbolIteratorFilter // constant or variable
-                Variables.Find();
+                Variables.Find(); // ZP.IDX = symbol node address
                 if (C)
                 {
                     /* 
