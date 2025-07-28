@@ -618,11 +618,10 @@ unit Statement
             // Pack symbolType|dataType: VARIABLE(1) in high nibble, dataType in low nibble
             TXA  // dataType in A
             ORA #(SymbolType.VARIABLE << 4)
-            STA ZP.ACCL
-            STZ ZP.ACCH
-    
+            STA ZP.ACCT
+            
             // Call Variables.Declare
-            // Input: ZP.TOP = name pointer, ZP.ACC = symbolType|dataType (packed),
+            // Input: ZP.TOP = name pointer, ZP.ACCT = symbolType|dataType (packed),
             //        ZP.NEXT = initial value (16-bit), ZP.IDY = tokens pointer (16-bit)
             Variables.Declare();
             Messages.CheckError();

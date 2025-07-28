@@ -11,10 +11,11 @@ unit Console
     uses "Statement"
     
     uses "Objects"
+    uses "Variables"
+    uses "Functions"
     
     // String constants for VARS command
     const string noVariablesMsg = "No variables defined\n";
-    const string varTypeMsg = "VAR";
     const string constTypeMsg = "CONST";
     const string intTypeMsg = "INT";
     const string wordTypeMsg = "WORD";
@@ -41,6 +42,8 @@ unit Console
     // Execute MEM command
     CmdMem()
     {
+        Tokenizer.NextToken(); // consume 'MEM'
+        
         LDA #(Messages.MemoryMsg % 256)
         STA ZP.ACCL
         LDA #(Messages.MemoryMsg / 256)
@@ -68,7 +71,19 @@ unit Console
     // Execute NEW command
     cmdNew()
     {
-        HopperBASIC.InitializeBASIC();
+        Tokenizer.NextToken(); // consume 'NEW'
+        
+        Variables.Clear();
+        Functions.Clear();
+        Messages.PrintOK();
+    }
+    
+    // Execute CLEAR command
+    cmdClear()
+    {
+        Tokenizer.NextToken(); // consume 'CLEAR'
+        
+        Variables.Clear();
         Messages.PrintOK();
     }
     
@@ -94,17 +109,6 @@ unit Console
         BRK
     }
     
-    // Execute CLEAR command
-    cmdClear()
-    {
-        // TODO: Clear variables
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BRK
-    }
-    
     // Execute FUNCS command
     cmdFuncs()
     {
@@ -121,10 +125,6 @@ unit Console
     // Execute VARS command - display all variables and constants
     cmdVars()
     {
-        PHA
-        PHX
-        PHY
-        
         Tokenizer.NextToken(); // consume 'VARS'
         
         //DumpHeap();
@@ -138,10 +138,83 @@ unit Console
         {
             if (NC) { break; }  // No more variables
             
-            // Get the variable name and print it
-            Variables.GetName();
+            // Get symbol type and data type
+            Variables.GetType();
+            LDA ZP.ACCL
+            PHA  // Save packed type for later
             
+            // Print symbol type (VAR or CONST)
+            AND #0xF0  // Extract symbol type (high nibble)
+            LSR LSR LSR LSR  // Shift to low nibble
+            CMP #SymbolType.VARIABLE
+            if (NZ)
+            {
+                // CONST
+                LDA #(constTypeMsg % 256)
+                STA ZP.ACCL
+                LDA #(constTypeMsg / 256)
+                STA ZP.ACCH
+                Tools.PrintStringACC();
+                // Print space
+                LDA #' '
+                Serial.WriteChar();
+            }
+            
+            // Get packed type back and extract data type
+            PLA
+            AND #0x0F  // Extract data type (low nibble)
+            CMP #BasicType.INT
+            if (Z)
+            {
+                LDA #(intTypeMsg % 256)
+                STA ZP.ACCL
+                LDA #(intTypeMsg / 256)
+                STA ZP.ACCH
+                Tools.PrintStringACC();
+            }
+            else
+            {
+                CMP #BasicType.WORD
+                if (Z)
+                {
+                    LDA #(wordTypeMsg % 256)
+                    STA ZP.ACCL
+                    LDA #(wordTypeMsg / 256)
+                    STA ZP.ACCH
+                    Tools.PrintStringACC();
+                }
+                else
+                {
+                    // Must be BIT
+                    LDA #(bitTypeMsg % 256)
+                    STA ZP.ACCL
+                    LDA #(bitTypeMsg / 256)
+                    STA ZP.ACCH
+                    Tools.PrintStringACC();
+                }
+            }
+            
+            // Print space
+            LDA #' '
+            Serial.WriteChar();
+            
+            // Get and print the variable name
+            Variables.GetName();
             Tools.PrintStringACC();
+            
+            // Print " = "
+            LDA #' '
+            Serial.WriteChar();
+            LDA #'='
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            
+            // Get and print the value
+            Variables.GetValue();
+            Tools.PrintDecimalWord();
+            
+            // Print newline
             Tools.NL();
             
             INX  // Increment count
@@ -158,11 +231,6 @@ unit Console
             STA ZP.ACCH
             Tools.PrintStringACC();
         }
-        
-        PLY
-        PLX
-        PLA
-        
         SEC // ok
     }
     
@@ -252,7 +320,23 @@ unit Console
                 }
                 case Tokens.NEW:
                 {
+                    DumpBasicBuffers();
+                    
                     cmdNew();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                    
+                    DumpBasicBuffers();
+                }
+                case Tokens.CLEAR:
+                {
+                    cmdClear();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                }
+                case Tokens.VARS:
+                {
+                    cmdVars();
                     Messages.CheckError();
                     if (NC) { return; }
                 }
@@ -265,18 +349,6 @@ unit Console
                 case Tokens.RUN:
                 {
                     cmdRun();
-                    Messages.CheckError();
-                    if (NC) { return; }
-                }
-                case Tokens.CLEAR:
-                {
-                    cmdClear();
-                    Messages.CheckError();
-                    if (NC) { return; }
-                }
-                case Tokens.VARS:
-                {
-                    cmdVars();
                     Messages.CheckError();
                     if (NC) { return; }
                 }

@@ -39,8 +39,6 @@ program HopperBASIC
         
         // Initialize BASIC-specific components
         Console.Initialize();  // This now initializes the tokenizer too
-        //Variables.Initialize();
-        //BASICRuntime.Initialize();
         
         // Clear program size (we're not a traditional Hopper program)
         STZ ZP.PROGSIZE
