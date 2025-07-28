@@ -375,79 +375,117 @@ unit Instructions
     // Input: ZP.NEXT = left operand, ZP.TOP = right operand (both popped from stack)
     //        ZP.NEXTT = left type, ZP.TOPT = right type
     // Output: Result pushed to stack
-    // Munts: ZP.NEXT, ZP.NEXTT, stack
-    // Error: Sets ZP.LastError if type mismatch
+    // Modifies: Stack interface (ZP.NEXT, ZP.NEXTT, ZP.SP, stack memory)
+    //          Error state (ZP.LastError if type mismatch occurs)
     subShared()
     {
-        LDA #1  // Arithmetic operation
-        CheckTypeCompatibility();
+        PHA  // Preserve A register
+        PHY  // Preserve Y register
         
-        if (NC)  // Type mismatch
+        loop // Single exit point for cleanup
         {
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            return;
-        }
+            LDA #1  // Arithmetic operation
+            CheckTypeCompatibility();
+            
+            if (NC)  // Type mismatch
+            {
+                LDA #(Messages.TypeMismatch % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.TypeMismatch / 256)
+                STA ZP.LastErrorH
+                break; // Error exit
+            }
+            
+            // Perform subtraction (left - right)
+            SEC
+            LDA ZP.NEXTL
+            SBC ZP.TOPL
+            STA ZP.NEXTL
+            LDA ZP.NEXTH
+            SBC ZP.TOPH
+            STA ZP.NEXTH
+            
+            // Push result to stack
+            LDA ZP.NEXTT
+            Stacks.PushNext(); // Push result, modifies Y
+            
+            break; // Success exit
+        } // Single exit loop
         
-        SEC
-        LDA ZP.NEXTL
-        SBC ZP.TOPL
-        STA ZP.NEXTL
-        LDA ZP.NEXTH
-        SBC ZP.TOPH
-        STA ZP.NEXTH
-        
-        LDA ZP.NEXTT       
-        Stacks.PushNext(); // Push result, modifies Y
+        // Restore registers
+        PLY  // Restore Y register
+        PLA  // Restore A register
     }
     
     // Addition operation (pops two operands, pushes result)
     // Input: Stack contains two operands (right operand on top)
     // Output: Sum pushed to stack
-    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT
-    // Error: Sets ZP.LastError if type mismatch
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
+    //          Error state (ZP.LastError if type mismatch occurs)
     Addition()
     {
-        // Pop two operands
-        Stacks.PopTopNext(); // Pop operands, modifies X
+        PHA  // Preserve A register
+        PHX  // Preserve X register
+        PHY  // Preserve Y register
         
-        LDA #1  // Arithmetic operation
-        CheckTypeCompatibility();
-        
-        if (NC)  // Type mismatch
+        loop // Single exit point for cleanup
         {
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            return;
-        }
+            // Pop two operands
+            Stacks.PopTopNext(); // Pop operands, modifies X
+            
+            LDA #1  // Arithmetic operation
+            CheckTypeCompatibility();
+            
+            if (NC)  // Type mismatch
+            {
+                LDA #(Messages.TypeMismatch % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.TypeMismatch / 256)
+                STA ZP.LastErrorH
+                break; // Error exit
+            }
+            
+            // Perform addition
+            CLC
+            LDA ZP.NEXTL
+            ADC ZP.TOPL
+            STA ZP.NEXTL
+            LDA ZP.NEXTH
+            ADC ZP.TOPH
+            STA ZP.NEXTH
+            
+            // Push result to stack
+            LDA ZP.NEXTT
+            Stacks.PushNext(); // Push result, modifies Y
+            
+            break; // Success exit
+        } // Single exit loop
         
-        CLC
-        LDA ZP.NEXTL
-        ADC ZP.TOPL
-        STA ZP.NEXTL
-        LDA ZP.NEXTH
-        ADC ZP.TOPH
-        STA ZP.NEXTH
-        
-        LDA ZP.NEXTT
-        Stacks.PushNext(); // Push result, modifies Y
+        // Restore registers
+        PLY  // Restore Y register
+        PLX  // Restore X register
+        PLA  // Restore A register
     }
         
     // Subtraction operation (pops two operands, pushes result)
     // Input: Stack contains two operands (right operand on top)
     // Output: Difference (left - right) pushed to stack
-    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT
-    // Error: Sets ZP.LastError if type mismatch
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
+    //          Error state (ZP.LastError if type mismatch occurs)
     Subtraction()
     {
+        PHX  // Preserve X register
+        
+        // Pop two operands
         Stacks.PopTopNext(); // Pop operands, modifies X
+        
+        // Delegate to shared subtraction logic
         subShared();
+        
+        // Restore registers
+        PLX  // Restore X register
     }
-    
+        
     // Handle sign extraction for signed operations
     // Input: ZP.NEXT = left operand, ZP.TOP = right operand
     // Output: ZP.FSIGN = count of negative operands (0, 1, or 2)
@@ -481,97 +519,128 @@ unit Instructions
     // Multiplication operation (pops two operands, pushes result)
     // Input: Stack contains two operands (right operand on top)
     // Output: Product pushed to stack
-    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.FSIGN
-    // Error: Sets ZP.LastError if type mismatch
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
+    //          Error state (ZP.LastError if type mismatch occurs)
+    //          Arithmetic scratch space (ZP.FSIGN, ZP.UWIDE0-UWIDE3 via IntMath)
     Multiply()
     {
-        // Pop two operands
-        Stacks.PopTopNext(); // Pop operands, modifies X
+        PHA  // Preserve A register
+        PHX  // Preserve X register
+        PHY  // Preserve Y register
         
-        LDA #1  // Arithmetic operation
-        CheckTypeCompatibility();
-        
-        if (NC)  // Type mismatch
+        loop // Single exit point for cleanup
         {
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            return;
-        }
-        
-        LDA ZP.NEXTT
-        CMP # BasicType.INT
-        if (Z)
-        {
-            // INT - handle signed multiplication
-            doSigns();
-            IntMath.MulShared();
-            LDA ZP.FSIGN     // load the sign count
-            CMP #1
-            if (Z)           // one negative (not zero or two)
+            // Pop two operands
+            Stacks.PopTopNext(); // Pop operands, modifies X
+            
+            LDA #1  // Arithmetic operation
+            CheckTypeCompatibility();
+            
+            if (NC)  // Type mismatch
             {
-                IntMath.NegateTop(); // TOP = -TOP
+                LDA #(Messages.TypeMismatch % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.TypeMismatch / 256)
+                STA ZP.LastErrorH
+                break; // Error exit
             }
-        }
-        else
-        {
-            // WORD or BYTE - unsigned multiplication
-            IntMath.MulShared();
-            LDA ZP.TOPT
-        }
+            
+            LDA ZP.NEXTT
+            CMP #BasicType.INT
+            if (Z)
+            {
+                // INT - handle signed multiplication
+                doSigns();
+                IntMath.MulShared();
+                LDA ZP.FSIGN     // load the sign count
+                CMP #1
+                if (Z)           // one negative (not zero or two)
+                {
+                    IntMath.NegateTop(); // TOP = -TOP
+                }
+            }
+            else
+            {
+                // WORD or BYTE - unsigned multiplication
+                IntMath.MulShared();
+            }
+            
+            // Push result to stack
+            LDA ZP.NEXTT
+            Stacks.PushTop(); // Push result, modifies Y
+            
+            break; // Success exit
+        } // Single exit loop
         
-        LDA ZP.NEXTT
-        Stacks.PushTop(); // Push result, modifies Y
-    }
+        // Restore registers
+        PLY  // Restore Y register
+        PLX  // Restore X register
+        PLA  // Restore A register
+    }    
     
     // Division operation (pops two operands, pushes result)
     // Input: Stack contains two operands (right operand on top)
     // Output: Quotient (left / right) pushed to stack
-    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.FSIGN
-    // Error: Sets ZP.LastError if type mismatch or division by zero
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
+    //          Error state (ZP.LastError if type mismatch or division by zero occurs)
+    //          Arithmetic scratch space (ZP.FSIGN, ZP.ACC via IntMath)
     Divide()
     {
-        // Pop two operands
-        Stacks.PopTopNext(); // Pop operands, modifies X
+        PHA  // Preserve A register
+        PHX  // Preserve X register
+        PHY  // Preserve Y register
         
-        LDA #1  // Arithmetic operation
-        CheckTypeCompatibility();
-        
-        if (NC)  // Type mismatch
+        loop // Single exit point for cleanup
         {
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            return;
-        }
-        
-        LDA ZP.NEXTT
-        CMP # BasicType.INT
-        if (Z)
-        {
-            // INT - handle signed division
-            doSigns(); // munts X
-            IntMath.UtilityDiv();
+            // Pop two operands
+            Stacks.PopTopNext(); // Pop operands, modifies X
             
-            LDA ZP.FSIGN     // load the sign count
-            CMP #1
-            if (Z)           // one negative (not zero or two)
+            LDA #1  // Arithmetic operation
+            CheckTypeCompatibility();
+            
+            if (NC)  // Type mismatch
             {
-                IntMath.NegateNext(); // NEXT = -NEXT
+                LDA #(Messages.TypeMismatch % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.TypeMismatch / 256)
+                STA ZP.LastErrorH
+                break; // Error exit
             }
-        }
-        else
-        {
-            // BYTE or WORD - unsigned division
-            // NEXT = NEXT / TOP
-            IntMath.UtilityDiv();
-        }
-        LDA ZP.NEXTT
-        Stacks.PushNext(); // Push result, modifies Y
-    }
-    
+            
+            LDA ZP.NEXTT
+            CMP #BasicType.INT
+            if (Z)
+            {
+                // INT - handle signed division
+                doSigns();
+                IntMath.UtilityDiv();
+                
+                LDA ZP.FSIGN     // load the sign count
+                CMP #1
+                if (Z)           // one negative (not zero or two)
+                {
+                    IntMath.NegateNext(); // NEXT = -NEXT
+                }
+            }
+            else
+            {
+                // BYTE or WORD - unsigned division
+                // NEXT = NEXT / TOP
+                IntMath.UtilityDiv();
+            }
+            
+            // Push result to stack
+            LDA ZP.NEXTT
+            Stacks.PushNext(); // Push result, modifies Y
+            
+            break; // Success exit
+        } // Single exit loop
+        
+        // Restore registers
+        PLY  // Restore Y register
+        PLX  // Restore X register
+        PLA  // Restore A register
+    }    
     // Modulo operation (pops two operands, pushes result)
     // Input: Stack contains two operands (right operand on top)
     // Output: Remainder (left % right) pushed to stack
@@ -622,359 +691,452 @@ unit Instructions
     // Equality comparison operation (pops two operands, pushes BIT result)
     // Input: Stack contains two operands (right operand on top)
     // Output: BIT value (0 or 1) pushed to stack
-    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, X
-    // Error: Sets ZP.LastError if type mismatch
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
+    //          Error state (ZP.LastError if type mismatch occurs)
     Equal()
     {
-        Stacks.PopTopNext(); // Pop operands, modifies X
+        PHA  // Preserve A register
+        PHX  // Preserve X register
+        PHY  // Preserve Y register
         
-        LDA #0  // Equality comparison operation
-        CheckTypeCompatibility();
-        
-        if (NC)  // Type mismatch
+        loop // Single exit point for cleanup
         {
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            return;
-        }
-        
-        // Types are compatible, do the comparison
-        LDX #0  // Assume not equal
-        LDA ZP.NEXTL
-        CMP ZP.TOPL
-        if (Z)
-        {
-            LDA ZP.NEXTH
-            CMP ZP.TOPH
+            Stacks.PopTopNext(); // Pop operands, modifies X
+            
+            LDA #0  // Equality comparison operation
+            CheckTypeCompatibility();
+            
+            if (NC)  // Type mismatch
+            {
+                LDA #(Messages.TypeMismatch % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.TypeMismatch / 256)
+                STA ZP.LastErrorH
+                break; // Error exit
+            }
+            
+            // Types are compatible, do the comparison
+            LDX #0  // Assume not equal
+            LDA ZP.NEXTL
+            CMP ZP.TOPL
             if (Z)
             {
-                LDX #1  // Equal
+                LDA ZP.NEXTH
+                CMP ZP.TOPH
+                if (Z)
+                {
+                    LDX #1  // Equal
+                }
             }
-        }
-        Stacks.PushX(); // Push result (X) with BIT type, modifies Y
+            Stacks.PushX(); // Push result (X) with BIT type, modifies Y
+            
+            break; // Success exit
+        } // Single exit loop
+        
+        // Restore registers
+        PLY  // Restore Y register
+        PLX  // Restore X register
+        PLA  // Restore A register
     }
     
     // Not-equal comparison operation (pops two operands, pushes BIT result)
     // Input: Stack contains two operands (right operand on top)
     // Output: BIT value (0 or 1) pushed to stack
-    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, X
-    // Error: Sets ZP.LastError if type mismatch
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
+    //          Error state (ZP.LastError if type mismatch occurs)
     NotEqual()
     {
-        Stacks.PopTopNext(); // Pop operands, modifies X
+        PHA  // Preserve A register
+        PHX  // Preserve X register
+        PHY  // Preserve Y register
         
-        LDA #0  // Equality comparison operation
-        CheckTypeCompatibility();
-        
-        if (NC)  // Type mismatch
+        loop // Single exit point for cleanup
         {
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            return;
-        }
-        
-        LDX #1  // Assume not equal
-        LDA ZP.NEXTL
-        CMP ZP.TOPL
-        if (Z)
-        {
-            LDA ZP.NEXTH
-            CMP ZP.TOPH
+            Stacks.PopTopNext(); // Pop operands, modifies X
+            
+            LDA #0  // Equality comparison operation
+            CheckTypeCompatibility();
+            
+            if (NC)  // Type mismatch
+            {
+                LDA #(Messages.TypeMismatch % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.TypeMismatch / 256)
+                STA ZP.LastErrorH
+                break; // Error exit
+            }
+            
+            // Types are compatible, do the comparison
+            LDX #1  // Assume not equal
+            LDA ZP.NEXTL
+            CMP ZP.TOPL
             if (Z)
             {
-                LDX #0  // Actually equal
+                LDA ZP.NEXTH
+                CMP ZP.TOPH
+                if (Z)
+                {
+                    LDX #0  // Actually equal
+                }
             }
-        }
-        Stacks.PushX(); // X as BIT type, modifies Y
+            Stacks.PushX(); // X as BIT type, modifies Y
+            
+            break; // Success exit
+        } // Single exit loop
+        
+        // Restore registers
+        PLY  // Restore Y register
+        PLX  // Restore X register
+        PLA  // Restore A register
     }
     
     // Less-than comparison operation (pops two operands, pushes BIT result)
     // Input: Stack contains two operands (right operand on top)
     // Output: BIT value (0 or 1) pushed to stack representing (left < right)
-    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, X
-    // Error: Sets ZP.LastError if type mismatch
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
+    //          Error state (ZP.LastError if type mismatch occurs)
     LessThan()
     {
-        // Pop two operands
-        Stacks.PopTopNext(); // Pop operands, modifies X
+        PHA  // Preserve A register
+        PHX  // Preserve X register
+        PHY  // Preserve Y register
         
-        LDA #3  // Ordering comparison operation
-        CheckTypeCompatibility();
-        
-        if (NC)  // Type mismatch
+        loop // Single exit point for cleanup
         {
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            return;
-        }
-        
-        LDA ZP.NEXTT
-        CMP # BasicType.INT
-        if (Z)
-        {
-            // INT - signed comparison: NEXT < TOP?
-            // Calculate TOP - NEXT and check if result > 0
-            SEC
-            LDA ZP.TOPL
-            SBC ZP.NEXTL
-            STA ZP.TOPL
-            LDA ZP.TOPH
-            SBC ZP.NEXTH
-            STA ZP.TOPH
+            // Pop two operands
+            Stacks.PopTopNext(); // Pop operands, modifies X
             
-            ASL           // sign bit into carry
+            LDA #3  // Ordering comparison operation
+            CheckTypeCompatibility();
             
-            LDX #0  // Assume NEXT >= TOP
-            loop
+            if (NC)  // Type mismatch
             {
-                if (C) { break; }  // Negative result means NEXT >= TOP
-                // Zero or positive result
-                LDA ZP.TOPL
-                ORA ZP.TOPH
-                if (Z)
-                {
-                    break;  // Zero result means NEXT == TOP
-                }
-                LDX #1  // Positive result means NEXT < TOP
-                break;
+                LDA #(Messages.TypeMismatch % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.TypeMismatch / 256)
+                STA ZP.LastErrorH
+                break; // Error exit
             }
-        }
-        else
-        {
-            // WORD and BYTE - unsigned comparison: NEXT < TOP?
-            LDX #1 // Assume NEXT < TOP
-            LDA ZP.NEXTH
-            CMP ZP.TOPH
+            
+            LDA ZP.NEXTT
+            CMP #BasicType.INT
             if (Z)
             {
-                LDA ZP.NEXTL
-                CMP ZP.TOPL
+                // INT - signed comparison: NEXT < TOP?
+                // Calculate TOP - NEXT and check if result > 0
+                SEC
+                LDA ZP.TOPL
+                SBC ZP.NEXTL
+                STA ZP.TOPL
+                LDA ZP.TOPH
+                SBC ZP.NEXTH
+                STA ZP.TOPH
+                
+                ASL           // sign bit into carry
+                
+                LDX #0  // Assume NEXT >= TOP
+                loop
+                {
+                    if (C) { break; }  // Negative result means NEXT >= TOP
+                    // Zero or positive result
+                    LDA ZP.TOPL
+                    ORA ZP.TOPH
+                    if (Z)
+                    {
+                        break;  // Zero result means NEXT == TOP
+                    }
+                    LDX #1  // Positive result means NEXT < TOP
+                    break;
+                }
             }
-            if (C) // NEXT >= TOP?
+            else
             {
-                LDX #0 // NEXT not < TOP
+                // WORD and BYTE - unsigned comparison: NEXT < TOP?
+                LDX #1 // Assume NEXT < TOP
+                LDA ZP.NEXTH
+                CMP ZP.TOPH
+                if (Z)
+                {
+                    LDA ZP.NEXTL
+                    CMP ZP.TOPL
+                }
+                if (C) // NEXT >= TOP?
+                {
+                    LDX #0 // NEXT not < TOP
+                }
             }
-        }
-        Stacks.PushX(); // Push BIT result, modifies Y
+            
+            Stacks.PushX(); // Push BIT result, modifies Y
+            
+            break; // Success exit
+        } // Single exit loop
+        
+        // Restore registers
+        PLY  // Restore Y register
+        PLX  // Restore X register
+        PLA  // Restore A register
     }
     
     // Greater-than comparison operation (pops two operands, pushes BIT result)
     // Input: Stack contains two operands (right operand on top)
     // Output: BIT value (0 or 1) pushed to stack representing (left > right)
-    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, X
-    // Error: Sets ZP.LastError if type mismatch
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
+    //          Error state (ZP.LastError if type mismatch occurs)
     GreaterThan()
     {
-        Stacks.PopTopNext(); // Pop operands, modifies X
+        PHA  // Preserve A register
+        PHX  // Preserve X register
+        PHY  // Preserve Y register
         
-        LDA #3  // Ordering comparison operation
-        CheckTypeCompatibility();
-        
-        if (NC)  // Type mismatch
+        loop // Single exit point for cleanup
         {
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            return;
-        }
-        LDA ZP.NEXTT
-        CMP # BasicType.INT
-        if (Z)
-        {
-            // INT - signed comparison: NEXT > TOP?
-            // Calculate NEXT - TOP and check if result > 0
-            SEC
-            LDA ZP.NEXTL
-            SBC ZP.TOPL
-            STA ZP.TOPL
-            LDA ZP.NEXTH
-            SBC ZP.TOPH
-            STA ZP.TOPH
+            Stacks.PopTopNext(); // Pop operands, modifies X
             
-            ASL           // sign bit into carry
+            LDA #3  // Ordering comparison operation
+            CheckTypeCompatibility();
             
-            LDX #0  // Assume NEXT <= TOP
-            loop
+            if (NC)  // Type mismatch
             {
-                if (C) { break; }  // Negative result means NEXT <= TOP
-                // Zero or positive result
-                LDA ZP.TOPL
-                ORA ZP.TOPH
-                if (Z)
-                {
-                    break;  // Zero result means NEXT == TOP
-                }
-                LDX #1  // Positive result means NEXT > TOP
-                break;
+                LDA #(Messages.TypeMismatch % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.TypeMismatch / 256)
+                STA ZP.LastErrorH
+                break; // Error exit
             }
-        }
-        else
-        {
-            // WORD and BYTE - unsigned comparison: testing !(NEXT <= TOP) which is (NEXT > TOP)
-            LDX #0 // Assume NEXT <= TOP
-            LDA ZP.NEXTH
-            CMP ZP.TOPH
+            
+            LDA ZP.NEXTT
+            CMP #BasicType.INT
             if (Z)
             {
+                // INT - signed comparison: NEXT > TOP?
+                // Calculate NEXT - TOP and check if result > 0
+                SEC
                 LDA ZP.NEXTL
-                CMP ZP.TOPL
-            }
-            if (NZ) // NEXT != TOP?
-            {
-                if (C) // NEXT < TOP?
+                SBC ZP.TOPL
+                STA ZP.TOPL
+                LDA ZP.NEXTH
+                SBC ZP.TOPH
+                STA ZP.TOPH
+                
+                ASL           // sign bit into carry
+                
+                LDX #0  // Assume NEXT <= TOP
+                loop
                 {
-                    LDX #1   // NEXT > TOP
+                    if (C) { break; }  // Negative result means NEXT <= TOP
+                    // Zero or positive result
+                    LDA ZP.TOPL
+                    ORA ZP.TOPH
+                    if (Z)
+                    {
+                        break;  // Zero result means NEXT == TOP
+                    }
+                    LDX #1  // Positive result means NEXT > TOP
+                    break;
                 }
             }
-        }
-        Stacks.PushX(); // Push BIT result, modifies Y
+            else
+            {
+                // WORD and BYTE - unsigned comparison: testing !(NEXT <= TOP) which is (NEXT > TOP)
+                LDX #0 // Assume NEXT <= TOP
+                LDA ZP.NEXTH
+                CMP ZP.TOPH
+                if (Z)
+                {
+                    LDA ZP.NEXTL
+                    CMP ZP.TOPL
+                }
+                if (NZ) // NEXT != TOP?
+                {
+                    if (C) // NEXT >= TOP?
+                    {
+                        LDX #1   // NEXT > TOP
+                    }
+                }
+            }
+            
+            Stacks.PushX(); // Push BIT result, modifies Y
+            
+            break; // Success exit
+        } // Single exit loop
+        
+        // Restore registers
+        PLY  // Restore Y register
+        PLX  // Restore X register
+        PLA  // Restore A register
     }
     
     // Less-than-or-equal comparison operation (pops two operands, pushes BIT result)
     // Input: Stack contains two operands (right operand on top)
     // Output: BIT value (0 or 1) pushed to stack representing (left <= right)
-    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, X
-    // Error: Sets ZP.LastError if type mismatch
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
+    //          Error state (ZP.LastError if type mismatch occurs)
     LessEqual()
     {
-        // Pop two operands
-        Stacks.PopTopNext(); // Pop operands, modifies X
+        PHA  // Preserve A register
+        PHX  // Preserve X register
+        PHY  // Preserve Y register
         
-        LDA #3  // Ordering comparison operation
-        CheckTypeCompatibility();
-        
-        if (NC)  // Type mismatch
+        loop // Single exit point for cleanup
         {
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            return;
-        }
-        
-        LDA ZP.NEXTT
-        CMP # BasicType.INT
-        if (Z)
-        {
-            // INT - signed comparison: NEXT <= TOP?
-            // Calculate TOP - NEXT and check if result >= 0
-            SEC
-            LDA ZP.TOPL
-            SBC ZP.NEXTL
-            STA ZP.TOPL
-            LDA ZP.TOPH
-            SBC ZP.NEXTH
-            STA ZP.TOPH
+            // Pop two operands
+            Stacks.PopTopNext(); // Pop operands, modifies X
             
-            ASL           // sign bit into carry
+            LDA #3  // Ordering comparison operation
+            CheckTypeCompatibility();
             
-            LDX #0  // Assume NEXT > TOP
-            if (NC)
+            if (NC)  // Type mismatch
             {
-                // Zero or positive result means NEXT <= TOP
-                LDX #1
+                LDA #(Messages.TypeMismatch % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.TypeMismatch / 256)
+                STA ZP.LastErrorH
+                break; // Error exit
             }
-        }
-        else
-        {
-            // WORD and BYTE - unsigned comparison: NEXT <= TOP?
-            LDX #1 // Assume NEXT <= TOP
-            LDA ZP.NEXTH
-            CMP ZP.TOPH
+            
+            LDA ZP.NEXTT
+            CMP #BasicType.INT
             if (Z)
             {
-                LDA ZP.NEXTL
-                CMP ZP.TOPL
-            }
-            if (NZ) // NEXT != TOP?
-            {
-                if (C) // NEXT < TOP?
+                // INT - signed comparison: NEXT <= TOP?
+                // Calculate TOP - NEXT and check if result >= 0
+                SEC
+                LDA ZP.TOPL
+                SBC ZP.NEXTL
+                STA ZP.TOPL
+                LDA ZP.TOPH
+                SBC ZP.NEXTH
+                STA ZP.TOPH
+                
+                ASL           // sign bit into carry
+                
+                LDX #0  // Assume NEXT > TOP
+                if (NC)
                 {
-                    LDX #0  // NEXT > TOP
+                    // Zero or positive result means NEXT <= TOP
+                    LDX #1
                 }
             }
-        }
-        Stacks.PushX(); // Push BIT result, modifies Y
+            else
+            {
+                // WORD and BYTE - unsigned comparison: NEXT <= TOP?
+                LDX #1 // Assume NEXT <= TOP
+                LDA ZP.NEXTH
+                CMP ZP.TOPH
+                if (Z)
+                {
+                    LDA ZP.NEXTL
+                    CMP ZP.TOPL
+                }
+                if (NZ) // NEXT != TOP?
+                {
+                    if (C) // NEXT >= TOP?
+                    {
+                        LDX #0  // NEXT > TOP
+                    }
+                }
+            }
+            
+            Stacks.PushX(); // Push BIT result, modifies Y
+            
+            break; // Success exit
+        } // Single exit loop
+        
+        // Restore registers
+        PLY  // Restore Y register
+        PLX  // Restore X register
+        PLA  // Restore A register
     }
     
     // Greater-than-or-equal comparison operation (pops two operands, pushes BIT result)
     // Input: Stack contains two operands (right operand on top)
     // Output: BIT value (0 or 1) pushed to stack representing (left >= right)
-    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, X
-    // Error: Sets ZP.LastError if type mismatch
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
+    //          Error state (ZP.LastError if type mismatch occurs)
     GreaterEqual()
     {
-        // Pop two operands
-        Stacks.PopTopNext(); // Pop operands, modifies X
+        PHA  // Preserve A register
+        PHX  // Preserve X register
+        PHY  // Preserve Y register
         
-        LDA #3  // Ordering comparison operation
-        CheckTypeCompatibility();
-        
-        if (NC)  // Type mismatch
+        loop // Single exit point for cleanup
         {
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            return;
-        }
-        
-        LDA ZP.NEXTT
-        CMP # BasicType.INT
-        if (Z)
-        {
-            // INT - signed comparison: testing !(NEXT < TOP) which is (NEXT >= TOP)
-            LDX #0 // Assume NEXT < TOP
-            LDA ZP.NEXTH
-            CMP ZP.TOPH
+            // Pop two operands
+            Stacks.PopTopNext(); // Pop operands, modifies X
+            
+            LDA #3  // Ordering comparison operation
+            CheckTypeCompatibility();
+            
+            if (NC)  // Type mismatch
+            {
+                LDA #(Messages.TypeMismatch % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.TypeMismatch / 256)
+                STA ZP.LastErrorH
+                break; // Error exit
+            }
+            
+            LDA ZP.NEXTT
+            CMP #BasicType.INT
             if (Z)
             {
+                // INT - signed comparison: testing !(NEXT < TOP) which is (NEXT >= TOP)
+                LDX #1 // Assume NEXT >= TOP
+                LDA ZP.NEXTH
+                CMP ZP.TOPH
+                if (Z)
+                {
+                    LDA ZP.NEXTL
+                    CMP ZP.TOPL
+                }
+                if (NC) // NEXT < TOP?
+                {
+                    LDX #0   // NEXT < TOP, so not >= 
+                }
+            }
+            else
+            {
+                // WORD and BYTE - unsigned comparison: NEXT >= TOP?
+                // Calculate NEXT - TOP and check if result >= 0
+                SEC
                 LDA ZP.NEXTL
-                CMP ZP.TOPL
+                SBC ZP.TOPL
+                STA ZP.TOPL
+                LDA ZP.NEXTH
+                SBC ZP.TOPH
+                STA ZP.TOPH
+                
+                ASL           // sign bit into carry
+                
+                LDX #1  // Assume NEXT >= TOP
+                if (C)
+                {
+                    // Negative result means NEXT < TOP
+                    LDX #0
+                }
             }
-            if (C) // NEXT < TOP?
-            {
-                LDX #1   // NEXT >= TOP
-            }
-        }
-        else
-        {
-            // WORD and BYTE - unsigned comparison: NEXT >= TOP?
-            // Calculate NEXT - TOP and check if result >= 0
-            SEC
-            LDA ZP.NEXTL
-            SBC ZP.TOPL
-            STA ZP.TOPL
-            LDA ZP.NEXTH
-            SBC ZP.TOPH
-            STA ZP.TOPH
             
-            ASL           // sign bit into carry
+            Stacks.PushX(); // Push BIT result, modifies Y
             
-            LDX #0  // Assume NEXT < TOP
-            if (NC)
-            {
-                // Zero or positive result means NEXT >= TOP
-                LDX #1
-            }
-        }
-        Stacks.PushX(); // Push BIT result, modifies Y
+            break; // Success exit
+        } // Single exit loop
+        
+        // Restore registers
+        PLY  // Restore Y register
+        PLX  // Restore X register
+        PLA  // Restore A register
     }
     
     // Bitwise/logical AND operation (pops two operands, pushes result)
     // Input: Stack contains two operands (right operand on top)
     // Output: Bitwise AND result pushed to stack
-    // Error: Sets ZP.LastError if type mismatch
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
+    //          Error state (ZP.LastError if type mismatch occurs)
     And()
     {
-        PHA
+        PHA  // Preserve A register
+        PHX  // Preserve X register
+        PHY  // Preserve Y register
         
         loop // Single exit point for cleanup
         {
@@ -1004,18 +1166,24 @@ unit Instructions
             Stacks.PushNext(); // Push result, modifies Y
             
             break; // Success exit
-        }
+        } // Single exit loop
         
-        PLA
+        // Restore registers
+        PLY  // Restore Y register
+        PLX  // Restore X register
+        PLA  // Restore A register
     }
     
     // Bitwise/logical OR operation (pops two operands, pushes result)
     // Input: Stack contains two operands (right operand on top)
     // Output: Bitwise OR result pushed to stack
-    // Error: Sets ZP.LastError if type mismatch
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
+    //          Error state (ZP.LastError if type mismatch occurs)
     Or()
     {
-        PHA
+        PHA  // Preserve A register
+        PHX  // Preserve X register
+        PHY  // Preserve Y register
         
         loop // Single exit point for cleanup
         {
@@ -1045,9 +1213,12 @@ unit Instructions
             Stacks.PushNext(); // Push result, modifies Y
             
             break; // Success exit
-        }
+        } // Single exit loop
         
-        PLA
+        // Restore registers
+        PLY  // Restore Y register
+        PLX  // Restore X register
+        PLA  // Restore A register
     }
     
     // Logical NOT operation (pops one operand, pushes BIT result)
@@ -1058,6 +1229,7 @@ unit Instructions
     {
         PHA
         PHX
+        PHY
         
         loop // Single exit point for cleanup
         {
@@ -1085,6 +1257,7 @@ unit Instructions
             break; // Success exit
         }
         
+        PLY
         PLX
         PLA
     }
