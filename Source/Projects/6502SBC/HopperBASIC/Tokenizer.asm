@@ -24,12 +24,14 @@ unit Tokenizer
         DEL      = 0x0B,
         MEM      = 0x0C,
         BYE      = 0x0D,
-        EOL      = 0x0E, // End of line/empty line
+        REM      = 0x0E,  // REM comment
+        COMMENT  = 0x0F,  // ' comment (single quote)
+        EOL      = 0x10,  // End of line/empty line (moved from 0x0E)
         
-        // Type declarations (16-31)  
-        INT      = 0x10,
-        WORD     = 0x11,
-        BIT      = 0x12,
+        // Type declarations (17-31)  
+        INT      = 0x11,  // Moved from 0x10
+        WORD     = 0x12,  // Moved from 0x11
+        BIT      = 0x13,  // Moved from 0x12
         
         // Language keywords (32-47)
         PRINT    = 0x20,
@@ -39,8 +41,8 @@ unit Tokenizer
         ENDFUNC  = 0x24,
         RETURN   = 0x25,
         BEGIN    = 0x26,
-        END      = 0x27,
-        
+        END      = 0x27,     
+           
         // Logical keywords (48-55)
         AND      = 0x30,
         OR       = 0x31,
@@ -90,6 +92,7 @@ unit Tokenizer
         3, Tokens.DEL, 'D', 'E', 'L',
         3, Tokens.MEM, 'M', 'E', 'M',
         3, Tokens.BYE, 'B', 'Y', 'E',
+        3, Tokens.REM, 'R', 'E', 'M',  // Add this line
         3, Tokens.INT, 'I', 'N', 'T',
         4, Tokens.WORD, 'W', 'O', 'R', 'D',
         3, Tokens.BIT, 'B', 'I', 'T',
@@ -557,6 +560,37 @@ unit Tokenizer
                     CLC  // Error
                     return;
                 }
+                case '\'':
+                {
+                    // Single quote comment
+                    LDA #Tokens.COMMENT
+                    appendToTokenBuffer();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                    
+                    INX  // Skip the quote character
+                    
+                    // Store comment text as inline data
+                    loop
+                    {
+                        CPX ZP.BasicInputLength
+                        if (Z) { break; }  // End of input
+                        
+                        LDA Address.BasicInputBuffer, X
+                        appendToTokenBuffer();
+                        Messages.CheckError();
+                        if (NC) { return; }
+                        INX
+                    }
+                    
+                    // Add null terminator
+                    LDA #0
+                    appendToTokenBuffer();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                    
+                    // X is already at end of input, continue will break out of main loop
+                }
                 default:
                 {
                     // Check if it's a number
@@ -656,6 +690,41 @@ unit Tokenizer
                     findKeyword();
                     if (NZ)  // Found keyword
                     {
+                        // Check if it's REM - need special processing
+                        CMP #Tokens.REM
+                        if (Z)
+                        {
+                            appendToTokenBuffer();
+                            Messages.CheckError();
+                            if (NC) { return; }
+                            
+                            // Store comment text as inline data
+                            skipWhitespace();  // Skip spaces after REM
+                            
+                            // Store all remaining characters as comment text
+                            loop
+                            {
+                                CPX ZP.BasicInputLength
+                                if (Z) { break; }  // End of input
+                                
+                                LDA Address.BasicInputBuffer, X
+                                appendToTokenBuffer();
+                                Messages.CheckError();
+                                if (NC) { return; }
+                                INX
+                            }
+                            
+                            // Add null terminator
+                            LDA #0
+                            appendToTokenBuffer();
+                            Messages.CheckError();
+                            if (NC) { return; }
+                            
+                            // X is already at end of input, continue will break out of main loop
+                            continue;
+                        }
+                        
+                        // Regular keyword processing
                         appendToTokenBuffer();
                         Messages.CheckError();
                         if (NC) { return; }
@@ -762,6 +831,32 @@ unit Tokenizer
             return;
         }
         CMP #Tokens.STRING
+        if (Z)
+        {
+            // Save current position as start of literal data
+            LDA ZP.TokenizerPosL
+            STA ZP.TokenLiteralPosL
+            LDA ZP.TokenizerPosH
+            STA ZP.TokenLiteralPosH
+            
+            skipInlineString();
+            LDA ZP.CurrentToken
+            return;
+        }
+        CMP #Tokens.REM
+        if (Z)
+        {
+            // Save current position as start of literal data
+            LDA ZP.TokenizerPosL
+            STA ZP.TokenLiteralPosL
+            LDA ZP.TokenizerPosH
+            STA ZP.TokenLiteralPosH
+            
+            skipInlineString();
+            LDA ZP.CurrentToken
+            return;
+        }
+        CMP #Tokens.COMMENT
         if (Z)
         {
             // Save current position as start of literal data

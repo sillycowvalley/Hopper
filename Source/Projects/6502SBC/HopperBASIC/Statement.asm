@@ -40,6 +40,22 @@ unit Statement
         
         switch (A)
         {
+            case Tokens.REM:
+            case Tokens.COMMENT:
+            {
+                // Comments are no-ops - just advance to next token
+                Tokenizer.NextToken();
+                
+        #ifdef DEBUG
+                LDA #'S'
+                Serial.WriteChar();
+                LDA #'>'
+                Serial.WriteChar();
+        #endif
+                
+                SEC  // Success
+                return;
+            }
             case Tokens.PRINT:
             {
                 executePrint();

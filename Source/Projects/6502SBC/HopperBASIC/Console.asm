@@ -187,6 +187,13 @@ unit Console
         Tokenizer.NextToken();  // Returns token in A, updates ZP.CurrentToken
         switch (A)
         {
+            case Tokens.REM:
+            case Tokens.COMMENT:
+            {
+                // Comments at top level are just ignored
+                SEC  // Success - continue REPL
+                return;
+            }
             case Tokens.NEW:
             {
                 cmdNew();
