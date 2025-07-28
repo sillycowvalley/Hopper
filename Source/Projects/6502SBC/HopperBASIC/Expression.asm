@@ -461,7 +461,7 @@ unit Expression
             STZ ZP.TOPH
             LDA #BasicType.INT
             STA ZP.TOPT
-            Stacks.PushTop();
+            Stacks.PushTop(); // Push value to stack, modifies Y
             
             // Parse the operand
             parsePrimary();
@@ -554,7 +554,7 @@ unit Expression
 #endif
                 
                 LDA ZP.TOPT // type
-                Stacks.PushTop();
+                Stacks.PushTop(); // Push value to stack, modifies Y
                 
                 // Get next token
                 Tokenizer.NextToken();

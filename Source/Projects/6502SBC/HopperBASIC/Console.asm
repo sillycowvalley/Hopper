@@ -51,7 +51,7 @@ unit Console
         
         // Get available memory
         Memory.Available();  // Pushes available memory (UInt) to stack
-        Stacks.PopTop();     // Pop into TOP
+        Stacks.PopTop();     // Pop into TOP, modifies X
         Tools.PrintDecimalWord();
         
         LDA #(Messages.BytesMsg % 256)

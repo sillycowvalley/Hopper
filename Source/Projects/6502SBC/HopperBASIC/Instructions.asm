@@ -400,7 +400,7 @@ unit Instructions
         STA ZP.NEXTH
         
         LDA ZP.NEXTT       
-        Stacks.PushNext();
+        Stacks.PushNext(); // Push result, modifies Y
     }
     
     // Addition operation (pops two operands, pushes result)
@@ -411,7 +411,7 @@ unit Instructions
     Addition()
     {
         // Pop two operands
-        Stacks.PopTopNext();
+        Stacks.PopTopNext(); // Pop operands, modifies X
         
         LDA #1  // Arithmetic operation
         CheckTypeCompatibility();
@@ -434,7 +434,7 @@ unit Instructions
         STA ZP.NEXTH
         
         LDA ZP.NEXTT
-        Stacks.PushNext();
+        Stacks.PushNext(); // Push result, modifies Y
     }
         
     // Subtraction operation (pops two operands, pushes result)
@@ -444,7 +444,7 @@ unit Instructions
     // Error: Sets ZP.LastError if type mismatch
     Subtraction()
     {
-        Stacks.PopTopNext();
+        Stacks.PopTopNext(); // Pop operands, modifies X
         subShared();
     }
     
@@ -486,7 +486,7 @@ unit Instructions
     Multiply()
     {
         // Pop two operands
-        Stacks.PopTopNext();
+        Stacks.PopTopNext(); // Pop operands, modifies X
         
         LDA #1  // Arithmetic operation
         CheckTypeCompatibility();
@@ -522,7 +522,7 @@ unit Instructions
         }
         
         LDA ZP.NEXTT
-        Stacks.PushTop();
+        Stacks.PushTop(); // Push result, modifies Y
     }
     
     // Division operation (pops two operands, pushes result)
@@ -533,7 +533,7 @@ unit Instructions
     Divide()
     {
         // Pop two operands
-        Stacks.PopTopNext();
+        Stacks.PopTopNext(); // Pop operands, modifies X
         
         LDA #1  // Arithmetic operation
         CheckTypeCompatibility();
@@ -569,7 +569,7 @@ unit Instructions
             IntMath.UtilityDiv();
         }
         LDA ZP.NEXTT
-        Stacks.PushNext();
+        Stacks.PushNext(); // Push result, modifies Y
     }
     
     // Modulo operation (pops two operands, pushes result)
@@ -583,7 +583,7 @@ unit Instructions
         
         loop // Single exit point for cleanup
         {
-            Stacks.PopTopNext();
+            Stacks.PopTopNext(); // Pop operands, modifies X
             
             LDA #1  // Arithmetic operation
             CheckTypeCompatibility();
@@ -610,7 +610,7 @@ unit Instructions
                 
             LDA ZP.NEXTT
             STA ZP.ACCT
-            Stacks.PushACC();  // Modifies Y internally
+            Stacks.PushACC(); // Push remainder, modifies Y
             
             break; // Success exit
         }
@@ -626,7 +626,7 @@ unit Instructions
     // Error: Sets ZP.LastError if type mismatch
     Equal()
     {
-        Stacks.PopTopNext();  // Gets both values and their types
+        Stacks.PopTopNext(); // Pop operands, modifies X
         
         LDA #0  // Equality comparison operation
         CheckTypeCompatibility();
@@ -653,7 +653,7 @@ unit Instructions
                 LDX #1  // Equal
             }
         }
-        Stacks.PushX();  // Push result (X) with BIT type
+        Stacks.PushX(); // Push result (X) with BIT type, modifies Y
     }
     
     // Not-equal comparison operation (pops two operands, pushes BIT result)
@@ -663,7 +663,7 @@ unit Instructions
     // Error: Sets ZP.LastError if type mismatch
     NotEqual()
     {
-        Stacks.PopTopNext();
+        Stacks.PopTopNext(); // Pop operands, modifies X
         
         LDA #0  // Equality comparison operation
         CheckTypeCompatibility();
@@ -689,7 +689,7 @@ unit Instructions
                 LDX #0  // Actually equal
             }
         }
-        Stacks.PushX(); // X as BIT type
+        Stacks.PushX(); // X as BIT type, modifies Y
     }
     
     // Less-than comparison operation (pops two operands, pushes BIT result)
@@ -700,7 +700,7 @@ unit Instructions
     LessThan()
     {
         // Pop two operands
-        Stacks.PopTopNext();
+        Stacks.PopTopNext(); // Pop operands, modifies X
         
         LDA #3  // Ordering comparison operation
         CheckTypeCompatibility();
@@ -761,7 +761,7 @@ unit Instructions
                 LDX #0 // NEXT not < TOP
             }
         }
-        Stacks.PushX(); // Result as BIT type
+        Stacks.PushX(); // Push BIT result, modifies Y
     }
     
     // Greater-than comparison operation (pops two operands, pushes BIT result)
@@ -771,7 +771,7 @@ unit Instructions
     // Error: Sets ZP.LastError if type mismatch
     GreaterThan()
     {
-        Stacks.PopTopNext();
+        Stacks.PopTopNext(); // Pop operands, modifies X
         
         LDA #3  // Ordering comparison operation
         CheckTypeCompatibility();
@@ -834,7 +834,7 @@ unit Instructions
                 }
             }
         }
-        Stacks.PushX(); // Result as BIT type
+        Stacks.PushX(); // Push BIT result, modifies Y
     }
     
     // Less-than-or-equal comparison operation (pops two operands, pushes BIT result)
@@ -845,7 +845,7 @@ unit Instructions
     LessEqual()
     {
         // Pop two operands
-        Stacks.PopTopNext();
+        Stacks.PopTopNext(); // Pop operands, modifies X
         
         LDA #3  // Ordering comparison operation
         CheckTypeCompatibility();
@@ -901,7 +901,7 @@ unit Instructions
                 }
             }
         }
-        Stacks.PushX(); // Result as BIT type
+        Stacks.PushX(); // Push BIT result, modifies Y
     }
     
     // Greater-than-or-equal comparison operation (pops two operands, pushes BIT result)
@@ -912,7 +912,7 @@ unit Instructions
     GreaterEqual()
     {
         // Pop two operands
-        Stacks.PopTopNext();
+        Stacks.PopTopNext(); // Pop operands, modifies X
         
         LDA #3  // Ordering comparison operation
         CheckTypeCompatibility();
@@ -965,7 +965,7 @@ unit Instructions
                 LDX #1
             }
         }
-        Stacks.PushX(); // Result as BIT type
+        Stacks.PushX(); // Push BIT result, modifies Y
     }
     
     // Bitwise/logical AND operation (pops two operands, pushes result)
@@ -978,7 +978,7 @@ unit Instructions
         
         loop // Single exit point for cleanup
         {
-            Stacks.PopTopNext();
+            Stacks.PopTopNext(); // Pop operands, modifies X
             
             LDA #2  // Bitwise/logical operation
             CheckTypeCompatibility();
@@ -1001,7 +1001,7 @@ unit Instructions
             STA ZP.NEXTH
             
             LDA ZP.NEXTT
-            Stacks.PushNext();
+            Stacks.PushNext(); // Push result, modifies Y
             
             break; // Success exit
         }
@@ -1019,7 +1019,7 @@ unit Instructions
         
         loop // Single exit point for cleanup
         {
-            Stacks.PopTopNext();
+            Stacks.PopTopNext(); // Pop operands, modifies X
             
             LDA #2  // Bitwise/logical operation
             CheckTypeCompatibility();
@@ -1042,7 +1042,7 @@ unit Instructions
             STA ZP.NEXTH
             
             LDA ZP.NEXTT
-            Stacks.PushNext();
+            Stacks.PushNext(); // Push result, modifies Y
             
             break; // Success exit
         }
@@ -1061,7 +1061,7 @@ unit Instructions
         
         loop // Single exit point for cleanup
         {
-            Stacks.PopTop();
+            Stacks.PopTop(); // Pop operand, modifies X
             
             // Check if operand is BIT type (only valid for logical NOT)
             LDA ZP.TOPT
@@ -1080,7 +1080,7 @@ unit Instructions
             EOR # 0x01
             TAX
             
-            Stacks.PushX();  // Push result (X) with BIT type
+            Stacks.PushX(); // Push BIT result, modifies Y
             
             break; // Success exit
         }

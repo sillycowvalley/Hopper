@@ -178,7 +178,7 @@ unit Statement
         
         // Top of stack now contains the result
         // For now, assume it's a number and print it
-        Stacks.PopTop();  // Pop result into ZP.TOP
+        Stacks.PopTop();  // Pop result into TOP, modifies X
         Tools.PrintDecimalWord();
         
         // Print newline
@@ -234,7 +234,7 @@ unit Statement
         }
         
         // Get the condition result
-        Stacks.PopTop();  // Pop condition into ZP.TOP
+        Stacks.PopTop();  // Pop condition into ZP.TOP, modifies X  
         
         // Check if condition is true (non-zero)
         LDA ZP.TOPL
@@ -495,7 +495,7 @@ unit Statement
                         STA ZP.IDYH
                      
                         // Pop the result into NEXT
-                        Stacks.PopNext();  // Result in ZP.NEXT, type in ZP.NEXTT
+                        Stacks.PopNext();  // Result in ZP.NEXT, type in ZP.NEXTT,  modifies X
                         
                         expectEOF();
                         if (NC) { break; }
