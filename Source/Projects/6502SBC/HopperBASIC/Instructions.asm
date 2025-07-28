@@ -73,8 +73,9 @@ unit Instructions
     //        ZP.ACCT = operation mode:
     //          0 = Equality comparison (=, <>) - BIT types allowed, result is BIT
     //          1 = Arithmetic (+, -, *, /, %) - BIT types rejected, result is promoted numeric type
-    //          2 = Bitwise/logical (AND, OR) - BIT types allowed, result is operand type or promoted
+    //          2 = Bitwise (&, |) - BIT types rejected, result is promoted numeric type
     //          3 = Ordering comparison (<, >, <=, >=) - BIT types rejected, result is BIT
+    //          4 = Logical (AND, OR) - Only BIT types allowed, result is BIT
     // Output: C set if compatible, NC set if TYPE MISMATCH
     //         ZP.NEXTT = result type (updated based on operation mode and type promotion)
     // Modifies: processor flags
@@ -115,10 +116,10 @@ unit Instructions
             else
             {
                 LDA ZP.ACCT  // Get operation mode again
-                CMP #3  // Ordering comparison operations
+                CMP #2  // Bitwise operations
                 if (Z)
                 {
-                    // Ordering comparison: reject BIT types
+                    // Bitwise: reject BIT types (numeric only)
                     LDA ZP.NEXTT
                     CMP #BasicType.BIT
                     if (Z)
@@ -135,7 +136,55 @@ unit Instructions
                         break;
                     }
                 }
-                // Modes 0 (equality) and 2 (bitwise/logical) allow BIT types
+                else
+                {
+                    LDA ZP.ACCT  // Get operation mode again
+                    CMP #3  // Ordering comparison operations
+                    if (Z)
+                    {
+                        // Ordering comparison: reject BIT types
+                        LDA ZP.NEXTT
+                        CMP #BasicType.BIT
+                        if (Z)
+                        {
+                            CLC  // Set NC - type mismatch
+                            break;
+                        }
+                        
+                        LDA ZP.TOPT
+                        CMP #BasicType.BIT
+                        if (Z)
+                        {
+                            CLC  // Set NC - type mismatch
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        LDA ZP.ACCT  // Get operation mode again
+                        CMP #4  // Logical operations
+                        if (Z)
+                        {
+                            // Logical: only BIT types allowed
+                            LDA ZP.NEXTT
+                            CMP #BasicType.BIT
+                            if (NZ)
+                            {
+                                CLC  // Set NC - type mismatch
+                                break;
+                            }
+                            
+                            LDA ZP.TOPT
+                            CMP #BasicType.BIT
+                            if (NZ)
+                            {
+                                CLC  // Set NC - type mismatch
+                                break;
+                            }
+                        }
+                        // Mode 0 (equality) allows BIT types
+                    }
+                }
             }
             
             // Check for ARRAY and STRING types - not supported in Phase 1
@@ -183,7 +232,8 @@ unit Instructions
                         STA ZP.NEXTT  // Result type = BIT
                     }
                     case 1:  // Arithmetic operations
-                    case 2:  // Bitwise/logical operations
+                    case 2:  // Bitwise operations
+                    case 4:  // Logical operations
                     {
                         // Result type = operand type (no change needed)
                     }
@@ -346,7 +396,7 @@ unit Instructions
     }
     
     // Set result type for mixed-type operations
-    // Input: A = operation mode (0=equality, 1=arithmetic, 2=bitwise, 3=ordering)
+    // Input: A = operation mode (0=equality, 1=arithmetic, 2=bitwise, 3=ordering, 4=logical)
     //        ZP.NEXTT = promoted operand type
     // Output: ZP.NEXTT = final result type
     setResultTypeForMixedOperation()
@@ -362,7 +412,8 @@ unit Instructions
                 STA ZP.NEXTT  // Result type = BIT
             }
             case 1:  // Arithmetic operations
-            case 2:  // Bitwise/logical operations
+            case 2:  // Bitwise operations
+            case 4:  // Logical operations
             {
                 // Result type = promoted operand type (ZP.NEXTT already set correctly)
             }
@@ -1127,12 +1178,12 @@ unit Instructions
         PLA  // Restore A register
     }
     
-    // Bitwise/logical AND operation (pops two operands, pushes result)
+    // Bitwise AND operation (pops two operands, pushes result)
     // Input: Stack contains two operands (right operand on top)
-    // Output: Bitwise AND result pushed to stack
+    // Output: Bitwise AND result (promoted numeric type) pushed to stack
     // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
     //          Error state (ZP.LastError if type mismatch occurs)
-    And()
+    BitwiseAnd()
     {
         PHA  // Preserve A register
         PHX  // Preserve X register
@@ -1142,7 +1193,7 @@ unit Instructions
         {
             Stacks.PopTopNext(); // Pop operands, modifies X
             
-            LDA #2  // Bitwise/logical operation
+            LDA #2  // Bitwise operation (numeric types only)
             CheckTypeCompatibility();
             
             if (NC)  // Type mismatch
@@ -1174,12 +1225,12 @@ unit Instructions
         PLA  // Restore A register
     }
     
-    // Bitwise/logical OR operation (pops two operands, pushes result)
+    // Bitwise OR operation (pops two operands, pushes result)
     // Input: Stack contains two operands (right operand on top)
-    // Output: Bitwise OR result pushed to stack
+    // Output: Bitwise OR result (promoted numeric type) pushed to stack
     // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
     //          Error state (ZP.LastError if type mismatch occurs)
-    Or()
+    BitwiseOr()
     {
         PHA  // Preserve A register
         PHX  // Preserve X register
@@ -1189,7 +1240,7 @@ unit Instructions
         {
             Stacks.PopTopNext(); // Pop operands, modifies X
             
-            LDA #2  // Bitwise/logical operation
+            LDA #2  // Bitwise operation (numeric types only)
             CheckTypeCompatibility();
             
             if (NC)  // Type mismatch
@@ -1211,6 +1262,131 @@ unit Instructions
             
             LDA ZP.NEXTT
             Stacks.PushNext(); // Push result, modifies Y
+            
+            break; // Success exit
+        } // Single exit loop
+        
+        // Restore registers
+        PLY  // Restore Y register
+        PLX  // Restore X register
+        PLA  // Restore A register
+    }
+    
+    // Logical AND operation (pops two operands, pushes result)
+    // Input: Stack contains two BIT operands (right operand on top)
+    // Output: Logical AND result (BIT type) pushed to stack
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
+    //          Error state (ZP.LastError if type mismatch occurs)
+    LogicalAnd()
+    {
+        PHA  // Preserve A register
+        PHX  // Preserve X register
+        PHY  // Preserve Y register
+        
+        loop // Single exit point for cleanup
+        {
+            Stacks.PopTopNext(); // Pop operands, modifies X
+            
+            LDA #4  // Logical operation (BIT types only)
+            CheckTypeCompatibility();
+            
+            if (NC)  // Type mismatch
+            {
+                LDA #(Messages.TypeMismatch % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.TypeMismatch / 256)
+                STA ZP.LastErrorH
+                break; // Error exit
+            }
+            
+            // Logical AND: both operands must be non-zero for result to be 1
+            LDX #0  // Assume result is 0 (false)
+            
+            // Check if left operand is non-zero
+            LDA ZP.NEXTL
+            ORA ZP.NEXTH
+            if (Z) 
+            { 
+                // Left is 0, result is 0
+                Stacks.PushX(); // Push BIT result, modifies Y
+                break;
+            }
+            
+            // Left is non-zero, check right operand
+            LDA ZP.TOPL
+            ORA ZP.TOPH
+            if (Z) 
+            { 
+                // Right is 0, result is 0
+                Stacks.PushX(); // Push BIT result, modifies Y
+                break;
+            }
+            
+            // Both are non-zero, result is 1
+            LDX #1
+            Stacks.PushX(); // Push BIT result, modifies Y
+            
+            break; // Success exit
+        } // Single exit loop
+        
+        // Restore registers
+        PLY  // Restore Y register
+        PLX  // Restore X register
+        PLA  // Restore A register
+    }
+    
+    // Logical OR operation (pops two operands, pushes result)
+    // Input: Stack contains two BIT operands (right operand on top)
+    // Output: Logical OR result (BIT type) pushed to stack
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
+    //          Error state (ZP.LastError if type mismatch occurs)
+    LogicalOr()
+    {
+        PHA  // Preserve A register
+        PHX  // Preserve X register
+        PHY  // Preserve Y register
+        
+        loop // Single exit point for cleanup
+        {
+            Stacks.PopTopNext(); // Pop operands, modifies X
+            
+            LDA #4  // Logical operation (BIT types only)
+            CheckTypeCompatibility();
+            
+            if (NC)  // Type mismatch
+            {
+                LDA #(Messages.TypeMismatch % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.TypeMismatch / 256)
+                STA ZP.LastErrorH
+                break; // Error exit
+            }
+            
+            // Logical OR: result is 1 if either operand is non-zero
+            LDX #0  // Assume result is 0 (false)
+            
+            // Check if left operand is non-zero
+            LDA ZP.NEXTL
+            ORA ZP.NEXTH
+            if (NZ) 
+            { 
+                // Left is non-zero, result is 1
+                LDX #1
+                Stacks.PushX(); // Push BIT result, modifies Y
+                break;
+            }
+            
+            // Left is 0, check right operand
+            LDA ZP.TOPL
+            ORA ZP.TOPH
+            if (NZ) 
+            { 
+                // Right is non-zero, result is 1
+                LDX #1
+            }
+            
+            // Push result (X = 0 if both were 0, X = 1 if either was non-zero)
+            Stacks.PushX(); // Push BIT result, modifies Y
             
             break; // Success exit
         } // Single exit loop

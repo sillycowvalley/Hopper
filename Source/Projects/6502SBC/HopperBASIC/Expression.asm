@@ -22,7 +22,7 @@ unit Expression
 #endif
         
         // Start with lowest precedence level
-        parseComparison();
+        parseLogical();
         
 #ifdef DEBUG
         LDA #'E'
@@ -48,7 +48,7 @@ unit Expression
 #endif
         
         // Parse left operand
-        parseLogical();
+        parseBitwiseOr();
         Messages.CheckError();
         if (NC) { return; }
         
@@ -64,7 +64,7 @@ unit Expression
                 if (NC) { return; }
                 
                 // Parse right operand
-                parseLogical();
+                parseBitwiseOr();
                 Messages.CheckError();
                 if (NC) { return; }
                 
@@ -82,7 +82,7 @@ unit Expression
                 if (NC) { return; }
                 
                 // Parse right operand
-                parseLogical();
+                parseBitwiseOr();
                 Messages.CheckError();
                 if (NC) { return; }
                 
@@ -100,7 +100,7 @@ unit Expression
                 if (NC) { return; }
                 
                 // Parse right operand
-                parseLogical();
+                parseBitwiseOr();
                 Messages.CheckError();
                 if (NC) { return; }
                 
@@ -118,7 +118,7 @@ unit Expression
                 if (NC) { return; }
                 
                 // Parse right operand
-                parseLogical();
+                parseBitwiseOr();
                 Messages.CheckError();
                 if (NC) { return; }
                 
@@ -136,7 +136,7 @@ unit Expression
                 if (NC) { return; }
                 
                 // Parse right operand
-                parseLogical();
+                parseBitwiseOr();
                 Messages.CheckError();
                 if (NC) { return; }
                 
@@ -154,7 +154,7 @@ unit Expression
                 if (NC) { return; }
                 
                 // Parse right operand
-                parseLogical();
+                parseBitwiseOr();
                 Messages.CheckError();
                 if (NC) { return; }
                 
@@ -176,12 +176,12 @@ unit Expression
         SEC  // Success
     }
     
-    // Parse logical OR operators (lowest precedence logical operator)
+    // Parse logical OR operators (BIT operands only)
     // Input: ZP.CurrentToken = current token
-    // Output: Logical result pushed to stack
+    // Output: Logical result (BIT type) pushed to stack
     //         ZP.CurrentToken = token after logical expression
     // Munts: Stack, ZP.CurrentToken, parsing variables
-    // Error: Sets ZP.LastError if syntax error
+    // Error: Sets ZP.LastError if syntax error or type mismatch
     parseLogical()
     {
 #ifdef DEBUG
@@ -212,8 +212,8 @@ unit Expression
                 Messages.CheckError();
                 if (NC) { return; }
                 
-                // Perform logical OR
-                Instructions.Or();
+                // Perform logical OR (BIT operands only)
+                Instructions.LogicalOr();
                 continue;
             }
             
@@ -230,16 +230,16 @@ unit Expression
         SEC  // Success
     }
     
-    // Parse logical AND operators (higher precedence than OR)
+    // Parse logical AND operators (BIT operands only, higher precedence than OR)
     // Input: ZP.CurrentToken = current token
-    // Output: Logical result pushed to stack
+    // Output: Logical result (BIT type) pushed to stack
     //         ZP.CurrentToken = token after AND expression
     // Munts: Stack, ZP.CurrentToken, parsing variables
-    // Error: Sets ZP.LastError if syntax error
+    // Error: Sets ZP.LastError if syntax error or type mismatch
     parseLogicalAnd()
     {
-        // Parse left operand
-        parseAddition();
+        // Parse left operand (higher precedence - parse comparison operations first)
+        parseComparison();
         Messages.CheckError();
         if (NC) { return; }
         
@@ -255,16 +255,95 @@ unit Expression
                 if (NC) { return; }
                 
                 // Parse right operand
-                parseAddition();
+                parseComparison();
                 Messages.CheckError();
                 if (NC) { return; }
                 
-                // Perform logical AND
-                Instructions.And();
+                // Perform logical AND (BIT operands only)
+                Instructions.LogicalAnd();
                 continue;
             }
             
             break; // No more AND operators
+        }
+        
+        SEC  // Success
+    }    
+    // Parse bitwise OR operators (| - numeric operands only)
+    // Input: ZP.CurrentToken = current token
+    // Output: Bitwise result (promoted numeric type) pushed to stack
+    //         ZP.CurrentToken = token after bitwise expression
+    // Munts: Stack, ZP.CurrentToken, parsing variables
+    // Error: Sets ZP.LastError if syntax error or type mismatch
+    parseBitwiseOr()
+    {
+        // Parse left operand (OR has lower precedence, so parse AND first)
+        parseBitwiseAnd();
+        Messages.CheckError();
+        if (NC) { return; }
+        
+        loop
+        {
+            LDA ZP.CurrentToken
+            CMP #Tokens.BITWISE_OR
+            if (Z)
+            {
+                // Get next token for right operand
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NC) { return; }
+                
+                // Parse right operand
+                parseBitwiseAnd();
+                Messages.CheckError();
+                if (NC) { return; }
+                
+                // Perform bitwise OR (numeric operands only)
+                Instructions.BitwiseOr();
+                continue;
+            }
+            
+            break; // No more bitwise OR operators
+        }
+        
+        SEC  // Success
+    }
+    
+    // Parse bitwise AND operators (& - numeric operands only, higher precedence than |)
+    // Input: ZP.CurrentToken = current token
+    // Output: Bitwise result (promoted numeric type) pushed to stack
+    //         ZP.CurrentToken = token after bitwise expression
+    // Munts: Stack, ZP.CurrentToken, parsing variables
+    // Error: Sets ZP.LastError if syntax error or type mismatch
+    parseBitwiseAnd()
+    {
+        // Parse left operand (higher precedence - parse arithmetic operations first)
+        parseAddition();
+        Messages.CheckError();
+        if (NC) { return; }
+        
+        loop
+        {
+            LDA ZP.CurrentToken
+            CMP #Tokens.BITWISE_AND
+            if (Z)
+            {
+                // Get next token for right operand
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NC) { return; }
+                
+                // Parse right operand
+                parseAddition();
+                Messages.CheckError();
+                if (NC) { return; }
+                
+                // Perform bitwise AND (numeric operands only)
+                Instructions.BitwiseAnd();
+                continue;
+            }
+            
+            break; // No more bitwise AND operators
         }
         
         SEC  // Success
