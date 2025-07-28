@@ -606,9 +606,9 @@ parseUnary()
                 
 #ifdef DEBUG
                 // Show parsed number
-                LDA #' ' Tools.OutC();
+                LDA #' ' Tools.COut();
                 LDA ZP.TOPT Tools.PrintType();
-                LDA #':' Tools.OutC
+                LDA #':' Tools.COut();
                 Tools.PrintDecimalWord();
 #endif
                 
