@@ -9,112 +9,82 @@ unit Instructions
     // Check if RHS value is compatible with LHS type
     // Input: ZP.TOP = RHS value, ZP.TOPT = RHS type, ZP.NEXTT = LHS type
     // Output: C set if compatible, NC if incompatible
-    // Munts: A
     CheckRHSTypeCompatibility()
     {
+        PHA  // Preserve A register
+        
         LDA ZP.NEXTT
-        CMP # #BasicType.BIT
+        CMP #BasicType.BIT
         if (Z)
         {
-            // special case for BIT
+            // Special case for BIT type - only allows values 0 or 1
             LDA ZP.TOPH
-            CMP #0
-            if (NZ)
+            if (NZ)  // High byte must be 0
             {
-                CLC    
+                PLA  // Restore A register
+                CLC  // Incompatible
                 return;
             }
             LDA ZP.TOPL
-            CMP # 0
+            CMP #0
             if (Z)
             {
-                SEC
+                PLA  // Restore A register
+                SEC  // Compatible (value is 0)
                 return;
             }
-            CMP # 1
+            CMP #1
             if (Z)
             {
-                SEC
+                PLA  // Restore A register
+                SEC  // Compatible (value is 1)
                 return;
             }
-            CLC
+            PLA  // Restore A register
+            CLC  // Incompatible (value not 0 or 1)
             return;
         }
         else
         {
-#ifdef DEBUG
-            //NOut();
-            //TOut();
-#endif            
+            // For non-BIT types, use general type compatibility checking
             LDA #1  // Arithmetic operation mode
-            Instructions.CheckTypeCompatibility();
-            if (NC)
-            {
-#ifdef DEBUG
-                //LDA #'N' COut(); LDA #' ' COut();
-#endif
-                CLC
-            }
-            else
-            {
-#ifdef DEBUG
-                //LDA #'Y' COut(); LDA #' ' COut();
-#endif
-                SEC
-            }
+            CheckTypeCompatibility();
+            // Carry flag already set by CheckTypeCompatibility
+            
+            PLA  // Restore A register
+            // Note: We restore A after CheckTypeCompatibility because that function
+            // also preserves A, so the stack is still correctly aligned
         }
     }
     
     // Check if two types are compatible for operations
     // Input: ZP.NEXTT = left operand type, ZP.TOPT = right operand type
     //        ZP.NEXT = left value, ZP.TOP = right value (for WORD/INT range check)
-    //        A = operation mode:
+    //        ZP.ACCT = operation mode:
     //          0 = Equality comparison (=, <>) - BIT types allowed, result is BIT
     //          1 = Arithmetic (+, -, *, /, %) - BIT types rejected, result is promoted numeric type
     //          2 = Bitwise/logical (AND, OR) - BIT types allowed, result is operand type or promoted
     //          3 = Ordering comparison (<, >, <=, >=) - BIT types rejected, result is BIT
     // Output: C set if compatible, NC set if TYPE MISMATCH
     //         ZP.NEXTT = result type (updated based on operation mode and type promotion)
-    // Munts: ZP.ACCL
     CheckTypeCompatibility()
     {
-        STA ZP.ACCL  // Save operation mode
+        PHA  // Preserve A register
         
-        // Mode-specific type restrictions
-        LDA ZP.ACCL
-        CMP #1  // Arithmetic operations
-        if (Z)
+        loop // Single exit point for all compatibility checks
         {
-            // Arithmetic: reject BIT types
-            LDA ZP.NEXTT
-            CMP #BasicType.BIT
+            // Mode-specific type restrictions
+            LDA ZP.ACCT  // Get operation mode from zero page
+            CMP #1  // Arithmetic operations
             if (Z)
             {
-                CLC  // Set NC - type mismatch
-                return;
-            }
-            
-            LDA ZP.TOPT
-            CMP #BasicType.BIT
-            if (Z)
-            {
-                CLC  // Set NC - type mismatch
-                return;
-            }
-        }
-        else
-        {
-            LDA ZP.ACCL
-            CMP #3  // Ordering comparison operations
-            if (Z)
-            {
-                // Ordering comparison: reject BIT types
+                // Arithmetic: reject BIT types
                 LDA ZP.NEXTT
                 CMP #BasicType.BIT
                 if (Z)
                 {
                     CLC  // Set NC - type mismatch
-                    return;
+                    break;
                 }
                 
                 LDA ZP.TOPT
@@ -122,212 +92,247 @@ unit Instructions
                 if (Z)
                 {
                     CLC  // Set NC - type mismatch
-                    return;
+                    break;
                 }
             }
-            // Modes 0 (equality) and 2 (bitwise/logical) allow BIT types
-        }
-        
-        // Check for ARRAY and STRING types - not supported in Phase 1
-        LDA ZP.NEXTT
-        CMP #BasicType.ARRAY
-        if (Z)
-        {
-            CLC  // Set NC - type mismatch
-            return;
-        }
-        CMP #BasicType.STRING
-        if (Z)
-        {
-            CLC  // Set NC - type mismatch
-            return;
-        }
-        
-        LDA ZP.TOPT
-        CMP #BasicType.ARRAY
-        if (Z)
-        {
-            CLC  // Set NC - type mismatch
-            return;
-        }
-        CMP #BasicType.STRING
-        if (Z)
-        {
-            CLC  // Set NC - type mismatch
-            return;
-        }
-        
-        // If both types are the same, check compatibility and set result type
-        LDA ZP.NEXTT
-        CMP ZP.TOPT
-        if (Z)
-        {
-            // Set result type based on operation mode
-            LDA ZP.ACCL
-            switch (A)
+            else
             {
-                case 0:  // Equality comparison
-                case 3:  // Ordering comparison
+                LDA ZP.ACCT  // Get operation mode again
+                CMP #3  // Ordering comparison operations
+                if (Z)
                 {
-                    LDA #BasicType.BIT
-                    STA ZP.NEXTT  // Result type = BIT
+                    // Ordering comparison: reject BIT types
+                    LDA ZP.NEXTT
+                    CMP #BasicType.BIT
+                    if (Z)
+                    {
+                        CLC  // Set NC - type mismatch
+                        break;
+                    }
+                    
+                    LDA ZP.TOPT
+                    CMP #BasicType.BIT
+                    if (Z)
+                    {
+                        CLC  // Set NC - type mismatch
+                        break;
+                    }
                 }
-                case 1:  // Arithmetic operations
-                case 2:  // Bitwise/logical operations
-                {
-                    // Result type = operand type (no change needed)
-                }
+                // Modes 0 (equality) and 2 (bitwise/logical) allow BIT types
             }
-            SEC  // Set C - compatible
-            return;
-        }
-        
-        // Different types - check specific compatibility rules and apply type promotion
-        
-        // BYTE vs INT - always compatible, promotes to INT
-        LDA ZP.NEXTT
-        CMP #BasicType.BYTE
-        if (Z)
-        {
-            LDA ZP.TOPT
-            CMP #BasicType.INT
+            
+            // Check for ARRAY and STRING types - not supported in Phase 1
+            LDA ZP.NEXTT
+            CMP #BasicType.ARRAY
             if (Z)
             {
-                setResultTypeForMixedOperation();
-                SEC  // Set C - compatible
-                return;
+                CLC  // Set NC - type mismatch
+                break;
             }
-        }
-        
-        // INT vs BYTE - always compatible, promotes to INT  
-        LDA ZP.NEXTT
-        CMP #BasicType.INT
-        if (Z)
-        {
+            CMP #BasicType.STRING
+            if (Z)
+            {
+                CLC  // Set NC - type mismatch
+                break;
+            }
+            
             LDA ZP.TOPT
+            CMP #BasicType.ARRAY
+            if (Z)
+            {
+                CLC  // Set NC - type mismatch
+                break;
+            }
+            CMP #BasicType.STRING
+            if (Z)
+            {
+                CLC  // Set NC - type mismatch
+                break;
+            }
+            
+            // If both types are the same, check compatibility and set result type
+            LDA ZP.NEXTT
+            CMP ZP.TOPT
+            if (Z)
+            {
+                // Set result type based on operation mode
+                LDA ZP.ACCT  // Get operation mode
+                switch (A)
+                {
+                    case 0:  // Equality comparison
+                    case 3:  // Ordering comparison
+                    {
+                        LDA #BasicType.BIT
+                        STA ZP.NEXTT  // Result type = BIT
+                    }
+                    case 1:  // Arithmetic operations
+                    case 2:  // Bitwise/logical operations
+                    {
+                        // Result type = operand type (no change needed)
+                    }
+                }
+                SEC  // Set C - compatible
+                break;
+            }
+            
+            // Different types - check specific compatibility rules and apply type promotion
+            
+            // BYTE vs INT - always compatible, promotes to INT
+            LDA ZP.NEXTT
             CMP #BasicType.BYTE
             if (Z)
             {
-                setResultTypeForMixedOperation();
-                SEC  // Set C - compatible
-                return;
+                LDA ZP.TOPT
+                CMP #BasicType.INT
+                if (Z)
+                {
+                    LDA ZP.ACCT  // Get operation mode
+                    setResultTypeForMixedOperation();
+                    SEC  // Set C - compatible
+                    break;
+                }
             }
-        }
-        
-        // BYTE vs WORD - always compatible, promotes to WORD
-        LDA ZP.NEXTT
-        CMP #BasicType.BYTE
-        if (Z)
-        {
-            LDA ZP.TOPT
-            CMP #BasicType.WORD
-            if (Z)
-            {
-                LDA #BasicType.WORD
-                STA ZP.NEXTT  // Promote to WORD for all operations except comparisons
-                setResultTypeForMixedOperation();
-                SEC  // Set C - compatible
-                return;
-            }
-        }
-        
-        // WORD vs BYTE - always compatible, promotes to WORD
-        LDA ZP.NEXTT
-        CMP #BasicType.WORD
-        if (Z)
-        {
-            LDA ZP.TOPT
-            CMP #BasicType.BYTE
-            if (Z)
-            {
-                // WORD is already the promoted type (no change to ZP.NEXTT needed)
-                setResultTypeForMixedOperation();
-                SEC  // Set C - compatible
-                return;
-            }
-        }
-        
-        // WORD vs INT - compatible only if INT >= 0 (non-negative), promotes to WORD
-        LDA ZP.NEXTT
-        CMP #BasicType.WORD
-        if (Z)
-        {
-            LDA ZP.TOPT
+            
+            // INT vs BYTE - always compatible, promotes to INT  
+            LDA ZP.NEXTT
             CMP #BasicType.INT
             if (Z)
             {
-                // Check if INT (right operand) is non-negative
-                BIT ZP.TOPH  // Test high bit of INT value
-                if (MI)      // High bit set - negative INT
+                LDA ZP.TOPT
+                CMP #BasicType.BYTE
+                if (Z)
                 {
-                    CLC      // Set NC - type mismatch
-                    return;
+                    LDA ZP.ACCT  // Get operation mode
+                    setResultTypeForMixedOperation();
+                    SEC  // Set C - compatible
+                    break;
                 }
-                // WORD is already the promoted type (no change to ZP.NEXTT needed)
-                setResultTypeForMixedOperation();
-                SEC          // Set C - compatible
-                return;
             }
-        }
-        
-        // INT vs WORD - compatible only if WORD <= 32767 (fits in signed range), promotes to INT
-        LDA ZP.NEXTT
-        CMP #BasicType.INT
-        if (Z)
-        {
-            LDA ZP.TOPT
+            
+            // BYTE vs WORD - always compatible, promotes to WORD
+            LDA ZP.NEXTT
+            CMP #BasicType.BYTE
+            if (Z)
+            {
+                LDA ZP.TOPT
+                CMP #BasicType.WORD
+                if (Z)
+                {
+                    LDA #BasicType.WORD
+                    STA ZP.NEXTT  // Promote to WORD for all operations except comparisons
+                    LDA ZP.ACCT  // Get operation mode
+                    setResultTypeForMixedOperation();
+                    SEC  // Set C - compatible
+                    break;
+                }
+            }
+            
+            // WORD vs BYTE - always compatible, promotes to WORD
+            LDA ZP.NEXTT
             CMP #BasicType.WORD
             if (Z)
             {
-                // Check if WORD (right operand) fits in signed INT range (<= 32767)
-                BIT ZP.TOPH  // Test high bit of WORD value
-                if (MI)      // High bit set - value >= 32768, too large for INT
+                LDA ZP.TOPT
+                CMP #BasicType.BYTE
+                if (Z)
                 {
-                    CLC      // Set NC - type mismatch
-                    return;
+                    // WORD is already the promoted type (no change to ZP.NEXTT needed)
+                    LDA ZP.ACCT  // Get operation mode
+                    setResultTypeForMixedOperation();
+                    SEC  // Set C - compatible
+                    break;
                 }
-                // WORD fits in INT range, INT is already the target type (no change to ZP.NEXTT needed)
-                setResultTypeForMixedOperation();
-                SEC          // Set C - compatible
-                return;
             }
-        }
-        
-        // INT vs WORD - compatible only if INT >= 0 (non-negative), promotes to WORD
-        LDA ZP.NEXTT
-        CMP #BasicType.INT
-        if (Z)
-        {
-            LDA ZP.TOPT
+            
+            // WORD vs INT - compatible only if INT >= 0 (non-negative), promotes to WORD
+            LDA ZP.NEXTT
             CMP #BasicType.WORD
             if (Z)
             {
-                // Check if INT (left operand) is non-negative
-                BIT ZP.NEXTH  // Test high bit of INT value
-                if (MI)       // High bit set - negative INT
+                LDA ZP.TOPT
+                CMP #BasicType.INT
+                if (Z)
                 {
-                    CLC       // Set NC - type mismatch
-                    return;
+                    // Check if INT (right operand) is non-negative
+                    BIT ZP.TOPH  // Test sign bit of INT value
+                    if (MI)      // High bit set - negative INT
+                    {
+                        CLC      // Set NC - type mismatch
+                        break;
+                    }
+                    // WORD is already the promoted type (no change to ZP.NEXTT needed)
+                    LDA ZP.ACCT  // Get operation mode
+                    setResultTypeForMixedOperation();
+                    SEC          // Set C - compatible
+                    break;
                 }
-                LDA #BasicType.WORD
-                STA ZP.NEXTT  // Promote to WORD
-                setResultTypeForMixedOperation();
-                SEC           // Set C - compatible
-                return;
             }
-        }
+            
+            // INT vs WORD - compatible only if WORD <= 32767 (fits in signed range), promotes to INT
+            LDA ZP.NEXTT
+            CMP #BasicType.INT
+            if (Z)
+            {
+                LDA ZP.TOPT
+                CMP #BasicType.WORD
+                if (Z)
+                {
+                    // Check if WORD (right operand) fits in signed INT range (<= 32767)
+                    BIT ZP.TOPH  // Test high bit of WORD value
+                    if (MI)      // High bit set - value >= 32768, too large for INT
+                    {
+                        CLC      // Set NC - type mismatch
+                        break;
+                    }
+                    // WORD fits in INT range, INT is already the target type (no change to ZP.NEXTT needed)
+                    LDA ZP.ACCT  // Get operation mode
+                    setResultTypeForMixedOperation();
+                    SEC          // Set C - compatible
+                    break;
+                }
+            }
+            
+            // INT vs WORD - compatible only if INT >= 0 (non-negative), promotes to WORD
+            LDA ZP.NEXTT
+            CMP #BasicType.INT
+            if (Z)
+            {
+                LDA ZP.TOPT
+                CMP #BasicType.WORD
+                if (Z)
+                {
+                    // Check if INT (left operand) is non-negative
+                    BIT ZP.NEXTH  // Test high bit of INT value
+                    if (MI)       // High bit set - negative INT
+                    {
+                        CLC       // Set NC - type mismatch
+                        break;
+                    }
+                    LDA #BasicType.WORD
+                    STA ZP.NEXTT  // Promote to WORD
+                    LDA ZP.ACCT  // Get operation mode
+                    setResultTypeForMixedOperation();
+                    SEC           // Set C - compatible
+                    break;
+                }
+            }
+            
+            // All other combinations are incompatible (STRING with numbers, etc.)
+            CLC  // Set NC - type mismatch
+            break;
+        } // end of single exit loop
         
-        // All other combinations are incompatible (STRING with numbers, etc.)
-        CLC  // Set NC - type mismatch
+        PLA  // Restore A register
     }
     
     // Set result type for mixed-type operations
-    // Input: ZP.ACCL = operation mode, ZP.NEXTT = promoted operand type
+    // Input: A = operation mode (0=equality, 1=arithmetic, 2=bitwise, 3=ordering)
+    //        ZP.NEXTT = promoted operand type
     // Output: ZP.NEXTT = final result type
-    // Preserves: Everything
     setResultTypeForMixedOperation()
     {
-        LDA ZP.ACCL
+        PHA  // Preserve A register
+        
         switch (A)
         {
             case 0:  // Equality comparison
@@ -342,6 +347,8 @@ unit Instructions
                 // Result type = promoted operand type (ZP.NEXTT already set correctly)
             }
         }
+        
+        PLA  // Restore A register
     }
     
     // Shared subtraction logic helper

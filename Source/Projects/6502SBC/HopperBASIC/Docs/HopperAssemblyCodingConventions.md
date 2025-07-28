@@ -138,6 +138,36 @@ LDA #Objects.SymbolType.VARIABLE
 LDA #Serial.Status.Ready  // If multiple Status enums exist
 ```
 
+### 10. Stick to Real 6502 Instructions (RULE #10)
+- **Use only actual 6502 assembly instructions** - no made-up addressing modes
+- **No stack-relative addressing** - the 6502 doesn't support `LDA offset,S` syntax
+- **No extended addressing modes** that don't exist on the real processor
+- **Valid 6502 stack operations only**:
+```hopper
+// Correct - real 6502 instructions:
+PHA              // Push accumulator
+PLA              // Pull accumulator  
+PHP              // Push processor status
+PLP              // Pull processor status
+TSX              // Transfer stack pointer to X
+TXS              // Transfer X to stack pointer
+
+// FORBIDDEN - not real 6502:
+LDA 0x01, S      // Stack-relative addressing doesn't exist
+LDA (offset,S)   // This addressing mode doesn't exist
+```
+
+- **Alternative approaches for parameter passing**:
+```hopper
+// Good - use zero page or registers:
+STA ZP.TEMP      // Store parameter in zero page
+// ... call function ...
+LDA ZP.TEMP      // Retrieve parameter
+
+// Good - use registers when possible:
+LDX #operationMode  // Pass in X register
+```
+
 ## Hopper Assembly Syntax Rules
 
 ### Constant Expressions in Operands
