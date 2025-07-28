@@ -335,30 +335,6 @@ unit Instructions
                 }
             }
             
-            // INT vs WORD - compatible only if WORD <= 32767 (fits in signed range), promotes to INT
-            LDA ZP.NEXTT
-            CMP #BasicType.INT
-            if (Z)
-            {
-                LDA ZP.TOPT
-                CMP #BasicType.WORD
-                if (Z)
-                {
-                    // Check if WORD (right operand) fits in signed INT range (<= 32767)
-                    BIT ZP.TOPH  // Test high bit of WORD value
-                    if (MI)      // High bit set - value >= 32768, too large for INT
-                    {
-                        CLC      // Set NC - type mismatch
-                        break;
-                    }
-                    // WORD fits in INT range, INT is already the target type (no change to ZP.NEXTT needed)
-                    LDA ZP.ACCT  // Get operation mode
-                    setResultTypeForMixedOperation();
-                    SEC          // Set C - compatible
-                    break;
-                }
-            }
-            
             // INT vs WORD - compatible only if INT >= 0 (non-negative), promotes to WORD
             LDA ZP.NEXTT
             CMP #BasicType.INT
@@ -874,30 +850,45 @@ unit Instructions
             if (Z)
             {
                 // INT - signed comparison: NEXT < TOP?
-                // Calculate TOP - NEXT and check if result > 0
-                SEC
-                LDA ZP.TOPL
-                SBC ZP.NEXTL
-                STA ZP.TOPL
-                LDA ZP.TOPH
-                SBC ZP.NEXTH
-                STA ZP.TOPH
-                
-                ASL           // sign bit into carry
-                
-                LDX #0  // Assume NEXT >= TOP
-                loop
+                LDX #0  // Assume NEXT >= TOP (not less than)
+                LDA ZP.NEXTH
+                CMP ZP.TOPH
+                if (Z)
                 {
-                    if (C) { break; }  // Negative result means NEXT >= TOP
-                    // Zero or positive result
-                    LDA ZP.TOPL
-                    ORA ZP.TOPH
-                    if (Z)
+                    // High bytes equal, compare low bytes unsigned
+                    LDA ZP.NEXTL
+                    CMP ZP.TOPL
+                    if (C)  // NEXT < TOP
                     {
-                        break;  // Zero result means NEXT == TOP
+                        LDX #1  // NEXT < TOP
                     }
-                    LDX #1  // Positive result means NEXT < TOP
-                    break;
+                }
+                else
+                {
+                    // High bytes different - need signed comparison
+                    EOR ZP.TOPH    // XOR to check if signs differ
+                    if (MI)        // Signs differ
+                    {
+                        // If signs differ, check NEXT's sign
+                        BIT ZP.NEXTH
+                        if (MI)    // NEXT is negative, TOP is positive
+                        {
+                            LDX #1  // NEXT < TOP
+                        }
+                        // else NEXT is positive, TOP is negative: NEXT > TOP (X stays 0)
+                    }
+                    else
+                    {
+                        // Same signs, use carry from high byte comparison
+                        if (C)     // NEXT >= TOP (unsigned when same signs)
+                        {
+                            // X stays 0 (NEXT >= TOP)
+                        }
+                        else
+                        {
+                            LDX #1  // NEXT < TOP
+                        }
+                    }
                 }
             }
             else
@@ -960,30 +951,44 @@ unit Instructions
             if (Z)
             {
                 // INT - signed comparison: NEXT > TOP?
-                // Calculate NEXT - TOP and check if result > 0
-                SEC
-                LDA ZP.NEXTL
-                SBC ZP.TOPL
-                STA ZP.TOPL
+                LDX #0  // Assume NEXT <= TOP (not greater than)
                 LDA ZP.NEXTH
-                SBC ZP.TOPH
-                STA ZP.TOPH
-                
-                ASL           // sign bit into carry
-                
-                LDX #0  // Assume NEXT <= TOP
-                loop
+                CMP ZP.TOPH
+                if (Z)
                 {
-                    if (C) { break; }  // Negative result means NEXT <= TOP
-                    // Zero or positive result
-                    LDA ZP.TOPL
-                    ORA ZP.TOPH
-                    if (Z)
+                    // High bytes equal, compare low bytes unsigned
+                    LDA ZP.NEXTL
+                    CMP ZP.TOPL
+                    if (NZ)     // NEXT != TOP?
                     {
-                        break;  // Zero result means NEXT == TOP
+                        if (C)  // NEXT >= TOP, and we know NEXT != TOP, so NEXT > TOP
+                        {
+                            LDX #1  // NEXT > TOP
+                        }
                     }
-                    LDX #1  // Positive result means NEXT > TOP
-                    break;
+                }
+                else
+                {
+                    // High bytes different - need signed comparison
+                    EOR ZP.TOPH    // XOR to check if signs differ
+                    if (MI)        // Signs differ
+                    {
+                        // If signs differ, check TOP's sign  
+                        BIT ZP.TOPH
+                        if (MI)    // TOP is negative, NEXT is positive
+                        {
+                            LDX #1  // NEXT > TOP
+                        }
+                        // else TOP is positive, NEXT is negative: NEXT < TOP (X stays 0)
+                    }
+                    else
+                    {
+                        // Same signs, use carry from high byte comparison
+                        if (C)     // NEXT >= TOP (unsigned when same signs)
+                        {
+                            LDX #1  // NEXT > TOP (since high bytes differ)
+                        }
+                    }
                 }
             }
             else
