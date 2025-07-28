@@ -575,37 +575,48 @@ unit Instructions
     // Modulo operation (pops two operands, pushes result)
     // Input: Stack contains two operands (right operand on top)
     // Output: Remainder (left % right) pushed to stack
-    // Munts: Stack, ZP.TOP, ZP.NEXT, ZP.ACC, ZP.ACCT, ZP.TOPT, ZP.NEXTT, ZP.FSIGN
     // Error: Sets ZP.LastError if type mismatch or division by zero
     Modulo()
     {
-        // Pop two operands
-        Stacks.PopTopNext();
+        PHA
+        PHY
         
-        LDA #1  // Arithmetic operation
-        CheckTypeCompatibility();
-        
-        if (NC)  // Type mismatch
+        loop // Single exit point for cleanup
         {
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            return;
-        }
-        LDA ZP.NEXTT
-        CMP # BasicType.INT
-        if (Z)
-        {
-            // INT - handle signed modulo
-            doSigns();
-        }
-        // ACC = NEXT % TOP
-        IntMath.DivMod();
+            Stacks.PopTopNext();
             
-        LDA ZP.NEXTT
-        STA ZP.ACCT
-        Stacks.PushACC(); // munts Y, A
+            LDA #1  // Arithmetic operation
+            CheckTypeCompatibility();
+            
+            if (NC)  // Type mismatch
+            {
+                LDA #(Messages.TypeMismatch % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.TypeMismatch / 256)
+                STA ZP.LastErrorH
+                break; // Error exit
+            }
+            
+            LDA ZP.NEXTT
+            CMP # BasicType.INT
+            if (Z)
+            {
+                // INT - handle signed modulo
+                doSigns();
+            }
+            
+            // ACC = NEXT % TOP
+            IntMath.DivMod();
+                
+            LDA ZP.NEXTT
+            STA ZP.ACCT
+            Stacks.PushACC();  // Modifies Y internally
+            
+            break; // Success exit
+        }
+        
+        PLY
+        PLA
     }
     
     // Equality comparison operation (pops two operands, pushes BIT result)
