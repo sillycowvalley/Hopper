@@ -114,6 +114,8 @@ unit Statement
                     STA ZP.LastErrorL
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
+                    
+                    Messages.StorePC(); // 6502 PC -> IDY
     
                     CLC  // Error
                     break;
@@ -229,6 +231,9 @@ unit Statement
             STA ZP.LastErrorL
             LDA #(Messages.SyntaxError / 256)
             STA ZP.LastErrorH
+            
+            Messages.StorePC(); // 6502 PC -> IDY
+            
             CLC  // Error
             return;
         }
@@ -312,6 +317,8 @@ unit Statement
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
         
+        Messages.StorePC(); // 6502 PC -> IDY
+        
 #ifdef DEBUG
         LDA #'R'
         Tools.COut();
@@ -335,6 +342,9 @@ unit Statement
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
+        
+        Messages.StorePC(); // 6502 PC -> IDY
+        
         CLC  // Error
         BRK
     }
@@ -351,6 +361,9 @@ unit Statement
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
+        
+        Messages.StorePC(); // 6502 PC -> IDY
+        
         CLC  // Error
         BRK
     }
@@ -454,6 +467,8 @@ unit Statement
                     STA ZP.LastErrorL
                     LDA #(Messages.IllegalVariableName  / 256)
                     STA ZP.LastErrorH
+                    
+                    Messages.StorePC(); // 6502 PC -> IDY
                 }
                 else
                 {
@@ -461,6 +476,8 @@ unit Statement
                     STA ZP.LastErrorL
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
+                    
+                    Messages.StorePC(); // 6502 PC -> IDY
                 }
                 
                 CLC
@@ -487,6 +504,9 @@ unit Statement
                     STA ZP.LastErrorL
                     LDA #(Messages.FunctionExists / 256)
                     STA ZP.LastErrorH
+                    
+                    Messages.StorePC(); // 6502 PC -> IDY
+                    
                     CLC  // Error
                     break;
                 }
@@ -510,6 +530,9 @@ unit Statement
                         STA ZP.LastErrorL
                         LDA #(Messages.ConstantExists / 256)
                         STA ZP.LastErrorH
+                        
+                        Messages.StorePC(); // 6502 PC -> IDY
+                        
                         CLC  // Error
                         break;
                     }
@@ -585,6 +608,9 @@ unit Statement
                                 STA ZP.LastErrorL
                                 LDA #(Messages.ConstantExpressionExpected / 256)
                                 STA ZP.LastErrorH
+                                
+                                Messages.StorePC(); // 6502 PC -> IDY
+                                
                                 CLC
                                 break; // error exit
                             }
@@ -602,6 +628,9 @@ unit Statement
                             STA ZP.LastErrorL
                             LDA #(Messages.ConstantExpressionExpected / 256)
                             STA ZP.LastErrorH
+                            
+                            Messages.StorePC(); // 6502 PC -> IDY
+                            
                             CLC
                             break; // error exit
                         }
@@ -618,6 +647,9 @@ unit Statement
                         STA ZP.LastErrorL
                         LDA #(Messages.SyntaxError / 256)
                         STA ZP.LastErrorH
+                        
+                        Messages.StorePC(); // 6502 PC -> IDY
+                        
                         CLC
                         break; // error exit
                     }
@@ -658,6 +690,9 @@ unit Statement
                     STA ZP.LastErrorL
                     LDA #(Messages.TypeMismatch / 256)
                     STA ZP.LastErrorH
+                    
+                    Messages.StorePC(); // 6502 PC -> IDY
+                    
                     CLC // what's this?
                     break;
                 }
@@ -702,6 +737,9 @@ unit Statement
                 STA ZP.LastErrorL
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 break;
             }
             
@@ -786,6 +824,9 @@ unit Statement
                 STA ZP.LastErrorL
                 LDA #(Messages.OutOfMemory / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 CLC
                 break;
             }

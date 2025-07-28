@@ -82,6 +82,17 @@ unit Tokenizer
         COLON      = 0x84, 
     }
     
+    enum IdentifierType
+    {
+        Undefined,
+        Global,
+        Constant,
+        Function,
+        Argument,
+        Local,
+        Keyword
+    }
+    
     // Compact keyword table: length, token, chars...
     const byte[] keywords = {
         3, Tokens.NEW, 'N', 'E', 'W',
@@ -123,14 +134,22 @@ unit Tokenizer
     // Modifies: Processor flags only
     IsKeyword()
     {
-        CMP #(Tokens.lastKeyword + 1)
-        if (C)  // >= lastKeyword + 1
+        CMP #Tokens.IDENTIFIER
+        if (Z)
         {
-            CLC  // Not a keyword
+            CLC  // Not a keyword    
         }
         else
         {
-            SEC  // Is a keyword
+            CMP #(Tokens.lastKeyword + 1)
+            if (C)  // >= lastKeyword + 1
+            {
+                CLC  // Not a keyword
+            }
+            else
+            {
+                SEC  // Is a keyword
+            }
         }
     }
     
@@ -298,6 +317,9 @@ unit Tokenizer
                     STA ZP.LastErrorL
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
+                    
+                    Messages.StorePC(); // 6502 PC -> IDY
+                    
                     CLC
                     break;
                 }
@@ -310,6 +332,9 @@ unit Tokenizer
                     STA ZP.LastErrorL
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
+                    
+                    Messages.StorePC(); // 6502 PC -> IDY
+                    
                     CLC
                     break;
                 }
@@ -588,6 +613,9 @@ unit Tokenizer
                     STA ZP.LastErrorL
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
+                    
+                    Messages.StorePC(); // 6502 PC -> IDY
+                    
                     CLC  // Error
                     return;
                 }
@@ -670,6 +698,9 @@ unit Tokenizer
                         STA ZP.LastErrorL
                         LDA #(Messages.SyntaxError / 256)
                         STA ZP.LastErrorH
+                        
+                        Messages.StorePC(); // 6502 PC -> IDY
+                        
                         CLC  // Error
                         return;
                     }
@@ -708,6 +739,9 @@ unit Tokenizer
                             STA ZP.LastErrorL
                             LDA #(Messages.SyntaxError / 256)
                             STA ZP.LastErrorH
+                            
+                            Messages.StorePC(); // 6502 PC -> IDY
+                            
                             CLC  // Error
                             return;
                         }
@@ -993,6 +1027,9 @@ unit Tokenizer
                 STA ZP.LastErrorL
                 LDA #(Messages.SyntaxError / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 return;
             }
             
@@ -1199,6 +1236,8 @@ unit Tokenizer
     // Munts: ZP.TOP
     GetTokenString()
     {
+        PHA
+        
         // Set up pointer to saved literal position in token buffer
         CLC
         LDA #(Address.BasicTokenizerBuffer & 0xFF)
@@ -1207,6 +1246,8 @@ unit Tokenizer
         LDA #(Address.BasicTokenizerBuffer >> 8)
         ADC ZP.TokenLiteralPosH
         STA ZP.TOPH
+        
+        PLA
     }
     
 }

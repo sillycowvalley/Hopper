@@ -33,6 +33,9 @@ unit Variables
                 STA ZP.LastErrorL
                 LDA #(Messages.SyntaxError / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 CLC  // Error
                 break;
             }
@@ -102,6 +105,8 @@ unit Variables
             LDA #(Messages.TypeMismatch / 256)
             STA ZP.LastErrorH
             
+            Messages.StorePC(); // 6502 PC -> IDY
+            
             CLC  // Error
             break;
         } // end of single exit block
@@ -137,6 +142,9 @@ unit Variables
                     STA ZP.LastErrorL
                     LDA #(Messages.TypeMismatch / 256)
                     STA ZP.LastErrorH
+                    
+                    Messages.StorePC(); // 6502 PC -> IDY
+                    
                     CLC  // Error
                     break;
                 }
@@ -196,6 +204,9 @@ unit Variables
                 STA ZP.LastErrorL
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 CLC  // Error
                 break;
             }
@@ -267,6 +278,9 @@ unit Variables
                 STA ZP.LastErrorL
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 CLC  // Error
             }
         }
@@ -320,6 +334,9 @@ unit Variables
             STA ZP.LastErrorL
             LDA #(Messages.TypeMismatch / 256)
             STA ZP.LastErrorH
+            
+            Messages.StorePC(); // 6502 PC -> IDY
+            
             CLC  // Error
             break;
         } // end of single exit block

@@ -661,6 +661,9 @@ unit Expression
                         STA ZP.LastErrorL
                         LDA #(Messages.SyntaxError / 256)
                         STA ZP.LastErrorH
+                        
+                        Messages.StorePC(); // 6502 PC -> IDY
+                        
                         CLC  // Error
                         break;
                     }
@@ -677,6 +680,8 @@ unit Expression
                     STA ZP.LastErrorL
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
+                    
+                    Messages.StorePC(); // 6502 PC -> IDY
                     
                     CLC  // Error
                     break;
@@ -695,6 +700,97 @@ unit Expression
     #endif
     }
     
+        
+    // Input: A ZP.CurrentToken == Tokens.IDENTIFIER
+    // Output: symbol or function in IDX, A = IndentifierType
+    
+    ResolveIdentifier()
+    {
+        PHX
+        PHY
+        
+        loop // Single exit block for clean error handling
+        {
+            // Get the identifier name for lookup
+            Tokenizer.GetTokenString();  // Result in ZP.TOP
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            Tokenizer.IsKeyword();
+            if (C)
+            {
+                LDA #'K' Tools.COut();
+                
+                LDA # IdentifierType.Keyword
+                break; // success
+            }
+            
+            STZ ZP.SymbolIteratorFilter  // Accept any symbol type (variable or constant)
+            Variables.Find(); // ZP.IDX = symbol node address
+            if (C) // Symbol found
+            {
+                LDA ZP.ACCT
+                AND #0xF0  // Extract symbol type (high nibble)
+                CMP # (SymbolType.VARIABLE << 4)
+                if (Z)
+                { 
+                    LDA # 'V' Tools.COut();
+                    
+                    LDA # IdentifierType.Global
+                    break; // success
+                }
+                CMP # (SymbolType.CONSTANT << 4)
+                if (Z)
+                { 
+                    LDA # 'C' Tools.COut();
+                    
+                    LDA # IdentifierType.Constant
+                    break; // success
+                }
+                // what's this?
+                LDA #(Messages.InternalError % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.InternalError / 256)
+                STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
+                CLC
+            }
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            // function by same name exists? name pointer in TOP
+            LDX #ZP.FunctionsList
+            Objects.Find();
+            if (C)  
+            {
+                LDA #'F' Tools.COut();
+                
+                LDA # IdentifierType.Function
+                break; // success
+            }
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            LDA #'U' Tools.COut();
+            
+            LDA #(Messages.UndefinedIdentifier % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.UndefinedIdentifier / 256)
+            STA ZP.LastErrorH
+            
+            Messages.StorePC(); // 6502 PC -> IDY
+            
+            LDA # IdentifierType.Undefined
+            CLC  // undefined identifier
+            break;
+        } // end of single exit block
+        
+        PLY
+        PLX
+    }
+    
     // Helper: Parse identifier (variable or constant lookup)
     // Input: ZP.CurrentToken = Tokens.IDENTIFIER
     // Output: Identifier value pushed to stack, ZP.CurrentToken advanced
@@ -708,23 +804,31 @@ unit Expression
         
         loop // Single exit block for clean error handling
         {
-            // Get the identifier name for lookup
-            Tokenizer.GetTokenString();  // Result in ZP.TOP
+            ResolveIdentifier();
             Messages.CheckError();
-            if (NC) { break; }
-            
-            STZ ZP.SymbolIteratorFilter  // Accept any symbol type (variable or constant)
-            Variables.Find(); // ZP.IDX = symbol node address
-            
-            if (NC)  // Symbol not found
+            if (NC)
             {
-                LDA #(Messages.UndefinedIdentifier % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.UndefinedIdentifier / 256)
-                STA ZP.LastErrorH
-                
-                CLC  // Set NC
-                break;
+                Messages.StorePC(); // 6502 PC -> IDY
+                break; 
+            }
+            
+            CMP # IdentifierType.Global
+            if (NZ)
+            {
+                CMP # IdentifierType.Constant
+                if (NZ)
+                {
+                    // function, local, argument?
+                    LDA #(Messages.NotImplemented % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.NotImplemented / 256)
+                    STA ZP.LastErrorH
+                    
+                    Messages.StorePC(); // 6502 PC -> IDY
+                    
+                    CLC  // Set NC
+                    break;
+                }
             }
             
             // Get the value and type from found symbol

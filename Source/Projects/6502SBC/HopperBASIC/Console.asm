@@ -92,6 +92,9 @@ unit Console
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
+        
+        Messages.StorePC(); // 6502 PC -> IDY
+        
         BRK
     }
     
@@ -103,6 +106,9 @@ unit Console
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
+        
+        Messages.StorePC(); // 6502 PC -> IDY
+        
         BRK
     }
     
@@ -114,6 +120,9 @@ unit Console
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
+        
+        Messages.StorePC(); // 6502 PC -> IDY
+        
         BRK
     }
     
@@ -340,6 +349,9 @@ unit Console
                     STA ZP.LastErrorL
                     LDA #(Messages.NotImplemented / 256)
                     STA ZP.LastErrorH
+                    
+                    Messages.StorePC(); // 6502 PC -> IDY
+                    
                     BRK
                 }
                 default:
@@ -367,6 +379,9 @@ unit Console
             STA ZP.LastErrorL
             LDA #(Messages.SyntaxError / 256)
             STA ZP.LastErrorH
+            
+            Messages.StorePC(); // 6502 PC -> IDY
+            
             CLC
             return;
         }

@@ -19,6 +19,7 @@ unit Messages
     // Error messages
     const string SyntaxError    = "SYNTAX ERROR";
     const string NotImplemented = "NOT IMPLEMENTED";
+    const string InternalError  = "INTERNAL ERROR";
     
     const string TypeMismatch   = "TYPE MISMATCH";
     const string FunctionExists = "FUNCTION EXISTS";
@@ -34,6 +35,39 @@ unit Messages
     const string ConstantExpected  = "CONSTANT EXPECTED";
     const string ConstantExpressionExpected  = "CONSTANT EXPRESSION EXPECTED";
     const string IllegalVariableName  = "ILLEGAL VARIABLE NAME";
+    
+    
+    // PC -> IDY
+    //
+    // Note: don't mess with the stack on entry, you'll break this method
+    StorePC()
+    {
+        // PC is now on stack - 1
+        TSX           // Transfer Stack Pointer to X
+        INX
+        
+        LDA 0x0101,X  // Get return address high byte from stack
+        STA ZP.IDYH   // Store in your PC variable
+        LDA 0x0100,X  // Get return address low byte from stack  
+        STA ZP.IDYL   // Store in your PC variable
+        
+        // IDY -= 2
+        SEC
+        LDA ZP.IDYL
+        SBC #2
+        STA ZP.IDYL
+        LDA ZP.IDYH
+        SBC #0
+        STA ZP.IDYH
+        
+        /*
+        Tools.DumpVariables();
+        LDA #1
+        DumpPage();
+        */
+        
+        return;
+    }
     
     // Clear error state
     // Input: None
@@ -100,6 +134,23 @@ unit Messages
         LDA ZP.LastErrorH
         STA ZP.ACCH
         Tools.PrintStringACC();
+#ifdef DEBUG
+        // 6502 PC
+        LDA #' '
+        Serial.WriteChar();
+        LDA #'('
+        Serial.WriteChar();
+        LDA #'0'
+        Serial.WriteChar();
+        LDA #'x'
+        Serial.WriteChar();
+        LDA ZP.IDYH
+        Serial.HexOut();
+        LDA ZP.IDYL
+        Serial.HexOut();
+        LDA #')'
+        Serial.WriteChar();
+#endif        
         LDA #'\n'
         Serial.WriteChar(); // '\n' suffix
         

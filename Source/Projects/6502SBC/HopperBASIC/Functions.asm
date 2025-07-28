@@ -37,6 +37,9 @@ unit Functions
                 STA ZP.LastErrorL
                 LDA #(Messages.SyntaxError / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 CLC  // Error
                 break;
             }
@@ -92,6 +95,9 @@ unit Functions
             STA ZP.LastErrorL
             LDA #(Messages.TypeMismatch / 256)
             STA ZP.LastErrorH
+            
+            Messages.StorePC(); // 6502 PC -> IDY
+            
             CLC  // Error
             break;
         } // end of single exit block

@@ -439,6 +439,9 @@ unit Instructions
                 STA ZP.LastErrorL
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 break;
             }
             
@@ -487,6 +490,9 @@ unit Instructions
                 STA ZP.LastErrorL
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 break;
             }
             
@@ -666,6 +672,9 @@ unit Instructions
                 STA ZP.LastErrorL
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 break;
             }
             
@@ -727,6 +736,9 @@ unit Instructions
                 STA ZP.LastErrorL
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 break;
             }
             
@@ -786,6 +798,9 @@ unit Instructions
                 STA ZP.LastErrorL
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 break;
             }
             
@@ -835,6 +850,9 @@ unit Instructions
                 STA ZP.LastErrorL
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 break;
             }
             
@@ -885,6 +903,9 @@ unit Instructions
                 STA ZP.LastErrorL
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 break;
             }
             
@@ -1060,6 +1081,9 @@ unit Instructions
                 STA ZP.LastErrorL
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 break;
             }
             
@@ -1119,6 +1143,9 @@ unit Instructions
                 STA ZP.LastErrorL
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 break;
             }
             
@@ -1179,6 +1206,9 @@ unit Instructions
                 STA ZP.LastErrorL
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 break;
             }
             
@@ -1239,6 +1269,9 @@ unit Instructions
                 STA ZP.LastErrorL
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 break;
             }
             
@@ -1297,6 +1330,9 @@ unit Instructions
                 STA ZP.LastErrorL
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 break;
             }
             
@@ -1343,6 +1379,9 @@ unit Instructions
                 STA ZP.LastErrorL
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 break;
             }
             
@@ -1389,6 +1428,9 @@ unit Instructions
                 STA ZP.LastErrorL
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 break;
             }
             
@@ -1451,6 +1493,9 @@ unit Instructions
                 STA ZP.LastErrorL
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 break;
             }
             
@@ -1511,6 +1556,9 @@ unit Instructions
                 STA ZP.LastErrorL
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
                 break;
             }
             
