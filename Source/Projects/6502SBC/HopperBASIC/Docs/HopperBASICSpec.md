@@ -1,15 +1,14 @@
-# Hopper BASIC Specification v2.2
+# Hopper BASIC Specification v2.3
 
 ## Project Objectives
 
-**Primary Goal**: Create a simple, elegant BASIC interpreter for 6502 systems that fits in 8K ROM and provides an interactive development environment.
+**Primary Goal**: Create a simple, elegant BASIC interpreter for 6502 systems that fits in 16K ROM and provides an interactive development environment (self-hosted).
 
 **Design Principles**:
 - **Simplicity over features** - Classic BASIC functionality only
 - **Direct execution** - No bytecode, no complex compilation
 - **Immediate feedback** - Interactive development with instant results
-- **Small footprint** - Target 8K ROM, minimal RAM usage
-- **Educational value** - Code should be readable and understandable
+- **Small footprint** - Target 16K ROM, minimal RAM usage
 
 ---
 
@@ -27,9 +26,14 @@
 - ✅ **`BYE`** - Exit interpreter
 
 ### Variable Declaration Commands
-- ✅ **`INT name [= value]`** - Create signed integer variable (-32768 to 32767) **(PARTIALLY IMPLEMENTED)**
-- ✅ **`WORD name [= value]`** - Create unsigned integer variable (0 to 65535) **(PARTIALLY IMPLEMENTED)**
-- ✅ **`BIT name [= value]`** - Create boolean variable (0 or 1) **(PARTIALLY IMPLEMENTED)**
+- ✅ **`INT name [= value]`** - Create signed integer variable (-32768 to 32767) **(IMPLEMENTED)**
+- ✅ **`WORD name [= value]`** - Create unsigned integer variable (0 to 65535) **(IMPLEMENTED)**
+- ✅ **`BIT name [= value]`** - Create boolean variable (0 or 1) **(IMPLEMENTED)**
+
+### Constant Declaration Commands
+- ✅ **`CONST INT name = value`** - Define immutable signed integer constant **(IMPLEMENTED)**
+- ✅ **`CONST WORD name = value`** - Define immutable unsigned integer constant **(IMPLEMENTED)**
+- ✅ **`CONST BIT name = value`** - Define immutable boolean constant **(IMPLEMENTED)**
 
 ### Definition Commands
 - ❌ **`FUNC name(params)`** - Start function definition (ends with `ENDFUNC`)
@@ -72,7 +76,6 @@
 - ✅ **Mixed-type operations**: BYTE↔INT, BYTE↔WORD, INT↔WORD (when non-negative)
 
 #### Control Flow
-- ✅ **`IF expr THEN statement`** - Conditional execution (expr must evaluate to BIT type)
 - ❌ **`RETURN [expr]`** - Return from function (stub implemented)
 - ❌ **`END`** - End main program (stub implemented)
 
@@ -109,7 +112,7 @@
 ### Technical Implementation
 - **Tokenized storage**: Programs saved in tokenized form to save space
 - **Complete sessions**: Variables, functions, and main program all saved together
-- **EEPROM integration**: Use existing I2C buffer and routines for storage
+- **EEPROM integration**: Use existing Hopper 6502 SBC I2C library for storage
 - **Efficient format**: Minimal overhead for maximum program storage
 
 ---
@@ -118,17 +121,17 @@
 
 ### Additional Types
 - ❌ **`BYTE name [= value]`** - 8-bit unsigned (0 to 255) for hardware I/O
-- ❌ **`STRING name [= "value"]`** - Text handling with string operations
-- ❌ **Arrays**: `INT numbers[10]` - single-dimensional arrays
+- ❌ **`STRING name [= "value"]`** - Text handling with string operations (maximum length of 255 characters)
+- ❌ **Arrays**: `INT numbers[10]` - single-dimensional arrays of integral types (no string arrays)
 
 ### Constants
-- ❌ **`CONST INT name = value`** - Define immutable signed integer constants
-- ❌ **`CONST WORD name = value`** - Define immutable unsigned integer constants
-- ❌ **`CONST BIT name = value`** - Define immutable boolean constants
+- ✅ **`CONST INT name = value`** - Define immutable signed integer constants **(IMPLEMENTED)**
+- ✅ **`CONST WORD name = value`** - Define immutable unsigned integer constants **(IMPLEMENTED)**
+- ✅ **`CONST BIT name = value`** - Define immutable boolean constants **(IMPLEMENTED)**
 - ❌ **`CONST BYTE name = value`** - Define immutable byte constants
 
 ### Enhanced I/O
-- ❌ **`INPUT var`** - Read value from keyboard into variable
+- ❌ **`INPUT var`** - Read value from serial console into variable
 - ❌ **`INPUT "prompt",var`** - Read with prompt
 - ❌ **`INPUT var1, var2, ...`** - Read multiple values in one statement
 - ❌ **`PRINT expr[,expr...]`** - Multiple values separated by spaces, newline at end
@@ -137,6 +140,7 @@
 - ❌ **`PRINT expr,`** - Output value followed by space, no newline
 
 ### Extended Control Flow
+- ❌ **`IF expr THEN statement`** - Conditional execution (proper BIT type checking needed)
 - ❌ **`FOR var = start TO end [STEP increment]`** - Counted loops
 - ❌ **`NEXT var`** - End of FOR loop
 - ❌ **`WHILE expr`...`WEND`** - Conditional loops
@@ -156,15 +160,7 @@
 - ❌ **`PWM(pin, value)`** - Analog output
 - ❌ **`DELAY(milliseconds)`** - Pause execution
 - ❌ **`PINMODE(pin, mode)`** - Configure pin as input/output
-- ❌ **`MILLIS()`** - Get system milliseconds since startup (returns WORD)
-- ❌ **`MILLISHI()`** - Get high word of system milliseconds (returns WORD)
-
-#### MILLIS Implementation Notes
-- **System Tick Integration**: Uses existing TICK0-TICK3 (32-bit) timer system from Hopper VM
-- **Two-Function Approach**: MILLIS() returns low 16 bits, MILLISHI() returns high 16 bits
-- **Hardware Independence**: Works with existing timer infrastructure across all platforms
-- **Overflow Handling**: 32-bit counter provides ~49.7 days before overflow
-- **Zero Page Usage**: Leverages existing TICK0-TICK3 at 0x28-0x2B
+- ❌ **`SECONDS()`** - Get system seconds since startup (returns WORD)
 
 ---
 
@@ -197,14 +193,16 @@
 - ✅ **Colon Separator Support**: Multi-statement line processing with proper error handling
 - ✅ **Comment Support**: REM and single-quote comments with inline text storage
 - ✅ **Variable Declaration Framework**: Parser support for INT, WORD, BIT with optional initialization
+- ✅ **Constant Declaration System**: CONST keyword support with constant expression validation and immutability
 
-### Recently Completed (Since v2.1)
+### Recently Completed (Since v2.2)
 - ✅ **Colon Token Recognition**: COLON token added to tokenizer and console processor
 - ✅ **Statement Boundary Processing**: Console processor splits on colon tokens and executes each statement
 - ✅ **Multi-Statement Execution**: Each statement executes separately with proper error handling
 - ✅ **Comment Token Support**: Both REM and ' (single quote) comments recognized and processed
 - ✅ **Variable Declaration Parsing**: Statement.executeVariableDeclaration() processes type tokens and identifiers
 - ✅ **Symbol Table Integration**: Variables.Declare() and Variables.Find() connected to parser
+- ✅ **Constant Declaration System**: executeConstantDeclaration() fully implemented with constant expression validation
 - ✅ **Console Commands Implementation**: NEW, CLEAR, VARS, MEM, BYE fully implemented
 - ✅ **Variable Display System**: VARS command shows variable types, names, and current values
 - ✅ **Symbol Table Iteration**: Variables.IterateAll(), IterateVariables(), IterateConstants() working
@@ -212,7 +210,7 @@
 ### Required Additions for Complete Phase 1
 - ❌ **Assignment Statement Processing**: Connect executeIdentifier() to symbol table for `var = expr`
 - ❌ **Function System Integration**: FUNC/ENDFUNC definitions and RETURN statements in parser
-- ❌ **Program Structure**: BEGIN/END main program blocks
+- ❌ **Program Structure**: BEGIN/END main program blocks (special case of FUNC)
 - ❌ **Management Commands**: LIST, RUN, FUNCS, FORGET integration with symbol tables
 
 ### Memory Layout (Preserved from Hopper VM)
@@ -261,9 +259,10 @@ console_command := NEW | LIST | RUN | CLEAR | VARS | FUNCS | MEM | BYE
                  | DEL string_literal
 ```
 
-### Variable Declarations
+### Variable and Constant Declarations
 ```
 variable_decl := type_keyword identifier [ "=" expression ]
+constant_decl := CONST type_keyword identifier "=" expression
 type_keyword := INT | WORD | BIT | BYTE | STRING
 ```
 
@@ -272,9 +271,9 @@ type_keyword := INT | WORD | BIT | BYTE | STRING
 program := { statement }*
 
 statement := variable_decl
+           | constant_decl
            | assignment
            | print_statement
-           | if_statement
            | function_definition
            | main_program
            | return_statement
@@ -293,7 +292,10 @@ expression_list := expression print_separator expression_list
 
 print_separator := "," | ";"
 
-if_statement := IF expression THEN statement [ ENDIF ]
+comment_statement := REM [ comment_text ]
+                   | "'" [ comment_text ]
+
+comment_text := any_characters_to_end_of_line
 
 function_definition := FUNC identifier "(" [ parameter_list ] ")"
                       { statement }*
@@ -304,11 +306,6 @@ main_program := BEGIN
                END
 
 return_statement := RETURN [ expression ]
-
-comment_statement := REM [ comment_text ]
-                   | "'" [ comment_text ]
-
-comment_text := any_characters_to_end_of_line
 
 parameter_list := identifier [ "," identifier ]*
 ```
@@ -352,13 +349,15 @@ string_literal := '"' { character }* '"'
 ### Extended Grammar (Phase 3)
 ```
 statement := ... (Phase 1 statements)
+           | if_statement
            | for_statement
            | while_statement
            | do_until_statement
            | break_statement
            | continue_statement
-           | const_declaration
            | array_declaration
+
+if_statement := IF expression THEN statement [ ENDIF ]
 
 for_statement := FOR identifier "=" expression TO expression [ STEP expression ]
                 { statement }*
@@ -371,8 +370,6 @@ while_statement := WHILE expression
 do_until_statement := DO
                      { statement }*
                      UNTIL expression
-
-const_declaration := CONST type_keyword identifier "=" expression
 
 array_declaration := type_keyword identifier "[" number "]" [ "=" array_initializer ]
 array_initializer := "{" expression [ "," expression ]* "}"
@@ -412,7 +409,7 @@ comment := REM any_characters_to_end_of_line
 ```
 NUMBER := decimal_digits
 IDENTIFIER := letter [ letter | digit ]*
-KEYWORD := predefined language keywords (PRINT, IF, THEN, etc.)
+KEYWORD := predefined language keywords (PRINT, IF, THEN, CONST, etc.)
 OPERATOR := "+" | "-" | "*" | "/" | "=" | "<>" | "<" | ">" | "<=" | ">=" | "&" | "|" | "(" | ")" | MOD | AND | OR | NOT
 SEPARATOR := ":" | "," | ";"
 COMMENT := REM | "'"
@@ -460,13 +457,14 @@ REM This is a full comment line
 PRINT "Hello"  REM This is an end-of-line comment
 ' Short form comment
 INT count = 0  ' Initialize counter
+CONST INT MAX = 100  ' Define constant
 ```
 
 ### Statement Separator Rules
 
 **Colon Separator (`:`):** ✅ **IMPLEMENTED**
 - **Multiple statements per line**: `PRINT 10 : PRINT 20`
-- **Classic BASIC compatibility**: Standard behavior across all BASIC dialects
+- **Classic BASIC compatibility**: Standard behavior across many BASIC dialects
 - **Execution order**: Left to right, each statement executes completely before next
 - **Error handling**: If any statement fails, execution stops at that point
 - **Whitespace**: Spaces around colons are optional: `PRINT 10:PRINT 20` works
@@ -476,7 +474,7 @@ INT count = 0  ' Initialize counter
 PRINT 10 : PRINT 20
 INT x = 5 : PRINT x : x = x + 1 : PRINT x
 IF x > 0 THEN PRINT "positive" : PRINT "done"
-PRINT "start" : REM this is a comment
+CONST INT SIZE = 10 : INT buffer = SIZE * 2
 ```
 
 ### Output Formatting Rules
@@ -491,11 +489,12 @@ PRINT "start" : REM this is a comment
 - `PRINT expr1,` outputs value followed by space, no newline
 
 ### Type System Benefits
-- **Type safety**: `IF count` is an error; must use `IF count <> 0`
+- **Type safety**: `IF count` is an error; must use `IF count <> 0` (when IF/THEN implemented in Phase 3)
 - **Clear intent**: BIT variables clearly indicate boolean usage
 - **Operator clarity**: Separate logical (BIT only) and bitwise (all types) operations
 - **Automatic promotion**: Compatible types promote safely (BYTE→INT→WORD when safe)
 - **Runtime validation**: INT/WORD mixing checked at runtime for safe operations
+- **Constant immutability**: CONST values cannot be modified after declaration
 
 ---
 
@@ -524,6 +523,7 @@ HopperBASIC uses a unified symbol table architecture with four distinct layers t
 ### Layer 3: Variables (variables.asm)
 **Variable and constant operations**
 - Variable declaration with type checking
+- Constant declaration with immutability enforcement
 - Value get/set with immutability enforcement (constants cannot be modified)
 - Name-based lookup with type filtering
 - Integration with tokenizer for initialization expressions
@@ -676,7 +676,7 @@ Offset 3+:  null-terminated argument name string
 - **Maintain compatibility**: Work within established memory layout
 
 ### ROM Size Target
-- **8K maximum** ($E000-$FFFF)
+- **16K maximum** (0xC000-0xFFFF)
 - **Leverage existing code**: Hopper VM runtime provides foundation
 - **Focus on interpreter logic**: Don't reimplement low-level functions
 
@@ -689,10 +689,11 @@ Offset 3+:  null-terminated argument name string
 2. ✅ **Colon Separator Support**: Multi-statement line processing with proper error handling
 3. ✅ **Comment Support**: REM and ' comment recognition and parsing
 4. ✅ **Variable Declaration Framework**: Parser support for INT, WORD, BIT with optional initialization
-5. **Assignment Statement Processing**: Connect executeIdentifier() to symbol table for `var = expr`
-6. **Function System Integration**: FUNC/ENDFUNC definitions and RETURN statements in parser
-7. **Program Structure**: BEGIN/END main program blocks
-8. **Management Commands**: VARS, FUNCS, LIST, CLEAR, FORGET integration with symbol tables
+5. ✅ **Constant Declaration System**: CONST keyword support with constant expression validation and immutability
+6. **Assignment Statement Processing**: Connect executeIdentifier() to symbol table for `var = expr`
+7. **Function System Integration**: FUNC/ENDFUNC definitions and RETURN statements in parser
+8. **Program Structure**: BEGIN/END main program blocks
+9. **Management Commands**: VARS, FUNCS, LIST, CLEAR, FORGET integration with symbol tables
 
 ### Next Phase (Storage)
 1. **SAVE/LOAD Commands**: Tokenized program storage to EEPROM
@@ -700,7 +701,7 @@ Offset 3+:  null-terminated argument name string
 
 ### Future Phases
 1. **Enhanced Types**: BYTE, STRING, Arrays
-2. **Extended Control Flow**: FOR/NEXT, WHILE/WEND loops
+2. **Extended Control Flow**: IF/THEN/ENDIF, FOR/NEXT loop, WHILE/WEND loops
 3. **Built-in Functions**: Math, string, and hardware I/O functions
 4. **Advanced I/O**: INPUT statements, formatted PRINT output
 
@@ -713,7 +714,7 @@ Offset 3+:  null-terminated argument name string
 3. **Phase 1c**: ✅ PRINT statement and IF/THEN control flow  
 4. **Phase 1d**: ✅ Complete symbol table foundation (4 layers + comprehensive testing)
 5. **Phase 1e**: ✅ Colon separator support for multi-statement lines
-6. **Phase 1f**: ✅ Comment support (REM and ' tokens) + ✅ Variable declaration framework + ✅ Console commands (NEW, CLEAR, VARS)
+6. ✅ **Phase 1f**: ✅ Comment support (REM and ' tokens) + ✅ Variable declaration framework + ✅ Console commands (NEW, CLEAR, VARS) + ✅ Constant declaration system
 7. **Phase 1g**: **NEXT** - Assignment statements (`var = expr`) and identifier resolution
 8. **Phase 1h**: Functions (FUNC/ENDFUNC/RETURN) and main program (BEGIN/END)
 9. **Phase 1i**: Remaining management commands (LIST, RUN, FUNCS, FORGET)
@@ -730,7 +731,6 @@ This approach maximizes code reuse while delivering a clean, simple BASIC interp
 - ✅ Core expression evaluation system (complete with all operators and type checking)
 - ✅ Basic console commands (NEW, MEM, BYE working; LIST, VARS, FUNCS, CLEAR, FORGET stubs)
 - ✅ PRINT statement (working for all expression types)
-- ✅ IF/THEN control flow (working with proper BIT type checking)
 - ✅ Complete tokenizer with number parsing and keyword recognition
 - ✅ Statement execution framework with proper error propagation
 - ✅ **Complete symbol table system** (4-layer architecture with comprehensive testing)
@@ -745,17 +745,19 @@ This approach maximizes code reuse while delivering a clean, simple BASIC interp
 - ✅ **Colon separator support**: Multi-statement line processing with proper error handling
 - ✅ **Comment support**: REM and single-quote comments with inline text storage
 - ✅ **Variable declaration framework**: Parser support for INT, WORD, BIT with optional initialization
+- ✅ **Constant declaration system**: CONST keyword with constant expression validation, immutability enforcement, and symbol table integration
 - ✅ **Management commands**: NEW, CLEAR, VARS, MEM, BYE implemented (LIST, RUN, FUNCS, FORGET stubs)
 - ❌ **Assignment statements**: Variable assignment with type checking (executeIdentifier stub)
 - ❌ **Function system integration**: Connect function tables to parser
 - ❌ **Program structure**: BEGIN/END main program blocks
 
-**Major Recent Achievement**: Console commands (NEW, CLEAR, VARS, MEM, BYE) are now fully implemented alongside colon separator support and comment processing, enabling classic BASIC multi-statement lines like `PRINT 10 : PRINT 20` and comprehensive variable management. The VARS command provides complete variable display with types and values.
+**Major Recent Achievement**: Console commands (NEW, CLEAR, VARS, MEM, BYE) are now fully implemented alongside colon separator support and comment processing, enabling classic BASIC multi-statement lines like `PRINT 10 : PRINT 20` and comprehensive variable management. The VARS command provides complete variable display with types and values. **CONST declaration is fully operational** with proper constant expression validation, immutability enforcement, and integration with the expression evaluator - constants can be declared, evaluated in expressions, and displayed via VARS.
 
 **Next Milestone**: Complete assignment statement processing by implementing executeIdentifier() to handle `var = expr` statements, connecting the existing symbol table system to variable assignment operations.
 
 **Testing Status**: All symbol table layers have comprehensive test suites with memory leak detection. The system has been validated to properly handle:
 - Variable and constant declaration with type checking
+- Constant expression validation and immutability enforcement  
 - Function declaration with parameter management  
 - Symbol lookup with type filtering
 - Memory management with automatic cleanup
@@ -763,6 +765,7 @@ This approach maximizes code reuse while delivering a clean, simple BASIC interp
 - Error handling with proper error messages
 - Multi-statement line processing with colon separators
 - Comment processing with both REM and ' syntax
+- Constant evaluation in expressions (constants can be used as operands)
 
 The symbol table foundation and core parsing infrastructure are production-ready and provide a robust base for completing the remaining assignment and function integration work.
 
