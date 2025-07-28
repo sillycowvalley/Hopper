@@ -9,52 +9,52 @@ unit Instructions
     // Check if RHS value is compatible with LHS type
     // Input: ZP.TOP = RHS value, ZP.TOPT = RHS type, ZP.NEXTT = LHS type
     // Output: C set if compatible, NC if incompatible
+    // Modifies: Processor flags only
     CheckRHSTypeCompatibility()
     {
         PHA  // Preserve A register
         
-        LDA ZP.NEXTT
-        CMP #BasicType.BIT
-        if (Z)
+        loop // Single exit point for all compatibility checks
         {
+            LDA ZP.NEXTT
+            CMP #BasicType.BIT
+            if (NZ)
+            {
+                // For non-BIT types, use general type compatibility checking
+                LDA #1  // Arithmetic operation mode
+                CheckTypeCompatibility();
+                // Carry flag already set by CheckTypeCompatibility
+                break;
+            }
+            
             // Special case for BIT type - only allows values 0 or 1
             LDA ZP.TOPH
             if (NZ)  // High byte must be 0
             {
-                PLA  // Restore A register
                 CLC  // Incompatible
-                return;
+                break;
             }
+            
             LDA ZP.TOPL
             CMP #0
             if (Z)
             {
-                PLA  // Restore A register
                 SEC  // Compatible (value is 0)
-                return;
+                break;
             }
+            
             CMP #1
             if (Z)
             {
-                PLA  // Restore A register
                 SEC  // Compatible (value is 1)
-                return;
+                break;
             }
-            PLA  // Restore A register
-            CLC  // Incompatible (value not 0 or 1)
-            return;
-        }
-        else
-        {
-            // For non-BIT types, use general type compatibility checking
-            LDA #1  // Arithmetic operation mode
-            CheckTypeCompatibility();
-            // Carry flag already set by CheckTypeCompatibility
             
-            PLA  // Restore A register
-            // Note: We restore A after CheckTypeCompatibility because that function
-            // also preserves A, so the stack is still correctly aligned
-        }
+            CLC  // Incompatible (value not 0 or 1)
+            break;
+        } // end of single exit loop
+        
+        PLA  // Restore A register
     }
     
     // Check if two types are compatible for operations
@@ -67,14 +67,21 @@ unit Instructions
     //          3 = Ordering comparison (<, >, <=, >=) - BIT types rejected, result is BIT
     // Output: C set if compatible, NC set if TYPE MISMATCH
     //         ZP.NEXTT = result type (updated based on operation mode and type promotion)
+    // Modifies: processor flags
     CheckTypeCompatibility()
     {
-        PHA  // Preserve A register
+        PHA
+        PHX
+        
+        // Save original ZP.ACCT value
+        LDX ZP.ACCT
+        
+        // Store operation mode in ZP.ACCT for internal use
+        STA ZP.ACCT
         
         loop // Single exit point for all compatibility checks
         {
             // Mode-specific type restrictions
-            LDA ZP.ACCT  // Get operation mode from zero page
             CMP #1  // Arithmetic operations
             if (Z)
             {
@@ -322,7 +329,10 @@ unit Instructions
             break;
         } // end of single exit loop
         
-        PLA  // Restore A register
+        // Restore ZP.ACCT
+        STX ZP.ACCT
+        PLX
+        PLA
     }
     
     // Set result type for mixed-type operations
@@ -432,9 +442,11 @@ unit Instructions
     // Input: ZP.NEXT = left operand, ZP.TOP = right operand
     // Output: ZP.FSIGN = count of negative operands (0, 1, or 2)
     //         ZP.NEXT and ZP.TOP converted to positive values
-    // Munts: ZP.FSIGN, ZP.NEXT, ZP.TOP, X, A
     doSigns()
     {
+        PHA  // Preserve A
+        PHX  // Preserve X
+        
         LDX #0 
         LDA ZP.NEXTH
         ASL // sign bit into carry
@@ -451,6 +463,9 @@ unit Instructions
             IntMath.NegateTop(); // TOP = -TOP
         }
         STX ZP.FSIGN // store the sign count
+        
+        PLX  // Restore X
+        PLA  // Restore A
     }
     
     // Multiplication operation (pops two operands, pushes result)
