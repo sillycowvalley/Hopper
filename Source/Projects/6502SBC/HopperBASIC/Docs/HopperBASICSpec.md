@@ -41,6 +41,10 @@
 - ✅ **`PRINT expr`** - Output single value followed by newline
 - ✅ **`PRINT`** - Output empty line (no arguments)
 
+#### Comments
+- ❌ **`REM [comment]`** - Full-form comment (traditional BASIC)
+- ❌ **`' [comment]`** - Short-form comment (modern convenience)
+
 #### Expressions & Operators (Complete Implementation)
 - ✅ **Arithmetic**: `+ -` (addition, subtraction)
 - ✅ **Multiplicative**: `* / MOD` (multiplication, division, modulo)
@@ -235,6 +239,7 @@ statement := variable_decl
            | function_definition
            | main_program
            | return_statement
+           | comment_statement
            | expression_statement
 
 assignment := identifier "=" expression
@@ -258,6 +263,11 @@ main_program := BEGIN
                END
 
 return_statement := RETURN [ expression ]
+
+comment_statement := REM [ comment_text ]
+                   | "'" [ comment_text ]
+
+comment_text := any_characters_to_end_of_line
 
 parameter_list := identifier [ "," identifier ]*
 ```
@@ -350,7 +360,8 @@ digit := '0'..'9'
 decimal_digits := digit { digit }*
 character := any printable ASCII character except '"'
 whitespace := ' ' | '\t'
-comment := "//" { character }* end_of_line
+comment := REM any_characters_to_end_of_line
+         | "'" any_characters_to_end_of_line
 ```
 
 ### Type System
@@ -380,6 +391,22 @@ comment := "//" { character }* end_of_line
 7. Logical AND (BIT operands only)
 8. Logical OR (BIT operands only)
 9. Comparison (=, <>, <, >, <=, >=)
+
+### Comment Rules
+
+**Phase 1:**
+- `REM [comment]` - Traditional BASIC comment (consumes rest of line)
+- `' [comment]` - Modern shorthand comment (consumes rest of line)
+- Comments can appear on their own line or at end of statements
+- Comment text is not stored in tokenized form (saves buffer space)
+
+**Usage Examples:**
+```basic
+REM This is a full comment line
+PRINT "Hello"  REM This is an end-of-line comment
+' Short form comment
+INT count = 0  ' Initialize counter
+```
 
 ### Output Formatting Rules
 
@@ -594,6 +621,7 @@ Offset 3+:  null-terminated argument name string
 5. **Function System Integration**: FUNC/ENDFUNC definitions and RETURN statements in parser
 6. **Program Structure**: BEGIN/END main program blocks
 7. **Management Commands**: VARS, FUNCS, LIST, CLEAR, FORGET integration with symbol tables
+8. **Comment Support**: REM and ' comment recognition and parsing
 
 ### Next Phase (Storage)
 1. **SAVE/LOAD Commands**: Tokenized program storage to EEPROM
@@ -615,8 +643,9 @@ Offset 3+:  null-terminated argument name string
 4. **Phase 1d**: ✅ Complete symbol table foundation (4 layers + comprehensive testing)
 5. **Phase 1e**: **NEXT** - Variable declarations and assignment (connect symbol tables to parser)
 6. **Phase 1f**: Functions (FUNC/ENDFUNC/RETURN) and main program (BEGIN/END)
-7. **Phase 2**: Add tokenized SAVE/LOAD functionality with EEPROM storage
-8. **Phase 3**: Add constants, loops, input, additional operators, built-in functions
+7. **Phase 1g**: Comment support (REM and ' tokens)
+8. **Phase 2**: Add tokenized SAVE/LOAD functionality with EEPROM storage
+9. **Phase 3**: Add constants, loops, input, additional operators, built-in functions
 
 This approach maximizes code reuse while delivering a clean, simple BASIC interpreter that feels familiar to users but leverages the robust Hopper VM foundation.
 
@@ -643,6 +672,7 @@ This approach maximizes code reuse while delivering a clean, simple BASIC interp
 - ❌ **Variable system integration**: Connect symbol tables to parser (next priority)
 - ❌ **Function system integration**: Connect function tables to parser
 - ❌ **Assignment statements**: Variable assignment with type checking
+- ❌ **Comment support**: REM and ' comment tokens
 
 **Major Achievement**: We now have a complete, tested symbol table system that can handle variables, constants, and functions with proper memory management, type checking, and comprehensive test coverage. The foundation is solid and ready for integration with the parser.
 
