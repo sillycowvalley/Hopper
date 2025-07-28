@@ -512,9 +512,6 @@ unit Statement
                      
                         // Pop the result into NEXT
                         Stacks.PopNext();  // Result in ZP.NEXT, type in ZP.NEXTT,  modifies X
-                        
-                        expectEOF();
-                        if (NC) { break; }
                     }
                     case Tokens.EOL:
                     {
@@ -663,39 +660,7 @@ unit Statement
         Serial.WriteChar();
 #endif
     }
-    
-    // Expect EOF token at current position
-    // Input: ZP.CurrentToken = current token
-    // Output: ZP.CurrentToken = EOF or next token after EOF
-    // Munts: ZP.CurrentToken, ZP.LastError if not EOF
-    // Error: Sets ZP.LastError if current token is not EOF
-    expectEOF()
-    {
-        PHA
-        
-        // expect no more tokens
-        Tokenizer.NextToken();
-        Messages.CheckError();
-        if (C)
-        {
-            CMP # Tokens.EOF
-            if (NZ)
-            {
-                CLC // expected EOF
-            }
-        }
-        
-        if (NC) 
-        { 
-            LDA #(Messages.SyntaxError % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.SyntaxError / 256)
-            STA ZP.LastErrorH
-        }
-        
-        PLA
-    }
-    
+      
     // Create token stream from tokenizer buffer slice
     // Input: ZP.FSOURCEADDRESS = start position in BasicTokenizerBuffer
     //        ZP.FLENGTH = length of token stream to copy
