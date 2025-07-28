@@ -61,7 +61,7 @@ unit TestArguments
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         STZ ZP.ACCH
         
         STZ ZP.NEXTL  // No arguments initially
@@ -106,7 +106,7 @@ unit TestArguments
         LDA #(argName1 / 256)
         STA ZP.TOPH
         LDA #BasicType.INT
-        STA ZP.ACCL
+        STA ZP.ACCT
         Arguments.Add();
         if (NC)
         {
@@ -134,7 +134,7 @@ unit TestArguments
         LDA #(argName2 / 256)
         STA ZP.TOPH
         LDA #BasicType.WORD
-        STA ZP.ACCL
+        STA ZP.ACCT
         Arguments.Add();
         if (NC)
         {
@@ -162,7 +162,7 @@ unit TestArguments
         LDA #(argName3 / 256)
         STA ZP.TOPH
         LDA #BasicType.BIT
-        STA ZP.ACCL
+        STA ZP.ACCT
         Arguments.Add();
         if (NC)
         {
@@ -209,7 +209,7 @@ unit TestArguments
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.WORD)
-        STA ZP.ACCL
+        STA ZP.ACCT
         STZ ZP.NEXTL
         STZ ZP.NEXTH
         
@@ -233,7 +233,7 @@ unit TestArguments
         LDA #(argName4 / 256)
         STA ZP.TOPH
         LDA #BasicType.INT
-        STA ZP.ACCL
+        STA ZP.ACCT
         Arguments.Add();
         
         // Restore function node address
@@ -293,7 +293,7 @@ unit TestArguments
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.BIT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         STZ ZP.NEXTL
         STZ ZP.NEXTH
         
@@ -317,7 +317,7 @@ unit TestArguments
         LDA #(argName5 / 256)
         STA ZP.TOPH
         LDA #BasicType.WORD
-        STA ZP.ACCL
+        STA ZP.ACCT
         Arguments.Add();
         
         // Restore function node address
@@ -341,7 +341,7 @@ unit TestArguments
         }
         
         Arguments.GetType();
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         CMP #BasicType.WORD
         if (Z)
         {
@@ -376,7 +376,7 @@ unit TestArguments
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         STZ ZP.NEXTL
         STZ ZP.NEXTH
         
@@ -400,7 +400,7 @@ unit TestArguments
         LDA #(argName3 / 256)
         STA ZP.TOPH
         LDA #BasicType.BIT
-        STA ZP.ACCL
+        STA ZP.ACCT
         Arguments.Add();
         
         // Restore function node address
@@ -477,7 +477,7 @@ unit TestArguments
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.WORD)
-        STA ZP.ACCL
+        STA ZP.ACCT
         STZ ZP.NEXTL
         STZ ZP.NEXTH
         
@@ -495,7 +495,7 @@ unit TestArguments
         LDA #(argName1 / 256)
         STA ZP.TOPH
         LDA #BasicType.INT
-        STA ZP.ACCL
+        STA ZP.ACCT
         Arguments.Add();
         
         // Add second argument "ARG2" of type WORD
@@ -504,7 +504,7 @@ unit TestArguments
         LDA #(argName2 / 256)
         STA ZP.TOPH
         LDA #BasicType.WORD
-        STA ZP.ACCL
+        STA ZP.ACCT
         Arguments.Add();
         
         // Find argument by index 0 (should be ARG1)
@@ -521,7 +521,7 @@ unit TestArguments
         
         // Get type to verify it's the first argument (INT)
         Arguments.GetType();
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         CMP #BasicType.INT
         if (NZ)
         {
@@ -545,7 +545,7 @@ unit TestArguments
         
         // Get type to verify it's the second argument (WORD)
         Arguments.GetType();
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         CMP #BasicType.WORD
         if (Z)
         {
@@ -580,7 +580,7 @@ unit TestArguments
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         STZ ZP.NEXTL
         STZ ZP.NEXTH
         
@@ -604,7 +604,7 @@ unit TestArguments
         LDA #(argName1 / 256)
         STA ZP.TOPH
         LDA #BasicType.INT
-        STA ZP.ACCL
+        STA ZP.ACCT
         Arguments.Add();
         
         // Restore function node address
@@ -618,7 +618,7 @@ unit TestArguments
         LDA #(argName2 / 256)
         STA ZP.TOPH
         LDA #BasicType.WORD
-        STA ZP.ACCL
+        STA ZP.ACCT
         Arguments.Add();
         
         // Restore function node address for iteration

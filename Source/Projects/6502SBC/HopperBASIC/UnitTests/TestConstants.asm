@@ -69,8 +69,7 @@ unit TestConstants
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #(314 % 256)
         STA ZP.NEXTL
@@ -118,9 +117,8 @@ unit TestConstants
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.WORD)
-        STA ZP.ACCL
-        STZ ZP.ACCH
-        
+        STA ZP.ACCT
+                
         LDA #(65000 % 256)
         STA ZP.NEXTL
         LDA #(65000 / 256)
@@ -167,8 +165,7 @@ unit TestConstants
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.BIT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #1
         STA ZP.NEXTL
@@ -212,7 +209,7 @@ unit TestConstants
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.WORD)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #200
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -260,7 +257,7 @@ unit TestConstants
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #(314 % 256)
         STA ZP.NEXTL
         LDA #(314 / 256)
@@ -342,7 +339,7 @@ unit TestConstants
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.WORD)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #100
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -392,7 +389,7 @@ unit TestConstants
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.BIT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #1
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -452,7 +449,7 @@ unit TestConstants
         LDA #(constName1 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #10
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -466,7 +463,7 @@ unit TestConstants
         LDA #(constName2 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.CONSTANT << 4) | BasicType.WORD)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #20
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -486,7 +483,7 @@ unit TestConstants
         
         // Check type
         Variables.GetType();
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         AND #0xF0
         LSR LSR LSR LSR
         CMP #SymbolType.CONSTANT
@@ -530,7 +527,7 @@ unit TestConstants
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #100
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -553,7 +550,7 @@ unit TestConstants
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.WORD)  // Different type
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #200
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -591,7 +588,7 @@ unit TestConstants
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.BIT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #1
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -620,7 +617,7 @@ unit TestConstants
         }
         
         // Check symbolType (high nibble)
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         AND #0xF0
         LSR LSR LSR LSR
         CMP #SymbolType.CONSTANT
@@ -633,7 +630,7 @@ unit TestConstants
         }
         
         // Check dataType (low nibble)
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         AND #0x0F
         CMP #BasicType.BIT
         if (NZ)
@@ -666,7 +663,7 @@ unit TestConstants
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.WORD)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #123
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -735,7 +732,7 @@ unit TestConstants
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA # (456 % 255)
         STA ZP.NEXTL
         LDA # (456 / 256)

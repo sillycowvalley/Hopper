@@ -74,8 +74,7 @@ unit TestFunctions
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         STZ ZP.NEXTL  // No arguments list
         STZ ZP.NEXTH
@@ -121,8 +120,7 @@ unit TestFunctions
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.WORD)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         STZ ZP.NEXTL  // No arguments initially
         STZ ZP.NEXTH
@@ -156,7 +154,7 @@ unit TestFunctions
         LDA #(argName1 / 256)
         STA ZP.TOPH
         LDA #BasicType.INT
-        STA ZP.ACCL
+        STA ZP.ACCT
         Arguments.Add();
         
         // Add second argument "B" of type WORD
@@ -165,7 +163,7 @@ unit TestFunctions
         LDA #(argName2 / 256)
         STA ZP.TOPH
         LDA #BasicType.WORD
-        STA ZP.ACCL
+        STA ZP.ACCT
         Arguments.Add();
         
         Functions.Clear();  // Clean up
@@ -190,7 +188,7 @@ unit TestFunctions
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.BIT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         STZ ZP.NEXTL  // No arguments
         STZ ZP.NEXTH
         STZ ZP.IDYL   // No tokens for this test
@@ -238,7 +236,7 @@ unit TestFunctions
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         
         STZ ZP.NEXTL  // No arguments for this test
         STZ ZP.NEXTH
@@ -262,10 +260,10 @@ unit TestFunctions
         }
         
         Functions.GetSignature();
-        // NEW INTERFACE: ZP.ACCL = returnType, ZP.NEXT = function body tokens, ZP.IDY = arguments list head
+        // NEW INTERFACE: ZP.ACCT = returnType, ZP.NEXT = function body tokens, ZP.IDY = arguments list head
         
         // Check return type (should be INT = 2)
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         CMP #BasicType.INT
         if (NZ)
         {
@@ -332,7 +330,7 @@ unit TestFunctions
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.WORD)
-        STA ZP.ACCL
+        STA ZP.ACCT
         STZ ZP.NEXTL  // No arguments
         STZ ZP.NEXTH
         
@@ -391,7 +389,7 @@ unit TestFunctions
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         
         STZ ZP.NEXTL  // No arguments initially
         STZ ZP.NEXTH
@@ -410,7 +408,7 @@ unit TestFunctions
         LDA #(argName1 / 256)
         STA ZP.TOPH
         LDA #BasicType.INT
-        STA ZP.ACCL
+        STA ZP.ACCT
         Arguments.Add();
         
         // Get arguments and check if it has arguments now
@@ -457,7 +455,7 @@ unit TestFunctions
         LDA #(argName1 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #10
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -471,7 +469,7 @@ unit TestFunctions
         LDA #(funcName1 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.FUNCTION << 4) | BasicType.BIT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         STZ ZP.NEXTL  // No arguments
         STZ ZP.NEXTH
         STZ ZP.IDYL
@@ -490,7 +488,7 @@ unit TestFunctions
         
         // Check type via Objects.GetData()
         Objects.GetData();
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         AND #0xF0
         LSR LSR LSR LSR
         CMP #SymbolType.FUNCTION
@@ -535,7 +533,7 @@ unit TestFunctions
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         STZ ZP.NEXTL
         STZ ZP.NEXTH
         STZ ZP.IDYL
@@ -557,7 +555,7 @@ unit TestFunctions
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.WORD)  // Different return type
-        STA ZP.ACCL
+        STA ZP.ACCT
         STZ ZP.NEXTL
         STZ ZP.NEXTH
         STZ ZP.IDYL
@@ -594,7 +592,7 @@ unit TestFunctions
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         STZ ZP.NEXTL  // No arguments
         STZ ZP.NEXTH
         STZ ZP.IDYL   // No tokens
@@ -658,7 +656,7 @@ unit TestFunctions
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.WORD)
-        STA ZP.ACCL
+        STA ZP.ACCT
         STZ ZP.NEXTL  // No arguments
         STZ ZP.NEXTH
         STZ ZP.IDYL   // No tokens for this test
@@ -728,7 +726,7 @@ unit TestFunctions
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         STZ ZP.NEXTL  // No arguments initially
         STZ ZP.NEXTH
         
@@ -746,7 +744,7 @@ unit TestFunctions
         LDA #(argName3 / 256)
         STA ZP.TOPH
         LDA #BasicType.BIT
-        STA ZP.ACCL
+        STA ZP.ACCT
         Arguments.Add();
         
         // Get the new arguments list head
@@ -802,7 +800,7 @@ unit TestFunctions
         LDA #(argName1 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #42
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -816,7 +814,7 @@ unit TestFunctions
         LDA #(funcName6 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         STZ ZP.NEXTL  // No arguments
         STZ ZP.NEXTH
         STZ ZP.IDYL   // No tokens
@@ -829,7 +827,7 @@ unit TestFunctions
         LDA #(funcName7 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.FUNCTION << 4) | BasicType.WORD)
-        STA ZP.ACCL
+        STA ZP.ACCT
         STZ ZP.NEXTL  // No arguments
         STZ ZP.NEXTH
         STZ ZP.IDYL   // No tokens
@@ -842,7 +840,7 @@ unit TestFunctions
         LDA #(funcName8 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.FUNCTION << 4) | BasicType.BIT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         STZ ZP.NEXTL  // No arguments
         STZ ZP.NEXTH
         STZ ZP.IDYL   // No tokens
@@ -866,7 +864,7 @@ unit TestFunctions
         {
             // Verify each one is actually a function
             Objects.GetData();
-            LDA ZP.ACCL
+            LDA ZP.ACCT
             AND #0xF0
             LSR LSR LSR LSR
             CMP #SymbolType.FUNCTION

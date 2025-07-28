@@ -11,7 +11,7 @@ unit Variables
     // Two-stage approach: Find name to address, then operate on address
     
     // Declare new variable or constant
-    // Input: ZP.TOP = name pointer, ZP.ACC = symbolType|dataType (packed),
+    // Input: ZP.TOP = name pointer, ZP.ACCT = symbolType|dataType (packed),
     //        ZP.NEXT = initial value (16-bit), ZP.IDY = tokens pointer (16-bit)
     // Output: C set if successful, NC if error (name exists, out of memory)
     // Munts: ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT
@@ -83,9 +83,9 @@ unit Variables
             STA ZP.SymbolTemp0  // Temporary storage
             
             // Get symbol type and check
-            Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
+            Objects.GetData();  // Returns type in ZP.ACCT, tokens in ZP.NEXT, value in ZP.IDY
             
-            LDA ZP.ACCL
+            LDA ZP.ACCT
             AND #0xF0  // Extract symbol type (high nibble)
             LSR LSR LSR LSR  // Shift to low nibble
             
@@ -121,10 +121,10 @@ unit Variables
         
         loop // start of single exit block
         {
-            Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
+            Objects.GetData();  // Returns type in ZP.ACCT, tokens in ZP.NEXT, value in ZP.IDY
             
             // Check if it's a variable or constant
-            LDA ZP.ACCL
+            LDA ZP.ACCT
             AND #0xF0  // Extract symbol type (high nibble)
             CMP # (SymbolType.VARIABLE << 4)
             if (NZ)
@@ -147,7 +147,7 @@ unit Variables
             LDA ZP.IDYH
             STA ZP.TOPH
             
-            LDA ZP.ACCL
+            LDA ZP.ACCT
             AND #0x0F  // Extract data type (low nibble)
             STA ZP.TOPT
             
@@ -182,10 +182,10 @@ unit Variables
         loop // start of single exit block
         {
             // Get current symbol info
-            Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
+            Objects.GetData();  // Returns type in ZP.ACCT, tokens in ZP.NEXT, value in ZP.IDY
             
             // Check if it's a variable
-            LDA ZP.ACCL
+            LDA ZP.ACCT
             AND #0xF0  // Extract symbol type (high nibble)
             LSR LSR LSR LSR  // Shift to low nibble
             
@@ -229,7 +229,7 @@ unit Variables
     
     // Get type information for variable/constant
     // Input: ZP.IDX = symbol node address (from Find)
-    // Output: ZP.ACC = symbolType|dataType (packed), C set if successful, NC if error
+    // Output: ZP.ACCT = symbolType|dataType (packed), C set if successful, NC if error
     // Munts: -
     GetType()
     {
@@ -237,10 +237,10 @@ unit Variables
         
         loop // start of single exit block
         {
-            Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
+            Objects.GetData();  // Returns type in ZP.ACCT, tokens in ZP.NEXT, value in ZP.IDY
             
             // Check if it's a variable or constant
-            LDA ZP.ACCL
+            LDA ZP.ACCT
             AND #0xF0  // Extract symbol type (high nibble)
             LSR LSR LSR LSR  // Shift to low nibble
             
@@ -272,7 +272,7 @@ unit Variables
     
     // Get variable/constant signature info
     // Input: ZP.IDX = symbol node address (from Find or iteration)
-    // Output: ZP.ACC = symbolType|dataType (packed), ZP.NEXT = tokens pointer, ZP.IDY = value, C set if successful, NC if error
+    // Output: ZP.ACCT = symbolType|dataType (packed), ZP.NEXT = tokens pointer, ZP.IDY = value, C set if successful, NC if error
     // Munts: -
     GetSignature()
     {
@@ -280,10 +280,10 @@ unit Variables
         
         loop // start of single exit block
         {
-            Objects.GetData();  // Returns type in ZP.ACC, tokens in ZP.NEXT, value in ZP.IDY
+            Objects.GetData();  // Returns type in ZP.ACCT, tokens in ZP.NEXT, value in ZP.IDY
             
             // Check if it's a variable or constant
-            LDA ZP.ACCL
+            LDA ZP.ACCT
             AND #0xF0  // Extract symbol type (high nibble)
             LSR LSR LSR LSR  // Shift to low nibble
             

@@ -79,8 +79,7 @@ unit TestVariables
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #42
         STA ZP.NEXTL
@@ -125,8 +124,7 @@ unit TestVariables
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.WORD)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #(1000 % 256)
         STA ZP.NEXTL
@@ -170,7 +168,7 @@ unit TestVariables
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.BIT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #1
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -216,7 +214,7 @@ unit TestVariables
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #255
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -286,7 +284,7 @@ unit TestVariables
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #10
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -344,7 +342,7 @@ unit TestVariables
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #50
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -393,7 +391,7 @@ unit TestVariables
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.WORD)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #(300 % 256)
         STA ZP.NEXTL
         LDA #(300 / 256)
@@ -453,7 +451,7 @@ unit TestVariables
         LDA #(testName1 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #10
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -467,7 +465,7 @@ unit TestVariables
         LDA #(testName5 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.CONSTANT << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #20
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -487,7 +485,7 @@ unit TestVariables
         
         // Check type
         Variables.GetType();
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         AND #0xF0
         LSR LSR LSR LSR
         CMP #SymbolType.VARIABLE
@@ -533,8 +531,7 @@ unit TestVariables
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.BIT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #1
         STA ZP.NEXTL
@@ -577,7 +574,7 @@ unit TestVariables
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #100
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -642,7 +639,7 @@ unit TestVariables
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.WORD)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA # (500 % 256)
         STA ZP.NEXTL
         LDA # (500 / 256)
@@ -672,7 +669,7 @@ unit TestVariables
         }
         
         // Check symbolType (high nibble)
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         AND #0xF0
         LSR LSR LSR LSR
         CMP #SymbolType.VARIABLE
@@ -685,7 +682,7 @@ unit TestVariables
         }
         
         // Check dataType (low nibble)
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         AND #0x0F
         CMP #BasicType.WORD
         if (NZ)
@@ -717,7 +714,7 @@ unit TestVariables
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.BIT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #0
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -784,7 +781,7 @@ unit TestVariables
         LDA #(testName1 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #10
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -798,7 +795,7 @@ unit TestVariables
         LDA #(testName5 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.CONSTANT << 4) | BasicType.WORD)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #20
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -855,7 +852,7 @@ unit TestVariables
         LDA #(testName1 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #10
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -869,7 +866,7 @@ unit TestVariables
         LDA #(testName5 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.CONSTANT << 4) | BasicType.BIT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #1
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -889,7 +886,7 @@ unit TestVariables
         
         // Check type
         Variables.GetType();
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         AND #0xF0
         LSR LSR LSR LSR
         CMP #SymbolType.CONSTANT
@@ -935,8 +932,7 @@ unit TestVariables
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.BYTE)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #255  // Max BYTE value
         STA ZP.NEXTL
@@ -970,7 +966,7 @@ unit TestVariables
         
         // Check type
         Variables.GetType();
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         AND #0x0F  // Extract data type
         CMP #BasicType.BYTE
         if (NZ)

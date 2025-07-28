@@ -60,8 +60,7 @@ unit TestObjects
         
         // Pack symbolType|dataType: VARIABLE(1) in high nibble, INT(2) in low nibble
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #42
         STA ZP.NEXTL
@@ -104,8 +103,7 @@ unit TestObjects
         LDA #(testName3 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.VARIABLE << 4) | BasicType.BYTE)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         LDA #255
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -164,8 +162,7 @@ unit TestObjects
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.WORD)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #(1000 % 256)
         STA ZP.NEXTL
@@ -191,10 +188,10 @@ unit TestObjects
         }
         
         Objects.GetData();
-        // NEW INTERFACE: ZP.ACC = symbolType|dataType, ZP.NEXT = tokens pointer, ZP.IDY = value
+        // NEW INTERFACE: ZP.ACCT = symbolType|dataType, ZP.NEXT = tokens pointer, ZP.IDY = value
         
         // Check data type (should be WORD = 4)
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         AND #0x0F  // Extract data type (low nibble)
         CMP #BasicType.WORD
         if (NZ)
@@ -258,8 +255,7 @@ unit TestObjects
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #100
         STA ZP.NEXTL
@@ -322,8 +318,7 @@ unit TestObjects
         LDA #(testName1 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         LDA #42
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -346,8 +341,7 @@ unit TestObjects
         LDA #(testName5 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.CONSTANT << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         LDA #100
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -384,7 +378,7 @@ unit TestObjects
         
         // Should find the variable
         Objects.GetData();
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         AND #0xF0
         CMP #(SymbolType.VARIABLE << 4)
         if (NZ)
@@ -418,8 +412,7 @@ unit TestObjects
         LDA #(testName1 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         LDA #42
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -441,8 +434,7 @@ unit TestObjects
         LDA #(testName2 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         LDA #99
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -549,8 +541,7 @@ unit TestObjects
         LDA #(testName6 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.FUNCTION << 4) | BasicType.VOID)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         STZ ZP.NEXTL
         STZ ZP.NEXTH
         LDA #(mockTokensAddr1 % 256)
@@ -721,8 +712,7 @@ unit TestObjects
         LDA #(testName1 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         LDA #42
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -745,8 +735,7 @@ unit TestObjects
         LDA #(constName1 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.CONSTANT << 4) | BasicType.WORD)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         LDA #100
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -771,8 +760,7 @@ unit TestObjects
         LDA #(funcName1 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.FUNCTION << 4) | BasicType.VOID)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         STZ ZP.NEXTL
         STZ ZP.NEXTH
         LDA #(mockTokensAddr1 % 256)
@@ -810,7 +798,7 @@ unit TestObjects
         
         // Should find variable
         Objects.GetData();
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         AND #0xF0
         CMP #(SymbolType.VARIABLE << 4)
         if (NZ)
@@ -854,7 +842,7 @@ unit TestObjects
         
         // Should find constant
         Objects.GetData();
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         AND #0xF0
         CMP #(SymbolType.CONSTANT << 4)
         if (NZ)
@@ -885,7 +873,7 @@ unit TestObjects
         
         // Should find function
         Objects.GetData();
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         AND #0xF0
         CMP #(SymbolType.FUNCTION << 4)
         if (NZ)
@@ -919,8 +907,7 @@ unit TestObjects
         LDA #(varName1 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         LDA #10
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -974,8 +961,7 @@ unit TestObjects
         LDA #(varName2 / 256)
         STA ZP.TOPH
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         LDA #20
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -1052,7 +1038,7 @@ unit TestObjects
             LDA #(testName1 / 256)
             STA ZP.TOPH
             LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-            STA ZP.ACCL
+            STA ZP.ACCT
             LDA #42
             STA ZP.NEXTL
             STZ ZP.NEXTH

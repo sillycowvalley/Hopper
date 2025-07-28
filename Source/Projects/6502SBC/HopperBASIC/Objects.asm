@@ -47,7 +47,7 @@ unit Objects
     
     // Add new symbol to table
     // Input: X = ZP address of table head (ZP.VariableList or ZP.FunctionsList),
-    //        ZP.TOP = name pointer, ZP.ACC = symbolType|dataType (packed),
+    //        ZP.TOP = name pointer, ZP.ACCT = symbolType|dataType (packed),
     //        ZP.IDY = tokens pointer (16-bit), ZP.NEXT = value/args (16-bit)
     // Output: ZP.IDX = new symbol node address, C set if successful, NC if allocation failed
     // Munts: ZP.LCURRENT, ZP.LHEADX
@@ -78,7 +78,7 @@ unit Objects
             STX ZP.SymbolTemp0
             
             // Save input parameters in dedicated ZP locations that survive Memory.Allocate()
-            LDA ZP.ACCL
+            LDA ZP.ACCT
             STA ZP.SymbolType   // Save symbolType|dataType
             
             LDA ZP.NEXTL
@@ -203,7 +203,7 @@ unit Objects
     
     // Get symbol data from found node
     // Input: ZP.IDX = symbol node address (from Find)
-    // Output: ZP.ACC = symbolType|dataType (packed), ZP.NEXT = tokens pointer, ZP.IDY = value/args
+    // Output: ZP.ACCT = symbolType|dataType (packed), ZP.NEXT = tokens pointer, ZP.IDY = value/args
     GetData()
     {
         PHY
@@ -211,8 +211,7 @@ unit Objects
         // Get symbolType|dataType (offset snType)
         LDY #snType
         LDA [ZP.IDX], Y
-        STA ZP.ACCL
-        STZ ZP.ACCH  // Clear high byte
+        STA ZP.ACCT
         
         // Get tokens pointer (offset snTokens to snTokens+1)
         LDY #snTokens

@@ -19,7 +19,7 @@ unit Arguments
     const byte anName = 3;          // Name field offset (variable length)
     
     // Add argument to function's arguments list at the end for correct order
-    // Input: ZP.IDX = function node address, ZP.TOP = argument name, ZP.ACCL = argument type
+    // Input: ZP.IDX = function node address, ZP.TOP = argument name, ZP.ACCT = argument type
     // Output: C set if successful, NC if allocation failed
     // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT, ZP.LPREVIOUS, 
     //        ZP.SymbolType, ZP.SymbolNameL/H, ZP.SymbolLength
@@ -37,7 +37,7 @@ unit Arguments
             LDA ZP.IDXH
             STA ZP.LHEADH
             
-            LDA ZP.ACCL
+            LDA ZP.ACCT
             STA ZP.SymbolType       // Argument type
             
             LDA ZP.TOPL
@@ -130,7 +130,7 @@ unit Arguments
     
     // Find argument by name in function's arguments list
     // Input: ZP.IDX = function node address, ZP.TOP = argument name
-    // Output: ZP.IDY = argument node address, ZP.ACCL = argument index, C set if found, NC if not found
+    // Output: ZP.IDY = argument node address, ZP.ACCT = argument index, C set if found, NC if not found
     // Munts: ZP.LCURRENT, ZP.LNEXT
     Find()
     {
@@ -199,7 +199,7 @@ unit Arguments
     
     // Get argument type from argument node
     // Input: ZP.IDY = argument node address
-    // Output: ZP.ACCL = argument type, C set (always succeeds)
+    // Output: ZP.ACCT = argument type, C set (always succeeds)
     // Munts: -
     GetType()
     {
@@ -207,7 +207,7 @@ unit Arguments
         
         LDY #anType
         LDA [ZP.IDY], Y
-        STA ZP.ACCL
+        STA ZP.ACCT
         SEC  // Always succeeds
         
         PLA

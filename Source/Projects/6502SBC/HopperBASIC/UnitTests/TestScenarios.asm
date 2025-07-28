@@ -65,8 +65,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #10
         STA ZP.NEXTL
@@ -284,7 +283,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #10
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -309,7 +308,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.WORD)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #100
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -332,7 +331,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.BIT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #1
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -356,7 +355,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #(314 % 256)
         STA ZP.NEXTL
         LDA #(314 / 256)
@@ -611,8 +610,7 @@ unit TestScenarios
         
         // Use type FUNCTION|VOID to indicate no return value
         LDA #((SymbolType.FUNCTION << 4) | BasicType.VOID)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         STZ ZP.NEXTL  // No arguments for main program
         STZ ZP.NEXTH
@@ -649,7 +647,7 @@ unit TestScenarios
         
         // Verify it has correct type (FUNCTION|VOID)
         Functions.GetSignature();
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         CMP #BasicType.VOID  // Compare against VOID (0x00), not the full combined type
         if (NZ)
         {
@@ -692,7 +690,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)  // Different type
-        STA ZP.ACCL
+        STA ZP.ACCT
         STZ ZP.NEXTL
         STZ ZP.NEXTH
         STZ ZP.IDYL  // No tokens for this attempt
@@ -745,7 +743,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.VOID)
-        STA ZP.ACCL
+        STA ZP.ACCT
         STZ ZP.NEXTL
         STZ ZP.NEXTH
         
@@ -804,7 +802,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         LDA #42
         STA ZP.NEXTL
         STZ ZP.NEXTH
@@ -827,7 +825,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
-        STA ZP.ACCL
+        STA ZP.ACCT
         STZ ZP.NEXTL
         STZ ZP.NEXTH
         STZ ZP.IDYL
@@ -859,7 +857,7 @@ unit TestScenarios
         
         // Verify main still has correct properties
         Functions.GetSignature();
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         CMP # BasicType.VOID
         if (NZ)
         {
@@ -893,8 +891,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #10
         STA ZP.NEXTL
@@ -924,8 +921,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         STZ ZP.NEXTL  // No arguments
         STZ ZP.NEXTH
@@ -1106,8 +1102,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.WORD)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         STZ ZP.NEXTL  // We'll add arguments separately
         STZ ZP.NEXTH
@@ -1143,7 +1138,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #BasicType.INT
-        STA ZP.ACCL
+        STA ZP.ACCT
         
         Arguments.Add();
         if (NC)
@@ -1160,7 +1155,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #BasicType.BIT
-        STA ZP.ACCL
+        STA ZP.ACCT
         
         Arguments.Add();
         if (NC)
@@ -1293,8 +1288,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #10
         STA ZP.NEXTL
@@ -1401,8 +1395,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         STZ ZP.NEXTL  // No arguments for this test
         STZ ZP.NEXTH
@@ -1504,8 +1497,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.WORD)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         STZ ZP.NEXTL  // Value = 0
         STZ ZP.NEXTH
@@ -1606,8 +1598,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #42
         STA ZP.NEXTL
@@ -1832,8 +1823,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.WORD)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         STZ ZP.NEXTL  // No arguments for this test
         STZ ZP.NEXTH
@@ -1950,8 +1940,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.WORD)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #200
         STA ZP.NEXTL
@@ -1984,8 +1973,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.BIT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         STZ ZP.NEXTL  // No arguments
         STZ ZP.NEXTH
@@ -2151,8 +2139,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #1
         STA ZP.NEXTL
@@ -2177,8 +2164,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.WORD)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #200
         STA ZP.NEXTL
@@ -2203,8 +2189,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.BIT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #1
         STA ZP.NEXTL
@@ -2229,8 +2214,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.WORD)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #(1024 % 256)
         STA ZP.NEXTL
@@ -2258,8 +2242,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #(65535 % 256)  // -1 as unsigned 16-bit
         STA ZP.NEXTL
@@ -2289,8 +2272,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         STZ ZP.NEXTL  // No arguments for this test
         STZ ZP.NEXTH
@@ -2592,7 +2574,7 @@ unit TestScenarios
         {
             // Check if current symbol is variable or constant
             Variables.GetSignature();
-            LDA ZP.ACCL
+            LDA ZP.ACCT
             AND #0xF0  // Extract symbol type (high nibble)
             CMP #(SymbolType.VARIABLE << 4)
             if (Z)
@@ -2654,7 +2636,7 @@ unit TestScenarios
         
         // Verify function still accessible
         Functions.GetSignature();
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         CMP #BasicType.INT  // Return type
         if (NZ)
         {
@@ -2672,8 +2654,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.WORD)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #99
         STA ZP.NEXTL
@@ -2735,7 +2716,7 @@ unit TestScenarios
         }
         
         Functions.GetSignature();
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         CMP #BasicType.INT
         if (NZ)
         {
@@ -2839,8 +2820,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #42
         STA ZP.NEXTL
@@ -2864,8 +2844,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.BIT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #1
         STA ZP.NEXTL
@@ -2889,8 +2868,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.WORD)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #(512 % 256)
         STA ZP.NEXTL
@@ -2916,8 +2894,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #(314 % 256)
         STA ZP.NEXTL
@@ -2942,8 +2919,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.WORD)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #1
         STA ZP.NEXTL
@@ -2970,8 +2946,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         STZ ZP.NEXTL  // Arguments added separately
         STZ ZP.NEXTH
@@ -3006,7 +2981,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #BasicType.INT
-        STA ZP.ACCL
+        STA ZP.ACCT
         
         Arguments.Add();
         if (NC)
@@ -3082,7 +3057,7 @@ unit TestScenarios
                 return;
             }
             
-            LDA ZP.ACCL
+            LDA ZP.ACCT
             AND #0xF0  // Extract symbol type
             CMP #(SymbolType.VARIABLE << 4)
             if (Z)
@@ -3453,7 +3428,7 @@ unit TestScenarios
             // Get symbol signature
             Variables.GetSignature();
             
-            LDA ZP.ACCL
+            LDA ZP.ACCT
             AND #0xF0  // Extract symbol type
             CMP #(SymbolType.VARIABLE << 4)
             if (Z)
@@ -3537,8 +3512,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #10
         STA ZP.NEXTL
@@ -3562,8 +3536,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.VARIABLE << 4) | BasicType.WORD)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         STZ ZP.NEXTL  // Value = 0
         STZ ZP.NEXTH
@@ -3587,8 +3560,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #(314 % 256)
         STA ZP.NEXTL
@@ -3613,8 +3585,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.CONSTANT << 4) | BasicType.WORD)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         LDA #100
         STA ZP.NEXTL
@@ -3641,8 +3612,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         STZ ZP.NEXTL  // Arguments added separately
         STZ ZP.NEXTH
@@ -3678,7 +3648,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #BasicType.INT
-        STA ZP.ACCL
+        STA ZP.ACCT
         
         Arguments.Add();
         if (NC)
@@ -3696,7 +3666,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #BasicType.INT
-        STA ZP.ACCL
+        STA ZP.ACCT
         
         Arguments.Add();
         if (NC)
@@ -3716,8 +3686,7 @@ unit TestScenarios
         STA ZP.TOPH
         
         LDA #((SymbolType.FUNCTION << 4) | BasicType.VOID)
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA ZP.ACCT
         
         STZ ZP.NEXTL  // No arguments
         STZ ZP.NEXTH
@@ -3755,7 +3724,7 @@ unit TestScenarios
         {
             // Get symbol signature to determine type
             Variables.GetSignature();
-            LDA ZP.ACCL
+            LDA ZP.ACCT
             AND #0xF0  // Extract symbol type (high nibble)
             
             CMP #(SymbolType.VARIABLE << 4)
@@ -3980,7 +3949,7 @@ unit TestScenarios
         }
         
         Functions.GetSignature();
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         CMP #BasicType.INT  // Return type
         if (NZ)
         {
@@ -4017,7 +3986,7 @@ unit TestScenarios
         }
         
         Functions.GetSignature();
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         CMP #BasicType.VOID  // Return type
         if (NZ)
         {
@@ -4028,7 +3997,7 @@ unit TestScenarios
         }
         
         Arguments.GetCount();
-        LDA ZP.ACCL
+        LDA ZP.ACCT
         CMP #0  // Should have no arguments
         if (NZ)
         {
