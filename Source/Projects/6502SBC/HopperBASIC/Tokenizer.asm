@@ -75,6 +75,7 @@ unit Tokenizer
         STRING     = 0x81,
         IDENTIFIER = 0x82,
         EOF        = 0x83,
+        COLON      = 0x84, 
     }
     
     // Compact keyword table: length, token, chars...
@@ -414,6 +415,14 @@ unit Tokenizer
             LDA Address.BasicInputBuffer, X
             switch (A)
             {
+                case ':':
+                {
+                    LDA #Tokens.COLON
+                    appendToTokenBuffer();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                    INX
+                }
                 case '=':
                 {
                     LDA #Tokens.EQUALS

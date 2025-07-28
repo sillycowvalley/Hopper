@@ -177,79 +177,132 @@ unit Console
         processTokens();
     }
     
-    // Process the tokens in BasicTokenizerBuffer
+    // Process the tokens in BasicTokenizerBuffer  
     // Returns C to continue, NC to exit
     processTokens()
     {
-        SEC  // not BYE
+        SEC  // Default: continue REPL
         
-        // Get first token
-        Tokenizer.NextToken();  // Returns token in A, updates ZP.CurrentToken
-        switch (A)
+        loop  // Main statement loop for colon-separated statements
         {
-            case Tokens.REM:
-            case Tokens.COMMENT:
+            // Get current token
+            Tokenizer.NextToken();  // Returns token in A, updates ZP.CurrentToken
+            LDA ZP.CurrentToken
+            
+            // Check for end of line first
+            CMP #Tokens.EOL
+            if (Z) { break; }  // End of all statements
+            
+            CMP #Tokens.EOF
+            if (Z) { break; }  // End of all statements
+            
+            // Execute the current statement
+            switch (A)
             {
-                // Comments at top level are just ignored
-                SEC  // Success - continue REPL
-                return;
+                case Tokens.REM:
+                case Tokens.COMMENT:
+                {
+                    // Comments at top level are just ignored
+                    // Skip to end of line or next colon
+                    loop
+                    {
+                        Tokenizer.NextToken();
+                        LDA ZP.CurrentToken
+                        CMP #Tokens.EOL
+                        if (Z) { break; }
+                        CMP #Tokens.COLON
+                        if (Z) { break; }
+                    }
+                }
+                case Tokens.NEW:
+                {
+                    cmdNew();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                }
+                case Tokens.LIST:
+                {
+                    cmdList();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                }
+                case Tokens.RUN:
+                {
+                    cmdRun();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                }
+                case Tokens.CLEAR:
+                {
+                    cmdClear();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                }
+                case Tokens.VARS:
+                {
+                    cmdVars();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                }
+                case Tokens.FUNCS:
+                {
+                    cmdFuncs();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                }
+                case Tokens.MEM:
+                {
+                    CmdMem();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                }
+                case Tokens.BYE:
+                {
+                    cmdBye();
+                    CLC  // Exit interpreter
+                    return;
+                }
+                case Tokens.FORGET:
+                case Tokens.SAVE:
+                case Tokens.LOAD:
+                case Tokens.DIR:
+                case Tokens.DEL:
+                {
+                    LDA #(Messages.NotImplemented % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.NotImplemented / 256)
+                    STA ZP.LastErrorH
+                    BRK
+                }
+                default:
+                {
+                    // Not a console command, try to execute as a statement
+                    Statement.Execute();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                }
             }
-            case Tokens.NEW:
-            {
-                cmdNew();
+            
+            // After executing statement, check what comes next
+            LDA ZP.CurrentToken
+            CMP #Tokens.EOL
+            if (Z) { break; }  // End of line
+            
+            CMP #Tokens.COLON
+            if (Z) 
+            { 
+                continue;  // Found colon, continue with next statement
             }
-            case Tokens.LIST:
-            {
-                cmdList();
-            }
-            case Tokens.RUN:
-            {
-                cmdRun();
-            }
-            case Tokens.CLEAR:
-            {
-                cmdClear();
-            }
-            case Tokens.VARS:
-            {
-                cmdVars();
-            }
-            case Tokens.FUNCS:
-            {
-                cmdFuncs();
-            }
-            case Tokens.MEM:
-            {
-                CmdMem();
-            }
-            case Tokens.BYE:
-            {
-                cmdBye();
-                CLC  // Exit
-                return;
-            }
-            case Tokens.EOL:
-            case Tokens.EOF:
-            {
-                // Empty line - just continue
-            }
-            case Tokens.FORGET:
-            case Tokens.SAVE:
-            case Tokens.LOAD:
-            case Tokens.DIR:
-            case Tokens.DEL:
-            {
-                LDA #(Messages.NotImplemented % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.NotImplemented / 256)
-                STA ZP.LastErrorH
-                BRK
-            }
-            default:
-            {
-                // Not a console command, try to execute as a statement
-                Statement.Execute();
-            }
+            
+            // If we get here, unexpected token after statement
+            LDA #(Messages.SyntaxError % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.SyntaxError / 256)
+            STA ZP.LastErrorH
+            CLC
+            return;
         }
+        
+        SEC  // Success - continue REPL
     }
 }
