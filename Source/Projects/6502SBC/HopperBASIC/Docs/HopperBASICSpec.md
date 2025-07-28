@@ -122,7 +122,10 @@
 - ❌ **Arrays**: `INT numbers[10]` - single-dimensional arrays
 
 ### Constants
-- ❌ **`CONST name = value`** - Define immutable constants
+- ❌ **`CONST INT name = value`** - Define immutable signed integer constants
+- ❌ **`CONST WORD name = value`** - Define immutable unsigned integer constants
+- ❌ **`CONST BIT name = value`** - Define immutable boolean constants
+- ❌ **`CONST BYTE name = value`** - Define immutable byte constants
 
 ### Enhanced I/O
 - ❌ **`INPUT var`** - Read value from keyboard into variable
@@ -369,7 +372,7 @@ do_until_statement := DO
                      { statement }*
                      UNTIL expression
 
-const_declaration := CONST identifier "=" expression
+const_declaration := CONST type_keyword identifier "=" expression
 
 array_declaration := type_keyword identifier "[" number "]" [ "=" array_initializer ]
 array_initializer := "{" expression [ "," expression ]* "}"
