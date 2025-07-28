@@ -109,7 +109,7 @@ unit Tools
     // Print null-terminated string to serial output
     // Input: ZP.IDX = pointer to null-terminated string
     // Output: String printed to serial
-    PrintString()
+    printStringIDX()
     {
         PHA
         PHY
@@ -128,6 +128,42 @@ unit Tools
         PLY
         PLA
     }
+    
+    // Print null-terminated string to serial output
+    // Input: ZP.ACC = pointer to null-terminated string
+    // Output: String printed to serial
+    PrintStringACC()
+    {
+        PHA
+        PHY
+        
+        LDY #0              // Initialize string index
+        
+        loop                // Print each character until null terminator
+        {
+            LDA [ZP.ACC], Y // Load character from string
+            if (Z) { break; } // Exit if null terminator found
+            
+            Serial.WriteChar(); // Print the character
+            INY             // Move to next character
+        }
+        
+        PLY
+        PLA
+    }
+    
+    // Write '\n' preserving carry flag
+    // Output: '\n' printed to serial
+    // Preserves: Everything
+    NL()
+    {
+        PHP  // Push processor status (including carry flag)
+        LDA #'\n' 
+        Serial.WriteChar();
+        PLP  // Pull processor status (restore carry flag)
+    }
+    
+    
     
     // Print 16-bit decimal number with no leading zeros
     // Input: ZP.TOP = 16-bit number to print (0-65535)
@@ -444,7 +480,7 @@ unit Tools
        STA ZP.IDXL
        LDA #(debugVarsHeader / 256)
        STA ZP.IDXH
-       PrintString();
+       printStringIDX();
        
        // A register
        LDA #'A'
@@ -605,7 +641,7 @@ unit Tools
         STA ZP.IDXL
         LDA #(debugStackHeader / 256)
         STA ZP.IDXH
-        PrintString();
+        printStringIDX();
         
         // SP and BP
         LDA #'S'
@@ -807,7 +843,7 @@ unit Tools
         STA ZP.IDXL
         LDA #(debugHeapHeader / 256)
         STA ZP.IDXH
-        PrintString();
+        printStringIDX();
         
         LDA #'V'
         Serial.WriteChar();
@@ -866,7 +902,7 @@ unit Tools
                 STA ZP.IDXL
                 LDA #(debugZeroBlock / 256)
                 STA ZP.IDXH
-                PrintString();
+                printStringIDX();
                 break; 
             }
             
@@ -1198,7 +1234,7 @@ unit Tools
                 STA ZP.IDXL
                 LDA #(debugEllipsis / 256)
                 STA ZP.IDXH
-                PrintString();
+                printStringIDX();
                 break; 
             }
         }
@@ -1373,14 +1409,14 @@ unit Tools
         STA ZP.IDXL
         LDA #(basicBuffersHeader / 256)
         STA ZP.IDXH
-        PrintString();
+        printStringIDX();
         
         // Show current BASIC zero page variables (0x30-0x37)
         LDA #(basicInputInfo % 256)
         STA ZP.IDXL
         LDA #(basicInputInfo / 256)
         STA ZP.IDXH
-        PrintString();
+        printStringIDX();
         LDA ZP.BasicInputLength  // 0x30
         Serial.HexOut();
         
@@ -1388,7 +1424,7 @@ unit Tools
         STA ZP.IDXL
         LDA #(basicTokPosInfo / 256)
         STA ZP.IDXH
-        PrintString();
+        printStringIDX();
         LDA ZP.TokenizerPosH     // 0x34
         Serial.HexOut();
         LDA ZP.TokenizerPosL     // 0x33
@@ -1398,7 +1434,7 @@ unit Tools
         STA ZP.IDXL
         LDA #(basicTokLenInfo / 256)
         STA ZP.IDXH
-        PrintString();
+        printStringIDX();
         LDA ZP.TokenBufferLengthH
         Serial.HexOut();
         LDA ZP.TokenBufferLengthL
@@ -1409,7 +1445,7 @@ unit Tools
         STA ZP.IDXL
         LDA #(basicCurTokInfo / 256)
         STA ZP.IDXH
-        PrintString();
+        printStringIDX();
         LDA ZP.CurrentToken      // 0x37
         Serial.HexOut();
         
@@ -1418,7 +1454,7 @@ unit Tools
         STA ZP.IDXL
         LDA #(basicErrorInfo / 256)
         STA ZP.IDXH
-        PrintString();
+        printStringIDX();
         LDA ZP.LastErrorH
         Serial.HexOut();
         LDA ZP.LastErrorL
@@ -1429,7 +1465,7 @@ unit Tools
         STA ZP.IDXL
         LDA #(basicCurrentCharInfo / 256)
         STA ZP.IDXH
-        PrintString();
+        printStringIDX();
         LDX ZP.TokenizerPosL     // Use low byte only for input buffer index
         CPX ZP.BasicInputLength
         if (C)  // TokPos < InputLength
@@ -1454,7 +1490,7 @@ unit Tools
         STA ZP.IDXL
         LDA #(basicTokenStringLabel / 256)
         STA ZP.IDXH
-        PrintString();
+        printStringIDX();
         
         // Print token string from TokenizerBuffer until null terminator
         LDX #0
@@ -1496,7 +1532,7 @@ unit Tools
         STA ZP.IDXL
         LDA #(basicInputBufferLabel / 256)
         STA ZP.IDXH
-        PrintString();
+        printStringIDX();
         
         PHX
         PHY
@@ -1627,7 +1663,7 @@ unit Tools
         STA ZP.IDXL
         LDA #(basicTokenizerBufferLabel / 256)
         STA ZP.IDXH
-        PrintString();
+        printStringIDX();
         
         PHX
         PHY
@@ -1760,17 +1796,7 @@ unit Tools
         PLP  // Restore flags
     }
     
-    // Write '\n' preserving carry flag
-    // Output: '\n' printed to serial
-    // Preserves: Everything
-    NL()
-    {
-        PHP  // Push processor status (including carry flag)
-        LDA #'\n' 
-        Serial.WriteChar();
-        PLP  // Pull processor status (restore carry flag)
-    }
-    
+       
     // Write character preserving carry flag
     // Input: A = character to output
     // Output: Character printed to serial

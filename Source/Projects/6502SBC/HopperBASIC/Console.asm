@@ -14,8 +14,6 @@ unit Console
     
     // String constants for VARS command
     const string noVariablesMsg = "No variables defined\n";
-    const string spaceOpenBracket = " (";
-    const string closeBracketSpaceEqualsSpace = ") = ";
     const string varTypeMsg = "VAR";
     const string constTypeMsg = "CONST";
     const string intTypeMsg = "INT";
@@ -44,10 +42,10 @@ unit Console
     CmdMem()
     {
         LDA #(Messages.MemoryMsg % 256)
-        STA ZP.IDXL
+        STA ZP.ACCL
         LDA #(Messages.MemoryMsg / 256)
-        STA ZP.IDXH
-        Tools.PrintString();
+        STA ZP.ACCH
+        Tools.PrintStringACC();
         
         // Get available memory
         Memory.Available();  // Pushes available memory (UInt) to stack
@@ -55,10 +53,10 @@ unit Console
         Tools.PrintDecimalWord();
         
         LDA #(Messages.BytesMsg % 256)
-        STA ZP.IDXL
+        STA ZP.ACCL
         LDA #(Messages.BytesMsg / 256)
-        STA ZP.IDXH
-        Tools.PrintString();
+        STA ZP.ACCH
+        Tools.PrintStringACC();
     }
     
     // Execute BYE command
@@ -120,14 +118,52 @@ unit Console
     
     
     // Execute VARS command - display all variables and constants
+    // Execute VARS command - display all variables and constants
     cmdVars()
     {
-        // TODO: Show functions
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BRK
+        PHA
+        PHX
+        PHY
+        
+        Tokenizer.NextToken(); // consume 'VARS'
+        
+        //DumpHeap();
+        
+        // Track if we found any variables or constants
+        LDX #0  // Counter for total symbols found
+        
+        // iterate through variables and constants
+        Variables.IterateAll();
+        loop
+        {
+            if (NC) { break; }  // No more variables
+            
+            // Get the variable name and print it
+            Variables.GetName();
+            
+            Tools.PrintStringACC();
+            Tools.NL();
+            
+            INX  // Increment count
+            Variables.IterateNext();
+        }
+              
+        // Special case: if no variables or constants found
+        CPX #0
+        if (Z)
+        {
+            LDA #(noVariablesMsg % 256)
+            STA ZP.ACCL
+            LDA #(noVariablesMsg / 256)
+            STA ZP.ACCH
+            Tools.PrintStringACC();
+        }
+        
+        PLY
+        PLX
+        PLA
+        
+        SEC // ok
     }
     
     

@@ -79,22 +79,10 @@ unit Messages
         PHX  // Preserve X register  
         PHY  // Preserve Y register
         
-        // Preserve ZP.IDX since we'll use it temporarily
-        LDA ZP.IDXL
-        PHA
-        LDA ZP.IDXH
-        PHA
-        
         // Returns C if no error, NC if error was printed
         CheckError();
         if (C) 
         { 
-            // Restore ZP.IDX
-            PLA
-            STA ZP.IDXH
-            PLA
-            STA ZP.IDXL
-            
             // Restore registers
             PLY
             PLX
@@ -106,21 +94,15 @@ unit Messages
         LDA #'?'
         Serial.WriteChar(); // '?' prefix
         LDA ZP.LastErrorL
-        STA ZP.IDXL
+        STA ZP.ACCL
         LDA ZP.LastErrorH
-        STA ZP.IDXH
-        Tools.PrintString();
+        STA ZP.ACCH
+        Tools.PrintStringACC();
         LDA #'\n'
         Serial.WriteChar(); // '\n' suffix
         
         // Clear the error
         ClearError();
-        
-        // Restore ZP.IDX
-        PLA
-        STA ZP.IDXH
-        PLA
-        STA ZP.IDXL
         
         // Restore registers
         PLY
@@ -137,23 +119,11 @@ unit Messages
     {
         PHA  // Preserve A register
         
-        // Preserve ZP.IDX since we'll use it temporarily
-        LDA ZP.IDXL
-        PHA
-        LDA ZP.IDXH
-        PHA
-        
         LDA #(OK % 256)
-        STA ZP.IDXL
+        STA ZP.ACCL
         LDA #(OK / 256)
-        STA ZP.IDXH
-        Tools.PrintString();
-        
-        // Restore ZP.IDX
-        PLA
-        STA ZP.IDXH
-        PLA
-        STA ZP.IDXL
+        STA ZP.ACCH
+        Tools.PrintStringACC();
         
         PLA  // Restore A register
     }

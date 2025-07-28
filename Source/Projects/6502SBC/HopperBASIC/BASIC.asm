@@ -1,6 +1,6 @@
 program HopperBASIC
 {
-    //#define DEBUG
+    #define DEBUG
     
     #define CPU_65C02S
     #define HOPPER_BASIC
@@ -52,10 +52,10 @@ program HopperBASIC
     {
         // Welcome message
         LDA #(Messages.Welcome % 256)
-        STA ZP.IDXL
+        STA ZP.ACCL
         LDA #(Messages.Welcome / 256)
-        STA ZP.IDXH
-        Tools.PrintString();
+        STA ZP.ACCH
+        Tools.PrintStringACC();
         
         Console.CmdMem();
     }
@@ -67,10 +67,10 @@ program HopperBASIC
         {
             // Show ready prompt
             LDA #(Messages.ReadyPrompt % 256)
-            STA ZP.IDXL
+            STA ZP.ACCL
             LDA #(Messages.ReadyPrompt / 256)
-            STA ZP.IDXH
-            Tools.PrintString();
+            STA ZP.ACCH
+            Tools.PrintStringACC();
             
             // Read and process user input using tokenizer
             Console.ReadLine();
