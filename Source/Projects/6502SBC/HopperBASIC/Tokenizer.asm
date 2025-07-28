@@ -65,6 +65,9 @@ unit Tokenizer
         MULTIPLY = 0x58,  // *
         DIVIDE   = 0x59,  // /
         
+        BITWISE_AND = 0x5A,  // &
+        BITWISE_OR  = 0x5B,  // |
+        
         // Literals and identifiers (128+)
         NUMBER     = 0x80,
         STRING     = 0x81,
@@ -443,6 +446,22 @@ unit Tokenizer
                 case '/':
                 {
                     LDA #Tokens.DIVIDE
+                    appendToTokenBuffer();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                    INX
+                }
+                case '&':
+                {
+                    LDA #Tokens.BITWISE_AND
+                    appendToTokenBuffer();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                    INX
+                }
+                case '|':
+                {
+                    LDA #Tokens.BITWISE_OR
                     appendToTokenBuffer();
                     Messages.CheckError();
                     if (NC) { return; }

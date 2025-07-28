@@ -619,8 +619,6 @@ unit Statement
                 STZ ZP.IDYH
             }
             
-            DumpHeap();
-        
             break;
         } // loop
         

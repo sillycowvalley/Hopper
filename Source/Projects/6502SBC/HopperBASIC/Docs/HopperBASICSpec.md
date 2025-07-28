@@ -44,10 +44,11 @@
 #### Expressions & Operators (Complete Implementation)
 - ✅ **Arithmetic**: `+ -` (addition, subtraction)
 - ✅ **Multiplicative**: `* / MOD` (multiplication, division, modulo)
+- ✅ **Bitwise**: `& |` (bitwise AND, bitwise OR)
 - ✅ **Unary**: `-` (negation), `NOT` (logical negation)
 - ✅ **Comparison**: `= <>` (equal, not equal - returns BIT type)
 - ✅ **Ordering**: `< > <= >=` (less than, greater than, less/greater equal)
-- ✅ **Logical**: `AND OR NOT` (BIT operands, also bitwise for numeric types)
+- ✅ **Logical**: `AND OR NOT` (BIT operands only)
 - ✅ **Parentheses**: `(` `)` for precedence
 
 #### Type System
@@ -155,7 +156,8 @@
 - ✅ **Interactive Console**: REPL with command processing
 - ✅ **Arithmetic Operations**: Complete set including multiplication, division, modulo with signed/unsigned handling
 - ✅ **Comparison Operations**: All six comparison operators with proper type handling
-- ✅ **Logical Operations**: AND, OR, NOT with BIT type requirements and bitwise operations for numeric types
+- ✅ **Bitwise Operations**: AND (&), OR (|) with all numeric types
+- ✅ **Logical Operations**: AND, OR, NOT with BIT type requirements only
 - ✅ **Symbol Table Foundation**: Complete 4-layer symbol table system
   - ✅ **Table Layer**: Generic linked list operations with memory management
   - ✅ **Objects Layer**: Symbol node management with type/value/name storage
@@ -168,7 +170,7 @@
 - ✅ **Interactive Loop**: Full REPL with startup banner and graceful error handling
 - ✅ **Comprehensive Testing**: Complete test suites validating all symbol table layers
 - ✅ **Type Compatibility System**: Full type checking with promotion rules for all operations
-- ✅ **Instruction Set**: Complete arithmetic and logical operations with type safety
+- ✅ **Instruction Set**: Complete arithmetic, bitwise, logical, and comparison operations with type safety
 
 ### Memory Layout (Preserved from Hopper VM)
 - **$0200-$02FF**: Serial input buffer (256 bytes)
@@ -269,7 +271,11 @@ comparison_op := "=" | "<>" | "<" | ">" | "<=" | ">="
 
 logical_or_expr := logical_and_expr [ OR logical_and_expr ]
 
-logical_and_expr := additive_expr [ AND additive_expr ]
+logical_and_expr := bitwise_or_expr [ AND bitwise_or_expr ]
+
+bitwise_or_expr := bitwise_and_expr [ "|" bitwise_and_expr ]
+
+bitwise_and_expr := additive_expr [ "&" additive_expr ]
 
 additive_expr := multiplicative_expr [ additive_op multiplicative_expr ]
 additive_op := "+" | "-"
@@ -359,18 +365,21 @@ comment := "//" { character }* end_of_line
 - **BYTE → WORD**: Always compatible (unsigned promotion)
 - **INT → WORD**: Compatible only when INT ≥ 0 (runtime check)
 - **WORD → INT**: Compatible only when WORD ≤ 32767 (runtime check)
-- **BIT operations**: Logical AND/OR/NOT for BIT types, bitwise for numeric types
+- **BIT operations**: Logical AND/OR/NOT for BIT types only
+- **Bitwise operations**: AND (&), OR (|) for all numeric types (INT, WORD, BYTE, BIT)
 - **Comparison results**: All comparisons return BIT type
-- **Operation modes**: Arithmetic (rejects BIT), Equality (allows all), Bitwise (allows all), Ordering (rejects BIT)
+- **Operation modes**: Arithmetic (rejects BIT), Equality (allows all), Bitwise (allows all), Ordering (rejects BIT), Logical (BIT only)
 
 ### Operator Precedence (Highest to Lowest)
 1. Function calls, array access, parentheses
 2. Unary minus (-), Logical NOT
 3. Multiplication (*), Division (/), Modulo (MOD)
 4. Addition (+), Subtraction (-)
-5. Logical AND
-6. Logical OR
-7. Comparison (=, <>, <, >, <=, >=)
+5. Bitwise AND (&)
+6. Bitwise OR (|)
+7. Logical AND (BIT operands only)
+8. Logical OR (BIT operands only)
+9. Comparison (=, <>, <, >, <=, >=)
 
 ### Output Formatting Rules
 
@@ -386,6 +395,7 @@ comment := "//" { character }* end_of_line
 ### Type System Benefits
 - **Type safety**: `IF count` is an error; must use `IF count <> 0`
 - **Clear intent**: BIT variables clearly indicate boolean usage
+- **Operator clarity**: Separate logical (BIT only) and bitwise (all types) operations
 - **Automatic promotion**: Compatible types promote safely (BYTE→INT→WORD when safe)
 - **Runtime validation**: INT/WORD mixing checked at runtime for safe operations
 
@@ -629,7 +639,7 @@ This approach maximizes code reuse while delivering a clean, simple BASIC interp
   - ✅ **Arguments layer**: Function parameter handling
   - ✅ **Comprehensive testing**: All layers tested with memory leak detection
 - ✅ **Type system**: Complete type compatibility checking with promotion rules
-- ✅ **Instruction set**: All arithmetic, logical, and comparison operations implemented
+- ✅ **Instruction set**: All arithmetic, bitwise, logical, and comparison operations implemented
 - ❌ **Variable system integration**: Connect symbol tables to parser (next priority)
 - ❌ **Function system integration**: Connect function tables to parser
 - ❌ **Assignment statements**: Variable assignment with type checking
