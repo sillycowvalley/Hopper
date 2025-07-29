@@ -106,7 +106,7 @@ const uint executorTokenAddrH    = Address.BasicProcessBuffer3 + 18;  // 0x09F2:
    - ✅ Operator-specific emission functions for all operation types
    - ✅ Proper zero page variable usage and dedicated buffer space allocation
 
-2. **✅ Complete Executor.asm** (COMPLETED):
+2. **✅ Complete Executor.asm** (READY FOR ARITHMETIC INTEGRATION):
    - ✅ Complete opcode dispatch loop with single switch statement
    - ✅ All core infrastructure functions implemented:
      - `ExecuteOpcodes()` - Main entry point with full error handling
@@ -114,7 +114,7 @@ const uint executorTokenAddrH    = Address.BasicProcessBuffer3 + 18;  // 0x09F2:
      - `FetchOpcode()` - Opcode fetching with bounds checking
      - `FetchOperandByte()` - Single byte operand fetching
      - `FetchOperandWord()` - 16-bit operand fetching (little-endian)
-     - `DispatchOpcode()` - Complete switch-based opcode dispatcher
+     - `DispatchOpcode()` - Complete switch-based opcode dispatcher **with proper error handling**
    - ✅ Handlers for all opcodes defined in `Opcodes.asm`:
      - **Arithmetic**: executeAdd, executeSub, executeMul, executeDiv, executeMod, executeNeg
      - **Bitwise**: executeBitwiseAnd, executeBitwiseOr
@@ -131,20 +131,60 @@ const uint executorTokenAddrH    = Address.BasicProcessBuffer3 + 18;  // 0x09F2:
    - ✅ Full BasicProcessBuffer3 space utilization for executor state
    - ✅ Working literal push operations (PUSHBIT, PUSHBYTE, PUSHINT, PUSHWORD)
    - ✅ Working stack manipulation (DECSP, DUP, NOP)
-   - ❌ Arithmetic operations (need Instructions.* integration)
+   - ✅ **ERROR HANDLING BUG FIX**: Removed incorrect `SEC` after switch that was masking arithmetic errors
+   - 🔧 **READY**: Arithmetic operations need simple wrapper implementations calling `Instructions.*`
    - ❌ Variable operations (need variable index → node mapping)
    - ❌ Control flow operations (need PC manipulation logic)
    - ❌ System calls (need PRINT integration)
 
-### 🔧 Phase 2: Expression Compilation Integration (READY TO START)
-1. **Replace Expression.asm Functions**:
-   - Update `Expression.Evaluate()` to use `Compiler.CompileExpression()` + `Executor.ExecuteOpcodes()`
-   - Maintain identical API and error handling
-   - Preserve type checking and stack integration
+### 🔧 Phase 2: Expression Compilation Integration (IN PROGRESS)
+**NEXT IMMEDIATE STEP**: Replace Executor arithmetic stubs with Instructions.* calls
 
+**Current Priority**:
+1. **🔧 Implement Arithmetic Operations** (Ready to code):
+   ```asm
+   executeAdd() { Instructions.Addition(); }
+   executeSub() { Instructions.Subtraction(); }
+   executeMul() { Instructions.Multiply(); }
+   executeDiv() { Instructions.Divide(); }
+   executeMod() { Instructions.Modulo(); }
+   executeNeg() { /* Push zero, swap operands, Instructions.Subtraction() */ }
+   ```
 
+2. **Test Basic Arithmetic JIT Chain**:
+   - Simple expressions: `5 + 3`, `10 * 2 + 5`
+   - Verify `Compiler.CompileExpression()` + `Executor.ExecuteOpcodes()` works
+   - Test error handling (type mismatches, division by zero)
 
-### ❌ Phase 3: Statement Integration (PENDING)
+3. **Replace Expression.Evaluate()**:
+   ```asm
+   Expression.Evaluate()
+   {
+       Compiler.CompileExpression();
+       Messages.CheckError();
+       if (NC) { return; }
+       
+       Executor.ExecuteOpcodes();
+   }
+   ```
+
+4. **Integration Testing**:
+   - Test through existing PRINT statements
+   - Verify identical behavior to current Expression.asm
+   - Test all expression types: arithmetic, logical, comparison
+
+### ❌ Phase 3: Variable Integration (NEXT BLOCKER)
+**After arithmetic works**, implement variable operations:
+1. **Variable Index Mapping System**:
+   - `executePushGlobal()` - Need variable index → node address lookup table
+   - `executePopGlobal()` - Need variable assignment through index
+   - Design compiler variable indexing strategy
+
+2. **Test Variable Expressions**:
+   - `A + B`, mixed variable/literal expressions
+   - Variable assignments through JIT
+
+### ❌ Phase 4: Statement Integration (PENDING)
 1. **Transform Statement.asm Execution Flow**:
    ```
    Current:  Parse tokens → Execute directly
@@ -157,7 +197,7 @@ const uint executorTokenAddrH    = Address.BasicProcessBuffer3 + 18;  // 0x09F2:
    - **Variable Declaration**: Compile optional initialization expression
    - **Management Commands**: Keep direct execution (NEW, VARS, MEM, etc.)
 
-### ❌ Phase 4: Performance Testing & Optimization (PENDING)
+### ❌ Phase 5: Performance Testing & Optimization (PENDING)
 1. **Performance Measurement**:
    - Add timing hooks to measure execution speed improvements
    - Test with complex nested expressions
@@ -212,6 +252,12 @@ For functions (future phase):
 - Opcodes cached after first compilation
 - Stored as extension to function node structure
 - Reused on subsequent calls
+
+### 6. Error Handling Strategy ✅
+- **Instructions.* functions** set `ZP.LastErrorL/H` on errors (type mismatch, division by zero)
+- **Messages.CheckError()** tests `ZP.LastErrorL/H`, not carry flag
+- **DispatchOpcode()** does NOT override error states with `SEC`
+- **ExecuteOpcodes()** main loop uses `Messages.CheckError()` to halt on errors
 
 ## Opcode Set (Complete) ✅
 
@@ -272,39 +318,58 @@ For functions (future phase):
 
 ## IMMEDIATE NEXT STEPS
 
-### 1. Complete Remaining Executor Operations
-**Current Status**: Core infrastructure and literal operations working
-**Remaining Work**:
-1. **Arithmetic Operations** - Integrate with existing `Instructions.*` functions:
-   - `executeAdd()` → `Instructions.Addition()`
-   - `executeSub()` → `Instructions.Subtraction()`
-   - `executeMul()` → `Instructions.Multiply()`
-   - `executeDiv()` → `Instructions.Divide()`
-   - `executeMod()` → `Instructions.Modulo()`
-   - `executeNeg()` → `Instructions.Subtraction()` (with zero)
+### 1. 🔧 Complete Arithmetic Operations (CURRENT PRIORITY)
+**Status**: Ready to implement - simple wrapper calls to existing `Instructions.*` functions
 
-2. **Variable Operations** - Implement variable index mapping:
-   - `executePushGlobal()` - Need variable index → node address lookup table
-   - `executePopGlobal()` - Need variable assignment through index
-   - Local variables can wait until function implementation
+**Implementation Strategy**:
+- Replace TODO stubs in `executeAdd()`, `executeSub()`, etc. with `Instructions.*` calls
+- Special handling for `executeNeg()` using zero-push + subtraction pattern
+- Maintain identical behavior to `Expression.asm` parsing
+- Leverage existing type checking, error handling, and arithmetic logic
 
-3. **System Calls** - Integrate with PRINT system:
-   - `executeSysCall()` - Route to appropriate system functions
+**Ready for Testing**: Once implemented, can test full compilation + execution chain
 
-### 2. Expression Integration Testing
-1. **Test Basic Compilation + Execution**:
-   - Simple expressions like `5 + 3`
-   - Variable access expressions like `A + B`
-   - Mixed type expressions with proper type handling
+### 2. Test Arithmetic JIT Chain
+1. **Basic Arithmetic Expressions**:
+   ```
+   > PRINT 5 + 3
+   8
+   > PRINT 10 * 2 + 5  
+   25
+   ```
 
-2. **Replace Expression.Evaluate()**:
-   - Update `Expression.Evaluate()` to call `Compiler.CompileExpression()` then `Executor.ExecuteOpcodes()`
-   - Ensure identical behavior and error handling
+2. **Error Handling Validation**:
+   - Type mismatch errors
+   - Division by zero detection
+   - Verify identical error messages to current system
 
-3. **Integration Testing**:
-   - Test through existing PRINT statements
-   - Test through variable assignments
-   - Verify all existing functionality still works
+3. **Performance Baseline**:
+   - Time complex expressions before/after JIT integration
+
+### 3. Replace Expression.Evaluate()
+**Goal**: Seamless drop-in replacement maintaining identical API
+
+**Implementation**:
+```asm
+Expression.Evaluate()
+{
+    // Save current tokenizer state
+    Compiler.CompileExpression();
+    Messages.CheckError();
+    if (NC) { return; }
+    
+    Executor.ExecuteOpcodes();
+    // Result left on stack (identical to current behavior)
+}
+```
+
+### 4. Variable Operations Integration
+**Next Major Milestone**: After arithmetic proven working
+
+**Requirements**:
+- Variable index → node address mapping system
+- Integration with existing Variables.* layer
+- Maintain type checking and assignment validation
 
 ## Success Criteria
 
@@ -327,8 +392,8 @@ For functions (future phase):
 ## Files Status
 - ✅ **OpCodes.asm** - Complete opcode definitions
 - ✅ **Compiler.asm** - Complete compilation infrastructure  
-- ✅ **Executor.asm** - Complete execution infrastructure (operations need Instructions.* integration)
-- ❌ **Expression.asm** - Needs integration with compiler/executor
+- ✅ **Executor.asm** - Complete execution infrastructure **ready for arithmetic integration**
+- 🔧 **Expression.asm** - Ready for JIT integration after arithmetic complete
 - ❌ **Statement.asm** - Needs integration for assignments and PRINT
 
 ## Technical Notes
@@ -351,12 +416,16 @@ All implemented code follows project rules:
 - Integration with existing Hopper VM systems
 - Complete switch-based opcode dispatch
 - Full BasicProcessBuffer3 space utilization
+- **Correct error propagation** (DispatchOpcode fix applied)
 
-### Current Testing Status ✅
-**Ready for Testing**: The compilation → execution chain can be tested immediately:
-- Literal operations work (PUSHBIT, PUSHBYTE, PUSHINT, PUSHWORD)
-- Stack manipulation works (DECSP, DUP, NOP)
-- Core infrastructure validated (bounds checking, error handling, dispatch)
-- Memory layout properly allocated and documented
+### Current Status Summary ✅
+**Infrastructure Complete**: The compilation → execution chain infrastructure is 100% ready:
+- ✅ Literal operations working (PUSHBIT, PUSHBYTE, PUSHINT, PUSHWORD)
+- ✅ Stack manipulation working (DECSP, DUP, NOP)
+- ✅ Error handling properly configured
+- ✅ Memory layout allocated and documented
+- ✅ Bounds checking and overflow detection
 
-**Next Integration**: Connect arithmetic operations to existing `Instructions.*` functions for full mathematical expression support.
+**Next Integration**: Simple arithmetic handler implementations will enable full JIT testing and Expression.asm integration.
+
+**Confidence Level**: High - the architecture is sound and ready for arithmetic integration.
