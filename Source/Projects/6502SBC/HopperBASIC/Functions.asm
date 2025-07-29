@@ -10,13 +10,13 @@ unit Functions
     // Function management building on Objects foundation
     // Functions use the existing Objects node structure:
     // Offset 0-1: next pointer (managed by Table unit)
-    // Offset 2:   symbolType|returnType (FUNCTION | INT/WORD/BIT/etc)
+    // Offset 2:   unused in functions
     // Offset 3-4: function body tokens pointer
     // Offset 5-6: arguments list head pointer (points directly to first argument node)
     // Offset 7+:  null-terminated function name string
     
     // Declare new function
-    // Input: ZP.TOP = name pointer, ZP.ACCT = FUNCTION|returnType (packed),
+    // Input: ZP.TOP = name pointer
     //        ZP.NEXT = arguments list head pointer, ZP.IDY = function body tokens pointer
     // Output: ZP.IDX = function node address, C set if successful, NC if error
     // Munts: ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT
@@ -58,12 +58,23 @@ unit Functions
     // Find function by name
     // Input: ZP.TOP = name pointer
     // Output: ZP.IDX = function node address, C set if found and is function, NC if not found or wrong type
-    // Munts: ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0
+    // Munts: ZP.LCURRENT, ZP.SymbolTemp0
     Find()
     {
         PHA
         PHX
         PHY
+        
+        LDA ZP.ACCT
+        PHA
+        LDA ZP.NEXTL
+        PHA
+        LDA ZP.NEXTH
+        PHA
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
         
         loop // start of single exit block
         {
@@ -102,32 +113,19 @@ unit Functions
             break;
         } // end of single exit block
         
+        PLA
+        STA ZP.IDYH
+        PLA
+        STA ZP.IDYL
+        PLA
+        STA ZP.NEXTH
+        PLA
+        STA ZP.NEXTL
+        PLA
+        STA ZP.ACCT
         
         PLY
         PLX
-        PLA
-    }
-    
-    // Get function signature info
-    // Input: ZP.IDX = function node address
-    // Output: ZP.ACCT = returnType, ZP.NEXT = function body tokens, ZP.IDY = arguments list head, C set (always succeeds)
-    // Munts: -
-    GetSignature()
-    {
-        PHA
-        
-        Objects.GetData();  // Returns type in ZP.ACCT, tokens in ZP.NEXT, value/args in ZP.IDY
-        
-        // Extract return type (low nibble)
-        LDA ZP.ACCT
-        AND #0x0F
-        STA ZP.ACCT
-        
-        // ZP.NEXT already contains function body tokens pointer
-        // ZP.IDY already contains arguments list head pointer
-        
-        SEC  // Always succeeds
-        
         PLA
     }
     
@@ -224,7 +222,14 @@ unit Functions
     {
         PHA
         
-        Objects.GetData();  // Returns type in ZP.ACCT, tokens in ZP.NEXT, value/args in ZP.IDY
+        LDA ZP.ACCT
+        PHA
+        LDA ZP.NEXTL
+        PHA
+        LDA ZP.NEXTH
+        PHA
+        
+        Objects.GetData();  // Returns tokens in ZP.NEXT, value/args in ZP.IDY
         
         // Check if arguments list head is non-zero
         LDA ZP.IDYL
@@ -237,6 +242,13 @@ unit Functions
         {
             SEC  // Has arguments
         }
+        
+        PLA
+        STA ZP.NEXTH
+        PLA
+        STA ZP.NEXTL
+        PLA
+        STA ZP.ACCT
         
         PLA
     }
@@ -417,23 +429,4 @@ unit Functions
         PLA
     }
     
-    // Get function return type only
-    // Input: ZP.IDX = function node address
-    // Output: ZP.ACCT = return type (BasicType), C set (always succeeds)
-    // Munts: -
-    GetReturnType()
-    {
-        PHA
-        
-        Objects.GetData();  // Returns type in ZP.ACCT, tokens in ZP.NEXT, value/args in ZP.IDY
-        
-        // Extract return type (low nibble)
-        LDA ZP.ACCT
-        AND #0x0F
-        STA ZP.ACCT
-        
-        SEC  // Always succeeds
-        
-        PLA
-    }
 }

@@ -29,7 +29,8 @@ program Test
     uses "TestConstants"
     uses "TestFunctions"
     uses "TestArguments"
-    uses "TestScenarios"
+    uses "TestScenariosA"
+    uses "TestScenariosB"
     
     // Test Table head locations
     const byte TableHeadLocation  = 0x3C;
@@ -292,7 +293,8 @@ program Test
         LDA #(scenarioSection / 256)
         STA ZP.TOPH
         PrintSectionHeader();
-        TestScenarios.RunScenarioTests();
+        TestScenariosA.RunScenarioTests();
+        TestScenariosB.RunScenarioTests();
         
         LDA #(testComplete % 256)
         STA ZP.IDXL

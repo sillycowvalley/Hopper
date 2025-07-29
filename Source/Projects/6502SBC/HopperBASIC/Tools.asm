@@ -375,13 +375,13 @@ unit Tools
             INY
         }
         
-        TYA  // Length in A
-        
         // Restore caller's ZP.TOP
         PLA
         STA ZP.TOPH
         PLA
         STA ZP.TOPL
+        
+        TYA  // Length in A
         
         PLY
         PLX

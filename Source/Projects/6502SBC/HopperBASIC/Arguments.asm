@@ -10,16 +10,14 @@ unit Arguments
     
     // Argument Node Structure:
     // Offset 0-1: next pointer
-    // Offset 2:   argument type (BasicType.INT, WORD, BIT, etc.)
-    // Offset 3+:  null-terminated argument name
+    // Offset 2+:  null-terminated argument name
     
-    const byte argOverhead = 3;     // Fixed fields before name
+    const byte argOverhead = 2;     // Fixed fields before name
     const byte anNext = 0;          // Next pointer offset (2 bytes)
-    const byte anType = 2;          // Argument type field offset
-    const byte anName = 3;          // Name field offset (variable length)
+    const byte anName = 2;          // Name field offset (variable length)
     
     // Add argument to function's arguments list at the end for correct order
-    // Input: ZP.IDX = function node address, ZP.TOP = argument name, ZP.ACCT = argument type
+    // Input: ZP.IDX = function node address, ZP.TOP = argument name
     // Output: C set if successful, NC if allocation failed
     // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT, ZP.LPREVIOUS, 
     //        ZP.SymbolType, ZP.SymbolNameL/H, ZP.SymbolLength
@@ -36,9 +34,6 @@ unit Arguments
             STA ZP.LHEADL           // Function node address
             LDA ZP.IDXH
             STA ZP.LHEADH
-            
-            LDA ZP.ACCT
-            STA ZP.SymbolType       // Argument type
             
             LDA ZP.TOPL
             STA ZP.SymbolNameL      // Argument name pointer
@@ -130,7 +125,7 @@ unit Arguments
     
     // Find argument by name in function's arguments list
     // Input: ZP.IDX = function node address, ZP.TOP = argument name
-    // Output: ZP.IDY = argument node address, ZP.ACCT = argument index, C set if found, NC if not found
+    // Output: ZP.IDY = argument node address, ZP.ACCL = argument index, C set if found, NC if not found
     // Munts: ZP.LCURRENT, ZP.LNEXT
     Find()
     {
@@ -194,22 +189,6 @@ unit Arguments
         
         PLY
         PLX
-        PLA
-    }
-    
-    // Get argument type from argument node
-    // Input: ZP.IDY = argument node address
-    // Output: ZP.ACCT = argument type, C set (always succeeds)
-    // Munts: -
-    GetType()
-    {
-        PHA
-        
-        LDY #anType
-        LDA [ZP.IDY], Y
-        STA ZP.ACCT
-        SEC  // Always succeeds
-        
         PLA
     }
     
@@ -527,17 +506,12 @@ unit Arguments
     }
     
     // Internal helper: Initialize fields in newly allocated argument node
-    // Input: ZP.IDX = node address, ZP.SymbolType = argument type,
+    // Input: ZP.IDX = node address
     //        ZP.SymbolName = name pointer, ZP.SymbolLength = name length
     // Note: Next pointer will be set by caller
     // Munts: -
     initializeNode()
     {
-        // Set argument type (offset anType)
-        LDY #anType
-        LDA ZP.SymbolType
-        STA [ZP.IDX], Y
-        
         // Copy name string starting at anName
         copyNameToNode();
     }
