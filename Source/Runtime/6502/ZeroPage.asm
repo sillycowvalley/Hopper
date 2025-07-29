@@ -110,11 +110,11 @@ unit ZP
 #endif
 
 #if defined(HOPPER_BASIC)
-    // HopperBASIC allocation: 0x30..0x3F (16 bytes primary)
-    
+    // HopperBASIC allocation: 0x30..0x4F (32 bytes total)
+
     // === CONSOLE INPUT (0x30) ===
     const byte BasicInputLength     = 0x30;  // Length of current input in BasicInputBuffer
-    
+
     // === TOKENIZER STATE (0x31-0x34) ===
     const byte TokenBufferLength    = 0x31;  // Length of tokens in BasicTokenizerBuffer (16-bit)
     const byte TokenBufferLengthL   = 0x31;  // Low byte
@@ -122,20 +122,31 @@ unit ZP
     const byte TokenizerPos         = 0x33;  // Current position in token buffer (16-bit)
     const byte TokenizerPosL        = 0x33;  // Low byte  
     const byte TokenizerPosH        = 0x34;  // High byte
-    
+
     // === ERROR HANDLING (0x35-0x36) ===
     const byte LastErrorL           = 0x35;  // Error message pointer low byte
     const byte LastErrorH           = 0x36;  // Error message pointer high byte
-    
+
     // === CURRENT TOKEN CACHE (0x37) ===
     const byte CurrentToken         = 0x37;  // Current token type/value from token buffer
-    
+
     // === LITERAL POSITION TRACKING (0x38-0x39) ===
     const byte TokenLiteralPosL     = 0x38;  // Literal data position low byte
     const byte TokenLiteralPosH     = 0x39;  // Literal data position high byte
-    
-    // === AVAILABLE PRIMARY (0x3A-0x4F) ===
-    // 22 bytes available for additional BASIC features (0x3A-0x4F)
+
+    // === JIT COMPILER STATE (0x3A-0x3F) ===
+    const byte OpcodeBufferLength   = 0x3A;  // Length of opcodes in BasicOpcodeBuffer (16-bit)
+    const byte OpcodeBufferLengthL  = 0x3A;  // Low byte
+    const byte OpcodeBufferLengthH  = 0x3B;  // High byte
+    // Use ZP.PCL/ZP.PCH for opcode execution program counter
+    const byte CompilerTokenPos     = 0x3C;  // Token position during compilation (16-bit)
+    const byte CompilerTokenPosL    = 0x3C;  // Low byte
+    const byte CompilerTokenPosH    = 0x3D;  // High byte
+    const byte CompilerFlags        = 0x3E;  // Compilation flags (bit 0: in function, etc.)
+    const byte OpcodeTemp           = 0x3F;  // Temporary byte for opcode construction
+
+    // === AVAILABLE (0x40-0x4F) ===
+    // 16 bytes still available for future features
     
     // === SYMBOL TABLE (0x70-0x7F) ===
 

@@ -29,8 +29,8 @@ Opcodes will be byte-aligned with variable-length encoding:
 ### 2. Literal Reference Strategy
 Instead of duplicating literal data, opcodes reference the original token stream:
 ```
-Token stream:   [TOKEN_STRING][5]["HELLO"][TOKEN_NUMBER][42][0]
-Opcode stream:  [PUSHSTRINGB][0x00][PUSHNUMBERB][0x08][ADD]
+Token stream:   [TOKEN_STRING]["HELLO"][TOKEN_NUMBER][0x002A][0]
+Opcode stream:  [PUSHSTRINGB][0x01][PUSHNUMBERB][0x08][ADD]
 ```
 
 This approach:
