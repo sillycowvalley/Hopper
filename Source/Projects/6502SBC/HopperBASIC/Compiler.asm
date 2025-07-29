@@ -64,9 +64,9 @@ unit Compiler
         CMP #0x02
         if (C) // >= 0x0200, definitely overflow
         {
-            LDA #(Messages.BufferOverflow % 256)
+            LDA #( Messages.BufferOverflow % 256)
             STA ZP.LastErrorL
-            LDA #(Messages.BufferOverflow / 256)
+            LDA #( Messages.BufferOverflow / 256)
             STA ZP.LastErrorH
             Messages.StorePC(); // 6502 PC -> IDY
             CLC // Overflow
@@ -120,7 +120,7 @@ unit Compiler
         // Write opcode to buffer
         LDA ZP.OpcodeTemp
         LDY #0
-        STA [compilerBufferAddr], Y
+        STA (compilerBufferAddr + 0), Y
         
         // Increment buffer length
         INC ZP.OpcodeBufferLengthL
@@ -425,7 +425,7 @@ unit Compiler
                 EmitOpcode();
                 return;
             }
-            case Tokens.MODULO:
+            case Tokens.MOD:
             {
                 LDA #OpcodeType.MOD
                 EmitOpcode();
@@ -463,25 +463,25 @@ unit Compiler
                 EmitOpcode();
                 return;
             }
-            case Tokens.LESSTHAN:
+            case Tokens.LT:
             {
                 LDA #OpcodeType.LT
                 EmitOpcode();
                 return;
             }
-            case Tokens.GREATERTHAN:
+            case Tokens.GT:
             {
                 LDA #OpcodeType.GT
                 EmitOpcode();
                 return;
             }
-            case Tokens.LESSEQUAL:
+            case Tokens.LE:
             {
                 LDA #OpcodeType.LE
                 EmitOpcode();
                 return;
             }
-            case Tokens.GREATEREQUAL:
+            case Tokens.GE:
             {
                 LDA #OpcodeType.GE
                 EmitOpcode();
@@ -744,10 +744,10 @@ unit Compiler
             {
                 case Tokens.EQUALS:
                 case Tokens.NOTEQUAL:
-                case Tokens.LESSTHAN:
-                case Tokens.GREATERTHAN:
-                case Tokens.LESSEQUAL:
-                case Tokens.GREATEREQUAL:
+                case Tokens.LT:
+                case Tokens.GT:
+                case Tokens.LE:
+                case Tokens.GE:
                 {
                     STA compilerOperatorToken // Save operator token
                     
@@ -924,7 +924,7 @@ unit Compiler
             {
                 case Tokens.MULTIPLY:
                 case Tokens.DIVIDE:
-                case Tokens.MODULO:
+                case Tokens.MOD:
                 {
                     STA compilerOperatorToken // Save operator
                     

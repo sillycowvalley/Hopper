@@ -6,7 +6,7 @@ unit Expression
     uses "Tokenizer"
     uses "Instructions"
     
-    // Evaluate an expression starting from current token
+    // JIT-enabled Expression.Evaluate() - drop-in replacement
     // Input: ZP.CurrentToken = first token of expression
     // Output: Expression result pushed onto value stack
     //         ZP.CurrentToken = token after expression
@@ -14,22 +14,54 @@ unit Expression
     // Error: Sets ZP.LastError if syntax error or type mismatch
     Evaluate()
     {
-#ifdef DEBUG
+    #ifdef DEBUG
         LDA #'<'
         Tools.COut();
         LDA #'E'
         Tools.COut();
-#endif
+    #endif
         
-        // Start with lowest precedence level
-        parseLogical();
+        // NEW JIT COMPILATION PATH:
+        // 1. Compile infix tokens ? postfix opcodes
+        Compiler.CompileExpression();
+        Messages.CheckError();
+        if (NC) 
+        { 
+    #ifdef DEBUG
+            LDA #'E'
+            Tools.COut();
+            LDA #'!'
+            Tools.COut();
+            LDA #'>'
+            Tools.COut();
+    #endif
+            return; 
+        }
         
-#ifdef DEBUG
+        // 2. Execute opcodes ? result on stack
+        Executor.ExecuteOpcodes();
+        Messages.CheckError();
+        if (NC) 
+        { 
+    #ifdef DEBUG
+            LDA #'E'
+            Tools.COut();
+            LDA #'!'
+            Tools.COut();
+            LDA #'>'
+            Tools.COut();
+    #endif
+            return; 
+        }
+        
+        // Result is now on stack - identical to old behavior
+        
+    #ifdef DEBUG
         LDA #'E'
         Tools.COut();
         LDA #'>'
         Tools.COut();
-#endif
+    #endif
     }
     
     // Parse comparison operators (=, <>, <, >, <=, >=)

@@ -36,6 +36,8 @@ unit Messages
     const string ConstantExpressionExpected  = "CONSTANT EXPRESSION EXPECTED";
     const string IllegalVariableName  = "ILLEGAL VARIABLE NAME";
     const string IllegalAssignment  = "ILLEGAL ASSIGNMENT";
+    const string InvalidOperator = "INVALID OPERATOR";
+    const string BufferOverflow = "BUFFER OVERFLOW";
     
     
     // PC -> IDY
