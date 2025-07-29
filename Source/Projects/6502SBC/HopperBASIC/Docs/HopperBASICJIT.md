@@ -18,15 +18,49 @@ The new architecture introduces a compilation phase:
 2. **Compilation** (new) - Token stream → Opcode stream  
 3. **Execution** (new) - Opcode stream → Results
 
+## Memory Layout
+
+### Buffer Allocation
+```asm
+// HopperBASIC buffers
+const uint BasicInputBuffer       = 0x0900;  // 128 bytes - raw user input
+const uint BasicProcessBuffer1    = 0x0980;  // 64 bytes - variable/general workspace
+const uint BasicProcessBuffer2    = 0x09C0;  // 32 bytes - secondary workspace
+const uint BasicProcessBuffer3    = 0x09E0;  // 32 bytes - tertiary workspace  
+const uint BasicTokenizerBuffer   = 0x0A00;  // 512 bytes - tokenized line storage
+const uint BasicOpcodeBuffer      = 0x0C00;  // 512 bytes - JIT compiled opcodes
+const uint HopperData             = 0x0E00;  // start of Hopper RAM (program, then heap)
+```
+
+### Zero Page Allocation
+```asm
+// === JIT COMPILER STATE (0x3A-0x3F) ===
+const byte OpcodeBufferLength   = 0x3A;  // Length of opcodes in BasicOpcodeBuffer (16-bit)
+const byte OpcodeBufferLengthL  = 0x3A;  // Low byte
+const byte OpcodeBufferLengthH  = 0x3B;  // High byte
+// Note: Opcode execution uses ZP.PCL/ZP.PCH from Hopper VM
+const byte CompilerTokenPos     = 0x3C;  // Token position during compilation (16-bit)
+const byte CompilerTokenPosL    = 0x3C;  // Low byte
+const byte CompilerTokenPosH    = 0x3D;  // High byte
+const byte CompilerFlags        = 0x3E;  // Compilation flags (bit 0: in function, etc.)
+const byte OpcodeTemp           = 0x3F;  // Temporary byte for opcode construction
+```
+
 ## Key Design Decisions
 
-### 1. Opcode Format
+### 1. Fixed-Size Buffers
+- 512-byte opcode buffer matches tokenizer buffer size
+- Opcodes are more compact than tokens, ensuring sufficient space
+- Simple bounds checking and overflow detection
+- No dynamic memory allocation required
+
+### 2. Opcode Format
 Opcodes will be byte-aligned with variable-length encoding:
 - Single-byte opcodes for common operations (ADD, SUB, etc.)
 - Two-byte opcodes for 8-bit offsets (PUSHVARB, PUSHSTRINGB)
 - Three-byte opcodes for 16-bit offsets when token buffer exceeds 256 bytes
 
-### 2. Literal Reference Strategy
+### 3. Literal Reference Strategy
 Instead of duplicating literal data, opcodes reference the original token stream:
 ```
 Token stream:   [TOKEN_STRING]["HELLO"][TOKEN_NUMBER][0x002A][0]
@@ -38,7 +72,7 @@ This approach:
 - Enables single-byte addressing for most programs
 - Avoids data duplication
 
-### 3. Storage Strategy
+### 4. Storage Strategy
 For immediate mode (console commands):
 - Opcodes generated in temporary buffer
 - Executed immediately
@@ -58,7 +92,7 @@ For functions (future phase):
    - Opcode buffer management
    - Token offset tracking
 3. Create `Executor.asm` with:
-   - Opcode dispatch loop
+   - Opcode dispatch loop using ZP.PCL/ZP.PCH
    - Handlers for each opcode
 
 ### Phase 2: Expression Compilation (3 days)
@@ -113,13 +147,13 @@ For functions (future phase):
 
 ## Memory Impact
 
-Estimated overhead:
-- Opcode definitions: ~200 bytes
-- Compiler code: ~2KB 
-- Executor code: ~1KB
-- Temporary opcode buffer: 256 bytes
+- Opcode buffer: 512 bytes (fixed allocation)
+- Zero page usage: 6 bytes (0x3A-0x3F)
+- Opcode definitions: ~200 bytes ROM
+- Compiler code: ~2KB ROM
+- Executor code: ~1KB ROM
 
-Total: ~3.5KB additional ROM
+Total: ~3.5KB additional ROM, 518 bytes additional RAM
 
 ## Performance Expectations
 
@@ -143,3 +177,9 @@ This architecture enables:
 - Advanced optimizations (constant folding, CSE)
 - Potential native code generation for hot paths
 - Debugging/profiling capabilities
+
+## Technical Notes
+
+- The 512-byte opcode buffer is guaranteed sufficient since opcodes reference tokens rather than embedding literals
+- Using ZP.PCL/ZP.PCH from Hopper VM for opcode execution maintains consistency with VM design
+- Fixed buffer sizes align with HopperBASIC's philosophy of predictable memory usage
