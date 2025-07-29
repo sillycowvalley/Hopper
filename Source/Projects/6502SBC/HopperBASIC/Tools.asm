@@ -105,7 +105,6 @@ unit Tools
         PLP  // Restore flags
     }
     
-#ifdef DEBUG    
     // Print null-terminated string to serial output
     // Input: ZP.ACC = pointer to null-terminated string
     // Output: String printed to serial
@@ -128,7 +127,7 @@ unit Tools
         PLY
         PLA
     } 
-#endif
+
    
     // Write '\n' preserving carry flag
     // Output: '\n' printed to serial
