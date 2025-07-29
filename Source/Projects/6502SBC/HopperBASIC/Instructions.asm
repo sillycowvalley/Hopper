@@ -302,7 +302,7 @@ unit Instructions
                         }
                         else
                         {
-                            // INT = 0: promote to WORD for unsigned comparison
+                            // INT >= 0: promote to WORD for unsigned comparison
                             LDA #BasicType.WORD
                             STA ZP.NEXTT
                             SEC  // Set C - compatible
@@ -310,25 +310,17 @@ unit Instructions
                         }
                     }
                     
-                    // For non-comparison operations: use existing range-check logic
-                    LDA ZP.NEXTH  // Check high byte of NEXT (WORD value)
-                    CMP #0x80     // Compare with 32768 high byte
-                    if (C)        // WORD = 32768
+                    // For non-comparison operations: use existing logic
+                    BIT ZP.TOPH  // Check sign bit of TOP (INT value)
+                    if (MI)      // Negative INT
                     {
-                        if (Z)    // Exactly 32768?
-                        {
-                            LDA ZP.NEXTL
-                            if (Z)  // Exactly 32768
-                            {
-                                CLC  // Set NC - incompatible
-                                break;
-                            }
-                        }
-                        // WORD > 32767
                         CLC  // Set NC - incompatible
                         break;
                     }
-                    // WORD = 32767, compatible with INT
+                    LDA #BasicType.WORD
+                    STA ZP.NEXTT
+                    
+                    // INT is non-negative, compatible with WORD
                     LDA ZP.ACCT
                     SEC  // Set C - compatible
                     break;
@@ -379,7 +371,7 @@ unit Instructions
                         }
                         else
                         {
-                            // INT = 0: promote to WORD for unsigned comparison
+                            // INT >= 0: promote to WORD for unsigned comparison
                             LDA #BasicType.WORD
                             STA ZP.NEXTT
                             SEC  // Set C - compatible

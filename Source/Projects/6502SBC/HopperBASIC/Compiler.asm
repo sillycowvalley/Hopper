@@ -119,7 +119,7 @@ unit Compiler
         Tools.NL(); LDA #'>' Tools.COut();
         LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
         LDA #' ' Tools.COut(); LDA compilerOpCode Tools.HOut(); LDA #' ' Tools.COut(); 
-                               LDA compilerOperand1 Tools.HOut(); LDA #' ' Tools.COut();
+                               LDA compilerOperand1 Tools.HOut(); LDA #' ' Tools.COut();
 #endif
         // Check space for 2 bytes
         LDA #2
@@ -161,8 +161,8 @@ unit Compiler
         Tools.NL(); LDA #'>' Tools.COut();
         LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
         LDA #' ' Tools.COut(); LDA compilerOpCode Tools.HOut(); LDA #' ' Tools.COut(); 
-                               LDA compilerOperand1 Tools.HOut(); LDA #' ' Tools.COut();
-                               LDA compilerOperand2 Tools.HOut(); LDA #' ' Tools.COut();
+                               LDA compilerOperand1 Tools.HOut(); LDA #' ' Tools.COut();
+                               LDA compilerOperand2 Tools.HOut(); LDA #' ' Tools.COut();
 #endif        
         // Check space for 3 bytes
         LDA #3
@@ -791,6 +791,58 @@ unit Compiler
 #endif
     }
     
+    // Compile bitwise AND operations (&)
+    // Input: ZP.CurrentToken = current token
+    // Output: Bitwise AND opcodes emitted, ZP.CurrentToken = token after expression  
+    // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
+    compileBitwiseAnd()
+    {
+    #ifdef DEBUG
+        LDA #'<'
+        Tools.COut();
+        LDA #'C'
+        Tools.COut();
+        LDA #'&'
+        Tools.COut();
+    #endif
+        
+        // Compile left operand (higher precedence)
+        compileAdditive();
+        Messages.CheckError();
+        if (NC) { return; }
+        
+        loop
+        {
+            LDA ZP.CurrentToken
+            CMP #Tokens.BITWISE_AND
+            if (NZ) { break; }
+            
+            // Get next token for right operand
+            Tokenizer.NextToken();
+            Messages.CheckError();
+            if (NC) { return; }
+            
+            // Compile right operand
+            compileAdditive();
+            Messages.CheckError();
+            if (NC) { return; }
+            
+            // Emit bitwise AND opcode
+            LDA #Tokens.BITWISE_AND
+            EmitBitwiseOp();
+            if (NC) { return; }
+        }
+        
+    #ifdef DEBUG
+        LDA #'C'
+        Tools.COut();
+        LDA #'&'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+    #endif
+    }
+    
     // Compile bitwise OR operations
     // Input: ZP.CurrentToken = current token
     // Output: Bitwise OR opcodes emitted, ZP.CurrentToken = token after expression  
@@ -807,7 +859,7 @@ unit Compiler
 #endif
         
         // Compile left operand (higher precedence)
-        compileAdditive();
+        compileBitwiseAnd();
         Messages.CheckError();
         if (NC) { return; }
         
@@ -823,7 +875,7 @@ unit Compiler
             if (NC) { return; }
             
             // Compile right operand
-            compileAdditive();
+            compileBitwiseAnd();
             Messages.CheckError();
             if (NC) { return; }
             

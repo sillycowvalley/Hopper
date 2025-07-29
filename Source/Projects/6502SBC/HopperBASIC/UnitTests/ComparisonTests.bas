@@ -1,6 +1,3 @@
-REM HopperBASIC Comparison Operators Test Suite
-
-REM Basic Integer Comparisons (< operator)
 PRINT 5 < 10
 PRINT 10 < 5
 PRINT 7 < 7
@@ -13,7 +10,6 @@ PRINT 1 < 0
 PRINT -1 < 0
 PRINT 0 < -1
 
-REM Edge Case Values (< operator)
 PRINT 32767 < 32766
 PRINT 32766 < 32767
 PRINT -32768 < -32767
@@ -25,7 +21,6 @@ PRINT 0 < 32767
 PRINT -32768 < 32767
 PRINT 32767 < -32768
 
-REM Large Numbers and Type Mixing (< operator)
 PRINT 50 < 100
 PRINT 200 < 150
 PRINT 255 < 300
@@ -43,7 +38,6 @@ PRINT 32768 < 32767
 PRINT 65535 < 32767
 PRINT 32767 < 65535
 
-REM Expression Comparisons (< operator)
 PRINT 5 + 3 < 10
 PRINT 10 - 3 < 5
 PRINT 4 * 3 < 15
@@ -53,7 +47,6 @@ PRINT 3 * 4 < 2 * 5
 PRINT 10 - 3 < 8 - 1
 PRINT 15 / 3 < 20 / 4
 
-REM Basic Integer Comparisons (<= operator)
 PRINT 5 <= 10
 PRINT 10 <= 5
 PRINT 7 <= 7
@@ -66,7 +59,6 @@ PRINT 1 <= 0
 PRINT -1 <= 0
 PRINT 0 <= -1
 
-REM Edge Case Values (<= operator)
 PRINT 32767 <= 32766
 PRINT 32766 <= 32767
 PRINT -32768 <= -32767
@@ -80,7 +72,6 @@ PRINT 32767 <= -32768
 PRINT 32767 <= 32767
 PRINT -32768 <= -32768
 
-REM Large Numbers and Type Mixing (<= operator)
 PRINT 50 <= 100
 PRINT 200 <= 150
 PRINT 255 <= 300
@@ -99,7 +90,6 @@ PRINT 65535 <= 32767
 PRINT 32767 <= 65535
 PRINT 65535 <= 65535
 
-REM Expression Comparisons (<= operator)
 PRINT 5 + 3 <= 10
 PRINT 10 - 3 <= 5
 PRINT 4 * 3 <= 15
@@ -109,7 +99,6 @@ PRINT 3 * 4 <= 2 * 5
 PRINT 10 - 3 <= 8 - 1
 PRINT 15 / 3 <= 20 / 4
 
-REM Basic Integer Comparisons (> operator)
 PRINT 5 > 10
 PRINT 10 > 5
 PRINT 7 > 7
@@ -122,7 +111,6 @@ PRINT 1 > 0
 PRINT -1 > 0
 PRINT 0 > -1
 
-REM Edge Case Values (> operator)
 PRINT 32767 > 32766
 PRINT 32766 > 32767
 PRINT -32768 > -32767
@@ -134,7 +122,6 @@ PRINT 0 > 32767
 PRINT -32768 > 32767
 PRINT 32767 > -32768
 
-REM Large Numbers and Type Mixing (> operator)
 PRINT 50 > 100
 PRINT 200 > 150
 PRINT 255 > 300
@@ -152,7 +139,6 @@ PRINT 32768 > 32767
 PRINT 65535 > 32767
 PRINT 32767 > 65535
 
-REM Expression Comparisons (> operator)
 PRINT 5 + 3 > 10
 PRINT 10 - 3 > 5
 PRINT 4 * 3 > 15
@@ -162,7 +148,6 @@ PRINT 3 * 4 > 2 * 5
 PRINT 10 - 3 > 8 - 1
 PRINT 15 / 3 > 20 / 4
 
-REM Basic Integer Comparisons (>= operator)
 PRINT 5 >= 10
 PRINT 10 >= 5
 PRINT 7 >= 7
@@ -175,7 +160,6 @@ PRINT 1 >= 0
 PRINT -1 >= 0
 PRINT 0 >= -1
 
-REM Edge Case Values (>= operator)
 PRINT 32767 >= 32766
 PRINT 32766 >= 32767
 PRINT -32768 >= -32767
@@ -189,7 +173,6 @@ PRINT 32767 >= -32768
 PRINT 32767 >= 32767
 PRINT -32768 >= -32768
 
-REM Large Numbers and Type Mixing (>= operator)
 PRINT 50 >= 100
 PRINT 200 >= 150
 PRINT 255 >= 300
@@ -208,7 +191,6 @@ PRINT 65535 >= 32767
 PRINT 32767 >= 65535
 PRINT 65535 >= 65535
 
-REM Expression Comparisons (>= operator)
 PRINT 5 + 3 >= 10
 PRINT 10 - 3 >= 5
 PRINT 4 * 3 >= 15
@@ -218,7 +200,6 @@ PRINT 3 * 4 >= 2 * 5
 PRINT 10 - 3 >= 8 - 1
 PRINT 15 / 3 >= 20 / 4
 
-REM Special Type Boundary Tests
 PRINT 255 < 256
 PRINT 256 > 255
 PRINT 32767 < 32768
@@ -228,8 +209,9 @@ PRINT 0 > -1
 PRINT -32768 < -1
 PRINT -1 > -32768
 
-REM Chained Comparisons
 PRINT 1 < 2 AND 2 < 3
 PRINT 3 > 2 AND 2 > 1
 PRINT 1 <= 1 AND 1 >= 1
 PRINT 5 < 10 OR 10 < 5
+
+
