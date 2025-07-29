@@ -7,16 +7,29 @@ This project transforms HopperBASIC from a direct token interpreter to a Just-In
 ## Current Architecture
 
 HopperBASIC currently uses a recursive descent parser that directly executes operations as it parses:
-- Tokens are parsed from the token buffer
+- Tokens are parsed from the token buffer in infix notation
 - Each expression node immediately evaluates and pushes results to the Hopper VM value stack
 - No intermediate representation exists between tokens and execution
 
 ## New Architecture
 
-The new architecture introduces a compilation phase:
-1. **Tokenization** (unchanged) - Source text → Token stream
-2. **Compilation** (new) - Token stream → Opcode stream  
-3. **Execution** (new) - Opcode stream → Results via VM stack
+The new architecture introduces a compilation phase that converts infix expressions to postfix opcodes:
+1. **Tokenization** (unchanged) - Source text → Infix token stream
+2. **Compilation** (new) - Infix token stream → Postfix opcode stream  
+3. **Execution** (new) - Postfix opcode stream → Results via VM stack
+
+### Infix to Postfix Conversion
+The key transformation is converting infix expressions to postfix (Reverse Polish Notation):
+```
+Infix tokens:    A + B * C
+Postfix opcodes: [PUSHVARB A][PUSHVARB B][PUSHVARB C][MUL][ADD]
+```
+
+This conversion:
+- Eliminates the need for recursive parsing during execution
+- Naturally handles operator precedence through compilation
+- Enables efficient stack-based execution
+- Maintains identical mathematical semantics
 
 ## Memory Layout
 
@@ -65,7 +78,7 @@ Opcodes use a 6+2 bit encoding scheme with variable-length instructions:
 Instead of duplicating literal data, opcodes reference the original token stream:
 ```
 Token stream:   [TOKEN_STRING]["HELLO"][TOKEN_NUMBER][0x002A][0]
-Opcode stream:  [PUSHSTRINGB][0x01][PUSHNUMBERB][0x08][ADD]
+Opcode stream:  [PUSHGLOBAL 0x01][PUSHBYTE 0x08][ADD]
 ```
 
 This approach:
@@ -121,8 +134,8 @@ For functions (future phase):
    - Transform `parsePrimary()` → `compilePrimary()` - numbers, variables, parentheses
 
 2. **Implement Compilation Logic**:
-   - **Numbers**: Emit `PUSHBYTE`, `PUSHWORD`, `PUSHINT` with token buffer offsets
-   - **Variables**: Emit `PUSHVARB` with identifier name offset in token buffer
+   - **Numbers**: Emit `PUSHBIT`, `PUSHBYTE`, `PUSHINT`, `PUSHWORD` with token buffer offsets
+   - **Variables**: Emit `PUSHGLOBAL` with identifier name offset in token buffer
    - **Operators**: Emit appropriate arithmetic/logical opcodes directly
    - **Type Compatibility**: Maintain existing type checking during compilation
    - **Error Handling**: Preserve Messages integration and error propagation
@@ -140,8 +153,8 @@ For functions (future phase):
    ```
 
 2. **Update Core Statements**:
-   - **PRINT**: Compile expression, emit `SYSCALL PRINT` opcode
-   - **Assignment**: Compile RHS expression, emit variable store opcode
+   - **PRINT**: Compile expression, emit `SYSCALL 0x01` (PRINT)
+   - **Assignment**: Compile RHS expression, emit `POPGLOBAL` opcode
    - **Variable Declaration**: Compile optional initialization expression
    - **Management Commands**: Keep direct execution (NEW, VARS, MEM, etc.)
 
@@ -181,10 +194,12 @@ For functions (future phase):
 ## Opcode Set (Complete)
 
 ### Stack Operations (One Byte Operand)
-- `PUSHBYTE <offset>` - Push byte literal from token buffer
 - `PUSHBIT <value>` - Push BIT literal (0 or 1)
-- `PUSHVARB <offset>` - Push variable value by name offset
-- `PUSHSTRINGB <offset>` - Push string address from token buffer
+- `PUSHBYTE <value>` - Push BYTE immediate value
+- `PUSHGLOBAL <index>` - Push global variable by index
+- `PUSHLOCAL <offset>` - Push local variable by signed offset
+- `POPGLOBAL <index>` - Pop to global variable by index
+- `POPLOCAL <offset>` - Pop to local variable by signed offset
 
 ### Stack Operations (Two Byte Operands)
 - `PUSHINT <lsb> <msb>` - Push INT immediate value
@@ -212,14 +227,26 @@ For functions (future phase):
 - `NE` - Pop two values, push inequality result (BIT)
 - `LT`, `GT`, `LE`, `GE` - Comparison operators returning BIT results
 
-### System Calls (One Byte Operand)
-- `SYSCALL <id>` - System call (0x01=PRINT, 0x02=PRINTLN)
+### Control Flow
+- `JUMPB <offset>` - Unconditional jump (signed byte offset)
+- `JUMPZB <offset>` - Jump if zero (signed byte offset)  
+- `JUMPNZB <offset>` - Jump if non-zero (signed byte offset)
+- `JUMPW <lsb> <msb>` - Unconditional jump (signed word offset)
+- `JUMPZW <lsb> <msb>` - Jump if zero (signed word offset)
+- `JUMPNZW <lsb> <msb>` - Jump if non-zero (signed word offset)
 
-### Control Flow (Future)
-- `JUMPB <offset>` - Conditional jump (signed byte offset)
-- `JUMPW <lsb> <msb>` - Conditional jump (signed word offset)
-- `CALL <offset>` - Function call
-- `RETURN` - Return from function
+### Function Operations (No Operands)
+- `RETURN` - Return from function (no return value)
+- `RETURNVAL` - Return from function (pop return value from stack)
+
+### System Calls (One Byte Operand)
+- `SYSCALL <id>` - System call (0x01=PRINT, 0x02=PRINTLN, etc.)
+- `CALL <index>` - Function call by index
+
+### Stack Manipulation (No Operands)
+- `DECSP` - Decrement stack pointer (discard top value)
+- `DUP` - Duplicate top stack value
+- `NOP` - No operation (useful for optimization)
 
 ## Memory Impact
 
@@ -263,6 +290,7 @@ This architecture enables:
 - The 512-byte opcode buffer is guaranteed sufficient since opcodes reference tokens rather than embedding literals
 - Token buffer references use 1-2 bytes vs. potentially much larger embedded data
 - Most programs will use <256 bytes of opcodes, enabling single-byte addressing
+- Postfix opcodes are typically more compact than infix tokens due to elimination of precedence parsing overhead
 
 ### VM Integration
 - Using `ZP.PCL/ZP.PCH` from Hopper VM for opcode execution maintains consistency
@@ -278,3 +306,4 @@ This architecture enables:
 - Opcode emission includes bounds checking to prevent buffer overflow
 - Invalid opcodes cause immediate `BRK` with error message (no silent failures)
 - Type checking during compilation prevents runtime type errors
+- Infix to postfix conversion maintains mathematical precedence and associativity rules
