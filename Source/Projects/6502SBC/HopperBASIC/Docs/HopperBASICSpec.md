@@ -583,39 +583,63 @@ HopperBASIC uses a unified symbol table architecture with four distinct layers t
 ## Table Operations
 
 ### Table Layer Functions
-- `Table.Add(size)` - Allocate and link new node
-- `Table.GetFirst()` - Start iteration
-- `Table.GetNext()` - Continue iteration
-- `Table.Delete(node)` - Remove specific node
-- `Table.Clear()` - Remove all nodes
+- `Table.GetFirst()` - Get first node in list (returns in ZP.IDX)
+- `Table.GetNext()` - Get next node in traversal (updates ZP.IDX)
+- `Table.Add(size)` - Add new node to end of list (size in ZP.ACC)
+- `Table.Delete(node)` - Delete specific node from list (node in ZP.IDX)
+- `Table.Clear()` - Clear entire list, free all nodes
 
 ### Objects Layer Functions
-- `Objects.Add(name, type, tokens, value)` - Add symbol with all metadata
-- `Objects.Find(name)` - Locate symbol by name
-- `Objects.GetData()` - Extract type/tokens/value from node
-- `Objects.SetValue()` - Update value (variables only)
-- `Objects.IterateStart(filter)` - Begin filtered iteration
+- `Objects.Initialize()` - Initialize empty symbol tables
+- `Objects.Add(table, name, type, tokens, value)` - Add symbol with metadata
+- `Objects.Find(table, name)` - Find symbol by name
+- `Objects.Remove(table, node)` - Remove symbol by node pointer
+- `Objects.GetData(node)` - Get symbol data (type, tokens, value)
+- `Objects.SetValue(node, value)` - Set symbol value (variables only)
+- `Objects.GetTokens(node)` - Get tokens pointer
+- `Objects.SetTokens(node, tokens)` - Set tokens pointer
+- `Objects.IterateStart(table, filter)` - Start iteration with type filter
+- `Objects.IterateNext()` - Continue iteration
+- `Objects.Destroy(table)` - Destroy entire symbol table
 
 ### Variables Layer Functions
-- `Variables.Declare(name, type, value, tokens)` - Create variable/constant
-- `Variables.Find(name, expectedType)` - Locate with type checking
-- `Variables.GetValue()` - Retrieve current value and type
-- `Variables.SetValue()` - Update value (variables only, enforces immutability)
-- `Variables.Remove(name)` - Delete and free tokens
+- `Variables.Declare(name, type, value, tokens)` - Declare new variable/constant
+- `Variables.Find(name, expectedType)` - Find with optional type filtering
+- `Variables.GetValue(node)` - Get variable/constant value and type
+- `Variables.SetValue(node, value)` - Set variable value (enforces immutability)
+- `Variables.GetType(node)` - Get type information
+- `Variables.GetSignature(node)` - Get complete signature info
+- `Variables.GetName(node)` - Get name pointer from node
+- `Variables.GetTokens(node)` - Get initialization tokens
+- `Variables.Remove(name)` - Remove by name with token cleanup
+- `Variables.IterateVariables()` - Start iteration over variables only
+- `Variables.IterateConstants()` - Start iteration over constants only
+- `Variables.IterateAll()` - Start iteration over all symbols
+- `Variables.IterateNext()` - Continue iteration
+- `Variables.Clear()` - Clear all variables and constants
 
 ### Functions Layer Functions
-- `Functions.Declare(name, returnType, argsListHead, bodyTokens)` - Create function
-- `Functions.Find(name)` - Locate function with type verification
-- `Functions.GetSignature()` - Extract return type, body tokens, and arguments
-- `Functions.GetArguments()` - Get parameter list head pointer
-- `Functions.Remove(name)` - Delete function and all parameters
+- `Functions.Declare(name, argsListHead, bodyTokens)` - Declare new function
+- `Functions.Find(name)` - Find function by name
+- `Functions.GetBody(node)` - Get function body tokens
+- `Functions.GetName(node)` - Get function name
+- `Functions.SetArguments(node, argsListHead)` - Set arguments list
+- `Functions.GetArguments(node)` - Get arguments list head
+- `Functions.Remove(name)` - Remove function by name
+- `Functions.IterateFunctions()` - Start iteration over functions
+- `Functions.IterateNext()` - Continue function iteration
+- `Functions.Clear()` - Clear all functions
+- `Functions.SetBody(node, tokens)` - Set function body tokens
 
 ### Arguments Layer Functions
-- `Arguments.Add(functionNode, argName, argType)` - Add parameter to function
-- `Arguments.Find(functionNode, argName)` - Locate parameter by name
-- `Arguments.FindByIndex(functionNode, index)` - Get parameter by position
-- `Arguments.GetCount(functionNode)` - Count parameters
-- `Arguments.Clear(functionNode)` - Remove all parameters
+- `Arguments.Add(functionNode, argName)` - Add argument to function
+- `Arguments.Find(functionNode, argName)` - Find argument by name
+- `Arguments.GetName(argNode)` - Get argument name
+- `Arguments.FindByIndex(functionNode, index)` - Find by index
+- `Arguments.GetCount(functionNode)` - Get argument count
+- `Arguments.IterateStart(functionNode)` - Start argument iteration
+- `Arguments.IterateNext()` - Continue argument iteration
+- `Arguments.Clear(functionNode)` - Clear all arguments
 
 ## Implementation Benefits
 
@@ -638,27 +662,28 @@ HopperBASIC uses a unified symbol table architecture with four distinct layers t
 ### Node Structure
 **Variable/Constant Node (Objects layer):**
 ```
-Offset 0-1: next pointer (Table layer)
-Offset 2:   symbolType|dataType (VARIABLE|INT, CONSTANT|WORD, etc.)
-Offset 3-4: tokens pointer (initialization expression)
-Offset 5-6: value (16-bit variable/constant value)
+Offset 0-1: next pointer (managed by Table layer)
+Offset 2:   symbolType|dataType (packed byte)
+            High nibble: SymbolType (VARIABLE=1, CONSTANT=2)
+            Low nibble: BasicType (INT=2, WORD=4, BIT=6, etc.)
+Offset 3-4: tokens pointer (16-bit pointer to initialization token stream)
+Offset 5-6: value (16-bit current value)
 Offset 7+:  null-terminated name string
 ```
 
 **Function Node (Objects layer):**
 ```
-Offset 0-1: next pointer (Table layer)  
-Offset 2:   symbolType|returnType (FUNCTION|INT, FUNCTION|WORD, etc.)
-Offset 3-4: function body tokens pointer
-Offset 5-6: arguments list head pointer
+Offset 0-1: next pointer (managed by Table layer)
+Offset 2:   unused in functions
+Offset 3-4: function body tokens pointer (16-bit)
+Offset 5-6: arguments list head pointer (16-bit, points directly to first argument)
 Offset 7+:  null-terminated function name string
 ```
 
 **Argument Node (Arguments layer):**
 ```
-Offset 0-1: next pointer (Arguments layer)
-Offset 2:   argument type (INT, WORD, BIT, etc.)
-Offset 3+:  null-terminated argument name string
+Offset 0-1: next pointer (managed by Arguments layer)
+Offset 2+:  null-terminated argument name string
 ```
 
 ### Memory Allocation Strategy
