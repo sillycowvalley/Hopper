@@ -736,9 +736,9 @@ unit Statement
                         
                         // Set tokens pointer to the new stream
                         LDA ZP.FDESTINATIONADDRESSL
-                        STA ZP.IDYL
+                        STA (stmtTokensPtr + 0)
                         LDA ZP.FDESTINATIONADDRESSH
-                        STA ZP.IDYH
+                        STA (stmtTokensPtr + 1)
                      
                         // Pop the result into NEXT
                         Stacks.PopNext();  // Result in ZP.NEXT, type in ZP.NEXTT,  modifies X
@@ -894,6 +894,11 @@ unit Statement
             ORA stmtSymbol // high nibble is VARIABLE<<4 of CONSTANT<<4
             STA ZP.ACCT
             
+            LDA (stmtTokensPtr+0)
+            STA ZP.IDYL
+            LDA (stmtTokensPtr+1)
+            STA ZP.IDYH
+            
             // Call Variables.Declare
             // Input: ZP.TOP = name pointer, ZP.ACCT = symbolType|dataType (packed),
             //        ZP.NEXT = initial value (16-bit), ZP.IDY = tokens pointer (16-bit)
@@ -901,20 +906,20 @@ unit Statement
             Messages.CheckError();
             if (C)
             {
-                STZ ZP.IDYL
-                STZ ZP.IDYH
+                STZ (stmtTokensPtr+0)
+                STZ (stmtTokensPtr+1)
             }
             
             break;
         } // loop
         
-        LDA ZP.IDYL
-        ORA ZP.IDYH
+        LDA (stmtTokensPtr+0)
+        ORA (stmtTokensPtr+1)
         if (NZ)
         {
-            LDA ZP.IDYL
+            LDA (stmtTokensPtr+0)
             STA ZP.IDXL
-            LDA ZP.IDYH
+            LDA (stmtTokensPtr+1)
             STA ZP.IDXH
             Memory.Free();
         }

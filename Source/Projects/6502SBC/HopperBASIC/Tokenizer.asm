@@ -549,6 +549,154 @@ unit Tokenizer
         LDA #0  // Not found
     }
     
+    scanHexNumber()
+    {
+        // Add NUMBER token
+        LDA #Tokens.NUMBER
+        appendToTokenBuffer();
+        Messages.CheckError();
+        if (NC) { return; }
+        
+        // Store "0x" prefix
+        LDA #'0'
+        appendToTokenBuffer();
+        Messages.CheckError();
+        if (NC) { return; }
+        
+        LDA Address.BasicInputBuffer, X  // 'x' or 'X'
+        appendToTokenBuffer();
+        Messages.CheckError();
+        if (NC) { return; }
+        INX
+        
+        // Scan hex digits
+        loop
+        {
+            CPX ZP.BasicInputLength
+            if (Z) { break; }
+            
+            LDA Address.BasicInputBuffer, X
+            IsHex();
+            if (NC) { break; }  // Not hex digit
+            
+            LDA Address.BasicInputBuffer, X
+            appendToTokenBuffer();
+            Messages.CheckError();
+            if (NC) { return; }
+            INX
+        }
+        
+        // Add null terminator
+        LDA #0
+        appendToTokenBuffer();
+        Messages.CheckError();
+        if (NC) { return; }
+    }
+    
+    // Parse hex number from token buffer
+    // Input: ZP.IDX = pointer to "0x..." string, Y = 1 (pointing at 'x')
+    // Output: ZP.TOP = 16-bit hex value, ZP.TOPT = determined type (INT or WORD)
+    // Munts: ZP.TOP, ZP.TOPT, ZP.ACC, A, Y
+    // Error: Sets ZP.LastError if invalid hex or overflow
+    parseHexNumber()
+    {
+        INY  // Skip 'x' or 'X'
+        
+        loop
+        {
+            LDA [ZP.IDX], Y
+            if (Z) { break; }  // Null terminator
+            
+            IsHex();
+            if (NC)  // Not hex digit
+            {
+                // Set syntax error and return
+                LDA #(Messages.SyntaxError % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.SyntaxError / 256)  
+                STA ZP.LastErrorH
+                Messages.StorePC();
+                return;
+            }
+            
+            // Convert hex char to value (0-15)
+            LDA [ZP.IDX], Y
+            IsDigit();
+            if (C)
+            {
+                SEC
+                SBC #'0'  // '0'-'9' -> 0-9
+            }
+            else
+            {
+                IsLower();
+                if (C)
+                {
+                    SEC
+                    SBC #'a'
+                    CLC
+                    ADC #10  // 'a'-'f' -> 10-15
+                }
+                else
+                {
+                    SEC
+                    SBC #'A'  
+                    CLC
+                    ADC #10  // 'A'-'F' -> 10-15
+                }
+            }
+            
+            STA ZP.ACCL  // Store hex digit value (0-15)
+            
+            // Check overflow: TOP > 0x0FFF would overflow when shifted left 4 bits
+            LDA ZP.TOPH
+            CMP #0x10
+            if (C)  // >= 0x10, would overflow
+            {
+                LDA #(Messages.NumericOverflow % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.NumericOverflow / 256)
+                STA ZP.LastErrorH
+                return;
+            }
+            
+            // Shift TOP left 4 bits (multiply by 16)
+            ASL ZP.TOPL
+            ROL ZP.TOPH
+            ASL ZP.TOPL
+            ROL ZP.TOPH
+            ASL ZP.TOPL
+            ROL ZP.TOPH
+            ASL ZP.TOPL
+            ROL ZP.TOPH
+            
+            // Add hex digit
+            LDA ZP.ACCL
+            CLC
+            ADC ZP.TOPL
+            STA ZP.TOPL
+            if (C)
+            {
+                INC ZP.TOPH
+            }
+            
+            INY
+        }
+        
+        // Set type based on value (same as decimal)
+        BIT ZP.TOPH
+        if (MI)
+        {
+            LDA #BasicType.WORD   // 32768-65535
+            STA ZP.TOPT
+        }
+        else
+        {
+            LDA #BasicType.INT    // 0-32767
+            STA ZP.TOPT
+        }
+    }
+    
     // Tokenize complete line from BasicInputBuffer into BasicTokenizerBuffer
     // Input: BasicInputBuffer contains raw input, ZP.BasicInputLength = input length
     // Output: Tokens stored in BasicTokenizerBuffer, ZP.TokenBufferLength = total length
@@ -775,7 +923,26 @@ unit Tokenizer
                 }
                 default:
                 {
-                    // Check if it's a number
+                    // Check for hex number (0x prefix)
+                    LDA Address.BasicInputBuffer, X
+                    CMP #'0'
+                    if (Z)
+                    {
+                        // Look ahead for 'x' or 'X'
+                        INX
+                        CPX ZP.BasicInputLength
+                        if (NZ)
+                        {
+                            LDA Address.BasicInputBuffer, X
+                            CMP #'x'
+                            if (Z) { scanHexNumber(); continue; }
+                            CMP #'X'  
+                            if (Z) { scanHexNumber(); continue; }
+                        }
+                        DEX  // Back up, not hex
+                    }
+                    
+                    // Check if it's a decimal number
                     IsDigit();
                     if (C)  
                     {
@@ -1127,6 +1294,20 @@ unit Tokenizer
         STA ZP.IDXH
         
         LDY #0  // Index into the number string
+        
+        // Check for hex format (0x prefix)
+        LDA [ZP.IDX], Y
+        CMP #'0'
+        if (Z)
+        {
+            INY
+            LDA [ZP.IDX], Y
+            CMP #'x'
+            if (Z) { parseHexNumber(); return; }
+            CMP #'X'
+            if (Z) { parseHexNumber(); return; }
+            DEY  // Back up
+        }
         
         loop
         {
