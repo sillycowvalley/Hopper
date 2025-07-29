@@ -82,13 +82,13 @@ unit Table
 {
     // Get first node in list
     // Input: X = ZP address of list head pointer
-    // Output: ZP.IDX = first node (0x0000 if empty list)
+    // Output: ZP.IDX = first node (0x0000 if empty list), C set if found, NC if empty
     // Preserves: A, Y, ZP.ACC, ZP.TOP, ZP.NEXT
     GetFirst();
     
     // Get next node in traversal
     // Input: ZP.IDX = current node
-    // Output: ZP.IDX = next node (0x0000 if end of list)
+    // Output: ZP.IDX = next node (0x0000 if end of list), C set if found, NC if end
     // Preserves: A, X, Y, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
     GetNext();
     
@@ -108,7 +108,7 @@ unit Table
     
     // Clear entire list (free all nodes)
     // Input: X = ZP address of list head pointer
-    // Output: None (list head set to 0x0000 in place)
+    // Output: C set (always succeeds), list head set to 0x0000 in place
     // Preserves: A, Y, ZP.IDX, ZP.ACC, ZP.TOP, ZP.NEXT
     // Uses: ZP.Lxx variables as temporary workspace
     Clear();
@@ -119,24 +119,26 @@ unit Table
 Symbol-specific operations using Table foundation:
 
 #### Node Layout
-Symbol nodes now have a 7-byte fixed header plus variable-length name:
+Symbol nodes have a 7-byte fixed header plus variable-length name:
 ```
 Offset 0-1: next pointer (managed by Table unit)
 Offset 2:   symbolType|dataType (packed byte)
             High nibble: SymbolType (VARIABLE=1, CONSTANT=2, FUNCTION=3, ARGUMENT=4)
             Low nibble:  BasicType (INT=2, BYTE=3, WORD=4, BIT=6, etc.)
-Offset 3-4: value/address (16-bit current value)
-Offset 5-6: tokens pointer (16-bit pointer to initialization token stream)
+Offset 3-4: tokens pointer (16-bit pointer to initialization/body token stream)
+Offset 5-6: value/address (16-bit - value for variables/constants, args list head for functions)
 Offset 7+:  null-terminated name string
 ```
 
 #### Constants
 ```hopper
 const byte symbolOverhead = 7;       // Fixed fields before name
-const byte typeOffset = 2;           // Offset to symbolType|dataType field
-const byte valueOffset = 3;          // Offset to value field
-const byte tokensOffset = 5;         // Offset to tokens pointer field
-const byte nameOffset = 7;           // Offset to name field in node
+const byte snNext = 0;               // Next pointer offset
+const byte snType = 2;               // symbolType|dataType field offset
+const byte snTokens = 3;             // Tokens pointer field offset
+const byte snValue = 5;              // Value field offset
+const byte snArguments = 5;          // Alias for value field when used for functions
+const byte snName = 7;               // Name field offset
 ```
 
 #### Zero Page Storage
@@ -145,6 +147,8 @@ Dedicated zero page locations that persist across `Memory.Allocate()` calls:
 - **ZP.SymbolValueL/H**: 16-bit symbol value
 - **ZP.SymbolNameL/H**: Pointer to symbol name string
 - **ZP.SymbolLength**: Name length including null terminator
+- **ZP.SymbolTokensL/H**: Tokens pointer
+- **ZP.SymbolIteratorFilter**: Type filter for iteration
 
 ```hopper
 unit Objects
@@ -158,29 +162,30 @@ unit Objects
         ARGUMENT = 0x04    // Function parameters
     }
     
-    // Initialize empty symbol table
-    // Output: ZP.SymbolListL/H = 0x0000
+    // Initialize empty symbol tables
+    // Output: ZP.VariableListL/H = 0x0000, ZP.FunctionsListL/H = 0x0000
     // Preserves: All registers and ZP variables
     Initialize();
     
     // Add new symbol to table
-    // Input: ZP.ACC = name pointer, ZP.ACCT = symbolType|dataType (packed),
-    //        ZP.TOP = value (16-bit), ZP.NEXT = tokens pointer (16-bit)
+    // Input: X = ZP address of table head (ZP.VariableList or ZP.FunctionsList),
+    //        ZP.TOP = name pointer, ZP.ACCT = symbolType|dataType (packed),
+    //        ZP.IDY = tokens pointer (16-bit), ZP.NEXT = value/args (16-bit)
     // Output: ZP.IDX = new symbol node address, C set if successful, NC if allocation failed
     // Preserves: A, X, Y
     // Munts: ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Table.Add call)
-    // Uses: ZP.SymbolType, ZP.SymbolValue, ZP.SymbolName for parameter storage
+    // Uses: ZP.SymbolType, ZP.SymbolValue, ZP.SymbolName, ZP.SymbolTokens for parameter storage
     Add();
     
     // Find symbol by name
-    // Input: ZP.ACC = name pointer to search for
+    // Input: X = ZP address of table head, ZP.TOP = name pointer to search for
     // Output: ZP.IDX = symbol node address, C set if found, NC if not found
     // Preserves: A, X, Y, ZP.TOP, ZP.NEXT, ZP.ACC
-    // Uses: Available ZP slots for temporary operations
+    // Uses: ZP.LCURRENT for temporary operations
     Find();
     
     // Remove symbol by node pointer
-    // Input: ZP.IDX = symbol node address (from Find)
+    // Input: X = ZP address of table head, ZP.IDX = symbol node address (from Find)
     // Output: C set if successful, NC if node not found
     // Preserves: A, Y
     // Munts: ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Table.Delete call)
@@ -189,30 +194,44 @@ unit Objects
     
     // Get symbol data from found node
     // Input: ZP.IDX = symbol node address (from Find)
-    // Output: ZP.ACCT = symbolType|dataType (packed), ZP.TOP = value, ZP.NEXT = tokens pointer
+    // Output: ZP.ACCT = symbolType|dataType (packed), ZP.NEXT = tokens pointer, ZP.IDY = value/args
     // Preserves: A, X, Y, ZP.IDX, ZP.ACC
     GetData();
     
     // Set symbol value (variables only)
-    // Input: ZP.IDX = symbol node address, ZP.TOP = new value
+    // Input: ZP.IDX = symbol node address, ZP.IDY = new value
     // Output: C set if successful, NC if not a variable
     // Preserves: A, X, Y, ZP.IDX, ZP.ACC, ZP.NEXT
     SetValue();
     
-    // Start iteration for specific symbol type
-    // Input: ZP.ACCL = symbol type filter (0 = all types)
+    // Get tokens pointer from symbol node
+    // Input: ZP.IDX = symbol node address
+    // Output: ZP.IDY = tokens pointer (16-bit)
+    // Preserves: A, X, Y, ZP.IDX, ZP.ACC, ZP.NEXT
+    GetTokens();
+    
+    // Set tokens pointer for symbol node
+    // Input: ZP.IDX = symbol node address, ZP.IDY = new tokens pointer
+    // Preserves: A, X, Y, ZP.IDX, ZP.ACC, ZP.NEXT
+    SetTokens();
+    
+    // Start iteration with type filter
+    // Input: X = ZP address of table head, ZP.SymbolIteratorFilter = filter (0 = all, or specific symbolType)
     // Output: ZP.IDX = first matching symbol, C set if found, NC if none
     // Preserves: A, X, Y, ZP.TOP, ZP.NEXT, ZP.ACC
+    // Uses: ZP.LCURRENT, ZP.LNEXT
     IterateStart();
     
     // Continue iteration
-    // Input: ZP.IDX = current symbol, ZP.ACCL = type filter
+    // Input: ZP.IDX = current symbol, ZP.SymbolIteratorFilter = type filter from previous call
     // Output: ZP.IDX = next matching symbol, C set if found, NC if done
     // Preserves: A, X, Y, ZP.TOP, ZP.NEXT, ZP.ACC
+    // Uses: ZP.LCURRENT, ZP.LNEXT
     IterateNext();
     
     // Destroy entire symbol table
-    // Output: ZP.SymbolListL/H = 0x0000
+    // Input: X = ZP address of table head
+    // Output: C set (always succeeds)
     // Preserves: A, X, Y
     // Munts: ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT (due to Table.Clear call)
     Destroy();
@@ -228,45 +247,47 @@ unit Variables
     // Variable management using Objects foundation
     // Two-stage approach: Find name to address, then operate on address
     
-    // Initialize variable system
-    // Output: Symbol table cleared and ready
-    // Preserves: All registers and ZP variables
-    Initialize();
-    
     // Declare new variable or constant
-    // Input: ZP.ACC = name pointer, ZP.ACCT = symbolType|dataType (packed),
-    //        ZP.TOP = initial value (16-bit), ZP.NEXT = tokens pointer (16-bit)
+    // Input: ZP.TOP = name pointer, ZP.ACCT = symbolType|dataType (packed),
+    //        ZP.NEXT = initial value (16-bit), ZP.IDY = tokens pointer (16-bit)
     // Output: C set if successful, NC if error (name exists, out of memory)
-    // Uses: Objects.Add() internally with extended node layout
+    // Munts: ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT
     Declare();
     
-    // Find variable/constant name to address
-    // Input: ZP.ACC = name pointer, ZP.ACCL = expected symbolType (VARIABLE or CONSTANT, 0 = any)
+    // Find variable/constant by name with optional type filtering
+    // Input: ZP.TOP = name pointer, ZP.SymbolIteratorFilter = expected symbolType (VARIABLE or CONSTANT, 0 = any)
     // Output: ZP.IDX = symbol node address, C set if found and correct type, NC if not found or wrong type
     // Preserves: A, X, Y, ZP.TOP, ZP.NEXT
     // Error: Sets LastError if found but wrong type
+    // Munts: ZP.LCURRENT, ZP.SymbolTemp0
     Find();
     
-    // Get variable/constant value by address
+    // Get variable/constant value and type
     // Input: ZP.IDX = symbol node address (from Find)
     // Output: ZP.TOP = value, ZP.TOPT = dataType, C set if successful, NC if error
     // Preserves: A, X, Y, ZP.ACC, ZP.NEXT
     // Error: Fails if node is not variable or constant
     GetValue();
     
-    // Set variable value by address (variables only)
+    // Set variable value (variables only, constants are immutable)
     // Input: ZP.IDX = symbol node address (from Find), ZP.TOP = new value
-    // Output: C set if successful, NC if error (not a variable, type mismatch)
+    // Output: C set if successful, NC if error (not a variable)
     // Preserves: A, X, Y, ZP.ACC, ZP.NEXT
     // Error: Fails if node is not a variable (constants rejected)
     SetValue();
     
-    // Get type info by address
+    // Get type information for variable/constant
     // Input: ZP.IDX = symbol node address (from Find)
     // Output: ZP.ACCT = symbolType|dataType (packed), C set if successful, NC if error
     // Preserves: A, X, Y, ZP.TOP, ZP.NEXT
     // Error: Fails if node is not variable or constant
     GetType();
+    
+    // Get variable/constant signature info
+    // Input: ZP.IDX = symbol node address (from Find or iteration)
+    // Output: ZP.ACCT = symbolType|dataType (packed), ZP.NEXT = tokens pointer, ZP.IDY = value
+    // Preserves: A, X, Y, ZP.IDX
+    GetSignature();
     
     // Get name from current node
     // Input: ZP.IDX = symbol node address (from Find or iteration)
@@ -276,37 +297,40 @@ unit Variables
     
     // Get initialization tokens from current node
     // Input: ZP.IDX = symbol node address (from Find or iteration)
-    // Output: ZP.NEXT = tokens pointer (points to initialization token stream)
+    // Output: ZP.NEXT = tokens pointer
     // Preserves: A, X, Y, ZP.TOP, ZP.ACC
     GetTokens();
     
-    // Remove variable or constant by name
-    // Input: ZP.ACC = name pointer
+    // Remove variable or constant by name with token cleanup
+    // Input: ZP.TOP = name pointer
     // Output: C set if successful, NC if not found
-    // Uses: Objects.Remove() internally
+    // Munts: ZP.IDY, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX, ZP.SymbolTemp0, ZP.SymbolTemp1
     Remove();
     
     // Start iteration over variables only (for VARS command)
     // Output: ZP.IDX = first variable node, C set if found, NC if none
     // Sets up iteration state for IterateNext()
+    // Munts: ZP.LCURRENT, ZP.LNEXT
     IterateVariables();
     
-    // Start iteration over constants only (for CONSTS command if added)
+    // Start iteration over constants only (for CONSTS command)
     // Output: ZP.IDX = first constant node, C set if found, NC if none
+    // Munts: ZP.LCURRENT, ZP.LNEXT
     IterateConstants();
     
-    // Start iteration over all symbols (for general enumeration)
+    // Start iteration over all symbols (for LIST command)
     // Output: ZP.IDX = first symbol node, C set if found, NC if none
+    // Munts: ZP.LCURRENT, ZP.LNEXT
     IterateAll();
     
     // Continue iteration (use after any Iterate* method)
-    // Input: ZP.IDX = current node, ZP.ACCL = type filter from previous call
     // Output: ZP.IDX = next matching node, C set if found, NC if done
+    // Munts: ZP.LCURRENT, ZP.LNEXT
     IterateNext();
     
-    // Clear all variables and constants (for NEW command)
-    // Output: Empty symbol table
-    // Uses: Objects.Destroy() internally
+    // Clear all variables and constants with token cleanup (for NEW command)
+    // Output: Empty symbol table, C set (always succeeds)
+    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX
     Clear();
 }
 ```
@@ -318,9 +342,9 @@ Function management building on Objects foundation with separate Arguments unit:
 Functions reuse the existing Objects node structure:
 ```
 Offset 0-1: next pointer (managed by Table unit)
-Offset 2:   symbolType|returnType (FUNCTION | INT/WORD/BIT/etc)
-Offset 3-4: arguments table head pointer (reuses value field)
-Offset 5-6: function body tokens pointer
+Offset 2:   unused in functions
+Offset 3-4: function body tokens pointer
+Offset 5-6: arguments list head pointer (points directly to first argument node)
 Offset 7+:  null-terminated function name string
 ```
 
@@ -330,134 +354,146 @@ unit Functions
     // Core function management - no argument handling
     
     // Declare new function
-    // Input: ZP.ACC = name pointer, ZP.ACCT = FUNCTION|returnType (packed),
-    //        ZP.TOP = arguments table head pointer, ZP.NEXT = function body tokens pointer
-    // Output: ZP.IDX = function node address, C set if successful
-    // Note: Arguments table created separately via Arguments.Create()
+    // Input: ZP.TOP = name pointer, ZP.NEXT = arguments list head pointer, 
+    //        ZP.IDY = function body tokens pointer
+    // Output: ZP.IDX = function node address, C set if successful, NC if error
+    // Note: Arguments list created separately via Arguments unit
+    // Munts: ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT
     Declare();
     
     // Find function by name
-    // Input: ZP.ACC = name pointer
-    // Output: ZP.IDX = function node address, C set if found and is function
+    // Input: ZP.TOP = name pointer
+    // Output: ZP.IDX = function node address, C set if found and is function, NC if not found or wrong type
     // Error: Sets LastError if found but wrong type
+    // Munts: ZP.LCURRENT, ZP.SymbolTemp0
     Find();
-    
-    // Get function signature info
-    // Input: ZP.IDX = function node address
-    // Output: ZP.ACCT = returnType, ZP.TOP = arguments table head, ZP.NEXT = function body tokens
-    GetSignature();
     
     // Get function body tokens
     // Input: ZP.IDX = function node address
-    // Output: ZP.NEXT = function body tokens pointer
+    // Output: ZP.IDY = function body tokens pointer, C set (always succeeds)
+    // Preserves: A, X, Y, ZP.IDX, ZP.ACC, ZP.NEXT
     GetBody();
     
     // Get function name
     // Input: ZP.IDX = function node address
-    // Output: ZP.ACC = name pointer (points into node data)
+    // Output: ZP.TOP = name pointer (points into node data), C set (always succeeds)
+    // Preserves: A, X, Y, ZP.IDX, ZP.ACC, ZP.NEXT
     GetName();
     
-    // Set arguments table head pointer in function node
-    // Input: ZP.IDX = function node address, ZP.TOP = arguments table head
+    // Set arguments list head pointer in function node
+    // Input: ZP.IDX = function node address, ZP.IDY = arguments list head
     // Output: C set if successful
+    // Munts: ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
     SetArguments();
     
-    // Get arguments table head pointer from function node
+    // Get arguments list head pointer from function node
     // Input: ZP.IDX = function node address
-    // Output: ZP.TOP = arguments table head pointer, C set if has arguments table
+    // Output: ZP.IDY = arguments list head pointer, C set if has arguments, NC if no arguments
+    // Preserves: A, X, Y, ZP.IDX
     GetArguments();
     
     // Remove function by name
-    // Input: ZP.ACC = name pointer
-    // Output: C set if successful
-    // Note: Caller must clear arguments table first via Arguments.Clear()
+    // Input: ZP.TOP = name pointer
+    // Output: C set if successful, NC if not found
+    // Note: Clears arguments list automatically before removing function
+    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX, ZP.SymbolTemp0, ZP.SymbolTemp1
     Remove();
     
     // Start iteration over functions only
-    // Output: ZP.IDX = first function node, C set if found
+    // Output: ZP.IDX = first function node, C set if found, NC if none
+    // Munts: ZP.LCURRENT, ZP.LNEXT
     IterateFunctions();
     
     // Continue function iteration
     // Input: ZP.IDX = current node
-    // Output: ZP.IDX = next function node, C set if found
+    // Output: ZP.IDX = next function node, C set if found, NC if done
+    // Munts: ZP.LCURRENT, ZP.LNEXT
     IterateNext();
     
     // Clear all functions
-    // Output: Empty function table
-    // Note: Caller must clear all arguments tables first
+    // Output: Empty function table, C set (always succeeds)
+    // Note: Clears all arguments lists and frees function body tokens
+    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX, ZP.SymbolTemp0, ZP.SymbolTemp1
     Clear();
+    
+    // Set function body tokens
+    // Input: ZP.IDX = function node address, ZP.IDY = new function body tokens pointer
+    // Output: C set if successful
+    // Note: Frees old tokens if non-zero
+    // Munts: ZP.TOP, ZP.NEXT
+    SetBody();
 }
 ```
 
 ### Layer 5: Arguments (Argument-Specific Interface)
-Independent argument table management using Table foundation:
+Independent argument list management with arguments stored directly in function nodes:
 
 #### Argument Node Structure
 Arguments use simplified node structure optimized for argument data:
 ```
-Offset 0-1: next pointer (managed by Table unit)
-Offset 2:   argument type (BasicType.INT, WORD, BIT, etc.)
-Offset 3+:  null-terminated argument name
+Offset 0-1: next pointer
+Offset 2+:  null-terminated argument name
 ```
 
 ```hopper
 unit Arguments
 {
-    // Argument table management - independent of Functions unit
+    // Argument list management - arguments list head stored directly in function node
+    // No separate "table head storage" - function node field points directly to first argument
     
-    // Create new arguments table
-    // Output: ZP.IDX = arguments table head address, C set if successful
-    Create();
-    
-    // Add argument to arguments table
-    // Input: ZP.IDX = arguments table head address, ZP.ACC = argument name, ZP.ACCT = argument type
-    // Output: C set if successful, argument added to table
+    // Add argument to function's arguments list at the end for correct order
+    // Input: ZP.IDX = function node address, ZP.TOP = argument name
+    // Output: C set if successful, NC if allocation failed
+    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT, ZP.LPREVIOUS, 
+    //        ZP.SymbolType, ZP.SymbolNameL/H, ZP.SymbolLength
     Add();
     
-    // Find argument by name in arguments table
-    // Input: ZP.IDX = arguments table head address, ZP.ACC = argument name
-    // Output: ZP.IDY = argument node address, ZP.ACCL = argument index, C set if found
+    // Find argument by name in function's arguments list
+    // Input: ZP.IDX = function node address, ZP.TOP = argument name
+    // Output: ZP.IDY = argument node address, ZP.ACCL = argument index, C set if found, NC if not found
+    // Preserves: A, X, Y, ZP.IDX
+    // Munts: ZP.LCURRENT, ZP.LNEXT
     Find();
     
-    // Get argument type from node
+    // Get argument name pointer from argument node
     // Input: ZP.IDY = argument node address
-    // Output: ZP.ACCT = argument type
-    GetType();
-    
-    // Get argument name from node
-    // Input: ZP.IDY = argument node address
-    // Output: ZP.ACC = argument name pointer
+    // Output: ZP.TOP = argument name pointer, C set (always succeeds)
+    // Preserves: A, X, Y, ZP.IDX, ZP.ACC, ZP.NEXT
     GetName();
     
-    // Find argument by index (for BP offset calculation)
-    // Input: ZP.IDX = arguments table head address, ZP.ACCL = argument index
-    // Output: ZP.IDY = argument node address, C set if found
+    // Find argument by index for BP offset calculation
+    // Input: ZP.IDX = function node address, ZP.ACCL = argument index
+    // Output: ZP.IDY = argument node address, C set if found, NC if index out of range
+    // Preserves: A, X, Y, ZP.IDX
+    // Munts: ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0
     FindByIndex();
     
-    // Get argument count in table
-    // Input: ZP.IDX = arguments table head address
-    // Output: ZP.ACCL = argument count
+    // Get argument count in function's arguments list
+    // Input: ZP.IDX = function node address
+    // Output: ZP.ACCL = argument count, C set (always succeeds)
+    // Preserves: A, X, Y, ZP.IDX
+    // Munts: ZP.LCURRENT, ZP.LNEXT
     GetCount();
     
-    // Start iteration over arguments in table
-    // Input: ZP.IDX = arguments table head address
-    // Output: ZP.IDY = first argument node, C set if found
+    // Start iteration over arguments in function's list
+    // Input: ZP.IDX = function node address
+    // Output: ZP.IDY = first argument node, C set if found, NC if no arguments
+    // Preserves: A, X, Y, ZP.IDX
     IterateStart();
     
     // Continue argument iteration
     // Input: ZP.IDY = current argument node
-    // Output: ZP.IDY = next argument node, C set if found
+    // Output: ZP.IDY = next argument node, C set if found, NC if end of arguments
+    // Preserves: A, X, Y, ZP.IDX
+    // Munts: ZP.LCURRENT
     IterateNext();
     
-    // Clear all arguments in table
-    // Input: ZP.IDX = arguments table head address
-    // Output: Empty arguments table
+    // Clear all arguments in function's list with proper memory cleanup
+    // Input: ZP.IDX = function node address
+    // Output: Function's arguments field set to null, all argument nodes freed, C set (always succeeds)
+    // Preserves: A, X, Y, ZP.IDX
+    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
     Clear();
-    
-    // Destroy arguments table (free table head storage)
-    // Input: ZP.IDX = arguments table head address
-    // Output: Table head freed
-    Destroy();
 }
 ```
 
@@ -467,24 +503,25 @@ unit Arguments
 ```hopper
 // Add INT variable "COUNT" = 42
 LDA #(testName % 256)
-STA ZP.ACCL
+STA ZP.TOPL
 LDA #(testName / 256)
-STA ZP.ACCH
+STA ZP.TOPH
 
 // Pack symbolType|dataType: VARIABLE(1) in high nibble, INT(2) in low nibble
 LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
 STA ZP.ACCT
 
 LDA #42
-STA ZP.TOPL
-STZ ZP.TOPH
+STA ZP.NEXTL
+STZ ZP.NEXTH
 
 // Tokens pointer to initialization expression
 LDA #(tokenStream % 256)
-STA ZP.NEXTL
+STA ZP.IDYL
 LDA #(tokenStream / 256)
-STA ZP.NEXTH
+STA ZP.IDYH
 
+LDX #ZP.VariablesList
 Objects.Add();
 // C set if successful, ZP.IDX contains new node address
 ```
@@ -493,39 +530,38 @@ Objects.Add();
 ```hopper
 // Find symbol "COUNT"
 LDA #(testName % 256)
-STA ZP.ACCL
+STA ZP.TOPL
 LDA #(testName / 256)
-STA ZP.ACCH
+STA ZP.TOPH
 
+LDX #ZP.VariablesList
 Objects.Find();
 if (C)  // Found
 {
     Objects.GetData();
-    // ZP.ACCT contains packed type, ZP.TOP contains value, ZP.NEXT contains tokens pointer
+    // ZP.ACCT contains packed type, ZP.IDY contains value, ZP.NEXT contains tokens pointer
     
     LDA ZP.ACCT
     AND #0x0F           // Extract data type (low nibble)
     CMP #BasicType.INT
-    // ZP.TOPL/H contains the value (42)
+    // ZP.IDYL/H contains the value (42)
     // ZP.NEXTL/H contains tokens pointer
 }
 ```
 
 ### Iterating Variables Only
 ```hopper
-LDA #SymbolType.VARIABLE
-STA ZP.ACCL
-Objects.IterateStart();
+Variables.IterateVariables();
 
 loop
 {
     if (NC) { break; }  // No more variables
     
     // ZP.IDX points to current variable node
-    Objects.GetData();
+    Variables.GetValue();
     // Process variable...
     
-    Objects.IterateNext();
+    Variables.IterateNext();
 }
 ```
 
@@ -533,85 +569,65 @@ loop
 ```hopper
 // FUNC Add(INT a, WORD b) -> INT
 
-// Step 1: Create arguments table
-Arguments.Create();
-// ZP.IDX now contains arguments table head
-
-// Step 2: Add arguments to table
-LDA #(arg1Name % 256)  // "a"
-STA ZP.ACCL
-LDA #(arg1Name / 256)
-STA ZP.ACCH
-LDA #BasicType.INT
-STA ZP.ACCT
-Arguments.Add();
-
-LDA #(arg2Name % 256)  // "b"
-STA ZP.ACCL
-LDA #(arg2Name / 256)
-STA ZP.ACCH
-LDA #BasicType.WORD
-STA ZP.ACCT
-Arguments.Add();
-
-// Step 3: Create function node
+// Step 1: Add arguments to function after declaring it
 LDA #(functionName % 256)
-STA ZP.ACCL
-LDA #(functionName / 256) 
-STA ZP.ACCH
-
-// Pack symbolType|returnType: FUNCTION(3) in high nibble, INT(2) in low nibble
-LDA #((SymbolType.FUNCTION << 4) | BasicType.INT)
-STA ZP.ACCT
-
-LDA ZP.IDXL  // Arguments table head (saved from step 1)
 STA ZP.TOPL
-LDA ZP.IDXH
+LDA #(functionName / 256) 
 STA ZP.TOPH
 
+// No arguments initially
+STZ ZP.NEXTL
+STZ ZP.NEXTH
+
 LDA #(functionBodyTokens % 256)  // Pointer to function body tokens
-STA ZP.NEXTL
+STA ZP.IDYL
 LDA #(functionBodyTokens / 256)
-STA ZP.NEXTH
+STA ZP.IDYH
 
 Functions.Declare();
 // ZP.IDX now contains function node address
+
+// Step 2: Add arguments to the function
+LDA #(arg1Name % 256)  // "a"
+STA ZP.TOPL
+LDA #(arg1Name / 256)
+STA ZP.TOPH
+Arguments.Add();  // Uses ZP.IDX from Declare
+
+LDA #(arg2Name % 256)  // "b"
+STA ZP.TOPL
+LDA #(arg2Name / 256)
+STA ZP.TOPH
+Arguments.Add();  // Uses ZP.IDX
 ```
 
 ### Function Call Validation
 ```hopper
 // Calling Add(count, 100) where count is INT
 LDA #(functionName % 256)
-STA ZP.ACCL
+STA ZP.TOPL
 LDA #(functionName / 256)
-STA ZP.ACCH
+STA ZP.TOPH
 
 Functions.Find();  // Find "Add" function
 if (C)
 {
-    Functions.GetArguments();  // Get arguments table head in ZP.TOP
+    Functions.GetArguments();  // Get arguments list head in ZP.IDY
     
-    LDA ZP.TOPL
-    STA ZP.IDXL
-    LDA ZP.TOPH
-    STA ZP.IDXH
-    
-    Arguments.GetCount();
+    Arguments.GetCount();  // Uses ZP.IDX (function node)
     // ZP.ACCL now contains argument count (2)
     
-    // Validate each argument type by iterating
-    Arguments.IterateStart();
+    // Validate each argument by iterating
+    Arguments.IterateStart();  // Uses ZP.IDX
     
-    // First argument should be INT type
-    Arguments.GetType();
-    LDA ZP.ACCT
-    CMP #BasicType.INT  // Validate first argument type
+    // First argument name: "a"
+    Arguments.GetName();  // Uses ZP.IDY
+    // ZP.TOP points to "a"
     
     Arguments.IterateNext();
-    // Second argument should be WORD type  
-    Arguments.GetType();
-    LDA ZP.ACCT
-    CMP #BasicType.WORD  // Validate second argument type
+    // Second argument name: "b"
+    Arguments.GetName();  // Uses ZP.IDY
+    // ZP.TOP points to "b"
 }
 ```
 
@@ -619,23 +635,20 @@ if (C)
 ```hopper
 // Inside function body, resolve "a" parameter to BP offset
 Functions.Find();  // Current function
-Functions.GetArguments();  // Get arguments table head in ZP.TOP
-
-LDA ZP.TOPL
-STA ZP.IDXL
-LDA ZP.TOPH
-STA ZP.IDXH
+// ZP.IDX = function node
 
 LDA #(paramName % 256)  // "a"
-STA ZP.ACCL
+STA ZP.TOPL
 LDA #(paramName / 256)
-STA ZP.ACCH
+STA ZP.TOPH
 
-Arguments.Find();
+Arguments.Find();  // Uses ZP.IDX (function node)
 if (C)
 {
-    // ZP.ACCL = argument index (0 for "a") - returned by Find()
-    Arguments.GetCount();
+    // ZP.ACCL = argument index (0 for "a")
+    // ZP.IDY = argument node address
+    
+    Arguments.GetCount();  // Uses ZP.IDX (function node)
     // ZP.ACCL = argument count (2)
     
     // BP offset = argument count - argument index - 1
@@ -644,88 +657,12 @@ if (C)
 }
 ```
 
-### Declaring a Variable with Tokens
-```hopper
-// Declare: INT COUNT = 10 * 5
-// Assume tokens for "10 * 5" are already in token buffer at position tokensPtr
-
-LDA #(variableName % 256)
-STA ZP.ACCL
-LDA #(variableName / 256)
-STA ZP.ACCH
-
-// Pack symbolType|dataType: VARIABLE(1) in high nibble, INT(2) in low nibble
-LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
-STA ZP.ACCT
-
-LDA #50  // Evaluated result of 10 * 5
-STA ZP.TOPL
-STZ ZP.TOPH
-
-LDA #(tokensPtr % 256)  // Pointer to "10 * 5" token stream
-STA ZP.NEXTL
-LDA #(tokensPtr / 256)
-STA ZP.NEXTH
-
-Variables.Declare();
-// C set if successful, ZP.IDX contains new node address
-```
-
-### Iterating and Displaying Functions
-```hopper
-Functions.IterateFunctions();
-
-loop
-{
-    if (NC) { break; }  // No more functions
-    
-    // ZP.IDX points to current function node
-    Functions.GetName();
-    // Print function name from ZP.ACC
-    
-    Functions.GetSignature();
-    // ZP.ACCT contains return type
-    
-    Functions.GetArguments();  // Get arguments table head in ZP.TOP
-    if (C)
-    {
-        LDA ZP.TOPL
-        STA ZP.IDXL
-        LDA ZP.TOPH
-        STA ZP.IDXH
-        
-        Arguments.GetCount();
-        // ZP.ACCL contains argument count
-        
-        // Display each argument by iterating arguments table
-        Arguments.IterateStart();
-        
-        loop
-        {
-            if (NC) { break; }  // No more arguments
-            
-            Arguments.GetType();
-            // Print argument type (ZP.ACCT)
-            
-            Arguments.GetName();
-            // Print argument name (ZP.ACC)
-            
-            Arguments.IterateNext();
-        }
-    }
-    
-    Functions.IterateNext();
-}
-```
-
-## Usage Patterns
-
 ### Variable lookup in expressions (two-stage):
 ```hopper
 // Stage 1: Find name to address
-Tokenizer.GetTokenString(); // Name in ZP.ACC
+Tokenizer.GetTokenString(); // Name in ZP.TOP
 LDA #SymbolType.VARIABLE
-STA ZP.ACCL
+STA ZP.SymbolIteratorFilter
 Variables.Find();
 if (NC) { /* undefined variable error */ }
 
@@ -737,9 +674,9 @@ Variables.GetValue(); // ZP.IDX already set from Find
 ### Assignment (two-stage):
 ```hopper
 // Stage 1: Find variable name
-Tokenizer.GetTokenString(); // Name in ZP.ACC
+Tokenizer.GetTokenString(); // Name in ZP.TOP
 LDA #SymbolType.VARIABLE
-STA ZP.ACCL
+STA ZP.SymbolIteratorFilter
 Variables.Find();
 if (NC) { /* undefined variable error */ }
 
@@ -752,8 +689,7 @@ Variables.SetValue(); // ZP.IDX from Find, ZP.TOP has new value
 ```hopper
 // For general identifier lookup (could be variable or constant)
 Tokenizer.GetTokenString();
-LDA #0  // Accept any symbol type
-STA ZP.ACCL
+STZ ZP.SymbolIteratorFilter  // Accept any symbol type
 Variables.Find();
 if (C)
 {
@@ -767,9 +703,9 @@ The symbol table integrates with the Hopper VM memory system:
 
 1. **Allocation**: Uses `Memory.Allocate()` through `Table.Add()`
 2. **Deallocation**: Uses `Memory.Free()` through `Table.Delete()`
-3. **Persistence**: ZP.SymbolType, ZP.SymbolValue, ZP.SymbolName survive memory operations
+3. **Persistence**: ZP.SymbolType, ZP.SymbolValue, ZP.SymbolName, ZP.SymbolTokens survive memory operations
 4. **Efficiency**: Only allocates space needed for each symbol (7 bytes + name length)
-5. **Arguments Tables**: Each function has separate arguments table using same Objects infrastructure
+5. **Arguments Lists**: Each function has separate arguments list using simplified 2-byte + name nodes
 
 ## Error Handling
 
@@ -832,5 +768,5 @@ This design enables:
 - **Referential integrity**: Prevents "stale constant" problems in dependency chains
 - **Forward references**: Functions can call functions defined later
 - **Dynamic modification**: FORGET and redefinition change symbol meanings
-- **Unified argument handling**: Arguments use dedicated unit with optimized node structure  
-- **Memory efficiency**: No duplicate code for argument management, optimized 3-byte argument node overhead
+- **Unified argument handling**: Arguments stored directly in function nodes with optimized structure
+- **Memory efficiency**: No duplicate code for argument management, optimized 2-byte argument node overhead
