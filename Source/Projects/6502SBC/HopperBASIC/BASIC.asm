@@ -14,6 +14,8 @@ program HopperBASIC
     
     uses "Messages"
     uses "Tokenizer"
+    uses "Compiler"
+    uses "Executor"
     uses "Console"
     uses "Tools"
     uses "Statement"
