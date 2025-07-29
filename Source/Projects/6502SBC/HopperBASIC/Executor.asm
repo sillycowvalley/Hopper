@@ -229,6 +229,8 @@ unit Executor
     // Output: Execution continues (errors detected via Messages.CheckError())
     DispatchOpcode()
     {
+        TAY // for jump table optimization
+        
 #ifdef DEBUG       
         PHA
         Tools.NL(); LDA #']' Tools.COut();
@@ -237,8 +239,8 @@ unit Executor
 #endif
         
         // Use switch statement for opcode dispatch
-        // Register A contains the opcode value
-        switch (A)
+        // Register Y contains the opcode value
+        switch (Y)
         {
             // === NO OPERAND OPCODES (0x00-0x3F) ===
             
@@ -421,117 +423,80 @@ unit Executor
             {
                 executeJumpNZW();
             }
-            
             default:
             {
-#ifdef DEBUG
-                Tools.DumpBasicBuffers();
-#endif                
-                // Unknown opcode
-                LDA #(Messages.InternalError % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.InternalError / 256)
-                STA ZP.LastErrorH
-                Messages.StorePC(); // 6502 PC -> IDY
-                CLC
+                executeNotImplemented();
             }
         }
-        
-        // NO SEC here! Let individual handlers manage their own error states
-        // The calling ExecuteOpcodes() will use Messages.CheckError() to detect failures
     }
     
-    // === ARITHMETIC OPERATION HANDLERS ===
+    executeNotImplemented()
+    {
+#ifdef DEBUG
+        LDA #'?' Tools.COut();
+        TYA Tools.HOut();
+        Tools.DumpBasicBuffers();
+#endif                
+        // Unknown opcode
+        LDA #(Messages.InternalError % 256)
+        STA ZP.LastErrorL
+        LDA #(Messages.InternalError / 256)
+        STA ZP.LastErrorH
+        Messages.StorePC(); // 6502 PC -> IDY
+        CLC
+    }
     
+    
+    // === ARITHMETIC OPERATION HANDLERS (FIXED) ===
+
     executeAdd()
     {
-        // Stack already has operands from earlier PUSH opcodes
-        // Just call the existing Instructions.Addition() function
         Instructions.Addition();
-        // Instructions.Addition() handles:
-        // - Stacks.PopTopNext() to get operands  
-        // - Type checking and compatibility
-        // - Actual arithmetic operation
-        // - Stacks.PushNext() or Stacks.PushTop() with result
-        // - Error handling via Messages system
+        SEC // Success - Instructions.* functions don't set carry flag
     }
     
     executeSub()
     {
-        // Stack already has operands from earlier PUSH opcodes
-        // Just call the existing Instructions.Subtraction() function
         Instructions.Subtraction();
-        // Instructions.Subtraction() handles all the details:
-        // - PopTopNext: gets right operand in TOP, left operand in NEXT
-        // - Performs: NEXT - TOP (correct order for subtraction)
-        // - Type checking and result pushing
+        SEC // Success - Instructions.* functions don't set carry flag
     }
     
     executeMul()
     {
-        // Stack already has operands from earlier PUSH opcodes
-        // Just call the existing Instructions.Multiply() function
         Instructions.Multiply();
-        // Instructions.Multiply() handles:
-        // - PopTopNext to get operands
-        // - Signed/unsigned multiplication based on types
-        // - Result type determination and stack push
+        SEC // Success - Instructions.* functions don't set carry flag
     }
     
     executeDiv()
     {
-        // Stack already has operands from earlier PUSH opcodes
-        // Just call the existing Instructions.Divide() function
         Instructions.Divide();
-        // Instructions.Divide() handles:
-        // - PopTopNext to get operands
-        // - Division by zero checking
-        // - Signed/unsigned division based on types
-        // - Error handling for division by zero
+        SEC // Success - Instructions.* functions don't set carry flag
     }
     
     executeMod()
     {
-        // Stack already has operands from earlier PUSH opcodes
-        // Just call the existing Instructions.Modulo() function
         Instructions.Modulo();
-        // Instructions.Modulo() handles:
-        // - PopTopNext to get operands
-        // - Modulo by zero checking
-        // - Signed/unsigned modulo based on types
-        // - Error handling for modulo by zero
+        SEC // Success - Instructions.* functions don't set carry flag
     }
     
     executeNeg()
     {
         // For unary negation, we need to push zero and then subtract
-        // This matches how Expression.parseUnary() handles unary minus:
-        //   "Push zero, parse operand, then subtract"
-        
-        // Push zero onto stack (same type as operand for proper subtraction)
         LDA #0
         STA ZP.TOPL
         STA ZP.TOPH
-        LDA #BasicType.INT  // Zero is INT type
+        LDA #BasicType.INT
         STA ZP.TOPT
         Stacks.PushTop();
         
-        // Now stack has: [original_operand] [zero] (zero on top)
-        // We want: zero - original_operand = -original_operand
-        // But Instructions.Subtraction() does NEXT - TOP
-        // So we need to swap the operands first
-        
-        // Pop both values
+        // Swap operands so subtraction order is correct
         Stacks.PopTop();     // Pop zero into TOP
         Stacks.PopNext();    // Pop original operand into NEXT
-        
-        // Push them back in swapped order  
         Stacks.PushTop();    // Push zero (was in TOP)
         Stacks.PushNext();   // Push original operand (was in NEXT)
         
-        // Now stack has: [zero] [original_operand] (original_operand on top)
-        // Instructions.Subtraction() will do: zero - original_operand = -original_operand
         Instructions.Subtraction();
+        SEC // Success - Instructions.* functions don't set carry flag
     }
     
     // === BITWISE OPERATION HANDLERS ===
