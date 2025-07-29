@@ -1176,18 +1176,6 @@ unit Tools
                     {
                         Serial.WriteChar();  // Print the character
                         INY
-                        
-                        // Add space after 8 characters
-                        CPY #8
-                        if (Z)
-                        {
-                            CPY ZP.U2  // Don't add space if we're at the end
-                            if (NZ)
-                            {
-                                LDA #' '
-                                Serial.WriteChar();
-                            }
-                        }
                         continue;
                     }
                 }
@@ -1196,18 +1184,6 @@ unit Tools
                 LDA #'.'
                 Serial.WriteChar();
                 INY
-                
-                // Add space after 8 characters
-                CPY #8
-                if (Z)
-                {
-                    CPY ZP.U2  // Don't add space if we're at the end
-                    if (NZ)
-                    {
-                        LDA #' '
-                        Serial.WriteChar();
-                    }
-                }
             }
             
             LDA #'\n'
@@ -1337,14 +1313,6 @@ unit Tools
                     {
                         Serial.WriteChar();  // Print the character
                         INY
-                        
-                        // Add space after 8 characters
-                        CPY #8
-                        if (Z)
-                        {
-                            LDA #' '
-                            Serial.WriteChar();
-                        }
                         continue;
                     }
                 }
@@ -1353,14 +1321,6 @@ unit Tools
                 LDA #'.'
                 Serial.WriteChar();
                 INY
-                
-                // Add space after 8 characters
-                CPY #8
-                if (Z)
-                {
-                    LDA #' '
-                    Serial.WriteChar();
-                }
             }
             
             LDA #'\n'
@@ -1548,9 +1508,9 @@ unit Tools
         PLP  // Restore flags
     }
     
-    // Dump a 64-byte memory block in hex format for debugging
+    // Dump a 64-byte memory block in hex+ASCII format for debugging
     // Input: ZP.M0/ZP.M1 = start address to dump
-    // Output: 64 bytes (4 lines of 16 bytes) printed to serial in hex format
+    // Output: 64 bytes (4 lines of 16 bytes) printed to serial in hex+ASCII format
     // Modifies: A, X, Y (internal operations)
     // Preserves: ZP.M0/ZP.M1 (start address preserved)
     DumpMemoryBlock()
@@ -1596,19 +1556,62 @@ unit Tools
                 Serial.WriteChar();
                 
                 INY
+                
+                // Add extra space after 8 bytes
+                CPY #8
+                if (Z)
+                {
+                    LDA #' '
+                    Serial.WriteChar();
+                }
+            }
+            
+            // Add spacing before ASCII dump
+            LDA #' '
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            
+            // Print 16 ASCII characters
+            LDY #0
+            loop
+            {
+                CPY #16
+                if (Z) { break; }
+                
+                LDA [ZP.M0], Y
+                
+                // Check if printable (32-127)
+                CMP #32
+                if (C)  // >= 32
+                {
+                    CMP #127
+                    if (NC)  // <= 127
+                    {
+                        Serial.WriteChar();  // Print the character
+                        INY
+                        continue;
+                    }
+                }
+                
+                // Not printable, print dot
+                LDA #'.'
+                Serial.WriteChar();
+                INY
             }
             
             LDA #'\n'
             Serial.WriteChar();
             
-            // Move to next line (add 16 to M0/M1)
+            // Move to next line (add 16 to address)
             CLC
             LDA ZP.M0
             ADC #16
             STA ZP.M0
-            LDA ZP.M1
-            ADC #0
-            STA ZP.M1
+            if (C)
+            {
+                INC ZP.M1
+            }
             
             INX
         }
