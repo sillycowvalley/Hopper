@@ -223,7 +223,7 @@ unit Executor
     
     // Dispatch opcode to appropriate handler
     // Input: A contains opcode value
-    // Output: C set if successful, NC if error
+    // Output: Execution continues (errors detected via Messages.CheckError())
     DispatchOpcode()
     {
         // Use switch statement for opcode dispatch
@@ -268,7 +268,7 @@ unit Executor
                 executeBitwiseOr();
             }
             
-            // Logical operations
+            // Logical operations (BIT operands only)
             case OpcodeType.LOGICAL_AND:
             {
                 executeLogicalAnd();
@@ -282,7 +282,7 @@ unit Executor
                 executeLogicalNot();
             }
             
-            // Comparison operations
+            // Comparison operations (all return BIT)
             case OpcodeType.EQ:
             {
                 executeEq();
@@ -308,7 +308,7 @@ unit Executor
                 executeGe();
             }
             
-            // Control flow and stack manipulation
+            // Function operations
             case OpcodeType.RETURN:
             {
                 executeReturn();
@@ -317,6 +317,8 @@ unit Executor
             {
                 executeReturnVal();
             }
+            
+            // Stack manipulation
             case OpcodeType.DECSP:
             {
                 executeDecSp();
@@ -332,7 +334,7 @@ unit Executor
             
             // === ONE BYTE OPERAND OPCODES (0x40-0x7F) ===
             
-            // Literal pushes
+            // Literal pushes (8-bit)
             case OpcodeType.PUSHBIT:
             {
                 executePushBit();
@@ -418,86 +420,105 @@ unit Executor
                 LDA #(Messages.InternalError / 256)
                 STA ZP.LastErrorH
                 Messages.StorePC(); // 6502 PC -> IDY
-                CLC
                 return;
             }
         }
         
-        SEC // Success (individual handlers set their own error states)
+        // NO SEC here! Let individual handlers manage their own error states
+        // The calling ExecuteOpcodes() will use Messages.CheckError() to detect failures
     }
     
     // === ARITHMETIC OPERATION HANDLERS ===
     
     executeAdd()
     {
-        Stacks.PopTopNext(); // Pop two values: TOP and NEXT
-        // TODO: Add type checking and arithmetic operation
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
-        CLC
+        // Stack already has operands from earlier PUSH opcodes
+        // Just call the existing Instructions.Addition() function
+        Instructions.Addition();
+        // Instructions.Addition() handles:
+        // - Stacks.PopTopNext() to get operands  
+        // - Type checking and compatibility
+        // - Actual arithmetic operation
+        // - Stacks.PushNext() or Stacks.PushTop() with result
+        // - Error handling via Messages system
     }
     
     executeSub()
     {
-        Stacks.PopTopNext(); // Pop two values: TOP and NEXT
-        // TODO: Implement subtraction: NEXT - TOP
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
-        CLC
+        // Stack already has operands from earlier PUSH opcodes
+        // Just call the existing Instructions.Subtraction() function
+        Instructions.Subtraction();
+        // Instructions.Subtraction() handles all the details:
+        // - PopTopNext: gets right operand in TOP, left operand in NEXT
+        // - Performs: NEXT - TOP (correct order for subtraction)
+        // - Type checking and result pushing
     }
     
     executeMul()
     {
-        Stacks.PopTopNext(); // Pop two values: TOP and NEXT
-        // TODO: Implement multiplication: NEXT * TOP
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
-        CLC
+        // Stack already has operands from earlier PUSH opcodes
+        // Just call the existing Instructions.Multiply() function
+        Instructions.Multiply();
+        // Instructions.Multiply() handles:
+        // - PopTopNext to get operands
+        // - Signed/unsigned multiplication based on types
+        // - Result type determination and stack push
     }
     
     executeDiv()
     {
-        Stacks.PopTopNext(); // Pop two values: TOP and NEXT
-        // TODO: Implement division: NEXT / TOP (check for divide by zero)
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
-        CLC
+        // Stack already has operands from earlier PUSH opcodes
+        // Just call the existing Instructions.Divide() function
+        Instructions.Divide();
+        // Instructions.Divide() handles:
+        // - PopTopNext to get operands
+        // - Division by zero checking
+        // - Signed/unsigned division based on types
+        // - Error handling for division by zero
     }
     
     executeMod()
     {
-        Stacks.PopTopNext(); // Pop two values: TOP and NEXT
-        // TODO: Implement modulo: NEXT % TOP
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
-        CLC
+        // Stack already has operands from earlier PUSH opcodes
+        // Just call the existing Instructions.Modulo() function
+        Instructions.Modulo();
+        // Instructions.Modulo() handles:
+        // - PopTopNext to get operands
+        // - Modulo by zero checking
+        // - Signed/unsigned modulo based on types
+        // - Error handling for modulo by zero
     }
     
     executeNeg()
     {
-        Stacks.PopTop(); // Pop one value: TOP
-        // TODO: Implement negation: -TOP
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
-        CLC
+        // For unary negation, we need to push zero and then subtract
+        // This matches how Expression.parseUnary() handles unary minus:
+        //   "Push zero, parse operand, then subtract"
+        
+        // Push zero onto stack (same type as operand for proper subtraction)
+        LDA #0
+        STA ZP.TOPL
+        STA ZP.TOPH
+        LDA #BasicType.INT  // Zero is INT type
+        STA ZP.TOPT
+        Stacks.PushTop();
+        
+        // Now stack has: [original_operand] [zero] (zero on top)
+        // We want: zero - original_operand = -original_operand
+        // But Instructions.Subtraction() does NEXT - TOP
+        // So we need to swap the operands first
+        
+        // Pop both values
+        Stacks.PopTop();     // Pop zero into TOP
+        Stacks.PopNext();    // Pop original operand into NEXT
+        
+        // Push them back in swapped order  
+        Stacks.PushTop();    // Push zero (was in TOP)
+        Stacks.PushNext();   // Push original operand (was in NEXT)
+        
+        // Now stack has: [zero] [original_operand] (original_operand on top)
+        // Instructions.Subtraction() will do: zero - original_operand = -original_operand
+        Instructions.Subtraction();
     }
     
     // === BITWISE OPERATION HANDLERS ===

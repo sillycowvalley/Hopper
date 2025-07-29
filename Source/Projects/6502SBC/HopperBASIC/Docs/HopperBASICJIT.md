@@ -142,11 +142,7 @@ const uint executorTokenAddrH    = Address.BasicProcessBuffer3 + 18;  // 0x09F2:
    - Maintain identical API and error handling
    - Preserve type checking and stack integration
 
-2. **Validation Testing**:
-   - Test all expression types: arithmetic, logical, comparison
-   - Verify variable access works correctly
-   - Test error handling produces identical error messages
-   - Validate stack state after expression evaluation
+
 
 ### ❌ Phase 3: Statement Integration (PENDING)
 1. **Transform Statement.asm Execution Flow**:

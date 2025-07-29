@@ -68,6 +68,7 @@ unit Compiler
             STA ZP.LastErrorL
             LDA #(Messages.BufferOverflow / 256)
             STA ZP.LastErrorH
+            Messages.StorePC(); // 6502 PC -> IDY
             CLC // Overflow
             return;
         }
@@ -283,6 +284,7 @@ unit Compiler
             STA ZP.LastErrorL
             LDA #(Messages.InvalidBitValue / 256)
             STA ZP.LastErrorH
+            Messages.StorePC(); // 6502 PC -> IDY
             CLC
             return;
         }
@@ -331,6 +333,7 @@ unit Compiler
         STA ZP.LastErrorL
         LDA #(Messages.InvalidType / 256)
         STA ZP.LastErrorH
+        Messages.StorePC(); // 6502 PC -> IDY
         CLC
     }
     
@@ -359,6 +362,7 @@ unit Compiler
         STA ZP.LastErrorL
         LDA #(Messages.TokenBufferTooLarge / 256)
         STA ZP.LastErrorH
+        Messages.StorePC(); // 6502 PC -> IDY
         CLC
     }
     
@@ -386,6 +390,7 @@ unit Compiler
         STA ZP.LastErrorL
         LDA #(Messages.TokenBufferTooLarge / 256)
         STA ZP.LastErrorH
+        Messages.StorePC(); // 6502 PC -> IDY
         CLC
     }
     
@@ -432,6 +437,7 @@ unit Compiler
                 STA ZP.LastErrorL
                 LDA #(Messages.InvalidOperator / 256)
                 STA ZP.LastErrorH
+                Messages.StorePC(); // 6502 PC -> IDY
                 CLC
                 return;
             }
@@ -487,6 +493,7 @@ unit Compiler
                 STA ZP.LastErrorL
                 LDA #(Messages.InvalidOperator / 256)
                 STA ZP.LastErrorH
+                Messages.StorePC(); // 6502 PC -> IDY
                 CLC
                 return;
             }
@@ -524,6 +531,7 @@ unit Compiler
                 STA ZP.LastErrorL
                 LDA #(Messages.InvalidOperator / 256)
                 STA ZP.LastErrorH
+                Messages.StorePC(); // 6502 PC -> IDY
                 CLC
                 return;
             }
@@ -555,6 +563,7 @@ unit Compiler
                 STA ZP.LastErrorL
                 LDA #(Messages.InvalidOperator / 256)
                 STA ZP.LastErrorH
+                Messages.StorePC(); // 6502 PC -> IDY
                 CLC
                 return;
             }
@@ -731,107 +740,39 @@ unit Compiler
         loop
         {
             LDA ZP.CurrentToken
-            CMP #Tokens.EQUALS
-            if (Z)
+            switch (A)
             {
-                STA compilerOperatorToken // Save operator token
-                
-                // Get next token for right operand
-                Tokenizer.NextToken();
-                Messages.CheckError();
-                if (NC) { return; }
-                
-                // Compile right operand
-                compileBitwiseOr();
-                Messages.CheckError();
-                if (NC) { return; }
-                
-                // Emit comparison opcode
-                LDA compilerOperatorToken // Restore operator token
-                EmitComparisonOp();
-                if (NC) { return; }
-                
-                continue;
-            }
-            
-            CMP #Tokens.NOTEQUAL
-            if (Z)
-            {
-                STA compilerOperatorToken
-                Tokenizer.NextToken();
-                Messages.CheckError();
-                if (NC) { return; }
-                compileBitwiseOr();
-                Messages.CheckError();
-                if (NC) { return; }
-                LDA compilerOperatorToken
-                EmitComparisonOp();
-                if (NC) { return; }
-                continue;
-            }
-            
-            CMP #Tokens.LESSTHAN
-            if (Z)
-            {
-                STA compilerOperatorToken
-                Tokenizer.NextToken();
-                Messages.CheckError();
-                if (NC) { return; }
-                compileBitwiseOr();
-                Messages.CheckError();
-                if (NC) { return; }
-                LDA compilerOperatorToken
-                EmitComparisonOp();
-                if (NC) { return; }
-                continue;
-            }
-            
-            CMP #Tokens.GREATERTHAN
-            if (Z)
-            {
-                STA compilerOperatorToken
-                Tokenizer.NextToken();
-                Messages.CheckError();
-                if (NC) { return; }
-                compileBitwiseOr();
-                Messages.CheckError();
-                if (NC) { return; }
-                LDA compilerOperatorToken
-                EmitComparisonOp();
-                if (NC) { return; }
-                continue;
-            }
-            
-            CMP #Tokens.LESSEQUAL
-            if (Z)
-            {
-                STA compilerOperatorToken
-                Tokenizer.NextToken();
-                Messages.CheckError();
-                if (NC) { return; }
-                compileBitwiseOr();
-                Messages.CheckError();
-                if (NC) { return; }
-                LDA compilerOperatorToken
-                EmitComparisonOp();
-                if (NC) { return; }
-                continue;
-            }
-            
-            CMP #Tokens.GREATEREQUAL
-            if (Z)
-            {
-                STA compilerOperatorToken
-                Tokenizer.NextToken();
-                Messages.CheckError();
-                if (NC) { return; }
-                compileBitwiseOr();
-                Messages.CheckError();
-                if (NC) { return; }
-                LDA compilerOperatorToken
-                EmitComparisonOp();
-                if (NC) { return; }
-                continue;
+                case Tokens.EQUALS:
+                case Tokens.NOTEQUAL:
+                case Tokens.LESSTHAN:
+                case Tokens.GREATERTHAN:
+                case Tokens.LESSEQUAL:
+                case Tokens.GREATEREQUAL:
+                {
+                    STA compilerOperatorToken // Save operator token
+                    
+                    // Get next token for right operand
+                    Tokenizer.NextToken();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                    
+                    // Compile right operand
+                    compileBitwiseOr();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                    
+                    // Emit comparison opcode
+                    LDA compilerOperatorToken // Restore operator token
+                    EmitComparisonOp();
+                    if (NC) { return; }
+                    
+                    continue; // Continue looking for more comparison operators
+                    break; // Exit switch to continue loop
+                }
+                default:
+                {
+                    break; // Exit switch and loop - no more comparison operators
+                }
             }
             
             break; // No more comparison operators
@@ -911,43 +852,35 @@ unit Compiler
         loop
         {
             LDA ZP.CurrentToken
-            CMP #Tokens.PLUS
-            if (Z)
+            switch (A)
             {
-                STA compilerOperatorToken // Save operator
-                
-                // Get next token for right operand
-                Tokenizer.NextToken();
-                Messages.CheckError();
-                if (NC) { return; }
-                
-                // Compile right operand
-                compileMultiplicative();
-                Messages.CheckError();
-                if (NC) { return; }
-                
-                // Emit arithmetic opcode
-                LDA compilerOperatorToken // Restore operator
-                EmitArithmeticOp();
-                if (NC) { return; }
-                
-                continue;
-            }
-            
-            CMP #Tokens.MINUS
-            if (Z)
-            {
-                STA compilerOperatorToken
-                Tokenizer.NextToken();
-                Messages.CheckError();
-                if (NC) { return; }
-                compileMultiplicative();
-                Messages.CheckError();
-                if (NC) { return; }
-                LDA compilerOperatorToken
-                EmitArithmeticOp();
-                if (NC) { return; }
-                continue;
+                case Tokens.PLUS:
+                case Tokens.MINUS:
+                {
+                    STA compilerOperatorToken // Save operator
+                    
+                    // Get next token for right operand
+                    Tokenizer.NextToken();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                    
+                    // Compile right operand
+                    compileMultiplicative();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                    
+                    // Emit arithmetic opcode
+                    LDA compilerOperatorToken // Restore operator
+                    EmitArithmeticOp();
+                    if (NC) { return; }
+                    
+                    continue; // Continue looking for more additive operators
+                    break; // Exit switch to continue loop
+                }
+                default:
+                {
+                    break; // Exit switch and loop - no more additive operators
+                }
             }
             
             break; // No more additive operators
@@ -987,59 +920,36 @@ unit Compiler
         loop
         {
             LDA ZP.CurrentToken
-            CMP #Tokens.MULTIPLY
-            if (Z)
+            switch (A)
             {
-                STA compilerOperatorToken // Save operator
-                
-                // Get next token for right operand
-                Tokenizer.NextToken();
-                Messages.CheckError();
-                if (NC) { return; }
-                
-                // Compile right operand
-                compileUnary();
-                Messages.CheckError();
-                if (NC) { return; }
-                
-                // Emit arithmetic opcode
-                LDA compilerOperatorToken // Restore operator
-                EmitArithmeticOp();
-                if (NC) { return; }
-                
-                continue;
-            }
-            
-            CMP #Tokens.DIVIDE
-            if (Z)
-            {
-                STA compilerOperatorToken
-                Tokenizer.NextToken();
-                Messages.CheckError();
-                if (NC) { return; }
-                compileUnary();
-                Messages.CheckError();
-                if (NC) { return; }
-                LDA compilerOperatorToken
-                EmitArithmeticOp();
-                if (NC) { return; }
-                continue;
-            }
-            
-            CMP #Tokens.MODULO
-            if (Z)
-            {
-                STA compilerOperatorToken
-                Tokenizer.NextToken();
-                Messages.CheckError();
-                if (NC) { return; }
-                compileUnary();
-                Messages.CheckError();
-                if (NC) { return; }
-                LDA compilerOperatorToken
-                EmitArithmeticOp();
-                if (NC) { return; }
-                continue;
+                case Tokens.MULTIPLY:
+                case Tokens.DIVIDE:
+                case Tokens.MODULO:
+                {
+                    STA compilerOperatorToken // Save operator
+                    
+                    // Get next token for right operand
+                    Tokenizer.NextToken();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                    
+                    // Compile right operand
+                    compileUnary();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                    
+                    // Emit arithmetic opcode
+                    LDA compilerOperatorToken // Restore operator
+                    EmitArithmeticOp();
+                    if (NC) { return; }
+                    
+                    continue; // Continue looking for more multiplicative operators
+                    break; // Exit switch to continue loop
+                }
+                default:
+                {
+                    break; // Exit switch and loop - no more multiplicative operators
+                }
             }
             
             break; // No more multiplicative operators
@@ -1072,69 +982,52 @@ unit Compiler
 #endif
         
         LDA ZP.CurrentToken
-        CMP #Tokens.MINUS
-        if (Z)
+        switch (A)
         {
-            // Unary minus
-            Tokenizer.NextToken();
-            Messages.CheckError();
-            if (NC) { return; }
-            
-            // Compile the operand first
-            compilePrimary();
-            Messages.CheckError();
-            if (NC) { return; }
-            
-            // Emit unary minus opcode
-            EmitUnaryMinus();
-            if (NC) { return; }
-            
-#ifdef DEBUG
-            LDA #'C'
-            Tools.COut();
-            LDA #'U'
-            Tools.COut();
-            LDA #'>'
-            Tools.COut();
-#endif
-            
-            SEC // Success
-            return;
+            case Tokens.MINUS:
+            {
+                // Unary minus
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NC) { return; }
+                
+                // Compile the operand first
+                compilePrimary();
+                Messages.CheckError();
+                if (NC) { return; }
+                
+                // Emit unary minus opcode
+                EmitUnaryMinus();
+                if (NC) { return; }
+                
+                break; // Exit switch - unary minus handled
+            }
+            case Tokens.NOT:
+            {
+                // Logical NOT
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NC) { return; }
+                
+                // Compile the operand
+                compilePrimary();
+                Messages.CheckError();
+                if (NC) { return; }
+                
+                // Emit logical NOT opcode
+                LDA #Tokens.NOT
+                EmitLogicalOp();
+                if (NC) { return; }
+                
+                break; // Exit switch - logical NOT handled
+            }
+            default:
+            {
+                // Not unary, compile primary
+                compilePrimary();
+                break; // Exit switch - primary handled
+            }
         }
-        
-        CMP #Tokens.NOT
-        if (Z)
-        {
-            // Logical NOT
-            Tokenizer.NextToken();
-            Messages.CheckError();
-            if (NC) { return; }
-            
-            // Compile the operand
-            compilePrimary();
-            Messages.CheckError();
-            if (NC) { return; }
-            
-            // Emit logical NOT opcode
-            LDA #Tokens.NOT
-            EmitLogicalOp();
-            if (NC) { return; }
-            
-#ifdef DEBUG
-            LDA #'C'
-            Tools.COut();
-            LDA #'U'
-            Tools.COut();
-            LDA #'>'
-            Tools.COut();
-#endif
-            
-            SEC // Success
-            return;
-        }
-        
-        // Not unary, compile primary
-        compilePrimary();
         
 #ifdef DEBUG
         LDA #'C'
@@ -1206,7 +1099,7 @@ unit Compiler
                     // Get next token
                     Tokenizer.NextToken();
                     Messages.CheckError();
-                    break;
+                    break; // Exit switch - number handled
                 }
                 case Tokens.IDENTIFIER:
                 {
@@ -1218,7 +1111,7 @@ unit Compiler
                     // Get next token
                     Tokenizer.NextToken();
                     Messages.CheckError();
-                    break;
+                    break; // Exit switch - identifier handled
                 }
                 case Tokens.LPAREN:
                 {
@@ -1241,6 +1134,7 @@ unit Compiler
                         STA ZP.LastErrorL
                         LDA #(Messages.ExpectedRightParen / 256)
                         STA ZP.LastErrorH
+                        Messages.StorePC(); // 6502 PC -> IDY
                         CLC
                         break;
                     }
@@ -1248,7 +1142,7 @@ unit Compiler
                     // Get next token after closing paren
                     Tokenizer.NextToken();
                     Messages.CheckError();
-                    break;
+                    break; // Exit switch - parenthesized expression handled
                 }
                 default:
                 {
@@ -1257,8 +1151,9 @@ unit Compiler
                     STA ZP.LastErrorL
                     LDA #(Messages.ExpectedExpression / 256)
                     STA ZP.LastErrorH
+                    Messages.StorePC(); // 6502 PC -> IDY
                     CLC
-                    break;
+                    break; // Exit switch - error case handled
                 }
             }
             
