@@ -48,7 +48,16 @@ const RETURN = 0xFD  // Return from function
 
 ### 3. Function Storage Enhancement
 
-**Function Node Structure**:
+**Function Node Structure** (Phase 2-3):
+```
+Offset 0-1: next pointer (managed by Table unit)
+Offset 2:   reserved for local_count (implemented in Phase 6)
+Offset 3-4: function body tokens pointer  
+Offset 5-6: arguments list head pointer (parsed but not used until Phase 6)
+Offset 7+:  null-terminated function name string
+```
+
+**Function Node Structure** (Phase 6):
 ```
 Offset 0-1: next pointer (managed by Table unit)
 Offset 2:   local_count (number of local variables)
@@ -56,8 +65,6 @@ Offset 3-4: function body tokens pointer
 Offset 5-6: arguments list head pointer
 Offset 7+:  null-terminated function name string
 ```
-
-The `local_count` field enables efficient stack frame cleanup on RETURN.
 
 ## Memory Architecture
 
@@ -90,7 +97,7 @@ Since BP (Base Pointer) is limited to value stack positions (0-255), we can stor
 - `CallStackLSB[CSP+1]` = BP
 - `CallStackMSB[CSP+1]` = 0 (unused)
 
-### Value Stack Frame (Pascal Calling Convention)
+### Value Stack Frame (Pascal Calling Convention) - Phase 6
 
 ```
 [...caller's data...]
@@ -106,10 +113,7 @@ Since BP (Base Pointer) is limited to value stack positions (0-255), we can stor
 [...temporaries...]   <- SP
 ```
 
-**Benefits of Pascal Convention**:
-- Local variables always at `BP + index` regardless of argument count
-- Arguments naturally positioned by caller's evaluation order
-- No BP adjustment needed based on parameter count
+**Note**: In Phases 2-4, functions execute without argument/local support. BP is saved/restored but not used for variable access.
 
 ### State Management Buffers
 
@@ -144,26 +148,48 @@ const FuncExecArgCount  = BasicProcessBuffer3 + 2   // Current function's argume
    - Use `Variables.Remove()` for variables/constants
    - Provide appropriate success/error messages
 
-### Phase 2: Function Definition
+### Phase 2: Function Definition (No Arguments/Locals)
 1. Implement `accumulateDefinitionBody()` for collecting multi-line definitions
 2. Add Ctrl-C abort handling with proper cleanup
 3. Implement `executeFunctionDefinition()` for FUNC statements
+   - Parse function name and parameter list (store but don't use parameters)
+   - Accumulate body tokens until ENDFUNC
 4. Implement `executeBeginDefinition()` for BEGIN/END blocks
 5. Add implicit RETURN token insertion for functions without explicit RETURN
 
-### Phase 3: Function Execution
-1. Implement function call mechanism in `executeIdentifier()`
+### Phase 3: Function Execution (No Arguments/Locals)
+1. Implement basic function call mechanism in `executeIdentifier()`
+   - No argument passing yet (functions can only use globals)
 2. Add stack overflow checking before calls
-3. Implement RETURN statement execution with proper stack cleanup
-4. Add local variable support with declaration-first constraint
-5. Extend FORGET command to handle functions
+3. Implement RETURN statement execution with proper PC/BP restoration
+4. Extend FORGET command to handle functions
 
 ### Phase 4: Management Commands
 1. Update LIST to show both main program and functions
 2. Implement RUN to execute __main function with dummy return address
-3. Update FUNCS to list all defined functions
+3. Update FUNCS to list all defined functions with signatures
 
-## Execution Flow
+### Phase 5: EEPROM Storage (SAVE/LOAD)
+1. Design tokenized program format for EEPROM storage
+2. Implement SAVE command to store all functions and variables
+3. Implement LOAD command to restore saved programs
+4. Add DIR command to list saved programs
+5. Add DEL command to delete saved programs
+6. Enable development of test suites as saved programs
+
+### Phase 6: Arguments and Local Variables
+1. Add new token types for local/argument access:
+   - `PUSHLOCAL` - Push local variable value
+   - `POPLOCAL` - Pop value to local variable
+2. Modify expression parser to resolve local/argument identifiers
+3. Implement argument passing in function calls:
+   - Evaluate argument expressions
+   - Set up BP correctly for Pascal convention
+4. Implement local variable allocation and access
+5. Add scope resolution (locals shadow globals)
+6. Update all error messages to include local context
+
+## Execution Flow (Phases 2-4)
 
 ### REPL Execution
 ```hopper
@@ -182,7 +208,7 @@ executeREPL()
 }
 ```
 
-### Function Execution
+### Function Execution (Without Arguments/Locals)
 ```hopper
 executeFunction()
 {
@@ -203,177 +229,120 @@ executeFunction()
 }
 ```
 
-### Function Call Mechanism
+### Simple Function Call (Phase 3)
 ```hopper
 callFunction()
 {
-    // 1. Arguments already on stack from expression evaluation
-    
-    // 2. Save return address (next token position)
+    // 1. Save return address (next token position)
     advancePC();  // Move past function call
     Stacks.PushPC();
     
-    // 3. Save current base pointer
+    // 2. Save current base pointer (not used until Phase 6)
     Stacks.PushBP();
     
-    // 4. Set new base pointer (points to first local)
-    LDA ZP.SP
-    SBC FuncExecArgCount  // Subtract argument count
-    STA ZP.BP
-    
-    // 5. Point PC at function body
+    // 3. Point PC at function body
     Functions.GetBody();  // Sets ZP.IDY
     LDA ZP.IDYL
     STA ZP.PCL
     LDA ZP.IDYH
     STA ZP.PCH
     
-    // 6. Execute function
+    // 4. Execute function
+    INC FuncExecDepth
     executeFunction();
+    DEC FuncExecDepth
 }
 ```
 
-### RUN Command Implementation
-```hopper
-cmdRun()
-{
-    // Find __main function
-    LDA #(mainName % 256)  // "__main"
-    STA ZP.TOPL
-    LDA #(mainName / 256)
-    STA ZP.TOPH
-    
-    Functions.Find();
-    if (NC)
-    {
-        // No main program defined
-        PrintError("No main program");
-        RTS
-    }
-    
-    // Set up dummy return address (0x0000)
-    STZ ZP.PCL
-    STZ ZP.PCH
-    Stacks.PushPC();
-    
-    // Save BP and set up for call
-    Stacks.PushBP();
-    LDA ZP.SP
-    STA ZP.BP  // No arguments for main
-    
-    // Execute __main as regular function
-    Functions.GetBody();
-    LDA ZP.IDYL
-    STA ZP.PCL
-    LDA ZP.IDYH
-    STA ZP.PCH
-    
-    executeFunction();
-    
-    // Should never return here (dummy address)
-}
-```
+## Benefits of Phased Approach
 
-## Error Handling
+### Early Testing (Phases 2-3)
+- Functions work with global variables only
+- Can test function definition/execution infrastructure
+- Can implement recursive algorithms using globals
+- Management commands (LIST, RUN, FUNCS) fully testable
 
-### Definition-Time Errors
-- **Syntax Errors**: Show token window around error location
-- **Redefinition**: Preserve existing function if new definition fails
-- **Ctrl-C Abort**: Clean up temporary buffers and restore normal mode
-- **Nested Definitions**: Error if FUNC appears inside FUNC/BEGIN
+### EEPROM Before Locals (Phase 5)
+- Develop comprehensive test programs
+- Save/load test suites for regression testing
+- Share programs without copy/paste
+- Build a library of test cases before tackling complex local variable implementation
 
-### Runtime Errors
-- **Stack Overflow**: Check CSP < 254 before calls (need 2 slots)
-- **Undefined Function**: Already handled by symbol table
-- **Argument Mismatch**: Check argument count matches declaration
-- **Missing RETURN**: Functions must end with RETURN (added implicitly if needed)
-
-### FORGET Command Errors
-- **Undefined Identifier**: "Undefined identifier" error message
-- **Protected Names**: Cannot forget keywords or built-in functions
-- **Success Message**: "Forgotten: [name]" confirmation
-
-## Special Behaviors
-
-### Main Program (__main)
-- Stored as a regular function named "__main"
-- No parameters allowed
-- Executed by RUN command with dummy return address
-- Replaced atomically on successful BEGIN/END parse
-- No special execution path - uses standard function mechanism
-
-### Local Variables
-- **Declaration Constraint**: All locals must be declared before any executable statements
-- **Scope**: Only accessible within their function
-- **Storage**: On value stack starting at BP
-- **Access**: Direct indexing via `BP + index`
-- **Cleanup**: SP restored to BP on RETURN
-
-### Implicit RETURN
-- Functions without explicit RETURN get one added automatically
-- Main program always gets implicit RETURN added
-- RETURN without value leaves stack unchanged
-
-### FORGET Command
-- **Variables/Constants**: Removes from symbol table, frees associated memory
-- **Functions**: Removes function node, argument list, and token stream
-- **Main Program**: Can be forgotten like any other function
+### Deferred Complexity (Phase 6)
+- Local variable implementation requires new tokens
+- Scope resolution adds complexity
+- Argument passing needs careful stack management
+- Can be implemented with confidence after core system is stable
 
 ## Token Stream Examples
 
-### Function Definition
+### Phase 2-3: Function Without Arguments
+```
+Input:  FUNC PrintBanner()
+        PRINT "**********"
+        PRINT "* HELLO  *"
+        PRINT "**********"
+        ENDFUNC
+
+Stored: [PRINT][STRING "**********"][EOL]
+        [PRINT][STRING "* HELLO  *"][EOL]
+        [PRINT][STRING "**********"][EOL]
+        [RETURN][EOL]
+```
+
+### Phase 2-3: Function With Ignored Parameters
+```
+Input:  FUNC Add(INT a, INT b)
+        ' Parameters parsed but not accessible yet
+        PRINT "Add function called"
+        ENDFUNC
+
+Stored: [REM][STRING " Parameters parsed but not accessible yet"][EOL]
+        [PRINT][STRING "Add function called"][EOL]
+        [RETURN][EOL]
+```
+
+### Phase 6: Function With Working Arguments
 ```
 Input:  FUNC Add(INT a, INT b)
         INT sum
+        INT extra = 10
         sum = a + b
         RETURN sum
         ENDFUNC
 
 Stored: [INT][ID "sum"][EOL]
-        [ID "sum"][EQUALS][ID "a"][PLUS][ID "b"][EOL]
-        [RETURN][ID "sum"][EOL]
+        [INT][ID "extra"][EQUALS][NUMBER 10][EOL]
+        [ID "extra"][EQUALS][ID "a"][PLUS][ID "b"][EOL]
+        [PUSHLOCAL 0][RETURN][EOL]
+        
+JIT Optimized: [ENTER 2][NUMBER 10][POPLOCAL 1][PUSHLOCAL -2][PLUS][PUSHLOCAL -1][POPLOCAL 0][PUSHLOCAL 0][RETURN]
 ```
 
-### Main Program
-```
-Input:  BEGIN
-        PRINT "Hello"
-        x = 10
-        END
-
-Stored: [PRINT][STRING "Hello"][EOL]
-        [ID "x"][EQUALS][NUMBER "10"][EOL]
-        [RETURN][EOL]
-```
-
-### Direct Execution (REPL)
-```
-Input:  PRINT 2 + 3
-
-Stored: [PRINT][NUMBER "2"][PLUS][NUMBER "3"][EOL]
-```
-
-## Testing Strategy
+## Testing Strategy by Phase
 
 ### Phase 1 Tests
-1. **PC Refactoring**: Verify all existing functionality works with PC instead of TokenizerPos
-2. **EOL Termination**: Ensure REPL stops at EOL correctly
-3. **FORGET Variables**: Test removing INT, WORD, BIT variables
-4. **FORGET Constants**: Verify constants can be removed
-5. **FORGET Errors**: Test undefined identifiers, keywords
+- PC refactoring verification
+- FORGET command for variables/constants
 
-### Phase 2-4 Tests
-1. **Definition Tests**: Parse various function signatures and bodies
-2. **Execution Tests**: Call functions with different argument counts
-3. **Stack Tests**: Verify correct BP setup and argument access
-4. **Error Tests**: Verify all error conditions are handled properly
-5. **Recursion Tests**: Factorial, Fibonacci with stack overflow detection
-6. **Integration Tests**: Functions calling functions, main calling functions
+### Phase 2-3 Tests
+- Function definition with various signatures
+- Function calls using only globals
+- Recursive functions with global counters
+- FORGET for functions
 
-## Future Enhancements
+### Phase 4 Tests
+- LIST showing all functions
+- RUN executing __main
+- FUNCS listing signatures
 
-1. **Return Type Checking**: Validate RETURN value matches function signature
-2. **Default Parameters**: Allow optional parameters with default values
-3. **Function Pointers**: Store function references in variables
-4. **Better Error Messages**: Include function name in runtime errors
-5. **Tail Call Optimization**: Detect and optimize tail recursion
+### Phase 5 Tests
+- SAVE/LOAD round trips
+- Multiple program management
+- EEPROM space management
+
+### Phase 6 Tests
+- Argument passing correctness
+- Local variable scoping
+- Stack frame management
+- Nested function calls with locals
