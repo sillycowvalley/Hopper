@@ -100,11 +100,15 @@ const FuncExecReturnType = BasicProcessBuffer3 + 2  // Expected return type
 
 ## Implementation Phases
 
-### Phase 1: Refactor Token Execution
+### Phase 1: Refactor Token Execution & Basic Commands
 1. Replace all `ZP.TokenizerPos` references with `ZP.PC`
 2. Remove `TokenBufferLength` from execution paths
 3. Add EOF token generation at end of tokenized lines
 4. Modify execution loop to stop at EOF token
+5. **Implement FORGET command** for variables and constants (easy testing milestone)
+   - Parse identifier name
+   - Use `Variables.Remove()` for variables/constants
+   - Provide appropriate success/error messages
 
 ### Phase 2: Function Definition
 1. Implement `accumulateDefinitionBody()` for collecting multi-line definitions
@@ -118,12 +122,12 @@ const FuncExecReturnType = BasicProcessBuffer3 + 2  // Expected return type
 2. Add stack overflow checking before calls
 3. Implement RETURN statement execution
 4. Add local variable support with declaration-first constraint
+5. Extend FORGET command to handle functions
 
 ### Phase 4: Management Commands
 1. Update LIST to show both main program and functions
 2. Implement RUN to execute __main function
 3. Update FUNCS to list all defined functions
-4. Enhance FORGET to handle function removal
 
 ## Error Handling
 
@@ -138,6 +142,11 @@ const FuncExecReturnType = BasicProcessBuffer3 + 2  // Expected return type
 - **Undefined Function**: Already handled by symbol table
 - **Type Mismatch**: Return value type checking
 - **Missing RETURN**: Functions must end with RETURN (added implicitly if needed)
+
+### FORGET Command Errors
+- **Undefined Identifier**: "Undefined identifier" error message
+- **Protected Names**: Cannot forget keywords or built-in functions
+- **Success Message**: "Forgotten: [name]" confirmation
 
 ## Special Behaviors
 
@@ -157,6 +166,11 @@ const FuncExecReturnType = BasicProcessBuffer3 + 2  // Expected return type
 - Functions without explicit RETURN get one added automatically
 - Main program always gets implicit RETURN
 - RETURN without value returns 0 (type TBD based on function signature)
+
+### FORGET Command
+- **Variables/Constants**: Removes from symbol table, frees associated memory
+- **Functions**: Removes function node, argument list, and token stream
+- **Main Program**: Special handling for "__main" (clear it but keep function infrastructure)
 
 ## Token Stream Examples
 
@@ -187,14 +201,30 @@ Stored: [PRINT][STRING "Hello"][EOL]
         [EOF]
 ```
 
+### FORGET Usage
+```
+> INT x = 10
+> FORGET x
+Forgotten: x
+> FORGET x
+Undefined identifier
+```
+
 ## Testing Strategy
 
-1. **Refactoring Tests**: Ensure PC-based execution matches current behavior
-2. **Definition Tests**: Parse various function signatures and bodies
-3. **Execution Tests**: Call functions with different argument counts
-4. **Error Tests**: Verify all error conditions are handled properly
-5. **Recursion Tests**: Factorial, Fibonacci with stack overflow detection
-6. **Integration Tests**: Functions calling functions, main calling functions
+### Phase 1 Tests
+1. **PC Refactoring**: Verify all existing functionality works with PC instead of TokenizerPos
+2. **EOF Token**: Ensure proper termination of direct execution
+3. **FORGET Variables**: Test removing INT, WORD, BIT variables
+4. **FORGET Constants**: Verify constants can be removed
+5. **FORGET Errors**: Test undefined identifiers, keywords
+
+### Phase 2-4 Tests
+1. **Definition Tests**: Parse various function signatures and bodies
+2. **Execution Tests**: Call functions with different argument counts
+3. **Error Tests**: Verify all error conditions are handled properly
+4. **Recursion Tests**: Factorial, Fibonacci with stack overflow detection
+5. **Integration Tests**: Functions calling functions, main calling functions
 
 ## Future Enhancements
 
