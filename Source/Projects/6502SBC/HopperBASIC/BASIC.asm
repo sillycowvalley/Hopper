@@ -18,8 +18,6 @@ program HopperBASIC
     uses "Tools"
     uses "Statement"
     uses "Expression"
-    //uses "Variables"
-    //uses "BASICRuntime"
     
     // Initialize the BASIC system
     InitializeBASIC()

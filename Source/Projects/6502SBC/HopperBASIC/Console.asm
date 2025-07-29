@@ -36,6 +36,108 @@ unit Console
         if (NC) { return; }  // Return if tokenization failed
     }
     
+    
+    // Execute DUMP command
+    cmdDump()
+    {
+#ifdef DEBUG
+        Tokenizer.NextToken(); // consume 'DUMP'
+        loop
+        {
+            // verify that the input is not a syntax error
+            LDA ZP.CurrentToken
+            switch (A)
+            {
+                case Tokens.EOL:
+                {
+                    LDA #0 // No argument - default to page 0
+                }
+                case Tokens.NUMBER:
+                {
+                    Tokenizer.GetTokenNumber();
+                    Tokenizer.NextToken(); // consume the argument
+                    LDA ZP.TOPH
+                    if (NZ)
+                    {
+                        CLC // > 255
+                        break;
+                    }
+                    LDA ZP.CurrentToken
+                    CMP # Tokens.EOL
+                    if (NZ)
+                    {
+                        CLC // was expecting EOL
+                        break;
+                    }
+                    LDA ZP.TOPL // populated by GetTokenNumber
+                }
+                default:
+                {
+                    CLC // unexpected token
+                    break;
+                }
+            }
+            // A contains page number - call DumpPage
+            Tools.DumpPage();
+            Messages.PrintOK();
+            SEC // ok
+            break;
+        } // single exit
+        if (NC)
+        {
+            LDA #(Messages.SyntaxError % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.SyntaxError / 256)
+            STA ZP.LastErrorH
+            Messages.StorePC();
+        }
+#else
+        LDA #(Messages.NotImplemented  % 256)
+        STA ZP.LastErrorL
+        LDA #(Messages.NotImplemented  / 256)
+        STA ZP.LastErrorH
+        Messages.StorePC();
+#endif    
+    }
+
+
+    // Execute HEAP command
+    cmdHeap()
+    {
+#ifdef DEBUG
+        Tokenizer.NextToken(); // consume 'HEAP'
+        
+        Tools.DumpHeap();
+        Messages.PrintOK();
+#else
+        LDA #(Messages.NotImplemented % 256)
+        STA ZP.LastErrorL
+        LDA #(Messages.NotImplemented / 256)
+        STA ZP.LastErrorH
+        
+        Messages.StorePC(); // 6502 PC -> IDY
+#endif
+    }
+    
+    // Execute BUFFERS command
+    cmdBuffers()
+    {
+#ifdef DEBUG
+        Tokenizer.NextToken(); // consume 'BUFFERS'
+        
+        Tools.DumpBasicBuffers();
+        Messages.PrintOK();
+#else
+        LDA #(Messages.NotImplemented % 256)
+        STA ZP.LastErrorL
+        LDA #(Messages.NotImplemented / 256)
+        STA ZP.LastErrorH
+        
+        Messages.StorePC(); // 6502 PC -> IDY
+#endif
+    }
+
+    
     // Execute MEM command
     CmdMem()
     {
@@ -57,10 +159,6 @@ unit Console
         LDA #(Messages.BytesMsg / 256)
         STA ZP.ACCH
         Tools.PrintStringACC();
-        
-#ifdef DEBUG
-        Tools.DumpBasicBuffers();
-#endif
     }
     
     // Execute BYE command
@@ -98,8 +196,6 @@ unit Console
         STA ZP.LastErrorH
         
         Messages.StorePC(); // 6502 PC -> IDY
-        
-        BRK
     }
     
     // Execute RUN command
@@ -112,8 +208,6 @@ unit Console
         STA ZP.LastErrorH
         
         Messages.StorePC(); // 6502 PC -> IDY
-        
-        BRK
     }
     
     // Execute FUNCS command
@@ -126,8 +220,6 @@ unit Console
         STA ZP.LastErrorH
         
         Messages.StorePC(); // 6502 PC -> IDY
-        
-        BRK
     }
     
     
@@ -337,6 +429,25 @@ unit Console
                     Messages.CheckError();
                     if (NC) { return; }
                 }
+                case Tokens.HEAP:
+                {
+                    cmdHeap();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                }
+                case Tokens.BUFFERS:
+                {
+                    cmdBuffers();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                }
+                case Tokens.DUMP:
+                {
+                    cmdDump();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                }
+                
                 case Tokens.BYE:
                 {
                     cmdBye();
@@ -355,8 +466,6 @@ unit Console
                     STA ZP.LastErrorH
                     
                     Messages.StorePC(); // 6502 PC -> IDY
-                    
-                    BRK
                 }
                 default:
                 {

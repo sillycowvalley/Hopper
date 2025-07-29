@@ -105,6 +105,7 @@ unit Tools
         PLP  // Restore flags
     }
     
+#ifdef DEBUG    
     // Print null-terminated string to serial output
     // Input: ZP.ACC = pointer to null-terminated string
     // Output: String printed to serial
@@ -126,8 +127,9 @@ unit Tools
         
         PLY
         PLA
-    }
-    
+    } 
+#endif
+   
     // Write '\n' preserving carry flag
     // Output: '\n' printed to serial
     // Preserves: Everything
@@ -138,8 +140,6 @@ unit Tools
         Serial.WriteChar();
         PLP  // Pull processor status (restore carry flag)
     }
-    
-    
     
     // Print 16-bit decimal number with no leading zeros
     // Input: ZP.TOP = 16-bit number to print (0-65535)
@@ -1397,15 +1397,22 @@ unit Tools
     const string basicOpCodeBufferLabel = "\nOpCodeBuffer (OpCodeLen:";
     const string basicPCLabel = " PC:";
     const string basicBufferSuffix = ") - First 64 bytes:\n";
-    const string basicErrorLabel = "\nError: ";
+    const string basicErrorLabel = "\nLastError: ";
 
     // Dump the BASIC input and tokenizer buffers for debugging
     // Input: None
     // Output: Buffer contents printed to serial
-    // Modifies: ZP.M0, ZP.M1, ZP.IDX, A, X, Y (internal operations)
     DumpBasicBuffers()
     {
         PHP  // Save flags
+        PHA  // Save A
+        PHX  // Save X  
+        PHY  // Save Y
+        
+        // Save all ZP variables that we or called functions modify
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
         PHA
         
         LDA #(basicBuffersHeader % 256)
@@ -1529,8 +1536,16 @@ unit Tools
         LDA #'\n'
         Serial.WriteChar();
         
+        // Restore all ZP variables in reverse order
         PLA
-        PLP
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        PLY  // Restore Y
+        PLX  // Restore X
+        PLA  // Restore A
+        PLP  // Restore flags
     }
     
     // Dump a 64-byte memory block in hex format for debugging

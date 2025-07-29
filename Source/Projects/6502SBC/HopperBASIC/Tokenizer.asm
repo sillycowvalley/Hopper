@@ -4,13 +4,14 @@ unit Tokenizer
     uses "/Source/Runtime/6502/Serial"
     uses "/Source/Runtime/6502/MemoryMap"
     uses "Limits"
+    uses "Tools"
     uses "Messages"
     uses "BasicTypes"
     
     // Phase 1 Token definitions (extended set)
     enum Tokens
     {
-        // Console commands (1-16)
+        // Console commands
         NEW      = 0x01,
         LIST     = 0x02,
         RUN      = 0x03,
@@ -23,18 +24,21 @@ unit Tokenizer
         DIR      = 0x0A,
         DEL      = 0x0B,
         MEM      = 0x0C,
-        BYE      = 0x0D,
-        REM      = 0x0E,
-        COMMENT  = 0x0F,
-        EOL      = 0x10,
+        HEAP     = 0x0D,
+        BUFFERS  = 0x0E,
+        DUMP     = 0x0F,
+        BYE      = 0x10,
+        REM      = 0x11,
+        COMMENT  = 0x12,
+        EOL      = 0x13,
         
-        // Type declarations (17-31)  
-        INT      = 0x11,
-        WORD     = 0x12,
-        BIT      = 0x13,
-        CONST    = 0x14, 
+        // Type declarations
+        INT      = 0x14,
+        WORD     = 0x15,
+        BIT      = 0x16,
+        CONST    = 0x17, 
         
-        // Language keywords (32-47)
+        // Language keywords
         PRINT    = 0x20,
         IF       = 0x21,
         THEN     = 0x22,
@@ -44,7 +48,7 @@ unit Tokenizer
         BEGIN    = 0x26,
         END      = 0x27,     
            
-        // Logical keywords (48-55)
+        // Logical keywords
         AND      = 0x30,
         OR       = 0x31,
         NOT      = 0x32,
@@ -53,7 +57,7 @@ unit Tokenizer
         // Sentinel marking end of keywords
         lastKeyword = 0x33,
         
-        // Basic operators (64-79)
+        // Basic operators
         EQUALS   = 0x40,  // =
         PLUS     = 0x41,  // +
         MINUS    = 0x42,  // -
@@ -61,20 +65,20 @@ unit Tokenizer
         RPAREN   = 0x44,  // )
         NOTEQUAL = 0x45,  // <>
         
-        // Additional comparison operators (80-87)
+        // Additional comparison operators
         LT       = 0x50,  // 
         GT       = 0x51,  // >
         LE       = 0x52,  // <=
         GE       = 0x53,  // >=
         
-        // Arithmetic operators (88-95)
+        // Arithmetic operators
         MULTIPLY = 0x58,  // *
         DIVIDE   = 0x59,  // /
         
         BITWISE_AND = 0x5A,  // &
         BITWISE_OR  = 0x5B,  // |
         
-        // Literals and identifiers (128+)
+        // Literals and identifiers
         NUMBER     = 0x80,
         STRING     = 0x81,
         IDENTIFIER = 0x82,
@@ -107,8 +111,11 @@ unit Tokenizer
         3, Tokens.DIR, 'D', 'I', 'R',
         3, Tokens.DEL, 'D', 'E', 'L',
         3, Tokens.MEM, 'M', 'E', 'M',
+        4, Tokens.HEAP, 'H', 'E', 'A', 'P',
+        7, Tokens.BUFFERS, 'B', 'U', 'F', 'F', 'E', 'R', 'S',
+        4, Tokens.DUMP, 'D', 'U', 'M', 'P', 
         3, Tokens.BYE, 'B', 'Y', 'E',
-        3, Tokens.REM, 'R', 'E', 'M',  // Add this line
+        3, Tokens.REM, 'R', 'E', 'M',
         3, Tokens.INT, 'I', 'N', 'T',
         4, Tokens.WORD, 'W', 'O', 'R', 'D',
         3, Tokens.BIT, 'B', 'I', 'T',
