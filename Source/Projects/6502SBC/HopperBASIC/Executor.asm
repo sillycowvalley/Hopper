@@ -247,77 +247,77 @@ unit Executor
             // Arithmetic operations
             case OpcodeType.ADD:
             {
-                executeAdd();
+                Instructions.Addition();
             }
             case OpcodeType.SUB:
             {
-                executeSub();
+                Instructions.Subtraction();
             }
             case OpcodeType.MUL:
             {
-                executeMul();
+                Instructions.Multiply();
             }
             case OpcodeType.DIV:
             {
-                executeDiv();
+                Instructions.Divide();
             }
             case OpcodeType.MOD:
             {
-                executeMod();
+                Instructions.Modulo();
             }
             case OpcodeType.NEG:
             {
-                executeNeg();
+                Instructions.UnaryMinus();
             }
             
             // Bitwise operations
             case OpcodeType.BITWISE_AND:
             {
-                executeBitwiseAnd();
+                Instructions.BitwiseAnd();
             }
             case OpcodeType.BITWISE_OR:
             {
-                executeBitwiseOr();
+                Instructions.BitwiseOr();
             }
             
             // Logical operations (BIT operands only)
             case OpcodeType.LOGICAL_AND:
             {
-                executeLogicalAnd();
+                Instructions.LogicalAnd();
             }
             case OpcodeType.LOGICAL_OR:
             {
-                executeLogicalOr();
+                Instructions.LogicalOr();
             }
             case OpcodeType.LOGICAL_NOT:
             {
-                executeLogicalNot();
+                Instructions.LogicalNot();
             }
             
             // Comparison operations (all return BIT)
             case OpcodeType.EQ:
             {
-                executeEq();
+                Instructions.Equal();
             }
             case OpcodeType.NE:
             {
-                executeNe();
+                Instructions.NotEqual();
             }
             case OpcodeType.LT:
             {
-                executeLt();
+                Instructions.LessThan();
             }
             case OpcodeType.GT:
             {
-                executeGt();
+                Instructions.GreaterThan();
             }
             case OpcodeType.LE:
             {
-                executeLe();
+                Instructions.LessEqual();
             }
             case OpcodeType.GE:
             {
-                executeGe();
+                Instructions.GreaterEqual();
             }
             
             // Function operations
@@ -441,197 +441,6 @@ unit Executor
         LDA #(Messages.InternalError % 256)
         STA ZP.LastErrorL
         LDA #(Messages.InternalError / 256)
-        STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
-        CLC
-    }
-    
-    
-    // === ARITHMETIC OPERATION HANDLERS (FIXED) ===
-
-    executeAdd()
-    {
-        Instructions.Addition();
-        SEC // Success - Instructions.* functions don't set carry flag
-    }
-    
-    executeSub()
-    {
-        Instructions.Subtraction();
-        SEC // Success - Instructions.* functions don't set carry flag
-    }
-    
-    executeMul()
-    {
-        Instructions.Multiply();
-        SEC // Success - Instructions.* functions don't set carry flag
-    }
-    
-    executeDiv()
-    {
-        Instructions.Divide();
-        SEC // Success - Instructions.* functions don't set carry flag
-    }
-    
-    executeMod()
-    {
-        Instructions.Modulo();
-        SEC // Success - Instructions.* functions don't set carry flag
-    }
-    
-    executeNeg()
-    {
-        // For unary negation, we need to push zero and then subtract
-        LDA #0
-        STA ZP.TOPL
-        STA ZP.TOPH
-        LDA #BasicType.INT
-        STA ZP.TOPT
-        Stacks.PushTop();
-        
-        // Swap operands so subtraction order is correct
-        Stacks.PopTop();     // Pop zero into TOP
-        Stacks.PopNext();    // Pop original operand into NEXT
-        Stacks.PushTop();    // Push zero (was in TOP)
-        Stacks.PushNext();   // Push original operand (was in NEXT)
-        
-        Instructions.Subtraction();
-        SEC // Success - Instructions.* functions don't set carry flag
-    }
-    
-    // === BITWISE OPERATION HANDLERS ===
-    
-    executeBitwiseAnd()
-    {
-        Stacks.PopTopNext(); // Pop two values: TOP and NEXT
-        // TODO: Implement bitwise AND: NEXT & TOP
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
-        CLC
-    }
-    
-    executeBitwiseOr()
-    {
-        Stacks.PopTopNext(); // Pop two values: TOP and NEXT
-        // TODO: Implement bitwise OR: NEXT | TOP
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
-        CLC
-    }
-    
-    // === LOGICAL OPERATION HANDLERS ===
-    
-    executeLogicalAnd()
-    {
-        Stacks.PopTopNext(); // Pop two BIT values: TOP and NEXT
-        // TODO: Implement logical AND: NEXT && TOP
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
-        CLC
-    }
-    
-    executeLogicalOr()
-    {
-        Stacks.PopTopNext(); // Pop two BIT values: TOP and NEXT
-        // TODO: Implement logical OR: NEXT || TOP
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
-        CLC
-    }
-    
-    executeLogicalNot()
-    {
-        Stacks.PopTop(); // Pop one BIT value: TOP
-        // TODO: Implement logical NOT: !TOP
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
-        CLC
-    }
-    
-    // === COMPARISON OPERATION HANDLERS ===
-    
-    executeEq()
-    {
-        Stacks.PopTopNext(); // Pop two values: TOP and NEXT
-        // TODO: Implement equality: NEXT == TOP (result is BIT)
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
-        CLC
-    }
-    
-    executeNe()
-    {
-        Stacks.PopTopNext(); // Pop two values: TOP and NEXT
-        // TODO: Implement inequality: NEXT != TOP (result is BIT)
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
-        CLC
-    }
-    
-    executeLt()
-    {
-        Stacks.PopTopNext(); // Pop two values: TOP and NEXT
-        // TODO: Implement less than: NEXT < TOP (result is BIT)
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
-        CLC
-    }
-    
-    executeGt()
-    {
-        Stacks.PopTopNext(); // Pop two values: TOP and NEXT
-        // TODO: Implement greater than: NEXT > TOP (result is BIT)
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
-        CLC
-    }
-    
-    executeLe()
-    {
-        Stacks.PopTopNext(); // Pop two values: TOP and NEXT
-        // TODO: Implement less or equal: NEXT <= TOP (result is BIT)
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
-        CLC
-    }
-    
-    executeGe()
-    {
-        Stacks.PopTopNext(); // Pop two values: TOP and NEXT
-        // TODO: Implement greater or equal: NEXT >= TOP (result is BIT)
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
         Messages.StorePC(); // 6502 PC -> IDY
         CLC

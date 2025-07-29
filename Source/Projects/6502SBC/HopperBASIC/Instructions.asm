@@ -458,6 +458,7 @@ unit Instructions
             LDA ZP.NEXTT
             Stacks.PushNext();
             
+            SEC
             break;
         }
         
@@ -508,7 +509,7 @@ unit Instructions
             // Push result to stack
             LDA ZP.NEXTT
             Stacks.PushNext();
-            
+            SEC
             break;
         }
         
@@ -531,7 +532,7 @@ unit Instructions
         
         // Delegate to shared subtraction logic
         subShared();
-        
+        SEC
         PLX
     }
         
@@ -599,6 +600,7 @@ unit Instructions
                         
                         LDA #BasicType.INT
                         Stacks.PushTop();
+                        SEC
                         break;
                     }
                 }
@@ -637,7 +639,7 @@ unit Instructions
             
             LDA #BasicType.INT
             Stacks.PushTop();
-            
+            SEC
             break;
         }
         
@@ -701,7 +703,7 @@ unit Instructions
             // Push result to stack
             LDA ZP.NEXTT
             Stacks.PushTop();
-            
+            SEC
             break;
         }
         
@@ -738,7 +740,6 @@ unit Instructions
                 STA ZP.LastErrorH
                 
                 Messages.StorePC(); // 6502 PC -> IDY
-                
                 break;
             }
             
@@ -767,7 +768,7 @@ unit Instructions
             // Push result to stack
             LDA ZP.NEXTT
             Stacks.PushNext();
-            
+            SEC
             break;
         }
         
@@ -818,7 +819,7 @@ unit Instructions
             LDA ZP.NEXTT
             STA ZP.ACCT
             Stacks.PushACC();
-            
+            SEC
             break;
         }
         
@@ -870,7 +871,7 @@ unit Instructions
                 }
             }
             Stacks.PushX();
-            
+            SEC
             break;
         }
         
@@ -923,7 +924,7 @@ unit Instructions
                 }
             }
             Stacks.PushX();
-            
+            SEC
             break;
         }
         
@@ -1109,7 +1110,7 @@ unit Instructions
             }
             
             Stacks.PushX();
-            
+            SEC
             break;
         }
         
@@ -1172,7 +1173,7 @@ unit Instructions
             }
             
             Stacks.PushX();
-            
+            SEC
             break;
         }
         
@@ -1235,7 +1236,7 @@ unit Instructions
             }
             
             Stacks.PushX();
-            
+            SEC
             break;
         }
         
@@ -1297,7 +1298,7 @@ unit Instructions
             }
             
             Stacks.PushX();
-            
+            SEC
             break;
         }
         
@@ -1346,7 +1347,7 @@ unit Instructions
             
             LDA ZP.NEXTT
             Stacks.PushNext();
-            
+            SEC
             break;
         }
         
@@ -1395,7 +1396,7 @@ unit Instructions
             
             LDA ZP.NEXTT
             Stacks.PushNext();
-            
+            SEC
             break;
         }
         
@@ -1444,6 +1445,7 @@ unit Instructions
             { 
                 // Left is 0, result is 0
                 Stacks.PushX();
+                SEC
                 break;
             }
             
@@ -1454,13 +1456,14 @@ unit Instructions
             { 
                 // Right is 0, result is 0
                 Stacks.PushX();
+                SEC
                 break;
             }
             
             // Both are non-zero, result is 1
             LDX #1
             Stacks.PushX();
-            
+            SEC
             break;
         }
         
@@ -1510,6 +1513,7 @@ unit Instructions
                 // Left is non-zero, result is 1
                 LDX #1
                 Stacks.PushX();
+                SEC
                 break;
             }
             
@@ -1524,7 +1528,7 @@ unit Instructions
             
             // Push result (X = 0 if both were 0, X = 1 if either was non-zero)
             Stacks.PushX();
-            
+            SEC
             break;
         }
         
@@ -1568,7 +1572,7 @@ unit Instructions
             TAX
             
             Stacks.PushX();
-            
+            SEC
             break;
         }
         

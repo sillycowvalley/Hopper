@@ -425,6 +425,7 @@ unit Tokenizer
     // Error: Sets ZP.LastError if buffer overflow
     appendToTokenBuffer()
     {
+        PHX
         PHY
         PHA  // Save byte to append
         loop
@@ -480,6 +481,7 @@ unit Tokenizer
             SEC // all good
         }
         PLY
+        PLX
     }
     
     // Find keyword match for current identifier in working buffer
@@ -940,6 +942,7 @@ unit Tokenizer
                             if (Z) { scanHexNumber(); continue; }
                         }
                         DEX  // Back up, not hex
+                        LDA Address.BasicInputBuffer, X
                     }
                     
                     // Check if it's a decimal number
@@ -959,11 +962,9 @@ unit Tokenizer
                             if (Z) { break; }
                             
                             LDA Address.BasicInputBuffer, X
-                            getCharClass();
-                            AND #CharClass.Digit
-                            if (Z) { break; }  // Not a digit
+                            IsDigit();
+                            if (NC) { SEC break; }  // Not a digit
                             
-                            LDA Address.BasicInputBuffer, X
                             appendToTokenBuffer();
                             Messages.CheckError();
                             if (NC) { return; }
@@ -1319,6 +1320,7 @@ unit Tokenizer
             IsDigit();
             if (NC) // not digit
             {
+                /*
                 LDA #(Messages.SyntaxError % 256)
                 STA ZP.LastErrorL
                 LDA #(Messages.SyntaxError / 256)
@@ -1327,6 +1329,8 @@ unit Tokenizer
                 Messages.StorePC(); // 6502 PC -> IDY
                 
                 return;
+                */
+                break;
             }
             
             // Convert to digit value

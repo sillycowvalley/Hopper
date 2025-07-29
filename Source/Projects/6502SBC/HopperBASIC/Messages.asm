@@ -48,6 +48,8 @@ unit Messages
     // Note: don't mess with the stack on entry, you'll break this method
     StorePC()
     {
+        PHP // preserve NC
+                
         // PC is now on stack - 1
         TSX           // Transfer Stack Pointer to X
         INX
@@ -66,13 +68,7 @@ unit Messages
         SBC #0
         STA ZP.IDYH
         
-        /*
-        Tools.DumpVariables();
-        LDA #1
-        DumpPage();
-        */
-        
-        return;
+        PLP // preserve NC
     }
     
     // Clear error state
