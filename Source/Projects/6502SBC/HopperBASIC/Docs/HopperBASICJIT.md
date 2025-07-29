@@ -8,15 +8,15 @@ This project transforms HopperBASIC from a direct token interpreter to a Just-In
 
 HopperBASIC currently uses a recursive descent parser that directly executes operations as it parses:
 - Tokens are parsed from the token buffer
-- Each expression node immediately evaluates and pushes results to the stack
+- Each expression node immediately evaluates and pushes results to the Hopper VM value stack
 - No intermediate representation exists between tokens and execution
 
-## Proposed Architecture
+## New Architecture
 
 The new architecture introduces a compilation phase:
 1. **Tokenization** (unchanged) - Source text → Token stream
 2. **Compilation** (new) - Token stream → Opcode stream  
-3. **Execution** (new) - Opcode stream → Results
+3. **Execution** (new) - Opcode stream → Results via VM stack
 
 ## Memory Layout
 
@@ -55,10 +55,11 @@ const byte OpcodeTemp           = 0x3F;  // Temporary byte for opcode constructi
 - No dynamic memory allocation required
 
 ### 2. Opcode Format
-Opcodes will be byte-aligned with variable-length encoding:
-- Single-byte opcodes for common operations (ADD, SUB, etc.)
-- Two-byte opcodes for 8-bit offsets (PUSHVARB, PUSHSTRINGB)
-- Three-byte opcodes for 16-bit offsets when token buffer exceeds 256 bytes
+Opcodes use a 6+2 bit encoding scheme with variable-length instructions:
+- **No operands (0x00-0x3F)**: Single-byte opcodes for common operations (ADD, SUB, etc.)
+- **One byte operand (0x40-0x7F)**: Two-byte opcodes for 8-bit offsets (PUSHVARB, PUSHSTRINGB)
+- **Two byte operands (0x80-0xBF)**: Three-byte opcodes for 16-bit values (PUSHINT, JUMPW)
+- **Reserved (0xC0-0xFF)**: Future extensions
 
 ### 3. Literal Reference Strategy
 Instead of duplicating literal data, opcodes reference the original token stream:
@@ -72,7 +73,14 @@ This approach:
 - Enables single-byte addressing for most programs
 - Avoids data duplication
 
-### 4. Storage Strategy
+### 4. Stack Integration
+The JIT executor integrates directly with the existing Hopper VM stack system:
+- **Value Stack**: Uses existing `Address.ValueStackLSB/MSB` (0x0600-0x0700)
+- **Type Stack**: Uses existing `Address.TypeStackLSB` (0x0500-0x05FF)
+- **Stack Operations**: Leverages proven `Stacks.PushTop()`, `Stacks.PopTop()`, etc.
+- **Stack Management**: VM automatically handles overflow/underflow detection
+
+### 5. Storage Strategy
 For immediate mode (console commands):
 - Opcodes generated in temporary buffer
 - Executed immediately
@@ -86,47 +94,103 @@ For functions (future phase):
 ## Implementation Plan
 
 ### Phase 1: Core Infrastructure (2 days)
-1. Create `Opcodes.asm` defining opcode constants
-2. Create `Compiler.asm` with:
-   - Opcode emission functions
-   - Opcode buffer management
-   - Token offset tracking
-3. Create `Executor.asm` with:
-   - Opcode dispatch loop using ZP.PCL/ZP.PCH
-   - Handlers for each opcode
+1. **Complete Compiler.asm**:
+   - Opcode emission functions (`EmitOpcode()`, `EmitOpcodeWithByte()`, `EmitOpcodeWithWord()`)
+   - Buffer management (`InitOpcodeBuffer()`, `CheckBufferSpace()`)
+   - Token offset tracking for literal references
+   - Opcode buffer bounds checking
+
+2. **Complete Executor.asm**:
+   - Opcode dispatch loop using `ZP.PCL/ZP.PCH`
+   - Handlers for all opcodes defined in existing `Opcodes.asm`
+   - Integration with Hopper VM stack operations
+   - Literal data fetching from token buffer
+
+3. **Fix Memory Layout Conflict**:
+   - Resolve `BasicOpcodeBuffer` vs `HopperData` address overlap in `Address.asm`
+   - Update `BasicOpcodeBuffer = 0x0C00`, `HopperData = 0x0E00`
+   - Verify zero page allocations for JIT state (0x3A-0x3F)
 
 ### Phase 2: Expression Compilation (3 days)
-1. Clone `Expression.asm` to create compilation variants:
-   - `compileExpression()` - Main entry point
-   - `compilePrimary()` - Numbers, variables, parentheses
-   - `compileAdditive()` - Addition, subtraction
-   - `compileMultiplicative()` - Multiplication, division, modulo
-   - etc.
-2. Implement opcode emission instead of direct execution
-3. Track token buffer offsets for literals
+1. **Replace Expression.asm Functions**:
+   - Transform `parseLogical()` → `compileLogical()` - emit opcodes instead of executing
+   - Transform `parseComparison()` → `compileComparison()` - handle all comparison operators
+   - Transform `parseBitwiseOr()` → `compileBitwiseOr()` - maintain operator precedence
+   - Transform `parseAdditive()` → `compileAdditive()` - addition, subtraction
+   - Transform `parseMultiplicative()` → `compileMultiplicative()` - multiplication, division, modulo
+   - Transform `parsePrimary()` → `compilePrimary()` - numbers, variables, parentheses
+
+2. **Implement Compilation Logic**:
+   - **Numbers**: Emit `PUSHBYTE`, `PUSHWORD`, `PUSHINT` with token buffer offsets
+   - **Variables**: Emit `PUSHVARB` with identifier name offset in token buffer
+   - **Operators**: Emit appropriate arithmetic/logical opcodes directly
+   - **Type Compatibility**: Maintain existing type checking during compilation
+   - **Error Handling**: Preserve Messages integration and error propagation
+
+3. **Maintain Parser Structure**:
+   - Keep identical recursive descent structure and precedence rules
+   - Support all current expression types and operators without changes
+   - Ensure token advancement and position tracking works identically
 
 ### Phase 3: Statement Integration (2 days)
-1. Modify statement execution flow:
+1. **Transform Statement.asm Execution Flow**:
    ```
-   Current:  Parse → Execute
-   New:      Parse → Compile → Execute
+   Current:  Parse tokens → Execute directly
+   New:      Parse tokens → Compile to opcodes → Execute opcodes
    ```
-2. Update `Statement.asm` to use compilation
-3. Handle all statement types (PRINT, assignments, etc.)
 
-### Phase 4: Testing & Optimization (2 days)
-1. Comprehensive testing comparing old vs. new execution
-2. Add specialized opcodes for common patterns
-3. Implement peephole optimizations
+2. **Update Core Statements**:
+   - **PRINT**: Compile expression, emit `SYSCALL PRINT` opcode
+   - **Assignment**: Compile RHS expression, emit variable store opcode
+   - **Variable Declaration**: Compile optional initialization expression
+   - **Management Commands**: Keep direct execution (NEW, VARS, MEM, etc.)
 
-## Opcode Set (Initial)
+3. **Integration Points**:
+   - Add compilation phase to `Statement.Execute()` main switch
+   - Route compiled opcodes through executor
+   - Maintain identical error handling and Messages integration
 
-### Stack Operations
-- `PUSHNUMBERB <offset>` - Push number from token buffer
+### Phase 4: Direct Replacement & Testing (2 days)
+1. **Replace Implementation**:
+   - Remove old direct-execution parsing functions entirely
+   - Connect new compilation functions to existing call sites
+   - Update `Expression.Evaluate()` to use compilation path
+
+2. **Validation Testing**:
+   - Test all expression types: arithmetic, logical, comparison
+   - Verify variable access and assignment works correctly
+   - Test error handling produces identical error messages
+   - Validate stack state after expression evaluation
+
+3. **Performance Measurement**:
+   - Add timing hooks to measure execution speed improvements
+   - Test with complex nested expressions
+   - Validate expected 3-5x performance improvement on arithmetic operations
+
+### Phase 5: Optimization & Polish (1 day)
+1. **Performance Tuning**:
+   - Add specialized opcodes for common patterns if beneficial
+   - Implement simple peephole optimizations (optional)
+   - Verify opcode buffer usage stays well within 512-byte limit
+
+2. **Final Integration**:
+   - Clean up any temporary testing infrastructure
+   - Update documentation and code comments
+   - Verify all existing BASIC programs work identically
+
+## Opcode Set (Complete)
+
+### Stack Operations (One Byte Operand)
+- `PUSHBYTE <offset>` - Push byte literal from token buffer
+- `PUSHBIT <value>` - Push BIT literal (0 or 1)
 - `PUSHVARB <offset>` - Push variable value by name offset
 - `PUSHSTRINGB <offset>` - Push string address from token buffer
 
-### Arithmetic
+### Stack Operations (Two Byte Operands)
+- `PUSHINT <lsb> <msb>` - Push INT immediate value
+- `PUSHWORD <lsb> <msb>` - Push WORD immediate value
+
+### Arithmetic (No Operands)
 - `ADD` - Pop two values, push sum
 - `SUB` - Pop two values, push difference  
 - `MUL` - Pop two values, push product
@@ -134,52 +198,83 @@ For functions (future phase):
 - `MOD` - Pop two values, push remainder
 - `NEG` - Pop value, push negation
 
-### Comparison
-- `EQ` - Pop two values, push equality result
-- `NE` - Pop two values, push inequality result
-- `LT`, `GT`, `LE`, `GE` - Comparison operators
+### Bitwise Operations (No Operands)
+- `BITWISE_AND` - Pop two values, push bitwise AND
+- `BITWISE_OR` - Pop two values, push bitwise OR
+
+### Logical Operations (No Operands, BIT type only)
+- `LOGICAL_AND` - Pop two BIT values, push logical AND
+- `LOGICAL_OR` - Pop two BIT values, push logical OR
+- `LOGICAL_NOT` - Pop BIT value, push logical NOT
+
+### Comparison (No Operands)
+- `EQ` - Pop two values, push equality result (BIT)
+- `NE` - Pop two values, push inequality result (BIT)
+- `LT`, `GT`, `LE`, `GE` - Comparison operators returning BIT results
+
+### System Calls (One Byte Operand)
+- `SYSCALL <id>` - System call (0x01=PRINT, 0x02=PRINTLN)
 
 ### Control Flow (Future)
-- `JUMP <offset>` - Unconditional jump
-- `JUMPZ <offset>` - Jump if top of stack is zero
+- `JUMPB <offset>` - Conditional jump (signed byte offset)
+- `JUMPW <lsb> <msb>` - Conditional jump (signed word offset)
 - `CALL <offset>` - Function call
 - `RETURN` - Return from function
 
 ## Memory Impact
 
-- Opcode buffer: 512 bytes (fixed allocation)
+- Opcode buffer: 512 bytes (fixed allocation at 0x0C00-0x0DFF)
 - Zero page usage: 6 bytes (0x3A-0x3F)
-- Opcode definitions: ~200 bytes ROM
+- Opcode definitions: ~300 bytes ROM (existing `Opcodes.asm`)
 - Compiler code: ~2KB ROM
 - Executor code: ~1KB ROM
 
-Total: ~3.5KB additional ROM, 518 bytes additional RAM
+**Total: ~3.5KB additional ROM, 518 bytes additional RAM**
 
 ## Performance Expectations
 
-Based on similar interpreters:
-- **3-5x faster** arithmetic operations
-- **2-3x faster** overall program execution
-- Near-instant execution of compiled functions (future)
+Based on similar interpreters and the elimination of recursive parsing overhead:
+- **3-5x faster** arithmetic operations (no recursive descent during execution)
+- **2-3x faster** overall program execution (compilation overhead amortized)
+- **Near-instant** repeated execution of compiled functions (future phase)
+- **Identical behavior** with significantly improved speed
 
 ## Success Criteria
 
-1. All existing BASIC programs run unchanged
-2. Execution produces identical results
-3. Measurable performance improvement
-4. Clean separation between compilation and execution
-5. Foundation ready for function compilation (future)
+1. **Functional Compatibility**: All existing BASIC programs run unchanged
+2.iden **Behavioral Identical**: Execution produces identical results and error messages
+3. **Performance Improvement**: Measurable speed increase, targeting 3-5x on arithmetic
+4. **Memory Efficiency**: Stays within defined 512-byte opcode buffer limits
+5. **Clean Architecture**: Foundation ready for function compilation caching (future)
+6. **Error Handling**: Maintains existing error reporting and debugging capabilities
 
 ## Future Extensions
 
 This architecture enables:
-- Function compilation and caching
-- Advanced optimizations (constant folding, CSE)
-- Potential native code generation for hot paths
-- Debugging/profiling capabilities
+- **Function Compilation Caching**: Store compiled opcodes with function definitions
+- **Advanced Optimizations**: Constant folding, common subexpression elimination
+- **Hot Path Optimization**: Native code generation for frequently executed code
+- **Debugging Capabilities**: Opcode-level stepping and inspection
+- **Performance Profiling**: Execution time analysis and bottleneck identification
 
 ## Technical Notes
 
+### Buffer Design
 - The 512-byte opcode buffer is guaranteed sufficient since opcodes reference tokens rather than embedding literals
-- Using ZP.PCL/ZP.PCH from Hopper VM for opcode execution maintains consistency with VM design
+- Token buffer references use 1-2 bytes vs. potentially much larger embedded data
+- Most programs will use <256 bytes of opcodes, enabling single-byte addressing
+
+### VM Integration
+- Using `ZP.PCL/ZP.PCH` from Hopper VM for opcode execution maintains consistency
+- Existing stack operations (`Stacks.PushTop()`, `Stacks.PopTop()`, etc.) handle all type management
 - Fixed buffer sizes align with HopperBASIC's philosophy of predictable memory usage
+
+### Error Compatibility
+- Compilation errors map directly to existing Messages system
+- Runtime errors during opcode execution produce identical error messages
+- Stack overflow/underflow detection maintained through existing VM mechanisms
+
+### Implementation Safety
+- Opcode emission includes bounds checking to prevent buffer overflow
+- Invalid opcodes cause immediate `BRK` with error message (no silent failures)
+- Type checking during compilation prevents runtime type errors
