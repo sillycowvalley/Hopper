@@ -60,21 +60,21 @@ The `local_count` field enables efficient stack frame cleanup on RETURN.
 ## Memory Layout
 
 ### Call Stack Frame
-Each function call uses 3 bytes on the Hopper VM call stack:
+Each function call uses 2 slots on the Hopper VM call stack:
 - **2 bytes**: Return address (PC value)
-- **1 byte**: Base pointer (BP value)
+- **1 byte**: Base pointer (BP value) (MSB for BP is always 0)
 
 ### Value Stack Frame
 ```
 [...caller's data...]
-[argument 1]          <- BP+0
-[argument 2]          <- BP+1  
+[argument 1]          <- BP-2
+[argument 2]          <- BP-1  
 ...
-[argument N]          <- BP+(N-1)
-[local var 1]         <- BP+N
-[local var 2]         <- BP+N+1
+[argument N]          <- BP - <arg count> + (N-1)
+[local var 1]         <- BP+0
+[local var 2]         <- BP+1
 ...
-[local var M]         <- BP+N+(M-1)
+[local var M]         <- BP+M
 [...temporaries...]   <- SP
 ```
 
@@ -185,7 +185,6 @@ Input:  FUNC Add(INT a, INT b)
 Stored: [INT][ID "sum"][EOL]
         [ID "sum"][EQUALS][ID "a"][PLUS][ID "b"][EOL]
         [RETURN][ID "sum"][EOL]
-        [EOF]
 ```
 
 ### Main Program
@@ -197,7 +196,6 @@ Input:  BEGIN
 
 Stored: [PRINT][STRING "Hello"][EOL]
         [ID "x"][EQUALS][NUMBER "10"][EOL]
-        [RETURN][EOL]
         [EOF]
 ```
 
