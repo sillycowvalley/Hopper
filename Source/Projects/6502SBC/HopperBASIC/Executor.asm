@@ -8,16 +8,16 @@ unit Executor
     uses "BasicTypes"
     
     // Memory layout for executor state - BasicProcessBuffer3 (0x09E9-0x09FF, 23 bytes)
-    const uint executorPCL           = Address.BasicProcessBuffer3 + 9;   // 0x09E9: execution PC low
-    const uint executorPCH           = Address.BasicProcessBuffer3 + 10;  // 0x09EA: execution PC high
-    const uint executorStartAddrL    = Address.BasicProcessBuffer3 + 11;  // 0x09EB: opcode buffer start low
-    const uint executorStartAddrH    = Address.BasicProcessBuffer3 + 12;  // 0x09EC: opcode buffer start high
-    const uint executorEndAddrL      = Address.BasicProcessBuffer3 + 13;  // 0x09ED: opcode buffer end low
-    const uint executorEndAddrH      = Address.BasicProcessBuffer3 + 14;  // 0x09EE: opcode buffer end high
-    const uint executorOperandL      = Address.BasicProcessBuffer3 + 15;  // 0x09EF: current operand low
-    const uint executorOperandH      = Address.BasicProcessBuffer3 + 16;  // 0x09F0: current operand high
-    const uint executorTokenAddrL    = Address.BasicProcessBuffer3 + 17;  // 0x09F1: token fetch addr low
-    const uint executorTokenAddrH    = Address.BasicProcessBuffer3 + 18;  // 0x09F2: token fetch addr high
+    const uint executorStartAddrL    = Address.BasicProcessBuffer3 + 9;   // 0x09E9: opcode buffer start low
+    const uint executorStartAddrH    = Address.BasicProcessBuffer3 + 10;  // 0x09EA: opcode buffer start high
+    const uint executorEndAddrL      = Address.BasicProcessBuffer3 + 11;  // 0x09EB: opcode buffer end low
+    const uint executorEndAddrH      = Address.BasicProcessBuffer3 + 12;  // 0x09EC: opcode buffer end high
+    const uint executorOperandL      = Address.BasicProcessBuffer3 + 13;  // 0x09ED: current operand low
+    const uint executorOperandH      = Address.BasicProcessBuffer3 + 14;  // 0x09EE: current operand high
+    const uint executorTokenAddrL    = Address.BasicProcessBuffer3 + 15;  // 0x09EF: token fetch addr low
+    const uint executorTokenAddrH    = Address.BasicProcessBuffer3 + 16;  // 0x09F0: token fetch addr high
+    // 15 bytes remaining for future executor needs (0x09F1-0x09FF)
+    
     
     // Main entry point - Execute compiled opcodes
     // Input: ZP.OpcodeBufferLengthL/H contains opcode buffer length
@@ -28,6 +28,11 @@ unit Executor
         PHA
         PHX
         PHY
+        
+        // CRITICAL: Reset stacks before execution to ensure clean state
+        // Previous expression errors or interruptions could leave stacks inconsistent
+        STZ ZP.SP    // Reset value/type stack pointer to 0
+        STZ ZP.BP
         
         loop // Single exit block
         {
@@ -43,12 +48,12 @@ unit Executor
             loop
             {
                 // Check if we've reached end of opcodes
-                LDA executorPCL
+                LDA ZP.PCL
                 CMP executorEndAddrL
                 if (NZ) { /* continue */ }
                 else
                 {
-                    LDA executorPCH
+                    LDA ZP.PCH
                     CMP executorEndAddrH
                     if (Z) 
                     { 
@@ -89,10 +94,10 @@ unit Executor
         // Set start address to BasicOpcodeBuffer
         LDA #(Address.BasicOpcodeBuffer % 256)
         STA executorStartAddrL
-        STA executorPCL // Start execution at beginning
+        STA ZP.PCL // Start execution at beginning
         LDA #(Address.BasicOpcodeBuffer / 256)
         STA executorStartAddrH
-        STA executorPCH
+        STA ZP.PCH
         
         // Calculate end address = start + length
         CLC
@@ -121,17 +126,17 @@ unit Executor
     }
     
     // Fetch next opcode from buffer
-    // Input: executorPCL/H points to current position
-    // Output: A contains opcode, executorPCL/H advanced, C set if success, NC if bounds error
+    // Input: ZP.PC points to current position
+    // Output: A contains opcode, ZP.PC advanced, C set if success, NC if bounds error
     FetchOpcode()
     {
         // Check bounds
-        LDA executorPCL
+        LDA ZP.PCL
         CMP executorEndAddrL
         if (NZ) { /* continue */ }
         else
         {
-            LDA executorPCH
+            LDA ZP.PCH
             CMP executorEndAddrH
             if (Z) 
             { 
@@ -148,14 +153,14 @@ unit Executor
         
         // Fetch opcode using indirect addressing
         LDY #0
-        LDA [executorPCL], Y
+        LDA [ZP.PC], Y
         PHA // Save opcode
         
         // Advance PC
-        INC executorPCL
+        INC ZP.PCL
         if (Z)
         {
-            INC executorPCH
+            INC ZP.PCH
         }
         
         PLA // Restore opcode to A
@@ -163,17 +168,17 @@ unit Executor
     }
     
     // Fetch single byte operand from buffer
-    // Input: executorPCL/H points to operand position
-    // Output: A contains operand byte, executorPCL/H advanced, C set if success
+    // Input: ZP.PC points to operand position
+    // Output: A contains operand byte, ZP.PC advanced, C set if success
     FetchOperandByte()
     {
         // Check bounds
-        LDA executorPCL
+        LDA ZP.PCL
         CMP executorEndAddrL
         if (NZ) { /* continue */ }
         else
         {
-            LDA executorPCH
+            LDA ZP.PCH
             CMP executorEndAddrH
             if (Z) 
             { 
@@ -189,14 +194,14 @@ unit Executor
         
         // Fetch operand
         LDY #0
-        LDA [executorPCL], Y
+        LDA [ZP.PC], Y
         PHA // Save operand
         
         // Advance PC
-        INC executorPCL
+        INC ZP.PCL
         if (Z)
         {
-            INC executorPCH
+            INC ZP.PCH
         }
         
         PLA // Restore operand to A
@@ -204,8 +209,8 @@ unit Executor
     }
     
     // Fetch word operand from buffer (little-endian)
-    // Input: executorPCL/H points to operand position
-    // Output: executorOperandL/H contains word, executorPCL/H advanced by 2, C set if success
+    // Input: ZP.PC points to operand position
+    // Output: executorOperandL/H contains word, ZP.PC advanced by 2, C set if success
     FetchOperandWord()
     {
         // Fetch low byte
@@ -420,7 +425,6 @@ unit Executor
                 LDA #(Messages.InternalError / 256)
                 STA ZP.LastErrorH
                 Messages.StorePC(); // 6502 PC -> IDY
-                return;
             }
         }
         
@@ -719,7 +723,7 @@ unit Executor
         STA ZP.TOPL
         LDA #0
         STA ZP.TOPH
-        LDA #Types.Bool
+        LDA # BasicType.BIT
         Stacks.PushTop();
         
         SEC // Success
@@ -735,7 +739,7 @@ unit Executor
         STA ZP.TOPL
         LDA #0
         STA ZP.TOPH
-        LDA #Types.Byte
+        LDA # BasicType.BYTE
         Stacks.PushTop();
         
         SEC // Success
@@ -860,7 +864,7 @@ unit Executor
         STA ZP.TOPL
         LDA executorOperandH
         STA ZP.TOPH
-        LDA #Types.Int
+        LDA # BasicType.INT
         Stacks.PushTop();
         
         SEC // Success
@@ -877,7 +881,7 @@ unit Executor
         STA ZP.TOPL
         LDA executorOperandH
         STA ZP.TOPH
-        LDA #Types.Word
+        LDA # BasicType.WORD
         Stacks.PushTop();
         
         SEC // Success

@@ -64,9 +64,9 @@ unit Compiler
         CMP #0x02
         if (C) // >= 0x0200, definitely overflow
         {
-            LDA #( Messages.BufferOverflow % 256)
+            LDA #(Messages.BufferOverflow % 256)
             STA ZP.LastErrorL
-            LDA #( Messages.BufferOverflow / 256)
+            LDA #(Messages.BufferOverflow / 256)
             STA ZP.LastErrorH
             Messages.StorePC(); // 6502 PC -> IDY
             CLC // Overflow
@@ -115,12 +115,12 @@ unit Compiler
         STA compilerBufferAddr
         LDA #(Address.BasicOpcodeBuffer / 256) 
         ADC ZP.OpcodeBufferLengthH
-        STA compilerBufferAddr + 1
+        STA (compilerBufferAddr + 1)
         
         // Write opcode to buffer
         LDA ZP.OpcodeTemp
         LDY #0
-        STA (compilerBufferAddr + 0), Y
+        STA compilerBufferAddr, Y
         
         // Increment buffer length
         INC ZP.OpcodeBufferLengthL
@@ -158,17 +158,17 @@ unit Compiler
         STA compilerBufferAddr
         LDA #(Address.BasicOpcodeBuffer / 256)
         ADC ZP.OpcodeBufferLengthH
-        STA compilerBufferAddr + 1
+        STA (compilerBufferAddr + 1)
         
         // Write opcode
         LDA ZP.OpcodeTemp
         LDY #0
-        STA [compilerBufferAddr], Y
+        STA compilerBufferAddr, Y
         
         // Write operand
         LDA compilerScratch1 // Retrieve operand
         INY
-        STA [compilerBufferAddr], Y
+        STA compilerBufferAddr, Y
         
         // Restore X register
         LDX compilerScratch1
@@ -220,22 +220,22 @@ unit Compiler
         STA compilerBufferAddr
         LDA #(Address.BasicOpcodeBuffer / 256)
         ADC ZP.OpcodeBufferLengthH
-        STA compilerBufferAddr + 1
+        STA (compilerBufferAddr + 1)
         
         // Write opcode
         LDA ZP.OpcodeTemp
         LDY #0
-        STA [compilerBufferAddr], Y
+        STA compilerBufferAddr, Y
         
         // Write LSB
         LDA compilerScratch1
         INY
-        STA [compilerBufferAddr], Y
+        STA compilerBufferAddr, Y
         
         // Write MSB  
         LDA compilerScratch2
         INY
-        STA [compilerBufferAddr], Y
+        STA compilerBufferAddr, Y
         
         // Restore ZP.ACCL/ZP.ACCH
         LDA compilerScratch1
@@ -312,7 +312,7 @@ unit Compiler
     {
         // Select opcode based on type
         LDA ZP.TOPT
-        CMP #Types.INT
+        CMP #BasicType.INT
         if (Z)
         {
             LDA #OpcodeType.PUSHINT
@@ -320,7 +320,7 @@ unit Compiler
             return;
         }
         
-        CMP #Types.WORD
+        CMP #BasicType.WORD
         if (Z)
         {
             LDA #OpcodeType.PUSHWORD
@@ -329,9 +329,9 @@ unit Compiler
         }
         
         // Invalid type for word push
-        LDA #(Messages.InvalidType % 256)
+        LDA #(Messages.TypeMismatch % 256)
         STA ZP.LastErrorL
-        LDA #(Messages.InvalidType / 256)
+        LDA #(Messages.TypeMismatch / 256)
         STA ZP.LastErrorH
         Messages.StorePC(); // 6502 PC -> IDY
         CLC
@@ -358,9 +358,9 @@ unit Compiler
         
         // Offset requires word operand - this should be rare
         // For now, generate error as we expect most programs to fit in 256 byte token buffer
-        LDA #(Messages.TokenBufferTooLarge % 256)
+        LDA #(Messages.BufferOverflow % 256)
         STA ZP.LastErrorL
-        LDA #(Messages.TokenBufferTooLarge / 256)
+        LDA #(Messages.BufferOverflow / 256)
         STA ZP.LastErrorH
         Messages.StorePC(); // 6502 PC -> IDY
         CLC
@@ -767,11 +767,10 @@ unit Compiler
                     if (NC) { return; }
                     
                     continue; // Continue looking for more comparison operators
-                    break; // Exit switch to continue loop
                 }
                 default:
                 {
-                    break; // Exit switch and loop - no more comparison operators
+                    // No more comparison operators
                 }
             }
             
@@ -875,11 +874,10 @@ unit Compiler
                     if (NC) { return; }
                     
                     continue; // Continue looking for more additive operators
-                    break; // Exit switch to continue loop
                 }
                 default:
                 {
-                    break; // Exit switch and loop - no more additive operators
+                    // No more additive operators
                 }
             }
             
@@ -944,11 +942,10 @@ unit Compiler
                     if (NC) { return; }
                     
                     continue; // Continue looking for more multiplicative operators
-                    break; // Exit switch to continue loop
                 }
                 default:
                 {
-                    break; // Exit switch and loop - no more multiplicative operators
+                    // No more multiplicative operators
                 }
             }
             
@@ -999,8 +996,6 @@ unit Compiler
                 // Emit unary minus opcode
                 EmitUnaryMinus();
                 if (NC) { return; }
-                
-                break; // Exit switch - unary minus handled
             }
             case Tokens.NOT:
             {
@@ -1018,14 +1013,11 @@ unit Compiler
                 LDA #Tokens.NOT
                 EmitLogicalOp();
                 if (NC) { return; }
-                
-                break; // Exit switch - logical NOT handled
             }
             default:
             {
                 // Not unary, compile primary
                 compilePrimary();
-                break; // Exit switch - primary handled
             }
         }
         
@@ -1067,19 +1059,20 @@ unit Compiler
                     
                     // Emit appropriate push opcode based on type and value
                     LDA ZP.TOPT
-                    CMP #Types.BIT
+                    NOP
+                    CMP BasicType.BIT
                     if (Z)
                     {
-                        LDA ZP.TOP // BIT values are single byte
+                        LDA ZP.TOPL // BIT values are single byte
                         EmitPushBit();
                         if (NC) { break; }
                     }
                     else // INT or WORD
                     {
-                        CMP #Types.BYTE
+                        CMP BasicType.BYTE
                         if (Z)
                         {
-                            LDA ZP.TOP
+                            LDA ZP.TOPL
                             EmitPushByte();
                             if (NC) { break; }
                         }
@@ -1099,7 +1092,6 @@ unit Compiler
                     // Get next token
                     Tokenizer.NextToken();
                     Messages.CheckError();
-                    break; // Exit switch - number handled
                 }
                 case Tokens.IDENTIFIER:
                 {
@@ -1111,7 +1103,6 @@ unit Compiler
                     // Get next token
                     Tokenizer.NextToken();
                     Messages.CheckError();
-                    break; // Exit switch - identifier handled
                 }
                 case Tokens.LPAREN:
                 {
@@ -1142,7 +1133,6 @@ unit Compiler
                     // Get next token after closing paren
                     Tokenizer.NextToken();
                     Messages.CheckError();
-                    break; // Exit switch - parenthesized expression handled
                 }
                 default:
                 {
@@ -1153,7 +1143,6 @@ unit Compiler
                     STA ZP.LastErrorH
                     Messages.StorePC(); // 6502 PC -> IDY
                     CLC
-                    break; // Exit switch - error case handled
                 }
             }
             

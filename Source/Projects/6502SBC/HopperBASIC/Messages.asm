@@ -38,6 +38,9 @@ unit Messages
     const string IllegalAssignment  = "ILLEGAL ASSIGNMENT";
     const string InvalidOperator = "INVALID OPERATOR";
     const string BufferOverflow = "BUFFER OVERFLOW";
+    const string ExpectedRightParen = ") EXPECTED";
+    const string ExpectedExpression = "EXPRESSION EXPECTED";
+    const string InvalidBitValue = "INVALID BIT VALUE";
     
     
     // PC -> IDY
