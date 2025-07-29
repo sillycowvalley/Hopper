@@ -24,14 +24,12 @@ unit Address
     
     const uint BasicTokenizerBuffer   = 0x0A00;  // 512 bytes - tokenized line storage
     
-    const uint HopperData           = 0x0C00;  // start of Hopper RAM (program, then heap)
-    
     const uint BasicOpcodeBuffer      = 0x0C00;  // 512 bytes - JIT compiled opcodes
 
     const uint HopperData             = 0x0E00;  // start of Hopper RAM (program, then heap)
     
 #else    
-    const uint HopperData           = 0x0900;  // start of Hopper RAM (program, then heap)
+    const uint HopperData             = 0x0900;  // start of Hopper RAM (program, then heap)
 #endif
     
 

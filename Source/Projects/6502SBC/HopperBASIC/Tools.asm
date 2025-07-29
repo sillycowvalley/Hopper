@@ -1387,16 +1387,17 @@ unit Tools
     }
 
     // Debug strings for BASIC buffers
+    
     const string basicBuffersHeader = "\n== BASIC BUFFERS ==\n";
-    const string basicInputInfo = "InBufLen:";
-    const string basicTokPosInfo = " TokPos:";
-    const string basicTokLenInfo = " TokBufLen:";
-    const string basicCurTokInfo = " CurTok:";
-    const string basicErrorInfo = " Err:";
-    const string basicCurrentCharInfo = " Char:";
-    const string basicInputBufferLabel = "\nInputBuffer - First 64 bytes:\n";
-    const string basicTokenizerBufferLabel = "\nTokenizerBuffer - First 64 bytes:\n";
-    const string basicTokenStringLabel = "\nToken string: '";
+    
+    const string basicInputBufferLabel = "\nInputBuffer (InBufLen:";
+    const string basicTokenizerBufferLabel = "\nTokenizerBuffer (TokPos:";
+    const string basicTokBufLenLabel = " TokBufLen:";
+    const string basicCurTokLabel = " CurTok:";
+    const string basicOpCodeBufferLabel = "\nOpCodeBuffer (OpCodeLen:";
+    const string basicPCLabel = " PC:";
+    const string basicBufferSuffix = ") - First 64 bytes:\n";
+    const string basicErrorLabel = "\nError: ";
 
     // Dump the BASIC input and tokenizer buffers for debugging
     // Input: None
@@ -1413,291 +1414,161 @@ unit Tools
         STA ZP.IDXH
         printStringIDX();
         
-        // Show current BASIC zero page variables (0x30-0x37)
-        LDA #(basicInputInfo % 256)
-        STA ZP.IDXL
-        LDA #(basicInputInfo / 256)
-        STA ZP.IDXH
-        printStringIDX();
-        LDA ZP.BasicInputLength  // 0x30
-        Serial.HexOut();
-        
-        LDA #(basicTokPosInfo % 256)
-        STA ZP.IDXL
-        LDA #(basicTokPosInfo / 256)
-        STA ZP.IDXH
-        printStringIDX();
-        LDA ZP.TokenizerPosH     // 0x34
-        Serial.HexOut();
-        LDA ZP.TokenizerPosL     // 0x33
-        Serial.HexOut();
-        
-        LDA #(basicTokLenInfo % 256)
-        STA ZP.IDXL
-        LDA #(basicTokLenInfo / 256)
-        STA ZP.IDXH
-        printStringIDX();
-        LDA ZP.TokenBufferLengthH
-        Serial.HexOut();
-        LDA ZP.TokenBufferLengthL
-        Serial.HexOut();
-        
-        
-        LDA #(basicCurTokInfo % 256)
-        STA ZP.IDXL
-        LDA #(basicCurTokInfo / 256)
-        STA ZP.IDXH
-        printStringIDX();
-        LDA ZP.CurrentToken      // 0x37
-        Serial.HexOut();
-        
-        // Show Error pointers if set
-        LDA #(basicErrorInfo % 256)
-        STA ZP.IDXL
-        LDA #(basicErrorInfo / 256)
-        STA ZP.IDXH
-        printStringIDX();
-        LDA ZP.LastErrorH
-        Serial.HexOut();
-        LDA ZP.LastErrorL
-        Serial.HexOut();
-        
-        // Show current character at tokenizer position in INPUT buffer
-        LDA #(basicCurrentCharInfo % 256)
-        STA ZP.IDXL
-        LDA #(basicCurrentCharInfo / 256)
-        STA ZP.IDXH
-        printStringIDX();
-        LDX ZP.TokenizerPosL     // Use low byte only for input buffer index
-        CPX ZP.BasicInputLength
-        if (C)  // TokPos < InputLength
-        {
-            LDA Address.BasicInputBuffer, X
-            Serial.WriteChar();
-            LDA Address.BasicInputBuffer, X
-            Serial.WriteChar(); // writes [xx] if not printable
-        }
-        else
-        {
-            LDA #'E'
-            Serial.WriteChar();
-            LDA #'O'
-            Serial.WriteChar();
-            LDA #'L'
-            Serial.WriteChar();
-        }
-        
-        // Show the current token string from TokenizerBuffer
-        LDA #(basicTokenStringLabel % 256)
-        STA ZP.IDXL
-        LDA #(basicTokenStringLabel / 256)
-        STA ZP.IDXH
-        printStringIDX();
-        
-        // Print token string from TokenizerBuffer until null terminator
-        LDX #0
-        loop
-        {
-            LDA Address.BasicTokenizerBuffer, X
-            if (Z) { break; }  // Hit null terminator
-            
-            // Check if printable
-            CMP #32
-            if (C)
-            {
-                CMP #127
-                if (NC)
-                {
-                    Serial.WriteChar();
-                }
-                else
-                {
-                    LDA #'?'
-                    Serial.WriteChar();
-                }
-            }
-            else
-            {
-                LDA #'?'
-                Serial.WriteChar();
-            }
-            
-            INX
-            CPX #64  // Safety limit
-            if (Z) { break; }
-        }
-        LDA #'\''
-        Serial.WriteChar();
-        
-        // BasicInputBuffer - First 64 bytes using constants
+        // InputBuffer (InBufLen:XX) - First 64 bytes:
         LDA #(basicInputBufferLabel % 256)
         STA ZP.IDXL
         LDA #(basicInputBufferLabel / 256)
         STA ZP.IDXH
         printStringIDX();
+        LDA ZP.BasicInputLength  // 0x30
+        Serial.HexOut();
+        LDA #(basicBufferSuffix % 256)
+        STA ZP.IDXL
+        LDA #(basicBufferSuffix / 256)
+        STA ZP.IDXH
+        printStringIDX();
         
-        PHX
-        PHY
-        
-        // Set up M0/M1 to point to BasicInputBuffer using constants
+        // Dump input buffer (first 64 bytes)
         LDA #(Address.BasicInputBuffer & 0xFF)
         STA ZP.M0
         LDA #(Address.BasicInputBuffer >> 8)
         STA ZP.M1
+        DumpMemoryBlock();
         
-        // Print 4 lines of 16 bytes each (64 bytes total)
-        LDX #0  // Line counter (0-3)
-        
-        loop
-        {
-            // Print address for this line
-            LDA ZP.M1
-            Serial.HexOut();
-            TXA
-            ASL
-            ASL
-            ASL
-            ASL
-            CLC
-            ADC ZP.M0
-            Serial.HexOut();
-            LDA #':'
-            Serial.WriteChar();
-            LDA #' '
-            Serial.WriteChar();
-            
-            // Print 16 hex bytes
-            LDY #0
-            loop
-            {
-                CPY #16
-                if (Z) { break; }
-                
-                LDA [ZP.M0], Y
-                Serial.HexOut();
-                LDA #' '
-                Serial.WriteChar();
-                
-                INY
-                
-                // Add extra space after 8 bytes
-                CPY #8
-                if (Z)
-                {
-                    LDA #' '
-                    Serial.WriteChar();
-                }
-            }
-            
-            // Add spacing before ASCII dump
-            LDA #' '
-            Serial.WriteChar();
-            LDA #' '
-            Serial.WriteChar();
-            
-            // Print 16 ASCII characters
-            LDY #0
-            loop
-            {
-                CPY #16
-                if (Z) { break; }
-                
-                LDA [ZP.M0], Y
-                
-                // Check if printable (32-127)
-                CMP #32
-                if (C)  // >= 32
-                {
-                    CMP #127
-                    if (NC)  // <= 127
-                    {
-                        Serial.WriteChar();
-                        INY
-                        
-                        // Add space after 8 characters
-                        CPY #8
-                        if (Z)
-                        {
-                            LDA #' '
-                            Serial.WriteChar();
-                        }
-                        continue;
-                    }
-                }
-                
-                // Not printable, print dot
-                LDA #'.'
-                Serial.WriteChar();
-                INY
-                
-                // Add space after 8 characters
-                CPY #8
-                if (Z)
-                {
-                    LDA #' '
-                    Serial.WriteChar();
-                }
-            }
-            
-            LDA #'\n'
-            Serial.WriteChar();
-            
-            // Move to next line (add 16 to M0/M1)
-            CLC
-            LDA ZP.M0
-            ADC #16
-            STA ZP.M0
-            if (C)
-            {
-                INC ZP.M1
-            }
-            
-            INX
-            CPX #4
-            if (Z) { break; }  // Done with 4 lines
-        }
-        
-        PLY
-        PLX
-        
-        // BasicTokenizerBuffer - show first 64 bytes using constants
+        // TokenizerBuffer (TokPos:XXXX TokBufLen:XXXX CurTok:XX) - First 64 bytes:
         LDA #(basicTokenizerBufferLabel % 256)
         STA ZP.IDXL
         LDA #(basicTokenizerBufferLabel / 256)
         STA ZP.IDXH
         printStringIDX();
         
-        PHX
-        PHY
+        LDA ZP.TokenizerPosH     // 0x34
+        Serial.HexOut();
+        LDA ZP.TokenizerPosL     // 0x33
+        Serial.HexOut();
         
-        // Set up M0/M1 to point to BasicTokenizerBuffer using constants
+        LDA #(basicTokBufLenLabel % 256)
+        STA ZP.IDXL
+        LDA #(basicTokBufLenLabel / 256)
+        STA ZP.IDXH
+        printStringIDX();
+        
+        LDA ZP.TokenBufferLengthH
+        Serial.HexOut();
+        LDA ZP.TokenBufferLengthL
+        Serial.HexOut();
+        
+        LDA #(basicCurTokLabel % 256)
+        STA ZP.IDXL
+        LDA #(basicCurTokLabel / 256)
+        STA ZP.IDXH
+        printStringIDX();
+        
+        LDA ZP.CurrentToken      // 0x37
+        Serial.HexOut();
+        
+        LDA #(basicBufferSuffix % 256)
+        STA ZP.IDXL
+        LDA #(basicBufferSuffix / 256)
+        STA ZP.IDXH
+        printStringIDX();
+        
+        // Dump tokenizer buffer (first 64 bytes)
         LDA #(Address.BasicTokenizerBuffer & 0xFF)
         STA ZP.M0
         LDA #(Address.BasicTokenizerBuffer >> 8)
         STA ZP.M1
+        DumpMemoryBlock();
+        
+        // OpCodeBuffer (OpCodeLen:XXXX PC:XXXX) - First 64 bytes:
+        LDA #(basicOpCodeBufferLabel % 256)
+        STA ZP.IDXL
+        LDA #(basicOpCodeBufferLabel / 256)
+        STA ZP.IDXH
+        printStringIDX();
+        
+        LDA ZP.OpcodeBufferLengthH    // 0x3B
+        Serial.HexOut();
+        LDA ZP.OpcodeBufferLengthL    // 0x3A
+        Serial.HexOut();
+        
+        LDA #(basicPCLabel % 256)
+        STA ZP.IDXL
+        LDA #(basicPCLabel / 256)
+        STA ZP.IDXH
+        printStringIDX();
+        
+        LDA ZP.PCH    // 0x01
+        Serial.HexOut();
+        LDA ZP.PCL    // 0x00
+        Serial.HexOut();
+        
+        LDA #(basicBufferSuffix % 256)
+        STA ZP.IDXL
+        LDA #(basicBufferSuffix / 256)
+        STA ZP.IDXH
+        printStringIDX();
+        
+        // Dump opcode buffer (first 64 bytes)
+        LDA #(Address.BasicOpcodeBuffer & 0xFF)
+        STA ZP.M0
+        LDA #(Address.BasicOpcodeBuffer >> 8)
+        STA ZP.M1
+        DumpMemoryBlock();
+        
+        // Show Error pointers if set
+        LDA #(basicErrorLabel % 256)
+        STA ZP.IDXL
+        LDA #(basicErrorLabel / 256)
+        STA ZP.IDXH
+        printStringIDX();
+        LDA ZP.LastErrorH
+        Serial.HexOut();
+        LDA ZP.LastErrorL
+        Serial.HexOut();
+        LDA #'\n'
+        Serial.WriteChar();
+        
+        PLA
+        PLP
+    }
+    
+    // Dump a 64-byte memory block in hex format for debugging
+    // Input: ZP.M0/ZP.M1 = start address to dump
+    // Output: 64 bytes (4 lines of 16 bytes) printed to serial in hex format
+    // Modifies: A, X, Y (internal operations)
+    // Preserves: ZP.M0/ZP.M1 (start address preserved)
+    DumpMemoryBlock()
+    {
+        PHA
+        PHX
+        PHY
+        
+        // Save original address
+        LDA ZP.M0
+        PHA
+        LDA ZP.M1
+        PHA
         
         // Print 4 lines of 16 bytes each (64 bytes total)
         LDX #0  // Line counter (0-3)
         
         loop
         {
+            CPX #4
+            if (Z) { break; }  // Done with 4 lines
+            
             // Print address for this line
             LDA ZP.M1
             Serial.HexOut();
-            TXA
-            ASL
-            ASL
-            ASL
-            ASL
-            CLC
-            ADC ZP.M0
+            LDA ZP.M0
             Serial.HexOut();
             LDA #':'
             Serial.WriteChar();
             LDA #' '
             Serial.WriteChar();
             
-            // Print 16 hex bytes
+            // Print 16 hex bytes with space after each
             LDY #0
             loop
             {
@@ -1710,64 +1581,6 @@ unit Tools
                 Serial.WriteChar();
                 
                 INY
-                
-                // Add extra space after 8 bytes
-                CPY #8
-                if (Z)
-                {
-                    LDA #' '
-                    Serial.WriteChar();
-                }
-            }
-            
-            // Add spacing before ASCII dump
-            LDA #' '
-            Serial.WriteChar();
-            LDA #' '
-            Serial.WriteChar();
-            
-            // Print 16 ASCII characters
-            LDY #0
-            loop
-            {
-                CPY #16
-                if (Z) { break; }
-                
-                LDA [ZP.M0], Y
-                
-                // Check if printable (32-127)
-                CMP #32
-                if (C)  // >= 32
-                {
-                    CMP #127
-                    if (NC)  // <= 127
-                    {
-                        Serial.WriteChar();
-                        INY
-                        
-                        // Add space after 8 characters
-                        CPY #8
-                        if (Z)
-                        {
-                            LDA #' '
-                            Serial.WriteChar();
-                        }
-                        continue;
-                    }
-                }
-                
-                // Not printable, print dot
-                LDA #'.'
-                Serial.WriteChar();
-                INY
-                
-                // Add space after 8 characters  
-                CPY #8
-                if (Z)
-                {
-                    LDA #' '
-                    Serial.WriteChar();
-                }
             }
             
             LDA #'\n'
@@ -1778,24 +1591,22 @@ unit Tools
             LDA ZP.M0
             ADC #16
             STA ZP.M0
-            if (C)
-            {
-                INC ZP.M1
-            }
+            LDA ZP.M1
+            ADC #0
+            STA ZP.M1
             
             INX
-            CPX #4
-            if (Z) { break; }  // Done with 4 lines
         }
+        
+        // Restore original address
+        PLA
+        STA ZP.M1
+        PLA
+        STA ZP.M0
         
         PLY
         PLX
-        
-        LDA #'\n'
-        Serial.WriteChar();
-        
         PLA
-        PLP  // Restore flags
     }
     
        

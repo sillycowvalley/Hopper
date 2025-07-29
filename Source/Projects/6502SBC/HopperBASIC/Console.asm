@@ -57,6 +57,10 @@ unit Console
         LDA #(Messages.BytesMsg / 256)
         STA ZP.ACCH
         Tools.PrintStringACC();
+        
+#ifdef DEBUG
+        Tools.DumpBasicBuffers();
+#endif
     }
     
     // Execute BYE command
