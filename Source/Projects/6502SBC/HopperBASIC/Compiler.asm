@@ -16,20 +16,25 @@ unit Compiler
     const uint compilerSavedTokenPosH = Address.BasicProcessBuffer3 + 1;  // 0x09E1: 1 byte - saved tokenizer pos high
     const uint compilerLiteralOffsetL = Address.BasicProcessBuffer3 + 2;  // 0x09E2: 1 byte - literal offset low
     const uint compilerLiteralOffsetH = Address.BasicProcessBuffer3 + 3;  // 0x09E3: 1 byte - literal offset high
-    const uint compilerScratch1      = Address.BasicProcessBuffer3 + 4;   // 0x09E4: 1 byte - general scratch
-    const uint compilerScratch2      = Address.BasicProcessBuffer3 + 5;   // 0x09E5: 1 byte - general scratch
-    const uint compilerOperatorToken = Address.BasicProcessBuffer3 + 6;   // 0x09E6: 1 byte - saved operator token
-    const uint compilerBufferAddr    = Address.BasicProcessBuffer3 + 7;   // 0x09E7: 2 bytes - calculated buffer address
-    // 23 bytes available for future compiler needs (0x09E9-0x09FF)
+    const uint compilerOpCode         = Address.BasicProcessBuffer3 + 4;  // 0x09E4: 1 byte - opcode to emit
+    const uint compilerOperand1       = Address.BasicProcessBuffer3 + 5;  // 0x09E5: 1 byte - first operand
+    const uint compilerOperand2       = Address.BasicProcessBuffer3 + 6;  // 0x09E6: 1 byte - second operand
+    // 25 bytes available for future compiler needs (0x09E7-0x09FF)
     
     // Initialize the opcode buffer for compilation
     // Output: Opcode buffer ready for emission
-    // Modifies: ZP.OpcodeBufferLengthL/H (set to 0), ZP.CompilerTokenPosL/H (set to current), ZP.CompilerFlags (cleared)
+    // Modifies: ZP.OpcodeBufferLengthL/H (set to 0), ZP.CompilerTokenPosL/H (set to current), ZP.CompilerFlags (cleared), ZP.PC (set to buffer start)
     InitOpcodeBuffer()
     {
         // Clear opcode buffer length
         STZ ZP.OpcodeBufferLengthL
         STZ ZP.OpcodeBufferLengthH
+        
+        // Initialize PC to start of opcode buffer
+        LDA #(Address.BasicOpcodeBuffer % 256)
+        STA ZP.PCL
+        LDA #(Address.BasicOpcodeBuffer / 256)
+        STA ZP.PCH
         
         // Save current tokenizer position for literal references
         LDA ZP.TokenizerPosL
@@ -46,23 +51,21 @@ unit Compiler
     // Check if there's space for N bytes in opcode buffer
     // Input: A = number of bytes needed
     // Output: C if space available, NC if buffer would overflow
+    // Strategy: Increment buffer length first, then check bounds
     CheckBufferSpace()
     {
-        // Save the required space in ZP.OpcodeTemp
-        STA ZP.OpcodeTemp
-        
-        // Calculate current position + required space
+        // Add required bytes to current buffer length
         CLC
         ADC ZP.OpcodeBufferLengthL
-        STA compilerScratch1 // Low byte of new position
+        STA ZP.OpcodeBufferLengthL
         LDA ZP.OpcodeBufferLengthH
         ADC #0
-        STA compilerScratch2 // High byte of new position
+        STA ZP.OpcodeBufferLengthH
         
         // Compare against buffer size (512 bytes = 0x0200)
-        LDA compilerScratch2
+        LDA ZP.OpcodeBufferLengthH
         CMP #0x02
-        if (C) // >= 0x0200, definitely overflow
+        if (C) // >= 0x0200, overflow
         {
             LDA #(Messages.BufferOverflow % 256)
             STA ZP.LastErrorL
@@ -73,184 +76,131 @@ unit Compiler
             return;
         }
         
-        if (NZ) // High byte is 0x01, check low byte
-        {
-            SEC // Within bounds (0x0100-0x01FF)
-            return;
-        }
-        
-        // High byte is 0x00, always within bounds
-        SEC // Success
-    }
-    
-    // Get current position in opcode buffer
-    // Output: ZP.ACCL/ZP.ACCH = current buffer position
-    GetOpcodeBufferPosition()
-    {
-        LDA ZP.OpcodeBufferLengthL
-        STA ZP.ACCL
-        LDA ZP.OpcodeBufferLengthH
-        STA ZP.ACCH
-        SEC // Success
+        SEC // Success - space available
     }
     
     // Emit a single-byte opcode (no operands)
-    // Input: A = opcode value
+    // Input: compilerOpCode = opcode value
     // Output: Opcode written to buffer
-    // Modifies: ZP.OpcodeBufferLengthL/H (incremented)
+    // Modifies: ZP.OpcodeBufferLengthL/H (incremented), ZP.PC (incremented)
     EmitOpcode()
     {
-        // Save opcode in ZP.OpcodeTemp
-        STA ZP.OpcodeTemp
-        
+#ifdef DEBUG       
+        Tools.NL(); LDA #'>' Tools.COut();
+        LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
+        LDA #' ' Tools.COut(); LDA compilerOpCode Tools.HOut(); LDA #' ' Tools.COut();
+#endif        
         // Check space for 1 byte
         LDA #1
         CheckBufferSpace();
         if (NC) { return; } // Buffer overflow
         
-        // Calculate buffer address: BasicOpcodeBuffer + current length
-        CLC
-        LDA #(Address.BasicOpcodeBuffer % 256)
-        ADC ZP.OpcodeBufferLengthL
-        STA compilerBufferAddr
-        LDA #(Address.BasicOpcodeBuffer / 256) 
-        ADC ZP.OpcodeBufferLengthH
-        STA (compilerBufferAddr + 1)
-        
         // Write opcode to buffer
-        LDA ZP.OpcodeTemp
-        LDY #0
-        STA compilerBufferAddr, Y
+        LDA compilerOpCode
+        STA [ZP.PC]
         
-        // Increment buffer length
-        INC ZP.OpcodeBufferLengthL
+        // Increment PC
+        INC ZP.PCL
         if (Z)
         {
-            INC ZP.OpcodeBufferLengthH
+            INC ZP.PCH
         }
         
         SEC // Success
     }
     
     // Emit opcode with one byte operand
-    // Input: A = opcode value, X = operand byte
+    // Input: compilerOpCode = opcode value, compilerOperand1 = operand byte
     // Output: Opcode and operand written to buffer
-    // Modifies: ZP.OpcodeBufferLengthL/H (incremented by 2)
+    // Modifies: ZP.OpcodeBufferLengthL/H (incremented by 2), ZP.PC (incremented by 2)
     EmitOpcodeWithByte()
     {
-        // Save parameters
-        STA ZP.OpcodeTemp
-        STX compilerScratch1 // Temporarily store operand
-        
+#ifdef DEBUG       
+        Tools.NL(); LDA #'>' Tools.COut();
+        LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
+        LDA #' ' Tools.COut(); LDA compilerOpCode Tools.HOut(); LDA #' ' Tools.COut(); 
+                               LDA compilerOperand1 Tools.HOut(); LDA #' ' Tools.COut();
+#endif
         // Check space for 2 bytes
         LDA #2
         CheckBufferSpace();
-        if (NC) 
-        { 
-            LDX compilerScratch1 // Restore X
-            return; 
-        }
-        
-        // Calculate buffer address: BasicOpcodeBuffer + current length
-        CLC
-        LDA #(Address.BasicOpcodeBuffer % 256)
-        ADC ZP.OpcodeBufferLengthL
-        STA compilerBufferAddr
-        LDA #(Address.BasicOpcodeBuffer / 256)
-        ADC ZP.OpcodeBufferLengthH
-        STA (compilerBufferAddr + 1)
+        if (NC) { return; } // Buffer overflow
         
         // Write opcode
-        LDA ZP.OpcodeTemp
-        LDY #0
-        STA compilerBufferAddr, Y
+        LDA compilerOpCode
+        STA [ZP.PC]
+        
+        // Increment PC
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
         
         // Write operand
-        LDA compilerScratch1 // Retrieve operand
-        INY
-        STA compilerBufferAddr, Y
+        LDA compilerOperand1
+        STA [ZP.PC]
         
-        // Restore X register
-        LDX compilerScratch1
-        
-        // Increment buffer length by 2
-        CLC
-        LDA ZP.OpcodeBufferLengthL
-        ADC #2
-        STA ZP.OpcodeBufferLengthL
-        LDA ZP.OpcodeBufferLengthH
-        ADC #0
-        STA ZP.OpcodeBufferLengthH
+        // Increment PC
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
         
         SEC // Success
     }
     
     // Emit opcode with two byte operands (word value)
-    // Input: A = opcode value, ZP.ACCL/ZP.ACCH = 16-bit operand (LSB/MSB)
+    // Input: compilerOpCode = opcode value, compilerOperand1 = LSB, compilerOperand2 = MSB
     // Output: Opcode and operands written to buffer
-    // Modifies: ZP.OpcodeBufferLengthL/H (incremented by 3)
+    // Modifies: ZP.OpcodeBufferLengthL/H (incremented by 3), ZP.PC (incremented by 3)
     EmitOpcodeWithWord()
     {
-        // Save opcode
-        STA ZP.OpcodeTemp
-        
-        // Save word operand in scratch space
-        LDA ZP.ACCL
-        STA compilerScratch1
-        LDA ZP.ACCH
-        STA compilerScratch2
-        
+#ifdef DEBUG       
+        Tools.NL(); LDA #'>' Tools.COut();
+        LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
+        LDA #' ' Tools.COut(); LDA compilerOpCode Tools.HOut(); LDA #' ' Tools.COut(); 
+                               LDA compilerOperand1 Tools.HOut(); LDA #' ' Tools.COut();
+                               LDA compilerOperand2 Tools.HOut(); LDA #' ' Tools.COut();
+#endif        
         // Check space for 3 bytes
         LDA #3
         CheckBufferSpace();
-        if (NC) 
-        { 
-            // Restore ZP.ACCL/ZP.ACCH
-            LDA compilerScratch1
-            STA ZP.ACCL
-            LDA compilerScratch2
-            STA ZP.ACCH
-            return; 
-        }
-        
-        // Calculate buffer address: BasicOpcodeBuffer + current length
-        CLC
-        LDA #(Address.BasicOpcodeBuffer % 256)
-        ADC ZP.OpcodeBufferLengthL
-        STA compilerBufferAddr
-        LDA #(Address.BasicOpcodeBuffer / 256)
-        ADC ZP.OpcodeBufferLengthH
-        STA (compilerBufferAddr + 1)
+        if (NC) { return; } // Buffer overflow
         
         // Write opcode
-        LDA ZP.OpcodeTemp
-        LDY #0
-        STA compilerBufferAddr, Y
+        LDA compilerOpCode
+        STA [ZP.PC]
+        
+        // Increment PC
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
         
         // Write LSB
-        LDA compilerScratch1
-        INY
-        STA compilerBufferAddr, Y
+        LDA compilerOperand1
+        STA [ZP.PC]
+        
+        // Increment PC
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
         
         // Write MSB  
-        LDA compilerScratch2
-        INY
-        STA compilerBufferAddr, Y
+        LDA compilerOperand2
+        STA [ZP.PC]
         
-        // Restore ZP.ACCL/ZP.ACCH
-        LDA compilerScratch1
-        STA ZP.ACCL
-        LDA compilerScratch2
-        STA ZP.ACCH
-        
-        // Increment buffer length by 3
-        CLC
-        LDA ZP.OpcodeBufferLengthL
-        ADC #3
-        STA ZP.OpcodeBufferLengthL
-        LDA ZP.OpcodeBufferLengthH
-        ADC #0
-        STA ZP.OpcodeBufferLengthH
+        // Increment PC
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
         
         SEC // Success
     }
@@ -274,6 +224,7 @@ unit Compiler
     // Emit PUSHBIT opcode with immediate value
     // Input: A = bit value (0 or 1)
     // Output: PUSHBIT opcode emitted with value
+    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpcodeWithByte()
     EmitPushBit()
     {
         // Validate bit value (must be 0 or 1)
@@ -289,25 +240,32 @@ unit Compiler
             return;
         }
         
-        // Emit PUSHBIT opcode with value as operand
-        TAX // Move value to X for operand
+        // Set up parameters for emission
+        STA compilerOperand1          // Store value as operand
         LDA #OpcodeType.PUSHBIT
+        STA compilerOpCode
+        
         EmitOpcodeWithByte();
     }
     
     // Emit PUSHBYTE opcode with immediate value
     // Input: A = byte value
     // Output: PUSHBYTE opcode emitted with value
+    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpcodeWithByte()
     EmitPushByte()
     {
-        TAX // Move value to X for operand
+        // Set up parameters for emission
+        STA compilerOperand1          // Store value as operand
         LDA #OpcodeType.PUSHBYTE
+        STA compilerOpCode
+        
         EmitOpcodeWithByte();
     }
     
     // Emit PUSHINT or PUSHWORD opcode with word value
-    // Input: ZP.ACCL/ZP.ACCH = 16-bit value, ZP.TOPT = type (determines opcode)
+    // Input: ZP.TOPT = type (determines opcode), compilerOperand1 = LSB, compilerOperand2 = MSB
     // Output: Appropriate opcode emitted with value
+    // Modifies: compilerOpCode, buffer state via EmitOpcodeWithWord()
     EmitPushWord()
     {
         // Select opcode based on type
@@ -316,6 +274,7 @@ unit Compiler
         if (Z)
         {
             LDA #OpcodeType.PUSHINT
+            STA compilerOpCode
             EmitOpcodeWithWord();
             return;
         }
@@ -324,6 +283,7 @@ unit Compiler
         if (Z)
         {
             LDA #OpcodeType.PUSHWORD
+            STA compilerOpCode
             EmitOpcodeWithWord();
             return;
         }
@@ -340,6 +300,7 @@ unit Compiler
     // Emit PUSHGLOBAL opcode to load variable
     // Input: No parameters (uses current token position for variable name offset)
     // Output: PUSHGLOBAL opcode emitted with token offset
+    // Modifies: compilerOpCode, compilerOperand1, ZP.ACC (via CalculateTokenOffset), buffer state
     EmitPushGlobal()
     {
         // Calculate offset to current token (variable name)
@@ -350,8 +311,10 @@ unit Compiler
         LDA ZP.ACCH
         if (Z) // High byte is 0, use single-byte operand
         {
-            LDX ZP.ACCL
+            LDA ZP.ACCL
+            STA compilerOperand1
             LDA #OpcodeType.PUSHGLOBAL
+            STA compilerOpCode
             EmitOpcodeWithByte();
             return;
         }
@@ -369,6 +332,7 @@ unit Compiler
     // Emit POPGLOBAL opcode to store to variable  
     // Input: No parameters (uses current token position for variable name offset)
     // Output: POPGLOBAL opcode emitted with token offset
+    // Modifies: compilerOpCode, compilerOperand1, ZP.ACC (via CalculateTokenOffset), buffer state
     EmitPopGlobal()
     {
         // Calculate offset to current token (variable name)
@@ -379,16 +343,18 @@ unit Compiler
         LDA ZP.ACCH
         if (Z) // High byte is 0, use single-byte operand
         {
-            LDX ZP.ACCL
+            LDA ZP.ACCL
+            STA compilerOperand1
             LDA #OpcodeType.POPGLOBAL
+            STA compilerOpCode
             EmitOpcodeWithByte();
             return;
         }
         
         // Offset too large
-        LDA #(Messages.TokenBufferTooLarge % 256)
+        LDA #(Messages.BufferOverflow % 256)
         STA ZP.LastErrorL
-        LDA #(Messages.TokenBufferTooLarge / 256)
+        LDA #(Messages.BufferOverflow / 256)
         STA ZP.LastErrorH
         Messages.StorePC(); // 6502 PC -> IDY
         CLC
@@ -397,6 +363,7 @@ unit Compiler
     // Emit arithmetic operation opcode
     // Input: A = operation token (Tokens.PLUS, Tokens.MINUS, etc.)
     // Output: Corresponding arithmetic opcode emitted
+    // Modifies: compilerOpCode, buffer state via EmitOpcode(), A/X/Y registers
     EmitArithmeticOp()
     {
         switch (A)
@@ -404,30 +371,35 @@ unit Compiler
             case Tokens.PLUS:
             {
                 LDA #OpcodeType.ADD
+                STA compilerOpCode
                 EmitOpcode();
                 return;
             }
             case Tokens.MINUS:
             {
                 LDA #OpcodeType.SUB
+                STA compilerOpCode
                 EmitOpcode();
                 return;
             }
             case Tokens.MULTIPLY:
             {
                 LDA #OpcodeType.MUL
+                STA compilerOpCode
                 EmitOpcode();
                 return;
             }
             case Tokens.DIVIDE:
             {
                 LDA #OpcodeType.DIV
+                STA compilerOpCode
                 EmitOpcode();
                 return;
             }
             case Tokens.MOD:
             {
                 LDA #OpcodeType.MOD
+                STA compilerOpCode
                 EmitOpcode();
                 return;
             }
@@ -447,6 +419,7 @@ unit Compiler
     // Emit comparison operation opcode
     // Input: A = comparison token (Tokens.EQUALS, Tokens.LESSTHAN, etc.)
     // Output: Corresponding comparison opcode emitted
+    // Modifies: compilerOpCode, buffer state via EmitOpcode(), A/X/Y registers
     EmitComparisonOp()
     {
         switch (A)
@@ -454,36 +427,42 @@ unit Compiler
             case Tokens.EQUALS:
             {
                 LDA #OpcodeType.EQ
+                STA compilerOpCode
                 EmitOpcode();
                 return;
             }
             case Tokens.NOTEQUAL:
             {
                 LDA #OpcodeType.NE
+                STA compilerOpCode
                 EmitOpcode();
                 return;
             }
             case Tokens.LT:
             {
                 LDA #OpcodeType.LT
+                STA compilerOpCode
                 EmitOpcode();
                 return;
             }
             case Tokens.GT:
             {
                 LDA #OpcodeType.GT
+                STA compilerOpCode
                 EmitOpcode();
                 return;
             }
             case Tokens.LE:
             {
                 LDA #OpcodeType.LE
+                STA compilerOpCode
                 EmitOpcode();
                 return;
             }
             case Tokens.GE:
             {
                 LDA #OpcodeType.GE
+                STA compilerOpCode
                 EmitOpcode();
                 return;
             }
@@ -503,6 +482,7 @@ unit Compiler
     // Emit logical operation opcode
     // Input: A = logical token (Tokens.AND, Tokens.OR, Tokens.NOT)
     // Output: Corresponding logical opcode emitted
+    // Modifies: compilerOpCode, buffer state via EmitOpcode(), A/X/Y registers
     EmitLogicalOp()
     {
         switch (A)
@@ -510,18 +490,21 @@ unit Compiler
             case Tokens.AND:
             {
                 LDA #OpcodeType.LOGICAL_AND
+                STA compilerOpCode
                 EmitOpcode();
                 return;
             }
             case Tokens.OR:
             {
                 LDA #OpcodeType.LOGICAL_OR
+                STA compilerOpCode
                 EmitOpcode();
                 return;
             }
             case Tokens.NOT:
             {
                 LDA #OpcodeType.LOGICAL_NOT
+                STA compilerOpCode
                 EmitOpcode();
                 return;
             }
@@ -541,6 +524,7 @@ unit Compiler
     // Emit bitwise operation opcode
     // Input: A = bitwise token 
     // Output: Corresponding bitwise opcode emitted
+    // Modifies: compilerOpCode, buffer state via EmitOpcode(), A/X/Y registers
     EmitBitwiseOp()
     {
         switch (A)
@@ -548,12 +532,14 @@ unit Compiler
             case Tokens.BITWISE_AND:
             {
                 LDA #OpcodeType.BITWISE_AND
+                STA compilerOpCode
                 EmitOpcode();
                 return;
             }
             case Tokens.BITWISE_OR:
             {
                 LDA #OpcodeType.BITWISE_OR
+                STA compilerOpCode
                 EmitOpcode();
                 return;
             }
@@ -572,26 +558,30 @@ unit Compiler
     
     // Emit unary minus (negation) opcode
     // Output: NEG opcode emitted
+    // Modifies: compilerOpCode, buffer state via EmitOpcode()
     EmitUnaryMinus()
     {
         LDA #OpcodeType.NEG
+        STA compilerOpCode
         EmitOpcode();
     }
     
     // Emit system call opcode
     // Input: A = system call ID
     // Output: SYSCALL opcode emitted with ID
+    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpcodeWithByte()
     EmitSysCall()
     {
-        TAX // Move ID to X for operand
+        STA compilerOperand1      // Store ID as operand
         LDA #OpcodeType.SYSCALL
+        STA compilerOpCode
         EmitOpcodeWithByte();
     }
     
     // Main entry point: Compile current expression to opcodes
     // Input: ZP.CurrentToken = first token of expression
     // Output: Expression compiled to opcode buffer, ZP.CurrentToken = token after expression
-    // Modifies: Opcode buffer, ZP.CurrentToken, compilation state
+    // Modifies: Opcode buffer, ZP.CurrentToken, compilation state, ZP.TokenizerPos (via Tokenizer calls)
     CompileExpression()
     {
 #ifdef DEBUG
@@ -623,6 +613,7 @@ unit Compiler
     // Compile logical OR operations (lowest precedence)
     // Input: ZP.CurrentToken = current token
     // Output: Logical opcodes emitted, ZP.CurrentToken = token after expression
+    // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
     compileLogical()
     {
 #ifdef DEBUG
@@ -643,27 +634,22 @@ unit Compiler
         {
             LDA ZP.CurrentToken
             CMP #Tokens.OR
-            if (Z)
-            {
-                // Get next token for right operand
-                Tokenizer.NextToken();
-                Messages.CheckError();
-                if (NC) { return; }
-                
-                // Compile right operand
-                compileLogicalAnd();
-                Messages.CheckError();
-                if (NC) { return; }
-                
-                // Emit OR opcode
-                LDA #Tokens.OR
-                EmitLogicalOp();
-                if (NC) { return; }
-                
-                continue;
-            }
+            if (NZ) { break; }
             
-            break; // No more OR operators
+            // Get next token for right operand
+            Tokenizer.NextToken();
+            Messages.CheckError();
+            if (NC) { return; }
+            
+            // Compile right operand
+            compileLogicalAnd();
+            Messages.CheckError();
+            if (NC) { return; }
+            
+            // Emit logical OR opcode
+            LDA #Tokens.OR
+            EmitLogicalOp();
+            if (NC) { return; }
         }
         
 #ifdef DEBUG
@@ -674,15 +660,23 @@ unit Compiler
         LDA #'>'
         Tools.COut();
 #endif
-        
-        SEC // Success
     }
     
-    // Compile logical AND operations (higher precedence than OR)
+    // Compile logical AND operations
     // Input: ZP.CurrentToken = current token
-    // Output: Logical opcodes emitted, ZP.CurrentToken = token after expression
+    // Output: Logical AND opcodes emitted, ZP.CurrentToken = token after expression
+    // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
     compileLogicalAnd()
     {
+#ifdef DEBUG
+        LDA #'<'
+        Tools.COut();
+        LDA #'C'
+        Tools.COut();
+        LDA #'A'
+        Tools.COut();
+#endif
+        
         // Compile left operand (higher precedence)
         compileComparison();
         Messages.CheckError();
@@ -692,35 +686,38 @@ unit Compiler
         {
             LDA ZP.CurrentToken
             CMP #Tokens.AND
-            if (Z)
-            {
-                // Get next token for right operand
-                Tokenizer.NextToken();
-                Messages.CheckError();
-                if (NC) { return; }
-                
-                // Compile right operand
-                compileComparison();
-                Messages.CheckError();
-                if (NC) { return; }
-                
-                // Emit AND opcode
-                LDA #Tokens.AND
-                EmitLogicalOp();
-                if (NC) { return; }
-                
-                continue;
-            }
+            if (NZ) { break; }
             
-            break; // No more AND operators
+            // Get next token for right operand
+            Tokenizer.NextToken();
+            Messages.CheckError();
+            if (NC) { return; }
+            
+            // Compile right operand
+            compileComparison();
+            Messages.CheckError();
+            if (NC) { return; }
+            
+            // Emit logical AND opcode
+            LDA #Tokens.AND
+            EmitLogicalOp();
+            if (NC) { return; }
         }
         
-        SEC // Success
+#ifdef DEBUG
+        LDA #'C'
+        Tools.COut();
+        LDA #'A'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+#endif
     }
     
-    // Compile comparison operations
+    // Compile comparison operations (=, <>, <, >, <=, >=)
     // Input: ZP.CurrentToken = current token
     // Output: Comparison opcodes emitted, ZP.CurrentToken = token after expression
+    // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
     compileComparison()
     {
 #ifdef DEBUG
@@ -732,7 +729,7 @@ unit Compiler
         Tools.COut();
 #endif
         
-        // Compile left operand
+        // Compile left operand (higher precedence)
         compileBitwiseOr();
         Messages.CheckError();
         if (NC) { return; }
@@ -749,32 +746,39 @@ unit Compiler
                 case Tokens.LE:
                 case Tokens.GE:
                 {
-                    STA compilerOperatorToken // Save operator token
+                    PHA // Save operator on stack
                     
                     // Get next token for right operand
                     Tokenizer.NextToken();
                     Messages.CheckError();
-                    if (NC) { return; }
+                    if (NC) 
+                    { 
+                        PLA // Clean up stack
+                        return; 
+                    }
                     
                     // Compile right operand
                     compileBitwiseOr();
                     Messages.CheckError();
-                    if (NC) { return; }
+                    if (NC) 
+                    { 
+                        PLA // Clean up stack
+                        return; 
+                    }
                     
                     // Emit comparison opcode
-                    LDA compilerOperatorToken // Restore operator token
+                    PLA // Retrieve operator
                     EmitComparisonOp();
                     if (NC) { return; }
                     
-                    continue; // Continue looking for more comparison operators
+                    continue; // Check for more comparisons
                 }
                 default:
                 {
-                    // No more comparison operators
+                    break; // Not a comparison operator
                 }
             }
-            
-            break; // No more comparison operators
+            break;
         }
         
 #ifdef DEBUG
@@ -785,15 +789,23 @@ unit Compiler
         LDA #'>'
         Tools.COut();
 #endif
-        
-        SEC // Success
     }
     
     // Compile bitwise OR operations
     // Input: ZP.CurrentToken = current token
-    // Output: Bitwise opcodes emitted, ZP.CurrentToken = token after expression
+    // Output: Bitwise OR opcodes emitted, ZP.CurrentToken = token after expression  
+    // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
     compileBitwiseOr()
     {
+#ifdef DEBUG
+        LDA #'<'
+        Tools.COut();
+        LDA #'C'
+        Tools.COut();
+        LDA #'O'
+        Tools.COut();
+#endif
+        
         // Compile left operand (higher precedence)
         compileAdditive();
         Messages.CheckError();
@@ -803,6 +815,58 @@ unit Compiler
         {
             LDA ZP.CurrentToken
             CMP #Tokens.BITWISE_OR
+            if (NZ) { break; }
+            
+            // Get next token for right operand
+            Tokenizer.NextToken();
+            Messages.CheckError();
+            if (NC) { return; }
+            
+            // Compile right operand
+            compileAdditive();
+            Messages.CheckError();
+            if (NC) { return; }
+            
+            // Emit bitwise OR opcode
+            LDA #Tokens.BITWISE_OR
+            EmitBitwiseOp();
+            if (NC) { return; }
+        }
+        
+#ifdef DEBUG
+        LDA #'C'
+        Tools.COut();
+        LDA #'O'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+#endif
+    }
+    
+    // Compile additive operations (+, -)
+    // Input: ZP.CurrentToken = current token
+    // Output: Additive opcodes emitted, ZP.CurrentToken = token after expression
+    // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
+    compileAdditive()
+    {
+#ifdef DEBUG
+        LDA #'<'
+        Tools.COut();
+        LDA #'C'
+        Tools.COut();
+        LDA #'+'
+        Tools.COut();
+#endif
+        
+        // Compile left operand (higher precedence)
+        compileMultiplicative();
+        Messages.CheckError();
+        if (NC) { return; }
+        
+        loop
+        {
+            LDA ZP.CurrentToken
+            CMP #Tokens.PLUS
             if (Z)
             {
                 // Get next token for right operand
@@ -811,94 +875,56 @@ unit Compiler
                 if (NC) { return; }
                 
                 // Compile right operand
-                compileAdditive();
+                compileMultiplicative();
                 Messages.CheckError();
                 if (NC) { return; }
                 
-                // Emit bitwise OR opcode
-                LDA #Tokens.BITWISE_OR
-                EmitBitwiseOp();
+                // Emit addition opcode
+                LDA #Tokens.PLUS
+                EmitArithmeticOp();
                 if (NC) { return; }
                 
                 continue;
             }
             
-            break; // No more bitwise OR operators
-        }
-        
-        SEC // Success
-    }
-    
-    // Compile additive operations (+ and -)
-    // Input: ZP.CurrentToken = current token
-    // Output: Additive opcodes emitted, ZP.CurrentToken = token after expression
-    compileAdditive()
-    {
-#ifdef DEBUG
-        LDA #'<'
-        Tools.COut();
-        LDA #'C'
-        Tools.COut();
-        LDA #'A'
-        Tools.COut();
-#endif
-        
-        // Compile left operand
-        compileMultiplicative();
-        Messages.CheckError();
-        if (NC) { return; }
-        
-        loop
-        {
-            LDA ZP.CurrentToken
-            switch (A)
+            CMP #Tokens.MINUS
+            if (Z)
             {
-                case Tokens.PLUS:
-                case Tokens.MINUS:
-                {
-                    STA compilerOperatorToken // Save operator
-                    
-                    // Get next token for right operand
-                    Tokenizer.NextToken();
-                    Messages.CheckError();
-                    if (NC) { return; }
-                    
-                    // Compile right operand
-                    compileMultiplicative();
-                    Messages.CheckError();
-                    if (NC) { return; }
-                    
-                    // Emit arithmetic opcode
-                    LDA compilerOperatorToken // Restore operator
-                    EmitArithmeticOp();
-                    if (NC) { return; }
-                    
-                    continue; // Continue looking for more additive operators
-                }
-                default:
-                {
-                    // No more additive operators
-                }
+                // Get next token for right operand
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NC) { return; }
+                
+                // Compile right operand
+                compileMultiplicative();
+                Messages.CheckError();
+                if (NC) { return; }
+                
+                // Emit subtraction opcode
+                LDA #Tokens.MINUS
+                EmitArithmeticOp();
+                if (NC) { return; }
+                
+                continue;
             }
             
-            break; // No more additive operators
+            break; // Not an additive operator
         }
         
 #ifdef DEBUG
         LDA #'C'
         Tools.COut();
-        LDA #'A'
+        LDA #'+'
         Tools.COut();
         LDA #'>'
         Tools.COut();
 #endif
-        
-        SEC // Success
     }
     
-    // Compile multiplicative operations (*, /, %)
+    // Compile multiplicative operations (*, /, MOD)
     // Input: ZP.CurrentToken = current token
     // Output: Multiplicative opcodes emitted, ZP.CurrentToken = token after expression
+    // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
     compileMultiplicative()
     {
 #ifdef DEBUG
@@ -906,11 +932,11 @@ unit Compiler
         Tools.COut();
         LDA #'C'
         Tools.COut();
-        LDA #'M'
+        LDA #'*'
         Tools.COut();
 #endif
         
-        // Compile left operand
+        // Compile left operand (higher precedence)
         compileUnary();
         Messages.CheckError();
         if (NC) { return; }
@@ -924,49 +950,55 @@ unit Compiler
                 case Tokens.DIVIDE:
                 case Tokens.MOD:
                 {
-                    STA compilerOperatorToken // Save operator
+                    PHA // Save operator on stack
                     
                     // Get next token for right operand
                     Tokenizer.NextToken();
                     Messages.CheckError();
-                    if (NC) { return; }
+                    if (NC) 
+                    { 
+                        PLA // Clean up stack
+                        return; 
+                    }
                     
                     // Compile right operand
                     compileUnary();
                     Messages.CheckError();
-                    if (NC) { return; }
+                    if (NC) 
+                    { 
+                        PLA // Clean up stack
+                        return; 
+                    }
                     
                     // Emit arithmetic opcode
-                    LDA compilerOperatorToken // Restore operator
+                    PLA // Retrieve operator
                     EmitArithmeticOp();
                     if (NC) { return; }
                     
-                    continue; // Continue looking for more multiplicative operators
+                    continue; // Check for more multiplicative operations
                 }
                 default:
                 {
-                    // No more multiplicative operators
+                    break; // Not a multiplicative operator
                 }
             }
-            
-            break; // No more multiplicative operators
+            break;
         }
         
 #ifdef DEBUG
         LDA #'C'
         Tools.COut();
-        LDA #'M'
+        LDA #'*'
         Tools.COut();
         LDA #'>'
         Tools.COut();
 #endif
-        
-        SEC // Success
     }
     
     // Compile unary operations (-, NOT)
     // Input: ZP.CurrentToken = current token
     // Output: Unary opcodes emitted, ZP.CurrentToken = token after expression
+    // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
     compileUnary()
     {
 #ifdef DEBUG
@@ -983,12 +1015,12 @@ unit Compiler
         {
             case Tokens.MINUS:
             {
-                // Unary minus
+                // Get next token for operand
                 Tokenizer.NextToken();
                 Messages.CheckError();
                 if (NC) { return; }
                 
-                // Compile the operand first
+                // Compile the operand
                 compilePrimary();
                 Messages.CheckError();
                 if (NC) { return; }
@@ -999,7 +1031,7 @@ unit Compiler
             }
             case Tokens.NOT:
             {
-                // Logical NOT
+                // Get next token for operand
                 Tokenizer.NextToken();
                 Messages.CheckError();
                 if (NC) { return; }
@@ -1034,6 +1066,7 @@ unit Compiler
     // Compile primary expressions (numbers, identifiers, parentheses)
     // Input: ZP.CurrentToken = current token
     // Output: Primary opcodes emitted, ZP.CurrentToken = token after expression
+    // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), ZP.TOP/TOPT (via GetTokenNumber), ZP.ACC, buffer state, A/X/Y registers
     compilePrimary()
     {
 #ifdef DEBUG
@@ -1059,30 +1092,29 @@ unit Compiler
                     
                     // Emit appropriate push opcode based on type and value
                     LDA ZP.TOPT
-                    NOP
-                    CMP BasicType.BIT
+                    CMP #BasicType.BIT
                     if (Z)
                     {
                         LDA ZP.TOPL // BIT values are single byte
                         EmitPushBit();
                         if (NC) { break; }
                     }
-                    else // INT or WORD
+                    else
                     {
-                        CMP BasicType.BYTE
+                        CMP #BasicType.BYTE
                         if (Z)
                         {
                             LDA ZP.TOPL
                             EmitPushByte();
                             if (NC) { break; }
                         }
-                        else // 16-bit value
+                        else // 16-bit value (INT or WORD)
                         {
-                            // Move value to ZP.ACCL/ZP.ACCH for word emission
+                            // Set up operands for word emission
                             LDA ZP.TOPL
-                            STA ZP.ACCL
+                            STA compilerOperand1  // LSB
                             LDA ZP.TOPH
-                            STA ZP.ACCH
+                            STA compilerOperand2  // MSB
                             
                             EmitPushWord();
                             if (NC) { break; }
@@ -1092,17 +1124,18 @@ unit Compiler
                     // Get next token
                     Tokenizer.NextToken();
                     Messages.CheckError();
+                    break;
                 }
                 case Tokens.IDENTIFIER:
                 {
-                    // Emit PUSHGLOBAL with current token position
+                    // Emit push global variable opcode
                     EmitPushGlobal();
-                    Messages.CheckError();
                     if (NC) { break; }
                     
                     // Get next token
                     Tokenizer.NextToken();
                     Messages.CheckError();
+                    break;
                 }
                 case Tokens.LPAREN:
                 {
@@ -1111,8 +1144,8 @@ unit Compiler
                     Messages.CheckError();
                     if (NC) { break; }
                     
-                    // Compile sub-expression
-                    compileLogical(); // Start from lowest precedence
+                    // Parse the sub-expression
+                    compileComparison();
                     Messages.CheckError();
                     if (NC) { break; }
                     
@@ -1121,33 +1154,40 @@ unit Compiler
                     CMP #Tokens.RPAREN
                     if (NZ)
                     {
-                        LDA #(Messages.ExpectedRightParen % 256)
+                        LDA #(Messages.SyntaxError % 256)
                         STA ZP.LastErrorL
-                        LDA #(Messages.ExpectedRightParen / 256)
+                        LDA #(Messages.SyntaxError / 256)
                         STA ZP.LastErrorH
+                        
                         Messages.StorePC(); // 6502 PC -> IDY
-                        CLC
+                        
+                        CLC  // Error
                         break;
                     }
                     
-                    // Get next token after closing paren
+                    // Get next token
                     Tokenizer.NextToken();
                     Messages.CheckError();
+                    break;
                 }
                 default:
                 {
-                    // Unexpected token in primary expression
-                    LDA #(Messages.ExpectedExpression % 256)
+                    // Unexpected token
+                    LDA #(Messages.SyntaxError % 256)
                     STA ZP.LastErrorL
-                    LDA #(Messages.ExpectedExpression / 256)
+                    LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
+                    
                     Messages.StorePC(); // 6502 PC -> IDY
-                    CLC
+                    
+                    CLC  // Error
+                    break;
                 }
             }
             
-            break; // Exit loop
-        }
+            CLC  // Error (we should never get here)
+            break;
+        } // Single exit point
         
 #ifdef DEBUG
         LDA #'C'

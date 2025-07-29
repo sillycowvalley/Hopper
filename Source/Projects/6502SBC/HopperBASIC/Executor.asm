@@ -66,16 +66,14 @@ unit Executor
                 FetchOpcode();
                 if (NC) 
                 { 
-                    CLC // Error fetching opcode
-                    break; 
+                    break; // Error fetching opcode
                 }
                 
                 // Dispatch opcode (A contains opcode value)
                 DispatchOpcode();
                 if (NC) 
                 { 
-                    CLC // Error executing opcode
-                    break; 
+                    break; // Error executing opcode
                 }
             }
             break;
@@ -231,6 +229,13 @@ unit Executor
     // Output: Execution continues (errors detected via Messages.CheckError())
     DispatchOpcode()
     {
+#ifdef DEBUG       
+        PHA
+        Tools.NL(); LDA #']' Tools.COut();
+        LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
+        LDA #' ' Tools.COut(); PLA Tools.HOut(); LDA #' ' Tools.COut();
+#endif
+        
         // Use switch statement for opcode dispatch
         // Register A contains the opcode value
         switch (A)
@@ -419,12 +424,16 @@ unit Executor
             
             default:
             {
+#ifdef DEBUG
+                Tools.DumpBasicBuffers();
+#endif                
                 // Unknown opcode
                 LDA #(Messages.InternalError % 256)
                 STA ZP.LastErrorL
                 LDA #(Messages.InternalError / 256)
                 STA ZP.LastErrorH
                 Messages.StorePC(); // 6502 PC -> IDY
+                CLC
             }
         }
         
