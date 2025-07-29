@@ -119,11 +119,6 @@ For functions (future phase):
    - Integration with Hopper VM stack operations
    - Literal data fetching from token buffer
 
-3. **Fix Memory Layout Conflict**:
-   - Resolve `BasicOpcodeBuffer` vs `HopperData` address overlap in `Address.asm`
-   - Update `BasicOpcodeBuffer = 0x0C00`, `HopperData = 0x0E00`
-   - Verify zero page allocations for JIT state (0x3A-0x3F)
-
 ### Phase 2: Expression Compilation (3 days)
 1. **Replace Expression.asm Functions**:
    - Transform `parseLogical()` → `compileLogical()` - emit opcodes instead of executing
