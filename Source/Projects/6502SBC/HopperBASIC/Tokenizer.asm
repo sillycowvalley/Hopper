@@ -275,31 +275,147 @@ unit Tokenizer
         }
     }
     
+    flags CharClass
+    {
+        Other = 0b00000000,
+        Digit = 0b00000001,
+        Alpha = 0b00000010,
+        Hex   = 0b00000100,
+        Lower = 0b00001000,
+        Upper = 0b00010000, // redundant - just !Lower
+    }
+    
     // Check character type
     // Input: A = character
-    // Output: A = 0=other, 1=digit, 2=alpha
+    // Output: A = bitmapped CharClass
     // Preserves: Everything except A
-    getCharType()
+    getCharClass()
     {
-        CMP #'0'
-        if (C)
+        loop
         {
-            CMP #('9'+1)
-            if (NC) { LDA #1 return; }  // digit
-        }
-        CMP #'A'
-        if (C)
+            CMP #'0'
+            if (C)
+            {
+                CMP #('9'+1)
+                if (NC) { LDA # (CharClass.Digit | CharClass.Hex) break; }
+            }
+            CMP #'A'
+            if (C)
+            {
+                CMP #('F'+1) 
+                if (NC) { LDA # (CharClass.Alpha | CharClass.Upper | CharClass.Hex) break; }
+            }
+            CMP #'G'
+            if (C)
+            {
+                CMP #('Z'+1) 
+                if (NC) { LDA # (CharClass.Alpha | CharClass.Upper) break; }
+            }
+            CMP #'a'
+            if (C)
+            {
+                CMP #('f'+1)
+                if (NC) { LDA # (CharClass.Alpha | CharClass.Lower | CharClass.Hex) break; }
+            }
+            CMP #'g'
+            if (C)
+            {
+                CMP #('z'+1)
+                if (NC) { LDA # (CharClass.Alpha | CharClass.Lower) break; }
+            }
+            LDA # CharClass.Other
+            break;
+        } // single exit
+    }
+    
+    // Input: A = character
+    // Output: C = digit, NC = not digit
+    IsDigit()
+    {
+        PHA
+        getCharClass();
+        AND # CharClass.Digit
+        if (NZ)
         {
-            CMP #('Z'+1) 
-            if (NC) { LDA #2 return; }  // alpha
+            SEC // '0'..'9'
         }
-        CMP #'a'
-        if (C)
+        else
         {
-            CMP #('z'+1)
-            if (NC) { LDA #2 return; }  // alpha  
+            CLC
         }
-        LDA #0  // other
+        PLA
+    }
+    
+    // Input: A = character
+    // Output: C = alpha, NC = not alpha
+    IsAlpha()
+    {
+        PHA
+        getCharClass();
+        AND # CharClass.Alpha
+        if (NZ)
+        {
+            SEC // 'a'..'z' | 'A'..'Z'
+        }
+        else
+        {
+            CLC
+        }
+        PLA
+    }
+    
+    // Input: A = character
+    // Output: C = alphanumeric, NC = not alphanumeric
+    IsAlphaNumeric()
+    {
+        PHA
+        getCharClass();
+        AND # (CharClass.Alpha|CharClass.Digit)
+        if (NZ)
+        {
+            SEC // 'a'..'z' | 'A'..'Z'
+        }
+        else
+        {
+            CLC
+        }
+        PLA
+    }
+    
+    // Input: A = character
+    // Output: C = lower alpha, NC = not lower alpha
+    IsLower()
+    {
+        PHA
+        getCharClass();
+        AND # CharClass.Lower
+        if (NZ)
+        {
+            SEC // 'a'..'z'
+        }
+        else
+        {
+            CLC
+        }
+        PLA
+    }
+    
+    // Input: A = character
+    // Output: C = hex digit, NC = not hex digit
+    IsHex()
+    {
+        PHA
+        getCharClass();
+        AND # CharClass.Hex
+        if (NZ)
+        {
+            SEC
+        }
+        else
+        {
+            CLC
+        }
+        PLA
     }
     
     // Append byte to token buffer using 16-bit addressing
@@ -660,9 +776,8 @@ unit Tokenizer
                 default:
                 {
                     // Check if it's a number
-                    getCharType(); 
-                    CMP #1 // isDigit?
-                    if (Z)  
+                    IsDigit();
+                    if (C)  
                     {
                         // Scan number and store inline in token buffer
                         LDA #Tokens.NUMBER
@@ -677,9 +792,9 @@ unit Tokenizer
                             if (Z) { break; }
                             
                             LDA Address.BasicInputBuffer, X
-                            getCharType();
-                            CMP #1 // isDigit?
-                            if (NZ) { break; }  // Not a digit
+                            getCharClass();
+                            AND #CharClass.Digit
+                            if (Z) { break; }  // Not a digit
                             
                             LDA Address.BasicInputBuffer, X
                             appendToTokenBuffer();
@@ -695,10 +810,9 @@ unit Tokenizer
                         if (NC) { return; }
                         continue;
                     }
-                    
                     // Must be an identifier or keyword
-                    CMP #2 // isAlpha?
-                    if (NZ)
+                    IsAlpha();
+                    if (NC)
                     {
                         // Invalid character
                         LDA #(Messages.SyntaxError % 256)
@@ -720,20 +834,15 @@ unit Tokenizer
                         if (Z) { break; }
                         
                         LDA Address.BasicInputBuffer, X
-                        getCharType();
-                        if (Z) { break; }  // Not alphanumeric
+                        IsAlphaNumeric();
+                        if (NC) { break; }  // Not alphanumeric
                         
                         // Convert to uppercase and store in working buffer
-                        LDA Address.BasicInputBuffer, X
-                        CMP #'a'
-                        if (C)             // >= 'a'
+                        IsLower();
+                        if (C)
                         {
-                            CMP #('z'+1)
-                            if (NC)        // <= 'z'
-                            {
-                                SEC
-                                SBC #('a'-'A')  // Convert to uppercase
-                            }
+                            SEC
+                            SBC #('a'-'A')  // Convert to uppercase
                         }
                         STA Address.BasicProcessBuffer1, Y  // FIXED: Use Y for working buffer
                         
@@ -1026,9 +1135,8 @@ unit Tokenizer
             
             // Check if character is a digit
             LDA [ZP.IDX], Y
-            getCharType();
-            CMP # 1
-            if (NZ) // not digit
+            IsDigit();
+            if (NC) // not digit
             {
                 LDA #(Messages.SyntaxError % 256)
                 STA ZP.LastErrorL
