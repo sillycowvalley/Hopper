@@ -15,8 +15,7 @@ unit Console
     uses "Functions"
     
     // String constants for VARS command
-    const string noVariablesMsg = "No variables defined\n";
-    const string constTypeMsg = "CONST";
+    const string noVariablesMsg = "NO VARIABLES\n";
     
     Initialize()
     {
@@ -92,9 +91,9 @@ unit Console
             Messages.StorePC();
         }
 #else
-        LDA #(Messages.NotImplemented  % 256)
+        LDA #(Messages.OnlyInDebug  % 256)
         STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented  / 256)
+        LDA #(Messages.OnlyInDebug  / 256)
         STA ZP.LastErrorH
         Messages.StorePC();
 #endif    
@@ -110,9 +109,9 @@ unit Console
         Tools.DumpHeap();
         Messages.PrintOK();
 #else
-        LDA #(Messages.NotImplemented % 256)
+        LDA #(Messages.OnlyInDebug % 256)
         STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
+        LDA #(Messages.OnlyInDebug / 256)
         STA ZP.LastErrorH
         
         Messages.StorePC(); // 6502 PC -> IDY
@@ -128,9 +127,9 @@ unit Console
         Tools.DumpBasicBuffers();
         Messages.PrintOK();
 #else
-        LDA #(Messages.NotImplemented % 256)
+        LDA #(Messages.OnlyInDebug % 256)
         STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
+        LDA #(Messages.OnlyInDebug / 256)
         STA ZP.LastErrorH
         
         Messages.StorePC(); // 6502 PC -> IDY
@@ -224,7 +223,6 @@ unit Console
     
     
     // Execute VARS command - display all variables and constants
-    // Execute VARS command - display all variables and constants
     cmdVars()
     {
         Tokenizer.NextToken(); // consume 'VARS'
@@ -244,16 +242,11 @@ unit Console
             // Print symbol type (VAR or CONST)
             LDA ZP.ACCT
             AND #0xF0  // Extract symbol type (high nibble)
-            CMP # (SymbolType.VARIABLE << 4)
-            if (NZ)
+            CMP # (SymbolType.CONSTANT << 4)
+            if (Z)
             {
-                // CONST
-                LDA #(constTypeMsg % 256)
-                STA ZP.ACCL
-                LDA #(constTypeMsg / 256)
-                STA ZP.ACCH
-                Tools.PrintStringACC();
-                // Print space
+                LDA #Tokens.CONST
+                Tokenizer.PrintKeyword();   
                 LDA #' '
                 Serial.WriteChar();
             }

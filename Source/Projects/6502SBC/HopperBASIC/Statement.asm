@@ -303,6 +303,25 @@ unit Statement
             break;
         } // loop - single exit
         
+        
+        if (C) // Only if statement executed successfully
+        {
+            LDA ZP.CurrentToken
+            CMP #Tokens.REM
+            if (Z)
+            {
+                Tokenizer.NextToken(); // Skip REM and consume comment text
+            }
+            else
+            {
+                CMP #Tokens.COMMENT  
+                if (Z)
+                {
+                    Tokenizer.NextToken(); // Skip COMMENT and consume comment text
+                }
+            }
+        }
+        
 #ifdef DEBUG
         LDA #'S'
         Tools.COut();

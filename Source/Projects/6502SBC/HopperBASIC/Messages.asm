@@ -20,6 +20,7 @@ unit Messages
     const string SyntaxError    = "SYNTAX ERROR";
     const string NotImplemented = "NOT IMPLEMENTED";
     const string InternalError  = "INTERNAL ERROR";
+    const string OnlyInDebug = "ONLY IN DEBUG BUILD";
     
     const string TypeMismatch   = "TYPE MISMATCH";
     const string FunctionExists = "FUNCTION EXISTS";

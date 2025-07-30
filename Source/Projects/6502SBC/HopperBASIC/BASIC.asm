@@ -60,24 +60,32 @@ program HopperBASIC
     // Main interpreter loop
     interpreterLoop()
     {
+        // Show initial ready prompt
+        LDA #(Messages.ReadyPrompt % 256)
+        STA ZP.ACCL
+        LDA #(Messages.ReadyPrompt / 256)
+        STA ZP.ACCH
+        Tools.PrintStringACC();
+        
         loop
         {
-            // Show ready prompt
-            LDA #(Messages.ReadyPrompt % 256)
-            STA ZP.ACCL
-            LDA #(Messages.ReadyPrompt / 256)
-            STA ZP.ACCH
-            Tools.PrintStringACC();
-            
-            // Read and process user input using tokenizer
+            // Read user input
             Console.ReadLine();
             
             // Check for empty line
             LDA ZP.BasicInputLength
-            if (Z) { continue; }  // Empty line, show prompt again
+            if (Z) 
+            { 
+                // Empty line - just show prompt, no READY
+                LDA #'>'
+                Serial.WriteChar();
+                LDA #' '
+                Serial.WriteChar();
+                continue; 
+            }
             
-            // Parse and execute the command/statement
-            Console.ProcessLine();  // Returns C to continue, NC to exit
+            // Process non-empty line
+            Console.ProcessLine();
             if (NC) 
             {
                 CheckError();
@@ -91,6 +99,12 @@ program HopperBASIC
                 }
             }
             
+            // Show ready prompt after successful execution
+            LDA #(Messages.ReadyPrompt % 256)
+            STA ZP.ACCL
+            LDA #(Messages.ReadyPrompt / 256)
+            STA ZP.ACCH
+            Tools.PrintStringACC();
         }
     }
     

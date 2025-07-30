@@ -13,24 +13,29 @@ unit Tools
     // Preserves: Everything
     PrintType()
     {
-        PHP  // Save flags
         PHA
-        PHX
-        PHY
         
+        // Convert BasicType to corresponding Token and use keyword table
         switch (A)
         {
-            case BasicType.INT:     // 0x02
+            case BasicType.INT:
             {
-                LDA #'I'
-                Serial.WriteChar();
-                LDA #'N'
-                Serial.WriteChar();
-                LDA #'T'
-                Serial.WriteChar();
+                LDA #Tokens.INT
+                Tokenizer.PrintKeyword();
             }
-            case BasicType.BYTE:    // 0x03
+            case BasicType.WORD:
             {
+                LDA #Tokens.WORD
+                Tokenizer.PrintKeyword();
+            }
+            case BasicType.BIT:
+            {
+                LDA #Tokens.BIT
+                Tokenizer.PrintKeyword();
+            }
+            case BasicType.BYTE:
+            {
+                // BYTE doesn't have a keyword token, so print directly
                 LDA #'B'
                 Serial.WriteChar();
                 LDA #'Y'
@@ -40,69 +45,15 @@ unit Tools
                 LDA #'E'
                 Serial.WriteChar();
             }
-            case BasicType.WORD:    // 0x04
-            {
-                LDA #'W'
-                Serial.WriteChar();
-                LDA #'O'
-                Serial.WriteChar();
-                LDA #'R'
-                Serial.WriteChar();
-                LDA #'D'
-                Serial.WriteChar();
-            }
-            case BasicType.BIT:     // 0x06
-            {
-                LDA #'B'
-                Serial.WriteChar();
-                LDA #'I'
-                Serial.WriteChar();
-                LDA #'T'
-                Serial.WriteChar();
-            }
-            case BasicType.STRING:  // 0x0F
-            {
-                LDA #'S'
-                Serial.WriteChar();
-                LDA #'T'
-                Serial.WriteChar();
-                LDA #'R'
-                Serial.WriteChar();
-                LDA #'I'
-                Serial.WriteChar();
-                LDA #'N'
-                Serial.WriteChar();
-                LDA #'G'
-                Serial.WriteChar();
-            }
-            case BasicType.ARRAY:   // 0x12
-            {
-                LDA #'A'
-                Serial.WriteChar();
-                LDA #'R'
-                Serial.WriteChar();
-                LDA #'R'
-                Serial.WriteChar();
-                LDA #'A'
-                Serial.WriteChar();
-                LDA #'Y'
-                Serial.WriteChar();
-            }
             default:
             {
-                PHA
-                // Unknown type - print as hex
+                // Unknown type
                 LDA #'?'
                 Serial.WriteChar();
-                PLA
-                Serial.HexOut();
             }
         }
         
-        PLY
-        PLX
         PLA
-        PLP  // Restore flags
     }
     
     // Print null-terminated string to serial output

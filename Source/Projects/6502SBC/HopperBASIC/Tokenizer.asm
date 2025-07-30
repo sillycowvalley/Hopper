@@ -57,6 +57,10 @@ unit Tokenizer
         // Sentinel marking end of keywords
         lastKeyword = 0x33,
         
+        // Built-in literals
+        TRUE     = 0x34,  // Built-in BIT constant (1)
+        FALSE    = 0x35,  // Built-in BIT constant (0)
+        
         // Basic operators
         EQUALS   = 0x40,  // =
         PLUS     = 0x41,  // +
@@ -132,8 +136,72 @@ unit Tokenizer
         2, Tokens.OR, 'O', 'R',
         3, Tokens.NOT, 'N', 'O', 'T',
         3, Tokens.MOD, 'M', 'O', 'D',
+        4, Tokens.TRUE, 'T', 'R', 'U', 'E',
+        5, Tokens.FALSE, 'F', 'A', 'L', 'S', 'E',
         0  // End marker
     };
+    
+    
+    // Print keyword corresponding to token value
+    // Input: A = token value (e.g., Tokens.CONST, Tokens.INT, etc.)
+    // Output: Keyword printed to serial
+    // Modifies: A, X, Y (internal search), preserves token value concept
+    // Error: If token not found in keywords table, prints nothing
+    PrintKeyword()
+    {
+        PHA  // Save token value
+        PHX
+        PHY
+        
+        STA ZP.ACCL  // Store target token value
+        
+        LDY #0  // Index into keywords table
+        loop
+        {
+            LDA keywords, Y     // Get length of this keyword
+            if (Z) 
+            { 
+                break; 
+            }   // End of table - not found
+            
+            STA ZP.ACCH         // Save keyword length
+            INY
+            LDA keywords, Y     // Get token value
+            CMP ZP.ACCL         // Compare with target
+            if (Z)
+            {
+                // Found it! Print the keyword
+                INY  // Move to first character
+                LDX ZP.ACCH  // X = character count
+                loop
+                {
+                    CPX #0
+                    if (Z) { break; }
+                    
+                    LDA keywords, Y
+                    Serial.WriteChar();
+                    INY
+                    DEX
+                }
+                break;  // Done printing
+            }
+            
+            // Skip to next keyword: advance Y by keyword length + 1 (for token byte)
+            INY  // Skip the token value byte first
+            LDX ZP.ACCH  // Then skip the keyword characters
+            loop
+            {
+                CPX #0
+                if (Z) { break; }
+                INY
+                DEX
+            }
+        }
+        PLY
+        PLX
+        PLA
+    }
+    
     
     // Check if a token value represents a keyword
     // Input: A = token value to check

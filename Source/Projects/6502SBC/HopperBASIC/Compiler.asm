@@ -1156,6 +1156,30 @@ unit Compiler
             LDA ZP.CurrentToken
             switch (A)
             {
+                case Tokens.TRUE:
+                {
+                    // Emit PUSHBIT with value 1
+                    LDA #1
+                    EmitPushBit();
+                    if (NC) { break; }
+                    
+                    // Get next token
+                    Tokenizer.NextToken();
+                    Messages.CheckError();
+                    break;
+                }
+                case Tokens.FALSE:
+                {
+                    // Emit PUSHBIT with value 0
+                    LDA #0
+                    EmitPushBit();
+                    if (NC) { break; }
+                    
+                    // Get next token
+                    Tokenizer.NextToken();
+                    Messages.CheckError();
+                    break;
+                }
                 case Tokens.NUMBER:
                 {
                     // Get number value and type
