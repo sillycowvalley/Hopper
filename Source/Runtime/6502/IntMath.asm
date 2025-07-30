@@ -22,6 +22,18 @@ unit IntMath
             {
                 ASL ZP.NEXTL
                 ROL ZP.NEXTH
+                
+#ifdef HOPPER_BASIC
+                if (C) // Overflow on *8
+                {
+                    LDA #(Messages.NumericOverflow % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.NumericOverflow / 256)
+                    STA ZP.LastErrorH
+                    Messages.StorePC();
+                    return;
+                }
+#endif                
                 LSR
             }
             CMP #4
@@ -29,6 +41,18 @@ unit IntMath
             {
                 ASL ZP.NEXTL
                 ROL ZP.NEXTH
+                
+#ifdef HOPPER_BASIC
+                if (C) // Overflow on *8
+                {
+                    LDA #(Messages.NumericOverflow % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.NumericOverflow / 256)
+                    STA ZP.LastErrorH
+                    Messages.StorePC();
+                    return;
+                }
+#endif                
                 LSR
             }
             CMP #2
@@ -36,9 +60,22 @@ unit IntMath
             {
                 ASL ZP.NEXTL
                 ROL ZP.NEXTH
+                
+#ifdef HOPPER_BASIC
+                if (C) // Overflow on *8
+                {
+                    LDA #(Messages.NumericOverflow % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.NumericOverflow / 256)
+                    STA ZP.LastErrorH
+                    Messages.StorePC();
+                    return;
+                }
+#endif                
+                
                 LSR
             }
-            CMP #1
+            CMP #1 // *= 1
             if (Z)
             {
                 LDA ZP.NEXTL
@@ -47,7 +84,8 @@ unit IntMath
                 STA ZP.TOPH
                 return; // return TOP
             }
-        }
+        } // ZP.TOPH == 0
+        
         LDA ZP.NEXTH
         if (Z)
         {
@@ -65,11 +103,27 @@ unit IntMath
 #endif
                 return;
             }
+            
+            // NEXTH == 0
+            
             CMP #8
             if (Z)
             {
                 ASL ZP.TOPL
                 ROL ZP.TOPH
+                
+#ifdef HOPPER_BASIC
+                if (C) // Overflow on *8
+                {
+                    LDA #(Messages.NumericOverflow % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.NumericOverflow / 256)
+                    STA ZP.LastErrorH
+                    Messages.StorePC();
+                    return;
+                }
+#endif                
+                
                 LSR
             }
             CMP #4
@@ -77,6 +131,19 @@ unit IntMath
             {
                 ASL ZP.TOPL
                 ROL ZP.TOPH
+                
+#ifdef HOPPER_BASIC
+                if (C) // Overflow on *8
+                {
+                    LDA #(Messages.NumericOverflow % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.NumericOverflow / 256)
+                    STA ZP.LastErrorH
+                    Messages.StorePC();
+                    return;
+                }
+#endif                                
+                
                 LSR
             }
             CMP #2
@@ -84,13 +151,28 @@ unit IntMath
             {
                 ASL ZP.TOPL
                 ROL ZP.TOPH
+                
+#ifdef HOPPER_BASIC
+                if (C) // Overflow on *8
+                {
+                    LDA #(Messages.NumericOverflow % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.NumericOverflow / 256)
+                    STA ZP.LastErrorH
+                    Messages.StorePC();
+                    return;
+                }
+#endif                                
                 LSR
             }
-            CMP #1
+            
+            CMP #1 // *= 1
             if (Z)
             {
                 return; // just return TOP
             }
+            
+            // NEXTL was not 8, 4, 2 or 1
                     
             LDA ZP.TOPH // 8x8 since TOPH and NEXTH are zero
             if (Z)
@@ -182,6 +264,21 @@ unit IntMath
             if (Z) { break; }
         }
         STA ZP.UWIDE3
+        
+#ifdef HOPPER_BASIC
+        // Check if high 16 bits are non-zero (overflow)
+        LDA ZP.UWIDE2
+        ORA ZP.UWIDE3
+        if (NZ)
+        {
+            LDA #(Messages.NumericOverflow % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.NumericOverflow / 256)
+            STA ZP.LastErrorH
+            Messages.StorePC();
+            return; // Leave corrupted result, but flag the error
+        }
+#endif        
         
         LDA ZP.UWIDE0
         STA ZP.TOPL

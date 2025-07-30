@@ -1,39 +1,1161 @@
-int x = 10
-print x
-const pi = 314
-print pi
-word y = 65535
-print y
-int x = 25
-print x
-const pi = 628
-print pi
-bit flag = 1
-print flag
-bit other = 0
-print other
-print flag and other
-print flag or other
-print not flag
-print not other
-int z = x + 15
-print z
-word big = 60000
-print big
-int x = big + 100
-print x
-const max = 999
-print max
-bit flag = 0
-print flag
-print flag and other
-print flag or other
-print not flag
-bit result = flag or other
-print result
-const true = 1
-const false = 0
-print true and false
-print true or false
-print not true
+int zeroi = 0
+int onei = 1
+int twoi = 2
+int fouri = 4
+int eighti = 8
+int msbcleari = 255
+int msbseti = 32767
+int negi = -1
 
+word zerow = 0
+word onew = 1
+word twow = 2
+word fourw = 4
+word eightw = 8
+word msbclearw = 255
+word msbsetw = 65535
+
+print zeroi * zeroi
+print zeroi * onei
+print zeroi * twoi
+print zeroi * fouri
+print zeroi * eighti
+print zeroi * msbcleari
+print zeroi * msbseti
+print zeroi * negi
+
+print onei * zeroi
+print onei * onei
+print onei * twoi
+print onei * fouri
+print onei * eighti
+print onei * msbcleari
+print onei * msbseti
+print onei * negi
+
+print twoi * zeroi
+print twoi * onei
+print twoi * twoi
+print twoi * fouri
+print twoi * eighti
+print twoi * msbcleari
+print twoi * msbseti
+print twoi * negi
+
+print fouri * zeroi
+print fouri * onei
+print fouri * twoi
+print fouri * fouri
+print fouri * eighti
+print fouri * msbcleari
+print fouri * msbseti
+print fouri * negi
+
+print eighti * zeroi
+print eighti * onei
+print eighti * twoi
+print eighti * fouri
+print eighti * eighti
+print eighti * msbcleari
+print eighti * msbseti
+print eighti * negi
+
+print msbcleari * zeroi
+print msbcleari * onei
+print msbcleari * twoi
+print msbcleari * fouri
+print msbcleari * eighti
+print msbcleari * msbcleari
+print msbcleari * msbseti
+print msbcleari * negi
+
+print msbseti * zeroi
+print msbseti * onei
+print msbseti * twoi
+print msbseti * fouri
+print msbseti * eighti
+print msbseti * msbcleari
+print msbseti * msbseti
+print msbseti * negi
+
+print negi * zeroi
+print negi * onei
+print negi * twoi
+print negi * fouri
+print negi * eighti
+print negi * msbcleari
+print negi * msbseti
+print negi * negi
+
+print zerow * zerow
+print zerow * onew
+print zerow * twow
+print zerow * fourw
+print zerow * eightw
+print zerow * msbclearw
+print zerow * msbsetw
+
+print onew * zerow
+print onew * onew
+print onew * twow
+print onew * fourw
+print onew * eightw
+print onew * msbclearw
+print onew * msbsetw
+
+print twow * zerow
+print twow * onew
+print twow * twow
+print twow * fourw
+print twow * eightw
+print twow * msbclearw
+print twow * msbsetw
+
+print fourw * zerow
+print fourw * onew
+print fourw * twow
+print fourw * fourw
+print fourw * eightw
+print fourw * msbclearw
+print fourw * msbsetw
+
+print eightw * zerow
+print eightw * onew
+print eightw * twow
+print eightw * fourw
+print eightw * eightw
+print eightw * msbclearw
+print eightw * msbsetw
+
+print msbclearw * zerow
+print msbclearw * onew
+print msbclearw * twow
+print msbclearw * fourw
+print msbclearw * eightw
+print msbclearw * msbclearw
+print msbclearw * msbsetw
+
+print msbsetw * zerow
+print msbsetw * onew
+print msbsetw * twow
+print msbsetw * fourw
+print msbsetw * eightw
+print msbsetw * msbclearw
+print msbsetw * msbsetw
+
+print zeroi * zerow
+print zeroi * onew
+print zeroi * twow
+print zeroi * fourw
+print zeroi * eightw
+print zeroi * msbclearw
+print zeroi * msbsetw
+
+print onei * zerow
+print onei * onew
+print onei * twow
+print onei * fourw
+print onei * eightw
+print onei * msbclearw
+print onei * msbsetw
+
+print twoi * zerow
+print twoi * onew
+print twoi * twow
+print twoi * fourw
+print twoi * eightw
+print twoi * msbclearw
+print twoi * msbsetw
+
+print fouri * zerow
+print fouri * onew
+print fouri * twow
+print fouri * fourw
+print fouri * eightw
+print fouri * msbclearw
+print fouri * msbsetw
+
+print eighti * zerow
+print eighti * onew
+print eighti * twow
+print eighti * fourw
+print eighti * eightw
+print eighti * msbclearw
+print eighti * msbsetw
+
+print msbcleari * zerow
+print msbcleari * onew
+print msbcleari * twow
+print msbcleari * fourw
+print msbcleari * eightw
+print msbcleari * msbclearw
+print msbcleari * msbsetw
+
+print msbseti * zerow
+print msbseti * onew
+print msbseti * twow
+print msbseti * fourw
+print msbseti * eightw
+print msbseti * msbclearw
+print msbseti * msbsetw
+
+print negi * zerow
+print negi * onew
+print negi * twow
+print negi * fourw
+print negi * eightw
+print negi * msbclearw
+print negi * msbsetw
+
+print zerow * zeroi
+print zerow * onei
+print zerow * twoi
+print zerow * fouri
+print zerow * eighti
+print zerow * msbcleari
+print zerow * msbseti
+print zerow * negi
+
+print onew * zeroi
+print onew * onei
+print onew * twoi
+print onew * fouri
+print onew * eighti
+print onew * msbcleari
+print onew * msbseti
+print onew * negi
+
+print twow * zeroi
+print twow * onei
+print twow * twoi
+print twow * fouri
+print twow * eighti
+print twow * msbcleari
+print twow * msbseti
+print twow * negi
+
+print fourw * zeroi
+print fourw * onei
+print fourw * twoi
+print fourw * fouri
+print fourw * eighti
+print fourw * msbcleari
+print fourw * msbseti
+print fourw * negi
+
+print eightw * zeroi
+print eightw * onei
+print eightw * twoi
+print eightw * fouri
+print eightw * eighti
+print eightw * msbcleari
+print eightw * msbseti
+print eightw * negi
+
+print msbclearw * zeroi
+print msbclearw * onei
+print msbclearw * twoi
+print msbclearw * fouri
+print msbclearw * eighti
+print msbclearw * msbcleari
+print msbclearw * msbseti
+print msbclearw * negi
+
+print msbsetw * zeroi
+print msbsetw * onei
+print msbsetw * twoi
+print msbsetw * fouri
+print msbsetw * eighti
+print msbsetw * msbcleari
+print msbsetw * msbseti
+print msbsetw * negi
+
+
+
+
+
+int zero = 0
+int one = 1
+int neg1 = -1
+int pos32767 = 32767
+int neg32768 = -32768
+
+word zerow = 0
+word onew = 1
+word maxw = 65535
+
+print pos32767 + one
+print pos32767 + pos32767
+print neg32768 + neg1
+print neg32768 + neg32768
+
+print one - neg32768
+print zero - neg32768
+print neg32768 - one
+print neg32768 - pos32767
+
+print maxw + onew
+print maxw + maxw
+print zerow - onew
+print zerow - maxw
+
+print pos32767 + onew
+print pos32767 + maxw
+print neg32768 + zerow
+print neg32768 + onew
+print neg32768 + maxw
+
+print onew + pos32767
+print maxw + pos32767
+print zerow + neg32768
+print onew + neg32768
+print maxw + neg32768
+
+print pos32767 - zerow
+print pos32767 - onew
+print pos32767 - maxw
+print neg32768 - zerow
+print neg32768 - onew
+print neg32768 - maxw
+
+print zerow - pos32767
+print onew - pos32767
+print maxw - pos32767
+print zerow - neg32768
+print onew - neg32768
+print maxw - neg32768
+
+
+
+// * failures:
+
+
+
+int twoi = 2
+int msbcleari = 255
+int msbseti = 32767
+int negi = -1
+
+word zerow = 0
+word onew = 1
+word twow = 2
+word fourw = 4
+word eightw = 8
+word msbclearw = 255
+word msbsetw = 65535
+
+print twoi * msbseti
+print msbcleari * msbcleari
+
+
+
+print negi * zerow
+print negi * onew
+print negi * twow
+print negi * fourw
+print negi * eightw
+print negi * msbclearw
+print negi * msbsetw
+
+print zerow * negi
+print onew * negi
+print twow * negi
+print fourw * negi
+print eightw * negi
+print msbclearw * negi
+print msbsetw * negi
+
+
+
+
+// + and - failures
+
+
+int neg32768 = -32768
+
+word zerow = 0
+word onew = 1
+word maxw = 65535
+
+print neg32768 + zerow
+print neg32768 + onew
+print neg32768 + maxw
+
+print zerow + neg32768
+print onew + neg32768
+print maxw + neg32768
+
+print neg32768 - zerow
+print neg32768 - onew
+print neg32768 - maxw
+
+print zerow - neg32768
+print onew - neg32768
+print maxw - neg32768
+
+
+
+// type mismatch failures
+
+
+int negi = -1
+int neg32768 = -32768
+
+word zerow = 0
+word onew = 1
+word twow = 2
+word fourw = 4
+word eightw = 8
+word msbclearw = 255
+word msbsetw = 65535
+
+print negi * zerow
+print negi * onew
+print negi * twow
+print negi * fourw
+print negi * eightw
+print negi * msbclearw
+print negi * msbsetw
+
+print zerow * negi
+print onew * negi
+print twow * negi
+print fourw * negi
+print eightw * negi
+print msbclearw * negi
+print msbsetw * negi
+
+print neg32768 + zerow
+print neg32768 + onew
+print neg32768 + msbsetw
+
+print zerow + neg32768
+print onew + neg32768
+print msbsetw + neg32768
+
+print neg32768 - zerow
+print neg32768 - onew
+print neg32768 - msbsetw
+
+print zerow - neg32768
+print onew - neg32768
+print msbsetw - neg32768
+
+
+
+
+// CheckTypeCompatibility tests:
+
+int pos1 = 1
+int pos127 = 127
+int pos255 = 255
+int pos1000 = 1000
+int pos16383 = 16383
+int pos32767 = 32767
+int neg1 = -1
+int neg127 = -127
+int neg255 = -255
+int neg1000 = -1000
+int neg16384 = -16384
+int neg32768 = -32768
+word w0 = 0
+word w1 = 1
+word w127 = 127
+word w128 = 128
+word w255 = 255
+word w256 = 256
+word w1000 = 1000
+word w16383 = 16383
+word w16384 = 16384
+word w32767 = 32767
+word w32768 = 32768
+word w32769 = 32769
+word w49151 = 49151
+word w49152 = 49152
+word w65534 = 65534
+word w65535 = 65535
+print pos1 + w0
+print pos1 + w1
+print pos1 + w32767
+print pos1 + w32768
+print pos1 + w65535
+print pos32767 + w0
+print pos32767 + w1
+print pos32767 + w32768
+print neg1 + w0
+print neg1 + w1
+print neg1 + w127
+print neg1 + w128
+print neg1 + w32767
+print neg1 + w32768
+print neg1 + w65535
+print neg127 + w0
+print neg127 + w127
+print neg127 + w128
+print neg255 + w255
+print neg255 + w256
+print neg1000 + w1000
+print neg16384 + w16383
+print neg16384 + w16384
+print neg32768 + w0
+print neg32768 + w32767
+print neg32768 + w32768
+print neg32768 + w65535
+print w0 + pos1
+print w1 + pos1
+print w32767 + pos1
+print w32768 + pos1
+print w65535 + pos1
+print w0 + pos32767
+print w1 + pos32767
+print w32768 + pos32767
+print w0 + neg1
+print w1 + neg1
+print w127 + neg1
+print w128 + neg1
+print w32767 + neg1
+print w32768 + neg1
+print w65535 + neg1
+print w0 + neg127
+print w127 + neg127
+print w128 + neg127
+print w255 + neg255
+print w256 + neg255
+print w1000 + neg1000
+print w16383 + neg16384
+print w16384 + neg16384
+print w0 + neg32768
+print w32767 + neg32768
+print w32768 + neg32768
+print w65535 + neg32768
+print pos1 - w32768
+print pos32767 - w32768
+print neg1 - w0
+print neg1 - w32768
+print neg32768 - w0
+print neg32768 - w32768
+print w0 - neg1
+print w32768 - neg1
+print w0 - neg32768
+print w32768 - neg32768
+print pos1 < w0
+print pos1 < w32768
+print pos32767 < w32768
+print neg1 < w0
+print neg1 < w32768
+print neg127 < w128
+print neg255 < w256
+print neg1000 < w1000
+print neg16384 < w16384
+print neg32768 < w0
+print neg32768 < w32767
+print neg32768 < w32768
+print w0 > pos1
+print w32768 > pos1
+print w32768 > pos32767
+print w0 > neg1
+print w32768 > neg1
+print w128 > neg127
+print w256 > neg255
+print w1000 > neg1000
+print w16384 > neg16384
+print w0 > neg32768
+print w32767 > neg32768
+print w32768 > neg32768
+print pos1 <= w32768
+print pos32767 <= w32768
+print neg1 <= w0
+print neg32768 <= w0
+print neg32768 <= w32768
+print w32768 >= pos1
+print w32768 >= pos32767
+print w0 >= neg1
+print w0 >= neg32768
+print w32768 >= neg32768
+print pos1 * w32768
+print neg1 * w0
+print neg1 * w1
+print neg1 * w32768
+print neg32768 * w1
+print w32768 * pos1
+print w0 * neg1
+print w1 * neg1
+print w32768 * neg1
+print w1 * neg32768
+int ipos = pos1
+int ineg = neg1
+word wpos = pos1
+word wneg = neg1
+word wposbig = pos32767
+word wnegconv = neg32768
+
+
+// CheckOrderingComparisonCompatibility
+
+
+
+
+int pos0 = 0
+int pos1 = 1
+int pos127 = 127
+int pos128 = 128
+int pos255 = 255
+int pos256 = 256
+int pos1000 = 1000
+int pos16383 = 16383
+int pos16384 = 16384
+int pos32766 = 32766
+int pos32767 = 32767
+int neg1 = -1
+int neg2 = -2
+int neg127 = -127
+int neg128 = -128
+int neg255 = -255
+int neg256 = -256
+int neg1000 = -1000
+int neg16383 = -16383
+int neg16384 = -16384
+int neg32767 = -32767
+int neg32768 = -32768
+word w0 = 0
+word w1 = 1
+word w2 = 2
+word w127 = 127
+word w128 = 128
+word w255 = 255
+word w256 = 256
+word w1000 = 1000
+word w16383 = 16383
+word w16384 = 16384
+word w32766 = 32766
+word w32767 = 32767
+word w32768 = 32768
+word w32769 = 32769
+word w49151 = 49151
+word w49152 = 49152
+word w65534 = 65534
+word w65535 = 65535
+print pos0 < w0
+print pos0 < w1
+print pos0 < w32767
+print pos0 < w32768
+print pos1 < w0
+print pos1 < w1
+print pos1 < w32767
+print pos1 < w32768
+print pos127 < w127
+print pos127 < w128
+print pos128 < w127
+print pos128 < w128
+print pos255 < w255
+print pos255 < w256
+print pos256 < w255
+print pos256 < w256
+print pos1000 < w1000
+print pos16383 < w16383
+print pos16383 < w16384
+print pos16384 < w16383
+print pos16384 < w16384
+print pos32766 < w32766
+print pos32766 < w32767
+print pos32766 < w32768
+print pos32767 < w32766
+print pos32767 < w32767
+print pos32767 < w32768
+print neg1 < w0
+print neg1 < w1
+print neg1 < w32767
+print neg1 < w32768
+print neg1 < w65535
+print neg2 < w0
+print neg2 < w1
+print neg2 < w32767
+print neg2 < w32768
+print neg127 < w127
+print neg127 < w128
+print neg128 < w127
+print neg128 < w128
+print neg255 < w255
+print neg255 < w256
+print neg256 < w255
+print neg256 < w256
+print neg1000 < w1000
+print neg16383 < w16383
+print neg16383 < w16384
+print neg16384 < w16383
+print neg16384 < w16384
+print neg32767 < w32766
+print neg32767 < w32767
+print neg32767 < w32768
+print neg32768 < w0
+print neg32768 < w32766
+print neg32768 < w32767
+print neg32768 < w32768
+print neg32768 < w65535
+print w0 < pos0
+print w1 < pos0
+print w32767 < pos0
+print w32768 < pos0
+print w0 < pos1
+print w1 < pos1
+print w32767 < pos1
+print w32768 < pos1
+print w127 < pos127
+print w128 < pos127
+print w127 < pos128
+print w128 < pos128
+print w255 < pos255
+print w256 < pos255
+print w255 < pos256
+print w256 < pos256
+print w1000 < pos1000
+print w16383 < pos16383
+print w16384 < pos16383
+print w16383 < pos16384
+print w16384 < pos16384
+print w32766 < pos32766
+print w32767 < pos32766
+print w32768 < pos32766
+print w32766 < pos32767
+print w32767 < pos32767
+print w32768 < pos32767
+print w0 < neg1
+print w1 < neg1
+print w32767 < neg1
+print w32768 < neg1
+print w65535 < neg1
+print w0 < neg2
+print w1 < neg2
+print w32767 < neg2
+print w32768 < neg2
+print w127 < neg127
+print w128 < neg127
+print w127 < neg128
+print w128 < neg128
+print w255 < neg255
+print w256 < neg255
+print w255 < neg256
+print w256 < neg256
+print w1000 < neg1000
+print w16383 < neg16383
+print w16384 < neg16383
+print w16383 < neg16384
+print w16384 < neg16384
+print w32766 < neg32767
+print w32767 < neg32767
+print w32768 < neg32767
+print w0 < neg32768
+print w32766 < neg32768
+print w32767 < neg32768
+print w32768 < neg32768
+print w65535 < neg32768
+print pos0 > w0
+print pos0 > w1
+print pos0 > w32767
+print pos0 > w32768
+print pos1 > w0
+print pos1 > w1
+print pos1 > w32767
+print pos1 > w32768
+print pos127 > w127
+print pos127 > w128
+print pos128 > w127
+print pos128 > w128
+print pos255 > w255
+print pos255 > w256
+print pos256 > w255
+print pos256 > w256
+print pos1000 > w1000
+print pos16383 > w16383
+print pos16383 > w16384
+print pos16384 > w16383
+print pos16384 > w16384
+print pos32766 > w32766
+print pos32766 > w32767
+print pos32766 > w32768
+print pos32767 > w32766
+print pos32767 > w32767
+print pos32767 > w32768
+print neg1 > w0
+print neg1 > w1
+print neg1 > w32767
+print neg1 > w32768
+print neg1 > w65535
+print neg2 > w0
+print neg2 > w1
+print neg2 > w32767
+print neg2 > w32768
+print neg127 > w127
+print neg127 > w128
+print neg128 > w127
+print neg128 > w128
+print neg255 > w255
+print neg255 > w256
+print neg256 > w255
+print neg256 > w256
+print neg1000 > w1000
+print neg16383 > w16383
+print neg16383 > w16384
+print neg16384 > w16383
+print neg16384 > w16384
+print neg32767 > w32766
+print neg32767 > w32767
+print neg32767 > w32768
+print neg32768 > w0
+print neg32768 > w32766
+print neg32768 > w32767
+print neg32768 > w32768
+print neg32768 > w65535
+print w0 > pos0
+print w1 > pos0
+print w32767 > pos0
+print w32768 > pos0
+print w0 > pos1
+print w1 > pos1
+print w32767 > pos1
+print w32768 > pos1
+print w127 > pos127
+print w128 > pos127
+print w127 > pos128
+print w128 > pos128
+print w255 > pos255
+print w256 > pos255
+print w255 > pos256
+print w256 > pos256
+print w1000 > pos1000
+print w16383 > pos16383
+print w16384 > pos16383
+print w16383 > pos16384
+print w16384 > pos16384
+print w32766 > pos32766
+print w32767 > pos32766
+print w32768 > pos32766
+print w32766 > pos32767
+print w32767 > pos32767
+print w32768 > pos32767
+print w0 > neg1
+print w1 > neg1
+print w32767 > neg1
+print w32768 > neg1
+print w65535 > neg1
+print w0 > neg2
+print w1 > neg2
+print w32767 > neg2
+print w32768 > neg2
+print w127 > neg127
+print w128 > neg127
+print w127 > neg128
+print w128 > neg128
+print w255 > neg255
+print w256 > neg255
+print w255 > neg256
+print w256 > neg256
+print w1000 > neg1000
+print w16383 > neg16383
+print w16384 > neg16383
+print w16383 > neg16384
+print w16384 > neg16384
+print w32766 > neg32767
+print w32767 > neg32767
+print w32768 > neg32767
+print w0 > neg32768
+print w32766 > neg32768
+print w32767 > neg32768
+print w32768 > neg32768
+print w65535 > neg32768
+print pos0 <= w0
+print pos0 <= w1
+print pos0 <= w32767
+print pos0 <= w32768
+print pos1 <= w0
+print pos1 <= w1
+print pos1 <= w32767
+print pos1 <= w32768
+print pos127 <= w127
+print pos127 <= w128
+print pos128 <= w127
+print pos128 <= w128
+print pos255 <= w255
+print pos255 <= w256
+print pos256 <= w255
+print pos256 <= w256
+print pos1000 <= w1000
+print pos16383 <= w16383
+print pos16383 <= w16384
+print pos16384 <= w16383
+print pos16384 <= w16384
+print pos32766 <= w32766
+print pos32766 <= w32767
+print pos32766 <= w32768
+print pos32767 <= w32766
+print pos32767 <= w32767
+print pos32767 <= w32768
+print neg1 <= w0
+print neg1 <= w1
+print neg1 <= w32767
+print neg1 <= w32768
+print neg1 <= w65535
+print neg2 <= w0
+print neg2 <= w1
+print neg2 <= w32767
+print neg2 <= w32768
+print neg127 <= w127
+print neg127 <= w128
+print neg128 <= w127
+print neg128 <= w128
+print neg255 <= w255
+print neg255 <= w256
+print neg256 <= w255
+print neg256 <= w256
+print neg1000 <= w1000
+print neg16383 <= w16383
+print neg16383 <= w16384
+print neg16384 <= w16383
+print neg16384 <= w16384
+print neg32767 <= w32766
+print neg32767 <= w32767
+print neg32767 <= w32768
+print neg32768 <= w0
+print neg32768 <= w32766
+print neg32768 <= w32767
+print neg32768 <= w32768
+print neg32768 <= w65535
+print w0 <= pos0
+print w1 <= pos0
+print w32767 <= pos0
+print w32768 <= pos0
+print w0 <= pos1
+print w1 <= pos1
+print w32767 <= pos1
+print w32768 <= pos1
+print w127 <= pos127
+print w128 <= pos127
+print w127 <= pos128
+print w128 <= pos128
+print w255 <= pos255
+print w256 <= pos255
+print w255 <= pos256
+print w256 <= pos256
+print w1000 <= pos1000
+print w16383 <= pos16383
+print w16384 <= pos16383
+print w16383 <= pos16384
+print w16384 <= pos16384
+print w32766 <= pos32766
+print w32767 <= pos32766
+print w32768 <= pos32766
+print w32766 <= pos32767
+print w32767 <= pos32767
+print w32768 <= pos32767
+print w0 <= neg1
+print w1 <= neg1
+print w32767 <= neg1
+print w32768 <= neg1
+print w65535 <= neg1
+print w0 <= neg2
+print w1 <= neg2
+print w32767 <= neg2
+print w32768 <= neg2
+print w127 <= neg127
+print w128 <= neg127
+print w127 <= neg128
+print w128 <= neg128
+print w255 <= neg255
+print w256 <= neg255
+print w255 <= neg256
+print w256 <= neg256
+print w1000 <= neg1000
+print w16383 <= neg16383
+print w16384 <= neg16383
+print w16383 <= neg16384
+print w16384 <= neg16384
+print w32766 <= neg32767
+print w32767 <= neg32767
+print w32768 <= neg32767
+print w0 <= neg32768
+print w32766 <= neg32768
+print w32767 <= neg32768
+print w32768 <= neg32768
+print w65535 <= neg32768
+print pos0 >= w0
+print pos0 >= w1
+print pos0 >= w32767
+print pos0 >= w32768
+print pos1 >= w0
+print pos1 >= w1
+print pos1 >= w32767
+print pos1 >= w32768
+print pos127 >= w127
+print pos127 >= w128
+print pos128 >= w127
+print pos128 >= w128
+print pos255 >= w255
+print pos255 >= w256
+print pos256 >= w255
+print pos256 >= w256
+print pos1000 >= w1000
+print pos16383 >= w16383
+print pos16383 >= w16384
+print pos16384 >= w16383
+print pos16384 >= w16384
+print pos32766 >= w32766
+print pos32766 >= w32767
+print pos32766 >= w32768
+print pos32767 >= w32766
+print pos32767 >= w32767
+print pos32767 >= w32768
+print neg1 >= w0
+print neg1 >= w1
+print neg1 >= w32767
+print neg1 >= w32768
+print neg1 >= w65535
+print neg2 >= w0
+print neg2 >= w1
+print neg2 >= w32767
+print neg2 >= w32768
+print neg127 >= w127
+print neg127 >= w128
+print neg128 >= w127
+print neg128 >= w128
+print neg255 >= w255
+print neg255 >= w256
+print neg256 >= w255
+print neg256 >= w256
+print neg1000 >= w1000
+print neg16383 >= w16383
+print neg16383 >= w16384
+print neg16384 >= w16383
+print neg16384 >= w16384
+print neg32767 >= w32766
+print neg32767 >= w32767
+print neg32767 >= w32768
+print neg32768 >= w0
+print neg32768 >= w32766
+print neg32768 >= w32767
+print neg32768 >= w32768
+print neg32768 >= w65535
+print w0 >= pos0
+print w1 >= pos0
+print w32767 >= pos0
+print w32768 >= pos0
+print w0 >= pos1
+print w1 >= pos1
+print w32767 >= pos1
+print w32768 >= pos1
+print w127 >= pos127
+print w128 >= pos127
+print w127 >= pos128
+print w128 >= pos128
+print w255 >= pos255
+print w256 >= pos255
+print w255 >= pos256
+print w256 >= pos256
+print w1000 >= pos1000
+print w16383 >= pos16383
+print w16384 >= pos16383
+print w16383 >= pos16384
+print w16384 >= pos16384
+print w32766 >= pos32766
+print w32767 >= pos32766
+print w32768 >= pos32766
+print w32766 >= pos32767
+print w32767 >= pos32767
+print w32768 >= pos32767
+print w0 >= neg1
+print w1 >= neg1
+print w32767 >= neg1
+print w32768 >= neg1
+print w65535 >= neg1
+print w0 >= neg2
+print w1 >= neg2
+print w32767 >= neg2
+print w32768 >= neg2
+print w127 >= neg127
+print w128 >= neg127
+print w127 >= neg128
+print w128 >= neg128
+print w255 >= neg255
+print w256 >= neg255
+print w255 >= neg256
+print w256 >= neg256
+print w1000 >= neg1000
+print w16383 >= neg16383
+print w16384 >= neg16383
+print w16383 >= neg16384
+print w16384 >= neg16384
+print w32766 >= neg32767
+print w32767 >= neg32767
+print w32768 >= neg32767
+print w0 >= neg32768
+print w32766 >= neg32768
+print w32767 >= neg32768
+print w32768 >= neg32768
+print w65535 >= neg32768
+
+
+
+
+// CheckOrderingComparisonCompatibility case #3 failures
+
+int neg1 = -1
+int neg2 = -2
+int neg32767 = -32767
+int neg32768 = -32768
+word w32768 = 32768
+word w65535 = 65535
+
+print neg1 < w32768
+print neg1 < w65535
+print neg2 < w32768
+print neg32767 < w32768
+print neg32768 < w32768
+print neg32768 < w65535
+
+print w32768 < neg1
+print w65535 < neg1
+print w32768 < neg2
+print w32768 < neg32767
+print w32768 < neg32768
+print w65535 < neg32768
+
+print neg1 > w32768
+print neg1 > w65535
+print neg2 > w32768
+print neg32767 > w32768
+print neg32768 > w32768
+print neg32768 > w65535
+
+print w32768 > neg1
+print w65535 > neg1
+print w32768 > neg2
+print w32768 > neg32767
+print w32768 > neg32768
+print w65535 > neg32768
+
+print neg1 <= w32768
+print neg1 <= w65535
+print neg2 <= w32768
+print neg32767 <= w32768
+print neg32768 <= w32768
+print neg32768 <= w65535
+
+print w32768 <= neg1
+print w65535 <= neg1
+print w32768 <= neg2
+print w32768 <= neg32767
+print w32768 <= neg32768
+print w65535 <= neg32768
+
+print neg1 >= w32768
+print neg1 >= w65535
+print neg2 >= w32768
+print neg32767 >= w32768
+print neg32768 >= w32768
+print neg32768 >= w65535
+
+print w32768 >= neg1
+print w65535 >= neg1
+print w32768 >= neg2
+print w32768 >= neg32767
+print w32768 >= neg32768
+print w65535 >= neg32768

@@ -6,6 +6,7 @@ unit Executor
     uses "Variables"
     uses "Messages"
     uses "BasicTypes"
+    uses "Instructions"
     
     // Memory layout for executor state - BasicProcessBuffer3 (0x09E9-0x09FF, 23 bytes)
     const uint executorStartAddrL    = Address.BasicProcessBuffer3 + 9;   // 0x09E9: opcode buffer start low

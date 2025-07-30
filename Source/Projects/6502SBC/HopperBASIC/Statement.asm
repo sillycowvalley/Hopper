@@ -621,11 +621,10 @@ unit Statement
                     CMP ZP.ACCT // Variable's declared type
                     if (NZ)
                     {
-                        // Type mismatch - check for valid type promotion
-                        // Use Instructions.CheckTypeCompatibility if available
-                        Instructions.CheckTypeCompatibility(); // ZP.TOPT = source, ZP.ACCT = target
+                        // Type mismatch - check for valid assignment promotion
+                        CheckRHSTypeCompatibility(); // Uses ZP.TOP = RHS value, ZP.TOPT = RHS type, ZP.NEXTT = LHS type
                         Messages.CheckError();
-                        if (NC) { break; } // Type promotion failed
+                        if (NC) { break; } // Assignment type promotion failed
                     }
                     
                     // Assign the value to the variable
