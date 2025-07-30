@@ -1,3 +1,48 @@
+
+**Task: Analyze Test Output and Generate Subset of Failing Cases**
+
+**Step 1: Understand the Context**
+- Review the test output showing comparisons between INT and WORD types
+- Identify which results are "?TYPE MISMATCH" vs numeric results (0 or 1)
+- Understand that TYPE MISMATCH may be correct behavior for some cases
+- Remember that BIT type is a boolean type that is:
+  - Incompatible with numeric types (INT, WORD, BYTE)
+  - Incompatible with ordering operators (<, >, <=, >=)
+  - Only valid with equality operators (=, <>) and logical operators (AND, OR, NOT)
+
+**Step 2: Classify the Failures**
+- Read through the test output line by line
+- Identify all cases that resulted in "?TYPE MISMATCH"
+- Do NOT look at source code - focus only on the test results
+- Group failures by operation type (<, >, <=, >=)
+
+**Step 3: Identify the Pattern**
+- Look for patterns in what types of comparisons are failing
+- Note the specific boundary values (like 32768) where behavior changes
+- Identify if there's a logical rule (e.g., "negative INT vs WORD ≥ 32768")
+- Distinguish between legitimate TYPE MISMATCH (like BIT comparisons) and potential bugs
+
+**Step 4: Determine if Failures are Legitimate**
+- Consider whether TYPE MISMATCH is the correct behavior
+- Identify subset where the comparison should be mathematically unambiguous
+- Focus on cases where signs differ (negative INT vs positive WORD) as these have obvious results
+- Remember that BIT type rejections may be correct behavior, not failures
+
+**Step 5: Generate Minimal Test Set**
+- Create variable declarations for all needed test values
+- Include only the subset of comparisons that should work but are failing
+- Organize by operation type for clarity
+- Remove redundant cases while maintaining coverage of edge cases
+- Exclude any BIT type tests as those should legitimately fail
+- never insert comments in the generated test files
+
+**Step 6: Validate the Subset**
+- Ensure all variables referenced in tests are declared
+- Verify the subset represents the core issue without unnecessary noise
+- Check that the expected results are mathematically obvious (negative < positive)
+
+
+
 // = and <> tests
 
 int pos0 = 0
@@ -1628,101 +1673,150 @@ print w32768 >= neg32768
 print w65535 >= neg32768
 
 
+// =, <>, <, >, <=, >= tests for BIT
 
-
-// failing comparison tests
-
-int neg1 = -1
-int neg2 = -2
-int neg127 = -127
-int neg128 = -128
-int neg255 = -255
-int neg256 = -256
-int neg1000 = -1000
-int neg16383 = -16383
-int neg16384 = -16384
-int neg32767 = -32767
-int neg32768 = -32768
+bit false = (1 = 0)
+bit true = (1 = 1)
+bit b0 = false
+bit b1 = true
+int i0 = 0
+int i1 = 1
+int ineg = -1
 word w0 = 0
 word w1 = 1
-word w127 = 127
-word w128 = 128
-word w255 = 255
-word w256 = 256
-word w1000 = 1000
-word w16383 = 16383
-word w16384 = 16384
-word w32766 = 32766
-word w32767 = 32767
-print neg1 > w0
-print neg1 > w1
-print neg1 > w32767
-print neg2 > w0
-print neg2 > w1
-print neg2 > w32767
-print neg127 > w127
-print neg127 > w128
-print neg128 > w127
-print neg128 > w128
-print neg255 > w255
-print neg255 > w256
-print neg256 > w255
-print neg256 > w256
-print neg1000 > w1000
-print neg16383 > w16383
-print neg16383 > w16384
-print neg16384 > w16383
-print neg16384 > w16384
-print neg32767 > w32766
-print neg32767 > w32767
-print neg32768 > w0
-print neg32768 > w32766
-print neg32768 > w32767
-print w0 > neg1
-print w1 > neg1
-print w32767 > neg1
-print w0 > neg2
-print w1 > neg2
-print w32767 > neg2
-print w127 > neg127
-print w128 > neg127
-print w127 > neg128
-print w128 > neg128
-print w255 > neg255
-print w256 > neg255
-print w255 > neg256
-print w256 > neg256
-print w1000 > neg1000
-print w16383 > neg16383
-print w16384 > neg16383
-print w16383 > neg16384
-print w16384 > neg16384
-print w32766 > neg32767
-print w32767 > neg32767
-print w0 > neg32768
-print w32766 > neg32768
-print w32767 > neg32768
-print neg1 >= w0
-print neg1 >= w1
-print neg1 >= w32767
-print neg2 >= w0
-print neg2 >= w1
-print neg2 >= w32767
-print neg127 >= w127
-print neg127 >= w128
-print neg128 >= w127
-print neg128 >= w128
-print neg255 >= w255
-print neg255 >= w256
-print neg256 >= w255
-print neg256 >= w256
-print neg1000 >= w1000
-print neg16383 >= w16383
-print neg16383 >= w16384
-print neg16384 >= w16383
-print neg16384 >= w16384
-print neg32767 >= w32766
-print neg32767 >= w32767
-print neg32768 >= w0
-print neg32768 >= w32766
-print neg32768 >= w32767
+word w32768 = 32768
+print b0 = b0
+print b0 = b1
+print b1 = b0
+print b1 = b1
+print b0 <> b0
+print b0 <> b1
+print b1 <> b0
+print b1 <> b1
+print b0 and b0
+print b0 and b1
+print b1 and b0
+print b1 and b1
+print b0 or b0
+print b0 or b1
+print b1 or b0
+print b1 or b1
+print not b0
+print not b1
+print b0 < b1
+print b1 < b0
+print b0 > b1
+print b1 > b0
+print b0 <= b1
+print b1 <= b0
+print b0 >= b1
+print b1 >= b0
+print b0 + b1
+print b1 - b0
+print b0 * b1
+print b1 / false
+print b1 mod false
+print b0 = i0
+print b0 = i1
+print b1 = i0
+print b1 = i1
+print b0 = ineg
+print b0 <> i0
+print b0 <> i1
+print b1 <> i0
+print b1 <> i1
+print b0 <> ineg
+print b0 and i0
+print b1 and i1
+print b0 or i0
+print b1 or i1
+print b0 < i0
+print b0 < i1
+print b1 < i0
+print b1 < i1
+print b0 < ineg
+print b1 < ineg
+print b0 > i0
+print b0 > i1
+print b1 > i0
+print b1 > i1
+print b0 > ineg
+print b1 > ineg
+print b0 <= i0
+print b0 <= i1
+print b1 <= i0
+print b1 <= i1
+print b0 >= i0
+print b0 >= i1
+print b1 >= i0
+print b1 >= i1
+print b0 + i1
+print b1 - i0
+print b0 * i1
+print b1 / i1
+print b1 mod i1
+print b0 = w0
+print b0 = w1
+print b1 = w0
+print b1 = w1
+print b0 = w32768
+print b0 <> w0
+print b0 <> w1
+print b1 <> w0
+print b1 <> w1
+print b0 <> w32768
+print b0 and w0
+print b1 and w1
+print b0 or w0
+print b1 or w1
+print b0 < w0
+print b0 < w1
+print b1 < w0
+print b1 < w1
+print b0 < w32768
+print b0 > w0
+print b0 > w1
+print b1 > w0
+print b1 > w1
+print b0 > w32768
+print b0 <= w0
+print b0 <= w1
+print b1 <= w0
+print b1 <= w1
+print b0 >= w0
+print b0 >= w1
+print b1 >= w0
+print b1 >= w1
+print b0 + w1
+print b1 - w0
+print b0 * w1
+print b1 / w1
+print b1 mod w1
+print i0 = b0
+print i1 = b1
+print ineg = b0
+print i0 <> b0
+print i1 <> b1
+print ineg <> b0
+print i0 < b0
+print i1 < b1
+print ineg < b0
+print i0 > b0
+print i1 > b1
+print ineg > b0
+print i0 + b1
+print i1 - b0
+print w0 = b0
+print w1 = b1
+print w32768 = b0
+print w0 <> b0
+print w1 <> b1
+print w32768 <> b0
+print w0 < b0
+print w1 < b1
+print w32768 < b0
+print w0 > b0
+print w1 > b1
+print w32768 > b0
+print w0 + b1
+print w1 - b0

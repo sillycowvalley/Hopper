@@ -375,7 +375,7 @@ unit ComparisonInstructions
     }
     
     // Inputs: ZP.NEXTT and ZP.TOPT
-    // Result: X: 1 = unsigned compare, 2 = signed compare, 3 = type mismatch
+    // Result: X: 1 = unsigned compare, 2 = signed compare, 3 = 'signs' comparison, 4 = type mismatch, 
     checkINTTypes()
     {
         loop
@@ -400,12 +400,15 @@ unit ComparisonInstructions
                 if (MI)
                 {
                     // NEXT < 0 
-                    LDX #3 
                     BIT ZP.TOPH
                     if (MI)
                     {
                         // TOP > 32657
-                        LDX #3 
+                        // 0 = NEXT < TOP
+                        // 1 = NEXT == TOP  
+                        // 2 = NEXT > TOP
+                        LDX #3
+                        LDY #0
                         break;
                     }
                     LDX #2 // signed
@@ -424,7 +427,11 @@ unit ComparisonInstructions
                     if (MI)
                     {
                         // NEXT > 32657
-                        LDX #3 
+                        // 0 = NEXT < TOP
+                        // 1 = NEXT == TOP  
+                        // 2 = NEXT > TOP
+                        LDX #3
+                        LDY #2
                         break;
                     }
                     LDX #2 // signed
@@ -489,6 +496,18 @@ unit ComparisonInstructions
                     }
                 }
                 case 3:
+                {
+                    // 0 = NEXT < TOP
+                    // 1 = NEXT == TOP  
+                    // 2 = NEXT > TOP
+                    LDX #0 // Assume false
+                    CPY #0
+                    if (Z)
+                    {
+                        LDX #1 // true
+                    }
+                }
+                default:
                 {
                     CLC  // type mismatch
                     break;
@@ -571,6 +590,18 @@ unit ComparisonInstructions
                 }
                 case 3:
                 {
+                    // 0 = NEXT < TOP
+                    // 1 = NEXT == TOP  
+                    // 2 = NEXT > TOP
+                    LDX #0 // Assume false
+                    CPY #2
+                    if (Z)
+                    {
+                        LDX #1 // true
+                    }
+                }
+                default:
+                {
                     CLC  // type mismatch
                     break;
                 }
@@ -652,6 +683,18 @@ unit ComparisonInstructions
                 }
                 case 3:
                 {
+                    // 0 = NEXT < TOP
+                    // 1 = NEXT == TOP  
+                    // 2 = NEXT > TOP
+                    LDX #0 // Assume false
+                    CPY #2
+                    if (NZ)
+                    {
+                        LDX #1 // true
+                    }
+                }
+                default:
+                {
                     CLC  // type mismatch
                     break;
                 }
@@ -732,6 +775,18 @@ unit ComparisonInstructions
                     }
                 }
                 case 3:
+                {
+                    // 0 = NEXT < TOP
+                    // 1 = NEXT == TOP  
+                    // 2 = NEXT > TOP
+                    LDX #0 // Assume false
+                    CPY #0
+                    if (NZ)
+                    {
+                        LDX #1 // true
+                    }
+                }
+                default:
                 {
                     CLC  // type mismatch
                     break;
