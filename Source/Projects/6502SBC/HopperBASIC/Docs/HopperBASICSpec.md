@@ -38,6 +38,7 @@ BEGIN
         ' Initialize flags array to true
         FOR i = 0 TO sizepl-1
             flags[i] = TRUE
+        NEXT i
         
         ' Sieve algorithm
         FOR i = 0 TO sizepl-1
@@ -47,7 +48,10 @@ BEGIN
                 WHILE k < sizepl
                     flags[k] = FALSE
                     k = k + prime
+                WEND
                 count = count + 1
+        NEXT i
+    NEXT iter
     
     elapsed = MILLIS() - start
     avgMs = elapsed / 10
@@ -78,6 +82,7 @@ FUNC Benchmark(name, arg, loops)
     
     FOR count = 0 TO loops-1
         result = Fibo(arg)
+    NEXT count
     
     elapsed = MILLIS() - start
     avgMs = elapsed / loops
@@ -604,8 +609,10 @@ ENDFUNC
 FUNC Benchmark(name, arg, loops)
     WORD start = MILLIS()
     WORD result
+    WORD count
     FOR count = 0 TO loops-1
         result = Fibo(arg)
+    NEXT count
     elapsed = MILLIS() - start
     PRINT name; "("; arg; ") = "; result; " in "; elapsed; " ms"
 ENDFUNC
