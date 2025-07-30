@@ -7,6 +7,7 @@ unit Executor
     uses "Messages"
     uses "BasicTypes"
     uses "Instructions"
+    uses "ComparisonInstructions"
     
     // Memory layout for executor state - BasicProcessBuffer3 (0x09E9-0x09FF, 23 bytes)
     const uint executorStartAddrL    = Address.BasicProcessBuffer3 + 9;   // 0x09E9: opcode buffer start low
@@ -298,27 +299,27 @@ unit Executor
             // Comparison operations (all return BIT)
             case OpcodeType.EQ:
             {
-                Instructions.Equal();
+                ComparisonInstructions.Equal();
             }
             case OpcodeType.NE:
             {
-                Instructions.NotEqual();
+                ComparisonInstructions.NotEqual();
             }
             case OpcodeType.LT:
             {
-                Instructions.LessThan();
+                ComparisonInstructions.LessThan();
             }
             case OpcodeType.GT:
             {
-                Instructions.GreaterThan();
+                ComparisonInstructions.GreaterThan();
             }
             case OpcodeType.LE:
             {
-                Instructions.LessEqual();
+                ComparisonInstructions.LessEqual();
             }
             case OpcodeType.GE:
             {
-                Instructions.GreaterEqual();
+                ComparisonInstructions.GreaterEqual();
             }
             
             // Function operations
