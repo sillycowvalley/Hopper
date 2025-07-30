@@ -10,17 +10,109 @@
 - **Immediate feedback** - Interactive development with instant results
 - **Small footprint** - Target 16K ROM, minimal RAM usage
 
+## Target Benchmarks
+
+**Milestone Goal**: Successfully run these two classic BASIC benchmark programs:
+
+### Sieve of Eratosthenes (Byte Magazine Benchmark)
+```basic
+' Sieve of Eratosthenes - Byte Magazine benchmark
+CONST sizepl = 8191
+BIT flags[sizepl]
+BEGIN
+    WORD i
+    WORD prime
+    WORD k
+    WORD count
+    WORD iter
+    WORD start
+    WORD elapsed
+    WORD avgMs
+    
+    PRINT "10 iterations"
+    start = MILLIS()
+    
+    FOR iter = 1 TO 10
+        count = 0
+        
+        ' Initialize flags array to true
+        FOR i = 0 TO sizepl-1
+            flags[i] = TRUE
+        
+        ' Sieve algorithm
+        FOR i = 0 TO sizepl-1
+            IF flags[i] THEN
+                prime = i + i + 3
+                k = i + prime
+                WHILE k < sizepl
+                    flags[k] = FALSE
+                    k = k + prime
+                count = count + 1
+    
+    elapsed = MILLIS() - start
+    avgMs = elapsed / 10
+    
+    PRINT "Done."
+    PRINT count
+    PRINT " primes"
+    PRINT avgMs
+    PRINT " ms average"
+END
+```
+
+### Fibonacci Benchmark with Functions
+```basic
+FUNC Fibo(n)
+    IF n <= 1 THEN RETURN n
+    RETURN Fibo(n-1) + Fibo(n-2)
+ENDFUNC
+
+FUNC Benchmark(name, arg, loops)
+    WORD start
+    WORD result
+    WORD count
+    WORD elapsed
+    WORD avgMs
+    
+    start = MILLIS()
+    
+    FOR count = 0 TO loops-1
+        result = Fibo(arg)
+    
+    elapsed = MILLIS() - start
+    avgMs = elapsed / loops
+    
+    PRINT name
+    PRINT "("
+    PRINT arg
+    PRINT ") = "
+    PRINT result
+    PRINT " in "
+    PRINT avgMs
+    PRINT " ms average"
+ENDFUNC
+
+BEGIN
+    Benchmark("Fibo", 10, 1)
+END
+```
+
+**Usage Examples:**
+- `RUN` - Execute the main program (BEGIN/END block)
+- `Benchmark("Fibo", 10, 1)` - Call function directly from REPL
+- `LIST` - Show complete program structure (constants, variables, functions, main)
+
 ---
 
 ## Phase 1: Core Functionality (Current Implementation Status)
 
 ### Console Commands
 - ✅ **`NEW`** - Clear everything (program, variables, functions)
-- ❌ **`LIST`** - Display complete program (main + functions)
-- ❌ **`RUN`** - Execute the main program
+- ❌ **`LIST`** - Display complete program: constants, variables, functions, main program (creation order)
+- ❌ **`RUN`** - Execute the main program (BEGIN/END block)
 - ✅ **`CLEAR`** - Reset all variables to default values, keep definitions
-- ✅ **`VARS`** - Show all variables and current values
-- ❌ **`FUNCS`** - Show all function signatures (overview)
+- ✅ **`VARS`** - Show constants first, then variables (creation order)
+- ❌ **`FUNCS`** - Show all functions in creation order (main program listed last as "__main")
 - ❌ **`FORGET name`** - Remove variable or function
 - ✅ **`MEM`** - Show available memory
 - ✅ **`BYE`** - Exit interpreter
@@ -127,9 +219,9 @@
 - ❌ **`PRINT expr,`** - Output value followed by space, no newline
 
 ### Extended Control Flow
-- ❌ **`FOR var = start TO end [STEP increment]`** - Counted loops
-- ❌ **`NEXT var`** - End of FOR loop
-- ❌ **`WHILE expr`...`WEND`** - Conditional loops
+- ❌ **`FOR var = start TO end [STEP increment]`** - Counted loops (required for benchmarks)
+- ❌ **`NEXT var`** - End of FOR loop (required for benchmarks)
+- ❌ **`WHILE expr`...`WEND`** - Conditional loops (required for benchmarks)
 - ❌ **`DO`...`UNTIL expr`** - Post-test conditional loops
 - ❌ **`BREAK`** - Exit from loops early
 - ❌ **`CONTINUE`** - Skip to next loop iteration
@@ -146,7 +238,7 @@
 - ❌ **`PWM(pin, value)`** - Analog output
 - ❌ **`DELAY(milliseconds)`** - Pause execution
 - ❌ **`PINMODE(pin, mode)`** - Configure pin as input/output
-- ❌ **`SECONDS()`** - Get system seconds since startup (returns WORD)
+- ❌ **`MILLIS()`** - Get milliseconds since startup (returns WORD, required for benchmarks)
 
 ---
 
@@ -166,8 +258,10 @@ console_command := NEW | LIST | RUN | CLEAR | VARS | FUNCS | MEM | BYE
 ### Variable and Constant Declarations
 ```
 variable_decl := type_keyword identifier [ "=" expression ]
+              | type_keyword identifier "[" number "]" [ "=" array_initializer ]
 constant_decl := CONST type_keyword identifier "=" expression
 type_keyword := INT | WORD | BIT | BYTE | STRING
+array_initializer := "{" expression [ "," expression ]* "}"
 ```
 
 ### Program Structure
@@ -179,6 +273,8 @@ statement := variable_decl
            | assignment
            | print_statement
            | if_statement
+           | for_statement
+           | while_statement
            | function_definition
            | main_program
            | return_statement
@@ -188,6 +284,15 @@ statement := variable_decl
 statement_line := statement [ ":" statement ]*
 
 assignment := identifier "=" expression
+            | identifier "[" expression "]" "=" expression
+
+for_statement := FOR identifier "=" expression TO expression [ STEP expression ]
+                { statement }*
+                NEXT identifier
+
+while_statement := WHILE expression
+                  { statement }*
+                  WEND
 
 print_statement := PRINT [ expression ]
 
@@ -236,10 +341,24 @@ unary_expr := [ "-" | NOT ] primary_expr
 
 primary_expr := number
               | identifier
+              | identifier "[" expression "]"
               | TRUE
               | FALSE
               | "(" expression ")"
               | function_call
+              | built_in_function
+
+built_in_function := ABS "(" expression ")"
+                  | RND "(" expression ")"
+                  | LEN "(" expression ")"
+                  | MILLIS "(" ")"
+                  | hardware_function
+
+hardware_function := READ "(" expression ")"
+                  | WRITE "(" expression "," expression ")"
+                  | PWM "(" expression "," expression ")"
+                  | DELAY "(" expression ")"
+                  | PINMODE "(" expression "," expression ")"
 
 function_call := identifier "(" [ argument_list ] ")"
 argument_list := expression [ "," expression ]*
@@ -268,8 +387,8 @@ comment := REM any_characters_to_end_of_line
 ```
 NUMBER := decimal_digits | hex_number
 IDENTIFIER := letter [ letter | digit ]*
-KEYWORD := predefined language keywords (PRINT, IF, THEN, CONST, etc.)
-OPERATOR := "+" | "-" | "*" | "/" | "=" | "<>" | "<" | ">" | "<=" | ">=" | "&" | "|" | "(" | ")" | MOD | AND | OR | NOT
+KEYWORD := predefined language keywords (PRINT, IF, THEN, CONST, FOR, WHILE, etc.)
+OPERATOR := "+" | "-" | "*" | "/" | "=" | "<>" | "<" | ">" | "<=" | ">=" | "&" | "|" | "(" | ")" | "[" | "]" | MOD | AND | OR | NOT | TO | STEP
 SEPARATOR := ":" | "," | ";"
 COMMENT := REM | "'"
 LITERAL := TRUE | FALSE
@@ -307,20 +426,48 @@ LITERAL := TRUE | FALSE
 8. Logical AND (BIT operands only)
 9. Logical OR (BIT operands only)
 
-### Comment Rules
-- `REM [comment]` - Traditional BASIC comment (consumes rest of line)
-- `' [comment]` - Modern shorthand comment (consumes rest of line)
-- Comments can appear on their own line or at end of statements
-- Comment text is preserved in token stream for REM/COMMENT processing
+## Console Command Display Order
 
-**Usage Examples:**
-```basic
-REM This is a full comment line
-PRINT "Hello"  REM This is an end-of-line comment
-' Short form comment
-INT count = 0  ' Initialize counter
-CONST INT MAX = 100  ' Define constant
+### VARS Command Output Format
+**Display Order**: Constants first (creation order), then variables (creation order)
 ```
+CONST INT SIZE = 100
+CONST BIT DEBUG = TRUE  
+INT counter = 5
+WORD buffer = 200
+```
+
+### FUNCS Command Output Format  
+**Display Order**: Functions in creation order, main program (__main) listed last
+```
+FUNC Fibo(n)
+FUNC Benchmark(name, arg, loops)
+FUNC __main()  // BEGIN/END block shown as special function
+```
+
+### LIST Command Output Format
+**Complete Program Listing**: VARS output + FUNCS output (maintains creation order)
+```
+CONST INT SIZE = 100
+CONST BIT DEBUG = TRUE  
+INT counter = 5
+WORD buffer = 200
+
+FUNC Fibo(n)
+    IF n <= 1 THEN RETURN n
+    RETURN Fibo(n-1) + Fibo(n-2)
+ENDFUNC
+
+FUNC Benchmark(name, arg, loops)
+    [function body...]
+ENDFUNC
+
+BEGIN
+    [main program body...]
+END
+```
+
+**Implementation Note**: LIST = VARS + FUNCS, maintaining the symbol table creation order for predictable program structure display.
 
 ### Statement Separator Rules
 
