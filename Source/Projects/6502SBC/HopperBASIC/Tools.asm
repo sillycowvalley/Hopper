@@ -1627,16 +1627,7 @@ unit Tools
     }
     
        
-    // Write character preserving carry flag
-    // Input: A = character to output
-    // Output: Character printed to serial
-    // Preserves: Everything
-    COut()
-    {
-        PHP  // Push processor status (including carry flag)
-        Serial.WriteChar();
-        PLP  // Pull processor status (restore carry flag)
-    }
+    
     
     // Output hex byte preserving carry flag  
     // Input: A = byte to output as hex
@@ -1878,5 +1869,16 @@ unit Tools
     }
     
 #endif
+
+    // Write character preserving carry flag
+    // Input: A = character to output
+    // Output: Character printed to serial
+    // Preserves: Everything
+    COut()
+    {
+        PHP  // Push processor status (including carry flag)
+        Serial.WriteChar();
+        PLP  // Pull processor status (restore carry flag)
+    }
 
 }

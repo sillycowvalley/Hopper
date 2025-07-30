@@ -129,211 +129,71 @@ unit ComparisonInstructions
         
         PLA
     }
-    
-    // Check if two types are compatible for ordering comparison operations
-    // Input: ZP.NEXTT = left operand type, ZP.TOPT = right operand type
-    //        ZP.NEXT = left value, ZP.TOP = right value (for WORD/INT range check)
-    // Output: C set if compatible, NC set if TYPE MISMATCH
-    //         ZP.NEXTT = result type (promoted type for the comparison)
-    // Modifies: ZP.NEXTT (promoted type), processor flags
-    // Note: Rejects BIT types, handles INT/WORD promotion with signed comparison logic
-    CheckOrderingComparisonCompatibility()
+
+    // Inputs: ZP.NEXTT and ZP.TOPT, A = 0 for not allowed at all, A = 1 for allowed if both are BIT
+    // Result: C for BIT types allowed and both are BIT, NC for not allowed
+    checkBITTypes()
     {
-        PHA
-        PHX
-        
         loop
         {
-            // Ordering comparisons reject BIT types
-            LDA ZP.NEXTT
-            CMP #BasicType.BIT
+            SEC // assume ok (in case not BIT types)
+            
+            CMP # 1 // not allowed at all
             if (Z)
             {
-                CLC  // Set NC - type mismatch
+                LDA ZP.NEXTT
+                CMP # BasicType.BIT
+                if (Z)
+                {
+                    CLC
+                    break;    
+                } 
+                LDA ZP.TOPT
+                CMP # BasicType.BIT
+                if (Z)
+                {   
+                    CLC
+                    break;
+                }
+                SEC
                 break;
             }
             
-            LDA ZP.TOPT
-            CMP #BasicType.BIT
+            CMP # 2 // allowed if both BIT
             if (Z)
             {
-                CLC  // Set NC - type mismatch
+                LDA ZP.NEXTT
+                CMP # BasicType.BIT
+                if (Z)
+                {
+                    LDA ZP.TOPT
+                    CMP # BasicType.BIT    
+                    if (NZ)
+                    {
+                        CLC   
+                        break;
+                    }
+                }
+                LDA ZP.TOPT
+                CMP # BasicType.BIT
+                if (Z)
+                {
+                    LDA ZP.NEXTT
+                    CMP # BasicType.BIT    
+                    if (NZ)
+                    {
+                        CLC   
+                        break;
+                    }
+                }
+                SEC
                 break;
             }
-            
-            // Same type check
-            LDA ZP.NEXTT
-            CMP ZP.TOPT
-            if (Z)
-            {
-                SEC  // Set C - compatible
-                break;
-            }
-            
-            // BYTE vs INT - always compatible, promotes to INT
-            LDA ZP.NEXTT
-            CMP #BasicType.BYTE
-            if (Z)
-            {
-                LDA ZP.TOPT
-                CMP #BasicType.INT
-                if (Z)
-                {
-                    LDA #BasicType.INT
-                    STA ZP.NEXTT
-                    SEC  // Set C - compatible
-                    break;
-                }
-            }
-            
-            // INT vs BYTE - always compatible, promotes to INT
-            LDA ZP.NEXTT
-            CMP #BasicType.INT
-            if (Z)
-            {
-                LDA ZP.TOPT
-                CMP #BasicType.BYTE
-                if (Z)
-                {
-                    SEC  // Set C - compatible
-                    break;
-                }
-            }
-            
-            // BYTE vs WORD - always compatible, promotes to WORD
-            LDA ZP.NEXTT
-            CMP #BasicType.BYTE
-            if (Z)
-            {
-                LDA ZP.TOPT
-                CMP #BasicType.WORD
-                if (Z)
-                {
-                    LDA #BasicType.WORD
-                    STA ZP.NEXTT
-                    SEC  // Set C - compatible
-                    break;
-                }
-            }
-            
-            // WORD vs BYTE - always compatible, promotes to WORD
-            LDA ZP.NEXTT
-            CMP #BasicType.WORD
-            if (Z)
-            {
-                LDA ZP.TOPT
-                CMP #BasicType.BYTE
-                if (Z)
-                {
-                    SEC  // Set C - compatible
-                    break;
-                }
-            }
-            
-            // WORD vs INT - comparison-specific promotion
-            LDA ZP.NEXTT
-            CMP #BasicType.WORD
-            if (Z)
-            {
-                LDA ZP.TOPT
-                CMP #BasicType.INT
-                if (Z)
-                {
-                    // Check INT sign to determine promotion direction
-                    BIT ZP.TOPH  // Check sign bit of INT value (ZP.TOP)
-                    if (MI)      // Negative INT
-                    {
-                        // INT < 0: check if WORD >= 32768
-                        LDA ZP.NEXTH  // Check WORD high byte
-                        CMP #0x80     // Compare with 32768 high byte
-                        if (C)        // WORD >= 32768
-                        {
-                            if (Z)    // Exactly 32768?
-                            {
-                                LDA ZP.NEXTL
-                                if (Z)  // Exactly 32768
-                                {
-                                    CLC  // Set NC - incompatible
-                                    break;
-                                }
-                            }
-                            // WORD > 32767
-                            CLC  // Set NC - incompatible
-                            break;
-                        }
-                        // WORD <= 32767: promote to INT for signed comparison
-                        LDA #BasicType.INT
-                        STA ZP.NEXTT
-                        SEC  // Set C - compatible
-                        break;
-                    }
-                    else
-                    {
-                        // INT >= 0: promote to WORD for unsigned comparison
-                        LDA #BasicType.WORD
-                        STA ZP.NEXTT
-                        SEC  // Set C - compatible
-                        break;
-                    }
-                }
-            }
-            
-            // INT vs WORD - comparison-specific promotion
-            LDA ZP.NEXTT
-            CMP #BasicType.INT
-            if (Z)
-            {
-                LDA ZP.TOPT
-                CMP #BasicType.WORD
-                if (Z)
-                {
-                    // Check INT sign to determine promotion direction
-                    BIT ZP.NEXTH  // Check sign bit of INT value (ZP.NEXT)
-                    if (MI)       // Negative INT
-                    {
-                        // INT < 0: check if WORD >= 32768
-                        LDA ZP.TOPH   // Check WORD high byte
-                        CMP #0x80     // Compare with 32768 high byte
-                        if (C)        // WORD >= 32768
-                        {
-                            if (Z)    // Exactly 32768?
-                            {
-                                LDA ZP.TOPL
-                                if (Z)  // Exactly 32768
-                                {
-                                    CLC  // Set NC - incompatible
-                                    break;
-                                }
-                            }
-                            // WORD > 32767
-                            CLC  // Set NC - incompatible
-                            break;
-                        }
-                        // WORD <= 32767: promote to INT for signed comparison
-                        LDA #BasicType.INT
-                        STA ZP.NEXTT
-                        SEC  // Set C - compatible
-                        break;
-                    }
-                    else
-                    {
-                        // INT >= 0: promote to WORD for unsigned comparison
-                        LDA #BasicType.WORD
-                        STA ZP.NEXTT
-                        SEC  // Set C - compatible
-                        break;
-                    }
-                }
-            }
-            
-            // No other compatibility rules matched
-            CLC  // Set NC - incompatible
+            BRK // bad argument : should be #1 or #2
             break;
-        }
-        
-        PLX
-        PLA
+        } // single exit
     }
+    
     
     // Equality comparison operation (pops two operands, pushes BIT result)
     // Input: Stack contains two operands (right operand on top)
@@ -348,39 +208,75 @@ unit ComparisonInstructions
         
         loop
         {
+            // Pop two operands
             Stacks.PopTopNext();
             
-            LDA #0  // Equality comparison operation
-            CheckTypeCompatibility();
+            LDX #0          // Assume false
             
-            if (NC)  // Type mismatch
+            LDA #2 // allowed
+            checkBITTypes();
+            if (NC)
             {
-                LDA #(Messages.TypeMismatch % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.TypeMismatch / 256)
-                STA ZP.LastErrorH
-                
-                Messages.StorePC(); // 6502 PC -> IDY
-                
                 break;
-            }
-            
-            // Types are compatible, do the comparison
-            LDX #0  // Assume not equal
-            LDA ZP.NEXTL
-            CMP ZP.TOPL
-            if (Z)
+            }            
+            LDA ZP.TOPT
+            CMP ZP.NEXTT
+            if (NZ)
             {
-                LDA ZP.NEXTH
-                CMP ZP.TOPH
+                // Never BIT vs INT|WORD|BYTE since checkBITTypes assured that either both or neither are BIT
+                LDA ZP.NEXTT
+                CMP #BasicType.INT
                 if (Z)
                 {
-                    LDX #1  // Equal
+                    BIT ZP.NEXTH
+                    if (MI)
+                    {
+                        CLC // NEXT < 0
+                        break;
+                    }
+                }
+                
+                LDA ZP.TOPT
+                CMP #BasicType.INT
+                if (Z)
+                {
+                    BIT ZP.TOPH
+                    if (MI)
+                    {
+                        CLC // TOP < 0
+                        break;
+                    }
                 }
             }
+            
+            // LSB
+            LDA ZP.TOPL
+            CMP ZP.NEXTL
+            if (Z)
+            {
+                // MSB
+                LDA ZP.TOPH
+                CMP ZP.NEXTH
+                if (Z)
+                {
+                    LDX #1 // true
+                }
+            }   
             Stacks.PushX();
             SEC
             break;
+        } // single exit
+        
+        if (NC)
+        {
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            
+            Messages.StorePC(); // 6502 PC -> IDY
+            
+            CLC
         }
         
         PLY
@@ -401,44 +297,142 @@ unit ComparisonInstructions
         
         loop
         {
+            // Pop two operands
             Stacks.PopTopNext();
             
-            LDA #0  // Equality comparison operation
-            CheckTypeCompatibility();
-            
-            if (NC)  // Type mismatch
+            LDA #2 // allowed
+            checkBITTypes();
+            if (NC)
             {
-                LDA #(Messages.TypeMismatch % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.TypeMismatch / 256)
-                STA ZP.LastErrorH
-                
-                Messages.StorePC(); // 6502 PC -> IDY
-                
                 break;
             }
             
-            // Types are compatible, do the comparison
-            LDX #1  // Assume not equal
-            LDA ZP.NEXTL
-            CMP ZP.TOPL
-            if (Z)
+            LDA ZP.TOPT
+            CMP ZP.NEXTT
+            if (NZ)
             {
-                LDA ZP.NEXTH
-                CMP ZP.TOPH
+                // Never BIT vs INT|WORD|BYTE since checkBITTypes assured that either both or neither are BIT
+                LDA ZP.NEXTT
+                CMP #BasicType.INT
                 if (Z)
                 {
-                    LDX #0  // Actually equal
+                    BIT ZP.NEXTH
+                    if (MI)
+                    {
+                        CLC // NEXT < 0
+                        break;
+                    }
+                }
+                
+                LDA ZP.TOPT
+                CMP #BasicType.INT
+                if (Z)
+                {
+                    BIT ZP.TOPH
+                    if (MI)
+                    {
+                        CLC // TOP < 0
+                        break;
+                    }
+                }
+            }
+            
+            LDX #1          // Assume true
+            
+            // LSB
+            LDA ZP.TOPL
+            CMP ZP.NEXTL
+            if (Z)
+            {
+                // MSB
+                LDA ZP.TOPH
+                CMP ZP.NEXTH
+                if (Z)
+                {
+                    LDX #0 // false (NEXT == TOP)
                 }
             }
             Stacks.PushX();
             SEC
             break;
+        } // single exit
+        
+        if (NC)
+        {
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            
+            Messages.StorePC(); // 6502 PC -> IDY
+            
+            CLC
         }
         
         PLY
         PLX
         PLA
+    }
+    
+    // Inputs: ZP.NEXTT and ZP.TOPT
+    // Result: X: 1 = unsigned compare, 2 = signed compare, 3 = type mismatch
+    checkINTTypes()
+    {
+        loop
+        {
+            LDX #1 // default to  unsigned compare
+            
+            LDA ZP.NEXTT
+            CMP #BasicType.INT
+            if (Z)
+            {
+                LDA ZP.TOPT
+                CMP #BasicType.INT
+                if (Z)
+                {
+                    // both INT
+                    LDX #2
+                    break;
+                }
+                
+                // INT vs WORD
+                BIT ZP.NEXTH
+                if (MI)
+                {
+                    // NEXT < 0 
+                    LDX #3 
+                    BIT ZP.TOPH
+                    if (MI)
+                    {
+                        // TOP > 32657
+                        LDX #3 
+                        break;
+                    }
+                    LDX #2 // signed
+                }
+            }
+            LDA ZP.TOPT
+            CMP #BasicType.INT
+            if (Z)
+            {
+                // WORD vs INT
+                BIT ZP.TOPH
+                if (MI)
+                {
+                    // TOP < 0 
+                    BIT ZP.NEXTH
+                    if (MI)
+                    {
+                        // NEXT > 32657
+                        LDX #3 
+                        break;
+                    }
+                    LDX #2 // signed
+                }
+            }
+            
+            break;
+        }
     }
     
     // Less-than comparison operation (pops two operands, pushes BIT result)
@@ -457,44 +451,64 @@ unit ComparisonInstructions
             // Pop two operands
             Stacks.PopTopNext();
             
-            CheckOrderingComparisonCompatibility();
-            
-            if (NC)  // Type mismatch
+            LDA #1 // not allowed
+            checkBITTypes();
+            if (NC)
             {
-                LDA #(Messages.TypeMismatch % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.TypeMismatch / 256)
-                STA ZP.LastErrorH
-                
-                Messages.StorePC(); // 6502 PC -> IDY
-                
                 break;
             }
-            
-            LDA ZP.NEXTT
-            CMP #BasicType.INT
-            if (Z)
+            checkINTTypes();
+            switch (X)
             {
-                // INT - signed comparison
-                doSignedCompare();
+                case 1:
+                {
+                    // 0 = NEXT < TOP
+                    // 1 = NEXT == TOP  
+                    // 2 = NEXT > TOP
+                    doUnsignedCompare();
+                    LDX #0     // Assume false
+                    LDA ZP.ACCL
+                    CMP #0
+                    if (Z)
+                    {
+                        LDX #1 // true
+                    }
+                }
+                case 2:
+                {
+                    // 0 = NEXT < TOP
+                    // 1 = NEXT == TOP  
+                    // 2 = NEXT > TOP
+                    doSignedCompare();
+                    LDX #0     // Assume false
+                    LDA ZP.ACCL
+                    CMP #0
+                    if (Z)
+                    {
+                        LDX #1 // true
+                    }
+                }
+                case 3:
+                {
+                    CLC  // type mismatch
+                    break;
+                }
             }
-            else
-            {
-                // WORD and BYTE - unsigned comparison
-                doUnsignedCompare();
-            }
-            
-            // Check if result is NEXT < TOP (ZP.ACC == 0)
-            LDX #0          // Assume false
-            LDA ZP.ACC
-            if (Z)          // Result was 0 (NEXT < TOP)
-            {
-                LDX #1      // True
-            }
-            
             Stacks.PushX();
             SEC
             break;
+        }
+        
+        if (NC)
+        {
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            
+            Messages.StorePC(); // 6502 PC -> IDY
+            
+            CLC
         }
         
         PLY
@@ -518,45 +532,64 @@ unit ComparisonInstructions
             // Pop two operands
             Stacks.PopTopNext();
             
-            CheckOrderingComparisonCompatibility();
-            
-            if (NC)  // Type mismatch
+            LDA #1 // not allowed
+            checkBITTypes();
+            if (NC)
             {
-                LDA #(Messages.TypeMismatch % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.TypeMismatch / 256)
-                STA ZP.LastErrorH
-                
-                Messages.StorePC(); // 6502 PC -> IDY
-                
                 break;
             }
-            
-            LDA ZP.NEXTT
-            CMP #BasicType.INT
-            if (Z)
+            checkINTTypes();
+            switch (X)
             {
-                // INT - signed comparison
-                doSignedCompare();
+                case 1:
+                {
+                    // 0 = NEXT < TOP
+                    // 1 = NEXT == TOP  
+                    // 2 = NEXT > TOP
+                    doUnsignedCompare();
+                    LDX #0     // Assume false
+                    LDA ZP.ACCL
+                    CMP #2
+                    if (Z)
+                    {
+                        LDX #1 // true
+                    }
+                }
+                case 2:
+                {
+                    // 0 = NEXT < TOP
+                    // 1 = NEXT == TOP  
+                    // 2 = NEXT > TOP
+                    doSignedCompare();
+                    LDX #0     // Assume false
+                    LDA ZP.ACCL
+                    CMP #2
+                    if (Z)
+                    {
+                        LDX #1 // true
+                    }
+                }
+                case 3:
+                {
+                    CLC  // type mismatch
+                    break;
+                }
             }
-            else
-            {
-                // WORD and BYTE - unsigned comparison
-                doUnsignedCompare();
-            }
-            
-            // Check if result is NEXT > TOP (ZP.ACC == 2)
-            LDX #0          // Assume false
-            LDA ZP.ACC
-            CMP #2
-            if (Z)          // Result was 2 (NEXT > TOP)
-            {
-                LDX #1      // True
-            }
-            
             Stacks.PushX();
             SEC
             break;
+        }
+        
+        if (NC)
+        {
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            
+            Messages.StorePC(); // 6502 PC -> IDY
+            
+            CLC
         }
         
         PLY
@@ -580,45 +613,64 @@ unit ComparisonInstructions
             // Pop two operands
             Stacks.PopTopNext();
             
-            CheckOrderingComparisonCompatibility();
-            
-            if (NC)  // Type mismatch
+            LDA #1 // not allowed
+            checkBITTypes();
+            if (NC)
             {
-                LDA #(Messages.TypeMismatch % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.TypeMismatch / 256)
-                STA ZP.LastErrorH
-                
-                Messages.StorePC(); // 6502 PC -> IDY
-                
                 break;
             }
-            
-            LDA ZP.NEXTT
-            CMP #BasicType.INT
-            if (Z)
+            checkINTTypes();
+            switch (X)
             {
-                // INT - signed comparison
-                doSignedCompare();
+                case 1:
+                {
+                    // 0 = NEXT < TOP
+                    // 1 = NEXT == TOP  
+                    // 2 = NEXT > TOP
+                    doUnsignedCompare();
+                    LDX #0     // Assume false
+                    LDA ZP.ACCL
+                    CMP #2
+                    if (NZ)
+                    {
+                        LDX #1 // true
+                    }
+                }
+                case 2:
+                {
+                    // 0 = NEXT < TOP
+                    // 1 = NEXT == TOP  
+                    // 2 = NEXT > TOP
+                    doSignedCompare();
+                    LDX #0     // Assume false
+                    LDA ZP.ACCL
+                    CMP #2
+                    if (NZ)
+                    {
+                        LDX #1 // true
+                    }
+                }
+                case 3:
+                {
+                    CLC  // type mismatch
+                    break;
+                }
             }
-            else
-            {
-                // WORD and BYTE - unsigned comparison
-                doUnsignedCompare();
-            }
-            
-            // Check if result is NEXT <= TOP (ZP.ACC == 0 OR ZP.ACC == 1)
-            LDX #0          // Assume false
-            LDA ZP.ACC
-            CMP #2
-            if (NZ)         // Result was not 2 (so NEXT <= TOP)
-            {
-                LDX #1      // True
-            }
-            
             Stacks.PushX();
             SEC
             break;
+        }
+        
+        if (NC)
+        {
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            
+            Messages.StorePC(); // 6502 PC -> IDY
+            
+            CLC
         }
         
         PLY
@@ -642,44 +694,65 @@ unit ComparisonInstructions
             // Pop two operands
             Stacks.PopTopNext();
             
-            CheckOrderingComparisonCompatibility();
-            
-            if (NC)  // Type mismatch
+            LDA #1 // not allowed
+            checkBITTypes();
+            if (NC)
             {
-                LDA #(Messages.TypeMismatch % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.TypeMismatch / 256)
-                STA ZP.LastErrorH
-                
-                Messages.StorePC(); // 6502 PC -> IDY
-                
                 break;
             }
-            
-            LDA ZP.NEXTT
-            CMP #BasicType.INT
-            if (Z)
+            checkINTTypes();
+            switch (X)
             {
-                // INT - signed comparison
-                doSignedCompare();
-            }
-            else
-            {
-                // WORD and BYTE - unsigned comparison
-                doUnsignedCompare();
-            }
-            
-            // Check if result is NEXT >= TOP (ZP.ACC == 1 OR ZP.ACC == 2)
-            LDX #0          // Assume false
-            LDA ZP.ACC
-            if (NZ)         // Result was not 0 (so NEXT >= TOP)
-            {
-                LDX #1      // True
+                case 1:
+                {
+                    // 0 = NEXT < TOP
+                    // 1 = NEXT == TOP  
+                    // 2 = NEXT > TOP
+                    doUnsignedCompare();
+                    LDX #0     // Assume false
+                    LDA ZP.ACCL
+                    CMP #0
+                    if (NZ)
+                    {
+                        LDX #1 // true
+                    }
+                }
+                case 2:
+                {
+                    // 0 = NEXT < TOP
+                    // 1 = NEXT == TOP  
+                    // 2 = NEXT > TOP
+                    doSignedCompare();
+                    LDX #0     // Assume false
+                    LDA ZP.ACCL
+                    CMP #0
+                    if (NZ)
+                    {
+                        LDX #1 // true
+                    }
+                }
+                case 3:
+                {
+                    CLC  // type mismatch
+                    break;
+                }
             }
             
             Stacks.PushX();
             SEC
             break;
+        }
+        
+        if (NC)
+        {
+            LDA #(Messages.TypeMismatch % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.TypeMismatch / 256)
+            STA ZP.LastErrorH
+            
+            Messages.StorePC(); // 6502 PC -> IDY
+            
+            CLC
         }
         
         PLY
