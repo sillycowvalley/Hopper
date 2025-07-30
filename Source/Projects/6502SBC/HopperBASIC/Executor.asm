@@ -530,18 +530,48 @@ unit Executor
     
     // === VARIABLE OPERATION HANDLERS (ONE BYTE OPERAND) ===
     
+    // Execute PUSHGLOBAL opcode - push global variable value
+    // Input: PC points to operand bytes (node address LSB, MSB)
+    // Output: Variable value pushed to stack, PC advanced by 2
+    // Modifies: A, X, Y, ZP.PC, ZP.IDX, ZP.TOP, ZP.TOPT, stack
     executePushGlobal()
     {
-        // TODO: Fetch global variable by index and push value
-        // Need to implement variable index lookup
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
-        CLC
-    }
-    
+        // Fetch node address (little-endian)
+        FetchOperandWord(); // Result in executorOperandL/H
+        Messages.CheckError();
+        if (NC) 
+        { 
+            CLC
+            return; 
+        }
+        
+        // Transfer node address to ZP.IDX
+        LDA executorOperandL
+        STA ZP.IDXL
+        LDA executorOperandH
+        STA ZP.IDXH
+        
+        // Get the variable's value and type
+        Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = type
+        Messages.CheckError();
+        if (NC) 
+        { 
+            CLC
+            return; 
+        }
+        
+        // Push value to stack with type
+        LDA ZP.TOPT
+        Stacks.PushTop(); // Push value and type to stack
+        Messages.CheckError();
+        if (NC) 
+        { 
+            CLC
+            return; 
+        }
+        
+        SEC // Success
+    }    
     executePushLocal()
     {
         // TODO: Fetch local variable by BP offset and push value

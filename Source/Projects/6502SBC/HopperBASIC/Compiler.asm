@@ -221,6 +221,59 @@ unit Compiler
         SEC // Success
     }
     
+    // Emit PUSHGLOBAL opcode for identifier
+    // Input: Current token is IDENTIFIER
+    // Output: PUSHGLOBAL opcode with node address emitted, C set if successful
+    // Modifies: A, X, Y, ZP.TOP, ZP.IDX, compilerOperand1/2
+    EmitPushGlobal()
+    {
+        PHA
+        PHX
+        PHY
+        
+        loop // Single exit
+        {
+            // Get the identifier name from the tokenizer
+            Tokenizer.GetTokenString(); // Result in ZP.TOP (name pointer)
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            // Find the variable/constant by name
+            STZ ZP.SymbolIteratorFilter  // Accept both variables and constants
+            Variables.Find();  // Input: ZP.TOP = name, Output: ZP.IDX = node address
+            if (NC)
+            {
+                // Variable not found
+                LDA #(Messages.UndefinedIdentifier % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.UndefinedIdentifier / 256)
+                STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
+                CLC
+                break;
+            }
+            
+            // Store node address as operands
+            LDA ZP.IDXL
+            STA compilerOperand1  // LSB
+            LDA ZP.IDXH
+            STA compilerOperand2  // MSB
+            
+            // Emit PUSHGLOBAL with word operand
+            LDA # OpcodeType.PUSHGLOBAL
+            STA compilerOpCode
+            EmitOpcodeWithWord();
+            break;
+        }
+        
+        PLY
+        PLX
+        PLA
+    }
+    
+    
     // Emit PUSHBIT opcode with immediate value
     // Input: A = bit value (0 or 1)
     // Output: PUSHBIT opcode emitted with value
@@ -292,38 +345,6 @@ unit Compiler
         LDA #(Messages.TypeMismatch % 256)
         STA ZP.LastErrorL
         LDA #(Messages.TypeMismatch / 256)
-        STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
-        CLC
-    }
-    
-    // Emit PUSHGLOBAL opcode to load variable
-    // Input: No parameters (uses current token position for variable name offset)
-    // Output: PUSHGLOBAL opcode emitted with token offset
-    // Modifies: compilerOpCode, compilerOperand1, ZP.ACC (via CalculateTokenOffset), buffer state
-    EmitPushGlobal()
-    {
-        // Calculate offset to current token (variable name)
-        CalculateTokenOffset();
-        if (NC) { return; }
-        
-        // Check if offset fits in single byte (most common case)
-        LDA ZP.ACCH
-        if (Z) // High byte is 0, use single-byte operand
-        {
-            LDA ZP.ACCL
-            STA compilerOperand1
-            LDA #OpcodeType.PUSHGLOBAL
-            STA compilerOpCode
-            EmitOpcodeWithByte();
-            return;
-        }
-        
-        // Offset requires word operand - this should be rare
-        // For now, generate error as we expect most programs to fit in 256 byte token buffer
-        LDA #(Messages.BufferOverflow % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.BufferOverflow / 256)
         STA ZP.LastErrorH
         Messages.StorePC(); // 6502 PC -> IDY
         CLC

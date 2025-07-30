@@ -19,7 +19,6 @@ program HopperBASIC
     uses "Console"
     uses "Tools"
     uses "Statement"
-    uses "Expression"
     
     // Initialize the BASIC system
     InitializeBASIC()

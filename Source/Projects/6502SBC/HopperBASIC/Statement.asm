@@ -4,10 +4,10 @@ unit Statement
     uses "/Source/Runtime/6502/Stacks"
     uses "Messages"
     uses "Tokenizer"
-    uses "Expression"
     uses "Tools"
     
     uses "Variables"
+    uses "Instructions"
     
     // Private Statement layer storage - BasicProcessBuffer2 (32 bytes at 0x09C0-0x09DF)
     const uint stmtNamePtr     = Address.BasicProcessBuffer2;      // 0x09C0: 2 bytes - identifier name pointer
@@ -38,6 +38,185 @@ unit Statement
             SEC // constant (stmtISConstant == 1)
         }
     }
+    
+    
+    // Typically called when ZP.CurrentToken is Tokens.IDENTIFIER, or a keyword
+    // Output: symbol or function in IDX, A = IdentifierType
+    resolveIdentifier()
+    {
+        PHX
+        PHY
+        
+        LDY ZP.ACCT
+        PHY
+        
+#ifdef DEBUG
+        PHA
+        LDA #'<'
+        Tools.COut();
+        LDA #'R'
+        Tools.COut();
+        LDA #':'
+        Tools.COut();
+        PLA
+#endif 
+        
+        loop // Single exit block for clean error handling
+        {
+            Tokenizer.IsKeyword();
+            if (C)
+            {
+#ifdef DEBUG
+                LDA #'K' Tools.COut();
+#endif
+                LDA # IdentifierType.Keyword
+                break; // success
+            }
+            
+            // Get the identifier name for lookup
+            Tokenizer.GetTokenString();  // Result in ZP.TOP
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            STZ ZP.SymbolIteratorFilter  // Accept any symbol type (variable or constant)
+            Variables.Find(); // ZP.IDX = symbol node address
+            if (C) // Symbol found
+            {
+                // Get symbol type and check
+                Variables.GetType();
+                LDA ZP.ACCT
+                AND #0xF0  // Extract symbol type (high nibble)
+                CMP # (SymbolType.VARIABLE << 4)
+                if (Z)
+                { 
+#ifdef DEBUG
+                    LDA # 'V' Tools.COut();
+#endif
+                    LDA # IdentifierType.Global
+                    break; // success
+                }
+                CMP # (SymbolType.CONSTANT << 4)
+                if (Z)
+                { 
+#ifdef DEBUG
+                    LDA # 'C' Tools.COut();
+#endif        
+                    LDA # IdentifierType.Constant
+                    break; // success
+                }
+                // what's this?
+                LDA #(Messages.InternalError % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.InternalError / 256)
+                STA ZP.LastErrorH
+                
+                Messages.StorePC(); // 6502 PC -> IDY
+                
+                CLC
+            }
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            // function by same name exists? name pointer in TOP
+            LDX #ZP.FunctionsList
+            Objects.Find();
+            if (C)  
+            {
+#ifdef DEBUG
+                LDA #'F' Tools.COut();
+#endif    
+                LDA # IdentifierType.Function
+                break; // success
+            }
+            Messages.CheckError();
+            if (NC) { break; }
+#ifdef DEBUG
+            LDA #'U' Tools.COut();
+#endif
+            LDA #(Messages.UndefinedIdentifier % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.UndefinedIdentifier / 256)
+            STA ZP.LastErrorH
+            
+            Messages.StorePC(); // 6502 PC -> IDY
+            
+            LDA # IdentifierType.Undefined
+            CLC  // undefined identifier
+            break;
+        } // end of single exit block
+#ifdef DEBUG
+        PHA
+        LDA #'R'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+        PLA
+#endif        
+        PLY
+        STY ZP.ACCT
+        
+        PLY
+        PLX
+    }
+    
+    // Evaluate expression using JIT compilation
+    // Input: ZP.CurrentToken = first token of expression
+    // Output: Expression result pushed onto value stack
+    //         ZP.CurrentToken = token after expression
+    // Munts: Stack, ZP.CurrentToken, all ZP variables used by parsing
+    // Error: Sets ZP.LastError if syntax error or type mismatch
+    EvaluateExpression()
+    {
+    #ifdef DEBUG
+        LDA #'<'
+        Tools.COut();
+        LDA #'E'
+        Tools.COut();
+    #endif
+        
+        // NEW JIT COMPILATION PATH:
+        // 1. Compile infix tokens ? postfix opcodes
+        Compiler.CompileExpression();
+        Messages.CheckError();
+        if (NC) 
+        { 
+    #ifdef DEBUG
+            LDA #'E'
+            Tools.COut();
+            LDA #'!'
+            Tools.COut();
+            LDA #'>'
+            Tools.COut();
+    #endif
+            return; 
+        }
+        
+        // 2. Execute opcodes ? result on stack
+        Executor.ExecuteOpcodes();
+        Messages.CheckError();
+        if (NC) 
+        { 
+    #ifdef DEBUG
+            LDA #'E'
+            Tools.COut();
+            LDA #'!'
+            Tools.COut();
+            LDA #'>'
+            Tools.COut();
+    #endif
+            return; 
+        }
+        
+        // Result is now on stack - identical to old behavior
+        
+    #ifdef DEBUG
+        LDA #'E'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+    #endif
+    }
+    
     
     // Execute a statement starting from current token position
     // Input: ZP.CurrentToken = first token of statement
@@ -146,7 +325,7 @@ unit Statement
         LDA #'P'
         Tools.COut();
 #endif
-        
+
         // Get next token (should be start of expression)
         Tokenizer.NextToken();
         
@@ -174,7 +353,7 @@ unit Statement
         }
         
         // Evaluate the expression
-        Expression.Evaluate();
+        EvaluateExpression();
         Messages.CheckError();
         if (NC) { return; }
         
@@ -218,7 +397,7 @@ unit Statement
         if (NC) { return; }
         
         // Evaluate the condition
-        Expression.Evaluate();
+        EvaluateExpression();
         Messages.CheckError();
         if (NC) { return; }
         
@@ -306,7 +485,7 @@ unit Statement
         else
         {
             // Evaluate return expression
-            Expression.Evaluate();
+            EvaluateExpression();
             Messages.CheckError();
             if (NC) { return; }
         }
@@ -370,7 +549,7 @@ unit Statement
         loop // Single exit block for clean error handling
         {
             // Use ResolveIdentifier to determine what we have
-            ResolveIdentifier(); // symbol or function in IDX, A = IdentifierType
+            resolveIdentifier(); // symbol or function in IDX, A = IdentifierType
             Messages.CheckError();
             if (NC) { break; } // Error - identifier not found or other error
             
@@ -413,7 +592,7 @@ unit Statement
                     if (NC) { break; }
                     
                     // Evaluate the expression on the right side
-                    Expression.Evaluate();
+                    EvaluateExpression();
                     Messages.CheckError();
                     if (NC) { break; }
                     
@@ -711,7 +890,7 @@ unit Statement
                         Messages.CheckError();
                         if (C)
                         {
-                            Expression.Evaluate();
+                            EvaluateExpression();
                             Messages.CheckError();
                         }
                         
