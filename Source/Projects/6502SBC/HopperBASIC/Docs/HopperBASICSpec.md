@@ -426,48 +426,20 @@ LITERAL := TRUE | FALSE
 8. Logical AND (BIT operands only)
 9. Logical OR (BIT operands only)
 
-## Console Command Display Order
+### Comment Rules
+- `REM [comment]` - Traditional BASIC comment (consumes rest of line)
+- `' [comment]` - Modern shorthand comment (consumes rest of line)
+- Comments can appear on their own line or at end of statements
+- Comment text is preserved in token stream for REM/COMMENT processing
 
-### VARS Command Output Format
-**Display Order**: Constants first (creation order), then variables (creation order)
+**Usage Examples:**
+```basic
+REM This is a full comment line
+PRINT "Hello"  REM This is an end-of-line comment
+' Short form comment
+INT count = 0  ' Initialize counter
+CONST INT MAX = 100  ' Define constant
 ```
-CONST INT SIZE = 100
-CONST BIT DEBUG = TRUE  
-INT counter = 5
-WORD buffer = 200
-```
-
-### FUNCS Command Output Format  
-**Display Order**: Functions in creation order, main program (__main) listed last
-```
-FUNC Fibo(n)
-FUNC Benchmark(name, arg, loops)
-FUNC __main()  // BEGIN/END block shown as special function
-```
-
-### LIST Command Output Format
-**Complete Program Listing**: VARS output + FUNCS output (maintains creation order)
-```
-CONST INT SIZE = 100
-CONST BIT DEBUG = TRUE  
-INT counter = 5
-WORD buffer = 200
-
-FUNC Fibo(n)
-    IF n <= 1 THEN RETURN n
-    RETURN Fibo(n-1) + Fibo(n-2)
-ENDFUNC
-
-FUNC Benchmark(name, arg, loops)
-    [function body...]
-ENDFUNC
-
-BEGIN
-    [main program body...]
-END
-```
-
-**Implementation Note**: LIST = VARS + FUNCS, maintaining the symbol table creation order for predictable program structure display.
 
 ### Statement Separator Rules
 
@@ -608,31 +580,61 @@ Offset 2+:  null-terminated argument name string
 
 ## Current Implementation Status
 
-### Phase 1 Progress: ~90% Complete
-
-**✅ Completed Components:**
+### ✅ Completed Foundation (Expression System & Variables)
 - **Symbol Table System**: Complete 4-layer architecture with comprehensive testing
 - **Tokenization**: Full lexical analysis with keyword recognition, hex numbers, comments
 - **Expression Evaluation**: Complete JIT compilation system with all operators
 - **Type System**: Comprehensive type checking and promotion rules
 - **Variable Management**: Declaration, assignment, constant enforcement
-- **Console Commands**: NEW, CLEAR, VARS, MEM, BYE, debug commands
+- **Basic Console Commands**: NEW, CLEAR, VARS, MEM, BYE, debug commands
 - **Statement Processing**: Multi-statement lines with colon separators
 - **IF/THEN Statements**: Basic conditional execution
 - **Assignment**: Variable assignment with type checking
 - **Error Handling**: Proper error messages and recovery
 
-**❌ Remaining for Phase 1:**
-- **Function System Integration**: FUNC/ENDFUNC definitions and RETURN statements
-- **Program Structure**: BEGIN/END main program blocks  
-- **Management Commands**: LIST, RUN, FUNCS, FORGET integration
+### 🎯 Current Milestone: Fibonacci Benchmark
 
-### Next Implementation Priority
-**Function System Integration** - The symbol table foundation supports functions completely, but the parser needs:
-1. **FUNC/ENDFUNC parsing** - Function definition blocks with parameter lists
-2. **RETURN statement handling** - Function exit with optional return values
-3. **Function call execution** - Parameter passing and local variable scoping
-4. **BEGIN/END blocks** - Main program structure (special case of functions)
+**Target**: Get this sample running successfully:
+```basic
+FUNC Fibo(n)
+    IF n <= 1 THEN RETURN n
+    RETURN Fibo(n-1) + Fibo(n-2)
+ENDFUNC
+
+FUNC Benchmark(name, arg, loops)
+    WORD start = MILLIS()
+    WORD result
+    FOR count = 0 TO loops-1
+        result = Fibo(arg)
+    elapsed = MILLIS() - start
+    PRINT name; "("; arg; ") = "; result; " in "; elapsed; " ms"
+ENDFUNC
+
+BEGIN
+    Benchmark("Fibo", 10, 1)
+END
+```
+
+**Phase 1 Dependencies** (in implementation order):
+1. **Function System** - FUNC/ENDFUNC definitions, parameters, local variables
+2. **RETURN statements** - Function exit with return values
+3. **Function calls** - Parameter passing and recursion
+4. **BEGIN/END blocks** - Main program structure
+5. **String literals in PRINT** - `PRINT "text"` without STRING variables
+6. **Multiple PRINT arguments** - `PRINT name; "("; arg; ")"`
+7. **FOR/NEXT loops** - Basic iteration support
+8. **MILLIS() function** - System timer access
+9. **RUN command** - Execute stored main program
+
+### 🎯 Future Milestone: Sieve Benchmark
+
+**Target**: Full Sieve of Eratosthenes with arrays and nested loops
+
+**Phase 2 Dependencies**:
+1. **Array declarations** - `BIT flags[8191]`
+2. **Array indexing** - `flags[i] = TRUE`
+3. **WHILE/WEND loops** - Conditional iteration
+4. **Nested loops** - FOR within WHILE constructs
 
 ### Testing Status
 All core systems have comprehensive test coverage:
@@ -666,7 +668,50 @@ All core systems have comprehensive test coverage:
 
 ---
 
-## Usage Examples
+## Console Command Display Order
+
+### VARS Command Output Format
+**Display Order**: Constants first (creation order), then variables (creation order)
+```
+CONST INT SIZE = 100
+CONST BIT DEBUG = TRUE  
+INT counter = 5
+WORD buffer = 200
+```
+
+### FUNCS Command Output Format  
+**Display Order**: Functions in creation order, main program (__main) listed last
+```
+FUNC Fibo(n)
+FUNC Benchmark(name, arg, loops)
+FUNC __main()  // BEGIN/END block shown as special function
+```
+
+### LIST Command Output Format
+**Complete Program Listing**: VARS output + FUNCS output (maintains creation order)
+```
+CONST INT SIZE = 100
+CONST BIT DEBUG = TRUE  
+INT counter = 5
+WORD buffer = 200
+
+FUNC Fibo(n)
+    IF n <= 1 THEN RETURN n
+    RETURN Fibo(n-1) + Fibo(n-2)
+ENDFUNC
+
+FUNC Benchmark(name, arg, loops)
+    [function body...]
+ENDFUNC
+
+BEGIN
+    [main program body...]
+END
+```
+
+**Implementation Note**: LIST = VARS + FUNCS, maintaining the symbol table creation order for predictable program structure display.
+
+---
 
 ### Basic Variable Operations
 ```basic
@@ -720,21 +765,16 @@ PRINT unsigned + 300   ' Prints 500
 
 ## Future Roadmap
 
-### Phase 2: Storage System
-- **Tokenized SAVE/LOAD**: Preserve programs in compact binary format
-- **EEPROM Integration**: Use I2C library for persistent storage
-- **File Management**: DIR, DEL commands for program organization
-
-### Phase 3: Extended Language Features
-- **Additional Types**: BYTE, STRING, single-dimensional arrays
-- **Control Structures**: FOR/NEXT, WHILE/WEND, DO/UNTIL loops
+### Phase 3: Enhanced Features (After Benchmarks)
+- **Storage System**: SAVE/LOAD with EEPROM integration
+- **Additional Types**: BYTE, STRING variables (beyond literals)
 - **Enhanced I/O**: INPUT statements, formatted PRINT output
-- **Built-in Functions**: Math, string manipulation, hardware I/O
+- **Built-in Functions**: Math (ABS, RND), string manipulation
+- **Advanced Control**: DO/UNTIL loops, BREAK/CONTINUE statements
 
-### Phase 4: Advanced Features (If ROM space permits)
-- **Program Structure**: Multi-line functions and main programs
-- **Local Variables**: Function-scoped variables with automatic cleanup
-- **Error Recovery**: Structured exception handling
-- **Interactive Debugging**: Breakpoints, single-step execution
+### Phase 4: Hardware Integration (If ROM space permits)
+- **Hardware I/O**: Pin control, PWM, timing functions
+- **Embedded Features**: Real-time capabilities for microcontroller applications
+- **Optimization**: Performance tuning for 6502 constraints
 
-The current implementation provides a solid foundation that can be extended incrementally while maintaining the core design principles of simplicity and direct execution.
+The current implementation provides a solid foundation focused on getting the benchmark samples running, which will validate the core interpreter functionality before adding advanced features.
