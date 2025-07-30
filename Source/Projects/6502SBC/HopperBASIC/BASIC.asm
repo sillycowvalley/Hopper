@@ -100,11 +100,15 @@ program HopperBASIC
             }
             
             // Show ready prompt after successful execution
-            LDA #(Messages.ReadyPrompt % 256)
-            STA ZP.ACCL
-            LDA #(Messages.ReadyPrompt / 256)
-            STA ZP.ACCH
-            Tools.PrintStringACC();
+            Statement.IsCaptureMode();
+            if (NC)
+            {
+                LDA #(Messages.ReadyPrompt % 256)
+                STA ZP.ACCL
+                LDA #(Messages.ReadyPrompt / 256)
+                STA ZP.ACCH
+                Tools.PrintStringACC();
+            }
         }
     }
     

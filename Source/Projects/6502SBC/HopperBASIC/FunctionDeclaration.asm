@@ -161,12 +161,23 @@ unit FunctionDeclaration
                 break;
             }
             
-            // Get next token - start of function body
+            // Get next token - start of function body or EOL
             Tokenizer.NextToken();
             Messages.CheckError();
             if (NC) { break; }
             
-            // Capture function body tokens from current position to ENDFUNC
+            // Check if this is an incomplete function (ends with EOL)
+            LDA ZP.CurrentToken
+            CMP #Tokens.EOL
+            if (Z)
+            {
+                // Incomplete function - set up for capture mode
+                // Function is already declared, Console will handle capture mode
+                SEC // Success - incomplete function ready for capture
+                break;
+            }
+            
+            // Complete function on same line - capture function body from current position to ENDFUNC
             captureFunctionBody();
             Messages.CheckError();
             if (NC) { break; }

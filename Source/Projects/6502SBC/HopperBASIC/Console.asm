@@ -139,29 +139,19 @@ unit Console
         // Process normally
         processTokens();
     }
-    
-    // Function capture mode line processing
-    processLineFunctionCapture()
-    {
-        // Check for tokenization errors
-        Messages.CheckError();
-        if (NC) { return; }
-        
-        // Check if this line contains ENDFUNC (completing the function)
-        detectFunctionEnd();
-        if (C)
-        {
-            // Complete function captured - process it
-            SetNormalMode();
-            processCompleteFunctionBuffer();
-        }
-        
-        SEC // Continue (either in capture mode or completed)
-    }
-    
+     
     // Detect if current line starts FUNC but doesn't end with ENDFUNC
     detectIncompleteFunction()
     {
+    #ifdef DEBUG
+        LDA #'<'
+        Tools.COut();
+        LDA #'D'
+        Tools.COut();
+        LDA #'I'
+        Tools.COut();
+    #endif
+
         // Save current position
         LDA ZP.TokenizerPosL
         PHA
@@ -174,6 +164,7 @@ unit Console
         
         // Get first token
         Tokenizer.NextToken();
+        
         LDA ZP.CurrentToken
         CMP #Tokens.FUNC
         if (NZ)
@@ -192,7 +183,6 @@ unit Console
         {
             Tokenizer.NextToken();
             LDA ZP.CurrentToken
-            
             CMP #Tokens.EOL
             if (Z) 
             { 
@@ -201,7 +191,7 @@ unit Console
                 STA ZP.TokenizerPosH
                 PLA
                 STA ZP.TokenizerPosL
-                CLC // End of line without ENDFUNC - incomplete
+                SEC // incomplete function found !!
                 return; 
             }
             
@@ -213,62 +203,200 @@ unit Console
                 STA ZP.TokenizerPosH
                 PLA
                 STA ZP.TokenizerPosL
-                SEC // Found ENDFUNC - complete function
+                CLC // Found ENDFUNC - complete function
                 return;
             }
-        }
+        } // loop
+        
+    #ifdef DEBUG
+        LDA #'D'
+        Tools.COut();
+        LDA #'I'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+    #endif
     }
-    
-    // Detect if the newly appended line contains ENDFUNC
+      
+    // Process complete function buffer
+    processCompleteFunctionBuffer()
+    {
+    #ifdef DEBUG
+        LDA #'<'
+        Tools.COut();
+        LDA #'P'
+        Tools.COut();
+        LDA #'C'
+        Tools.COut();
+        LDA #'F'
+        Tools.COut();
+        
+        // Show buffer state before processing
+        LDA #'B'
+        Tools.COut();
+        LDA ZP.TokenBufferLengthL
+        Tools.HOut();
+        LDA ZP.TokenBufferLengthH
+        Tools.HOut();
+        
+        LDA #'P'
+        Tools.COut();
+        LDA ZP.TokenizerPosL
+        Tools.HOut();
+        LDA ZP.TokenizerPosH
+        Tools.HOut();
+    #endif
+
+        // Reset to start of function and process normally
+        STZ ZP.TokenizerPosL
+        STZ ZP.TokenizerPosH
+        
+    #ifdef DEBUG
+        LDA #'R' // Reset complete
+        Tools.COut();
+    #endif
+        
+        processTokens();
+        
+    #ifdef DEBUG
+        LDA #'P'
+        Tools.COut();
+        LDA #'C'
+        Tools.COut();
+        LDA #'F'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+    #endif
+    }
+
+    // Function capture mode line processing
+    processLineFunctionCapture()
+    {
+    #ifdef DEBUG
+        LDA #'<'
+        Tools.COut();
+        LDA #'L'
+        Tools.COut();
+        LDA #'F'
+        Tools.COut();
+        LDA #'C'
+        Tools.COut();
+    #endif
+
+        // Check for tokenization errors
+        Messages.CheckError();
+        if (NC) { return; }
+        
+        // Check if this line contains ENDFUNC (completing the function)
+        detectFunctionEnd();
+        
+    #ifdef DEBUG
+        PHA // Save A
+        PHP // Save flags
+        if (C)
+        {
+            LDA #'E' // ENDFUNC detected
+            Tools.COut();
+        }
+        else
+        {
+            LDA #'N' // No ENDFUNC
+            Tools.COut();
+        }
+        PLP // Restore flags
+        PLA // Restore A
+    #endif
+        
+        if (C)
+        {
+            // Complete function captured - process it
+    #ifdef DEBUG
+            LDA #'S' // Setting normal mode
+            Tools.COut();
+    #endif
+            SetNormalMode();
+            
+    #ifdef DEBUG
+            LDA #'C' // Calling processCompleteFunctionBuffer
+            Tools.COut();
+    #endif
+            processCompleteFunctionBuffer();
+        }
+        
+    #ifdef DEBUG
+        LDA #'L'
+        Tools.COut();
+        LDA #'F'
+        Tools.COut();
+        LDA #'C'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+    #endif
+        
+        SEC // Continue (either in capture mode or completed)
+    }
+
     detectFunctionEnd()
     {
+    #ifdef DEBUG
+        LDA #'<'
+        Tools.COut();
+        LDA #'D'
+        Tools.COut();
+        LDA #'F'
+        Tools.COut();
+        LDA #'E'
+        Tools.COut();
+    #endif
+
         // Save current position
         LDA ZP.TokenizerPosL
         PHA
         LDA ZP.TokenizerPosH
         PHA
         
-        // Scan from start of buffer looking for ENDFUNC in this session
-        STZ ZP.TokenizerPosL
-        STZ ZP.TokenizerPosH
-        
-        loop
+        loop // Single exit pattern
         {
-            Tokenizer.CompareTokenizerPosToLength();
-            if (C) { break; } // Reached end
+            // Scan from start of buffer looking for ENDFUNC
+            STZ ZP.TokenizerPosL
+            STZ ZP.TokenizerPosH
             
-            Tokenizer.NextToken();
-            LDA ZP.CurrentToken
-            CMP #Tokens.ENDFUNC
-            if (Z)
+            loop
             {
-                // Restore position
-                PLA
-                STA ZP.TokenizerPosH
-                PLA
-                STA ZP.TokenizerPosL
-                SEC // Found ENDFUNC
-                return;
+                Tokenizer.CompareTokenizerPosToLength();
+                if (C) { CLC break; } // Reached end - not found
+                
+                Tokenizer.NextToken();
+                LDA ZP.CurrentToken
+                CMP #Tokens.ENDFUNC
+                if (Z)
+                {
+                    SEC // Found ENDFUNC
+                    break;
+                }
             }
+            break; // Exit outer loop
         }
         
-        // Restore position
+        // Restore position (always executed)
         PLA
         STA ZP.TokenizerPosH
         PLA
         STA ZP.TokenizerPosL
-        CLC // No ENDFUNC found
+        
+    #ifdef DEBUG
+        LDA #'D'
+        Tools.COut();
+        LDA #'F'
+        Tools.COut();
+        LDA #'E'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+    #endif
     }
-    
-    // Process complete function buffer
-    processCompleteFunctionBuffer()
-    {
-        // Reset to start of function and process normally
-        STZ ZP.TokenizerPosL
-        STZ ZP.TokenizerPosH
-        processTokens();
-    }
-    
     // Process the tokens in BasicTokenizerBuffer  
     // Returns C to continue, NC to exit
     processTokens()
