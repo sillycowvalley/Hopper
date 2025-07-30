@@ -65,14 +65,11 @@ unit Instructions
     }
     
     
-    
-            
-    
     // Check if two types are compatible for operations
     // Input: ZP.NEXTT = left operand type, ZP.TOPT = right operand type
     //        ZP.NEXT = left value, ZP.TOP = right value (for WORD/INT range check)
     //        ZP.ACCT = operation mode:
-    //          0 = Equality comparison (=, <>) - BIT types allowed, result is BIT
+    //          0 = Equality comparison (=, <>) - BIT types only allowed with other BIT types, result is BIT
     //          1 = Arithmetic (+, -, *, /, %) - BIT types rejected, result is promoted numeric type
     //          2 = Bitwise (&, |) - BIT types rejected, result is promoted numeric type
     //          4 = Logical (AND, OR) - Only BIT types allowed, result is BIT

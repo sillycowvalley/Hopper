@@ -6,12 +6,9 @@ unit ComparisonInstructions
     uses "Messages"
     uses "BasicTypes"
     
-    // Private helper: Signed 16-bit comparison of NEXT vs TOP
+    // Signed 16-bit comparison of NEXT vs TOP
     // Input: ZP.NEXT, ZP.TOP (16-bit signed values)
-    // Output: ZP.ACC = comparison result:
-    //         0 = NEXT < TOP
-    //         1 = NEXT == TOP  
-    //         2 = NEXT > TOP
+    // Output: ZP.ACC = comparison result (0=NEXT<TOP, 1=NEXT==TOP, 2=NEXT>TOP)
     // Modifies: ZP.ACC, processor flags
     doSignedCompare()
     {
@@ -78,12 +75,9 @@ unit ComparisonInstructions
         PLA
     }
     
-    // Private helper: Unsigned 16-bit comparison of NEXT vs TOP
+    // Unsigned 16-bit comparison of NEXT vs TOP
     // Input: ZP.NEXT, ZP.TOP (16-bit unsigned values)
-    // Output: ZP.ACC = comparison result:
-    //         0 = NEXT < TOP
-    //         1 = NEXT == TOP  
-    //         2 = NEXT > TOP
+    // Output: ZP.ACC = comparison result (0=NEXT<TOP, 1=NEXT==TOP, 2=NEXT>TOP)
     // Modifies: ZP.ACC, processor flags
     doUnsignedCompare()
     {
@@ -130,8 +124,9 @@ unit ComparisonInstructions
         PLA
     }
 
-    // Inputs: ZP.NEXTT and ZP.TOPT, A = 0 for not allowed at all, A = 1 for allowed if both are BIT
-    // Result: C for BIT types allowed and both are BIT, NC for not allowed
+    // Check if BIT types are allowed for comparison operation
+    // Input: ZP.NEXTT and ZP.TOPT (operand types), A = permission level (1=not allowed, 2=allowed if both BIT)
+    // Output: C set if allowed, C clear if not allowed
     checkBITTypes()
     {
         loop
@@ -194,12 +189,10 @@ unit ComparisonInstructions
         } // single exit
     }
     
-    
     // Equality comparison operation (pops two operands, pushes BIT result)
     // Input: Stack contains two operands (right operand on top)
-    // Output: BIT value (0 or 1) pushed to stack
-    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
-    //          Error state (ZP.LastError if type mismatch occurs)
+    // Output: BIT value (0 or 1) pushed to stack, C set if successful
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory), ZP.LastError on type mismatch
     Equal()
     {
         PHA
@@ -286,9 +279,8 @@ unit ComparisonInstructions
     
     // Not-equal comparison operation (pops two operands, pushes BIT result)
     // Input: Stack contains two operands (right operand on top)
-    // Output: BIT value (0 or 1) pushed to stack
-    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
-    //          Error state (ZP.LastError if type mismatch occurs)
+    // Output: BIT value (0 or 1) pushed to stack, C set if successful
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory), ZP.LastError on type mismatch
     NotEqual()
     {
         PHA
@@ -374,8 +366,9 @@ unit ComparisonInstructions
         PLA
     }
     
-    // Inputs: ZP.NEXTT and ZP.TOPT
-    // Result: X: 1 = unsigned compare, 2 = signed compare, 3 = 'signs' comparison, 4 = type mismatch, 
+    // Check types for integer comparison operations
+    // Input: ZP.NEXTT and ZP.TOPT (operand types)
+    // Output: X = comparison strategy (1=unsigned, 2=signed, 3=signs comparison), Y = result for signs comparison
     checkINTTypes()
     {
         loop
@@ -444,9 +437,8 @@ unit ComparisonInstructions
     
     // Less-than comparison operation (pops two operands, pushes BIT result)
     // Input: Stack contains two operands (right operand on top)
-    // Output: BIT value (0 or 1) pushed to stack representing (left < right)
-    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
-    //          Error state (ZP.LastError if type mismatch occurs)
+    // Output: BIT value (0 or 1) pushed to stack representing (left < right), C set if successful
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory), ZP.LastError on type mismatch
     LessThan()
     {
         PHA
@@ -537,9 +529,8 @@ unit ComparisonInstructions
     
     // Greater-than comparison operation (pops two operands, pushes BIT result)
     // Input: Stack contains two operands (right operand on top)
-    // Output: BIT value (0 or 1) pushed to stack representing (left > right)
-    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
-    //          Error state (ZP.LastError if type mismatch occurs)
+    // Output: BIT value (0 or 1) pushed to stack representing (left > right), C set if successful
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory), ZP.LastError on type mismatch
     GreaterThan()
     {
         PHA
@@ -630,9 +621,8 @@ unit ComparisonInstructions
     
     // Less-than-or-equal comparison operation (pops two operands, pushes BIT result)
     // Input: Stack contains two operands (right operand on top)
-    // Output: BIT value (0 or 1) pushed to stack representing (left <= right)
-    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
-    //          Error state (ZP.LastError if type mismatch occurs)
+    // Output: BIT value (0 or 1) pushed to stack representing (left <= right), C set if successful
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory), ZP.LastError on type mismatch
     LessEqual()
     {
         PHA
@@ -723,9 +713,8 @@ unit ComparisonInstructions
     
     // Greater-than-or-equal comparison operation (pops two operands, pushes BIT result)
     // Input: Stack contains two operands (right operand on top)
-    // Output: BIT value (0 or 1) pushed to stack representing (left >= right)
-    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory)
-    //          Error state (ZP.LastError if type mismatch occurs)
+    // Output: BIT value (0 or 1) pushed to stack representing (left >= right), C set if successful
+    // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory), ZP.LastError on type mismatch
     GreaterEqual()
     {
         PHA
