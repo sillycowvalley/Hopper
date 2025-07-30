@@ -1,4 +1,4 @@
-# Hopper BASIC Specification v2.4
+# Hopper BASIC Specification v2.5
 
 ## Project Objectives
 
@@ -12,7 +12,7 @@
 
 ---
 
-## Phase 1: Core Functionality (Implementation Status)
+## Phase 1: Core Functionality (Current Implementation Status)
 
 ### Console Commands
 - ✅ **`NEW`** - Clear everything (program, variables, functions)
@@ -25,15 +25,20 @@
 - ✅ **`MEM`** - Show available memory
 - ✅ **`BYE`** - Exit interpreter
 
+### Debug Commands (DEBUG build only)
+- ✅ **`HEAP`** - Show heap memory layout
+- ✅ **`BUFFERS`** - Show tokenizer and opcode buffer contents
+- ✅ **`DUMP [page]`** - Hex dump of memory page (default: page 0)
+
 ### Variable Declaration Commands
-- ✅ **`INT name [= value]`** - Create signed integer variable (-32768 to 32767) **(IMPLEMENTED)**
-- ✅ **`WORD name [= value]`** - Create unsigned integer variable (0 to 65535) **(IMPLEMENTED)**
-- ✅ **`BIT name [= value]`** - Create boolean variable (0 or 1) **(IMPLEMENTED)**
+- ✅ **`INT name [= value]`** - Create signed integer variable (-32768 to 32767)
+- ✅ **`WORD name [= value]`** - Create unsigned integer variable (0 to 65535)
+- ✅ **`BIT name [= value]`** - Create boolean variable (0 or 1)
 
 ### Constant Declaration Commands
-- ✅ **`CONST INT name = value`** - Define immutable signed integer constant **(IMPLEMENTED)**
-- ✅ **`CONST WORD name = value`** - Define immutable unsigned integer constant **(IMPLEMENTED)**
-- ✅ **`CONST BIT name = value`** - Define immutable boolean constant **(IMPLEMENTED)**
+- ✅ **`CONST INT name = value`** - Define immutable signed integer constant
+- ✅ **`CONST WORD name = value`** - Define immutable unsigned integer constant
+- ✅ **`CONST BIT name = value`** - Define immutable boolean constant
 
 ### Definition Commands
 - ❌ **`FUNC name(params)`** - Start function definition (ends with `ENDFUNC`)
@@ -46,25 +51,23 @@
 - ✅ **`PRINT`** - Output empty line (no arguments)
 
 #### Statement Separators
-- ✅ **Colon (`:`) separator** - Multiple statements on one line **(IMPLEMENTED)**
+- ✅ **Colon (`:`) separator** - Multiple statements on one line
   - **Usage**: `PRINT 10 : PRINT 20` executes both print statements
   - **Classic BASIC compatibility** - Standard behavior for multiple commands
   - **Tokenizer support** - Colon recognized as statement boundary token
   - **Parser integration** - Line processor splits on colons and executes each statement
 
 #### Comments
-- ✅ **`REM [comment]`** - Full-form comment (traditional BASIC) **(IMPLEMENTED)**
-- ✅ **`' [comment]`** - Short-form comment (modern convenience) **(IMPLEMENTED)**
+- ✅ **`REM [comment]`** - Full-form comment (traditional BASIC)
+- ✅ **`' [comment]`** - Short-form comment (modern convenience)
 
 #### Expressions & Operators (Complete Implementation)
-- ✅ **Arithmetic**: `+ -` (addition, subtraction)
-- ✅ **Multiplicative**: `* / MOD` (multiplication, division, modulo)
+- ✅ **Arithmetic**: `+ - * / MOD` (basic math operations)
 - ✅ **Bitwise**: `& |` (bitwise AND, bitwise OR)
 - ✅ **Unary**: `-` (negation), `NOT` (logical negation)
-- ✅ **Comparison**: `= <>` (equal, not equal - returns BIT type)
-- ✅ **Ordering**: `< > <= >=` (less than, greater than, less/greater equal)
+- ✅ **Comparison**: `= <> < > <= >=` (all comparison operators - returns BIT type)
 - ✅ **Logical**: `AND OR NOT` (BIT operands only)
-- ✅ **Parentheses**: `(` `)` for precedence
+- ✅ **Parentheses**: `( )` for precedence grouping
 
 #### Type System
 - ✅ **INT**: 16-bit signed integer (-32768 to 32767)
@@ -73,31 +76,21 @@
 - ✅ **Type promotion**: Automatic promotion between compatible types
 - ✅ **Type safety**: Proper type checking with meaningful error messages
 - ✅ **Type compatibility checking**: Comprehensive validation for all operations
-- ✅ **Mixed-type operations**: BYTE↔INT, BYTE↔WORD, INT↔WORD (when non-negative)
+- ✅ **Mixed-type operations**: INT↔WORD (when safe), with runtime validation
 
 #### Control Flow
+- ✅ **`IF expr THEN statement`** - Basic conditional execution
 - ❌ **`RETURN [expr]`** - Return from function (stub implemented)
 - ❌ **`END`** - End main program (stub implemented)
 
-#### Core Infrastructure
-- ✅ **Tokenizer**: Complete lexical analysis with inline literals
-- ✅ **Expression evaluator**: Full recursive descent parser with proper precedence
-- ✅ **Type system**: Runtime type checking and promotion
-- ✅ **Error handling**: Comprehensive error messages and reporting
-- ✅ **Memory management**: Integration with Hopper VM memory system
-- ✅ **Interactive REPL**: Command processing and execution loop
-- ✅ **Number parsing**: 16-bit integers with overflow detection and type determination
-- ✅ **Keyword recognition**: Complete keyword table with uppercase conversion
-- ✅ **Statement framework**: Extensible statement execution with proper error propagation
-- ✅ **Symbol table foundation**: Complete low-level table operations
-- ✅ **Objects layer**: Symbol management with type checking and memory management
-- ✅ **Variables layer**: Variable and constant declaration/manipulation
-- ✅ **Functions layer**: Function declaration and management infrastructure
-- ✅ **Arguments layer**: Function parameter handling
-- ✅ **Comprehensive testing**: Complete test suites for all symbol table layers
+#### Assignment
+- ✅ **`var = expr`** - Assignment to existing variables with type checking
 
-### Assignment
-- ✅ **`var = expr`** - Assignment to existing variables **(IMPLEMENTED)**
+#### JIT Compilation System
+- ✅ **Expression compilation** - Infix expressions compiled to postfix opcodes
+- ✅ **Stack-based execution** - Efficient opcode execution using value stack
+- ✅ **Buffer management** - 512-byte opcode buffer with bounds checking
+- ✅ **Opcode dispatch** - Fast execution with comprehensive instruction set
 
 ---
 
@@ -124,12 +117,6 @@
 - ❌ **`STRING name [= "value"]`** - Text handling with string operations (maximum length of 255 characters)
 - ❌ **Arrays**: `INT numbers[10]` - single-dimensional arrays of integral types (no string arrays)
 
-### Constants
-- ✅ **`CONST INT name = value`** - Define immutable signed integer constants **(IMPLEMENTED)**
-- ✅ **`CONST WORD name = value`** - Define immutable unsigned integer constants **(IMPLEMENTED)**
-- ✅ **`CONST BIT name = value`** - Define immutable boolean constants **(IMPLEMENTED)**
-- ❌ **`CONST BYTE name = value`** - Define immutable byte constants
-
 ### Enhanced I/O
 - ❌ **`INPUT var`** - Read value from serial console into variable
 - ❌ **`INPUT "prompt",var`** - Read with prompt
@@ -140,7 +127,6 @@
 - ❌ **`PRINT expr,`** - Output value followed by space, no newline
 
 ### Extended Control Flow
-- ❌ **`IF expr THEN statement`** - Conditional execution (proper BIT type checking needed)
 - ❌ **`FOR var = start TO end [STEP increment]`** - Counted loops
 - ❌ **`NEXT var`** - End of FOR loop
 - ❌ **`WHILE expr`...`WEND`** - Conditional loops
@@ -164,95 +150,12 @@
 
 ---
 
-## Technical Implementation Status
-
-### Completed Infrastructure
-- ✅ **Tokenizer System**: 512-byte token buffer with inline literal storage
-- ✅ **Expression Parser**: Recursive descent with proper operator precedence
-- ✅ **Type System**: Runtime type checking, promotion, and error reporting
-- ✅ **Memory Integration**: Working with Hopper VM memory management
-- ✅ **Error Handling**: Comprehensive error messages and reporting
-- ✅ **Interactive Console**: REPL with command processing
-- ✅ **Arithmetic Operations**: Complete set including multiplication, division, modulo with signed/unsigned handling
-- ✅ **Comparison Operations**: All six comparison operators with proper type handling
-- ✅ **Bitwise Operations**: AND (&), OR (|) with all numeric types
-- ✅ **Logical Operations**: AND, OR, NOT with BIT type requirements only
-- ✅ **Symbol Table Foundation**: Complete 4-layer symbol table system
-  - ✅ **Table Layer**: Generic linked list operations with memory management
-  - ✅ **Objects Layer**: Symbol node management with type/value/name storage
-  - ✅ **Variables Layer**: Variable and constant declaration, find, and manipulation
-  - ✅ **Functions Layer**: Function declaration and management infrastructure
-  - ✅ **Arguments Layer**: Function parameter handling
-- ✅ **Number Tokenization**: Inline storage with overflow detection and automatic type assignment
-- ✅ **Keyword Recognition**: Complete keyword table with uppercase conversion
-- ✅ **Statement Framework**: Extensible statement execution with proper error propagation
-- ✅ **Interactive Loop**: Full REPL with startup banner and graceful error handling
-- ✅ **Comprehensive Testing**: Complete test suites validating all symbol table layers
-- ✅ **Type Compatibility System**: Full type checking with promotion rules for all operations
-- ✅ **Instruction Set**: Complete arithmetic, bitwise, logical, and comparison operations with type safety
-- ✅ **Colon Separator Support**: Multi-statement line processing with proper error handling
-- ✅ **Comment Support**: REM and single-quote comments with inline text storage
-- ✅ **Variable Declaration Framework**: Parser support for INT, WORD, BIT with optional initialization
-- ✅ **Constant Declaration System**: CONST keyword support with constant expression validation and immutability
-- ✅ **Assignment Statement System**: Complete `var = expr` processing with type checking and immutability enforcement
-
-### Recently Completed (Since v2.3)
-- ✅ **Constant Declaration System**: executeConstantDeclaration() fully implemented with constant expression validation
-- ✅ **Assignment Statement System**: executeIdentifier() fully implemented with complete `var = expr` processing
-- ✅ **ResolveIdentifier System**: Complete identifier resolution for variables, constants, keywords, and functions
-- ✅ **Type Compatibility Integration**: Assignment statements use full type checking and promotion system
-- ✅ **Immutability Enforcement**: Comprehensive protection preventing assignment to constants
-- ✅ **Console Commands Implementation**: NEW, CLEAR, VARS, MEM, BYE fully implemented
-- ✅ **Variable Display System**: VARS command shows variable types, names, and current values
-- ✅ **Symbol Table Integration**: Variables.Declare() and Variables.Find() connected to parser
-- ✅ **Constant Expression Validation**: Proper validation of constant expressions during CONST declaration
-- ✅ **Constant Evaluation in Expressions**: Constants can be used as operands in expressions
-- ✅ **Symbol Table Iteration**: Variables.IterateAll(), IterateVariables(), IterateConstants() working
-
-### Required Additions for Complete Phase 1
-- ❌ **Function System Integration**: FUNC/ENDFUNC definitions and RETURN statements in parser
-- ❌ **Program Structure**: BEGIN/END main program blocks (special case of FUNC)
-- ❌ **Management Commands**: LIST, RUN, FUNCS, FORGET integration with symbol tables
-
-### Memory Layout (Preserved from Hopper VM)
-- **$0200-$02FF**: Serial input buffer (256 bytes)
-- **$0300-$03FF**: Call stack LSB (256 bytes)
-- **$0400-$04FF**: Call stack MSB (256 bytes)  
-- **$0500-$05FF**: Type stack (256 bytes)
-- **$0600-$06FF**: Value stack LSB (256 bytes)
-- **$0700-$07FF**: Value stack MSB (256 bytes)
-- **$0800-$08FF**: I2C buffer (256 bytes, used for EEPROM)
-- **$0900-$097F**: Basic input buffer (128 bytes)
-- **$0980-$09BF**: Process buffer 1 (64 bytes)
-- **$09C0-$09DF**: Process buffer 2 (32 bytes)
-- **$09E0-$09FF**: Process buffer 3 (32 bytes)
-- **$0A00-$0BFF**: Tokenizer buffer (512 bytes)
-- **$0C00+**: Dynamic heap for BASIC programs/variables
-
-### Zero Page Usage
-- **Standard Hopper VM allocations**: SP, BP, PC, IDX, IDY, TOP, NEXT, ACC (0x00-0x1F)
-- **Workspace Variables**: W0-W7, TICK0-TICK3, TARGET0-TARGET3 (0x20-0x2F)
-- **BASIC-specific (0x30-0x39)**: 10 bytes allocated
-  - **Console Input**: BasicInputLength (0x30)
-  - **Tokenizer State**: TokenBufferLength (16-bit: 0x31-0x32), TokenizerPos (16-bit: 0x33-0x34)
-  - **Error Handling**: LastError (16-bit: 0x35-0x36)
-  - **Token Cache**: CurrentToken (0x37), TokenLiteralPos (16-bit: 0x38-0x39)
-- **Available Primary (0x3A-0x4F)**: 22 bytes reserved for future BASIC features
-- **Memory Manager Workspace (0x50-0x5F)**: M0-M15 used by Memory.Allocate/Free
-- **Function Workspace (0x60-0x6F)**: F0-F15 used by various system functions
-- **Symbol Table Range (0x70-0x7F)**: 16 bytes allocated for Objects system
-  - **Table Head Pointers**: VariablesList (16-bit: 0x70-0x71), FunctionsList (16-bit: 0x72-0x73)
-  - **Symbol Node Working Storage**: SymbolType (0x74), SymbolValue (16-bit: 0x75-0x76), SymbolName (16-bit: 0x77-0x78), SymbolTokens (16-bit: 0x79-0x7A), SymbolLength (0x7B), SymbolTemp0-1 (0x7C-0x7D)
-- **UInt Operations (0x80-0x87)**: U0-U7 workspace for arithmetic operations
-- **Hardware I/O**: Platform-dependent mappings (0xEC+, 0xF0+)
-
----
-
 ## Grammar
 
 ### Console Commands
 ```
 console_command := NEW | LIST | RUN | CLEAR | VARS | FUNCS | MEM | BYE
+                 | HEAP | BUFFERS | DUMP [number]
                  | FORGET identifier
                  | SAVE string_literal
                  | LOAD string_literal  
@@ -275,6 +178,7 @@ statement := variable_decl
            | constant_decl
            | assignment
            | print_statement
+           | if_statement
            | function_definition
            | main_program
            | return_statement
@@ -285,13 +189,9 @@ statement_line := statement [ ":" statement ]*
 
 assignment := identifier "=" expression
 
-print_statement := PRINT expression [ print_separator ]
-                  | PRINT expression_list
+print_statement := PRINT [ expression ]
 
-expression_list := expression print_separator expression_list
-                 | expression [ print_separator ]
-
-print_separator := "," | ";"
+if_statement := IF expression THEN statement
 
 comment_statement := REM [ comment_text ]
                    | "'" [ comment_text ]
@@ -313,14 +213,14 @@ parameter_list := identifier [ "," identifier ]*
 
 ### Expressions (Phase 1 - Complete Implementation)
 ```
-expression := comparison_expr
-
-comparison_expr := logical_or_expr [ comparison_op logical_or_expr ]
-comparison_op := "=" | "<>" | "<" | ">" | "<=" | ">="
+expression := logical_or_expr
 
 logical_or_expr := logical_and_expr [ OR logical_and_expr ]
 
-logical_and_expr := bitwise_or_expr [ AND bitwise_or_expr ]
+logical_and_expr := comparison_expr [ AND comparison_expr ]
+
+comparison_expr := bitwise_or_expr [ comparison_op bitwise_or_expr ]
+comparison_op := "=" | "<>" | "<" | ">" | "<=" | ">="
 
 bitwise_or_expr := bitwise_and_expr [ "|" bitwise_and_expr ]
 
@@ -336,69 +236,27 @@ unary_expr := [ "-" | NOT ] primary_expr
 
 primary_expr := number
               | identifier
+              | TRUE
+              | FALSE
               | "(" expression ")"
               | function_call
 
 function_call := identifier "(" [ argument_list ] ")"
 argument_list := expression [ "," expression ]*
 
-number := decimal_digits
+number := decimal_digits | hex_number
+hex_number := "0" ("x" | "X") hex_digits
+decimal_digits := digit { digit }*
+hex_digits := hex_digit { hex_digit }*
 identifier := letter [ letter | digit ]*
 string_literal := '"' { character }* '"'
-```
-
-### Extended Grammar (Phase 3)
-```
-statement := ... (Phase 1 statements)
-           | if_statement
-           | for_statement
-           | while_statement
-           | do_until_statement
-           | break_statement
-           | continue_statement
-           | array_declaration
-
-if_statement := IF expression THEN statement [ ENDIF ]
-
-for_statement := FOR identifier "=" expression TO expression [ STEP expression ]
-                { statement }*
-                NEXT identifier
-
-while_statement := WHILE expression
-                  { statement }*
-                  WEND
-
-do_until_statement := DO
-                     { statement }*
-                     UNTIL expression
-
-array_declaration := type_keyword identifier "[" number "]" [ "=" array_initializer ]
-array_initializer := "{" expression [ "," expression ]* "}"
-
-primary_expr := ... (Phase 1 expressions)
-              | array_access
-              | built_in_function
-
-array_access := identifier "[" expression "]"
-built_in_function := ABS "(" expression ")"
-                   | RND "(" expression ")"
-                   | LEN "(" expression ")"
-                   | hardware_function
-
-hardware_function := READ "(" expression ")"
-                   | write "(" expression "," expression ")"
-                   | pwm "(" expression "," expression ")"
-                   | delay "(" expression ")"
-                   | pinmode "(" expression "," expression ")"
-                   | millis "(" ")"
-                   | millishi "(" ")"
 ```
 
 ### Lexical Elements
 ```
 letter := 'A'..'Z' | 'a'..'z'
 digit := '0'..'9'
-decimal_digits := digit { digit }*
+hex_digit := '0'..'9' | 'A'..'F' | 'a'..'f'
 character := any printable ASCII character except '"'
 whitespace := ' ' | '\t'
 statement_separator := ":"
@@ -408,12 +266,13 @@ comment := REM any_characters_to_end_of_line
 
 ### Token Types
 ```
-NUMBER := decimal_digits
+NUMBER := decimal_digits | hex_number
 IDENTIFIER := letter [ letter | digit ]*
 KEYWORD := predefined language keywords (PRINT, IF, THEN, CONST, etc.)
 OPERATOR := "+" | "-" | "*" | "/" | "=" | "<>" | "<" | ">" | "<=" | ">=" | "&" | "|" | "(" | ")" | MOD | AND | OR | NOT
 SEPARATOR := ":" | "," | ";"
 COMMENT := REM | "'"
+LITERAL := TRUE | FALSE
 ```
 
 ### Type System
@@ -424,33 +283,35 @@ COMMENT := REM | "'"
 - **STRING**: Null-terminated character array [Phase 3]
 
 ### Type Promotion and Compatibility Rules
-- **BYTE → INT**: Always compatible (unsigned 8-bit fits in signed 16-bit)
-- **BYTE → WORD**: Always compatible (unsigned promotion)
 - **INT → WORD**: Compatible only when INT ≥ 0 (runtime check)
 - **WORD → INT**: Compatible only when WORD ≤ 32767 (runtime check)
+- **All types → BIT**: Only values 0 and 1 are compatible
 - **BIT operations**: Logical AND/OR/NOT for BIT types only
-- **Bitwise operations**: AND (&), OR (|) for all numeric types (INT, WORD, BYTE, BIT)
+- **Bitwise operations**: AND (&), OR (|) for all numeric types (INT, WORD, BIT)
 - **Comparison results**: All comparisons return BIT type
-- **Operation modes**: Arithmetic (rejects BIT), Equality (allows all), Bitwise (allows all), Ordering (rejects BIT), Logical (BIT only)
+- **Operation modes**:
+  - **Arithmetic** (rejects BIT): +, -, *, /, MOD
+  - **Equality** (allows all): =, <>
+  - **Ordering** (allows all): <, >, <=, >=
+  - **Bitwise** (allows all): &, |
+  - **Logical** (BIT only): AND, OR, NOT
 
 ### Operator Precedence (Highest to Lowest)
-1. Function calls, array access, parentheses
+1. Function calls, parentheses
 2. Unary minus (-), Logical NOT
 3. Multiplication (*), Division (/), Modulo (MOD)
 4. Addition (+), Subtraction (-)
 5. Bitwise AND (&)
 6. Bitwise OR (|)
-7. Logical AND (BIT operands only)
-8. Logical OR (BIT operands only)
-9. Comparison (=, <>, <, >, <=, >=)
+7. Comparison (=, <>, <, >, <=, >=)
+8. Logical AND (BIT operands only)
+9. Logical OR (BIT operands only)
 
 ### Comment Rules
-
-**Phase 1:** ✅ **IMPLEMENTED**
 - `REM [comment]` - Traditional BASIC comment (consumes rest of line)
 - `' [comment]` - Modern shorthand comment (consumes rest of line)
 - Comments can appear on their own line or at end of statements
-- Comment text is not stored in tokenized form (saves buffer space)
+- Comment text is preserved in token stream for REM/COMMENT processing
 
 **Usage Examples:**
 ```basic
@@ -463,7 +324,7 @@ CONST INT MAX = 100  ' Define constant
 
 ### Statement Separator Rules
 
-**Colon Separator (`:`):** ✅ **IMPLEMENTED**
+**Colon Separator (`:`):**
 - **Multiple statements per line**: `PRINT 10 : PRINT 20`
 - **Classic BASIC compatibility**: Standard behavior across many BASIC dialects
 - **Execution order**: Left to right, each statement executes completely before next
@@ -478,194 +339,67 @@ IF x > 0 THEN PRINT "positive" : PRINT "done"
 CONST INT SIZE = 10 : INT buffer = SIZE * 2
 ```
 
-### Output Formatting Rules
-
-**Phase 1:**
-- `PRINT expression` outputs the value followed by a newline
-
-**Phase 3:**
-- `PRINT expr1, expr2` outputs values separated by spaces, newline at end
-- `PRINT expr1; expr2` outputs values with no separation, newline at end  
-- `PRINT expr1;` outputs value with no newline (cursor stays on line)
-- `PRINT expr1,` outputs value followed by space, no newline
-
-### Type System Benefits
-- **Type safety**: `IF count` is an error; must use `IF count <> 0` (when IF/THEN implemented in Phase 3)
-- **Clear intent**: BIT variables clearly indicate boolean usage
-- **Operator clarity**: Separate logical (BIT only) and bitwise (all types) operations
-- **Automatic promotion**: Compatible types promote safely (BYTE→INT→WORD when safe)
-- **Runtime validation**: INT/WORD mixing checked at runtime for safe operations
-- **Constant immutability**: CONST values cannot be modified after declaration
+### Literal Values
+- **Decimal numbers**: `123`, `0`, `32767`
+- **Hexadecimal numbers**: `0x1F`, `0xFF00`, `0xA0` (case insensitive)
+- **Boolean literals**: `TRUE` (value 1), `FALSE` (value 0)
+- **Type determination**: Numbers typed as INT (0-32767) or WORD (32768-65535)
 
 ---
 
-# HopperBASIC Symbol Table Design
+## Technical Architecture
 
-## Overview
+### JIT Compilation System
+The expression evaluation system uses a Just-In-Time compilation approach:
 
-HopperBASIC uses a unified symbol table architecture with four distinct layers to store all program identifiers: variables, constants, and functions (including the main program).
+**Compilation Phase:**
+1. **Infix to Postfix**: Expressions compiled using recursive descent parser
+2. **Opcode Generation**: Stack-based opcodes emitted to 512-byte buffer
+3. **Type Checking**: Compile-time type compatibility validation
+4. **Optimization**: Efficient literal handling (PUSHBIT, PUSHBYTE, PUSHINT, PUSHWORD)
 
-## Four-Layer Architecture
+**Execution Phase:**
+1. **Stack Machine**: Opcodes executed using Hopper VM value/type stacks
+2. **Fast Dispatch**: Single-byte opcode determines operand count and handler
+3. **Error Handling**: Runtime type checking and overflow detection
+4. **Register Preservation**: Clean API with documented side effects only
 
-### Layer 1: Table (table.asm)
-**Generic linked list operations**
-- Memory allocation and node management
-- Insertion at end of list (preserves declaration order)
-- Traversal and deletion operations
-- Works with any node size and structure
+**Opcode Set:**
+```
+No Operands (0x00-0x3F):
+  ADD, SUB, MUL, DIV, MOD, NEG
+  BITWISE_AND, BITWISE_OR
+  LOGICAL_AND, LOGICAL_OR, LOGICAL_NOT
+  EQ, NE, LT, GT, LE, GE
+  RETURN, RETURNVAL, DECSP, DUP, NOP
 
-### Layer 2: Objects (objects.asm)
-**Symbol-specific node management**
-- Defines symbol node structure (next, type|dataType, tokens, value, name)
-- Handles symbol type filtering (VARIABLE, CONSTANT, FUNCTION, ARGUMENT)
-- Manages symbol-to-symbol comparisons and lookups
-- Provides iterator support with type filtering
+One Byte Operand (0x40-0x7F):
+  PUSHBIT, PUSHBYTE
+  PUSHLOCAL, POPLOCAL
+  JUMPB, JUMPZB, JUMPNZB
+  CALL, SYSCALL
 
-### Layer 3: Variables (variables.asm)
-**Variable and constant operations**
-- Variable declaration with type checking
-- Constant declaration with immutability enforcement
-- Value get/set with immutability enforcement (constants cannot be modified)
-- Name-based lookup with type filtering
-- Integration with tokenizer for initialization expressions
+Two Byte Operands (0x80-0xBF):
+  PUSHINT, PUSHWORD
+  PUSHGLOBAL, POPGLOBAL
+  JUMPW, JUMPZW, JUMPNZW
+```
 
-### Layer 4: Functions (functions.asm)
-**Function-specific operations**
-- Function signature management (name, return type, parameter list)
-- Function body token storage and retrieval  
-- Integration with Arguments layer for parameter handling
-- Function call resolution and type checking
+### Memory Management
 
-### Supporting Layer: Arguments (arguments.asm)
-**Function parameter management**
-- Ordered parameter lists stored as linked lists
-- Parameter type information and name storage
-- Index-based parameter lookup (for stack frame construction)
-- Automatic cleanup when functions are removed
+#### Symbol Table Architecture (4-Layer System)
+**Layer 1: Table.asm** - Generic linked list operations
+**Layer 2: Objects.asm** - Symbol node management with type information
+**Layer 3: Variables/Functions.asm** - Domain-specific symbol operations
+**Layer 4: Statement.asm** - Parser integration and type checking
 
-## Design Decisions
-
-### Unified Table Structure
-- **Single implementation** for all linked list operations
-- **Shared memory management** reduces code duplication
-- **Generic operations** work across all identifier types
-
-### Layered Architecture Benefits
-- **Separation of concerns**: Each layer has a specific responsibility
-- **Code reuse**: Higher layers build on lower layer functionality
-- **Testability**: Each layer can be tested independently
-- **Maintainability**: Clear interfaces between layers
-
-### Runtime Resolution
-- **Identifiers stored as strings** during tokenization  
-- **Lookup performed at runtime** when tokens execute
-- **No caching** of resolved addresses (simple linear search)
-
-## Rationale
-
-### Why Four Layers?
-- **Table Layer**: Provides generic linked list operations for any use case
-- **Objects Layer**: Adds symbol-specific knowledge while remaining general
-- **Variables/Functions Layers**: Implement language-specific semantics
-- **Clear separation**: Each layer has distinct responsibilities and can be tested separately
-
-### Why Simple Linear Search?
-- **Small scale**: Typical programs have 5-20 total identifiers
-- **Rare operation**: Lookups only occur during statement execution
-- **6502 performance**: Linear search of 20 items is microseconds
-- **User perception**: No noticeable delay
-
-### Why Runtime Resolution?
-- **Forward references**: Functions can call functions defined later
-- **Dynamic modification**: FORGET and redefinition change symbol meanings
-- **Implementation simplicity**: No cache invalidation or dependency tracking needed
-
-## Table Operations
-
-### Table Layer Functions
-- `Table.GetFirst()` - Get first node in list (returns in ZP.IDX)
-- `Table.GetNext()` - Get next node in traversal (updates ZP.IDX)
-- `Table.Add(size)` - Add new node to end of list (size in ZP.ACC)
-- `Table.Delete(node)` - Delete specific node from list (node in ZP.IDX)
-- `Table.Clear()` - Clear entire list, free all nodes
-
-### Objects Layer Functions
-- `Objects.Initialize()` - Initialize empty symbol tables
-- `Objects.Add(table, name, type, tokens, value)` - Add symbol with metadata
-- `Objects.Find(table, name)` - Find symbol by name
-- `Objects.Remove(table, node)` - Remove symbol by node pointer
-- `Objects.GetData(node)` - Get symbol data (type, tokens, value)
-- `Objects.SetValue(node, value)` - Set symbol value (variables only)
-- `Objects.GetTokens(node)` - Get tokens pointer
-- `Objects.SetTokens(node, tokens)` - Set tokens pointer
-- `Objects.IterateStart(table, filter)` - Start iteration with type filter
-- `Objects.IterateNext()` - Continue iteration
-- `Objects.Destroy(table)` - Destroy entire symbol table
-
-### Variables Layer Functions
-- `Variables.Declare(name, type, value, tokens)` - Declare new variable/constant
-- `Variables.Find(name, expectedType)` - Find with optional type filtering
-- `Variables.GetValue(node)` - Get variable/constant value and type
-- `Variables.SetValue(node, value)` - Set variable value (enforces immutability)
-- `Variables.GetType(node)` - Get type information
-- `Variables.GetSignature(node)` - Get complete signature info
-- `Variables.GetName(node)` - Get name pointer from node
-- `Variables.GetTokens(node)` - Get initialization tokens
-- `Variables.Remove(name)` - Remove by name with token cleanup
-- `Variables.IterateVariables()` - Start iteration over variables only
-- `Variables.IterateConstants()` - Start iteration over constants only
-- `Variables.IterateAll()` - Start iteration over all symbols
-- `Variables.IterateNext()` - Continue iteration
-- `Variables.Clear()` - Clear all variables and constants
-
-### Functions Layer Functions
-- `Functions.Declare(name, argsListHead, bodyTokens)` - Declare new function
-- `Functions.Find(name)` - Find function by name
-- `Functions.GetBody(node)` - Get function body tokens
-- `Functions.GetName(node)` - Get function name
-- `Functions.SetArguments(node, argsListHead)` - Set arguments list
-- `Functions.GetArguments(node)` - Get arguments list head
-- `Functions.Remove(name)` - Remove function by name
-- `Functions.IterateFunctions()` - Start iteration over functions
-- `Functions.IterateNext()` - Continue function iteration
-- `Functions.Clear()` - Clear all functions
-- `Functions.SetBody(node, tokens)` - Set function body tokens
-
-### Arguments Layer Functions
-- `Arguments.Add(functionNode, argName)` - Add argument to function
-- `Arguments.Find(functionNode, argName)` - Find argument by name
-- `Arguments.GetName(argNode)` - Get argument name
-- `Arguments.FindByIndex(functionNode, index)` - Find by index
-- `Arguments.GetCount(functionNode)` - Get argument count
-- `Arguments.IterateStart(functionNode)` - Start argument iteration
-- `Arguments.IterateNext()` - Continue argument iteration
-- `Arguments.Clear(functionNode)` - Clear all arguments
-
-## Implementation Benefits
-
-1. **Minimal code footprint** - Shared table implementation across all layers
-2. **Predictable behavior** - Consistent operations across identifier types  
-3. **Easy debugging** - Clear layer boundaries with defined interfaces
-4. **Flexible execution** - Supports forward references and dynamic redefinition
-5. **Memory efficient** - No duplicate table management code
-6. **Comprehensive testing** - Each layer tested independently and in integration
-
-## Performance Characteristics
-
-- **Lookup time**: O(n) where n ≈ 20 maximum
-- **Memory overhead**: Minimal - simple linked list nodes with symbol metadata
-- **Runtime cost**: Negligible on target 6502 systems
-- **Development cost**: Low complexity per layer, easy to implement and maintain
-
-## Memory Management
-
-### Node Structure
+#### Node Structure
 **Variable/Constant Node (Objects layer):**
 ```
 Offset 0-1: next pointer (managed by Table layer)
 Offset 2:   symbolType|dataType (packed byte)
             High nibble: SymbolType (VARIABLE=1, CONSTANT=2)
-            Low nibble: BasicType (INT=2, WORD=4, BIT=6, etc.)
+            Low nibble: BasicType (INT=2, WORD=4, BIT=6)
 Offset 3-4: tokens pointer (16-bit pointer to initialization token stream)
 Offset 5-6: value (16-bit current value)
 Offset 7+:  null-terminated name string
@@ -686,122 +420,84 @@ Offset 0-1: next pointer (managed by Arguments layer)
 Offset 2+:  null-terminated argument name string
 ```
 
-### Memory Allocation Strategy
+#### Memory Allocation Strategy
 - **Exact-size allocation**: Nodes allocated to exact size needed (overhead + name length)
 - **Automatic cleanup**: Memory.Free() called when symbols are removed
 - **Token stream management**: Initialization and function body tokens stored separately and freed with symbols
 - **Argument integration**: Function arguments stored as separate linked list, automatically cleaned up with function
 
----
+### Buffer Management
+**BasicInputBuffer**: 128 bytes - Raw user input (0x0900-0x097F)
+**BasicTokenizerBuffer**: 512 bytes - Tokenized line storage (0x0A00-0x0BFF)
+**BasicOpcodeBuffer**: 512 bytes - JIT compiled opcodes (0x0C00-0x0DFF)
 
-## Technical Architecture
+**Working Buffers:**
+- **BasicProcessBuffer1**: 64 bytes - General workspace (0x0980-0x09BF)
+- **BasicProcessBuffer2**: 32 bytes - Statement layer storage (0x09C0-0x09DF)
+- **BasicProcessBuffer3**: 32 bytes - Compiler/Executor storage (0x09E0-0x09FF)
+
+### Zero Page Allocation
+**BASIC Project Allocation (0x30-0x4F, 32 bytes):**
+- **Console Input**: BasicInputLength (0x30)
+- **Tokenizer State**: TokenBufferLength, TokenizerPos (0x31-0x34)
+- **Error Handling**: LastError pointer (0x35-0x36)
+- **Token Cache**: CurrentToken, TokenLiteralPos (0x37-0x39)
+- **JIT Compiler**: OpcodeBuffer state, CompilerFlags (0x3A-0x3F)
+- **Available**: 16 bytes for future features (0x40-0x4F)
+
+**Symbol Table Allocation (0x70-0x7F, 16 bytes):**
+- **Table Heads**: VariablesList, FunctionsList (0x70-0x73)
+- **Symbol Working Storage**: SymbolType, SymbolValue, SymbolName, SymbolTokens (0x74-0x7A)
+- **Iterator State**: SymbolIteratorFilter (0x7B)
+- **Temporary Storage**: SymbolLength, SymbolTemp0-2 (0x7C-0x7F)
 
 ### Built on Hopper VM Foundation
 - **Reuse existing runtime**: Serial I/O, memory management, stack operations
 - **Leverage proven code**: Use existing helper functions and utilities
 - **Maintain compatibility**: Work within established memory layout
-
-### ROM Size Target
-- **16K maximum** (0xC000-0xFFFF)
-- **Leverage existing code**: Hopper VM runtime provides foundation
-- **Focus on interpreter logic**: Don't reimplement low-level functions
+- **External API contracts**: Well-defined interfaces to Hopper VM services
 
 ---
 
-## Next Implementation Priorities
+## Current Implementation Status
 
-### Immediate (Complete Phase 1)
-1. ✅ **Symbol Table Foundation**: Complete 4-layer symbol table system with comprehensive testing
-2. ✅ **Colon Separator Support**: Multi-statement line processing with proper error handling
-3. ✅ **Comment Support**: REM and ' comment recognition and parsing
-4. ✅ **Variable Declaration Framework**: Parser support for INT, WORD, BIT with optional initialization
-5. ✅ **Constant Declaration System**: CONST keyword support with constant expression validation and immutability
-6. ✅ **Assignment Statement Processing**: Connect executeIdentifier() to symbol table for `var = expr`
-7. **Function System Integration**: FUNC/ENDFUNC definitions and RETURN statements in parser
-8. **Program Structure**: BEGIN/END main program blocks
-9. **Management Commands**: LIST, RUN, FUNCS, FORGET integration with symbol tables
+### Phase 1 Progress: ~90% Complete
 
-### Next Phase (Storage)
-1. **SAVE/LOAD Commands**: Tokenized program storage to EEPROM
-2. **File Management**: DIR, DEL commands for program management
+**✅ Completed Components:**
+- **Symbol Table System**: Complete 4-layer architecture with comprehensive testing
+- **Tokenization**: Full lexical analysis with keyword recognition, hex numbers, comments
+- **Expression Evaluation**: Complete JIT compilation system with all operators
+- **Type System**: Comprehensive type checking and promotion rules
+- **Variable Management**: Declaration, assignment, constant enforcement
+- **Console Commands**: NEW, CLEAR, VARS, MEM, BYE, debug commands
+- **Statement Processing**: Multi-statement lines with colon separators
+- **IF/THEN Statements**: Basic conditional execution
+- **Assignment**: Variable assignment with type checking
+- **Error Handling**: Proper error messages and recovery
 
-### Future Phases
-1. **Enhanced Types**: BYTE, STRING, Arrays
-2. **Extended Control Flow**: IF/THEN/ENDIF, FOR/NEXT loop, WHILE/WEND loops
-3. **Built-in Functions**: Math, string, and hardware I/O functions
-4. **Advanced I/O**: INPUT statements, formatted PRINT output
+**❌ Remaining for Phase 1:**
+- **Function System Integration**: FUNC/ENDFUNC definitions and RETURN statements
+- **Program Structure**: BEGIN/END main program blocks  
+- **Management Commands**: LIST, RUN, FUNCS, FORGET integration
 
----
+### Next Implementation Priority
+**Function System Integration** - The symbol table foundation supports functions completely, but the parser needs:
+1. **FUNC/ENDFUNC parsing** - Function definition blocks with parameter lists
+2. **RETURN statement handling** - Function exit with optional return values
+3. **Function call execution** - Parameter passing and local variable scoping
+4. **BEGIN/END blocks** - Main program structure (special case of functions)
 
-## Implementation Strategy
-
-1. **Phase 1a**: ✅ Console commands (NEW, MEM, BYE working)
-2. **Phase 1b**: ✅ Complete expression system (numbers, operators, precedence, type checking)
-3. **Phase 1c**: ✅ PRINT statement and IF/THEN control flow  
-4. **Phase 1d**: ✅ Complete symbol table foundation (4 layers + comprehensive testing)
-5. **Phase 1e**: ✅ Colon separator support for multi-statement lines
-6. **Phase 1f**: ✅ Comment support (REM and ' tokens) + ✅ Variable declaration framework + ✅ Console commands (NEW, CLEAR, VARS) + ✅ Constant declaration system
-7. **Phase 1g**: ✅ Assignment statements (`var = expr`) and identifier resolution
-8. **Phase 1h**: **NEXT** - Functions (FUNC/ENDFUNC/RETURN) and main program (BEGIN/END)
-9. **Phase 1i**: Remaining management commands (LIST, RUN, FUNCS, FORGET)
-10. **Phase 2**: Add tokenized SAVE/LOAD functionality with EEPROM storage
-11. **Phase 3**: Add constants, loops, input, additional operators, built-in functions
-
-This approach maximizes code reuse while delivering a clean, simple BASIC interpreter that feels familiar to users but leverages the robust Hopper VM foundation.
+### Testing Status
+All core systems have comprehensive test coverage:
+- **Symbol table operations**: Creation, lookup, type checking, memory management
+- **Expression evaluation**: All operators, type promotion, error conditions
+- **Tokenization**: All token types, edge cases, buffer management
+- **Memory management**: Allocation, deallocation, leak detection
+- **Type system**: Compatibility rules, runtime validation, error messages
 
 ---
 
-## Current Status Summary
-
-**Phase 1 Progress**: ~99% complete
-- ✅ Core expression evaluation system (complete with all operators and type checking)
-- ✅ Basic console commands (NEW, CLEAR, VARS, MEM, BYE working; LIST, RUN, FUNCS, FORGET stubs)
-- ✅ PRINT statement (working for all expression types)
-- ✅ Complete tokenizer with number parsing and keyword recognition
-- ✅ Statement execution framework with proper error propagation
-- ✅ **Complete symbol table system** (4-layer architecture with comprehensive testing)
-  - ✅ **Table layer**: Generic linked list operations with memory management
-  - ✅ **Objects layer**: Symbol-specific operations with type filtering
-  - ✅ **Variables layer**: Variable/constant declaration and manipulation
-  - ✅ **Functions layer**: Function signature and body management
-  - ✅ **Arguments layer**: Function parameter handling
-  - ✅ **Comprehensive testing**: All layers tested with memory leak detection
-- ✅ **Type system**: Complete type compatibility checking with promotion rules
-- ✅ **Instruction set**: All arithmetic, bitwise, logical, and comparison operations implemented
-- ✅ **Colon separator support**: Multi-statement line processing with proper error handling
-- ✅ **Comment support**: REM and single-quote comments with inline text storage
-- ✅ **Variable declaration framework**: Parser support for INT, WORD, BIT with optional initialization
-- ✅ **Constant declaration system**: CONST keyword with constant expression validation, immutability enforcement, and symbol table integration
-- ✅ **Assignment statement system**: Complete `var = expr` processing with type checking and immutability enforcement
-- ✅ **ResolveIdentifier system**: Complete identifier resolution distinguishing variables, constants, keywords, and functions
-- ✅ **Variables.SetValue integration**: Full variable assignment with immutability validation
-- ✅ **Type promotion in assignment**: Assignment statements use complete type compatibility checking
-- ✅ **Management commands**: NEW, CLEAR, VARS, MEM, BYE implemented (LIST, RUN, FUNCS, FORGET stubs)
-- ❌ **Function system integration**: Connect function tables to parser
-- ❌ **Program structure**: BEGIN/END main program blocks
-
-**Major Recent Achievement**: **Assignment statements are fully operational** with complete `var = expr` processing, type checking, and immutability enforcement. Combined with the CONST declaration system, this provides a complete variable manipulation framework. The executeIdentifier() function handles variable assignment with proper type promotion and prevents assignment to constants.
-
-**Next Milestone**: Function system integration - implementing FUNC/ENDFUNC definitions and RETURN statements to complete the core language functionality.
-
-**Testing Status**: All symbol table layers have comprehensive test suites with memory leak detection. The system has been validated to properly handle:
-- Variable and constant declaration with type checking
-- Constant expression validation and immutability enforcement  
-- Function declaration with parameter management  
-- Symbol lookup with type filtering
-- Memory management with automatic cleanup
-- Type compatibility checking across all operations
-- Error handling with proper error messages
-- Multi-statement line processing with colon separators
-- Comment processing with both REM and ' syntax
-- Constant evaluation in expressions (constants can be used as operands)
-- **Assignment statement processing**: Complete `var = expr` with type checking, promotion, and immutability enforcement
-
-The symbol table foundation and core parsing infrastructure are production-ready and provide a robust base for completing the remaining assignment and function integration work.
-
----
-
-## Development Notes
+## Development Guidelines Compliance
 
 ### Rule Compliance Status
 - **Rule #0**: ✅ Project knowledge prioritized for current implementation status
@@ -811,6 +507,7 @@ The symbol table foundation and core parsing infrastructure are production-ready
 - **Rule #7**: ✅ C/NC flags used for success/failure status returns
 - **Rule #8**: ✅ CamelCase identifiers preferred over SCREAMING_SNAKE_CASE
 - **Rule #9**: ✅ Direct enum syntax used (SymbolType.VARIABLE vs Objects.SymbolType.VARIABLE)
+- **Rule #10**: ✅ Switch statements use proper break semantics
 
 ### Code Quality Measures
 - **Comprehensive error handling**: All operations return proper C/NC status
@@ -818,3 +515,79 @@ The symbol table foundation and core parsing infrastructure are production-ready
 - **Type safety**: Strict type checking throughout symbol table operations
 - **Clear documentation**: Each layer has defined interfaces and responsibilities
 - **Debugging support**: Tools.Dump* methods available for system state inspection
+- **Clean API standards**: Register preservation and documented side effects only
+
+---
+
+## Usage Examples
+
+### Basic Variable Operations
+```basic
+INT count = 5
+WORD max = 65000
+BIT flag = TRUE
+PRINT count : PRINT max : PRINT flag
+count = count + 1 : PRINT count
+```
+
+### Constant Definitions
+```basic
+CONST INT SIZE = 100
+CONST BIT DEBUG = TRUE
+CONST WORD MAX_VALUE = 0xFFFF
+INT buffer = SIZE * 2
+IF DEBUG THEN PRINT buffer
+```
+
+### Expression Evaluation
+```basic
+INT a = 10 : INT b = 20
+PRINT a + b * 2        ' Prints 50 (precedence: * before +)
+PRINT (a + b) * 2      ' Prints 60 (parentheses override precedence)
+BIT result = a > b
+PRINT result           ' Prints 0 (false)
+```
+
+### Multi-Statement Lines
+```basic
+INT x = 5 : INT y = 10 : PRINT x + y : PRINT x * y
+IF x < y THEN PRINT "x is smaller" : x = y
+```
+
+### Hexadecimal Numbers
+```basic
+WORD addr = 0x8000
+INT offset = 0x100
+PRINT addr + offset    ' Prints 32768 + 256 = 33024
+```
+
+### Type Mixing
+```basic
+INT signed = -100
+WORD unsigned = 200
+' This works because signed value promoted to unsigned safely
+PRINT unsigned + 300   ' Prints 500
+```
+
+---
+
+## Future Roadmap
+
+### Phase 2: Storage System
+- **Tokenized SAVE/LOAD**: Preserve programs in compact binary format
+- **EEPROM Integration**: Use I2C library for persistent storage
+- **File Management**: DIR, DEL commands for program organization
+
+### Phase 3: Extended Language Features
+- **Additional Types**: BYTE, STRING, single-dimensional arrays
+- **Control Structures**: FOR/NEXT, WHILE/WEND, DO/UNTIL loops
+- **Enhanced I/O**: INPUT statements, formatted PRINT output
+- **Built-in Functions**: Math, string manipulation, hardware I/O
+
+### Phase 4: Advanced Features (If ROM space permits)
+- **Program Structure**: Multi-line functions and main programs
+- **Local Variables**: Function-scoped variables with automatic cleanup
+- **Error Recovery**: Structured exception handling
+- **Interactive Debugging**: Breakpoints, single-step execution
+
+The current implementation provides a solid foundation that can be extended incrementally while maintaining the core design principles of simplicity and direct execution.
