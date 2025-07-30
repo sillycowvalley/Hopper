@@ -8,6 +8,9 @@ unit Statement
     
     uses "Variables"
     uses "Instructions"
+    uses "FunctionDeclaration.asm"
+    
+    friend FunctionDeclaration;
     
     // Private Statement layer storage - BasicProcessBuffer2 (32 bytes at 0x09C0-0x09DF)
     const uint stmtNamePtr     = Address.BasicProcessBuffer2;      // 0x09C0: 2 bytes - identifier name pointer
@@ -20,8 +23,35 @@ unit Statement
     const uint stmtIsConstant  = Address.BasicProcessBuffer2 + 14; // 0x09CE: 1 byte  - current expression is const
     const uint stmtObjectPtr   = Address.BasicProcessBuffer2 + 15; // 0x09CF: 2 bytes - object node pointer
     
-    // 15 bytes available for future statement needs (0x09D1-0x09DF)
-
+    const uint funcCaptureMode       = Address.BasicProcessBuffer2 + 17; // 0x09D1: 1 byte - console mode
+    const uint funcCaptureStartPos   = Address.BasicProcessBuffer2 + 18; // 0x09D2: 2 bytes - start position in token buffer
+    const uint funcOriginalLength    = Address.BasicProcessBuffer2 + 20; // 0x09D4: 2 bytes - original buffer length when capture started
+    // 12 bytes still available (0x09D6-0x09DF)
+    
+    
+    SetCaptureMode()
+    {
+        LDA #1
+        STA funcCaptureMode
+    }
+    SetNormalMode()
+    {
+        LDA #0
+        STA funcCaptureMode
+    }
+    IsCaptureMode()
+    {
+        LDA funcCaptureMode
+        if (Z)
+        {
+            CLC // not capture mode (funcCaptureMode == 0)
+        }   
+        else
+        {
+            SEC // capture mode (funcCaptureMode == 1)
+        }
+    }
+    
     SetIsConstant()
     {
         STA stmtIsConstant
@@ -250,6 +280,11 @@ unit Statement
                 case Tokens.PRINT:
                 {
                     executePrint();
+                    break;
+                }
+                case Tokens.FUNC:
+                {
+                    FunctionDeclaration.ExecuteFunctionDeclaration();
                     break;
                 }
                 case Tokens.IF:
@@ -928,7 +963,7 @@ unit Statement
                         LDA ZP.TokenizerPosH
                         SBC ZP.FSOURCEADDRESSH
                         STA ZP.FLENGTHH  // Length high
-                        createTokenStream();
+                        CreateTokenStream();
                         if (NC) { break; } // error exit
                         
                         // Set tokens pointer to the new stream
@@ -1142,7 +1177,7 @@ unit Statement
     // Output: ZP.FDESTINATIONADDRESS = pointer to allocated token stream copy
     // Munts: ZP.IDXL, ZP.IDXH, ZP.ACCL, ZP.ACCH, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS
     // Error: Sets ZP.LastError if memory allocation fails
-    createTokenStream()
+    CreateTokenStream()
     {
         PHA
         LDA ZP.IDXL

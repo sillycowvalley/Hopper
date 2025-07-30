@@ -36,12 +36,15 @@ unit Messages
     const string ConstantExpected  = "CONSTANT EXPECTED";
     const string ConstantExpressionExpected  = "CONSTANT EXPRESSION EXPECTED";
     const string IllegalVariableName  = "ILLEGAL VARIABLE NAME";
+    const string IllegalFunctionName  = "ILLEGAL FUNCTION NAME";
     const string IllegalAssignment  = "ILLEGAL ASSIGNMENT";
     const string InvalidOperator = "INVALID OPERATOR";
     const string BufferOverflow = "BUFFER OVERFLOW";
     const string ExpectedRightParen = ") EXPECTED";
+    const string ExpectedLeftParen = "( EXPECTED";
     const string ExpectedExpression = "EXPRESSION EXPECTED";
     const string InvalidBitValue = "INVALID BIT VALUE";
+    const string IllegalInFunctionMode = "ILLEGAL IN FUNCTION MODE";
     
     
     // PC -> IDY

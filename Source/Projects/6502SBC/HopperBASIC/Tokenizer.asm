@@ -88,6 +88,7 @@ unit Tokenizer
         IDENTIFIER = 0x82,
         EOF        = 0x83,
         COLON      = 0x84, 
+        COMMA      = 0x85,
     }
     
     enum IdentifierType
@@ -304,7 +305,7 @@ unit Tokenizer
     // Input: None (uses ZP.TokenizerPos, ZP.TokenBufferLength)
     // Output: Z set if equal, C set if TokenizerPos >= TokenBufferLength
     // Preserves: Everything
-    compareTokenizerPosToLength()
+    CompareTokenizerPosToLength()
     {
         LDA ZP.TokenizerPosH
         CMP ZP.TokenBufferLengthH
@@ -767,25 +768,43 @@ unit Tokenizer
         }
     }
     
+    // Replace existing TokenizeLine() with mode-aware version
+    TokenizeLine() 
+    {
+        STZ ZP.OpcodeTemp  // Replace mode = 0
+        TokenizeLineWithMode();
+    }
+    
+    TokenizeAndAppendLine()
+    {
+        LDA #1 // Append mode = 1
+        STA ZP.OpcodeTemp   
+        TokenizeLineWithMode();
+    }
+    
     // Tokenize complete line from BasicInputBuffer into BasicTokenizerBuffer
-    // Input: BasicInputBuffer contains raw input, ZP.BasicInputLength = input length
+    // Input: BasicInputBuffer contains raw input, ZP.BasicInputLength = input length, mode in A
     // Output: Tokens stored in BasicTokenizerBuffer, ZP.TokenBufferLength = total length
     //         ZP.TokenizerPos reset to 0
     // Munts: ZP.TokenBufferLength, ZP.TokenizerPos, ZP.IDX, A, X, Y
     // Error: Sets ZP.LastError if tokenization fails
-    TokenizeLine()
+    TokenizeLineWithMode()
     {
-        // Clear token buffer
-        STZ ZP.TokenBufferLengthL
-        STZ ZP.TokenBufferLengthH
-        Messages.ClearError();
+        LDA ZP.OpcodeTemp
+        if (Z)
+        {
+            // Replace mode - clear token buffer
+            STZ ZP.TokenBufferLengthL
+            STZ ZP.TokenBufferLengthH
+            Messages.ClearError();
+        }
         
         // Check for empty line
         LDA ZP.BasicInputLength
         if (Z)
         {
             // Empty line - add EOL token
-            LDA #Tokens.EOL
+            LDA # Tokens.EOL
             appendToTokenBuffer();
             SEC  // Success
             return;
@@ -806,6 +825,14 @@ unit Tokenizer
                 case ':':
                 {
                     LDA #Tokens.COLON
+                    appendToTokenBuffer();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                    INX
+                }
+                case ',':
+                {
+                    LDA #Tokens.COMMA
                     appendToTokenBuffer();
                     Messages.CheckError();
                     if (NC) { return; }
@@ -1184,9 +1211,14 @@ unit Tokenizer
         Messages.CheckError();
         if (NC) { return; }
         
-        // Reset tokenizer position to start of buffer
-        STZ ZP.TokenizerPosL
-        STZ ZP.TokenizerPosH
+        LDA ZP.OpcodeTemp
+        if (Z)
+        {
+            // Reset tokenizer position only in replace mode
+            STZ ZP.TokenizerPosL
+            STZ ZP.TokenizerPosH
+        }
+        // Append mode - DON'T reset position (keep pointing to function start)
         
         SEC  // Success
     }
@@ -1200,7 +1232,7 @@ unit Tokenizer
     NextToken()
     {
         // 16-bit comparison: if (TokenizerPos >= TokenBufferLength)
-        compareTokenizerPosToLength();
+        CompareTokenizerPosToLength();
         if (C)  // TokenizerPos >= TokenBufferLength
         {
             LDA # Tokens.EOF
@@ -1528,6 +1560,21 @@ unit Tokenizer
     // Munts: ZP.BasicInputLength, A, X
     ReadLine()
     {
+        // Show appropriate prompt
+        IsCaptureMode();
+        if (NC)
+        {
+            // Normal mode - prompt already shown by interpreterLoop
+        }
+        else
+        {
+            // Function capture mode
+            LDA #'*'
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+        }
+        
         LDX #0  // Buffer position
         
         loop
@@ -1567,6 +1614,14 @@ unit Tokenizer
                     Serial.WriteChar();
                     LDA #'\n'
                     Serial.WriteChar();
+                    
+                    // If in function capture mode, cancel it
+                    IsCaptureMode();
+                    if (C)
+                    {
+                        Console.ExitFunctionCaptureMode();
+                    }
+                    
                     LDX #0  // Clear buffer
                     break;
                 }
@@ -1617,5 +1672,4 @@ unit Tokenizer
         
         PLA
     }
-    
 }

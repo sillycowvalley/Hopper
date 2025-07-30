@@ -479,3 +479,79 @@ unit Utilities
     // Modifies: ZP.LCOUNT, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, A, Y
     CopyBytes()
 }
+
+```
+
+## SerialEEPROM.asm
+```hopper
+unit SerialEEPROM
+{
+    // API Status: Clean
+    // Serial EEPROM interface for program storage and retrieval
+    // All public methods preserve caller state except for documented outputs
+    // No accidental side effects or register corruption
+    // Uses ZP.IDX/ZP.IDY for address management and ZP.TOP for timing control
+
+    // Hardware configuration - EEPROM chip page size selection
+    // Different EEPROM chips have different page sizes for write operations
+#ifdef SERIAL128BYTEPAGES
+    const byte serialPageSize = 128;  // Large page EEPROMs (24AA512, 24AA1026)
+#endif    
+#ifdef SERIAL64BYTEPAGES
+    const byte serialPageSize = 64;   // Smaller page EEPROMs (24C256)
+#endif    
+    
+    // Copy one EEPROM page (128 or 64 bytes) to RAM
+    // Input: ZP.IDY = EEPROM source address (16-bit)
+    //        ZP.IDX = RAM destination address (16-bit)
+    // Output: One page copied from EEPROM to RAM
+    //         ZP.IDY advanced by serialPageSize bytes
+    //         ZP.IDX advanced by serialPageSize bytes
+    // Modifies: ZP.OutB (I2C operations), ZP.TOP (timing delay), X (byte counter)
+    //          ZP.NEXTL (I2C address), ZP.TOPL (byte count)
+    copyProgramPage()
+    
+    // Load complete Hopper program from Serial EEPROM to RAM
+    // Input: ZP.PROGSIZE = program size in 256-byte pages
+    // Output: Program loaded from EEPROM to HopperData address
+    //         ZP.IDX = final destination address (after last copied byte)
+    //         ZP.IDY = final EEPROM address (after last read byte)
+    // Modifies: ZP.IDX, ZP.IDY, Y (page counter), all registers used by copyProgramPage()
+    LoadFromEEPROM()
+    
+    // Copy one RAM page (serialPageSize bytes) to EEPROM
+    // Input: ZP.IDX = RAM source address (16-bit)
+    //        ZP.IDY = EEPROM destination address (16-bit)
+    // Output: One page copied from RAM to EEPROM
+    //         ZP.IDX advanced by serialPageSize bytes
+    //         ZP.IDY advanced by serialPageSize bytes
+    // Modifies: ZP.OutB (I2C operations), ZP.TOP (timing delay), X (byte counter)
+    //          A, X, Y (preserved via stack)
+    copyPageToEEPROM()
+    
+    // Save complete Hopper program from RAM to Serial EEPROM
+    // Input: ZP.PROGSIZE = program size in 256-byte pages
+    // Output: Program saved from HopperData address to EEPROM
+    //         ZP.IDX = final source address (after last copied byte)
+    //         ZP.IDY = final EEPROM address (after last written byte)
+    // Modifies: ZP.IDX, ZP.IDY, X (page counter), all registers used by copyPageToEEPROM()
+    SaveToEEPROM()
+    
+    // Write single 256-byte page from RAM to EEPROM
+    // Input: ZP.IDX = RAM source address (16-bit, page-aligned recommended)
+    //        ZP.IDY = EEPROM destination address (16-bit, page-aligned recommended)
+    // Output: 256 bytes copied from RAM to EEPROM
+    //         ZP.IDX advanced by 256 bytes
+    //         ZP.IDY advanced by 256 bytes
+    // Modifies: All registers used by copyPageToEEPROM()
+    WritePage()
+    
+    // Read single 256-byte page from EEPROM to RAM
+    // Input: ZP.IDY = EEPROM source address (16-bit, page-aligned recommended)
+    //        ZP.IDX = RAM destination address (16-bit, page-aligned recommended)
+    // Output: 256 bytes copied from EEPROM to RAM
+    //         ZP.IDY advanced by 256 bytes
+    //         ZP.IDX advanced by 256 bytes
+    // Modifies: All registers used by copyProgramPage()
+    ReadPage()
+}
