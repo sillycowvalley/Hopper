@@ -1,7 +1,16 @@
-# Table and Objects System Reference Stubs
+// API Reference - Complete Implementations
+// 
+// All methods listed in this file are fully implemented and thoroughly tested.
+// The actual source code has been omitted from this reference to reduce the 
+// volume of code in the project knowledge base while maintaining API visibility.
+//
+// These are working implementations, not placeholder stubs - the term "stubs" 
+// refers only to the abbreviated documentation format, not the implementation status.
+//
+// For debugging or modification needs, refer to the actual source files which
+// contain the complete, tested implementations with full error handling and
+// proper register preservation as documented in the API contracts below.
 
-## Table.asm
-```hopper
 unit Table
 {
     uses "/Source/Runtime/6502/ZeroPage"
@@ -48,10 +57,7 @@ unit Table
     // Modifies: ZP.L* scratch space (internal to Table operations)
     Clear()
 }
-```
 
-## Objects.asm
-```hopper
 unit Objects
 {
     uses "/Source/Runtime/6502/ZeroPage"
@@ -154,10 +160,7 @@ unit Objects
     // Modifies: ZP.LCURRENT, ZP.LNEXT (internal traversal)
     IterateNext()
 }
-```
 
-## Variables.asm
-```hopper
 unit Variables
 {
     uses "/Source/Runtime/6502/ZeroPage"
@@ -245,10 +248,7 @@ unit Variables
     // Modifies: ZP.L* scratch space (internal Table operations)
     Clear()
 }
-```
 
-## Functions.asm
-```hopper
 unit Functions
 {
     uses "/Source/Runtime/6502/ZeroPage"
@@ -327,10 +327,7 @@ unit Functions
     // Output: C set if successful
     SetBody()
 }
-```
 
-## Arguments.asm
-```hopper
 unit Arguments
 {
     uses "/Source/Runtime/6502/ZeroPage"
@@ -396,4 +393,3 @@ unit Arguments
     // Modifies: ZP.Symbol* scratch space (internal operations)
     Clear()
 }
-```

@@ -45,6 +45,8 @@ unit Functions
             }
             
             // Function doesn't exist, add it
+            LDA #(SymbolType.FUNCTION << 4)  // Functions don't have dataType, just symbolType in high nibble
+            STA ZP.ACCT
             LDX #ZP.FunctionsList
             Objects.Add();
             break;

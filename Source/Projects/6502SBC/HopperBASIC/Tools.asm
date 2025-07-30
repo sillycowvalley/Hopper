@@ -55,7 +55,7 @@ unit Tools
         
         PLA
     }
-    
+        
     // Print null-terminated string to serial output
     // Input: ZP.ACC = pointer to null-terminated string
     // Output: String printed to serial
@@ -69,6 +69,29 @@ unit Tools
         loop                // Print each character until null terminator
         {
             LDA [ZP.ACC], Y // Load character from string
+            if (Z) { break; } // Exit if null terminator found
+            
+            Serial.WriteChar(); // Print the character
+            INY             // Move to next character
+        }
+        
+        PLY
+        PLA
+    } 
+    
+    // Print null-terminated string to serial output
+    // Input: ZP.TOP = pointer to null-terminated string
+    // Output: String printed to serial
+    PrintStringTOP()
+    {
+        PHA
+        PHY
+        
+        LDY #0              // Initialize string index
+        
+        loop                // Print each character until null terminator
+        {
+            LDA [ZP.TOP], Y // Load character from string
             if (Z) { break; } // Exit if null terminator found
             
             Serial.WriteChar(); // Print the character
@@ -1819,8 +1842,60 @@ unit Tools
         PLP  // Pull processor status (restore carry flag)
     }
     
-#endif
-
+    CFOut()
+    {
+        PHP  // Push processor status (including carry flag)
+        PHA
+        if (C)
+        {
+            LDA #'C' Serial.WriteChar();
+        }
+        else
+        {
+            LDA #'N' Serial.WriteChar(); LDA #'C' Serial.WriteChar();
+        }
+        LDA #' ' Serial.WriteChar();
+        PLA
+        PLP  // Pull processor status (restore carry flag)
+    }
+    ZFOut()
+    {
+        PHP  // Push processor status (including carry flag)
+        PHA
+        if (Z)
+        {
+            LDA #'Z' Serial.WriteChar();
+        }
+        else
+        {
+            LDA #'N' Serial.WriteChar(); LDA #'Z' Serial.WriteChar();
+        }
+        LDA #' ' Serial.WriteChar();
+        PLA
+        PLP  // Pull processor status (restore carry flag)
+    }
+    
+    // Helper to checkpoint error state
+    // Input: A = checkpoint ID  
+    // Output: Shows checkpoint ID only if error occurred since last check
+    // Preserves: Everything
+    ChkErr()
+    {
+        PHP
+        PHA
+        LDA ZP.LastErrorL
+        ORA ZP.LastErrorH
+        if (NZ)
+        {
+            LDA #'{' Serial.WriteChar();LDA #'E' Serial.WriteChar();
+            PLA
+            Serial.HexOut();  // Show checkpoint ID where error was first detected
+            PHA
+            LDA #'}' Serial.WriteChar();
+        }
+        PLA
+        PLP
+    }
     // Write character preserving carry flag
     // Input: A = character to output
     // Output: Character printed to serial
@@ -1831,5 +1906,6 @@ unit Tools
         Serial.WriteChar();
         PLP  // Pull processor status (restore carry flag)
     }
+#endif
 
-}
+}    

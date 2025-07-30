@@ -45,6 +45,7 @@ unit Messages
     const string ExpectedExpression = "EXPRESSION EXPECTED";
     const string InvalidBitValue = "INVALID BIT VALUE";
     const string IllegalInFunctionMode = "ILLEGAL IN FUNCTION MODE";
+    const string NoFunctionsMsg = "NO FUNCTIONS\n";
     
     
     // PC -> IDY

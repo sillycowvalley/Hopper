@@ -341,13 +341,6 @@ unit FunctionDeclaration
                 CMP #Tokens.EOF
                 if (Z)
                 {
-    Tools.NL();
-    LDA #'E' // Error set here
-    Tools.COut();
-    DumpBasicBuffers();
-    
-
-                
                     // Hit end of input without finding ENDFUNC
                     LDA #(Messages.SyntaxError % 256)
                     STA ZP.LastErrorL

@@ -774,14 +774,14 @@ unit Tokenizer
         STZ ZP.OpcodeTemp  // Replace mode = 0
         TokenizeLineWithMode();
     }
-    
+
     TokenizeAndAppendLine()
     {
         LDA #1 // Append mode = 1
         STA ZP.OpcodeTemp   
         TokenizeLineWithMode();
     }
-    
+
     // Tokenize complete line from BasicInputBuffer into BasicTokenizerBuffer
     // Input: BasicInputBuffer contains raw input, ZP.BasicInputLength = input length, mode in A
     // Output: Tokens stored in BasicTokenizerBuffer, ZP.TokenBufferLength = total length
@@ -803,14 +803,50 @@ unit Tokenizer
         LDA ZP.BasicInputLength
         if (Z)
         {
-            // Empty line - add EOL token
-            LDA # Tokens.EOL
-            appendToTokenBuffer();
-            SEC  // Success
-            return;
+            // Empty line handling depends on mode
+            LDA ZP.OpcodeTemp
+            if (Z)
+            {
+                // Replace mode - add EOL token for empty line
+                LDA #Tokens.EOL
+                appendToTokenBuffer();
+                SEC  // Success
+                return;
+            }
+            else
+            {
+                // Append mode - skip empty lines entirely (don't add EOL)
+                SEC  // Success - but don't add anything to buffer
+                return;
+            }
         }
         
-        LDX #0  // Position in input buffer
+        // Check if line contains only whitespace
+        LDX #0
+        skipWhitespace(); // Updates X to first non-whitespace
+        CPX ZP.BasicInputLength
+        if (Z)
+        {
+            // Line is only whitespace - treat same as empty line
+            LDA ZP.OpcodeTemp
+            if (Z)
+            {
+                // Replace mode - add EOL token
+                LDA #Tokens.EOL
+                appendToTokenBuffer();
+                SEC  // Success
+                return;
+            }
+            else
+            {
+                // Append mode - skip whitespace-only lines
+                SEC  // Success - but don't add anything to buffer
+                return;
+            }
+        }
+        
+        // Line has content - process normally
+        LDX #0  // Reset position in input buffer
         
         loop
         {
@@ -1205,7 +1241,7 @@ unit Tokenizer
             }
         }
         
-        // Add EOL token
+        // Add EOL token only for lines with content
         LDA #Tokens.EOL
         appendToTokenBuffer();
         Messages.CheckError();
@@ -1221,8 +1257,7 @@ unit Tokenizer
         // Append mode - DON'T reset position (keep pointing to function start)
         
         SEC  // Success
-    }
-    
+    }    
     // Get next token from BasicTokenizerBuffer using 16-bit addressing
     // Input: ZP.TokenizerPos = current position in token buffer
     // Output: A = token type, ZP.CurrentToken = token type

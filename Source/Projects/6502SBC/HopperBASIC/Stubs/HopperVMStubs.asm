@@ -1,9 +1,16 @@
-# Reference Stubs for Stable Source Files
-# This file contains API-only reference stubs for stable source files
-# Implementation details removed to reduce project knowledge volume
+// API Reference - Complete Implementations
+// 
+// All methods listed in this file are fully implemented and thoroughly tested.
+// The actual source code has been omitted from this reference to reduce the 
+// volume of code in the project knowledge base while maintaining API visibility.
+//
+// These are working implementations, not placeholder stubs - the term "stubs" 
+// refers only to the abbreviated documentation format, not the implementation status.
+//
+// For debugging or modification needs, refer to the actual source files which
+// contain the complete, tested implementations with full error handling and
+// proper register preservation as documented in the API contracts below.
 
-## acia6850.asm
-```hopper
 unit SerialDevice
 {
     // API Status: Clean
@@ -17,10 +24,7 @@ unit SerialDevice
     const byte StatusRegister     = ZP.ACIASTATUS;
     
 }
-```
 
-## Serial.asm
-```hopper
 unit Serial
 {
     // API Status: Clean
@@ -76,10 +80,7 @@ unit Serial
     // Modifies: A register, WorkSpaceHexIn
     HexIn()
 }
-```
 
-## Stacks.asm
-```hopper
 unit Stacks
 {
     // API Status: Clean
@@ -178,10 +179,7 @@ unit Stacks
     // Modifies: A register, ZP.SP
     PopA()
 }
-```
 
-## memory.asm
-```hopper
 unit Memory
 {
     // API Status: Clean
@@ -225,10 +223,7 @@ unit Memory
     // Output: Largest block size pushed to stack as Types.UInt
     Maximum()
 }
-```
 
-## I2C.asm
-```hopper
 unit I2C
 {
     // API Status: Clean
@@ -299,8 +294,6 @@ unit I2C
     ByteOut()
 }
 
-## IntMath.asm
-```hopper
 unit IntMath
 {
     // API Status: Clean
@@ -373,10 +366,7 @@ unit IntMath
     // Modifies: Stack type only
     UIntToInt()
 }
-```
 
-## Utilities.asm
-```hopper
 unit Utilities
 {
     // API Status: Clean
@@ -480,10 +470,6 @@ unit Utilities
     CopyBytes()
 }
 
-```
-
-## SerialEEPROM.asm
-```hopper
 unit SerialEEPROM
 {
     // API Status: Clean

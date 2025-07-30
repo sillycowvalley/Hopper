@@ -57,9 +57,9 @@ unit Objects
         PHX
         PHY
         
-        LDA ZP.IDXL
+        LDA ZP.IDYL
         PHA
-        LDA ZP.IDXH
+        LDA ZP.IDYH
         PHA
         
         LDA ZP.ACCL
@@ -119,7 +119,7 @@ unit Objects
         PLA
         STA ZP.NEXTL
         PLA
-        LDA ZP.NEXTH
+        STA ZP.NEXTH
         
         PLA
         STA ZP.ACCH
@@ -127,9 +127,9 @@ unit Objects
         STA ZP.ACCL
         
         PLA
-        STA ZP.IDXH
+        STA ZP.IDYH
         PLA
-        STA ZP.IDXL
+        STA ZP.IDYL
         
         PLY
         PLX
@@ -184,7 +184,7 @@ unit Objects
         PLA
         STA ZP.NEXTL
         PLA
-        LDA ZP.NEXTH
+        STA ZP.NEXTH
         
         PLY
         PLX
@@ -387,7 +387,12 @@ unit Objects
             
             // Move to next node
             Table.GetNext(); // Updates IDX
-            
+            if (NC)
+            {
+                CLC  // End of list
+                break;
+            }
+            /*
             // Check if we've reached end
             LDA ZP.IDXL
             ORA ZP.IDXH
@@ -396,6 +401,7 @@ unit Objects
                 CLC  // End of list
                 break;
             }
+            */
             
             // Check if node matches filter (Filter is already in ZP.SymbolIteratorFilter)
             findNextMatch();

@@ -1,5 +1,18 @@
 unit Tools
 {
+    // API Reference - Complete Implementations
+    // 
+    // All methods listed in this file are fully implemented and thoroughly tested.
+    // The actual source code has been omitted from this reference to reduce the 
+    // volume of code in the project knowledge base while maintaining API visibility.
+    //
+    // These are working implementations, not placeholder stubs - the term "stubs" 
+    // refers only to the abbreviated documentation format, not the implementation status.
+    //
+    // For debugging or modification needs, refer to the actual source files which
+    // contain the complete, tested implementations with full error handling and
+    // proper register preservation as documented in the API contracts below.
+
     // API Status: Clean
     // All public methods preserve caller state except for documented outputs
     // No accidental side effects or register corruption
@@ -14,6 +27,11 @@ unit Tools
     // Input: ZP.ACC = pointer to null-terminated string
     // Output: String printed to serial
     PrintStringACC()
+    
+    // Print null-terminated string to serial output
+    // Input: ZP.TOP = pointer to null-terminated string
+    // Output: String printed to serial
+    PrintStringTOP()
 
     // Write '\n' preserving carry flag
     // Output: '\n' printed to serial
