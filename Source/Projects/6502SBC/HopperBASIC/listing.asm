@@ -16,9 +16,9 @@ unit Listing
     // All public methods preserve caller state except for documented outputs
     // Commands consume their tokens and display output to serial
     
-    // Display a single function signature with parameters
+    // Display a complete function with body
     // Input: ZP.IDX = function node address
-    // Output: Function signature printed to serial with newline
+    // Output: Complete function printed to serial (signature + body + ENDFUNC/END)
     // Preserves: ZP.IDX (function node address)
     // Modifies: ZP.IDY (argument iteration), ZP.TOP (name pointers), serial output
     displayFunction()
@@ -27,7 +27,111 @@ unit Listing
         PHX
         PHY
         
-        // Save function node address since iteration may modify ZP.IDX temporarily
+        // Get the function name FIRST (before any other operations that might corrupt ZP.IDX)
+        Functions.GetName(); // Input: ZP.IDX, Output: ZP.TOP = name pointer
+        
+        // Check if this is the special "BEGIN" function (main program)
+        checkForBeginFunction(); // Input: ZP.TOP, Returns C if this is the BEGIN function
+        if (C)
+        {
+            // Display as BEGIN...END block (no FUNC keyword, no parameters)
+            displayBeginFunction(); // Input: ZP.IDX = function node
+        }
+        else
+        {
+            // Display as regular FUNC...ENDFUNC
+            displayRegularFunction(); // Input: ZP.IDX = function node, ZP.TOP = name
+        }
+        
+        PLY
+        PLX
+        PLA
+    }
+    
+    // Check if function name is "BEGIN"
+    // Input: ZP.TOP = function name pointer
+    // Output: C set if name is "BEGIN", NC if regular function
+    // Preserves: ZP.TOP, all other registers
+    checkForBeginFunction()
+    {
+        PHA
+        PHY
+        
+        // Save ZP.NEXT since StringCompare uses it
+        LDA ZP.NEXTL
+        PHA
+        LDA ZP.NEXTH
+        PHA
+        
+        // Set up comparison with "BEGIN" string
+        LDA #(beginFunctionName % 256)
+        STA ZP.NEXTL
+        LDA #(beginFunctionName / 256)
+        STA ZP.NEXTH
+        
+        // Compare function name with "BEGIN"
+        Tools.StringCompare(); // Input: ZP.TOP vs ZP.NEXT, Output: C set if match
+        
+        // Restore ZP.NEXT
+        PLA
+        STA ZP.NEXTH
+        PLA
+        STA ZP.NEXTL
+        
+        PLY
+        PLA
+    }
+    
+    // Display BEGIN...END function (main program)
+    // Input: ZP.IDX = function node, ZP.TOP = name pointer
+    // Output: BEGIN block printed to serial
+    displayBeginFunction()
+    {
+        PHA
+        PHX
+        PHY
+        
+        // Save function node address for body display
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
+        // Print "BEGIN"
+        LDA #Tokens.BEGIN
+        Tokenizer.PrintKeyword();
+        Tools.NL();
+        
+        // Restore function node for body display
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        // Display function body (token stream)
+        displayFunctionBody(); // Input: ZP.IDX = function node
+        
+        // Print "END"
+        LDA #Tokens.END
+        Tokenizer.PrintKeyword();
+        Tools.NL();
+        Tools.NL(); // Extra blank line after main program
+        
+        PLY
+        PLX
+        PLA
+    }
+    
+    // Display regular FUNC...ENDFUNC function
+    // Input: ZP.IDX = function node, ZP.TOP = name pointer (from Functions.GetName)
+    // Output: Complete function printed to serial
+    displayRegularFunction()
+    {
+        PHA
+        PHX
+        PHY
+        
+        // Save function node address since we'll be making calls that corrupt ZP.IDX
         LDA ZP.IDXL
         PHA
         LDA ZP.IDXH
@@ -39,9 +143,20 @@ unit Listing
         LDA #' '
         Serial.WriteChar();
         
-        // Get and print the function name
-        Functions.GetName(); // Input: ZP.IDX, Output: ZP.TOP = name pointer
+        // Print the function name (already in ZP.TOP from caller)
         Tools.PrintStringTOP();
+        
+        // Restore function node for Arguments operations
+        PLA
+        STA ZP.IDXH
+        PLA  
+        STA ZP.IDXL
+        
+        // Save it again for body display
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
         
         // Print parameter list - get arguments
         Functions.GetArguments(); // Input: ZP.IDX, Output: ZP.IDY = arguments list head, C set if has arguments
@@ -80,16 +195,95 @@ unit Listing
         Serial.WriteChar();
         Tools.NL();
         
-        // Restore function node address
+        // Restore function node for body display
         PLA
         STA ZP.IDXH
         PLA
         STA ZP.IDXL
         
+        // Display function body (token stream)
+        displayFunctionBody(); // Input: ZP.IDX = function node
+        
+        // Print "ENDFUNC"
+        LDA #Tokens.ENDFUNC
+        Tokenizer.PrintKeyword();
+        Tools.NL();
+        Tools.NL(); // Extra blank line after function
+        
         PLY
         PLX
         PLA
     }
+    
+    // Display function body from token stream
+    // Input: ZP.IDX = function node address
+    // Output: Function body printed to serial with proper indentation
+    // TODO: Parse and pretty-print the token stream
+    displayFunctionBody()
+    {
+        // Get function body tokens
+        Functions.GetBody(); // Input: ZP.IDX, Output: ZP.IDY = tokens pointer
+        
+        // Check if function has a body
+        LDA ZP.IDYL
+        ORA ZP.IDYH
+        if (Z)
+        {
+            // No body - just add indented comment
+            LDA #' '
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            LDA #'('
+            Serial.WriteChar();
+            LDA #'e'
+            Serial.WriteChar();
+            LDA #'m'
+            Serial.WriteChar();
+            LDA #'p'
+            Serial.WriteChar();
+            LDA #'t'
+            Serial.WriteChar();
+            LDA #'y'
+            Serial.WriteChar();
+            LDA #')'
+            Serial.WriteChar();
+            Tools.NL();
+        }
+        else
+        {
+            // TODO: Parse token stream and pretty-print with indentation
+            // For now, just show placeholder
+            LDA #' '
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            LDA #'('
+            Serial.WriteChar();
+            LDA #'b'
+            Serial.WriteChar();
+            LDA #'o'
+            Serial.WriteChar();
+            LDA #'d'
+            Serial.WriteChar();
+            LDA #'y'
+            Serial.WriteChar();
+            LDA #')'
+            Serial.WriteChar();
+            Tools.NL();
+        }
+    }
+    
+    // String constant for BEGIN function name
+    const string beginFunctionName = "BEGIN";
     
     // Display all functions in the system
     // Input: None
@@ -134,44 +328,37 @@ unit Listing
         SEC // Always succeeds
     }
     
-    // Display specific function by name
-    // Input: ZP.CurrentToken = IDENTIFIER token (function name)
-    // Output: Function signature printed to serial
-    // Modifies: ZP.CurrentToken (advanced past function name), ZP.TOP (name lookup), ZP.IDX (function node)
-    // Error: Sets ZP.LastError if function not found or syntax error
     displaySpecificFunction()
     {
-        PHA
-        PHX
-        PHY
-        
         loop // Single exit block for error handling
         {
             // Get the function name
-            Tokenizer.GetTokenString(); // Input: ZP.TokenLiteralPos, Output: ZP.TOP = name pointer
+            Tokenizer.GetTokenString(); // Output: ZP.TOP = name pointer
             Messages.CheckError();
             if (NC) { break; }
             
             // Find the function
-            Functions.Find(); // Input: ZP.TOP = name, Output: ZP.IDX = node, C set if found
-            if (NC)
-            {
+            Functions.Find(); // Input: ZP.TOP = name, Output: ZP.IDX = node
+            if (NC) 
+            { 
                 LDA #(Messages.UndefinedIdentifier % 256)
                 STA ZP.LastErrorL
                 LDA #(Messages.UndefinedIdentifier / 256)
                 STA ZP.LastErrorH
                 Messages.StorePC();
-                break;
+                CLC
+                break; 
             }
             
+            // SAVE ZP.IDX before tokenizer call
             LDA ZP.IDXL
             PHA
             LDA ZP.IDXH  
             PHA
             
-            // Consume the function name token
-            Tokenizer.NextToken();
+            Tokenizer.NextToken(); // This corrupts ZP.IDX
             
+            // RESTORE ZP.IDX immediately
             PLA
             STA ZP.IDXH
             PLA
@@ -183,25 +370,22 @@ unit Listing
             // Verify end of line
             LDA ZP.CurrentToken
             CMP #Tokens.EOL
-            if (NZ)
-            {
+            if (NZ) 
+            { 
                 LDA #(Messages.SyntaxError % 256)
                 STA ZP.LastErrorL
                 LDA #(Messages.SyntaxError / 256)
                 STA ZP.LastErrorH
                 Messages.StorePC();
+                CLC
                 break;
             }
             
             // Display the found function
             displayFunction(); // Input: ZP.IDX = function node
-            SEC // Success
+            SEC
             break;
         }
-        
-        PLY
-        PLX
-        PLA
     }
     
     // Execute FUNCS command - display all functions or specific function
