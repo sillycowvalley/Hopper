@@ -14,11 +14,13 @@ unit Console
     uses "Variables"
     uses "Functions"
     
+    uses "Listing"
+    
     // Function capture mode storage - using Statement.asm BasicProcessBuffer2
     const uint funcCaptureMode = Address.BasicProcessBuffer2 + 17; // 0x09D1: 1 byte - console mode
     
     // Error handler for commands in function mode
-    functionModeError()
+    FunctionModeError()
     {
         LDA #(Messages.SyntaxError % 256)
         STA ZP.LastErrorL
@@ -445,25 +447,25 @@ unit Console
                 }
                 case Tokens.VARS:
                 {
-                    cmdVars();
+                    Listing.CmdVars();
                     Messages.CheckError();
                     if (NC) { return; }
                 }
                 case Tokens.LIST:
                 {
-                    cmdList();
+                    Listing.CmdList();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                }
+                case Tokens.FUNCS:
+                {
+                    Listing.CmdFuncs();
                     Messages.CheckError();
                     if (NC) { return; }
                 }
                 case Tokens.RUN:
                 {
                     cmdRun();
-                    Messages.CheckError();
-                    if (NC) { return; }
-                }
-                case Tokens.FUNCS:
-                {
-                    cmdFuncs();
                     Messages.CheckError();
                     if (NC) { return; }
                 }
@@ -548,7 +550,7 @@ unit Console
         IsCaptureMode();
         if (C)
         {
-            functionModeError();
+            FunctionModeError();
             return;
         }
         
@@ -618,7 +620,7 @@ unit Console
         IsCaptureMode();
         if (C)
         {
-            functionModeError();
+            FunctionModeError();
             return;
         }
         
@@ -642,7 +644,7 @@ unit Console
         IsCaptureMode();
         if (C)
         {
-            functionModeError();
+            FunctionModeError();
             return;
         }
         
@@ -666,7 +668,7 @@ unit Console
         IsCaptureMode();
         if (C)
         {
-            functionModeError();
+            FunctionModeError();
             return;
         }
         
@@ -703,7 +705,7 @@ unit Console
         IsCaptureMode();
         if (C)
         {
-            functionModeError();
+            FunctionModeError();
             return;
         }
         
@@ -720,7 +722,7 @@ unit Console
         IsCaptureMode();
         if (C)
         {
-            functionModeError();
+            FunctionModeError();
             return;
         }
         
@@ -730,80 +732,7 @@ unit Console
         Messages.PrintOK();
     }
     
-    // Execute LIST command - display complete program listing
-    // Shows constants, variables, functions in creation order per spec
-    cmdList()
-    {
-        IsCaptureMode();
-        if (C)
-        {
-            functionModeError();
-            return;
-        }
-        
-        // Tokenizer.NextToken(); // consume 'LIST' (cmdVars consumes it)
-        
-        // Display variables and constants (VARS output)
-        cmdVars();
-        
-        // Display all functions (FUNCS output)
-        Functions.IterateFunctions();
-        loop
-        {
-            if (NC) { break; }  // No more functions
-            
-            // Print "FUNC "
-            LDA #Tokens.FUNC
-            Tokenizer.PrintKeyword();
-            LDA #' '
-            Serial.WriteChar();
-            
-            // Get and print the function name
-            Functions.GetName();
-            Tools.PrintStringTOP();
-            
-            // Print parameter list - get arguments
-            Functions.GetArguments(); // Returns ZP.IDY = arguments list head, C set if has arguments
-
-            // Print opening parenthesis
-            LDA #'('
-            Serial.WriteChar();
-            
-            if (C)
-            {
-                // Has arguments - iterate through them
-                Arguments.IterateStart(); // Input: ZP.IDX = function node, Output: ZP.IDY = first argument
-                loop
-                {
-                    if (NC) { break; } // No more arguments
-                    
-                    // Get and print argument name
-                    Arguments.GetName(); // Input: ZP.IDY = argument node, Output: ZP.TOP = name pointer
-                    Tools.PrintStringTOP();
-                    
-                    // Check if there's another argument
-                    Arguments.IterateNext(); // Input: ZP.IDY = current arg, Output: ZP.IDY = next arg
-                    if (C)
-                    {
-                        // More arguments - print comma separator
-                        LDA #','
-                        Serial.WriteChar();
-                        LDA #' '
-                        Serial.WriteChar();
-                    }
-                }
-            }
-            
-            // Print closing parenthesis
-            LDA #')'
-            Serial.WriteChar();
-            
-            // Print newline
-            Tools.NL();
-            Functions.IterateNext(); // Continue to next function
-        }// loop
-        SEC // Success
-    }
+    
     
     // Execute RUN command
     cmdRun()
@@ -811,7 +740,7 @@ unit Console
         IsCaptureMode();
         if (C)
         {
-            functionModeError();
+            FunctionModeError();
             return;
         }
         
@@ -823,272 +752,11 @@ unit Console
         Messages.StorePC(); // 6502 PC -> IDY
     }
     
-    // Execute FUNCS command - display all functions
-    cmdFuncs()
-    {
-        IsCaptureMode();
-        if (C)
-        {
-            functionModeError();
-            return;
-        }
-        
-        Tokenizer.NextToken(); // consume 'FUNCS'
-        
-    #ifdef DEBUG
-        LDA #'<'
-        Tools.COut();
-        LDA #'F'
-        Tools.COut();
-        LDA #'U'
-        Tools.COut();
-        
-        // Show function list head pointer
-        LDA #'H'
-        Tools.COut();
-        LDA ZP.FunctionsListL
-        Tools.HOut();
-        LDA ZP.FunctionsListH
-        Tools.HOut();
-    #endif
-        
-        // Track if we found any functions
-        LDX #0  // Counter for total functions found
-        
-        // Iterate through functions
-        Functions.IterateFunctions();
-        
-    #ifdef DEBUG
-        if (C)
-        {
-            LDA #'I' // Iterator found first function
-            Tools.COut();
-            LDA ZP.IDXL
-            Tools.HOut();
-            LDA ZP.IDXH
-            Tools.HOut();
-        }
-        else
-        {
-            LDA #'N' // No functions in iterator
-            Tools.COut();
-        }
-    #endif
-        
-        loop
-        {
-            if (NC) { break; }  // No more functions
-            
-    #ifdef DEBUG
-            LDA #'F' // Found function
-            Tools.COut();
-            LDA ZP.IDXL
-            Tools.HOut();
-            LDA ZP.IDXH
-            Tools.HOut();
-    #endif
-            
-            // Print "FUNC "
-            LDA #Tokens.FUNC
-            Tokenizer.PrintKeyword();
-            LDA #' '
-            Serial.WriteChar();
-            
-            // Get and print the function name
-            Functions.GetName();
-            Tools.PrintStringTOP();
-            
-            // Print parameter list - get arguments
-            Functions.GetArguments(); // Returns ZP.IDY = arguments list head, C set if has arguments
-            
-            // Print opening parenthesis
-            LDA #'('
-            Serial.WriteChar();
-            
-            if (C)
-            {
-                // Has arguments - iterate through them
-                Arguments.IterateStart(); // Input: ZP.IDX = function node, Output: ZP.IDY = first argument
-                loop
-                {
-                    if (NC) { break; } // No more arguments
-                    
-                    // Get and print argument name
-                    Arguments.GetName(); // Input: ZP.IDY = argument node, Output: ZP.TOP = name pointer
-                    Tools.PrintStringACC();
-                    
-                    // Check if there's another argument
-                    Arguments.IterateNext(); // Input: ZP.IDY = current arg, Output: ZP.IDY = next arg
-                    if (C)
-                    {
-                        // More arguments - print comma separator
-                        LDA #','
-                        Serial.WriteChar();
-                        LDA #' '
-                        Serial.WriteChar();
-                    }
-                }
-            }
-            
-            // Print closing parenthesis
-            LDA #')'
-            Serial.WriteChar();
-            
-            // Print newline
-            Tools.NL();
-            
-            INX  // Increment function count
-            Functions.IterateNext(); // Continue to next function
-        }
-        
-    #ifdef DEBUG
-        LDA #'C' // Count
-        Tools.COut();
-        TXA
-        Tools.HOut();
-    #endif
-        
-        // Special case: if no functions found
-        CPX #0
-        if (Z)
-        {
-            LDA #(Messages.NoFunctionsMsg % 256)
-            STA ZP.ACCL
-            LDA #(Messages.NoFunctionsMsg / 256)
-            STA ZP.ACCH
-            Tools.PrintStringACC();
-        }
-        
-    #ifdef DEBUG
-        LDA #'F'
-        Tools.COut();
-        LDA #'U'
-        Tools.COut();
-        LDA #'>'
-        Tools.COut();
-    #endif
-        
-        SEC // Success
-    }
     
-    // Execute VARS command - display all variables and constants
-    // Constants first, then variables, with blank lines separating sections
-    cmdVars()
-    {
-        IsCaptureMode();
-        if (C)
-        {
-            functionModeError();
-            return;
-        }
-        
-        Tokenizer.NextToken(); // consume 'VARS'
-        
-        // PASS 1: Display all constants
-        LDX #0  // Counter for constants found
-        Variables.IterateConstants();
-        loop
-        {
-            if (NC) { break; }  // No more constants
-            
-            // Print "CONST "
-            LDA #Tokens.CONST
-            Tokenizer.PrintKeyword();   
-            LDA #' '
-            Serial.WriteChar();
-            
-            // Get symbol type and data type
-            Variables.GetType();
-            
-            // Get packed type and extract data type
-            LDA ZP.ACCT
-            AND #0x0F
-            Tools.PrintType();
-                        
-            // Print space
-            LDA #' '
-            Serial.WriteChar();
-            
-            // Get and print the constant name
-            Variables.GetName();
-            Tools.PrintStringACC();
-            
-            // Print " = "
-            LDA #' '
-            Serial.WriteChar();
-            LDA #'='
-            Serial.WriteChar();
-            LDA #' '
-            Serial.WriteChar();
-            
-            // Get and print the value
-            Variables.GetValue();
-            Tools.PrintDecimalWord();
-            
-            // Print newline
-            Tools.NL();
-            
-            INX  // Increment constant count
-            Variables.IterateNext();
-        }
-        
-        // If we found constants, add a blank line
-        CPX #0
-        if (NZ)
-        {
-            Tools.NL();
-        }
-        
-        // PASS 2: Display all variables
-        LDY #0  // Counter for variables found
-        Variables.IterateVariables();
-        loop
-        {
-            if (NC) { break; }  // No more variables
-            
-            // Get symbol type and data type
-            Variables.GetType();
-            
-            // Get packed type and extract data type
-            LDA ZP.ACCT
-            AND #0x0F
-            Tools.PrintType();
-                        
-            // Print space
-            LDA #' '
-            Serial.WriteChar();
-            
-            // Get and print the variable name
-            Variables.GetName();
-            Tools.PrintStringACC();
-            
-            // Print " = "
-            LDA #' '
-            Serial.WriteChar();
-            LDA #'='
-            Serial.WriteChar();
-            LDA #' '
-            Serial.WriteChar();
-            
-            // Get and print the value
-            Variables.GetValue();
-            Tools.PrintDecimalWord();
-            
-            // Print newline
-            Tools.NL();
-            
-            INY  // Increment variable count
-            Variables.IterateNext();
-        }
-        
-        // If we found variables, add a blank line
-        CPY #0
-        if (NZ)
-        {
-            Tools.NL();
-        }
-        SEC // Success
-    }
+    
+    
+
+    
     
     // Exit function capture mode and return to normal (called from Console or Tokenizer on Ctrl+C)
     ExitFunctionCaptureMode()
