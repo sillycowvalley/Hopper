@@ -200,11 +200,17 @@ unit Tokenizer
         LDA ZP.IDYH
         PHA
         
+        
+        
+LDA Address.BasicProcessBuffer1
+Tools.NL(); Tools.HOut();        
+      
         // Choose table based on first character
-        LDA Address.BasicProcessBuffer1
+        LDA Address.BasicProcessBuffer1  
         CMP #'M'
         if (C)  // >= 'M', use M-Z table
         {
+LDA #'1' Tools.COut();
             LDA #(keywordsMZ % 256)
             STA ZP.IDYL
             LDA #(keywordsMZ / 256)
@@ -212,6 +218,7 @@ unit Tokenizer
         }
         else    // < 'M', use A-L table
         {
+LDA #'2' Tools.COut();
             LDA #(keywordsAL % 256)
             STA ZP.IDYL
             LDA #(keywordsAL / 256)
@@ -246,8 +253,12 @@ unit Tokenizer
                     CPX ZP.ACCL
                     if (Z)
                     {
+                        
+LDA #'>' Tools.COut();                         
                         // Exact match found
                         LDA ZP.ACCH  // Get token value to return
+Tools.HOut();                                                
+                        
                         break;       // Exit to cleanup with result
                     }
                     break; // Length mismatch
@@ -255,7 +266,7 @@ unit Tokenizer
                 
                 // Check if we've exceeded keyword length
                 CPX ZP.ACCL
-                if (C) { break; }  // Our identifier is longer than keyword
+                if (Z) { break; }  // We've reached end of keyword without null terminator in identifier
                 
                 CMP [ZP.IDY], Y    // Compare with expected character
                 if (NZ) { break; } // Mismatch
@@ -277,12 +288,13 @@ unit Tokenizer
             }
             
             // Mismatch - skip to next keyword
-            // Reset Y and skip past this keyword entry
-            LDY #0
-            LDA [ZP.IDY], Y     // Get length again
+            // We need to advance Y to point to the next keyword entry
+            // Y currently points somewhere in the middle of current keyword
+            // Go back to start of current keyword and skip past it entirely
+            LDY #0              // Reset to start of current keyword
+            LDA ZP.ACCL         // Get length we saved earlier
             CLC
-            ADC #2              // length + token = 2 bytes header
-            ADC ZP.ACCL         // + keyword characters  
+            ADC #2              // length + token byte + length byte = total entry size
             TAY                 // Y now points to next keyword
         }
         
