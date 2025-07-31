@@ -26,19 +26,22 @@ unit Tools
     // Print null-terminated string to serial output
     // Input: ZP.ACC = pointer to null-terminated string
     // Output: String printed to serial
+    // Preserves: Everything
     PrintStringACC()
     
     // Print null-terminated string to serial output
     // Input: ZP.TOP = pointer to null-terminated string
     // Output: String printed to serial
+    // Preserves: Everything
     PrintStringTOP()
     
     // Print null-terminated string to serial output
     // Input: ZP.IDY = pointer to null-terminated string
     // Output: String printed to serial
+    // Preserves: Everything
     PrintStringIDY()
 
-    // Write '\n' preserving carry flag
+    // Debug utility: Write '\n' preserving carry flag
     // Output: '\n' printed to serial
     // Preserves: Everything
     NL()
@@ -47,6 +50,7 @@ unit Tools
     // Input: ZP.TOP = 16-bit number to print (0-65535)
     //        ZP.TOPT = type (for signed/unsigned determination)
     // Output: Decimal number printed to serial
+    // Preserves: Everything
     PrintDecimalWord()
     
     // Powers of 10 table for PrintDecimalWord (little-endian format)
@@ -63,120 +67,122 @@ unit Tools
     //        ZP.FDESTINATIONADDRESS = destination pointer  
     //        ZP.FLENGTH = number of bytes to copy (16-bit)
     // Output: Data copied from source to destination
+    // Preserves: Everything
     CopyBytes()
     
     // Get string length
     // Input: X = string pointer low byte, Y = string pointer high byte
     // Output: A = string length (not including null terminator)
+    // Preserves: Everything
     StringLength()
     
     // Compare two strings
     // Input: ZP.TOP = first string pointer, ZP.NEXT = second string pointer
     // Output: C set if strings match, NC if different
+    // Preserves: Everything
     StringCompare()
 
-#ifdef DEBUG    
-    
-    // Dump key zero page variables for debugging
+    // Debug dump: key zero page variables for debugging
     // Input: None
     // Output: Variables printed to serial
-    // Preserves: Everything
+    // Preserves: Everything (saves/restores flags with PHP/PLP)
     DumpVariables()
 
-    // Dump the value stack for debugging
+    // Debug dump: value stack contents for debugging
     // Input: None
     // Output: Stack contents printed to serial
-    // Preserves: Everything
+    // Preserves: Everything (saves/restores flags with PHP/PLP)
     DumpStack()
     
-    // Lightweight heap summary for use during iteration
+    // Debug dump: lightweight heap summary for use during iteration
     // Input: None
     // Output: List head pointers printed to serial
-    // Preserves: Everything
+    // Preserves: Everything (saves/restores flags with PHP/PLP)
     DumpHeapSummary()
 
-    // Debug output for iteration state
+    // Debug dump: iteration state for debugging
     // Input: None
     // Output: Current IDX pointer printed to serial
-    // Preserves: Everything
+    // Preserves: Everything (saves/restores flags with PHP/PLP)
     DumpIterationState()
     
-    // Dump heap with state preservation for debugging
+    // Debug dump: heap with state preservation for debugging
     // Input: None
     // Output: Heap contents printed to serial
     // Modifies: ZP.M* scratch space (internal to heap analysis operations)
+    // Preserves: Everything else (saves/restores flags with PHP/PLP)
     DumpHeap()
 
-    // Dump a 256-byte page in hex+ASCII format for debugging
+    // Debug dump: 256-byte page in hex+ASCII format for debugging
     // Input: A = page number (high byte of address)
     // Output: Page contents printed to serial
     // Modifies: ZP.M0, ZP.M1 (internal operations)
+    // Preserves: Everything else (saves/restores flags with PHP/PLP)
     DumpPage()
 
-    // Dump the BASIC input and tokenizer buffers for debugging
+    // Debug dump: BASIC input and tokenizer buffers for debugging
     // Input: None
     // Output: Buffer contents printed to serial
+    // Preserves: Everything (saves/restores flags with PHP/PLP)
     DumpBasicBuffers()
     
-    // Output hex byte preserving carry flag  
+    // Debug output: hex byte preserving carry flag  
     // Input: A = byte to output as hex
     // Output: Hex byte printed to serial
-    // Preserves: Everything
+    // Preserves: Everything (saves/restores flags with PHP/PLP)
     HOut()
     
-    // Output IDX register as "IDX:hhll "
+    // Debug output: IDX register as "IDX:hhll "
     // Input: None (uses ZP.IDX)
     // Output: IDX value printed to serial
-    // Preserves: Everything
+    // Preserves: Everything (saves/restores flags with PHP/PLP)
     XOut()
     
-    // Output IDY register as "IDY:hhll "
+    // Debug output: IDY register as "IDY:hhll "
     // Input: None (uses ZP.IDY)
     // Output: IDY value printed to serial
-    // Preserves: Everything
+    // Preserves: Everything (saves/restores flags with PHP/PLP)
     YOut()
     
-    // Output ZP.SymbolIteratorFilter as "I:ll "
+    // Debug output: ZP.SymbolIteratorFilter as "I:ll "
     // Input: None (uses ZP.SymbolIteratorFilter)
     // Output: ZP.SymbolIteratorFilter value printed to serial
-    // Preserves: Everything
+    // Preserves: Everything (saves/restores flags with PHP/PLP)
     IOut()
     
-    // Output ACC register as "ACC:hhll "
+    // Debug output: ACC register as "ACC:hhll "
     // Input: None (uses ZP.ACC)
     // Output: ACC value printed to serial
-    // Preserves: Everything
+    // Preserves: Everything (saves/restores flags with PHP/PLP)
     AOut()
     
-    // Output ACCT register as "ACCT:ll "
+    // Debug output: ACCT register as "ACCT:ll "
     // Input: None (uses ZP.ACCT)
     // Output: ACCT value printed to serial
-    // Preserves: Everything
+    // Preserves: Everything (saves/restores flags with PHP/PLP)
     ATOut()
     
-    // Output NEXT register as "NEXT:type-hhll "
+    // Debug output: NEXT register as "NEXT:type-hhll "
     // Input: None (uses ZP.NEXT)
     // Output: NEXT value printed to serial
-    // Preserves: Everything
+    // Preserves: Everything (saves/restores flags with PHP/PLP)
     NOut()
     
-    // Output TOP register as "TOP:type-hhll "
+    // Debug output: TOP register as "TOP:type-hhll "
     // Input: None (uses ZP.TOP)
     // Output: TOP value printed to serial
-    // Preserves: Everything
+    // Preserves: Everything (saves/restores flags with PHP/PLP)
     TOut()
     
-    // Output ACCL register as "ACCL:ll "
+    // Debug output: ACCL register as "ACCL:ll "
     // Input: None (uses ZP.ACCL)
     // Output: ACCL value printed to serial
-    // Preserves: Everything
+    // Preserves: Everything (saves/restores flags with PHP/PLP)
     ALOut()
 
-#endif
-
-    // Write character preserving carry flag
+    // Debug utility: Write character preserving carry flag
     // Input: A = character to output
     // Output: Character printed to serial
-    // Preserves: Everything
+    // Preserves: Everything (saves/restores flags with PHP/PLP)
     COut()
 }
