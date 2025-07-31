@@ -28,29 +28,70 @@ unit Statement
     const uint funcOriginalLength    = Address.BasicProcessBuffer2 + 20; // 0x09D4: 2 bytes - original buffer length when capture started
     // 12 bytes still available (0x09D6-0x09DF)
     
+    flags CaptureMode
+    {
+        Off = 0,
+        Func = 1,
+        Begin = 2
+    }
     
     SetCaptureMode()
     {
-        LDA #1
         STA funcCaptureMode
     }
-    SetNormalMode()
-    {
-        LDA #0
-        STA funcCaptureMode
-    }
-    IsCaptureMode()
+    IsCaptureModeOff()
     {
         LDA funcCaptureMode
+        CMP # CaptureMode.Off
         if (Z)
         {
-            CLC // not capture mode (funcCaptureMode == 0)
+            SEC // C = CaptureMode.Off
         }   
         else
         {
-            SEC // capture mode (funcCaptureMode == 1)
+            CLC // NC = not CaptureMode.Off
         }
     }
+    IsCaptureModeOn()
+    {
+        LDA funcCaptureMode
+        CMP # CaptureMode.Off
+        if (Z)
+        {
+            CLC // NC = CaptureMode.Off
+        }   
+        else
+        {
+            SEC // C = not CaptureMode.Off
+        }
+    }
+    IsCaptureModeBegin()
+    {
+        LDA funcCaptureMode
+        CMP # CaptureMode.Begin
+        if (Z)
+        {
+            SEC // C = CaptureMode.Begin
+        }   
+        else
+        {
+            CLC // NC = not CaptureMode.Begin
+        }
+    }
+    IsCaptureModeFunc()
+    {
+        LDA funcCaptureMode
+        CMP # CaptureMode.Func
+        if (Z)
+        {
+            SEC // C = CaptureMode.Func
+        }   
+        else
+        {
+            CLC // NC = not CaptureMode.Func
+        }
+    }
+    
     
     SetIsConstant()
     {
@@ -285,6 +326,11 @@ unit Statement
                 case Tokens.FUNC:
                 {
                     FunctionDeclaration.ExecuteFunctionDeclaration();
+                    break;
+                }
+                case Tokens.BEGIN:
+                {
+                    FunctionDeclaration.ExecuteBeginDeclaration();
                     break;
                 }
                 case Tokens.IF:

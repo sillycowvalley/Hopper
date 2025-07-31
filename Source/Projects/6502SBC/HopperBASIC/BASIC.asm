@@ -100,8 +100,8 @@ program HopperBASIC
             }
             
             // Show ready prompt after successful execution
-            Statement.IsCaptureMode();
-            if (NC)
+            Statement.IsCaptureModeOff();
+            if (C)
             {
                 LDA #(Messages.ReadyPrompt % 256)
                 STA ZP.ACCL

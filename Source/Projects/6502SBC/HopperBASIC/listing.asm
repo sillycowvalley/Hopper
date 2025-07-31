@@ -11,7 +11,7 @@ unit Listing
     uses "Variables"
     uses "Functions"
     uses "Arguments"
-    uses "Statement"  // For IsCaptureMode()
+    uses "Statement"  // For IsCaptureModeOn()
     uses "Console"   // For FunctionModeError()
     
     // API Status: Clean
@@ -66,9 +66,9 @@ unit Listing
         PHA
         
         // Set up comparison with "BEGIN" string
-        LDA #(beginFunctionName % 256)
+        LDA #(Messages.BeginFunctionName % 256)
         STA ZP.NEXTL
-        LDA #(beginFunctionName / 256)
+        LDA #(Messages.BeginFunctionName / 256)
         STA ZP.NEXTH
         
         // Compare function name with "BEGIN"
@@ -102,7 +102,6 @@ unit Listing
         // Print "BEGIN"
         LDA #Tokens.BEGIN
         Tokenizer.PrintKeyword();
-        Tools.NL();
         
         // Restore function node for body display
         PLA
@@ -113,10 +112,6 @@ unit Listing
         // Display function body (token stream)
         displayFunctionBody(); // Input: ZP.IDX = function node
         
-        // Print "END"
-        LDA #Tokens.END
-        Tokenizer.PrintKeyword();
-        Tools.NL();
         Tools.NL(); // Extra blank line after main program
         
         PLY
@@ -240,9 +235,6 @@ unit Listing
         PLA
     }
     
-    // String constant for BEGIN function name
-    const string beginFunctionName = "BEGIN";
-    
     // Display all functions in the system
     // Input: None
     // Output: All function signatures printed to serial, or "NO FUNCTIONS" message
@@ -353,7 +345,7 @@ unit Listing
     // Error: Sets ZP.LastError if function mode, syntax error, or function not found
     CmdFuncs()
     {
-        Statement.IsCaptureMode();
+        Statement.IsCaptureModeOn();
         if (C)
         {
             Console.FunctionModeError();
@@ -397,7 +389,7 @@ unit Listing
     // Error: Sets ZP.LastError if function mode or other command errors
     CmdList()
     {
-        Statement.IsCaptureMode();
+        Statement.IsCaptureModeOn();
         if (C)
         {
             Console.FunctionModeError();
@@ -426,7 +418,7 @@ unit Listing
     // Error: Sets ZP.LastError if function mode or iteration errors
     CmdVars()
     {
-        Statement.IsCaptureMode();
+        Statement.IsCaptureModeOn();
         if (C)
         {
             Console.FunctionModeError();

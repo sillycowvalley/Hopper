@@ -1736,8 +1736,8 @@ unit Tokenizer
     ReadLine()
     {
         // Show appropriate prompt
-        IsCaptureMode();
-        if (NC)
+        Statement.IsCaptureModeOff();
+        if (C)
         {
             // Normal mode - prompt already shown by interpreterLoop
         }
@@ -1791,7 +1791,7 @@ unit Tokenizer
                     Serial.WriteChar();
                     
                     // If in function capture mode, cancel it
-                    IsCaptureMode();
+                    Statement.IsCaptureModeOn();
                     if (C)
                     {
                         Console.ExitFunctionCaptureMode();

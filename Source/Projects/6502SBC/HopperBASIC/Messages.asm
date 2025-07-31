@@ -47,6 +47,9 @@ unit Messages
     const string IllegalInFunctionMode = "ILLEGAL IN FUNCTION MODE";
     const string NoFunctionsMsg = "NO FUNCTIONS\n";
     
+    // String constant for BEGIN function name
+    const string BeginFunctionName = "BEGIN";
+    
     
     // PC -> IDY
     //

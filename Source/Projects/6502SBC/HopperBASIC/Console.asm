@@ -38,8 +38,8 @@ unit Console
         // Initialize symbol tables
         Objects.Initialize();
         
-        // Initialize function capture mode
-        Statement.SetNormalMode();
+        LDA #CaptureMode.Off
+        Statement.SetCaptureMode();
     }
     
     // Read a line of input and tokenize it
@@ -48,10 +48,10 @@ unit Console
         Tokenizer.ReadLine();    // Read into BasicInputBuffer, sets ZP.BasicInputLength
         
         // Tokenize based on current mode
-        IsCaptureMode();
+        Statement.IsCaptureModeOn();
         if (C)
         {
-            // Function capture mode - append to existing buffer
+            // FUNC or BEGIN capture mode - append to existing buffer
             Tokenizer.TokenizeAndAppendLine();
         }
         else
@@ -67,10 +67,10 @@ unit Console
     // Enhanced ProcessLine() to handle function capture mode
     ProcessLine()
     {
-        IsCaptureMode();
+        Statement.IsCaptureModeOn();
         if (C)
         {
-            // Function capture mode processing
+            // FUNC or BEGIN capture mode processing
             processLineFunctionCapture();
         }
         else
@@ -133,11 +133,6 @@ unit Console
         
         // After processing, check if we just processed an incomplete function
         detectIncompleteFunction();
-        if (C)
-        {
-            SetCaptureMode(); // Enter capture mode for the body
-        }
-        
         SEC // Continue
     }
      
@@ -170,44 +165,96 @@ unit Console
         CMP #Tokens.FUNC
         if (NZ)
         {
-            // Restore position
-            PLA
-            STA ZP.TokenizerPosH
-            PLA
-            STA ZP.TokenizerPosL
-            CLC // Not a function
-            return;
-        }
-        
-        // Scan through tokens looking for ENDFUNC
-        loop
-        {
-            Tokenizer.NextToken();
-            LDA ZP.CurrentToken
-            CMP #Tokens.EOL
-            if (Z) 
-            { 
-                // Restore position
-                PLA
-                STA ZP.TokenizerPosH
-                PLA
-                STA ZP.TokenizerPosL
-                SEC // incomplete function found !!
-                return; 
-            }
-            
-            CMP #Tokens.ENDFUNC
-            if (Z)
+            CMP #Tokens.BEGIN
+            if (NZ)
             {
                 // Restore position
                 PLA
                 STA ZP.TokenizerPosH
                 PLA
                 STA ZP.TokenizerPosL
-                CLC // Found ENDFUNC - complete function
+                CLC // Not a function
                 return;
             }
-        } // loop
+            
+            // BEGIN case - scan for END
+            loop
+            {
+                Tokenizer.NextToken();
+                LDA ZP.CurrentToken
+                CMP #Tokens.EOL
+                if (Z) 
+                { 
+                    // Restore position
+                    PLA
+                    STA ZP.TokenizerPosH
+                    PLA
+                    STA ZP.TokenizerPosL
+#ifdef DEBUG
+                    LDA #'i' Tools.COut(); LDA #'b' Tools.COut();
+#endif
+                    LDA #CaptureMode.Begin
+                    Statement.SetCaptureMode();
+                    SEC // incomplete BEGIN found !!
+                    break; 
+                }
+                
+                CMP #Tokens.END
+                if (Z)
+                {
+                    // Restore position
+                    PLA
+                    STA ZP.TokenizerPosH
+                    PLA
+                    STA ZP.TokenizerPosL
+#ifdef DEBUG
+                    LDA #'c' Tools.COut(); LDA #'b' Tools.COut();
+#endif
+                    CLC // Found END - complete BEGIN
+                    break;
+                }
+            } // loop
+        }
+        else
+        {
+            // FUNC case - scan for ENDFUNC
+            loop
+            {
+                Tokenizer.NextToken();
+                LDA ZP.CurrentToken
+                CMP #Tokens.EOL
+                if (Z) 
+                { 
+                    // Restore position
+                    PLA
+                    STA ZP.TokenizerPosH
+                    PLA
+                    STA ZP.TokenizerPosL
+#ifdef DEBUG
+                    LDA #'i' Tools.COut(); LDA #'f' Tools.COut();
+#endif
+                    LDA #CaptureMode.Func
+                    Statement.SetCaptureMode();
+                    SEC // incomplete function found !!
+                    break; 
+                }
+                
+                CMP #Tokens.ENDFUNC
+                if (Z)
+                {
+                    // Restore position
+                    PLA
+                    STA ZP.TokenizerPosH
+                    PLA
+                    STA ZP.TokenizerPosL
+#ifdef DEBUG
+                    LDA #'c' Tools.COut(); LDA #'f' Tools.COut();
+#endif
+                    CLC // Found ENDFUNC - complete function
+                    break;
+                }
+            } // loop
+        }
         
     #ifdef DEBUG
         LDA #'D'
@@ -264,7 +311,8 @@ unit Console
             LDA #'S' // Setting normal mode
             Tools.COut();
     #endif
-            SetNormalMode();
+            LDA #CaptureMode.Off
+            Statement.SetCaptureMode();
             
     #ifdef DEBUG
             LDA #'C' // Calling CompletePartialFunction
@@ -314,18 +362,55 @@ unit Console
             STZ ZP.TokenizerPosL
             STZ ZP.TokenizerPosH
             
-            loop
+            Statement.IsCaptureModeFunc();
+            if (C)
             {
-                Tokenizer.CompareTokenizerPosToLength();
-                if (C) { CLC break; } // Reached end - not found
-                
-                Tokenizer.NextToken();
-                LDA ZP.CurrentToken
-                CMP #Tokens.ENDFUNC
-                if (Z)
+                // Look for ENDFUNC
+                loop
                 {
-                    SEC // Found ENDFUNC
-                    break;
+                    Tokenizer.CompareTokenizerPosToLength();
+                    if (C) { CLC break; } // Reached end - not found
+                    
+                    Tokenizer.NextToken();
+                    LDA ZP.CurrentToken
+                    CMP #Tokens.ENDFUNC
+                    if (Z)
+                    {
+                        SEC // Found ENDFUNC
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                Statement.IsCaptureModeBegin();
+                if (C)
+                {
+                    // Look for END
+                    loop
+                    {
+                        Tokenizer.CompareTokenizerPosToLength();
+                        if (C) { CLC break; } // Reached end - not found
+                        
+                        Tokenizer.NextToken();
+                        LDA ZP.CurrentToken
+                        CMP #Tokens.END
+                        if (Z)
+                        {
+                            SEC // Found END
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    // Should not happen - error condition
+                    LDA #(Messages.InternalError % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.InternalError / 256)
+                    STA ZP.LastErrorH
+                    Messages.StorePC();
+                    CLC
                 }
             }
             break; // Exit outer loop
@@ -500,7 +585,7 @@ unit Console
     // Execute DUMP command
     cmdDump()
     {
-        IsCaptureMode();
+        Statement.IsCaptureModeOn();
         if (C)
         {
             FunctionModeError();
@@ -570,7 +655,7 @@ unit Console
     // Execute HEAP command
     cmdHeap()
     {
-        IsCaptureMode();
+        Statement.IsCaptureModeOn();
         if (C)
         {
             FunctionModeError();
@@ -594,7 +679,7 @@ unit Console
     // Execute BUFFERS command
     cmdBuffers()
     {
-        IsCaptureMode();
+        Statement.IsCaptureModeOn();
         if (C)
         {
             FunctionModeError();
@@ -618,7 +703,7 @@ unit Console
     // Execute MEM command
     CmdMem()
     {
-        IsCaptureMode();
+        Statement.IsCaptureModeOn();
         if (C)
         {
             FunctionModeError();
@@ -655,7 +740,7 @@ unit Console
     // Execute NEW command
     cmdNew()
     {
-        IsCaptureMode();
+        Statement.IsCaptureModeOn();
         if (C)
         {
             FunctionModeError();
@@ -672,7 +757,7 @@ unit Console
     // Execute CLEAR command
     cmdClear()
     {
-        IsCaptureMode();
+        Statement.IsCaptureModeOn();
         if (C)
         {
             FunctionModeError();
@@ -690,7 +775,7 @@ unit Console
     // Execute RUN command
     cmdRun()
     {
-        IsCaptureMode();
+        Statement.IsCaptureModeOn();
         if (C)
         {
             FunctionModeError();
@@ -714,7 +799,8 @@ unit Console
     // Exit function capture mode and return to normal (called from Console or Tokenizer on Ctrl+C)
     ExitFunctionCaptureMode()
     {
-        SetNormalMode();
+        LDA #CaptureMode.Off
+        Statement.SetCaptureMode();
         
         // Additional cleanup when exiting function capture mode:
         // Reset tokenizer buffer to clear partial function data
