@@ -8,7 +8,18 @@ unit Tokenizer
     uses "Messages"
     uses "BasicTypes"
     
-    // Phase 1 Token definitions (extended set)
+    enum IdentifierType
+    {
+        Undefined,
+        Global,
+        Constant,
+        Function,
+        Argument,
+        Local,
+        Keyword
+    }    
+    
+    // Complete Token definitions for HopperBASIC
     enum Tokens
     {
         // Console commands
@@ -36,30 +47,44 @@ unit Tokenizer
         INT      = 0x14,
         WORD     = 0x15,
         BIT      = 0x16,
-        CONST    = 0x17, 
+        BYTE     = 0x17,
+        STRING   = 0x18,
+        CONST    = 0x19, 
         
         // Language keywords
         PRINT    = 0x20,
-        IF       = 0x21,
-        THEN     = 0x22,
-        FUNC     = 0x23,
-        ENDFUNC  = 0x24,
-        RETURN   = 0x25,
-        BEGIN    = 0x26,
-        END      = 0x27,     
-           
+        INPUT    = 0x21,
+        IF       = 0x22,
+        THEN     = 0x23,
+        FUNC     = 0x24,
+        ENDFUNC  = 0x25,
+        RETURN   = 0x26,
+        BEGIN    = 0x27,
+        END      = 0x28,
+        FOR      = 0x29,
+        TO       = 0x2A,
+        STEP     = 0x2B,
+        NEXT     = 0x2C,
+        WHILE    = 0x2D,
+        WEND     = 0x2E,
+        DO       = 0x2F,
+        UNTIL    = 0x30,
+        BREAK    = 0x31,
+        CONTINUE = 0x32,
+        CONT     = 0x33,
+               
         // Logical keywords
-        AND      = 0x30,
-        OR       = 0x31,
-        NOT      = 0x32,
-        MOD      = 0x33,
+        AND      = 0x34,
+        OR       = 0x35,
+        NOT      = 0x36,
+        MOD      = 0x37,
         
         // Sentinel marking end of keywords
-        lastKeyword = 0x33,
+        lastKeyword = 0x37,
         
         // Built-in literals
-        TRUE     = 0x34,  // Built-in BIT constant (1)
-        FALSE    = 0x35,  // Built-in BIT constant (0)
+        TRUE     = 0x38,  // Built-in BIT constant (1)
+        FALSE    = 0x39,  // Built-in BIT constant (0)
         
         // Basic operators
         EQUALS   = 0x40,  // =
@@ -70,7 +95,7 @@ unit Tokenizer
         NOTEQUAL = 0x45,  // <>
         
         // Additional comparison operators
-        LT       = 0x50,  // 
+        LT       = 0x50,  // <
         GT       = 0x51,  // >
         LE       = 0x52,  // <=
         GE       = 0x53,  // >=
@@ -82,129 +107,342 @@ unit Tokenizer
         BITWISE_AND = 0x5A,  // &
         BITWISE_OR  = 0x5B,  // |
         
+        // Array and string operators
+        LBRACKET = 0x5C,  // [
+        RBRACKET = 0x5D,  // ]
+        LBRACE   = 0x5E,  // {
+        RBRACE   = 0x5F,  // }
+        
         // Literals and identifiers
         NUMBER     = 0x80,
-        STRING     = 0x81,
+        STRINGLIT  = 0x81,  // String literal "text"
         IDENTIFIER = 0x82,
         EOF        = 0x83,
         COLON      = 0x84, 
         COMMA      = 0x85,
+        SEMICOLON  = 0x86,  // ;
     }
     
-    enum IdentifierType
-    {
-        Undefined,
-        Global,
-        Constant,
-        Function,
-        Argument,
-        Local,
-        Keyword
-    }
-    
-    // Compact keyword table: length, token, chars...
-    const byte[] keywords = {
-        3, Tokens.NEW, 'N', 'E', 'W',
-        4, Tokens.LIST, 'L', 'I', 'S', 'T',
-        3, Tokens.RUN, 'R', 'U', 'N',
-        5, Tokens.CLEAR, 'C', 'L', 'E', 'A', 'R',
-        4, Tokens.VARS, 'V', 'A', 'R', 'S',
-        5, Tokens.FUNCS, 'F', 'U', 'N', 'C', 'S',
-        6, Tokens.FORGET, 'F', 'O', 'R', 'G', 'E', 'T',
-        4, Tokens.SAVE, 'S', 'A', 'V', 'E',
-        4, Tokens.LOAD, 'L', 'O', 'A', 'D',
-        3, Tokens.DIR, 'D', 'I', 'R',
-        3, Tokens.DEL, 'D', 'E', 'L',
-        3, Tokens.MEM, 'M', 'E', 'M',
-        4, Tokens.HEAP, 'H', 'E', 'A', 'P',
-        7, Tokens.BUFFERS, 'B', 'U', 'F', 'F', 'E', 'R', 'S',
-        4, Tokens.DUMP, 'D', 'U', 'M', 'P', 
-        3, Tokens.BYE, 'B', 'Y', 'E',
-        3, Tokens.REM, 'R', 'E', 'M',
-        3, Tokens.INT, 'I', 'N', 'T',
-        4, Tokens.WORD, 'W', 'O', 'R', 'D',
-        3, Tokens.BIT, 'B', 'I', 'T',
-        5, Tokens.CONST, 'C', 'O', 'N', 'S', 'T', 
-        5, Tokens.PRINT, 'P', 'R', 'I', 'N', 'T',
-        2, Tokens.IF, 'I', 'F',
-        4, Tokens.THEN, 'T', 'H', 'E', 'N',
-        4, Tokens.FUNC, 'F', 'U', 'N', 'C',
-        7, Tokens.ENDFUNC, 'E', 'N', 'D', 'F', 'U', 'N', 'C',
-        6, Tokens.RETURN, 'R', 'E', 'T', 'U', 'R', 'N',
-        5, Tokens.BEGIN, 'B', 'E', 'G', 'I', 'N',
-        3, Tokens.END, 'E', 'N', 'D',
-        3, Tokens.AND, 'A', 'N', 'D',
-        2, Tokens.OR, 'O', 'R',
-        3, Tokens.NOT, 'N', 'O', 'T',
-        3, Tokens.MOD, 'M', 'O', 'D',
-        4, Tokens.TRUE, 'T', 'R', 'U', 'E',
-        5, Tokens.FALSE, 'F', 'A', 'L', 'S', 'E',
+    // Keywords A-L (first character < 'M')
+    const byte[] keywordsAL = {
+        2, Tokens.IF, 'I', 'F',                    // Very frequent
+        3, Tokens.INT, 'I', 'N', 'T',             // Very frequent  
+        3, Tokens.BIT, 'B', 'I', 'T',             // Very frequent
+        3, Tokens.AND, 'A', 'N', 'D',             // Frequent
+        3, Tokens.FOR, 'F', 'O', 'R',             // Frequent
+        3, Tokens.END, 'E', 'N', 'D',             // Frequent
+        4, Tokens.FUNC, 'F', 'U', 'N', 'C',       // Frequent
+        5, Tokens.BEGIN, 'B', 'E', 'G', 'I', 'N', // Frequent
+        5, Tokens.CONST, 'C', 'O', 'N', 'S', 'T', // Frequent
+        5, Tokens.CLEAR, 'C', 'L', 'E', 'A', 'R', // Frequent console command
+        5, Tokens.INPUT, 'I', 'N', 'P', 'U', 'T', // Moderate
+        5, Tokens.BREAK, 'B', 'R', 'E', 'A', 'K', // Moderate
+        7, Tokens.ENDFUNC, 'E', 'N', 'D', 'F', 'U', 'N', 'C', // Moderate
+        5, Tokens.FUNCS, 'F', 'U', 'N', 'C', 'S', // Console command
+        2, Tokens.DO, 'D', 'O',                   // Less frequent
+        4, Tokens.BYTE, 'B', 'Y', 'T', 'E',       // Less frequent
+        5, Tokens.FALSE, 'F', 'A', 'L', 'S', 'E', // Less frequent
+        4, Tokens.CONT, 'C', 'O', 'N', 'T',       // Console command
+        3, Tokens.BYE, 'B', 'Y', 'E',             // Console command
+        3, Tokens.DEL, 'D', 'E', 'L',             // Infrequent
+        3, Tokens.DIR, 'D', 'I', 'R',             // Infrequent
+        4, Tokens.DUMP, 'D', 'U', 'M', 'P',       // Infrequent (debug)
+        4, Tokens.HEAP, 'H', 'E', 'A', 'P',       // Infrequent (debug)
+        7, Tokens.BUFFERS, 'B', 'U', 'F', 'F', 'E', 'R', 'S', // Infrequent (debug)
+        6, Tokens.FORGET, 'F', 'O', 'R', 'G', 'E', 'T', // Infrequent
+        8, Tokens.CONTINUE, 'C', 'O', 'N', 'T', 'I', 'N', 'U', 'E', // Infrequent
+        4, Tokens.LOAD, 'L', 'O', 'A', 'D',       // Infrequent
+        4, Tokens.LIST, 'L', 'I', 'S', 'T',       // Infrequent
         0  // End marker
     };
     
-    
+    // Keywords M-Z (first character >= 'M')  
+    const byte[] keywordsMZ = {
+        5, Tokens.PRINT, 'P', 'R', 'I', 'N', 'T', // Very frequent
+        4, Tokens.WORD, 'W', 'O', 'R', 'D',       // Very frequent
+        3, Tokens.NOT, 'N', 'O', 'T',             // Frequent
+        2, Tokens.OR, 'O', 'R',                   // Frequent
+        3, Tokens.MOD, 'M', 'O', 'D',             // Frequent
+        4, Tokens.THEN, 'T', 'H', 'E', 'N',       // Frequent
+        4, Tokens.NEXT, 'N', 'E', 'X', 'T',       // Frequent
+        6, Tokens.RETURN, 'R', 'E', 'T', 'U', 'R', 'N', // Moderate
+        5, Tokens.WHILE, 'W', 'H', 'I', 'L', 'E', // Moderate
+        4, Tokens.TRUE, 'T', 'R', 'U', 'E',       // Moderate
+        2, Tokens.TO, 'T', 'O',                   // Moderate
+        6, Tokens.STRING, 'S', 'T', 'R', 'I', 'N', 'G', // Moderate
+        4, Tokens.STEP, 'S', 'T', 'E', 'P',       // Less frequent
+        4, Tokens.WEND, 'W', 'E', 'N', 'D',       // Less frequent
+        5, Tokens.UNTIL, 'U', 'N', 'T', 'I', 'L', // Less frequent
+        3, Tokens.NEW, 'N', 'E', 'W',             // Infrequent
+        3, Tokens.RUN, 'R', 'U', 'N',             // Infrequent
+        3, Tokens.MEM, 'M', 'E', 'M',             // Infrequent
+        4, Tokens.SAVE, 'S', 'A', 'V', 'E',       // Infrequent
+        4, Tokens.VARS, 'V', 'A', 'R', 'S',       // Infrequent
+        3, Tokens.REM, 'R', 'E', 'M',             // Infrequent
+        0  // End marker
+    };   
+
+    // Find keyword match for current identifier in working buffer
+    // Input: Working buffer at Address.BasicProcessBuffer1, null-terminated
+    // Output: A = token value if found, or 0 if not found
+    // Preserves: Everything except A (output)
+    findKeyword()
+    {
+        // Preserve all registers and ZP variables
+        PHX
+        PHY
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
+        
+        // Choose table based on first character
+        LDA Address.BasicProcessBuffer1
+        CMP #'M'
+        if (C)  // >= 'M', use M-Z table
+        {
+            LDA #(keywordsMZ % 256)
+            STA ZP.IDYL
+            LDA #(keywordsMZ / 256)
+            STA ZP.IDYH
+        }
+        else    // < 'M', use A-L table
+        {
+            LDA #(keywordsAL % 256)
+            STA ZP.IDYL
+            LDA #(keywordsAL / 256)
+            STA ZP.IDYH
+        }
+        
+        // Search the selected table
+        LDY #0  // Start at beginning of table
+        loop
+        {
+            LDA [ZP.IDY], Y     // Get length of this keyword
+            if (Z) 
+            { 
+                LDA #0          // Not found - end of table
+                break;          // Exit to cleanup
+            }
+            
+            STA ZP.ACCL         // Save keyword length
+            INY
+            LDA [ZP.IDY], Y     // Get token value
+            STA ZP.ACCH         // Save token value
+            INY
+            
+            // Compare characters
+            LDX #0  // Character index in our identifier
+            loop
+            {
+                LDA Address.BasicProcessBuffer1, X  // Get char from identifier
+                if (Z)  // Hit null terminator in our identifier
+                {
+                    // Check if we've matched the full keyword length
+                    CPX ZP.ACCL
+                    if (Z)
+                    {
+                        // Exact match found
+                        LDA ZP.ACCH  // Get token value to return
+                        break;       // Exit to cleanup with result
+                    }
+                    break; // Length mismatch
+                }
+                
+                // Check if we've exceeded keyword length
+                CPX ZP.ACCL
+                if (C) { break; }  // Our identifier is longer than keyword
+                
+                CMP [ZP.IDY], Y    // Compare with expected character
+                if (NZ) { break; } // Mismatch
+                
+                INX
+                INY
+            }
+            
+            // Check if we found a match
+            CPX ZP.ACCL
+            if (Z)
+            {
+                LDA Address.BasicProcessBuffer1, X
+                if (Z) // Hit null terminator and matched full length
+                {
+                    LDA ZP.ACCH  // Return the token value
+                    break;       // Exit to cleanup
+                }
+            }
+            
+            // Mismatch - skip to next keyword
+            // Reset Y and skip past this keyword entry
+            LDY #0
+            LDA [ZP.IDY], Y     // Get length again
+            CLC
+            ADC #2              // length + token = 2 bytes header
+            ADC ZP.ACCL         // + keyword characters  
+            TAY                 // Y now points to next keyword
+        }
+        
+        // Single exit point - A contains result (token value or 0)
+        PHA          // Save result
+        
+        // Restore all preserved state
+        PLA          // ZP.IDYH
+        STA ZP.IDYH
+        PLA          // ZP.IDYL  
+        STA ZP.IDYL
+        PLA          // ZP.ACCH
+        STA ZP.ACCH
+        PLA          // ZP.ACCL
+        STA ZP.ACCL
+        PLY
+        PLX
+        
+        PLA          // Get result back into A
+    }
+
     // Print keyword corresponding to token value
     // Input: A = token value (e.g., Tokens.CONST, Tokens.INT, etc.)
     // Output: Keyword printed to serial
-    // Modifies: A, X, Y (internal search), preserves token value concept
-    // Error: If token not found in keywords table, prints nothing
+    // Preserves: Everything
     PrintKeyword()
     {
-        PHA  // Save token value
+        // Save token value in a ZP temp location first
+        STA ZP.SymbolTemp0   // Use available temp space
+        
+        // Preserve all registers and ZP variables
+        PHA          // Save token value (input) - redundant but maintains pattern
         PHX
         PHY
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
         
-        STA ZP.ACCL  // Store target token value
-        
-#ifdef DEBUG
-        LDA #'[' Tools.COut(); LDA ZP.ACCL Tools.HOut(); LDA #']' Tools.COut(); 
-#endif                
-        
-        LDY #0  // Index into keywords table
-        loop
+        loop // Single exit pattern
         {
-            LDA keywords, Y     // Get length of this keyword
-            if (Z) 
-            { 
-                break; 
-            }   // End of table - not found
+            // Get target token value from temp storage
+            LDA ZP.SymbolTemp0
+            STA ZP.ACCL
             
-            STA ZP.ACCH         // Save keyword length
-            INY
-            LDA keywords, Y     // Get token value
-            CMP ZP.ACCL         // Compare with target
-            if (Z)
+            // Search A-L table first (contains most frequent keywords)
+            LDA #(keywordsAL % 256)
+            STA ZP.IDYL
+            LDA #(keywordsAL / 256)
+            STA ZP.IDYH
+            
+            LDY #0  // Start at beginning of table
+            loop
             {
-                // Found it! Print the keyword
-                INY  // Move to first character
-                LDX ZP.ACCH  // X = character count
+                LDA [ZP.IDY], Y     // Get length of this keyword
+                if (Z) { break; }   // End of table - try other table
+                
+                STA ZP.ACCH         // Save keyword length
+                INY
+                LDA [ZP.IDY], Y     // Get token value
+                CMP ZP.ACCL         // Compare with target
+                if (Z)
+                {
+                    // Found it! Print the keyword
+                    INY  // Move to first character
+                    LDX ZP.ACCH  // X = character count
+                    loop
+                    {
+                        CPX #0
+                        if (Z) { break; } // Done printing, exit to cleanup
+                        
+                        LDA [ZP.IDY], Y
+                        Serial.WriteChar();
+                        INY
+                        DEX
+                    }
+                    break; // Exit to cleanup
+                }
+                
+                // Skip to next keyword: advance Y by keyword length + 1 (for token byte)
+                INY  // Skip the token value byte first
+                LDX ZP.ACCH  // Then skip the keyword characters
                 loop
                 {
                     CPX #0
                     if (Z) { break; }
-                    
-                    LDA keywords, Y
-                    Serial.WriteChar();
                     INY
                     DEX
                 }
-                break;  // Done printing
             }
             
-            // Skip to next keyword: advance Y by keyword length + 1 (for token byte)
-            INY  // Skip the token value byte first
-            LDX ZP.ACCH  // Then skip the keyword characters
+            // Check if we found and printed it
+            CPX #0
+            if (Z) { break; } // We found it and printed, exit
+            
+            // Not found in A-L, try M-Z table
+            LDA #(keywordsMZ % 256)
+            STA ZP.IDYL
+            LDA #(keywordsMZ / 256)
+            STA ZP.IDYH
+            
+            LDY #0  // Start at beginning of table
             loop
             {
-                CPX #0
-                if (Z) { break; }
+                LDA [ZP.IDY], Y     // Get length of this keyword
+                if (Z) { break; }   // End of table - not found anywhere
+                
+                STA ZP.ACCH         // Save keyword length
                 INY
-                DEX
+                LDA [ZP.IDY], Y     // Get token value
+                CMP ZP.ACCL         // Compare with target
+                if (Z)
+                {
+                    // Found it! Print the keyword
+                    INY  // Move to first character
+                    LDX ZP.ACCH  // X = character count
+                    loop
+                    {
+                        CPX #0
+                        if (Z) { break; } // Done printing
+                        
+                        LDA [ZP.IDY], Y
+                        Serial.WriteChar();
+                        INY
+                        DEX
+                    }
+                    break; // Exit to cleanup
+                }
+                
+                // Skip to next keyword: advance Y by keyword length + 1 (for token byte)
+                INY  // Skip the token value byte first
+                LDX ZP.ACCH  // Then skip the keyword characters
+                loop
+                {
+                    CPX #0
+                    if (Z) { break; }
+                    INY
+                    DEX
+                }
             }
+            
+            break; // Exit outer loop to cleanup
         }
+        
+        // Single exit point - restore all preserved state
+        PLA          // ZP.IDYH
+        STA ZP.IDYH
+        PLA          // ZP.IDYL
+        STA ZP.IDYL
+        PLA          // ZP.ACCH
+        STA ZP.ACCH
+        PLA          // ZP.ACCL
+        STA ZP.ACCL
         PLY
         PLX
-        PLA
+        PLA          // Remove token value from stack
     }
     
     
@@ -556,74 +794,7 @@ unit Tokenizer
         PLY
         PLX
     }
-    
-    // Find keyword match for current identifier in working buffer
-    // Input: Working buffer at Address.BasicProcessBuffer1, null-terminated
-    // Output: A = token value if found, or 0 if not found
-    // Munts: A, X, Y, ZP.ACC
-    findKeyword()
-    {
-        PHX
-        PHY
-        
-        LDY #0  // Start at beginning of keyword table
-        loop
-        {
-            LDA keywords, Y    // Get length of this keyword
-            if (Z) { break; }  // End of table - not found
-            
-            STA ZP.ACCL        // Save keyword length
-            INY
-            LDA keywords, Y    // Get token value
-            STA ZP.ACCH        // Save token value
-            INY
-            
-            // Compare characters
-            LDX #0  // Character index in our identifier
-            loop
-            {
-                LDA Address.BasicProcessBuffer1, X  // Get char from our identifier
-                if (Z)  // Hit null terminator in our identifier
-                {
-                    // Check if we've matched the full keyword length
-                    CPX ZP.ACCL
-                    if (Z)
-                    {
-                        PLY
-                        PLX
-                        LDA ZP.ACCH  // Return token value - exact match!
-                        return;
-                    }
-                    break; // Length mismatch
-                }
-                
-                // Check if we've exceeded keyword length
-                CPX ZP.ACCL
-                if (Z) { break; }  // Our identifier is longer than keyword
-                
-                CMP keywords, Y  // Compare with expected character
-                if (NZ) { break; } // Mismatch
-                
-                INX
-                INY
-            }
-            
-            // Mismatch - skip to next keyword
-            loop
-            {
-                CPX ZP.ACCL       // Have we reached the end of keyword?
-                if (Z) { break; } // Yes, Y now points to start of next keyword
-                INX               // Move to next character position  
-                INY               // Advance Y to next character
-            }
-        }
-        
-        PLY
-        PLX
-        
-        LDA #0  // Not found
-    }
-    
+       
     scanHexNumber()
     {
         // Add NUMBER token
