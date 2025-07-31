@@ -191,6 +191,16 @@ unit Tokenizer
         PHX
         PHY
         
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
+        
+        
         // Choose table based on first character
         LDA Address.BasicProcessBuffer1
         CMP #'M'
@@ -232,9 +242,21 @@ unit Tokenizer
                     CPX ZP.ACCL
                     if (Z)
                     {
+                        LDX ZP.ACCH  // Return token value - exact match!
+                    
+                        PLA
+                        STA ZP.IDYH
+                        PLA
+                        STA ZP.IDYL
+                        PLA
+                        STA ZP.ACCH
+                        PLA
+                        STA ZP.ACCL
+                        
+                        TXA // Return token value
+                        
                         PLY
                         PLX
-                        LDA ZP.ACCH  // Return token value - exact match!
                         return;
                     }
                     break; // Length mismatch
@@ -249,7 +271,7 @@ unit Tokenizer
                 
                 INX
                 INY
-            }
+            } // loop
             
             // Mismatch - skip to next keyword
             loop
@@ -259,7 +281,16 @@ unit Tokenizer
                 INX               // Move to next character position  
                 INY               // Advance Y to next character
             }
-        }
+        } // loop
+        
+        PLA
+        STA ZP.IDYH
+        PLA
+        STA ZP.IDYL
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
         
         PLY
         PLX
@@ -270,142 +301,113 @@ unit Tokenizer
     // Print keyword corresponding to token value
     // Input: A = token value (e.g., Tokens.CONST, Tokens.INT, etc.)
     // Output: Keyword printed to serial
-    // Preserves: Everything
+    // Modifies: A, X, Y (internal search), preserves token value concept
+    // Error: If token not found in keywords table, prints nothing, C if printed, NC if not
     PrintKeyword()
     {
-        // Save token value in a ZP temp location first
-        STA ZP.SymbolTemp0   // Use available temp space
-        
-        // Preserve all registers and ZP variables
-        PHA          // Save token value (input) - redundant but maintains pattern
+        PHA  // Save token value
         PHX
         PHY
-        LDA ZP.ACCL
+        
+        TAX
+        
+        LDA ZP.IDYL
         PHA
-        LDA ZP.ACCH
+        LDA ZP.IDYH
         PHA
         LDA ZP.IDYL
         PHA
         LDA ZP.IDYH
         PHA
         
-        loop // Single exit pattern
+        STX ZP.ACCL  // Store target token value
+        
+    #ifdef DEBUG
+        LDA #'[' Tools.COut(); LDA ZP.ACCL Tools.HOut(); LDA #']' Tools.COut(); 
+    #endif                
+        
+        // Load keywords table address into ZP.IDY
+        LDA #(keywordsAL % 256)
+        STA ZP.IDYL
+        LDA #(keywordsAL / 256)
+        STA ZP.IDYH
+        printKeywordFromTable();
+        
+        if (NC)
         {
-            // Get target token value from temp storage
-            LDA ZP.SymbolTemp0
-            STA ZP.ACCL
-            
-            // Search A-L table first (contains most frequent keywords)
+            // perhaps it is in the other table
             LDA #(keywordsAL % 256)
-            STA ZP.IDYL
-            LDA #(keywordsAL / 256)
-            STA ZP.IDYH
-            
-            LDY #0  // Start at beginning of table
-            loop
-            {
-                LDA [ZP.IDY], Y     // Get length of this keyword
-                if (Z) { break; }   // End of table - try other table
-                
-                STA ZP.ACCH         // Save keyword length
-                INY
-                LDA [ZP.IDY], Y     // Get token value
-                CMP ZP.ACCL         // Compare with target
-                if (Z)
-                {
-                    // Found it! Print the keyword
-                    INY  // Move to first character
-                    LDX ZP.ACCH  // X = character count
-                    loop
-                    {
-                        CPX #0
-                        if (Z) { break; } // Done printing, exit to cleanup
-                        
-                        LDA [ZP.IDY], Y
-                        Serial.WriteChar();
-                        INY
-                        DEX
-                    }
-                    break; // Exit to cleanup
-                }
-                
-                // Skip to next keyword: advance Y by keyword length + 1 (for token byte)
-                INY  // Skip the token value byte first
-                LDX ZP.ACCH  // Then skip the keyword characters
-                loop
-                {
-                    CPX #0
-                    if (Z) { break; }
-                    INY
-                    DEX
-                }
-            }
-            
-            // Check if we found and printed it
-            CPX #0
-            if (Z) { break; } // We found it and printed, exit
-            
-            // Not found in A-L, try M-Z table
-            LDA #(keywordsMZ % 256)
             STA ZP.IDYL
             LDA #(keywordsMZ / 256)
             STA ZP.IDYH
+            printKeywordFromTable();
+        }
+        
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        PLA
+        STA ZP.IDYH
+        PLA
+        STA ZP.IDYL
+        
+        
+        PLY
+        PLX
+        PLA
+    }
+
+    // Helper method to search table and print keyword
+    // Input: ZP.ACCL = target token value, ZP.IDY = table address
+    // Output: Keyword printed to serial if found, C if found, NC if not
+    // Modifies: A, X, Y (internal use only)
+    printKeywordFromTable()
+    {
+        LDY #0  // Index into keywords table
+        loop
+        {
+            LDA [ZP.IDY], Y     // Get length of this keyword using indirect addressing
+            if (Z) 
+            { 
+                CLC
+                break; 
+            }   // End of table - not found
             
-            LDY #0  // Start at beginning of table
-            loop
+            STA ZP.ACCH         // Save keyword length
+            INY
+            LDA [ZP.IDY], Y     // Get token value using indirect addressing
+            CMP ZP.ACCL         // Compare with target
+            if (Z)
             {
-                LDA [ZP.IDY], Y     // Get length of this keyword
-                if (Z) { break; }   // End of table - not found anywhere
-                
-                STA ZP.ACCH         // Save keyword length
-                INY
-                LDA [ZP.IDY], Y     // Get token value
-                CMP ZP.ACCL         // Compare with target
-                if (Z)
-                {
-                    // Found it! Print the keyword
-                    INY  // Move to first character
-                    LDX ZP.ACCH  // X = character count
-                    loop
-                    {
-                        CPX #0
-                        if (Z) { break; } // Done printing
-                        
-                        LDA [ZP.IDY], Y
-                        Serial.WriteChar();
-                        INY
-                        DEX
-                    }
-                    break; // Exit to cleanup
-                }
-                
-                // Skip to next keyword: advance Y by keyword length + 1 (for token byte)
-                INY  // Skip the token value byte first
-                LDX ZP.ACCH  // Then skip the keyword characters
+                // Found it! Print the keyword
+                INY  // Move to first character
+                LDX ZP.ACCH  // X = character count
                 loop
                 {
                     CPX #0
                     if (Z) { break; }
+                    
+                    LDA [ZP.IDY], Y  // Access character using indirect addressing
+                    Serial.WriteChar();
                     INY
                     DEX
                 }
+                SEC
+                break;  // Done printing
             }
             
-            break; // Exit outer loop to cleanup
-        }
-        
-        // Single exit point - restore all preserved state
-        PLA          // ZP.IDYH
-        STA ZP.IDYH
-        PLA          // ZP.IDYL
-        STA ZP.IDYL
-        PLA          // ZP.ACCH
-        STA ZP.ACCH
-        PLA          // ZP.ACCL
-        STA ZP.ACCL
-        PLY
-        PLX
-        PLA          // Remove token value from stack
+            // Skip to next keyword: advance Y by keyword length + 1 (for token byte)
+            INY  // Skip the token value byte first
+            LDX ZP.ACCH  // Then skip the keyword characters
+            loop
+            {
+                CPX #0
+                if (Z) { break; }
+                INY
+                DEX
+            }
+        } // loop
     }
     
     
