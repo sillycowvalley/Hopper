@@ -101,6 +101,29 @@ unit Tools
         PLY
         PLA
     } 
+    
+    // Print null-terminated string to serial output
+    // Input: ZP.IDY = pointer to null-terminated string
+    // Output: String printed to serial
+    PrintStringIDY()
+    {
+        PHA
+        PHY
+        
+        LDY #0              // Initialize string index
+        
+        loop                // Print each character until null terminator
+        {
+            LDA [ZP.IDY], Y // Load character from string
+            if (Z) { break; } // Exit if null terminator found
+            
+            Serial.WriteChar(); // Print the character
+            INY             // Move to next character
+        }
+        
+        PLY
+        PLA
+    } 
 
    
     // Write '\n' preserving carry flag

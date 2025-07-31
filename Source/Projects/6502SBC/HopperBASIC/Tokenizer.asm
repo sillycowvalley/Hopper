@@ -156,6 +156,10 @@ unit Tokenizer
         
         STA ZP.ACCL  // Store target token value
         
+#ifdef DEBUG
+        LDA #'[' Tools.COut(); LDA ZP.ACCL Tools.HOut(); LDA #']' Tools.COut(); 
+#endif                
+        
         LDY #0  // Index into keywords table
         loop
         {

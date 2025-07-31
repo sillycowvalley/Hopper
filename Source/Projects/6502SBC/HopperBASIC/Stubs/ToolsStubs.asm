@@ -32,6 +32,11 @@ unit Tools
     // Input: ZP.TOP = pointer to null-terminated string
     // Output: String printed to serial
     PrintStringTOP()
+    
+    // Print null-terminated string to serial output
+    // Input: ZP.IDY = pointer to null-terminated string
+    // Output: String printed to serial
+    PrintStringIDY()
 
     // Write '\n' preserving carry flag
     // Output: '\n' printed to serial

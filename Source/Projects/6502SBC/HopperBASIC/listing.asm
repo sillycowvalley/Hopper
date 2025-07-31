@@ -206,9 +206,6 @@ unit Listing
         // Display function body (token stream)
         displayFunctionBody(); // Input: ZP.IDX = function node
         
-        // Print "ENDFUNC"
-        LDA #Tokens.ENDFUNC
-        Tokenizer.PrintKeyword();
         Tools.NL();
         Tools.NL(); // Extra blank line after function
         
@@ -217,9 +214,9 @@ unit Listing
         PLA
     }
     
-    // Display function body from token stream
+    // Display function body from token stream as readable BASIC code
     // Input: ZP.IDX = function node address
-    // Output: Function body printed to serial with token hex values
+    // Output: Function body printed to serial as formatted BASIC statements
     displayFunctionBody()
     {
         PHA
@@ -232,80 +229,10 @@ unit Listing
         // Check if function has a body
         LDA ZP.IDYL
         ORA ZP.IDYH
-        if (Z)
+        if (NZ)
         {
-            // No body - show empty message
-            LDA #' '
-            Serial.WriteChar();
-            LDA #' '
-            Serial.WriteChar();
-            LDA #' '
-            Serial.WriteChar();
-            LDA #' '
-            Serial.WriteChar();
-            LDA #'('
-            Serial.WriteChar();
-            LDA #'e'
-            Serial.WriteChar();
-            LDA #'m'
-            Serial.WriteChar();
-            LDA #'p'
-            Serial.WriteChar();
-            LDA #'t'
-            Serial.WriteChar();
-            LDA #'y'
-            Serial.WriteChar();
-            LDA #')'
-            Serial.WriteChar();
-            Tools.NL();
-        }
-        else
-        {
-            // Display token stream as hex values
-            LDA #' '
-            Serial.WriteChar();
-            LDA #' '
-            Serial.WriteChar();
-            LDA #' '
-            Serial.WriteChar();
-            LDA #' '
-            Serial.WriteChar();
-            LDA #'T'
-            Serial.WriteChar();
-            LDA #'o'
-            Serial.WriteChar();
-            LDA #'k'
-            Serial.WriteChar();
-            LDA #'e'
-            Serial.WriteChar();
-            LDA #'n'
-            Serial.WriteChar();
-            LDA #'s'
-            Serial.WriteChar();
-            LDA #':'
-            Serial.WriteChar();
-            LDA #' '
-            Serial.WriteChar();
-            
-            // Start token iteration
-            TokenIterator.Start(); // Input: ZP.IDY = tokens pointer
-            if (C) // Has tokens
-            {
-                loop
-                {
-                    // Get current token and print as hex
-                    TokenIterator.GetCurrent(); // A = current token
-                    Serial.HexOut(); // Print token as hex
-                    LDA #' '
-                    Serial.WriteChar(); // Space separator
-                    
-                    // Advance to next token
-                    TokenIterator.Next();
-                    if (NC) { break; } // End of stream
-                }
-            }
-            
-            Tools.NL();
+            // Use TokenIterator to render the function body
+            TokenIterator.RenderTokenStream(); // Input: ZP.IDY = tokens pointer
         }
         
         PLY
