@@ -305,6 +305,9 @@ unit Tokenizer
     // Error: If token not found in keywords table, prints nothing, C if printed, NC if not
     PrintKeyword()
     {
+
+        
+        
         PHA  // Save token value
         PHX
         PHY
@@ -315,28 +318,24 @@ unit Tokenizer
         PHA
         LDA ZP.IDYH
         PHA
-        LDA ZP.IDYL
+        LDA ZP.ACCL
         PHA
-        LDA ZP.IDYH
+        LDA ZP.ACCH
         PHA
         
         STX ZP.ACCL  // Store target token value
-        
-    #ifdef DEBUG
-        LDA #'[' Tools.COut(); LDA ZP.ACCL Tools.HOut(); LDA #']' Tools.COut(); 
-    #endif                
         
         // Load keywords table address into ZP.IDY
         LDA #(keywordsAL % 256)
         STA ZP.IDYL
         LDA #(keywordsAL / 256)
         STA ZP.IDYH
-        printKeywordFromTable();
         
+        printKeywordFromTable();
         if (NC)
         {
             // perhaps it is in the other table
-            LDA #(keywordsAL % 256)
+            LDA #(keywordsMZ % 256)
             STA ZP.IDYL
             LDA #(keywordsMZ / 256)
             STA ZP.IDYH
@@ -352,7 +351,6 @@ unit Tokenizer
         PLA
         STA ZP.IDYL
         
-        
         PLY
         PLX
         PLA
@@ -367,7 +365,7 @@ unit Tokenizer
         LDY #0  // Index into keywords table
         loop
         {
-            LDA [ZP.IDY], Y     // Get length of this keyword using indirect addressing
+            LDA [ZP.IDY], Y     // Get length of this keyword
             if (Z) 
             { 
                 CLC
@@ -376,23 +374,25 @@ unit Tokenizer
             
             STA ZP.ACCH         // Save keyword length
             INY
-            LDA [ZP.IDY], Y     // Get token value using indirect addressing
+            LDA [ZP.IDY], Y     // Get token value 
             CMP ZP.ACCL         // Compare with target
             if (Z)
             {
                 // Found it! Print the keyword
                 INY  // Move to first character
                 LDX ZP.ACCH  // X = character count
+                
                 loop
                 {
                     CPX #0
                     if (Z) { break; }
                     
-                    LDA [ZP.IDY], Y  // Access character using indirect addressing
+                    LDA [ZP.IDY], Y  // Access character 
                     Serial.WriteChar();
                     INY
                     DEX
-                }
+                } // loop
+                
                 SEC
                 break;  // Done printing
             }
