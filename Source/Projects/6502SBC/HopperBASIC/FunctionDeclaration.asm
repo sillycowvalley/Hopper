@@ -33,7 +33,7 @@ unit FunctionDeclaration
     
         loop // Single exit block for clean error handling
         {
-            // Check if "BEGIN" function already exists
+            // Check if "BEGIN" function already exists and remove it
             LDA #(Messages.BeginFunctionName % 256)
             STA ZP.TOPL
             LDA #(Messages.BeginFunctionName / 256)
@@ -42,13 +42,16 @@ unit FunctionDeclaration
             Functions.Find(); // Input: ZP.TOP = name
             if (C)
             {
-                LDA #(Messages.FunctionExists % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.FunctionExists / 256)
-                STA ZP.LastErrorH
-                Messages.StorePC(); // 6502 PC -> IDY
-                CLC
-                break;
+                // BEGIN function exists - remove it (name pointer already in ZP.TOP)
+                Functions.Remove();
+                Messages.CheckError();
+                if (NC) { break; }
+                
+                // Restore the name pointer for declaration
+                LDA #(Messages.BeginFunctionName % 256)
+                STA ZP.TOPL
+                LDA #(Messages.BeginFunctionName / 256)
+                STA ZP.TOPH
             }
             
             // Create empty "BEGIN" function with no arguments
@@ -172,32 +175,32 @@ unit FunctionDeclaration
             LDA ZP.TOPH
             STA (Statement.stmtNamePtr + 1)
             
-            // Check if function or variable with this name already exists
-            LDX #ZP.FunctionsList
-            Objects.Find(); // Input: ZP.TOP = name
+            // Check if function with this name already exists and remove it
+            Functions.Find(); // Input: ZP.TOP = name
             if (C)
             {
-                LDA #(Messages.FunctionExists % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.FunctionExists / 256)
-                STA ZP.LastErrorH
-                Messages.StorePC(); // 6502 PC -> IDY
-                CLC
-                break;
+                // Function exists - remove it (name pointer already in ZP.TOP)
+                Functions.Remove();
+                Messages.CheckError();
+                if (NC) { break; }
             }
             
+            // Check if variable/constant with this name exists and remove it
             STZ ZP.SymbolIteratorFilter // Accept any symbol type
             Variables.Find(); // Input: ZP.TOP = name
             if (C)
             {
-                LDA #(Messages.FunctionExists % 256) // Same error message
-                STA ZP.LastErrorL
-                LDA #(Messages.FunctionExists / 256)
-                STA ZP.LastErrorH
-                Messages.StorePC(); // 6502 PC -> IDY
-                CLC
-                break;
+                // Variable/constant exists - remove it (name pointer already in ZP.TOP)
+                Variables.Remove();
+                Messages.CheckError();
+                if (NC) { break; }
             }
+            
+            // Restore function name pointer after potential corruption from Remove operations
+            LDA (Statement.stmtNamePtr + 0)
+            STA ZP.TOPL
+            LDA (Statement.stmtNamePtr + 1)
+            STA ZP.TOPH
             
             // Get next token - should be opening parenthesis
             Tokenizer.NextToken();
@@ -724,8 +727,6 @@ unit FunctionDeclaration
                 
                 // Now we're at the start of the function body
                 // Save this position as the start of body tokens
-                
-                
             }
             else
             {
@@ -873,5 +874,4 @@ unit FunctionDeclaration
         Tools.COut();
     #endif
     }
-    
 }
