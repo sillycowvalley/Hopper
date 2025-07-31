@@ -5,6 +5,8 @@ unit Listing
     uses "Messages"
     uses "Tools"
     uses "Tokenizer"
+    uses "TokenIterator"
+    
     uses "Objects"
     uses "Variables"
     uses "Functions"
@@ -217,10 +219,13 @@ unit Listing
     
     // Display function body from token stream
     // Input: ZP.IDX = function node address
-    // Output: Function body printed to serial with proper indentation
-    // TODO: Parse and pretty-print the token stream
+    // Output: Function body printed to serial with token hex values
     displayFunctionBody()
     {
+        PHA
+        PHX
+        PHY
+        
         // Get function body tokens
         Functions.GetBody(); // Input: ZP.IDX, Output: ZP.IDY = tokens pointer
         
@@ -229,7 +234,7 @@ unit Listing
         ORA ZP.IDYH
         if (Z)
         {
-            // No body - just add indented comment
+            // No body - show empty message
             LDA #' '
             Serial.WriteChar();
             LDA #' '
@@ -256,8 +261,7 @@ unit Listing
         }
         else
         {
-            // TODO: Parse token stream and pretty-print with indentation
-            // For now, just show placeholder
+            // Display token stream as hex values
             LDA #' '
             Serial.WriteChar();
             LDA #' '
@@ -266,20 +270,47 @@ unit Listing
             Serial.WriteChar();
             LDA #' '
             Serial.WriteChar();
-            LDA #'('
-            Serial.WriteChar();
-            LDA #'b'
+            LDA #'T'
             Serial.WriteChar();
             LDA #'o'
             Serial.WriteChar();
-            LDA #'d'
+            LDA #'k'
             Serial.WriteChar();
-            LDA #'y'
+            LDA #'e'
             Serial.WriteChar();
-            LDA #')'
+            LDA #'n'
             Serial.WriteChar();
+            LDA #'s'
+            Serial.WriteChar();
+            LDA #':'
+            Serial.WriteChar();
+            LDA #' '
+            Serial.WriteChar();
+            
+            // Start token iteration
+            TokenIterator.Start(); // Input: ZP.IDY = tokens pointer
+            if (C) // Has tokens
+            {
+                loop
+                {
+                    // Get current token and print as hex
+                    TokenIterator.GetCurrent(); // A = current token
+                    Serial.HexOut(); // Print token as hex
+                    LDA #' '
+                    Serial.WriteChar(); // Space separator
+                    
+                    // Advance to next token
+                    TokenIterator.Next();
+                    if (NC) { break; } // End of stream
+                }
+            }
+            
             Tools.NL();
         }
+        
+        PLY
+        PLX
+        PLA
     }
     
     // String constant for BEGIN function name
