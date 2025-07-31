@@ -124,19 +124,21 @@ unit Console
     }
     
     // Process tokens and check if we're starting a function
-    processTokensAndCheckFunction()
+   processTokensAndCheckFunction()
     {
-        // Check if this line starts an incomplete function
+        // Always process the tokens first (this creates the function node)
+        processTokens();
+        Messages.CheckError();
+        if (NC) { return; }
+        
+        // After processing, check if we just processed an incomplete function
         detectIncompleteFunction();
         if (C)
         {
-            SetCaptureMode();
-            SEC // Continue in capture mode
-            return;
+            SetCaptureMode(); // Enter capture mode for the body
         }
         
-        // Process normally
-        processTokens();
+        SEC // Continue
     }
      
     // Detect if current line starts FUNC but doesn't end with ENDFUNC
@@ -217,58 +219,6 @@ unit Console
     #endif
     }
       
-    // Process complete function buffer
-    processCompleteFunctionBuffer()
-    {
-    #ifdef DEBUG
-        LDA #'<'
-        Tools.COut();
-        LDA #'P'
-        Tools.COut();
-        LDA #'C'
-        Tools.COut();
-        LDA #'F'
-        Tools.COut();
-        
-        // Show buffer state before processing
-        LDA #'B'
-        Tools.COut();
-        LDA ZP.TokenBufferLengthL
-        Tools.HOut();
-        LDA ZP.TokenBufferLengthH
-        Tools.HOut();
-        
-        LDA #'P'
-        Tools.COut();
-        LDA ZP.TokenizerPosL
-        Tools.HOut();
-        LDA ZP.TokenizerPosH
-        Tools.HOut();
-    #endif
-
-        // Reset to start of function and process normally
-        STZ ZP.TokenizerPosL
-        STZ ZP.TokenizerPosH
-        
-    #ifdef DEBUG
-        LDA #'R' // Reset complete
-        Tools.COut();
-    #endif
-        
-        processTokens();
-        
-    #ifdef DEBUG
-        LDA #'P'
-        Tools.COut();
-        LDA #'C'
-        Tools.COut();
-        LDA #'F'
-        Tools.COut();
-        LDA #'>'
-        Tools.COut();
-    #endif
-    }
-
     // Function capture mode line processing
     processLineFunctionCapture()
     {
@@ -317,10 +267,12 @@ unit Console
             SetNormalMode();
             
     #ifdef DEBUG
-            LDA #'C' // Calling processCompleteFunctionBuffer
+            LDA #'C' // Calling CompletePartialFunction
             Tools.COut();
     #endif
-            processCompleteFunctionBuffer();
+            FunctionDeclaration.CompletePartialFunction();
+            Messages.CheckError();
+            if (NC) { return; }
         }
         
     #ifdef DEBUG
@@ -396,6 +348,7 @@ unit Console
         Tools.COut();
     #endif
     }
+    
     // Process the tokens in BasicTokenizerBuffer  
     // Returns C to continue, NC to exit
     processTokens()

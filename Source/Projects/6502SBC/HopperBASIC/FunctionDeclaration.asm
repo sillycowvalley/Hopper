@@ -422,4 +422,224 @@ unit FunctionDeclaration
     #endif
     }
     
+    // Complete a partial function that was captured in multiple lines
+    // Input: Token buffer contains complete function from FUNC to ENDFUNC
+    // Output: Function body tokens extracted and attached to existing function node
+    // Modifies: Function node, memory allocation, tokenizer position
+    // Error: Sets ZP.LastError if function not found, syntax error, or memory allocation fails
+    CompletePartialFunction()
+    {
+    #ifdef DEBUG
+        LDA #'<'
+        Tools.COut();
+        LDA #'C'
+        Tools.COut();
+        LDA #'P'
+        Tools.COut();
+        LDA #'F'
+        Tools.COut();
+    #endif
+    
+        loop // Single exit block for error handling
+        {
+            // Reset to start of function buffer
+            STZ ZP.TokenizerPosL
+            STZ ZP.TokenizerPosH
+            
+            // Skip FUNC token
+            Tokenizer.NextToken(); // Should be FUNC
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            LDA ZP.CurrentToken
+            CMP #Tokens.FUNC
+            if (NZ)
+            {
+                LDA #(Messages.InternalError % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.InternalError / 256)
+                STA ZP.LastErrorH
+                Messages.StorePC();
+                CLC
+                break;
+            }
+            
+            // Get function name
+            Tokenizer.NextToken(); // Should be function name
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            LDA ZP.CurrentToken
+            CMP #Tokens.IDENTIFIER
+            if (NZ)
+            {
+                LDA #(Messages.SyntaxError % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.SyntaxError / 256)
+                STA ZP.LastErrorH
+                Messages.StorePC();
+                CLC
+                break;
+            }
+            
+            // Get the function name string
+            Tokenizer.GetTokenString(); // Result in ZP.TOP
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            // Find the function that was already declared
+            Functions.Find(); // Input: ZP.TOP = name, Output: ZP.IDX = function node
+            if (NC)
+            {
+                LDA #(Messages.UndefinedIdentifier % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.UndefinedIdentifier / 256)
+                STA ZP.LastErrorH
+                Messages.StorePC();
+                CLC
+                break;
+            }
+            
+            // Save function node address in statement storage
+            LDA ZP.IDXL
+            STA (Statement.stmtObjectPtr + 0)
+            LDA ZP.IDXH
+            STA (Statement.stmtObjectPtr + 1)
+            
+            // Skip to end of function signature (past closing parenthesis)
+            loop
+            {
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NC) { break; }
+                
+                LDA ZP.CurrentToken
+                CMP #Tokens.RPAREN
+                if (Z) 
+                { 
+                    Tokenizer.NextToken(); // Move past RPAREN to start of body
+                    Messages.CheckError();
+                    if (NC) { break; }
+                    break; 
+                }
+                
+                CMP #Tokens.EOF
+                if (Z)
+                {
+                    LDA #(Messages.SyntaxError % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.SyntaxError / 256)
+                    STA ZP.LastErrorH
+                    Messages.StorePC();
+                    CLC
+                    break;
+                }
+            }
+            if (NC) { break; }
+            
+            // Now we're at the start of the function body
+            // Save this position as the start of body tokens
+            LDA ZP.TokenizerPosL
+            STA ZP.FSOURCEADDRESSL
+            LDA ZP.TokenizerPosH
+            STA ZP.FSOURCEADDRESSH
+            
+            // Find ENDFUNC to calculate body length
+            loop
+            {
+                LDA ZP.CurrentToken
+                CMP #Tokens.ENDFUNC
+                if (Z) { break; }
+                
+                CMP #Tokens.EOF
+                if (Z)
+                {
+                    LDA #(Messages.SyntaxError % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.SyntaxError / 256)
+                    STA ZP.LastErrorH
+                    Messages.StorePC();
+                    CLC
+                    break;
+                }
+                
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NC) { break; }
+            }
+            if (NC) { break; }
+            
+            // Calculate body length (current pos - start pos)
+            SEC
+            LDA ZP.TokenizerPosL
+            SBC ZP.FSOURCEADDRESSL
+            STA ZP.FLENGTHL
+            LDA ZP.TokenizerPosH
+            SBC ZP.FSOURCEADDRESSH
+            STA ZP.FLENGTHH
+            
+    #ifdef DEBUG
+            LDA #'L' // Length calculated
+            Tools.COut();
+            LDA ZP.FLENGTHH
+            Tools.HOut();
+            LDA ZP.FLENGTHL
+            Tools.HOut();
+    #endif
+            
+            // Create token stream for function body
+            Statement.CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
+            Messages.CheckError();
+            if (NC) { break; }
+            
+    #ifdef DEBUG
+            LDA #'A' // Allocated
+            Tools.COut();
+            LDA ZP.FDESTINATIONADDRESSH
+            Tools.HOut();
+            LDA ZP.FDESTINATIONADDRESSL
+            Tools.HOut();
+    #endif
+            
+            // Restore function node address
+            LDA (Statement.stmtObjectPtr + 0)
+            STA ZP.IDXL
+            LDA (Statement.stmtObjectPtr + 1)
+            STA ZP.IDXH
+            
+            // Set function body tokens
+            LDA ZP.FDESTINATIONADDRESSL
+            STA ZP.IDYL
+            LDA ZP.FDESTINATIONADDRESSH
+            STA ZP.IDYH
+            
+            Functions.SetBody(); // Input: ZP.IDX = function node, ZP.IDY = body tokens
+            Messages.CheckError();
+            if (NC) { break; }
+            
+    #ifdef DEBUG
+            LDA #'S' // Set body
+            Tools.COut();
+            LDA ZP.IDYL
+            Tools.HOut();
+            LDA ZP.IDYH
+            Tools.HOut();
+    #endif
+            
+            SEC // Success
+            break;
+        }
+        
+    #ifdef DEBUG
+        LDA #'C'
+        Tools.COut();
+        LDA #'P'
+        Tools.COut();
+        LDA #'F'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+    #endif
+    }
+    
 }
