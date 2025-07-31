@@ -1286,7 +1286,16 @@ unit Compiler
         PHA
         PHX
         PHY
-        
+#ifdef DEBUG
+        LDA #'<'
+        Tools.COut();
+        LDA #'C'
+        Tools.COut();
+        LDA #'F'
+        Tools.COut();
+        LDA #'V'
+        Tools.COut();
+#endif
         loop // Single exit
         {
             // Save current token position for potential function name resolution
@@ -1317,11 +1326,6 @@ unit Compiler
                 
                 // Emit function call opcode
                 EmitCall();
-                if (NC) { break; }
-                
-                // Advance past function name
-                Tokenizer.NextToken();
-                Messages.CheckError();
                 if (NC) { break; }
                 
                 // Expect opening parenthesis
@@ -1387,7 +1391,16 @@ unit Compiler
             SEC // Success
             break;
         }
-        
+#ifdef DEBUG
+        LDA #'C'
+        Tools.COut();
+        LDA #'F'
+        Tools.COut();
+        LDA #'V'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+#endif
         PLY
         PLX
         PLA
