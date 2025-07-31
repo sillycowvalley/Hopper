@@ -71,7 +71,7 @@ unit Compiler
             STA ZP.LastErrorL
             LDA #(Messages.BufferOverflow / 256)
             STA ZP.LastErrorH
-            Messages.StorePC(); // 6502 PC -> IDY
+            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
             CLC // Overflow
             return;
         }
@@ -249,7 +249,7 @@ unit Compiler
                 LDA #(Messages.UndefinedIdentifier / 256)
                 STA ZP.LastErrorH
                 
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 
                 CLC
                 break;
@@ -288,7 +288,7 @@ unit Compiler
             STA ZP.LastErrorL
             LDA #(Messages.InvalidBitValue / 256)
             STA ZP.LastErrorH
-            Messages.StorePC(); // 6502 PC -> IDY
+            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
             CLC
             return;
         }
@@ -346,7 +346,7 @@ unit Compiler
         STA ZP.LastErrorL
         LDA #(Messages.TypeMismatch / 256)
         STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
         CLC
     }
     
@@ -377,7 +377,7 @@ unit Compiler
         STA ZP.LastErrorL
         LDA #(Messages.BufferOverflow / 256)
         STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
         CLC
     }
     
@@ -430,7 +430,7 @@ unit Compiler
                 STA ZP.LastErrorL
                 LDA #(Messages.InvalidOperator / 256)
                 STA ZP.LastErrorH
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 CLC
                 return;
             }
@@ -493,7 +493,7 @@ unit Compiler
                 STA ZP.LastErrorL
                 LDA #(Messages.InvalidOperator / 256)
                 STA ZP.LastErrorH
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 CLC
                 return;
             }
@@ -535,7 +535,7 @@ unit Compiler
                 STA ZP.LastErrorL
                 LDA #(Messages.InvalidOperator / 256)
                 STA ZP.LastErrorH
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 CLC
                 return;
             }
@@ -570,7 +570,7 @@ unit Compiler
                 STA ZP.LastErrorL
                 LDA #(Messages.InvalidOperator / 256)
                 STA ZP.LastErrorH
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 CLC
                 return;
             }
@@ -1258,7 +1258,7 @@ unit Compiler
                     STA ZP.LastErrorL
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC();
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
                     CLC
                     break;
                 }
@@ -1336,7 +1336,7 @@ unit Compiler
                     STA ZP.LastErrorL
                     LDA #(Messages.ExpectedLeftParen / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC();
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
                     CLC
                     break;
                 }
@@ -1354,7 +1354,7 @@ unit Compiler
                     STA ZP.LastErrorL
                     LDA #(Messages.ExpectedRightParen / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC();
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
                     CLC
                     break;
                 }
@@ -1519,7 +1519,7 @@ unit Compiler
                         LDA #(Messages.SyntaxError / 256)
                         STA ZP.LastErrorH
                         
-                        Messages.StorePC(); // 6502 PC -> IDY
+                        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                         
                         CLC  // Error
                         break;
@@ -1538,7 +1538,7 @@ unit Compiler
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
                     
-                    Messages.StorePC(); // 6502 PC -> IDY
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                     
                     CLC  // Error
                     break;

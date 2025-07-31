@@ -55,6 +55,7 @@ unit Messages
     // PC -> IDY
     //
     // Note: don't mess with the stack on entry, you'll break this method
+    /*
     StorePC()
     {
         PHP // preserve NC
@@ -79,7 +80,7 @@ unit Messages
         
         PLP // preserve NC
     }
-    
+    */
     // Clear error state
     // Input: None
     // Output: ZP.LastError cleared (set to 0x0000)

@@ -718,7 +718,7 @@ unit Tokenizer
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
                     
-                    Messages.StorePC(); // 6502 PC -> IDY
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                     
                     CLC
                     break;
@@ -733,7 +733,7 @@ unit Tokenizer
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
                     
-                    Messages.StorePC(); // 6502 PC -> IDY
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                     
                     CLC
                     break;
@@ -826,7 +826,7 @@ unit Tokenizer
                 STA ZP.LastErrorL
                 LDA #(Messages.SyntaxError / 256)  
                 STA ZP.LastErrorH
-                Messages.StorePC();
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
                 return;
             }
             
@@ -1158,7 +1158,7 @@ unit Tokenizer
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
                     
-                    Messages.StorePC(); // 6502 PC -> IDY
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                     
                     CLC  // Error
                     return;
@@ -1259,7 +1259,7 @@ unit Tokenizer
                         LDA #(Messages.SyntaxError / 256)
                         STA ZP.LastErrorH
                         
-                        Messages.StorePC(); // 6502 PC -> IDY
+                        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                         
                         CLC  // Error
                         return;
@@ -1295,7 +1295,7 @@ unit Tokenizer
                             LDA #(Messages.SyntaxError / 256)
                             STA ZP.LastErrorH
                             
-                            Messages.StorePC(); // 6502 PC -> IDY
+                            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                             
                             CLC  // Error
                             return;
@@ -1601,7 +1601,7 @@ unit Tokenizer
                 LDA #(Messages.SyntaxError / 256)
                 STA ZP.LastErrorH
                 
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 
                 return;
                 */

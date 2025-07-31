@@ -30,7 +30,7 @@ unit IntMath
                     STA ZP.LastErrorL
                     LDA #(Messages.NumericOverflow / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC();
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                     return;
                 }
 #endif                
@@ -49,7 +49,7 @@ unit IntMath
                     STA ZP.LastErrorL
                     LDA #(Messages.NumericOverflow / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC();
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                     return;
                 }
 #endif                
@@ -68,7 +68,7 @@ unit IntMath
                     STA ZP.LastErrorL
                     LDA #(Messages.NumericOverflow / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC();
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                     return;
                 }
 #endif                
@@ -119,7 +119,7 @@ unit IntMath
                     STA ZP.LastErrorL
                     LDA #(Messages.NumericOverflow / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC();
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                     return;
                 }
 #endif                
@@ -139,7 +139,7 @@ unit IntMath
                     STA ZP.LastErrorL
                     LDA #(Messages.NumericOverflow / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC();
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                     return;
                 }
 #endif                                
@@ -159,7 +159,7 @@ unit IntMath
                     STA ZP.LastErrorL
                     LDA #(Messages.NumericOverflow / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC();
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                     return;
                 }
 #endif                                
@@ -275,7 +275,7 @@ unit IntMath
             STA ZP.LastErrorL
             LDA #(Messages.NumericOverflow / 256)
             STA ZP.LastErrorH
-            Messages.StorePC();
+            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
             return; // Leave corrupted result, but flag the error
         }
 #endif        

@@ -432,7 +432,7 @@ unit Instructions
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
                 
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 
                 break;
             }
@@ -484,7 +484,7 @@ unit Instructions
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
                 
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 
                 break;
             }
@@ -667,7 +667,7 @@ unit Instructions
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
                 
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 
                 break;
             }
@@ -735,7 +735,7 @@ unit Instructions
                 STA ZP.LastErrorL
                 LDA #(Messages.DivisionByZero / 256)
                 STA ZP.LastErrorH
-                Messages.StorePC();
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
                 CLC
                 break;
             }
@@ -750,7 +750,7 @@ unit Instructions
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
                 
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 break;
             }
             
@@ -810,7 +810,7 @@ unit Instructions
                 STA ZP.LastErrorL
                 LDA #(Messages.DivisionByZero / 256)
                 STA ZP.LastErrorH
-                Messages.StorePC();
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
                 CLC
                 break;
             }
@@ -825,7 +825,7 @@ unit Instructions
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
                 
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 
                 break;
             }
@@ -877,7 +877,7 @@ unit Instructions
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
                 
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 
                 break;
             }
@@ -926,7 +926,7 @@ unit Instructions
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
                 
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 
                 break;
             }
@@ -975,7 +975,7 @@ unit Instructions
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
                 
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 
                 break;
             }
@@ -1042,7 +1042,7 @@ unit Instructions
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
                 
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 
                 break;
             }
@@ -1106,7 +1106,7 @@ unit Instructions
                 LDA #(Messages.TypeMismatch / 256)
                 STA ZP.LastErrorH
                 
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 
                 break;
             }

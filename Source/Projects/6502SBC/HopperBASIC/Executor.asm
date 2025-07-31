@@ -119,7 +119,7 @@ unit Executor
             STA ZP.LastErrorL
             LDA #(Messages.InternalError / 256)
             STA ZP.LastErrorH
-            Messages.StorePC(); // 6502 PC -> IDY
+            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
             CLC
             return;
         }
@@ -147,7 +147,7 @@ unit Executor
                 STA ZP.LastErrorL
                 LDA #(Messages.InternalError / 256)
                 STA ZP.LastErrorH
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 CLC
                 return; 
             }
@@ -188,7 +188,7 @@ unit Executor
                 STA ZP.LastErrorL
                 LDA #(Messages.InternalError / 256)
                 STA ZP.LastErrorH
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 CLC
                 return; 
             }
@@ -450,7 +450,7 @@ unit Executor
         STA ZP.LastErrorL
         LDA #(Messages.InternalError / 256)
         STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
         CLC
     }
     
@@ -463,7 +463,7 @@ unit Executor
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
         CLC
     }
     
@@ -474,7 +474,7 @@ unit Executor
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
         CLC
     }
     
@@ -587,7 +587,7 @@ unit Executor
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
         CLC
     }
     
@@ -598,7 +598,7 @@ unit Executor
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
         CLC
     }
     
@@ -609,7 +609,7 @@ unit Executor
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
         CLC
     }
     
@@ -622,7 +622,7 @@ unit Executor
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
         CLC
     }
     
@@ -633,7 +633,7 @@ unit Executor
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
         CLC
     }
     
@@ -644,7 +644,7 @@ unit Executor
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
         CLC
     }
     
@@ -670,7 +670,7 @@ unit Executor
                 STA ZP.LastErrorL
                 LDA #(Messages.UndefinedIdentifier / 256)
                 STA ZP.LastErrorH
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 CLC
                 break;
             }
@@ -743,7 +743,7 @@ unit Executor
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
         CLC
     }
     
@@ -792,7 +792,7 @@ unit Executor
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
         CLC
     }
     
@@ -803,7 +803,7 @@ unit Executor
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
         CLC
     }
     
@@ -814,7 +814,7 @@ unit Executor
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
         CLC
     }
 }

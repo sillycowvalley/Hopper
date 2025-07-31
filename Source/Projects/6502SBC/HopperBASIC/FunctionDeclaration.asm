@@ -71,6 +71,8 @@ unit FunctionDeclaration
             Messages.CheckError();
             if (NC) { break; }
             
+DumpHeap();
+            
             // Save function node address
             LDA ZP.IDXL
             STA (Statement.stmtObjectPtr + 0)
@@ -150,7 +152,7 @@ unit FunctionDeclaration
                     STA ZP.LastErrorL
                     LDA #(Messages.IllegalFunctionName / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC(); // 6502 PC -> IDY
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 }
                 else
                 {
@@ -158,7 +160,7 @@ unit FunctionDeclaration
                     STA ZP.LastErrorL
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC(); // 6502 PC -> IDY
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 }
                 CLC
                 break;
@@ -212,7 +214,7 @@ unit FunctionDeclaration
                     LDA #(Messages.VariableExists / 256)
                     STA ZP.LastErrorH
                 }
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 CLC
                 break;
             }
@@ -236,7 +238,7 @@ unit FunctionDeclaration
                 STA ZP.LastErrorL
                 LDA #(Messages.ExpectedLeftParen / 256)
                 STA ZP.LastErrorH
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 CLC
                 break;
             }
@@ -279,7 +281,7 @@ unit FunctionDeclaration
                 STA ZP.LastErrorL
                 LDA #(Messages.ExpectedRightParen / 256)
                 STA ZP.LastErrorH
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 CLC
                 break;
             }
@@ -363,7 +365,7 @@ unit FunctionDeclaration
                     STA ZP.LastErrorL
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC(); // 6502 PC -> IDY
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                     CLC
                     break;
                 }
@@ -406,7 +408,7 @@ unit FunctionDeclaration
                     STA ZP.LastErrorL
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC(); // 6502 PC -> IDY
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                     CLC
                     break;
                 }
@@ -471,7 +473,7 @@ unit FunctionDeclaration
                     STA ZP.LastErrorL
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC(); // 6502 PC -> IDY
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                     CLC
                     break;
                 }
@@ -583,7 +585,7 @@ unit FunctionDeclaration
                     STA ZP.LastErrorL
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC(); // 6502 PC -> IDY
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                     CLC
                     break;
                 }
@@ -705,7 +707,7 @@ unit FunctionDeclaration
                     STA ZP.LastErrorL
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC();
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
                     CLC
                     break;
                 }
@@ -739,7 +741,7 @@ unit FunctionDeclaration
                         STA ZP.LastErrorL
                         LDA #(Messages.SyntaxError / 256)
                         STA ZP.LastErrorH
-                        Messages.StorePC();
+                        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
                         CLC
                         break;
                     }
@@ -758,7 +760,7 @@ unit FunctionDeclaration
                     STA ZP.LastErrorL
                     LDA #(Messages.InternalError / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC();
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
                     CLC
                     break;
                 }
@@ -770,16 +772,21 @@ unit FunctionDeclaration
                 // Already at body start after BEGIN token - no parameters to skip
                 // Tokenizer is positioned correctly after BEGIN
             }
-                
+            
+DumpHeap();
+PrintStringTOP();
+            
             // Find the function that was already declared
             Functions.Find(); // Input: ZP.TOP = name, Output: ZP.IDX = function node
+XOut();
+            
             if (NC)
             {
                 LDA #(Messages.UndefinedIdentifier % 256)
                 STA ZP.LastErrorL
                 LDA #(Messages.UndefinedIdentifier / 256)
                 STA ZP.LastErrorH
-                Messages.StorePC();
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
                 CLC
                 break;
             }
@@ -812,7 +819,7 @@ unit FunctionDeclaration
                     STA ZP.LastErrorL
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC();
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
                     CLC
                     break;
                 }

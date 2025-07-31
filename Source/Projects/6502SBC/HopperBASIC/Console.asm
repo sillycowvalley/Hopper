@@ -26,7 +26,7 @@ unit Console
         STA ZP.LastErrorL
         LDA #(Messages.SyntaxError / 256)
         STA ZP.LastErrorH
-        Messages.StorePC();
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
         CLC
     }
     
@@ -409,7 +409,7 @@ unit Console
                     STA ZP.LastErrorL
                     LDA #(Messages.InternalError / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC();
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
                     CLC
                 }
             }
@@ -552,7 +552,7 @@ unit Console
                     STA ZP.LastErrorL
                     LDA #(Messages.NotImplemented / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC(); // 6502 PC -> IDY
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 }
                 default:
                 {
@@ -579,7 +579,7 @@ unit Console
             STA ZP.LastErrorL
             LDA #(Messages.SyntaxError / 256)
             STA ZP.LastErrorH
-            Messages.StorePC(); // 6502 PC -> IDY
+            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
             CLC
             return;
         }
@@ -646,14 +646,14 @@ unit Console
             STA ZP.LastErrorL
             LDA #(Messages.SyntaxError / 256)
             STA ZP.LastErrorH
-            Messages.StorePC();
+            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
         }
 #else
         LDA #(Messages.OnlyInDebug % 256)
         STA ZP.LastErrorL
         LDA #(Messages.OnlyInDebug / 256)
         STA ZP.LastErrorH
-        Messages.StorePC();
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
 #endif    
     }
 
@@ -677,7 +677,7 @@ unit Console
         STA ZP.LastErrorL
         LDA #(Messages.OnlyInDebug / 256)
         STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
 #endif
     }
     
@@ -701,7 +701,7 @@ unit Console
         STA ZP.LastErrorL
         LDA #(Messages.OnlyInDebug / 256)
         STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
 #endif
     }
 
@@ -804,7 +804,7 @@ unit Console
                 STA ZP.LastErrorL
                 LDA #(Messages.SyntaxError / 256)
                 STA ZP.LastErrorH
-                Messages.StorePC();
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
                 CLC
                 break;
             }
@@ -844,7 +844,7 @@ unit Console
                     STA ZP.LastErrorL
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC();
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
                     CLC
                     break;
                 }
@@ -878,7 +878,7 @@ unit Console
                     STA ZP.LastErrorL
                     LDA #(Messages.SyntaxError / 256)
                     STA ZP.LastErrorH
-                    Messages.StorePC();
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
                     CLC
                     break;
                 }
@@ -893,7 +893,7 @@ unit Console
             STA ZP.LastErrorL
             LDA #(Messages.UndefinedIdentifier / 256)
             STA ZP.LastErrorH
-            Messages.StorePC();
+            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
             CLC
             break;
         } // Single exit block
@@ -917,7 +917,7 @@ unit Console
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
     }
     
     

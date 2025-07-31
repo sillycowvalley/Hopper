@@ -280,7 +280,7 @@ unit Listing
                 STA ZP.LastErrorL
                 LDA #(Messages.UndefinedIdentifier / 256)
                 STA ZP.LastErrorH
-                Messages.StorePC();
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
                 CLC
                 break; 
             }
@@ -311,7 +311,7 @@ unit Listing
                 STA ZP.LastErrorL
                 LDA #(Messages.SyntaxError / 256)
                 STA ZP.LastErrorH
-                Messages.StorePC();
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
                 CLC
                 break;
             }
@@ -359,7 +359,7 @@ unit Listing
             STA ZP.LastErrorL
             LDA #(Messages.SyntaxError / 256)
             STA ZP.LastErrorH
-            Messages.StorePC();
+            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
             return;
         }
         

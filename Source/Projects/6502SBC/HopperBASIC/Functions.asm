@@ -45,15 +45,14 @@ unit Functions
                 LDA #(Messages.SyntaxError / 256)
                 STA ZP.LastErrorH
                 
-                Messages.StorePC(); // 6502 PC -> IDY
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 
                 CLC  // Error
                 break;
             }
             
             // Function doesn't exist, add it
-            LDA #(SymbolType.FUNCTION << 4)  // Functions don't have dataType, just symbolType in high nibble
-            STA ZP.ACCT
+            STZ ZP.ACCT // flags = 0
             LDX #ZP.FunctionsList
             Objects.Add();
             
@@ -108,30 +107,6 @@ unit Functions
                 CLC  // Not found
                 break;
             }
-            
-            // Check if it's a function
-            Objects.GetData();  // Returns type in ZP.ACCT, tokens in ZP.NEXT, value/args in ZP.IDY
-            
-            LDA ZP.ACCT
-            AND #0xF0  // Extract symbol type (high nibble)
-            LSR LSR LSR LSR  // Shift to low nibble
-            
-            CMP #SymbolType.FUNCTION
-            if (Z)  // It's a function
-            {
-                SEC  // Found and correct type
-                break;
-            }
-            
-            // Wrong type
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            
-            Messages.StorePC(); // 6502 PC -> IDY
-            
-            CLC  // Error
             break;
         } // end of single exit block
         
@@ -330,8 +305,10 @@ unit Functions
         PHA
         PHX
         
-        LDA #SymbolType.FUNCTION
+        // 'all' because this list only has FUNCTIONs
+        LDA # 0 
         STA ZP.SymbolIteratorFilter
+        
         LDX #ZP.FunctionsList
         Objects.IterateStart();
         
@@ -588,7 +565,7 @@ unit Functions
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
         CLC
     }
     
