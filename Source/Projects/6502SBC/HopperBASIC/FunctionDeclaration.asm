@@ -190,11 +190,28 @@ unit FunctionDeclaration
             Variables.Find(); // Input: ZP.TOP = name
             if (C)
             {
-                // Variable/constant exists - this is a name conflict
-                LDA #(Messages.FunctionExists % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.FunctionExists / 256)
-                STA ZP.LastErrorH
+                // Variable/constant exists - determine type and show appropriate error
+                Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = symbolType|dataType
+                Messages.CheckError();
+                if (NC) { break; }
+                
+                LDA ZP.ACCT
+                AND #0xF0  // Extract symbol type (high nibble)
+                CMP #(SymbolType.CONSTANT << 4)
+                if (Z)
+                {
+                    LDA #(Messages.ConstantExists % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.ConstantExists / 256)
+                    STA ZP.LastErrorH
+                }
+                else
+                {
+                    LDA #(Messages.VariableExists % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.VariableExists / 256)
+                    STA ZP.LastErrorH
+                }
                 Messages.StorePC(); // 6502 PC -> IDY
                 CLC
                 break;

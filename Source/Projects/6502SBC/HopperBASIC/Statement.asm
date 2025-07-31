@@ -934,37 +934,49 @@ unit Statement
                     CLC  // Error
                     break;
                 }
-                
-                // if it already exists, try to delete it
+                // if it already exists, check type compatibility before replacing
                 STZ ZP.SymbolIteratorFilter // constant or variable
                 Variables.Find(); // ZP.IDX = symbol node address
                 if (C)
                 {
-                    /* 
-                    
-                    // Should we ever want constants not to be re-definable:
-                    Variables.GetType();
+                    // Get existing symbol type
+                    Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = symbolType|dataType
+                    Messages.CheckError();
                     if (NC) { break; }
+                    
                     LDA ZP.ACCT
-                    AND #0xF0
-                    CMP #(SymbolType.CONSTANT << 4)
-                    if (Z)
+                    AND #0xF0  // Extract existing symbol type (high nibble)
+                    STA ZP.NEXTT // Temporarily store existing type
+                    
+                    // Compare with new symbol type being declared
+                    LDA stmtSymbol // New symbol type (VARIABLE or CONSTANT << 4)
+                    CMP ZP.NEXTT
+                    if (NZ)
                     {
-                        LDA #(Messages.ConstantExists % 256)
-                        STA ZP.LastErrorL
-                        LDA #(Messages.ConstantExists / 256)
-                        STA ZP.LastErrorH
-                        
+                        // Type mismatch - show appropriate error
+                        LDA ZP.NEXTT
+                        CMP #(SymbolType.CONSTANT << 4)
+                        if (Z)
+                        {
+                            LDA #(Messages.ConstantExists % 256)
+                            STA ZP.LastErrorL
+                            LDA #(Messages.ConstantExists / 256)
+                            STA ZP.LastErrorH
+                        }
+                        else
+                        {
+                            LDA #(Messages.VariableExists % 256)
+                            STA ZP.LastErrorL
+                            LDA #(Messages.VariableExists / 256)
+                            STA ZP.LastErrorH
+                        }
                         Messages.StorePC(); // 6502 PC -> IDY
-                        
-                        CLC  // Error
+                        CLC
                         break;
                     }
                     
-                    */
-                    
-                    // delete it (name ptr in TOP)
-                    Variables.Remove();
+                    // Same type - allow replacement by removing existing
+                    Variables.Remove(); // delete it (name ptr in TOP)
                     if (NC) { break; }
                 }
                 
