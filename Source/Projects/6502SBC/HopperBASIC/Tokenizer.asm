@@ -185,32 +185,17 @@ unit Tokenizer
     // Find keyword match for current identifier in working buffer
     // Input: Working buffer at Address.BasicProcessBuffer1, null-terminated
     // Output: A = token value if found, or 0 if not found
-    // Preserves: Everything except A (output)
+    // Munts: A, X, Y, ZP.ACC, ZP.IDY
     findKeyword()
     {
-        // Preserve all registers and ZP variables
         PHX
         PHY
-        LDA ZP.ACCL
-        PHA
-        LDA ZP.ACCH
-        PHA
-        LDA ZP.IDYL
-        PHA
-        LDA ZP.IDYH
-        PHA
         
-        
-        
-LDA Address.BasicProcessBuffer1
-Tools.NL(); Tools.HOut();        
-      
         // Choose table based on first character
-        LDA Address.BasicProcessBuffer1  
+        LDA Address.BasicProcessBuffer1
         CMP #'M'
         if (C)  // >= 'M', use M-Z table
         {
-LDA #'1' Tools.COut();
             LDA #(keywordsMZ % 256)
             STA ZP.IDYL
             LDA #(keywordsMZ / 256)
@@ -218,102 +203,68 @@ LDA #'1' Tools.COut();
         }
         else    // < 'M', use A-L table
         {
-LDA #'2' Tools.COut();
             LDA #(keywordsAL % 256)
             STA ZP.IDYL
             LDA #(keywordsAL / 256)
             STA ZP.IDYH
         }
         
-        // Search the selected table
-        LDY #0  // Start at beginning of table
+        LDY #0  // Start at beginning of keyword table
         loop
         {
-            LDA [ZP.IDY], Y     // Get length of this keyword
-            if (Z) 
-            { 
-                LDA #0          // Not found - end of table
-                break;          // Exit to cleanup
-            }
+            LDA [ZP.IDY], Y    // Get length of this keyword
+            if (Z) { break; }  // End of table - not found
             
-            STA ZP.ACCL         // Save keyword length
+            STA ZP.ACCL        // Save keyword length
             INY
-            LDA [ZP.IDY], Y     // Get token value
-            STA ZP.ACCH         // Save token value
+            LDA [ZP.IDY], Y    // Get token value
+            STA ZP.ACCH        // Save token value
             INY
             
             // Compare characters
             LDX #0  // Character index in our identifier
             loop
             {
-                LDA Address.BasicProcessBuffer1, X  // Get char from identifier
+                LDA Address.BasicProcessBuffer1, X  // Get char from our identifier
                 if (Z)  // Hit null terminator in our identifier
                 {
                     // Check if we've matched the full keyword length
                     CPX ZP.ACCL
                     if (Z)
                     {
-                        
-LDA #'>' Tools.COut();                         
-                        // Exact match found
-                        LDA ZP.ACCH  // Get token value to return
-Tools.HOut();                                                
-                        
-                        break;       // Exit to cleanup with result
+                        PLY
+                        PLX
+                        LDA ZP.ACCH  // Return token value - exact match!
+                        return;
                     }
                     break; // Length mismatch
                 }
                 
                 // Check if we've exceeded keyword length
                 CPX ZP.ACCL
-                if (Z) { break; }  // We've reached end of keyword without null terminator in identifier
+                if (Z) { break; }  // Our identifier is longer than keyword
                 
-                CMP [ZP.IDY], Y    // Compare with expected character
+                CMP [ZP.IDY], Y  // Compare with expected character
                 if (NZ) { break; } // Mismatch
                 
                 INX
                 INY
             }
             
-            // Check if we found a match
-            CPX ZP.ACCL
-            if (Z)
-            {
-                LDA Address.BasicProcessBuffer1, X
-                if (Z) // Hit null terminator and matched full length
-                {
-                    LDA ZP.ACCH  // Return the token value
-                    break;       // Exit to cleanup
-                }
-            }
-            
             // Mismatch - skip to next keyword
-            // We need to advance Y to point to the next keyword entry
-            // Y currently points somewhere in the middle of current keyword
-            // Go back to start of current keyword and skip past it entirely
-            LDY #0              // Reset to start of current keyword
-            LDA ZP.ACCL         // Get length we saved earlier
-            CLC
-            ADC #2              // length + token byte + length byte = total entry size
-            TAY                 // Y now points to next keyword
+            loop
+            {
+                CPX ZP.ACCL       // Have we reached the end of keyword?
+                if (Z) { break; } // Yes, Y now points to start of next keyword
+                INX               // Move to next character position  
+                INY               // Advance Y to next character
+            }
         }
         
-        // Single exit point - A contains result (token value or 0)
-        PHA          // Save result
-        
-        // Restore all preserved state
-        PLA          // ZP.IDYH
-        STA ZP.IDYH
-        PLA          // ZP.IDYL  
-        STA ZP.IDYL
-        PLA          // ZP.ACCH
-        STA ZP.ACCH
-        PLA          // ZP.ACCL
-        STA ZP.ACCL
         PLY
         PLX
         
-        PLA          // Get result back into A
+        LDA #0  // Not found
     }
 
     // Print keyword corresponding to token value
