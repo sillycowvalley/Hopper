@@ -12,6 +12,40 @@ This provides excellent performance while maintaining type safety through node-b
 
 ---
 
+## Stack Frame Architecture: Always-Present Return Slot
+
+### Consistent Return Value Handling
+Every function call creates a return slot, regardless of whether the function returns a value or the caller uses it:
+
+```
+Value Stack Layout:
+Before call:  [caller_data...]
+After args:   [caller_data...] [return_slot(BIT 0)] [arg1] [arg2] ... [argN]  
+After ENTER:  [caller_data...] [return_slot(BIT 0)] [arg1] [arg2] ... [argN] [saved_BP] [locals...]
+After RETURN: [caller_data...] [return_value_or_zero]
+```
+
+### Return Statement Behavior
+- **`RETURN` (no expression)**: Leaves return slot as `BIT 0` (zero-initialized)
+- **`RETURNVAL` (with expression)**: Pops expression result into return slot, preserves type
+- **Both opcodes**: Clean up arguments + locals using cleanup_count operand
+- **Stack cleanup**: SP reduced by cleanup_count (arguments + locals, but NOT return slot)
+
+### Always-Present Return Slot Benefits
+1. **Predictable stack layout** for all function calls
+2. **No crashes** on mixed `RETURN`/`RETURNVAL` patterns within same function  
+3. **Consistent caller cleanup** (always exactly one return slot)
+4. **Zero-initialized return slot** provides sensible default (`BIT 0`)
+5. **Type information preserved** in parallel TypeStack
+6. **Future-proof**: Return type checking already built-in via TypeStack
+
+### Caller Responsibility
+- **Function call as statement**: Emit `DECSP` after call to discard unused return value
+- **Function call in expression**: Return value consumed directly (no cleanup needed)
+- **Consistent pattern**: Every function call produces exactly one stack result
+
+---
+
 ## Opcode Architecture: Unresolved → Resolved Pairs
 
 ### Function Calls
@@ -40,25 +74,46 @@ PUSHCSTRING stringAddress      // Direct pointer to string in token buffer
 
 ---
 
+## Updated OpCode Definitions
+
+### Function Management Opcodes
+```hopper
+// One byte operand opcodes (0x40-0x7F)
+ENTER        = 0x48,  // Set up stack frame [arg_count]
+RETURN       = 0x49,  // Return from function [cleanup_count]  
+RETURNVAL    = 0x4A,  // Return with value [cleanup_count]
+
+// Two byte operand opcodes (0x80-0xBF)  
+CALL         = 0x83,  // Call function by name [name_offset_lsb] [name_offset_msb]
+CALLF        = 0x84,  // Call function fast [node_lsb] [node_msb] (resolved)
+```
+
+### Stack Cleanup Semantics
+- **`ENTER [arg_count]`**: Save current BP, set BP = SP - arg_count (point to first argument)
+- **`RETURN [cleanup_count]`**: Restore BP, reduce SP by cleanup_count, leave return slot
+- **`RETURNVAL [cleanup_count]`**: Pop value into return slot, restore BP, reduce SP by cleanup_count
+
+---
+
 ## Implementation Roadmap
 
 ### Phase 1: Function Call Resolution (Priority 1)
 **Goal**: Enable `RUN` command and function calls for benchmarks
 
 **Required Changes:**
-1. **OpCodes.asm**: Add `CALL = 0x47` and `CALLF = 0x48`
-2. **Compiler.asm**: Emit `CALL functionNameOffset` for function calls
-3. **Executor.asm**: Implement resolution logic in `executeCall()`
+1. **OpCodes.asm**: Add function management opcodes with correct operand counts
+2. **Compiler.asm**: Emit `CALL functionNameOffset` for function calls with return slot setup
+3. **Executor.asm**: Implement resolution logic in `executeCall()` and stack frame management
 4. **RUN command**: Find "BEGIN" function and execute it
 
 **Test Case:**
 ```basic
 FUNC Greet()
-    PRINT "Hello"
+    PRINT 42
 ENDFUNC
 
 BEGIN
-    Greet()  // Function call
+    Greet()  // Function call (return value discarded)
 END
 
 RUN  // Execute main program
@@ -68,7 +123,7 @@ RUN  // Execute main program
 **Goal**: Fast global variable access with full type safety
 
 **Required Changes:**
-1. **OpCodes.asm**: Add `PUSHGLOBALF = 0x86`, `POPGLOBALF = 0x87`
+1. **OpCodes.asm**: Add `PUSHGLOBALF = 0x87`, `POPGLOBALF = 0x88`
 2. **Compiler.asm**: Update `EmitPushGlobal()` to use name offsets
 3. **Executor.asm**: Implement resolution logic in `executePushGlobal()`/`executePopGlobal()`
 
@@ -120,7 +175,7 @@ STRING message = "Hello"                 // Mutable strings (Phase 4+)
 **Step 2: Opcode Patching**
 ```hopper
 // 5. Patch opcode stream in place:
-//    - Change CALL (0x47) to CALLF (0x48)  
+//    - Change CALL (0x83) to CALLF (0x84)  
 //    - Replace name offset with node address
 // 6. Execute CALLF immediately (don't defer to next run)
 ```
@@ -130,6 +185,45 @@ STRING message = "Hello"                 // Mutable strings (Phase 4+)
 // Subsequent executions hit CALLF directly:
 // 1. Fetch node address from operand
 // 2. Execute function immediately (no lookup)
+```
+
+### Function Call Compilation Strategy
+
+**Detection Logic** in `compilePrimary()`:
+```hopper
+case Tokens.IDENTIFIER:
+{
+    // Look ahead to distinguish variable vs function call
+    if (nextToken == LPAREN)
+    {
+        // Function call: functionName() 
+        // 1. Push return slot (BIT 0)
+        // 2. Compile arguments 
+        // 3. Emit CALL nameOffset
+    }
+    else
+    {
+        // Variable reference: variableName
+        // Emit PUSHGLOBAL nameOffset  
+    }
+}
+```
+
+**Argument List Compilation**:
+```hopper
+compileArgumentList()
+{
+    // ALWAYS push return slot first (BIT 0)
+    EmitPushBit(0);
+    
+    // Then compile actual arguments
+    if (args present)
+    {
+        compileExpression(); // arg1
+        if (comma) compileExpression(); // arg2
+        // etc.
+    }
+}
 ```
 
 ### Node-Based Access Benefits
@@ -193,6 +287,10 @@ FUNC Fibo(n)
     RETURN Fibo(n-1) + Fibo(n-2)  // Recursive calls work
 ENDFUNC
 
+BEGIN
+    Fibo(10)  // Call from main program, return value discarded
+END
+
 RUN  // Executes BEGIN block
 ```
 
@@ -219,7 +317,9 @@ ENDFUNC
 1. **Performance**: Resolved opcodes eliminate symbol lookup overhead
 2. **Type Safety**: Node-based access preserves full type information
 3. **Simplicity**: Same pattern for functions, variables, and strings
-4. **Extensibility**: Easy to add new symbol types (arrays, etc.)
-5. **Debugging**: Unresolved opcodes clearly show first-time execution
+4. **Robustness**: Always-present return slot eliminates function return inconsistency crashes
+5. **Extensibility**: Easy to add new symbol types (arrays, etc.)
+6. **Debugging**: Unresolved opcodes clearly show first-time execution
+7. **Consistent Cleanup**: Uniform stack management regardless of return value usage
 
-This resolve-and-replace architecture positions HopperBASIC for excellent performance while maintaining the simplicity and type safety required for a robust BASIC interpreter.
+This resolve-and-replace architecture with always-present return slots positions HopperBASIC for excellent performance while maintaining the simplicity, type safety, and robustness required for a reliable BASIC interpreter.

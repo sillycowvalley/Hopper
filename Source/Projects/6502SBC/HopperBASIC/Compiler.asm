@@ -599,6 +599,78 @@ unit Compiler
         EmitOpcodeWithByte();
     }
     
+    // Emit ENTER opcode for function entry (stack frame setup)
+    // Input: A = argument count for this function
+    // Output: ENTER opcode with argument count emitted
+    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpcodeWithByte()
+    EmitEnter()
+    {
+        STA compilerOperand1          // Store argument count as operand
+        LDA #OpcodeType.ENTER
+        STA compilerOpCode
+        EmitOpcodeWithByte();
+    }
+    
+    
+    // Emit RETURN opcode for function exit (no return value)
+    // Input: A = total stack slots to clean up (arguments + locals)
+    // Output: RETURN opcode with cleanup count emitted
+    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpcodeWithByte()
+    EmitReturn()
+    {
+        STA compilerOperand1          // Store cleanup count as operand
+        LDA #OpcodeType.RETURN
+        STA compilerOpCode
+        EmitOpcodeWithByte();
+    }
+    
+    // Emit RETURNVAL opcode for function exit with return value
+    // Input: A = total stack slots to clean up (arguments + locals)
+    // Output: RETURNVAL opcode with cleanup count emitted (expects return value on stack)
+    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpcodeWithByte()
+    EmitReturnVal()
+    {
+        STA compilerOperand1          // Store cleanup count as operand
+        LDA #OpcodeType.RETURNVAL
+        STA compilerOpCode
+        EmitOpcodeWithByte();
+    }  
+    
+    // Emit CALL opcode for unresolved function call
+    // Input: Current token is IDENTIFIER (function name)
+    // Output: CALL opcode with name offset emitted, C set if successful
+    // Modifies: compilerOpCode, compilerOperand1/2, ZP.ACC (via CalculateTokenOffset), buffer state
+    EmitCall()
+    {
+        PHA
+        PHX
+        PHY
+        
+        loop // Single exit
+        {
+            // Calculate offset to current token (function name)
+            CalculateTokenOffset(); // Result in ZP.ACC
+            if (NC) { break; }
+            
+            // Check if offset fits in 16-bit operand
+            // For Phase 1, we'll assume it fits (token buffer is 512 bytes)
+            LDA ZP.ACCL
+            STA compilerOperand1  // LSB
+            LDA ZP.ACCH
+            STA compilerOperand2  // MSB
+            
+            // Emit CALL with word operand (name offset)
+            LDA #OpcodeType.CALL
+            STA compilerOpCode
+            EmitOpcodeWithWord();
+            break;
+        }
+        
+        PLY
+        PLX
+        PLA
+    }
+    
     // Main entry point: Compile current expression to opcodes
     // Input: ZP.CurrentToken = first token of expression
     // Output: Expression compiled to opcode buffer, ZP.CurrentToken = token after expression
@@ -1136,6 +1208,191 @@ unit Compiler
 #endif
     }
     
+    // Parse and compile function argument list
+    // Input: ZP.CurrentToken = LPAREN (opening parenthesis)
+    // Output: Arguments compiled and pushed to stack in correct order, ZP.CurrentToken = RPAREN
+    // Modifies: ZP.CurrentToken, buffer state, compilation state
+    compileArgumentList()
+    {
+        PHA
+        PHX
+        PHY
+        
+        loop // Single exit
+        {
+            // Get token after opening parenthesis
+            Tokenizer.NextToken();
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            // Check for empty argument list
+            LDA ZP.CurrentToken
+            CMP #Tokens.RPAREN
+            if (Z)
+            {
+                SEC // Success - empty argument list
+                break;
+            }
+            
+            // Compile arguments separated by commas
+            loop
+            {
+                // Compile argument expression
+                compileComparison(); // Use full expression compilation
+                Messages.CheckError();
+                if (NC) { break; }
+                
+                // Check what comes next
+                LDA ZP.CurrentToken
+                CMP #Tokens.RPAREN
+                if (Z)
+                {
+                    SEC // Success - end of argument list
+                    break;
+                }
+                
+                // Expect comma for more arguments
+                CMP #Tokens.COMMA
+                if (NZ)
+                {
+                    LDA #(Messages.SyntaxError % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.SyntaxError / 256)
+                    STA ZP.LastErrorH
+                    Messages.StorePC();
+                    CLC
+                    break;
+                }
+                
+                // Get token after comma
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NC) { break; }
+                
+                // Continue with next argument
+            }
+            
+            break; // Exit outer loop
+        }
+        
+        PLY
+        PLX
+        PLA
+    }
+    
+    // Update compilePrimary() to handle function calls
+    compileFunctionCallOrVariable()
+    {
+        PHA
+        PHX
+        PHY
+        
+        loop // Single exit
+        {
+            // Save current token position for potential function name resolution
+            LDA ZP.TokenizerPosL
+            STA (compilerSavedTokenPosL + 0)
+            LDA ZP.TokenizerPosH
+            STA (compilerSavedTokenPosH + 0)
+            
+            // Look ahead to see if this is a function call (identifier followed by '(')
+            Tokenizer.NextToken(); // Get token after identifier
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            LDA ZP.CurrentToken
+            CMP #Tokens.LPAREN
+            if (Z)
+            {
+                // This is a function call - restore tokenizer to identifier and emit call
+                LDA (compilerSavedTokenPosL + 0)
+                STA ZP.TokenizerPosL
+                LDA (compilerSavedTokenPosH + 0)
+                STA ZP.TokenizerPosH
+                
+                // Get the identifier token back
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NC) { break; }
+                
+                // Emit function call opcode
+                EmitCall();
+                if (NC) { break; }
+                
+                // Advance past function name
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NC) { break; }
+                
+                // Expect opening parenthesis
+                LDA ZP.CurrentToken
+                CMP #Tokens.LPAREN
+                if (NZ)
+                {
+                    LDA #(Messages.ExpectedLeftParen % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.ExpectedLeftParen / 256)
+                    STA ZP.LastErrorH
+                    Messages.StorePC();
+                    CLC
+                    break;
+                }
+                
+                // Parse function arguments
+                compileArgumentList();
+                if (NC) { break; }
+                
+                // Expect closing parenthesis (should be current token after argument parsing)
+                LDA ZP.CurrentToken
+                CMP #Tokens.RPAREN
+                if (NZ)
+                {
+                    LDA #(Messages.ExpectedRightParen % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.ExpectedRightParen / 256)
+                    STA ZP.LastErrorH
+                    Messages.StorePC();
+                    CLC
+                    break;
+                }
+                
+                // Get next token after closing parenthesis
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NC) { break; }
+            }
+            else
+            {
+                // Not a function call - restore position and emit variable push
+                LDA (compilerSavedTokenPosL + 0)
+                STA ZP.TokenizerPosL
+                LDA (compilerSavedTokenPosH + 0)
+                STA ZP.TokenizerPosH
+                
+                // Get the identifier token back
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NC) { break; }
+                
+                // Emit push global variable opcode (existing functionality)
+                EmitPushGlobal();
+                if (NC) { break; }
+                
+                // Get next token
+                Tokenizer.NextToken();
+                Messages.CheckError();
+                if (NC) { break; }
+            }
+            
+            SEC // Success
+            break;
+        }
+        
+        PLY
+        PLX
+        PLA
+    }
+    
     // Compile primary expressions (numbers, identifiers, parentheses)
     // Input: ZP.CurrentToken = current token
     // Output: Primary opcodes emitted, ZP.CurrentToken = token after expression
@@ -1225,13 +1482,7 @@ unit Compiler
                 }
                 case Tokens.IDENTIFIER:
                 {
-                    // Emit push global variable opcode
-                    EmitPushGlobal();
-                    if (NC) { break; }
-                    
-                    // Get next token
-                    Tokenizer.NextToken();
-                    Messages.CheckError();
+                    compileFunctionCallOrVariable();
                     break;
                 }
                 case Tokens.LPAREN:

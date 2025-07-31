@@ -576,11 +576,10 @@ unit Statement
         CMP #Tokens.EOL
         if (Z)
         {
-            // No return value, push 0
-            LDA #0
-            STA ZP.TOPL
-            STA ZP.TOPH
-            Stacks.PushTop();
+            // No return value - emit RETURN opcode
+            Compiler.EmitReturn();
+            Messages.CheckError();
+            if (NC) { return; }
         }
         else
         {
@@ -588,16 +587,12 @@ unit Statement
             EvaluateExpression();
             Messages.CheckError();
             if (NC) { return; }
+            
+            // Emit RETURNVAL opcode (expects value on stack)
+            Compiler.EmitReturnVal();
+            Messages.CheckError();
+            if (NC) { return; }
         }
-        
-        // TODO: Actually return from function when we have function support
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        
-        Messages.StorePC(); // 6502 PC -> IDY
-        
 #ifdef DEBUG
         LDA #'R'
         Tools.COut();
@@ -608,6 +603,7 @@ unit Statement
         CLC  // Error
         BRK
     }
+        
     
     // Execute END statement (stub implementation)
     // Input: ZP.CurrentToken = END token
@@ -656,6 +652,20 @@ unit Statement
             // Handle different identifier types
             switch (A)
             {
+                case IdentifierType.Function:
+                {
+                    // This is a function call - compile it as expression and execute
+                    EvaluateExpression(); // This will handle the function call compilation
+                    Messages.CheckError();
+                    if (NC) { break; }
+                    
+                    // Function call executed via opcodes - result may be on stack
+                    // For Level 1, we'll just discard any return value
+                    // TODO: In future, handle return values appropriately
+                    
+                    SEC // Success
+                    break;
+                }
                 case IdentifierType.Global:
                 {
                     // This is a variable - save the node address in statement storage

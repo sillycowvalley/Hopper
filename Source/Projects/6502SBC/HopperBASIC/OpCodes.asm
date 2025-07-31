@@ -43,10 +43,6 @@ unit OpCodes
         LE           = 0x0F,  // Pop two values, push less or equal result (BIT)
         GE           = 0x10,  // Pop two values, push greater or equal result (BIT)
         
-        // Control flow
-        RETURN       = 0x11,  // Return from function (no return value)
-        RETURNVAL    = 0x12,  // Return from function (pop return value from stack)
-        
         // Stack manipulation
         DECSP        = 0x13,  // Decrement stack pointer (discard top value)
         DUP          = 0x14,  // Duplicate top stack value
@@ -78,7 +74,15 @@ unit OpCodes
         // System calls
         SYSCALL      = 0x47,  // System call [function_id]
         
-        // Available: 0x48-0x7F (56 opcodes remaining in this group)
+        // Function frame management
+        ENTER        = 0x48,  // Enter function frame [local_count] - push BP, SP?BP, reserve locals
+        
+        // Control flow
+        RETURN       = 0x49,  // Return from function (no return value)
+        RETURNVAL    = 0x4A,  // Return from function (pop return value from stack)
+        
+        
+        // Available: 0x49-0x7F (55 opcodes remaining in this group)
         
         // === OPCODES WITH TWO BYTE OPERANDS (0x80-0xBF) ===
         // Bits 7-6: 10 (two byte operands)
@@ -161,6 +165,7 @@ unit OpCodes
     //     JUMPB 0x0A          - Jump forward 10 bytes
     //     JUMPB 0xF6          - Jump backward 10 bytes (signed)
     //     SYSCALL 0x01        - System call PRINT_STRING
+    //     ENTER 0x03          - Enter function frame with 3 local variable slots
     //
     // **Group 2: Two Byte Operands (0x80-0xBF)**
     //   [OPCODE][LSB][MSB]
