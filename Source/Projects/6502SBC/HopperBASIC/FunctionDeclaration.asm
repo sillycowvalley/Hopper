@@ -185,15 +185,19 @@ unit FunctionDeclaration
                 if (NC) { break; }
             }
             
-            // Check if variable/constant with this name exists and remove it
+            // Check if variable/constant with this name exists - this is an error
             STZ ZP.SymbolIteratorFilter // Accept any symbol type
             Variables.Find(); // Input: ZP.TOP = name
             if (C)
             {
-                // Variable/constant exists - remove it (name pointer already in ZP.TOP)
-                Variables.Remove();
-                Messages.CheckError();
-                if (NC) { break; }
+                // Variable/constant exists - this is a name conflict
+                LDA #(Messages.FunctionExists % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.FunctionExists / 256)
+                STA ZP.LastErrorH
+                Messages.StorePC(); // 6502 PC -> IDY
+                CLC
+                break;
             }
             
             // Restore function name pointer after potential corruption from Remove operations

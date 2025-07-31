@@ -24,7 +24,8 @@ unit Messages
     
     const string TypeMismatch   = "TYPE MISMATCH";
     const string FunctionExists = "FUNCTION EXISTS";
-    //const string ConstantExists = "CONSTANT EXISTS";
+    const string ConstantExists = "CONSTANT EXISTS";
+    const string VariableExists = "VARIABLE EXISTS";
     const string OutOfMemory    = "OUT OF MEMORY";
     const string FileNotFound   = "FILE NOT FOUND";
     const string NextWithoutFor = "NEXT WITHOUT FOR";
