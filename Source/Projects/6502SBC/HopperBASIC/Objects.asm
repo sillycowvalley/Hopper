@@ -25,15 +25,18 @@ unit Objects
     // Offset 2:   symbolType|dataType (packed byte)
     // Offset 3-4: tokens pointer (16-bit pointer to initialization/body token stream)
     // Offset 5-6: value/address (16-bit - value for variables/constants, args list for functions)
-    // Offset 7+:  null-terminated name string
+    // Offset 7-8: opcode stream pointer (16-bit - for functions, unused for variables/constants)
+    // Offset 9+:  null-terminated name string
     
-    const byte symbolOverhead = 7;       // Fixed fields before name (including Table's next pointer)
+    const byte symbolOverhead = 9;       // Fixed fields before name (increased from 7)
     const byte snNext = 0;               // Next pointer offset (2 bytes)
     const byte snType = 2;               // symbolType|dataType field offset
+    const byte snFlags = 2;              // flags for functions
     const byte snTokens = 3;             // Tokens pointer field offset (2 bytes)
     const byte snValue = 5;              // Value/args field offset (2 bytes)
     const byte snArguments = 5;          // same slot as Values, better name for Function arguments
-    const byte snName = 7;               // Name field offset (variable length)
+    const byte snOpcodes = 7;            // Opcode stream pointer offset (2 bytes) - NEW!
+    const byte snName = 9;               // Name field offset (variable length) - shifted by 2
     
     // Initialize empty symbol tables
     // Output: ZP.VariableListL/H = 0x0000, ZP.FunctionsListL/H = 0x0000

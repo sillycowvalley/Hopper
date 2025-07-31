@@ -684,7 +684,7 @@ unit FunctionDeclaration
             STZ ZP.TokenizerPosH
             
             // Skip FUNC token
-            Tokenizer.NextToken(); // Should be FUNC
+            Tokenizer.NextToken(); // Gets FIRST token (should be FUNC)
             Messages.CheckError();
             if (NC) { break; }
             
@@ -693,7 +693,7 @@ unit FunctionDeclaration
             if (Z)
             {
                 // Get function name
-                Tokenizer.NextToken(); // Should be function name
+                Tokenizer.NextToken(); // Gets SECOND token (should be function name)
                 Messages.CheckError();
                 if (NC) { break; }
                 

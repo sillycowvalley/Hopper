@@ -637,9 +637,9 @@ unit Compiler
     }  
     
     // Emit CALL opcode for unresolved function call
-    // Input: Current token is IDENTIFIER (function name)
-    // Output: CALL opcode with name offset emitted, C set if successful
-    // Modifies: compilerOpCode, compilerOperand1/2, ZP.ACC (via CalculateTokenOffset), buffer state
+    // Input: Current token is IDENTIFIER (function name), tokenizer positioned at function name
+    // Output: CALL opcode with absolute name address emitted, C set if successful
+    // Modifies: compilerOpCode, compilerOperand1/2, buffer state
     EmitCall()
     {
         PHA
@@ -648,18 +648,17 @@ unit Compiler
         
         loop // Single exit
         {
-            // Calculate offset to current token (function name)
-            CalculateTokenOffset(); // Result in ZP.ACC
-            if (NC) { break; }
+            // Calculate absolute address of function name in token buffer
+            // The tokenizer's TokenLiteralPos points to the start of the identifier string
+            CLC
+            LDA #(Address.BasicTokenizerBuffer % 256)
+            ADC ZP.TokenLiteralPosL    // TokenLiteralPos points to identifier string
+            STA compilerOperand1       // Absolute address LSB
+            LDA #(Address.BasicTokenizerBuffer / 256)
+            ADC ZP.TokenLiteralPosH
+            STA compilerOperand2       // Absolute address MSB
             
-            // Check if offset fits in 16-bit operand
-            // For Phase 1, we'll assume it fits (token buffer is 512 bytes)
-            LDA ZP.ACCL
-            STA compilerOperand1  // LSB
-            LDA ZP.ACCH
-            STA compilerOperand2  // MSB
-            
-            // Emit CALL with word operand (name offset)
+            // Emit CALL with absolute address (not offset!)
             LDA #OpcodeType.CALL
             STA compilerOpCode
             EmitOpcodeWithWord();

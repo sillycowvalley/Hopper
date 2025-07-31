@@ -246,9 +246,6 @@ unit Listing
         PHX
         PHY
         
-        // Track if we found any functions
-        LDX #0  // Counter for total functions found
-        
         // Iterate through functions
         Functions.IterateFunctions(); // Output: ZP.IDX = first function node, C set if found
         loop
@@ -257,19 +254,7 @@ unit Listing
             
             displayFunction(); // Input: ZP.IDX = function node
             
-            INX  // Increment function count
             Functions.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next function
-        }
-        
-        // Special case: if no functions found
-        CPX #0
-        if (Z)
-        {
-            LDA #(Messages.NoFunctionsMsg % 256)
-            STA ZP.ACCL
-            LDA #(Messages.NoFunctionsMsg / 256)
-            STA ZP.ACCH
-            Tools.PrintStringACC();
         }
         
         PLY

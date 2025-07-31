@@ -9,6 +9,8 @@ unit Executor
     uses "Instructions"
     uses "ComparisonInstructions"
     
+    friend Functions;
+    
     // Memory layout for executor state - BasicProcessBuffer3 (0x09E9-0x09FF, 23 bytes)
     const uint executorStartAddrL    = Address.BasicProcessBuffer3 + 9;   // 0x09E9: opcode buffer start low
     const uint executorStartAddrH    = Address.BasicProcessBuffer3 + 10;  // 0x09EA: opcode buffer start high
@@ -395,6 +397,10 @@ unit Executor
             {
                 executeCall();
             }
+            case OpcodeType.CALLF:
+            {
+                executeCallF();
+            }
             case OpcodeType.SYSCALL:
             {
                 executeSysCall();
@@ -646,13 +652,88 @@ unit Executor
     
     executeCall()
     {
-        // TODO: Function call by index
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        Messages.StorePC(); // 6502 PC -> IDY
-        CLC
+        loop
+        {
+            FetchOperandWord();
+            if (NC) { break; }
+        
+            LDA executorOperandL
+            STA ZP.TOPL
+            LDA executorOperandH
+            STA ZP.TOPH
+            
+            // 1. resolve Function <index> to function call <address>
+            Functions.Find(); // Input: ZP.TOP = name
+            if (NC)
+            {
+                LDA #(Messages.UndefinedIdentifier % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.UndefinedIdentifier / 256)
+                STA ZP.LastErrorH
+                Messages.StorePC(); // 6502 PC -> IDY
+                CLC
+                break;
+            }
+            // ZP.IDX = function node address
+            
+            Functions.IsCompiled();
+            if (NC)
+            {
+                // JIT
+                Functions.Compile();
+                if (NC)
+                {
+                    break; // compilation failed
+                }
+            }
+            
+            // 2. replace own opcode CALL -> CALLF, <index> by <address>
+            // 3, PC -= 3 (so CALLF happens instead)
+            //
+            // <address> MSB
+            // PC--
+            LDA ZP.PCL
+            if (Z)
+            {
+                DEC ZP.PCH
+            }
+            DEC ZP.PCL
+            LDA ZP.IDXH 
+            STA [ZP.PC]
+            
+            // <address> LSB
+            // PC--
+            LDA ZP.PCL
+            if (Z)
+            {
+                DEC ZP.PCH
+            }
+            DEC ZP.PCL
+            LDA ZP.IDXL
+            STA [ZP.PC]
+            
+            // CALLF
+            // PC--
+            LDA ZP.PCL
+            if (Z)
+            {
+                DEC ZP.PCH
+            }
+            DEC ZP.PCL
+            LDA # OpcodeType.CALLF
+            STA [ZP.PC]
+            SEC
+            break;
+        } // loop
+    }
+    
+    executeCallF()
+    {
+        // Function call by <address>
+        // PUSH PC
+        // PUSH BP
+        // PC = <address>
+        Functions.JumpToOpCodes();
     }
     
     executeSysCall()

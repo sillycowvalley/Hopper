@@ -2,7 +2,7 @@
     "buildoptions": 
   {
       "checkedBuild": "false"
-    , "runOptimizer": "false"
+    , "runOptimizer": "true"
     , "runDisassembler": "true"
     , "autoSaveOnBuild": "true"
   }

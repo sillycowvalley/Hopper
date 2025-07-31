@@ -5,15 +5,22 @@ unit Functions
     uses "Arguments"
     uses "BasicTypes"
     uses "Messages"
-    
+        
+    flags FunctionFlags
+    {
+        None    = 0x00,
+        Compiled = 0x01,    // Bit 0: 1 = opcodes compiled, 0 = tokens only
+        // Bits 1-7: Available for future use (optimization flags, etc.)
+    }
     
     // Function management building on Objects foundation
     // Functions use the existing Objects node structure:
     // Offset 0-1: next pointer (managed by Table unit)
-    // Offset 2:   unused in functions
-    // Offset 3-4: function body tokens pointer
+    // Offset 2:   function flags byte (was unused)
+    // Offset 3-4: function body tokens pointer / compiled opcodes pointer (dual purpose)
     // Offset 5-6: arguments list head pointer (points directly to first argument node)
-    // Offset 7+:  null-terminated function name string
+    // Offset 7-8: opcode stream pointer (16-bit - for functions, unused for variables/constants)
+    // Offset 9+:  null-terminated name string
     
     // Declare new function
     // Input: ZP.TOP = name pointer
@@ -49,6 +56,19 @@ unit Functions
             STA ZP.ACCT
             LDX #ZP.FunctionsList
             Objects.Add();
+            
+            // FunctionFlags = FunctionFlags.None
+            LDY # Objects.snFlags
+            LDA # 0
+            STA [ZP.IDX], Y
+            
+            // clear opCodes
+            LDY # Objects.snOpcodes
+            STA [ZP.IDX], Y
+            INY
+            STA [ZP.IDX], Y
+            
+            
             break;
         } // end of single exit block
         
@@ -283,6 +303,8 @@ unit Functions
             // Clear all arguments before removing function
             Arguments.Clear();  // preserves IDX munts ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
             
+            freeOpCodes();
+            
             LDX #ZP.FunctionsList
             Objects.Remove();  // munts ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX
             break;
@@ -298,6 +320,8 @@ unit Functions
         PLA
     }
     
+    // function node IDX
+        
     // Start iteration over functions only
     // Output: ZP.IDX = first function node, C set if found, NC if none
     // Munts: ZP.LCURRENT, ZP.LNEXT
@@ -429,6 +453,143 @@ unit Functions
         PLY
         PLX
         PLA
+    }
+    
+    freeOpCodes()
+    {
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+         
+            
+        // clear opCodes stream
+        LDY # Objects.snOpcodes
+        STA [ZP.IDX], Y
+        STA ZP.IDYL
+        INY
+        STA [ZP.IDX], Y
+        STA ZP.IDXH
+        LDA ZP.IDYL
+        STA ZP.IDXL
+        ORA ZP.IDXH
+        if (NZ)
+        {
+            Memory.Free(); // ZP.IDX
+        }
+        
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        // set to null
+        LDY # Objects.snOpcodes
+        LDA # 0
+        STA [ZP.IDX], Y
+        INY
+        STA [ZP.IDX], Y
+    }
+    
+    // Check if function is compiled
+    // Input: ZP.IDX = function node address  
+    // Output: C set if compiled, NC if tokens only
+    IsCompiled()
+    {
+        LDY # Objects.snFlags
+        LDA [ZP.IDX], Y
+        AND #FunctionFlags.Compiled
+        if (NZ) { SEC } else { CLC }
+    }
+    
+    // Mark function as compiled  
+    // Input: ZP.IDX = function node address
+    SetCompiled()
+    {
+        LDY # Objects.snFlags
+        LDA [ZP.IDX], Y
+        ORA #FunctionFlags.Compiled
+        STA [ZP.IDX], Y
+    }
+    
+    // Mark function as tokens only (clear compiled flag)
+    // Input: ZP.IDX = function node address  
+    ClearCompiled()
+    {
+        LDY # Objects.snFlags
+        LDA [ZP.IDX], Y
+        AND #(~FunctionFlags.Compiled)
+        STA [ZP.IDX], Y
+    }
+    
+    // Retrieve opcode stream for execution
+    // Input: ZP.IDX = function node address
+    // Output: ZP.IDY = opcode stream pointer, C set if compiled, NC if not compiled
+    GetOpcodes()
+    {
+        PHA
+        PHY
+        
+        // Check if function is compiled
+        LDY # Objects.snFlags 
+        LDA [ZP.IDX], Y
+        AND # FunctionFlags.Compiled
+        if (Z) // Not compiled
+        {
+            // Return null pointer
+            STZ ZP.IDYL
+            STZ ZP.IDYH
+            CLC // Not compiled
+        }
+        else
+        {
+            // Function is compiled - return opcode stream pointer
+            LDY # Objects.snOpcodes
+            LDA [ZP.IDX], Y
+            STA ZP.IDYL
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDYH
+            
+            SEC // Compiled
+        }
+        
+        PLY
+        PLA
+    }
+    
+    // fast unprotected version for CALLF
+    JumpToOpCodes()
+    {
+        Stacks.PushPC();
+        Stacks.PushBP();
+        
+        // assume we are compiled and good
+        Executor.FetchOperandWord();
+        LDA Executor.executorOperandL
+        STA ZP.IDXL
+        LDA Executor.executorOperandH
+        STA ZP.IDXH
+        LDA [ZP.IDX], Y
+        STA ZP.PCL
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.PCH
+        SEC
+    }        
+    
+    
+    Compile()
+    {
+        freeOpCodes(); // frees existing stream buffer if not null
+        
+        
+        LDA #( Messages.NotImplemented % 256)
+        STA ZP.LastErrorL
+        LDA #(Messages.NotImplemented / 256)
+        STA ZP.LastErrorH
+        Messages.StorePC(); // 6502 PC -> IDY
+        CLC
     }
     
 }

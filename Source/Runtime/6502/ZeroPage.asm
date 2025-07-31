@@ -177,6 +177,11 @@ unit ZP
     const byte SymbolTemp0          = 0x7D;  // General temporary storage
     const byte SymbolTemp1          = 0x7E;  // General temporary storage
     const byte SymbolTemp2          = 0x7F;  // General temporary storage
+    
+    const byte EmulatorPCL          = 0xF0;  // BIT this address to lock the current PC into this and the next slot
+    const byte EmulatorPCH          = 0xF1;
+    
+    
 
     
 #endif

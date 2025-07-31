@@ -46,7 +46,7 @@ unit Messages
     const string ExpectedExpression = "EXPRESSION EXPECTED";
     const string InvalidBitValue = "INVALID BIT VALUE";
     const string IllegalInFunctionMode = "ILLEGAL IN FUNCTION MODE";
-    const string NoFunctionsMsg = "NO FUNCTIONS\n";
+    
     
     // String constant for BEGIN function name
     const string BeginFunctionName = "BEGIN";
@@ -63,19 +63,19 @@ unit Messages
         TSX           // Transfer Stack Pointer to X
         INX
         
-        LDA 0x0101,X  // Get return address high byte from stack
-        STA ZP.IDYH   // Store in your PC variable
-        LDA 0x0100,X  // Get return address low byte from stack  
-        STA ZP.IDYL   // Store in your PC variable
+        LDA 0x0101,X         // Get return address high byte from stack
+        STA ZP.EmulatorPCH   // Store in your PC variable
+        LDA 0x0100,X         // Get return address low byte from stack  
+        STA ZP.EmulatorPCL   // Store in your PC variable
         
         // IDY -= 2
         SEC
-        LDA ZP.IDYL
+        LDA ZP.EmulatorPCL
         SBC #2
-        STA ZP.IDYL
-        LDA ZP.IDYH
+        STA ZP.EmulatorPCL
+        LDA ZP.EmulatorPCH
         SBC #0
-        STA ZP.IDYH
+        STA ZP.EmulatorPCH
         
         PLP // preserve NC
     }
@@ -155,9 +155,9 @@ unit Messages
         Serial.WriteChar();
         LDA #'x'
         Serial.WriteChar();
-        LDA ZP.IDYH
+        LDA ZP.EmulatorPCH
         Serial.HexOut();
-        LDA ZP.IDYL
+        LDA ZP.EmulatorPCL
         Serial.HexOut();
         LDA #')'
         Serial.WriteChar();
