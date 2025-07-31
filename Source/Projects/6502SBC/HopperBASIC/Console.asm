@@ -477,6 +477,12 @@ unit Console
                     Messages.CheckError();
                     if (NC) { return; }
                 }
+                case Tokens.FORGET:
+                {
+                    cmdForget();
+                    Messages.CheckError();
+                    if (NC) { return; }
+                }
                 case Tokens.CLEAR:
                 {
                     cmdClear();
@@ -537,7 +543,6 @@ unit Console
                     CLC  // Exit interpreter
                     return;
                 }
-                case Tokens.FORGET:
                 case Tokens.SAVE:
                 case Tokens.LOAD:
                 case Tokens.DIR:
@@ -769,6 +774,131 @@ unit Console
         Variables.Clear();
         Messages.PrintOK();
     }
+    
+    // Execute FORGET command - remove variable, constant, or function by name
+    // Input: ZP.CurrentToken = FORGET token
+    // Output: Named symbol removed from appropriate table, or error if not found
+    // Usage: FORGET identifier
+    // Error: Sets ZP.LastError if function mode, syntax error, or identifier not found
+    cmdForget()
+    {
+        Statement.IsCaptureModeOn();
+        if (C)
+        {
+            FunctionModeError();
+            return;
+        }
+        
+        loop // Single exit block for clean error handling
+        {
+            Tokenizer.NextToken(); // consume 'FORGET'
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            // Expect identifier name
+            LDA ZP.CurrentToken
+            CMP #Tokens.IDENTIFIER
+            if (NZ)
+            {
+                LDA #(Messages.SyntaxError % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.SyntaxError / 256)
+                STA ZP.LastErrorH
+                Messages.StorePC();
+                CLC
+                break;
+            }
+            
+            // Get the identifier name
+            Tokenizer.GetTokenString(); // Result in ZP.TOP
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            // Save name pointer for multiple attempts
+            LDA ZP.TOPL
+            PHA
+            LDA ZP.TOPH
+            PHA
+            
+            // Try to remove as variable/constant first
+            Variables.Remove(); // Input: ZP.TOP = name pointer
+            if (C)
+            {
+                // Successfully removed variable/constant
+                // Clean up stack and advance to next token
+                PLA
+                STA ZP.TOPH
+                PLA
+                STA ZP.TOPL
+                
+                Tokenizer.NextToken(); // consume identifier
+                Messages.CheckError();
+                if (NC) { break; }
+                
+                // Verify end of line
+                LDA ZP.CurrentToken
+                CMP #Tokens.EOL
+                if (NZ)
+                {
+                    LDA #(Messages.SyntaxError % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.SyntaxError / 256)
+                    STA ZP.LastErrorH
+                    Messages.StorePC();
+                    CLC
+                    break;
+                }
+                
+                Messages.PrintOK();
+                SEC // Success
+                break;
+            }
+            
+            // Not found as variable/constant, try function
+            // Restore name pointer
+            PLA
+            STA ZP.TOPH
+            PLA
+            STA ZP.TOPL
+            
+            Functions.Remove(); // Input: ZP.TOP = name pointer
+            if (C)
+            {
+                // Successfully removed function
+                Tokenizer.NextToken(); // consume identifier
+                Messages.CheckError();
+                if (NC) { break; }
+                
+                // Verify end of line
+                LDA ZP.CurrentToken
+                CMP #Tokens.EOL
+                if (NZ)
+                {
+                    LDA #(Messages.SyntaxError % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.SyntaxError / 256)
+                    STA ZP.LastErrorH
+                    Messages.StorePC();
+                    CLC
+                    break;
+                }
+                
+                Messages.PrintOK();
+                SEC // Success
+                break;
+            }
+            
+            // Not found in either table
+            LDA #(Messages.UndefinedIdentifier % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.UndefinedIdentifier / 256)
+            STA ZP.LastErrorH
+            Messages.StorePC();
+            CLC
+            break;
+        } // Single exit block
+    }
+    
     
     
     

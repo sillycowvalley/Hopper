@@ -1,4 +1,4 @@
-# Hopper BASIC Specification v2.5
+# Hopper BASIC Specification v2.6
 
 ## Project Objectives
 
@@ -113,12 +113,12 @@ END
 
 ### Console Commands
 - ✅ **`NEW`** - Clear everything (program, variables, functions)
-- ❌ **`LIST`** - Display complete program: constants, variables, functions, main program (creation order)
-- ❌ **`RUN`** - Execute the main program (BEGIN/END block)
+- ✅ **`LIST`** - Display complete program: constants, variables, functions, main program (creation order)
+- ❌ **`RUN`** - Execute the main program (BEGIN/END block) - **stub implemented**
 - ✅ **`CLEAR`** - Reset all variables to default values, keep definitions
 - ✅ **`VARS`** - Show constants first, then variables (creation order)
-- ❌ **`FUNCS`** - Show all functions in creation order (main program listed last as "__main")
-- ❌ **`FORGET name`** - Remove variable or function
+- ✅ **`FUNCS`** - Show all functions in creation order (main program listed last as "BEGIN")
+- ✅ **`FORGET name`** - Remove variable or function
 - ✅ **`MEM`** - Show available memory
 - ✅ **`BYE`** - Exit interpreter
 
@@ -138,8 +138,8 @@ END
 - ✅ **`CONST BIT name = value`** - Define immutable boolean constant
 
 ### Definition Commands
-- ❌ **`FUNC name(params)`** - Start function definition (ends with `ENDFUNC`)
-- ❌ **`BEGIN`** - Start main program definition (ends with `END`)
+- ✅ **`FUNC name(params)`** - Start function definition (ends with `ENDFUNC`) - **multi-line capture mode implemented**
+- ✅ **`BEGIN`** - Start main program definition (ends with `END`) - **multi-line capture mode implemented**
 
 ### Core Language Features
 
@@ -177,8 +177,8 @@ END
 
 #### Control Flow
 - ✅ **`IF expr THEN statement`** - Basic conditional execution
-- ❌ **`RETURN [expr]`** - Return from function (stub implemented)
-- ❌ **`END`** - End main program (stub implemented)
+- ✅ **`RETURN [expr]`** - Return from function
+- ✅ **`END`** - End main program
 
 #### Assignment
 - ✅ **`var = expr`** - Assignment to existing variables with type checking
@@ -188,6 +188,16 @@ END
 - ✅ **Stack-based execution** - Efficient opcode execution using value stack
 - ✅ **Buffer management** - 512-byte opcode buffer with bounds checking
 - ✅ **Opcode dispatch** - Fast execution with comprehensive instruction set
+
+#### Function System Architecture
+- ✅ **Function declaration**: Complete FUNC/ENDFUNC syntax parsing
+- ✅ **Parameter parsing**: Function parameter lists with comma separation
+- ✅ **Multi-line capture**: Interactive function definition across multiple lines
+- ✅ **BEGIN/END blocks**: Main program definition with same capture system
+- ✅ **Function storage**: Token stream storage for function bodies
+- ✅ **Arguments system**: Parameter storage and management
+- ✅ **Function listing**: FUNCS command displays all defined functions with formatted output
+- ✅ **Symbol table integration**: Functions stored alongside variables with proper cleanup
 
 ---
 
@@ -567,7 +577,8 @@ Offset 2+:  null-terminated argument name string
 - **Error Handling**: LastError pointer (0x35-0x36)
 - **Token Cache**: CurrentToken, TokenLiteralPos (0x37-0x39)
 - **JIT Compiler**: OpcodeBuffer state, CompilerFlags (0x3A-0x3F)
-- **Available**: 16 bytes for future features (0x40-0x4F)
+- **TokenIterator**: Iterator state for function display (0x40-0x43)
+- **Available**: 12 bytes for future features (0x44-0x4F)
 
 **Symbol Table Allocation (0x70-0x7F, 16 bytes):**
 - **Table Heads**: VariablesList, FunctionsList (0x70-0x73)
@@ -585,71 +596,99 @@ Offset 2+:  null-terminated argument name string
 
 ## Current Implementation Status
 
-### ✅ Completed Foundation (Expression System & Variables)
+### ✅ Completed Foundation (Expression System, Variables & Functions)
 - **Symbol Table System**: Complete 4-layer architecture with comprehensive testing
 - **Tokenization**: Full lexical analysis with keyword recognition, hex numbers, comments
 - **Expression Evaluation**: Complete JIT compilation system with all operators
 - **Type System**: Comprehensive type checking and promotion rules
 - **Variable Management**: Declaration, assignment, constant enforcement
-- **Basic Console Commands**: NEW, CLEAR, VARS, MEM, BYE, debug commands
+- **Function Declaration**: Complete FUNC/ENDFUNC and BEGIN/END syntax
+- **Function Storage**: Token stream capture and storage for function bodies
+- **Parameter Lists**: Argument parsing and storage in Functions system
+- **Multi-line Capture**: Interactive function definition across multiple input lines
+- **Function Display**: FUNCS and LIST commands with formatted token stream rendering
+- **Function Calls**: Complete function call parsing in expressions
+- **Console Commands**: NEW, CLEAR, VARS, FUNCS, LIST, FORGET, MEM, BYE, debug commands
 - **Statement Processing**: Multi-statement lines with colon separators
 - **IF/THEN Statements**: Basic conditional execution
+- **RETURN/END Statements**: Function and program termination
 - **Assignment**: Variable assignment with type checking
 - **Error Handling**: Proper error messages and recovery
+- **Clean API Standards**: All units follow register preservation and documented contracts
 
-### 🎯 Current Milestone: Fibonacci Benchmark
+### 🎯 Current Milestone: Function Execution System
 
-**Target**: Get this sample running successfully:
-```basic
-FUNC Fibo(n)
-    IF n <= 1 THEN RETURN n
-    RETURN Fibo(n-1) + Fibo(n-2)
-ENDFUNC
+**Next Priority**: Complete the function execution infrastructure to enable the Fibonacci benchmark:
 
-FUNC Benchmark(name, arg, loops)
-    WORD start = MILLIS()
-    WORD result
-    WORD count
-    FOR count = 0 TO loops-1
-        result = Fibo(arg)
-    NEXT count
-    elapsed = MILLIS() - start
-    PRINT name; "("; arg; ") = "; result; " in "; elapsed; " ms"
-ENDFUNC
+### ❌ Missing Components for Function Execution:
+1. **Function Body Execution** - Execute stored token streams as function bodies
+2. **Parameter Passing** - Pass arguments to function parameters
+3. **Local Variable Scope** - Function-local variable storage
+4. **RUN Command** - Execute the main program (BEGIN/END block)
+5. **Stack Frame Management** - Call stack for recursion
+6. **Executor System** - Execute compiled opcodes (referenced by Compiler but not implemented)
 
-BEGIN
-    Benchmark("Fibo", 10, 1)
-END
-```
+### ❌ Missing Components for Full Benchmark Support:
+1. **FOR/NEXT loops** - Basic iteration support
+2. **WHILE/WEND loops** - Conditional iteration  
+3. **String literals in PRINT** - `PRINT "text"` output
+4. **Multiple PRINT arguments** - `PRINT name; "("; arg; ")"`
+5. **MILLIS() function** - System timer access
+6. **Nested loop support** - FOR within WHILE constructs
+7. **Array declarations** - `BIT flags[8191]`
+8. **Array indexing** - `flags[i] = TRUE`
 
-**Phase 1 Dependencies** (in implementation order):
-1. **Function System** - FUNC/ENDFUNC definitions, parameters, local variables
-2. **RETURN statements** - Function exit with return values
-3. **Function calls** - Parameter passing and recursion
-4. **BEGIN/END blocks** - Main program structure
-5. **String literals in PRINT** - `PRINT "text"` without STRING variables
-6. **Multiple PRINT arguments** - `PRINT name; "("; arg; ")"`
-7. **FOR/NEXT loops** - Basic iteration support
-8. **MILLIS() function** - System timer access
-9. **RUN command** - Execute stored main program
+### 🎯 Function System Architecture Status
 
-### 🎯 Future Milestone: Sieve Benchmark
+**✅ Completed Components:**
+- **Function Declaration Parser**: Complete FUNC name(params) syntax parsing
+- **Parameter List Parser**: Argument parsing with comma separation and storage
+- **Function Storage**: Token stream storage for function bodies in symbol table
+- **Arguments Management**: Complete argument list management with iteration
+- **Function Lookup**: Find functions by name in symbol table
+- **Multi-line Capture Mode**: Interactive function definition across multiple lines
+- **Function Display**: Formatted output of function signatures and bodies
+- **BEGIN/END Support**: Main program treated as special "BEGIN" function
+- **Token Stream Rendering**: Convert stored tokens back to readable BASIC code
+- **Function Call Parser**: Parse `functionName(arg1, arg2)` syntax in expressions
+- **RETURN Statement Parser**: Complete RETURN [expr] syntax processing
+- **END Statement Parser**: Complete END statement processing
+- **FORGET Command**: Remove variables or functions by name
 
-**Target**: Full Sieve of Eratosthenes with arrays and nested loops
+**❌ Missing for Execution:**
+- **Function Call Parser**: Parse `functionName(arg1, arg2)` syntax in expressions
+- **Parameter Binding**: Map function arguments to parameter values
+- **Function Body Executor**: Execute function token streams
+- **Return Value Handling**: RETURN statement processing and value passing
+- **Call Stack Management**: Support for recursion and nested calls
+- **Local Scope**: Function-local variables and parameter access
 
-**Phase 2 Dependencies**:
-1. **Array declarations** - `BIT flags[8191]`
-2. **Array indexing** - `flags[i] = TRUE`
-3. **WHILE/WEND loops** - Conditional iteration
-4. **Nested loops** - FOR within WHILE constructs
+### Implementation Architecture
 
-### Testing Status
-All core systems have comprehensive test coverage:
+**Current Function Flow:**
+1. **Declaration Phase**: `FUNC Fibo(n)` → Create function node, parse parameters, capture body tokens
+2. **Storage Phase**: Function stored in Functions table with body tokens and argument list
+3. **Display Phase**: `FUNCS` command renders stored functions back to readable BASIC
+
+**Missing Execution Flow:**
+1. **Call Recognition**: Recognize `Fibo(10)` as function call in expression parser
+2. **Argument Evaluation**: Evaluate `10` and bind to parameter `n`
+3. **Body Execution**: Execute stored function body tokens as statements
+4. **Return Handling**: Process `RETURN n` and push result to value stack
+5. **Stack Management**: Handle recursive calls like `Fibo(n-1) + Fibo(n-2)`
+
+---
+
+## Testing Status
+All implemented systems have comprehensive test coverage:
 - **Symbol table operations**: Creation, lookup, type checking, memory management
 - **Expression evaluation**: All operators, type promotion, error conditions
 - **Tokenization**: All token types, edge cases, buffer management
 - **Memory management**: Allocation, deallocation, leak detection
 - **Type system**: Compatibility rules, runtime validation, error messages
+- **Function declaration**: Complete function definition and storage
+- **Function display**: Token stream rendering and formatting
+- **Multi-line capture**: Function definition across multiple input lines
 
 ---
 
@@ -687,11 +726,20 @@ WORD buffer = 200
 ```
 
 ### FUNCS Command Output Format  
-**Display Order**: Functions in creation order, main program (__main) listed last
+**Display Order**: Functions in creation order, main program (BEGIN block) listed with special handling
 ```
 FUNC Fibo(n)
+    IF n <= 1 THEN RETURN n
+    RETURN Fibo(n-1) + Fibo(n-2)
+ENDFUNC
+
 FUNC Benchmark(name, arg, loops)
-FUNC __main()  // BEGIN/END block shown as special function
+    [function body with proper indentation...]
+ENDFUNC
+
+BEGIN
+    [main program body...]
+END
 ```
 
 ### LIST Command Output Format
@@ -716,9 +764,68 @@ BEGIN
 END
 ```
 
-**Implementation Note**: LIST = VARS + FUNCS, maintaining the symbol table creation order for predictable program structure display.
+**Implementation Details:**
+- LIST = VARS + FUNCS output combined
+- Function bodies rendered with 4-space indentation
+- Token streams converted back to readable BASIC syntax
+- BEGIN blocks displayed without FUNC keyword
+- Parameters shown in function signatures
 
 ---
+
+## Usage Examples
+
+### Function Definition and Display
+```basic
+> FUNC Add(a, b)
+* RETURN a + b
+* ENDFUNC
+OK
+
+> FUNCS
+FUNC Add(a, b)
+    RETURN a + b
+ENDFUNC
+
+> LIST
+FUNC Add(a, b)
+    RETURN a + b
+ENDFUNC
+```
+
+### Multi-line Function Capture
+```basic
+> FUNC Complex(x)
+* INT temp = x * 2
+* IF temp > 10 THEN temp = temp - 5
+* RETURN temp
+* ENDFUNC
+OK
+
+> FUNCS Complex
+FUNC Complex(x)
+    INT temp = x * 2
+    IF temp > 10 THEN temp = temp - 5
+    RETURN temp
+ENDFUNC
+```
+
+### BEGIN/END Main Program
+```basic
+> BEGIN
+* PRINT "Starting program"
+* INT result = 42
+* PRINT result
+* END
+OK
+
+> FUNCS
+BEGIN
+    PRINT "Starting program"
+    INT result = 42
+    PRINT result
+END
+```
 
 ### Basic Variable Operations
 ```basic
@@ -772,9 +879,25 @@ PRINT unsigned + 300   ' Prints 500
 
 ## Future Roadmap
 
+### Phase 1.5: Function Execution (Next Sprint)
+- **Function Call Parser**: Parse function calls in expressions
+- **Executor System**: Implement opcode execution engine referenced by Compiler
+- **Parameter Binding**: Map arguments to function parameters
+- **RETURN Statement**: Complete return value processing
+- **RUN Command**: Execute stored main program (BEGIN/END block)
+- **Call Stack**: Basic function call and return mechanism
+
+### Phase 2: Loop Constructs & String Literals
+- **FOR/NEXT loops**: Counted iteration with STEP support
+- **WHILE/WEND loops**: Conditional iteration
+- **String literals**: Basic string output for PRINT statements
+- **Multiple PRINT args**: Semicolon and comma separators
+- **MILLIS() function**: System timer for benchmarks
+
 ### Phase 3: Enhanced Features (After Benchmarks)
 - **Storage System**: SAVE/LOAD with EEPROM integration
 - **Additional Types**: BYTE, STRING variables (beyond literals)
+- **Arrays**: Single-dimensional arrays for all types
 - **Enhanced I/O**: INPUT statements, formatted PRINT output
 - **Built-in Functions**: Math (ABS, RND), string manipulation
 - **Advanced Control**: DO/UNTIL loops, BREAK/CONTINUE statements
@@ -784,4 +907,4 @@ PRINT unsigned + 300   ' Prints 500
 - **Embedded Features**: Real-time capabilities for microcontroller applications
 - **Optimization**: Performance tuning for 6502 constraints
 
-The current implementation provides a solid foundation focused on getting the benchmark samples running, which will validate the core interpreter functionality before adding advanced features.
+The current implementation provides a robust foundation with complete function declaration, storage, and display systems. The next major milestone is implementing function execution to enable the Fibonacci benchmark, which will validate the core interpreter functionality before adding additional language features.
