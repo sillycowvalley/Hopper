@@ -1,4 +1,4 @@
-# Hopper BASIC Specification v2.8
+# Hopper BASIC Specification v2.9
 
 ## Project Objectives
 
@@ -130,7 +130,7 @@ END
 ### Variable Declaration Commands
 - ✅ **`INT name [= value]`** - Create signed integer variable (-32768 to 32767)
 - ✅ **`WORD name [= value]`** - Create unsigned integer variable (0 to 65535)
-- ✅ **`BIT name [= value]`** - Create boolean variable (0 or 1)
+- ✅ **`BIT name [= value]`** - Create boolean variable (TRUE or FALSE only)
 - ❌ **`BYTE name [= value]`** - Create 8-bit unsigned variable (0 to 255)
 - ❌ **`STRING name = "value"`** - Create string variable (can be reassigned to different string literals)
 
@@ -178,13 +178,141 @@ END
 #### Type System
 - ✅ **INT**: 16-bit signed integer (-32768 to 32767)
 - ✅ **WORD**: 16-bit unsigned integer (0 to 65535)
-- ✅ **BIT**: Boolean value (0 or 1)
+- ✅ **BIT**: Pure boolean type (TRUE or FALSE only)
+  - **Values**: Only TRUE (1) and FALSE (0) literals allowed
+  - **Type Isolation**: Incompatible with all numeric types (INT, WORD, BYTE)
+  - **Comparisons**: Only BIT = BIT and BIT <> BIT supported
+  - **No Ordering**: BIT < BIT, BIT > BIT, etc. → TYPE MISMATCH
+  - **No Arithmetic**: BIT + anything → TYPE MISMATCH
+  - **Logical Only**: AND, OR, NOT operations exclusively for BIT types
 - ❌ **BYTE**: 8-bit unsigned integer (0 to 255)
 - ❌ **STRING**: Immutable string literals (Phase 2)
 - ✅ **Type promotion**: Automatic promotion between compatible types
 - ✅ **Type safety**: Proper type checking with meaningful error messages
 - ✅ **Type compatibility checking**: Comprehensive validation for all operations
 - ✅ **Mixed-type operations**: INT↔WORD (when safe), with runtime validation
+
+### BIT Type Design Philosophy
+
+The BIT type is designed as a **pure boolean type** that is intentionally isolated from numeric types to prevent logical errors and enforce type safety:
+
+#### ✅ **Allowed BIT Operations:**
+```basic
+BIT a = TRUE
+BIT b = FALSE
+BIT result1 = a AND b      ' Logical operations with other BIT types
+BIT result2 = a OR b       ' Logical operations 
+BIT result3 = NOT a        ' Logical negation
+BIT result4 = a = b        ' BIT equality comparison
+BIT result5 = a <> b       ' BIT inequality comparison
+BIT result6 = a & b        ' Bitwise AND (since BIT is 0 or 1)
+BIT result7 = a | b        ' Bitwise OR (since BIT is 0 or 1)
+```
+
+#### ❌ **Rejected BIT Operations (TYPE MISMATCH):**
+```basic
+BIT flag = TRUE
+INT number = 5
+WORD count = 10
+
+' Cross-type comparisons
+PRINT flag = number        ' TYPE MISMATCH - BIT cannot compare with INT
+PRINT flag <> count        ' TYPE MISMATCH - BIT cannot compare with WORD
+PRINT number = flag        ' TYPE MISMATCH - INT cannot compare with BIT
+
+' Ordering operations between BIT types
+PRINT flag < TRUE          ' TYPE MISMATCH - BIT has no ordering concept
+PRINT flag > FALSE         ' TYPE MISMATCH - BIT ordering is meaningless
+PRINT flag <= TRUE         ' TYPE MISMATCH - No BIT ordering supported
+PRINT flag >= FALSE        ' TYPE MISMATCH - No BIT ordering supported
+
+' Arithmetic operations
+PRINT flag + 1             ' TYPE MISMATCH - BIT is not numeric
+PRINT number * flag        ' TYPE MISMATCH - BIT cannot participate in arithmetic
+
+' Assignment type mismatches
+flag = number              ' TYPE MISMATCH - Cannot assign INT to BIT
+number = flag              ' TYPE MISMATCH - Cannot assign BIT to INT
+```
+
+#### **Design Rationale:**
+1. **Type Safety**: Prevents logical errors like `if (count = true)` where assignment was intended
+2. **Clear Semantics**: BIT represents true/false states, not numeric values 0/1
+3. **Self-Documenting Code**: Forces explicit conversion when mixing boolean and numeric concepts
+4. **Error Prevention**: Catches common programming mistakes at compile time
+
+#### **Working with BIT Values:**
+```basic
+' Correct patterns for BIT usage
+BIT isReady = FALSE
+INT count = 0
+
+' Conditional logic
+IF isReady = TRUE THEN count = count + 1
+
+' BIT-only operations
+BIT result = isReady AND (count > 5)   ' Error: cannot mix BIT and numeric in expression
+BIT result = isReady AND TRUE          ' Correct: BIT-only expression
+
+' Proper flag usage
+IF isReady = TRUE THEN PRINT "System ready"
+IF isReady <> FALSE THEN PRINT "Not false"
+
+' BIT assignment from expressions  
+BIT comparison = (count > 10)          ' Comparison result is BIT type
+BIT combined = comparison AND isReady  ' BIT-only logical operation
+```
+
+#### **TRUE/FALSE Literal Behavior:**
+- `TRUE` and `FALSE` are **BIT literals** (not numeric values)
+- `TRUE` has BIT type with value 1
+- `FALSE` has BIT type with value 0  
+- Cannot be used in numeric expressions
+- Only compatible with other BIT values
+
+**Correct Usage:**
+```basic
+BIT flag1 = TRUE           ' BIT literal assignment
+BIT flag2 = FALSE          ' BIT literal assignment
+BIT result = flag1 = TRUE  ' BIT comparison
+```
+
+**Incorrect Usage:**
+```basic
+INT number = TRUE          ' TYPE MISMATCH - TRUE is BIT, not INT
+WORD count = FALSE         ' TYPE MISMATCH - FALSE is BIT, not WORD
+BIT flag = 1               ' TYPE MISMATCH - 1 is INT, not BIT
+BIT flag = 0               ' TYPE MISMATCH - 0 is INT, not BIT
+```
+
+### Type Promotion and Compatibility Rules
+- ✅ **INT → WORD**: Compatible only when INT ≥ 0 (runtime check)
+- ✅ **WORD → INT**: Compatible only when WORD ≤ 32767 (runtime check)
+- ❌ **BYTE → INT/WORD**: Always compatible (promotes to larger type)
+- ❌ **INT/WORD → BYTE**: Compatible only when value ≤ 255 (runtime check)
+- ✅ **BIT Type Isolation**: BIT is incompatible with all other types (INT, WORD, BYTE, STRING)
+- ❌ **STRING operations**: Only equality comparison supported (`=`, `<>`)
+- ✅ **BIT operations**: Logical AND/OR/NOT for BIT types only
+- ✅ **Bitwise operations**: AND (&), OR (|) for numeric types only (INT, WORD, BYTE) - **excludes BIT**
+- ✅ **Comparison results**: All comparisons return BIT type
+- ✅ **Operation modes**:
+  - **Arithmetic** (numeric only): +, -, *, /, MOD
+    - **Allowed**: INT, WORD, BYTE (with appropriate promotion)
+    - **Rejected**: BIT, STRING → TYPE MISMATCH
+  - **Equality** (same type groups): =, <>
+    - **BIT group**: BIT = BIT, BIT <> BIT
+    - **Numeric group**: INT/WORD/BYTE cross-comparisons (with promotion)
+    - **STRING group**: STRING = STRING, STRING <> STRING  
+    - **Cross-group**: TYPE MISMATCH (BIT vs numeric, STRING vs numeric, BIT vs STRING)
+  - **Ordering** (numeric only): <, >, <=, >=
+    - **Allowed**: INT, WORD, BYTE (with appropriate promotion)
+    - **Rejected**: BIT, STRING → TYPE MISMATCH
+  - **Bitwise** (numeric only): &, |
+    - **Allowed**: INT, WORD, BYTE
+    - **Rejected**: BIT, STRING → TYPE MISMATCH
+  - **Logical** (BIT only): AND, OR, NOT
+    - **Allowed**: BIT AND BIT, BIT OR BIT, NOT BIT
+    - **Rejected**: All other types → TYPE MISMATCH
 
 #### Control Flow
 - ✅ **`IF expr THEN statement`** - Basic conditional execution
@@ -467,30 +595,6 @@ COMMENT := REM | "'"
 LITERAL := TRUE | FALSE
 STRING := '"' { character }* '"'
 ```
-
-### Type System
-- ✅ **INT**: 16-bit signed integer (-32768 to 32767)
-- ✅ **WORD**: 16-bit unsigned integer (0 to 65535)  
-- ✅ **BIT**: Boolean value (0 or 1)
-- ❌ **BYTE**: 8-bit unsigned integer (0 to 255)
-- ❌ **STRING**: Immutable string constant (null-terminated character array)
-
-### Type Promotion and Compatibility Rules
-- ✅ **INT → WORD**: Compatible only when INT ≥ 0 (runtime check)
-- ✅ **WORD → INT**: Compatible only when WORD ≤ 32767 (runtime check)
-- ❌ **BYTE → INT/WORD**: Always compatible (promotes to larger type)
-- ❌ **INT/WORD → BYTE**: Compatible only when value ≤ 255 (runtime check)
-- ✅ **All types → BIT**: Only values 0 and 1 are compatible
-- ❌ **STRING operations**: Only equality comparison supported (`=`, `<>`)
-- ✅ **BIT operations**: Logical AND/OR/NOT for BIT types only
-- ✅ **Bitwise operations**: AND (&), OR (|) for all numeric types (INT, WORD, BIT)
-- ✅ **Comparison results**: All comparisons return BIT type
-- ✅ **Operation modes**:
-  - **Arithmetic** (rejects BIT, STRING): +, -, *, /, MOD
-  - **Equality** (allows all): =, <>
-  - **Ordering** (numeric only): <, >, <=, >=
-  - **Bitwise** (numeric only): &, |
-  - **Logical** (BIT only): AND, OR, NOT
 
 ### Operator Precedence (Highest to Lowest)
 1. Function calls, parentheses
@@ -791,7 +895,7 @@ All implemented systems have comprehensive test coverage:
 - **Function declaration**: Complete function definition and storage
 - **Function display**: Token stream rendering and formatting
 - **Multi-line capture**: Function definition across multiple input lines
-- **BIT Type**: Complete test suite passed
+- **BIT Type**: Complete test suite passed with correct type isolation behavior
 
 ---
 
