@@ -245,9 +245,12 @@ unit Statement
         LDA #'E'
         Tools.COut();
     #endif
-        
-        // NEW JIT COMPILATION PATH:
-        // 1. Compile infix tokens ? postfix opcodes
+        // Set literal base to BasicTokenizerBuffer for REPL
+        LDA #(Address.BasicTokenizerBuffer % 256)
+        STA ZP.IDYL  
+        LDA #(Address.BasicTokenizerBuffer / 256) 
+        STA ZP.IDYH
+        Compiler.SetLiteralBase();
         Compiler.CompileExpression();
         Messages.CheckError();
         if (NC) 

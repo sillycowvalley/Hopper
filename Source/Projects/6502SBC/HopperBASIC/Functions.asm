@@ -442,16 +442,20 @@ unit Functions
             
         // clear opCodes stream
         LDY # Objects.snOpcodes
-        STA [ZP.IDX], Y
+        LDA [ZP.IDX], Y
         STA ZP.IDYL
         INY
-        STA [ZP.IDX], Y
-        STA ZP.IDXH
-        LDA ZP.IDYL
-        STA ZP.IDXL
-        ORA ZP.IDXH
+        LDA [ZP.IDX], Y
+        STA ZP.IDYH
+        
+        STA ZP.IDYH
+        ORA ZP.IDYL
         if (NZ)
         {
+            LDA ZP.IDYL
+            STA ZP.IDXL
+            LDA ZP.IDYH
+            STA ZP.IDXH
             Memory.Free(); // ZP.IDX
         }
         
@@ -547,6 +551,8 @@ unit Functions
         STA ZP.IDXL
         LDA Executor.executorOperandH
         STA ZP.IDXH
+        
+        LDY #Objects.snOpcodes
         LDA [ZP.IDX], Y
         STA ZP.PCL
         INY
@@ -575,9 +581,10 @@ unit Functions
         loop // Single exit block
         {
             freeOpCodes(); // Free existing opcode stream if not null
-            
+                                    
             // Get function body tokens
             Functions.GetBody(); // Input: ZP.IDX = function node, Output: ZP.IDY = tokens pointer
+            Compiler.SetLiteralBase(); 
             
             // Check if function has a body
             LDA ZP.IDYL
@@ -598,31 +605,27 @@ unit Functions
             // instead of BasicTokenizerBuffer
             
             // Calculate length of function token stream by scanning for end marker
-            LDA ZP.IDYL
-            STA ZP.IDXL
-            LDA ZP.IDYH  
-            STA ZP.IDXH
-            
             LDY #0
             STZ ZP.ACCL
             STZ ZP.ACCH
             
             loop // Scan for length
             {
-                LDA [ZP.IDX], Y
+                LDA [ZP.IDY], Y
                 CMP #Tokens.ENDFUNC
                 if (Z) { break; }
                 CMP #Tokens.EOF  
                 if (Z) { break; }
                 
                 INY
-                if (Z) { INC ZP.IDXH }
+                if (Z) { INC ZP.IDYH }
                 
                 INC ZP.ACCL
                 if (Z) { INC ZP.ACCH }
             }
             
             // Copy function's token stream to BasicTokenizerBuffer for compilation
+            Functions.GetBody(); // Input: ZP.IDX = function node, Output: ZP.IDY = tokens pointer
             LDA ZP.IDYL
             STA ZP.FSOURCEADDRESSL        // Source: function's token stream
             LDA ZP.IDYH
@@ -637,7 +640,7 @@ unit Functions
             STA ZP.FLENGTHL
             LDA ZP.ACCH
             STA ZP.FLENGTHH
-            
+           
             Tools.CopyBytes();            // Copy function tokens to tokenizer buffer
             
             // Set up tokenizer to read copied function tokens
@@ -647,26 +650,49 @@ unit Functions
             STA ZP.TokenBufferLengthH
             
             STZ ZP.TokenizerPosL          // Start at beginning of copied tokens
-            STZ ZP.TokenizerPosH            
+            STZ ZP.TokenizerPosH 
+            
+            STZ ZP.ACCL // 0 arguments
+            GetArguments(); // ZP.IDY = arguments list head pointer
+            if (C)
+            {
+                LDA ZP.IDXL
+                PHA
+                LDA ZP.IDXH 
+                PHA
+                
+                LDA ZP.IDYL
+                STA ZP.IDXL
+                LDA ZP.IDYH
+                STA ZP.IDXH
+                
+                // has arguments
+                Arguments.GetCount(); // ZP.ACCL = argument count
+                
+                PLA
+                STA ZP.IDXH
+                PLA
+                STA ZP.IDXL
+            }
             
             // Use Compiler.CompileExpression() to compile function body
             Compiler.CompileFunction();
-            
-DumpBasicBuffers();
-DumpHeap();
-            
             Messages.CheckError();
             if (NC) { break; }
-loop { }                                    
-            // TODO: Copy opcodes from BasicOpcodeBuffer to permanent function storage
-            // TODO: Set compiled flag
+  /*          
+DumpBasicBuffers();
+DumpHeap();
+loop { }   
+*/                                 
+            // Copy opcodes from BasicOpcodeBuffer to permanent function storage
+            copyOpcodesToFunction();
+            Messages.CheckError();
+            if (NC) { break; }
             
-            LDA #(Messages.NotImplemented % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.NotImplemented / 256)
-            STA ZP.LastErrorH
-            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-            CLC
+            // Mark function as compiled
+            SetCompiled();
+            
+            SEC // Success
             break;
         }
         
@@ -679,6 +705,109 @@ loop { }
         STA ZP.TokenizerPosH
         PLA
         STA ZP.TokenizerPosL
+        
+        PLY
+        PLX
+        PLA
+    }
+
+    // Helper method to copy opcodes to permanent storage
+    // Input: ZP.IDX = function node address, opcodes in BasicOpcodeBuffer
+    // Output: Opcodes copied to allocated memory and stored in function node
+    // Modifies: ZP.ACC, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, ZP.FLENGTH
+    copyOpcodesToFunction()
+    {
+        PHA
+        PHX
+        PHY
+        
+        // Save function node address
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
+        loop // Single exit block
+        {
+            // Check if we have any opcodes to copy
+            LDA ZP.OpcodeBufferLengthL
+            ORA ZP.OpcodeBufferLengthH
+            if (Z)
+            {
+                // No opcodes - this shouldn't happen but handle gracefully
+                LDA #(Messages.InternalError % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.InternalError / 256)
+                STA ZP.LastErrorH
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                CLC
+                break;
+            }
+            
+            // Allocate memory for opcode storage
+            LDA ZP.OpcodeBufferLengthL
+            STA ZP.ACCL
+            LDA ZP.OpcodeBufferLengthH
+            STA ZP.ACCH
+            
+            Memory.Allocate(); // Returns address in ZP.IDX
+            
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z)
+            {
+                // Allocation failed
+                LDA #(Messages.OutOfMemory % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.OutOfMemory / 256)
+                STA ZP.LastErrorH
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                CLC
+                break;
+            }
+            
+            // Save allocated opcode storage address
+            LDA ZP.IDXL
+            STA ZP.ACCL  // Temporarily store opcode storage address
+            LDA ZP.IDXH
+            STA ZP.ACCH
+            
+            // Set up copy parameters
+            LDA #(Address.BasicOpcodeBuffer % 256)
+            STA ZP.FSOURCEADDRESSL        // Source: BasicOpcodeBuffer
+            LDA #(Address.BasicOpcodeBuffer / 256)
+            STA ZP.FSOURCEADDRESSH
+            
+            LDA ZP.ACCL
+            STA ZP.FDESTINATIONADDRESSL   // Destination: allocated storage
+            LDA ZP.ACCH
+            STA ZP.FDESTINATIONADDRESSH
+            
+            LDA ZP.OpcodeBufferLengthL    // Length: opcode buffer length
+            STA ZP.FLENGTHL
+            LDA ZP.OpcodeBufferLengthH
+            STA ZP.FLENGTHH
+            
+            // Copy opcodes to permanent storage
+            Tools.CopyBytes();
+            
+            // Restore function node address
+            PLA
+            STA ZP.IDXH
+            PLA
+            STA ZP.IDXL
+            
+            // Store opcode storage address in function node
+            LDY #Objects.snOpcodes
+            LDA ZP.ACCL  // Opcode storage address LSB
+            STA [ZP.IDX], Y
+            INY
+            LDA ZP.ACCH  // Opcode storage address MSB
+            STA [ZP.IDX], Y
+            
+            SEC // Success
+            break;
+        }
         
         PLY
         PLX

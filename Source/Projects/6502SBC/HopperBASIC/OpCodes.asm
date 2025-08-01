@@ -115,6 +115,8 @@ unit OpCodes
         // Reserved for future complex instructions or extensions
         // Potential uses: Variable-length operands, complex string operations,
         //                array access, advanced control flow
+        
+        INVALID       = 0xFF // probably better if this were 0x00
     }
     
     // System call IDs for SYSCALL opcode

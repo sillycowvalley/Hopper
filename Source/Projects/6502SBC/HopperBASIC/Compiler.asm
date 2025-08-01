@@ -19,7 +19,13 @@ unit Compiler
     const uint compilerOpCode         = Address.BasicProcessBuffer3 + 4;  // 0x09E4: 1 byte - opcode to emit
     const uint compilerOperand1       = Address.BasicProcessBuffer3 + 5;  // 0x09E5: 1 byte - first operand
     const uint compilerOperand2       = Address.BasicProcessBuffer3 + 6;  // 0x09E6: 1 byte - second operand
-    // 25 bytes available for future compiler needs (0x09E7-0x09FF)
+    const uint compilerLastOpcode     = Address.BasicProcessBuffer3 + 7;  // 0x09E7: 1 byte - last opcode emitted
+    const uint compilerFuncArgs       = Address.BasicProcessBuffer3 + 8;  // 0x09E8: 1 byte - number of arguments for current FUNC being compiled
+    const uint compilerFuncLocals     = Address.BasicProcessBuffer3 + 9;  // 0x09E9: 1 byte - number of locals for current FUNC being compiled
+    const uint compilerLiteralBaseL   = Address.BasicProcessBuffer3 + 10; // 0x09EA: 1 byte - literal base address low
+    const uint compilerLiteralBaseH   = Address.BasicProcessBuffer3 + 11; // 0x09EB: 1 byte - literal base address high
+
+    // 20 bytes available for future compiler needs (0x09EC-0x09FF)
     
     // Initialize the opcode buffer for compilation
     // Output: Opcode buffer ready for emission
@@ -44,6 +50,9 @@ unit Compiler
         
         // Clear compiler flags
         STZ ZP.CompilerFlags
+        
+        LDA # OpcodeType.INVALID
+        STA compilerLastOpcode
         
         SEC // Success
     }
@@ -98,6 +107,7 @@ unit Compiler
         // Write opcode to buffer
         LDA compilerOpCode
         STA [ZP.PC]
+        STA compilerLastOpcode
         
         // Increment PC
         INC ZP.PCL
@@ -129,6 +139,7 @@ unit Compiler
         // Write opcode
         LDA compilerOpCode
         STA [ZP.PC]
+        STA compilerLastOpcode
         
         // Increment PC
         INC ZP.PCL
@@ -172,6 +183,7 @@ unit Compiler
         // Write opcode
         LDA compilerOpCode
         STA [ZP.PC]
+        STA compilerLastOpcode
         
         // Increment PC
         INC ZP.PCL
@@ -1486,6 +1498,7 @@ unit Compiler
                     Messages.CheckError();
                     if (NC) { break; }
                     
+                    // OFFSET : compiling STRINGLIT
                     // Emit PUSHCSTRING with pointer to string content
                     LDA ZP.TOPL
                     STA compilerOperand1  // LSB
@@ -1607,10 +1620,8 @@ unit Compiler
     }
     
     
-    // Add this method to the Compiler unit
-
     // Compile function body from tokens to opcodes  
-    // Input: Function tokens already copied to BasicTokenizerBuffer, ZP.TokenBufferLength set
+    // Input: Function tokens already copied to BasicTokenizerBuffer, ZP.TokenBufferLength set, ZP.ACCL = number of arguments for FUNC
     // Output: Function compiled to opcode buffer, C set if successful
     // Modifies: Opcode buffer, ZP.CurrentToken, ZP.TokenizerPos, compilation state
     // Error: Sets ZP.LastError if compilation fails
@@ -1631,6 +1642,9 @@ unit Compiler
         PHX
         PHY
         
+        LDA ZP.ACCL
+        STA compilerFuncArgs
+        
         loop // Single exit block
         {
             // Initialize opcode buffer
@@ -1647,10 +1661,12 @@ unit Compiler
             if (NC) { break; }
             
             // TODO: Get argument count and emit ENTER opcode
-            // For now, emit ENTER with 0 arguments
-            LDA #0
+            // ENTER <arguments>
+            LDA compilerFuncArgs
             EmitEnter();
             if (NC) { break; }
+            
+            STZ compilerFuncLocals // no locals yet
             
             // Compile statements until end of function
             loop // Statement compilation loop
@@ -1689,8 +1705,8 @@ unit Compiler
             checkLastOpcodeIsReturn();
             if (NC) // Last opcode was not RETURN
             {
-                // Emit RETURN with 0 cleanup count (no locals for now)
-                LDA #0
+                // Emit RETURN with locals cleanup count
+                LDA compilerFuncLocals
                 EmitReturn();
                 if (NC) { break; }
             }
@@ -1913,42 +1929,18 @@ unit Compiler
     }
 
     // Check if the last emitted opcode is RETURN or RETURNVAL
-    // Input: Opcode buffer with opcodes
+    // Input: None (uses compilerLastOpcode tracking)
     // Output: C set if last opcode is RETURN/RETURNVAL, NC if not
-    // Modifies: ZP.ACC (temporarily)
+    // Modifies: Processor flags only
     checkLastOpcodeIsReturn()
     {
-        PHA
-        
-        // Check if buffer is empty
-        LDA ZP.OpcodeBufferLengthL
-        ORA ZP.OpcodeBufferLengthH
-        if (Z)
-        {
-            CLC // Empty buffer - no RETURN
-            PLA
-            return;
-        }
-        
-        // Calculate address of last opcode
-        SEC
-        LDA ZP.PCL
-        SBC #1
-        STA ZP.ACCL
-        LDA ZP.PCH
-        SBC #0
-        STA ZP.ACCH
-        
-        // Read the last opcode
-        LDY #0
-        LDA [ZP.ACC], Y
+        LDA compilerLastOpcode
         
         // Check if it's RETURN or RETURNVAL
         CMP #OpcodeType.RETURN
         if (Z)
         {
             SEC // Found RETURN
-            PLA
             return;
         }
         
@@ -1956,12 +1948,19 @@ unit Compiler
         if (Z)
         {
             SEC // Found RETURNVAL
-            PLA
             return;
         }
         
         CLC // Not a RETURN opcode
-        PLA
+    }
+    
+    // IDY -> compilerSavedTokenPos
+    SetLiteralBase()
+    {
+        LDA ZP.IDYL
+        STA compilerLiteralBaseL
+        LDA ZP.IDYH
+        STA compilerLiteralBaseH
     }
     
 }
