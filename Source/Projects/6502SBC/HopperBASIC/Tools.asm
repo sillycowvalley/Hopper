@@ -638,10 +638,10 @@ unit Tools
        LDA #'C'
        Serial.WriteChar();
        LDA #':'
+       Serial.WriteChar();
        LDA ZP.ACCT
        PrintType();
        LDA #'-'
-       Serial.WriteChar();
        Serial.WriteChar();
        LDA ZP.ACCH
        Serial.HexOut();

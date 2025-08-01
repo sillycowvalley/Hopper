@@ -22,11 +22,12 @@ unit Statement
     const uint stmtType        = Address.BasicProcessBuffer2 + 13; // 0x09CD: 1 byte  - type information
     const uint stmtIsConstant  = Address.BasicProcessBuffer2 + 14; // 0x09CE: 1 byte  - current expression is const
     const uint stmtObjectPtr   = Address.BasicProcessBuffer2 + 15; // 0x09CF: 2 bytes - object node pointer
+    const uint stmtStringPtr   = Address.BasicProcessBuffer2 + 17; // 0x09CF: 2 bytes - string memory pointer
     
-    const uint funcCaptureMode       = Address.BasicProcessBuffer2 + 17; // 0x09D1: 1 byte - console mode
-    const uint funcCaptureStartPos   = Address.BasicProcessBuffer2 + 18; // 0x09D2: 2 bytes - start position in token buffer
-    const uint funcOriginalLength    = Address.BasicProcessBuffer2 + 20; // 0x09D4: 2 bytes - original buffer length when capture started
-    // 12 bytes still available (0x09D6-0x09DF)
+    const uint funcCaptureMode       = Address.BasicProcessBuffer2 + 19; // 0x09D1: 1 byte - console mode
+    const uint funcCaptureStartPos   = Address.BasicProcessBuffer2 + 20; // 0x09D2: 2 bytes - start position in token buffer
+    const uint funcOriginalLength    = Address.BasicProcessBuffer2 + 22; // 0x09D4: 2 bytes - original buffer length when capture started
+    // 10 bytes still available (0x09D8-0x09DF)
     
     flags CaptureMode
     {
@@ -882,6 +883,10 @@ unit Statement
 
         loop
         {
+            // Initialize string pointer tracking
+            STZ (stmtStringPtr + 0)
+            STZ (stmtStringPtr + 1)
+
             LDA ZP.CurrentToken
             STA stmtType
             
@@ -1087,10 +1092,26 @@ unit Statement
                         CMP #Tokens.STRING
                         if (Z)
                         {
-                            // STRING default: pointer to EmptyString
-                            LDA #(EmptyString % 256)
+                            // STRING default: allocate copy of EmptyString
+                            LDA #(Variables.EmptyString % 256)
+                            STA ZP.TOPL
+                            LDA #(Variables.EmptyString / 256)
+                            STA ZP.TOPH
+                            
+                            Variables.AllocateAndCopyString(); // Input: ZP.TOP = source, Output: ZP.IDY = allocated copy
+                            Messages.CheckError();
+                            if (NC) { break; } // allocation failed
+                            
+                            // Track allocated string for cleanup
+                            LDA ZP.IDYL
+                            STA (stmtStringPtr + 0)
+                            LDA ZP.IDYH
+                            STA (stmtStringPtr + 1)
+                           
+                            // Use allocated copy as the default value
+                            LDA ZP.IDYL
                             STA ZP.NEXTL
-                            LDA #(EmptyString / 256)
+                            LDA ZP.IDYH
                             STA ZP.NEXTH
                         }
                         else
@@ -1238,8 +1259,11 @@ unit Statement
             Messages.CheckError();
             if (C)
             {
+                // Success - ownership transferred to Variables table
                 STZ (stmtTokensPtr+0)
                 STZ (stmtTokensPtr+1)
+                STZ (stmtStringPtr+0)
+                STZ (stmtStringPtr+1)
             }
             
             break;
@@ -1252,6 +1276,16 @@ unit Statement
             LDA (stmtTokensPtr+0)
             STA ZP.IDXL
             LDA (stmtTokensPtr+1)
+            STA ZP.IDXH
+            Memory.Free();
+        }
+        LDA (stmtStringPtr+0)
+        ORA (stmtStringPtr+1)
+        if (NZ)
+        {
+            LDA (stmtStringPtr+0)
+            STA ZP.IDXL
+            LDA (stmtStringPtr+1)
             STA ZP.IDXH
             Memory.Free();
         }
