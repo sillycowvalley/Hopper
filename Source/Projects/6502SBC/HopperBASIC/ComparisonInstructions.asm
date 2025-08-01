@@ -206,17 +206,57 @@ unit ComparisonInstructions
             
             LDX #0          // Assume false
             
+            // Check for STRING types first
+            LDA ZP.NEXTT
+            CMP #BasicType.STRING
+            if (Z)
+            {
+                LDA ZP.TOPT
+                CMP #BasicType.STRING
+                if (Z)
+                {
+                    // Both are STRING - compare them
+                    Tools.StringCompare(); // Now includes pointer optimization
+                    if (C)
+                    {
+                        LDX #1 // Strings match
+                    }
+                    // continue to PushX at end of loop
+                }
+                else
+                {
+                    // STRING vs non-STRING = type mismatch
+                    CLC
+                    break; // fall through to type mismatch error
+                }
+            }
+            else
+            {
+                LDA ZP.TOPT
+                CMP #BasicType.STRING
+                if (Z)
+                {
+                    // non-STRING vs STRING = type mismatch
+                    CLC
+                    break; // fall through to type mismatch error
+                }
+            }
+            
             LDA #2 // allowed
             checkBITTypes();
             if (NC)
             {
-                break;
+                break; // fall through to type mismatch error
             }            
+            
+            // MSB
             LDA ZP.TOPT
             CMP ZP.NEXTT
             if (NZ)
             {
                 // Never BIT vs INT|WORD|BYTE since checkBITTypes assured that either both or neither are BIT
+                // Never STRING vs INT|WORD|BYTE since STRING is dealt with above
+                // So, only checking INT vs WORD|BYTE here
                 LDA ZP.NEXTT
                 CMP #BasicType.INT
                 if (Z)
@@ -224,8 +264,8 @@ unit ComparisonInstructions
                     BIT ZP.NEXTH
                     if (MI)
                     {
-                        CLC // NEXT < 0
-                        break;
+                        LDX #0 // false (NEXT != TOP) since -ve INT cannot be same as any WORD|BYTE
+                        break; // continue to PushX at end of loop
                     }
                 }
                 
@@ -236,10 +276,11 @@ unit ComparisonInstructions
                     BIT ZP.TOPH
                     if (MI)
                     {
-                        CLC // TOP < 0
-                        break;
+                        LDX #0 // false (NEXT != TOP) since -ve INT cannot be same as any WORD|BYTE
+                        break; // continue to PushX at end of loop
                     }
                 }
+                // continue to PushX at end of loop
             }
             
             // LSB
@@ -254,6 +295,7 @@ unit ComparisonInstructions
                 {
                     LDX #1 // true
                 }
+                // continue to PushX at end of loop
             }   
             Stacks.PushX();
             SEC
@@ -292,18 +334,59 @@ unit ComparisonInstructions
             // Pop two operands
             Stacks.PopTopNext();
             
+            LDX #1          // Assume true (not equal)
+            
+            // Check for STRING types first
+            LDA ZP.NEXTT
+            CMP #BasicType.STRING
+            if (Z)
+            {
+                LDA ZP.TOPT
+                CMP #BasicType.STRING
+                if (Z)
+                {
+                    // Both are STRING - compare them
+                    Tools.StringCompare(); // Now includes pointer optimization
+                    if (C)
+                    {
+                        LDX #0 // Strings match, so NOT EQUAL is false
+                    }
+                    // continue to PushX at end of loop
+                }
+                else
+                {
+                    // STRING vs non-STRING = type mismatch
+                    CLC
+                    break; // fall through to type mismatch error
+                }
+            }
+            else
+            {
+                LDA ZP.TOPT
+                CMP #BasicType.STRING
+                if (Z)
+                {
+                    // non-STRING vs STRING = type mismatch
+                    CLC
+                    break; // fall through to type mismatch error
+                }
+            
+            }
             LDA #2 // allowed
             checkBITTypes();
             if (NC)
             {
-                break;
+                break; // fall through to type mismatch error
             }
             
+            // MSB
             LDA ZP.TOPT
             CMP ZP.NEXTT
             if (NZ)
             {
                 // Never BIT vs INT|WORD|BYTE since checkBITTypes assured that either both or neither are BIT
+                // Never STRING vs INT|WORD|BYTE since STRING is dealt with above
+                // So, only checking INT vs WORD|BYTE here
                 LDA ZP.NEXTT
                 CMP #BasicType.INT
                 if (Z)
@@ -311,8 +394,8 @@ unit ComparisonInstructions
                     BIT ZP.NEXTH
                     if (MI)
                     {
-                        CLC // NEXT < 0
-                        break;
+                        LDX #1 // true (NEXT != TOP) since -ve INT cannot be same as any WORD|BYTE
+                        break; // continue to PushX at end of loop
                     }
                 }
                 
@@ -323,13 +406,11 @@ unit ComparisonInstructions
                     BIT ZP.TOPH
                     if (MI)
                     {
-                        CLC // TOP < 0
-                        break;
+                        LDX #1 // true (NEXT != TOP) since -ve INT cannot be same as any WORD|BYTE
+                        break; // continue to PushX at end of loop
                     }
                 }
             }
-            
-            LDX #1          // Assume true
             
             // LSB
             LDA ZP.TOPL
@@ -343,6 +424,7 @@ unit ComparisonInstructions
                 {
                     LDX #0 // false (NEXT == TOP)
                 }
+                // continue to PushX at end of loop
             }
             Stacks.PushX();
             SEC

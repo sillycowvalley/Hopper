@@ -363,6 +363,7 @@ unit Statement
                 case Tokens.WORD:
                 case Tokens.BIT:
                 case Tokens.BYTE:
+                case Tokens.STRING:
                 {
                     executeVariableDeclaration();
                     break;
@@ -1132,6 +1133,10 @@ unit Statement
                 case Tokens.BYTE:
                 {
                     LDX #BasicType.BYTE
+                }
+                case Tokens.STRING:
+                {
+                    LDX #BasicType.STRING
                 }
                 default:
                 {

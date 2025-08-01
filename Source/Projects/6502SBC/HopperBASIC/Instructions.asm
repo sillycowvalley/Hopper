@@ -407,7 +407,49 @@ unit Instructions
                 }
             } // INT vs WORD
             
-            
+            LDA ZP.NEXTT
+            CMP #BasicType.STRING
+            if (Z)
+            {
+                LDA ZP.TOPT  
+                CMP #BasicType.STRING
+                if (Z)
+                {
+                    // STRING vs STRING - only valid for equality operations
+                    LDA ZP.ACCT
+                    if (Z)  // Equality comparison mode
+                    {
+                        LDA #BasicType.BIT  // Result type is BIT
+                        STA ZP.NEXTT
+                        SEC  // Compatible
+                        break;
+                    }
+                    else
+                    {
+                        CLC  // STRING not valid for arithmetic/bitwise/logical
+                        break;
+                    }
+                }
+                else
+                {
+                    CLC  // STRING with non-STRING is invalid
+                    break;
+                }
+            }
+
+            LDA ZP.TOPT
+            CMP #BasicType.STRING
+            if (Z)
+            {
+                LDA ZP.NEXTT
+                CMP #BasicType.STRING
+                if (NZ)
+                {
+                    CLC  // non-STRING with STRING is invalid
+                    break;
+                }
+                // STRING vs STRING already handled above
+            }
             
             
             

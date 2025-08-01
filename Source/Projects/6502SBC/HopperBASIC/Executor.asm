@@ -359,6 +359,10 @@ unit Executor
             {
                 executePushByte();
             }
+            case OpCodes.PUSHCSTRING:
+            {
+                executePushCString();
+            }
             
             // Variable operations
             case OpcodeType.PUSHGLOBAL:
@@ -532,6 +536,41 @@ unit Executor
         STA ZP.TOPH
         LDA # BasicType.BYTE
         Stacks.PushTop();
+        
+        SEC // Success
+    }
+    
+    // Execute PUSHCSTRING opcode - push string pointer to stack
+    // Input: PC points to operand bytes (string pointer LSB, MSB)
+    // Output: String pointer pushed to stack as STRING type, PC advanced by 2
+    // Modifies: A, X, Y, ZP.PC, ZP.TOP, ZP.TOPT, stack
+    executePushCString()
+    {
+        // Fetch string pointer (little-endian)
+        FetchOperandWord(); // Result in executorOperandL/H
+        Messages.CheckError();
+        if (NC) 
+        { 
+            CLC
+            return; 
+        }
+        
+        // Store pointer in ZP.TOP as STRING value
+        LDA executorOperandL
+        STA ZP.TOPL
+        LDA executorOperandH
+        STA ZP.TOPH
+        LDA #BasicType.STRING
+        STA ZP.TOPT
+        
+        // Push to stack with STRING type
+        Stacks.PushTop();
+        Messages.CheckError();
+        if (NC) 
+        { 
+            CLC
+            return; 
+        }
         
         SEC // Success
     }

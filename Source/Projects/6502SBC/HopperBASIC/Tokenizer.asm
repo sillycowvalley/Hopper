@@ -1152,15 +1152,56 @@ unit Tokenizer
                 }
                 case '"':
                 {
-                    // String literal - for Phase 1, this is an error
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
+                    // String literal tokenization
+                    appendByteToTokenBuffer(Tokens.STRINGLIT);
+                    Messages.CheckError();
+                    if (NC) { return; }
                     
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                    // Store starting position of string content
+                    LDA ZP.TokenBufferLength.LSB
+                    STA ZP.TokenLiteralPosL
+                    LDA ZP.TokenBufferLength.MSB  
+                    STA ZP.TokenLiteralPosH
                     
-                    CLC  // Error
+                    // Skip opening quote
+                    incrementInputPos();
+                    
+                    loop // Scan string content until closing quote
+                    {
+                        LDA [ZP.IDX], Y
+                        if (Z) // End of input without closing quote
+                        {
+                            LDA #(Messages.SyntaxError % 256)
+                            STA ZP.LastErrorL
+                            LDA #(Messages.SyntaxError / 256)
+                            STA ZP.LastErrorH
+                            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                            CLC
+                            return;
+                        }
+                        
+                        CMP #'"'
+                        if (Z) // Found closing quote
+                        {
+                            // Add null terminator to string content
+                            LDA #0
+                            appendByteToTokenBuffer(A);
+                            Messages.CheckError();
+                            if (NC) { return; }
+                            
+                            incrementInputPos(); // Skip closing quote
+                            break;
+                        }
+                        
+                        // Add character to string content
+                        appendByteToTokenBuffer(A);
+                        Messages.CheckError();
+                        if (NC) { return; }
+                        
+                        incrementInputPos();
+                    }
+                    
+                    SEC  // Success
                     return;
                 }
                 case '\'':
@@ -1688,6 +1729,29 @@ unit Tokenizer
             STA ZP.TOPT
         }
     }
+    
+    // Get string literal content from token buffer
+    // Input: None (uses current token which must be STRINGLIT)
+    // Output: ZP.TOP = pointer to null-terminated string content
+    // Preserves: Everything except ZP.TOP
+    GetTokenString()
+    {
+        PHA
+        
+        // Calculate address of string content in token buffer
+        // String content starts at TokenLiteralPos offset in token buffer
+        LDA #(Address.BasicTokenizerBuffer % 256)
+        CLC
+        ADC ZP.TokenLiteralPosL
+        STA ZP.TOPL
+        
+        LDA #(Address.BasicTokenizerBuffer / 256)
+        ADC ZP.TokenLiteralPosH
+        STA ZP.TOPH
+        
+        PLA
+    }
+    
     
     // Skip past null-terminated string at current tokenizer position
     // Input: ZP.TokenizerPos = current position in token buffer

@@ -8,7 +8,7 @@ unit Tools
 
        
     // Print BasicType enum value as readable string
-    // Input: A = BasicType enum value
+    // Input: A = BasicType enum value, ZP.TOP contains value (or pointer)
     // Output: Type name printed to serial
     // Preserves: Everything
     PrintType()
@@ -37,6 +37,11 @@ unit Tools
             {
                 LDA #Tokens.BYTE
                 Tokenizer.PrintKeyword();
+            }
+            case BasicType.STRING:
+            {
+                // ZP.TOP contains pointer to null-terminated string
+                PrintStringTOP();
             }
             default:
             {
@@ -421,6 +426,20 @@ unit Tools
         LDY #0
         loop
         {
+            // First check pointer equality (optimization)
+            LDA ZP.TOPL
+            CMP ZP.NEXTL
+            if (Z)
+            {
+                LDA ZP.TOPH
+                CMP ZP.NEXTH
+                if (Z)
+                {
+                    // Same pointer = equal strings
+                    SEC // Set C for match
+                    break;
+                }
+            }
             LDA [ZP.TOP], Y
             CMP [ZP.NEXT], Y
             if (NZ) 

@@ -221,6 +221,38 @@ unit Compiler
         SEC // Success
     }
     
+    // Emit PUSHCSTRING opcode with word operand
+    // Input: compilerOperand1 = string pointer LSB, compilerOperand2 = string pointer MSB  
+    // Output: PUSHCSTRING opcode emitted with operands, C set if successful
+    // Modifies: A, ZP.OpcodeBufferLengthL/H, buffer state
+    EmitPushCString()
+    {
+        PHA
+        
+        loop // Single exit
+        {
+            LDA #OpCodes.PUSHCSTRING
+            appendByteToOpcodeBuffer(A);
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            LDA compilerOperand1  // LSB
+            appendByteToOpcodeBuffer(A);
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            LDA compilerOperand2  // MSB  
+            appendByteToOpcodeBuffer(A);
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            SEC // Success
+            break;
+        }
+        
+        PLA
+    }
+    
     // Emit PUSHGLOBAL opcode for identifier
     // Input: Current token is IDENTIFIER
     // Output: PUSHGLOBAL opcode with node address emitted, C set if successful
@@ -1487,6 +1519,28 @@ unit Compiler
                     Messages.CheckError();
                     break;
                 }
+                case Tokens.STRINGLIT:
+                {
+                    // Get string content pointer
+                    Tokenizer.GetTokenString(); // Result in ZP.TOP
+                    Messages.CheckError();
+                    if (NC) { break; }
+                    
+                    // Emit PUSHCSTRING with pointer to string content
+                    LDA ZP.TOPL
+                    STA compilerOperand1  // LSB
+                    LDA ZP.TOPH
+                    STA compilerOperand2  // MSB
+                    
+                    EmitPushCString();
+                    if (NC) { break; }
+                    
+                    // Get next token
+                    Tokenizer.NextToken();
+                    Messages.CheckError();
+                    break;
+                }
+                
                 case Tokens.IDENTIFIER:
                 {
                     compileFunctionCallOrVariable();
