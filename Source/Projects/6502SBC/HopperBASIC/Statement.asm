@@ -455,11 +455,6 @@ unit Statement
         
         // Evaluate the expression
         EvaluateExpression();
-        
-LDA #'A' Tools.COut();        // After expression
-LDA ZP.CurrentToken Tools.HOut();
-LDA #' ' Tools.COut();
-        
         Messages.CheckError();
         if (NC) { return; }
         

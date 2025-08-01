@@ -71,8 +71,6 @@ unit FunctionDeclaration
             Messages.CheckError();
             if (NC) { break; }
             
-DumpHeap();
-            
             // Save function node address
             LDA ZP.IDXL
             STA (Statement.stmtObjectPtr + 0)
@@ -773,13 +771,8 @@ DumpHeap();
                 // Tokenizer is positioned correctly after BEGIN
             }
             
-DumpHeap();
-PrintStringTOP();
-            
             // Find the function that was already declared
             Functions.Find(); // Input: ZP.TOP = name, Output: ZP.IDX = function node
-XOut();
-            
             if (NC)
             {
                 LDA #(Messages.UndefinedIdentifier % 256)

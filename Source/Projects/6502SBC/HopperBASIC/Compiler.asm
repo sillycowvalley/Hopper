@@ -1380,15 +1380,6 @@ unit Compiler
                 // Emit push global variable opcode (existing functionality)
                 EmitPushGlobal();
                 if (NC) { break; }
-                
-                
-LDA #'V' Tools.COut();        // Variable case
-LDA ZP.CurrentToken Tools.HOut();
-LDA #'>' Tools.COut();
-// ... NextToken() call ...
-LDA ZP.CurrentToken Tools.HOut();
-LDA #' ' Tools.COut();
-                
             }
             
             SEC // Success
@@ -1509,7 +1500,7 @@ LDA #' ' Tools.COut();
                     if (NC) { break; }
                     
                     // Parse the sub-expression
-                    compileComparison();
+                    compileLogical();
                     Messages.CheckError();
                     if (NC) { break; }
                     
