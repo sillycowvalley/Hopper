@@ -152,11 +152,24 @@ unit Executor
                 return; 
             }
         }
-        
+
+#ifdef DEBUG       
+        Tools.NL(); LDA #']' Tools.COut();
+        LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
+        LDA #' ' Tools.COut();
+#endif
+
+
         // Fetch opcode using indirect addressing
         LDY #0
         LDA [ZP.PC], Y
         PHA // Save opcode
+        
+#ifdef DEBUG       
+        PHA Tools.HOut(); LDA #' ' Tools.COut(); PLA
+#endif
+
+        
         
         // Advance PC
         INC ZP.PCL
@@ -234,13 +247,6 @@ unit Executor
     DispatchOpcode()
     {
         TAY // for jump table optimization
-        
-#ifdef DEBUG       
-        PHA
-        Tools.NL(); LDA #']' Tools.COut();
-        LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
-        LDA #' ' Tools.COut(); PLA Tools.HOut(); LDA #' ' Tools.COut();
-#endif
         
         // Use switch statement for opcode dispatch
         // Register Y contains the opcode value
@@ -466,13 +472,9 @@ unit Executor
     
     executeReturn()
     {
-        // TODO: Implement function return (no return value)
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-        CLC
+        Stacks.PopBP();
+        Stacks.PopPC();
+        SEC
     }
     
     executeReturnVal()
@@ -703,25 +705,22 @@ unit Executor
     
     executeCall()
     {
-    #ifdef DEBUG
-        LDA #'C' Tools.COut(); LDA #'A' Tools.COut(); LDA #'L' Tools.COut(); LDA #'L' Tools.COut();
-    #endif
-        
         loop
         {
             FetchOperandWord();
             if (NC) { break; }
     
-    #ifdef DEBUG
-            LDA #'@' Tools.COut(); 
-            LDA executorOperandH Tools.HOut(); 
-            LDA executorOperandL Tools.HOut();
-    #endif
         
             LDA executorOperandL
             STA ZP.TOPL
             LDA executorOperandH
             STA ZP.TOPH
+            
+    #ifdef DEBUG
+            LDA #'@' Tools.COut(); 
+            LDA executorOperandH Tools.HOut(); 
+            LDA executorOperandL Tools.HOut();
+    #endif            
             
             // 1. resolve Function <index> to function call <address>
             Functions.Find(); // Input: ZP.TOP = name
@@ -738,19 +737,17 @@ unit Executor
                 CLC
                 break;
             }
+#ifdef DEBUG
+            LDA #' ' Tools.COut(); LDA #'\'' Tools.COut(); Tools.PrintStringTOP(); LDA #'\'' Tools.COut(); LDA #' ' Tools.COut();
+            LDA #'=' Tools.COut(); LDA ZP.IDXH Tools.HOut(); LDA ZP.IDXL Tools.HOut(); LDA #' ' Tools.COut(); 
+#endif
             // ZP.IDX = function node address
-    
-    #ifdef DEBUG
-            LDA #'F' Tools.COut(); LDA #'=' Tools.COut();
-            LDA ZP.IDXH Tools.HOut(); LDA ZP.IDXL Tools.HOut();
-    #endif
-            
             Functions.IsCompiled();
             if (NC)
             {
-    #ifdef DEBUG
-                LDA #'J' Tools.COut(); LDA #'I' Tools.COut(); LDA #'T' Tools.COut();
-    #endif
+#ifdef DEBUG
+                Tools.NL(); LDA #' ' Tools.NL(); LDA #'J' Tools.COut(); LDA #'I' Tools.COut(); LDA #'T' Tools.COut();
+#endif
                 // JIT
                 Functions.Compile();
                 if (NC)
@@ -760,9 +757,11 @@ unit Executor
             }
             
     #ifdef DEBUG
+            Tools.NL(); 
             LDA #'P' Tools.COut(); LDA #'A' Tools.COut(); LDA #'T' Tools.COut(); LDA #'C' Tools.COut(); LDA #'H' Tools.COut();
-            LDA #'@' Tools.COut();
-            LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
+            LDA #':' Tools.COut(); LDA #' ' Tools.COut();
+            Tools.XOut(); // IDX
+            
     #endif
             
             // 2. replace own opcode CALL -> CALLF, <index> by <address>
@@ -779,12 +778,6 @@ unit Executor
             LDA ZP.IDXH 
             STA [ZP.PC]
             
-    #ifdef DEBUG
-            LDA #'M' Tools.COut(); LDA #'=' Tools.COut();
-            LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
-            LDA #':' Tools.COut(); LDA ZP.IDXH Tools.HOut();
-    #endif
-            
             // <address> LSB
             // PC--
             LDA ZP.PCL
@@ -795,12 +788,6 @@ unit Executor
             DEC ZP.PCL
             LDA ZP.IDXL
             STA [ZP.PC]
-            
-    #ifdef DEBUG
-            LDA #'L' Tools.COut(); LDA #'=' Tools.COut();
-            LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
-            LDA #':' Tools.COut(); LDA ZP.IDXL Tools.HOut();
-    #endif
             
             // CALLF
             // PC--
@@ -814,9 +801,19 @@ unit Executor
             STA [ZP.PC]
             
     #ifdef DEBUG
-            LDA #'R' Tools.COut(); LDA #'=' Tools.COut();
-            LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
-            LDA #':' Tools.COut(); LDA # OpcodeType.CALLF Tools.HOut();
+            LDA ZP.PCH Tools.HOut();
+            LDA ZP.PCL Tools.HOut();
+            LDA #' ' Tools.COut();
+            LDY # 0
+            LDA [ZP.PC], Y
+            Tools.HOut(); LDA #' ' Tools.COut();
+            INY
+            LDA [ZP.PC], Y
+            Tools.HOut(); LDA #' ' Tools.COut();
+            INY
+            LDA [ZP.PC], Y
+            Tools.HOut(); LDA #' ' Tools.COut();
+            
     #endif
             
             SEC
@@ -826,10 +823,6 @@ unit Executor
     
     executeCallF()
     {
-    #ifdef DEBUG
-        LDA #'C' Tools.COut(); LDA #'A' Tools.COut(); LDA #'L' Tools.COut(); LDA #'L' Tools.COut(); LDA #'F' Tools.COut();
-    #endif
-        
         // Function call by <address>
         // PUSH PC
         // PUSH BP
@@ -839,13 +832,30 @@ unit Executor
     
     executeSysCall()
     {
-        // TODO: System call (0x01=PRINT, 0x02=PRINTLN, etc.)
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-        CLC
+        FetchOperandByte();
+        if (NC) { return; }
+        TAX
+        switch (A)
+        {
+            case SysCallType.PrintValue:
+            {
+                Stacks.PopTop();
+                Tools.PrintVariableValue();
+            }
+            case SysCallType.PrintNewLine:
+            {
+                LDA #'\n' Serial.WriteChar();
+            }
+            default:
+            {
+                LDA #(Messages.NotImplemented % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.NotImplemented / 256)
+                STA ZP.LastErrorH
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+            }
+        }
+        SEC
     }
     
     // === LITERAL PUSH HANDLERS (TWO BYTE OPERANDS) ===

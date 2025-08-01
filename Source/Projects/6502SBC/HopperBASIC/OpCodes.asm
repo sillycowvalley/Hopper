@@ -14,49 +14,51 @@ unit OpCodes
     
     enum OpcodeType
     {
-        // === OPCODES WITH NO OPERANDS (0x00-0x3F) ===
+        // === INVALID OPCODE ===
+        INVALID      = 0x00,  // Invalid opcode - triggers error
+        
+        // === OPCODES WITH NO OPERANDS (0x01-0x3F) ===
         // Bits 7-6: 00 (no operands)
-        // Bits 5-0: Opcode (0-63 available)
+        // Bits 5-0: Opcode (1-63 available, 0x00 reserved for INVALID)
         
         // Arithmetic operations
-        ADD          = 0x00,  // Pop two values, push sum
-        SUB          = 0x01,  // Pop two values, push difference
-        MUL          = 0x02,  // Pop two values, push product
-        DIV          = 0x03,  // Pop two values, push quotient
-        MOD          = 0x04,  // Pop two values, push remainder
-        NEG          = 0x05,  // Pop value, push negation
+        ADD          = 0x01,  // Pop two values, push sum
+        SUB          = 0x02,  // Pop two values, push difference
+        MUL          = 0x03,  // Pop two values, push product
+        DIV          = 0x04,  // Pop two values, push quotient
+        MOD          = 0x05,  // Pop two values, push remainder
+        NEG          = 0x06,  // Pop value, push negation
         
         // Bitwise operations
-        BITWISE_AND  = 0x06,  // Pop two values, push bitwise AND
-        BITWISE_OR   = 0x07,  // Pop two values, push bitwise OR
+        BITWISE_AND  = 0x07,  // Pop two values, push bitwise AND
+        BITWISE_OR   = 0x08,  // Pop two values, push bitwise OR
         
         // Logical operations (BIT type only)
-        LOGICAL_AND  = 0x08,  // Pop two BIT values, push logical AND
-        LOGICAL_OR   = 0x09,  // Pop two BIT values, push logical OR
-        LOGICAL_NOT  = 0x0A,  // Pop BIT value, push logical NOT
+        LOGICAL_AND  = 0x09,  // Pop two BIT values, push logical AND
+        LOGICAL_OR   = 0x0A,  // Pop two BIT values, push logical OR
+        LOGICAL_NOT  = 0x0B,  // Pop BIT value, push logical NOT
         
         // Comparison operations (return BIT type)
-        EQ           = 0x0B,  // Pop two values, push equality result (BIT)
-        NE           = 0x0C,  // Pop two values, push inequality result (BIT)
-        LT           = 0x0D,  // Pop two values, push less than result (BIT)
-        GT           = 0x0E,  // Pop two values, push greater than result (BIT)
-        LE           = 0x0F,  // Pop two values, push less or equal result (BIT)
-        GE           = 0x10,  // Pop two values, push greater or equal result (BIT)
+        EQ           = 0x0C,  // Pop two values, push equality result (BIT)
+        NE           = 0x0D,  // Pop two values, push inequality result (BIT)
+        LT           = 0x0E,  // Pop two values, push less than result (BIT)
+        GT           = 0x0F,  // Pop two values, push greater than result (BIT)
+        LE           = 0x10,  // Pop two values, push less or equal result (BIT)
+        GE           = 0x11,  // Pop two values, push greater or equal result (BIT)
         
         // Stack manipulation
-        DECSP        = 0x13,  // Decrement stack pointer (discard top value)
-        DUP          = 0x14,  // Duplicate top stack value
+        DECSP        = 0x14,  // Decrement stack pointer (discard top value)
+        DUP          = 0x15,  // Duplicate top stack value
         
         // Utility and common literals
-        NOP          = 0x15,  // No operation (useful for code generation/optimization)
-        PUSH0        = 0x16,  // Push INT 0 (very common literal, no operand)
-        PUSH1        = 0x17,  // Push INT 1 (very common literal, no operand)
+        NOP          = 0x16,  // No operation (useful for code generation/optimization)
+        PUSH0        = 0x17,  // Push INT 0 (very common literal, no operand)
+        PUSH1        = 0x18,  // Push INT 1 (very common literal, no operand)
         
         // Function frame management
-        ENTER        = 0x18,  // Enter function frame - push BP, SP->BP
+        ENTER        = 0x19,  // Enter function frame - push BP, SP->BP
         
-        
-        // Available: 0x19-0x3F (40 opcodes remaining in this group)
+        // Available: 0x1A-0x3F (38 opcodes remaining in this group)
         
         // === OPCODES WITH ONE BYTE OPERAND (0x40-0x7F) ===
         // Bits 7-6: 01 (one byte operand)
@@ -78,13 +80,11 @@ unit OpCodes
         // System calls
         SYSCALL      = 0x47,  // System call [function_id]
         
-        
         // Control flow
         RETURN       = 0x49,  // Return from function (no return value)
         RETURNVAL    = 0x4A,  // Return from function (pop return value from stack)
         
-        
-        // Available: 0x49-0x7F (55 opcodes remaining in this group)
+        // Available: 0x4B-0x7F (53 opcodes remaining in this group)
         
         // === OPCODES WITH TWO BYTE OPERANDS (0x80-0xBF) ===
         // Bits 7-6: 10 (two byte operands)
@@ -95,11 +95,11 @@ unit OpCodes
         PUSHWORD     = 0x81,  // Push WORD immediate [lsb] [msb]
         PUSHCSTRING  = 0x82,  // Push CONSTSTRING pointer [addr_lsb] [addr_msb]
         
-        // Function calls (unresolved ? resolved)
+        // Function calls (unresolved → resolved)
         CALL         = 0x83,  // Call function by name [name_offset_lsb] [name_offset_msb] (unresolved)
         CALLF        = 0x84,  // Call function fast [node_lsb] [node_msb] (resolved)
         
-        // Global variable operations (unresolved ? resolved)
+        // Global variable operations (unresolved → resolved)
         PUSHGLOBAL   = 0x85,  // Push global by name [name_offset_lsb] [name_offset_msb] (unresolved)
         POPGLOBAL    = 0x86,  // Pop to global by name [name_offset_lsb] [name_offset_msb] (unresolved)
         PUSHGLOBALF  = 0x87,  // Push global fast [node_lsb] [node_msb] (resolved)
@@ -117,16 +117,14 @@ unit OpCodes
         // Reserved for future complex instructions or extensions
         // Potential uses: Variable-length operands, complex string operations,
         //                array access, advanced control flow
-        
-        INVALID       = 0xFF // probably better if this were 0x00
     }
     
     // System call IDs for SYSCALL opcode
     enum SysCallType
     {
-        PRINT_STRING = 0x01,    // Print CONSTSTRING from stack
-        PRINT_NEWLINE = 0x02,   // Print newline character
-        MILLIS = 0x03,          // Push current milliseconds to stack (future)
+        PrintValue = 0x01,    // Print value from stack (type from TypeStack: STRING, WORD, INT, BYTE, BIT)
+        PrintNewLine = 0x02,   // Print newline character
+        Millis = 0x03,         // Push current milliseconds to stack (future)
     }
     
     // **Resolve-and-Replace Architecture:**
@@ -142,13 +140,13 @@ unit OpCodes
     // **Resolution Process:**
     // 1. First execution hits unresolved opcode (e.g., CALL)
     // 2. Resolve name to node address via symbol table lookup
-    // 3. Patch opcode stream: Change CALL ? CALLF, replace name offset with node address
+    // 3. Patch opcode stream: Change CALL → CALLF, replace name offset with node address
     // 4. Execute resolved opcode immediately
     // 5. Subsequent executions use fast resolved opcode directly
     //
     // **Instruction Format Summary:**
     //
-    // **Group 0: No Operands (0x00-0x3F)**
+    // **Group 0: No Operands (0x01-0x3F, 0x00=INVALID)**
     //   [OPCODE]
     //   Examples:
     //     ADD             - Pop two values, push sum
@@ -216,7 +214,7 @@ unit OpCodes
     //
     // **Node-Based Access Benefits:**
     // - **Type Safety**: Node contains both value and type information
-    // - **PUSHGLOBALF**: Uses Variables.GetValue() ? ZP.TOP + ZP.TOPT with correct type
+    // - **PUSHGLOBALF**: Uses Variables.GetValue() → ZP.TOP + ZP.TOPT with correct type
     // - **POPGLOBALF**: Uses Variables.GetType() + CheckRHSTypeCompatibility() for assignments
     // - **CALLF**: Direct function execution via node address with parameter type checking
     //

@@ -173,31 +173,29 @@ unit Tools
         PHA
         
         // Special handling for BIT type - print TRUE/FALSE instead of 1/0
-        LDA ZP.TOPT
-        CMP #BasicType.BIT
-        if (Z)
+        LDX ZP.TOPT
+        switch(X)
         {
-            LDA ZP.TOPL
-            CMP #0
-            if (Z)
+            case BasicType.BIT:
             {
-                LDA #Tokens.FALSE
-                Tokenizer.PrintKeyword();
+                LDA ZP.TOPL
+                CMP #0
+                if (Z)
+                {
+                    LDA #Tokens.FALSE
+                    Tokenizer.PrintKeyword();
+                }
+                else
+                {
+                    LDA #Tokens.TRUE
+                    Tokenizer.PrintKeyword();
+                }
             }
-            else
-            {
-                LDA #Tokens.TRUE
-                Tokenizer.PrintKeyword();
-            }
-        }
-        else
-        {
-            CMP #BasicType.STRING
-            if (Z)
+            case BasicType.STRING:
             {
                 PrintStringTOP();  // Print the actual string content
             }
-            else
+            default:
             {
                 PrintDecimalWord(); // Numeric types
             }

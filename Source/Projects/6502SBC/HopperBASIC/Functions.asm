@@ -542,43 +542,32 @@ unit Functions
     // fast unprotected version for CALLF
     JumpToOpCodes()
     {
-    #ifdef DEBUG
-        LDA #'J' Tools.COut(); LDA #'U' Tools.COut(); LDA #'M' Tools.COut(); LDA #'P' Tools.COut();
-        LDA #'@' Tools.COut();
-        LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
-    #endif
-        
-        Stacks.PushPC();
-        Stacks.PushBP();
-        
-    #ifdef DEBUG
-        LDA #'S' Tools.COut(); LDA #'T' Tools.COut(); LDA #'K' Tools.COut();
-    #endif
-        
         // assume we are compiled and good
         Executor.FetchOperandWord();
         LDA Executor.executorOperandL
         STA ZP.IDXL
         LDA Executor.executorOperandH
         STA ZP.IDXH
-    
-    #ifdef DEBUG
-        LDA #'N' Tools.COut(); LDA #'=' Tools.COut();
-        LDA ZP.IDXH Tools.HOut(); LDA ZP.IDXL Tools.HOut();
-    #endif
         
-        LDY #Objects.snOpcodes  // This line was missing!
+        Stacks.PushPC(); // after FetchOperandWord
+        
+#ifdef DEBUG
+        LDA #' ' Tools.COut(); LDA #'[' Tools.COut();
+        LDA ZP.IDXH Tools.HOut(); LDA ZP.IDXL Tools.HOut();
+        LDA #']' Tools.COut(); LDA #' ' Tools.COut();
+#endif        
+        
+        LDY #Objects.snOpcodes
         LDA [ZP.IDX], Y
         STA ZP.PCL
         INY
         LDA [ZP.IDX], Y
         STA ZP.PCH
     
-    #ifdef DEBUG
-        LDA #'P' Tools.COut(); LDA #'C' Tools.COut(); LDA #'=' Tools.COut();
+#ifdef DEBUG
+        LDA #' ' Tools.COut(); LDA #'-' Tools.COut();LDA #'>' Tools.COut(); LDA #' ' Tools.COut();
         LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
-    #endif
-        
+#endif        
         SEC
     }   
     
@@ -701,16 +690,23 @@ unit Functions
                 PLA
                 STA ZP.IDXL
             }
+            LDA ZP.IDXL
+            PHA
+            LDA ZP.IDXH 
+            PHA
             
             // Use Compiler.CompileExpression() to compile function body
             Compiler.CompileFunction();
             Messages.CheckError();
+            PLA
+            STA ZP.IDXH
+            PLA
+            STA ZP.IDXL
+            
             if (NC) { break; }
-  /*          
-DumpBasicBuffers();
-DumpHeap();
-loop { }   
-*/                                 
+            
+            Tools.XOut();
+                                   
             // Copy opcodes from BasicOpcodeBuffer to permanent function storage
             copyOpcodesToFunction();
             Messages.CheckError();

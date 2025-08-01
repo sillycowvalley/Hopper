@@ -620,15 +620,13 @@ unit Compiler
     }
     
     // Emit ENTER opcode for function entry (stack frame setup)
-    // Input: A = argument count for this function
     // Output: ENTER opcode with argument count emitted
     // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpcodeWithByte()
     EmitEnter()
     {
-        STA compilerOperand1          // Store argument count as operand
         LDA #OpcodeType.ENTER
         STA compilerOpCode
-        EmitOpcodeWithByte();
+        EmitOpcode();
     }
     
     
@@ -668,6 +666,11 @@ unit Compiler
         
         loop // Single exit
         {
+#ifdef DEBUG
+            Tools.NL();
+            LDA ZP.TokenLiteralPosH Tools.HOut();
+            LDA ZP.TokenLiteralPosL Tools.HOut();
+#endif            
             // Calculate absolute address of function name in token buffer
             // The tokenizer's TokenLiteralPos points to the start of the identifier string
             CLC
@@ -677,9 +680,15 @@ unit Compiler
             LDA #(Address.BasicTokenizerBuffer / 256)
             ADC ZP.TokenLiteralPosH
             STA compilerOperand2       // Absolute address MSB
-            
+
+#ifdef DEBUG
+            LDA #'-' Tools.COut(); LDA #'>' Tools.COut();
+            LDA compilerOperand2 Tools.HOut();
+            LDA compilerOperand1 Tools.HOut();
+#endif                        
+                                   
             // Emit CALL with absolute address (not offset!)
-            LDA #OpcodeType.CALL
+            LDA # OpcodeType.CALL
             STA compilerOpCode
             EmitOpcodeWithWord();
             break;
@@ -1660,9 +1669,6 @@ unit Compiler
             Messages.CheckError();
             if (NC) { break; }
             
-            // TODO: Get argument count and emit ENTER opcode
-            // ENTER <arguments>
-            LDA compilerFuncArgs
             EmitEnter();
             if (NC) { break; }
             
@@ -1834,7 +1840,7 @@ unit Compiler
             if (Z)
             {
                 // Emit system call for print newline
-                LDA #SysCallType.PRINT_NEWLINE
+                LDA #SysCallType.PrintNewLine
                 EmitSysCall();
                 break;
             }
@@ -1845,12 +1851,12 @@ unit Compiler
             if (NC) { break; }
             
             // Emit system call to print the value on stack
-            LDA #SysCallType.PRINT_STRING
+            LDA #SysCallType.PrintValue
             EmitSysCall();
             if (NC) { break; }
             
             // Emit system call for newline
-            LDA #SysCallType.PRINT_NEWLINE  
+            LDA #SysCallType.PrintNewLine  
             EmitSysCall();
             if (NC) { break; }
             
