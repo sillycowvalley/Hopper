@@ -1496,7 +1496,7 @@ unit Tokenizer
             LDA ZP.CurrentToken
             return;
         }
-        CMP #Tokens.STRING
+        CMP #Tokens.STRINGLIT
         if (Z)
         {
             // Save current position as start of literal data

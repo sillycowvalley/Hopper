@@ -891,6 +891,7 @@ unit Statement
             
             // Check that we have an identifier
             LDA ZP.CurrentToken
+            
             CMP # Tokens.IDENTIFIER
             if (NZ)
             {
@@ -1082,9 +1083,22 @@ unit Statement
                             CLC
                             break; // error exit
                         }
-                        // initial value
-                        STZ ZP.NEXTL
-                        STZ ZP.NEXTH
+                        LDA stmtType
+                        CMP #Tokens.STRING
+                        if (Z)
+                        {
+                            // STRING default: pointer to EmptyString
+                            LDA #(EmptyString % 256)
+                            STA ZP.NEXTL
+                            LDA #(EmptyString / 256)
+                            STA ZP.NEXTH
+                        }
+                        else
+                        {
+                            // Other types default: 0 (INT->0, BIT->FALSE, WORD->0, BYTE->0)
+                            STZ ZP.NEXTL
+                            STZ ZP.NEXTH
+                        }
                         // no expression tokens
                         STZ ZP.IDXH
                         STZ ZP.IDXL

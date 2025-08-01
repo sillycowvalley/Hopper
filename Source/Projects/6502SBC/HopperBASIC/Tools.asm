@@ -40,8 +40,8 @@ unit Tools
             }
             case BasicType.STRING:
             {
-                // ZP.TOP contains pointer to null-terminated string
-                PrintStringTOP();
+                LDA #Tokens.STRING
+                Tokenizer.PrintKeyword();
             }
             default:
             {
@@ -163,7 +163,19 @@ unit Tools
         }
         else
         {
-            PrintDecimalWord(); // Input: ZP.TOP = value, ZP.TOPT = type
+            CMP #BasicType.STRING
+            if (Z)
+            {
+                LDA #'"'
+                Serial.WriteChar();
+                PrintStringTOP();  // Print the actual string content
+                LDA #'"'
+                Serial.WriteChar();
+            }
+            else
+            {
+                PrintDecimalWord(); // Numeric types
+            }
         }
         
         PLA
