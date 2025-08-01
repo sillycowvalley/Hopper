@@ -313,8 +313,8 @@ BIT flag = 0               ' TYPE MISMATCH - 0 is INT, not BIT
 
 #### Control Flow
 - ✅ **`IF expr THEN statement`** - Basic conditional execution
-- ✅ **`RETURN [expr]`** - Return from function
-- ✅ **`END`** - End main program
+- ❌ **`RETURN [expr]`** - Return from function (parsing complete, execution pending)
+- ❌ **`END`** - End main program (parsing complete, execution pending)
 
 #### Assignment
 - ✅ **`var = expr`** - Assignment to existing variables with type checking
@@ -334,6 +334,10 @@ BIT flag = 0               ' TYPE MISMATCH - 0 is INT, not BIT
 - ✅ **Arguments system**: Parameter storage and management
 - ✅ **Function listing**: FUNCS command displays all defined functions with formatted output
 - ✅ **Symbol table integration**: Functions stored alongside variables with proper cleanup
+- ✅ **Function call parsing**: Parse function calls in expressions
+- ❌ **Function execution**: Execute stored function bodies
+- ❌ **Parameter binding**: Map arguments to parameters during execution
+- ❌ **Return value handling**: Process RETURN statements and pass values
 
 ---
 
@@ -666,23 +670,23 @@ The expression evaluation system uses a Just-In-Time compilation approach:
 **Opcode Set:**
 ```
 No Operands (0x00-0x3F):
-  ADD, SUB, MUL, DIV, MOD, NEG
-  BITWISE_AND, BITWISE_OR
-  LOGICAL_AND, LOGICAL_OR, LOGICAL_NOT
-  EQ, NE, LT, GT, LE, GE
-  RETURN, RETURNVAL, DECSP, DUP, NOP
+  ✅ ADD, SUB, MUL, DIV, MOD, NEG
+  ✅ BITWISE_AND, BITWISE_OR
+  ✅ LOGICAL_AND, LOGICAL_OR, LOGICAL_NOT
+  ✅ EQ, NE, LT, GT, LE, GE
+  ❌ RETURN, RETURNVAL, DECSP, DUP, NOP
 
 One Byte Operand (0x40-0x7F):
-  PUSHBIT, PUSHBYTE
-  PUSHLOCAL, POPLOCAL
-  JUMPB, JUMPZB, JUMPNZB
-  CALL, SYSCALL
+  ✅ PUSHBIT, PUSHBYTE
+  ❌ PUSHLOCAL, POPLOCAL
+  ❌ JUMPB, JUMPZB, JUMPNZB
+  ✅ CALL (with JIT resolution), SYSCALL
 
 Two Byte Operands (0x80-0xBF):
-  PUSHINT, PUSHWORD, PUSHCSTRING
-  PUSHGLOBAL, POPGLOBAL
-  JUMPW, JUMPZW, JUMPNZW
-  PEEK, POKE
+  ✅ PUSHINT, PUSHWORD, PUSHCSTRING
+  ✅ PUSHGLOBAL, ❌ POPGLOBAL
+  ❌ JUMPW, JUMPZW, JUMPNZW
+  ❌ PEEK, POKE
 ```
 
 ### String Architecture
@@ -728,10 +732,11 @@ Offset 7+:  null-terminated name string
 **Function Node (Objects layer):**
 ```
 Offset 0-1: next pointer (managed by Table layer)
-Offset 2:   unused in functions
-Offset 3-4: function body tokens pointer (16-bit)
-Offset 5-6: arguments list head pointer (16-bit, points directly to first argument)
-Offset 7+:  null-terminated function name string
+Offset 2:   function flags byte (was unused)
+Offset 3-4: function body tokens pointer / compiled opcodes pointer (dual purpose)
+Offset 5-6: arguments list head pointer (points directly to first argument node)
+Offset 7-8: opcode stream pointer (16-bit - for functions, unused for variables/constants)
+Offset 9+:  null-terminated name string
 ```
 
 **Argument Node (Arguments layer):**
@@ -752,9 +757,10 @@ Offset 2+:  null-terminated argument name string
 **BasicOpcodeBuffer**: 512 bytes - JIT compiled opcodes (0x0C00-0x0DFF)
 
 **Working Buffers:**
-- **BasicProcessBuffer1**: 64 bytes - General workspace (0x0980-0x09BF)
-- **BasicProcessBuffer2**: 32 bytes - Statement layer storage (0x09C0-0x09DF)
-- **BasicProcessBuffer3**: 32 bytes - Compiler/Executor storage (0x09E0-0x09FF)
+- **BasicCompilerWorkspace**: 32 bytes - Compiler state (0x0980-0x099F)
+- **BasicStatementWorkspace**: 32 bytes - Statement layer storage (0x09A0-0x09BF)
+- **BasicExecutorWorkspace**: 32 bytes - Executor state (0x09C0-0x09DF)
+- **BasicProcessBuffer**: 32 bytes - General workspace (0x09E0-0x09FF)
 
 ### Zero Page Allocation
 **BASIC Project Allocation (0x30-0x4F, 32 bytes):**
@@ -797,7 +803,7 @@ Offset 2+:  null-terminated argument name string
 - **Console Commands**: NEW, CLEAR, VARS, FUNCS, LIST, FORGET, MEM, BYE, debug commands
 - **Statement Processing**: Multi-statement lines with colon separators
 - **IF/THEN Statements**: Basic conditional execution
-- **RETURN/END Statements**: Function and program termination
+- **RETURN/END Statements**: Function and program termination (parsing complete)
 - **Assignment**: Variable assignment with type checking
 - **Error Handling**: Proper error messages and recovery
 - **Clean API Standards**: All units follow register preservation and documented contracts
@@ -815,7 +821,7 @@ Offset 2+:  null-terminated argument name string
 3. **Local Variable Scope** - Function-local variable storage
 4. **RUN Command** - Execute the main program (BEGIN/END block)
 5. **Stack Frame Management** - Call stack for recursion
-6. **Executor System** - Execute compiled opcodes (referenced by Compiler but not implemented)
+6. **Missing Opcodes** - Complete executor implementation for all defined opcodes
 
 ### ❌ Missing Components for String Support:
 1. **Function String Arguments**: Pass string literals to user-defined functions
