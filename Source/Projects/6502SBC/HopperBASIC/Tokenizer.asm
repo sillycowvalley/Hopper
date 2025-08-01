@@ -79,12 +79,12 @@ unit Tokenizer
         NOT      = 0x36,
         MOD      = 0x37,
         
-        // Sentinel marking end of keywords
-        lastKeyword = 0x37,
-        
         // Built-in literals
         TRUE     = 0x38,  // Built-in BIT constant (1)
         FALSE    = 0x39,  // Built-in BIT constant (0)
+        
+        // Sentinel marking end of keywords
+        lastKeyword = 0x39,
         
         // Basic operators
         EQUALS   = 0x40,  // =
@@ -417,14 +417,14 @@ unit Tokenizer
     // Modifies: Processor flags only
     IsKeyword()
     {
-        CMP #Tokens.IDENTIFIER
+        CMP # Tokens.IDENTIFIER
         if (Z)
         {
             CLC  // Not a keyword    
         }
         else
         {
-            CMP #(Tokens.lastKeyword + 1)
+            CMP #( Tokens.lastKeyword + 1)
             if (C)  // >= lastKeyword + 1
             {
                 CLC  // Not a keyword

@@ -897,9 +897,9 @@ unit Statement
                 Tokenizer.IsKeyword();
                 if (C)
                 {
-                    LDA #(Messages.IllegalVariableName  % 256)
+                    LDA #(Messages.IllegalIdentifier  % 256)
                     STA ZP.LastErrorL
-                    LDA #(Messages.IllegalVariableName  / 256)
+                    LDA #(Messages.IllegalIdentifier  / 256)
                     STA ZP.LastErrorH
                     
                     BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC

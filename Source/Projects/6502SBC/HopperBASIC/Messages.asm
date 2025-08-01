@@ -36,8 +36,7 @@ unit Messages
     const string UndefinedIdentifier = "UNDEFINED IDENTIFIER"; // FUNC or VAR
     const string ConstantExpected  = "CONSTANT EXPECTED";
     const string ConstantExpressionExpected  = "CONSTANT EXPRESSION EXPECTED";
-    const string IllegalVariableName  = "ILLEGAL VARIABLE NAME";
-    const string IllegalFunctionName  = "ILLEGAL FUNCTION NAME";
+    const string IllegalIdentifier  = "ILLEGAL IDENTIFIER";
     const string IllegalAssignment  = "ILLEGAL ASSIGNMENT";
     const string InvalidOperator = "INVALID OPERATOR";
     const string BufferOverflow = "BUFFER OVERFLOW";

@@ -38,35 +38,6 @@ unit Instructions
                 SEC  // Compatible - value 0-255
                 break;
             }
-            CMP #BasicType.BIT
-            if (Z)
-            {
-                // Special case for BIT type - only allows values 0 or 1
-                LDA ZP.TOPH
-                if (NZ)
-                {
-                    CLC  // Incompatible
-                    break;
-                }
-                
-                LDA ZP.TOPL
-                CMP #0
-                if (Z)
-                {
-                    SEC  // Compatible (value is 0)
-                    break;
-                }
-                
-                CMP #1
-                if (Z)
-                {
-                    SEC  // Compatible (value is 1)
-                    break;
-                }
-
-                CLC  // Incompatible (value not 0 or 1)
-                break;
-            }
             
             // For all types (including BIT), use general type compatibility checking
             LDA #1  // Arithmetic operation mode
