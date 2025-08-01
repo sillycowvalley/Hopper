@@ -217,14 +217,32 @@ unit Variables
                 break;
             }
             
-            // It's a variable, set the new value - Objects.SetValue expects value in ZP.IDY
-            LDA ZP.TOPL
-            STA ZP.IDYL
-            LDA ZP.TOPH
-            STA ZP.IDYH
-            
-            Objects.SetValue();  // This will use ZP.IDY
-            SEC  // Success
+            // Check if this is a STRING variable needing memory management
+            LDA ZP.ACCT  // symbolType|dataType from Objects.GetData()
+            AND #0x0F    // Extract data type (low nibble)
+            CMP #BasicType.STRING
+            if (Z)
+            {
+                // STRING variable - need to free old string and allocate new
+                FreeStringValue(); // Free existing string memory
+                Messages.CheckError();
+                if (NC) { break; }
+                
+                // Allocate and copy new string (ZP.TOP has source string pointer)
+                AllocateAndCopyString(); // Returns new string pointer in ZP.IDY
+                Messages.CheckError();
+                if (NC) { break; }
+            }
+            else
+            {
+                // Non-STRING variable - use existing logic
+                LDA ZP.TOPL
+                STA ZP.IDYL
+                LDA ZP.TOPH
+                STA ZP.IDYH
+            }
+           // Set the new string pointer as the variable's value
+            Objects.SetValue(); // Uses ZP.IDY, C = success, NC = failure
             break;
         } // end of single exit block
         
@@ -418,6 +436,9 @@ unit Variables
                 break;
             }
             
+            // This checks type internally and only frees STRING types (that are not null)
+            FreeStringValue(); 
+            
             // Get tokens pointer before removing symbol
             Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
             
@@ -543,6 +564,9 @@ unit Variables
                 break; // No more symbols
             }
             
+            // This checks type internally and only frees STRING types (that are not null)
+            FreeStringValue(); 
+            
             // Get tokens pointer
             Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
             
@@ -575,4 +599,210 @@ unit Variables
         PLA
         SEC  // Always succeeds
     }
+    
+    // Empty string constant for default STRING values
+    const string EmptyString = "";
+
+    // Allocate and copy string from source
+    // Input: ZP.TOP = source string pointer
+    // Output: ZP.IDY = pointer to allocated copy, C set if successful, NC if allocation failed
+    // Modifies: ZP.ACC, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, ZP.FLENGTH
+    // Preserves: ZP.IDX (variable node address)
+    AllocateAndCopyString()
+    {
+        PHA
+        PHX
+        PHY
+        
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
+        // Save ZP.IDX (variable node) 
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
+        loop // single exit
+        {
+            // Get source string length
+            LDX ZP.TOPL
+            LDY ZP.TOPH
+            Tools.StringLength(); // Returns length in A
+            
+            // Allocate length + 1 for null terminator
+            CLC
+            ADC #1
+            STA ZP.ACCL
+            LDA #0
+            ADC #0  // Add carry
+            STA ZP.ACCH
+            
+            Memory.Allocate(); // Returns address in ZP.IDX (temporarily)
+            
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z)
+            {
+                // Allocation failed
+                LDA #(Messages.OutOfMemory % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.OutOfMemory / 256)
+                STA ZP.LastErrorH
+                
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                
+                CLC
+                break;
+            }
+            
+            // Move allocated pointer to ZP.IDY for return
+            LDA ZP.IDXL
+            STA ZP.IDYL
+            LDA ZP.IDXH
+            STA ZP.IDYH
+            
+            // Set up copy parameters
+            LDA ZP.TOPL
+            STA ZP.FSOURCEADDRESSL
+            LDA ZP.TOPH
+            STA ZP.FSOURCEADDRESSH
+            
+            LDA ZP.IDYL
+            STA ZP.FDESTINATIONADDRESSL
+            LDA ZP.IDYH
+            STA ZP.FDESTINATIONADDRESSH
+            
+            LDA ZP.ACCL  // Length + 1 (includes null terminator)
+            STA ZP.FLENGTHL
+            LDA ZP.ACCH
+            STA ZP.FLENGTHH
+            
+            // Copy string including null terminator
+            Tools.CopyBytes();
+            
+            SEC // Success
+            break;
+        }
+        
+        // Restore ZP.IDX (variable node)
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
+        PLY
+        PLX
+        PLA
+    }
+
+    // Free string memory for STRING variable
+    // Input: ZP.IDX = variable node address (must be STRING type)
+    // Output: C set if successful, NC if error or not a STRING variable  
+    // Modifies: ZP.ACCT, ZP.IDY, ZP.NEXT
+    // Preserves: ZP.IDX (variable node address)
+    FreeStringValue()
+    {
+        PHA
+        PHX
+        PHY
+        
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
+        LDA ZP.NEXTL
+        PHA
+        LDA ZP.NEXTH
+        PHA
+        
+        // Save ZP.IDX (variable node)
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
+        loop // single exit
+        {
+            // Get variable data
+            Objects.GetData(); // Returns type in ZP.ACCT, value in ZP.IDY
+            
+            // Check if it's a STRING variable
+            LDA ZP.ACCT
+            AND #0x0F  // Extract data type (low nibble)
+            CMP #BasicType.STRING
+            if (NZ)
+            {
+                // Not a STRING variable - nothing to free
+                SEC // Success (no-op)
+                break;
+            }
+            
+            // Check if string pointer is non-zero
+            LDA ZP.IDYL
+            ORA ZP.IDYH
+            if (Z)
+            {
+                // Null pointer - nothing to free
+                SEC // Success (no-op)
+                break;
+            }
+            
+            // Free the string memory (use different register than IDX)
+            LDA ZP.IDYL
+            STA ZP.ACCL  // Temporarily use ACC for Memory.Free
+            LDA ZP.IDYH
+            STA ZP.ACCH
+            
+            LDA ZP.ACCL
+            STA ZP.IDXL  // Memory.Free expects address in IDX
+            LDA ZP.ACCH
+            STA ZP.IDXH
+            
+            Memory.Free(); // munts ZP.IDY, ZP.TOP, ZP.NEXT
+            
+            STZ ZP.IDYL  // Zero out for Objects.SetValue
+            STZ ZP.IDYH
+            Objects.SetValue(); // Set variable's string pointer to 0x0000
+            
+            SEC // Success
+            break;
+        }
+        
+        // Restore ZP.IDX (variable node)
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        PLA
+        STA ZP.NEXTH
+        PLA
+        STA ZP.NEXTL
+        PLA
+        STA ZP.IDYH
+        PLA
+        STA ZP.IDYL
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
+        PLY
+        PLX
+        PLA
+    }
+
+
 }

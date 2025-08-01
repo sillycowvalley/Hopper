@@ -25,6 +25,16 @@ unit Tools
         BIT ZP.EmulatorPCL
         CLC
     }
+    
+    SyntaxError()
+    {
+        LDA #(Messages.SyntaxError % 256)
+        STA ZP.LastErrorL
+        LDA #(Messages.SyntaxError / 256)
+        STA ZP.LastErrorH
+        BIT ZP.EmulatorPCL
+        CLC
+    }
 
        
     // Print BasicType enum value as readable string

@@ -11,7 +11,6 @@ unit Messages
     const string Welcome = "\nHopper BASIC v2.0\n";
     const string MemoryMsg = "Memory: ";
     const string BytesMsg = " bytes available\n";
-    const string EmptyString = ""; // for initialization of STRING
     
     // Status messages
     const string ReadyPrompt = "READY\n> ";
