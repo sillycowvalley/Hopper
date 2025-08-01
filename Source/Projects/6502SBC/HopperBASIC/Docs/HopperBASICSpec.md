@@ -1,4 +1,4 @@
-# Hopper BASIC Specification v2.6
+# Hopper BASIC Specification v2.7
 
 ## Project Objectives
 
@@ -131,11 +131,18 @@ END
 - ✅ **`INT name [= value]`** - Create signed integer variable (-32768 to 32767)
 - ✅ **`WORD name [= value]`** - Create unsigned integer variable (0 to 65535)
 - ✅ **`BIT name [= value]`** - Create boolean variable (0 or 1)
+- ❌ **`BYTE name [= value]`** - Create 8-bit unsigned variable (0 to 255)
+- ❌ **`STRING name = "value"`** - Create string variable (can be reassigned to different string literals)
 
 ### Constant Declaration Commands
 - ✅ **`CONST INT name = value`** - Define immutable signed integer constant
 - ✅ **`CONST WORD name = value`** - Define immutable unsigned integer constant
 - ✅ **`CONST BIT name = value`** - Define immutable boolean constant
+- ❌ **`CONST BYTE name = value`** - Define immutable 8-bit unsigned constant  
+- ❌ **`CONST STRING name = "value"`** - Define immutable string constant
+
+### String Declaration Commands
+- ❌ **`STRING name = "value"`** - Create mutable string variable (contents are immutable, reference can change)
 
 ### Definition Commands
 - ✅ **`FUNC name(params)`** - Start function definition (ends with `ENDFUNC`) - **multi-line capture mode implemented**
@@ -146,6 +153,8 @@ END
 #### Basic I/O
 - ✅ **`PRINT expr`** - Output single value followed by newline
 - ✅ **`PRINT`** - Output empty line (no arguments)
+- ❌ **`PRINT "string"`** - Direct string literal output
+- ❌ **Function arguments**: Direct string literals as function arguments (`MyFunc("Hello")`)
 
 #### Statement Separators
 - ✅ **Colon (`:`) separator** - Multiple statements on one line
@@ -170,6 +179,8 @@ END
 - ✅ **INT**: 16-bit signed integer (-32768 to 32767)
 - ✅ **WORD**: 16-bit unsigned integer (0 to 65535)
 - ✅ **BIT**: Boolean value (0 or 1)
+- ❌ **BYTE**: 8-bit unsigned integer (0 to 255)
+- ❌ **STRING**: Immutable string literals (Phase 2)
 - ✅ **Type promotion**: Automatic promotion between compatible types
 - ✅ **Type safety**: Proper type checking with meaningful error messages
 - ✅ **Type compatibility checking**: Comprehensive validation for all operations
@@ -201,7 +212,49 @@ END
 
 ---
 
-## Phase 2: Storage and File Management
+## Phase 2: String Support and Enhanced I/O
+
+### String Constants and Variables
+- ❌ **`CONST STRING name = "value"`** - Immutable string constants (name cannot be reassigned)
+- ❌ **`STRING name = "value"`** - Mutable string variables (name can be reassigned to different string literals)
+- ❌ **String literals**: `"Hello World"` in expressions, PRINT statements, and function arguments
+- ❌ **String comparison**: `IF name = "admin" THEN ...`
+- ❌ **Direct string printing**: `PRINT "Hello"`
+- ❌ **Function arguments**: `MyFunction("Hello", "World")`
+
+### Enhanced I/O
+- ❌ **`PRINT "string"`** - Direct string literal output
+- ❌ **`PRINT expr[,expr...]`** - Multiple values separated by spaces, newline at end
+- ❌ **`PRINT expr[;expr...]`** - Multiple values with no separation, newline at end
+- ❌ **`PRINT expr;`** - Output value with no newline (cursor stays on line)
+- ❌ **`PRINT expr,`** - Output value followed by space, no newline
+
+### String Type Behavior (By Design)
+**Supported:**
+```basic
+CONST STRING greeting = "Hello World"    // Immutable string constant
+STRING message = "Initial"               // Mutable string variable
+message = "New Value"                    // String reassignment allowed
+PRINT greeting                           // Direct string printing
+PRINT "Direct literal"                   // Direct string literals
+IF message = "OK" THEN PRINT "Success"   // String comparison
+MyFunction("Hello", message)             // String literals and variables as function arguments
+```
+
+**Deliberately Unsupported:**
+```basic
+message[0] = 'H'                         // Character modification (not supported)
+message = greeting + " World"            // String concatenation (not supported)
+INPUT message                            // String input (not supported)
+LEN(message)                             // String functions (not supported)
+MID(message, 1, 3)                       // String manipulation (not supported)
+```
+
+**Design Rationale:** STRING type supports both constant and variable string references, but string **contents** are always immutable. Variables can be reassigned to point to different string literals, but individual characters cannot be modified. This avoids complex string memory management while supporting essential string functionality for benchmarks and basic programs.
+
+---
+
+## Phase 3: Storage and File Management
 
 ### Storage Commands
 - ❌ **`SAVE "name"`** - Save complete session to EEPROM (tokenized form)
@@ -217,21 +270,11 @@ END
 
 ---
 
-## Phase 3: Extended Features
+## Phase 4: Extended Features
 
 ### Additional Types
 - ❌ **`BYTE name [= value]`** - 8-bit unsigned (0 to 255) for hardware I/O
-- ❌ **`STRING name [= "value"]`** - Text handling with string operations (maximum length of 255 characters)
-- ❌ **Arrays**: `INT numbers[10]` - single-dimensional arrays of integral types (no string arrays)
-
-### Enhanced I/O
-- ❌ **`INPUT var`** - Read value from serial console into variable
-- ❌ **`INPUT "prompt",var`** - Read with prompt
-- ❌ **`INPUT var1, var2, ...`** - Read multiple values in one statement
-- ❌ **`PRINT expr[,expr...]`** - Multiple values separated by spaces, newline at end
-- ❌ **`PRINT expr[;expr...]`** - Multiple values with no separation, newline at end
-- ❌ **`PRINT expr;`** - Output value with no newline (cursor stays on line)
-- ❌ **`PRINT expr,`** - Output value followed by space, no newline
+- ❌ **Arrays**: `INT numbers[10]` - single-dimensional arrays of integral types
 
 ### Extended Control Flow
 - ❌ **`FOR var = start TO end [STEP increment]`** - Counted loops (required for benchmarks)
@@ -244,7 +287,7 @@ END
 
 ### Built-in Functions
 - ❌ **Math functions**: `ABS(x)`, `RND(x)`
-- ❌ **String functions**: `LEN()`, `MID()`, `LEFT()`, `RIGHT()` (if strings added)
+- ❌ **Memory functions**: `PEEK(address)`, `POKE(address, value)`
 - ❌ **Conversion functions**: Type conversion between INT/WORD/BYTE
 
 ### Hardware I/O (If space permits)
@@ -273,11 +316,21 @@ console_command := NEW | LIST | RUN | CLEAR | VARS | FUNCS | MEM | BYE
 ### Variable and Constant Declarations
 ```
 variable_decl := type_keyword identifier [ "=" expression ]
-              | type_keyword identifier "[" number "]" [ "=" array_initializer ]
+              | type_keyword identifier "[" number "]"
+              | STRING identifier "=" string_literal
 constant_decl := CONST type_keyword identifier "=" expression
-type_keyword := INT | WORD | BIT | BYTE | STRING
-array_initializer := "{" expression [ "," expression ]* "}"
+              | CONST STRING identifier "=" string_literal
+type_keyword := INT | WORD | BIT | BYTE
 ```
+
+**Array Declaration Rules:**
+- **Global scope only**: Array declarations are only allowed at global scope (not inside functions)
+- **Fixed size**: Array size must be a compile-time constant
+- **Zero initialization**: Arrays are automatically initialized to zero values (0 for numeric types, FALSE for BIT arrays)
+- **No initialization syntax**: Array initialization lists are not supported
+- **Function parameters**: Global arrays can be passed as arguments to functions
+- **No local arrays**: Functions cannot declare local array variables
+- **BIT array optimization**: BIT arrays store 8 elements per byte for efficient memory usage
 
 ### Program Structure
 ```
@@ -309,7 +362,10 @@ while_statement := WHILE expression
                   { statement }*
                   WEND
 
-print_statement := PRINT [ expression ]
+print_statement := PRINT [ print_list ]
+print_list := print_item [ print_separator print_item ]*
+print_item := expression | string_literal
+print_separator := ";" | ","
 
 if_statement := IF expression THEN statement
 
@@ -357,6 +413,7 @@ unary_expr := [ "-" | NOT ] primary_expr
 primary_expr := number
               | identifier
               | identifier "[" expression "]"
+              | string_literal
               | TRUE
               | FALSE
               | "(" expression ")"
@@ -365,7 +422,7 @@ primary_expr := number
 
 built_in_function := ABS "(" expression ")"
                   | RND "(" expression ")"
-                  | LEN "(" expression ")"
+                  | PEEK "(" expression ")"
                   | MILLIS "(" ")"
                   | hardware_function
 
@@ -374,6 +431,7 @@ hardware_function := READ "(" expression ")"
                   | PWM "(" expression "," expression ")"
                   | DELAY "(" expression ")"
                   | PINMODE "(" expression "," expression ")"
+                  | POKE "(" expression "," expression ")"
 
 function_call := identifier "(" [ argument_list ] ")"
 argument_list := expression [ "," expression ]*
@@ -407,27 +465,31 @@ OPERATOR := "+" | "-" | "*" | "/" | "=" | "<>" | "<" | ">" | "<=" | ">=" | "&" |
 SEPARATOR := ":" | "," | ";"
 COMMENT := REM | "'"
 LITERAL := TRUE | FALSE
+STRING := '"' { character }* '"'
 ```
 
 ### Type System
 - **INT**: 16-bit signed integer (-32768 to 32767)
 - **WORD**: 16-bit unsigned integer (0 to 65535)  
 - **BIT**: Boolean value (0 or 1)
-- **BYTE**: 8-bit unsigned integer (0 to 255) [Phase 3]
-- **STRING**: Null-terminated character array [Phase 3]
+- **BYTE**: 8-bit unsigned integer (0 to 255)
+- **STRING**: Immutable string constant (null-terminated character array)
 
 ### Type Promotion and Compatibility Rules
 - **INT → WORD**: Compatible only when INT ≥ 0 (runtime check)
 - **WORD → INT**: Compatible only when WORD ≤ 32767 (runtime check)
+- **BYTE → INT/WORD**: Always compatible (promotes to larger type)
+- **INT/WORD → BYTE**: Compatible only when value ≤ 255 (runtime check)
 - **All types → BIT**: Only values 0 and 1 are compatible
+- **STRING operations**: Only equality comparison supported (`=`, `<>`)
 - **BIT operations**: Logical AND/OR/NOT for BIT types only
-- **Bitwise operations**: AND (&), OR (|) for all numeric types (INT, WORD, BIT)
+- **Bitwise operations**: AND (&), OR (|) for all numeric types (INT, WORD, BIT, BYTE)
 - **Comparison results**: All comparisons return BIT type
 - **Operation modes**:
-  - **Arithmetic** (rejects BIT): +, -, *, /, MOD
+  - **Arithmetic** (rejects BIT, STRING): +, -, *, /, MOD
   - **Equality** (allows all): =, <>
-  - **Ordering** (allows all): <, >, <=, >=
-  - **Bitwise** (allows all): &, |
+  - **Ordering** (numeric only): <, >, <=, >=
+  - **Bitwise** (numeric only): &, |
   - **Logical** (BIT only): AND, OR, NOT
 
 ### Operator Precedence (Highest to Lowest)
@@ -454,6 +516,7 @@ PRINT "Hello"  REM This is an end-of-line comment
 ' Short form comment
 INT count = 0  ' Initialize counter
 CONST INT MAX = 100  ' Define constant
+CONST STRING msg = "Ready"  ' String constant
 ```
 
 ### Statement Separator Rules
@@ -469,14 +532,15 @@ CONST INT MAX = 100  ' Define constant
 ```basic
 PRINT 10 : PRINT 20
 INT x = 5 : PRINT x : x = x + 1 : PRINT x
-IF x > 0 THEN PRINT "positive" : PRINT "done"
-CONST INT SIZE = 10 : INT buffer = SIZE * 2
+IF x < y THEN PRINT "x is smaller" : x = y
+CONST STRING greeting = "Hello" : PRINT greeting
 ```
 
 ### Literal Values
 - **Decimal numbers**: `123`, `0`, `32767`
 - **Hexadecimal numbers**: `0x1F`, `0xFF00`, `0xA0` (case insensitive)
 - **Boolean literals**: `TRUE` (value 1), `FALSE` (value 0)
+- **String literals**: `"Hello World"`, `""` (empty string)
 - **Type determination**: Numbers typed as INT (0-32767) or WORD (32768-65535)
 
 ---
@@ -490,7 +554,7 @@ The expression evaluation system uses a Just-In-Time compilation approach:
 1. **Infix to Postfix**: Expressions compiled using recursive descent parser
 2. **Opcode Generation**: Stack-based opcodes emitted to 512-byte buffer
 3. **Type Checking**: Compile-time type compatibility validation
-4. **Optimization**: Efficient literal handling (PUSHBIT, PUSHBYTE, PUSHINT, PUSHWORD)
+4. **Optimization**: Efficient literal handling (PUSHBIT, PUSHBYTE, PUSHINT, PUSHWORD, PUSHSTRING)
 
 **Execution Phase:**
 1. **Stack Machine**: Opcodes executed using Hopper VM value/type stacks
@@ -514,10 +578,30 @@ One Byte Operand (0x40-0x7F):
   CALL, SYSCALL
 
 Two Byte Operands (0x80-0xBF):
-  PUSHINT, PUSHWORD
+  PUSHINT, PUSHWORD, PUSHSTRING
   PUSHGLOBAL, POPGLOBAL
   JUMPW, JUMPZW, JUMPNZW
+  PEEK, POKE
 ```
+
+### String Architecture
+
+#### STRING Type Implementation
+- **BasicType.STRING = 0x13**: Immutable string constant type
+- **Token buffer storage**: String literals stored in tokenized form
+- **16-bit pointers**: STRING values are pointers to null-terminated strings
+- **PUSHSTRING opcode**: Emit string literals as 16-bit pointers to token buffer
+
+#### String Operations
+- **Equality comparison**: `=` and `<>` operators supported
+- **Smart comparison**: Pointer equality first, then content comparison
+- **PRINT support**: Direct string output via PRINT statement
+- **Expression integration**: String literals work in all expression contexts
+
+#### String Memory Management
+- **No dynamic allocation**: All strings are compile-time constants
+- **Token buffer persistence**: Strings remain valid throughout REPL session
+- **Efficient storage**: Identical string literals share same memory location
 
 ### Memory Management
 
@@ -533,9 +617,9 @@ Two Byte Operands (0x80-0xBF):
 Offset 0-1: next pointer (managed by Table layer)
 Offset 2:   symbolType|dataType (packed byte)
             High nibble: SymbolType (VARIABLE=1, CONSTANT=2)
-            Low nibble: BasicType (INT=2, WORD=4, BIT=6)
+            Low nibble: BasicType (INT=2, WORD=4, BIT=6, BYTE=3, STRING=0x13)
 Offset 3-4: tokens pointer (16-bit pointer to initialization token stream)
-Offset 5-6: value (16-bit current value)
+Offset 5-6: value (16-bit current value or string pointer)
 Offset 7+:  null-terminated name string
 ```
 
@@ -558,6 +642,7 @@ Offset 2+:  null-terminated argument name string
 - **Exact-size allocation**: Nodes allocated to exact size needed (overhead + name length)
 - **Automatic cleanup**: Memory.Free() called when symbols are removed
 - **Token stream management**: Initialization and function body tokens stored separately and freed with symbols
+- **String constants**: Stored in token buffer, no separate allocation needed
 - **Argument integration**: Function arguments stored as separate linked list, automatically cleaned up with function
 
 ### Buffer Management
@@ -628,15 +713,32 @@ Offset 2+:  null-terminated argument name string
 5. **Stack Frame Management** - Call stack for recursion
 6. **Executor System** - Execute compiled opcodes (referenced by Compiler but not implemented)
 
+### ❌ Missing Components for String Support:
+1. **STRING Type**: Add BasicType.STRING = 0x13 to type system
+2. **String Tokenization**: Enable `"string"` literal scanning in tokenizer
+3. **CONST STRING**: String constant declaration support
+4. **STRING Variables**: Mutable string variable declaration support
+5. **PUSHSTRING Opcode**: Emit string literals as token buffer pointers
+6. **String Comparison**: Equality operators for STRING types
+7. **String PRINT**: Direct string output in PRINT statements
+8. **String Function Arguments**: Pass string literals to user functions
+
+### ❌ Missing Components for BYTE and Memory Functions:
+1. **BYTE Type**: Add BasicType.BYTE = 0x03 to type system
+2. **BYTE Variables**: BYTE variable and constant declaration support  
+3. **PEEK Function**: Built-in function to read memory bytes
+4. **POKE Statement**: Built-in statement to write memory bytes
+5. **BYTE Type Promotion**: Integration with existing type compatibility system
+
 ### ❌ Missing Components for Full Benchmark Support:
 1. **FOR/NEXT loops** - Basic iteration support
 2. **WHILE/WEND loops** - Conditional iteration  
-3. **String literals in PRINT** - `PRINT "text"` output
-4. **Multiple PRINT arguments** - `PRINT name; "("; arg; ")"`
-5. **MILLIS() function** - System timer access
-6. **Nested loop support** - FOR within WHILE constructs
-7. **Array declarations** - `BIT flags[8191]`
-8. **Array indexing** - `flags[i] = TRUE`
+3. **Multiple PRINT arguments** - `PRINT name; "("; arg; ")"`
+4. **MILLIS() function** - System timer access
+5. **Nested loop support** - FOR within WHILE constructs
+6. **Global array declarations** - `BIT flags[8191]` (global scope only)
+7. **Array indexing** - `flags[i] = TRUE`
+8. **Array function parameters** - Pass global arrays to functions
 
 ### 🎯 Function System Architecture Status
 
@@ -721,8 +823,12 @@ All implemented systems have comprehensive test coverage:
 ```
 CONST INT SIZE = 100
 CONST BIT DEBUG = TRUE  
+CONST BYTE ACIA = 80
+CONST STRING msg = "Ready"
 INT counter = 5
 WORD buffer = 200
+BYTE port = 255
+STRING status = "Active"
 ```
 
 ### FUNCS Command Output Format  
@@ -747,8 +853,12 @@ END
 ```
 CONST INT SIZE = 100
 CONST BIT DEBUG = TRUE  
+CONST BYTE ACIA = 80
+CONST STRING msg = "Ready"
 INT counter = 5
 WORD buffer = 200
+BYTE port = 255
+STRING status = "Active"
 
 FUNC Fibo(n)
     IF n <= 1 THEN RETURN n
@@ -770,10 +880,88 @@ END
 - Token streams converted back to readable BASIC syntax
 - BEGIN blocks displayed without FUNC keyword
 - Parameters shown in function signatures
+- String constants displayed with quotes
 
 ---
 
 ## Usage Examples
+
+### String Constants and Variables  
+```basic
+> CONST STRING greeting = "Hello World"
+OK
+
+> STRING message = "Initial Value"
+OK
+
+> message = "Updated Value"
+OK
+
+> PRINT greeting
+Hello World
+
+> PRINT message  
+Updated Value
+
+> IF message = "Updated Value" THEN PRINT "Match"
+Match
+
+> VARS
+CONST STRING greeting = "Hello World"
+STRING message = "Updated Value"
+```
+
+### BYTE Type and Memory Access
+```basic
+> BYTE port = 0x80
+OK
+
+> CONST BYTE ACIA = 0x50
+OK
+
+> POKE(0x5000, 0xFF)    ' Write 255 to address $5000
+OK
+
+> BYTE value = PEEK(0x5000)    ' Read byte from address $5000
+OK
+
+> PRINT value
+255
+
+> port = PEEK(ACIA)     ' Read from I/O port
+OK
+
+> POKE(ACIA + 1, port | 0x01)   ' Set bit 0 in next port
+OK
+
+> VARS
+CONST BYTE ACIA = 80
+BYTE port = 193
+BYTE value = 255
+```
+
+### String Literals in Function Arguments
+```basic
+> FUNC DisplayMessage(title, text)
+* PRINT title
+* PRINT ": "
+* PRINT text
+* ENDFUNC
+OK
+
+> DisplayMessage("Status", "Ready")
+Status
+: 
+Ready
+
+> STRING status = "Running"
+OK
+
+> DisplayMessage("Current", status)
+Current
+: 
+Running
+```
 
 ### Function Definition and Display
 ```basic
@@ -810,10 +998,11 @@ FUNC Complex(x)
 ENDFUNC
 ```
 
-### BEGIN/END Main Program
+### BEGIN/END Main Program with Strings
 ```basic
 > BEGIN
-* PRINT "Starting program"
+* CONST STRING msg = "Starting program"
+* PRINT msg
 * INT result = 42
 * PRINT result
 * END
@@ -821,7 +1010,8 @@ OK
 
 > FUNCS
 BEGIN
-    PRINT "Starting program"
+    CONST STRING msg = "Starting program"
+    PRINT msg
     INT result = 42
     PRINT result
 END
@@ -832,47 +1022,89 @@ END
 INT count = 5
 WORD max = 65000
 BIT flag = TRUE
-PRINT count : PRINT max : PRINT flag
+BYTE port = 0x80
+CONST STRING status = "Ready"
+STRING current = "Active"
+PRINT count : PRINT max : PRINT flag : PRINT port : PRINT status : PRINT current
 count = count + 1 : PRINT count
+current = "Updated" : PRINT current
+port = PEEK(0x5000) : PRINT port
 ```
 
-### Constant Definitions
+### Array Usage Examples
 ```basic
-CONST INT SIZE = 100
-CONST BIT DEBUG = TRUE
-CONST WORD MAX_VALUE = 0xFFFF
-INT buffer = SIZE * 2
-IF DEBUG THEN PRINT buffer
+' Global array declarations (allowed)
+INT numbers[10]  ' 20 bytes (2 bytes per INT)
+BIT flags[100]   ' 13 bytes (8 bits per byte, so 100 bits = 12.5 bytes rounded up to 13)
+BYTE buffer[256] ' 256 bytes (1 byte per BYTE)
+
+' Array usage in main program  
+BEGIN
+    FOR i = 0 TO 9
+        numbers[i] = i * 2
+    NEXT i
+    
+    ProcessArray(numbers, 10)   ' Pass array to function
+END
+
+' Function with array parameter
+FUNC ProcessArray(arr, size)
+    FOR i = 0 TO size-1
+        PRINT arr[i]
+    NEXT i
+ENDFUNC
+
+' Function with local array (NOT ALLOWED)
+FUNC BadExample()
+    INT localArray[5]    ' ERROR: Local arrays not supported
+ENDFUNC
 ```
 
-### Expression Evaluation
+### Array Scope Rules
+```basic
+' ALLOWED: Global array declarations
+INT globalData[100]
+
+FUNC WorkWithArrays()
+    ' ALLOWED: Access global arrays
+    globalData[0] = 42
+    
+    ' ALLOWED: Global arrays as parameters (passed by reference)
+    ' (array parameter receives reference to global array)
+    
+    ' NOT ALLOWED: Local array declarations
+    ' INT localBuffer[50]    ' Compile error
+ENDFUNC
+
+' ALLOWED: Pass global arrays to functions
+ProcessData(globalData, 100)
+```
+
+### Expression Evaluation with Strings
 ```basic
 INT a = 10 : INT b = 20
+CONST STRING op = "addition"
+STRING result = "unknown"
 PRINT a + b * 2        ' Prints 50 (precedence: * before +)
 PRINT (a + b) * 2      ' Prints 60 (parentheses override precedence)
-BIT result = a > b
-PRINT result           ' Prints 0 (false)
+BIT match = a > b
+PRINT match            ' Prints 0 (false)
+IF op = "addition" THEN result = "math operation"
+PRINT result           ' Prints "math operation"
 ```
 
-### Multi-Statement Lines
+### Multi-Statement Lines with Strings
 ```basic
-INT x = 5 : INT y = 10 : PRINT x + y : PRINT x * y
-IF x < y THEN PRINT "x is smaller" : x = y
+CONST STRING msg = "Hello" : STRING temp = "World" : PRINT msg : PRINT temp
+IF msg = "Hello" THEN temp = "Updated" : PRINT temp : PRINT "Done"
 ```
 
 ### Hexadecimal Numbers
 ```basic
 WORD addr = 0x8000
 INT offset = 0x100
-PRINT addr + offset    ' Prints 32768 + 256 = 33024
-```
-
-### Type Mixing
-```basic
-INT signed = -100
-WORD unsigned = 200
-' This works because signed value promoted to unsigned safely
-PRINT unsigned + 300   ' Prints 500
+CONST STRING label = "Address"
+PRINT label : PRINT addr + offset    ' Prints Address, then 33024
 ```
 
 ---
@@ -887,24 +1119,39 @@ PRINT unsigned + 300   ' Prints 500
 - **RUN Command**: Execute stored main program (BEGIN/END block)
 - **Call Stack**: Basic function call and return mechanism
 
-### Phase 2: Loop Constructs & String Literals
+### Phase 2: String Support and BYTE Type (Current Target)
+- **STRING Type**: Add BasicType.STRING to type system
+- **String Tokenization**: Enable string literal scanning
+- **CONST STRING**: String constant declarations
+- **STRING Variables**: Mutable string variable declarations  
+- **PUSHSTRING Opcode**: String literal compilation
+- **String Comparison**: Equality operators for strings
+- **String PRINT**: Direct string output support
+- **String Function Arguments**: Pass string literals to user functions
+- **BYTE Type**: Add BasicType.BYTE to type system
+- **BYTE Variables**: BYTE variable and constant declarations
+- **PEEK Function**: Built-in memory read function
+- **POKE Statement**: Built-in memory write statement
+- **Multiple PRINT Arguments**: Enhanced PRINT with separators
+
+### Phase 3: Loop Constructs & Array Support
 - **FOR/NEXT loops**: Counted iteration with STEP support
 - **WHILE/WEND loops**: Conditional iteration
-- **String literals**: Basic string output for PRINT statements
-- **Multiple PRINT args**: Semicolon and comma separators
 - **MILLIS() function**: System timer for benchmarks
+- **Global Arrays**: Single-dimensional arrays for all types (global scope only)
+- **Array Indexing**: Zero-based array access with bounds checking
+- **Array Parameters**: Pass global arrays as function arguments
 
-### Phase 3: Enhanced Features (After Benchmarks)
+### Phase 4: Enhanced Features (After Benchmarks)
 - **Storage System**: SAVE/LOAD with EEPROM integration
-- **Additional Types**: BYTE, STRING variables (beyond literals)
-- **Arrays**: Single-dimensional arrays for all types
+- **Additional Types**: BYTE variables
 - **Enhanced I/O**: INPUT statements, formatted PRINT output
 - **Built-in Functions**: Math (ABS, RND), string manipulation
 - **Advanced Control**: DO/UNTIL loops, BREAK/CONTINUE statements
 
-### Phase 4: Hardware Integration (If ROM space permits)
+### Phase 5: Hardware Integration (If ROM space permits)
 - **Hardware I/O**: Pin control, PWM, timing functions
 - **Embedded Features**: Real-time capabilities for microcontroller applications
 - **Optimization**: Performance tuning for 6502 constraints
 
-The current implementation provides a robust foundation with complete function declaration, storage, and display systems. The next major milestone is implementing function execution to enable the Fibonacci benchmark, which will validate the core interpreter functionality before adding additional language features.
+The current implementation provides a robust foundation with complete function declaration, storage, and display systems. The addition of STRING support as immutable string constants provides the essential string functionality needed for the benchmark programs while maintaining simplicity and avoiding complex string memory management. The next major milestone is implementing function execution to enable the Fibonacci benchmark, which will validate the core interpreter functionality before adding loop constructs and other advanced features.
