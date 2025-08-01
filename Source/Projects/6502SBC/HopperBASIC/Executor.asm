@@ -325,6 +325,10 @@ unit Executor
             }
             
             // Function operations
+            case OpcodeType.ENTER:
+            {
+                executeEnter();
+            }
             case OpcodeType.RETURN:
             {
                 executeReturn();
@@ -450,9 +454,9 @@ unit Executor
         Tools.DumpBasicBuffers();
 #endif                
         // Unknown opcode
-        LDA #(Messages.InternalError % 256)
+        LDA #(Messages.NotImplemented % 256)
         STA ZP.LastErrorL
-        LDA #(Messages.InternalError / 256)
+        LDA #(Messages.NotImplemented / 256)
         STA ZP.LastErrorH
         BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
         CLC
@@ -480,6 +484,14 @@ unit Executor
         STA ZP.LastErrorH
         BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
         CLC
+    }
+    
+    executeEnter()
+    {
+        Stacks.PushBP();
+        LDA ZP.BP
+        STA ZP.SP
+        SEC
     }
     
     executeDecSp()
@@ -691,10 +703,20 @@ unit Executor
     
     executeCall()
     {
+    #ifdef DEBUG
+        LDA #'C' Tools.COut(); LDA #'A' Tools.COut(); LDA #'L' Tools.COut(); LDA #'L' Tools.COut();
+    #endif
+        
         loop
         {
             FetchOperandWord();
             if (NC) { break; }
+    
+    #ifdef DEBUG
+            LDA #'@' Tools.COut(); 
+            LDA executorOperandH Tools.HOut(); 
+            LDA executorOperandL Tools.HOut();
+    #endif
         
             LDA executorOperandL
             STA ZP.TOPL
@@ -705,6 +727,9 @@ unit Executor
             Functions.Find(); // Input: ZP.TOP = name
             if (NC)
             {
+    #ifdef DEBUG
+                LDA #'?' Tools.COut(); LDA #'F' Tools.COut();
+    #endif
                 LDA #(Messages.UndefinedIdentifier % 256)
                 STA ZP.LastErrorL
                 LDA #(Messages.UndefinedIdentifier / 256)
@@ -714,10 +739,18 @@ unit Executor
                 break;
             }
             // ZP.IDX = function node address
+    
+    #ifdef DEBUG
+            LDA #'F' Tools.COut(); LDA #'=' Tools.COut();
+            LDA ZP.IDXH Tools.HOut(); LDA ZP.IDXL Tools.HOut();
+    #endif
             
             Functions.IsCompiled();
             if (NC)
             {
+    #ifdef DEBUG
+                LDA #'J' Tools.COut(); LDA #'I' Tools.COut(); LDA #'T' Tools.COut();
+    #endif
                 // JIT
                 Functions.Compile();
                 if (NC)
@@ -725,6 +758,12 @@ unit Executor
                     break; // compilation failed
                 }
             }
+            
+    #ifdef DEBUG
+            LDA #'P' Tools.COut(); LDA #'A' Tools.COut(); LDA #'T' Tools.COut(); LDA #'C' Tools.COut(); LDA #'H' Tools.COut();
+            LDA #'@' Tools.COut();
+            LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
+    #endif
             
             // 2. replace own opcode CALL -> CALLF, <index> by <address>
             // 3, PC -= 3 (so CALLF happens instead)
@@ -740,6 +779,12 @@ unit Executor
             LDA ZP.IDXH 
             STA [ZP.PC]
             
+    #ifdef DEBUG
+            LDA #'M' Tools.COut(); LDA #'=' Tools.COut();
+            LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
+            LDA #':' Tools.COut(); LDA ZP.IDXH Tools.HOut();
+    #endif
+            
             // <address> LSB
             // PC--
             LDA ZP.PCL
@@ -751,6 +796,12 @@ unit Executor
             LDA ZP.IDXL
             STA [ZP.PC]
             
+    #ifdef DEBUG
+            LDA #'L' Tools.COut(); LDA #'=' Tools.COut();
+            LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
+            LDA #':' Tools.COut(); LDA ZP.IDXL Tools.HOut();
+    #endif
+            
             // CALLF
             // PC--
             LDA ZP.PCL
@@ -761,6 +812,13 @@ unit Executor
             DEC ZP.PCL
             LDA # OpcodeType.CALLF
             STA [ZP.PC]
+            
+    #ifdef DEBUG
+            LDA #'R' Tools.COut(); LDA #'=' Tools.COut();
+            LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
+            LDA #':' Tools.COut(); LDA # OpcodeType.CALLF Tools.HOut();
+    #endif
+            
             SEC
             break;
         } // loop
@@ -768,6 +826,10 @@ unit Executor
     
     executeCallF()
     {
+    #ifdef DEBUG
+        LDA #'C' Tools.COut(); LDA #'A' Tools.COut(); LDA #'L' Tools.COut(); LDA #'L' Tools.COut(); LDA #'F' Tools.COut();
+    #endif
+        
         // Function call by <address>
         // PUSH PC
         // PUSH BP

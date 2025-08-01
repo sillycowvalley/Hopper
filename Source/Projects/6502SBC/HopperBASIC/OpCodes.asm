@@ -52,7 +52,11 @@ unit OpCodes
         PUSH0        = 0x16,  // Push INT 0 (very common literal, no operand)
         PUSH1        = 0x17,  // Push INT 1 (very common literal, no operand)
         
-        // Available: 0x18-0x3F (40 opcodes remaining in this group)
+        // Function frame management
+        ENTER        = 0x18,  // Enter function frame - push BP, SP->BP
+        
+        
+        // Available: 0x19-0x3F (40 opcodes remaining in this group)
         
         // === OPCODES WITH ONE BYTE OPERAND (0x40-0x7F) ===
         // Bits 7-6: 01 (one byte operand)
@@ -74,8 +78,6 @@ unit OpCodes
         // System calls
         SYSCALL      = 0x47,  // System call [function_id]
         
-        // Function frame management
-        ENTER        = 0x48,  // Enter function frame [local_count] - push BP, SP?BP, reserve locals
         
         // Control flow
         RETURN       = 0x49,  // Return from function (no return value)
@@ -154,6 +156,7 @@ unit OpCodes
     //     EQ              - Pop two values, push equality result
     //     RETURN          - Return from function
     //     DUP             - Duplicate top stack value
+    //     ENTER           - Enter function - setup stack frame
     //
     // **Group 1: One Byte Operand (0x40-0x7F)**
     //   [OPCODE][OPERAND]
@@ -167,7 +170,6 @@ unit OpCodes
     //     JUMPB 0x0A          - Jump forward 10 bytes
     //     JUMPB 0xF6          - Jump backward 10 bytes (signed)
     //     SYSCALL 0x01        - System call PRINT_STRING
-    //     ENTER 0x03          - Enter function frame with 3 local variable slots
     //
     // **Group 2: Two Byte Operands (0x80-0xBF)**
     //   [OPCODE][LSB][MSB]

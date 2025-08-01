@@ -542,8 +542,18 @@ unit Functions
     // fast unprotected version for CALLF
     JumpToOpCodes()
     {
+    #ifdef DEBUG
+        LDA #'J' Tools.COut(); LDA #'U' Tools.COut(); LDA #'M' Tools.COut(); LDA #'P' Tools.COut();
+        LDA #'@' Tools.COut();
+        LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
+    #endif
+        
         Stacks.PushPC();
         Stacks.PushBP();
+        
+    #ifdef DEBUG
+        LDA #'S' Tools.COut(); LDA #'T' Tools.COut(); LDA #'K' Tools.COut();
+    #endif
         
         // assume we are compiled and good
         Executor.FetchOperandWord();
@@ -551,15 +561,26 @@ unit Functions
         STA ZP.IDXL
         LDA Executor.executorOperandH
         STA ZP.IDXH
+    
+    #ifdef DEBUG
+        LDA #'N' Tools.COut(); LDA #'=' Tools.COut();
+        LDA ZP.IDXH Tools.HOut(); LDA ZP.IDXL Tools.HOut();
+    #endif
         
-        LDY #Objects.snOpcodes
+        LDY #Objects.snOpcodes  // This line was missing!
         LDA [ZP.IDX], Y
         STA ZP.PCL
         INY
         LDA [ZP.IDX], Y
         STA ZP.PCH
+    
+    #ifdef DEBUG
+        LDA #'P' Tools.COut(); LDA #'C' Tools.COut(); LDA #'=' Tools.COut();
+        LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
+    #endif
+        
         SEC
-    }        
+    }   
     
     
     Compile()
@@ -567,6 +588,12 @@ unit Functions
         PHA
         PHX
         PHY
+        
+        // Save main execution PC
+        LDA ZP.PCL
+        PHA
+        LDA ZP.PCH
+        PHA
         
         // Save current tokenizer state
         LDA ZP.TokenizerPosL
@@ -705,6 +732,12 @@ loop { }
         STA ZP.TokenizerPosH
         PLA
         STA ZP.TokenizerPosL
+        
+        // Restore main execution PC  
+        PLA
+        STA ZP.PCH
+        PLA
+        STA ZP.PCL
         
         PLY
         PLX
