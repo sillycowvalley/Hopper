@@ -362,6 +362,7 @@ unit Statement
                 case Tokens.INT:
                 case Tokens.WORD:
                 case Tokens.BIT:
+                case Tokens.BYTE:
                 {
                     executeVariableDeclaration();
                     break;
@@ -454,13 +455,18 @@ unit Statement
         
         // Evaluate the expression
         EvaluateExpression();
+        
+LDA #'A' Tools.COut();        // After expression
+LDA ZP.CurrentToken Tools.HOut();
+LDA #' ' Tools.COut();
+        
         Messages.CheckError();
         if (NC) { return; }
         
         // Top of stack now contains the result
         // For now, assume it's a number and print it
         Stacks.PopTop();  // Pop result into TOP, modifies X
-        Tools.PrintDecimalWord();
+        Tools.PrintVariableValue();
         
         // Print newline
         LDA #'\n'
@@ -883,8 +889,6 @@ unit Statement
             LDA ZP.CurrentToken
             STA stmtType
             
-            //Tools.HOut();
-        
             Tokenizer.NextToken();
             Messages.CheckError();
             if (NC) { break; } // error exit
@@ -1129,6 +1133,10 @@ unit Statement
                 case Tokens.BIT:
                 {
                     LDX #BasicType.BIT
+                }
+                case Tokens.BYTE:
+                {
+                    LDX #BasicType.BYTE
                 }
                 default:
                 {

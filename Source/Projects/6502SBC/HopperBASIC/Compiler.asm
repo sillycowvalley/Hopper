@@ -1381,10 +1381,14 @@ unit Compiler
                 EmitPushGlobal();
                 if (NC) { break; }
                 
-                // Get next token
-                Tokenizer.NextToken();
-                Messages.CheckError();
-                if (NC) { break; }
+                
+LDA #'V' Tools.COut();        // Variable case
+LDA ZP.CurrentToken Tools.HOut();
+LDA #'>' Tools.COut();
+// ... NextToken() call ...
+LDA ZP.CurrentToken Tools.HOut();
+LDA #' ' Tools.COut();
+                
             }
             
             SEC // Success

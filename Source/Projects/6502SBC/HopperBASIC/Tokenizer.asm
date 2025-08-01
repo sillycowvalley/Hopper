@@ -128,6 +128,7 @@ unit Tokenizer
         2, Tokens.IF, 'I', 'F',                    // Very frequent
         3, Tokens.INT, 'I', 'N', 'T',             // Very frequent  
         3, Tokens.BIT, 'B', 'I', 'T',             // Very frequent
+        4, Tokens.BYTE, 'B', 'Y', 'T', 'E',       // Very frequent
         3, Tokens.AND, 'A', 'N', 'D',             // Frequent
         3, Tokens.FOR, 'F', 'O', 'R',             // Frequent
         3, Tokens.END, 'E', 'N', 'D',             // Frequent
@@ -140,7 +141,6 @@ unit Tokenizer
         7, Tokens.ENDFUNC, 'E', 'N', 'D', 'F', 'U', 'N', 'C', // Moderate
         5, Tokens.FUNCS, 'F', 'U', 'N', 'C', 'S', // Console command
         2, Tokens.DO, 'D', 'O',                   // Less frequent
-        4, Tokens.BYTE, 'B', 'Y', 'T', 'E',       // Less frequent
         5, Tokens.FALSE, 'F', 'A', 'L', 'S', 'E', // Less frequent
         4, Tokens.CONT, 'C', 'O', 'N', 'T',       // Console command
         3, Tokens.BYE, 'B', 'Y', 'E',             // Console command
@@ -1666,17 +1666,26 @@ unit Tokenizer
         }
         
         // Set the type based on the value
-        BIT ZP.TOPH          // Check high bit
-        if (MI)
+        LDA ZP.TOPH
+        if (NZ)
         {
-            LDA #BasicType.WORD   // Large positive (32768-65535)
-            STA ZP.TOPT
+            // Value > 255
+            BIT ZP.TOPH          // Check high bit
+            if (MI)
+            {
+                LDA #BasicType.WORD   // Large positive (32768-65535)
+                STA ZP.TOPT
+            }
+            else
+            {
+                LDA #BasicType.INT    // Medium positive (256-32767)
+                STA ZP.TOPT       
+            }
         }
         else
         {
-         
-            LDA #BasicType.INT    // Medium positive (256-32767)
-            STA ZP.TOPT       
+            LDA #BasicType.BYTE   // Values 2-255 are BYTE
+            STA ZP.TOPT
         }
     }
     

@@ -563,6 +563,13 @@ unit Console
                 }
             }
             
+// Add this right before line 567 in Console.processTokens()
+// After executing statement, check what comes next
+LDA #'T' Tools.COut();        // Token check
+LDA ZP.CurrentToken Tools.HOut();
+LDA #' ' Tools.COut();
+           
+            
             // After executing statement, check what comes next
             LDA ZP.CurrentToken
             CMP #Tokens.EOL

@@ -25,45 +25,28 @@ unit Instructions
         loop
         {
             LDA ZP.NEXTT
-            CMP #BasicType.BIT
-            if (NZ)
-            {
-                // For non-BIT types, use general type compatibility checking
-                LDA #1  // Arithmetic operation mode
-                CheckTypeCompatibility();
-                break;
-            }
-            
-            // Special case for BIT type - only allows values 0 or 1
-            LDA ZP.TOPH
-            if (NZ)
-            {
-                CLC  // Incompatible
-                break;
-            }
-            
-            LDA ZP.TOPL
-            CMP #0
+            CMP #BasicType.BYTE
             if (Z)
             {
-                SEC  // Compatible (value is 0)
+                // Special case for BYTE type - only allows values 0-255
+                LDA ZP.TOPH
+                if (NZ)
+                {
+                    CLC  // Incompatible - value > 255
+                    break;
+                }
+                SEC  // Compatible - value 0-255
                 break;
             }
             
-            CMP #1
-            if (Z)
-            {
-                SEC  // Compatible (value is 1)
-                break;
-            }
-            
-            CLC  // Incompatible (value not 0 or 1)
+            // For all types (including BIT), use general type compatibility checking
+            LDA #1  // Arithmetic operation mode
+            CheckTypeCompatibility();
             break;
         }
         
         PLA
-    }
-    
+    }  
     
     // Check if two types are compatible for operations
     // Input: ZP.NEXTT = left operand type, ZP.TOPT = right operand type
@@ -179,7 +162,6 @@ unit Instructions
                 {
                     LDA #BasicType.INT
                     STA ZP.NEXTT
-                    
                     LDA ZP.ACCT
                     SEC  // Set C - compatible
                     break;
@@ -395,6 +377,13 @@ unit Instructions
                     break;
                 }
             } // INT vs WORD
+            
+            
+            
+            
+            
+            
+            
             
             // No other compatibility rules matched
             CLC  // Set NC - incompatible

@@ -13,12 +13,19 @@ program HopperBASIC
     uses "/Source/Runtime/6502/Stacks"
     
     uses "Messages"
+    
     uses "Tokenizer"
+    uses "FunctionDeclaration.asm"
+    uses "Statement"
     uses "Compiler"
+    
+    uses "Instructions"
+    uses "ComparisonInstructions"
     uses "Executor"
+    
     uses "Console"
     uses "Tools"
-    uses "Statement"
+    
     
     // Initialize the BASIC system
     InitializeBASIC()

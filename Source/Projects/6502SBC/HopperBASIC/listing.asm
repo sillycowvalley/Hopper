@@ -453,7 +453,7 @@ unit Listing
             
             // Get and print the value
             Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = type
-            Tools.PrintDecimalWord(); // Input: ZP.TOP = value, ZP.TOPT = type
+            Tools.PrintVariableValue(); // Input: ZP.TOP = value, ZP.TOPT = type
             
             // Print newline
             Tools.NL();
@@ -502,7 +502,7 @@ unit Listing
             
             // Get and print the value
             Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = type
-            Tools.PrintDecimalWord(); // Input: ZP.TOP = value, ZP.TOPT = type
+            Tools.PrintVariableValue(); // Input: ZP.TOP = value, ZP.TOPT = type
             
             // Print newline
             Tools.NL();

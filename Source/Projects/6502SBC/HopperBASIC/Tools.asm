@@ -35,15 +35,8 @@ unit Tools
             }
             case BasicType.BYTE:
             {
-                // BYTE doesn't have a keyword token, so print directly
-                LDA #'B'
-                Serial.WriteChar();
-                LDA #'Y'
-                Serial.WriteChar();
-                LDA #'T'
-                Serial.WriteChar();
-                LDA #'E'
-                Serial.WriteChar();
+                LDA #Tokens.BYTE
+                Tokenizer.PrintKeyword();
             }
             default:
             {
@@ -135,6 +128,40 @@ unit Tools
         LDA #'\n' 
         Serial.WriteChar();
         PLP  // Pull processor status (restore carry flag)
+    }
+    
+    // Print variable value with proper type formatting
+    // Input: ZP.TOP = value, ZP.TOPT = type
+    // Output: Value printed to serial (TRUE/FALSE for BIT, numeric for others)
+    // Preserves: Everything
+    PrintVariableValue()
+    {
+        PHA
+        
+        // Special handling for BIT type - print TRUE/FALSE instead of 1/0
+        LDA ZP.TOPT
+        CMP #BasicType.BIT
+        if (Z)
+        {
+            LDA ZP.TOPL
+            CMP #0
+            if (Z)
+            {
+                LDA #Tokens.FALSE
+                Tokenizer.PrintKeyword();
+            }
+            else
+            {
+                LDA #Tokens.TRUE
+                Tokenizer.PrintKeyword();
+            }
+        }
+        else
+        {
+            PrintDecimalWord(); // Input: ZP.TOP = value, ZP.TOPT = type
+        }
+        
+        PLA
     }
     
     // Print 16-bit decimal number with no leading zeros

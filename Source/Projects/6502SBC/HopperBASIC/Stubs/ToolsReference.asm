@@ -46,6 +46,12 @@ unit Tools
     // Preserves: Everything
     NL()
     
+    // Print variable value with proper type formatting
+    // Input: ZP.TOP = value, ZP.TOPT = type
+    // Output: Value printed to serial (TRUE/FALSE for BIT, numeric for others)
+    // Preserves: Everything
+    PrintVariableValue()
+    
     // Print 16-bit decimal number with no leading zeros
     // Input: ZP.TOP = 16-bit number to print (0-65535)
     //        ZP.TOPT = type (for signed/unsigned determination)
