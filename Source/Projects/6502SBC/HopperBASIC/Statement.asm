@@ -891,7 +891,7 @@ unit Statement
             
             // Check that we have an identifier
             LDA ZP.CurrentToken
-            CMP #Tokens.IDENTIFIER
+            CMP # Tokens.IDENTIFIER
             if (NZ)
             {
                 Tokenizer.IsKeyword();
@@ -993,6 +993,8 @@ unit Statement
                 Tokenizer.NextToken();
                 Messages.CheckError();
                 if (NC) { break; } // error exit
+                
+                STZ ZP.TOPT // set RHS type to 0 if there is no initializer
                 
                 // Check for optional initialization
                 LDX ZP.CurrentToken
@@ -1161,19 +1163,29 @@ unit Statement
             PHA
             LDA ZP.NEXTH
             PHA
-            
-            LDA ZP.NEXTL
-            STA ZP.TOPL
-            LDA ZP.NEXTH
-            STA ZP.TOPH
-            LDA ZP.NEXTT
-            STA ZP.TOPT
+
+LDA #'[' Tools.COut(); LDA ZP.TOPT Tools.HOut(); LDA #']' Tools.COut(); 
             
             STX ZP.NEXTT // LHS type
             
-            // RHS in TOP
-            // LHS type in NEXTT
-            CheckRHSTypeCompatibility();
+            LDA ZP.TOPT // did we have "= <expression>"?
+            if (NZ)
+            {
+                LDA ZP.NEXTL
+                STA ZP.TOPL
+                LDA ZP.NEXTH
+                STA ZP.TOPH
+                LDA ZP.NEXTT
+                STA ZP.TOPT
+                
+                // RHS in TOP
+                // LHS type in NEXTT
+                CheckRHSTypeCompatibility();
+            }
+            else
+            {
+                SEC // absent RHS is ok, default to INT -> 0, BIT -> FALSE, STRING -> empty
+            }
             
             PLA
             STA ZP.NEXTH

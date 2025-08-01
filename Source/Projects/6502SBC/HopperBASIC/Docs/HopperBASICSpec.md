@@ -691,7 +691,7 @@ Two Byte Operands (0x80-0xBF):
 ### String Architecture
 
 #### STRING Type Implementation
-- **BasicType.STRING = 0x13**: Immutable string constant type
+- **BasicType.STRING = 0x0F**: Immutable string constant type
 - **Token buffer storage**: String literals stored in tokenized form
 - **16-bit pointers**: STRING values are pointers to null-terminated strings
 - **PUSHSTRING opcode**: Emit string literals as 16-bit pointers to token buffer
@@ -721,7 +721,7 @@ Two Byte Operands (0x80-0xBF):
 Offset 0-1: next pointer (managed by Table layer)
 Offset 2:   symbolType|dataType (packed byte)
             High nibble: SymbolType (VARIABLE=1, CONSTANT=2)
-            Low nibble: BasicType (INT=2, WORD=4, BIT=6, BYTE=3, STRING=0x13)
+            Low nibble: BasicType (INT=2, WORD=4, BIT=6, BYTE=3, STRING=0x0F)
 Offset 3-4: tokens pointer (16-bit pointer to initialization token stream)
 Offset 5-6: value (16-bit current value or string pointer)
 Offset 7+:  null-terminated name string
@@ -819,7 +819,7 @@ Offset 2+:  null-terminated argument name string
 6. **Executor System** - Execute compiled opcodes (referenced by Compiler but not implemented)
 
 ### ❌ Missing Components for String Support:
-1. **STRING Type**: Add BasicType.STRING = 0x13 to type system
+1. **STRING Type**: Add BasicType.STRING = 0x0F to type system
 2. **String Tokenization**: Enable `"string"` literal scanning in tokenizer
 3. **CONST STRING**: String constant declaration support
 4. **STRING Variables**: Mutable string variable declaration support
