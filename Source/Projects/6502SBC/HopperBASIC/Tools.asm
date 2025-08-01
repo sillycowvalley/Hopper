@@ -5,6 +5,26 @@ unit Tools
     // No accidental side effects or register corruption
  
     uses "BasicTypes"
+    
+    InvalidOperatorError()
+    {
+        LDA #(Messages.InvalidOperator % 256)
+        STA ZP.LastErrorL
+        LDA #(Messages.InvalidOperator / 256)
+        STA ZP.LastErrorH
+        BIT ZP.EmulatorPCL
+        CLC
+    }
+    
+    TypeMismatchError()
+    {
+        LDA #(Messages.TypeMismatch % 256)
+        STA ZP.LastErrorL
+        LDA #(Messages.TypeMismatch / 256)
+        STA ZP.LastErrorH
+        BIT ZP.EmulatorPCL
+        CLC
+    }
 
        
     // Print BasicType enum value as readable string
@@ -166,11 +186,7 @@ unit Tools
             CMP #BasicType.STRING
             if (Z)
             {
-                LDA #'"'
-                Serial.WriteChar();
                 PrintStringTOP();  // Print the actual string content
-                LDA #'"'
-                Serial.WriteChar();
             }
             else
             {

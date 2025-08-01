@@ -1164,23 +1164,23 @@ unit Tokenizer
                     LDA ZP.TokenBufferLengthH
                     STA ZP.TokenLiteralPosH
                     
-                    // Skip opening quote
-                    incrementTokenizerPos();
+                    INX // Skip opening quote
                     
                     loop // Scan string content until closing quote
                     {
-                        LDA [ZP.IDX], Y
+                        CPX ZP.BasicInputLength  // Check input buffer bounds
                         if (Z) // End of input without closing quote
                         {
-                            LDA #(Messages.SyntaxError % 256)
+                            LDA #(Messages.ExpectedQuote % 256)
                             STA ZP.LastErrorL
-                            LDA #(Messages.SyntaxError / 256)
+                            LDA #(Messages.ExpectedQuote / 256)
                             STA ZP.LastErrorH
                             BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                             CLC
                             return;
                         }
                         
+                        LDA Address.BasicInputBuffer, X  // Read from input buffer
                         CMP #'"'
                         if (Z) // Found closing quote
                         {
@@ -1190,20 +1190,18 @@ unit Tokenizer
                             Messages.CheckError();
                             if (NC) { return; }
                             
-                            incrementTokenizerPos(); // Skip closing quote
+                            INX  // Skip closing quote in input buffer
                             break;
                         }
                         
-                        // Add character to string content
+                        // Add character to string content in token buffer
                         appendToTokenBuffer();
                         Messages.CheckError();
                         if (NC) { return; }
                         
-                        incrementTokenizerPos();
-                    }
-                    
+                        INX  // Advance input buffer position
+                    }           
                     SEC  // Success
-                    return;
                 }
                 case '\'':
                 {

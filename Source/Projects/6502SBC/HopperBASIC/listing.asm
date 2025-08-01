@@ -433,6 +433,7 @@ unit Listing
             // Get packed type and extract data type
             LDA ZP.ACCT
             AND #0x0F
+            STA ZP.ACCT
             Tools.PrintType(); // Input: A = dataType
             
             // Print space
@@ -451,9 +452,25 @@ unit Listing
             LDA #' '
             Serial.WriteChar();
             
+            LDA ZP.ACCT
+            CMP #BasicType.STRING
+            if (Z)
+            {
+                LDA #'"'
+                Serial.WriteChar();
+            }
+            
             // Get and print the value
             Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = type
             Tools.PrintVariableValue(); // Input: ZP.TOP = value, ZP.TOPT = type
+            
+            LDA ZP.ACCT
+            CMP #BasicType.STRING
+            if (Z)
+            {
+                LDA #'"'
+                Serial.WriteChar();
+            }
             
             // Print newline
             Tools.NL();

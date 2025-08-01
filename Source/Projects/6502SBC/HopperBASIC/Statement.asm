@@ -1178,8 +1178,6 @@ unit Statement
             LDA ZP.NEXTH
             PHA
 
-LDA #'[' Tools.COut(); LDA ZP.TOPT Tools.HOut(); LDA #']' Tools.COut(); 
-            
             STX ZP.NEXTT // LHS type
             
             LDA ZP.TOPT // did we have "= <expression>"?

@@ -124,7 +124,7 @@ unit ComparisonInstructions
         PLA
     }
 
-    // Check if BIT types are allowed for comparison operation
+    // Check if BIT types are allowed for comparison operation (same for STRING types)
     // Input: ZP.NEXTT and ZP.TOPT (operand types), A = permission level (1=not allowed, 2=allowed if both BIT)
     // Output: C set if allowed, C clear if not allowed
     checkBITTypes()
@@ -145,6 +145,21 @@ unit ComparisonInstructions
                 } 
                 LDA ZP.TOPT
                 CMP # BasicType.BIT
+                if (Z)
+                {   
+                    CLC
+                    break;
+                }
+                SEC
+                LDA ZP.NEXTT
+                CMP # BasicType.STRING
+                if (Z)
+                {
+                    CLC
+                    break;    
+                } 
+                LDA ZP.TOPT
+                CMP # BasicType.STRING
                 if (Z)
                 {   
                     CLC
@@ -175,6 +190,30 @@ unit ComparisonInstructions
                 {
                     LDA ZP.NEXTT
                     CMP # BasicType.BIT    
+                    if (NZ)
+                    {
+                        CLC   
+                        break;
+                    }
+                }
+                LDA ZP.NEXTT
+                CMP # BasicType.STRING
+                if (Z)
+                {
+                    LDA ZP.TOPT
+                    CMP # BasicType.STRING    
+                    if (NZ)
+                    {
+                        CLC   
+                        break;
+                    }
+                }
+                LDA ZP.TOPT
+                CMP # BasicType.STRING
+                if (Z)
+                {
+                    LDA ZP.NEXTT
+                    CMP # BasicType.STRING    
                     if (NZ)
                     {
                         CLC   
@@ -615,18 +654,29 @@ unit ComparisonInstructions
             Stacks.PushX();
             SEC
             break;
-        }
+        } // loop
         
         if (NC)
         {
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            
-            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-            
-            CLC
+            loop
+            {
+                // Check if it's an unsupported type (BIT or STRING)
+                LDA ZP.NEXTT
+                CMP #BasicType.BIT
+                if (Z) { InvalidOperatorError(); BIT ZP.EmulatorPCL break; }
+                CMP #BasicType.STRING  
+                if (Z) { InvalidOperatorError(); BIT ZP.EmulatorPCL break; }
+                
+                LDA ZP.TOPT
+                CMP #BasicType.BIT
+                if (Z) { InvalidOperatorError(); BIT ZP.EmulatorPCL break; }
+                CMP #BasicType.STRING
+                if (Z) { InvalidOperatorError(); BIT ZP.EmulatorPCL break; }
+                
+                // Otherwise it's a numeric type mismatch
+                TypeMismatchError();
+                break;
+            }
         }
         
         PLY
@@ -711,14 +761,25 @@ unit ComparisonInstructions
         
         if (NC)
         {
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            
-            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-            
-            CLC
+            loop
+            {
+                // Check if it's an unsupported type (BIT or STRING)
+                LDA ZP.NEXTT
+                CMP #BasicType.BIT
+                if (Z) { InvalidOperatorError(); BIT ZP.EmulatorPCL break; }
+                CMP #BasicType.STRING  
+                if (Z) { InvalidOperatorError(); BIT ZP.EmulatorPCL break; }
+                
+                LDA ZP.TOPT
+                CMP #BasicType.BIT
+                if (Z) { InvalidOperatorError(); BIT ZP.EmulatorPCL break; }
+                CMP #BasicType.STRING
+                if (Z) { InvalidOperatorError(); BIT ZP.EmulatorPCL break; }
+                
+                // Otherwise it's a numeric type mismatch
+                TypeMismatchError();
+                break;
+            }
         }
         
         PLY
@@ -803,14 +864,25 @@ unit ComparisonInstructions
         
         if (NC)
         {
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            
-            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-            
-            CLC
+            loop
+            {
+                // Check if it's an unsupported type (BIT or STRING)
+                LDA ZP.NEXTT
+                CMP #BasicType.BIT
+                if (Z) { InvalidOperatorError(); BIT ZP.EmulatorPCL break; }
+                CMP #BasicType.STRING  
+                if (Z) { InvalidOperatorError(); BIT ZP.EmulatorPCL break; }
+                
+                LDA ZP.TOPT
+                CMP #BasicType.BIT
+                if (Z) { InvalidOperatorError(); BIT ZP.EmulatorPCL break; }
+                CMP #BasicType.STRING
+                if (Z) { InvalidOperatorError(); BIT ZP.EmulatorPCL break; }
+                
+                // Otherwise it's a numeric type mismatch
+                TypeMismatchError();
+                break;
+            }
         }
         
         PLY
@@ -896,14 +968,25 @@ unit ComparisonInstructions
         
         if (NC)
         {
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            
-            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-            
-            CLC
+            loop
+            {
+                // Check if it's an unsupported type (BIT or STRING)
+                LDA ZP.NEXTT
+                CMP #BasicType.BIT
+                if (Z) { InvalidOperatorError(); BIT ZP.EmulatorPCL break; }
+                CMP #BasicType.STRING  
+                if (Z) { InvalidOperatorError(); BIT ZP.EmulatorPCL break; }
+                
+                LDA ZP.TOPT
+                CMP #BasicType.BIT
+                if (Z) { InvalidOperatorError(); BIT ZP.EmulatorPCL break; }
+                CMP #BasicType.STRING
+                if (Z) { InvalidOperatorError(); BIT ZP.EmulatorPCL break; }
+                
+                // Otherwise it's a numeric type mismatch
+                TypeMismatchError();
+                break;
+            }
         }
         
         PLY

@@ -444,12 +444,7 @@ unit Compiler
             }
             default:
             {
-                LDA #(Messages.InvalidOperator % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.InvalidOperator / 256)
-                STA ZP.LastErrorH
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                CLC
+                InvalidOperatorError(); BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 return;
             }
         }
@@ -549,12 +544,7 @@ unit Compiler
             }
             default:
             {
-                LDA #(Messages.InvalidOperator % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.InvalidOperator / 256)
-                STA ZP.LastErrorH
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                CLC
+                InvalidOperatorError(); BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                 return;
             }
         }

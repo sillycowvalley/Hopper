@@ -43,6 +43,7 @@ unit Messages
     const string BufferOverflow = "BUFFER OVERFLOW";
     const string ExpectedRightParen = ") EXPECTED";
     const string ExpectedLeftParen = "( EXPECTED";
+    const string ExpectedQuote = "QUOTE EXPECTED";
     const string ExpectedExpression = "EXPRESSION EXPECTED";
     const string InvalidBitValue = "INVALID BIT VALUE";
     const string IllegalInFunctionMode = "ILLEGAL IN FUNCTION MODE";
