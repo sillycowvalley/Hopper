@@ -11,21 +11,21 @@ unit Compiler
     // All public methods preserve caller state except for documented outputs
     // Buffer management and opcode emission with proper bounds checking
     
-    // Private Compiler layer storage - BasicProcessBuffer3 (32 bytes at 0x09E0-0x09FF)
-    const uint compilerSavedTokenPosL = Address.BasicProcessBuffer3;      // 0x09E0: 1 byte - saved tokenizer pos low
-    const uint compilerSavedTokenPosH = Address.BasicProcessBuffer3 + 1;  // 0x09E1: 1 byte - saved tokenizer pos high
-    const uint compilerLiteralOffsetL = Address.BasicProcessBuffer3 + 2;  // 0x09E2: 1 byte - literal offset low
-    const uint compilerLiteralOffsetH = Address.BasicProcessBuffer3 + 3;  // 0x09E3: 1 byte - literal offset high
-    const uint compilerOpCode         = Address.BasicProcessBuffer3 + 4;  // 0x09E4: 1 byte - opcode to emit
-    const uint compilerOperand1       = Address.BasicProcessBuffer3 + 5;  // 0x09E5: 1 byte - first operand
-    const uint compilerOperand2       = Address.BasicProcessBuffer3 + 6;  // 0x09E6: 1 byte - second operand
-    const uint compilerLastOpcode     = Address.BasicProcessBuffer3 + 7;  // 0x09E7: 1 byte - last opcode emitted
-    const uint compilerFuncArgs       = Address.BasicProcessBuffer3 + 8;  // 0x09E8: 1 byte - number of arguments for current FUNC being compiled
-    const uint compilerFuncLocals     = Address.BasicProcessBuffer3 + 9;  // 0x09E9: 1 byte - number of locals for current FUNC being compiled
-    const uint compilerLiteralBaseL   = Address.BasicProcessBuffer3 + 10; // 0x09EA: 1 byte - literal base address low
-    const uint compilerLiteralBaseH   = Address.BasicProcessBuffer3 + 11; // 0x09EB: 1 byte - literal base address high
+    // Private Compiler layer storage - BasicCompilerWorkspace (32 bytes)
+    const uint compilerSavedTokenPosL = Address.BasicCompilerWorkspace;      // 1 byte - saved tokenizer pos low
+    const uint compilerSavedTokenPosH = Address.BasicCompilerWorkspace + 1;  // 1 byte - saved tokenizer pos high
+    const uint compilerLiteralOffsetL = Address.BasicCompilerWorkspace + 2;  // 1 byte - literal offset low
+    const uint compilerLiteralOffsetH = Address.BasicCompilerWorkspace + 3;  // 1 byte - literal offset high
+    const uint compilerOpCode         = Address.BasicCompilerWorkspace + 4;  // 1 byte - opcode to emit
+    const uint compilerOperand1       = Address.BasicCompilerWorkspace + 5;  // 1 byte - first operand
+    const uint compilerOperand2       = Address.BasicCompilerWorkspace + 6;  // 1 byte - second operand
+    const uint compilerLastOpcode     = Address.BasicCompilerWorkspace + 7;  // 1 byte - last opcode emitted
+    const uint compilerFuncArgs       = Address.BasicCompilerWorkspace + 8;  // 1 byte - number of arguments for current FUNC being compiled
+    const uint compilerFuncLocals     = Address.BasicCompilerWorkspace + 9;  // 1 byte - number of locals for current FUNC being compiled
+    const uint compilerLiteralBaseL   = Address.BasicCompilerWorkspace + 10; // 1 byte - literal base address low
+    const uint compilerLiteralBaseH   = Address.BasicCompilerWorkspace + 11; // 1 byte - literal base address high
 
-    // 20 bytes available for future compiler needs (0x09EC-0x09FF)
+    
     
     // Initialize the opcode buffer for compilation
     // Output: Opcode buffer ready for emission
@@ -1925,7 +1925,7 @@ unit Compiler
     // Output: Statement compiled to opcodes
     compileIdentifierStatement()
     {
-        // TODO: Implement assignment and function call compilation
+         // TODO: Implement assignment and function call compilation
         LDA #(Messages.NotImplemented % 256)
         STA ZP.LastErrorL
         LDA #(Messages.NotImplemented / 256)

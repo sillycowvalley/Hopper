@@ -705,8 +705,6 @@ unit Functions
             
             if (NC) { break; }
             
-            Tools.XOut();
-                                   
             // Copy opcodes from BasicOpcodeBuffer to permanent function storage
             copyOpcodesToFunction();
             Messages.CheckError();

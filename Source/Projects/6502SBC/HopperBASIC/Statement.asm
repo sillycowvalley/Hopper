@@ -12,22 +12,22 @@ unit Statement
     
     friend FunctionDeclaration;
     
-    // Private Statement layer storage - BasicProcessBuffer2 (32 bytes at 0x09C0-0x09DF)
-    const uint stmtNamePtr     = Address.BasicProcessBuffer2;      // 0x09C0: 2 bytes - identifier name pointer
-    const uint stmtValue       = Address.BasicProcessBuffer2 + 2;  // 0x09C2: 2 bytes - initial/evaluated value
-    const uint stmtTokensPtr   = Address.BasicProcessBuffer2 + 4;  // 0x09C4: 2 bytes - tokens pointer  
-    const uint stmtTokPos      = Address.BasicProcessBuffer2 + 8;  // 0x09C8: 2 bytes - saved tokenizer position
-    const uint stmtTokLen      = Address.BasicProcessBuffer2 + 10; // 0x09CA: 2 bytes - token stream length
-    const uint stmtSymbol      = Address.BasicProcessBuffer2 + 12; // 0x09CC: 1 byte  - symbol information
-    const uint stmtType        = Address.BasicProcessBuffer2 + 13; // 0x09CD: 1 byte  - type information
-    const uint stmtIsConstant  = Address.BasicProcessBuffer2 + 14; // 0x09CE: 1 byte  - current expression is const
-    const uint stmtObjectPtr   = Address.BasicProcessBuffer2 + 15; // 0x09CF: 2 bytes - object node pointer
-    const uint stmtStringPtr   = Address.BasicProcessBuffer2 + 17; // 0x09CF: 2 bytes - string memory pointer
+    // Private Statement layer storage - BasicStatementWorkspace (32 bytes)
+    const uint stmtNamePtr     = Address.BasicStatementWorkspace;      // 2 bytes - identifier name pointer
+    const uint stmtValue       = Address.BasicStatementWorkspace + 2;  // 2 bytes - initial/evaluated value
+    const uint stmtTokensPtr   = Address.BasicStatementWorkspace + 4;  // 2 bytes - tokens pointer  
+    const uint stmtTokPos      = Address.BasicStatementWorkspace + 8;  // 2 bytes - saved tokenizer position
+    const uint stmtTokLen      = Address.BasicStatementWorkspace + 10; // 2 bytes - token stream length
+    const uint stmtSymbol      = Address.BasicStatementWorkspace + 12; // 1 byte  - symbol information
+    const uint stmtType        = Address.BasicStatementWorkspace + 13; // 1 byte  - type information
+    const uint stmtIsConstant  = Address.BasicStatementWorkspace + 14; // 1 byte  - current expression is const
+    const uint stmtObjectPtr   = Address.BasicStatementWorkspace + 15; // 2 bytes - object node pointer
+    const uint stmtStringPtr   = Address.BasicStatementWorkspace + 17; // 2 bytes - string memory pointer
     
-    const uint funcCaptureMode       = Address.BasicProcessBuffer2 + 19; // 0x09D1: 1 byte - console mode
-    const uint funcCaptureStartPos   = Address.BasicProcessBuffer2 + 20; // 0x09D2: 2 bytes - start position in token buffer
-    const uint funcOriginalLength    = Address.BasicProcessBuffer2 + 22; // 0x09D4: 2 bytes - original buffer length when capture started
-    // 10 bytes still available (0x09D8-0x09DF)
+    const uint funcCaptureMode       = Address.BasicStatementWorkspace + 19; // 1 byte - console mode
+    const uint funcCaptureStartPos   = Address.BasicStatementWorkspace + 20; // 2 bytes - start position in token buffer
+    const uint funcOriginalLength    = Address.BasicStatementWorkspace + 22; // 2 bytes - original buffer length when capture started
+    
     
     flags CaptureMode
     {
@@ -664,11 +664,6 @@ unit Statement
                     EvaluateExpression(); // This will handle the function call compilation
                     Messages.CheckError();
                     if (NC) { break; }
-                    
-                    // Function call executed via opcodes - result may be on stack
-                    // For Level 1, we'll just discard any return value
-                    // TODO: In future, handle return values appropriately
-                    
                     SEC // Success
                     break;
                 }
@@ -709,6 +704,7 @@ unit Statement
                     
                     // Evaluate the expression on the right side
                     EvaluateExpression();
+                    
                     Messages.CheckError();
                     if (NC) { break; }
                     

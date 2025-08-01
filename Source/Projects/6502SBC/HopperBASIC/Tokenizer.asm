@@ -202,7 +202,7 @@ unit Tokenizer
         
         
         // Choose table based on first character
-        LDA Address.BasicProcessBuffer1
+        LDA Address.BasicProcessBuffer
         CMP #'M'
         if (C)  // >= 'M', use M-Z table
         {
@@ -235,7 +235,7 @@ unit Tokenizer
             LDX #0  // Character index in our identifier
             loop
             {
-                LDA Address.BasicProcessBuffer1, X  // Get char from our identifier
+                LDA Address.BasicProcessBuffer, X  // Get char from our identifier
                 if (Z)  // Hit null terminator in our identifier
                 {
                     // Check if we've matched the full keyword length
@@ -1323,11 +1323,11 @@ unit Tokenizer
                             SEC
                             SBC #('a'-'A')  // Convert to uppercase
                         }
-                        STA Address.BasicProcessBuffer1, Y  // FIXED: Use Y for working buffer
+                        STA Address.BasicProcessBuffer, Y  // FIXED: Use Y for working buffer
                         
                         INX  // Advance input position
                         INY  // FIXED: Advance working buffer index separately
-                        CPY #Limits.BasicProcessBuffer1Length
+                        CPY #Limits.BasicProcessBufferLength
                         if (Z) 
                         { 
                             LDA #(Messages.SyntaxError % 256)
@@ -1344,7 +1344,7 @@ unit Tokenizer
                     
                     // Add null terminator to working buffer
                     LDA #0
-                    STA Address.BasicProcessBuffer1, Y  // FIXED: Use Y for working buffer
+                    STA Address.BasicProcessBuffer, Y  // FIXED: Use Y for working buffer
                     
                     // Check if it's a keyword
                     findKeyword();
@@ -1401,7 +1401,7 @@ unit Tokenizer
                         LDY #0  // Reset Y for copying
                         loop
                         {
-                            LDA Address.BasicProcessBuffer1, Y
+                            LDA Address.BasicProcessBuffer, Y
                             STA ZP.ACCL 
                             appendToTokenBuffer();
                             Messages.CheckError();

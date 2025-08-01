@@ -14,13 +14,15 @@ unit Address
     
 #if defined(HOPPER_BASIC)
     // HopperBASIC buffers
-    const uint BasicInputBuffer       = 0x0900;  // 128 bytes - raw user input
+    const uint BasicInputBuffer        = 0x0900;  // 128 bytes - raw user input
     
-    const uint BasicProcessBuffer1    = 0x0980;  // 64 bytes - variable/general workspace
+    const uint BasicCompilerWorkspace  = 0x0980;  // 32 bytes - compiler.asm
     
-    const uint BasicProcessBuffer2    = 0x09C0;  // 32 bytes - secondary workspace
+    const uint BasicStatementWorkspace = 0x09A0;  // 32 bytes - statemet.asm
     
-    const uint BasicProcessBuffer3    = 0x09E0;  // 32 bytes - tertiary workspace  
+    const uint BasicExecutorWorkspace  = 0x09C0;  // 32 bytes - executor.asm  
+    
+    const uint BasicProcessBuffer      = 0x09E0;  // 32 bytes - used to convert string literals to uppercase in tokenizer.asm
     
     const uint BasicTokenizerBuffer   = 0x0A00;  // 512 bytes - tokenized line storage
     

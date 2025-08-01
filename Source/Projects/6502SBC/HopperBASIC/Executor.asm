@@ -11,16 +11,15 @@ unit Executor
     
     friend Functions;
     
-    // Memory layout for executor state - BasicProcessBuffer3 (0x09E9-0x09FF, 23 bytes)
-    const uint executorStartAddrL    = Address.BasicProcessBuffer3 + 9;   // 0x09E9: opcode buffer start low
-    const uint executorStartAddrH    = Address.BasicProcessBuffer3 + 10;  // 0x09EA: opcode buffer start high
-    const uint executorEndAddrL      = Address.BasicProcessBuffer3 + 11;  // 0x09EB: opcode buffer end low
-    const uint executorEndAddrH      = Address.BasicProcessBuffer3 + 12;  // 0x09EC: opcode buffer end high
-    const uint executorOperandL      = Address.BasicProcessBuffer3 + 13;  // 0x09ED: current operand low
-    const uint executorOperandH      = Address.BasicProcessBuffer3 + 14;  // 0x09EE: current operand high
-    const uint executorTokenAddrL    = Address.BasicProcessBuffer3 + 15;  // 0x09EF: token fetch addr low
-    const uint executorTokenAddrH    = Address.BasicProcessBuffer3 + 16;  // 0x09F0: token fetch addr high
-    // 15 bytes remaining for future executor needs (0x09F1-0x09FF)
+    // Memory layout for executor state - BasicExecutorWorkspace (32 bytes)
+    const uint executorStartAddrL    = Address.BasicExecutorWorkspace + 9;   // opcode buffer start low
+    const uint executorStartAddrH    = Address.BasicExecutorWorkspace + 10;  // opcode buffer start high
+    const uint executorEndAddrL      = Address.BasicExecutorWorkspace + 11;  // opcode buffer end low
+    const uint executorEndAddrH      = Address.BasicExecutorWorkspace + 12;  // opcode buffer end high
+    const uint executorOperandL      = Address.BasicExecutorWorkspace + 13;  // current operand low
+    const uint executorOperandH      = Address.BasicExecutorWorkspace + 14;  // current operand high
+    const uint executorTokenAddrL    = Address.BasicExecutorWorkspace + 15;  // token fetch addr low
+    const uint executorTokenAddrH    = Address.BasicExecutorWorkspace + 16;  // token fetch addr high
     
     
     // Main entry point - Execute compiled opcodes
@@ -61,6 +60,7 @@ unit Executor
                     CMP executorEndAddrH
                     if (Z) 
                     { 
+                        // REPL uses this exit
                         SEC // Success - reached end
                         break; 
                     }

@@ -16,9 +16,6 @@ unit Console
     
     uses "Listing"
     
-    // Function capture mode storage - using Statement.asm BasicProcessBuffer2
-    const uint funcCaptureMode = Address.BasicProcessBuffer2 + 17; // 0x09D1: 1 byte - console mode
-    
     // Error handler for commands in function mode
     FunctionModeError()
     {

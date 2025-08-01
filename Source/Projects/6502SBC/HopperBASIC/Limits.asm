@@ -6,7 +6,8 @@ unit Limits
     const uint BasicOpCodeBufferLength = 512;    // JITted OpCode storage (16-bit size)
     
     // Working buffer sizes (all in page 0x09 after 128-byte input buffer)
-    const byte BasicProcessBuffer1Length = 64;   // 0x0980-0x09BF
-    const byte BasicProcessBuffer2Length = 32;   // 0x09C0-0x09DF  
-    const byte BasicProcessBuffer3Length = 32;   // 0x09E0-0x09FF
+    const byte BasicCompilerWorkspaceLength = 32;  // 0x0980-0x099F - compiler
+    const byte BasicStatementWorkspaceLength = 32; // 0x09A0-0x09BF - statement
+    const byte BasicExecutorWorkspaceLength = 32;  // 0x09C0-0x09DF - executor
+    const byte BasicProcessBufferLength = 32;      // 0x09E0-0x09FF - tokenizer (uppercasing)
 }
