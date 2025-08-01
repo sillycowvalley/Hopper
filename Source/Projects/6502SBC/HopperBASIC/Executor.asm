@@ -359,7 +359,7 @@ unit Executor
             {
                 executePushByte();
             }
-            case OpCodes.PUSHCSTRING:
+            case OpcodeType.PUSHCSTRING:
             {
                 executePushCString();
             }

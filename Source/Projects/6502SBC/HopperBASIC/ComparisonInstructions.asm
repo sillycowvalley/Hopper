@@ -204,68 +204,78 @@ unit ComparisonInstructions
             // Pop two operands
             Stacks.PopTopNext();
             
-            LDX #0          // Assume false
+            LDX #0          // Assume false (not equal)
             
-            // Check for STRING types first
+            // Handle STRING type combinations
             LDA ZP.NEXTT
             CMP #BasicType.STRING
             if (Z)
             {
+                // Left operand is STRING
                 LDA ZP.TOPT
                 CMP #BasicType.STRING
                 if (Z)
                 {
-                    // Both are STRING - compare them
-                    Tools.StringCompare(); // Now includes pointer optimization
+                    // Both operands are STRING - compare string content
+                    Tools.StringCompare(); // Includes pointer equality optimization
                     if (C)
                     {
-                        LDX #1 // Strings match
+                        LDX #1 // Strings are equal
                     }
-                    // continue to PushX at end of loop
+                    // Continue to value comparison section (will reach PushX)
                 }
                 else
                 {
                     // STRING vs non-STRING = type mismatch
                     CLC
-                    break; // fall through to type mismatch error
+                    break;
                 }
             }
             else
             {
+                // Left operand is not STRING, check right operand
                 LDA ZP.TOPT
                 CMP #BasicType.STRING
                 if (Z)
                 {
                     // non-STRING vs STRING = type mismatch
                     CLC
-                    break; // fall through to type mismatch error
+                    break;
                 }
             }
             
-            LDA #2 // allowed
+            // Handle numeric type combinations (INT, WORD, BIT, BYTE)
+            LDA #2 // BIT types allowed for equality comparison
             checkBITTypes();
             if (NC)
             {
-                break; // fall through to type mismatch error
+                CLC
+                break; // BIT type mismatch
             }            
             
-            // MSB
+            // Check for cross-type compatibility (INT vs WORD/BYTE)
             LDA ZP.TOPT
             CMP ZP.NEXTT
             if (NZ)
             {
-                // Never BIT vs INT|WORD|BYTE since checkBITTypes assured that either both or neither are BIT
-                // Never STRING vs INT|WORD|BYTE since STRING is dealt with above
-                // So, only checking INT vs WORD|BYTE here
+                // Different numeric types - handle special cases
+                // BIT vs INT|WORD|BYTE already rejected by checkBITTypes above
+                // STRING vs numeric already handled above
+                // Only INT vs WORD|BYTE combinations remain
+                
                 LDA ZP.NEXTT
                 CMP #BasicType.INT
                 if (Z)
                 {
+                    // Left is INT, right is WORD/BYTE
                     BIT ZP.NEXTH
                     if (MI)
                     {
-                        LDX #0 // false (NEXT != TOP) since -ve INT cannot be same as any WORD|BYTE
-                        break; // continue to PushX at end of loop
+                        // Negative INT cannot equal positive WORD/BYTE
+                        // LDX already 0 (false)
+                        Stacks.PushX();
+                        SEC
+                        break;
                     }
                 }
                 
@@ -273,30 +283,32 @@ unit ComparisonInstructions
                 CMP #BasicType.INT
                 if (Z)
                 {
+                    // Right is INT, left is WORD/BYTE  
                     BIT ZP.TOPH
                     if (MI)
                     {
-                        LDX #0 // false (NEXT != TOP) since -ve INT cannot be same as any WORD|BYTE
-                        break; // continue to PushX at end of loop
+                        // Negative INT cannot equal positive WORD/BYTE
+                        // LDX already 0 (false)
+                        Stacks.PushX();
+                        SEC
+                        break;
                     }
                 }
-                // continue to PushX at end of loop
             }
             
-            // LSB
+            // Compare actual 16-bit values
             LDA ZP.TOPL
             CMP ZP.NEXTL
             if (Z)
             {
-                // MSB
                 LDA ZP.TOPH
                 CMP ZP.NEXTH
                 if (Z)
                 {
-                    LDX #1 // true
+                    LDX #1 // Values are equal
                 }
-                // continue to PushX at end of loop
             }   
+
             Stacks.PushX();
             SEC
             break;
@@ -318,7 +330,7 @@ unit ComparisonInstructions
         PLX
         PLA
     }
-    
+
     // Not-equal comparison operation (pops two operands, pushes BIT result)
     // Input: Stack contains two operands (right operand on top)
     // Output: BIT value (0 or 1) pushed to stack, C set if successful
@@ -336,66 +348,76 @@ unit ComparisonInstructions
             
             LDX #1          // Assume true (not equal)
             
-            // Check for STRING types first
+            // Handle STRING type combinations
             LDA ZP.NEXTT
             CMP #BasicType.STRING
             if (Z)
             {
+                // Left operand is STRING
                 LDA ZP.TOPT
                 CMP #BasicType.STRING
                 if (Z)
                 {
-                    // Both are STRING - compare them
-                    Tools.StringCompare(); // Now includes pointer optimization
+                    // Both operands are STRING - compare string content
+                    Tools.StringCompare(); // Includes pointer equality optimization
                     if (C)
                     {
-                        LDX #0 // Strings match, so NOT EQUAL is false
+                        LDX #0 // Strings are equal, so NOT EQUAL is false
                     }
-                    // continue to PushX at end of loop
+                    // Continue to value comparison section (will reach PushX)
                 }
                 else
                 {
                     // STRING vs non-STRING = type mismatch
                     CLC
-                    break; // fall through to type mismatch error
+                    break;
                 }
             }
             else
             {
+                // Left operand is not STRING, check right operand
                 LDA ZP.TOPT
                 CMP #BasicType.STRING
                 if (Z)
                 {
                     // non-STRING vs STRING = type mismatch
                     CLC
-                    break; // fall through to type mismatch error
+                    break;
                 }
-            
             }
-            LDA #2 // allowed
+            
+            // Handle numeric type combinations (INT, WORD, BIT, BYTE)
+            LDA #2 // BIT types allowed for equality comparison
             checkBITTypes();
             if (NC)
             {
-                break; // fall through to type mismatch error
+                CLC
+                break; // BIT type mismatch
             }
             
-            // MSB
+            // Check for cross-type compatibility (INT vs WORD/BYTE)
             LDA ZP.TOPT
             CMP ZP.NEXTT
             if (NZ)
             {
-                // Never BIT vs INT|WORD|BYTE since checkBITTypes assured that either both or neither are BIT
-                // Never STRING vs INT|WORD|BYTE since STRING is dealt with above
-                // So, only checking INT vs WORD|BYTE here
+                // Different numeric types - handle special cases
+                // BIT vs INT|WORD|BYTE already rejected by checkBITTypes above
+                // STRING vs numeric already handled above
+                // Only INT vs WORD|BYTE combinations remain
+                
                 LDA ZP.NEXTT
                 CMP #BasicType.INT
                 if (Z)
                 {
+                    // Left is INT, right is WORD/BYTE
                     BIT ZP.NEXTH
                     if (MI)
                     {
-                        LDX #1 // true (NEXT != TOP) since -ve INT cannot be same as any WORD|BYTE
-                        break; // continue to PushX at end of loop
+                        // Negative INT cannot equal positive WORD/BYTE
+                        // LDX already 1 (true - they are not equal)
+                        Stacks.PushX();
+                        SEC
+                        break;
                     }
                 }
                 
@@ -403,29 +425,32 @@ unit ComparisonInstructions
                 CMP #BasicType.INT
                 if (Z)
                 {
+                    // Right is INT, left is WORD/BYTE
                     BIT ZP.TOPH
                     if (MI)
                     {
-                        LDX #1 // true (NEXT != TOP) since -ve INT cannot be same as any WORD|BYTE
-                        break; // continue to PushX at end of loop
+                        // Negative INT cannot equal positive WORD/BYTE
+                        // LDX already 1 (true - they are not equal)
+                        Stacks.PushX();
+                        SEC
+                        break;
                     }
                 }
             }
             
-            // LSB
+            // Compare actual 16-bit values
             LDA ZP.TOPL
             CMP ZP.NEXTL
             if (Z)
             {
-                // MSB
                 LDA ZP.TOPH
                 CMP ZP.NEXTH
                 if (Z)
                 {
-                    LDX #0 // false (NEXT == TOP)
+                    LDX #0 // Values are equal, so NOT EQUAL is false
                 }
-                // continue to PushX at end of loop
             }
+            
             Stacks.PushX();
             SEC
             break;

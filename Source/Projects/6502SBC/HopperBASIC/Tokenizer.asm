@@ -1153,18 +1153,19 @@ unit Tokenizer
                 case '"':
                 {
                     // String literal tokenization
-                    appendByteToTokenBuffer(Tokens.STRINGLIT);
+                    LDA # Tokens.STRINGLIT
+                    appendToTokenBuffer();
                     Messages.CheckError();
                     if (NC) { return; }
                     
                     // Store starting position of string content
-                    LDA ZP.TokenBufferLength.LSB
+                    LDA ZP.TokenBufferLengthL
                     STA ZP.TokenLiteralPosL
-                    LDA ZP.TokenBufferLength.MSB  
+                    LDA ZP.TokenBufferLengthH
                     STA ZP.TokenLiteralPosH
                     
                     // Skip opening quote
-                    incrementInputPos();
+                    incrementTokenizerPos();
                     
                     loop // Scan string content until closing quote
                     {
@@ -1185,20 +1186,20 @@ unit Tokenizer
                         {
                             // Add null terminator to string content
                             LDA #0
-                            appendByteToTokenBuffer(A);
+                            appendToTokenBuffer();
                             Messages.CheckError();
                             if (NC) { return; }
                             
-                            incrementInputPos(); // Skip closing quote
+                            incrementTokenizerPos(); // Skip closing quote
                             break;
                         }
                         
                         // Add character to string content
-                        appendByteToTokenBuffer(A);
+                        appendToTokenBuffer();
                         Messages.CheckError();
                         if (NC) { return; }
                         
-                        incrementInputPos();
+                        incrementTokenizerPos();
                     }
                     
                     SEC  // Success
@@ -1730,29 +1731,6 @@ unit Tokenizer
         }
     }
     
-    // Get string literal content from token buffer
-    // Input: None (uses current token which must be STRINGLIT)
-    // Output: ZP.TOP = pointer to null-terminated string content
-    // Preserves: Everything except ZP.TOP
-    GetTokenString()
-    {
-        PHA
-        
-        // Calculate address of string content in token buffer
-        // String content starts at TokenLiteralPos offset in token buffer
-        LDA #(Address.BasicTokenizerBuffer % 256)
-        CLC
-        ADC ZP.TokenLiteralPosL
-        STA ZP.TOPL
-        
-        LDA #(Address.BasicTokenizerBuffer / 256)
-        ADC ZP.TokenLiteralPosH
-        STA ZP.TOPH
-        
-        PLA
-    }
-    
-    
     // Skip past null-terminated string at current tokenizer position
     // Input: ZP.TokenizerPos = current position in token buffer
     // Output: ZP.TokenizerPos advanced past null terminator
@@ -1901,23 +1879,26 @@ unit Tokenizer
         TXA  // Return length
     }
     
-    // Get pointer to current token's string (for IDENTIFIER, NUMBER, STRING tokens)
-    // Input: ZP.TokenLiteralPos = position of literal data in token buffer
-    // Output: ZP.TOP = pointer to null-terminated string in token buffer
-    // Munts: ZP.TOP
+    // Get string literal content from token buffer
+    // Input: None (uses current token which must be STRINGLIT)
+    // Output: ZP.TOP = pointer to null-terminated string content
+    // Preserves: Everything except ZP.TOP
     GetTokenString()
     {
         PHA
         
-        // Set up pointer to saved literal position in token buffer
+        // Calculate address of string content in token buffer
+        // String content starts at TokenLiteralPos offset in token buffer
+        LDA #(Address.BasicTokenizerBuffer % 256)
         CLC
-        LDA #(Address.BasicTokenizerBuffer & 0xFF)
         ADC ZP.TokenLiteralPosL
         STA ZP.TOPL
-        LDA #(Address.BasicTokenizerBuffer >> 8)
+        
+        LDA #(Address.BasicTokenizerBuffer / 256)
         ADC ZP.TokenLiteralPosH
         STA ZP.TOPH
         
         PLA
     }
+    
 }

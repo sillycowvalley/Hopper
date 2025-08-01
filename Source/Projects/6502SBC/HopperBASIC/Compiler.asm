@@ -229,26 +229,12 @@ unit Compiler
     {
         PHA
         
-        loop // Single exit
-        {
-            LDA #OpCodes.PUSHCSTRING
-            appendByteToOpcodeBuffer(A);
-            Messages.CheckError();
-            if (NC) { break; }
-            
-            LDA compilerOperand1  // LSB
-            appendByteToOpcodeBuffer(A);
-            Messages.CheckError();
-            if (NC) { break; }
-            
-            LDA compilerOperand2  // MSB  
-            appendByteToOpcodeBuffer(A);
-            Messages.CheckError();
-            if (NC) { break; }
-            
-            SEC // Success
-            break;
-        }
+        // Set up opcode
+        LDA #OpcodeType.PUSHCSTRING
+        STA compilerOpCode
+        
+        // Emit opcode with word operand (uses compilerOperand1/2)
+        EmitOpcodeWithWord();
         
         PLA
     }

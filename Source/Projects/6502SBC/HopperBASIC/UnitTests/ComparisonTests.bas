@@ -1,50 +1,3 @@
-
-**Task: Analyze Test Output and Generate Subset of Failing Cases**
-
-**Step 1: Understand the Context**
-- Review the test output showing comparisons between INT and WORD types
-- Identify which results are "?TYPE MISMATCH" vs numeric results (0 or 1)
-- Understand that TYPE MISMATCH may be correct behavior for some cases
-- Remember that BIT type is a boolean type that is:
-  - Incompatible with numeric types (INT, WORD, BYTE)
-  - Incompatible with ordering operators (<, >, <=, >=)
-  - Only valid with equality operators (=, <>) and logical operators (AND, OR, NOT)
-
-**Step 2: Classify the Failures**
-- Read through the test output line by line
-- Identify all cases that resulted in "?TYPE MISMATCH"
-- Do NOT look at source code - focus only on the test results
-- Group failures by operation type (<, >, <=, >=)
-
-**Step 3: Identify the Pattern**
-- Look for patterns in what types of comparisons are failing
-- Note the specific boundary values (like 32768) where behavior changes
-- Identify if there's a logical rule (e.g., "negative INT vs WORD ≥ 32768")
-- Distinguish between legitimate TYPE MISMATCH (like BIT comparisons) and potential bugs
-
-**Step 4: Determine if Failures are Legitimate**
-- Consider whether TYPE MISMATCH is the correct behavior
-- Identify subset where the comparison should be mathematically unambiguous
-- Focus on cases where signs differ (negative INT vs positive WORD) as these have obvious results
-- Remember that BIT type rejections may be correct behavior, not failures
-
-**Step 5: Generate Minimal Test Set**
-- Create variable declarations for all needed test values
-- Include only the subset of comparisons that should work but are failing
-- Organize by operation type for clarity
-- Remove redundant cases while maintaining coverage of edge cases
-- Exclude any BIT type tests as those should legitimately fail
-- never insert comments in the generated test files
-
-**Step 6: Validate the Subset**
-- Ensure all variables referenced in tests are declared
-- Verify the subset represents the core issue without unnecessary noise
-- Check that the expected results are mathematically obvious (negative < positive)
-
-
-
-// = and <> tests
-
 int pos0 = 0
 int pos1 = 1
 int pos127 = 127
@@ -90,6 +43,15 @@ word w65535 = 65535
 
 bit true = (1 = 1)
 bit false = (1 = 0)
+
+string empty = ""
+string hello = "hello"
+string world = "world"
+string hello2 = "hello"
+string longer = "this is a longer string"
+string space = " "
+string number = "123"
+string special = "!@#$%"
 
 print pos0 = w0
 print pos0 = w1
@@ -209,6 +171,48 @@ print w32767 = neg32768
 print w32768 = neg32768
 print w65535 = neg32768
 
+print hello = hello
+print hello = hello2
+print hello = world
+print hello = empty
+print hello = longer
+print empty = empty
+print empty = hello
+print world = hello
+print world = world
+print longer = hello
+print longer = longer
+print space = space
+print space = empty
+print number = number
+print number = hello
+print special = special
+print special = hello
+
+print "hello" = hello
+print "hello" = world
+print "hello" = hello2
+print "world" = world
+print "world" = hello
+print "" = empty
+print "" = hello
+print "123" = number
+print "123" = hello
+print "!@#$%" = special
+print "!@#$%" = hello
+
+print hello = "hello"
+print world = "hello"
+print hello2 = "hello"
+print world = "world"
+print hello = "world"
+print empty = ""
+print hello = ""
+print number = "123"
+print hello = "123"
+print special = "!@#$%"
+print hello = "!@#$%"
+
 print pos0 <> w0
 print pos0 <> w1
 print pos0 <> w32767
@@ -327,6 +331,48 @@ print w32767 <> neg32768
 print w32768 <> neg32768
 print w65535 <> neg32768
 
+print hello <> hello
+print hello <> hello2
+print hello <> world
+print hello <> empty
+print hello <> longer
+print empty <> empty
+print empty <> hello
+print world <> hello
+print world <> world
+print longer <> hello
+print longer <> longer
+print space <> space
+print space <> empty
+print number <> number
+print number <> hello
+print special <> special
+print special <> hello
+
+print "hello" <> hello
+print "hello" <> world
+print "hello" <> hello2
+print "world" <> world
+print "world" <> hello
+print "" <> empty
+print "" <> hello
+print "123" <> number
+print "123" <> hello
+print "!@#$%" <> special
+print "!@#$%" <> hello
+
+print hello <> "hello"
+print world <> "hello"
+print hello2 <> "hello"
+print world <> "world"
+print hello <> "world"
+print empty <> ""
+print hello <> ""
+print number <> "123"
+print hello <> "123"
+print special <> "!@#$%"
+print hello <> "!@#$%"
+
 print true = true
 print true = false
 print false = true
@@ -334,7 +380,7 @@ print false = false
 
 print true <> true
 print true <> false
-print false <> true
+print false = true
 print false <> false
 
 print true = pos0
@@ -681,13 +727,69 @@ print w49152 <> false
 print w65534 <> false
 print w65535 <> false
 
+print hello = pos0
+print hello = pos1
+print hello = neg1
+print hello = w0
+print hello = w1
+print hello = true
+print hello = false
 
+print empty = pos0
+print empty = pos1
+print empty = neg1
+print empty = w0
+print empty = w1
+print empty = true
+print empty = false
 
+print pos0 = hello
+print pos1 = hello
+print neg1 = hello
+print w0 = hello
+print w1 = hello
+print true = hello
+print false = hello
 
+print pos0 = empty
+print pos1 = empty
+print neg1 = empty
+print w0 = empty
+print w1 = empty
+print true = empty
+print false = empty
 
-// arithmetic tests
+print hello <> pos0
+print hello <> pos1
+print hello <> neg1
+print hello <> w0
+print hello <> w1
+print hello <> true
+print hello <> false
 
+print empty <> pos0
+print empty <> pos1
+print empty <> neg1
+print empty <> w0
+print empty <> w1
+print empty <> true
+print empty <> false
 
+print pos0 <> hello
+print pos1 <> hello
+print neg1 <> hello
+print w0 <> hello
+print w1 <> hello
+print true <> hello
+print false <> hello
+
+print pos0 <> empty
+print pos1 <> empty
+print neg1 <> empty
+print w0 <> empty
+print w1 <> empty
+print true <> empty
+print false <> empty
 
 int zeroi = 0
 int onei = 1
@@ -961,10 +1063,6 @@ print msbsetw * msbcleari
 print msbsetw * msbseti
 print msbsetw * negi
 
-
-
-
-
 int zero = 0
 int one = 1
 int neg1 = -1
@@ -1015,14 +1113,6 @@ print maxw - pos32767
 print zerow - neg32768
 print onew - neg32768
 print maxw - neg32768
-
-
-
-
-
-
-
-// CheckTypeCompatibility tests:
 
 int pos1 = 1
 int pos127 = 127
@@ -1166,14 +1256,6 @@ word wpos = pos1
 word wneg = neg1
 word wposbig = pos32767
 word wnegconv = neg32768
-
-
-
-
-
-
-// CheckOrderingComparisonCompatibility
-
 
 int pos0 = 0
 int pos1 = 1
@@ -1672,9 +1754,6 @@ print w32767 >= neg32768
 print w32768 >= neg32768
 print w65535 >= neg32768
 
-
-// =, <>, <, >, <=, >= tests for BIT
-
 bit false = (1 = 0)
 bit true = (1 = 1)
 bit b0 = false
@@ -1820,3 +1899,4 @@ print w1 > b1
 print w32768 > b0
 print w0 + b1
 print w1 - b0
+
