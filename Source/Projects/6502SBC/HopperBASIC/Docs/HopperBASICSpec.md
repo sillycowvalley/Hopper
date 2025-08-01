@@ -1,4 +1,4 @@
-# Hopper BASIC Specification v2.7
+# Hopper BASIC Specification v2.8
 
 ## Project Objectives
 
@@ -167,7 +167,7 @@ END
 - ✅ **`REM [comment]`** - Full-form comment (traditional BASIC)
 - ✅ **`' [comment]`** - Short-form comment (modern convenience)
 
-#### Expressions & Operators (Complete Implementation)
+#### Expressions & Operators
 - ✅ **Arithmetic**: `+ - * / MOD` (basic math operations)
 - ✅ **Bitwise**: `& |` (bitwise AND, bitwise OR)
 - ✅ **Unary**: `-` (negation), `NOT` (logical negation)
@@ -387,7 +387,7 @@ return_statement := RETURN [ expression ]
 parameter_list := identifier [ "," identifier ]*
 ```
 
-### Expressions (Phase 1 - Complete Implementation)
+### Expressions
 ```
 expression := logical_or_expr
 
@@ -469,23 +469,23 @@ STRING := '"' { character }* '"'
 ```
 
 ### Type System
-- **INT**: 16-bit signed integer (-32768 to 32767)
-- **WORD**: 16-bit unsigned integer (0 to 65535)  
-- **BIT**: Boolean value (0 or 1)
-- **BYTE**: 8-bit unsigned integer (0 to 255)
-- **STRING**: Immutable string constant (null-terminated character array)
+- ✅ **INT**: 16-bit signed integer (-32768 to 32767)
+- ✅ **WORD**: 16-bit unsigned integer (0 to 65535)  
+- ✅ **BIT**: Boolean value (0 or 1)
+- ❌ **BYTE**: 8-bit unsigned integer (0 to 255)
+- ❌ **STRING**: Immutable string constant (null-terminated character array)
 
 ### Type Promotion and Compatibility Rules
-- **INT → WORD**: Compatible only when INT ≥ 0 (runtime check)
-- **WORD → INT**: Compatible only when WORD ≤ 32767 (runtime check)
-- **BYTE → INT/WORD**: Always compatible (promotes to larger type)
-- **INT/WORD → BYTE**: Compatible only when value ≤ 255 (runtime check)
-- **All types → BIT**: Only values 0 and 1 are compatible
-- **STRING operations**: Only equality comparison supported (`=`, `<>`)
-- **BIT operations**: Logical AND/OR/NOT for BIT types only
-- **Bitwise operations**: AND (&), OR (|) for all numeric types (INT, WORD, BIT, BYTE)
-- **Comparison results**: All comparisons return BIT type
-- **Operation modes**:
+- ✅ **INT → WORD**: Compatible only when INT ≥ 0 (runtime check)
+- ✅ **WORD → INT**: Compatible only when WORD ≤ 32767 (runtime check)
+- ❌ **BYTE → INT/WORD**: Always compatible (promotes to larger type)
+- ❌ **INT/WORD → BYTE**: Compatible only when value ≤ 255 (runtime check)
+- ✅ **All types → BIT**: Only values 0 and 1 are compatible
+- ❌ **STRING operations**: Only equality comparison supported (`=`, `<>`)
+- ✅ **BIT operations**: Logical AND/OR/NOT for BIT types only
+- ✅ **Bitwise operations**: AND (&), OR (|) for all numeric types (INT, WORD, BIT)
+- ✅ **Comparison results**: All comparisons return BIT type
+- ✅ **Operation modes**:
   - **Arithmetic** (rejects BIT, STRING): +, -, *, /, MOD
   - **Equality** (allows all): =, <>
   - **Ordering** (numeric only): <, >, <=, >=
@@ -539,7 +539,7 @@ CONST STRING greeting = "Hello" : PRINT greeting
 ### Literal Values
 - **Decimal numbers**: `123`, `0`, `32767`
 - **Hexadecimal numbers**: `0x1F`, `0xFF00`, `0xA0` (case insensitive)
-- **Boolean literals**: `TRUE` (value 1), `FALSE` (value 0)
+- ✅ **Boolean literals**: `TRUE` (value 1), `FALSE` (value 0)
 - **String literals**: `"Hello World"`, `""` (empty string)
 - **Type determination**: Numbers typed as INT (0-32767) or WORD (32768-65535)
 
@@ -681,7 +681,7 @@ Offset 2+:  null-terminated argument name string
 
 ## Current Implementation Status
 
-### ✅ Completed Foundation (Expression System, Variables & Functions)
+### ✅ Completed Foundation
 - **Symbol Table System**: Complete 4-layer architecture with comprehensive testing
 - **Tokenization**: Full lexical analysis with keyword recognition, hex numbers, comments
 - **Expression Evaluation**: Complete JIT compilation system with all operators
@@ -700,6 +700,7 @@ Offset 2+:  null-terminated argument name string
 - **Assignment**: Variable assignment with type checking
 - **Error Handling**: Proper error messages and recovery
 - **Clean API Standards**: All units follow register preservation and documented contracts
+- **BIT Type**: Complete implementation with TRUE/FALSE literals and logical operations
 
 ### 🎯 Current Milestone: Function Execution System
 
@@ -740,7 +741,7 @@ Offset 2+:  null-terminated argument name string
 7. **Array indexing** - `flags[i] = TRUE`
 8. **Array function parameters** - Pass global arrays to functions
 
-### 🎯 Function System Architecture Status
+### Function System Architecture Status
 
 **✅ Completed Components:**
 - **Function Declaration Parser**: Complete FUNC name(params) syntax parsing
@@ -758,7 +759,6 @@ Offset 2+:  null-terminated argument name string
 - **FORGET Command**: Remove variables or functions by name
 
 **❌ Missing for Execution:**
-- **Function Call Parser**: Parse `functionName(arg1, arg2)` syntax in expressions
 - **Parameter Binding**: Map function arguments to parameter values
 - **Function Body Executor**: Execute function token streams
 - **Return Value Handling**: RETURN statement processing and value passing
@@ -791,6 +791,7 @@ All implemented systems have comprehensive test coverage:
 - **Function declaration**: Complete function definition and storage
 - **Function display**: Token stream rendering and formatting
 - **Multi-line capture**: Function definition across multiple input lines
+- **BIT Type**: Complete test suite passed
 
 ---
 
@@ -885,6 +886,33 @@ END
 ---
 
 ## Usage Examples
+
+### BIT Type Usage
+```basic
+> CONST BIT debugMode = TRUE
+OK
+
+> BIT flag1 = FALSE
+OK
+
+> BIT result = flag1 OR debugMode
+OK
+
+> PRINT result
+TRUE
+
+> BIT complex = (TRUE OR FALSE) AND NOT (FALSE AND TRUE)
+OK
+
+> PRINT complex
+TRUE
+
+> VARS
+CONST BIT DEBUGMODE = TRUE
+BIT FLAG1 = FALSE
+BIT RESULT = TRUE
+BIT COMPLEX = TRUE
+```
 
 ### String Constants and Variables  
 ```basic
@@ -1080,23 +1108,21 @@ ENDFUNC
 ProcessData(globalData, 100)
 ```
 
-### Expression Evaluation with Strings
+### Expression Evaluation with BIT Types
 ```basic
-INT a = 10 : INT b = 20
-CONST STRING op = "addition"
-STRING result = "unknown"
-PRINT a + b * 2        ' Prints 50 (precedence: * before +)
-PRINT (a + b) * 2      ' Prints 60 (parentheses override precedence)
-BIT match = a > b
-PRINT match            ' Prints 0 (false)
-IF op = "addition" THEN result = "math operation"
-PRINT result           ' Prints "math operation"
+BIT a = TRUE : BIT b = FALSE
+BIT result1 = a AND b         ' FALSE
+BIT result2 = a OR b          ' TRUE  
+BIT result3 = NOT a           ' FALSE
+BIT result4 = a = b           ' FALSE (TRUE != FALSE)
+BIT complex = (a OR b) AND NOT (b AND a)  ' TRUE
+PRINT result1 : PRINT result2 : PRINT result3 : PRINT result4 : PRINT complex
 ```
 
-### Multi-Statement Lines with Strings
+### Multi-Statement Lines with BIT Types
 ```basic
-CONST STRING msg = "Hello" : STRING temp = "World" : PRINT msg : PRINT temp
-IF msg = "Hello" THEN temp = "Updated" : PRINT temp : PRINT "Done"
+BIT flag1 = TRUE : BIT flag2 = FALSE : PRINT flag1 : PRINT flag2
+IF flag1 = TRUE THEN flag2 = TRUE : PRINT flag2 : PRINT "Done"
 ```
 
 ### Hexadecimal Numbers
@@ -1154,4 +1180,4 @@ PRINT label : PRINT addr + offset    ' Prints Address, then 33024
 - **Embedded Features**: Real-time capabilities for microcontroller applications
 - **Optimization**: Performance tuning for 6502 constraints
 
-The current implementation provides a robust foundation with complete function declaration, storage, and display systems. The addition of STRING support as immutable string constants provides the essential string functionality needed for the benchmark programs while maintaining simplicity and avoiding complex string memory management. The next major milestone is implementing function execution to enable the Fibonacci benchmark, which will validate the core interpreter functionality before adding loop constructs and other advanced features.
+The current implementation provides a robust foundation with complete function declaration, storage, and display systems, plus a working BIT type with logical operations. The BIT type serves as an excellent template for implementing the STRING and BYTE types. The next major milestone is implementing function execution to enable the Fibonacci benchmark, which will validate the core interpreter functionality before adding loop constructs and other advanced features.
