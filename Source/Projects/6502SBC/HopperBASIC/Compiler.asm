@@ -678,37 +678,7 @@ unit Compiler
         PLA
     }
     
-    // Main entry point: Compile current expression to opcodes
-    // Input: ZP.CurrentToken = first token of expression
-    // Output: Expression compiled to opcode buffer, ZP.CurrentToken = token after expression
-    // Modifies: Opcode buffer, ZP.CurrentToken, compilation state, ZP.TokenizerPos (via Tokenizer calls)
-    CompileExpression()
-    {
-#ifdef DEBUG
-        LDA #'<'
-        Tools.COut();
-        LDA #'C'
-        Tools.COut();
-        LDA #'E'
-        Tools.COut();
-#endif
-        
-        // Initialize opcode buffer if this is the start of compilation
-        InitOpcodeBuffer();
-        if (NC) { return; }
-        
-        // Compile the expression using same precedence as Expression.asm
-        compileLogical();
-        
-#ifdef DEBUG
-        LDA #'C'
-        Tools.COut();
-        LDA #'E'
-        Tools.COut();
-        LDA #'>'
-        Tools.COut();
-#endif
-    }
+    
     
     // Compile logical OR operations (lowest precedence)
     // Input: ZP.CurrentToken = current token
@@ -1224,7 +1194,9 @@ unit Compiler
         PHA
         PHX
         PHY
-        
+#ifdef DEBUG
+        LDA #'[' Tools.COut();
+#endif
         loop // Single exit
         {
             // Get token after opening parenthesis
@@ -1281,7 +1253,9 @@ unit Compiler
             
             break; // Exit outer loop
         }
-        
+#ifdef DEBUG
+        LDA #']' Tools.COut(); // Exit from argument list  
+#endif
         PLY
         PLX
         PLA
@@ -1320,6 +1294,9 @@ unit Compiler
             CMP #Tokens.LPAREN
             if (Z)
             {
+#ifdef DEBUG
+        LDA #'(' Tools.COut();
+#endif
                 // This is a function call - restore tokenizer to identifier and emit call
                 LDA (compilerSavedTokenPosL + 0)
                 STA ZP.TokenizerPosL
@@ -1371,9 +1348,16 @@ unit Compiler
                 Tokenizer.NextToken();
                 Messages.CheckError();
                 if (NC) { break; }
+#ifdef DEBUG
+        LDA #')' Tools.COut();
+#endif
+
             }
             else
             {
+#ifdef DEBUG
+        LDA #'V' Tools.COut();
+#endif
                 // Not a function call - restore position and emit variable push
                 LDA (compilerSavedTokenPosL + 0)
                 STA ZP.TokenizerPosL
@@ -1519,7 +1503,13 @@ unit Compiler
                 
                 case Tokens.IDENTIFIER:
                 {
+#ifdef DEBUG
+                    LDA #'{' Tools.COut();
+#endif
                     compileFunctionCallOrVariable();
+#ifdef DEBUG
+                    LDA #'}' Tools.COut();
+#endif
                     break;
                 }
                 case Tokens.LPAREN:
@@ -1583,4 +1573,395 @@ unit Compiler
         Tools.COut();
 #endif
     }
+    
+    // Main entry point: Compile current expression to opcodes
+    // Input: ZP.CurrentToken = first token of expression
+    // Output: Expression compiled to opcode buffer, ZP.CurrentToken = token after expression
+    // Modifies: Opcode buffer, ZP.CurrentToken, compilation state, ZP.TokenizerPos (via Tokenizer calls)
+    CompileExpression()
+    {
+#ifdef DEBUG
+        LDA #'<'
+        Tools.COut();
+        LDA #'C'
+        Tools.COut();
+        LDA #'E'
+        Tools.COut();
+#endif
+        
+        // Initialize opcode buffer if this is the start of compilation
+        InitOpcodeBuffer();
+        if (NC) { return; }
+        
+        // Compile the expression using same precedence as Expression.asm
+        compileLogical();
+        
+#ifdef DEBUG
+        LDA #'C'
+        Tools.COut();
+        LDA #'E'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+#endif
+    }
+    
+    
+    // Add this method to the Compiler unit
+
+    // Compile function body from tokens to opcodes  
+    // Input: Function tokens already copied to BasicTokenizerBuffer, ZP.TokenBufferLength set
+    // Output: Function compiled to opcode buffer, C set if successful
+    // Modifies: Opcode buffer, ZP.CurrentToken, ZP.TokenizerPos, compilation state
+    // Error: Sets ZP.LastError if compilation fails
+    CompileFunction()
+    {
+    #ifdef DEBUG
+        LDA #'<'
+        Tools.COut();
+        LDA #'C'
+        Tools.COut();
+        LDA #'F'
+        Tools.COut();
+        LDA #'N'
+        Tools.COut();
+    #endif
+
+        PHA
+        PHX
+        PHY
+        
+        loop // Single exit block
+        {
+            // Initialize opcode buffer
+            InitOpcodeBuffer();
+            if (NC) { break; }
+            
+            // Reset tokenizer to start of function body
+            STZ ZP.TokenizerPosL
+            STZ ZP.TokenizerPosH
+            
+            // Get first token of function body
+            Tokenizer.NextToken();
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            // TODO: Get argument count and emit ENTER opcode
+            // For now, emit ENTER with 0 arguments
+            LDA #0
+            EmitEnter();
+            if (NC) { break; }
+            
+            // Compile statements until end of function
+            loop // Statement compilation loop
+            {
+                // Check for end of function
+                LDA ZP.CurrentToken
+                CMP #Tokens.ENDFUNC
+                if (Z) { break; } // End of regular function
+                
+                CMP #Tokens.END  
+                if (Z) { break; } // End of BEGIN function
+                
+                CMP #Tokens.EOF
+                if (Z) { break; } // End of token stream
+                
+                CMP #Tokens.EOL
+                if (Z)
+                {
+                    // Skip empty lines
+                    Tokenizer.NextToken();
+                    Messages.CheckError();
+                    if (NC) { break; }
+                    continue;
+                }
+                
+                // Compile the statement
+                compileStatement();
+                Messages.CheckError();
+                if (NC) { break; }
+            }
+            
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            // Check if last opcode was RETURN or RETURNVAL
+            checkLastOpcodeIsReturn();
+            if (NC) // Last opcode was not RETURN
+            {
+                // Emit RETURN with 0 cleanup count (no locals for now)
+                LDA #0
+                EmitReturn();
+                if (NC) { break; }
+            }
+            
+            SEC // Success
+            break;
+        }
+        
+        PLY
+        PLX
+        PLA
+        
+    #ifdef DEBUG
+        LDA #'C'
+        Tools.COut();
+        LDA #'F'
+        Tools.COut();
+        LDA #'N'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+    #endif
+    }
+
+    // Compile a single statement within a function
+    // Input: ZP.CurrentToken = first token of statement
+    // Output: Statement compiled to opcodes, ZP.CurrentToken = token after statement  
+    // Modifies: Opcode buffer, ZP.CurrentToken, compilation state
+    // Error: Sets ZP.LastError if statement compilation fails
+    compileStatement()
+    {
+    #ifdef DEBUG
+        LDA #'<'
+        Tools.COut();
+        LDA #'C'
+        Tools.COut();
+        LDA #'S'
+        Tools.COut();
+    #endif
+
+        loop // Single exit block
+        {
+            LDA ZP.CurrentToken
+            switch (A)
+            {
+                case Tokens.PRINT:
+                {
+                    compilePrintStatement();
+                    break;
+                }
+                case Tokens.RETURN:
+                {
+                    compileReturnStatement();
+                    break;
+                }
+                case Tokens.IF:
+                {
+                    compileIfStatement();
+                    break;
+                }
+                case Tokens.IDENTIFIER:
+                {
+                    // Could be assignment or function call
+                    compileIdentifierStatement();
+                    break;
+                }
+                case Tokens.REM:
+                case Tokens.COMMENT:
+                {
+                    // Skip comments - advance to next token
+                    Tokenizer.NextToken();
+                    Messages.CheckError();
+                    break;
+                }
+                default:
+                {
+                    // TODO: Add more statement types as needed
+                    LDA #(Messages.SyntaxError % 256)
+                    STA ZP.LastErrorL
+                    LDA #(Messages.SyntaxError / 256)
+                    STA ZP.LastErrorH
+                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                    CLC
+                    break;
+                }
+            }
+            break;
+        }
+        
+    #ifdef DEBUG
+        LDA #'C'
+        Tools.COut();
+        LDA #'S'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+    #endif
+    }
+
+    // Compile PRINT statement
+    // Input: ZP.CurrentToken = PRINT token
+    // Output: PRINT statement compiled to opcodes
+    // Modifies: Opcode buffer, ZP.CurrentToken, compilation state
+    compilePrintStatement()
+    {
+    #ifdef DEBUG
+        LDA #'<'
+        Tools.COut();
+        LDA #'P'
+        Tools.COut();
+        LDA #'S'
+        Tools.COut();
+    #endif
+
+        loop // Single exit block
+        {
+            // Get next token (should be start of expression to print)
+            Tokenizer.NextToken();
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            // Check for PRINT with no arguments (just newline)
+            LDA ZP.CurrentToken
+            CMP #Tokens.EOL
+            if (Z)
+            {
+                // Emit system call for print newline
+                LDA #SysCallType.PRINT_NEWLINE
+                EmitSysCall();
+                break;
+            }
+            
+            // Compile the expression to print
+            compileLogical(); // Use full expression compilation
+            Messages.CheckError();
+            if (NC) { break; }
+            
+            // Emit system call to print the value on stack
+            LDA #SysCallType.PRINT_STRING
+            EmitSysCall();
+            if (NC) { break; }
+            
+            // Emit system call for newline
+            LDA #SysCallType.PRINT_NEWLINE  
+            EmitSysCall();
+            if (NC) { break; }
+            
+            SEC // Success
+            break;
+        }
+        
+    #ifdef DEBUG
+        LDA #'P'
+        Tools.COut();
+        LDA #'S'
+        Tools.COut();
+        LDA #'>'
+        Tools.COut();
+    #endif
+    }
+
+    // Compile RETURN statement
+    // Input: ZP.CurrentToken = RETURN token
+    // Output: RETURN statement compiled to opcodes
+    // Modifies: Opcode buffer, ZP.CurrentToken, compilation state
+    compileReturnStatement()
+    {
+        // Get next token
+        Tokenizer.NextToken();
+        Messages.CheckError();
+        if (NC) { return; }
+        
+        // Check if there's a return expression
+        LDA ZP.CurrentToken
+        CMP #Tokens.EOL
+        if (Z)
+        {
+            // No return value - emit RETURN
+            LDA #0  // No locals to clean up for now
+            EmitReturn();
+            return;
+        }
+        
+        // Compile return expression
+        compileLogical();
+        Messages.CheckError();
+        if (NC) { return; }
+        
+        // Emit RETURNVAL (expects value on stack)
+        LDA #0  // No locals to clean up for now
+        EmitReturnVal();
+    }
+
+    // Compile IF statement (stub for now)
+    // Input: ZP.CurrentToken = IF token
+    // Output: Error (not implemented)
+    compileIfStatement()
+    {
+        // TODO: Implement IF statement compilation
+        LDA #(Messages.NotImplemented % 256)
+        STA ZP.LastErrorL
+        LDA #(Messages.NotImplemented / 256)
+        STA ZP.LastErrorH
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+        CLC
+    }
+
+    // Compile identifier statement (assignment or function call)
+    // Input: ZP.CurrentToken = IDENTIFIER token
+    // Output: Statement compiled to opcodes
+    compileIdentifierStatement()
+    {
+        // TODO: Implement assignment and function call compilation
+        LDA #(Messages.NotImplemented % 256)
+        STA ZP.LastErrorL
+        LDA #(Messages.NotImplemented / 256)
+        STA ZP.LastErrorH
+        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+        CLC
+    }
+
+    // Check if the last emitted opcode is RETURN or RETURNVAL
+    // Input: Opcode buffer with opcodes
+    // Output: C set if last opcode is RETURN/RETURNVAL, NC if not
+    // Modifies: ZP.ACC (temporarily)
+    checkLastOpcodeIsReturn()
+    {
+        PHA
+        
+        // Check if buffer is empty
+        LDA ZP.OpcodeBufferLengthL
+        ORA ZP.OpcodeBufferLengthH
+        if (Z)
+        {
+            CLC // Empty buffer - no RETURN
+            PLA
+            return;
+        }
+        
+        // Calculate address of last opcode
+        SEC
+        LDA ZP.PCL
+        SBC #1
+        STA ZP.ACCL
+        LDA ZP.PCH
+        SBC #0
+        STA ZP.ACCH
+        
+        // Read the last opcode
+        LDY #0
+        LDA [ZP.ACC], Y
+        
+        // Check if it's RETURN or RETURNVAL
+        CMP #OpcodeType.RETURN
+        if (Z)
+        {
+            SEC // Found RETURN
+            PLA
+            return;
+        }
+        
+        CMP #OpcodeType.RETURNVAL
+        if (Z)
+        {
+            SEC // Found RETURNVAL
+            PLA
+            return;
+        }
+        
+        CLC // Not a RETURN opcode
+        PLA
+    }
+    
 }

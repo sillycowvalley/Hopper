@@ -558,15 +558,131 @@ unit Functions
     
     Compile()
     {
-        freeOpCodes(); // frees existing stream buffer if not null
+        PHA
+        PHX
+        PHY
         
+        // Save current tokenizer state
+        LDA ZP.TokenizerPosL
+        PHA
+        LDA ZP.TokenizerPosH
+        PHA
+        LDA ZP.TokenBufferLengthL
+        PHA
+        LDA ZP.TokenBufferLengthH
+        PHA
         
-        LDA #( Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-        CLC
+        loop // Single exit block
+        {
+            freeOpCodes(); // Free existing opcode stream if not null
+            
+            // Get function body tokens
+            Functions.GetBody(); // Input: ZP.IDX = function node, Output: ZP.IDY = tokens pointer
+            
+            // Check if function has a body
+            LDA ZP.IDYL
+            ORA ZP.IDYH
+            if (Z)
+            {
+                LDA #(Messages.InternalError % 256)
+                STA ZP.LastErrorL
+                LDA #(Messages.InternalError / 256)
+                STA ZP.LastErrorH
+                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                CLC
+                break;
+            }
+            
+            // Set up tokenizer to read from function's token stream (ZP.IDY)
+            // We need to temporarily redirect the tokenizer to use the function's allocated token stream
+            // instead of BasicTokenizerBuffer
+            
+            // Calculate length of function token stream by scanning for end marker
+            LDA ZP.IDYL
+            STA ZP.IDXL
+            LDA ZP.IDYH  
+            STA ZP.IDXH
+            
+            LDY #0
+            STZ ZP.ACCL
+            STZ ZP.ACCH
+            
+            loop // Scan for length
+            {
+                LDA [ZP.IDX], Y
+                CMP #Tokens.ENDFUNC
+                if (Z) { break; }
+                CMP #Tokens.EOF  
+                if (Z) { break; }
+                
+                INY
+                if (Z) { INC ZP.IDXH }
+                
+                INC ZP.ACCL
+                if (Z) { INC ZP.ACCH }
+            }
+            
+            // Copy function's token stream to BasicTokenizerBuffer for compilation
+            LDA ZP.IDYL
+            STA ZP.FSOURCEADDRESSL        // Source: function's token stream
+            LDA ZP.IDYH
+            STA ZP.FSOURCEADDRESSH
+            
+            LDA #(Address.BasicTokenizerBuffer % 256)
+            STA ZP.FDESTINATIONADDRESSL   // Destination: BasicTokenizerBuffer
+            LDA #(Address.BasicTokenizerBuffer / 256)  
+            STA ZP.FDESTINATIONADDRESSH
+            
+            LDA ZP.ACCL                   // Length of function tokens
+            STA ZP.FLENGTHL
+            LDA ZP.ACCH
+            STA ZP.FLENGTHH
+            
+            Tools.CopyBytes();            // Copy function tokens to tokenizer buffer
+            
+            // Set up tokenizer to read copied function tokens
+            LDA ZP.ACCL                   // Length of function tokens
+            STA ZP.TokenBufferLengthL
+            LDA ZP.ACCH
+            STA ZP.TokenBufferLengthH
+            
+            STZ ZP.TokenizerPosL          // Start at beginning of copied tokens
+            STZ ZP.TokenizerPosH            
+            
+            // Use Compiler.CompileExpression() to compile function body
+            Compiler.CompileFunction();
+            
+DumpBasicBuffers();
+DumpHeap();
+            
+            Messages.CheckError();
+            if (NC) { break; }
+loop { }                                    
+            // TODO: Copy opcodes from BasicOpcodeBuffer to permanent function storage
+            // TODO: Set compiled flag
+            
+            LDA #(Messages.NotImplemented % 256)
+            STA ZP.LastErrorL
+            LDA #(Messages.NotImplemented / 256)
+            STA ZP.LastErrorH
+            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+            CLC
+            break;
+        }
+        
+        // Restore tokenizer state
+        PLA
+        STA ZP.TokenBufferLengthH
+        PLA
+        STA ZP.TokenBufferLengthL
+        PLA
+        STA ZP.TokenizerPosH
+        PLA
+        STA ZP.TokenizerPosL
+        
+        PLY
+        PLX
+        PLA
     }
     
 }
