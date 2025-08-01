@@ -76,8 +76,7 @@ unit Tools
             default:
             {
                 // Unknown type
-                LDA #'?'
-                Serial.WriteChar();
+                Serial.HexOut();
             }
         }
         

@@ -453,6 +453,7 @@ unit Listing
             Serial.WriteChar();
             
             LDA ZP.ACCT
+            AND #0x0F
             CMP #BasicType.STRING
             if (Z)
             {
@@ -465,6 +466,7 @@ unit Listing
             Tools.PrintVariableValue(); // Input: ZP.TOP = value, ZP.TOPT = type
             
             LDA ZP.ACCT
+            AND #0x0F
             CMP #BasicType.STRING
             if (Z)
             {
@@ -518,6 +520,7 @@ unit Listing
             Serial.WriteChar();
             
             LDA ZP.ACCT
+            AND #0x0F
             CMP #BasicType.STRING
             if (Z)
             {
@@ -530,6 +533,7 @@ unit Listing
             Tools.PrintVariableValue(); // Input: ZP.TOP = value, ZP.TOPT = type
             
             LDA ZP.ACCT
+            AND #0x0F
             CMP #BasicType.STRING
             if (Z)
             {

@@ -40,10 +40,48 @@ unit Variables
                 break;
             }
             
+            LDA ZP.ACCT
+            AND #0x0F
+            CMP #BasicType.STRING
+            if (Z)
+            {
+                // save the source string address and clear 'value'
+                LDA ZP.NEXTL
+                PHA
+                LDA ZP.NEXTH
+                PHA
+                STZ ZP.NEXTL
+                STZ ZP.NEXTH
+            }
+            
             // Symbol doesn't exist, add it
             LDX #ZP.VariablesList
             Objects.Add();
-            // Flag already set by Objects.Add() - C for success, NC for failure
+            
+            LDA ZP.ACCT
+            AND #0x0F
+            CMP #BasicType.STRING
+            if (Z)
+            {
+                // restore source string pointer
+                PLA
+                STA ZP.TOPH
+                PLA
+                STA ZP.TOPL
+            }
+            // set by Objects.Add() - C for success, NC for failure
+            if (NC)
+            {
+                break;
+            }
+            
+            LDA ZP.ACCT
+            AND #0x0F
+            CMP #BasicType.STRING
+            if (Z)
+            {
+                SetValue();
+            }
             break;
         } // end of single exit block
         
@@ -227,7 +265,6 @@ unit Variables
                 FreeStringValue(); // Free existing string memory
                 Messages.CheckError();
                 if (NC) { break; }
-                
                 // Allocate and copy new string (ZP.TOP has source string pointer)
                 AllocateAndCopyString(); // Returns new string pointer in ZP.IDY
                 Messages.CheckError();

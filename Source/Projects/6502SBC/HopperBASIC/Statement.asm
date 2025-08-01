@@ -1251,7 +1251,7 @@ unit Statement
             STA ZP.IDYL
             LDA (stmtTokensPtr+1)
             STA ZP.IDYH
-            
+
             // Call Variables.Declare
             // Input: ZP.TOP = name pointer, ZP.ACCT = symbolType|dataType (packed),
             //        ZP.NEXT = initial value (16-bit), ZP.IDY = tokens pointer (16-bit)
@@ -1262,8 +1262,6 @@ unit Statement
                 // Success - ownership transferred to Variables table
                 STZ (stmtTokensPtr+0)
                 STZ (stmtTokensPtr+1)
-                STZ (stmtStringPtr+0)
-                STZ (stmtStringPtr+1)
             }
             
             break;
