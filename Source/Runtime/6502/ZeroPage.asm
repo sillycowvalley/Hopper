@@ -186,6 +186,7 @@ unit ZP
     const byte EmulatorPCH          = 0xF1;
     const byte TraceMessageL        = 0xF2;  // used by Trace.asm
     const byte TraceMessageH        = 0xF3;
+    const byte SystemState          = 0xF4;  // Success, Failure, Exiting
     
     
 
@@ -410,10 +411,10 @@ unit ZP
     const byte PORTA                = 0xF1;
     const byte DDRB                 = 0xF2;
     const byte DDRA                 = 0xF3;
-#endif
     const byte T1CL                 = 0xF4; // Timer 1 counter low
     const byte T1CH                 = 0xF5; // Timer 1 counter high
-    
+#endif
+
     const byte T1LL                 = 0xF6; // Timer 1 Latch Low
     const byte T1LH                 = 0xF7; // Timer 1 Latch High
     const byte T2CL                 = 0xF8; // Timer 2 Counter Low

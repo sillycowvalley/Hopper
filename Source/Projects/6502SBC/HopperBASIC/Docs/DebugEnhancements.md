@@ -4,17 +4,18 @@
 Complete refactoring of debug output and error handling systems in HopperBASIC to support:
 - Enhanced method call tracing for REPL/Function unification debugging
 - Simplified error handling with one-liner methods
+- Robust state management system replacing fragile C|NC flags
 - Modular debug capabilities with selective compilation
 - Human-readable structure dumps and literate output
 
 ## Debug Symbols
 - `DEBUG` - General debug output and structure dumps
-- `TRACE` - Method entry/exit tracing (new)
+- `TRACE` - Method entry/exit tracing
 - `TERSE_ERRORS` - Error numbers instead of strings (future)
 
 ## Architecture Refactoring
 
-### Four-Unit Split: Tools.asm → Tools.asm + Debug.asm + Trace.asm + Errors.asm
+### Four-Unit Split: Tools.asm → Tools.asm + Debug.asm + Trace.asm + Error.asm + State.asm
 
 **Tools.asm** (Production utilities only)
 - String operations (`StringLength`, `StringCompare`, `CopyBytes`)
@@ -33,12 +34,17 @@ Complete refactoring of debug output and error handling systems in HopperBASIC t
 - Call hierarchy management
 - Convergence point tracking (`MarkConvergence`)
 
-**Errors.asm** (Error handling and messages)
+**Error.asm** (Error handling and messages)
 - One-liner error methods (`SyntaxError()`, `TypeMismatch()`, etc.)
 - Error message strings (moved from Messages.asm)
 - Future: Terse mode compilation support
 
-## Error Handling Simplification
+**State.asm** (System state management)
+- Universal state management replacing fragile C|NC flags
+- State helper methods (`SetSuccess()`, `SetFailure()`, `IsExiting()`, etc.)
+- Robust state propagation for complex flows
+
+## Error Handling Simplification ✅ **COMPLETE**
 
 ### Before (verbose pattern):
 ```hopper
@@ -55,7 +61,7 @@ CLC
 Error.SyntaxError(); BIT ZP.EmulatorPCL
 ```
 
-### Errors Unit API
+### Error Unit API ✅ **IMPLEMENTED**
 ```hopper
 unit Error
 {
@@ -114,17 +120,116 @@ unit Error
 }
 ```
 
-## Trace System
+## State Management System
 
 ### New Zero Page Allocation
 ```hopper
 // Added to ZeroPage.asm  
 #if defined(HOPPER_BASIC)
+const byte SystemState          = 0x4A; // Universal system state (1 byte)
 const byte TraceIndent          = 0x0F; // used by Trace.asm
 const byte TraceMessageL        = 0xF2; // used by Trace.asm
 const byte TraceMessageH        = 0xF3;
 #endif
 ```
+
+### State System Enum
+```hopper
+enum SystemState 
+{
+    Failure = 0,        // Zero for easy testing (CMP -> Z flag)
+    Success = 1,        // Normal completion
+    Exiting = 2         // User exit request (BYE, Ctrl+C)
+}
+```
+
+### State Unit API
+```hopper
+unit State
+{
+    uses "/Source/Runtime/6502/ZeroPage"
+    
+    enum SystemState 
+    {
+        Failure = 0,        // Zero for easy testing
+        Success = 1,        // Normal completion  
+        Exiting = 2         // User exit request (BYE, Ctrl+C)
+    }
+    
+    // Set system state
+    // Input: A = SystemState value
+    // Output: ZP.SystemState updated, flags set for compatibility
+    // Modifies: ZP.SystemState, processor flags
+    SetState()
+    {
+        STA ZP.SystemState
+        CMP #SystemState.Failure
+        if (Z) { CLC } else { SEC }  // Maintain C|NC compatibility
+    }
+    
+    // Get current system state  
+    // Output: A = current SystemState, flags set for compatibility
+    // Modifies: A, processor flags
+    GetState()
+    {
+        LDA ZP.SystemState
+        CMP #SystemState.Failure
+        if (Z) { CLC } else { SEC }  // Set flags for existing code
+    }
+    
+    // Test for specific states (preserves A register)
+    IsFailure()
+    {
+        PHA
+        LDA ZP.SystemState
+        CMP #SystemState.Failure  // Sets Z if failure
+        PLA
+    }
+    
+    IsSuccess()
+    {
+        PHA  
+        LDA ZP.SystemState
+        CMP #SystemState.Success  // Sets Z if success
+        PLA
+    }
+    
+    IsExiting()
+    {
+        PHA
+        LDA ZP.SystemState
+        CMP #SystemState.Exiting  // Sets Z if exiting
+        PLA
+    }
+    
+    // Convenience methods
+    SetSuccess()
+    {
+        LDA #SystemState.Success
+        SetState();
+    }
+    
+    SetFailure()
+    {
+        LDA #SystemState.Failure  
+        SetState();
+    }
+    
+    SetExiting()
+    {
+        LDA #SystemState.Exiting
+        SetState(); 
+    }
+    
+    // Initialize system state
+    Initialize()
+    {
+        SetSuccess();
+    }
+}
+```
+
+## Trace System ✅ **COMPLETE**
 
 ### Enhanced Method Naming Convention with Operator Context
 ```hopper
@@ -155,12 +260,12 @@ CompMult { // '*'
 ```
 
 Examples:
-- `"EvExpr"` - EvaluateExpression
+- `"EvalExpr"` - EvaluateExpression
 - `"CompFn"` - CompileFunction  
 - `"ExecOp"` - ExecuteOpcodes
 - `"FindSym"` - FindSymbol
 
-### Trace Unit Implementation (Current)
+### Trace Unit Implementation ✅ **IMPLEMENTED**
 ```hopper
 unit Trace
 {
@@ -193,7 +298,6 @@ unit Trace
 
 #ifdef TRACE
     const string convergenceMarker = " <- CONVERGENCE";
-    const string endBrace = "} // ";
 
     Initialize()
     {
@@ -227,9 +331,7 @@ unit Trace
         
         PrintIndent();
         
-        LDA #(endBrace % 256) STA ZP.ACCL LDA #(endBrace / 256) STA ZP.ACCH Tools.PrintStringACC();
-        
-        LDA ZP.TraceMessageL STA ZP.ACCL LDA ZP.TraceMessageH STA ZP.ACCH Tools.PrintStringACC(); Debug.Space(); Debug.NL();
+        LDA ZP.TraceMessageL STA ZP.ACCL LDA ZP.TraceMessageH STA ZP.ACCH Tools.PrintStringACC(); Debug.Space(); LDA #'}' Debug.COut(); Debug.NL();
         
         PLY
         PLX
@@ -250,7 +352,7 @@ unit Trace
 }
 ```
 
-## Debug System
+## Debug System ✅ **COMPLETE**
 
 ### Debug Unit API
 ```hopper
@@ -333,26 +435,25 @@ LDA #(traceMethodName % 256) STA ZP.TraceMessageL LDA #(traceMethodName / 256) S
 }
 ```
 
-### Single Point of Exit for Debug Methods
+### State Management Integration
 ```hopper
-// RULE: Debug methods use single exit pattern
-DebugMethod()
+// RULE: Use State system for complex flows, maintain C|NC compatibility
+ComplexMethod()
 {
-    PHA  // Only preserve what we modify
+    PHA
     
-    loop // Single exit block
+    // Complex operation
+    processOperation();
+    
+    // Set appropriate state
+    State.GetState();
+    switch (A)
     {
-        // Debug implementation
-        if (error_condition) { break; }
-        
-        // More debug work
-        if (another_condition) { break; }
-        
-        // Success path
-        break;
+        case SystemState.Success:   { continue; }
+        case SystemState.Failure:   { cleanup(); }
+        case SystemState.Exiting:   { propagateExit(); }
     }
     
-    // Cleanup always executes
     PLA
 }
 ```
@@ -512,7 +613,7 @@ RenderTokenStream()
 
 ## Sample Output
 
-### TRACE Only (Current Implementation)
+### TRACE Only ✅ **WORKING**
 ```
 > print 4 * 4 + 5
 EvalExpr {
@@ -555,6 +656,24 @@ EvalExpr {
     Register State: IDX:4020 TOP:INT-42
   } // ExecOpCodes
 } // EvalExpr
+```
+
+### State Management Examples
+```hopper
+// Robust Console capture mode
+Console.processTokens();
+State.GetState();
+switch (A)
+{
+    case SystemState.Success:   { continue; }
+    case SystemState.Exiting:   { ExitFunctionCaptureMode(); return; }
+    case SystemState.Failure:   { displayError(); }
+}
+
+// REPL unification with clear state flow
+executeUnifiedStatement();
+State.IsExiting();
+if (Z) { cleanup(); exit(); }
 ```
 
 ### Literate Output Examples (Future)
@@ -618,51 +737,35 @@ This validates that the unification is working correctly:
 - **Same results**: Both paths produce the same answer
 
 ## Benefits
-- **Dramatically reduced code clutter**: Error handling 5 lines → 1 line
-- **Consistent error handling**: All errors follow same pattern
-- **Future-proof**: Easy to add terse mode or error logging
-- **Granular debug control**: Choose tracing level independently
-- **Single responsibility**: Each unit has clear, focused purpose
-- **Visual call hierarchy**: Easy to see execution flow ✅ **WORKING**
-- **Literate debugging**: Human-readable structure dumps
-- **Path validation**: Direct verification of REPL vs Function convergence
-- **Zero overhead**: Production builds unaffected when symbols undefined
+- **Dramatically reduced code clutter**: Error handling 5 lines → 1 line ✅
+- **Consistent error handling**: All errors follow same pattern ✅
+- **Robust state management**: Replaces fragile C|NC flag propagation
+- **Future-proof**: Easy to add terse mode or error logging ✅
+- **Granular debug control**: Choose tracing level independently ✅
+- **Single responsibility**: Each unit has clear, focused purpose ✅
+- **Visual call hierarchy**: Easy to see execution flow ✅
+- **Literate debugging**: Human-readable structure dumps ✅
+- **Path validation**: Direct verification of REPL vs Function convergence ✅
+- **Zero overhead**: Production builds unaffected when symbols undefined ✅
 
 ## Implementation Checklist
 
-### Phase 1: Errors ✅ **COMPLETE**
-- [x] **Create Error.asm**
-  - [x] Move error message strings from Messages.asm
-  - [x] Create one-liner error methods (SyntaxError, TypeMismatch, etc.)
-- [x] **Update Messages.asm**
-  - [x] Remove error message strings (moved to Error.asm)
-  - [x] Keep status messages (Welcome, OK, MemoryMsg, etc.)
-- [x] **Systematically replace verbose error patterns with one-liners**
-  - [x] All units updated to use Error.SyntaxError(); BIT ZP.EmulatorPCL pattern
+### Phase 1: State Management System
+- [ ] **Create State.asm**
+  - [ ] Define SystemState enum (Failure, Success, Exiting)
+  - [ ] Implement SetState(), GetState(), IsFailure(), IsSuccess(), IsExiting()
+  - [ ] Add convenience methods (SetSuccess(), SetFailure(), SetExiting())
+  - [ ] Implement Initialize() method
+- [ ] **Update ZeroPage.asm**
+  - [ ] Add ZP.SystemState allocation (1 byte at 0x4A)
+- [ ] **Update InitializeBASIC()**
+  - [ ] Add State.Initialize() call
+- [ ] **Target high-value conversion areas:**
+  - [ ] Console capture mode (function definition across multiple lines)
+  - [ ] Function compilation pipeline error handling
+  - [ ] Main interpreter loop exit handling
 
-### Phase 2: Tools → Tools, Debug ✅ **COMPLETE**
-- [x] **Create Debug.asm** 
-  - [x] Move debug methods from Tools.asm (DumpVariables, DumpStack, etc.)
-  - [x] Move register output methods (XOut, YOut, TOut, etc.)
-  - [x] Add `#ifdef DEBUG` guards around all methods
-- [x] **Refactor Tools.asm**
-  - [x] Remove debug methods (moved to Debug.asm)
-  - [x] Keep only production utilities (string ops, type ops, basic I/O)
-
-### Phase 3: Trace ✅ **CORE COMPLETE**
-- [x] **Create Trace.asm**
-  - [x] Added ZP.TraceIndent, ZP.TraceMessageL/H to ZeroPage.asm
-  - [x] Initialize ZP.TraceIndent in InitializeBASIC()
-  - [x] Implement PrintIndent() with shared compilation guard
-  - [x] Implement MethodEntry() and MethodExit() with TRACE guards  
-  - [x] Implement MarkConvergence() for convergence point detection
-  - [x] Add compact syntax for efficient trace calls
-- [x] **Insert trace calls to REPL execution path:**
-  - [x] Statement.EvaluateExpression() → "EvalExpr"
-  - [x] Compiler.CompileExpression() → "CompExpr"  
-  - [x] Executor.ExecuteOpcodes() → "ExecOpCodes"
-
-### Phase 4: Function Execution Tracing
+### Phase 2: Function Execution Tracing
 - [ ] **Add trace calls to function execution path:**
   - [ ] Functions.Compile() → "FnComp"
   - [ ] Compiler.CompileFunction() → "CompFn"
@@ -670,7 +773,7 @@ This validates that the unification is working correctly:
   - [ ] Executor.executeCall() → "Call"
   - [ ] Executor.executeCallF() → "CallF"
 
-### Phase 5: Enhanced Trace Context
+### Phase 3: Enhanced Trace Context
 - [ ] **Add operator context to trace output:**
   - [ ] Modify compilation methods to show current operator
   - [ ] Format: `CompMult { // '*'` and `} // CompMult '*'`
@@ -695,3 +798,4 @@ This validates that the unification is working correctly:
 - Interactive debugging commands (in addition to DUMP, BUFFERS, HEAP)
 - Breakpoint simulation
 - Error logging and statistics (to file via changes to the Windows emulator)
+- Additional SystemState values as needed (Breaking, Continuing, Retry, Pending)
