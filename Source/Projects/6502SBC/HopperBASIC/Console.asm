@@ -148,19 +148,10 @@ unit Console
             }
         }
     }
-     
+
     // Detect if current line starts FUNC but doesn't end with ENDFUNC
     detectIncompleteFunction()
     {
-    #ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'D'
-        Debug.COut();
-        LDA #'I'
-        Debug.COut();
-    #endif
-
         // Save current position
         LDA ZP.TokenizerPosL
         PHA
@@ -202,9 +193,6 @@ unit Console
                     STA ZP.TokenizerPosH
                     PLA
                     STA ZP.TokenizerPosL
-#ifdef DEBUG
-                    LDA #'i' Debug.COut(); LDA #'b' Debug.COut();
-#endif
                     LDA #CaptureMode.Begin
                     Statement.SetCaptureMode();
                     break; // incomplete BEGIN found
@@ -218,9 +206,6 @@ unit Console
                     STA ZP.TokenizerPosH
                     PLA
                     STA ZP.TokenizerPosL
-#ifdef DEBUG
-                    LDA #'c' Debug.COut(); LDA #'b' Debug.COut();
-#endif
                     break; // Found END - complete BEGIN
                 }
             } // loop
@@ -240,9 +225,6 @@ unit Console
                     STA ZP.TokenizerPosH
                     PLA
                     STA ZP.TokenizerPosL
-#ifdef DEBUG
-                    LDA #'i' Debug.COut(); LDA #'f' Debug.COut();
-#endif
                     LDA #CaptureMode.Func
                     Statement.SetCaptureMode();
                     break; // incomplete function found
@@ -256,106 +238,40 @@ unit Console
                     STA ZP.TokenizerPosH
                     PLA
                     STA ZP.TokenizerPosL
-#ifdef DEBUG
-                    LDA #'c' Debug.COut(); LDA #'f' Debug.COut();
-#endif
                     break; // Found ENDFUNC - complete function
                 }
             } // loop
         }
-        
-    #ifdef DEBUG
-        LDA #'D'
-        Debug.COut();
-        LDA #'I'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-    #endif
     }
-      
+
     // Function capture mode line processing
     processLineFunctionCapture()
     {
-    #ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'L'
-        Debug.COut();
-        LDA #'F'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-    #endif
-
         // Check for tokenization errors
         Error.CheckError();
-        if (NC) { State.SetFailure(); return; }
+        if (NC) { State.SetFailure(); 
+        return; }
         
         // Check if this line contains ENDFUNC (completing the function)
         detectFunctionEnd();
         
-    #ifdef DEBUG
-        PHA // Save A
-        if (C)
-        {
-            LDA #'E' // ENDFUNC detected
-            Debug.COut();
-        }
-        else
-        {
-            LDA #'N' // No ENDFUNC
-            Debug.COut();
-        }
-        PLA // Restore A
-    #endif
-        
         if (C)
         {
             // Complete function captured - process it
-    #ifdef DEBUG
-            LDA #'S' // Setting normal mode
-            Debug.COut();
-    #endif
             LDA #CaptureMode.Off
             Statement.SetCaptureMode();
             
-    #ifdef DEBUG
-            LDA #'C' // Calling CompletePartialFunction
-            Debug.COut();
-    #endif
             FunctionDeclaration.CompletePartialFunction();
             Error.CheckError();
-            if (NC) { State.SetFailure(); return; }
+            if (NC) { State.SetFailure(); 
+            return; }
         }
-        
-    #ifdef DEBUG
-        LDA #'L'
-        Debug.COut();
-        LDA #'F'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-    #endif
         
         State.SetSuccess(); // Continue (either in capture mode or completed)
     }
 
     detectFunctionEnd()
     {
-    #ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'D'
-        Debug.COut();
-        LDA #'F'
-        Debug.COut();
-        LDA #'E'
-        Debug.COut();
-    #endif
-
         // Save current position
         LDA ZP.TokenizerPosL
         PHA
@@ -422,17 +338,6 @@ unit Console
         STA ZP.TokenizerPosH
         PLA
         STA ZP.TokenizerPosL
-        
-    #ifdef DEBUG
-        LDA #'D'
-        Debug.COut();
-        LDA #'F'
-        Debug.COut();
-        LDA #'E'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-    #endif
     }
     
     // Process the tokens in BasicTokenizerBuffer  
@@ -574,14 +479,23 @@ unit Console
         
         // Success - all statements processed
     }
-    
+
+#ifdef TRACE
+    const string cmdDumpTrace = "DUMP";
+#endif
     // Execute DUMP command
     cmdDump()
     {
+#ifdef TRACE
+LDA #(cmdDumpTrace % 256) STA ZP.TraceMessageL LDA #(cmdDumpTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         Statement.IsCaptureModeOn();
         if (C)
         {
             Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
+#ifdef TRACE
+LDA #(cmdDumpTrace % 256) STA ZP.TraceMessageL LDA #(cmdDumpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
             return;
         }
         
@@ -634,16 +548,28 @@ unit Console
         }
 #else
         Error.OnlyInDebug(); BIT ZP.EmulatorPCL
-#endif    
+#endif
+#ifdef TRACE
+LDA #(cmdDumpTrace % 256) STA ZP.TraceMessageL LDA #(cmdDumpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
 
+#ifdef TRACE
+    const string cmdHeapTrace = "HEAP";
+#endif
     // Execute HEAP command
     cmdHeap()
     {
+#ifdef TRACE
+LDA #(cmdHeapTrace % 256) STA ZP.TraceMessageL LDA #(cmdHeapTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         Statement.IsCaptureModeOn();
         if (C)
         {
             Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
+#ifdef TRACE
+LDA #(cmdHeapTrace % 256) STA ZP.TraceMessageL LDA #(cmdHeapTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
             return;
         }
         
@@ -655,15 +581,27 @@ unit Console
 #else
         Error.OnlyInDebug(); BIT ZP.EmulatorPCL
 #endif
+#ifdef TRACE
+LDA #(cmdHeapTrace % 256) STA ZP.TraceMessageL LDA #(cmdHeapTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
-    
+
+#ifdef TRACE
+    const string cmdBuffersTrace = "BUFFERS";
+#endif
     // Execute BUFFERS command
     cmdBuffers()
     {
+#ifdef TRACE
+LDA #(cmdBuffersTrace % 256) STA ZP.TraceMessageL LDA #(cmdBuffersTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         Statement.IsCaptureModeOn();
         if (C)
         {
             Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
+#ifdef TRACE
+LDA #(cmdBuffersTrace % 256) STA ZP.TraceMessageL LDA #(cmdBuffersTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
             return;
         }
         
@@ -675,15 +613,27 @@ unit Console
 #else
         Error.OnlyInDebug(); BIT ZP.EmulatorPCL
 #endif
+#ifdef TRACE
+LDA #(cmdBuffersTrace % 256) STA ZP.TraceMessageL LDA #(cmdBuffersTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
 
+#ifdef TRACE
+    const string cmdMemTrace = "MEM";
+#endif
     // Execute MEM command
     CmdMem()
     {
+#ifdef TRACE
+LDA #(cmdMemTrace % 256) STA ZP.TraceMessageL LDA #(cmdMemTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         Statement.IsCaptureModeOn();
         if (C)
         {
             Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
+#ifdef TRACE
+LDA #(cmdMemTrace % 256) STA ZP.TraceMessageL LDA #(cmdMemTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
             return;
         }
         
@@ -705,22 +655,43 @@ unit Console
         LDA #(Messages.BytesMsg / 256)
         STA ZP.ACCH
         Tools.PrintStringACC();
+#ifdef TRACE
+LDA #(cmdMemTrace % 256) STA ZP.TraceMessageL LDA #(cmdMemTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
-    
+
+#ifdef TRACE
+    const string cmdByeTrace = "BYE";
+#endif
     // Execute BYE command
     cmdBye()
     {
+#ifdef TRACE
+LDA #(cmdByeTrace % 256) STA ZP.TraceMessageL LDA #(cmdByeTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         // BYE command works in both modes - allows escape from function capture
         State.SetExiting(); // Set exit status instead of fragile CLC
+#ifdef TRACE
+LDA #(cmdByeTrace % 256) STA ZP.TraceMessageL LDA #(cmdByeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
-    
+
+#ifdef TRACE
+    const string cmdNewTrace = "NEW";
+#endif
     // Execute NEW command
     cmdNew()
     {
+#ifdef TRACE
+LDA #(cmdNewTrace % 256) STA ZP.TraceMessageL LDA #(cmdNewTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         Statement.IsCaptureModeOn();
         if (C)
         {
             Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
+#ifdef TRACE
+LDA #(cmdNewTrace % 256) STA ZP.TraceMessageL LDA #(cmdNewTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
             return;
         }
         
@@ -729,15 +700,27 @@ unit Console
         Variables.Clear();
         Functions.Clear();
         Messages.PrintOK();
+#ifdef TRACE
+LDA #(cmdNewTrace % 256) STA ZP.TraceMessageL LDA #(cmdNewTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
-    
+
+#ifdef TRACE
+    const string cmdClearTrace = "CLEAR";
+#endif
     // Execute CLEAR command
     cmdClear()
     {
+#ifdef TRACE
+LDA #(cmdClearTrace % 256) STA ZP.TraceMessageL LDA #(cmdClearTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         Statement.IsCaptureModeOn();
         if (C)
         {
             Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
+#ifdef TRACE
+LDA #(cmdClearTrace % 256) STA ZP.TraceMessageL LDA #(cmdClearTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
             return;
         }
         
@@ -745,8 +728,14 @@ unit Console
         
         Variables.Clear();
         Messages.PrintOK();
+#ifdef TRACE
+LDA #(cmdClearTrace % 256) STA ZP.TraceMessageL LDA #(cmdClearTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
-    
+
+#ifdef TRACE
+    const string cmdForgetTrace = "FORGET";
+#endif
     // Execute FORGET command - remove variable, constant, or function by name
     // Input: ZP.CurrentToken = FORGET token
     // Output: Named symbol removed from appropriate table, or error if not found
@@ -754,10 +743,16 @@ unit Console
     // Error: Sets ZP.LastError if function mode, syntax error, or identifier not found
     cmdForget()
     {
+#ifdef TRACE
+LDA #(cmdForgetTrace % 256) STA ZP.TraceMessageL LDA #(cmdForgetTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         Statement.IsCaptureModeOn();
         if (C)
         {
             Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
+#ifdef TRACE
+LDA #(cmdForgetTrace % 256) STA ZP.TraceMessageL LDA #(cmdForgetTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
             return;
         }
         
@@ -850,20 +845,35 @@ unit Console
             CLC
             break;
         } // Single exit block
+#ifdef TRACE
+LDA #(cmdForgetTrace % 256) STA ZP.TraceMessageL LDA #(cmdForgetTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
-    
+
+#ifdef TRACE
+    const string cmdRunTrace = "RUN";
+#endif
     // Execute RUN command
     cmdRun()
     {
+#ifdef TRACE
+LDA #(cmdRunTrace % 256) STA ZP.TraceMessageL LDA #(cmdRunTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         Statement.IsCaptureModeOn();
         if (C)
         {
             Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
+#ifdef TRACE
+LDA #(cmdRunTrace % 256) STA ZP.TraceMessageL LDA #(cmdRunTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
             return;
         }
         
         // TODO: Run program
         Error.NotImplemented(); BIT ZP.EmulatorPCL
+#ifdef TRACE
+LDA #(cmdRunTrace % 256) STA ZP.TraceMessageL LDA #(cmdRunTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Exit function capture mode and return to normal (called from Console or Tokenizer on Ctrl+C)

@@ -19,7 +19,10 @@ unit Listing
     // API Status: Clean
     // All public methods preserve caller state except for documented outputs
     // Commands consume their tokens and display output to serial
-    
+
+#ifdef TRACE
+    const string displayFunctionTrace = "DispFunc";
+#endif
     // Display a complete function with body
     // Input: ZP.IDX = function node address
     // Output: Complete function printed to serial (signature + body + ENDFUNC/END)
@@ -27,6 +30,9 @@ unit Listing
     // Modifies: ZP.IDY (argument iteration), ZP.TOP (name pointers), serial output
     displayFunction()
     {
+#ifdef TRACE
+LDA #(displayFunctionTrace % 256) STA ZP.TraceMessageL LDA #(displayFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHA
         PHX
         PHY
@@ -50,14 +56,23 @@ unit Listing
         PLY
         PLX
         PLA
+#ifdef TRACE
+LDA #(displayFunctionTrace % 256) STA ZP.TraceMessageL LDA #(displayFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
-    
+
+#ifdef TRACE
+    const string checkBeginFuncTrace = "ChkBegin";
+#endif
     // Check if function name is "BEGIN"
     // Input: ZP.TOP = function name pointer
     // Output: C set if name is "BEGIN", NC if regular function
     // Preserves: ZP.TOP, all other registers
     checkForBeginFunction()
     {
+#ifdef TRACE
+LDA #(checkBeginFuncTrace % 256) STA ZP.TraceMessageL LDA #(checkBeginFuncTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHA
         PHY
         
@@ -84,13 +99,22 @@ unit Listing
         
         PLY
         PLA
+#ifdef TRACE
+LDA #(checkBeginFuncTrace % 256) STA ZP.TraceMessageL LDA #(checkBeginFuncTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
-    
+
+#ifdef TRACE
+    const string displayBeginFuncTrace = "DispBegin";
+#endif
     // Display BEGIN...END function (main program)
     // Input: ZP.IDX = function node, ZP.TOP = name pointer
     // Output: BEGIN block printed to serial
     displayBeginFunction()
     {
+#ifdef TRACE
+LDA #(displayBeginFuncTrace % 256) STA ZP.TraceMessageL LDA #(displayBeginFuncTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHA
         PHX
         PHY
@@ -119,13 +143,22 @@ unit Listing
         PLY
         PLX
         PLA
+#ifdef TRACE
+LDA #(displayBeginFuncTrace % 256) STA ZP.TraceMessageL LDA #(displayBeginFuncTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
-    
+
+#ifdef TRACE
+    const string displayRegFuncTrace = "DispReg";
+#endif
     // Display regular FUNC...ENDFUNC function
     // Input: ZP.IDX = function node, ZP.TOP = name pointer (from Functions.GetName)
     // Output: Complete function printed to serial
     displayRegularFunction()
     {
+#ifdef TRACE
+LDA #(displayRegFuncTrace % 256) STA ZP.TraceMessageL LDA #(displayRegFuncTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHA
         PHX
         PHY
@@ -209,13 +242,22 @@ unit Listing
         PLY
         PLX
         PLA
+#ifdef TRACE
+LDA #(displayRegFuncTrace % 256) STA ZP.TraceMessageL LDA #(displayRegFuncTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
-    
+
+#ifdef TRACE
+    const string displayFuncBodyTrace = "DispBody";
+#endif
     // Display function body from token stream as readable BASIC code
     // Input: ZP.IDX = function node address
     // Output: Function body printed to serial as formatted BASIC statements
     displayFunctionBody()
     {
+#ifdef TRACE
+LDA #(displayFuncBodyTrace % 256) STA ZP.TraceMessageL LDA #(displayFuncBodyTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHA
         PHX
         PHY
@@ -235,8 +277,14 @@ unit Listing
         PLY
         PLX
         PLA
+#ifdef TRACE
+LDA #(displayFuncBodyTrace % 256) STA ZP.TraceMessageL LDA #(displayFuncBodyTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
-    
+
+#ifdef TRACE
+    const string displayAllFuncsTrace = "DispAll";
+#endif
     // Display all functions in the system
     // Input: None
     // Output: All function signatures printed to serial, or "NO FUNCTIONS" message
@@ -244,6 +292,9 @@ unit Listing
     // Modifies: ZP.IDX (function iteration), serial output
     displayAllFunctions()
     {
+#ifdef TRACE
+LDA #(displayAllFuncsTrace % 256) STA ZP.TraceMessageL LDA #(displayAllFuncsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHA
         PHX
         PHY
@@ -262,6 +313,9 @@ unit Listing
         PLY
         PLX
         PLA
+#ifdef TRACE
+LDA #(displayAllFuncsTrace % 256) STA ZP.TraceMessageL LDA #(displayAllFuncsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     displaySpecificFunction()
@@ -313,7 +367,10 @@ unit Listing
             break;
         }
     }
-    
+
+#ifdef TRACE
+    const string cmdFuncsTrace = "FUNCS";
+#endif
     // Execute FUNCS command - display all functions or specific function
     // Input: ZP.CurrentToken = FUNCS token (consumed by this method)
     // Output: Function(s) displayed to serial
@@ -321,57 +378,82 @@ unit Listing
     // Error: Sets ZP.LastError if function mode, syntax error, or function not found
     CmdFuncs()
     {
-        Statement.IsCaptureModeOn();
-        if (C)
+#ifdef TRACE
+        LDA #(cmdFuncsTrace % 256) STA ZP.TraceMessageL LDA #(cmdFuncsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        loop
         {
-            Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
-            State.SetFailure();
-            return;
-        }
-        
-        Tokenizer.NextToken(); // consume 'FUNCS'
-        Error.CheckError();
-        if (NC) { State.SetFailure(); return; }
-        
-        // Check if there's a function name argument
-        LDA ZP.CurrentToken
-        CMP #Tokens.IDENTIFIER
-        if (Z)
-        {
-            // Display specific function
-            displaySpecificFunction();
+            Statement.IsCaptureModeOn();
+            if (C)
+            {
+                Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
+                State.SetFailure();
+                break;
+            }
+            
+            Tokenizer.NextToken(); // consume 'FUNCS'
             Error.CheckError();
-            if (NC) { State.SetFailure(); return; }
+            if (NC) 
+            { 
+                State.SetFailure(); 
+                break; 
+            }
+            
+            // Check if there's a function name argument
+            LDA ZP.CurrentToken
+            CMP #Tokens.IDENTIFIER
+            if (Z)
+            {
+                // Display specific function
+                displaySpecificFunction();
+                Error.CheckError();
+                if (NC) 
+                { 
+                    State.SetFailure(); 
+                    break;
+                }
+                State.SetSuccess();
+                break;
+            }
+            
+            CMP #Tokens.EOL
+            if (NZ)
+            {
+                // Invalid argument
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                State.SetFailure();
+                break;
+            }
+            
+            // Display all functions
+            displayAllFunctions();
             State.SetSuccess();
-            return;
-        }
-        
-        CMP #Tokens.EOL
-        if (NZ)
-        {
-            // Invalid argument
-            Error.SyntaxError(); BIT ZP.EmulatorPCL
-            State.SetFailure();
-            return;
-        }
-        
-        // Display all functions
-        displayAllFunctions();
-        State.SetSuccess();
+            break;
+        } // loop exit
+#ifdef TRACE
+        LDA #(cmdFuncsTrace % 256) STA ZP.TraceMessageL LDA #(cmdFuncsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
-    
+
     // Execute LIST command - display complete program listing
     // Input: ZP.CurrentToken = LIST token (NOT consumed - delegated to CmdVars)
     // Output: Complete program listing (constants, variables, functions) displayed to serial
     // Shows constants first, then variables, then functions in creation order per spec
     // Error: Sets ZP.LastError if function mode or other command errors
+    const string cmdListTrace = "LIST";
     CmdList()
     {
+#ifdef TRACE
+    LDA #(cmdListTrace % 256) STA ZP.TraceMessageL LDA #(cmdListTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         Statement.IsCaptureModeOn();
         if (C)
         {
             Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
             State.SetFailure();
+#ifdef TRACE
+LDA #(cmdListTrace % 256) STA ZP.TraceMessageL LDA #(cmdListTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
             return;
         }
         
@@ -381,175 +463,203 @@ unit Listing
         // Display variables and constants (VARS output)
         CmdVars();
         Error.CheckError();
-        if (NC) { State.SetFailure(); return; }
+        if (NC) { State.SetFailure(); 
+#ifdef TRACE
+LDA #(cmdListTrace % 256) STA ZP.TraceMessageL LDA #(cmdListTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+        return; }
         
         // Display all functions
         displayAllFunctions();
         Error.CheckError();
-        if (NC) { State.SetFailure(); return; }
+        if (NC) { State.SetFailure(); 
+#ifdef TRACE
+LDA #(cmdListTrace % 256) STA ZP.TraceMessageL LDA #(cmdListTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+        return; }
         
         State.SetSuccess();
+#ifdef TRACE
+LDA #(cmdListTrace % 256) STA ZP.TraceMessageL LDA #(cmdListTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
-    
+
+#ifdef TRACE
+    const string cmdVarsTrace = "VARS";
+#endif
     // Execute VARS command - display all variables and constants
     // Input: ZP.CurrentToken = VARS (or LIST) token (consumed by this method)
     // Output: Constants first, then variables, with blank lines separating sections
     // Error: Sets ZP.LastError if function mode or iteration errors
     CmdVars()
     {
-        Statement.IsCaptureModeOn();
-        if (C)
-        {
-            Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
-            State.SetFailure();
-            return;
-        }
-        
-        Tokenizer.NextToken(); // consume 'VARS' (or 'LIST' when called from CmdList)
-        Error.CheckError();
-        if (NC) { State.SetFailure(); return; }
-        
-        // PASS 1: Display all constants
-        LDX #0  // Counter for constants found
-        Variables.IterateConstants(); // Output: ZP.IDX = first constant, C set if found
+#ifdef TRACE
+    LDA #(cmdVarsTrace % 256) STA ZP.TraceMessageL LDA #(cmdVarsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         loop
         {
-            if (NC) { break; }  // No more constants
-            
-            // Print "CONST "
-            LDA #Tokens.CONST
-            Tokenizer.PrintKeyword();   
-            LDA #' '
-            Serial.WriteChar();
-            
-            // Get symbol type and data type
-            Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = symbolType|dataType
-            
-            // Get packed type and extract data type
-            LDA ZP.ACCT
-            AND #0x0F
-            STA ZP.ACCT
-            Tools.PrintType(); // Input: A = dataType
-            
-            // Print space
-            LDA #' '
-            Serial.WriteChar();
-            
-            // Get and print the constant name
-            Variables.GetName(); // Input: ZP.IDX, Output: ZP.ACC = name pointer
-            Tools.PrintStringACC();
-            
-            // Print " = "
-            LDA #' '
-            Serial.WriteChar();
-            LDA #'='
-            Serial.WriteChar();
-            LDA #' '
-            Serial.WriteChar();
-            
-            LDA ZP.ACCT
-            AND #0x0F
-            CMP #BasicType.STRING
-            if (Z)
+            Statement.IsCaptureModeOn();
+            if (C)
             {
-                LDA #'"'
-                Serial.WriteChar();
+                Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
+                State.SetFailure();
+                break;
             }
             
-            // Get and print the value
-            Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = type
-            Tools.PrintVariableValue(); // Input: ZP.TOP = value, ZP.TOPT = type
-            
-            LDA ZP.ACCT
-            AND #0x0F
-            CMP #BasicType.STRING
-            if (Z)
-            {
-                LDA #'"'
-                Serial.WriteChar();
+            Tokenizer.NextToken(); // consume 'VARS' (or 'LIST' when called from CmdList)
+            Error.CheckError();
+            if (NC) 
+            { 
+                State.SetFailure(); 
+                break;
             }
             
-            // Print newline
-            Tools.NL();
-            
-            INX  // Increment constant count
-            Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
-        }
-        
-        // If we found constants, add a blank line
-        CPX #0
-        if (NZ)
-        {
-            Tools.NL();
-        }
-        
-        // PASS 2: Display all variables
-        LDY #0  // Counter for variables found
-        Variables.IterateVariables(); // Output: ZP.IDX = first variable, C set if found
-        loop
-        {
-            if (NC) { break; }  // No more variables
-            
-            // Get symbol type and data type
-            Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = symbolType|dataType
-            
-            // Get packed type and extract data type
-            LDA ZP.ACCT
-            AND #0x0F
-            Tools.PrintType(); // Input: A = dataType
-            
-            // Print space
-            LDA #' '
-            Serial.WriteChar();
-            
-            // Get and print the variable name
-            Variables.GetName(); // Input: ZP.IDX, Output: ZP.ACC = name pointer
-            Tools.PrintStringACC();
-            
-            // Print " = "
-            LDA #' '
-            Serial.WriteChar();
-            LDA #'='
-            Serial.WriteChar();
-            LDA #' '
-            Serial.WriteChar();
-            
-            LDA ZP.ACCT
-            AND #0x0F
-            CMP #BasicType.STRING
-            if (Z)
+            // PASS 1: Display all constants
+            LDX #0  // Counter for constants found
+            Variables.IterateConstants(); // Output: ZP.IDX = first constant, C set if found
+            loop
             {
-                LDA #'"'
+                if (NC) { break; }  // No more constants
+                
+                // Print "CONST "
+                LDA #Tokens.CONST
+                Tokenizer.PrintKeyword();   
+                LDA #' '
                 Serial.WriteChar();
+                
+                // Get symbol type and data type
+                Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = symbolType|dataType
+                
+                // Get packed type and extract data type
+                LDA ZP.ACCT
+                AND #0x0F
+                STA ZP.ACCT
+                Tools.PrintType(); // Input: A = dataType
+                
+                // Print space
+                LDA #' '
+                Serial.WriteChar();
+                
+                // Get and print the constant name
+                Variables.GetName(); // Input: ZP.IDX, Output: ZP.ACC = name pointer
+                Tools.PrintStringACC();
+                
+                // Print " = "
+                LDA #' '
+                Serial.WriteChar();
+                LDA #'='
+                Serial.WriteChar();
+                LDA #' '
+                Serial.WriteChar();
+                
+                LDA ZP.ACCT
+                AND #0x0F
+                CMP #BasicType.STRING
+                if (Z)
+                {
+                    LDA #'"'
+                    Serial.WriteChar();
+                }
+                
+                // Get and print the value
+                Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = type
+                Tools.PrintVariableValue(); // Input: ZP.TOP = value, ZP.TOPT = type
+                
+                LDA ZP.ACCT
+                AND #0x0F
+                CMP #BasicType.STRING
+                if (Z)
+                {
+                    LDA #'"'
+                    Serial.WriteChar();
+                }
+                
+                // Print newline
+                Tools.NL();
+                
+                INX  // Increment constant count
+                Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
             }
             
-            // Get and print the value
-            Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = type
-            Tools.PrintVariableValue(); // Input: ZP.TOP = value, ZP.TOPT = type
-            
-            LDA ZP.ACCT
-            AND #0x0F
-            CMP #BasicType.STRING
-            if (Z)
+            // If we found constants, add a blank line
+            CPX #0
+            if (NZ)
             {
-                LDA #'"'
-                Serial.WriteChar();
+                Tools.NL();
             }
             
-            // Print newline
-            Tools.NL();
+            // PASS 2: Display all variables
+            LDY #0  // Counter for variables found
+            Variables.IterateVariables(); // Output: ZP.IDX = first variable, C set if found
+            loop
+            {
+                if (NC) { break; }  // No more variables
+                
+                // Get symbol type and data type
+                Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = symbolType|dataType
+                
+                // Get packed type and extract data type
+                LDA ZP.ACCT
+                AND #0x0F
+                Tools.PrintType(); // Input: A = dataType
+                
+                // Print space
+                LDA #' '
+                Serial.WriteChar();
+                
+                // Get and print the variable name
+                Variables.GetName(); // Input: ZP.IDX, Output: ZP.ACC = name pointer
+                Tools.PrintStringACC();
+                
+                // Print " = "
+                LDA #' '
+                Serial.WriteChar();
+                LDA #'='
+                Serial.WriteChar();
+                LDA #' '
+                Serial.WriteChar();
+                
+                LDA ZP.ACCT
+                AND #0x0F
+                CMP #BasicType.STRING
+                if (Z)
+                {
+                    LDA #'"'
+                    Serial.WriteChar();
+                }
+                
+                // Get and print the value
+                Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = type
+                Tools.PrintVariableValue(); // Input: ZP.TOP = value, ZP.TOPT = type
+                
+                LDA ZP.ACCT
+                AND #0x0F
+                CMP #BasicType.STRING
+                if (Z)
+                {
+                    LDA #'"'
+                    Serial.WriteChar();
+                }
+                
+                // Print newline
+                Tools.NL();
+                
+                INY  // Increment variable count
+                Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
+            }
             
-            INY  // Increment variable count
-            Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
-        }
-        
-        // If we found variables, add a blank line
-        CPY #0
-        if (NZ)
-        {
-            Tools.NL();
-        }
-        
-        State.SetSuccess();
+            // If we found variables, add a blank line
+            CPY #0
+            if (NZ)
+            {
+                Tools.NL();
+            }
+            
+            State.SetSuccess();
+            break;
+        } // exit loop
+#ifdef TRACE
+        LDA #(cmdVarsTrace % 256) STA ZP.TraceMessageL LDA #(cmdVarsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
 }
