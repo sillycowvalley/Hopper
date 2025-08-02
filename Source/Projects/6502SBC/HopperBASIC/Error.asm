@@ -392,7 +392,7 @@ unit Error
         else
         {
             CLC  // Error occurred
-#ifdef DEBUG
+#if defined(DEBUG) || defined(TRACE)
             LDA #'!'
             Serial.WriteChar();
 #endif
@@ -446,7 +446,7 @@ unit Error
         LDA ZP.LastErrorH
         STA ZP.ACCH
         Tools.PrintStringACC();
-#ifdef DEBUG
+#if defined(DEBUG) || defined(TRACE)
         // 6502 PC
         LDA #' '
         Serial.WriteChar();

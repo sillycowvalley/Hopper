@@ -5,6 +5,7 @@ unit Executor
     uses "OpCodes"
     uses "Variables"
     uses "Error"
+    uses "State"  // Add State dependency
     uses "BasicTypes"
     uses "Instructions"
     uses "ComparisonInstructions"
@@ -24,7 +25,7 @@ unit Executor
     
     // Main entry point - Execute compiled opcodes
     // Input: ZP.OpCodeBufferLengthL/H contains opcode buffer length
-    // Output: C set if successful, NC if error occurred
+    // Output: SystemState set (Success, Failure, or Exiting)
     // Uses: BasicOpCodeBuffer at Address.BasicOpCodeBuffer (0x0C00)
     const string strExecuteOpCodes = "ExecOpCodes";
     ExecuteOpCodes()
@@ -46,11 +47,8 @@ unit Executor
         {
             // Initialize executor state
             InitExecutor();
-            if (NC) 
-            { 
-                CLC // Error already set by InitExecutor
-                break; 
-            }
+            State.CanContinue();
+            if (NC) { break; } // Error already set by InitExecutor
             
             // Main execution loop
             loop
@@ -65,25 +63,21 @@ unit Executor
                     CMP executorEndAddrH
                     if (Z) 
                     { 
-                        // REPL uses this exit
-                        SEC // Success - reached end
+                        // REPL uses this exit - success
+                        State.SetSuccess();
                         break; 
                     }
                 }
                 
                 // Fetch and execute next opcode
                 FetchOpCode();
-                if (NC) 
-                { 
-                    break; // Error fetching opcode
-                }
+                State.CanContinue();
+                if (NC) { break; } // Error fetching opcode
                 
                 // Dispatch opcode (A contains opcode value)
                 DispatchOpCode();
-                if (NC) 
-                { 
-                    break; // Error executing opcode
-                }
+                State.CanContinue();
+                if (NC) { break; } // Error executing opcode
             }
             break;
         } // Single exit block
@@ -92,7 +86,6 @@ unit Executor
         LDA #(strExecuteOpCodes % 256) STA ZP.TraceMessageL LDA #(strExecuteOpCodes / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
 
-
         PLY
         PLX
         PLA
@@ -100,7 +93,7 @@ unit Executor
     
     // Initialize executor state from opcode buffer
     // Input: ZP.OpCodeBufferLengthL/H contains opcode buffer length
-    // Output: C set if successful, NC if error
+    // Output: SystemState set (Success or Failure)
     InitExecutor()
     {
         // Set start address to BasicOpCodeBuffer
@@ -126,15 +119,16 @@ unit Executor
         if (Z)
         {
             Error.InternalError(); BIT ZP.EmulatorPCL
+            State.SetFailure();
             return;
         }
         
-        SEC // Success
+        State.SetSuccess();
     }
     
     // Fetch next opcode from buffer
     // Input: ZP.PC points to current position
-    // Output: A contains opcode, ZP.PC advanced, C set if success, NC if bounds error
+    // Output: A contains opcode, ZP.PC advanced, SystemState set
     FetchOpCode()
     {
         // Check bounds
@@ -149,6 +143,7 @@ unit Executor
             { 
                 // At end of buffer
                 Error.InternalError(); BIT ZP.EmulatorPCL
+                State.SetFailure();
                 return; 
             }
         }
@@ -176,12 +171,12 @@ unit Executor
         }
         
         PLA // Restore opcode to A
-        SEC // Success
+        State.SetSuccess();
     }
     
     // Fetch single byte operand from buffer
     // Input: ZP.PC points to operand position
-    // Output: A contains operand byte, ZP.PC advanced, C set if success
+    // Output: A contains operand byte, ZP.PC advanced, SystemState set
     FetchOperandByte()
     {
         // Check bounds
@@ -195,6 +190,7 @@ unit Executor
             if (Z) 
             { 
                 Error.InternalError(); BIT ZP.EmulatorPCL
+                State.SetFailure();
                 return; 
             }
         }
@@ -212,30 +208,32 @@ unit Executor
         }
         
         PLA // Restore operand to A
-        SEC // Success
+        State.SetSuccess();
     }
     
     // Fetch word operand from buffer (little-endian)
     // Input: ZP.PC points to operand position
-    // Output: executorOperandL/H contains word, ZP.PC advanced by 2, C set if success
+    // Output: executorOperandL/H contains word, ZP.PC advanced by 2, SystemState set
     FetchOperandWord()
     {
         // Fetch low byte
         FetchOperandByte();
+        State.CanContinue();
         if (NC) { return; }
         STA executorOperandL
         
         // Fetch high byte
         FetchOperandByte();
+        State.CanContinue();
         if (NC) { return; }
         STA executorOperandH
         
-        SEC // Success
+        State.SetSuccess();
     }
     
     // Dispatch opcode to appropriate handler
     // Input: A contains opcode value
-    // Output: Execution continues (errors detected via Error.CheckError())
+    // Output: SystemState set based on execution result
     DispatchOpCode()
     {
         TAY // for jump table optimization
@@ -442,6 +440,24 @@ unit Executor
                 executeNotImplemented();
             }
         }
+        
+        // Check if any instruction set an error state
+        Error.CheckError();
+        if (NC) 
+        { 
+            State.SetFailure(); 
+        }
+        else
+        {
+            // Only set success if no error occurred
+            State.CanContinue();
+            if (NC) 
+            {
+                // State was already set to Failure or Exiting by instruction
+                return;
+            }
+            State.SetSuccess();
+        }
     }
     
     executeNotImplemented()
@@ -453,6 +469,7 @@ unit Executor
 #endif                
         // Unknown opcode
         Error.NotImplemented(); BIT ZP.EmulatorPCL
+        State.SetFailure();
     }
     
     // === CONTROL FLOW AND STACK MANIPULATION HANDLERS ===
@@ -461,13 +478,14 @@ unit Executor
     {
         Stacks.PopBP();
         Stacks.PopPC();
-        SEC
+        State.SetSuccess();
     }
     
     executeReturnVal()
     {
         // TODO: Implement function return with value (pop return value from stack)
         Error.NotImplemented(); BIT ZP.EmulatorPCL
+        State.SetFailure();
     }
     
     executeEnter()
@@ -475,14 +493,14 @@ unit Executor
         Stacks.PushBP();
         LDA ZP.BP
         STA ZP.SP
-        SEC
+        State.SetSuccess();
     }
     
     executeDecSp()
     {
         // Decrement stack pointer (discard top value)
         DEC ZP.SP
-        SEC // Success
+        State.SetSuccess();
     }
     
     executeDup()
@@ -493,13 +511,13 @@ unit Executor
         Stacks.PushTop(); // Push it back
         LDA ZP.TOPT  
         Stacks.PushTop(); // Push duplicate
-        SEC // Success
+        State.SetSuccess();
     }
     
     executeNop()
     {
         // No operation - do nothing
-        SEC // Success
+        State.SetSuccess();
     }
     
     // === LITERAL PUSH HANDLERS (ONE BYTE OPERAND) ===
@@ -508,6 +526,7 @@ unit Executor
     {
         // Fetch operand byte
         FetchOperandByte();
+        State.CanContinue();
         if (NC) { return; }
         
         // Store in ZP.TOP as BIT value (0 or 1)
@@ -517,13 +536,14 @@ unit Executor
         LDA # BasicType.BIT
         Stacks.PushTop();
         
-        SEC // Success
+        State.SetSuccess();
     }
     
     executePushByte()
     {
         // Fetch operand byte
         FetchOperandByte();
+        State.CanContinue();
         if (NC) { return; }
         
         // Store in ZP.TOP as BYTE value
@@ -533,7 +553,7 @@ unit Executor
         LDA # BasicType.BYTE
         Stacks.PushTop();
         
-        SEC // Success
+        State.SetSuccess();
     }
     
     // Execute PUSHCSTRING opcode - push string pointer to stack
@@ -547,7 +567,7 @@ unit Executor
         Error.CheckError();
         if (NC) 
         { 
-            CLC
+            State.SetFailure();
             return; 
         }
         
@@ -564,11 +584,11 @@ unit Executor
         Error.CheckError();
         if (NC) 
         { 
-            CLC
+            State.SetFailure();
             return; 
         }
         
-        SEC // Success
+        State.SetSuccess();
     }
     
     // === VARIABLE OPERATION HANDLERS (ONE BYTE OPERAND) ===
@@ -584,7 +604,7 @@ unit Executor
         Error.CheckError();
         if (NC) 
         { 
-            CLC
+            State.SetFailure();
             return; 
         }
         
@@ -599,7 +619,7 @@ unit Executor
         Error.CheckError();
         if (NC) 
         { 
-            CLC
+            State.SetFailure();
             return; 
         }
         
@@ -609,28 +629,32 @@ unit Executor
         Error.CheckError();
         if (NC) 
         { 
-            CLC
+            State.SetFailure();
             return; 
         }
         
-        SEC // Success
+        State.SetSuccess();
     }    
+    
     executePushLocal()
     {
         // TODO: Fetch local variable by BP offset and push value
         Error.NotImplemented(); BIT ZP.EmulatorPCL
+        State.SetFailure();
     }
     
     executePopGlobal()
     {
         // TODO: Pop value and store in global variable by index
         Error.NotImplemented(); BIT ZP.EmulatorPCL
+        State.SetFailure();
     }
     
     executePopLocal()
     {
         // TODO: Pop value and store in local variable by BP offset
         Error.NotImplemented(); BIT ZP.EmulatorPCL
+        State.SetFailure();
     }
     
     // === CONTROL FLOW HANDLERS (ONE BYTE OPERAND) ===
@@ -639,18 +663,21 @@ unit Executor
     {
         // TODO: Unconditional jump with signed byte offset
         Error.NotImplemented(); BIT ZP.EmulatorPCL
+        State.SetFailure();
     }
     
     executeJumpZB()
     {
         // TODO: Jump if zero with signed byte offset
         Error.NotImplemented(); BIT ZP.EmulatorPCL
+        State.SetFailure();
     }
     
     executeJumpNZB()
     {
         // TODO: Jump if non-zero with signed byte offset
         Error.NotImplemented(); BIT ZP.EmulatorPCL
+        State.SetFailure();
     }
     
     // === FUNCTION AND SYSTEM CALL HANDLERS (ONE BYTE OPERAND) ===
@@ -660,9 +687,9 @@ unit Executor
         loop
         {
             FetchOperandWord();
+            State.CanContinue();
             if (NC) { break; }
     
-        
             LDA executorOperandL
             STA ZP.TOPL
             LDA executorOperandH
@@ -682,6 +709,7 @@ unit Executor
                 LDA #'?' Debug.COut(); LDA #'F' Debug.COut();
     #endif
                 Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
+                State.SetFailure();
                 break;
             }
 #ifdef DEBUG
@@ -699,6 +727,7 @@ unit Executor
                 Functions.Compile();
                 if (NC)
                 {
+                    State.SetFailure();
                     break; // compilation failed
                 }
             }
@@ -763,7 +792,7 @@ unit Executor
             
     #endif
             
-            SEC
+            State.SetSuccess();
             break;
         } // loop
     }
@@ -775,12 +804,15 @@ unit Executor
         // PUSH BP
         // PC = <address>
         Functions.JumpToOpCodes();
+        // State management handled by Functions.JumpToOpCodes()
     }
     
     executeSysCall()
     {
         FetchOperandByte();
+        State.CanContinue();
         if (NC) { return; }
+        
         TAX
         switch (A)
         {
@@ -788,17 +820,19 @@ unit Executor
             {
                 Stacks.PopTop();
                 Tools.PrintVariableValue();
+                State.SetSuccess();
             }
             case SysCallType.PrintNewLine:
             {
                 LDA #'\n' Serial.WriteChar();
+                State.SetSuccess();
             }
             default:
             {
                 Error.NotImplemented(); BIT ZP.EmulatorPCL
+                State.SetFailure();
             }
         }
-        SEC
     }
     
     // === LITERAL PUSH HANDLERS (TWO BYTE OPERANDS) ===
@@ -807,6 +841,7 @@ unit Executor
     {
         // Fetch 16-bit operand
         FetchOperandWord();
+        State.CanContinue();
         if (NC) { return; }
         
         // Store in ZP.TOP as INT value
@@ -817,13 +852,14 @@ unit Executor
         LDA # BasicType.INT
         Stacks.PushTop();
         
-        SEC // Success
+        State.SetSuccess();
     }
     
     executePushWord()
     {
         // Fetch 16-bit operand
         FetchOperandWord();
+        State.CanContinue();
         if (NC) { return; }
         
         // Store in ZP.TOP as WORD value
@@ -834,7 +870,7 @@ unit Executor
         LDA # BasicType.WORD
         Stacks.PushTop();
         
-        SEC // Success
+        State.SetSuccess();
     }
     
     // === CONTROL FLOW HANDLERS (TWO BYTE OPERANDS) ===
@@ -843,17 +879,20 @@ unit Executor
     {
         // TODO: Unconditional jump with signed word offset
         Error.NotImplemented(); BIT ZP.EmulatorPCL
+        State.SetFailure();
     }
     
     executeJumpZW()
     {
         // TODO: Jump if zero with signed word offset
         Error.NotImplemented(); BIT ZP.EmulatorPCL
+        State.SetFailure();
     }
     
     executeJumpNZW()
     {
         // TODO: Jump if non-zero with signed word offset
         Error.NotImplemented(); BIT ZP.EmulatorPCL
+        State.SetFailure();
     }
 }
