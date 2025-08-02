@@ -247,7 +247,11 @@ unit Statement
             // 2. Execute opcodes ? result on stack
             Executor.ExecuteOpCodes();
             Error.CheckError(); 
-            if (NC) { State.SetFailure(); break; } 
+            if (NC)
+            {
+                State.SetFailure(); 
+                break;
+            } 
             
             State.IsExiting();
             if (C)

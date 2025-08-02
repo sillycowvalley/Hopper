@@ -721,6 +721,8 @@ unit Functions
             // Mark function as compiled
             SetCompiled();
             
+DumpBasicBuffers();            
+DumpHeap();
             SEC // Success
             break;
         }

@@ -560,7 +560,15 @@ unit Executor
         
         Stacks.PopBP();
         Stacks.PopPC();
-        State.SetSuccess();
+        LDA ZP.CSP
+        if (Z) // CallStack pointer == 0?
+        {
+            State.SetExiting(); // popped back down to entry call
+        }
+        else
+        {
+            State.SetSuccess();
+        }
         
 #ifdef TRACE
         LDA #(executeReturnTrace % 256) STA ZP.TraceMessageL LDA #(executeReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();

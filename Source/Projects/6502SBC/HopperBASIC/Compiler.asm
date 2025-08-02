@@ -681,35 +681,38 @@ unit Compiler
         LDA #'L'
         Debug.COut();
 #endif
-        
-        // Compile left operand (higher precedence)
-        compileLogicalAnd();
-        Error.CheckError();
-        if (NC) { return; }
-        
         loop
         {
-            LDA ZP.CurrentToken
-            CMP #Tokens.OR
-            if (NZ) { break; }
-            
-            // Get next token for right operand
-            Tokenizer.NextToken();
-            Error.CheckError();
-            if (NC) { return; }
-            
-            // Compile right operand
+            // Compile left operand (higher precedence)
             compileLogicalAnd();
             Error.CheckError();
             if (NC) { return; }
             
-            // Emit logical OR opcode
-            LDA #Tokens.OR
-            EmitLogicalOp();
-            Error.CheckError();
-            if (NC) { return; }
-        }
-        
+            loop
+            {
+                LDA ZP.CurrentToken
+                CMP #Tokens.OR
+                if (NZ) { break; }
+                
+                // Get next token for right operand
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Compile right operand
+                compileLogicalAnd();
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Emit logical OR opcode
+                LDA #Tokens.OR
+                EmitLogicalOp();
+                Error.CheckError();
+                if (NC) { break; }
+            } // loop
+            exit;
+        } // loop
+            
 #ifdef DEBUG
         LDA #'C'
         Debug.COut();

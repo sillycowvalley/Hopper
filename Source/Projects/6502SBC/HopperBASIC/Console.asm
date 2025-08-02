@@ -498,21 +498,28 @@ unit Console
                     // Not a console command, try to execute as a statement
                     Statement.Execute();
                     Error.CheckError();
-                    if (NC) { return; }
+                    if (NC)
+                    {
+                        return; // error occurred
+                    }
+                    LDA #'@' Debug.COut();Debug.COut();Debug.COut();
                 }
             }
             
             // After executing statement, check what comes next
             LDA ZP.CurrentToken
             CMP #Tokens.EOL
-            if (Z) { break; }  // End of line
+            if (Z)
+            {
+                break; // End of line
+            }  
             
             CMP #Tokens.COLON
             if (Z) 
             { 
                 continue;  // Found colon, continue with next statement
             }
-            
+DumpBasicBuffers();
             // If we get here, unexpected token after statement
             Error.SyntaxError(); BIT ZP.EmulatorPCL
             return;
