@@ -7,6 +7,7 @@ unit Console
     uses "/Source/Runtime/6502/MemoryMap"
     uses "Messages"
     uses "Error"
+    uses "State"
     uses "Tools"
     uses "Tokenizer"
     uses "Statement"
@@ -28,6 +29,9 @@ unit Console
         
         LDA #CaptureMode.Off
         Statement.SetCaptureMode();
+        
+        // Initialize state system
+        State.SetSuccess();
     }
     
     // Read a line of input and tokenize it
@@ -49,7 +53,9 @@ unit Console
         }
         
         Error.CheckError();
-        if (NC) { return; }  // Return if tokenization failed
+        if (NC) { State.SetFailure(); return; }  // Return if tokenization failed
+        
+        State.SetSuccess();
     }
     
     // Enhanced ProcessLine() to handle function capture mode
@@ -66,6 +72,15 @@ unit Console
             // Normal mode processing
             processLineNormal();
         }
+        
+        // Check SystemState and propagate
+        State.GetState();
+        switch (A)
+        {
+            case SystemState.Success:   { /* continue */ }
+            case SystemState.Failure:   { return; }
+            case SystemState.Exiting:   { return; }
+        }
     }
     
     // Normal mode processing
@@ -73,7 +88,7 @@ unit Console
     {
         // Check for tokenization errors
         Error.CheckError();
-        if (NC) { return; }  // Error during tokenization
+        if (NC) { State.SetFailure(); return; }
         
         // Check for empty line (just EOL token)
         LDA ZP.TokenBufferLengthL
@@ -101,7 +116,7 @@ unit Console
         CMP #Tokens.EOL
         if (Z)
         {
-            SEC  // Continue (empty line)
+            State.SetSuccess(); // Continue (empty line)
             return;
         }
         
@@ -117,11 +132,11 @@ unit Console
         // Always process the tokens first (this creates the function node)
         processTokens();
         Error.CheckError();
-        if (NC) { return; }
+        if (NC) { State.SetFailure(); return; }
         
         // After processing, check if we just processed an incomplete function
         detectIncompleteFunction();
-        SEC // Continue
+        State.SetSuccess(); // Continue
     }
      
     // Detect if current line starts FUNC but doesn't end with ENDFUNC
@@ -161,8 +176,7 @@ unit Console
                 STA ZP.TokenizerPosH
                 PLA
                 STA ZP.TokenizerPosL
-                CLC // Not a function
-                return;
+                return; // Not a function
             }
             
             // BEGIN case - scan for END
@@ -183,8 +197,7 @@ unit Console
 #endif
                     LDA #CaptureMode.Begin
                     Statement.SetCaptureMode();
-                    SEC // incomplete BEGIN found !!
-                    break; 
+                    break; // incomplete BEGIN found
                 }
                 
                 CMP #Tokens.END
@@ -198,8 +211,7 @@ unit Console
 #ifdef DEBUG
                     LDA #'c' Debug.COut(); LDA #'b' Debug.COut();
 #endif
-                    CLC // Found END - complete BEGIN
-                    break;
+                    break; // Found END - complete BEGIN
                 }
             } // loop
         }
@@ -223,8 +235,7 @@ unit Console
 #endif
                     LDA #CaptureMode.Func
                     Statement.SetCaptureMode();
-                    SEC // incomplete function found !!
-                    break; 
+                    break; // incomplete function found
                 }
                 
                 CMP #Tokens.ENDFUNC
@@ -238,8 +249,7 @@ unit Console
 #ifdef DEBUG
                     LDA #'c' Debug.COut(); LDA #'f' Debug.COut();
 #endif
-                    CLC // Found ENDFUNC - complete function
-                    break;
+                    break; // Found ENDFUNC - complete function
                 }
             } // loop
         }
@@ -270,14 +280,13 @@ unit Console
 
         // Check for tokenization errors
         Error.CheckError();
-        if (NC) { return; }
+        if (NC) { State.SetFailure(); return; }
         
         // Check if this line contains ENDFUNC (completing the function)
         detectFunctionEnd();
         
     #ifdef DEBUG
         PHA // Save A
-        PHP // Save flags
         if (C)
         {
             LDA #'E' // ENDFUNC detected
@@ -288,7 +297,6 @@ unit Console
             LDA #'N' // No ENDFUNC
             Debug.COut();
         }
-        PLP // Restore flags
         PLA // Restore A
     #endif
         
@@ -308,7 +316,7 @@ unit Console
     #endif
             FunctionDeclaration.CompletePartialFunction();
             Error.CheckError();
-            if (NC) { return; }
+            if (NC) { State.SetFailure(); return; }
         }
         
     #ifdef DEBUG
@@ -322,7 +330,7 @@ unit Console
         Debug.COut();
     #endif
         
-        SEC // Continue (either in capture mode or completed)
+        State.SetSuccess(); // Continue (either in capture mode or completed)
     }
 
     detectFunctionEnd()
@@ -418,11 +426,8 @@ unit Console
     }
     
     // Process the tokens in BasicTokenizerBuffer  
-    // Returns C to continue, NC to exit
     processTokens()
     {
-        SEC  // Default: continue REPL
-        
         loop  // Main statement loop for colon-separated statements
         {
             // Get current token
@@ -523,8 +528,7 @@ unit Console
                 case Tokens.BYE:
                 {
                     cmdBye();
-                    CLC  // Exit interpreter
-                    return;
+                    return; // BYE sets SystemState.Exiting
                 }
                 case Tokens.SAVE:
                 case Tokens.LOAD:
@@ -558,7 +562,7 @@ unit Console
             return;
         }
         
-        SEC  // Success - continue REPL
+        // Success - all statements processed
     }
     
     // Execute DUMP command
@@ -697,7 +701,7 @@ unit Console
     cmdBye()
     {
         // BYE command works in both modes - allows escape from function capture
-        // NOP - just return NC to exit interpreter
+        State.SetExiting(); // Set exit status instead of fragile CLC
     }
     
     // Execute NEW command
@@ -838,9 +842,6 @@ unit Console
         } // Single exit block
     }
     
-    
-    
-    
     // Execute RUN command
     cmdRun()
     {
@@ -854,12 +855,6 @@ unit Console
         // TODO: Run program
         Error.NotImplemented(); BIT ZP.EmulatorPCL
     }
-    
-    
-    
-    
-
-    
     
     // Exit function capture mode and return to normal (called from Console or Tokenizer on Ctrl+C)
     ExitFunctionCaptureMode()
@@ -876,6 +871,6 @@ unit Console
         
         // Clear any error state that might have been set during capture
         Error.ClearError();
-        SEC
+        State.SetSuccess();
     }
 }

@@ -4,6 +4,7 @@ unit Listing
     uses "/Source/Runtime/6502/Serial"
     uses "Messages"
     uses "Error"
+    uses "State"
     uses "Tools"
     uses "Tokenizer"
     uses "TokenIterator"
@@ -261,7 +262,6 @@ unit Listing
         PLY
         PLX
         PLA
-        SEC // Always succeeds
     }
     
     displaySpecificFunction()
@@ -325,12 +325,13 @@ unit Listing
         if (C)
         {
             Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
+            State.SetFailure();
             return;
         }
         
         Tokenizer.NextToken(); // consume 'FUNCS'
         Error.CheckError();
-        if (NC) { return; }
+        if (NC) { State.SetFailure(); return; }
         
         // Check if there's a function name argument
         LDA ZP.CurrentToken
@@ -339,6 +340,9 @@ unit Listing
         {
             // Display specific function
             displaySpecificFunction();
+            Error.CheckError();
+            if (NC) { State.SetFailure(); return; }
+            State.SetSuccess();
             return;
         }
         
@@ -347,11 +351,13 @@ unit Listing
         {
             // Invalid argument
             Error.SyntaxError(); BIT ZP.EmulatorPCL
+            State.SetFailure();
             return;
         }
         
         // Display all functions
         displayAllFunctions();
+        State.SetSuccess();
     }
     
     // Execute LIST command - display complete program listing
@@ -365,6 +371,7 @@ unit Listing
         if (C)
         {
             Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
+            State.SetFailure();
             return;
         }
         
@@ -374,14 +381,14 @@ unit Listing
         // Display variables and constants (VARS output)
         CmdVars();
         Error.CheckError();
-        if (NC) { return; }
+        if (NC) { State.SetFailure(); return; }
         
         // Display all functions
         displayAllFunctions();
         Error.CheckError();
-        if (NC) { return; }
+        if (NC) { State.SetFailure(); return; }
         
-        SEC // Success
+        State.SetSuccess();
     }
     
     // Execute VARS command - display all variables and constants
@@ -394,12 +401,13 @@ unit Listing
         if (C)
         {
             Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
+            State.SetFailure();
             return;
         }
         
         Tokenizer.NextToken(); // consume 'VARS' (or 'LIST' when called from CmdList)
         Error.CheckError();
-        if (NC) { return; }
+        if (NC) { State.SetFailure(); return; }
         
         // PASS 1: Display all constants
         LDX #0  // Counter for constants found
@@ -542,6 +550,6 @@ unit Listing
             Tools.NL();
         }
         
-        SEC // Success
+        State.SetSuccess();
     }
 }

@@ -15,7 +15,7 @@ program HopperBASIC
     
     uses "Messages"
     uses "Error"
-    uses "SystemState"
+    uses "State"
     uses "Debug"
     uses "Trace"
     uses "Tools"
@@ -39,6 +39,7 @@ program HopperBASIC
     InitializeBASIC()
     {
         Error.ClearError();
+        State.SetSuccess();    // Initialize state system
         Trace.Initialize();    // Initialize trace system (NOP in production code)
         
         // Initialize serial communication first
@@ -88,6 +89,16 @@ program HopperBASIC
             // Read user input
             Console.ReadLine();
             
+            // Check state after reading line
+            Error.CheckErrorAndStatus();
+            if (NC)
+            {
+                State.IsExiting();
+                if (C) { break; } // Exit on Ctrl+C during input
+                Error.CheckAndPrint();
+                continue; // Error during input, show prompt again
+            }
+            
             // Check for empty line
             LDA ZP.BasicInputLength
             if (Z) 
@@ -102,17 +113,16 @@ program HopperBASIC
             
             // Process non-empty line
             Console.ProcessLine();
-            if (NC) 
+            
+            // Check for exit first (regardless of error state)
+            State.IsExiting();
+            if (C) { break; } // BYE command - clean exit
+            
+            // Then check for errors
+            Error.CheckError();
+            if (NC)
             {
-                Error.CheckError();
-                if (NC)
-                {
-                    Error.CheckAndPrint();
-                }
-                else
-                {
-                    break; // Exit if BYE was entered
-                }
+                Error.CheckAndPrint();
             }
             
             // Show ready prompt after successful execution
@@ -138,6 +148,9 @@ program HopperBASIC
     {
         // Hardware break - could be used for BASIC BREAK functionality
         INC ZP.SerialBreakFlag
+        
+        // Set exit state to break out of interpreter loop
+        State.SetExiting();
     }
     
     // Main entry point
