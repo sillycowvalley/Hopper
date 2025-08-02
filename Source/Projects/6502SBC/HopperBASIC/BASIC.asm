@@ -15,6 +15,7 @@ program HopperBASIC
     
     uses "Messages"
     uses "Error"
+    uses "SystemState"
     uses "Debug"
     uses "Trace"
     uses "Tools"

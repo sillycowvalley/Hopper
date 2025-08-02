@@ -15,7 +15,7 @@ Complete refactoring of debug output and error handling systems in HopperBASIC t
 
 ## Architecture Refactoring
 
-### Four-Unit Split: Tools.asm → Tools.asm + Debug.asm + Trace.asm + Error.asm + State.asm
+### Five-Unit Split: Tools.asm → Tools.asm + Debug.asm + Trace.asm + Error.asm + State.asm
 
 **Tools.asm** (Production utilities only)
 - String operations (`StringLength`, `StringCompare`, `CopyBytes`)
@@ -37,6 +37,7 @@ Complete refactoring of debug output and error handling systems in HopperBASIC t
 **Error.asm** (Error handling and messages)
 - One-liner error methods (`SyntaxError()`, `TypeMismatch()`, etc.)
 - Error message strings (moved from Messages.asm)
+- Comprehensive error checking (`CheckErrorAndStatus()`)
 - Future: Terse mode compilation support
 
 **State.asm** (System state management)
@@ -66,6 +67,7 @@ Error.SyntaxError(); BIT ZP.EmulatorPCL
 unit Error
 {
     uses "/Source/Runtime/6502/ZeroPage"
+    uses "State"
     
     // Error message strings (moved from Messages.asm)
     #ifdef TERSE_ERRORS
@@ -117,10 +119,43 @@ unit Error
     }
     
     // ... (additional error methods follow same pattern)
+    
+    // Comprehensive error check covering both error systems
+    // Input: None
+    // Output: C set if ok, NC if not ok (error occurred)
+    // Modifies: Processor flags only
+    CheckErrorAndStatus()
+    {
+        PHA
+        Error.CheckError(); // C if ok, NC if not ok (error)
+        if (C)
+        {
+            // LastError not set, check SystemState
+            State.CanContinue(); // C if all good, NC if error or exit
+        }
+        PLA
+    }
 }
 ```
 
-## State Management System
+## State Management System ✅ **IMPLEMENTED**
+
+### Design Principles
+
+**API Layer Distinction:**
+- **Leaf-level APIs**: Use C|NC flags for immediate success/failure
+- **Orchestration methods**: Use SystemState for complex flows that need to propagate status
+- **Rule**: If you're passing status to your caller and you're not a leaf API, use SystemState
+
+**Flag Preservation Simplification:**
+- **Before**: PHP/PLP everywhere to preserve fragile C flags
+- **After**: Remove PHP/PLP except for small utility/debug APIs used near C|NC checks
+- **Benefit**: Cleaner code, fewer register stack operations, more robust state management
+
+**Error Detection Enhancement:**
+- **State.IsError()**: Checks only SystemState.Failure
+- **Error.CheckErrorAndStatus()**: Comprehensive check of both error systems
+- **Benefit**: Granular control when needed, comprehensive checking at decision points
 
 ### New Zero Page Allocation
 ```hopper
@@ -143,7 +178,7 @@ enum SystemState
 }
 ```
 
-### State Unit API
+### State Unit API ✅ **IMPLEMENTED**
 ```hopper
 unit State
 {
@@ -158,31 +193,29 @@ unit State
     
     // Set system state
     // Input: A = SystemState value
-    // Output: ZP.SystemState updated, flags set for compatibility
-    // Modifies: ZP.SystemState, processor flags
+    // Output: ZP.SystemState updated, A preserved
+    // Modifies: ZP.SystemState only
     SetState()
     {
         STA ZP.SystemState
-        CMP #SystemState.Failure
-        if (Z) { CLC } else { SEC }  // Maintain C|NC compatibility
     }
     
     // Get current system state  
-    // Output: A = current SystemState, flags set for compatibility
-    // Modifies: A, processor flags
+    // Output: A = current SystemState
+    // Modifies: A only
     GetState()
     {
         LDA ZP.SystemState
-        CMP #SystemState.Failure
-        if (Z) { CLC } else { SEC }  // Set flags for existing code
     }
     
     // Test for specific states (preserves A register)
+    // Output: C set if condition true, NC if condition false
     IsFailure()
     {
         PHA
         LDA ZP.SystemState
-        CMP #SystemState.Failure  // Sets Z if failure
+        CMP #SystemState.Failure
+        if (Z) { SEC } else { CLC }
         PLA
     }
     
@@ -190,7 +223,8 @@ unit State
     {
         PHA  
         LDA ZP.SystemState
-        CMP #SystemState.Success  // Sets Z if success
+        CMP #SystemState.Success
+        if (Z) { SEC } else { CLC }
         PLA
     }
     
@@ -198,27 +232,58 @@ unit State
     {
         PHA
         LDA ZP.SystemState
-        CMP #SystemState.Exiting  // Sets Z if exiting
+        CMP #SystemState.Exiting
+        if (Z) { SEC } else { CLC }
         PLA
     }
     
-    // Convenience methods
+    // Check if current state indicates continuation is possible
+    // Output: C set if can continue (Success), NC if should stop (Failure or Exiting)
+    // Preserves: A register
+    CanContinue()
+    {
+        PHA
+        LDA ZP.SystemState
+        CMP #SystemState.Success
+        if (Z) { SEC } else { CLC }
+        PLA
+    }
+    
+    // Check if current state indicates an error condition (SystemState only)
+    // Output: C set if error (Failure), NC if not error (Success or Exiting)
+    // Preserves: A register
+    IsError()
+    {
+        PHA
+        LDA ZP.SystemState
+        CMP #SystemState.Failure
+        if (Z) { SEC } else { CLC }
+        PLA
+    }
+    
+    // Convenience methods (preserve A register)
     SetSuccess()
     {
+        PHA
         LDA #SystemState.Success
-        SetState();
+        STA ZP.SystemState
+        PLA
     }
     
     SetFailure()
     {
+        PHA
         LDA #SystemState.Failure  
-        SetState();
+        STA ZP.SystemState
+        PLA
     }
     
     SetExiting()
     {
+        PHA
         LDA #SystemState.Exiting
-        SetState(); 
+        STA ZP.SystemState
+        PLA
     }
     
     // Initialize system state
@@ -226,6 +291,78 @@ unit State
     {
         SetSuccess();
     }
+}
+```
+
+### Usage Guidelines
+
+**Leaf-level APIs (continue using C|NC):**
+```hopper
+// Memory allocation, string operations, basic I/O
+Memory.Allocate();  // Returns C for success, NC for failure
+if (NC) { /* handle allocation failure */ }
+
+Tools.StringCompare();  // Returns C for match, NC for no match
+if (C) { /* strings match */ }
+
+// Example leaf API that should use C|NC
+createReplFunction()
+{
+    // Implementation
+    if (success) { SEC } else { CLC }
+}
+```
+
+**Orchestration methods (use SystemState):**
+```hopper
+// Complex flows that coordinate multiple operations
+Console.ProcessLine()
+{
+    // No PHP/PLP needed - not preserving fragile C flags
+    
+    executeUnifiedStatement();  // Leaf API call
+    if (NC) { State.SetFailure(); return; }
+    
+    // Handle complex state flows
+    checkForExit();
+    State.GetState();
+    switch (A)
+    {
+        case SystemState.Success:   { /* continue */ }
+        case SystemState.Failure:   { /* handle error */ }
+        case SystemState.Exiting:   { /* propagate exit */ }
+    }
+}
+
+// Caller checks SystemState instead of fragile C flag
+interpreterLoop()
+{
+    Console.ProcessLine();
+    State.IsExiting();
+    if (C) { cleanup(); exit(); }
+}
+```
+
+**Comprehensive Error Checking:**
+```hopper
+// At key decision points, check both error systems
+complexOperation();
+Error.CheckErrorAndStatus();
+if (NC) { 
+    State.IsExiting();
+    if (C) { exit(); }
+    else { displayError(); }
+}
+```
+
+**Debug/Utility APIs (preserve flags when needed):**
+```hopper
+// Small utilities that might be used near C|NC checks
+Debug.HOut()
+{
+    PHP  // Preserve flags for debugging context
+    Serial.HexOut();
+    PLP  // Restore flags
 }
 ```
 
@@ -245,7 +382,7 @@ MethodName()
 LDA #(traceMethodName % 256) STA ZP.TraceMessageL LDA #(traceMethodName / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
     
-    // Method implementation
+    // Method implementation (no PHP/PLP needed for orchestration methods)
     
 #ifdef TRACE  
 LDA #(traceMethodName % 256) STA ZP.TraceMessageL LDA #(traceMethodName / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -359,10 +496,28 @@ unit Trace
 unit Debug  
 {
 #if defined(DEBUG) || defined(TRACE)
-    // Shared utilities (needed by Trace)
-    HOut()          // Hex byte preserving carry
-    COut()          // Character preserving carry
-    Space()         // Single space output
+    // Shared utilities (preserve flags for debugging context)
+    HOut()
+    {
+        PHP  // Preserve flags for debugging context
+        Serial.HexOut();
+        PLP  // Restore flags
+    }
+    
+    COut()
+    {
+        PHP  // Preserve flags for debugging context
+        Serial.WriteChar();
+        PLP  // Restore flags
+    }
+    
+    Space()
+    {
+        PHP  // Preserve flags for debugging context
+        LDA #' ' 
+        Serial.WriteChar();
+        PLP  // Restore flags
+    }
 #endif
 
 #ifdef DEBUG
@@ -387,7 +542,7 @@ unit Debug
     DumpTokenBuffer()      // Current token stream as readable BASIC
     DumpOpcodeBuffer()     // Current opcodes as readable assembly
 
-    // Register output
+    // Register output (preserve flags for debugging context)
     XOut(), YOut(), TOut(), NOut(), AOut(), ATOut(), ALOut(), IOut()
     DumpRegisters()        // All key registers in one line
     DumpCompilerState()    // Compiler workspace variables
@@ -398,20 +553,96 @@ unit Debug
 
 ## Clean API Coding Conventions
 
-### Register and Flag State Management
+### Register Preservation (Simplified)
 ```hopper
-// RULE: Only preserve what we modify, knowing called methods are Clean APIs
-SomeDebugMethod()
+// NEW RULE: Remove PHP/PLP except for small debug utilities
+// Orchestration methods don't need to preserve fragile C flags
+
+// Before (unnecessarily complex):
+ComplexMethod()
 {
-    // Only preserve what this method actually modifies
-    PHA  // If we modify A
-    PHX  // If we modify X
+    PHP  // Why preserve flags?
+    PHA
+    PHX
+    PHY
     
-    // Debug implementation
+    // Implementation
     
-    PLX  // Restore in reverse order
+    PLY
+    PLX
     PLA
+    PLP  // Fragile flag restoration
 }
+
+// After (clean and simple):
+ComplexMethod()
+{
+    PHA  // Only preserve what we modify
+    PHX
+    PHY
+    
+    // Implementation
+    
+    PLY
+    PLX
+    PLA
+    // No flag preservation needed for SystemState APIs
+}
+```
+
+### API Layer Distinction
+```hopper
+// Leaf-level API (use C|NC):
+Memory.Allocate()
+{
+    // Implementation
+    if (success) { SEC } else { CLC }
+}
+
+// Orchestration method (use SystemState):
+Functions.Compile()
+{
+    // No PHP/PLP needed
+    
+    Memory.Allocate();
+    if (NC) { State.SetFailure(); return; }
+    
+    Tokenizer.TokenizeLine();
+    if (NC) { State.SetFailure(); return; }
+    
+    State.SetSuccess();
+}
+
+// Caller uses SystemState:
+someHigherLevel()
+{
+    Functions.Compile();
+    State.GetState();
+    switch (A)
+    {
+        case SystemState.Success: { continue; }
+        case SystemState.Failure: { handleError(); }
+    }
+}
+```
+
+### Error Checking Patterns
+```hopper
+// Granular SystemState-only check:
+State.IsError();
+if (C) { handleStateFailure(); }
+
+// Comprehensive error check at decision points:
+Error.CheckErrorAndStatus();
+if (NC) { 
+    State.IsExiting();
+    if (C) { exit(); }
+    else { displayError(); }
+}
+
+// Quick continuation check:
+State.CanContinue();
+if (NC) { return; }  // Stop execution
 ```
 
 ### Debug Code Alignment Convention
@@ -419,7 +650,7 @@ SomeDebugMethod()
 // RULE: Debug code aligns to left margin for easy removal
 NormalMethod()
 {
-    PHA
+    PHA  // No PHP/PLP for orchestration methods
     
 #ifdef TRACE
 LDA #(traceMethodName % 256) STA ZP.TraceMessageL LDA #(traceMethodName / 256) STA ZP.TraceMessageH Trace.MethodEntry();
@@ -437,23 +668,31 @@ LDA #(traceMethodName % 256) STA ZP.TraceMessageL LDA #(traceMethodName / 256) S
 
 ### State Management Integration
 ```hopper
-// RULE: Use State system for complex flows, maintain C|NC compatibility
+// RULE: Use State system for complex flows, leaf APIs use C|NC
 ComplexMethod()
 {
     PHA
     
-    // Complex operation
-    processOperation();
+    // Call leaf APIs directly
+    Memory.Allocate();
+    if (NC) 
+    { 
+        State.SetFailure(); 
+        PLA
+        return; 
+    }
     
-    // Set appropriate state
+    // Call other orchestration methods
+    someOtherOrchestrationMethod();
     State.GetState();
     switch (A)
     {
-        case SystemState.Success:   { continue; }
-        case SystemState.Failure:   { cleanup(); }
-        case SystemState.Exiting:   { propagateExit(); }
+        case SystemState.Success:   { /* continue */ }
+        case SystemState.Failure:   { PLA; return; }
+        case SystemState.Exiting:   { State.SetExiting(); PLA; return; }
     }
     
+    State.SetSuccess();
     PLA
 }
 ```
@@ -473,7 +712,7 @@ MyMethod()
 LDA #(myMethodTrace % 256) STA ZP.TraceMessageL LDA #(myMethodTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
     
-    // Implementation
+    // Implementation (no PHP/PLP needed for orchestration)
     
 #ifdef TRACE
 LDA #(myMethodTrace % 256) STA ZP.TraceMessageL LDA #(myMethodTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -483,18 +722,17 @@ LDA #(myMethodTrace % 256) STA ZP.TraceMessageL LDA #(myMethodTrace / 256) STA Z
 
 ### Debug Output Consistency
 ```hopper
-// RULE: All debug output preserves execution state
-// Pattern: Use Debug.COut() not Serial.WriteChar()
-// Reason: Debug methods preserve flags, Serial methods don't
+// RULE: Debug utilities preserve flags, orchestration methods don't
 
-// Good (preserves flags):
-Debug.COut();
-Debug.HOut();
-Debug.NL();
+// Debug utilities (preserve flags):
+Debug.COut();      // Uses PHP/PLP internally
+Debug.HOut();      // Uses PHP/PLP internally
+Debug.NL();        // Uses PHP/PLP internally
 
-// Bad (munts flags):
-Serial.WriteChar();
-Serial.HexOut();
+// Orchestration methods (don't preserve flags):
+Statement.Execute();    // No PHP/PLP needed
+Console.ProcessLine();  // No PHP/PLP needed
+Functions.Compile();    // No PHP/PLP needed
 ```
 
 ### Conditional Compilation Safety
@@ -505,24 +743,22 @@ Serial.HexOut();
 loop
 {
 #ifdef DEBUG
-DebugOutputHere();
+DebugOutputHere();  // May preserve flags internally
 #endif
     
     // Production logic never depends on debug state
-    if (production_condition)
-    {
-        break;
-    }
+    leafApi();
+    if (NC) { State.SetFailure(); break; }
     
 #ifdef TRACE
-TracePointHere();
+TracePointHere();   // May preserve flags internally
 #endif
 }
 ```
 
 ### Error Handling in Debug Code
 ```hopper
-// RULE: Debug methods never set ZP.LastError
+// RULE: Debug methods never set ZP.LastError or SystemState
 // Pattern: Silent failure or internal error indicators only
 
 DebugMethod()
@@ -532,11 +768,10 @@ DebugMethod()
     // If debug operation fails, fail silently
     // Don't corrupt main program's error state
     Memory.Allocate();
-    LDA ZP.IDXL
-    ORA ZP.IDXH
-    if (Z)
+    if (NC)
     {
         // Debug allocation failed - just exit quietly
+        // Don't call State.SetFailure() - this is debug code
         PLA
         return;
     }
@@ -660,20 +895,43 @@ EvalExpr {
 
 ### State Management Examples
 ```hopper
-// Robust Console capture mode
-Console.processTokens();
-State.GetState();
-switch (A)
+// Robust Console capture mode (no fragile flag preservation)
+Console.ProcessTokens()
 {
-    case SystemState.Success:   { continue; }
-    case SystemState.Exiting:   { ExitFunctionCaptureMode(); return; }
-    case SystemState.Failure:   { displayError(); }
+    // No PHP/PLP needed
+    
+    Tokenizer.TokenizeLine();
+    if (NC) { State.SetFailure(); return; }
+    
+    Statement.Execute();
+    State.GetState();
+    switch (A)
+    {
+        case SystemState.Success:   { /* continue */ }
+        case SystemState.Exiting:   { ExitFunctionCaptureMode(); return; }
+        case SystemState.Failure:   { /* handle error */ }
+    }
 }
 
-// REPL unification with clear state flow
-executeUnifiedStatement();
-State.IsExiting();
-if (Z) { cleanup(); exit(); }
+// Leaf API example
+executeUnifiedStatement()
+{
+    createReplFunction();  // Leaf API - returns C|NC
+    if (NC) { cleanup(); return; }  // Direct C|NC check
+}
+
+// Comprehensive error checking at decision points
+mainInterpreterLoop()
+{
+    Console.ProcessLine();
+    Error.CheckErrorAndStatus();  // Check both error systems
+    if (NC) 
+    { 
+        State.IsExiting();
+        if (C) { cleanup(); exit(); }
+        else { displayError(); }
+    }
+}
 ```
 
 ### Literate Output Examples (Future)
@@ -739,7 +997,9 @@ This validates that the unification is working correctly:
 ## Benefits
 - **Dramatically reduced code clutter**: Error handling 5 lines → 1 line ✅
 - **Consistent error handling**: All errors follow same pattern ✅
-- **Robust state management**: Replaces fragile C|NC flag propagation
+- **Robust state management**: Replaces fragile C|NC flag propagation ✅
+- **Simplified register management**: Remove PHP/PLP from orchestration methods ✅
+- **Comprehensive error detection**: Both SystemState and ZP.LastError checking ✅
 - **Future-proof**: Easy to add terse mode or error logging ✅
 - **Granular debug control**: Choose tracing level independently ✅
 - **Single responsibility**: Each unit has clear, focused purpose ✅
@@ -750,16 +1010,24 @@ This validates that the unification is working correctly:
 
 ## Implementation Checklist
 
-### Phase 1: State Management System
-- [ ] **Create State.asm**
-  - [ ] Define SystemState enum (Failure, Success, Exiting)
-  - [ ] Implement SetState(), GetState(), IsFailure(), IsSuccess(), IsExiting()
-  - [ ] Add convenience methods (SetSuccess(), SetFailure(), SetExiting())
-  - [ ] Implement Initialize() method
+### Phase 1: State Management System ✅ **COMPLETE**
+- [x] **Create State.asm**
+  - [x] Define SystemState enum (Failure, Success, Exiting)
+  - [x] Implement SetState(), GetState(), IsFailure(), IsSuccess(), IsExiting()
+  - [x] Add convenience methods (SetSuccess(), SetFailure(), SetExiting())
+  - [x] Implement Initialize() and CanContinue() methods
+  - [x] Use C|NC return convention for all Is*() methods
+- [x] **Update Error.asm**
+  - [x] Add CheckErrorAndStatus() for comprehensive error checking
+  - [x] Add State dependency for enhanced error detection
 - [ ] **Update ZeroPage.asm**
   - [ ] Add ZP.SystemState allocation (1 byte at 0x4A)
 - [ ] **Update InitializeBASIC()**
   - [ ] Add State.Initialize() call
+- [ ] **Refactor PHP/PLP usage:**
+  - [ ] Remove PHP/PLP from orchestration methods (Console, Statement, Functions, etc.)
+  - [ ] Keep PHP/PLP only in small debug utilities (Debug.COut(), Debug.HOut(), etc.)
+  - [ ] Convert complex state flows to use SystemState instead of C|NC
 - [ ] **Target high-value conversion areas:**
   - [ ] Console capture mode (function definition across multiple lines)
   - [ ] Function compilation pipeline error handling
@@ -780,13 +1048,15 @@ This validates that the unification is working correctly:
   - [ ] Add convergence markers where paths merge
 
 ### Code Quality Standards (All Phases) ✅ **MAINTAINED**
-- [x] **Flag preservation**: Methods preserve only what they modify
+- [x] **Flag preservation**: Only for small debug utilities, not orchestration methods
 - [x] **Register preservation**: Proper save/restore for modified registers  
 - [x] **Left-margin alignment**: Debug code easy to identify/remove
 - [x] **Single exit pattern**: Clean error handling and cleanup
 - [x] **No ZP corruption**: Debug uses only designated scratch space
-- [x] **No error pollution**: Debug failures don't set ZP.LastError
+- [x] **No error pollution**: Debug failures don't set ZP.LastError or SystemState
 - [x] **PC at call site**: Error PC set at call site with BIT ZP.EmulatorPCL
+- [x] **API layer distinction**: Leaf APIs use C|NC, orchestration uses SystemState
+- [x] **Comprehensive error checking**: Both granular and comprehensive options available
   
 ## Future Enhancements
 - Implement new literate rendering methods (RenderTokenStream, RenderFunction, etc.)

@@ -376,7 +376,7 @@ unit Error
     
     // Check if error has occurred
     // Input: None
-    // Output: C set if no error, NC if error occurred
+    // Output: C set if ok, NC if not ok (error occurred)
     // Modifies: Processor flags only
     CheckError()
     {
@@ -396,6 +396,22 @@ unit Error
             LDA #'!'
             Serial.WriteChar();
 #endif
+        }
+        PLA
+    }
+    
+    // Check if error has occurred
+    // Input: None
+    // Output: C set if ok, NC if not ok (error occurred)
+    // Modifies: Processor flags only
+    CheckErrorAndStatus()
+    {
+        PHA
+        Error.CheckError(); // C if ok, NC if not ok (error)
+        if (C)
+        {
+            // LastError not set, check SystemState
+            State.CanContinue(); // C if all good, NC if error or exit
         }
         PLA
     }
