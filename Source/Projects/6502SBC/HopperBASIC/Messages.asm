@@ -15,9 +15,10 @@ unit Messages
     // Status messages
     const string ReadyPrompt = "READY\n> ";
     const string OK = "OK\n";
+    const string NoMainProgram = "NO MAIN PROGRAM";
     
     // String constant for BEGIN function name
-    const string BeginFunctionName = "BEGIN";
+    const string BeginFunctionName = "$MAIN";
     
     
     // Print OK message

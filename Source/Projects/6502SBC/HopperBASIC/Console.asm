@@ -898,13 +898,14 @@ unit Console
 #endif
     }
 
-    // Execute RUN command
+    // Execute RUN command - execute the main program ($MAIN function)
+    // Execute RUN command - execute the main program ($MAIN function)
     const string runTrace = "RUN";
     cmdRun()
     {
-#ifdef TRACECONSOLE
+    #ifdef TRACECONSOLE
         LDA #(runTrace % 256) STA ZP.TraceMessageL LDA #(runTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
+    #endif
         
         Statement.IsCaptureModeOn();
         if (C)
@@ -913,14 +914,97 @@ unit Console
         }
         else
         {
-            // TODO: Run program
-            Error.NotImplemented(); BIT ZP.EmulatorPCL
+            loop // Single exit block
+            {
+                Tokenizer.NextToken(); // consume 'RUN'
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Look for $MAIN function
+                LDA #(Messages.BeginFunctionName % 256)
+                STA ZP.TOPL
+                LDA #(Messages.BeginFunctionName / 256)
+                STA ZP.TOPH
+                
+                Functions.Find();
+                if (NC)
+                {
+                    // No main program found
+                    LDA #(Messages.NoMainProgram % 256)
+                    STA ZP.ACCL
+                    LDA #(Messages.NoMainProgram / 256)
+                    STA ZP.ACCH
+                    Tools.PrintStringACC();
+                    break;
+                }
+                
+                LDA #0x01 Debug.ChkHeap();
+                
+                // Create tokens for: IDENTIFIER "$MAIN" LPAREN RPAREN EOL
+                LDX #0
+                
+                // Token 1: IDENTIFIER
+                LDA #Tokens.IDENTIFIER
+                STA Address.BasicTokenizerBuffer, X
+                INX
+                LDY #0
+                loop
+                {
+                    LDA [ZP.TOP], Y
+                    STA Address.BasicTokenizerBuffer, X
+                    if (Z) { break; } // that was '\0'
+                    INX
+                    INY
+                }
+                INX
+                
+                LDA #0x02 Debug.ChkHeap();
+                
+                // Token 2: LPAREN
+                LDA #Tokens.LPAREN
+                STA Address.BasicTokenizerBuffer, X
+                INX
+                
+                // Token 3: RPAREN
+                LDA #Tokens.RPAREN
+                STA Address.BasicTokenizerBuffer, X
+                INX
+                
+                // Token 4: EOL
+                LDA #Tokens.EOL
+                STA Address.BasicTokenizerBuffer, X
+                INX
+                
+                // Clear tokenizer state
+                STZ ZP.TokenizerPosL
+                STZ ZP.TokenizerPosH
+                // Set buffer length**
+                STX ZP.TokenBufferLengthL
+                STZ ZP.TokenBufferLengthH
+                // Point to start of string literal (after IDENTIFIER token)
+                LDA #1  
+                STA ZP.TokenLiteralPosL
+                STZ ZP.TokenLiteralPosH
+                
+                Tokenizer.Initialize();
+                                
+                LDA #0x03 Debug.ChkHeap();
+                                
+                Tokenizer.NextToken();
+                
+                LDA #0x04 Debug.ChkHeap();
+
+                Statement.EvaluateExpression();
+                
+                Messages.PrintOK();
+                break;
+            }
         }
         
-#ifdef TRACECONSOLE
+    #ifdef TRACECONSOLE
         LDA #(runTrace % 256) STA ZP.TraceMessageL LDA #(runTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
+    #endif
+    }    
     
     // Exit function capture mode and return to normal (called from Console or Tokenizer on Ctrl+C)
     const string exitFuncModeTrace = "ExitFunc";

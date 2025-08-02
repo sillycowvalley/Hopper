@@ -1482,5 +1482,257 @@ unit Debug
         PLP
     }
     
+    // Validate heap integrity by checking for zero-length blocks
+    // Input: None
+    // Output: C set if heap is valid, NC if corrupted (zero-length block found)
+    // Preserves: Everything (saves/restores all modified state)
+    // Note: Lightweight version of heap walk for frequent validation calls
+    ValidateHeap()
+    {
+        PHP  // Save flags
+        PHA  // Save A
+        PHX  // Save X
+        PHY  // Save Y
+        
+        // Save critical ZP state that heap walk might modify
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        LDA ZP.M0
+        PHA
+        LDA ZP.M1
+        PHA
+        
+        // Start at heap beginning: ZP.HEAPSTART is the page number
+        LDA ZP.HEAPSTART
+        STA ZP.IDXH
+        LDA #0
+        STA ZP.IDXL
+        
+        LDX #0  // Block counter to prevent infinite loops
+        
+        loop
+        {
+            // Check if we're past the end of heap
+            // Calculate current page: IDX high byte - HEAPSTART
+            LDA ZP.IDXH
+            SEC
+            SBC ZP.HEAPSTART
+            CMP ZP.HEAPSIZE
+            if (C) { SEC break; }  // Past end of heap - valid exit
+            
+            // Check for zero block size (corrupted heap)
+            LDY #0
+            LDA [ZP.IDX], Y     // Low byte of size
+            STA ZP.M0
+            INY
+            LDA [ZP.IDX], Y     // High byte of size
+            STA ZP.M1
+            ORA ZP.M0           // Check if size is zero
+            if (Z) 
+            { 
+                CLC             // Corruption found - return NC
+                break; 
+            }
+            
+            // Additional validation: check for reasonable block sizes
+            // Very large blocks (> 32KB) are suspicious in our system
+            LDA ZP.M1           // High byte of size
+            CMP #0x80           // > 32KB is suspicious
+            if (C)
+            {
+                CLC             // Suspicious size - return NC  
+                break;
+            }
+            
+            // Move to next block: current address + block size
+            CLC
+            LDA ZP.IDXL
+            ADC ZP.M0  // Add low byte of size
+            STA ZP.IDXL
+            LDA ZP.IDXH
+            ADC ZP.M1  // Add high byte of size
+            STA ZP.IDXH
+            
+            INX
+            CPX #50  // Safety limit - more generous than DumpHeap's 20
+            if (Z) 
+            { 
+                SEC             // Reached limit without corruption - assume valid
+                break; 
+            }
+        }
+        
+        // Restore ZP state in reverse order
+        PLA
+        STA ZP.M1
+        PLA
+        STA ZP.M0
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        PLY  // Restore Y
+        PLX  // Restore X
+        PLA  // Restore A
+        PLP  // Restore flags (but carry will be overwritten by our result)
+    }
+
+    // Quick heap corruption checkpoint for trace points with diagnostics
+    // Input: A = checkpoint ID for identification
+    // Output: Shows corruption message with checkpoint ID and details if heap is corrupted
+    // Preserves: Everything
+    ChkHeap()
+    {
+        PHA  // Save checkpoint ID
+        ValidateHeap();
+        if (NC)  // Heap corrupted
+        {
+            // Show corruption detected message with checkpoint ID
+            LDA #'!'
+            Tools.COut();
+            LDA #'H'
+            Tools.COut();
+            LDA #'C'
+            Tools.COut();
+            PLA  // Get checkpoint ID
+            Serial.HexOut();  // Show where corruption was detected
+            PHA  // Save it back
+            LDA #'!'
+            Tools.COut();
+            Tools.NL();
+            
+            // Add diagnostic information
+            dumpHeapCorruptionDetails();
+        }
+        PLA  // Restore checkpoint ID
+    }
+
+    // Dump detailed information when heap corruption is detected
+    // Input: None (heap walk state is preserved from ValidateHeap)
+    // Output: Detailed corruption information printed to serial
+    // Modifies: ZP.M0-M3, ZP.U0-U4 (internal operations)
+    dumpHeapCorruptionDetails()
+    {
+        PHA
+        PHX
+        PHY
+        
+        // Save current state
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
+        LDA #'D'
+        Tools.COut();
+        LDA #'E'
+        Tools.COut();
+        LDA #'T'
+        Tools.COut();
+        LDA #'A'
+        Tools.COut();
+        LDA #'I'
+        Tools.COut();
+        LDA #'L'
+        Tools.COut();
+        LDA #':'
+        Tools.COut();
+        Tools.NL();
+        
+        // Show heap boundaries
+        LDA #'H'
+        Tools.COut();
+        LDA #'S'
+        Tools.COut();
+        LDA #':'
+        Tools.COut();
+        LDA ZP.HEAPSTART
+        Serial.HexOut();
+        Debug.Space();
+        
+        LDA #'H'
+        Debug.COut();
+        LDA #'Z'
+        Debug.COut();
+        LDA #':'
+        Debug.COut();
+        LDA ZP.HEAPSIZE
+        Serial.HexOut();
+        Debug.Space();
+        
+        // Show current position where corruption was found
+        LDA #'P'
+        Debug.COut();
+        LDA #'O'
+        Debug.COut();
+        LDA #'S'
+        Debug.COut();
+        LDA #':'
+        Debug.COut();
+        LDA ZP.IDXH
+        Serial.HexOut();
+        LDA ZP.IDXL
+        Serial.HexOut();
+        Debug.Space();
+        
+        // Show the suspicious block header
+        LDY #0
+        LDA [ZP.IDX], Y     // Low byte of size
+        STA ZP.M0
+        INY
+        LDA [ZP.IDX], Y     // High byte of size
+        STA ZP.M1
+        
+        LDA #'S'
+        Tools.COut();
+        LDA #'Z'
+        Tools.COut();
+        LDA #':'
+        Tools.COut();
+        LDA ZP.M1
+        Serial.HexOut();
+        LDA ZP.M0
+        Serial.HexOut();
+        Debug.Space();
+        
+        // Show first 8 bytes of block for context
+        LDA #'D'
+        Tools.COut();
+        LDA #'A'
+        Tools.COut();
+        LDA #'T'
+        Tools.COut();
+        LDA #'A'
+        Tools.COut();
+        LDA #':'
+        Debug.COut();
+        
+        LDY #0
+        loop
+        {
+            CPY #8
+            if (Z) { break; }
+            
+            LDA [ZP.IDX], Y
+            Serial.HexOut();
+            Debug.Space();
+            INY
+        }
+        Debug.NL();
+        
+        // Restore state
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        PLY
+        PLX
+        PLA
+    }
+    
 #endif
 }

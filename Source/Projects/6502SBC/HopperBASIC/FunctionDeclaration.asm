@@ -6,6 +6,7 @@ unit FunctionDeclaration
     uses "Error"
     uses "Tokenizer"
     uses "Tools"
+    uses "Trace"
     
     uses "Instructions"
     
@@ -19,18 +20,12 @@ unit FunctionDeclaration
     //         ZP.CurrentToken = token after BEGIN declaration
     // Modifies: Functions table, memory allocation, all statement buffer locations
     // Error: Sets ZP.LastError if syntax error, name conflict, or memory allocation fails
+    const string executeBeginDeclarationTrace = "ExecBegDecl";
     ExecuteBeginDeclaration()
     {
-    #ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'B'
-        Debug.COut();
-        LDA #'E'
-        Debug.COut();
-        LDA #'G'
-        Debug.COut();
-    #endif
+#ifdef TRACE
+        LDA #(executeBeginDeclarationTrace % 256) STA ZP.TraceMessageL LDA #(executeBeginDeclarationTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
     
         loop // Single exit block for clean error handling
         {
@@ -102,16 +97,9 @@ unit FunctionDeclaration
             break;
         } // Single exit block
         
-    #ifdef DEBUG
-        LDA #'B'
-        Debug.COut();
-        LDA #'E'
-        Debug.COut();
-        LDA #'G'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-    #endif
+#ifdef TRACE
+        LDA #(executeBeginDeclarationTrace % 256) STA ZP.TraceMessageL LDA #(executeBeginDeclarationTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Execute function declaration statement
@@ -121,16 +109,12 @@ unit FunctionDeclaration
     // Modifies: Stack, ZP.CurrentToken, symbol tables, memory allocation,
     //          all statement buffer locations, all parsing variables
     // Error: Sets ZP.LastError if syntax error, name conflict, or memory allocation fails
+    const string executeFunctionDeclarationTrace = "ExecFuncDecl";
     ExecuteFunctionDeclaration()
     {
-    #ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'F'
-        Debug.COut();
-        LDA #'D'
-        Debug.COut();
-    #endif
+#ifdef TRACE
+        LDA #(executeFunctionDeclarationTrace % 256) STA ZP.TraceMessageL LDA #(executeFunctionDeclarationTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
     
         loop // Single exit block for clean error handling
         {
@@ -283,14 +267,9 @@ unit FunctionDeclaration
             break;
         } // Single exit block
         
-    #ifdef DEBUG
-        LDA #'F'
-        Debug.COut();
-        LDA #'D'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-    #endif
+#ifdef TRACE
+        LDA #(executeFunctionDeclarationTrace % 256) STA ZP.TraceMessageL LDA #(executeFunctionDeclarationTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Parse parameter list and add arguments to function
@@ -298,16 +277,12 @@ unit FunctionDeclaration
     //        Function node address in stmtObjectPtr
     // Output: Arguments added to function, ZP.CurrentToken = closing parenthesis or error
     // Modifies: ZP.CurrentToken, Arguments list, ZP.IDX, ZP.TOP
+    const string parseParameterListTrace = "ParseParams";
     parseParameterList()
     {
-    #ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'P'
-        Debug.COut();
-        LDA #'L'
-        Debug.COut();
-    #endif
+#ifdef TRACE
+        LDA #(parseParameterListTrace % 256) STA ZP.TraceMessageL LDA #(parseParameterListTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
     
         loop // Single exit block
         {
@@ -386,14 +361,9 @@ unit FunctionDeclaration
             break; // Exit outer loop
         } // Single exit block
         
-    #ifdef DEBUG
-        LDA #'P'
-        Debug.COut();
-        LDA #'L'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-    #endif
+#ifdef TRACE
+        LDA #(parseParameterListTrace % 256) STA ZP.TraceMessageL LDA #(parseParameterListTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Capture BEGIN body tokens from current position to END
@@ -402,18 +372,12 @@ unit FunctionDeclaration
     // Output: BEGIN body tokens captured and stored in function node
     //         ZP.CurrentToken = token after END
     // Modifies: Memory allocation, function node, ZP.CurrentToken, tokenizer position
+    const string captureBeginBodyTrace = "CapBegBody";
     captureBeginBody()
     {
-    #ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'B'
-        Debug.COut();
-        LDA #'B'
-        Debug.COut();
-    #endif
+#ifdef TRACE
+        LDA #(captureBeginBodyTrace % 256) STA ZP.TraceMessageL LDA #(captureBeginBodyTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
     
         loop // Single exit block
         {
@@ -495,16 +459,9 @@ unit FunctionDeclaration
             break;
         } // Single exit block
         
-    #ifdef DEBUG
-        LDA #'C'
-        Debug.COut();
-        LDA #'B'
-        Debug.COut();
-        LDA #'B'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-    #endif
+#ifdef TRACE
+        LDA #(captureBeginBodyTrace % 256) STA ZP.TraceMessageL LDA #(captureBeginBodyTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Capture function body tokens from current position to ENDFUNC
@@ -513,16 +470,12 @@ unit FunctionDeclaration
     // Output: Function body tokens captured and stored in function node
     //         ZP.CurrentToken = token after ENDFUNC
     // Modifies: Memory allocation, function node, ZP.CurrentToken, tokenizer position
+    const string captureFunctionBodyTrace = "CapFuncBody";
     captureFunctionBody()
     {
-    #ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'B'
-        Debug.COut();
-    #endif
+#ifdef TRACE
+        LDA #(captureFunctionBodyTrace % 256) STA ZP.TraceMessageL LDA #(captureFunctionBodyTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
 
         loop // Single exit block
         {
@@ -607,14 +560,9 @@ unit FunctionDeclaration
             break;
         } // Single exit block
         
-    #ifdef DEBUG
-        LDA #'C'
-        Debug.COut();
-        LDA #'B'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-    #endif
+#ifdef TRACE
+        LDA #(captureFunctionBodyTrace % 256) STA ZP.TraceMessageL LDA #(captureFunctionBodyTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Complete a partial function that was captured in multiple lines
@@ -622,18 +570,12 @@ unit FunctionDeclaration
     // Output: Function body tokens extracted and attached to existing function node
     // Modifies: Function node, memory allocation, tokenizer position
     // Error: Sets ZP.LastError if function not found, syntax error, or memory allocation fails
+    const string completePartialFunctionTrace = "CompPartFunc";
     CompletePartialFunction()
     {
-    #ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'P'
-        Debug.COut();
-        LDA #'F'
-        Debug.COut();
-    #endif
+#ifdef TRACE
+        LDA #(completePartialFunctionTrace % 256) STA ZP.TraceMessageL LDA #(completePartialFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
     
         loop // Single exit block for error handling
         {
@@ -765,28 +707,10 @@ unit FunctionDeclaration
             SBC ZP.FSOURCEADDRESSH
             STA ZP.FLENGTHH
             
-    #ifdef DEBUG
-            LDA #'L' // Length calculated
-            Debug.COut();
-            LDA ZP.FLENGTHH
-            Debug.HOut();
-            LDA ZP.FLENGTHL
-            Debug.HOut();
-    #endif
-            
             // Create token stream for function body
             Statement.CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
             Error.CheckError();
             if (NC) { break; }
-            
-    #ifdef DEBUG
-            LDA #'A' // Allocated
-            Debug.COut();
-            LDA ZP.FDESTINATIONADDRESSH
-            Debug.HOut();
-            LDA ZP.FDESTINATIONADDRESSL
-            Debug.HOut();
-    #endif
             
             // Restore function node address
             LDA (Statement.stmtObjectPtr + 0)
@@ -806,28 +730,12 @@ unit FunctionDeclaration
             
             Functions.FreeAllOpCodes(); // compiled FUNCs potentially stale now
             
-    #ifdef DEBUG
-            LDA #'S' // Set body
-            Debug.COut();
-            LDA ZP.IDYL
-            Debug.HOut();
-            LDA ZP.IDYH
-            Debug.HOut();
-    #endif
-            
             SEC // Success
             break;
         }
         
-    #ifdef DEBUG
-        LDA #'C'
-        Debug.COut();
-        LDA #'P'
-        Debug.COut();
-        LDA #'F'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-    #endif
+#ifdef TRACE
+        LDA #(completePartialFunctionTrace % 256) STA ZP.TraceMessageL LDA #(completePartialFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
 }

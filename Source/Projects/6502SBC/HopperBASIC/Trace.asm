@@ -56,11 +56,25 @@ unit Trace
         PHX
         PHY
         
+        // capture current stack pointer
+        //TSX
+        //PHX
+        
+        // Add heap validation at method entry
+        LDA #0xE1  // Entry checkpoint ID (0xE1 = Entry)
+        Debug.ChkHeap();
+        
         PrintIndent();
         
         // Print method name from ZP.TraceMessage
         LDA ZP.TraceMessageL STA ZP.ACCL LDA ZP.TraceMessageH STA ZP.ACCH Tools.PrintStringACC(); Debug.Space(); LDA #'{' Debug.COut(); 
         
+        /*
+        LDA #' ' Debug.COut();
+        LDA #'S' Debug.COut(); 
+        PLA Debug.HOut();  // Print current stack pointer
+        LDA #' ' Debug.COut();
+        */
         LDA ZP.LastErrorL
         ORA ZP.LastErrorH
         if (NZ)
@@ -97,6 +111,14 @@ unit Trace
         PHX
         PHY
         
+        // capture current stack pointer
+        //TSX
+        //PHX
+        
+         // Add heap validation at method exit
+        LDA #0xE0  // Exit checkpoint ID (0xE0 = Exit)
+        Debug.ChkHeap();
+        
         // Decrease indentation first
         DEC ZP.TraceIndent
         
@@ -106,6 +128,13 @@ unit Trace
         
         // Print method name from ZP.TraceMessage
         LDA ZP.TraceMessageL STA ZP.ACCL LDA ZP.TraceMessageH STA ZP.ACCH Tools.PrintStringACC(); Debug.Space(); 
+        
+        /*
+        LDA #' ' Debug.COut();
+        LDA #'S' Debug.COut();
+        PLA Debug.HOut();  // Print current stack pointer
+        LDA #' ' Debug.COut();
+        */
         
         LDA ZP.LastErrorL
         ORA ZP.LastErrorH

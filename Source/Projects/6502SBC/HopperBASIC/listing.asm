@@ -19,6 +19,16 @@ unit Listing
     // API Status: Clean
     // All public methods preserve caller state except for documented outputs
     // Commands consume their tokens and display output to serial
+    
+    // Check if function name starts with '$' (hidden function)
+    IsVisibleFunction()
+    {
+        PHA
+        LDA [ZP.TOP]  // Get first character
+        CMP #'$'
+        if (Z) { CLC } else { SEC }
+        PLA
+    }
 
     // Display a complete function with body
     // Input: ZP.IDX = function node address
@@ -298,8 +308,12 @@ unit Listing
         {
             if (NC) { break; }  // No more functions
             
-            displayFunction(); // Input: ZP.IDX = function node
-            
+            Functions.GetName(); // ZP.TOP = name pointer
+            IsVisibleFunction();
+            if (C) 
+            { 
+                displayFunction(); // Input: ZP.IDX = function node
+            }
             Functions.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next function
         }
 #ifdef TRACECONSOLE
@@ -322,6 +336,10 @@ unit Listing
             
             // Find the function
             Functions.Find(); // Input: ZP.TOP = name, Output: ZP.IDX = node
+            if (C)
+            {
+                IsVisibleFunction();
+            }
             if (NC) 
             { 
                 Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
