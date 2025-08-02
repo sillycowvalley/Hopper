@@ -692,17 +692,15 @@ unit Functions
             {
                 case SystemState.Success:
                 {
-                    LDA #'A' Tools.COut();Tools.COut();Tools.COut();Tools.COut(); // continue
+                    // continue
                 }
                 case SystemState.Failure:
                 { 
                     // handle compilation error
-                    LDA #'B' Tools.COut();Tools.COut();Tools.COut();Tools.COut();
                     break;
                 }
                 case SystemState.Exiting:   
                 { 
-                    LDA #'C' Tools.COut();Tools.COut();Tools.COut();Tools.COut();
                     // should not happen in compilation
                 }
             }
@@ -723,8 +721,6 @@ unit Functions
             // Mark function as compiled
             SetCompiled();
             
-DumpBasicBuffers();            
-DumpHeap();
             SEC // Success
             break;
         }

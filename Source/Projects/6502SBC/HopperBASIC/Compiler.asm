@@ -2089,9 +2089,40 @@ unit Compiler
     // Output: Statement compiled to opcodes
     compileIdentifierStatement()
     {
-         // TODO: Implement assignment and function call compilation
-        Error.NotImplemented(); BIT ZP.EmulatorPCL
-        State.SetFailure();
+        loop
+        {
+            // Typically called when ZP.CurrentToken is Tokens.IDENTIFIER, or a keyword
+            // Output: symbol or function in IDX, A = IdentifierType
+            Statement.ResolveIdentifier(); // Uses same logic as REPL
+            Error.CheckError();
+            if (NC) 
+            { 
+                break; 
+            }
+            switch (A)
+            {
+                case IdentifierType.Function:
+                {
+                    // Compile function call using existing logic
+                    compileFunctionCallOrVariable();
+                    Error.CheckError();
+                    break;
+                }
+                case IdentifierType.Global:
+                {
+                    // Compile assignment: var = expr
+                    // TODO: Implement assignment compilation
+                    Error.NotImplemented(); BIT ZP.EmulatorPCL
+                    break;
+                }
+                case IdentifierType.Constant:
+                {
+                    Error.IllegalAssignment(); BIT ZP.EmulatorPCL
+                    break;
+                }
+            }
+            break;
+        } // single exit
     }
 
     // Check if the last emitted opcode is RETURN or RETURNVAL

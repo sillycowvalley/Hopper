@@ -502,7 +502,18 @@ unit Console
                     {
                         return; // error occurred
                     }
-                    LDA #'@' Debug.COut();Debug.COut();Debug.COut();
+                    State.IsReturn();
+                    if (C)
+                    {
+                        // REPL was a function call (buffer is munted so even if there was a ':', no point)
+                        // We can remove this when function compiling doesn't use shared token and buffers
+                        return; 
+                    }
+                    State.IsExiting();
+                    if (C)
+                    {
+                        State.SetSuccess(); // don't "BYE"
+                    }
                 }
             }
             
@@ -519,7 +530,7 @@ unit Console
             { 
                 continue;  // Found colon, continue with next statement
             }
-DumpBasicBuffers();
+
             // If we get here, unexpected token after statement
             Error.SyntaxError(); BIT ZP.EmulatorPCL
             return;

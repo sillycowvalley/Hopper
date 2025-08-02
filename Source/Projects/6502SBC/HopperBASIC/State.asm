@@ -7,11 +7,12 @@ unit State
     // All public methods preserve caller state except for documented outputs
     // System state management for robust orchestration method coordination
     
-    enum SystemState 
+    flags SystemState 
     {
         Failure = 0,        // Zero for easy testing (CMP -> Z flag)
         Success = 1,        // Normal completion
-        Exiting = 2         // User exit request (BYE, Ctrl+C)
+        Exiting = 2,        // User exit request (BYE, Ctrl+C)
+        Return  = 3         // exit from a compiled function
     }
     
     // Set system state
@@ -85,6 +86,24 @@ unit State
         PLA
     }
     
+    // Output: C implies success (as in, yes condition = C, no condition is NC)
+    // Preserves: A register, modifies flags only
+    IsReturn()
+    {
+        PHA
+        LDA ZP.SystemState
+        CMP #SystemState.Return
+        if (Z)
+        {
+            SEC
+        }
+        else
+        {
+            CLC
+        }
+        PLA
+    }
+    
     // Check if current state indicates continuation is possible
     // Output: C set if can continue (Success), NC if should stop (Failure or Exiting)
     // Preserves: A register
@@ -129,6 +148,13 @@ unit State
     {
         PHA
         LDA #SystemState.Exiting
+        STA ZP.SystemState
+        PLA
+    }
+    SetReturn()
+    {
+        PHA
+        LDA #SystemState.Return
         STA ZP.SystemState
         PLA
     }

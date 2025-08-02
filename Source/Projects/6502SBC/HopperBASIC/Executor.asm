@@ -78,7 +78,7 @@ unit Executor
                         break; 
                     }
                 }
-                State.IsExiting();
+                State.IsReturn();
                 if (C)
                 {
                     break; // other exit conditions like popping the last return address from the callstack
@@ -515,11 +515,10 @@ unit Executor
             if (C) 
             {
                 State.SetSuccess();
-                
             }
             else
             {
-                // State was already set to Failure or Exiting by instruction
+                // State was already set to Failure, Return or Exiting by instruction
             }
         }
         
@@ -565,7 +564,7 @@ unit Executor
         LDA ZP.CSP
         if (Z) // CallStack pointer == 0?
         {
-            State.SetExiting(); // popped back down to entry call
+            State.SetReturn(); // popped back down to entry call
         }
         else
         {
@@ -916,23 +915,11 @@ unit Executor
 #endif
                 // JIT
                 Functions.Compile();
-                State.GetState();
-                switch (A)
+                State.CanContinue();
+                if (NC)
                 {
-                    case SystemState.Success:   
-                    { 
-                        // continue with execution
-                    }
-                    case SystemState.Failure:
-                    {
-                        // handle error
-                        break;
-                    }
-                    case SystemState.Exiting:
-                    {
-                        // propogate exit
-                        break;
-                    }
+                    // handle error
+                    break;
                 }
             }
             
@@ -941,6 +928,8 @@ unit Executor
             LDA #'P' Debug.COut(); LDA #'A' Debug.COut(); LDA #'T' Debug.COut(); LDA #'C' Debug.COut(); LDA #'H' Debug.COut();
             LDA #':' Debug.COut(); LDA #' ' Debug.COut();
             Debug.XOut(); // IDX
+            
+            
             
     #endif
             

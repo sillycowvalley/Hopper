@@ -116,7 +116,7 @@ unit Statement
     // Typically called when ZP.CurrentToken is Tokens.IDENTIFIER, or a keyword
     // Output: symbol or function in IDX, A = IdentifierType
     const string resolveIdentifierTrace = "ResolveId";
-    resolveIdentifier()
+    ResolveIdentifier()
     {
         PHX
         PHY
@@ -215,6 +215,7 @@ unit Statement
     // Input: ZP.CurrentToken = first token of expression
     // Output: Expression result pushed onto value stack
     //         ZP.CurrentToken = token after expression
+    //         C set if successful, NC if error
     // Munts: Stack, ZP.CurrentToken, all ZP variables used by parsing
     // Error: Sets ZP.LastError if syntax error or type mismatch
     const string strEvaluateExpression = "EvalExpr";
@@ -233,10 +234,25 @@ unit Statement
             Compiler.SetLiteralBase();
             Compiler.CompileExpression();
             Error.CheckError();
-            if (NC) { State.SetFailure(); break; }  
+            if (NC) { State.SetFailure(); break; }
+            
+            // Save opcode buffer length after compilation (important for function calls from REPL)
+            LDA ZP.OpCodeBufferLengthL
+            PHA
+            LDA ZP.OpCodeBufferLengthH
+            PHA
+            
+            State.SetSuccess(); // clear
             
             // 2. Execute opcodes ? result on stack
             Executor.ExecuteOpCodes();
+            
+            // Restore opcode buffer length after execution (important for function calls from REPL)
+            PLA
+            STA ZP.OpCodeBufferLengthH
+            PLA
+            STA ZP.OpCodeBufferLengthL
+            
             Error.CheckError(); 
             if (NC)
             {
@@ -244,11 +260,14 @@ unit Statement
                 break;
             } 
             
+            
+            /*
             State.IsExiting();
             if (C)
             {
                 State.SetSuccess();
             }
+            */
             
             // Result is now on stack
             break;
@@ -273,81 +292,66 @@ unit Statement
         LDA #(executeTrace % 256) STA ZP.TraceMessageL LDA #(executeTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
 
-        loop
+        LDA ZP.CurrentToken
+        switch (A)
         {
-            LDA ZP.CurrentToken
-            switch (A)
+            case Tokens.REM:
+            case Tokens.COMMENT:
             {
-                case Tokens.REM:
-                case Tokens.COMMENT:
-                {
-                    // Comments are no-ops - just advance to next token
-                    Tokenizer.NextToken();
-                    SEC  // Success
-                    break;
-                }
-                case Tokens.PRINT:
-                {
-                    executePrint();
-                    break;
-                }
-                case Tokens.FUNC:
-                {
-                    FunctionDeclaration.ExecuteFunctionDeclaration();
-                    break;
-                }
-                case Tokens.BEGIN:
-                {
-                    FunctionDeclaration.ExecuteBeginDeclaration();
-                    break;
-                }
-                case Tokens.IF:
-                {
-                    executeIf();
-                    break;
-                }
-                case Tokens.RETURN:
-                {
-                    executeReturn();
-                    break;
-                }
-                case Tokens.END:
-                {
-                    executeEnd();
-                    break;
-                }
-                case Tokens.IDENTIFIER:
-                {
-                    // Could be assignment or function call
-                    executeIdentifier();
-                    break;
-                }
-                
-                case Tokens.CONST:
-                {
-                    executeConstantDeclaration();
-                }
-                case Tokens.INT:
-                case Tokens.WORD:
-                case Tokens.BIT:
-                case Tokens.BYTE:
-                case Tokens.STRING:
-                {
-                    executeVariableDeclaration();
-                    break;
-                }
-                
-                default:
-                {
-                    // Unexpected token for statement
-                    Error.SyntaxError(); BIT ZP.EmulatorPCL
-                    CLC  // Error
-                    break;
-                }
-            } // switch
-            break;
-        } // loop - single exit
-        
+                // Comments are no-ops - just advance to next token
+                Tokenizer.NextToken();
+                SEC  // Success
+            }
+            case Tokens.PRINT:
+            {
+                executePrint();
+            }
+            case Tokens.FUNC:
+            {
+                FunctionDeclaration.ExecuteFunctionDeclaration();
+            }
+            case Tokens.BEGIN:
+            {
+                FunctionDeclaration.ExecuteBeginDeclaration();
+            }
+            case Tokens.IF:
+            {
+                executeIf();
+            }
+            case Tokens.RETURN:
+            {
+                executeReturn();
+            }
+            case Tokens.END:
+            {
+                executeEnd();
+            }
+            case Tokens.IDENTIFIER:
+            {
+                // Could be assignment or function call
+                executeIdentifier();
+            }
+            
+            case Tokens.CONST:
+            {
+                executeConstantDeclaration();
+            }
+            case Tokens.INT:
+            case Tokens.WORD:
+            case Tokens.BIT:
+            case Tokens.BYTE:
+            case Tokens.STRING:
+            {
+                executeVariableDeclaration();
+            }
+            
+            default:
+            {
+                // Unexpected token for statement
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                CLC  // Error
+            }
+        } // switch
         
         if (C) // Only if statement executed successfully
         {
@@ -583,7 +587,7 @@ unit Statement
         loop // Single exit block for clean error handling
         {
             // Use ResolveIdentifier to determine what we have
-            resolveIdentifier(); // symbol or function in IDX, A = IdentifierType
+            Statement.ResolveIdentifier(); // symbol or function in IDX, A = IdentifierType
             Error.CheckError();
             if (NC) { break; } // Error - identifier not found or other error
             
