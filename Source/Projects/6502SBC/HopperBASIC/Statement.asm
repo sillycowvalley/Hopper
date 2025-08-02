@@ -126,11 +126,11 @@ unit Statement
 #ifdef DEBUG
         PHA
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'R'
-        Tools.COut();
+        Debug.COut();
         LDA #':'
-        Tools.COut();
+        Debug.COut();
         PLA
 #endif 
         
@@ -140,7 +140,7 @@ unit Statement
             if (C)
             {
 #ifdef DEBUG
-                LDA #'K' Tools.COut();
+                LDA #'K' Debug.COut();
 #endif
                 LDA # IdentifierType.Keyword
                 break; // success
@@ -163,7 +163,7 @@ unit Statement
                 if (Z)
                 { 
 #ifdef DEBUG
-                    LDA # 'V' Tools.COut();
+                    LDA # 'V' Debug.COut();
 #endif
                     LDA # IdentifierType.Global
                     break; // success
@@ -172,7 +172,7 @@ unit Statement
                 if (Z)
                 { 
 #ifdef DEBUG
-                    LDA # 'C' Tools.COut();
+                    LDA # 'C' Debug.COut();
 #endif        
                     LDA # IdentifierType.Constant
                     break; // success
@@ -190,7 +190,7 @@ unit Statement
             if (C)  
             {
 #ifdef DEBUG
-                LDA #'F' Tools.COut();
+                LDA #'F' Debug.COut();
 #endif    
                 LDA # IdentifierType.Function
                 break; // success
@@ -198,7 +198,7 @@ unit Statement
             Error.CheckError();
             if (NC) { break; }
 #ifdef DEBUG
-            LDA #'U' Tools.COut();
+            LDA #'U' Debug.COut();
 #endif
             Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
             LDA # IdentifierType.Undefined
@@ -208,9 +208,9 @@ unit Statement
 #ifdef DEBUG
         PHA
         LDA #'R'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
         PLA
 #endif        
         PLY
@@ -230,9 +230,9 @@ unit Statement
     {
     #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'E'
-        Tools.COut();
+        Debug.COut();
     #endif
         // Set literal base to BasicTokenizerBuffer for REPL
         LDA #(Address.BasicTokenizerBuffer % 256)
@@ -246,11 +246,11 @@ unit Statement
         { 
     #ifdef DEBUG
             LDA #'E'
-            Tools.COut();
+            Debug.COut();
             LDA #'!'
-            Tools.COut();
+            Debug.COut();
             LDA #'>'
-            Tools.COut();
+            Debug.COut();
     #endif
             return; 
         }
@@ -262,11 +262,11 @@ unit Statement
         { 
     #ifdef DEBUG
             LDA #'E'
-            Tools.COut();
+            Debug.COut();
             LDA #'!'
-            Tools.COut();
+            Debug.COut();
             LDA #'>'
-            Tools.COut();
+            Debug.COut();
     #endif
             return; 
         }
@@ -275,9 +275,9 @@ unit Statement
         
     #ifdef DEBUG
         LDA #'E'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
     #endif
     }
     
@@ -292,11 +292,11 @@ unit Statement
     {
 #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'S'
-        Tools.COut();
+        Debug.COut();
         LDA ZP.CurrentToken
-        Tools.HOut();
+        Debug.HOut();
 #endif
         loop
         {
@@ -394,9 +394,9 @@ unit Statement
         
 #ifdef DEBUG
         LDA #'S'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
 #endif
     }
     
@@ -410,9 +410,9 @@ unit Statement
     {
 #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'P'
-        Tools.COut();
+        Debug.COut();
 #endif
 
         // Get next token (should be start of expression)
@@ -432,9 +432,9 @@ unit Statement
             
 #ifdef DEBUG
             LDA #'P'
-            Tools.COut();
+            Debug.COut();
             LDA #'>'
-            Tools.COut();
+            Debug.COut();
 #endif
             
             SEC  // Success
@@ -457,9 +457,9 @@ unit Statement
         
 #ifdef DEBUG
         LDA #'P'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
 #endif
         
         SEC  // Success
@@ -475,9 +475,9 @@ unit Statement
     {
 #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'I'
-        Tools.COut();
+        Debug.COut();
 #endif
         
         // Get next token (should be start of condition expression)
@@ -511,9 +511,9 @@ unit Statement
             // Condition is false, skip to end of line
 #ifdef DEBUG
             LDA #'I'
-            Tools.COut();
+            Debug.COut();
             LDA #'>'
-            Tools.COut();
+            Debug.COut();
 #endif
             SEC  // Success (skip)
             return;
@@ -529,9 +529,9 @@ unit Statement
         
 #ifdef DEBUG
         LDA #'I'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
 #endif
     }
     
@@ -544,9 +544,9 @@ unit Statement
     {
 #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'R'
-        Tools.COut();
+        Debug.COut();
 #endif
         
         // Get next token
@@ -578,9 +578,9 @@ unit Statement
         }
 #ifdef DEBUG
         LDA #'R'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
 #endif
         
         CLC  // Error
@@ -611,11 +611,11 @@ unit Statement
     #ifdef DEBUG
         PHA
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'I'
-        Tools.COut();
+        Debug.COut();
         LDA #'D'
-        Tools.COut();
+        Debug.COut();
         PLA
     #endif
     
@@ -743,11 +743,11 @@ unit Statement
         
     #ifdef DEBUG
         LDA #'I'
-        Tools.COut();
+        Debug.COut();
         LDA #'D'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
     #endif
     }
         
@@ -756,11 +756,11 @@ unit Statement
     {
 #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'D'
-        Tools.COut();
+        Debug.COut();
 #endif        
         loop
         {
@@ -778,11 +778,11 @@ unit Statement
         } // single exit
 #ifdef DEBUG
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'D'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
 #endif        
     }
     
@@ -797,22 +797,22 @@ unit Statement
     {
 #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'V'
-        Tools.COut();
+        Debug.COut();
         LDA #'D'
-        Tools.COut();
+        Debug.COut();
 #endif        
         LDA #(SymbolType.VARIABLE << 4)
         STA stmtSymbol
         processSingleSymbolDeclaration();
 #ifdef DEBUG
         LDA #'V'
-        Tools.COut();
+        Debug.COut();
         LDA #'D'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
 #endif        
     }
     
@@ -820,11 +820,11 @@ unit Statement
     {
 #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'S'
-        Tools.COut();
+        Debug.COut();
         LDA #'D'
-        Tools.COut();
+        Debug.COut();
 #endif
 
         loop
@@ -1187,11 +1187,11 @@ unit Statement
         
 #ifdef DEBUG
         LDA #'S'
-        Tools.COut();
+        Debug.COut();
         LDA #'D'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
 #endif
     }
       

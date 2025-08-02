@@ -23,13 +23,13 @@ unit FunctionDeclaration
     {
     #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'B'
-        Tools.COut();
+        Debug.COut();
         LDA #'E'
-        Tools.COut();
+        Debug.COut();
         LDA #'G'
-        Tools.COut();
+        Debug.COut();
     #endif
     
         loop // Single exit block for clean error handling
@@ -104,13 +104,13 @@ unit FunctionDeclaration
         
     #ifdef DEBUG
         LDA #'B'
-        Tools.COut();
+        Debug.COut();
         LDA #'E'
-        Tools.COut();
+        Debug.COut();
         LDA #'G'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
     #endif
     }
     
@@ -125,11 +125,11 @@ unit FunctionDeclaration
     {
     #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'F'
-        Tools.COut();
+        Debug.COut();
         LDA #'D'
-        Tools.COut();
+        Debug.COut();
     #endif
     
         loop // Single exit block for clean error handling
@@ -285,11 +285,11 @@ unit FunctionDeclaration
         
     #ifdef DEBUG
         LDA #'F'
-        Tools.COut();
+        Debug.COut();
         LDA #'D'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
     #endif
     }
     
@@ -302,11 +302,11 @@ unit FunctionDeclaration
     {
     #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'P'
-        Tools.COut();
+        Debug.COut();
         LDA #'L'
-        Tools.COut();
+        Debug.COut();
     #endif
     
         loop // Single exit block
@@ -388,11 +388,11 @@ unit FunctionDeclaration
         
     #ifdef DEBUG
         LDA #'P'
-        Tools.COut();
+        Debug.COut();
         LDA #'L'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
     #endif
     }
     
@@ -406,13 +406,13 @@ unit FunctionDeclaration
     {
     #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'B'
-        Tools.COut();
+        Debug.COut();
         LDA #'B'
-        Tools.COut();
+        Debug.COut();
     #endif
     
         loop // Single exit block
@@ -495,13 +495,13 @@ unit FunctionDeclaration
         
     #ifdef DEBUG
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'B'
-        Tools.COut();
+        Debug.COut();
         LDA #'B'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
     #endif
     }
     
@@ -515,11 +515,11 @@ unit FunctionDeclaration
     {
     #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'B'
-        Tools.COut();
+        Debug.COut();
     #endif
 
         loop // Single exit block
@@ -605,11 +605,11 @@ unit FunctionDeclaration
         
     #ifdef DEBUG
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'B'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
     #endif
     }
     
@@ -622,13 +622,13 @@ unit FunctionDeclaration
     {
     #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'P'
-        Tools.COut();
+        Debug.COut();
         LDA #'F'
-        Tools.COut();
+        Debug.COut();
     #endif
     
         loop // Single exit block for error handling
@@ -763,11 +763,11 @@ unit FunctionDeclaration
             
     #ifdef DEBUG
             LDA #'L' // Length calculated
-            Tools.COut();
+            Debug.COut();
             LDA ZP.FLENGTHH
-            Tools.HOut();
+            Debug.HOut();
             LDA ZP.FLENGTHL
-            Tools.HOut();
+            Debug.HOut();
     #endif
             
             // Create token stream for function body
@@ -777,11 +777,11 @@ unit FunctionDeclaration
             
     #ifdef DEBUG
             LDA #'A' // Allocated
-            Tools.COut();
+            Debug.COut();
             LDA ZP.FDESTINATIONADDRESSH
-            Tools.HOut();
+            Debug.HOut();
             LDA ZP.FDESTINATIONADDRESSL
-            Tools.HOut();
+            Debug.HOut();
     #endif
             
             // Restore function node address
@@ -802,11 +802,11 @@ unit FunctionDeclaration
             
     #ifdef DEBUG
             LDA #'S' // Set body
-            Tools.COut();
+            Debug.COut();
             LDA ZP.IDYL
-            Tools.HOut();
+            Debug.HOut();
             LDA ZP.IDYH
-            Tools.HOut();
+            Debug.HOut();
     #endif
             
             SEC // Success
@@ -815,13 +815,13 @@ unit FunctionDeclaration
         
     #ifdef DEBUG
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'P'
-        Tools.COut();
+        Debug.COut();
         LDA #'F'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
     #endif
     }
 }

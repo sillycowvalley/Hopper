@@ -209,7 +209,7 @@ program Test
             
             PLA  // Clean up failure code
 #ifdef DEBUG             
-            Tools.DumpHeap();
+            Debug.DumpHeap();
 #endif
             loop { }
         }

@@ -91,9 +91,9 @@ unit Compiler
     EmitOpcode()
     {
 #ifdef DEBUG       
-        Tools.NL(); LDA #'>' Tools.COut();
-        LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
-        LDA #' ' Tools.COut(); LDA compilerOpCode Tools.HOut(); LDA #' ' Tools.COut();
+        Tools.NL(); LDA #'>' Debug.COut();
+        LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
+        LDA #' ' Debug.COut(); LDA compilerOpCode Debug.HOut(); LDA #' ' Debug.COut();
 #endif        
         // Check space for 1 byte
         LDA #1
@@ -122,10 +122,10 @@ unit Compiler
     EmitOpcodeWithByte()
     {
 #ifdef DEBUG       
-        Tools.NL(); LDA #'>' Tools.COut();
-        LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
-        LDA #' ' Tools.COut(); LDA compilerOpCode Tools.HOut(); LDA #' ' Tools.COut(); 
-                               LDA compilerOperand1 Tools.HOut(); LDA #' ' Tools.COut();
+        Tools.NL(); LDA #'>' Debug.COut();
+        LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
+        LDA #' ' Debug.COut(); LDA compilerOpCode Debug.HOut(); LDA #' ' Debug.COut(); 
+                               LDA compilerOperand1 Debug.HOut(); LDA #' ' Debug.COut();
 #endif
         // Check space for 2 bytes
         LDA #2
@@ -165,11 +165,11 @@ unit Compiler
     EmitOpcodeWithWord()
     {
 #ifdef DEBUG       
-        Tools.NL(); LDA #'>' Tools.COut();
-        LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
-        LDA #' ' Tools.COut(); LDA compilerOpCode Tools.HOut(); LDA #' ' Tools.COut(); 
-                               LDA compilerOperand1 Tools.HOut(); LDA #' ' Tools.COut();
-                               LDA compilerOperand2 Tools.HOut(); LDA #' ' Tools.COut();
+        Tools.NL(); LDA #'>' Debug.COut();
+        LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
+        LDA #' ' Debug.COut(); LDA compilerOpCode Debug.HOut(); LDA #' ' Debug.COut(); 
+                               LDA compilerOperand1 Debug.HOut(); LDA #' ' Debug.COut();
+                               LDA compilerOperand2 Debug.HOut(); LDA #' ' Debug.COut();
 #endif        
         // Check space for 3 bytes
         LDA #3
@@ -633,8 +633,8 @@ unit Compiler
         {
 #ifdef DEBUG
             Tools.NL();
-            LDA ZP.TokenLiteralPosH Tools.HOut();
-            LDA ZP.TokenLiteralPosL Tools.HOut();
+            LDA ZP.TokenLiteralPosH Debug.HOut();
+            LDA ZP.TokenLiteralPosL Debug.HOut();
 #endif            
             // Calculate absolute address of function name in token buffer
             // The tokenizer's TokenLiteralPos points to the start of the identifier string
@@ -647,9 +647,9 @@ unit Compiler
             STA compilerOperand2       // Absolute address MSB
 
 #ifdef DEBUG
-            LDA #'-' Tools.COut(); LDA #'>' Tools.COut();
-            LDA compilerOperand2 Tools.HOut();
-            LDA compilerOperand1 Tools.HOut();
+            LDA #'-' Debug.COut(); LDA #'>' Debug.COut();
+            LDA compilerOperand2 Debug.HOut();
+            LDA compilerOperand1 Debug.HOut();
 #endif                        
                                    
             // Emit CALL with absolute address (not offset!)
@@ -674,11 +674,11 @@ unit Compiler
     {
 #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'L'
-        Tools.COut();
+        Debug.COut();
 #endif
         
         // Compile left operand (higher precedence)
@@ -710,11 +710,11 @@ unit Compiler
         
 #ifdef DEBUG
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'L'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
 #endif
     }
     
@@ -726,11 +726,11 @@ unit Compiler
     {
 #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'A'
-        Tools.COut();
+        Debug.COut();
 #endif
         
         // Compile left operand (higher precedence)
@@ -762,11 +762,11 @@ unit Compiler
         
 #ifdef DEBUG
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'A'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
 #endif
     }
     
@@ -778,11 +778,11 @@ unit Compiler
     {
 #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
 #endif
         
         // Compile left operand (higher precedence)
@@ -839,11 +839,11 @@ unit Compiler
         
 #ifdef DEBUG
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
 #endif
     }
     
@@ -855,11 +855,11 @@ unit Compiler
     {
     #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'&'
-        Tools.COut();
+        Debug.COut();
     #endif
         
         // Compile left operand (higher precedence)
@@ -891,11 +891,11 @@ unit Compiler
         
     #ifdef DEBUG
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'&'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
     #endif
     }
     
@@ -907,11 +907,11 @@ unit Compiler
     {
 #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'O'
-        Tools.COut();
+        Debug.COut();
 #endif
         
         // Compile left operand (higher precedence)
@@ -943,11 +943,11 @@ unit Compiler
         
 #ifdef DEBUG
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'O'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
 #endif
     }
     
@@ -959,11 +959,11 @@ unit Compiler
     {
 #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'+'
-        Tools.COut();
+        Debug.COut();
 #endif
         
         // Compile left operand (higher precedence)
@@ -1021,11 +1021,11 @@ unit Compiler
         
 #ifdef DEBUG
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'+'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
 #endif
     }
     
@@ -1037,11 +1037,11 @@ unit Compiler
     {
 #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'*'
-        Tools.COut();
+        Debug.COut();
 #endif
         
         // Compile left operand (higher precedence)
@@ -1095,11 +1095,11 @@ unit Compiler
         
 #ifdef DEBUG
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'*'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
 #endif
     }
     
@@ -1111,11 +1111,11 @@ unit Compiler
     {
 #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'U'
-        Tools.COut();
+        Debug.COut();
 #endif
         
         LDA ZP.CurrentToken
@@ -1163,11 +1163,11 @@ unit Compiler
         
 #ifdef DEBUG
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'U'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
 #endif
     }
     
@@ -1181,7 +1181,7 @@ unit Compiler
         PHX
         PHY
 #ifdef DEBUG
-        LDA #'[' Tools.COut();
+        LDA #'[' Debug.COut();
 #endif
         loop // Single exit
         {
@@ -1235,7 +1235,7 @@ unit Compiler
             break; // Exit outer loop
         }
 #ifdef DEBUG
-        LDA #']' Tools.COut(); // Exit from argument list  
+        LDA #']' Debug.COut(); // Exit from argument list  
 #endif
         PLY
         PLX
@@ -1250,13 +1250,13 @@ unit Compiler
         PHY
 #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'F'
-        Tools.COut();
+        Debug.COut();
         LDA #'V'
-        Tools.COut();
+        Debug.COut();
 #endif
         loop // Single exit
         {
@@ -1276,7 +1276,7 @@ unit Compiler
             if (Z)
             {
 #ifdef DEBUG
-        LDA #'(' Tools.COut();
+        LDA #'(' Debug.COut();
 #endif
                 // This is a function call - restore tokenizer to identifier and emit call
                 LDA (compilerSavedTokenPosL + 0)
@@ -1320,14 +1320,14 @@ unit Compiler
                 Error.CheckError();
                 if (NC) { break; }
 #ifdef DEBUG
-        LDA #')' Tools.COut();
+        LDA #')' Debug.COut();
 #endif
 
             }
             else
             {
 #ifdef DEBUG
-        LDA #'V' Tools.COut();
+        LDA #'V' Debug.COut();
 #endif
                 // Not a function call - restore position and emit variable push
                 LDA (compilerSavedTokenPosL + 0)
@@ -1350,13 +1350,13 @@ unit Compiler
         }
 #ifdef DEBUG
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'F'
-        Tools.COut();
+        Debug.COut();
         LDA #'V'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
 #endif
         PLY
         PLX
@@ -1371,11 +1371,11 @@ unit Compiler
     {
 #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'P'
-        Tools.COut();
+        Debug.COut();
 #endif
         
         loop // Single exit pattern
@@ -1476,11 +1476,11 @@ unit Compiler
                 case Tokens.IDENTIFIER:
                 {
 #ifdef DEBUG
-                    LDA #'{' Tools.COut();
+                    LDA #'{' Debug.COut();
 #endif
                     compileFunctionCallOrVariable();
 #ifdef DEBUG
-                    LDA #'}' Tools.COut();
+                    LDA #'}' Debug.COut();
 #endif
                     break;
                 }
@@ -1524,11 +1524,11 @@ unit Compiler
         
 #ifdef DEBUG
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'P'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
 #endif
     }
     
@@ -1540,11 +1540,11 @@ unit Compiler
     {
 #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'E'
-        Tools.COut();
+        Debug.COut();
 #endif
         
         // Initialize opcode buffer if this is the start of compilation
@@ -1556,11 +1556,11 @@ unit Compiler
         
 #ifdef DEBUG
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'E'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
 #endif
     }
     
@@ -1574,13 +1574,13 @@ unit Compiler
     {
     #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'F'
-        Tools.COut();
+        Debug.COut();
         LDA #'N'
-        Tools.COut();
+        Debug.COut();
     #endif
 
         PHA
@@ -1663,13 +1663,13 @@ unit Compiler
         
     #ifdef DEBUG
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'F'
-        Tools.COut();
+        Debug.COut();
         LDA #'N'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
     #endif
     }
 
@@ -1682,11 +1682,11 @@ unit Compiler
     {
     #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'S'
-        Tools.COut();
+        Debug.COut();
     #endif
 
         loop // Single exit block
@@ -1735,11 +1735,11 @@ unit Compiler
         
     #ifdef DEBUG
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'S'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
     #endif
     }
 
@@ -1751,11 +1751,11 @@ unit Compiler
     {
     #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'P'
-        Tools.COut();
+        Debug.COut();
         LDA #'S'
-        Tools.COut();
+        Debug.COut();
     #endif
 
         loop // Single exit block
@@ -1797,11 +1797,11 @@ unit Compiler
         
     #ifdef DEBUG
         LDA #'P'
-        Tools.COut();
+        Debug.COut();
         LDA #'S'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
     #endif
     }
 

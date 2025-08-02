@@ -546,9 +546,9 @@ unit Functions
         Stacks.PushPC(); // after FetchOperandWord
         
 #ifdef DEBUG
-        LDA #' ' Tools.COut(); LDA #'[' Tools.COut();
-        LDA ZP.IDXH Tools.HOut(); LDA ZP.IDXL Tools.HOut();
-        LDA #']' Tools.COut(); LDA #' ' Tools.COut();
+        LDA #' ' Debug.COut(); LDA #'[' Debug.COut();
+        LDA ZP.IDXH Debug.HOut(); LDA ZP.IDXL Debug.HOut();
+        LDA #']' Debug.COut(); LDA #' ' Debug.COut();
 #endif        
         
         LDY #Objects.snOpcodes
@@ -559,8 +559,8 @@ unit Functions
         STA ZP.PCH
     
 #ifdef DEBUG
-        LDA #' ' Tools.COut(); LDA #'-' Tools.COut();LDA #'>' Tools.COut(); LDA #' ' Tools.COut();
-        LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
+        LDA #' ' Debug.COut(); LDA #'-' Debug.COut();LDA #'>' Debug.COut(); LDA #' ' Debug.COut();
+        LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
 #endif        
         SEC
     }   

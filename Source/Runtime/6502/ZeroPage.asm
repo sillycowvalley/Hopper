@@ -36,8 +36,11 @@ unit ZP
     const byte CODESTART            = 0x0D;
     const byte CODESTARTL           = 0x0D;
     const byte CODESTARTH           = 0x0E;
-    
+#ifdef HOPPER_BASIC
+    const byte TraceIndent          = 0x0F; // used by Trace.asm
+#else
     const byte CNP                  = 0x0F;
+#endif
     
     const byte ACC                  = 0x10;
     const byte ACCL                 = 0x10;

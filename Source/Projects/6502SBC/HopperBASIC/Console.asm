@@ -129,11 +129,11 @@ unit Console
     {
     #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'D'
-        Tools.COut();
+        Debug.COut();
         LDA #'I'
-        Tools.COut();
+        Debug.COut();
     #endif
 
         // Save current position
@@ -179,7 +179,7 @@ unit Console
                     PLA
                     STA ZP.TokenizerPosL
 #ifdef DEBUG
-                    LDA #'i' Tools.COut(); LDA #'b' Tools.COut();
+                    LDA #'i' Debug.COut(); LDA #'b' Debug.COut();
 #endif
                     LDA #CaptureMode.Begin
                     Statement.SetCaptureMode();
@@ -196,7 +196,7 @@ unit Console
                     PLA
                     STA ZP.TokenizerPosL
 #ifdef DEBUG
-                    LDA #'c' Tools.COut(); LDA #'b' Tools.COut();
+                    LDA #'c' Debug.COut(); LDA #'b' Debug.COut();
 #endif
                     CLC // Found END - complete BEGIN
                     break;
@@ -219,7 +219,7 @@ unit Console
                     PLA
                     STA ZP.TokenizerPosL
 #ifdef DEBUG
-                    LDA #'i' Tools.COut(); LDA #'f' Tools.COut();
+                    LDA #'i' Debug.COut(); LDA #'f' Debug.COut();
 #endif
                     LDA #CaptureMode.Func
                     Statement.SetCaptureMode();
@@ -236,7 +236,7 @@ unit Console
                     PLA
                     STA ZP.TokenizerPosL
 #ifdef DEBUG
-                    LDA #'c' Tools.COut(); LDA #'f' Tools.COut();
+                    LDA #'c' Debug.COut(); LDA #'f' Debug.COut();
 #endif
                     CLC // Found ENDFUNC - complete function
                     break;
@@ -246,11 +246,11 @@ unit Console
         
     #ifdef DEBUG
         LDA #'D'
-        Tools.COut();
+        Debug.COut();
         LDA #'I'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
     #endif
     }
       
@@ -259,13 +259,13 @@ unit Console
     {
     #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'L'
-        Tools.COut();
+        Debug.COut();
         LDA #'F'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
     #endif
 
         // Check for tokenization errors
@@ -281,12 +281,12 @@ unit Console
         if (C)
         {
             LDA #'E' // ENDFUNC detected
-            Tools.COut();
+            Debug.COut();
         }
         else
         {
             LDA #'N' // No ENDFUNC
-            Tools.COut();
+            Debug.COut();
         }
         PLP // Restore flags
         PLA // Restore A
@@ -297,14 +297,14 @@ unit Console
             // Complete function captured - process it
     #ifdef DEBUG
             LDA #'S' // Setting normal mode
-            Tools.COut();
+            Debug.COut();
     #endif
             LDA #CaptureMode.Off
             Statement.SetCaptureMode();
             
     #ifdef DEBUG
             LDA #'C' // Calling CompletePartialFunction
-            Tools.COut();
+            Debug.COut();
     #endif
             FunctionDeclaration.CompletePartialFunction();
             Error.CheckError();
@@ -313,13 +313,13 @@ unit Console
         
     #ifdef DEBUG
         LDA #'L'
-        Tools.COut();
+        Debug.COut();
         LDA #'F'
-        Tools.COut();
+        Debug.COut();
         LDA #'C'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
     #endif
         
         SEC // Continue (either in capture mode or completed)
@@ -329,13 +329,13 @@ unit Console
     {
     #ifdef DEBUG
         LDA #'<'
-        Tools.COut();
+        Debug.COut();
         LDA #'D'
-        Tools.COut();
+        Debug.COut();
         LDA #'F'
-        Tools.COut();
+        Debug.COut();
         LDA #'E'
-        Tools.COut();
+        Debug.COut();
     #endif
 
         // Save current position
@@ -407,13 +407,13 @@ unit Console
         
     #ifdef DEBUG
         LDA #'D'
-        Tools.COut();
+        Debug.COut();
         LDA #'F'
-        Tools.COut();
+        Debug.COut();
         LDA #'E'
-        Tools.COut();
+        Debug.COut();
         LDA #'>'
-        Tools.COut();
+        Debug.COut();
     #endif
     }
     
@@ -609,7 +609,7 @@ unit Console
                 }
             }
             // A contains page number - call DumpPage
-            Tools.DumpPage();
+            Debug.DumpPage();
             Messages.PrintOK();
             SEC // ok
             break;
@@ -636,7 +636,7 @@ unit Console
 #ifdef DEBUG
         Tokenizer.NextToken(); // consume 'HEAP'
         
-        Tools.DumpHeap();
+        Debug.DumpHeap();
         Messages.PrintOK();
 #else
         Error.OnlyInDebug(); BIT ZP.EmulatorPCL
@@ -656,7 +656,7 @@ unit Console
 #ifdef DEBUG
         Tokenizer.NextToken(); // consume 'BUFFERS'
         
-        Tools.DumpBasicBuffers();
+        Debug.DumpBasicBuffers();
         Messages.PrintOK();
 #else
         Error.OnlyInDebug(); BIT ZP.EmulatorPCL

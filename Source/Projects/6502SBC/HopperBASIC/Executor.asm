@@ -144,9 +144,9 @@ unit Executor
         }
 
 #ifdef DEBUG       
-        Tools.NL(); LDA #']' Tools.COut();
-        LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
-        LDA #' ' Tools.COut();
+        Tools.NL(); LDA #']' Debug.COut();
+        LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
+        LDA #' ' Debug.COut();
 #endif
 
         // Fetch opcode using indirect addressing
@@ -155,7 +155,7 @@ unit Executor
         PHA // Save opcode
         
 #ifdef DEBUG       
-        PHA Tools.HOut(); LDA #' ' Tools.COut(); PLA
+        PHA Debug.HOut(); LDA #' ' Debug.COut(); PLA
 #endif
         
         // Advance PC
@@ -437,9 +437,9 @@ unit Executor
     executeNotImplemented()
     {
 #ifdef DEBUG
-        LDA #'?' Tools.COut();
-        TYA Tools.HOut();
-        Tools.DumpBasicBuffers();
+        LDA #'?' Debug.COut();
+        TYA Debug.HOut();
+        Debug.DumpBasicBuffers();
 #endif                
         // Unknown opcode
         Error.NotImplemented(); BIT ZP.EmulatorPCL
@@ -659,9 +659,9 @@ unit Executor
             STA ZP.TOPH
             
     #ifdef DEBUG
-            LDA #'@' Tools.COut(); 
-            LDA executorOperandH Tools.HOut(); 
-            LDA executorOperandL Tools.HOut();
+            LDA #'@' Debug.COut(); 
+            LDA executorOperandH Debug.HOut(); 
+            LDA executorOperandL Debug.HOut();
     #endif            
             
             // 1. resolve Function <index> to function call <address>
@@ -669,21 +669,21 @@ unit Executor
             if (NC)
             {
     #ifdef DEBUG
-                LDA #'?' Tools.COut(); LDA #'F' Tools.COut();
+                LDA #'?' Debug.COut(); LDA #'F' Debug.COut();
     #endif
                 Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
                 break;
             }
 #ifdef DEBUG
-            LDA #' ' Tools.COut(); LDA #'\'' Tools.COut(); Tools.PrintStringTOP(); LDA #'\'' Tools.COut(); LDA #' ' Tools.COut();
-            LDA #'=' Tools.COut(); LDA ZP.IDXH Tools.HOut(); LDA ZP.IDXL Tools.HOut(); LDA #' ' Tools.COut(); 
+            LDA #' ' Debug.COut(); LDA #'\'' Debug.COut(); Tools.PrintStringTOP(); LDA #'\'' Debug.COut(); LDA #' ' Debug.COut();
+            LDA #'=' Debug.COut(); LDA ZP.IDXH Debug.HOut(); LDA ZP.IDXL Debug.HOut(); LDA #' ' Debug.COut(); 
 #endif
             // ZP.IDX = function node address
             Functions.IsCompiled();
             if (NC)
             {
 #ifdef DEBUG
-                Tools.NL(); LDA #' ' Tools.NL(); LDA #'J' Tools.COut(); LDA #'I' Tools.COut(); LDA #'T' Tools.COut();
+                Tools.NL(); LDA #' ' Tools.NL(); LDA #'J' Debug.COut(); LDA #'I' Debug.COut(); LDA #'T' Debug.COut();
 #endif
                 // JIT
                 Functions.Compile();
@@ -695,9 +695,9 @@ unit Executor
             
     #ifdef DEBUG
             Tools.NL(); 
-            LDA #'P' Tools.COut(); LDA #'A' Tools.COut(); LDA #'T' Tools.COut(); LDA #'C' Tools.COut(); LDA #'H' Tools.COut();
-            LDA #':' Tools.COut(); LDA #' ' Tools.COut();
-            Tools.XOut(); // IDX
+            LDA #'P' Debug.COut(); LDA #'A' Debug.COut(); LDA #'T' Debug.COut(); LDA #'C' Debug.COut(); LDA #'H' Debug.COut();
+            LDA #':' Debug.COut(); LDA #' ' Debug.COut();
+            Debug.XOut(); // IDX
             
     #endif
             
@@ -738,18 +738,18 @@ unit Executor
             STA [ZP.PC]
             
     #ifdef DEBUG
-            LDA ZP.PCH Tools.HOut();
-            LDA ZP.PCL Tools.HOut();
-            LDA #' ' Tools.COut();
+            LDA ZP.PCH Debug.HOut();
+            LDA ZP.PCL Debug.HOut();
+            LDA #' ' Debug.COut();
             LDY # 0
             LDA [ZP.PC], Y
-            Tools.HOut(); LDA #' ' Tools.COut();
+            Debug.HOut(); LDA #' ' Debug.COut();
             INY
             LDA [ZP.PC], Y
-            Tools.HOut(); LDA #' ' Tools.COut();
+            Debug.HOut(); LDA #' ' Debug.COut();
             INY
             LDA [ZP.PC], Y
-            Tools.HOut(); LDA #' ' Tools.COut();
+            Debug.HOut(); LDA #' ' Debug.COut();
             
     #endif
             

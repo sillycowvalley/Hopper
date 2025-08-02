@@ -1,6 +1,6 @@
 program HopperBASIC
 {
-    //#define DEBUG
+    #define DEBUG
     
     #define CPU_65C02S
     #define HOPPER_BASIC
@@ -27,6 +27,7 @@ program HopperBASIC
     uses "Executor"
     
     uses "Console"
+    uses "Debug"
     uses "Tools"
     
     

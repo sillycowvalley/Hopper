@@ -546,39 +546,40 @@ This validates that the unification is working correctly:
 
 ## Implementation Checklist
 
-### Phase 1: Errors
-- [ ] **Create Errors.asm**
-  - [ ] Move error message strings from Messages.asm
-  - [ ] Implement `setError()` helper method
-  - [ ] Create one-liner error methods (SyntaxError, TypeMismatch, etc.)
-- [ ] **Update Messages.asm**
-  - [ ] Remove error message strings (moved to Errors.asm)
-  - [ ] Keep status messages (Welcome, OK, MemoryMsg, etc.)
-  - [ ] Update any references to moved constants
-- [ ] **Systematically replace verbose error patterns with one-liners:**
-  - [ ] Compiler.asm: Replace all error pattern occurrences
-  - [ ] Statement.asm: Replace all error pattern occurrences  
-  - [ ] Tokenizer.asm: Replace all error pattern occurrences
-  - [ ] Variables.asm: Replace all error pattern occurrences
-  - [ ] Functions.asm: Replace all error pattern occurrences
-  - [ ] Console.asm: Replace all error pattern occurrences
-  - [ ] Instructions.asm: Replace all error pattern occurrences
-  - [ ] Add `uses "Errors"` to all affected units
+### Phase 1: Errors ✅ **COMPLETE**
+- [x] **Create Errors.asm**
+  - [x] Move error message strings from Messages.asm
+  - [x] Implement `setError()` helper method
+  - [x] Create one-liner error methods (SyntaxError, TypeMismatch, etc.)
+- [x] **Update Messages.asm**
+  - [x] Remove error message strings (moved to Errors.asm)
+  - [x] Keep status messages (Welcome, OK, MemoryMsg, etc.)
+  - [x] Update any references to moved constants
+- [x] **Systematically replace verbose error patterns with one-liners:**
+  - [x] Compiler.asm: Replace all error pattern occurrences
+  - [x] Statement.asm: Replace all error pattern occurrences  
+  - [x] Tokenizer.asm: Replace all error pattern occurrences
+  - [x] Variables.asm: Replace all error pattern occurrences
+  - [x] Functions.asm: Replace all error pattern occurrences
+  - [x] Console.asm: Replace all error pattern occurrences
+  - [x] Instructions.asm: Replace all error pattern occurrences
+  - [x] Add `uses "Error"` to all affected units
 
-### Phase 2: Tools -> Tools, Debug
-- [ ] **Create Debug.asm** 
-  - [ ] Move debug methods from Tools.asm (DumpVariables, DumpStack, etc.)
-  - [ ] Move register output methods (XOut, YOut, TOut, etc.)
-  - [ ] Add `#ifdef DEBUG` guards around all methods
-- [ ] **Refactor Tools.asm**
-  - [ ] Remove debug methods (moved to Debug.asm)
-  - [ ] Remove register output methods (moved to Debug.asm) 
-  - [ ] Keep only production utilities (string ops, type ops, basic I/O)
-  - [ ] Update any internal dependencies
+### Phase 2: Tools -> Tools, Debug ✅ **COMPLETE**
+- [x] **Create Debug.asm** 
+  - [x] Move debug methods from Tools.asm (DumpVariables, DumpStack, etc.)
+  - [x] Move register output methods (XOut, YOut, TOut, etc.)
+  - [x] Add `#ifdef DEBUG` guards around all methods
+- [x] **Refactor Tools.asm**
+  - [x] Remove debug methods (moved to Debug.asm)
+  - [x] Remove register output methods (moved to Debug.asm) 
+  - [x] Keep only production utilities (string ops, type ops, basic I/O)
+  - [x] Update any internal dependencies
 
 ### Phase 3: Trace
 - [ ] **Create Trace.asm**
-  - [ ] Add ZP.TraceIndent and debug temps to ZeroPage.asm with guards
+  - [x] Added ZP.TraceIndent to ZeroPage.asm
+  - [ ] Initialize ZP.TraceIndent at start of session
   - [ ] Implement PrintIndent() with shared compilation guard
   - [ ] Implement MethodEntry() and MethodExit() with TRACE guards  
   - [ ] Implement MarkConvergence() for convergence point detection
@@ -613,74 +614,3 @@ This validates that the unification is working correctly:
 - Error logging and statistics (to file via changes to the Windows emulator)
 
 
-
-
-
-
-# Error Handling Refactoring Instructions Summary
-
-RULE #0
-
-## Core Transformation Pattern
-
-**Replace this verbose 5-line pattern:**
-```hopper
-LDA #(Messages.ErrorName % 256)
-STA ZP.LastErrorL
-LDA #(Messages.ErrorName / 256)
-STA ZP.LastErrorH
-BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-CLC
-```
-
-**With this clean 1-line pattern:**
-```hopper
-Error.ErrorName(); BIT ZP.EmulatorPCL
-```
-
-## Header Changes Required
-
-1. **Add**: `uses "Error"` to import the Error unit
-2. **Keep**: `uses "Messages"` for status messages and CheckError()
-3. **Optional**: Remove `uses "Messages"` only if no Messages.* calls remain
-
-## Key Syntax Rules
-
-1. **Method calls get semicolons**: `Error.SyntaxError();`
-2. **6502 opcodes don't get semicolons**: `BIT ZP.EmulatorPCL`
-3. **Correct pattern**: `Error.InvalidOperator(); BIT ZP.EmulatorPCL break;`
-4. **Wrong pattern**: `Error.InvalidOperator(); BIT ZP.EmulatorPCL; break;`
-
-## Error vs Messages Separation
-
-- **Error unit**: For setting errors (`Error.SyntaxError()`, `Error.TypeMismatch()`, etc.)
-- **Messages unit**: For checking errors (`Messages.CheckError()`) and status messages (`Messages.PrintOK()`)
-
-## Available Error Methods
-
-Common ones include:
-- `Error.SyntaxError()`
-- `Error.TypeMismatch()`
-- `Error.NotImplemented()`
-- `Error.UndefinedIdentifier()`
-- `Error.InvalidOperator()`
-- `Error.InternalError()`
-- `Error.OutOfMemory()`
-- `Error.DivisionByZero()`
-- And 14 more (see Error.asm for complete list)
-
-## Benefits
-
-- **Reduces 5 lines to 1 line** for each error case
-- **Consistent error handling** across all units
-- **Easier maintenance** - error messages centralized in Error.asm
-- **Future-proof** - ready for TERSE_ERRORS mode with error codes
-- **Cleaner code** - error handling no longer dominates the codebase
-
-## Process
-
-1. Search for all instances of `LDA #(Messages.` error patterns
-2. Replace with appropriate `Error.MethodName(); BIT ZP.EmulatorPCL`
-3. Remove the old 4-line pattern completely
-4. Update unit headers to include Error unit
-5. Verify no semicolons after 6502 opcodes

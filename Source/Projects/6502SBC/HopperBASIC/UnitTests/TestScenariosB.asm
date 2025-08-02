@@ -2607,7 +2607,7 @@ unit TestScenariosB
                     Variables.GetName();
                     if (NC)
                     {
-                        LDA #'a' Tools.COut(); 
+                        LDA #'a' Debug.COut(); 
                         
                         LDA #0x9C
                         CLC  // Fail - could not get constant name
@@ -2631,7 +2631,7 @@ unit TestScenariosB
             Variables.IterateNext();
             if (NC) 
             { 
-                LDA #'X' Tools.COut();
+                LDA #'X' Debug.COut();
                 break; 
             }
         }
@@ -2830,7 +2830,7 @@ unit TestScenariosB
         Functions.GetArguments();
         if (NC)
         {
-            LDA #'b' Tools.COut();
+            LDA #'b' Debug.COut();
             
             LDA #0x9C
             CLC  // Fail - ADD function should have arguments
@@ -2848,7 +2848,7 @@ unit TestScenariosB
             PLA  // Clean stack
             PLA
             
-            LDA #'c' Tools.COut(); Tools.AOut();
+            LDA #'c' Debug.COut(); Tools.AOut();
             
             LDA #0x9C
             CLC  // Fail - wrong ADD function argument count
