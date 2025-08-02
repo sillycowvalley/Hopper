@@ -130,8 +130,10 @@ unit Tools
     NL()
     {
         PHP  // Push processor status (including carry flag)
+        PHA
         LDA #'\n' 
         Serial.WriteChar();
+        PLA
         PLP  // Pull processor status (restore carry flag)
     }
     

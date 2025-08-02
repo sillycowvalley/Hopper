@@ -249,6 +249,12 @@ unit Statement
             Error.CheckError(); 
             if (NC) { State.SetFailure(); break; } 
             
+            State.IsExiting();
+            if (C)
+            {
+                State.SetSuccess();
+            }
+            
             // Result is now on stack
             break;
         } // single exit

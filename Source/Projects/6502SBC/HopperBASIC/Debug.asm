@@ -7,7 +7,7 @@ unit Debug
     uses "Tools"      // For convenience wrappers
     uses "BasicTypes" // For type printing
     
-#ifdef DEBUG
+#if defined(TRACE) || defined(DEBUG)        
     // Debug strings - main headers
     const string debugVarsHeader = "\n== VARS ==\n";
     const string debugStackHeader = "\n== STACK ==\n";
@@ -74,9 +74,6 @@ unit Debug
         LDA #' ' Tools.COut();
     }
     
-#endif
-
-#ifdef DEBUG
     // Print null-terminated string to serial output
     // Input: ZP.IDX = pointer to null-terminated string
     // Output: String printed to serial
@@ -398,6 +395,8 @@ unit Debug
         PLA
         PLP  // Restore flags
     }
+
+
     
     // Dump heap with state preservation for debugging
     // Input: None
@@ -1195,7 +1194,7 @@ unit Debug
         PLX
         PLA
     }
-    
+
     // Output hex byte preserving carry flag  
     // Input: A = byte to output as hex
     // Output: Hex byte printed to serial

@@ -536,7 +536,7 @@ unit Console
         }
         else
         {
-#ifdef DEBUG
+#if defined(DEBUG) || defined(TRACE)
             Tokenizer.NextToken(); // consume 'DUMP'
             loop
             {
@@ -608,7 +608,7 @@ unit Console
         }
         else
         {
-#ifdef DEBUG
+#if defined(DEBUG) || defined(TRACE)
             Tokenizer.NextToken(); // consume 'HEAP'
             
             Debug.DumpHeap();
@@ -638,7 +638,7 @@ unit Console
         }
         else
         {
-#ifdef DEBUG
+#if defined(DEBUG) || defined(TRACE)
             Tokenizer.NextToken(); // consume 'BUFFERS'
             
             Debug.DumpBasicBuffers();

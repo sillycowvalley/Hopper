@@ -50,9 +50,19 @@ unit Executor
             State.CanContinue();
             if (NC) { break; } // Error already set by InitExecutor
             
-            // Main execution loop
+            // Main execution loop (assume there is at least one opcode)
             loop
             {
+                // Fetch and execute next opcode
+                FetchOpCode();
+                State.CanContinue();
+                if (NC) { break; } // Error fetching opcode
+                
+                // Dispatch opcode (A contains opcode value)
+                DispatchOpCode();
+                State.CanContinue();
+                if (NC) { break; } // Error executing opcode
+
                 // Check if we've reached end of opcodes
                 LDA ZP.PCL
                 CMP executorEndAddrL
@@ -64,21 +74,16 @@ unit Executor
                     if (Z) 
                     { 
                         // REPL uses this exit - success
-                        State.SetSuccess();
+                        State.SetExiting();
                         break; 
                     }
                 }
-                
-                // Fetch and execute next opcode
-                FetchOpCode();
-                State.CanContinue();
-                if (NC) { break; } // Error fetching opcode
-                
-                // Dispatch opcode (A contains opcode value)
-                DispatchOpCode();
-                State.CanContinue();
-                if (NC) { break; } // Error executing opcode
-            }
+                State.IsExiting();
+                if (C)
+                {
+                    break; // other exit conditions like popping the last return address from the callstack
+                }
+            } // loop
             break;
         } // Single exit block
 
@@ -151,35 +156,39 @@ unit Executor
             // Check bounds
             LDA ZP.PCL
             CMP executorEndAddrL
-            if (NZ) { /* continue */ }
-            else
+            if (Z)
             {
                 LDA ZP.PCH
                 CMP executorEndAddrH
                 if (Z) 
                 { 
                     // At end of buffer
-                    Error.InternalError(); BIT ZP.EmulatorPCL
-                    State.SetFailure();
+                    State.SetExiting();
                     break; 
                 }
             }
-
-    #ifdef DEBUG       
-            Tools.NL(); LDA #']' Debug.COut();
+#ifdef TRACE
+            Trace.PrintIndent();
+#endif
+#ifdef DEBUG
+            Debug.NL(); LDA #']' Debug.COut();
+#endif
+#if defined(DEBUG) || defined(TRACE)
             LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
             LDA #' ' Debug.COut();
-    #endif
+#endif
 
             // Fetch opcode using indirect addressing
             LDY #0
             LDA [ZP.PC], Y
             PHA // Save opcode
             
-    #ifdef DEBUG       
+#if defined(DEBUG) || defined(TRACE)
             PHA Debug.HOut(); LDA #' ' Debug.COut(); PLA
-    #endif
-            
+#endif
+#ifdef TRACE
+            Tools.NL(); 
+#endif            
             // Advance PC
             INC ZP.PCL
             if (Z)
@@ -193,7 +202,7 @@ unit Executor
         }
         
 #ifdef TRACE
-        LDA #(fetchOpCodeTrace % 256) STA ZP.TraceMessageL LDA #(fetchOpCodeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+        PHA LDA #(fetchOpCodeTrace % 256) STA ZP.TraceMessageL LDA #(fetchOpCodeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
 #endif
     }
     
@@ -218,6 +227,7 @@ unit Executor
                 CMP executorEndAddrH
                 if (Z) 
                 { 
+                    // At end of buffer - should exit successfully
                     Error.InternalError(); BIT ZP.EmulatorPCL
                     State.SetFailure();
                     break; 
@@ -242,7 +252,7 @@ unit Executor
         } // loop exit
         
 #ifdef TRACE
-        LDA #(fetchOperandByteTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandByteTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+        PHA LDA #(fetchOperandByteTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandByteTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
 #endif
     }
     
@@ -253,7 +263,7 @@ unit Executor
     FetchOperandWord()
     {
 #ifdef TRACE
-        LDA #(fetchOperandWordTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandWordTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+        PHA LDA #(fetchOperandWordTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandWordTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
 #endif
         
         loop
@@ -285,12 +295,10 @@ unit Executor
     const string dispatchOpCodeTrace = "Dispatch";
     DispatchOpCode()
     {
+        TAY // for jump table optimization
 #ifdef TRACE
         LDA #(dispatchOpCodeTrace % 256) STA ZP.TraceMessageL LDA #(dispatchOpCodeTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-
-        TAY // for jump table optimization
-        
         // Use switch statement for opcode dispatch
         // Register Y contains the opcode value
         switch (Y)
