@@ -6,36 +6,6 @@ unit Tools
  
     uses "BasicTypes"
     
-    InvalidOperatorError()
-    {
-        LDA #(Messages.InvalidOperator % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.InvalidOperator / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL
-        CLC
-    }
-    
-    TypeMismatchError()
-    {
-        LDA #(Messages.TypeMismatch % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.TypeMismatch / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL
-        CLC
-    }
-    
-    SyntaxError()
-    {
-        LDA #(Messages.SyntaxError % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.SyntaxError / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL
-        CLC
-    }
-
        
     // Print BasicType enum value as readable string
     // Input: A = BasicType enum value, ZP.TOP contains value (or pointer)
