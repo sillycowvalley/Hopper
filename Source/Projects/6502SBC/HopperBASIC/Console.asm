@@ -131,12 +131,22 @@ unit Console
     {
         // Always process the tokens first (this creates the function node)
         processTokens();
-        Error.CheckError();
-        if (NC) { State.SetFailure(); return; }
-        
-        // After processing, check if we just processed an incomplete function
-        detectIncompleteFunction();
-        State.SetSuccess(); // Continue
+        State.IsExiting();
+        if (NC)
+        {
+            // not exiting
+            Error.CheckError();
+            if (NC)
+            {
+                State.SetFailure();
+            }
+            else
+            {
+                // After processing, check if we just processed an incomplete function
+                detectIncompleteFunction();
+                State.SetSuccess(); // Continue
+            }
+        }
     }
      
     // Detect if current line starts FUNC but doesn't end with ENDFUNC
