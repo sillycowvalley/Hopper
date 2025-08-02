@@ -710,7 +710,7 @@ unit Compiler
                 Error.CheckError();
                 if (NC) { break; }
             } // loop
-            exit;
+            break;
         } // loop
             
 #ifdef DEBUG
@@ -723,137 +723,204 @@ unit Compiler
 #endif
     }
     
+    // Fixed compilation methods converted to single-exit pattern
+
     // Compile logical AND operations
     // Input: ZP.CurrentToken = current token
     // Output: Logical AND opcodes emitted, ZP.CurrentToken = token after expression
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
     compileLogicalAnd()
     {
-#ifdef DEBUG
+    #ifdef DEBUG
         LDA #'<'
         Debug.COut();
         LDA #'C'
         Debug.COut();
         LDA #'A'
         Debug.COut();
-#endif
-        
-        // Compile left operand (higher precedence)
-        compileComparison();
-        Error.CheckError();
-        if (NC) { return; }
+    #endif
         
         loop
         {
-            LDA ZP.CurrentToken
-            CMP #Tokens.AND
-            if (NZ) { break; }
-            
-            // Get next token for right operand
-            Tokenizer.NextToken();
-            Error.CheckError();
-            if (NC) { return; }
-            
-            // Compile right operand
+            // Compile left operand (higher precedence)
             compileComparison();
             Error.CheckError();
-            if (NC) { return; }
+            if (NC) { break; }
             
-            // Emit logical AND opcode
-            LDA #Tokens.AND
-            EmitLogicalOp();
-            Error.CheckError();
-            if (NC) { return; }
-        }
+            loop
+            {
+                LDA ZP.CurrentToken
+                CMP #Tokens.AND
+                if (NZ) { break; }
+                
+                // Get next token for right operand
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Compile right operand
+                compileComparison();
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Emit logical AND opcode
+                LDA #Tokens.AND
+                EmitLogicalOp();
+                Error.CheckError();
+                if (NC) { break; }
+            } // loop
+            break;
+        } // loop
         
-#ifdef DEBUG
+    #ifdef DEBUG
         LDA #'C'
         Debug.COut();
         LDA #'A'
         Debug.COut();
         LDA #'>'
         Debug.COut();
-#endif
+    #endif
     }
-    
+
     // Compile comparison operations (=, <>, <, >, <=, >=)
     // Input: ZP.CurrentToken = current token
     // Output: Comparison opcodes emitted, ZP.CurrentToken = token after expression
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
     compileComparison()
     {
-#ifdef DEBUG
+    #ifdef DEBUG
         LDA #'<'
         Debug.COut();
         LDA #'C'
         Debug.COut();
         LDA #'C'
         Debug.COut();
-#endif
-        
-        // Compile left operand (higher precedence)
-        compileBitwiseOr();
-        Error.CheckError();
-        if (NC) { return; }
+    #endif
         
         loop
         {
-            LDA ZP.CurrentToken
-            switch (A)
+            // Compile left operand (higher precedence)
+            compileBitwiseOr();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            loop
             {
-                case Tokens.EQUALS:
-                case Tokens.NOTEQUAL:
-                case Tokens.LT:
-                case Tokens.GT:
-                case Tokens.LE:
-                case Tokens.GE:
+                LDA ZP.CurrentToken
+                switch (A)
                 {
-                    PHA // Save operator on stack
-                    
-                    // Get next token for right operand
-                    Tokenizer.NextToken();
-                    Error.CheckError();
-                    if (NC) 
-                    { 
-                        PLA // Clean up stack
-                        return; 
+                    case Tokens.EQUALS:
+                    case Tokens.NOTEQUAL:
+                    case Tokens.LT:
+                    case Tokens.GT:
+                    case Tokens.LE:
+                    case Tokens.GE:
+                    {
+                        PHA // Save operator on stack
+                        
+                        // Get next token for right operand
+                        Tokenizer.NextToken();
+                        Error.CheckError();
+                        if (NC) 
+                        { 
+                            PLA // Clean up stack
+                            break; 
+                        }
+                        
+                        // Compile right operand
+                        compileBitwiseOr();
+                        Error.CheckError();
+                        if (NC) 
+                        { 
+                            PLA // Clean up stack
+                            break; 
+                        }
+                        
+                        // Emit comparison opcode
+                        PLA // Retrieve operator
+                        EmitComparisonOp();
+                        Error.CheckError();
+                        if (NC) { break; }
+                        
+                        continue; // Check for more comparisons
                     }
-                    
-                    // Compile right operand
-                    compileBitwiseOr();
-                    Error.CheckError();
-                    if (NC) 
-                    { 
-                        PLA // Clean up stack
-                        return; 
+                    default:
+                    {
+                        break; // Not a comparison operator
                     }
-                    
-                    // Emit comparison opcode
-                    PLA // Retrieve operator
-                    EmitComparisonOp();
-                    Error.CheckError();
-                    if (NC) { return; }
-                    
-                    continue; // Check for more comparisons
                 }
-                default:
-                {
-                    break; // Not a comparison operator
-                }
-            }
+                break;
+            } // loop
             break;
-        }
+        } // loop
         
-#ifdef DEBUG
+    #ifdef DEBUG
         LDA #'C'
         Debug.COut();
         LDA #'C'
         Debug.COut();
         LDA #'>'
         Debug.COut();
-#endif
+    #endif
     }
-    
+
+    // Compile bitwise OR operations
+    // Input: ZP.CurrentToken = current token
+    // Output: Bitwise OR opcodes emitted, ZP.CurrentToken = token after expression  
+    // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
+    compileBitwiseOr()
+    {
+    #ifdef DEBUG
+        LDA #'<'
+        Debug.COut();
+        LDA #'C'
+        Debug.COut();
+        LDA #'O'
+        Debug.COut();
+    #endif
+        
+        loop
+        {
+            // Compile left operand (higher precedence)
+            compileBitwiseAnd();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            loop
+            {
+                LDA ZP.CurrentToken
+                CMP #Tokens.BITWISE_OR
+                if (NZ) { break; }
+                
+                // Get next token for right operand
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Compile right operand
+                compileBitwiseAnd();
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Emit bitwise OR opcode
+                LDA #Tokens.BITWISE_OR
+                EmitBitwiseOp();
+                Error.CheckError();
+                if (NC) { break; }
+            } // loop
+            break;
+        } // loop
+        
+    #ifdef DEBUG
+        LDA #'C'
+        Debug.COut();
+        LDA #'O'
+        Debug.COut();
+        LDA #'>'
+        Debug.COut();
+    #endif
+    }
+
     // Compile bitwise AND operations (&)
     // Input: ZP.CurrentToken = current token
     // Output: Bitwise AND opcodes emitted, ZP.CurrentToken = token after expression  
@@ -869,33 +936,37 @@ unit Compiler
         Debug.COut();
     #endif
         
-        // Compile left operand (higher precedence)
-        compileAdditive();
-        Error.CheckError();
-        if (NC) { return; }
-        
         loop
         {
-            LDA ZP.CurrentToken
-            CMP #Tokens.BITWISE_AND
-            if (NZ) { break; }
-            
-            // Get next token for right operand
-            Tokenizer.NextToken();
-            Error.CheckError();
-            if (NC) { return; }
-            
-            // Compile right operand
+            // Compile left operand (higher precedence)
             compileAdditive();
             Error.CheckError();
-            if (NC) { return; }
+            if (NC) { break; }
             
-            // Emit bitwise AND opcode
-            LDA #Tokens.BITWISE_AND
-            EmitBitwiseOp();
-            Error.CheckError();
-            if (NC) { return; }
-        }
+            loop
+            {
+                LDA ZP.CurrentToken
+                CMP #Tokens.BITWISE_AND
+                if (NZ) { break; }
+                
+                // Get next token for right operand
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Compile right operand
+                compileAdditive();
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Emit bitwise AND opcode
+                LDA #Tokens.BITWISE_AND
+                EmitBitwiseOp();
+                Error.CheckError();
+                if (NC) { break; }
+            } // loop
+            break;
+        } // loop
         
     #ifdef DEBUG
         LDA #'C'
@@ -906,283 +977,244 @@ unit Compiler
         Debug.COut();
     #endif
     }
-    
-    // Compile bitwise OR operations
-    // Input: ZP.CurrentToken = current token
-    // Output: Bitwise OR opcodes emitted, ZP.CurrentToken = token after expression  
-    // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
-    compileBitwiseOr()
-    {
-#ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'O'
-        Debug.COut();
-#endif
-        
-        // Compile left operand (higher precedence)
-        compileBitwiseAnd();
-        Error.CheckError();
-        if (NC) { return; }
-        
-        loop
-        {
-            LDA ZP.CurrentToken
-            CMP #Tokens.BITWISE_OR
-            if (NZ) { break; }
-            
-            // Get next token for right operand
-            Tokenizer.NextToken();
-            Error.CheckError();
-            if (NC) { return; }
-            
-            // Compile right operand
-            compileBitwiseAnd();
-            Error.CheckError();
-            if (NC) { return; }
-            
-            // Emit bitwise OR opcode
-            LDA #Tokens.BITWISE_OR
-            EmitBitwiseOp();
-            Error.CheckError();
-            if (NC) { return; }
-        }
-        
-#ifdef DEBUG
-        LDA #'C'
-        Debug.COut();
-        LDA #'O'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-#endif
-    }
-    
+
     // Compile additive operations (+, -)
     // Input: ZP.CurrentToken = current token
     // Output: Additive opcodes emitted, ZP.CurrentToken = token after expression
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
     compileAdditive()
     {
-#ifdef DEBUG
+    #ifdef DEBUG
         LDA #'<'
         Debug.COut();
         LDA #'C'
         Debug.COut();
         LDA #'+'
         Debug.COut();
-#endif
-        
-        // Compile left operand (higher precedence)
-        compileMultiplicative();
-        Error.CheckError();
-        if (NC) { return; }
+    #endif
         
         loop
         {
-            LDA ZP.CurrentToken
-            CMP #Tokens.PLUS
-            if (Z)
-            {
-                // Get next token for right operand
-                Tokenizer.NextToken();
-                Error.CheckError();
-                if (NC) { return; }
-                
-                // Compile right operand
-                compileMultiplicative();
-                Error.CheckError();
-                if (NC) { return; }
-                
-                // Emit addition opcode
-                LDA #Tokens.PLUS
-                EmitArithmeticOp();
-                Error.CheckError();
-                if (NC) { return; }
-                
-                continue;
-            }
+            // Compile left operand (higher precedence)
+            compileMultiplicative();
+            Error.CheckError();
+            if (NC) { break; }
             
-            CMP #Tokens.MINUS
-            if (Z)
+            loop
             {
-                // Get next token for right operand
-                Tokenizer.NextToken();
-                Error.CheckError();
-                if (NC) { return; }
+                LDA ZP.CurrentToken
+                CMP #Tokens.PLUS
+                if (Z)
+                {
+                    // Get next token for right operand
+                    Tokenizer.NextToken();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    
+                    // Compile right operand
+                    compileMultiplicative();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    
+                    // Emit addition opcode
+                    LDA #Tokens.PLUS
+                    EmitArithmeticOp();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    
+                    continue;
+                }
                 
-                // Compile right operand
-                compileMultiplicative();
-                Error.CheckError();
-                if (NC) { return; }
+                CMP #Tokens.MINUS
+                if (Z)
+                {
+                    // Get next token for right operand
+                    Tokenizer.NextToken();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    
+                    // Compile right operand
+                    compileMultiplicative();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    
+                    // Emit subtraction opcode
+                    LDA #Tokens.MINUS
+                    EmitArithmeticOp();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    
+                    continue;
+                }
                 
-                // Emit subtraction opcode
-                LDA #Tokens.MINUS
-                EmitArithmeticOp();
-                Error.CheckError();
-                if (NC) { return; }
-                
-                continue;
-            }
-            
-            break; // Not an additive operator
-        }
+                break; // Not an additive operator
+            } // loop
+            break;
+        } // loop
         
-#ifdef DEBUG
+    #ifdef DEBUG
         LDA #'C'
         Debug.COut();
         LDA #'+'
         Debug.COut();
         LDA #'>'
         Debug.COut();
-#endif
+    #endif
     }
-    
+
     // Compile multiplicative operations (*, /, MOD)
     // Input: ZP.CurrentToken = current token
     // Output: Multiplicative opcodes emitted, ZP.CurrentToken = token after expression
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
     compileMultiplicative()
     {
-#ifdef DEBUG
+    #ifdef DEBUG
         LDA #'<'
         Debug.COut();
         LDA #'C'
         Debug.COut();
         LDA #'*'
         Debug.COut();
-#endif
-        
-        // Compile left operand (higher precedence)
-        compileUnary();
-        Error.CheckError();
-        if (NC) { return; }
+    #endif
         
         loop
         {
-            LDA ZP.CurrentToken
-            switch (A)
+            // Compile left operand (higher precedence)
+            compileUnary();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            loop
             {
-                case Tokens.MULTIPLY:
-                case Tokens.DIVIDE:
-                case Tokens.MOD:
+                LDA ZP.CurrentToken
+                switch (A)
                 {
-                    PHA // Save operator on stack
-                    
-                    // Get next token for right operand
-                    Tokenizer.NextToken();
-                    Error.CheckError();
-                    if (NC) 
-                    { 
-                        PLA // Clean up stack
-                        return; 
+                    case Tokens.MULTIPLY:
+                    case Tokens.DIVIDE:
+                    case Tokens.MOD:
+                    {
+                        PHA // Save operator on stack
+                        
+                        // Get next token for right operand
+                        Tokenizer.NextToken();
+                        Error.CheckError();
+                        if (NC) 
+                        { 
+                            PLA // Clean up stack
+                            break; 
+                        }
+                        
+                        // Compile right operand
+                        compileUnary();
+                        Error.CheckError();
+                        if (NC) 
+                        { 
+                            PLA // Clean up stack
+                            break; 
+                        }
+                        
+                        // Emit arithmetic opcode
+                        PLA // Retrieve operator
+                        EmitArithmeticOp();
+                        Error.CheckError();
+                        if (NC) { break; }
+                        
+                        continue; // Check for more multiplicative operations
                     }
-                    
-                    // Compile right operand
-                    compileUnary();
-                    Error.CheckError();
-                    if (NC) 
-                    { 
-                        PLA // Clean up stack
-                        return; 
+                    default:
+                    {
+                        break; // Not a multiplicative operator
                     }
-                    
-                    // Emit arithmetic opcode
-                    PLA // Retrieve operator
-                    EmitArithmeticOp();
-                    Error.CheckError();
-                    if (NC) { return; }
-                    
-                    continue; // Check for more multiplicative operations
                 }
-                default:
-                {
-                    break; // Not a multiplicative operator
-                }
-            }
+                break;
+            } // loop
             break;
-        }
+        } // loop
         
-#ifdef DEBUG
+    #ifdef DEBUG
         LDA #'C'
         Debug.COut();
         LDA #'*'
         Debug.COut();
         LDA #'>'
         Debug.COut();
-#endif
+    #endif
     }
-    
+
     // Compile unary operations (-, NOT)
     // Input: ZP.CurrentToken = current token
     // Output: Unary opcodes emitted, ZP.CurrentToken = token after expression
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
     compileUnary()
     {
-#ifdef DEBUG
+    #ifdef DEBUG
         LDA #'<'
         Debug.COut();
         LDA #'C'
         Debug.COut();
         LDA #'U'
         Debug.COut();
-#endif
+    #endif
         
-        LDA ZP.CurrentToken
-        switch (A)
+        loop
         {
-            case Tokens.MINUS:
+            LDA ZP.CurrentToken
+            switch (A)
             {
-                // Get next token for operand
-                Tokenizer.NextToken();
-                Error.CheckError();
-                if (NC) { return; }
-                
-                // Compile the operand
-                compilePrimary();
-                Error.CheckError();
-                if (NC) { return; }
-                
-                // Emit unary minus opcode
-                EmitUnaryMinus();
-                Error.CheckError();
-                if (NC) { return; }
+                case Tokens.MINUS:
+                {
+                    // Get next token for operand
+                    Tokenizer.NextToken();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    
+                    // Compile the operand
+                    compilePrimary();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    
+                    // Emit unary minus opcode
+                    EmitUnaryMinus();
+                    Error.CheckError();
+                    if (NC) { break; }
+                }
+                case Tokens.NOT:
+                {
+                    // Get next token for operand
+                    Tokenizer.NextToken();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    
+                    // Compile the operand
+                    compilePrimary();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    
+                    // Emit logical NOT opcode
+                    LDA #Tokens.NOT
+                    EmitLogicalOp();
+                    Error.CheckError();
+                    if (NC) { break; }
+                }
+                default:
+                {
+                    // Not unary, compile primary
+                    compilePrimary();
+                    Error.CheckError();
+                    if (NC) { break; }
+                }
             }
-            case Tokens.NOT:
-            {
-                // Get next token for operand
-                Tokenizer.NextToken();
-                Error.CheckError();
-                if (NC) { return; }
-                
-                // Compile the operand
-                compilePrimary();
-                Error.CheckError();
-                if (NC) { return; }
-                
-                // Emit logical NOT opcode
-                LDA #Tokens.NOT
-                EmitLogicalOp();
-                Error.CheckError();
-                if (NC) { return; }
-            }
-            default:
-            {
-                // Not unary, compile primary
-                compilePrimary();
-            }
-        }
+            break;
+        } // loop
         
-#ifdef DEBUG
+    #ifdef DEBUG
         LDA #'C'
         Debug.COut();
         LDA #'U'
         Debug.COut();
         LDA #'>'
         Debug.COut();
-#endif
+    #endif
     }
     
     // Parse and compile function argument list
