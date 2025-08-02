@@ -3,6 +3,7 @@ unit Trace
     uses "/Source/Runtime/6502/ZeroPage"
     uses "Tools"
     uses "Debug"
+    
 
 #if defined(DEBUG) || defined(TRACE)
     // Shared utilities (needed by Debug unit too)

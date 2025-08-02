@@ -3,9 +3,15 @@ program HopperBASIC
     //#define DEBUG
     #define TRACE
     
+    //#define TRACECONSOLE
+    
     #define CPU_65C02S
     #define HOPPER_BASIC
     #define ROM_32K
+    
+#ifdef TRACECONSOLE
+    #define TRACE
+#endif
     
     uses "/Source/Runtime/6502/Serial"
     uses "/Source/Runtime/6502/ZeroPage"

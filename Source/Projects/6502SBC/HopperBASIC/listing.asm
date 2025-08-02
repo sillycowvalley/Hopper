@@ -20,22 +20,20 @@ unit Listing
     // All public methods preserve caller state except for documented outputs
     // Commands consume their tokens and display output to serial
 
-#ifdef TRACE
-    const string displayFunctionTrace = "DispFunc";
-#endif
     // Display a complete function with body
     // Input: ZP.IDX = function node address
     // Output: Complete function printed to serial (signature + body + ENDFUNC/END)
     // Preserves: ZP.IDX (function node address)
     // Modifies: ZP.IDY (argument iteration), ZP.TOP (name pointers), serial output
+    const string displayFunctionTrace = "DispFunc";
     displayFunction()
     {
-#ifdef TRACE
-LDA #(displayFunctionTrace % 256) STA ZP.TraceMessageL LDA #(displayFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
         PHA
         PHX
         PHY
+#ifdef TRACECONSOLE
+        LDA #(displayFunctionTrace % 256) STA ZP.TraceMessageL LDA #(displayFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         
         // Get the function name FIRST (before any other operations that might corrupt ZP.IDX)
         Functions.GetName(); // Input: ZP.IDX, Output: ZP.TOP = name pointer
@@ -52,27 +50,22 @@ LDA #(displayFunctionTrace % 256) STA ZP.TraceMessageL LDA #(displayFunctionTrac
             // Display as regular FUNC...ENDFUNC
             displayRegularFunction(); // Input: ZP.IDX = function node, ZP.TOP = name
         }
+#ifdef TRACECONSOLE
+        LDA #(displayFunctionTrace % 256) STA ZP.TraceMessageL LDA #(displayFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
         
         PLY
         PLX
         PLA
-#ifdef TRACE
-LDA #(displayFunctionTrace % 256) STA ZP.TraceMessageL LDA #(displayFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
     }
 
-#ifdef TRACE
-    const string checkBeginFuncTrace = "ChkBegin";
-#endif
     // Check if function name is "BEGIN"
     // Input: ZP.TOP = function name pointer
     // Output: C set if name is "BEGIN", NC if regular function
     // Preserves: ZP.TOP, all other registers
+    const string checkBeginFuncTrace = "ChkBegin";
     checkForBeginFunction()
     {
-#ifdef TRACE
-LDA #(checkBeginFuncTrace % 256) STA ZP.TraceMessageL LDA #(checkBeginFuncTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
         PHA
         PHY
         
@@ -81,6 +74,11 @@ LDA #(checkBeginFuncTrace % 256) STA ZP.TraceMessageL LDA #(checkBeginFuncTrace 
         PHA
         LDA ZP.NEXTH
         PHA
+#ifdef TRACECONSOLE
+        LDA #(checkBeginFuncTrace % 256) STA ZP.TraceMessageL LDA #(checkBeginFuncTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+
+        
         
         // Set up comparison with "BEGIN" string
         LDA #(Messages.BeginFunctionName % 256)
@@ -90,6 +88,10 @@ LDA #(checkBeginFuncTrace % 256) STA ZP.TraceMessageL LDA #(checkBeginFuncTrace 
         
         // Compare function name with "BEGIN"
         Tools.StringCompare(); // Input: ZP.TOP vs ZP.NEXT, Output: C set if match
+
+#ifdef TRACECONSOLE
+        LDA #(checkBeginFuncTrace % 256) STA ZP.TraceMessageL LDA #(checkBeginFuncTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
         
         // Restore ZP.NEXT
         PLA
@@ -99,25 +101,20 @@ LDA #(checkBeginFuncTrace % 256) STA ZP.TraceMessageL LDA #(checkBeginFuncTrace 
         
         PLY
         PLA
-#ifdef TRACE
-LDA #(checkBeginFuncTrace % 256) STA ZP.TraceMessageL LDA #(checkBeginFuncTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
     }
 
-#ifdef TRACE
-    const string displayBeginFuncTrace = "DispBegin";
-#endif
     // Display BEGIN...END function (main program)
     // Input: ZP.IDX = function node, ZP.TOP = name pointer
     // Output: BEGIN block printed to serial
+    const string displayBeginFuncTrace = "DispBegin";
     displayBeginFunction()
     {
-#ifdef TRACE
-LDA #(displayBeginFuncTrace % 256) STA ZP.TraceMessageL LDA #(displayBeginFuncTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
         PHA
         PHX
         PHY
+#ifdef TRACECONSOLE
+        LDA #(displayBeginFuncTrace % 256) STA ZP.TraceMessageL LDA #(displayBeginFuncTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         
         // Save function node address for body display
         LDA ZP.IDXL
@@ -139,29 +136,29 @@ LDA #(displayBeginFuncTrace % 256) STA ZP.TraceMessageL LDA #(displayBeginFuncTr
         displayFunctionBody(); // Input: ZP.IDX = function node
         
         Tools.NL(); // Extra blank line after main program
+#ifdef TRACECONSOLE
+        LDA #(displayBeginFuncTrace % 256) STA ZP.TraceMessageL LDA #(displayBeginFuncTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
         
         PLY
         PLX
         PLA
-#ifdef TRACE
-LDA #(displayBeginFuncTrace % 256) STA ZP.TraceMessageL LDA #(displayBeginFuncTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
     }
 
-#ifdef TRACE
-    const string displayRegFuncTrace = "DispReg";
-#endif
     // Display regular FUNC...ENDFUNC function
     // Input: ZP.IDX = function node, ZP.TOP = name pointer (from Functions.GetName)
     // Output: Complete function printed to serial
+    const string displayRegFuncTrace = "DispReg";
     displayRegularFunction()
     {
-#ifdef TRACE
-LDA #(displayRegFuncTrace % 256) STA ZP.TraceMessageL LDA #(displayRegFuncTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
         PHA
         PHX
         PHY
+        
+#ifdef TRACECONSOLE
+        LDA #(displayRegFuncTrace % 256) STA ZP.TraceMessageL LDA #(displayRegFuncTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         
         // Save function node address since we'll be making calls that corrupt ZP.IDX
         LDA ZP.IDXL
@@ -238,29 +235,27 @@ LDA #(displayRegFuncTrace % 256) STA ZP.TraceMessageL LDA #(displayRegFuncTrace 
         
         Tools.NL();
         Tools.NL(); // Extra blank line after function
+#ifdef TRACECONSOLE
+        LDA #(displayRegFuncTrace % 256) STA ZP.TraceMessageL LDA #(displayRegFuncTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
         
         PLY
         PLX
         PLA
-#ifdef TRACE
-LDA #(displayRegFuncTrace % 256) STA ZP.TraceMessageL LDA #(displayRegFuncTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
     }
 
-#ifdef TRACE
-    const string displayFuncBodyTrace = "DispBody";
-#endif
     // Display function body from token stream as readable BASIC code
     // Input: ZP.IDX = function node address
     // Output: Function body printed to serial as formatted BASIC statements
+    const string displayFuncBodyTrace = "DispBody";
     displayFunctionBody()
     {
-#ifdef TRACE
-LDA #(displayFuncBodyTrace % 256) STA ZP.TraceMessageL LDA #(displayFuncBodyTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
         PHA
         PHX
         PHY
+#ifdef TRACECONSOLE
+        LDA #(displayFuncBodyTrace % 256) STA ZP.TraceMessageL LDA #(displayFuncBodyTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         
         // Get function body tokens
         Functions.GetBody(); // Input: ZP.IDX, Output: ZP.IDY = tokens pointer
@@ -273,31 +268,29 @@ LDA #(displayFuncBodyTrace % 256) STA ZP.TraceMessageL LDA #(displayFuncBodyTrac
             // Use TokenIterator to render the function body
             TokenIterator.RenderTokenStream(); // Input: ZP.IDY = tokens pointer
         }
+#ifdef TRACECONSOLE
+        LDA #(displayFuncBodyTrace % 256) STA ZP.TraceMessageL LDA #(displayFuncBodyTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
         
         PLY
         PLX
         PLA
-#ifdef TRACE
-LDA #(displayFuncBodyTrace % 256) STA ZP.TraceMessageL LDA #(displayFuncBodyTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
     }
 
-#ifdef TRACE
-    const string displayAllFuncsTrace = "DispAll";
-#endif
     // Display all functions in the system
     // Input: None
     // Output: All function signatures printed to serial, or "NO FUNCTIONS" message
     // Preserves: All caller state
     // Modifies: ZP.IDX (function iteration), serial output
+    const string displayAllFuncsTrace = "DispAll";
     displayAllFunctions()
     {
-#ifdef TRACE
-LDA #(displayAllFuncsTrace % 256) STA ZP.TraceMessageL LDA #(displayAllFuncsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
         PHA
         PHX
         PHY
+#ifdef TRACECONSOLE
+        LDA #(displayAllFuncsTrace % 256) STA ZP.TraceMessageL LDA #(displayAllFuncsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         
         // Iterate through functions
         Functions.IterateFunctions(); // Output: ZP.IDX = first function node, C set if found
@@ -309,13 +302,13 @@ LDA #(displayAllFuncsTrace % 256) STA ZP.TraceMessageL LDA #(displayAllFuncsTrac
             
             Functions.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next function
         }
+#ifdef TRACECONSOLE
+        LDA #(displayAllFuncsTrace % 256) STA ZP.TraceMessageL LDA #(displayAllFuncsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
         
         PLY
         PLX
         PLA
-#ifdef TRACE
-LDA #(displayAllFuncsTrace % 256) STA ZP.TraceMessageL LDA #(displayAllFuncsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
     }
     
     displaySpecificFunction()
@@ -368,17 +361,15 @@ LDA #(displayAllFuncsTrace % 256) STA ZP.TraceMessageL LDA #(displayAllFuncsTrac
         }
     }
 
-#ifdef TRACE
-    const string cmdFuncsTrace = "FUNCS";
-#endif
     // Execute FUNCS command - display all functions or specific function
     // Input: ZP.CurrentToken = FUNCS token (consumed by this method)
     // Output: Function(s) displayed to serial
     // Usage: FUNCS (all functions) or FUNCS functionName (specific function)
     // Error: Sets ZP.LastError if function mode, syntax error, or function not found
+    const string cmdFuncsTrace = "FUNCS";
     CmdFuncs()
     {
-#ifdef TRACE
+#ifdef TRACECONSOLE
         LDA #(cmdFuncsTrace % 256) STA ZP.TraceMessageL LDA #(cmdFuncsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         loop
@@ -430,7 +421,7 @@ LDA #(displayAllFuncsTrace % 256) STA ZP.TraceMessageL LDA #(displayAllFuncsTrac
             State.SetSuccess();
             break;
         } // loop exit
-#ifdef TRACE
+#ifdef TRACECONSOLE
         LDA #(cmdFuncsTrace % 256) STA ZP.TraceMessageL LDA #(cmdFuncsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
@@ -443,58 +434,57 @@ LDA #(displayAllFuncsTrace % 256) STA ZP.TraceMessageL LDA #(displayAllFuncsTrac
     const string cmdListTrace = "LIST";
     CmdList()
     {
-#ifdef TRACE
-    LDA #(cmdListTrace % 256) STA ZP.TraceMessageL LDA #(cmdListTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#ifdef TRACECONSOLE
+        LDA #(cmdListTrace % 256) STA ZP.TraceMessageL LDA #(cmdListTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-        Statement.IsCaptureModeOn();
-        if (C)
+        loop
         {
-            Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
-            State.SetFailure();
-#ifdef TRACE
-LDA #(cmdListTrace % 256) STA ZP.TraceMessageL LDA #(cmdListTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-            return;
-        }
-        
-        // Note: Don't consume 'LIST' token - let CmdVars() consume it
-        // This avoids token consumption conflicts
-        
-        // Display variables and constants (VARS output)
-        CmdVars();
-        Error.CheckError();
-        if (NC) { State.SetFailure(); 
-#ifdef TRACE
-LDA #(cmdListTrace % 256) STA ZP.TraceMessageL LDA #(cmdListTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-        return; }
-        
-        // Display all functions
-        displayAllFunctions();
-        Error.CheckError();
-        if (NC) { State.SetFailure(); 
-#ifdef TRACE
-LDA #(cmdListTrace % 256) STA ZP.TraceMessageL LDA #(cmdListTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-        return; }
-        
-        State.SetSuccess();
-#ifdef TRACE
-LDA #(cmdListTrace % 256) STA ZP.TraceMessageL LDA #(cmdListTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+            Statement.IsCaptureModeOn();
+            if (C)
+            {
+                Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
+                State.SetFailure();
+                break;
+            }
+            
+            // Note: Don't consume 'LIST' token - let CmdVars() consume it
+            // This avoids token consumption conflicts
+            
+            // Display variables and constants (VARS output)
+            CmdVars();
+            Error.CheckError();
+            if (NC) 
+            {
+                State.SetFailure(); 
+                break; 
+            }
+            
+            // Display all functions
+            displayAllFunctions();
+            Error.CheckError();
+            if (NC)
+            {
+                State.SetFailure(); 
+                break;
+            }
+            
+            State.SetSuccess();
+            break;
+        } // loop exit
+#ifdef TRACECONSOLE
+        LDA #(cmdListTrace % 256) STA ZP.TraceMessageL LDA #(cmdListTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
 
-#ifdef TRACE
-    const string cmdVarsTrace = "VARS";
-#endif
     // Execute VARS command - display all variables and constants
     // Input: ZP.CurrentToken = VARS (or LIST) token (consumed by this method)
     // Output: Constants first, then variables, with blank lines separating sections
     // Error: Sets ZP.LastError if function mode or iteration errors
+    const string cmdVarsTrace = "VARS";
     CmdVars()
     {
-#ifdef TRACE
-    LDA #(cmdVarsTrace % 256) STA ZP.TraceMessageL LDA #(cmdVarsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#ifdef TRACECONSOLE
+        LDA #(cmdVarsTrace % 256) STA ZP.TraceMessageL LDA #(cmdVarsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         loop
         {
@@ -658,7 +648,7 @@ LDA #(cmdListTrace % 256) STA ZP.TraceMessageL LDA #(cmdListTrace / 256) STA ZP.
             State.SetSuccess();
             break;
         } // exit loop
-#ifdef TRACE
+#ifdef TRACECONSOLE
         LDA #(cmdVarsTrace % 256) STA ZP.TraceMessageL LDA #(cmdVarsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }

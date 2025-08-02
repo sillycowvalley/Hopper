@@ -18,7 +18,7 @@ unit Console
     
     uses "Listing"
     
-    
+    // Initialize console system
     Initialize()
     {
         // Initialize tokenizer
@@ -53,9 +53,8 @@ unit Console
         }
         
         Error.CheckError();
-        if (NC) { State.SetFailure(); return; }  // Return if tokenization failed
-        
-        State.SetSuccess();
+        if (NC) { State.SetFailure(); }  // Return if tokenization failed
+        else { State.SetSuccess(); }
     }
     
     // Enhanced ProcessLine() to handle function capture mode
@@ -84,50 +83,62 @@ unit Console
     }
     
     // Normal mode processing
+    const string processLineNormalTrace = "ProcNorm";
     processLineNormal()
     {
-        // Check for tokenization errors
-        Error.CheckError();
-        if (NC) { State.SetFailure(); return; }
-        
-        // Check for empty line (just EOL token)
-        LDA ZP.TokenBufferLengthL
-        CMP #1
-        if (NZ) 
-        { 
-            // More than one token, process normally
-            processTokensAndCheckFunction();
-            return;
-        }
-        
-        LDA ZP.TokenBufferLengthH
-        if (NZ)
+#ifdef TRACECONSOLE
+        LDA #(processLineNormalTrace % 256) STA ZP.TraceMessageL LDA #(processLineNormalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        loop // Single exit pattern
         {
-            // Definitely more than one token
+            // Check for tokenization errors
+            Error.CheckError();
+            if (NC) { State.SetFailure(); break; }
+            
+            // Check for empty line (just EOL token)
+            LDA ZP.TokenBufferLengthL
+            CMP #1
+            if (NZ) 
+            { 
+                // More than one token, process normally
+                processTokensAndCheckFunction();
+                break;
+            }
+            
+            LDA ZP.TokenBufferLengthH
+            if (NZ)
+            {
+                // Definitely more than one token
+                processTokensAndCheckFunction();
+                break;
+            }
+            
+            // Exactly one token - check if it's EOL by getting first token
+            STZ ZP.TokenizerPosL
+            STZ ZP.TokenizerPosH
+            Tokenizer.NextToken();
+            LDA ZP.CurrentToken
+            CMP #Tokens.EOL
+            if (Z)
+            {
+                State.SetSuccess(); // Continue (empty line)
+                break;
+            }
+            
+            // Single non-EOL token, reset position and process it
+            STZ ZP.TokenizerPosL
+            STZ ZP.TokenizerPosH
             processTokensAndCheckFunction();
-            return;
+            break;
         }
         
-        // Exactly one token - check if it's EOL by getting first token
-        STZ ZP.TokenizerPosL
-        STZ ZP.TokenizerPosH
-        Tokenizer.NextToken();
-        LDA ZP.CurrentToken
-        CMP #Tokens.EOL
-        if (Z)
-        {
-            State.SetSuccess(); // Continue (empty line)
-            return;
-        }
-        
-        // Single non-EOL token, reset position and process it
-        STZ ZP.TokenizerPosL
-        STZ ZP.TokenizerPosH
-        processTokensAndCheckFunction();
+#ifdef TRACECONSOLE
+        LDA #(processLineNormalTrace % 256) STA ZP.TraceMessageL LDA #(processLineNormalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Process tokens and check if we're starting a function
-   processTokensAndCheckFunction()
+    processTokensAndCheckFunction()
     {
         // Always process the tokens first (this creates the function node)
         processTokens();
@@ -152,6 +163,10 @@ unit Console
     // Detect if current line starts FUNC but doesn't end with ENDFUNC
     detectIncompleteFunction()
     {
+        PHA
+        PHX
+        PHY
+        
         // Save current position
         LDA ZP.TokenizerPosL
         PHA
@@ -172,43 +187,44 @@ unit Console
             CMP #Tokens.BEGIN
             if (NZ)
             {
-                // Restore position
+                // Restore position and exit - not a function
                 PLA
                 STA ZP.TokenizerPosH
                 PLA
                 STA ZP.TokenizerPosL
-                return; // Not a function
             }
-            
-            // BEGIN case - scan for END
-            loop
+            else
             {
-                Tokenizer.NextToken();
-                LDA ZP.CurrentToken
-                CMP #Tokens.EOL
-                if (Z) 
-                { 
-                    // Restore position
-                    PLA
-                    STA ZP.TokenizerPosH
-                    PLA
-                    STA ZP.TokenizerPosL
-                    LDA #CaptureMode.Begin
-                    Statement.SetCaptureMode();
-                    break; // incomplete BEGIN found
-                }
-                
-                CMP #Tokens.END
-                if (Z)
+                // BEGIN case - scan for END
+                loop
                 {
-                    // Restore position
-                    PLA
-                    STA ZP.TokenizerPosH
-                    PLA
-                    STA ZP.TokenizerPosL
-                    break; // Found END - complete BEGIN
-                }
-            } // loop
+                    Tokenizer.NextToken();
+                    LDA ZP.CurrentToken
+                    CMP #Tokens.EOL
+                    if (Z) 
+                    { 
+                        // Restore position
+                        PLA
+                        STA ZP.TokenizerPosH
+                        PLA
+                        STA ZP.TokenizerPosL
+                        LDA #CaptureMode.Begin
+                        Statement.SetCaptureMode();
+                        break; // incomplete BEGIN found
+                    }
+                    
+                    CMP #Tokens.END
+                    if (Z)
+                    {
+                        // Restore position
+                        PLA
+                        STA ZP.TokenizerPosH
+                        PLA
+                        STA ZP.TokenizerPosL
+                        break; // Found END - complete BEGIN
+                    }
+                } // loop
+            }
         }
         else
         {
@@ -242,36 +258,56 @@ unit Console
                 }
             } // loop
         }
+        
+        PLY
+        PLX
+        PLA
     }
 
     // Function capture mode line processing
+    const string processFuncCaptureTrace = "ProcFunc";
     processLineFunctionCapture()
     {
-        // Check for tokenization errors
-        Error.CheckError();
-        if (NC) { State.SetFailure(); 
-        return; }
+#ifdef TRACECONSOLE
+        LDA #(processFuncCaptureTrace % 256) STA ZP.TraceMessageL LDA #(processFuncCaptureTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         
-        // Check if this line contains ENDFUNC (completing the function)
-        detectFunctionEnd();
-        
-        if (C)
+        loop // Single exit pattern
         {
-            // Complete function captured - process it
-            LDA #CaptureMode.Off
-            Statement.SetCaptureMode();
-            
-            FunctionDeclaration.CompletePartialFunction();
+            // Check for tokenization errors
             Error.CheckError();
-            if (NC) { State.SetFailure(); 
-            return; }
+            if (NC) { State.SetFailure(); break; }
+            
+            // Check if this line contains ENDFUNC (completing the function)
+            detectFunctionEnd();
+            
+            if (C)
+            {
+                // Complete function captured - process it
+                LDA #CaptureMode.Off
+                Statement.SetCaptureMode();
+                
+                FunctionDeclaration.CompletePartialFunction();
+                Error.CheckError();
+                if (NC) { State.SetFailure(); break; }
+            }
+            
+            State.SetSuccess(); // Continue (either in capture mode or completed)
+            break;
         }
         
-        State.SetSuccess(); // Continue (either in capture mode or completed)
+#ifdef TRACECONSOLE
+        LDA #(processFuncCaptureTrace % 256) STA ZP.TraceMessageL LDA #(processFuncCaptureTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
 
+    // Detect if current buffer contains function end token
     detectFunctionEnd()
     {
+        PHA
+        PHX
+        PHY
+        
         // Save current position
         LDA ZP.TokenizerPosL
         PHA
@@ -328,6 +364,7 @@ unit Console
                 {
                     // Should not happen - error condition
                     Error.InternalError(); BIT ZP.EmulatorPCL
+                    CLC
                 }
             }
             break; // Exit outer loop
@@ -338,6 +375,10 @@ unit Console
         STA ZP.TokenizerPosH
         PLA
         STA ZP.TokenizerPosL
+        
+        PLY
+        PLX
+        PLA
     }
     
     // Process the tokens in BasicTokenizerBuffer  
@@ -480,405 +521,395 @@ unit Console
         // Success - all statements processed
     }
 
-#ifdef TRACE
-    const string cmdDumpTrace = "DUMP";
-#endif
     // Execute DUMP command
+    const string dumpTrace = "DUMP";
     cmdDump()
     {
-#ifdef TRACE
-LDA #(cmdDumpTrace % 256) STA ZP.TraceMessageL LDA #(cmdDumpTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#ifdef TRACECONSOLE
+        LDA #(dumpTrace % 256) STA ZP.TraceMessageL LDA #(dumpTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
+        
         Statement.IsCaptureModeOn();
         if (C)
         {
             Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
-#ifdef TRACE
-LDA #(cmdDumpTrace % 256) STA ZP.TraceMessageL LDA #(cmdDumpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+        }
+        else
+        {
+#ifdef DEBUG
+            Tokenizer.NextToken(); // consume 'DUMP'
+            loop
+            {
+                // verify that the input is not a syntax error
+                LDA ZP.CurrentToken
+                switch (A)
+                {
+                    case Tokens.EOL:
+                    {
+                        LDA #0 // No argument - default to page 0
+                    }
+                    case Tokens.NUMBER:
+                    {
+                        Tokenizer.GetTokenNumber();
+                        Tokenizer.NextToken(); // consume the argument
+                        LDA ZP.TOPH
+                        if (NZ)
+                        {
+                            CLC // > 255
+                            break;
+                        }
+                        LDA ZP.CurrentToken
+                        CMP # Tokens.EOL
+                        if (NZ)
+                        {
+                            CLC // was expecting EOL
+                            break;
+                        }
+                        LDA ZP.TOPL // populated by GetTokenNumber
+                    }
+                    default:
+                    {
+                        CLC // unexpected token
+                        break;
+                    }
+                }
+                // A contains page number - call DumpPage
+                Debug.DumpPage();
+                Messages.PrintOK();
+                SEC // ok
+                break;
+            } // single exit
+            if (NC)
+            {
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+            }
+#else
+            Error.OnlyInDebug(); BIT ZP.EmulatorPCL
 #endif
-            return;
         }
         
-#ifdef DEBUG
-        Tokenizer.NextToken(); // consume 'DUMP'
-        loop
-        {
-            // verify that the input is not a syntax error
-            LDA ZP.CurrentToken
-            switch (A)
-            {
-                case Tokens.EOL:
-                {
-                    LDA #0 // No argument - default to page 0
-                }
-                case Tokens.NUMBER:
-                {
-                    Tokenizer.GetTokenNumber();
-                    Tokenizer.NextToken(); // consume the argument
-                    LDA ZP.TOPH
-                    if (NZ)
-                    {
-                        CLC // > 255
-                        break;
-                    }
-                    LDA ZP.CurrentToken
-                    CMP # Tokens.EOL
-                    if (NZ)
-                    {
-                        CLC // was expecting EOL
-                        break;
-                    }
-                    LDA ZP.TOPL // populated by GetTokenNumber
-                }
-                default:
-                {
-                    CLC // unexpected token
-                    break;
-                }
-            }
-            // A contains page number - call DumpPage
-            Debug.DumpPage();
-            Messages.PrintOK();
-            SEC // ok
-            break;
-        } // single exit
-        if (NC)
-        {
-            Error.SyntaxError(); BIT ZP.EmulatorPCL
-        }
-#else
-        Error.OnlyInDebug(); BIT ZP.EmulatorPCL
-#endif
-#ifdef TRACE
-LDA #(cmdDumpTrace % 256) STA ZP.TraceMessageL LDA #(cmdDumpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#ifdef TRACECONSOLE
+        LDA #(dumpTrace % 256) STA ZP.TraceMessageL LDA #(dumpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
 
-#ifdef TRACE
-    const string cmdHeapTrace = "HEAP";
-#endif
     // Execute HEAP command
+    const string heapTrace = "HEAP";
     cmdHeap()
     {
-#ifdef TRACE
-LDA #(cmdHeapTrace % 256) STA ZP.TraceMessageL LDA #(cmdHeapTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#ifdef TRACECONSOLE
+        LDA #(heapTrace % 256) STA ZP.TraceMessageL LDA #(heapTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
+        
         Statement.IsCaptureModeOn();
         if (C)
         {
             Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
-#ifdef TRACE
-LDA #(cmdHeapTrace % 256) STA ZP.TraceMessageL LDA #(cmdHeapTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+        }
+        else
+        {
+#ifdef DEBUG
+            Tokenizer.NextToken(); // consume 'HEAP'
+            
+            Debug.DumpHeap();
+            Messages.PrintOK();
+#else
+            Error.OnlyInDebug(); BIT ZP.EmulatorPCL
 #endif
-            return;
         }
         
-#ifdef DEBUG
-        Tokenizer.NextToken(); // consume 'HEAP'
-        
-        Debug.DumpHeap();
-        Messages.PrintOK();
-#else
-        Error.OnlyInDebug(); BIT ZP.EmulatorPCL
-#endif
-#ifdef TRACE
-LDA #(cmdHeapTrace % 256) STA ZP.TraceMessageL LDA #(cmdHeapTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#ifdef TRACECONSOLE
+        LDA #(heapTrace % 256) STA ZP.TraceMessageL LDA #(heapTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
 
-#ifdef TRACE
-    const string cmdBuffersTrace = "BUFFERS";
-#endif
     // Execute BUFFERS command
+    const string buffersTrace = "BUFFERS";
     cmdBuffers()
     {
-#ifdef TRACE
-LDA #(cmdBuffersTrace % 256) STA ZP.TraceMessageL LDA #(cmdBuffersTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#ifdef TRACECONSOLE
+        LDA #(buffersTrace % 256) STA ZP.TraceMessageL LDA #(buffersTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
+        
         Statement.IsCaptureModeOn();
         if (C)
         {
             Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
-#ifdef TRACE
-LDA #(cmdBuffersTrace % 256) STA ZP.TraceMessageL LDA #(cmdBuffersTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+        }
+        else
+        {
+#ifdef DEBUG
+            Tokenizer.NextToken(); // consume 'BUFFERS'
+            
+            Debug.DumpBasicBuffers();
+            Messages.PrintOK();
+#else
+            Error.OnlyInDebug(); BIT ZP.EmulatorPCL
 #endif
-            return;
         }
         
-#ifdef DEBUG
-        Tokenizer.NextToken(); // consume 'BUFFERS'
-        
-        Debug.DumpBasicBuffers();
-        Messages.PrintOK();
-#else
-        Error.OnlyInDebug(); BIT ZP.EmulatorPCL
-#endif
-#ifdef TRACE
-LDA #(cmdBuffersTrace % 256) STA ZP.TraceMessageL LDA #(cmdBuffersTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#ifdef TRACECONSOLE
+        LDA #(buffersTrace % 256) STA ZP.TraceMessageL LDA #(buffersTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
 
-#ifdef TRACE
-    const string cmdMemTrace = "MEM";
-#endif
     // Execute MEM command
+    const string memTrace = "MEM";
     CmdMem()
     {
-#ifdef TRACE
-LDA #(cmdMemTrace % 256) STA ZP.TraceMessageL LDA #(cmdMemTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#ifdef TRACECONSOLE
+        LDA #(memTrace % 256) STA ZP.TraceMessageL LDA #(memTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
+        
         Statement.IsCaptureModeOn();
         if (C)
         {
             Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
-#ifdef TRACE
-LDA #(cmdMemTrace % 256) STA ZP.TraceMessageL LDA #(cmdMemTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-            return;
+        }
+        else
+        {
+            Tokenizer.NextToken(); // consume 'MEM'
+            
+            LDA #(Messages.MemoryMsg % 256)
+            STA ZP.ACCL
+            LDA #(Messages.MemoryMsg / 256)
+            STA ZP.ACCH
+            Tools.PrintStringACC();
+            
+            // Get available memory
+            Memory.Available();  // Pushes available memory (UInt) to stack
+            Stacks.PopTop();     // Pop into TOP, modifies X
+            Tools.PrintDecimalWord();
+            
+            LDA #(Messages.BytesMsg % 256)
+            STA ZP.ACCL
+            LDA #(Messages.BytesMsg / 256)
+            STA ZP.ACCH
+            Tools.PrintStringACC();
         }
         
-        Tokenizer.NextToken(); // consume 'MEM'
-        
-        LDA #(Messages.MemoryMsg % 256)
-        STA ZP.ACCL
-        LDA #(Messages.MemoryMsg / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
-        
-        // Get available memory
-        Memory.Available();  // Pushes available memory (UInt) to stack
-        Stacks.PopTop();     // Pop into TOP, modifies X
-        Tools.PrintDecimalWord();
-        
-        LDA #(Messages.BytesMsg % 256)
-        STA ZP.ACCL
-        LDA #(Messages.BytesMsg / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
-#ifdef TRACE
-LDA #(cmdMemTrace % 256) STA ZP.TraceMessageL LDA #(cmdMemTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#ifdef TRACECONSOLE
+        LDA #(memTrace % 256) STA ZP.TraceMessageL LDA #(memTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
 
-#ifdef TRACE
-    const string cmdByeTrace = "BYE";
-#endif
     // Execute BYE command
+    const string byeTrace = "BYE";
     cmdBye()
     {
-#ifdef TRACE
-LDA #(cmdByeTrace % 256) STA ZP.TraceMessageL LDA #(cmdByeTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#ifdef TRACECONSOLE
+        LDA #(byeTrace % 256) STA ZP.TraceMessageL LDA #(byeTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
+        
         // BYE command works in both modes - allows escape from function capture
         State.SetExiting(); // Set exit status instead of fragile CLC
-#ifdef TRACE
-LDA #(cmdByeTrace % 256) STA ZP.TraceMessageL LDA #(cmdByeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+        
+#ifdef TRACECONSOLE
+        LDA #(byeTrace % 256) STA ZP.TraceMessageL LDA #(byeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
 
-#ifdef TRACE
-    const string cmdNewTrace = "NEW";
-#endif
     // Execute NEW command
+#ifdef TRACECONSOLE
+    const string newTrace = "NEW";
+#endif
     cmdNew()
     {
-#ifdef TRACE
-LDA #(cmdNewTrace % 256) STA ZP.TraceMessageL LDA #(cmdNewTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#ifdef TRACECONSOLE
+        LDA #(newTrace % 256) STA ZP.TraceMessageL LDA #(newTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
+        
         Statement.IsCaptureModeOn();
         if (C)
         {
             Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
-#ifdef TRACE
-LDA #(cmdNewTrace % 256) STA ZP.TraceMessageL LDA #(cmdNewTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-            return;
+        }
+        else
+        {
+            Tokenizer.NextToken(); // consume 'NEW'
+            
+            Variables.Clear();
+            Functions.Clear();
+            Messages.PrintOK();
         }
         
-        Tokenizer.NextToken(); // consume 'NEW'
-        
-        Variables.Clear();
-        Functions.Clear();
-        Messages.PrintOK();
-#ifdef TRACE
-LDA #(cmdNewTrace % 256) STA ZP.TraceMessageL LDA #(cmdNewTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#ifdef TRACECONSOLE
+        LDA #(newTrace % 256) STA ZP.TraceMessageL LDA #(newTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
 
-#ifdef TRACE
-    const string cmdClearTrace = "CLEAR";
-#endif
     // Execute CLEAR command
+#ifdef TRACECONSOLE
+    const string clearTrace = "CLEAR";
+#endif
     cmdClear()
     {
-#ifdef TRACE
-LDA #(cmdClearTrace % 256) STA ZP.TraceMessageL LDA #(cmdClearTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#ifdef TRACECONSOLE
+        LDA #(clearTrace % 256) STA ZP.TraceMessageL LDA #(clearTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
+        
         Statement.IsCaptureModeOn();
         if (C)
         {
             Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
-#ifdef TRACE
-LDA #(cmdClearTrace % 256) STA ZP.TraceMessageL LDA #(cmdClearTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-            return;
+        }
+        else
+        {
+            Tokenizer.NextToken(); // consume 'CLEAR'
+            
+            Variables.Clear();
+            Messages.PrintOK();
         }
         
-        Tokenizer.NextToken(); // consume 'CLEAR'
-        
-        Variables.Clear();
-        Messages.PrintOK();
-#ifdef TRACE
-LDA #(cmdClearTrace % 256) STA ZP.TraceMessageL LDA #(cmdClearTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#ifdef TRACECONSOLE
+        LDA #(clearTrace % 256) STA ZP.TraceMessageL LDA #(clearTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
 
-#ifdef TRACE
-    const string cmdForgetTrace = "FORGET";
-#endif
     // Execute FORGET command - remove variable, constant, or function by name
     // Input: ZP.CurrentToken = FORGET token
     // Output: Named symbol removed from appropriate table, or error if not found
     // Usage: FORGET identifier
     // Error: Sets ZP.LastError if function mode, syntax error, or identifier not found
+    const string forgetTrace = "FORGET";
     cmdForget()
     {
-#ifdef TRACE
-LDA #(cmdForgetTrace % 256) STA ZP.TraceMessageL LDA #(cmdForgetTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#ifdef TRACECONSOLE
+        LDA #(forgetTrace % 256) STA ZP.TraceMessageL LDA #(forgetTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
+        
         Statement.IsCaptureModeOn();
         if (C)
         {
             Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
-#ifdef TRACE
-LDA #(cmdForgetTrace % 256) STA ZP.TraceMessageL LDA #(cmdForgetTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-            return;
         }
-        
-        loop // Single exit block for clean error handling
+        else
         {
-            Tokenizer.NextToken(); // consume 'FORGET'
-            Error.CheckError();
-            if (NC) { break; }
-            
-            // Expect identifier name
-            LDA ZP.CurrentToken
-            CMP #Tokens.IDENTIFIER
-            if (NZ)
+            loop // Single exit block for clean error handling
             {
-                Error.SyntaxError(); BIT ZP.EmulatorPCL
-                break;
-            }
-            
-            // Get the identifier name
-            Tokenizer.GetTokenString(); // Result in ZP.TOP
-            Error.CheckError();
-            if (NC) { break; }
-            
-            // Save name pointer for multiple attempts
-            LDA ZP.TOPL
-            PHA
-            LDA ZP.TOPH
-            PHA
-            
-            // Try to remove as variable/constant first
-            Variables.Remove(); // Input: ZP.TOP = name pointer
-            if (C)
-            {
-                // Successfully removed variable/constant
-                // Clean up stack and advance to next token
+                Tokenizer.NextToken(); // consume 'FORGET'
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Expect identifier name
+                LDA ZP.CurrentToken
+                CMP #Tokens.IDENTIFIER
+                if (NZ)
+                {
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
+                    break;
+                }
+                
+                // Get the identifier name
+                Tokenizer.GetTokenString(); // Result in ZP.TOP
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Save name pointer for multiple attempts
+                LDA ZP.TOPL
+                PHA
+                LDA ZP.TOPH
+                PHA
+                
+                // Try to remove as variable/constant first
+                Variables.Remove(); // Input: ZP.TOP = name pointer
+                if (C)
+                {
+                    // Successfully removed variable/constant
+                    // Clean up stack and advance to next token
+                    PLA
+                    STA ZP.TOPH
+                    PLA
+                    STA ZP.TOPL
+                    
+                    Tokenizer.NextToken(); // consume identifier
+                    Error.CheckError();
+                    if (NC) { break; }
+                    
+                    // Verify end of line
+                    LDA ZP.CurrentToken
+                    CMP #Tokens.EOL
+                    if (NZ)
+                    {
+                        Error.SyntaxError(); BIT ZP.EmulatorPCL
+                        break;
+                    }
+                    
+                    Messages.PrintOK();
+                    break;
+                }
+                
+                // Not found as variable/constant, try function
+                // Restore name pointer
                 PLA
                 STA ZP.TOPH
                 PLA
                 STA ZP.TOPL
                 
-                Tokenizer.NextToken(); // consume identifier
-                Error.CheckError();
-                if (NC) { break; }
-                
-                // Verify end of line
-                LDA ZP.CurrentToken
-                CMP #Tokens.EOL
-                if (NZ)
+                Functions.Remove(); // Input: ZP.TOP = name pointer
+                if (C)
                 {
-                    Error.SyntaxError(); BIT ZP.EmulatorPCL
+                    // Successfully removed function
+                    Tokenizer.NextToken(); // consume identifier
+                    Error.CheckError();
+                    if (NC) { break; }
+                    
+                    // Verify end of line
+                    LDA ZP.CurrentToken
+                    CMP #Tokens.EOL
+                    if (NZ)
+                    {
+                        Error.SyntaxError(); BIT ZP.EmulatorPCL
+                        break;
+                    }
+                    
+                    Messages.PrintOK();
                     break;
                 }
                 
-                Messages.PrintOK();
-                SEC // Success
+                // Not found in either table
+                Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
                 break;
-            }
-            
-            // Not found as variable/constant, try function
-            // Restore name pointer
-            PLA
-            STA ZP.TOPH
-            PLA
-            STA ZP.TOPL
-            
-            Functions.Remove(); // Input: ZP.TOP = name pointer
-            if (C)
-            {
-                // Successfully removed function
-                Tokenizer.NextToken(); // consume identifier
-                Error.CheckError();
-                if (NC) { break; }
-                
-                // Verify end of line
-                LDA ZP.CurrentToken
-                CMP #Tokens.EOL
-                if (NZ)
-                {
-                    Error.SyntaxError(); BIT ZP.EmulatorPCL
-                    break;
-                }
-                
-                Messages.PrintOK();
-                SEC // Success
-                break;
-            }
-            
-            // Not found in either table
-            Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
-            CLC
-            break;
-        } // Single exit block
-#ifdef TRACE
-LDA #(cmdForgetTrace % 256) STA ZP.TraceMessageL LDA #(cmdForgetTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+            } // Single exit block
+        }
+        
+#ifdef TRACECONSOLE
+        LDA #(forgetTrace % 256) STA ZP.TraceMessageL LDA #(forgetTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
 
-#ifdef TRACE
-    const string cmdRunTrace = "RUN";
-#endif
     // Execute RUN command
+    const string runTrace = "RUN";
     cmdRun()
     {
-#ifdef TRACE
-LDA #(cmdRunTrace % 256) STA ZP.TraceMessageL LDA #(cmdRunTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#ifdef TRACECONSOLE
+        LDA #(runTrace % 256) STA ZP.TraceMessageL LDA #(runTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
+        
         Statement.IsCaptureModeOn();
         if (C)
         {
             Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
-#ifdef TRACE
-LDA #(cmdRunTrace % 256) STA ZP.TraceMessageL LDA #(cmdRunTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-            return;
+        }
+        else
+        {
+            // TODO: Run program
+            Error.NotImplemented(); BIT ZP.EmulatorPCL
         }
         
-        // TODO: Run program
-        Error.NotImplemented(); BIT ZP.EmulatorPCL
-#ifdef TRACE
-LDA #(cmdRunTrace % 256) STA ZP.TraceMessageL LDA #(cmdRunTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#ifdef TRACECONSOLE
+        LDA #(runTrace % 256) STA ZP.TraceMessageL LDA #(runTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
     
     // Exit function capture mode and return to normal (called from Console or Tokenizer on Ctrl+C)
+    const string exitFuncModeTrace = "ExitFunc";
     ExitFunctionCaptureMode()
     {
+#ifdef TRACECONSOLE
+        LDA #(exitFuncModeTrace % 256) STA ZP.TraceMessageL LDA #(exitFuncModeTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         LDA #CaptureMode.Off
         Statement.SetCaptureMode();
         
@@ -892,5 +923,9 @@ LDA #(cmdRunTrace % 256) STA ZP.TraceMessageL LDA #(cmdRunTrace / 256) STA ZP.Tr
         // Clear any error state that might have been set during capture
         Error.ClearError();
         State.SetSuccess();
+        
+#ifdef TRACECONSOLE
+        LDA #(exitFuncModeTrace % 256) STA ZP.TraceMessageL LDA #(exitFuncModeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
 }
