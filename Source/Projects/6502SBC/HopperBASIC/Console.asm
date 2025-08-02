@@ -16,16 +16,6 @@ unit Console
     
     uses "Listing"
     
-    // Error handler for commands in function mode
-    FunctionModeError()
-    {
-        LDA #(Messages.SyntaxError % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.SyntaxError / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
-        CLC
-    }
     
     Initialize()
     {
@@ -57,7 +47,7 @@ unit Console
             Tokenizer.TokenizeLine();
         }
         
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }  // Return if tokenization failed
     }
     
@@ -81,7 +71,7 @@ unit Console
     processLineNormal()
     {
         // Check for tokenization errors
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }  // Error during tokenization
         
         // Check for empty line (just EOL token)
@@ -125,7 +115,7 @@ unit Console
     {
         // Always process the tokens first (this creates the function node)
         processTokens();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         // After processing, check if we just processed an incomplete function
@@ -278,7 +268,7 @@ unit Console
     #endif
 
         // Check for tokenization errors
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         // Check if this line contains ENDFUNC (completing the function)
@@ -316,7 +306,7 @@ unit Console
             Tools.COut();
     #endif
             FunctionDeclaration.CompletePartialFunction();
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { return; }
         }
         
@@ -402,12 +392,7 @@ unit Console
                 else
                 {
                     // Should not happen - error condition
-                    LDA #(Messages.InternalError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.InternalError / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
-                    CLC
+                    Error.InternalError(); BIT ZP.EmulatorPCL
                 }
             }
             break; // Exit outer loop
@@ -471,67 +456,67 @@ unit Console
                 case Tokens.NEW:
                 {
                     cmdNew();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                 }
                 case Tokens.FORGET:
                 {
                     cmdForget();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                 }
                 case Tokens.CLEAR:
                 {
                     cmdClear();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                 }
                 case Tokens.VARS:
                 {
                     Listing.CmdVars();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                 }
                 case Tokens.LIST:
                 {
                     Listing.CmdList();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                 }
                 case Tokens.FUNCS:
                 {
                     Listing.CmdFuncs();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                 }
                 case Tokens.RUN:
                 {
                     cmdRun();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                 }
                 case Tokens.MEM:
                 {
                     CmdMem();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                 }
                 case Tokens.HEAP:
                 {
                     cmdHeap();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                 }
                 case Tokens.BUFFERS:
                 {
                     cmdBuffers();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                 }
                 case Tokens.DUMP:
                 {
                     cmdDump();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                 }
                 case Tokens.BYE:
@@ -545,17 +530,13 @@ unit Console
                 case Tokens.DIR:
                 case Tokens.DEL:
                 {
-                    LDA #(Messages.NotImplemented % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.NotImplemented / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                    Error.NotImplemented(); BIT ZP.EmulatorPCL
                 }
                 default:
                 {
                     // Not a console command, try to execute as a statement
                     Statement.Execute();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                 }
             }
@@ -572,12 +553,7 @@ unit Console
             }
             
             // If we get here, unexpected token after statement
-            LDA #(Messages.SyntaxError % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.SyntaxError / 256)
-            STA ZP.LastErrorH
-            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-            CLC
+            Error.SyntaxError(); BIT ZP.EmulatorPCL
             return;
         }
         
@@ -590,7 +566,7 @@ unit Console
         Statement.IsCaptureModeOn();
         if (C)
         {
-            FunctionModeError();
+            Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
             return;
         }
         
@@ -639,11 +615,7 @@ unit Console
         } // single exit
         if (NC)
         {
-            LDA #(Messages.SyntaxError % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.SyntaxError / 256)
-            STA ZP.LastErrorH
-            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
+            Error.SyntaxError(); BIT ZP.EmulatorPCL
         }
 #else
         LDA #(Messages.OnlyInDebug % 256)
@@ -660,7 +632,7 @@ unit Console
         Statement.IsCaptureModeOn();
         if (C)
         {
-            FunctionModeError();
+            Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
             return;
         }
         
@@ -684,7 +656,7 @@ unit Console
         Statement.IsCaptureModeOn();
         if (C)
         {
-            FunctionModeError();
+            Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
             return;
         }
         
@@ -708,7 +680,7 @@ unit Console
         Statement.IsCaptureModeOn();
         if (C)
         {
-            FunctionModeError();
+            Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
             return;
         }
         
@@ -745,7 +717,7 @@ unit Console
         Statement.IsCaptureModeOn();
         if (C)
         {
-            FunctionModeError();
+            Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
             return;
         }
         
@@ -762,7 +734,7 @@ unit Console
         Statement.IsCaptureModeOn();
         if (C)
         {
-            FunctionModeError();
+            Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
             return;
         }
         
@@ -782,14 +754,14 @@ unit Console
         Statement.IsCaptureModeOn();
         if (C)
         {
-            FunctionModeError();
+            Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
             return;
         }
         
         loop // Single exit block for clean error handling
         {
             Tokenizer.NextToken(); // consume 'FORGET'
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { break; }
             
             // Expect identifier name
@@ -797,18 +769,13 @@ unit Console
             CMP #Tokens.IDENTIFIER
             if (NZ)
             {
-                LDA #(Messages.SyntaxError % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.SyntaxError / 256)
-                STA ZP.LastErrorH
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
-                CLC
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
                 break;
             }
             
             // Get the identifier name
             Tokenizer.GetTokenString(); // Result in ZP.TOP
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { break; }
             
             // Save name pointer for multiple attempts
@@ -829,7 +796,7 @@ unit Console
                 STA ZP.TOPL
                 
                 Tokenizer.NextToken(); // consume identifier
-                Messages.CheckError();
+                Error.CheckError();
                 if (NC) { break; }
                 
                 // Verify end of line
@@ -837,12 +804,7 @@ unit Console
                 CMP #Tokens.EOL
                 if (NZ)
                 {
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
-                    CLC
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
                     break;
                 }
                 
@@ -863,7 +825,7 @@ unit Console
             {
                 // Successfully removed function
                 Tokenizer.NextToken(); // consume identifier
-                Messages.CheckError();
+                Error.CheckError();
                 if (NC) { break; }
                 
                 // Verify end of line
@@ -871,12 +833,7 @@ unit Console
                 CMP #Tokens.EOL
                 if (NZ)
                 {
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
-                    CLC
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
                     break;
                 }
                 
@@ -905,7 +862,7 @@ unit Console
         Statement.IsCaptureModeOn();
         if (C)
         {
-            FunctionModeError();
+            Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
             return;
         }
         

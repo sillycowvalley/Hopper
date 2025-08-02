@@ -765,18 +765,18 @@ unit Tokenizer
         // Add NUMBER token
         LDA #Tokens.NUMBER
         appendToTokenBuffer();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         // Store "0x" prefix
         LDA #'0'
         appendToTokenBuffer();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         LDA Address.BasicInputBuffer, X  // 'x' or 'X'
         appendToTokenBuffer();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         INX
         
@@ -792,7 +792,7 @@ unit Tokenizer
             
             LDA Address.BasicInputBuffer, X
             appendToTokenBuffer();
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { return; }
             INX
         }
@@ -800,7 +800,7 @@ unit Tokenizer
         // Add null terminator
         LDA #0
         appendToTokenBuffer();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
     }
     
@@ -1002,7 +1002,7 @@ unit Tokenizer
                 {
                     LDA #Tokens.COLON
                     appendToTokenBuffer();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -1010,7 +1010,7 @@ unit Tokenizer
                 {
                     LDA #Tokens.COMMA
                     appendToTokenBuffer();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -1018,7 +1018,7 @@ unit Tokenizer
                 {
                     LDA #Tokens.EQUALS
                     appendToTokenBuffer();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -1026,7 +1026,7 @@ unit Tokenizer
                 {
                     LDA #Tokens.PLUS
                     appendToTokenBuffer();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -1034,7 +1034,7 @@ unit Tokenizer
                 {
                     LDA #Tokens.MINUS
                     appendToTokenBuffer();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -1042,7 +1042,7 @@ unit Tokenizer
                 {
                     LDA #Tokens.MULTIPLY
                     appendToTokenBuffer();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -1050,7 +1050,7 @@ unit Tokenizer
                 {
                     LDA #Tokens.DIVIDE
                     appendToTokenBuffer();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -1058,7 +1058,7 @@ unit Tokenizer
                 {
                     LDA #Tokens.BITWISE_AND
                     appendToTokenBuffer();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -1066,7 +1066,7 @@ unit Tokenizer
                 {
                     LDA #Tokens.BITWISE_OR
                     appendToTokenBuffer();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -1074,7 +1074,7 @@ unit Tokenizer
                 {
                     LDA #Tokens.LPAREN
                     appendToTokenBuffer();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -1082,7 +1082,7 @@ unit Tokenizer
                 {
                     LDA #Tokens.RPAREN
                     appendToTokenBuffer();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -1099,7 +1099,7 @@ unit Tokenizer
                         {
                             LDA #Tokens.LE
                             appendToTokenBuffer();
-                            Messages.CheckError();
+                            Error.CheckError();
                             if (NC) { return; }
                             INX  // Skip both '<' and '='
                             continue;
@@ -1109,7 +1109,7 @@ unit Tokenizer
                         {
                             LDA #Tokens.NOTEQUAL
                             appendToTokenBuffer();
-                            Messages.CheckError();
+                            Error.CheckError();
                             if (NC) { return; }
                             INX  // Skip both '<' and '>'
                             continue;
@@ -1119,7 +1119,7 @@ unit Tokenizer
                     DEX  // Back up to point at '<'
                     LDA #Tokens.LT
                     appendToTokenBuffer();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                     INX  // Move past '<'
                 }
@@ -1136,7 +1136,7 @@ unit Tokenizer
                         {
                             LDA #Tokens.GE
                             appendToTokenBuffer();
-                            Messages.CheckError();
+                            Error.CheckError();
                             if (NC) { return; }
                             INX  // Skip both '>' and '='
                             continue;
@@ -1146,7 +1146,7 @@ unit Tokenizer
                     DEX  // Back up to point at '>'
                     LDA #Tokens.GT
                     appendToTokenBuffer();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                     INX  // Move past '>'
                 }
@@ -1155,7 +1155,7 @@ unit Tokenizer
                     // String literal tokenization
                     LDA # Tokens.STRINGLIT
                     appendToTokenBuffer();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                     
                     // Store starting position of string content
@@ -1187,7 +1187,7 @@ unit Tokenizer
                             // Add null terminator to string content
                             LDA #0
                             appendToTokenBuffer();
-                            Messages.CheckError();
+                            Error.CheckError();
                             if (NC) { return; }
                             
                             INX  // Skip closing quote in input buffer
@@ -1196,7 +1196,7 @@ unit Tokenizer
                         
                         // Add character to string content in token buffer
                         appendToTokenBuffer();
-                        Messages.CheckError();
+                        Error.CheckError();
                         if (NC) { return; }
                         
                         INX  // Advance input buffer position
@@ -1208,7 +1208,7 @@ unit Tokenizer
                     // Single quote comment
                     LDA #Tokens.COMMENT
                     appendToTokenBuffer();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                     
                     INX  // Skip the quote character
@@ -1221,7 +1221,7 @@ unit Tokenizer
                         
                         LDA Address.BasicInputBuffer, X
                         appendToTokenBuffer();
-                        Messages.CheckError();
+                        Error.CheckError();
                         if (NC) { return; }
                         INX
                     }
@@ -1229,7 +1229,7 @@ unit Tokenizer
                     // Add null terminator
                     LDA #0
                     appendToTokenBuffer();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { return; }
                     
                     // X is already at end of input, continue will break out of main loop
@@ -1263,7 +1263,7 @@ unit Tokenizer
                         // Scan number and store inline in token buffer
                         LDA #Tokens.NUMBER
                         appendToTokenBuffer();
-                        Messages.CheckError();
+                        Error.CheckError();
                         if (NC) { return; }
                         
                         // Store number digits inline
@@ -1277,7 +1277,7 @@ unit Tokenizer
                             if (NC) { SEC break; }  // Not a digit
                             
                             appendToTokenBuffer();
-                            Messages.CheckError();
+                            Error.CheckError();
                             if (NC) { return; }
                             INX
                         }
@@ -1285,7 +1285,7 @@ unit Tokenizer
                         // Add null terminator for number
                         LDA #0
                         appendToTokenBuffer();
-                        Messages.CheckError();
+                        Error.CheckError();
                         if (NC) { return; }
                         continue;
                     }
@@ -1355,7 +1355,7 @@ unit Tokenizer
                         if (Z)
                         {
                             appendToTokenBuffer();
-                            Messages.CheckError();
+                            Error.CheckError();
                             if (NC) { return; }
                             
                             // Store comment text as inline data
@@ -1369,7 +1369,7 @@ unit Tokenizer
                                 
                                 LDA Address.BasicInputBuffer, X
                                 appendToTokenBuffer();
-                                Messages.CheckError();
+                                Error.CheckError();
                                 if (NC) { return; }
                                 INX
                             }
@@ -1377,7 +1377,7 @@ unit Tokenizer
                             // Add null terminator
                             LDA #0
                             appendToTokenBuffer();
-                            Messages.CheckError();
+                            Error.CheckError();
                             if (NC) { return; }
                             
                             // X is already at end of input, continue will break out of main loop
@@ -1386,7 +1386,7 @@ unit Tokenizer
                         
                         // Regular keyword processing
                         appendToTokenBuffer();
-                        Messages.CheckError();
+                        Error.CheckError();
                         if (NC) { return; }
                     }
                     else
@@ -1394,7 +1394,7 @@ unit Tokenizer
                         // It's an identifier - store token + inline string
                         LDA #Tokens.IDENTIFIER
                         appendToTokenBuffer();
-                        Messages.CheckError();
+                        Error.CheckError();
                         if (NC) { return; }
                         
                         // Copy identifier from working buffer to token buffer
@@ -1404,7 +1404,7 @@ unit Tokenizer
                             LDA Address.BasicProcessBuffer, Y
                             STA ZP.ACCL 
                             appendToTokenBuffer();
-                            Messages.CheckError();
+                            Error.CheckError();
                             if (NC) 
                             { 
                                 return; 
@@ -1424,7 +1424,7 @@ unit Tokenizer
         // Add EOL token only for lines with content
         LDA #Tokens.EOL
         appendToTokenBuffer();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         LDA ZP.OpcodeTemp

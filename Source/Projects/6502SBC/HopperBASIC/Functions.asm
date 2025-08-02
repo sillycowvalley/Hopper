@@ -697,7 +697,7 @@ unit Functions
             
             // Use Compiler.CompileExpression() to compile function body
             Compiler.CompileFunction();
-            Messages.CheckError();
+            Error.CheckError();
             PLA
             STA ZP.IDXH
             PLA
@@ -707,7 +707,7 @@ unit Functions
             
             // Copy opcodes from BasicOpcodeBuffer to permanent function storage
             copyOpcodesToFunction();
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { break; }
             
             // Mark function as compiled

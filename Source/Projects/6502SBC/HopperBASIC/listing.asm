@@ -269,7 +269,7 @@ unit Listing
         {
             // Get the function name
             Tokenizer.GetTokenString(); // Output: ZP.TOP = name pointer
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { break; }
             
             // Find the function
@@ -299,7 +299,7 @@ unit Listing
             PLA
             STA ZP.IDXL
             
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { break; }
             
             // Verify end of line
@@ -338,7 +338,7 @@ unit Listing
         }
         
         Tokenizer.NextToken(); // consume 'FUNCS'
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         // Check if there's a function name argument
@@ -386,12 +386,12 @@ unit Listing
         
         // Display variables and constants (VARS output)
         CmdVars();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         // Display all functions
         displayAllFunctions();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         SEC // Success
@@ -411,7 +411,7 @@ unit Listing
         }
         
         Tokenizer.NextToken(); // consume 'VARS' (or 'LIST' when called from CmdList)
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         // PASS 1: Display all constants

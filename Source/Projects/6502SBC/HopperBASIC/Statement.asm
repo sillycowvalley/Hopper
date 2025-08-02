@@ -147,7 +147,7 @@ unit Statement
             
             // Get the identifier name for lookup
             Tokenizer.GetTokenString();  // Result in ZP.TOP
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { break; }
             
             STZ ZP.SymbolIteratorFilter  // Accept any symbol type (variable or constant)
@@ -186,7 +186,7 @@ unit Statement
                 
                 CLC
             }
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { break; }
             
             // function by same name exists? name pointer in TOP
@@ -200,7 +200,7 @@ unit Statement
                 LDA # IdentifierType.Function
                 break; // success
             }
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { break; }
 #ifdef DEBUG
             LDA #'U' Tools.COut();
@@ -252,7 +252,7 @@ unit Statement
         STA ZP.IDYH
         Compiler.SetLiteralBase();
         Compiler.CompileExpression();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) 
         { 
     #ifdef DEBUG
@@ -268,7 +268,7 @@ unit Statement
         
         // 2. Execute opcodes ? result on stack
         Executor.ExecuteOpcodes();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) 
         { 
     #ifdef DEBUG
@@ -435,7 +435,7 @@ unit Statement
         // Get next token (should be start of expression)
         Tokenizer.NextToken();
         
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         // Check for end of line (PRINT with no arguments)
@@ -460,7 +460,7 @@ unit Statement
         
         // Evaluate the expression
         EvaluateExpression();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         // Top of stack now contains the result
@@ -499,12 +499,12 @@ unit Statement
         
         // Get next token (should be start of condition expression)
         Tokenizer.NextToken();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         // Evaluate the condition
         EvaluateExpression();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         // Check for THEN keyword
@@ -544,7 +544,7 @@ unit Statement
         
         // Condition is true, get next token and execute statement
         Tokenizer.NextToken();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         // Recursively execute the statement after THEN
@@ -574,7 +574,7 @@ unit Statement
         
         // Get next token
         Tokenizer.NextToken();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         // Check if there's an expression to return
@@ -584,19 +584,19 @@ unit Statement
         {
             // No return value - emit RETURN opcode
             Compiler.EmitReturn();
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { return; }
         }
         else
         {
             // Evaluate return expression
             EvaluateExpression();
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { return; }
             
             // Emit RETURNVAL opcode (expects value on stack)
             Compiler.EmitReturnVal();
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { return; }
         }
 #ifdef DEBUG
@@ -652,7 +652,7 @@ unit Statement
         {
             // Use ResolveIdentifier to determine what we have
             resolveIdentifier(); // symbol or function in IDX, A = IdentifierType
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { break; } // Error - identifier not found or other error
             
             // Handle different identifier types
@@ -662,7 +662,7 @@ unit Statement
                 {
                     // This is a function call - compile it as expression and execute
                     EvaluateExpression(); // This will handle the function call compilation
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { break; }
                     SEC // Success
                     break;
@@ -677,7 +677,7 @@ unit Statement
                     
                     // Move to next token - should be '=' for assignment
                     Tokenizer.NextToken();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { break; }
                     
                     // Check for assignment operator
@@ -699,18 +699,18 @@ unit Statement
                     
                     // Move past the '=' token
                     Tokenizer.NextToken();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { break; }
                     
                     // Evaluate the expression on the right side
                     EvaluateExpression();
                     
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { break; }
                     
                     // Pop the expression result from the value stack
                     Stacks.PopTop(); // Result in ZP.TOP, type in ZP.TOPT
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { break; }
                     
                     // Restore the variable node address from statement storage
@@ -721,7 +721,7 @@ unit Statement
                     
                     // Get the variable's declared type for type checking
                     Variables.GetType(); // Returns type in ZP.ACCT
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { break; }
                     
                     LDA ZP.ACCT
@@ -735,13 +735,13 @@ unit Statement
                     {
                         // Type mismatch - check for valid assignment promotion
                         CheckRHSTypeCompatibility(); // Uses ZP.TOP = RHS value, ZP.TOPT = RHS type, ZP.NEXTT = LHS type
-                        Messages.CheckError();
+                        Error.CheckError();
                         if (NC) { break; } // Assignment type promotion failed
                     }
                     
                     // Assign the value to the variable
                     Variables.SetValue(); // ZP.IDX = node, ZP.TOP = value
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { break; }
                     
                     SEC // Success
@@ -890,7 +890,7 @@ unit Statement
             STA stmtType
             
             Tokenizer.NextToken();
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { break; } // error exit
             
             // Check that we have an identifier
@@ -956,7 +956,7 @@ unit Statement
                 {
                     // Get existing symbol type
                     Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = symbolType|dataType
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { break; }
                     
                     LDA ZP.ACCT
@@ -996,7 +996,7 @@ unit Statement
                 }
                 
                 Tokenizer.NextToken();
-                Messages.CheckError();
+                Error.CheckError();
                 if (NC) { break; } // error exit
                 
                 STZ ZP.TOPT // set RHS type to 0 if there is no initializer
@@ -1015,11 +1015,11 @@ unit Statement
                         
                         // Get next token (start of expression)
                         Tokenizer.NextToken();
-                        Messages.CheckError();
+                        Error.CheckError();
                         if (C)
                         {
                             EvaluateExpression();
-                            Messages.CheckError();
+                            Error.CheckError();
                         }
                         
                         // Restore tokenizer position before expression
@@ -1098,7 +1098,7 @@ unit Statement
                             STA ZP.TOPH
                             
                             Variables.AllocateAndCopyString(); // Input: ZP.TOP = source, Output: ZP.IDY = allocated copy
-                            Messages.CheckError();
+                            Error.CheckError();
                             if (NC) { break; } // allocation failed
                             
                             // Track allocated string for cleanup
@@ -1255,7 +1255,7 @@ unit Statement
             // Input: ZP.TOP = name pointer, ZP.ACCT = symbolType|dataType (packed),
             //        ZP.NEXT = initial value (16-bit), ZP.IDY = tokens pointer (16-bit)
             Variables.Declare();
-            Messages.CheckError();
+            Error.CheckError();
             if (C)
             {
                 // Success - ownership transferred to Variables table

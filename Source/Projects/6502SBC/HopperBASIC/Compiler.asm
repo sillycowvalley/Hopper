@@ -265,7 +265,7 @@ unit Compiler
         {
             // Get the identifier name from the tokenizer
             Tokenizer.GetTokenString(); // Result in ZP.TOP (name pointer)
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { break; }
             
             // Find the variable/constant by name
@@ -718,7 +718,7 @@ unit Compiler
         
         // Compile left operand (higher precedence)
         compileLogicalAnd();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         loop
@@ -729,12 +729,12 @@ unit Compiler
             
             // Get next token for right operand
             Tokenizer.NextToken();
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { return; }
             
             // Compile right operand
             compileLogicalAnd();
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { return; }
             
             // Emit logical OR opcode
@@ -770,7 +770,7 @@ unit Compiler
         
         // Compile left operand (higher precedence)
         compileComparison();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         loop
@@ -781,12 +781,12 @@ unit Compiler
             
             // Get next token for right operand
             Tokenizer.NextToken();
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { return; }
             
             // Compile right operand
             compileComparison();
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { return; }
             
             // Emit logical AND opcode
@@ -822,7 +822,7 @@ unit Compiler
         
         // Compile left operand (higher precedence)
         compileBitwiseOr();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         loop
@@ -841,7 +841,7 @@ unit Compiler
                     
                     // Get next token for right operand
                     Tokenizer.NextToken();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) 
                     { 
                         PLA // Clean up stack
@@ -850,7 +850,7 @@ unit Compiler
                     
                     // Compile right operand
                     compileBitwiseOr();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) 
                     { 
                         PLA // Clean up stack
@@ -899,7 +899,7 @@ unit Compiler
         
         // Compile left operand (higher precedence)
         compileAdditive();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         loop
@@ -910,12 +910,12 @@ unit Compiler
             
             // Get next token for right operand
             Tokenizer.NextToken();
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { return; }
             
             // Compile right operand
             compileAdditive();
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { return; }
             
             // Emit bitwise AND opcode
@@ -951,7 +951,7 @@ unit Compiler
         
         // Compile left operand (higher precedence)
         compileBitwiseAnd();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         loop
@@ -962,12 +962,12 @@ unit Compiler
             
             // Get next token for right operand
             Tokenizer.NextToken();
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { return; }
             
             // Compile right operand
             compileBitwiseAnd();
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { return; }
             
             // Emit bitwise OR opcode
@@ -1003,7 +1003,7 @@ unit Compiler
         
         // Compile left operand (higher precedence)
         compileMultiplicative();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         loop
@@ -1014,12 +1014,12 @@ unit Compiler
             {
                 // Get next token for right operand
                 Tokenizer.NextToken();
-                Messages.CheckError();
+                Error.CheckError();
                 if (NC) { return; }
                 
                 // Compile right operand
                 compileMultiplicative();
-                Messages.CheckError();
+                Error.CheckError();
                 if (NC) { return; }
                 
                 // Emit addition opcode
@@ -1035,12 +1035,12 @@ unit Compiler
             {
                 // Get next token for right operand
                 Tokenizer.NextToken();
-                Messages.CheckError();
+                Error.CheckError();
                 if (NC) { return; }
                 
                 // Compile right operand
                 compileMultiplicative();
-                Messages.CheckError();
+                Error.CheckError();
                 if (NC) { return; }
                 
                 // Emit subtraction opcode
@@ -1081,7 +1081,7 @@ unit Compiler
         
         // Compile left operand (higher precedence)
         compileUnary();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         loop
@@ -1097,7 +1097,7 @@ unit Compiler
                     
                     // Get next token for right operand
                     Tokenizer.NextToken();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) 
                     { 
                         PLA // Clean up stack
@@ -1106,7 +1106,7 @@ unit Compiler
                     
                     // Compile right operand
                     compileUnary();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) 
                     { 
                         PLA // Clean up stack
@@ -1160,12 +1160,12 @@ unit Compiler
             {
                 // Get next token for operand
                 Tokenizer.NextToken();
-                Messages.CheckError();
+                Error.CheckError();
                 if (NC) { return; }
                 
                 // Compile the operand
                 compilePrimary();
-                Messages.CheckError();
+                Error.CheckError();
                 if (NC) { return; }
                 
                 // Emit unary minus opcode
@@ -1176,12 +1176,12 @@ unit Compiler
             {
                 // Get next token for operand
                 Tokenizer.NextToken();
-                Messages.CheckError();
+                Error.CheckError();
                 if (NC) { return; }
                 
                 // Compile the operand
                 compilePrimary();
-                Messages.CheckError();
+                Error.CheckError();
                 if (NC) { return; }
                 
                 // Emit logical NOT opcode
@@ -1222,7 +1222,7 @@ unit Compiler
         {
             // Get token after opening parenthesis
             Tokenizer.NextToken();
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { break; }
             
             // Check for empty argument list
@@ -1239,7 +1239,7 @@ unit Compiler
             {
                 // Compile argument expression
                 compileComparison(); // Use full expression compilation
-                Messages.CheckError();
+                Error.CheckError();
                 if (NC) { break; }
                 
                 // Check what comes next
@@ -1266,7 +1266,7 @@ unit Compiler
                 
                 // Get token after comma
                 Tokenizer.NextToken();
-                Messages.CheckError();
+                Error.CheckError();
                 if (NC) { break; }
                 
                 // Continue with next argument
@@ -1308,7 +1308,7 @@ unit Compiler
             
             // Look ahead to see if this is a function call (identifier followed by '(')
             Tokenizer.NextToken(); // Get token after identifier
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { break; }
             
             LDA ZP.CurrentToken
@@ -1326,7 +1326,7 @@ unit Compiler
                 
                 // Get the identifier token back
                 Tokenizer.NextToken();
-                Messages.CheckError();
+                Error.CheckError();
                 if (NC) { break; }
                 
                 // Emit function call opcode
@@ -1367,7 +1367,7 @@ unit Compiler
                 
                 // Get next token after closing parenthesis
                 Tokenizer.NextToken();
-                Messages.CheckError();
+                Error.CheckError();
                 if (NC) { break; }
 #ifdef DEBUG
         LDA #')' Tools.COut();
@@ -1387,7 +1387,7 @@ unit Compiler
                 
                 // Get the identifier token back
                 Tokenizer.NextToken();
-                Messages.CheckError();
+                Error.CheckError();
                 if (NC) { break; }
                 
                 // Emit push global variable opcode (existing functionality)
@@ -1442,7 +1442,7 @@ unit Compiler
                     
                     // Get next token
                     Tokenizer.NextToken();
-                    Messages.CheckError();
+                    Error.CheckError();
                     break;
                 }
                 case Tokens.FALSE:
@@ -1454,14 +1454,14 @@ unit Compiler
                     
                     // Get next token
                     Tokenizer.NextToken();
-                    Messages.CheckError();
+                    Error.CheckError();
                     break;
                 }
                 case Tokens.NUMBER:
                 {
                     // Get number value and type
                     Tokenizer.GetTokenNumber(); // Result in ZP.TOP, type in ZP.TOPT
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { break; }
                     
                     // Emit appropriate push opcode based on type and value
@@ -1497,14 +1497,14 @@ unit Compiler
                     
                     // Get next token
                     Tokenizer.NextToken();
-                    Messages.CheckError();
+                    Error.CheckError();
                     break;
                 }
                 case Tokens.STRINGLIT:
                 {
                     // Get string content pointer
                     Tokenizer.GetTokenString(); // Result in ZP.TOP
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { break; }
                     
                     // OFFSET : compiling STRINGLIT
@@ -1519,7 +1519,7 @@ unit Compiler
                     
                     // Get next token
                     Tokenizer.NextToken();
-                    Messages.CheckError();
+                    Error.CheckError();
                     break;
                 }
                 
@@ -1538,12 +1538,12 @@ unit Compiler
                 {
                     // Get next token (start of sub-expression)
                     Tokenizer.NextToken();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { break; }
                     
                     // Parse the sub-expression
                     compileLogical();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { break; }
                     
                     // Expect closing parenthesis
@@ -1564,7 +1564,7 @@ unit Compiler
                     
                     // Get next token
                     Tokenizer.NextToken();
-                    Messages.CheckError();
+                    Error.CheckError();
                     break;
                 }
                 default:
@@ -1666,7 +1666,7 @@ unit Compiler
             
             // Get first token of function body
             Tokenizer.NextToken();
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { break; }
             
             EmitEnter();
@@ -1693,18 +1693,18 @@ unit Compiler
                 {
                     // Skip empty lines
                     Tokenizer.NextToken();
-                    Messages.CheckError();
+                    Error.CheckError();
                     if (NC) { break; }
                     continue;
                 }
                 
                 // Compile the statement
                 compileStatement();
-                Messages.CheckError();
+                Error.CheckError();
                 if (NC) { break; }
             }
             
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { break; }
             
             // Check if last opcode was RETURN or RETURNVAL
@@ -1784,7 +1784,7 @@ unit Compiler
                 {
                     // Skip comments - advance to next token
                     Tokenizer.NextToken();
-                    Messages.CheckError();
+                    Error.CheckError();
                     break;
                 }
                 default:
@@ -1831,7 +1831,7 @@ unit Compiler
         {
             // Get next token (should be start of expression to print)
             Tokenizer.NextToken();
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { break; }
             
             // Check for PRINT with no arguments (just newline)
@@ -1847,7 +1847,7 @@ unit Compiler
             
             // Compile the expression to print
             compileLogical(); // Use full expression compilation
-            Messages.CheckError();
+            Error.CheckError();
             if (NC) { break; }
             
             // Emit system call to print the value on stack
@@ -1882,7 +1882,7 @@ unit Compiler
     {
         // Get next token
         Tokenizer.NextToken();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         // Check if there's a return expression
@@ -1898,7 +1898,7 @@ unit Compiler
         
         // Compile return expression
         compileLogical();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) { return; }
         
         // Emit RETURNVAL (expects value on stack)

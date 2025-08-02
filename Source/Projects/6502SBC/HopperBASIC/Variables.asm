@@ -263,11 +263,11 @@ unit Variables
             {
                 // STRING variable - need to free old string and allocate new
                 FreeStringValue(); // Free existing string memory
-                Messages.CheckError();
+                Error.CheckError();
                 if (NC) { break; }
                 // Allocate and copy new string (ZP.TOP has source string pointer)
                 AllocateAndCopyString(); // Returns new string pointer in ZP.IDY
-                Messages.CheckError();
+                Error.CheckError();
                 if (NC) { break; }
             }
             else

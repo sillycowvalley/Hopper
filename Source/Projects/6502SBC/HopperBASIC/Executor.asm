@@ -243,7 +243,7 @@ unit Executor
     
     // Dispatch opcode to appropriate handler
     // Input: A contains opcode value
-    // Output: Execution continues (errors detected via Messages.CheckError())
+    // Output: Execution continues (errors detected via Error.CheckError())
     DispatchOpcode()
     {
         TAY // for jump table optimization
@@ -562,7 +562,7 @@ unit Executor
     {
         // Fetch string pointer (little-endian)
         FetchOperandWord(); // Result in executorOperandL/H
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) 
         { 
             CLC
@@ -579,7 +579,7 @@ unit Executor
         
         // Push to stack with STRING type
         Stacks.PushTop();
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) 
         { 
             CLC
@@ -599,7 +599,7 @@ unit Executor
     {
         // Fetch node address (little-endian)
         FetchOperandWord(); // Result in executorOperandL/H
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) 
         { 
             CLC
@@ -614,7 +614,7 @@ unit Executor
         
         // Get the variable's value and type
         Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = type
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) 
         { 
             CLC
@@ -624,7 +624,7 @@ unit Executor
         // Push value to stack with type
         LDA ZP.TOPT
         Stacks.PushTop(); // Push value and type to stack
-        Messages.CheckError();
+        Error.CheckError();
         if (NC) 
         { 
             CLC
