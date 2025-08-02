@@ -1097,6 +1097,7 @@ unit Statement
                 STZ (stmtTokensPtr+0)
                 STZ (stmtTokensPtr+1)
             }
+            Functions.FreeAllOpCodes(); // compiled FUNCs potentially stale now
             
             break;
         } // loop

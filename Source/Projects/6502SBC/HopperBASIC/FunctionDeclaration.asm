@@ -484,6 +484,8 @@ unit FunctionDeclaration
             Error.CheckError();
             if (NC) { break; }
             
+            Functions.FreeAllOpCodes(); // compiled FUNCs potentially stale now
+            
             // Get next token after END
             Tokenizer.NextToken();
             Error.CheckError();
@@ -593,6 +595,8 @@ unit FunctionDeclaration
             Functions.SetBody(); // Input: ZP.IDX = function node, ZP.IDY = body tokens
             Error.CheckError();
             if (NC) { break; }
+            
+            Functions.FreeAllOpCodes(); // compiled FUNCs potentially stale now
             
             // Get next token after ENDFUNC
             Tokenizer.NextToken();
@@ -799,6 +803,8 @@ unit FunctionDeclaration
             Functions.SetBody(); // Input: ZP.IDX = function node, ZP.IDY = body tokens
             Error.CheckError();
             if (NC) { break; }
+            
+            Functions.FreeAllOpCodes(); // compiled FUNCs potentially stale now
             
     #ifdef DEBUG
             LDA #'S' // Set body

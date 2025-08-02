@@ -9,8 +9,9 @@ unit Functions
         
     flags FunctionFlags
     {
-        None    = 0x00,
-        Compiled = 0x01,    // Bit 0: 1 = opcodes compiled, 0 = tokens only
+        None            = 0x00,
+        Compiled        = 0x01,    // Bit 0: 1 = opcodes compiled, 0 = tokens only
+        NotCompiledMask = 0xFE,
         // Bits 1-7: Available for future use (optimization flags, etc.)
     }
     
@@ -272,6 +273,29 @@ unit Functions
             // Clear all arguments before removing function
             Arguments.Clear();  // preserves IDX munts ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
             
+            // Free function body tokens if they exist
+            Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
+            LDA ZP.IDYL
+            ORA ZP.IDYH
+            if (NZ)  // Non-zero tokens pointer
+            {
+                LDA ZP.IDXL
+                PHA
+                LDA ZP.IDXH
+                PHA
+                
+                LDA ZP.IDYL
+                STA ZP.IDXL
+                LDA ZP.IDYH
+                STA ZP.IDXH
+                Memory.Free();  // munts ZP.IDX, ZP.IDY, ZP.TOP, ZP.NEXT
+                
+                PLA
+                STA ZP.IDXH
+                PLA
+                STA ZP.IDXL
+            }
+            
             freeOpCodes();
             
             LDX #ZP.FunctionsList
@@ -466,6 +490,83 @@ unit Functions
         STA [ZP.IDX], Y
     }
     
+    // Free all compiled opcode streams and mark functions as tokens-only
+    // Called when environment changes (variables/constants/functions modified)
+    // and JITed code becomes stale.
+    //
+    // Input: None
+    // Output: All functions marked as uncompiled, opcode memory freed
+    // Munts: ZP.IDX, ZP.IDY, iteration state
+    FreeAllOpCodes()
+    {
+        PHA
+        PHX
+        PHY
+        
+        // Save all ZP registers that will be munted
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
+        LDA ZP.TOPL
+        PHA
+        LDA ZP.TOPH
+        PHA
+        LDA ZP.NEXTL
+        PHA
+        LDA ZP.NEXTH
+        PHA
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
+        // Iterate through all functions
+        IterateFunctions(); // ZP.IDX = first function
+        
+        loop
+        {
+            if (NC) { break; } // No more functions
+            
+            // Free opcodes for current function (ZP.IDX)
+            freeOpCodes(); // Frees opcode stream and nulls pointer
+            ClearCompiled(); // Mark as tokens-only
+            
+            // Move to next function
+            IterateNext(); // ZP.IDX = next function
+        }
+        
+        // Restore all ZP registers
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        PLA
+        STA ZP.NEXTH
+        PLA
+        STA ZP.NEXTL
+        PLA
+        STA ZP.TOPH
+        PLA
+        STA ZP.TOPL
+        PLA
+        STA ZP.IDYH
+        PLA
+        STA ZP.IDYL
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        PLY
+        PLX
+        PLA
+    }
+    
     // Check if function is compiled
     // Input: ZP.IDX = function node address  
     // Output: C set if compiled, NC if tokens only
@@ -493,7 +594,7 @@ unit Functions
     {
         LDY # Objects.snFlags
         LDA [ZP.IDX], Y
-        AND #(~FunctionFlags.Compiled)
+        AND #FunctionFlags.NotCompiledMask
         STA [ZP.IDX], Y
     }
     
@@ -745,6 +846,8 @@ unit Functions
         PLX
         PLA
     }
+    
+    
 
     // Helper method to copy opcodes to permanent storage
     // Input: ZP.IDX = function node address, opcodes in BasicOpCodeBuffer

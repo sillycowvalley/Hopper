@@ -776,6 +776,7 @@ unit Console
             Tokenizer.NextToken(); // consume 'CLEAR'
             
             Variables.Clear();
+            Functions.FreeAllOpCodes(); // compiled FUNCs potentially stale now
             Messages.PrintOK();
         }
         
@@ -853,6 +854,7 @@ unit Console
                         break;
                     }
                     
+                    Functions.FreeAllOpCodes(); // compiled FUNCs potentially stale now
                     Messages.PrintOK();
                     break;
                 }
