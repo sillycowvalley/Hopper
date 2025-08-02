@@ -687,6 +687,25 @@ unit Functions
             // Use Compiler.CompileExpression() to compile function body
             Compiler.CompileFunction();
             Error.CheckError();
+            State.GetState();
+            switch (A)
+            {
+                case SystemState.Success:
+                {
+                    // continue
+                }
+                case SystemState.Failure:
+                { 
+                    // handle compilation error
+                    break;
+                }
+                case SystemState.Exiting:   
+                { 
+                    // should not happen in compilation
+                }
+            }
+            
+            
             PLA
             STA ZP.IDXH
             PLA

@@ -242,18 +242,12 @@ unit Statement
             Compiler.SetLiteralBase();
             Compiler.CompileExpression();
             Error.CheckError();
-            if (NC) 
-            { 
-                break; 
-            }
+            if (NC) { State.SetFailure(); break; }  
             
             // 2. Execute opcodes ? result on stack
             Executor.ExecuteOpCodes();
-            Error.CheckError();
-            if (NC) 
-            { 
-                break; 
-            }
+            Error.CheckError(); 
+            if (NC) { State.SetFailure(); break; } 
             
             // Result is now on stack
             break;

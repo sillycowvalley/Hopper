@@ -5,6 +5,7 @@ unit Compiler
     uses "OpCodes"
     uses "Messages"
     uses "Error"
+    uses "State"
     uses "Tokenizer"
     uses "Tools"
     
@@ -705,6 +706,7 @@ unit Compiler
             // Emit logical OR opcode
             LDA #Tokens.OR
             EmitLogicalOp();
+            Error.CheckError();
             if (NC) { return; }
         }
         
@@ -757,6 +759,7 @@ unit Compiler
             // Emit logical AND opcode
             LDA #Tokens.AND
             EmitLogicalOp();
+            Error.CheckError();
             if (NC) { return; }
         }
         
@@ -825,6 +828,7 @@ unit Compiler
                     // Emit comparison opcode
                     PLA // Retrieve operator
                     EmitComparisonOp();
+                    Error.CheckError();
                     if (NC) { return; }
                     
                     continue; // Check for more comparisons
@@ -886,6 +890,7 @@ unit Compiler
             // Emit bitwise AND opcode
             LDA #Tokens.BITWISE_AND
             EmitBitwiseOp();
+            Error.CheckError();
             if (NC) { return; }
         }
         
@@ -938,6 +943,7 @@ unit Compiler
             // Emit bitwise OR opcode
             LDA #Tokens.BITWISE_OR
             EmitBitwiseOp();
+            Error.CheckError();
             if (NC) { return; }
         }
         
@@ -990,6 +996,7 @@ unit Compiler
                 // Emit addition opcode
                 LDA #Tokens.PLUS
                 EmitArithmeticOp();
+                Error.CheckError();
                 if (NC) { return; }
                 
                 continue;
@@ -1011,6 +1018,7 @@ unit Compiler
                 // Emit subtraction opcode
                 LDA #Tokens.MINUS
                 EmitArithmeticOp();
+                Error.CheckError();
                 if (NC) { return; }
                 
                 continue;
@@ -1081,6 +1089,7 @@ unit Compiler
                     // Emit arithmetic opcode
                     PLA // Retrieve operator
                     EmitArithmeticOp();
+                    Error.CheckError();
                     if (NC) { return; }
                     
                     continue; // Check for more multiplicative operations
@@ -1135,6 +1144,7 @@ unit Compiler
                 
                 // Emit unary minus opcode
                 EmitUnaryMinus();
+                Error.CheckError();
                 if (NC) { return; }
             }
             case Tokens.NOT:
@@ -1152,6 +1162,7 @@ unit Compiler
                 // Emit logical NOT opcode
                 LDA #Tokens.NOT
                 EmitLogicalOp();
+                Error.CheckError();
                 if (NC) { return; }
             }
             default:
@@ -1291,6 +1302,7 @@ unit Compiler
                 
                 // Emit function call opcode
                 EmitCall();
+                Error.CheckError();
                 if (NC) { break; }
                 
                 // Expect opening parenthesis
@@ -1304,6 +1316,7 @@ unit Compiler
                 
                 // Parse function arguments
                 compileArgumentList();
+                Error.CheckError();
                 if (NC) { break; }
                 
                 // Expect closing parenthesis (should be current token after argument parsing)
@@ -1342,6 +1355,7 @@ unit Compiler
                 
                 // Emit push global variable opcode (existing functionality)
                 EmitPushGlobal();
+                Error.CheckError();
                 if (NC) { break; }
             }
             
@@ -1388,6 +1402,7 @@ unit Compiler
                     // Emit PUSHBIT with value 1
                     LDA #1
                     EmitPushBit();
+                    Error.CheckError();
                     if (NC) { break; }
                     
                     // Get next token
@@ -1400,6 +1415,7 @@ unit Compiler
                     // Emit PUSHBIT with value 0
                     LDA #0
                     EmitPushBit();
+                    Error.CheckError();
                     if (NC) { break; }
                     
                     // Get next token
@@ -1421,6 +1437,7 @@ unit Compiler
                     {
                         LDA ZP.TOPL // BIT values are single byte
                         EmitPushBit();
+                        Error.CheckError();
                         if (NC) { break; }
                     }
                     else
@@ -1430,6 +1447,7 @@ unit Compiler
                         {
                             LDA ZP.TOPL
                             EmitPushByte();
+                            Error.CheckError();
                             if (NC) { break; }
                         }
                         else // 16-bit value (INT or WORD)
@@ -1441,6 +1459,7 @@ unit Compiler
                             STA compilerOperand2  // MSB
                             
                             EmitPushWord();
+                            Error.CheckError();
                             if (NC) { break; }
                         }
                     }
@@ -1465,6 +1484,7 @@ unit Compiler
                     STA compilerOperand2  // MSB
                     
                     EmitPushCString();
+                    Error.CheckError();
                     if (NC) { break; }
                     
                     // Get next token
@@ -1479,6 +1499,7 @@ unit Compiler
                     LDA #'{' Debug.COut();
 #endif
                     compileFunctionCallOrVariable();
+                    Error.CheckError();
 #ifdef DEBUG
                     LDA #'}' Debug.COut();
 #endif
@@ -1518,8 +1539,7 @@ unit Compiler
                 }
             }
             
-            CLC  // Error (we should never get here)
-            break;
+            break; // Normal exit point
         } // Single exit point
         
 #ifdef DEBUG
@@ -1543,14 +1563,18 @@ unit Compiler
         LDA #(strCompileExpression % 256) STA ZP.TraceMessageL LDA #(strCompileExpression / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
 
-        
         // Initialize opcode buffer if this is the start of compilation
         InitOpCodeBuffer();
-        if (NC) { return; }
+        Error.CheckError();
+        if (NC) { State.SetFailure(); return; }
         
         // Compile the expression using same precedence as Expression.asm
         compileLogical();
+        Error.CheckError();
+        if (NC) { State.SetFailure(); return; }
         
+        State.SetSuccess();
+
 #ifdef TRACE
         LDA #(strCompileExpression % 256) STA ZP.TraceMessageL LDA #(strCompileExpression / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -1559,7 +1583,7 @@ unit Compiler
     
     // Compile function body from tokens to opcodes  
     // Input: Function tokens already copied to BasicTokenizerBuffer, ZP.TokenBufferLength set, ZP.ACCL = number of arguments for FUNC
-    // Output: Function compiled to opcode buffer, C set if successful
+    // Output: Function compiled to opcode buffer, SystemState set
     // Modifies: OpCode buffer, ZP.CurrentToken, ZP.TokenizerPos, compilation state
     // Error: Sets ZP.LastError if compilation fails
     CompileFunction()
@@ -1586,7 +1610,8 @@ unit Compiler
         {
             // Initialize opcode buffer
             InitOpCodeBuffer();
-            if (NC) { break; }
+            Error.CheckError();
+            if (NC) { State.SetFailure(); break; }
             
             // Reset tokenizer to start of function body
             STZ ZP.TokenizerPosL
@@ -1595,10 +1620,11 @@ unit Compiler
             // Get first token of function body
             Tokenizer.NextToken();
             Error.CheckError();
-            if (NC) { break; }
+            if (NC) { State.SetFailure(); break; }
             
             EmitEnter();
-            if (NC) { break; }
+            Error.CheckError();
+            if (NC) { State.SetFailure(); break; }
             
             STZ compilerFuncLocals // no locals yet
             
@@ -1622,18 +1648,18 @@ unit Compiler
                     // Skip empty lines
                     Tokenizer.NextToken();
                     Error.CheckError();
-                    if (NC) { break; }
+                    if (NC) { State.SetFailure(); break; }
                     continue;
                 }
                 
                 // Compile the statement
                 compileStatement();
                 Error.CheckError();
-                if (NC) { break; }
+                if (NC) { State.SetFailure(); break; }
             }
             
             Error.CheckError();
-            if (NC) { break; }
+            if (NC) { State.SetFailure(); break; }
             
             // Check if last opcode was RETURN or RETURNVAL
             checkLastOpCodeIsReturn();
@@ -1642,10 +1668,11 @@ unit Compiler
                 // Emit RETURN with locals cleanup count
                 LDA compilerFuncLocals
                 EmitReturn();
-                if (NC) { break; }
+                Error.CheckError();
+                if (NC) { State.SetFailure(); break; }
             }
             
-            SEC // Success
+            State.SetSuccess(); // Success
             break;
         }
         
@@ -1689,23 +1716,27 @@ unit Compiler
                 case Tokens.PRINT:
                 {
                     compilePrintStatement();
-                    break;
+                    Error.CheckError();
+                    if (NC) { State.SetFailure(); break; }
                 }
                 case Tokens.RETURN:
                 {
                     compileReturnStatement();
-                    break;
+                    Error.CheckError();
+                    if (NC) { State.SetFailure(); break; }
                 }
                 case Tokens.IF:
                 {
                     compileIfStatement();
-                    break;
+                    Error.CheckError();
+                    if (NC) { State.SetFailure(); break; }
                 }
                 case Tokens.IDENTIFIER:
                 {
                     // Could be assignment or function call
                     compileIdentifierStatement();
-                    break;
+                    Error.CheckError();
+                    if (NC) { State.SetFailure(); break; }
                 }
                 case Tokens.REM:
                 case Tokens.COMMENT:
@@ -1713,15 +1744,18 @@ unit Compiler
                     // Skip comments - advance to next token
                     Tokenizer.NextToken();
                     Error.CheckError();
-                    break;
+                    if (NC) { State.SetFailure(); break; }
                 }
                 default:
                 {
                     // TODO: Add more statement types as needed
                     Error.SyntaxError(); BIT ZP.EmulatorPCL
+                    State.SetFailure();
                     break;
                 }
             }
+            
+            State.SetSuccess();
             break;
         }
         
@@ -1755,7 +1789,7 @@ unit Compiler
             // Get next token (should be start of expression to print)
             Tokenizer.NextToken();
             Error.CheckError();
-            if (NC) { break; }
+            if (NC) { State.SetFailure(); break; }
             
             // Check for PRINT with no arguments (just newline)
             LDA ZP.CurrentToken
@@ -1765,25 +1799,30 @@ unit Compiler
                 // Emit system call for print newline
                 LDA #SysCallType.PrintNewLine
                 EmitSysCall();
+                Error.CheckError();
+                if (NC) { State.SetFailure(); break; }
+                State.SetSuccess();
                 break;
             }
             
             // Compile the expression to print
             compileLogical(); // Use full expression compilation
             Error.CheckError();
-            if (NC) { break; }
+            if (NC) { State.SetFailure(); break; }
             
             // Emit system call to print the value on stack
             LDA #SysCallType.PrintValue
             EmitSysCall();
-            if (NC) { break; }
+            Error.CheckError();
+            if (NC) { State.SetFailure(); break; }
             
             // Emit system call for newline
             LDA #SysCallType.PrintNewLine  
             EmitSysCall();
-            if (NC) { break; }
+            Error.CheckError();
+            if (NC) { State.SetFailure(); break; }
             
-            SEC // Success
+            State.SetSuccess(); // Success
             break;
         }
         
@@ -1806,7 +1845,7 @@ unit Compiler
         // Get next token
         Tokenizer.NextToken();
         Error.CheckError();
-        if (NC) { return; }
+        if (NC) { State.SetFailure(); return; }
         
         // Check if there's a return expression
         LDA ZP.CurrentToken
@@ -1816,17 +1855,24 @@ unit Compiler
             // No return value - emit RETURN
             LDA #0  // No locals to clean up for now
             EmitReturn();
+            Error.CheckError();
+            if (NC) { State.SetFailure(); return; }
+            State.SetSuccess();
             return;
         }
         
         // Compile return expression
         compileLogical();
         Error.CheckError();
-        if (NC) { return; }
+        if (NC) { State.SetFailure(); return; }
         
         // Emit RETURNVAL (expects value on stack)
         LDA #0  // No locals to clean up for now
         EmitReturnVal();
+        Error.CheckError();
+        if (NC) { State.SetFailure(); return; }
+        
+        State.SetSuccess();
     }
 
     // Compile IF statement (stub for now)
@@ -1836,6 +1882,7 @@ unit Compiler
     {
         // TODO: Implement IF statement compilation
         Error.NotImplemented(); BIT ZP.EmulatorPCL
+        State.SetFailure();
     }
 
     // Compile identifier statement (assignment or function call)
@@ -1845,6 +1892,7 @@ unit Compiler
     {
          // TODO: Implement assignment and function call compilation
         Error.NotImplemented(); BIT ZP.EmulatorPCL
+        State.SetFailure();
     }
 
     // Check if the last emitted opcode is RETURN or RETURNVAL

@@ -94,8 +94,13 @@ unit Executor
     // Initialize executor state from opcode buffer
     // Input: ZP.OpCodeBufferLengthL/H contains opcode buffer length
     // Output: SystemState set (Success or Failure)
+    const string initExecutorTrace = "InitExec";
     InitExecutor()
     {
+#ifdef TRACE
+        LDA #(initExecutorTrace % 256) STA ZP.TraceMessageL LDA #(initExecutorTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         // Set start address to BasicOpCodeBuffer
         LDA #(Address.BasicOpCodeBuffer % 256)
         STA executorStartAddrL
@@ -125,13 +130,22 @@ unit Executor
         {
             State.SetSuccess();
         }
+        
+#ifdef TRACE
+        LDA #(initExecutorTrace % 256) STA ZP.TraceMessageL LDA #(initExecutorTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Fetch next opcode from buffer
     // Input: ZP.PC points to current position
     // Output: A contains opcode, ZP.PC advanced, SystemState set
+    const string fetchOpCodeTrace = "FetchOp";
     FetchOpCode()
     {
+#ifdef TRACE
+        LDA #(fetchOpCodeTrace % 256) STA ZP.TraceMessageL LDA #(fetchOpCodeTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         loop
         {
             // Check bounds
@@ -177,13 +191,22 @@ unit Executor
             State.SetSuccess();
             break;
         }
+        
+#ifdef TRACE
+        LDA #(fetchOpCodeTrace % 256) STA ZP.TraceMessageL LDA #(fetchOpCodeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Fetch single byte operand from buffer
     // Input: ZP.PC points to operand position
     // Output: A contains operand byte, ZP.PC advanced, SystemState set
+    const string fetchOperandByteTrace = "FetchByte";
     FetchOperandByte()
     {
+#ifdef TRACE
+        LDA #(fetchOperandByteTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandByteTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         loop
         {
             // Check bounds
@@ -217,13 +240,22 @@ unit Executor
             State.SetSuccess();
             break;
         } // loop exit
+        
+#ifdef TRACE
+        LDA #(fetchOperandByteTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandByteTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Fetch word operand from buffer (little-endian)
     // Input: ZP.PC points to operand position
     // Output: executorOperandL/H contains word, ZP.PC advanced by 2, SystemState set
+    const string fetchOperandWordTrace = "FetchWord";
     FetchOperandWord()
     {
+#ifdef TRACE
+        LDA #(fetchOperandWordTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandWordTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         loop
         {
             // Fetch low byte
@@ -241,13 +273,21 @@ unit Executor
             State.SetSuccess();
             break;
         }
+        
+#ifdef TRACE
+        LDA #(fetchOperandWordTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandWordTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Dispatch opcode to appropriate handler
     // Input: A contains opcode value
     // Output: SystemState set based on execution result
+    const string dispatchOpCodeTrace = "Dispatch";
     DispatchOpCode()
     {
+#ifdef TRACE
+        LDA #(dispatchOpCodeTrace % 256) STA ZP.TraceMessageL LDA #(dispatchOpCodeTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
 
         TAY // for jump table optimization
         
@@ -474,10 +514,19 @@ unit Executor
                 // State was already set to Failure or Exiting by instruction
             }
         }
+        
+#ifdef TRACE
+        LDA #(dispatchOpCodeTrace % 256) STA ZP.TraceMessageL LDA #(dispatchOpCodeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
+    const string executeNotImplementedTrace = "NotImpl";
     executeNotImplemented()
     {
+#ifdef TRACE
+        LDA #(executeNotImplementedTrace % 256) STA ZP.TraceMessageL LDA #(executeNotImplementedTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
 #ifdef DEBUG
         LDA #'?' Debug.COut();
         TYA Debug.HOut();
@@ -486,15 +535,28 @@ unit Executor
         // Unknown opcode
         Error.NotImplemented(); BIT ZP.EmulatorPCL
         State.SetFailure();
+        
+#ifdef TRACE
+        LDA #(executeNotImplementedTrace % 256) STA ZP.TraceMessageL LDA #(executeNotImplementedTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // === CONTROL FLOW AND STACK MANIPULATION HANDLERS ===
     
+    const string executeReturnTrace = "Return";
     executeReturn()
     {
+#ifdef TRACE
+        LDA #(executeReturnTrace % 256) STA ZP.TraceMessageL LDA #(executeReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         Stacks.PopBP();
         Stacks.PopPC();
         State.SetSuccess();
+        
+#ifdef TRACE
+        LDA #(executeReturnTrace % 256) STA ZP.TraceMessageL LDA #(executeReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     executeReturnVal()
@@ -504,23 +566,46 @@ unit Executor
         State.SetFailure();
     }
     
+    const string executeEnterTrace = "Enter";
     executeEnter()
     {
+#ifdef TRACE
+        LDA #(executeEnterTrace % 256) STA ZP.TraceMessageL LDA #(executeEnterTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         Stacks.PushBP();
         LDA ZP.BP
         STA ZP.SP
         State.SetSuccess();
+        
+#ifdef TRACE
+        LDA #(executeEnterTrace % 256) STA ZP.TraceMessageL LDA #(executeEnterTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
+    const string executeDecSpTrace = "DecSp";
     executeDecSp()
     {
+#ifdef TRACE
+        LDA #(executeDecSpTrace % 256) STA ZP.TraceMessageL LDA #(executeDecSpTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         // Decrement stack pointer (discard top value)
         DEC ZP.SP
         State.SetSuccess();
+        
+#ifdef TRACE
+        LDA #(executeDecSpTrace % 256) STA ZP.TraceMessageL LDA #(executeDecSpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
+    const string executeDupTrace = "Dup";
     executeDup()
     {
+#ifdef TRACE
+        LDA #(executeDupTrace % 256) STA ZP.TraceMessageL LDA #(executeDupTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         // Duplicate top stack value
         Stacks.PopTop(); // Get top value in ZP.TOP and ZP.TOPT
         LDA ZP.TOPT
@@ -528,18 +613,36 @@ unit Executor
         LDA ZP.TOPT  
         Stacks.PushTop(); // Push duplicate
         State.SetSuccess();
+        
+#ifdef TRACE
+        LDA #(executeDupTrace % 256) STA ZP.TraceMessageL LDA #(executeDupTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
+    const string executeNopTrace = "Nop";
     executeNop()
     {
+#ifdef TRACE
+        LDA #(executeNopTrace % 256) STA ZP.TraceMessageL LDA #(executeNopTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         // No operation - do nothing
         State.SetSuccess();
+        
+#ifdef TRACE
+        LDA #(executeNopTrace % 256) STA ZP.TraceMessageL LDA #(executeNopTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // === LITERAL PUSH HANDLERS (ONE BYTE OPERAND) ===
     
+    const string executePushBitTrace = "PushBit";
     executePushBit()
     {
+#ifdef TRACE
+        LDA #(executePushBitTrace % 256) STA ZP.TraceMessageL LDA #(executePushBitTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         // Fetch operand byte
         FetchOperandByte();
         State.CanContinue();
@@ -554,11 +657,19 @@ unit Executor
             
             State.SetSuccess();
         }
+        
+#ifdef TRACE
+        LDA #(executePushBitTrace % 256) STA ZP.TraceMessageL LDA #(executePushBitTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
-    
+    const string executePushByteTrace = "PushByte";
     executePushByte()
     {
+#ifdef TRACE
+        LDA #(executePushByteTrace % 256) STA ZP.TraceMessageL LDA #(executePushByteTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         // Fetch operand byte
         FetchOperandByte();
         State.CanContinue();
@@ -574,14 +685,23 @@ unit Executor
             
             State.SetSuccess();
         }
+        
+#ifdef TRACE
+        LDA #(executePushByteTrace % 256) STA ZP.TraceMessageL LDA #(executePushByteTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Execute PUSHCSTRING opcode - push string pointer to stack
     // Input: PC points to operand bytes (string pointer LSB, MSB)
     // Output: String pointer pushed to stack as STRING type, PC advanced by 2
     // Modifies: A, X, Y, ZP.PC, ZP.TOP, ZP.TOPT, stack
+    const string executePushCStringTrace = "PushStr";
     executePushCString()
     {
+#ifdef TRACE
+        LDA #(executePushCStringTrace % 256) STA ZP.TraceMessageL LDA #(executePushCStringTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         loop
         {
             // Fetch string pointer (little-endian)
@@ -613,6 +733,10 @@ unit Executor
             State.SetSuccess();
             break;
         }
+        
+#ifdef TRACE
+        LDA #(executePushCStringTrace % 256) STA ZP.TraceMessageL LDA #(executePushCStringTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // === VARIABLE OPERATION HANDLERS (ONE BYTE OPERAND) ===
@@ -621,8 +745,13 @@ unit Executor
     // Input: PC points to operand bytes (node address LSB, MSB)
     // Output: Variable value pushed to stack, PC advanced by 2
     // Modifies: A, X, Y, ZP.PC, ZP.IDX, ZP.TOP, ZP.TOPT, stack
+    const string executePushGlobalTrace = "PushGlob";
     executePushGlobal()
     {
+#ifdef TRACE
+        LDA #(executePushGlobalTrace % 256) STA ZP.TraceMessageL LDA #(executePushGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         loop
         {
             // Fetch node address (little-endian)
@@ -662,6 +791,10 @@ unit Executor
             State.SetSuccess();
             break;
         }
+        
+#ifdef TRACE
+        LDA #(executePushGlobalTrace % 256) STA ZP.TraceMessageL LDA #(executePushGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }    
     
     executePushLocal()
@@ -710,8 +843,13 @@ unit Executor
     
     // === FUNCTION AND SYSTEM CALL HANDLERS (ONE BYTE OPERAND) ===
     
+    const string executeCallTrace = "Call";
     executeCall()
     {
+#ifdef TRACE
+        LDA #(executeCallTrace % 256) STA ZP.TraceMessageL LDA #(executeCallTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         loop
         {
             FetchOperandWord();
@@ -753,10 +891,23 @@ unit Executor
 #endif
                 // JIT
                 Functions.Compile();
-                if (NC)
+                State.GetState();
+                switch (A)
                 {
-                    State.SetFailure();
-                    break; // compilation failed
+                    case SystemState.Success:   
+                    { 
+                        // continue with execution
+                    }
+                    case SystemState.Failure:
+                    {
+                        // handle error
+                        break;
+                    }
+                    case SystemState.Exiting:
+                    {
+                        // propogate exit
+                        break;
+                    }
                 }
             }
             
@@ -823,23 +974,47 @@ unit Executor
             State.SetSuccess();
             break;
         } // loop
+        
+#ifdef TRACE
+        LDA #(executeCallTrace % 256) STA ZP.TraceMessageL LDA #(executeCallTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
+    const string executeCallFTrace = "CallF";
     executeCallF()
     {
+#ifdef TRACE
+        LDA #(executeCallFTrace % 256) STA ZP.TraceMessageL LDA #(executeCallFTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         // Function call by <address>
         // PUSH PC
         // PUSH BP
         // PC = <address>
         Functions.JumpToOpCodes();
         // State management handled by Functions.JumpToOpCodes()
+        
+#ifdef TRACE
+        LDA #(executeCallFTrace % 256) STA ZP.TraceMessageL LDA #(executeCallFTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
+    const string executeSysCallTrace = "SysCall";
     executeSysCall()
     {
+#ifdef TRACE
+        LDA #(executeSysCallTrace % 256) STA ZP.TraceMessageL LDA #(executeSysCallTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         FetchOperandByte();
         State.CanContinue();
-        if (NC) { return; }
+        if (NC) 
+        { 
+#ifdef TRACE
+            LDA #(executeSysCallTrace % 256) STA ZP.TraceMessageL LDA #(executeSysCallTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+            return; 
+        }
         
         TAX
         switch (A)
@@ -861,12 +1036,21 @@ unit Executor
                 State.SetFailure();
             }
         }
+        
+#ifdef TRACE
+        LDA #(executeSysCallTrace % 256) STA ZP.TraceMessageL LDA #(executeSysCallTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // === LITERAL PUSH HANDLERS (TWO BYTE OPERANDS) ===
     
+    const string executePushIntTrace = "PushInt";
     executePushInt()
     {
+#ifdef TRACE
+        LDA #(executePushIntTrace % 256) STA ZP.TraceMessageL LDA #(executePushIntTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         // Fetch 16-bit operand
         FetchOperandWord();
         State.CanContinue();
@@ -883,10 +1067,19 @@ unit Executor
             
             State.SetSuccess();
         }
+        
+#ifdef TRACE
+        LDA #(executePushIntTrace % 256) STA ZP.TraceMessageL LDA #(executePushIntTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
+    const string executePushWordTrace = "PushWord";
     executePushWord()
     {
+#ifdef TRACE
+        LDA #(executePushWordTrace % 256) STA ZP.TraceMessageL LDA #(executePushWordTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         // Fetch 16-bit operand
         FetchOperandWord();
         State.CanContinue();
@@ -903,6 +1096,10 @@ unit Executor
             
             State.SetSuccess();
         }
+        
+#ifdef TRACE
+        LDA #(executePushWordTrace % 256) STA ZP.TraceMessageL LDA #(executePushWordTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // === CONTROL FLOW HANDLERS (TWO BYTE OPERANDS) ===

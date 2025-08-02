@@ -1,6 +1,6 @@
 program HopperBASIC
 {
-    #define DEBUG
+    //#define DEBUG
     #define TRACE
     
     //#define TRACECONSOLE
