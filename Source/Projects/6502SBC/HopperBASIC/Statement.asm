@@ -364,47 +364,43 @@ unit Statement
     // Error: Sets ZP.LastError if expression evaluation fails
     executePrint()
     {
-
-        // Get next token (should be start of expression)
-        Tokenizer.NextToken();
-        
-        Error.CheckError();
-        if (NC) { return; }
-        
-        // Check for end of line (PRINT with no arguments)
-        LDA ZP.CurrentToken
-        CMP #Tokens.EOL
-        if (Z)
+        loop
         {
-            // Just print a newline
+            // Get next token (should be start of expression)
+            Tokenizer.NextToken();
+            
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Check for end of line (PRINT with no arguments)
+            LDA ZP.CurrentToken
+            CMP #Tokens.EOL
+            if (Z)
+            {
+                // Just print a newline
+                LDA #'\n'
+                Serial.WriteChar();
+                
+                
+                SEC  // Success
+                break;
+            }
+            
+            // Evaluate the expression
+            EvaluateExpression();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Top of stack now contains the result
+            // For now, assume it's a number and print it
+            Stacks.PopTop();  // Pop result into TOP, modifies X
+            Tools.PrintVariableValue();
+            
+            // Print newline
             LDA #'\n'
             Serial.WriteChar();
-            
-            
-            SEC  // Success
-            return;
-        }
-        
-        // Evaluate the expression
-        EvaluateExpression();
-        Error.CheckError();
-        if (NC) { return; }
-        
-        // Top of stack now contains the result
-        // For now, assume it's a number and print it
-        Stacks.PopTop();  // Pop result into TOP, modifies X
-        Tools.PrintVariableValue();
-        
-        // Print newline
-        LDA #'\n'
-        Serial.WriteChar();
-        
-#ifdef DEBUG
-        LDA #'P'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-#endif
+            break;
+        } // exit loop
         
         SEC  // Success
     }
@@ -417,48 +413,50 @@ unit Statement
     // Error: Sets ZP.LastError if syntax error or expression evaluation fails
     executeIf()
     {
-        
-        // Get next token (should be start of condition expression)
-        Tokenizer.NextToken();
-        Error.CheckError();
-        if (NC) { return; }
-        
-        // Evaluate the condition
-        EvaluateExpression();
-        Error.CheckError();
-        if (NC) { return; }
-        
-        // Check for THEN keyword
-        LDA ZP.CurrentToken
-        CMP #Tokens.THEN
-        if (NZ)
+        loop
         {
-            Error.SyntaxError(); BIT ZP.EmulatorPCL
-            CLC  // Error
-            return;
-        }
-        
-        // Get the condition result
-        Stacks.PopTop();  // Pop condition into ZP.TOP, modifies X  
-        
-        // Check if condition is true (non-zero)
-        LDA ZP.TOPL
-        ORA ZP.TOPH
-        if (Z)
-        {
-            // Condition is false, skip to end of line
-            SEC  // Success (skip)
-            return;
-        }
-        
-        // Condition is true, get next token and execute statement
-        Tokenizer.NextToken();
-        Error.CheckError();
-        if (NC) { return; }
-        
-        // Recursively execute the statement after THEN
-        Execute();
-        
+            // Get next token (should be start of condition expression)
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Evaluate the condition
+            EvaluateExpression();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Check for THEN keyword
+            LDA ZP.CurrentToken
+            CMP #Tokens.THEN
+            if (NZ)
+            {
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                CLC  // Error
+                break;
+            }
+            
+            // Get the condition result
+            Stacks.PopTop();  // Pop condition into ZP.TOP, modifies X  
+            
+            // Check if condition is true (non-zero)
+            LDA ZP.TOPL
+            ORA ZP.TOPH
+            if (Z)
+            {
+                // Condition is false, skip to end of line
+                SEC  // Success (skip)
+                break;
+            }
+            
+            // Condition is true, get next token and execute statement
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Recursively execute the statement after THEN
+            Execute();
+            break;
+        } // loop
     }
     
     // Execute RETURN statement (stub implementation)
@@ -468,37 +466,40 @@ unit Statement
     // Error: Always sets ZP.LastError (not implemented)
     executeReturn()
     {
-        
-        // Get next token
-        Tokenizer.NextToken();
-        Error.CheckError();
-        if (NC) { return; }
-        
-        // Check if there's an expression to return
-        LDA ZP.CurrentToken
-        CMP #Tokens.EOL
-        if (Z)
+        loop
         {
-            // No return value - emit RETURN opcode
-            Compiler.EmitReturn();
+            // Get next token
+            Tokenizer.NextToken();
             Error.CheckError();
-            if (NC) { return; }
-        }
-        else
-        {
-            // Evaluate return expression
-            EvaluateExpression();
-            Error.CheckError();
-            if (NC) { return; }
+            if (NC) { break; }
             
-            // Emit RETURNVAL opcode (expects value on stack)
-            Compiler.EmitReturnVal();
-            Error.CheckError();
-            if (NC) { return; }
-        }
-        
-        CLC  // Error
-        BRK
+            // Check if there's an expression to RETURN
+            LDA ZP.CurrentToken
+            CMP #Tokens.EOL
+            if (Z)
+            {
+                // No RETURN value - emit RETURN opcode
+                Compiler.EmitReturn();
+                Error.CheckError();
+                if (NC) { break; }
+            }
+            else
+            {
+                // Evaluate RETURN expression
+                EvaluateExpression();
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Emit RETURNVAL opcode (expects value on stack)
+                Compiler.EmitReturnVal();
+                Error.CheckError();
+                if (NC) { break; }
+            }
+            
+            CLC  // Error
+            BRK
+            break;
+        } // loop
     }
         
     
