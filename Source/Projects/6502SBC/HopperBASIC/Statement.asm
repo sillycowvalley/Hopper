@@ -3,6 +3,7 @@ unit Statement
     uses "/Source/Runtime/6502/ZeroPage"
     uses "/Source/Runtime/6502/Stacks"
     uses "Messages"
+    uses "Error"
     uses "Tokenizer"
     uses "Tools"
     
@@ -177,13 +178,7 @@ unit Statement
                     break; // success
                 }
                 // what's this?
-                LDA #(Messages.InternalError % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.InternalError / 256)
-                STA ZP.LastErrorH
-                
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                
+                Error.InternalError(); BIT ZP.EmulatorPCL
                 CLC
             }
             Error.CheckError();
@@ -205,13 +200,7 @@ unit Statement
 #ifdef DEBUG
             LDA #'U' Tools.COut();
 #endif
-            LDA #(Messages.UndefinedIdentifier % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.UndefinedIdentifier / 256)
-            STA ZP.LastErrorH
-            
-            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-            
+            Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
             LDA # IdentifierType.Undefined
             CLC  // undefined identifier
             break;
@@ -376,13 +365,7 @@ unit Statement
                 default:
                 {
                     // Unexpected token for statement
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
-                    
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-    
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
                     CLC  // Error
                     break;
                 }
@@ -512,13 +495,7 @@ unit Statement
         CMP #Tokens.THEN
         if (NZ)
         {
-            LDA #(Messages.SyntaxError % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.SyntaxError / 256)
-            STA ZP.LastErrorH
-            
-            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-            
+            Error.SyntaxError(); BIT ZP.EmulatorPCL
             CLC  // Error
             return;
         }
@@ -619,13 +596,7 @@ unit Statement
     executeEnd()
     {
         // TODO: End program execution when we have program support
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-        
+        Error.NotImplemented(); BIT ZP.EmulatorPCL
         CLC  // Error
         BRK
     }
@@ -686,13 +657,7 @@ unit Statement
                     if (NZ)
                     {
                         // Not an assignment - this might be a function call or syntax error
-                        LDA #(Messages.SyntaxError % 256)
-                        STA ZP.LastErrorL
-                        LDA #(Messages.SyntaxError / 256)
-                        STA ZP.LastErrorH
-                        
-                        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                        
+                        Error.SyntaxError(); BIT ZP.EmulatorPCL
                         CLC
                         break;
                     }
@@ -751,13 +716,7 @@ unit Statement
                 case IdentifierType.Constant:
                 {
                     // Constants cannot be assigned to
-                    LDA #(Messages.IllegalAssignment % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.IllegalAssignment / 256)
-                    STA ZP.LastErrorH
-                    
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                    
+                    Error.IllegalAssignment(); BIT ZP.EmulatorPCL
                     CLC
                     break;
                 }
@@ -765,13 +724,7 @@ unit Statement
                 case IdentifierType.Keyword:
                 {
                     // Keywords should not appear as statements
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
-                    
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                    
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
                     CLC
                     break;
                 }
@@ -779,13 +732,7 @@ unit Statement
                 default:
                 {
                     // TODO: Handle function calls when functions are implemented
-                    LDA #(Messages.NotImplemented % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.NotImplemented / 256)
-                    STA ZP.LastErrorH
-                    
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                    
+                    Error.NotImplemented(); BIT ZP.EmulatorPCL
                     CLC
                     break;
                 }
@@ -902,23 +849,12 @@ unit Statement
                 Tokenizer.IsKeyword();
                 if (C)
                 {
-                    LDA #(Messages.IllegalIdentifier  % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.IllegalIdentifier  / 256)
-                    STA ZP.LastErrorH
-                    
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                    Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
                 }
                 else
                 {
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
-                    
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
                 }
-                
                 CLC
                 break; // error exit
             }
@@ -939,13 +875,7 @@ unit Statement
                 Objects.Find(); // ZP.IDX = symbol node address
                 if (C)  
                 {
-                    LDA #(Messages.FunctionExists % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.FunctionExists / 256)
-                    STA ZP.LastErrorH
-                    
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                    
+                    Error.FunctionExists(); BIT ZP.EmulatorPCL
                     CLC  // Error
                     break;
                 }
@@ -973,19 +903,12 @@ unit Statement
                         CMP #(SymbolType.CONSTANT << 4)
                         if (Z)
                         {
-                            LDA #(Messages.ConstantExists % 256)
-                            STA ZP.LastErrorL
-                            LDA #(Messages.ConstantExists / 256)
-                            STA ZP.LastErrorH
+                            Error.ConstantExists(); BIT ZP.EmulatorPCL
                         }
                         else
                         {
-                            LDA #(Messages.VariableExists % 256)
-                            STA ZP.LastErrorL
-                            LDA #(Messages.VariableExists / 256)
-                            STA ZP.LastErrorH
+                            Error.VariableExists(); BIT ZP.EmulatorPCL
                         }
-                        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
                         CLC
                         break;
                     }
@@ -1057,13 +980,7 @@ unit Statement
                             IsConstant();
                             if (NC)
                             {
-                                LDA #(Messages.ConstantExpressionExpected % 256)
-                                STA ZP.LastErrorL
-                                LDA #(Messages.ConstantExpressionExpected / 256)
-                                STA ZP.LastErrorH
-                                
-                                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                                
+                                Error.ConstantExpressionExpected(); BIT ZP.EmulatorPCL
                                 CLC
                                 break; // error exit
                             }
@@ -1077,13 +994,7 @@ unit Statement
                         if (Z)
                         {
                             // constants must be initialized
-                            LDA #(Messages.ConstantExpressionExpected % 256)
-                            STA ZP.LastErrorL
-                            LDA #(Messages.ConstantExpressionExpected / 256)
-                            STA ZP.LastErrorH
-                            
-                            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                            
+                            Error.ConstantExpressionExpected(); BIT ZP.EmulatorPCL
                             CLC
                             break; // error exit
                         }
@@ -1125,13 +1036,7 @@ unit Statement
                     }
                     default:
                     {
-                        LDA #(Messages.SyntaxError % 256)
-                        STA ZP.LastErrorL
-                        LDA #(Messages.SyntaxError / 256)
-                        STA ZP.LastErrorH
-                        
-                        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                        
+                        Error.SyntaxError(); BIT ZP.EmulatorPCL
                         CLC
                         break; // error exit
                     }
@@ -1176,13 +1081,7 @@ unit Statement
                 }
                 default:
                 {
-                    LDA #(Messages.TypeMismatch % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.TypeMismatch / 256)
-                    STA ZP.LastErrorH
-                    
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                    
+                    Error.TypeMismatch(); BIT ZP.EmulatorPCL
                     CLC // what's this?
                     break;
                 }
@@ -1231,13 +1130,7 @@ unit Statement
             
             if (NC)
             {
-                LDA #(Messages.TypeMismatch % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.TypeMismatch / 256)
-                STA ZP.LastErrorH
-                
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -1334,13 +1227,7 @@ unit Statement
             if (Z)
             {
                 // Allocation failed
-                LDA #(Messages.OutOfMemory % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.OutOfMemory / 256)
-                STA ZP.LastErrorH
-                
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                
+                Error.OutOfMemory(); BIT ZP.EmulatorPCL
                 CLC
                 break;
             }

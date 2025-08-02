@@ -4,7 +4,7 @@ unit Executor
     uses "/Source/Runtime/6502/Stacks"
     uses "OpCodes"
     uses "Variables"
-    uses "Messages"
+    uses "Error"
     uses "BasicTypes"
     uses "Instructions"
     uses "ComparisonInstructions"
@@ -115,12 +115,7 @@ unit Executor
         ORA ZP.OpcodeBufferLengthH
         if (Z)
         {
-            LDA #(Messages.InternalError % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.InternalError / 256)
-            STA ZP.LastErrorH
-            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-            CLC
+            Error.InternalError(); BIT ZP.EmulatorPCL
             return;
         }
         
@@ -143,12 +138,7 @@ unit Executor
             if (Z) 
             { 
                 // At end of buffer
-                LDA #(Messages.InternalError % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.InternalError / 256)
-                STA ZP.LastErrorH
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                CLC
+                Error.InternalError(); BIT ZP.EmulatorPCL
                 return; 
             }
         }
@@ -159,7 +149,6 @@ unit Executor
         LDA #' ' Tools.COut();
 #endif
 
-
         // Fetch opcode using indirect addressing
         LDY #0
         LDA [ZP.PC], Y
@@ -168,8 +157,6 @@ unit Executor
 #ifdef DEBUG       
         PHA Tools.HOut(); LDA #' ' Tools.COut(); PLA
 #endif
-
-        
         
         // Advance PC
         INC ZP.PCL
@@ -197,12 +184,7 @@ unit Executor
             CMP executorEndAddrH
             if (Z) 
             { 
-                LDA #(Messages.InternalError % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.InternalError / 256)
-                STA ZP.LastErrorH
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                CLC
+                Error.InternalError(); BIT ZP.EmulatorPCL
                 return; 
             }
         }
@@ -460,12 +442,7 @@ unit Executor
         Tools.DumpBasicBuffers();
 #endif                
         // Unknown opcode
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-        CLC
+        Error.NotImplemented(); BIT ZP.EmulatorPCL
     }
     
     // === CONTROL FLOW AND STACK MANIPULATION HANDLERS ===
@@ -480,12 +457,7 @@ unit Executor
     executeReturnVal()
     {
         // TODO: Implement function return with value (pop return value from stack)
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-        CLC
+        Error.NotImplemented(); BIT ZP.EmulatorPCL
     }
     
     executeEnter()
@@ -636,34 +608,19 @@ unit Executor
     executePushLocal()
     {
         // TODO: Fetch local variable by BP offset and push value
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-        CLC
+        Error.NotImplemented(); BIT ZP.EmulatorPCL
     }
     
     executePopGlobal()
     {
         // TODO: Pop value and store in global variable by index
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-        CLC
+        Error.NotImplemented(); BIT ZP.EmulatorPCL
     }
     
     executePopLocal()
     {
         // TODO: Pop value and store in local variable by BP offset
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-        CLC
+        Error.NotImplemented(); BIT ZP.EmulatorPCL
     }
     
     // === CONTROL FLOW HANDLERS (ONE BYTE OPERAND) ===
@@ -671,34 +628,19 @@ unit Executor
     executeJumpB()
     {
         // TODO: Unconditional jump with signed byte offset
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-        CLC
+        Error.NotImplemented(); BIT ZP.EmulatorPCL
     }
     
     executeJumpZB()
     {
         // TODO: Jump if zero with signed byte offset
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-        CLC
+        Error.NotImplemented(); BIT ZP.EmulatorPCL
     }
     
     executeJumpNZB()
     {
         // TODO: Jump if non-zero with signed byte offset
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-        CLC
+        Error.NotImplemented(); BIT ZP.EmulatorPCL
     }
     
     // === FUNCTION AND SYSTEM CALL HANDLERS (ONE BYTE OPERAND) ===
@@ -729,12 +671,7 @@ unit Executor
     #ifdef DEBUG
                 LDA #'?' Tools.COut(); LDA #'F' Tools.COut();
     #endif
-                LDA #(Messages.UndefinedIdentifier % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.UndefinedIdentifier / 256)
-                STA ZP.LastErrorH
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                CLC
+                Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
                 break;
             }
 #ifdef DEBUG
@@ -848,11 +785,7 @@ unit Executor
             }
             default:
             {
-                LDA #(Messages.NotImplemented % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.NotImplemented / 256)
-                STA ZP.LastErrorH
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                Error.NotImplemented(); BIT ZP.EmulatorPCL
             }
         }
         SEC
@@ -899,33 +832,18 @@ unit Executor
     executeJumpW()
     {
         // TODO: Unconditional jump with signed word offset
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-        CLC
+        Error.NotImplemented(); BIT ZP.EmulatorPCL
     }
     
     executeJumpZW()
     {
         // TODO: Jump if zero with signed word offset
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-        CLC
+        Error.NotImplemented(); BIT ZP.EmulatorPCL
     }
     
     executeJumpNZW()
     {
         // TODO: Jump if non-zero with signed word offset
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-        CLC
+        Error.NotImplemented(); BIT ZP.EmulatorPCL
     }
 }

@@ -1,5 +1,10 @@
 unit IntMath
 {
+
+#ifdef HOPPER_BASIC
+    uses "Error"
+#endif
+
     MulShared()
     {
         // TOP = NEXT * TOP
@@ -26,11 +31,7 @@ unit IntMath
 #ifdef HOPPER_BASIC
                 if (C) // Overflow on *8
                 {
-                    LDA #(Messages.NumericOverflow % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.NumericOverflow / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                    Error.NumericOverflow(); BIT ZP.EmulatorPCL
                     return;
                 }
 #endif                
@@ -45,11 +46,7 @@ unit IntMath
 #ifdef HOPPER_BASIC
                 if (C) // Overflow on *8
                 {
-                    LDA #(Messages.NumericOverflow % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.NumericOverflow / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                    Error.NumericOverflow(); BIT ZP.EmulatorPCL
                     return;
                 }
 #endif                
@@ -64,11 +61,7 @@ unit IntMath
 #ifdef HOPPER_BASIC
                 if (C) // Overflow on *8
                 {
-                    LDA #(Messages.NumericOverflow % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.NumericOverflow / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                    Error.NumericOverflow(); BIT ZP.EmulatorPCL
                     return;
                 }
 #endif                
@@ -115,11 +108,7 @@ unit IntMath
 #ifdef HOPPER_BASIC
                 if (C) // Overflow on *8
                 {
-                    LDA #(Messages.NumericOverflow % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.NumericOverflow / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                    Error.NumericOverflow(); BIT ZP.EmulatorPCL
                     return;
                 }
 #endif                
@@ -135,11 +124,7 @@ unit IntMath
 #ifdef HOPPER_BASIC
                 if (C) // Overflow on *8
                 {
-                    LDA #(Messages.NumericOverflow % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.NumericOverflow / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                    Error.NumericOverflow(); BIT ZP.EmulatorPCL
                     return;
                 }
 #endif                                
@@ -155,11 +140,7 @@ unit IntMath
 #ifdef HOPPER_BASIC
                 if (C) // Overflow on *8
                 {
-                    LDA #(Messages.NumericOverflow % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.NumericOverflow / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                    Error.NumericOverflow(); BIT ZP.EmulatorPCL
                     return;
                 }
 #endif                                
@@ -271,11 +252,7 @@ unit IntMath
         ORA ZP.UWIDE3
         if (NZ)
         {
-            LDA #(Messages.NumericOverflow % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.NumericOverflow / 256)
-            STA ZP.LastErrorH
-            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+            Error.NumericOverflow(); BIT ZP.EmulatorPCL
             return; // Leave corrupted result, but flag the error
         }
 #endif        

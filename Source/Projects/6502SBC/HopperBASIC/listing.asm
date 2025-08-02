@@ -3,6 +3,7 @@ unit Listing
     uses "/Source/Runtime/6502/ZeroPage"
     uses "/Source/Runtime/6502/Serial"
     uses "Messages"
+    uses "Error"
     uses "Tools"
     uses "Tokenizer"
     uses "TokenIterator"
@@ -276,12 +277,7 @@ unit Listing
             Functions.Find(); // Input: ZP.TOP = name, Output: ZP.IDX = node
             if (NC) 
             { 
-                LDA #(Messages.UndefinedIdentifier % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.UndefinedIdentifier / 256)
-                STA ZP.LastErrorH
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
-                CLC
+                Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
                 break; 
             }
             
@@ -307,12 +303,7 @@ unit Listing
             CMP #Tokens.EOL
             if (NZ) 
             { 
-                LDA #(Messages.SyntaxError % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.SyntaxError / 256)
-                STA ZP.LastErrorH
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
-                CLC
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -333,7 +324,7 @@ unit Listing
         Statement.IsCaptureModeOn();
         if (C)
         {
-            Console.FunctionModeError();
+            Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
             return;
         }
         
@@ -355,11 +346,7 @@ unit Listing
         if (NZ)
         {
             // Invalid argument
-            LDA #(Messages.SyntaxError % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.SyntaxError / 256)
-            STA ZP.LastErrorH
-            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
+            Error.SyntaxError(); BIT ZP.EmulatorPCL
             return;
         }
         
@@ -377,7 +364,7 @@ unit Listing
         Statement.IsCaptureModeOn();
         if (C)
         {
-            Console.FunctionModeError();
+            Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
             return;
         }
         
@@ -406,7 +393,7 @@ unit Listing
         Statement.IsCaptureModeOn();
         if (C)
         {
-            Console.FunctionModeError();
+            Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
             return;
         }
         

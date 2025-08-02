@@ -6,6 +6,7 @@ unit Console
     uses "/Source/Runtime/6502/Stacks"
     uses "/Source/Runtime/6502/MemoryMap"
     uses "Messages"
+    uses "Error"
     uses "Tools"
     uses "Tokenizer"
     uses "Statement"
@@ -618,11 +619,7 @@ unit Console
             Error.SyntaxError(); BIT ZP.EmulatorPCL
         }
 #else
-        LDA #(Messages.OnlyInDebug % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.OnlyInDebug / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
+        Error.OnlyInDebug(); BIT ZP.EmulatorPCL
 #endif    
     }
 
@@ -642,11 +639,7 @@ unit Console
         Tools.DumpHeap();
         Messages.PrintOK();
 #else
-        LDA #(Messages.OnlyInDebug % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.OnlyInDebug / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+        Error.OnlyInDebug(); BIT ZP.EmulatorPCL
 #endif
     }
     
@@ -666,11 +659,7 @@ unit Console
         Tools.DumpBasicBuffers();
         Messages.PrintOK();
 #else
-        LDA #(Messages.OnlyInDebug % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.OnlyInDebug / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+        Error.OnlyInDebug(); BIT ZP.EmulatorPCL
 #endif
     }
 
@@ -843,11 +832,7 @@ unit Console
             }
             
             // Not found in either table
-            LDA #(Messages.UndefinedIdentifier % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.UndefinedIdentifier / 256)
-            STA ZP.LastErrorH
-            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
+            Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
             CLC
             break;
         } // Single exit block
@@ -867,11 +852,7 @@ unit Console
         }
         
         // TODO: Run program
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+        Error.NotImplemented(); BIT ZP.EmulatorPCL
     }
     
     
@@ -894,7 +875,7 @@ unit Console
         STZ ZP.TokenizerPosH
         
         // Clear any error state that might have been set during capture
-        Messages.ClearError();
+        Error.ClearError();
         SEC
     }
 }

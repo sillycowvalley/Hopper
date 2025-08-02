@@ -5,6 +5,7 @@ unit Variables
     uses "Objects"
     uses "BasicTypes"
     uses "Messages"
+    uses "Error"
     uses "Table"
     
     // Variable management using Objects foundation
@@ -29,14 +30,7 @@ unit Variables
             
             if (C)  // Symbol already exists
             {
-                LDA #(Messages.SyntaxError % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.SyntaxError / 256)
-                STA ZP.LastErrorH
-                
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                
-                CLC  // Error
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -141,14 +135,7 @@ unit Variables
             }
             
             // Wrong type
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            
-            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-            
-            CLC  // Error
+            Error.TypeMismatch(); BIT ZP.EmulatorPCL
             break;
         } // end of single exit block
         
@@ -182,14 +169,7 @@ unit Variables
                 if (NZ)
                 {
                     // Not a variable or constant
-                    LDA #(Messages.TypeMismatch % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.TypeMismatch / 256)
-                    STA ZP.LastErrorH
-                    
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                    
-                    CLC  // Error
+                    Error.TypeMismatch(); BIT ZP.EmulatorPCL
                     break;
                 }
             }
@@ -244,14 +224,7 @@ unit Variables
             CMP #SymbolType.VARIABLE
             if (NZ)  // Not a variable
             {
-                LDA #(Messages.TypeMismatch % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.TypeMismatch / 256)
-                STA ZP.LastErrorH
-                
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                
-                CLC  // Error
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -335,14 +308,7 @@ unit Variables
             default:
             {
                 // Not a variable or constant
-                LDA #(Messages.TypeMismatch % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.TypeMismatch / 256)
-                STA ZP.LastErrorH
-                
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                
-                CLC  // Error
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
             }
         }
         
@@ -391,14 +357,7 @@ unit Variables
             }
             
             // Not a variable or constant
-            LDA #(Messages.TypeMismatch % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.TypeMismatch / 256)
-            STA ZP.LastErrorH
-            
-            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-            
-            CLC  // Error
+            Error.TypeMismatch(); BIT ZP.EmulatorPCL
             break;
         } // end of single exit block
         
@@ -684,14 +643,7 @@ unit Variables
             if (Z)
             {
                 // Allocation failed
-                LDA #(Messages.OutOfMemory % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.OutOfMemory / 256)
-                STA ZP.LastErrorH
-                
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                
-                CLC
+                Error.OutOfMemory(); BIT ZP.EmulatorPCL
                 break;
             }
             

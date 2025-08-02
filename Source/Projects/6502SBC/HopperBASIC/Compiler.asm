@@ -4,6 +4,7 @@ unit Compiler
     uses "/Source/Runtime/6502/Stacks"
     uses "OpCodes"
     uses "Messages"
+    uses "Error"
     uses "Tokenizer"
     uses "Tools"
     
@@ -76,12 +77,7 @@ unit Compiler
         CMP #0x02
         if (C) // >= 0x0200, overflow
         {
-            LDA #(Messages.BufferOverflow % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.BufferOverflow / 256)
-            STA ZP.LastErrorH
-            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-            CLC // Overflow
+            Error.BufferOverflow(); BIT ZP.EmulatorPCL
             return;
         }
         
@@ -274,14 +270,7 @@ unit Compiler
             if (NC)
             {
                 // Variable not found
-                LDA #(Messages.UndefinedIdentifier % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.UndefinedIdentifier / 256)
-                STA ZP.LastErrorH
-                
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                
-                CLC
+                Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -314,12 +303,7 @@ unit Compiler
         CMP #2
         if (C) // >= 2, invalid
         {
-            LDA #(Messages.InvalidBitValue % 256)
-            STA ZP.LastErrorL
-            LDA #(Messages.InvalidBitValue / 256)
-            STA ZP.LastErrorH
-            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-            CLC
+            Error.InvalidBitValue(); BIT ZP.EmulatorPCL
             return;
         }
         
@@ -372,12 +356,7 @@ unit Compiler
         }
         
         // Invalid type for word push
-        LDA #(Messages.TypeMismatch % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.TypeMismatch / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-        CLC
+        Error.TypeMismatch(); BIT ZP.EmulatorPCL
     }
     
     // Emit POPGLOBAL opcode to store to variable  
@@ -403,13 +382,9 @@ unit Compiler
         }
         
         // Offset too large
-        LDA #(Messages.BufferOverflow % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.BufferOverflow / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-        CLC
+        Error.BufferOverflow(); BIT ZP.EmulatorPCL
     }
+    
     
     // Emit arithmetic operation opcode
     // Input: A = operation token (Tokens.PLUS, Tokens.MINUS, etc.)
@@ -456,7 +431,7 @@ unit Compiler
             }
             default:
             {
-                InvalidOperatorError(); BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                Error.InvalidOperator(); BIT ZP.EmulatorPCL
                 return;
             }
         }
@@ -514,12 +489,7 @@ unit Compiler
             }
             default:
             {
-                LDA #(Messages.InvalidOperator % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.InvalidOperator / 256)
-                STA ZP.LastErrorH
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                CLC
+                Error.InvalidOperator(); BIT ZP.EmulatorPCL
                 return;
             }
         }
@@ -556,7 +526,7 @@ unit Compiler
             }
             default:
             {
-                InvalidOperatorError(); BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                Error.InvalidOperator(); BIT ZP.EmulatorPCL
                 return;
             }
         }
@@ -586,12 +556,7 @@ unit Compiler
             }
             default:
             {
-                LDA #(Messages.InvalidOperator % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.InvalidOperator / 256)
-                STA ZP.LastErrorH
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                CLC
+                Error.InvalidOperator(); BIT ZP.EmulatorPCL
                 return;
             }
         }
@@ -1255,12 +1220,7 @@ unit Compiler
                 CMP #Tokens.COMMA
                 if (NZ)
                 {
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
-                    CLC
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
                     break;
                 }
                 
@@ -1338,12 +1298,7 @@ unit Compiler
                 CMP #Tokens.LPAREN
                 if (NZ)
                 {
-                    LDA #(Messages.ExpectedLeftParen % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.ExpectedLeftParen / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
-                    CLC
+                    Error.ExpectedLeftParen(); BIT ZP.EmulatorPCL
                     break;
                 }
                 
@@ -1356,12 +1311,7 @@ unit Compiler
                 CMP #Tokens.RPAREN
                 if (NZ)
                 {
-                    LDA #(Messages.ExpectedRightParen % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.ExpectedRightParen / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
-                    CLC
+                    Error.ExpectedRightParen(); BIT ZP.EmulatorPCL
                     break;
                 }
                 
@@ -1551,14 +1501,7 @@ unit Compiler
                     CMP #Tokens.RPAREN
                     if (NZ)
                     {
-                        LDA #(Messages.SyntaxError % 256)
-                        STA ZP.LastErrorL
-                        LDA #(Messages.SyntaxError / 256)
-                        STA ZP.LastErrorH
-                        
-                        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                        
-                        CLC  // Error
+                        Error.SyntaxError(); BIT ZP.EmulatorPCL
                         break;
                     }
                     
@@ -1570,14 +1513,7 @@ unit Compiler
                 default:
                 {
                     // Unexpected token
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
-                    
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                    
-                    CLC  // Error
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
                     break;
                 }
             }
@@ -1790,12 +1726,7 @@ unit Compiler
                 default:
                 {
                     // TODO: Add more statement types as needed
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                    CLC
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
                     break;
                 }
             }
@@ -1912,12 +1843,7 @@ unit Compiler
     compileIfStatement()
     {
         // TODO: Implement IF statement compilation
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-        CLC
+        Error.NotImplemented(); BIT ZP.EmulatorPCL
     }
 
     // Compile identifier statement (assignment or function call)
@@ -1926,12 +1852,7 @@ unit Compiler
     compileIdentifierStatement()
     {
          // TODO: Implement assignment and function call compilation
-        LDA #(Messages.NotImplemented % 256)
-        STA ZP.LastErrorL
-        LDA #(Messages.NotImplemented / 256)
-        STA ZP.LastErrorH
-        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-        CLC
+        Error.NotImplemented(); BIT ZP.EmulatorPCL
     }
 
     // Check if the last emitted opcode is RETURN or RETURNVAL

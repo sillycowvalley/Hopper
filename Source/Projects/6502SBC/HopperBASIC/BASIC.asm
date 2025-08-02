@@ -13,11 +13,14 @@ program HopperBASIC
     uses "/Source/Runtime/6502/Stacks"
     
     uses "Messages"
+    uses "Error"
     
     uses "Tokenizer"
     uses "FunctionDeclaration.asm"
     uses "Statement"
     uses "Compiler"
+    
+    uses "Functions"
     
     uses "Instructions"
     uses "ComparisonInstructions"
@@ -30,7 +33,7 @@ program HopperBASIC
     // Initialize the BASIC system
     InitializeBASIC()
     {
-        Messages.ClearError();
+        Error.ClearError();
         
         // Initialize serial communication first
         Serial.Initialize();
@@ -95,10 +98,10 @@ program HopperBASIC
             Console.ProcessLine();
             if (NC) 
             {
-                CheckError();
+                Error.CheckError();
                 if (NC)
                 {
-                    Messages.CheckAndPrintError();
+                    Error.CheckAndPrint();
                 }
                 else
                 {

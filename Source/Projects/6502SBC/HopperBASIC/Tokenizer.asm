@@ -6,6 +6,7 @@ unit Tokenizer
     uses "Limits"
     uses "Tools"
     uses "Messages"
+    uses "Error"  // Added Error unit
     uses "BasicTypes"
     
     enum IdentifierType
@@ -713,13 +714,7 @@ unit Tokenizer
             {
                 if (NZ)  // > 2, definitely full
                 {
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
-                    
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                    
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
                     CLC
                     break;
                 }
@@ -728,13 +723,7 @@ unit Tokenizer
                 CMP #(Limits.BasicTokenizerBufferLength & 0xFF)  // Compare low byte (0)
                 if (C)  // >= 512, buffer full
                 {
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
-                    
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                    
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
                     CLC
                     break;
                 }
@@ -822,11 +811,7 @@ unit Tokenizer
             if (NC)  // Not hex digit
             {
                 // Set syntax error and return
-                LDA #(Messages.SyntaxError % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.SyntaxError / 256)  
-                STA ZP.LastErrorH
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
                 return;
             }
             
@@ -864,10 +849,7 @@ unit Tokenizer
             CMP #0x10
             if (C)  // >= 0x10, would overflow
             {
-                LDA #(Messages.NumericOverflow % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.NumericOverflow / 256)
-                STA ZP.LastErrorH
+                Error.NumericOverflow(); BIT ZP.EmulatorPCL
                 return;
             }
             
@@ -936,7 +918,7 @@ unit Tokenizer
             // Replace mode - clear token buffer
             STZ ZP.TokenBufferLengthL
             STZ ZP.TokenBufferLengthH
-            Messages.ClearError();
+            Error.ClearError();
         }
         
         // Check for empty line
@@ -1171,11 +1153,7 @@ unit Tokenizer
                         CPX ZP.BasicInputLength  // Check input buffer bounds
                         if (Z) // End of input without closing quote
                         {
-                            LDA #(Messages.ExpectedQuote % 256)
-                            STA ZP.LastErrorL
-                            LDA #(Messages.ExpectedQuote / 256)
-                            STA ZP.LastErrorH
-                            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                            Error.ExpectedQuote(); BIT ZP.EmulatorPCL
                             CLC
                             return;
                         }
@@ -1294,13 +1272,7 @@ unit Tokenizer
                     if (NC)
                     {
                         // Invalid character
-                        LDA #(Messages.SyntaxError % 256)
-                        STA ZP.LastErrorL
-                        LDA #(Messages.SyntaxError / 256)
-                        STA ZP.LastErrorH
-                        
-                        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                        
+                        Error.SyntaxError(); BIT ZP.EmulatorPCL
                         CLC  // Error
                         return;
                     }
@@ -1330,13 +1302,7 @@ unit Tokenizer
                         CPY #Limits.BasicProcessBufferLength
                         if (Z) 
                         { 
-                            LDA #(Messages.SyntaxError % 256)
-                            STA ZP.LastErrorL
-                            LDA #(Messages.SyntaxError / 256)
-                            STA ZP.LastErrorH
-                            
-                            BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                            
+                            Error.SyntaxError(); BIT ZP.EmulatorPCL
                             CLC  // Error
                             return;
                         }
@@ -1636,13 +1602,7 @@ unit Tokenizer
             if (NC) // not digit
             {
                 /*
-                LDA #(Messages.SyntaxError % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.SyntaxError / 256)
-                STA ZP.LastErrorH
-                
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
                 return;
                 */
                 break;
@@ -1658,10 +1618,7 @@ unit Tokenizer
             checkMultiply10PlusDigitOverflow();
             if (NC)  // Would overflow
             {
-                LDA #( Messages.NumericOverflow % 256)
-                STA ZP.LastErrorL
-                LDA #( Messages.NumericOverflow / 256)
-                STA ZP.LastErrorH
+                Error.NumericOverflow(); BIT ZP.EmulatorPCL
                 return;
             }
             

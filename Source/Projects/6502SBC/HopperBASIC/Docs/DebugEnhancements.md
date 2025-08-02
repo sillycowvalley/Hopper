@@ -611,3 +611,76 @@ This validates that the unification is working correctly:
 - Interactive debugging commands (in addition to DUMP, BUFFERS, HEAP)
 - Breakpoint simulation
 - Error logging and statistics (to file via changes to the Windows emulator)
+
+
+
+
+
+
+# Error Handling Refactoring Instructions Summary
+
+RULE #0
+
+## Core Transformation Pattern
+
+**Replace this verbose 5-line pattern:**
+```hopper
+LDA #(Messages.ErrorName % 256)
+STA ZP.LastErrorL
+LDA #(Messages.ErrorName / 256)
+STA ZP.LastErrorH
+BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+CLC
+```
+
+**With this clean 1-line pattern:**
+```hopper
+Error.ErrorName(); BIT ZP.EmulatorPCL
+```
+
+## Header Changes Required
+
+1. **Add**: `uses "Error"` to import the Error unit
+2. **Keep**: `uses "Messages"` for status messages and CheckError()
+3. **Optional**: Remove `uses "Messages"` only if no Messages.* calls remain
+
+## Key Syntax Rules
+
+1. **Method calls get semicolons**: `Error.SyntaxError();`
+2. **6502 opcodes don't get semicolons**: `BIT ZP.EmulatorPCL`
+3. **Correct pattern**: `Error.InvalidOperator(); BIT ZP.EmulatorPCL break;`
+4. **Wrong pattern**: `Error.InvalidOperator(); BIT ZP.EmulatorPCL; break;`
+
+## Error vs Messages Separation
+
+- **Error unit**: For setting errors (`Error.SyntaxError()`, `Error.TypeMismatch()`, etc.)
+- **Messages unit**: For checking errors (`Messages.CheckError()`) and status messages (`Messages.PrintOK()`)
+
+## Available Error Methods
+
+Common ones include:
+- `Error.SyntaxError()`
+- `Error.TypeMismatch()`
+- `Error.NotImplemented()`
+- `Error.UndefinedIdentifier()`
+- `Error.InvalidOperator()`
+- `Error.InternalError()`
+- `Error.OutOfMemory()`
+- `Error.DivisionByZero()`
+- And 14 more (see Error.asm for complete list)
+
+## Benefits
+
+- **Reduces 5 lines to 1 line** for each error case
+- **Consistent error handling** across all units
+- **Easier maintenance** - error messages centralized in Error.asm
+- **Future-proof** - ready for TERSE_ERRORS mode with error codes
+- **Cleaner code** - error handling no longer dominates the codebase
+
+## Process
+
+1. Search for all instances of `LDA #(Messages.` error patterns
+2. Replace with appropriate `Error.MethodName(); BIT ZP.EmulatorPCL`
+3. Remove the old 4-line pattern completely
+4. Update unit headers to include Error unit
+5. Verify no semicolons after 6502 opcodes

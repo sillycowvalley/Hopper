@@ -3,6 +3,7 @@ unit FunctionDeclaration
     uses "/Source/Runtime/6502/ZeroPage"
     uses "/Source/Runtime/6502/Stacks"
     uses "Messages"
+    uses "Error"
     uses "Tokenizer"
     uses "Tools"
     
@@ -146,21 +147,12 @@ unit FunctionDeclaration
                 Tokenizer.IsKeyword();
                 if (C)
                 {
-                    LDA #(Messages.IllegalIdentifier % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.IllegalIdentifier / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                    Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
                 }
                 else
                 {
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
                 }
-                CLC
                 break;
             }
             
@@ -200,20 +192,12 @@ unit FunctionDeclaration
                 CMP #(SymbolType.CONSTANT << 4)
                 if (Z)
                 {
-                    LDA #(Messages.ConstantExists % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.ConstantExists / 256)
-                    STA ZP.LastErrorH
+                    Error.ConstantExists(); BIT ZP.EmulatorPCL
                 }
                 else
                 {
-                    LDA #(Messages.VariableExists % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.VariableExists / 256)
-                    STA ZP.LastErrorH
+                    Error.VariableExists(); BIT ZP.EmulatorPCL
                 }
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                CLC
                 break;
             }
             
@@ -232,12 +216,7 @@ unit FunctionDeclaration
             CMP #Tokens.LPAREN
             if (NZ)
             {
-                LDA #(Messages.ExpectedLeftParen % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.ExpectedLeftParen / 256)
-                STA ZP.LastErrorH
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                CLC
+                Error.ExpectedLeftParen(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -275,12 +254,7 @@ unit FunctionDeclaration
             CMP #Tokens.RPAREN
             if (NZ)
             {
-                LDA #(Messages.ExpectedRightParen % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.ExpectedRightParen / 256)
-                STA ZP.LastErrorH
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                CLC
+                Error.ExpectedRightParen(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -359,12 +333,7 @@ unit FunctionDeclaration
                 CMP #Tokens.IDENTIFIER
                 if (NZ)
                 {
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                    CLC
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
                     break;
                 }
                 
@@ -402,12 +371,7 @@ unit FunctionDeclaration
                 CMP #Tokens.COMMA
                 if (NZ)
                 {
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                    CLC
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
                     break;
                 }
                 
@@ -467,12 +431,7 @@ unit FunctionDeclaration
                 if (Z)
                 {
                     // Hit end of input without finding END
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                    CLC
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
                     break;
                 }
                 
@@ -579,12 +538,7 @@ unit FunctionDeclaration
                 if (Z)
                 {
                     // Hit end of input without finding ENDFUNC
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                    CLC
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
                     break;
                 }
                 
@@ -701,12 +655,7 @@ unit FunctionDeclaration
                 CMP #Tokens.IDENTIFIER
                 if (NZ)
                 {
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
-                    CLC
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
                     break;
                 }
                 
@@ -735,12 +684,7 @@ unit FunctionDeclaration
                     CMP #Tokens.EOF
                     if (Z)
                     {
-                        LDA #(Messages.SyntaxError % 256)
-                        STA ZP.LastErrorL
-                        LDA #(Messages.SyntaxError / 256)
-                        STA ZP.LastErrorH
-                        BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
-                        CLC
+                        Error.SyntaxError(); BIT ZP.EmulatorPCL
                         break;
                     }
                 }
@@ -754,12 +698,7 @@ unit FunctionDeclaration
                 CMP #Tokens.BEGIN
                 if (NZ)
                 {
-                    LDA #(Messages.InternalError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.InternalError / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
-                    CLC
+                    Error.InternalError(); BIT ZP.EmulatorPCL
                     break;
                 }
                 // "BEGIN" function name
@@ -775,12 +714,7 @@ unit FunctionDeclaration
             Functions.Find(); // Input: ZP.TOP = name, Output: ZP.IDX = function node
             if (NC)
             {
-                LDA #(Messages.UndefinedIdentifier % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.UndefinedIdentifier / 256)
-                STA ZP.LastErrorH
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
-                CLC
+                Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -808,12 +742,7 @@ unit FunctionDeclaration
                 CMP #Tokens.EOF
                 if (Z)
                 {
-                    LDA #(Messages.SyntaxError % 256)
-                    STA ZP.LastErrorL
-                    LDA #(Messages.SyntaxError / 256)
-                    STA ZP.LastErrorH
-                    BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
-                    CLC
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
                     break;
                 }
                 

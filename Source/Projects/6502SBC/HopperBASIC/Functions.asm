@@ -5,6 +5,7 @@ unit Functions
     uses "Arguments"
     uses "BasicTypes"
     uses "Messages"
+    uses "Error"
         
     flags FunctionFlags
     {
@@ -40,14 +41,7 @@ unit Functions
             Objects.Find();
             if (C)  // Function already exists
             {
-                LDA #(Messages.SyntaxError % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.SyntaxError / 256)
-                STA ZP.LastErrorH
-                
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                
-                CLC  // Error
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -607,12 +601,7 @@ unit Functions
             ORA ZP.IDYH
             if (Z)
             {
-                LDA #(Messages.InternalError % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.InternalError / 256)
-                STA ZP.LastErrorH
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                CLC
+                Error.InternalError(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -762,12 +751,7 @@ unit Functions
             if (Z)
             {
                 // No opcodes - this shouldn't happen but handle gracefully
-                LDA #(Messages.InternalError % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.InternalError / 256)
-                STA ZP.LastErrorH
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                CLC
+                Error.InternalError(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -784,12 +768,7 @@ unit Functions
             if (Z)
             {
                 // Allocation failed
-                LDA #(Messages.OutOfMemory % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.OutOfMemory / 256)
-                STA ZP.LastErrorH
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                CLC
+                Error.OutOfMemory(); BIT ZP.EmulatorPCL
                 break;
             }
             

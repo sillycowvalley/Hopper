@@ -3,7 +3,7 @@ unit Instructions
     uses "/Source/Runtime/6502/ZeroPage"
     uses "/Source/Runtime/6502/Stacks"
     uses "/Source/Runtime/6502/IntMath"
-    uses "Messages"
+    uses "Error"
     uses "BasicTypes"
     
     // Instruction implementation for HopperBASIC operations
@@ -422,11 +422,6 @@ unit Instructions
                 // STRING vs STRING already handled above
             }
             
-            
-            
-            
-            
-            
             // No other compatibility rules matched
             CLC  // Set NC - incompatible
             break;
@@ -458,13 +453,7 @@ unit Instructions
             
             if (NC)  // Type mismatch
             {
-                LDA #(Messages.TypeMismatch % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.TypeMismatch / 256)
-                STA ZP.LastErrorH
-                
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -510,13 +499,7 @@ unit Instructions
             
             if (NC)  // Type mismatch
             {
-                LDA #(Messages.TypeMismatch % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.TypeMismatch / 256)
-                STA ZP.LastErrorH
-                
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -693,13 +676,7 @@ unit Instructions
             
             if (NC)  // Type mismatch
             {
-                LDA #(Messages.TypeMismatch % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.TypeMismatch / 256)
-                STA ZP.LastErrorH
-                
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -710,7 +687,7 @@ unit Instructions
                 // INT - handle signed multiplication
                 doSigns();
                 IntMath.MulShared();
-                CheckError();
+                Error.CheckError();
                 if (NC) { break; }
                 
                 LDA ZP.FSIGN     // load the sign count
@@ -724,7 +701,7 @@ unit Instructions
             {
                 // WORD or BYTE - unsigned multiplication
                 IntMath.MulShared();
-                CheckError();
+                Error.CheckError();
                 if (NC) { break; }
             }
             
@@ -762,12 +739,7 @@ unit Instructions
             ORA ZP.TOPH
             if (Z)  // Divisor is zero
             {
-                LDA #(Messages.DivisionByZero % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.DivisionByZero / 256)
-                STA ZP.LastErrorH
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
-                CLC
+                Error.DivisionByZero(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -776,12 +748,7 @@ unit Instructions
             
             if (NC)  // Type mismatch
             {
-                LDA #(Messages.TypeMismatch % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.TypeMismatch / 256)
-                STA ZP.LastErrorH
-                
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -837,12 +804,7 @@ unit Instructions
             ORA ZP.TOPH
             if (Z)  // Divisor is zero
             {
-                LDA #(Messages.DivisionByZero % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.DivisionByZero / 256)
-                STA ZP.LastErrorH
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC;
-                CLC
+                Error.DivisionByZero(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -851,13 +813,7 @@ unit Instructions
             
             if (NC)  // Type mismatch
             {
-                LDA #(Messages.TypeMismatch % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.TypeMismatch / 256)
-                STA ZP.LastErrorH
-                
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -903,13 +859,7 @@ unit Instructions
             
             if (NC)  // Type mismatch
             {
-                LDA #(Messages.TypeMismatch % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.TypeMismatch / 256)
-                STA ZP.LastErrorH
-                
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -952,13 +902,7 @@ unit Instructions
             
             if (NC)  // Type mismatch
             {
-                LDA #(Messages.TypeMismatch % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.TypeMismatch / 256)
-                STA ZP.LastErrorH
-                
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -1001,13 +945,7 @@ unit Instructions
             
             if (NC)  // Type mismatch
             {
-                LDA #(Messages.TypeMismatch % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.TypeMismatch / 256)
-                STA ZP.LastErrorH
-                
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -1068,13 +1006,7 @@ unit Instructions
             
             if (NC)  // Type mismatch
             {
-                LDA #(Messages.TypeMismatch % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.TypeMismatch / 256)
-                STA ZP.LastErrorH
-                
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
             
@@ -1132,13 +1064,7 @@ unit Instructions
             CMP #BasicType.BIT
             if (NZ)
             {
-                LDA #(Messages.TypeMismatch % 256)
-                STA ZP.LastErrorL
-                LDA #(Messages.TypeMismatch / 256)
-                STA ZP.LastErrorH
-                
-                BIT ZP.EmulatorPCL // 6502 PC -> EmulatorPC
-                
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
             
