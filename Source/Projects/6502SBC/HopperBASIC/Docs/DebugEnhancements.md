@@ -52,77 +52,65 @@ CLC
 
 ### After (simplified pattern):
 ```hopper
-Errors.SyntaxError(); BIT ZP.EmulatorPCL
+Error.SyntaxError(); BIT ZP.EmulatorPCL
 ```
 
 ### Errors Unit API
 ```hopper
-unit Errors
+unit Error
 {
     uses "/Source/Runtime/6502/ZeroPage"
     
     // Error message strings (moved from Messages.asm)
     #ifdef TERSE_ERRORS
-    const string SyntaxErrorMsg = "E001";
-    const string TypeMismatchMsg = "E002";
-    const string NotImplementedMsg = "E003";
+    const string syntaxError = "E001";
+    const string typeMismatch = "E002";
+    const string notImplemented = "E003";
     // ... (future enhancement)
     #else
-    const string SyntaxErrorMsg = "SYNTAX ERROR";
-    const string TypeMismatchMsg = "TYPE MISMATCH";
-    const string NotImplementedMsg = "NOT IMPLEMENTED";
-    const string InternalErrorMsg = "INTERNAL ERROR";
-    const string FunctionExistsMsg = "FUNCTION EXISTS";
-    const string ConstantExistsMsg = "CONSTANT EXISTS";
-    const string VariableExistsMsg = "VARIABLE EXISTS";
-    const string OutOfMemoryMsg = "OUT OF MEMORY";
-    const string DivisionByZeroMsg = "DIVISION BY ZERO";
-    const string NumericOverflowMsg = "NUMERIC OVERFLOW";
-    const string UndefinedIdentifierMsg = "UNDEFINED IDENTIFIER";
-    const string IllegalAssignmentMsg = "ILLEGAL ASSIGNMENT";
-    const string InvalidOperatorMsg = "INVALID OPERATOR";
-    const string BufferOverflowMsg = "BUFFER OVERFLOW";
-    const string ExpectedRightParenMsg = ") EXPECTED";
-    const string ExpectedLeftParenMsg = "( EXPECTED";
-    const string ExpectedQuoteMsg = "QUOTE EXPECTED";
-    const string ExpectedExpressionMsg = "EXPRESSION EXPECTED";
-    const string InvalidBitValueMsg = "INVALID BIT VALUE";
-    const string ConstantExpressionExpectedMsg = "CONSTANT EXPRESSION EXPECTED";
-    const string IllegalIdentifierMsg = "ILLEGAL IDENTIFIER";
+    const string syntaxError = "SYNTAX ERROR";
+    const string typeMismatch = "TYPE MISMATCH";
+    const string notImplemented = "NOT IMPLEMENTED";
+    const string internalError = "INTERNAL ERROR";
+    const string functionExists = "FUNCTION EXISTS";
+    const string constantExists = "CONSTANT EXISTS";
+    const string variableExists = "VARIABLE EXISTS";
+    const string outOfMemory = "OUT OF MEMORY";
+    const string divisionByZero = "DIVISION BY ZERO";
+    const string numericOverflow = "NUMERIC OVERFLOW";
+    const string undefinedIdentifier = "UNDEFINED IDENTIFIER";
+    const string illegalAssignment = "ILLEGAL ASSIGNMENT";
+    const string invalidOperator = "INVALID OPERATOR";
+    const string bufferOverflow = "BUFFER OVERFLOW";
+    const string expectedRightParen = ") EXPECTED";
+    const string expectedLeftParen = "( EXPECTED";
+    const string expectedQuote = "QUOTE EXPECTED";
+    const string expectedExpression = "EXPRESSION EXPECTED";
+    const string invalidBitValue = "INVALID BIT VALUE";
+    const string constantExpressionExpected = "CONSTANT EXPRESSION EXPECTED";
+    const string illegalIdentifier = "ILLEGAL IDENTIFIER";
     #endif
     
     // One-liner error methods (PC must be set at call site)
-    SyntaxError() { setError(SyntaxErrorMsg); }
-    TypeMismatch() { setError(TypeMismatchMsg); }
-    NotImplemented() { setError(NotImplementedMsg); }
-    InternalError() { setError(InternalErrorMsg); }
-    FunctionExists() { setError(FunctionExistsMsg); }
-    ConstantExists() { setError(ConstantExistsMsg); }
-    VariableExists() { setError(VariableExistsMsg); }
-    OutOfMemory() { setError(OutOfMemoryMsg); }
-    DivisionByZero() { setError(DivisionByZeroMsg); }
-    NumericOverflow() { setError(NumericOverflowMsg); }
-    UndefinedIdentifier() { setError(UndefinedIdentifierMsg); }
-    IllegalAssignment() { setError(IllegalAssignmentMsg); }
-    InvalidOperator() { setError(InvalidOperatorMsg); }
-    BufferOverflow() { setError(BufferOverflowMsg); }
-    ExpectedRightParen() { setError(ExpectedRightParenMsg); }
-    ExpectedLeftParen() { setError(ExpectedLeftParenMsg); }
-    ExpectedQuote() { setError(ExpectedQuoteMsg); }
-    ExpectedExpression() { setError(ExpectedExpressionMsg); }
-    InvalidBitValue() { setError(InvalidBitValueMsg); }
-    ConstantExpressionExpected() { setError(ConstantExpressionExpectedMsg); }
-    IllegalIdentifier() { setError(IllegalIdentifierMsg); }
-    
-    // Internal helper
-    setError()
-    {
-        // A contains message address (from calling method setup)
+    SyntaxError() 
+    { 
+        LDA #(syntaxError % 256)
         STA ZP.LastErrorL
-        LDA ZP.ACCH
+        LDA #(syntaxError / 256)
         STA ZP.LastErrorH
         CLC
     }
+    
+    TypeMismatch() 
+    { 
+        LDA #(typeMismatch % 256)
+        STA ZP.LastErrorL
+        LDA #(typeMismatch / 256)
+        STA ZP.LastErrorH
+        CLC
+    }
+    
+    // ... (additional error methods follow same pattern)
 }
 ```
 
@@ -130,15 +118,15 @@ unit Errors
 
 ### New Zero Page Allocation
 ```hopper
-// Add to ZeroPage.asm  
-#if defined(DEBUG) || defined(TRACE)
-ZP.TraceIndent   = 0x??;  // 1 byte - current call depth
-ZP.DebugTemp0    = 0x??;  // 1 byte - debug temporary
-ZP.DebugTemp1    = 0x??;  // 1 byte - debug temporary
+// Added to ZeroPage.asm  
+#if defined(HOPPER_BASIC)
+const byte TraceIndent          = 0x0F; // used by Trace.asm
+const byte TraceMessageL        = 0xF2; // used by Trace.asm
+const byte TraceMessageH        = 0xF3;
 #endif
 ```
 
-### Method Naming Convention
+### Enhanced Method Naming Convention with Operator Context
 ```hopper
 #ifdef TRACE
 const string traceMethodName = "ShortName";  // 6-8 chars, descriptive
@@ -149,15 +137,21 @@ const string traceMethodName = "ShortName";  // 6-8 chars, descriptive
 MethodName()
 {
 #ifdef TRACE
-LDA #(traceMethodName / 256); STA ZP.ACCH; LDA #(traceMethodName % 256); STA ZP.ACCL; Trace.MethodEntry()
+LDA #(traceMethodName % 256) STA ZP.TraceMessageL LDA #(traceMethodName / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
     
     // Method implementation
     
 #ifdef TRACE  
-LDA #(traceMethodName / 256); STA ZP.ACCH; LDA #(traceMethodName % 256); STA ZP.ACCL; Trace.MethodExit()
+LDA #(traceMethodName % 256) STA ZP.TraceMessageL LDA #(traceMethodName / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
 }
+```
+
+**Enhanced trace output with operator context:**
+```
+CompMult { // '*'
+} // CompMult '*'
 ```
 
 Examples:
@@ -166,27 +160,92 @@ Examples:
 - `"ExecOp"` - ExecuteOpcodes
 - `"FindSym"` - FindSymbol
 
-### Trace Unit API
+### Trace Unit Implementation (Current)
 ```hopper
 unit Trace
 {
-    uses "Debug"  // For shared utilities
-    
+    uses "/Source/Runtime/6502/ZeroPage"
+    uses "Tools"
+    uses "Debug"
+
 #if defined(DEBUG) || defined(TRACE)
-    // Shared utilities (available to both DEBUG and TRACE)
-    PrintIndent()   // Print current indentation level
+    // Shared utilities (needed by Debug unit too)
+    PrintIndent()
+    {
+        PHA
+        PHX
+        
+        LDX ZP.TraceIndent
+        loop
+        {
+            CPX #0
+            if (Z) { break; }
+            
+            Debug.Space(); Debug.Space();
+            
+            DEX
+        }
+        
+        PLX
+        PLA
+    }
 #endif
 
 #ifdef TRACE
-    // Pure tracing functionality
-    MethodEntry()   // Print method name + '{', increase indent
-    MethodExit()    // Decrease indent, print method name + '}'
-    MarkConvergence()  // Special marker for convergence points
+    const string convergenceMarker = " <- CONVERGENCE";
+    const string endBrace = "} // ";
+
+    Initialize()
+    {
+        STZ ZP.TraceIndent
+    }
+
+    MethodEntry()
+    {
+        PHA
+        PHX
+        PHY
+        
+        PrintIndent();
+        
+        LDA ZP.TraceMessageL STA ZP.ACCL LDA ZP.TraceMessageH STA ZP.ACCH Tools.PrintStringACC(); Debug.Space(); LDA #'{' Debug.COut(); Debug.NL();
+        
+        INC ZP.TraceIndent
+        
+        PLY
+        PLX
+        PLA
+    }
+    
+    MethodExit()
+    {
+        PHA
+        PHX
+        PHY
+        
+        DEC ZP.TraceIndent
+        
+        PrintIndent();
+        
+        LDA #(endBrace % 256) STA ZP.ACCL LDA #(endBrace / 256) STA ZP.ACCH Tools.PrintStringACC();
+        
+        LDA ZP.TraceMessageL STA ZP.ACCL LDA ZP.TraceMessageH STA ZP.ACCH Tools.PrintStringACC(); Debug.Space(); Debug.NL();
+        
+        PLY
+        PLX
+        PLA
+    }
+    
+    MarkConvergence()
+    {
+        PHA
+        
+        LDA #(convergenceMarker % 256) STA ZP.ACCL LDA #(convergenceMarker / 256) STA ZP.ACCH Tools.PrintStringACC();
+        
+        PLA
+    }
 #else
-    // No-op versions for production builds
-    MethodEntry() { }
-    MethodExit()  { }
-    MarkConvergence() { }
+    Initialize() { }
 #endif
 }
 ```
@@ -201,6 +260,7 @@ unit Debug
     // Shared utilities (needed by Trace)
     HOut()          // Hex byte preserving carry
     COut()          // Character preserving carry
+    Space()         // Single space output
 #endif
 
 #ifdef DEBUG
@@ -260,13 +320,13 @@ NormalMethod()
     PHA
     
 #ifdef TRACE
-LDA #(traceMethodName / 256); STA ZP.ACCH; LDA #(traceMethodName % 256); STA ZP.ACCL; Trace.MethodEntry()
+LDA #(traceMethodName % 256) STA ZP.TraceMessageL LDA #(traceMethodName / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
 
     // Normal method logic with proper indentation
     
 #ifdef TRACE  
-LDA #(traceMethodName / 256); STA ZP.ACCH; LDA #(traceMethodName % 256); STA ZP.ACCL; Trace.MethodExit()
+LDA #(traceMethodName % 256) STA ZP.TraceMessageL LDA #(traceMethodName / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
 
     PLA
@@ -309,17 +369,13 @@ const string myMethodTrace = "MyMethod";
 MyMethod()
 {
 #ifdef TRACE
-LDA #(myMethodTrace / 256); STA ZP.ACCH; 
-LDA #(myMethodTrace % 256); STA ZP.ACCL; 
-Trace.MethodEntry()
+LDA #(myMethodTrace % 256) STA ZP.TraceMessageL LDA #(myMethodTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
     
     // Implementation
     
 #ifdef TRACE
-LDA #(myMethodTrace / 256); STA ZP.ACCH; 
-LDA #(myMethodTrace % 256); STA ZP.ACCL; 
-Trace.MethodExit()
+LDA #(myMethodTrace % 256) STA ZP.TraceMessageL LDA #(myMethodTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
 }
 ```
@@ -327,13 +383,13 @@ Trace.MethodExit()
 ### Debug Output Consistency
 ```hopper
 // RULE: All debug output preserves execution state
-// Pattern: Use Tools.COut() not Serial.WriteChar()
-// Reason: Tools methods preserve flags, Serial methods don't
+// Pattern: Use Debug.COut() not Serial.WriteChar()
+// Reason: Debug methods preserve flags, Serial methods don't
 
 // Good (preserves flags):
-Tools.COut();
-Tools.HOut();
-Tools.NL();
+Debug.COut();
+Debug.HOut();
+Debug.NL();
 
 // Bad (munts flags):
 Serial.WriteChar();
@@ -456,30 +512,52 @@ RenderTokenStream()
 
 ## Sample Output
 
-### TRACE Only
+### TRACE Only (Current Implementation)
 ```
-EvExpr {
-  CompEx {
-  }
-  ExecOp { ← CONVERGENCE
-  }
-}
+> print 4 * 4 + 5
+EvalExpr {
+  CompExpr {
+  } // CompExpr
+  ExecOpCodes {
+  } // ExecOpCodes
+} // EvalExpr
+21
 ```
 
-### DEBUG + TRACE
+### TRACE with Enhanced Context (Future)
 ```
-EvExpr {
-  CompEx {
+> print 4 * 4 + 5
+EvalExpr {
+  CompExpr {
+    CompLog { // 'OR'
+      CompCmp { // '='
+        CompAdd { // '+'
+          CompMult { // '*'
+          } // CompMult '*'
+        } // CompAdd '+'
+      } // CompCmp '='
+    } // CompLog 'OR'
+  } // CompExpr
+  ExecOpCodes {
+  } // ExecOpCodes
+} // EvalExpr
+21
+```
+
+### DEBUG + TRACE (Future)
+```
+EvalExpr {
+  CompExpr {
     Token Stream [FUNC test() RETURN 42 ENDFUNC]
     Opcode Stream [ENTER, PUSHINT 42, RETURNVAL]
-  }
-  ExecOp { ← CONVERGENCE
+  } // CompExpr
+  ExecOpCodes { ← CONVERGENCE
     Register State: IDX:4020 TOP:INT-42
-  }
-}
+  } // ExecOpCodes
+} // EvalExpr
 ```
 
-### Literate Output Examples
+### Literate Output Examples (Future)
 
 **Token Stream Rendering:**
 ```
@@ -508,22 +586,28 @@ Function test() [Node: 0x4010]
 
 ## Target Methods for REPL/Function Tracing
 
-### REPL Execution Path
-- `Statement.EvaluateExpression()` → `"EvExpr"`
-- `Compiler.CompileExpression()` → `"CompEx"`
-- `Compiler.compilePrimary()` → `"CompPr"`
-- `Executor.ExecuteOpcodes()` → `"ExecOp"`
+### REPL Execution Path ✅ **IMPLEMENTED**
+- `Statement.EvaluateExpression()` → `"EvalExpr"` ✅
+- `Compiler.CompileExpression()` → `"CompExpr"` ✅
+- `Executor.ExecuteOpcodes()` → `"ExecOpCodes"` ✅
 
-### Function Execution Path  
-- `Functions.Compile()` → `"CompFn"`
-- `Compiler.CompileFunction()` → `"CompFu"`
-- `Functions.JumpToOpCodes()` → `"JumpOp"`
-- `Executor.ExecuteOpcodes()` → `"ExecOp"` (convergence)
+### Function Execution Path (Next Target)
+- `Functions.Compile()` → `"FnComp"`
+- `Compiler.CompileFunction()` → `"CompFn"`
+- `Functions.JumpToOpCodes()` → `"FnJump"`
+- `Executor.ExecuteOpcodes()` → `"ExecOpCodes"` (convergence)
 
-### Key Decision Points
+### Key Decision Points (Future)
 - `Console.processTokens()` → `"ProcTk"` (REPL vs statement)
 - `Statement.Execute()` → `"ExecSt"` (statement dispatch)
 - `executeCall()` vs `executeCallF()` → `"Call"` vs `"CallF"`
+
+### Expression Compilation Details (Future)
+- `Compiler.compilePrimary()` → `"CompPrim"`
+- `Compiler.compileLogical()` → `"CompLog"`
+- `Compiler.compileComparison()` → `"CompCmp"`
+- `Compiler.compileAdditive()` → `"CompAdd"`
+- `Compiler.compileMultiplicative()` → `"CompMult"`
 
 ## Convergence Points
 **Convergence points** are where different execution paths merge back into the same code. The key convergence point is `Executor.ExecuteOpcodes()` - both REPL expressions and function calls should generate the same opcodes and use the same execution engine.
@@ -539,7 +623,7 @@ This validates that the unification is working correctly:
 - **Future-proof**: Easy to add terse mode or error logging
 - **Granular debug control**: Choose tracing level independently
 - **Single responsibility**: Each unit has clear, focused purpose
-- **Visual call hierarchy**: Easy to see execution flow
+- **Visual call hierarchy**: Easy to see execution flow ✅ **WORKING**
 - **Literate debugging**: Human-readable structure dumps
 - **Path validation**: Direct verification of REPL vs Function convergence
 - **Zero overhead**: Production builds unaffected when symbols undefined
@@ -547,60 +631,59 @@ This validates that the unification is working correctly:
 ## Implementation Checklist
 
 ### Phase 1: Errors ✅ **COMPLETE**
-- [x] **Create Errors.asm**
+- [x] **Create Error.asm**
   - [x] Move error message strings from Messages.asm
-  - [x] Implement `setError()` helper method
   - [x] Create one-liner error methods (SyntaxError, TypeMismatch, etc.)
 - [x] **Update Messages.asm**
-  - [x] Remove error message strings (moved to Errors.asm)
+  - [x] Remove error message strings (moved to Error.asm)
   - [x] Keep status messages (Welcome, OK, MemoryMsg, etc.)
-  - [x] Update any references to moved constants
-- [x] **Systematically replace verbose error patterns with one-liners:**
-  - [x] Compiler.asm: Replace all error pattern occurrences
-  - [x] Statement.asm: Replace all error pattern occurrences  
-  - [x] Tokenizer.asm: Replace all error pattern occurrences
-  - [x] Variables.asm: Replace all error pattern occurrences
-  - [x] Functions.asm: Replace all error pattern occurrences
-  - [x] Console.asm: Replace all error pattern occurrences
-  - [x] Instructions.asm: Replace all error pattern occurrences
-  - [x] Add `uses "Error"` to all affected units
+- [x] **Systematically replace verbose error patterns with one-liners**
+  - [x] All units updated to use Error.SyntaxError(); BIT ZP.EmulatorPCL pattern
 
-### Phase 2: Tools -> Tools, Debug ✅ **COMPLETE**
+### Phase 2: Tools → Tools, Debug ✅ **COMPLETE**
 - [x] **Create Debug.asm** 
   - [x] Move debug methods from Tools.asm (DumpVariables, DumpStack, etc.)
   - [x] Move register output methods (XOut, YOut, TOut, etc.)
   - [x] Add `#ifdef DEBUG` guards around all methods
 - [x] **Refactor Tools.asm**
   - [x] Remove debug methods (moved to Debug.asm)
-  - [x] Remove register output methods (moved to Debug.asm) 
   - [x] Keep only production utilities (string ops, type ops, basic I/O)
-  - [x] Update any internal dependencies
 
-### Phase 3: Trace
-- [ ] **Create Trace.asm**
-  - [x] Added ZP.TraceIndent to ZeroPage.asm
-  - [ ] Initialize ZP.TraceIndent at start of session
-  - [ ] Implement PrintIndent() with shared compilation guard
-  - [ ] Implement MethodEntry() and MethodExit() with TRACE guards  
-  - [ ] Implement MarkConvergence() for convergence point detection
-  - [ ] Add no-op versions for production builds
+### Phase 3: Trace ✅ **CORE COMPLETE**
+- [x] **Create Trace.asm**
+  - [x] Added ZP.TraceIndent, ZP.TraceMessageL/H to ZeroPage.asm
+  - [x] Initialize ZP.TraceIndent in InitializeBASIC()
+  - [x] Implement PrintIndent() with shared compilation guard
+  - [x] Implement MethodEntry() and MethodExit() with TRACE guards  
+  - [x] Implement MarkConvergence() for convergence point detection
+  - [x] Add compact syntax for efficient trace calls
+- [x] **Insert trace calls to REPL execution path:**
+  - [x] Statement.EvaluateExpression() → "EvalExpr"
+  - [x] Compiler.CompileExpression() → "CompExpr"  
+  - [x] Executor.ExecuteOpcodes() → "ExecOpCodes"
 
-### Phase 4: Insert Trace Calls
-- [ ] **Add method entry/exit tracing to key units:**
-  - [ ] Statement
-  - [ ] Compiler
-  - [ ] Executor
-  - [ ] Functions
+### Phase 4: Function Execution Tracing
+- [ ] **Add trace calls to function execution path:**
+  - [ ] Functions.Compile() → "FnComp"
+  - [ ] Compiler.CompileFunction() → "CompFn"
+  - [ ] Functions.JumpToOpCodes() → "FnJump"
+  - [ ] Executor.executeCall() → "Call"
+  - [ ] Executor.executeCallF() → "CallF"
 
-### Code Quality Standards (All Phases)
-- [ ] **Flag preservation**: Preserve only what methods actually modify
-- [ ] **Register preservation**: Proper save/restore for modified registers  
-- [ ] **Left-margin alignment**: Debug code easy to identify/remove
-- [ ] **Single exit pattern**: No early returns without cleanup
-- [ ] **No ZP corruption**: Debug uses only designated scratch space
-- [ ] **No error pollution**: Debug failures don't set ZP.LastError
-- [ ] **Buffer isolation**: Debug doesn't corrupt main program buffers
-- [ ] **PC at call site**: Error PC set at call site, not in error method
+### Phase 5: Enhanced Trace Context
+- [ ] **Add operator context to trace output:**
+  - [ ] Modify compilation methods to show current operator
+  - [ ] Format: `CompMult { // '*'` and `} // CompMult '*'`
+  - [ ] Add convergence markers where paths merge
+
+### Code Quality Standards (All Phases) ✅ **MAINTAINED**
+- [x] **Flag preservation**: Methods preserve only what they modify
+- [x] **Register preservation**: Proper save/restore for modified registers  
+- [x] **Left-margin alignment**: Debug code easy to identify/remove
+- [x] **Single exit pattern**: Clean error handling and cleanup
+- [x] **No ZP corruption**: Debug uses only designated scratch space
+- [x] **No error pollution**: Debug failures don't set ZP.LastError
+- [x] **PC at call site**: Error PC set at call site with BIT ZP.EmulatorPCL
   
 ## Future Enhancements
 - Implement new literate rendering methods (RenderTokenStream, RenderFunction, etc.)
@@ -612,5 +695,3 @@ This validates that the unification is working correctly:
 - Interactive debugging commands (in addition to DUMP, BUFFERS, HEAP)
 - Breakpoint simulation
 - Error logging and statistics (to file via changes to the Windows emulator)
-
-

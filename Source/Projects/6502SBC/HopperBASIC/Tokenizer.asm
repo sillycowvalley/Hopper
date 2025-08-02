@@ -893,14 +893,14 @@ unit Tokenizer
     // Replace existing TokenizeLine() with mode-aware version
     TokenizeLine() 
     {
-        STZ ZP.OpcodeTemp  // Replace mode = 0
+        STZ ZP.OpCodeTemp  // Replace mode = 0
         TokenizeLineWithMode();
     }
 
     TokenizeAndAppendLine()
     {
         LDA #1 // Append mode = 1
-        STA ZP.OpcodeTemp   
+        STA ZP.OpCodeTemp   
         TokenizeLineWithMode();
     }
 
@@ -912,7 +912,7 @@ unit Tokenizer
     // Error: Sets ZP.LastError if tokenization fails
     TokenizeLineWithMode()
     {
-        LDA ZP.OpcodeTemp
+        LDA ZP.OpCodeTemp
         if (Z)
         {
             // Replace mode - clear token buffer
@@ -926,7 +926,7 @@ unit Tokenizer
         if (Z)
         {
             // Empty line handling depends on mode
-            LDA ZP.OpcodeTemp
+            LDA ZP.OpCodeTemp
             if (Z)
             {
                 // Replace mode - add EOL token for empty line
@@ -950,7 +950,7 @@ unit Tokenizer
         if (Z)
         {
             // Line is only whitespace - treat same as empty line
-            LDA ZP.OpcodeTemp
+            LDA ZP.OpCodeTemp
             if (Z)
             {
                 // Replace mode - add EOL token
@@ -1393,7 +1393,7 @@ unit Tokenizer
         Error.CheckError();
         if (NC) { return; }
         
-        LDA ZP.OpcodeTemp
+        LDA ZP.OpCodeTemp
         if (Z)
         {
             // Reset tokenizer position only in replace mode

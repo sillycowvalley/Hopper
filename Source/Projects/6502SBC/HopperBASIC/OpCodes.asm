@@ -4,7 +4,7 @@ unit OpCodes
     // 
     // Encoding scheme uses 6+2 bits:
     // - Bits 7-6: Operand count (00=none, 01=one byte, 10=two bytes, 11=reserved)
-    // - Bits 5-0: Opcode value (0-63 per group)
+    // - Bits 5-0: OpCode value (0-63 per group)
     //
     // This design enables:
     // - Fast dispatch: Single byte fetch reveals operand count
@@ -12,14 +12,14 @@ unit OpCodes
     // - Future expansion: 64 opcodes reserved for complex instructions
     // - Resolve-and-replace: Unresolved opcodes patch to fast versions after first execution
     
-    enum OpcodeType
+    enum OpCodeType
     {
         // === INVALID OPCODE ===
         INVALID      = 0x00,  // Invalid opcode - triggers error
         
         // === OPCODES WITH NO OPERANDS (0x01-0x3F) ===
         // Bits 7-6: 00 (no operands)
-        // Bits 5-0: Opcode (1-63 available, 0x00 reserved for INVALID)
+        // Bits 5-0: OpCode (1-63 available, 0x00 reserved for INVALID)
         
         // Arithmetic operations
         ADD          = 0x01,  // Pop two values, push sum
@@ -62,7 +62,7 @@ unit OpCodes
         
         // === OPCODES WITH ONE BYTE OPERAND (0x40-0x7F) ===
         // Bits 7-6: 01 (one byte operand)
-        // Bits 5-0: Opcode (0-63 available)
+        // Bits 5-0: OpCode (0-63 available)
         
         // Literal pushes (small values)
         PUSHBIT      = 0x40,  // Push BIT immediate [value] (0 or 1)
@@ -88,7 +88,7 @@ unit OpCodes
         
         // === OPCODES WITH TWO BYTE OPERANDS (0x80-0xBF) ===
         // Bits 7-6: 10 (two byte operands)
-        // Bits 5-0: Opcode (0-63 available)
+        // Bits 5-0: OpCode (0-63 available)
         
         // Literal pushes (16-bit values)
         PUSHINT      = 0x80,  // Push INT immediate [lsb] [msb]
@@ -129,11 +129,11 @@ unit OpCodes
     
     // **Resolve-and-Replace Architecture:**
     //
-    // **Unresolved Opcodes (First Execution):**
+    // **Unresolved OpCodes (First Execution):**
     // - CALL: Function call by name offset in token buffer
     // - PUSHGLOBAL/POPGLOBAL: Variable access by name offset in token buffer
     //
-    // **Resolved Opcodes (Subsequent Executions):**
+    // **Resolved OpCodes (Subsequent Executions):**
     // - CALLF: Direct function call via node address (2-3x faster)
     // - PUSHGLOBALF/POPGLOBALF: Direct variable access via node address (2-3x faster)
     //

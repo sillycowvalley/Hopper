@@ -54,7 +54,10 @@ unit Debug
     const string listVL = "VL:";
     const string listFL = "FL:";
     const string listIT = "IT:";
-    
+#endif
+
+#if defined(DEBUG) || defined(TRACE)
+
     // Convenience wrappers - allow existing debug code to work unchanged
     // Input: A = character to output / None for newline
     // Output: Character/newline printed to serial
@@ -65,17 +68,15 @@ unit Debug
     // Common helper for single space
     // Input: None
     // Output: Single space printed to serial
-    // Preserves: Everything
+    // Modifies: A, Z
     Space()
     {
-        PHP
-        PHA
-        LDA #' '
-        Tools.COut();
-        PLA
-        PLP
+        LDA #' ' Tools.COut();
     }
     
+#endif
+
+#ifdef DEBUG
     // Print null-terminated string to serial output
     // Input: ZP.IDX = pointer to null-terminated string
     // Output: String printed to serial
@@ -1029,9 +1030,9 @@ unit Debug
         STA ZP.ACCH
         Tools.PrintStringACC();
         
-        LDA ZP.OpcodeBufferLengthH    // 0x3B
+        LDA ZP.OpCodeBufferLengthH    // 0x3B
         Serial.HexOut();
-        LDA ZP.OpcodeBufferLengthL    // 0x3A
+        LDA ZP.OpCodeBufferLengthL    // 0x3A
         Serial.HexOut();
         
         LDA #(basicPCLabel % 256)
@@ -1052,9 +1053,9 @@ unit Debug
         Tools.PrintStringACC();
         
         // Dump opcode buffer (first 64 bytes)
-        LDA #(Address.BasicOpcodeBuffer & 0xFF)
+        LDA #(Address.BasicOpCodeBuffer & 0xFF)
         STA ZP.M0
-        LDA #(Address.BasicOpcodeBuffer >> 8)
+        LDA #(Address.BasicOpCodeBuffer >> 8)
         STA ZP.M1
         DumpMemoryBlock();
         

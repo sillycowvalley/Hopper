@@ -1,6 +1,7 @@
 program HopperBASIC
 {
-    #define DEBUG
+    //#define DEBUG
+    #define TRACE
     
     #define CPU_65C02S
     #define HOPPER_BASIC
@@ -14,6 +15,10 @@ program HopperBASIC
     
     uses "Messages"
     uses "Error"
+    uses "Debug"
+    uses "Trace"
+    uses "Tools"
+    
     
     uses "Tokenizer"
     uses "FunctionDeclaration.asm"
@@ -27,14 +32,13 @@ program HopperBASIC
     uses "Executor"
     
     uses "Console"
-    uses "Debug"
-    uses "Tools"
     
     
     // Initialize the BASIC system
     InitializeBASIC()
     {
         Error.ClearError();
+        Trace.Initialize();    // Initialize trace system (NOP in production code)
         
         // Initialize serial communication first
         Serial.Initialize();

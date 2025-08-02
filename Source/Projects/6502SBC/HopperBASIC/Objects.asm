@@ -35,7 +35,7 @@ unit Objects
     const byte snTokens = 3;             // Tokens pointer field offset (2 bytes)
     const byte snValue = 5;              // Value/args field offset (2 bytes)
     const byte snArguments = 5;          // same slot as Values, better name for Function arguments
-    const byte snOpcodes = 7;            // Opcode stream pointer offset (2 bytes) - NEW!
+    const byte snOpCodes = 7;            // OpCode stream pointer offset (2 bytes) - NEW!
     const byte snName = 9;               // Name field offset (variable length) - shifted by 2
     
     // Initialize empty symbol tables

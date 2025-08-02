@@ -56,7 +56,7 @@ unit Functions
             STA [ZP.IDX], Y
             
             // clear opCodes
-            LDY # Objects.snOpcodes
+            LDY # Objects.snOpCodes
             STA [ZP.IDX], Y
             INY
             STA [ZP.IDX], Y
@@ -435,7 +435,7 @@ unit Functions
          
             
         // clear opCodes stream
-        LDY # Objects.snOpcodes
+        LDY # Objects.snOpCodes
         LDA [ZP.IDX], Y
         STA ZP.IDYL
         INY
@@ -459,7 +459,7 @@ unit Functions
         STA ZP.IDXL
         
         // set to null
-        LDY # Objects.snOpcodes
+        LDY # Objects.snOpCodes
         LDA # 0
         STA [ZP.IDX], Y
         INY
@@ -500,7 +500,7 @@ unit Functions
     // Retrieve opcode stream for execution
     // Input: ZP.IDX = function node address
     // Output: ZP.IDY = opcode stream pointer, C set if compiled, NC if not compiled
-    GetOpcodes()
+    GetOpCodes()
     {
         PHA
         PHY
@@ -519,7 +519,7 @@ unit Functions
         else
         {
             // Function is compiled - return opcode stream pointer
-            LDY # Objects.snOpcodes
+            LDY # Objects.snOpCodes
             LDA [ZP.IDX], Y
             STA ZP.IDYL
             INY
@@ -551,7 +551,7 @@ unit Functions
         LDA #']' Debug.COut(); LDA #' ' Debug.COut();
 #endif        
         
-        LDY #Objects.snOpcodes
+        LDY #Objects.snOpCodes
         LDA [ZP.IDX], Y
         STA ZP.PCL
         INY
@@ -694,8 +694,8 @@ unit Functions
             
             if (NC) { break; }
             
-            // Copy opcodes from BasicOpcodeBuffer to permanent function storage
-            copyOpcodesToFunction();
+            // Copy opcodes from BasicOpCodeBuffer to permanent function storage
+            copyOpCodesToFunction();
             Error.CheckError();
             if (NC) { break; }
             
@@ -728,10 +728,10 @@ unit Functions
     }
 
     // Helper method to copy opcodes to permanent storage
-    // Input: ZP.IDX = function node address, opcodes in BasicOpcodeBuffer
-    // Output: Opcodes copied to allocated memory and stored in function node
+    // Input: ZP.IDX = function node address, opcodes in BasicOpCodeBuffer
+    // Output: OpCodes copied to allocated memory and stored in function node
     // Modifies: ZP.ACC, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, ZP.FLENGTH
-    copyOpcodesToFunction()
+    copyOpCodesToFunction()
     {
         PHA
         PHX
@@ -746,8 +746,8 @@ unit Functions
         loop // Single exit block
         {
             // Check if we have any opcodes to copy
-            LDA ZP.OpcodeBufferLengthL
-            ORA ZP.OpcodeBufferLengthH
+            LDA ZP.OpCodeBufferLengthL
+            ORA ZP.OpCodeBufferLengthH
             if (Z)
             {
                 // No opcodes - this shouldn't happen but handle gracefully
@@ -756,9 +756,9 @@ unit Functions
             }
             
             // Allocate memory for opcode storage
-            LDA ZP.OpcodeBufferLengthL
+            LDA ZP.OpCodeBufferLengthL
             STA ZP.ACCL
-            LDA ZP.OpcodeBufferLengthH
+            LDA ZP.OpCodeBufferLengthH
             STA ZP.ACCH
             
             Memory.Allocate(); // Returns address in ZP.IDX
@@ -779,9 +779,9 @@ unit Functions
             STA ZP.ACCH
             
             // Set up copy parameters
-            LDA #(Address.BasicOpcodeBuffer % 256)
-            STA ZP.FSOURCEADDRESSL        // Source: BasicOpcodeBuffer
-            LDA #(Address.BasicOpcodeBuffer / 256)
+            LDA #(Address.BasicOpCodeBuffer % 256)
+            STA ZP.FSOURCEADDRESSL        // Source: BasicOpCodeBuffer
+            LDA #(Address.BasicOpCodeBuffer / 256)
             STA ZP.FSOURCEADDRESSH
             
             LDA ZP.ACCL
@@ -789,9 +789,9 @@ unit Functions
             LDA ZP.ACCH
             STA ZP.FDESTINATIONADDRESSH
             
-            LDA ZP.OpcodeBufferLengthL    // Length: opcode buffer length
+            LDA ZP.OpCodeBufferLengthL    // Length: opcode buffer length
             STA ZP.FLENGTHL
-            LDA ZP.OpcodeBufferLengthH
+            LDA ZP.OpCodeBufferLengthH
             STA ZP.FLENGTHH
             
             // Copy opcodes to permanent storage
@@ -804,11 +804,11 @@ unit Functions
             STA ZP.IDXL
             
             // Store opcode storage address in function node
-            LDY #Objects.snOpcodes
-            LDA ZP.ACCL  // Opcode storage address LSB
+            LDY #Objects.snOpCodes
+            LDA ZP.ACCL  // OpCode storage address LSB
             STA [ZP.IDX], Y
             INY
-            LDA ZP.ACCH  // Opcode storage address MSB
+            LDA ZP.ACCH  // OpCode storage address MSB
             STA [ZP.IDX], Y
             
             SEC // Success

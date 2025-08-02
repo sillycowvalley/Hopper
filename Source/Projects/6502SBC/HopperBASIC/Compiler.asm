@@ -20,7 +20,7 @@ unit Compiler
     const uint compilerOpCode         = Address.BasicCompilerWorkspace + 4;  // 1 byte - opcode to emit
     const uint compilerOperand1       = Address.BasicCompilerWorkspace + 5;  // 1 byte - first operand
     const uint compilerOperand2       = Address.BasicCompilerWorkspace + 6;  // 1 byte - second operand
-    const uint compilerLastOpcode     = Address.BasicCompilerWorkspace + 7;  // 1 byte - last opcode emitted
+    const uint compilerLastOpCode     = Address.BasicCompilerWorkspace + 7;  // 1 byte - last opcode emitted
     const uint compilerFuncArgs       = Address.BasicCompilerWorkspace + 8;  // 1 byte - number of arguments for current FUNC being compiled
     const uint compilerFuncLocals     = Address.BasicCompilerWorkspace + 9;  // 1 byte - number of locals for current FUNC being compiled
     const uint compilerLiteralBaseL   = Address.BasicCompilerWorkspace + 10; // 1 byte - literal base address low
@@ -29,18 +29,18 @@ unit Compiler
     
     
     // Initialize the opcode buffer for compilation
-    // Output: Opcode buffer ready for emission
-    // Modifies: ZP.OpcodeBufferLengthL/H (set to 0), ZP.CompilerTokenPosL/H (set to current), ZP.CompilerFlags (cleared), ZP.PC (set to buffer start)
-    InitOpcodeBuffer()
+    // Output: OpCode buffer ready for emission
+    // Modifies: ZP.OpCodeBufferLengthL/H (set to 0), ZP.CompilerTokenPosL/H (set to current), ZP.CompilerFlags (cleared), ZP.PC (set to buffer start)
+    InitOpCodeBuffer()
     {
         // Clear opcode buffer length
-        STZ ZP.OpcodeBufferLengthL
-        STZ ZP.OpcodeBufferLengthH
+        STZ ZP.OpCodeBufferLengthL
+        STZ ZP.OpCodeBufferLengthH
         
         // Initialize PC to start of opcode buffer
-        LDA #(Address.BasicOpcodeBuffer % 256)
+        LDA #(Address.BasicOpCodeBuffer % 256)
         STA ZP.PCL
-        LDA #(Address.BasicOpcodeBuffer / 256)
+        LDA #(Address.BasicOpCodeBuffer / 256)
         STA ZP.PCH
         
         // Save current tokenizer position for literal references
@@ -52,8 +52,8 @@ unit Compiler
         // Clear compiler flags
         STZ ZP.CompilerFlags
         
-        LDA # OpcodeType.INVALID
-        STA compilerLastOpcode
+        LDA # OpCodeType.INVALID
+        STA compilerLastOpCode
         
         SEC // Success
     }
@@ -66,14 +66,14 @@ unit Compiler
     {
         // Add required bytes to current buffer length
         CLC
-        ADC ZP.OpcodeBufferLengthL
-        STA ZP.OpcodeBufferLengthL
-        LDA ZP.OpcodeBufferLengthH
+        ADC ZP.OpCodeBufferLengthL
+        STA ZP.OpCodeBufferLengthL
+        LDA ZP.OpCodeBufferLengthH
         ADC #0
-        STA ZP.OpcodeBufferLengthH
+        STA ZP.OpCodeBufferLengthH
         
         // Compare against buffer size (512 bytes = 0x0200)
-        LDA ZP.OpcodeBufferLengthH
+        LDA ZP.OpCodeBufferLengthH
         CMP #0x02
         if (C) // >= 0x0200, overflow
         {
@@ -86,9 +86,9 @@ unit Compiler
     
     // Emit a single-byte opcode (no operands)
     // Input: compilerOpCode = opcode value
-    // Output: Opcode written to buffer
-    // Modifies: ZP.OpcodeBufferLengthL/H (incremented), ZP.PC (incremented)
-    EmitOpcode()
+    // Output: OpCode written to buffer
+    // Modifies: ZP.OpCodeBufferLengthL/H (incremented), ZP.PC (incremented)
+    EmitOpCode()
     {
 #ifdef DEBUG       
         Tools.NL(); LDA #'>' Debug.COut();
@@ -103,7 +103,7 @@ unit Compiler
         // Write opcode to buffer
         LDA compilerOpCode
         STA [ZP.PC]
-        STA compilerLastOpcode
+        STA compilerLastOpCode
         
         // Increment PC
         INC ZP.PCL
@@ -117,9 +117,9 @@ unit Compiler
     
     // Emit opcode with one byte operand
     // Input: compilerOpCode = opcode value, compilerOperand1 = operand byte
-    // Output: Opcode and operand written to buffer
-    // Modifies: ZP.OpcodeBufferLengthL/H (incremented by 2), ZP.PC (incremented by 2)
-    EmitOpcodeWithByte()
+    // Output: OpCode and operand written to buffer
+    // Modifies: ZP.OpCodeBufferLengthL/H (incremented by 2), ZP.PC (incremented by 2)
+    EmitOpCodeWithByte()
     {
 #ifdef DEBUG       
         Tools.NL(); LDA #'>' Debug.COut();
@@ -135,7 +135,7 @@ unit Compiler
         // Write opcode
         LDA compilerOpCode
         STA [ZP.PC]
-        STA compilerLastOpcode
+        STA compilerLastOpCode
         
         // Increment PC
         INC ZP.PCL
@@ -160,9 +160,9 @@ unit Compiler
     
     // Emit opcode with two byte operands (word value)
     // Input: compilerOpCode = opcode value, compilerOperand1 = LSB, compilerOperand2 = MSB
-    // Output: Opcode and operands written to buffer
-    // Modifies: ZP.OpcodeBufferLengthL/H (incremented by 3), ZP.PC (incremented by 3)
-    EmitOpcodeWithWord()
+    // Output: OpCode and operands written to buffer
+    // Modifies: ZP.OpCodeBufferLengthL/H (incremented by 3), ZP.PC (incremented by 3)
+    EmitOpCodeWithWord()
     {
 #ifdef DEBUG       
         Tools.NL(); LDA #'>' Debug.COut();
@@ -179,7 +179,7 @@ unit Compiler
         // Write opcode
         LDA compilerOpCode
         STA [ZP.PC]
-        STA compilerLastOpcode
+        STA compilerLastOpCode
         
         // Increment PC
         INC ZP.PCL
@@ -232,17 +232,17 @@ unit Compiler
     // Emit PUSHCSTRING opcode with word operand
     // Input: compilerOperand1 = string pointer LSB, compilerOperand2 = string pointer MSB  
     // Output: PUSHCSTRING opcode emitted with operands, C set if successful
-    // Modifies: A, ZP.OpcodeBufferLengthL/H, buffer state
+    // Modifies: A, ZP.OpCodeBufferLengthL/H, buffer state
     EmitPushCString()
     {
         PHA
         
         // Set up opcode
-        LDA #OpcodeType.PUSHCSTRING
+        LDA #OpCodeType.PUSHCSTRING
         STA compilerOpCode
         
         // Emit opcode with word operand (uses compilerOperand1/2)
-        EmitOpcodeWithWord();
+        EmitOpCodeWithWord();
         
         PLA
     }
@@ -281,9 +281,9 @@ unit Compiler
             STA compilerOperand2  // MSB
             
             // Emit PUSHGLOBAL with word operand
-            LDA # OpcodeType.PUSHGLOBAL
+            LDA # OpCodeType.PUSHGLOBAL
             STA compilerOpCode
-            EmitOpcodeWithWord();
+            EmitOpCodeWithWord();
             break;
         }
         
@@ -296,7 +296,7 @@ unit Compiler
     // Emit PUSHBIT opcode with immediate value
     // Input: A = bit value (0 or 1)
     // Output: PUSHBIT opcode emitted with value
-    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpcodeWithByte()
+    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
     EmitPushBit()
     {
         // Validate bit value (must be 0 or 1)
@@ -309,30 +309,30 @@ unit Compiler
         
         // Set up parameters for emission
         STA compilerOperand1          // Store value as operand
-        LDA #OpcodeType.PUSHBIT
+        LDA #OpCodeType.PUSHBIT
         STA compilerOpCode
         
-        EmitOpcodeWithByte();
+        EmitOpCodeWithByte();
     }
     
     // Emit PUSHBYTE opcode with immediate value
     // Input: A = byte value
     // Output: PUSHBYTE opcode emitted with value
-    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpcodeWithByte()
+    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
     EmitPushByte()
     {
         // Set up parameters for emission
         STA compilerOperand1          // Store value as operand
-        LDA #OpcodeType.PUSHBYTE
+        LDA #OpCodeType.PUSHBYTE
         STA compilerOpCode
         
-        EmitOpcodeWithByte();
+        EmitOpCodeWithByte();
     }
     
     // Emit PUSHINT or PUSHWORD opcode with word value
     // Input: ZP.TOPT = type (determines opcode), compilerOperand1 = LSB, compilerOperand2 = MSB
     // Output: Appropriate opcode emitted with value
-    // Modifies: compilerOpCode, buffer state via EmitOpcodeWithWord()
+    // Modifies: compilerOpCode, buffer state via EmitOpCodeWithWord()
     EmitPushWord()
     {
         // Select opcode based on type
@@ -340,18 +340,18 @@ unit Compiler
         CMP #BasicType.INT
         if (Z)
         {
-            LDA #OpcodeType.PUSHINT
+            LDA #OpCodeType.PUSHINT
             STA compilerOpCode
-            EmitOpcodeWithWord();
+            EmitOpCodeWithWord();
             return;
         }
         
         CMP #BasicType.WORD
         if (Z)
         {
-            LDA #OpcodeType.PUSHWORD
+            LDA #OpCodeType.PUSHWORD
             STA compilerOpCode
-            EmitOpcodeWithWord();
+            EmitOpCodeWithWord();
             return;
         }
         
@@ -375,9 +375,9 @@ unit Compiler
         {
             LDA ZP.ACCL
             STA compilerOperand1
-            LDA #OpcodeType.POPGLOBAL
+            LDA #OpCodeType.POPGLOBAL
             STA compilerOpCode
-            EmitOpcodeWithByte();
+            EmitOpCodeWithByte();
             return;
         }
         
@@ -389,44 +389,44 @@ unit Compiler
     // Emit arithmetic operation opcode
     // Input: A = operation token (Tokens.PLUS, Tokens.MINUS, etc.)
     // Output: Corresponding arithmetic opcode emitted
-    // Modifies: compilerOpCode, buffer state via EmitOpcode(), A/X/Y registers
+    // Modifies: compilerOpCode, buffer state via EmitOpCode(), A/X/Y registers
     EmitArithmeticOp()
     {
         switch (A)
         {
             case Tokens.PLUS:
             {
-                LDA #OpcodeType.ADD
+                LDA #OpCodeType.ADD
                 STA compilerOpCode
-                EmitOpcode();
+                EmitOpCode();
                 return;
             }
             case Tokens.MINUS:
             {
-                LDA #OpcodeType.SUB
+                LDA #OpCodeType.SUB
                 STA compilerOpCode
-                EmitOpcode();
+                EmitOpCode();
                 return;
             }
             case Tokens.MULTIPLY:
             {
-                LDA #OpcodeType.MUL
+                LDA #OpCodeType.MUL
                 STA compilerOpCode
-                EmitOpcode();
+                EmitOpCode();
                 return;
             }
             case Tokens.DIVIDE:
             {
-                LDA #OpcodeType.DIV
+                LDA #OpCodeType.DIV
                 STA compilerOpCode
-                EmitOpcode();
+                EmitOpCode();
                 return;
             }
             case Tokens.MOD:
             {
-                LDA #OpcodeType.MOD
+                LDA #OpCodeType.MOD
                 STA compilerOpCode
-                EmitOpcode();
+                EmitOpCode();
                 return;
             }
             default:
@@ -440,51 +440,51 @@ unit Compiler
     // Emit comparison operation opcode
     // Input: A = comparison token (Tokens.EQUALS, Tokens.LESSTHAN, etc.)
     // Output: Corresponding comparison opcode emitted
-    // Modifies: compilerOpCode, buffer state via EmitOpcode(), A/X/Y registers
+    // Modifies: compilerOpCode, buffer state via EmitOpCode(), A/X/Y registers
     EmitComparisonOp()
     {
         switch (A)
         {
             case Tokens.EQUALS:
             {
-                LDA #OpcodeType.EQ
+                LDA #OpCodeType.EQ
                 STA compilerOpCode
-                EmitOpcode();
+                EmitOpCode();
                 return;
             }
             case Tokens.NOTEQUAL:
             {
-                LDA #OpcodeType.NE
+                LDA #OpCodeType.NE
                 STA compilerOpCode
-                EmitOpcode();
+                EmitOpCode();
                 return;
             }
             case Tokens.LT:
             {
-                LDA #OpcodeType.LT
+                LDA #OpCodeType.LT
                 STA compilerOpCode
-                EmitOpcode();
+                EmitOpCode();
                 return;
             }
             case Tokens.GT:
             {
-                LDA #OpcodeType.GT
+                LDA #OpCodeType.GT
                 STA compilerOpCode
-                EmitOpcode();
+                EmitOpCode();
                 return;
             }
             case Tokens.LE:
             {
-                LDA #OpcodeType.LE
+                LDA #OpCodeType.LE
                 STA compilerOpCode
-                EmitOpcode();
+                EmitOpCode();
                 return;
             }
             case Tokens.GE:
             {
-                LDA #OpcodeType.GE
+                LDA #OpCodeType.GE
                 STA compilerOpCode
-                EmitOpcode();
+                EmitOpCode();
                 return;
             }
             default:
@@ -498,30 +498,30 @@ unit Compiler
     // Emit logical operation opcode
     // Input: A = logical token (Tokens.AND, Tokens.OR, Tokens.NOT)
     // Output: Corresponding logical opcode emitted
-    // Modifies: compilerOpCode, buffer state via EmitOpcode(), A/X/Y registers
+    // Modifies: compilerOpCode, buffer state via EmitOpCode(), A/X/Y registers
     EmitLogicalOp()
     {
         switch (A)
         {
             case Tokens.AND:
             {
-                LDA #OpcodeType.LOGICAL_AND
+                LDA #OpCodeType.LOGICAL_AND
                 STA compilerOpCode
-                EmitOpcode();
+                EmitOpCode();
                 return;
             }
             case Tokens.OR:
             {
-                LDA #OpcodeType.LOGICAL_OR
+                LDA #OpCodeType.LOGICAL_OR
                 STA compilerOpCode
-                EmitOpcode();
+                EmitOpCode();
                 return;
             }
             case Tokens.NOT:
             {
-                LDA #OpcodeType.LOGICAL_NOT
+                LDA #OpCodeType.LOGICAL_NOT
                 STA compilerOpCode
-                EmitOpcode();
+                EmitOpCode();
                 return;
             }
             default:
@@ -535,23 +535,23 @@ unit Compiler
     // Emit bitwise operation opcode
     // Input: A = bitwise token 
     // Output: Corresponding bitwise opcode emitted
-    // Modifies: compilerOpCode, buffer state via EmitOpcode(), A/X/Y registers
+    // Modifies: compilerOpCode, buffer state via EmitOpCode(), A/X/Y registers
     EmitBitwiseOp()
     {
         switch (A)
         {
             case Tokens.BITWISE_AND:
             {
-                LDA #OpcodeType.BITWISE_AND
+                LDA #OpCodeType.BITWISE_AND
                 STA compilerOpCode
-                EmitOpcode();
+                EmitOpCode();
                 return;
             }
             case Tokens.BITWISE_OR:
             {
-                LDA #OpcodeType.BITWISE_OR
+                LDA #OpCodeType.BITWISE_OR
                 STA compilerOpCode
-                EmitOpcode();
+                EmitOpCode();
                 return;
             }
             default:
@@ -564,59 +564,59 @@ unit Compiler
     
     // Emit unary minus (negation) opcode
     // Output: NEG opcode emitted
-    // Modifies: compilerOpCode, buffer state via EmitOpcode()
+    // Modifies: compilerOpCode, buffer state via EmitOpCode()
     EmitUnaryMinus()
     {
-        LDA #OpcodeType.NEG
+        LDA #OpCodeType.NEG
         STA compilerOpCode
-        EmitOpcode();
+        EmitOpCode();
     }
     
     // Emit system call opcode
     // Input: A = system call ID
     // Output: SYSCALL opcode emitted with ID
-    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpcodeWithByte()
+    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
     EmitSysCall()
     {
         STA compilerOperand1      // Store ID as operand
-        LDA #OpcodeType.SYSCALL
+        LDA #OpCodeType.SYSCALL
         STA compilerOpCode
-        EmitOpcodeWithByte();
+        EmitOpCodeWithByte();
     }
     
     // Emit ENTER opcode for function entry (stack frame setup)
     // Output: ENTER opcode with argument count emitted
-    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpcodeWithByte()
+    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
     EmitEnter()
     {
-        LDA #OpcodeType.ENTER
+        LDA #OpCodeType.ENTER
         STA compilerOpCode
-        EmitOpcode();
+        EmitOpCode();
     }
     
     
     // Emit RETURN opcode for function exit (no return value)
     // Input: A = total stack slots to clean up (arguments + locals)
     // Output: RETURN opcode with cleanup count emitted
-    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpcodeWithByte()
+    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
     EmitReturn()
     {
         STA compilerOperand1          // Store cleanup count as operand
-        LDA #OpcodeType.RETURN
+        LDA #OpCodeType.RETURN
         STA compilerOpCode
-        EmitOpcodeWithByte();
+        EmitOpCodeWithByte();
     }
     
     // Emit RETURNVAL opcode for function exit with return value
     // Input: A = total stack slots to clean up (arguments + locals)
     // Output: RETURNVAL opcode with cleanup count emitted (expects return value on stack)
-    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpcodeWithByte()
+    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
     EmitReturnVal()
     {
         STA compilerOperand1          // Store cleanup count as operand
-        LDA #OpcodeType.RETURNVAL
+        LDA #OpCodeType.RETURNVAL
         STA compilerOpCode
-        EmitOpcodeWithByte();
+        EmitOpCodeWithByte();
     }  
     
     // Emit CALL opcode for unresolved function call
@@ -653,9 +653,9 @@ unit Compiler
 #endif                        
                                    
             // Emit CALL with absolute address (not offset!)
-            LDA # OpcodeType.CALL
+            LDA # OpCodeType.CALL
             STA compilerOpCode
-            EmitOpcodeWithWord();
+            EmitOpCodeWithWord();
             break;
         }
         
@@ -1535,32 +1535,24 @@ unit Compiler
     // Main entry point: Compile current expression to opcodes
     // Input: ZP.CurrentToken = first token of expression
     // Output: Expression compiled to opcode buffer, ZP.CurrentToken = token after expression
-    // Modifies: Opcode buffer, ZP.CurrentToken, compilation state, ZP.TokenizerPos (via Tokenizer calls)
+    // Modifies: OpCode buffer, ZP.CurrentToken, compilation state, ZP.TokenizerPos (via Tokenizer calls)
+    const string strCompileExpression = "CompExpr";
     CompileExpression()
     {
-#ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'E'
-        Debug.COut();
+#ifdef TRACE
+        LDA #(strCompileExpression % 256) STA ZP.TraceMessageL LDA #(strCompileExpression / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
+
         
         // Initialize opcode buffer if this is the start of compilation
-        InitOpcodeBuffer();
+        InitOpCodeBuffer();
         if (NC) { return; }
         
         // Compile the expression using same precedence as Expression.asm
         compileLogical();
         
-#ifdef DEBUG
-        LDA #'C'
-        Debug.COut();
-        LDA #'E'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
+#ifdef TRACE
+        LDA #(strCompileExpression % 256) STA ZP.TraceMessageL LDA #(strCompileExpression / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
     
@@ -1568,7 +1560,7 @@ unit Compiler
     // Compile function body from tokens to opcodes  
     // Input: Function tokens already copied to BasicTokenizerBuffer, ZP.TokenBufferLength set, ZP.ACCL = number of arguments for FUNC
     // Output: Function compiled to opcode buffer, C set if successful
-    // Modifies: Opcode buffer, ZP.CurrentToken, ZP.TokenizerPos, compilation state
+    // Modifies: OpCode buffer, ZP.CurrentToken, ZP.TokenizerPos, compilation state
     // Error: Sets ZP.LastError if compilation fails
     CompileFunction()
     {
@@ -1593,7 +1585,7 @@ unit Compiler
         loop // Single exit block
         {
             // Initialize opcode buffer
-            InitOpcodeBuffer();
+            InitOpCodeBuffer();
             if (NC) { break; }
             
             // Reset tokenizer to start of function body
@@ -1644,7 +1636,7 @@ unit Compiler
             if (NC) { break; }
             
             // Check if last opcode was RETURN or RETURNVAL
-            checkLastOpcodeIsReturn();
+            checkLastOpCodeIsReturn();
             if (NC) // Last opcode was not RETURN
             {
                 // Emit RETURN with locals cleanup count
@@ -1676,7 +1668,7 @@ unit Compiler
     // Compile a single statement within a function
     // Input: ZP.CurrentToken = first token of statement
     // Output: Statement compiled to opcodes, ZP.CurrentToken = token after statement  
-    // Modifies: Opcode buffer, ZP.CurrentToken, compilation state
+    // Modifies: OpCode buffer, ZP.CurrentToken, compilation state
     // Error: Sets ZP.LastError if statement compilation fails
     compileStatement()
     {
@@ -1746,7 +1738,7 @@ unit Compiler
     // Compile PRINT statement
     // Input: ZP.CurrentToken = PRINT token
     // Output: PRINT statement compiled to opcodes
-    // Modifies: Opcode buffer, ZP.CurrentToken, compilation state
+    // Modifies: OpCode buffer, ZP.CurrentToken, compilation state
     compilePrintStatement()
     {
     #ifdef DEBUG
@@ -1808,7 +1800,7 @@ unit Compiler
     // Compile RETURN statement
     // Input: ZP.CurrentToken = RETURN token
     // Output: RETURN statement compiled to opcodes
-    // Modifies: Opcode buffer, ZP.CurrentToken, compilation state
+    // Modifies: OpCode buffer, ZP.CurrentToken, compilation state
     compileReturnStatement()
     {
         // Get next token
@@ -1856,22 +1848,22 @@ unit Compiler
     }
 
     // Check if the last emitted opcode is RETURN or RETURNVAL
-    // Input: None (uses compilerLastOpcode tracking)
+    // Input: None (uses compilerLastOpCode tracking)
     // Output: C set if last opcode is RETURN/RETURNVAL, NC if not
     // Modifies: Processor flags only
-    checkLastOpcodeIsReturn()
+    checkLastOpCodeIsReturn()
     {
-        LDA compilerLastOpcode
+        LDA compilerLastOpCode
         
         // Check if it's RETURN or RETURNVAL
-        CMP #OpcodeType.RETURN
+        CMP #OpCodeType.RETURN
         if (Z)
         {
             SEC // Found RETURN
             return;
         }
         
-        CMP #OpcodeType.RETURNVAL
+        CMP #OpCodeType.RETURNVAL
         if (Z)
         {
             SEC // Found RETURNVAL

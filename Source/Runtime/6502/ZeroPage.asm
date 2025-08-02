@@ -138,15 +138,15 @@ unit ZP
     const byte TokenLiteralPosH     = 0x39;  // Literal data position high byte
 
     // === JIT COMPILER STATE (0x3A-0x3F) ===
-    const byte OpcodeBufferLength   = 0x3A;  // Length of opcodes in BasicOpcodeBuffer (16-bit)
-    const byte OpcodeBufferLengthL  = 0x3A;  // Low byte
-    const byte OpcodeBufferLengthH  = 0x3B;  // High byte
+    const byte OpCodeBufferLength   = 0x3A;  // Length of opcodes in BasicOpcodeBuffer (16-bit)
+    const byte OpCodeBufferLengthL  = 0x3A;  // Low byte
+    const byte OpCodeBufferLengthH  = 0x3B;  // High byte
     // Use ZP.PCL/ZP.PCH for opcode execution program counter
     const byte CompilerTokenPos     = 0x3C;  // Token position during compilation (16-bit)
     const byte CompilerTokenPosL    = 0x3C;  // Low byte
     const byte CompilerTokenPosH    = 0x3D;  // High byte
     const byte CompilerFlags        = 0x3E;  // Compilation flags (bit 0: in function, etc.)
-    const byte OpcodeTemp           = 0x3F;  // Temporary byte for opcode construction
+    const byte OpCodeTemp           = 0x3F;  // Temporary byte for opcode construction
 
     // === AVAILABLE (0x40-0x4F) ===
     // 16 bytes still available for future features
@@ -180,9 +180,12 @@ unit ZP
     const byte SymbolTemp0          = 0x7D;  // General temporary storage
     const byte SymbolTemp1          = 0x7E;  // General temporary storage
     const byte SymbolTemp2          = 0x7F;  // General temporary storage
-    
+
+    // Repurposed W65C22 VIA slots, for now
     const byte EmulatorPCL          = 0xF0;  // BIT this address to lock the current PC into this and the next slot
     const byte EmulatorPCH          = 0xF1;
+    const byte TraceMessageL        = 0xF2;  // used by Trace.asm
+    const byte TraceMessageH        = 0xF3;
     
     
 
@@ -402,10 +405,12 @@ unit ZP
     const byte ACIADATA             = 0xED; //0x1F;
     
     // W65C22 VIA
+#if !defined(HOPPER_BASIC)
     const byte PORTB                = 0xF0;
     const byte PORTA                = 0xF1;
     const byte DDRB                 = 0xF2;
     const byte DDRA                 = 0xF3;
+#endif
     const byte T1CL                 = 0xF4; // Timer 1 counter low
     const byte T1CH                 = 0xF5; // Timer 1 counter high
     

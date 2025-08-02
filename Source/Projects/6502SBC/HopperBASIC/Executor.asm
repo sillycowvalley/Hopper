@@ -23,15 +23,20 @@ unit Executor
     
     
     // Main entry point - Execute compiled opcodes
-    // Input: ZP.OpcodeBufferLengthL/H contains opcode buffer length
+    // Input: ZP.OpCodeBufferLengthL/H contains opcode buffer length
     // Output: C set if successful, NC if error occurred
-    // Uses: BasicOpcodeBuffer at Address.BasicOpcodeBuffer (0x0C00)
-    ExecuteOpcodes()
+    // Uses: BasicOpCodeBuffer at Address.BasicOpCodeBuffer (0x0C00)
+    const string strExecuteOpCodes = "ExecOpCodes";
+    ExecuteOpCodes()
     {
         PHA
         PHX
         PHY
-        
+
+#ifdef TRACE
+        LDA #(strExecuteOpCodes % 256) STA ZP.TraceMessageL LDA #(strExecuteOpCodes / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+
         // CRITICAL: Reset stacks before execution to ensure clean state
         // Previous expression errors or interruptions could leave stacks inconsistent
         STZ ZP.SP    // Reset value/type stack pointer to 0
@@ -67,14 +72,14 @@ unit Executor
                 }
                 
                 // Fetch and execute next opcode
-                FetchOpcode();
+                FetchOpCode();
                 if (NC) 
                 { 
                     break; // Error fetching opcode
                 }
                 
                 // Dispatch opcode (A contains opcode value)
-                DispatchOpcode();
+                DispatchOpCode();
                 if (NC) 
                 { 
                     break; // Error executing opcode
@@ -82,37 +87,42 @@ unit Executor
             }
             break;
         } // Single exit block
-        
+
+#ifdef TRACE
+        LDA #(strExecuteOpCodes % 256) STA ZP.TraceMessageL LDA #(strExecuteOpCodes / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+
+
         PLY
         PLX
         PLA
     }
     
     // Initialize executor state from opcode buffer
-    // Input: ZP.OpcodeBufferLengthL/H contains opcode buffer length
+    // Input: ZP.OpCodeBufferLengthL/H contains opcode buffer length
     // Output: C set if successful, NC if error
     InitExecutor()
     {
-        // Set start address to BasicOpcodeBuffer
-        LDA #(Address.BasicOpcodeBuffer % 256)
+        // Set start address to BasicOpCodeBuffer
+        LDA #(Address.BasicOpCodeBuffer % 256)
         STA executorStartAddrL
         STA ZP.PCL // Start execution at beginning
-        LDA #(Address.BasicOpcodeBuffer / 256)
+        LDA #(Address.BasicOpCodeBuffer / 256)
         STA executorStartAddrH
         STA ZP.PCH
         
         // Calculate end address = start + length
         CLC
         LDA executorStartAddrL
-        ADC ZP.OpcodeBufferLengthL
+        ADC ZP.OpCodeBufferLengthL
         STA executorEndAddrL
         LDA executorStartAddrH
-        ADC ZP.OpcodeBufferLengthH
+        ADC ZP.OpCodeBufferLengthH
         STA executorEndAddrH
         
         // Validate buffer length is not zero
-        LDA ZP.OpcodeBufferLengthL
-        ORA ZP.OpcodeBufferLengthH
+        LDA ZP.OpCodeBufferLengthL
+        ORA ZP.OpCodeBufferLengthH
         if (Z)
         {
             Error.InternalError(); BIT ZP.EmulatorPCL
@@ -125,7 +135,7 @@ unit Executor
     // Fetch next opcode from buffer
     // Input: ZP.PC points to current position
     // Output: A contains opcode, ZP.PC advanced, C set if success, NC if bounds error
-    FetchOpcode()
+    FetchOpCode()
     {
         // Check bounds
         LDA ZP.PCL
@@ -226,7 +236,7 @@ unit Executor
     // Dispatch opcode to appropriate handler
     // Input: A contains opcode value
     // Output: Execution continues (errors detected via Error.CheckError())
-    DispatchOpcode()
+    DispatchOpCode()
     {
         TAY // for jump table optimization
         
@@ -237,105 +247,105 @@ unit Executor
             // === NO OPERAND OPCODES (0x00-0x3F) ===
             
             // Arithmetic operations
-            case OpcodeType.ADD:
+            case OpCodeType.ADD:
             {
                 Instructions.Addition();
             }
-            case OpcodeType.SUB:
+            case OpCodeType.SUB:
             {
                 Instructions.Subtraction();
             }
-            case OpcodeType.MUL:
+            case OpCodeType.MUL:
             {
                 Instructions.Multiply();
             }
-            case OpcodeType.DIV:
+            case OpCodeType.DIV:
             {
                 Instructions.Divide();
             }
-            case OpcodeType.MOD:
+            case OpCodeType.MOD:
             {
                 Instructions.Modulo();
             }
-            case OpcodeType.NEG:
+            case OpCodeType.NEG:
             {
                 Instructions.UnaryMinus();
             }
             
             // Bitwise operations
-            case OpcodeType.BITWISE_AND:
+            case OpCodeType.BITWISE_AND:
             {
                 Instructions.BitwiseAnd();
             }
-            case OpcodeType.BITWISE_OR:
+            case OpCodeType.BITWISE_OR:
             {
                 Instructions.BitwiseOr();
             }
             
             // Logical operations (BIT operands only)
-            case OpcodeType.LOGICAL_AND:
+            case OpCodeType.LOGICAL_AND:
             {
                 Instructions.LogicalAnd();
             }
-            case OpcodeType.LOGICAL_OR:
+            case OpCodeType.LOGICAL_OR:
             {
                 Instructions.LogicalOr();
             }
-            case OpcodeType.LOGICAL_NOT:
+            case OpCodeType.LOGICAL_NOT:
             {
                 Instructions.LogicalNot();
             }
             
             // Comparison operations (all return BIT)
-            case OpcodeType.EQ:
+            case OpCodeType.EQ:
             {
                 ComparisonInstructions.Equal();
             }
-            case OpcodeType.NE:
+            case OpCodeType.NE:
             {
                 ComparisonInstructions.NotEqual();
             }
-            case OpcodeType.LT:
+            case OpCodeType.LT:
             {
                 ComparisonInstructions.LessThan();
             }
-            case OpcodeType.GT:
+            case OpCodeType.GT:
             {
                 ComparisonInstructions.GreaterThan();
             }
-            case OpcodeType.LE:
+            case OpCodeType.LE:
             {
                 ComparisonInstructions.LessEqual();
             }
-            case OpcodeType.GE:
+            case OpCodeType.GE:
             {
                 ComparisonInstructions.GreaterEqual();
             }
             
             // Function operations
-            case OpcodeType.ENTER:
+            case OpCodeType.ENTER:
             {
                 executeEnter();
             }
-            case OpcodeType.RETURN:
+            case OpCodeType.RETURN:
             {
                 executeReturn();
             }
-            case OpcodeType.RETURNVAL:
+            case OpCodeType.RETURNVAL:
             {
                 executeReturnVal();
             }
             
             // Stack manipulation
-            case OpcodeType.DECSP:
+            case OpCodeType.DECSP:
             {
                 executeDecSp();
             }
-            case OpcodeType.DUP:
+            case OpCodeType.DUP:
             {
                 executeDup();
             }
-            case OpcodeType.NOP:
+            case OpCodeType.NOP:
             {
                 executeNop();
             }
@@ -343,61 +353,61 @@ unit Executor
             // === ONE BYTE OPERAND OPCODES (0x40-0x7F) ===
             
             // Literal pushes (8-bit)
-            case OpcodeType.PUSHBIT:
+            case OpCodeType.PUSHBIT:
             {
                 executePushBit();
             }
-            case OpcodeType.PUSHBYTE:
+            case OpCodeType.PUSHBYTE:
             {
                 executePushByte();
             }
-            case OpcodeType.PUSHCSTRING:
+            case OpCodeType.PUSHCSTRING:
             {
                 executePushCString();
             }
             
             // Variable operations
-            case OpcodeType.PUSHGLOBAL:
+            case OpCodeType.PUSHGLOBAL:
             {
                 executePushGlobal();
             }
-            case OpcodeType.PUSHLOCAL:
+            case OpCodeType.PUSHLOCAL:
             {
                 executePushLocal();
             }
-            case OpcodeType.POPGLOBAL:
+            case OpCodeType.POPGLOBAL:
             {
                 executePopGlobal();
             }
-            case OpcodeType.POPLOCAL:
+            case OpCodeType.POPLOCAL:
             {
                 executePopLocal();
             }
             
             // Control flow (short jumps)
-            case OpcodeType.JUMPB:
+            case OpCodeType.JUMPB:
             {
                 executeJumpB();
             }
-            case OpcodeType.JUMPZB:
+            case OpCodeType.JUMPZB:
             {
                 executeJumpZB();
             }
-            case OpcodeType.JUMPNZB:
+            case OpCodeType.JUMPNZB:
             {
                 executeJumpNZB();
             }
             
             // Function and system calls
-            case OpcodeType.CALL:
+            case OpCodeType.CALL:
             {
                 executeCall();
             }
-            case OpcodeType.CALLF:
+            case OpCodeType.CALLF:
             {
                 executeCallF();
             }
-            case OpcodeType.SYSCALL:
+            case OpCodeType.SYSCALL:
             {
                 executeSysCall();
             }
@@ -405,25 +415,25 @@ unit Executor
             // === TWO BYTE OPERAND OPCODES (0x80-0xBF) ===
             
             // Literal pushes (16-bit)
-            case OpcodeType.PUSHINT:
+            case OpCodeType.PUSHINT:
             {
                 executePushInt();
             }
-            case OpcodeType.PUSHWORD:
+            case OpCodeType.PUSHWORD:
             {
                 executePushWord();
             }
             
             // Control flow (long jumps)
-            case OpcodeType.JUMPW:
+            case OpCodeType.JUMPW:
             {
                 executeJumpW();
             }
-            case OpcodeType.JUMPZW:
+            case OpCodeType.JUMPZW:
             {
                 executeJumpZW();
             }
-            case OpcodeType.JUMPNZW:
+            case OpCodeType.JUMPNZW:
             {
                 executeJumpNZW();
             }
@@ -734,7 +744,7 @@ unit Executor
                 DEC ZP.PCH
             }
             DEC ZP.PCL
-            LDA # OpcodeType.CALLF
+            LDA # OpCodeType.CALLF
             STA [ZP.PC]
             
     #ifdef DEBUG

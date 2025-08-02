@@ -226,59 +226,42 @@ unit Statement
     //         ZP.CurrentToken = token after expression
     // Munts: Stack, ZP.CurrentToken, all ZP variables used by parsing
     // Error: Sets ZP.LastError if syntax error or type mismatch
+    const string strEvaluateExpression = "EvalExpr";
     EvaluateExpression()
     {
-    #ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'E'
-        Debug.COut();
-    #endif
-        // Set literal base to BasicTokenizerBuffer for REPL
-        LDA #(Address.BasicTokenizerBuffer % 256)
-        STA ZP.IDYL  
-        LDA #(Address.BasicTokenizerBuffer / 256) 
-        STA ZP.IDYH
-        Compiler.SetLiteralBase();
-        Compiler.CompileExpression();
-        Error.CheckError();
-        if (NC) 
-        { 
-    #ifdef DEBUG
-            LDA #'E'
-            Debug.COut();
-            LDA #'!'
-            Debug.COut();
-            LDA #'>'
-            Debug.COut();
-    #endif
-            return; 
-        }
+#ifdef TRACE
+        LDA #(strEvaluateExpression % 256) STA ZP.TraceMessageL LDA #(strEvaluateExpression / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        loop
+        {
+            // Set literal base to BasicTokenizerBuffer for REPL
+            LDA #(Address.BasicTokenizerBuffer % 256)
+            STA ZP.IDYL  
+            LDA #(Address.BasicTokenizerBuffer / 256) 
+            STA ZP.IDYH
+            Compiler.SetLiteralBase();
+            Compiler.CompileExpression();
+            Error.CheckError();
+            if (NC) 
+            { 
+                break; 
+            }
+            
+            // 2. Execute opcodes ? result on stack
+            Executor.ExecuteOpCodes();
+            Error.CheckError();
+            if (NC) 
+            { 
+                break; 
+            }
+            
+            // Result is now on stack
+            break;
+        } // single exit
         
-        // 2. Execute opcodes ? result on stack
-        Executor.ExecuteOpcodes();
-        Error.CheckError();
-        if (NC) 
-        { 
-    #ifdef DEBUG
-            LDA #'E'
-            Debug.COut();
-            LDA #'!'
-            Debug.COut();
-            LDA #'>'
-            Debug.COut();
-    #endif
-            return; 
-        }
-        
-        // Result is now on stack - identical to old behavior
-        
-    #ifdef DEBUG
-        LDA #'E'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-    #endif
+#ifdef TRACE
+        LDA #(strEvaluateExpression % 256) STA ZP.TraceMessageL LDA #(strEvaluateExpression / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     
