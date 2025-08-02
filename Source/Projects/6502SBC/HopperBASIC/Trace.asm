@@ -50,6 +50,7 @@ unit Trace
     // Preserves: All registers and flags
     MethodEntry()
     {
+        PHP
         PHA
         PHX
         PHY
@@ -57,7 +58,23 @@ unit Trace
         PrintIndent();
         
         // Print method name from ZP.TraceMessage
-        LDA ZP.TraceMessageL STA ZP.ACCL LDA ZP.TraceMessageH STA ZP.ACCH Tools.PrintStringACC(); Debug.Space(); LDA #'{' Debug.COut(); Debug.NL();
+        LDA ZP.TraceMessageL STA ZP.ACCL LDA ZP.TraceMessageH STA ZP.ACCH Tools.PrintStringACC(); Debug.Space(); LDA #'{' Debug.COut(); 
+        
+        LDA ZP.LastErrorL
+        ORA ZP.LastErrorH
+        if (NZ)
+        {
+            LDA #'!' Debug.COut(); 
+            PLP
+            if (NC)
+            {
+                LDA #'N' Debug.COut(); LDA #'C' Debug.COut(); 
+                CLC
+            }
+            PHP
+        }
+        
+        Debug.NL();
         
         // Increase indentation
         INC ZP.TraceIndent
@@ -65,6 +82,7 @@ unit Trace
         PLY
         PLX
         PLA
+        PLP
     }
     
     // Method exit tracing  
@@ -73,6 +91,7 @@ unit Trace
     // Preserves: All registers and flags
     MethodExit()
     {
+        PHP
         PHA
         PHX
         PHY
@@ -85,11 +104,28 @@ unit Trace
         LDA #(endBrace % 256) STA ZP.ACCL LDA #(endBrace / 256) STA ZP.ACCH Tools.PrintStringACC(); // ' } // '
         
         // Print method name from ZP.TraceMessage
-        LDA ZP.TraceMessageL STA ZP.ACCL LDA ZP.TraceMessageH STA ZP.ACCH Tools.PrintStringACC(); Debug.Space(); Debug.NL();
+        LDA ZP.TraceMessageL STA ZP.ACCL LDA ZP.TraceMessageH STA ZP.ACCH Tools.PrintStringACC(); Debug.Space(); 
+        
+        LDA ZP.LastErrorL
+        ORA ZP.LastErrorH
+        if (NZ)
+        {
+            LDA #'!' Debug.COut(); 
+            PLP
+            if (NC)
+            {
+                LDA #'N' Debug.COut(); LDA #'C' Debug.COut(); 
+                CLC
+            }
+            PHP
+        }
+        
+        Debug.NL();
         
         PLY
         PLX
         PLA
+        PLP
     }
     
     // Mark convergence points where different execution paths merge
