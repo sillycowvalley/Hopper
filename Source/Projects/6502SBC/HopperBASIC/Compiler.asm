@@ -238,12 +238,16 @@ unit Compiler
     {
         PHA
         
-        // Set up opcode
-        LDA #OpCodeType.PUSHCSTRING
-        STA compilerOpCode
-        
-        // Emit opcode with word operand (uses compilerOperand1/2)
-        EmitOpCodeWithWord();
+        loop
+        {
+            // Set up opcode
+            LDA #OpCodeType.PUSHCSTRING
+            STA compilerOpCode
+            
+            // Emit opcode with word operand (uses compilerOperand1/2)
+            EmitOpCodeWithWord();
+            break;
+        } // loop
         
         PLA
     }
@@ -336,28 +340,32 @@ unit Compiler
     // Modifies: compilerOpCode, buffer state via EmitOpCodeWithWord()
     EmitPushWord()
     {
-        // Select opcode based on type
-        LDA ZP.TOPT
-        CMP #BasicType.INT
-        if (Z)
+        loop
         {
-            LDA #OpCodeType.PUSHINT
-            STA compilerOpCode
-            EmitOpCodeWithWord();
-            return;
-        }
-        
-        CMP #BasicType.WORD
-        if (Z)
-        {
-            LDA #OpCodeType.PUSHWORD
-            STA compilerOpCode
-            EmitOpCodeWithWord();
-            return;
-        }
-        
-        // Invalid type for word push
-        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+            // Select opcode based on type
+            LDA ZP.TOPT
+            CMP #BasicType.INT
+            if (Z)
+            {
+                LDA #OpCodeType.PUSHINT
+                STA compilerOpCode
+                EmitOpCodeWithWord();
+                break;
+            }
+            
+            CMP #BasicType.WORD
+            if (Z)
+            {
+                LDA #OpCodeType.PUSHWORD
+                STA compilerOpCode
+                EmitOpCodeWithWord();
+                break;
+            }
+            
+            // Invalid type for word push
+            Error.TypeMismatch(); BIT ZP.EmulatorPCL
+            break;
+        } // loop
     }
     
     // Emit POPGLOBAL opcode to store to variable  
@@ -366,24 +374,28 @@ unit Compiler
     // Modifies: compilerOpCode, compilerOperand1, ZP.ACC (via CalculateTokenOffset), buffer state
     EmitPopGlobal()
     {
-        // Calculate offset to current token (variable name)
-        CalculateTokenOffset();
-        if (NC) { return; }
-        
-        // Check if offset fits in single byte
-        LDA ZP.ACCH
-        if (Z) // High byte is 0, use single-byte operand
+        loop
         {
-            LDA ZP.ACCL
-            STA compilerOperand1
-            LDA #OpCodeType.POPGLOBAL
-            STA compilerOpCode
-            EmitOpCodeWithByte();
-            return;
-        }
-        
-        // Offset too large
-        Error.BufferOverflow(); BIT ZP.EmulatorPCL
+            // Calculate offset to current token (variable name)
+            CalculateTokenOffset();
+            if (NC) { break; }
+            
+            // Check if offset fits in single byte
+            LDA ZP.ACCH
+            if (Z) // High byte is 0, use single-byte operand
+            {
+                LDA ZP.ACCL
+                STA compilerOperand1
+                LDA #OpCodeType.POPGLOBAL
+                STA compilerOpCode
+                EmitOpCodeWithByte();
+                break;
+            }
+            
+            // Offset too large
+            Error.BufferOverflow(); BIT ZP.EmulatorPCL
+            break;
+        } // loop
     }
     
     
@@ -393,49 +405,53 @@ unit Compiler
     // Modifies: compilerOpCode, buffer state via EmitOpCode(), A/X/Y registers
     EmitArithmeticOp()
     {
-        switch (A)
+        loop
         {
-            case Tokens.PLUS:
+            switch (A)
             {
-                LDA #OpCodeType.ADD
-                STA compilerOpCode
-                EmitOpCode();
-                return;
+                case Tokens.PLUS:
+                {
+                    LDA #OpCodeType.ADD
+                    STA compilerOpCode
+                    EmitOpCode();
+                    break;
+                }
+                case Tokens.MINUS:
+                {
+                    LDA #OpCodeType.SUB
+                    STA compilerOpCode
+                    EmitOpCode();
+                    break;
+                }
+                case Tokens.MULTIPLY:
+                {
+                    LDA #OpCodeType.MUL
+                    STA compilerOpCode
+                    EmitOpCode();
+                    break;
+                }
+                case Tokens.DIVIDE:
+                {
+                    LDA #OpCodeType.DIV
+                    STA compilerOpCode
+                    EmitOpCode();
+                    break;
+                }
+                case Tokens.MOD:
+                {
+                    LDA #OpCodeType.MOD
+                    STA compilerOpCode
+                    EmitOpCode();
+                    break;
+                }
+                default:
+                {
+                    Error.InvalidOperator(); BIT ZP.EmulatorPCL
+                    break;
+                }
             }
-            case Tokens.MINUS:
-            {
-                LDA #OpCodeType.SUB
-                STA compilerOpCode
-                EmitOpCode();
-                return;
-            }
-            case Tokens.MULTIPLY:
-            {
-                LDA #OpCodeType.MUL
-                STA compilerOpCode
-                EmitOpCode();
-                return;
-            }
-            case Tokens.DIVIDE:
-            {
-                LDA #OpCodeType.DIV
-                STA compilerOpCode
-                EmitOpCode();
-                return;
-            }
-            case Tokens.MOD:
-            {
-                LDA #OpCodeType.MOD
-                STA compilerOpCode
-                EmitOpCode();
-                return;
-            }
-            default:
-            {
-                Error.InvalidOperator(); BIT ZP.EmulatorPCL
-                return;
-            }
-        }
+            break;
+        } // loop
     }
     
     // Emit comparison operation opcode
@@ -444,57 +460,62 @@ unit Compiler
     // Modifies: compilerOpCode, buffer state via EmitOpCode(), A/X/Y registers
     EmitComparisonOp()
     {
-        switch (A)
+        loop
         {
-            case Tokens.EQUALS:
+            switch (A)
             {
-                LDA #OpCodeType.EQ
-                STA compilerOpCode
-                EmitOpCode();
-                return;
+                case Tokens.EQUALS:
+                {
+                    LDA #OpCodeType.EQ
+                    STA compilerOpCode
+                    EmitOpCode();
+                    break;
+                }
+                case Tokens.NOTEQUAL:
+                {
+                    LDA #OpCodeType.NE
+                    STA compilerOpCode
+                    EmitOpCode();
+                    break;
+                }
+                case Tokens.LT:
+                {
+                    LDA #OpCodeType.LT
+                    STA compilerOpCode
+                    EmitOpCode();
+                    break;
+                }
+                case Tokens.GT:
+                {
+                    LDA #OpCodeType.GT
+                    STA compilerOpCode
+                    EmitOpCode();
+                    break;
+                }
+                case Tokens.LE:
+                {
+                    LDA #OpCodeType.LE
+                    STA compilerOpCode
+                    EmitOpCode();
+                    break;
+                }
+                case Tokens.GE:
+                {
+                    LDA #OpCodeType.GE
+                    STA compilerOpCode
+                    EmitOpCode();
+                    break;
+                }
+                default:
+                {
+                    Error.InvalidOperator(); BIT ZP.EmulatorPCL
+                    break;
+                }
             }
-            case Tokens.NOTEQUAL:
-            {
-                LDA #OpCodeType.NE
-                STA compilerOpCode
-                EmitOpCode();
-                return;
-            }
-            case Tokens.LT:
-            {
-                LDA #OpCodeType.LT
-                STA compilerOpCode
-                EmitOpCode();
-                return;
-            }
-            case Tokens.GT:
-            {
-                LDA #OpCodeType.GT
-                STA compilerOpCode
-                EmitOpCode();
-                return;
-            }
-            case Tokens.LE:
-            {
-                LDA #OpCodeType.LE
-                STA compilerOpCode
-                EmitOpCode();
-                return;
-            }
-            case Tokens.GE:
-            {
-                LDA #OpCodeType.GE
-                STA compilerOpCode
-                EmitOpCode();
-                return;
-            }
-            default:
-            {
-                Error.InvalidOperator(); BIT ZP.EmulatorPCL
-                return;
-            }
-        }
+            break;
+        } // loop
     }
+
     
     // Emit logical operation opcode
     // Input: A = logical token (Tokens.AND, Tokens.OR, Tokens.NOT)
@@ -502,35 +523,39 @@ unit Compiler
     // Modifies: compilerOpCode, buffer state via EmitOpCode(), A/X/Y registers
     EmitLogicalOp()
     {
-        switch (A)
+        loop
         {
-            case Tokens.AND:
+            switch (A)
             {
-                LDA #OpCodeType.LOGICAL_AND
-                STA compilerOpCode
-                EmitOpCode();
-                return;
+                case Tokens.AND:
+                {
+                    LDA #OpCodeType.LOGICAL_AND
+                    STA compilerOpCode
+                    EmitOpCode();
+                    break;
+                }
+                case Tokens.OR:
+                {
+                    LDA #OpCodeType.LOGICAL_OR
+                    STA compilerOpCode
+                    EmitOpCode();
+                    break;
+                }
+                case Tokens.NOT:
+                {
+                    LDA #OpCodeType.LOGICAL_NOT
+                    STA compilerOpCode
+                    EmitOpCode();
+                    break;
+                }
+                default:
+                {
+                    Error.InvalidOperator(); BIT ZP.EmulatorPCL
+                    break;
+                }
             }
-            case Tokens.OR:
-            {
-                LDA #OpCodeType.LOGICAL_OR
-                STA compilerOpCode
-                EmitOpCode();
-                return;
-            }
-            case Tokens.NOT:
-            {
-                LDA #OpCodeType.LOGICAL_NOT
-                STA compilerOpCode
-                EmitOpCode();
-                return;
-            }
-            default:
-            {
-                Error.InvalidOperator(); BIT ZP.EmulatorPCL
-                return;
-            }
-        }
+            break;
+        } // loop
     }
     
     // Emit bitwise operation opcode
@@ -539,28 +564,32 @@ unit Compiler
     // Modifies: compilerOpCode, buffer state via EmitOpCode(), A/X/Y registers
     EmitBitwiseOp()
     {
-        switch (A)
+        loop
         {
-            case Tokens.BITWISE_AND:
+            switch (A)
             {
-                LDA #OpCodeType.BITWISE_AND
-                STA compilerOpCode
-                EmitOpCode();
-                return;
+                case Tokens.BITWISE_AND:
+                {
+                    LDA #OpCodeType.BITWISE_AND
+                    STA compilerOpCode
+                    EmitOpCode();
+                    break;
+                }
+                case Tokens.BITWISE_OR:
+                {
+                    LDA #OpCodeType.BITWISE_OR
+                    STA compilerOpCode
+                    EmitOpCode();
+                    break;
+                }
+                default:
+                {
+                    Error.InvalidOperator(); BIT ZP.EmulatorPCL
+                    break;
+                }
             }
-            case Tokens.BITWISE_OR:
-            {
-                LDA #OpCodeType.BITWISE_OR
-                STA compilerOpCode
-                EmitOpCode();
-                return;
-            }
-            default:
-            {
-                Error.InvalidOperator(); BIT ZP.EmulatorPCL
-                return;
-            }
-        }
+            break;
+        } // loop
     }
     
     // Emit unary minus (negation) opcode
@@ -723,9 +752,6 @@ unit Compiler
 #endif
     }
     
-    // Fixed compilation methods converted to single-exit pattern
-
-    // Compile logical AND operations
     // Input: ZP.CurrentToken = current token
     // Output: Logical AND opcodes emitted, ZP.CurrentToken = token after expression
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
@@ -1859,7 +1885,7 @@ unit Compiler
             
             State.SetSuccess(); // Success
             break;
-        }
+        } // loop
         
     #ifdef DEBUG
         LDA #'P'
@@ -1877,37 +1903,41 @@ unit Compiler
     // Modifies: OpCode buffer, ZP.CurrentToken, compilation state
     compileReturnStatement()
     {
-        // Get next token
-        Tokenizer.NextToken();
-        Error.CheckError();
-        if (NC) { State.SetFailure(); return; }
-        
-        // Check if there's a return expression
-        LDA ZP.CurrentToken
-        CMP #Tokens.EOL
-        if (Z)
+        loop
         {
-            // No return value - emit RETURN
-            LDA #0  // No locals to clean up for now
-            EmitReturn();
+            // Get next token
+            Tokenizer.NextToken();
             Error.CheckError();
-            if (NC) { State.SetFailure(); return; }
+            if (NC) { State.SetFailure(); break; }
+            
+            // Check if there's a return expression
+            LDA ZP.CurrentToken
+            CMP #Tokens.EOL
+            if (Z)
+            {
+                // No return value - emit RETURN
+                LDA #0  // No locals to clean up for now
+                EmitReturn();
+                Error.CheckError();
+                if (NC) { State.SetFailure(); break; }
+                State.SetSuccess();
+                break;
+            }
+            
+            // Compile return expression
+            compileLogical();
+            Error.CheckError();
+            if (NC) { State.SetFailure(); break; }
+            
+            // Emit RETURNVAL (expects value on stack)
+            LDA #0  // No locals to clean up for now
+            EmitReturnVal();
+            Error.CheckError();
+            if (NC) { State.SetFailure(); break; }
+            
             State.SetSuccess();
-            return;
-        }
-        
-        // Compile return expression
-        compileLogical();
-        Error.CheckError();
-        if (NC) { State.SetFailure(); return; }
-        
-        // Emit RETURNVAL (expects value on stack)
-        LDA #0  // No locals to clean up for now
-        EmitReturnVal();
-        Error.CheckError();
-        if (NC) { State.SetFailure(); return; }
-        
-        State.SetSuccess();
+            break;
+        } // loop
     }
 
     // Compile IF statement (stub for now)
