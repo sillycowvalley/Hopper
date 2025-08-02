@@ -123,16 +123,6 @@ unit Statement
         LDY ZP.ACCT
         PHY
         
-#ifdef DEBUG
-        PHA
-        LDA #'<'
-        Debug.COut();
-        LDA #'R'
-        Debug.COut();
-        LDA #':'
-        Debug.COut();
-        PLA
-#endif 
         
         loop // Single exit block for clean error handling
         {
@@ -205,14 +195,7 @@ unit Statement
             CLC  // undefined identifier
             break;
         } // end of single exit block
-#ifdef DEBUG
-        PHA
-        LDA #'R'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-        PLA
-#endif        
+
         PLY
         STY ZP.ACCT
         
@@ -277,14 +260,6 @@ unit Statement
     // Error: Sets ZP.LastError if statement execution fails
     Execute()
     {
-#ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'S'
-        Debug.COut();
-        LDA ZP.CurrentToken
-        Debug.HOut();
-#endif
         loop
         {
             LDA ZP.CurrentToken
@@ -379,12 +354,6 @@ unit Statement
             }
         }
         
-#ifdef DEBUG
-        LDA #'S'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-#endif
     }
     
     // Execute PRINT statement
@@ -395,12 +364,6 @@ unit Statement
     // Error: Sets ZP.LastError if expression evaluation fails
     executePrint()
     {
-#ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'P'
-        Debug.COut();
-#endif
 
         // Get next token (should be start of expression)
         Tokenizer.NextToken();
@@ -417,12 +380,6 @@ unit Statement
             LDA #'\n'
             Serial.WriteChar();
             
-#ifdef DEBUG
-            LDA #'P'
-            Debug.COut();
-            LDA #'>'
-            Debug.COut();
-#endif
             
             SEC  // Success
             return;
@@ -460,12 +417,6 @@ unit Statement
     // Error: Sets ZP.LastError if syntax error or expression evaluation fails
     executeIf()
     {
-#ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'I'
-        Debug.COut();
-#endif
         
         // Get next token (should be start of condition expression)
         Tokenizer.NextToken();
@@ -496,12 +447,6 @@ unit Statement
         if (Z)
         {
             // Condition is false, skip to end of line
-#ifdef DEBUG
-            LDA #'I'
-            Debug.COut();
-            LDA #'>'
-            Debug.COut();
-#endif
             SEC  // Success (skip)
             return;
         }
@@ -514,12 +459,6 @@ unit Statement
         // Recursively execute the statement after THEN
         Execute();
         
-#ifdef DEBUG
-        LDA #'I'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-#endif
     }
     
     // Execute RETURN statement (stub implementation)
@@ -529,12 +468,6 @@ unit Statement
     // Error: Always sets ZP.LastError (not implemented)
     executeReturn()
     {
-#ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'R'
-        Debug.COut();
-#endif
         
         // Get next token
         Tokenizer.NextToken();
@@ -563,12 +496,6 @@ unit Statement
             Error.CheckError();
             if (NC) { return; }
         }
-#ifdef DEBUG
-        LDA #'R'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-#endif
         
         CLC  // Error
         BRK
@@ -595,16 +522,6 @@ unit Statement
     // Error: Sets ZP.LastError if undefined variable, type mismatch, or syntax error
     executeIdentifier()
     {
-    #ifdef DEBUG
-        PHA
-        LDA #'<'
-        Debug.COut();
-        LDA #'I'
-        Debug.COut();
-        LDA #'D'
-        Debug.COut();
-        PLA
-    #endif
     
         loop // Single exit block for clean error handling
         {
@@ -727,28 +644,11 @@ unit Statement
             
             break; // Exit the outer loop
         } // end single exit block
-        
-    #ifdef DEBUG
-        LDA #'I'
-        Debug.COut();
-        LDA #'D'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-    #endif
     }
         
     // Input: ZP.CurrentToken = CONST
     executeConstantDeclaration()
     {
-#ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'D'
-        Debug.COut();
-#endif        
         loop
         {
             Tokenizer.NextToken(); // consume 'CONST'
@@ -763,14 +663,6 @@ unit Statement
             processSingleSymbolDeclaration();
             break;
         } // single exit
-#ifdef DEBUG
-        LDA #'C'
-        Debug.COut();
-        LDA #'D'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-#endif        
     }
     
     // Execute variable declaration statement
@@ -782,37 +674,13 @@ unit Statement
     // Error: Sets ZP.LastError if syntax error, type mismatch, name conflict, or memory allocation fails
     executeVariableDeclaration()
     {
-#ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'V'
-        Debug.COut();
-        LDA #'D'
-        Debug.COut();
-#endif        
         LDA #(SymbolType.VARIABLE << 4)
         STA stmtSymbol
         processSingleSymbolDeclaration();
-#ifdef DEBUG
-        LDA #'V'
-        Debug.COut();
-        LDA #'D'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-#endif        
     }
     
     processSingleSymbolDeclaration()
     {
-#ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'S'
-        Debug.COut();
-        LDA #'D'
-        Debug.COut();
-#endif
 
         loop
         {
@@ -1172,14 +1040,6 @@ unit Statement
         //DumpHeap();
 #endif
         
-#ifdef DEBUG
-        LDA #'S'
-        Debug.COut();
-        LDA #'D'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-#endif
     }
       
     // Create token stream from tokenizer buffer slice

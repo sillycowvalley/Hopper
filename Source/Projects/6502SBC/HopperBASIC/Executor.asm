@@ -27,7 +27,7 @@ unit Executor
     // Input: ZP.OpCodeBufferLengthL/H contains opcode buffer length
     // Output: SystemState set (Success, Failure, or Exiting)
     // Uses: BasicOpCodeBuffer at Address.BasicOpCodeBuffer (0x0C00)
-    const string strExecuteOpCodes = "ExecOpCodes";
+    const string strExecuteOpCodes = "ExecOpCodes // Execute compiled opcodes";
     ExecuteOpCodes()
     {
         PHA
@@ -99,7 +99,7 @@ unit Executor
     // Initialize executor state from opcode buffer
     // Input: ZP.OpCodeBufferLengthL/H contains opcode buffer length
     // Output: SystemState set (Success or Failure)
-    const string initExecutorTrace = "InitExec";
+    const string initExecutorTrace = "InitExec // Initialize executor state";
     InitExecutor()
     {
 #ifdef TRACE
@@ -144,7 +144,7 @@ unit Executor
     // Fetch next opcode from buffer
     // Input: ZP.PC points to current position
     // Output: A contains opcode, ZP.PC advanced, SystemState set
-    const string fetchOpCodeTrace = "FetchOp";
+    const string fetchOpCodeTrace = "FetchOp // Fetch next opcode";
     FetchOpCode()
     {
 #ifdef TRACE
@@ -209,7 +209,7 @@ unit Executor
     // Fetch single byte operand from buffer
     // Input: ZP.PC points to operand position
     // Output: A contains operand byte, ZP.PC advanced, SystemState set
-    const string fetchOperandByteTrace = "FetchByte";
+    const string fetchOperandByteTrace = "FetchByte // Fetch byte operand";
     FetchOperandByte()
     {
 #ifdef TRACE
@@ -259,7 +259,7 @@ unit Executor
     // Fetch word operand from buffer (little-endian)
     // Input: ZP.PC points to operand position
     // Output: executorOperandL/H contains word, ZP.PC advanced by 2, SystemState set
-    const string fetchOperandWordTrace = "FetchWord";
+    const string fetchOperandWordTrace = "FetchWord // Fetch word operand";
     FetchOperandWord()
     {
 #ifdef TRACE
@@ -292,7 +292,7 @@ unit Executor
     // Dispatch opcode to appropriate handler
     // Input: A contains opcode value
     // Output: SystemState set based on execution result
-    const string dispatchOpCodeTrace = "Dispatch";
+    const string dispatchOpCodeTrace = "Dispatch // Dispatch opcode";
     DispatchOpCode()
     {
         TAY // for jump table optimization
@@ -528,7 +528,8 @@ unit Executor
 #endif
     }
     
-    const string executeNotImplementedTrace = "NotImpl";
+    // Execute unknown opcode
+    const string executeNotImplementedTrace = "NotImpl // Unknown opcode";
     executeNotImplemented()
     {
 #ifdef TRACE
@@ -551,7 +552,8 @@ unit Executor
     
     // === CONTROL FLOW AND STACK MANIPULATION HANDLERS ===
     
-    const string executeReturnTrace = "Return";
+    // Execute RETURN opcode - return from function
+    const string executeReturnTrace = "RETURN // Return from function";
     executeReturn()
     {
 #ifdef TRACE
@@ -582,7 +584,8 @@ unit Executor
         State.SetFailure();
     }
     
-    const string executeEnterTrace = "Enter";
+    // Execute ENTER opcode - enter function frame
+    const string executeEnterTrace = "ENTER // Enter function frame";
     executeEnter()
     {
 #ifdef TRACE
@@ -599,7 +602,8 @@ unit Executor
 #endif
     }
     
-    const string executeDecSpTrace = "DecSp";
+    // Execute DECSP opcode - decrement stack pointer
+    const string executeDecSpTrace = "DECSP // Decrement stack pointer";
     executeDecSp()
     {
 #ifdef TRACE
@@ -615,7 +619,8 @@ unit Executor
 #endif
     }
     
-    const string executeDupTrace = "Dup";
+    // Execute DUP opcode - duplicate top stack value
+    const string executeDupTrace = "DUP // Duplicate top stack value";
     executeDup()
     {
 #ifdef TRACE
@@ -635,7 +640,8 @@ unit Executor
 #endif
     }
     
-    const string executeNopTrace = "Nop";
+    // Execute NOP opcode - no operation
+    const string executeNopTrace = "NOP // No operation";
     executeNop()
     {
 #ifdef TRACE
@@ -652,7 +658,8 @@ unit Executor
     
     // === LITERAL PUSH HANDLERS (ONE BYTE OPERAND) ===
     
-    const string executePushBitTrace = "PushBit";
+    // Execute PUSHBIT opcode - push BIT immediate
+    const string executePushBitTrace = "PUSHBIT // Push BIT immediate";
     executePushBit()
     {
 #ifdef TRACE
@@ -679,7 +686,8 @@ unit Executor
 #endif
     }
     
-    const string executePushByteTrace = "PushByte";
+    // Execute PUSHBYTE opcode - push BYTE immediate
+    const string executePushByteTrace = "PUSHBYTE // Push BYTE immediate";
     executePushByte()
     {
 #ifdef TRACE
@@ -711,7 +719,7 @@ unit Executor
     // Input: PC points to operand bytes (string pointer LSB, MSB)
     // Output: String pointer pushed to stack as STRING type, PC advanced by 2
     // Modifies: A, X, Y, ZP.PC, ZP.TOP, ZP.TOPT, stack
-    const string executePushCStringTrace = "PushStr";
+    const string executePushCStringTrace = "PUSHCSTRING // Push CONSTSTRING pointer";
     executePushCString()
     {
 #ifdef TRACE
@@ -761,7 +769,7 @@ unit Executor
     // Input: PC points to operand bytes (node address LSB, MSB)
     // Output: Variable value pushed to stack, PC advanced by 2
     // Modifies: A, X, Y, ZP.PC, ZP.IDX, ZP.TOP, ZP.TOPT, stack
-    const string executePushGlobalTrace = "PushGlob";
+    const string executePushGlobalTrace = "PUSHGLOBAL // Push global by name";
     executePushGlobal()
     {
 #ifdef TRACE
@@ -859,7 +867,8 @@ unit Executor
     
     // === FUNCTION AND SYSTEM CALL HANDLERS (ONE BYTE OPERAND) ===
     
-    const string executeCallTrace = "Call";
+    // Execute CALL opcode - call function by name (unresolved)
+    const string executeCallTrace = "CALL // Call function by name (unresolved)";
     executeCall()
     {
 #ifdef TRACE
@@ -996,7 +1005,8 @@ unit Executor
 #endif
     }
     
-    const string executeCallFTrace = "CallF";
+    // Execute CALLF opcode - call function fast (resolved)
+    const string executeCallFTrace = "CALLF // Call function fast (resolved)";
     executeCallF()
     {
 #ifdef TRACE
@@ -1015,7 +1025,8 @@ unit Executor
 #endif
     }
     
-    const string executeSysCallTrace = "SysCall";
+    // Execute SYSCALL opcode - system call
+    const string executeSysCallTrace = "SYSCALL // System call";
     executeSysCall()
     {
 #ifdef TRACE
@@ -1060,7 +1071,8 @@ unit Executor
     
     // === LITERAL PUSH HANDLERS (TWO BYTE OPERANDS) ===
     
-    const string executePushIntTrace = "PushInt";
+    // Execute PUSHINT opcode - push INT immediate
+    const string executePushIntTrace = "PUSHINT // Push INT immediate";
     executePushInt()
     {
 #ifdef TRACE
@@ -1089,7 +1101,8 @@ unit Executor
 #endif
     }
     
-    const string executePushWordTrace = "PushWord";
+    // Execute PUSHWORD opcode - push WORD immediate
+    const string executePushWordTrace = "PUSHWORD // Push WORD immediate";
     executePushWord()
     {
 #ifdef TRACE

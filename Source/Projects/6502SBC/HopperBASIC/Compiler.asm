@@ -926,14 +926,6 @@ unit Compiler
         LDA #(compileLogicalTrace % 256) STA ZP.TraceMessageL LDA #(compileLogicalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         
-#ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'L'
-        Debug.COut();
-#endif
         loop
         {
             // Compile left operand (higher precedence)
@@ -966,14 +958,6 @@ unit Compiler
             break;
         } // loop
             
-#ifdef DEBUG
-        LDA #'C'
-        Debug.COut();
-        LDA #'L'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-#endif
 
 #ifdef TRACE
         LDA #(compileLogicalTrace % 256) STA ZP.TraceMessageL LDA #(compileLogicalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -991,14 +975,6 @@ unit Compiler
         LDA #(compileLogicalAndTrace % 256) STA ZP.TraceMessageL LDA #(compileLogicalAndTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         
-#ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'A'
-        Debug.COut();
-#endif
         
         loop
         {
@@ -1032,14 +1008,6 @@ unit Compiler
             break;
         } // loop
         
-#ifdef DEBUG
-        LDA #'C'
-        Debug.COut();
-        LDA #'A'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-#endif
 
 #ifdef TRACE
         LDA #(compileLogicalAndTrace % 256) STA ZP.TraceMessageL LDA #(compileLogicalAndTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1057,14 +1025,6 @@ unit Compiler
         LDA #(compileComparisonTrace % 256) STA ZP.TraceMessageL LDA #(compileComparisonTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         
-#ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-#endif
         
         loop
         {
@@ -1123,14 +1083,6 @@ unit Compiler
             break;
         } // loop
         
-#ifdef DEBUG
-        LDA #'C'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-#endif
 
 #ifdef TRACE
         LDA #(compileComparisonTrace % 256) STA ZP.TraceMessageL LDA #(compileComparisonTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1147,15 +1099,6 @@ unit Compiler
 #ifdef TRACE
         LDA #(compileBitwiseAndTrace % 256) STA ZP.TraceMessageL LDA #(compileBitwiseAndTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-        
-    #ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'&'
-        Debug.COut();
-    #endif
         
         loop
         {
@@ -1189,14 +1132,6 @@ unit Compiler
             break;
         } // loop
         
-    #ifdef DEBUG
-        LDA #'C'
-        Debug.COut();
-        LDA #'&'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-    #endif
 
 #ifdef TRACE
         LDA #(compileBitwiseAndTrace % 256) STA ZP.TraceMessageL LDA #(compileBitwiseAndTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1214,14 +1149,6 @@ unit Compiler
         LDA #(compileBitwiseOrTrace % 256) STA ZP.TraceMessageL LDA #(compileBitwiseOrTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         
-#ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'O'
-        Debug.COut();
-#endif
         
         loop
         {
@@ -1255,14 +1182,6 @@ unit Compiler
             break;
         } // loop
         
-#ifdef DEBUG
-        LDA #'C'
-        Debug.COut();
-        LDA #'O'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-#endif
 
 #ifdef TRACE
         LDA #(compileBitwiseOrTrace % 256) STA ZP.TraceMessageL LDA #(compileBitwiseOrTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1278,15 +1197,6 @@ unit Compiler
     {
 #ifdef TRACE
         LDA #(compileAdditiveTrace % 256) STA ZP.TraceMessageL LDA #(compileAdditiveTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        
-#ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'+'
-        Debug.COut();
 #endif
         
         loop
@@ -1347,16 +1257,6 @@ unit Compiler
             } // loop
             break;
         } // loop
-        
-#ifdef DEBUG
-        LDA #'C'
-        Debug.COut();
-        LDA #'+'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-#endif
-
 #ifdef TRACE
         LDA #(compileAdditiveTrace % 256) STA ZP.TraceMessageL LDA #(compileAdditiveTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -1373,14 +1273,6 @@ unit Compiler
         LDA #(compileMultiplicativeTrace % 256) STA ZP.TraceMessageL LDA #(compileMultiplicativeTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         
-#ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'*'
-        Debug.COut();
-#endif
         
         loop
         {
@@ -1436,14 +1328,6 @@ unit Compiler
             break;
         } // loop
         
-#ifdef DEBUG
-        LDA #'C'
-        Debug.COut();
-        LDA #'*'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-#endif
 
 #ifdef TRACE
         LDA #(compileMultiplicativeTrace % 256) STA ZP.TraceMessageL LDA #(compileMultiplicativeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1461,14 +1345,6 @@ unit Compiler
         LDA #(compileUnaryTrace % 256) STA ZP.TraceMessageL LDA #(compileUnaryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         
-#ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'U'
-        Debug.COut();
-#endif
         
         loop
         {
@@ -1521,14 +1397,6 @@ unit Compiler
             break;
         } // loop
         
-#ifdef DEBUG
-        LDA #'C'
-        Debug.COut();
-        LDA #'U'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-#endif
 
 #ifdef TRACE
         LDA #(compileUnaryTrace % 256) STA ZP.TraceMessageL LDA #(compileUnaryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1629,16 +1497,6 @@ unit Compiler
         LDA #(compileFunctionCallOrVariableTrace % 256) STA ZP.TraceMessageL LDA #(compileFunctionCallOrVariableTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         
-#ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'F'
-        Debug.COut();
-        LDA #'V'
-        Debug.COut();
-#endif
         loop // Single exit
         {
             // Save current token position for potential function name resolution
@@ -1732,16 +1590,6 @@ unit Compiler
             SEC // Success
             break;
         }
-#ifdef DEBUG
-        LDA #'C'
-        Debug.COut();
-        LDA #'F'
-        Debug.COut();
-        LDA #'V'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-#endif
 
 #ifdef TRACE
         LDA #(compileFunctionCallOrVariableTrace % 256) STA ZP.TraceMessageL LDA #(compileFunctionCallOrVariableTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1963,16 +1811,6 @@ unit Compiler
         LDA #(compileFunctionTrace % 256) STA ZP.TraceMessageL LDA #(compileFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         
-    #ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'F'
-        Debug.COut();
-        LDA #'N'
-        Debug.COut();
-    #endif
 
         LDA ZP.ACCL
         STA compilerFuncArgs
@@ -2046,17 +1884,6 @@ unit Compiler
             State.SetSuccess(); // Success
             break;
         }
-        
-    #ifdef DEBUG
-        LDA #'C'
-        Debug.COut();
-        LDA #'F'
-        Debug.COut();
-        LDA #'N'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-    #endif
 
 #ifdef TRACE
         LDA #(compileFunctionTrace % 256) STA ZP.TraceMessageL LDA #(compileFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -2079,14 +1906,6 @@ unit Compiler
         LDA #(compileStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         
-    #ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'S'
-        Debug.COut();
-    #endif
 
         loop // Single exit block
         {
@@ -2139,15 +1958,6 @@ unit Compiler
             break;
         } // loop
         
-    #ifdef DEBUG
-        LDA #'C'
-        Debug.COut();
-        LDA #'S'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-    #endif
-
 #ifdef TRACE
         LDA #(compileStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -2164,14 +1974,6 @@ unit Compiler
         LDA #(compilePrintStatementTrace % 256) STA ZP.TraceMessageL LDA #(compilePrintStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         
-    #ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'P'
-        Debug.COut();
-        LDA #'S'
-        Debug.COut();
-    #endif
 
         loop // Single exit block
         {
@@ -2214,15 +2016,6 @@ unit Compiler
             State.SetSuccess(); // Success
             break;
         } // loop
-        
-    #ifdef DEBUG
-        LDA #'P'
-        Debug.COut();
-        LDA #'S'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-    #endif
 
 #ifdef TRACE
         LDA #(compilePrintStatementTrace % 256) STA ZP.TraceMessageL LDA #(compilePrintStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
