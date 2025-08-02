@@ -120,10 +120,11 @@ unit Executor
         {
             Error.InternalError(); BIT ZP.EmulatorPCL
             State.SetFailure();
-            return;
         }
-        
-        State.SetSuccess();
+        else
+        {
+            State.SetSuccess();
+        }
     }
     
     // Fetch next opcode from buffer
@@ -131,47 +132,51 @@ unit Executor
     // Output: A contains opcode, ZP.PC advanced, SystemState set
     FetchOpCode()
     {
-        // Check bounds
-        LDA ZP.PCL
-        CMP executorEndAddrL
-        if (NZ) { /* continue */ }
-        else
+        loop
         {
-            LDA ZP.PCH
-            CMP executorEndAddrH
-            if (Z) 
-            { 
-                // At end of buffer
-                Error.InternalError(); BIT ZP.EmulatorPCL
-                State.SetFailure();
-                return; 
+            // Check bounds
+            LDA ZP.PCL
+            CMP executorEndAddrL
+            if (NZ) { /* continue */ }
+            else
+            {
+                LDA ZP.PCH
+                CMP executorEndAddrH
+                if (Z) 
+                { 
+                    // At end of buffer
+                    Error.InternalError(); BIT ZP.EmulatorPCL
+                    State.SetFailure();
+                    break; 
+                }
             }
-        }
 
-#ifdef DEBUG       
-        Tools.NL(); LDA #']' Debug.COut();
-        LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
-        LDA #' ' Debug.COut();
-#endif
+    #ifdef DEBUG       
+            Tools.NL(); LDA #']' Debug.COut();
+            LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
+            LDA #' ' Debug.COut();
+    #endif
 
-        // Fetch opcode using indirect addressing
-        LDY #0
-        LDA [ZP.PC], Y
-        PHA // Save opcode
-        
-#ifdef DEBUG       
-        PHA Debug.HOut(); LDA #' ' Debug.COut(); PLA
-#endif
-        
-        // Advance PC
-        INC ZP.PCL
-        if (Z)
-        {
-            INC ZP.PCH
+            // Fetch opcode using indirect addressing
+            LDY #0
+            LDA [ZP.PC], Y
+            PHA // Save opcode
+            
+    #ifdef DEBUG       
+            PHA Debug.HOut(); LDA #' ' Debug.COut(); PLA
+    #endif
+            
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+            
+            PLA // Restore opcode to A
+            State.SetSuccess();
+            break;
         }
-        
-        PLA // Restore opcode to A
-        State.SetSuccess();
     }
     
     // Fetch single byte operand from buffer
@@ -179,36 +184,39 @@ unit Executor
     // Output: A contains operand byte, ZP.PC advanced, SystemState set
     FetchOperandByte()
     {
-        // Check bounds
-        LDA ZP.PCL
-        CMP executorEndAddrL
-        if (NZ) { /* continue */ }
-        else
+        loop
         {
-            LDA ZP.PCH
-            CMP executorEndAddrH
-            if (Z) 
-            { 
-                Error.InternalError(); BIT ZP.EmulatorPCL
-                State.SetFailure();
-                return; 
+            // Check bounds
+            LDA ZP.PCL
+            CMP executorEndAddrL
+            if (Z)
+            {
+                LDA ZP.PCH
+                CMP executorEndAddrH
+                if (Z) 
+                { 
+                    Error.InternalError(); BIT ZP.EmulatorPCL
+                    State.SetFailure();
+                    break; 
+                }
             }
-        }
-        
-        // Fetch operand
-        LDY #0
-        LDA [ZP.PC], Y
-        PHA // Save operand
-        
-        // Advance PC
-        INC ZP.PCL
-        if (Z)
-        {
-            INC ZP.PCH
-        }
-        
-        PLA // Restore operand to A
-        State.SetSuccess();
+            // Fetch operand
+            LDY #0
+            LDA [ZP.PC], Y
+                
+            PHA // Save operand
+            
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+            
+            PLA // Restore operand to A
+            State.SetSuccess();
+            break;
+        } // loop exit
     }
     
     // Fetch word operand from buffer (little-endian)
@@ -216,19 +224,23 @@ unit Executor
     // Output: executorOperandL/H contains word, ZP.PC advanced by 2, SystemState set
     FetchOperandWord()
     {
-        // Fetch low byte
-        FetchOperandByte();
-        State.CanContinue();
-        if (NC) { return; }
-        STA executorOperandL
-        
-        // Fetch high byte
-        FetchOperandByte();
-        State.CanContinue();
-        if (NC) { return; }
-        STA executorOperandH
-        
-        State.SetSuccess();
+        loop
+        {
+            // Fetch low byte
+            FetchOperandByte();
+            State.CanContinue();
+            if (NC) { break; }
+            STA executorOperandL
+            
+            // Fetch high byte
+            FetchOperandByte();
+            State.CanContinue();
+            if (NC) { break; }
+            STA executorOperandH
+            
+            State.SetSuccess();
+            break;
+        }
     }
     
     // Dispatch opcode to appropriate handler
@@ -236,6 +248,7 @@ unit Executor
     // Output: SystemState set based on execution result
     DispatchOpCode()
     {
+
         TAY // for jump table optimization
         
         // Use switch statement for opcode dispatch
@@ -451,12 +464,15 @@ unit Executor
         {
             // Only set success if no error occurred
             State.CanContinue();
-            if (NC) 
+            if (C) 
+            {
+                State.SetSuccess();
+                
+            }
+            else
             {
                 // State was already set to Failure or Exiting by instruction
-                return;
             }
-            State.SetSuccess();
         }
     }
     
@@ -527,33 +543,37 @@ unit Executor
         // Fetch operand byte
         FetchOperandByte();
         State.CanContinue();
-        if (NC) { return; }
-        
-        // Store in ZP.TOP as BIT value (0 or 1)
-        STA ZP.TOPL
-        LDA #0
-        STA ZP.TOPH
-        LDA # BasicType.BIT
-        Stacks.PushTop();
-        
-        State.SetSuccess();
+        if (C)
+        {
+            // Store in ZP.TOP as BIT value (0 or 1)
+            STA ZP.TOPL
+            LDA #0
+            STA ZP.TOPH
+            LDA # BasicType.BIT
+            Stacks.PushTop();
+            
+            State.SetSuccess();
+        }
     }
+    
     
     executePushByte()
     {
         // Fetch operand byte
         FetchOperandByte();
         State.CanContinue();
-        if (NC) { return; }
-        
-        // Store in ZP.TOP as BYTE value
-        STA ZP.TOPL
-        LDA #0
-        STA ZP.TOPH
-        LDA # BasicType.BYTE
-        Stacks.PushTop();
-        
-        State.SetSuccess();
+        if (C)
+        {
+            
+            // Store in ZP.TOP as BYTE value
+            STA ZP.TOPL
+            LDA #0
+            STA ZP.TOPH
+            LDA # BasicType.BYTE
+            Stacks.PushTop();
+            
+            State.SetSuccess();
+        }
     }
     
     // Execute PUSHCSTRING opcode - push string pointer to stack
@@ -562,33 +582,37 @@ unit Executor
     // Modifies: A, X, Y, ZP.PC, ZP.TOP, ZP.TOPT, stack
     executePushCString()
     {
-        // Fetch string pointer (little-endian)
-        FetchOperandWord(); // Result in executorOperandL/H
-        Error.CheckError();
-        if (NC) 
-        { 
-            State.SetFailure();
-            return; 
+        loop
+        {
+            // Fetch string pointer (little-endian)
+            FetchOperandWord(); // Result in executorOperandL/H
+            Error.CheckError();
+            if (NC) 
+            { 
+                State.SetFailure();
+                break; 
+            }
+            
+            // Store pointer in ZP.TOP as STRING value
+            LDA executorOperandL
+            STA ZP.TOPL
+            LDA executorOperandH
+            STA ZP.TOPH
+            LDA #BasicType.STRING
+            STA ZP.TOPT
+            
+            // Push to stack with STRING type
+            Stacks.PushTop();
+            Error.CheckError();
+            if (NC) 
+            { 
+                State.SetFailure();
+                break; 
+            }
+            
+            State.SetSuccess();
+            break;
         }
-        
-        // Store pointer in ZP.TOP as STRING value
-        LDA executorOperandL
-        STA ZP.TOPL
-        LDA executorOperandH
-        STA ZP.TOPH
-        LDA #BasicType.STRING
-        STA ZP.TOPT
-        
-        // Push to stack with STRING type
-        Stacks.PushTop();
-        Error.CheckError();
-        if (NC) 
-        { 
-            State.SetFailure();
-            return; 
-        }
-        
-        State.SetSuccess();
     }
     
     // === VARIABLE OPERATION HANDLERS (ONE BYTE OPERAND) ===
@@ -599,41 +623,45 @@ unit Executor
     // Modifies: A, X, Y, ZP.PC, ZP.IDX, ZP.TOP, ZP.TOPT, stack
     executePushGlobal()
     {
-        // Fetch node address (little-endian)
-        FetchOperandWord(); // Result in executorOperandL/H
-        Error.CheckError();
-        if (NC) 
-        { 
-            State.SetFailure();
-            return; 
+        loop
+        {
+            // Fetch node address (little-endian)
+            FetchOperandWord(); // Result in executorOperandL/H
+            Error.CheckError();
+            if (NC) 
+            { 
+                State.SetFailure();
+                break; 
+            }
+            
+            // Transfer node address to ZP.IDX
+            LDA executorOperandL
+            STA ZP.IDXL
+            LDA executorOperandH
+            STA ZP.IDXH
+            
+            // Get the variable's value and type
+            Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = type
+            Error.CheckError();
+            if (NC) 
+            { 
+                State.SetFailure();
+                break; 
+            }
+            
+            // Push value to stack with type
+            LDA ZP.TOPT
+            Stacks.PushTop(); // Push value and type to stack
+            Error.CheckError();
+            if (NC) 
+            { 
+                State.SetFailure();
+                break; 
+            }
+            
+            State.SetSuccess();
+            break;
         }
-        
-        // Transfer node address to ZP.IDX
-        LDA executorOperandL
-        STA ZP.IDXL
-        LDA executorOperandH
-        STA ZP.IDXH
-        
-        // Get the variable's value and type
-        Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = type
-        Error.CheckError();
-        if (NC) 
-        { 
-            State.SetFailure();
-            return; 
-        }
-        
-        // Push value to stack with type
-        LDA ZP.TOPT
-        Stacks.PushTop(); // Push value and type to stack
-        Error.CheckError();
-        if (NC) 
-        { 
-            State.SetFailure();
-            return; 
-        }
-        
-        State.SetSuccess();
     }    
     
     executePushLocal()
@@ -842,17 +870,19 @@ unit Executor
         // Fetch 16-bit operand
         FetchOperandWord();
         State.CanContinue();
-        if (NC) { return; }
-        
-        // Store in ZP.TOP as INT value
-        LDA executorOperandL
-        STA ZP.TOPL
-        LDA executorOperandH
-        STA ZP.TOPH
-        LDA # BasicType.INT
-        Stacks.PushTop();
-        
-        State.SetSuccess();
+        if (C)
+        {
+            
+            // Store in ZP.TOP as INT value
+            LDA executorOperandL
+            STA ZP.TOPL
+            LDA executorOperandH
+            STA ZP.TOPH
+            LDA # BasicType.INT
+            Stacks.PushTop();
+            
+            State.SetSuccess();
+        }
     }
     
     executePushWord()
@@ -860,17 +890,19 @@ unit Executor
         // Fetch 16-bit operand
         FetchOperandWord();
         State.CanContinue();
-        if (NC) { return; }
-        
-        // Store in ZP.TOP as WORD value
-        LDA executorOperandL
-        STA ZP.TOPL
-        LDA executorOperandH
-        STA ZP.TOPH
-        LDA # BasicType.WORD
-        Stacks.PushTop();
-        
-        State.SetSuccess();
+        if (C)
+        {
+            
+            // Store in ZP.TOP as WORD value
+            LDA executorOperandL
+            STA ZP.TOPL
+            LDA executorOperandH
+            STA ZP.TOPH
+            LDA # BasicType.WORD
+            Stacks.PushTop();
+            
+            State.SetSuccess();
+        }
     }
     
     // === CONTROL FLOW HANDLERS (TWO BYTE OPERANDS) ===

@@ -1020,10 +1020,10 @@ This validates that the unification is working correctly:
 - [x] **Update Error.asm**
   - [x] Add CheckErrorAndStatus() for comprehensive error checking
   - [x] Add State dependency for enhanced error detection
-- [ ] **Update ZeroPage.asm**
-  - [ ] Add ZP.SystemState allocation (1 byte at 0x4A)
-- [ ] **Update InitializeBASIC()**
-  - [ ] Add State.Initialize() call
+- [x] **Update ZeroPage.asm**
+  - [x] Add ZP.SystemState allocation (1 byte at 0x4A)
+- [x] **Update InitializeBASIC()**
+  - [x] Add State.Initialize() call
 - [ ] **Refactor PHP/PLP usage:**
   - [ ] Remove PHP/PLP from orchestration methods (Console, Statement, Functions, etc.)
   - [ ] Keep PHP/PLP only in small debug utilities (Debug.COut(), Debug.HOut(), etc.)
