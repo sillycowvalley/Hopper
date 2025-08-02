@@ -692,15 +692,17 @@ unit Functions
             {
                 case SystemState.Success:
                 {
-                    // continue
+                    LDA #'A' Tools.COut();Tools.COut();Tools.COut();Tools.COut(); // continue
                 }
                 case SystemState.Failure:
                 { 
                     // handle compilation error
+                    LDA #'B' Tools.COut();Tools.COut();Tools.COut();Tools.COut();
                     break;
                 }
                 case SystemState.Exiting:   
                 { 
+                    LDA #'C' Tools.COut();Tools.COut();Tools.COut();Tools.COut();
                     // should not happen in compilation
                 }
             }

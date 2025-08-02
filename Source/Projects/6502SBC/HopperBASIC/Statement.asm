@@ -115,6 +115,7 @@ unit Statement
     
     // Typically called when ZP.CurrentToken is Tokens.IDENTIFIER, or a keyword
     // Output: symbol or function in IDX, A = IdentifierType
+    const string resolveIdentifierTrace = "ResolveId";
     resolveIdentifier()
     {
         PHX
@@ -123,6 +124,9 @@ unit Statement
         LDY ZP.ACCT
         PHY
         
+#ifdef TRACE
+        LDA #(resolveIdentifierTrace % 256) STA ZP.TraceMessageL LDA #(resolveIdentifierTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         
         loop // Single exit block for clean error handling
         {
@@ -196,6 +200,10 @@ unit Statement
             break;
         } // end of single exit block
 
+#ifdef TRACE
+        PHA LDA #(resolveIdentifierTrace % 256) STA ZP.TraceMessageL LDA #(resolveIdentifierTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
+#endif
+
         PLY
         STY ZP.ACCT
         
@@ -258,8 +266,13 @@ unit Statement
     //         ZP.CurrentToken = token after statement
     // Munts: Stack, ZP.CurrentToken, all parsing and execution variables
     // Error: Sets ZP.LastError if statement execution fails
+    const string executeTrace = "Execute";
     Execute()
     {
+#ifdef TRACE
+        LDA #(executeTrace % 256) STA ZP.TraceMessageL LDA #(executeTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+
         loop
         {
             LDA ZP.CurrentToken
@@ -354,6 +367,9 @@ unit Statement
             }
         }
         
+#ifdef TRACE
+        LDA #(executeTrace % 256) STA ZP.TraceMessageL LDA #(executeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Execute PRINT statement
@@ -362,8 +378,13 @@ unit Statement
     //         ZP.CurrentToken = token after PRINT statement
     // Munts: Stack, ZP.CurrentToken, ZP.TOP, ZP.TOPT, all parsing variables
     // Error: Sets ZP.LastError if expression evaluation fails
+    const string executePrintTrace = "ExecPrint";
     executePrint()
     {
+#ifdef TRACE
+        LDA #(executePrintTrace % 256) STA ZP.TraceMessageL LDA #(executePrintTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+
         loop
         {
             // Get next token (should be start of expression)
@@ -403,6 +424,10 @@ unit Statement
         } // exit loop
         
         SEC  // Success
+
+#ifdef TRACE
+        LDA #(executePrintTrace % 256) STA ZP.TraceMessageL LDA #(executePrintTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Execute IF statement
@@ -411,8 +436,13 @@ unit Statement
     //         ZP.CurrentToken = token after IF statement
     // Munts: Stack, ZP.CurrentToken, ZP.TOP, ZP.TOPT, all parsing variables
     // Error: Sets ZP.LastError if syntax error or expression evaluation fails
+    const string executeIfTrace = "ExecIf";
     executeIf()
     {
+#ifdef TRACE
+        LDA #(executeIfTrace % 256) STA ZP.TraceMessageL LDA #(executeIfTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+
         loop
         {
             // Get next token (should be start of condition expression)
@@ -457,6 +487,10 @@ unit Statement
             Execute();
             break;
         } // loop
+
+#ifdef TRACE
+        LDA #(executeIfTrace % 256) STA ZP.TraceMessageL LDA #(executeIfTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Execute RETURN statement (stub implementation)
@@ -464,8 +498,13 @@ unit Statement
     // Output: Error (not implemented)
     // Munts: ZP.LastError, ZP.CurrentToken, stack if expression provided
     // Error: Always sets ZP.LastError (not implemented)
+    const string executeReturnTrace = "ExecReturn";
     executeReturn()
     {
+#ifdef TRACE
+        LDA #(executeReturnTrace % 256) STA ZP.TraceMessageL LDA #(executeReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+
         loop
         {
             // Get next token
@@ -500,6 +539,10 @@ unit Statement
             BRK
             break;
         } // loop
+
+#ifdef TRACE
+        LDA #(executeReturnTrace % 256) STA ZP.TraceMessageL LDA #(executeReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
         
     
@@ -508,12 +551,21 @@ unit Statement
     // Output: Error (not implemented)
     // Munts: ZP.LastError
     // Error: Always sets ZP.LastError (not implemented)
+    const string executeEndTrace = "ExecEnd";
     executeEnd()
     {
+#ifdef TRACE
+        LDA #(executeEndTrace % 256) STA ZP.TraceMessageL LDA #(executeEndTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+
         // TODO: End program execution when we have program support
         Error.NotImplemented(); BIT ZP.EmulatorPCL
         CLC  // Error
         BRK
+
+#ifdef TRACE
+        LDA #(executeEndTrace % 256) STA ZP.TraceMessageL LDA #(executeEndTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Execute identifier statement (assignment or function call)
@@ -521,8 +573,12 @@ unit Statement
     // Output: C set if successful, NC if error
     // Munts: Stack, ZP.CurrentToken, symbol tables, expression evaluation
     // Error: Sets ZP.LastError if undefined variable, type mismatch, or syntax error
+    const string executeIdentifierTrace = "ExecId";
     executeIdentifier()
     {
+#ifdef TRACE
+        PHA LDA #(executeIdentifierTrace % 256) STA ZP.TraceMessageL LDA #(executeIdentifierTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+#endif
     
         loop // Single exit block for clean error handling
         {
@@ -645,11 +701,20 @@ unit Statement
             
             break; // Exit the outer loop
         } // end single exit block
+
+#ifdef TRACE
+        LDA #(executeIdentifierTrace % 256) STA ZP.TraceMessageL LDA #(executeIdentifierTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
         
     // Input: ZP.CurrentToken = CONST
+    const string executeConstDeclTrace = "ExecConst";
     executeConstantDeclaration()
     {
+#ifdef TRACE
+        LDA #(executeConstDeclTrace % 256) STA ZP.TraceMessageL LDA #(executeConstDeclTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+
         loop
         {
             Tokenizer.NextToken(); // consume 'CONST'
@@ -664,6 +729,10 @@ unit Statement
             processSingleSymbolDeclaration();
             break;
         } // single exit
+
+#ifdef TRACE
+        LDA #(executeConstDeclTrace % 256) STA ZP.TraceMessageL LDA #(executeConstDeclTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Execute variable declaration statement
@@ -673,15 +742,28 @@ unit Statement
     // Munts: Stack, ZP.CurrentToken, symbol tables, memory allocation, 
     //        all statement buffer locations, all parsing variables
     // Error: Sets ZP.LastError if syntax error, type mismatch, name conflict, or memory allocation fails
+    const string executeVarDeclTrace = "ExecVarDecl";
     executeVariableDeclaration()
     {
+#ifdef TRACE
+        LDA #(executeVarDeclTrace % 256) STA ZP.TraceMessageL LDA #(executeVarDeclTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+
         LDA #(SymbolType.VARIABLE << 4)
         STA stmtSymbol
         processSingleSymbolDeclaration();
+
+#ifdef TRACE
+        LDA #(executeVarDeclTrace % 256) STA ZP.TraceMessageL LDA #(executeVarDeclTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
+    const string processSingleSymbolDeclTrace = "ProcSymDecl";
     processSingleSymbolDeclaration()
     {
+#ifdef TRACE
+        LDA #(processSingleSymbolDeclTrace % 256) STA ZP.TraceMessageL LDA #(processSingleSymbolDeclTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
 
         loop
         {
@@ -1040,7 +1122,10 @@ unit Statement
         //DumpBasicBuffers();
         //DumpHeap();
 #endif
-        
+
+#ifdef TRACE
+        LDA #(processSingleSymbolDeclTrace % 256) STA ZP.TraceMessageL LDA #(processSingleSymbolDeclTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
       
     // Create token stream from tokenizer buffer slice
@@ -1049,6 +1134,7 @@ unit Statement
     // Output: ZP.FDESTINATIONADDRESS = pointer to allocated token stream copy
     // Munts: ZP.IDXL, ZP.IDXH, ZP.ACCL, ZP.ACCH, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS
     // Error: Sets ZP.LastError if memory allocation fails
+    const string createTokenStreamTrace = "CreateTok";
     CreateTokenStream()
     {
         PHA
@@ -1060,6 +1146,10 @@ unit Statement
         PHA
         LDA ZP.ACCH
         PHA
+        
+#ifdef TRACE
+        LDA #(createTokenStreamTrace % 256) STA ZP.TraceMessageL LDA #(createTokenStreamTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         
         loop
         {
@@ -1108,6 +1198,10 @@ unit Statement
             
             break;
         } // loop    
+        
+#ifdef TRACE
+        LDA #(createTokenStreamTrace % 256) STA ZP.TraceMessageL LDA #(createTokenStreamTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
         
         PLA
         STA ZP.ACCH
