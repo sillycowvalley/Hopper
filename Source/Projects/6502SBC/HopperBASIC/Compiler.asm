@@ -32,8 +32,13 @@ unit Compiler
     // Initialize the opcode buffer for compilation
     // Output: OpCode buffer ready for emission
     // Modifies: ZP.OpCodeBufferLengthL/H (set to 0), ZP.CompilerTokenPosL/H (set to current), ZP.CompilerFlags (cleared), ZP.PC (set to buffer start)
+    const string initOpCodeBufferTrace = "InitOpBuf";
     InitOpCodeBuffer()
     {
+#ifdef TRACE
+        LDA #(initOpCodeBufferTrace % 256) STA ZP.TraceMessageL LDA #(initOpCodeBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         // Clear opcode buffer length
         STZ ZP.OpCodeBufferLengthL
         STZ ZP.OpCodeBufferLengthH
@@ -57,167 +62,232 @@ unit Compiler
         STA compilerLastOpCode
         
         SEC // Success
+        
+#ifdef TRACE
+        LDA #(initOpCodeBufferTrace % 256) STA ZP.TraceMessageL LDA #(initOpCodeBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Check if there's space for N bytes in opcode buffer
     // Input: A = number of bytes needed
     // Output: C if space available, NC if buffer would overflow
     // Strategy: Increment buffer length first, then check bounds
+    const string checkBufferSpaceTrace = "ChkBufSpc";
     CheckBufferSpace()
     {
-        // Add required bytes to current buffer length
-        CLC
-        ADC ZP.OpCodeBufferLengthL
-        STA ZP.OpCodeBufferLengthL
-        LDA ZP.OpCodeBufferLengthH
-        ADC #0
-        STA ZP.OpCodeBufferLengthH
-        
-        // Compare against buffer size (512 bytes = 0x0200)
-        LDA ZP.OpCodeBufferLengthH
-        CMP #0x02
-        if (C) // >= 0x0200, overflow
+#ifdef TRACE
+        PHA LDA #(checkBufferSpaceTrace % 256) STA ZP.TraceMessageL LDA #(checkBufferSpaceTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+#endif
+        loop
         {
-            Error.BufferOverflow(); BIT ZP.EmulatorPCL
-            return;
+            // Add required bytes to current buffer length
+            CLC
+            ADC ZP.OpCodeBufferLengthL
+            STA ZP.OpCodeBufferLengthL
+            LDA ZP.OpCodeBufferLengthH
+            ADC #0
+            STA ZP.OpCodeBufferLengthH
+            
+            // Compare against buffer size (512 bytes = 0x0200)
+            LDA ZP.OpCodeBufferLengthH
+            CMP #0x02
+            if (C) // >= 0x0200, overflow
+            {
+                Error.BufferOverflow(); BIT ZP.EmulatorPCL
+                break;
+            }
+            
+            SEC // Success - space available
+            break;
         }
         
-        SEC // Success - space available
+#ifdef TRACE
+        LDA #(checkBufferSpaceTrace % 256) STA ZP.TraceMessageL LDA #(checkBufferSpaceTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Emit a single-byte opcode (no operands)
     // Input: compilerOpCode = opcode value
     // Output: OpCode written to buffer
     // Modifies: ZP.OpCodeBufferLengthL/H (incremented), ZP.PC (incremented)
+    const string emitOpCodeTrace = "EmitOp";
     EmitOpCode()
     {
-#ifdef DEBUG       
-        Tools.NL(); LDA #'>' Debug.COut();
-        LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
-        LDA #' ' Debug.COut(); LDA compilerOpCode Debug.HOut(); LDA #' ' Debug.COut();
-#endif        
-        // Check space for 1 byte
-        LDA #1
-        CheckBufferSpace();
-        if (NC) { return; } // Buffer overflow
+#ifdef TRACE
+        LDA #(emitOpCodeTrace % 256) STA ZP.TraceMessageL LDA #(emitOpCodeTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         
-        // Write opcode to buffer
-        LDA compilerOpCode
-        STA [ZP.PC]
-        STA compilerLastOpCode
-        
-        // Increment PC
-        INC ZP.PCL
-        if (Z)
+        loop
         {
-            INC ZP.PCH
-        }
+#ifdef DEBUG       
+            Tools.NL(); LDA #'>' Debug.COut();
+            LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
+            LDA #' ' Debug.COut(); LDA compilerOpCode Debug.HOut(); LDA #' ' Debug.COut();
+#endif        
+            // Check space for 1 byte
+            LDA #1
+            CheckBufferSpace();
+            if (NC) 
+            { 
+                break; 
+            } // Buffer overflow
         
-        SEC // Success
+            // Write opcode to buffer
+            LDA compilerOpCode
+            STA [ZP.PC]
+            STA compilerLastOpCode
+            
+            // Increment PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+            
+            SEC // Success
+            break;
+        }
+#ifdef TRACE
+        LDA #(emitOpCodeTrace % 256) STA ZP.TraceMessageL LDA #(emitOpCodeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Emit opcode with one byte operand
     // Input: compilerOpCode = opcode value, compilerOperand1 = operand byte
     // Output: OpCode and operand written to buffer
     // Modifies: ZP.OpCodeBufferLengthL/H (incremented by 2), ZP.PC (incremented by 2)
+    const string emitOpCodeWithByteTrace = "EmitOpByte";
     EmitOpCodeWithByte()
     {
-#ifdef DEBUG       
-        Tools.NL(); LDA #'>' Debug.COut();
-        LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
-        LDA #' ' Debug.COut(); LDA compilerOpCode Debug.HOut(); LDA #' ' Debug.COut(); 
-                               LDA compilerOperand1 Debug.HOut(); LDA #' ' Debug.COut();
+#ifdef TRACE
+        LDA #(emitOpCodeWithByteTrace % 256) STA ZP.TraceMessageL LDA #(emitOpCodeWithByteTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-        // Check space for 2 bytes
-        LDA #2
-        CheckBufferSpace();
-        if (NC) { return; } // Buffer overflow
-        
-        // Write opcode
-        LDA compilerOpCode
-        STA [ZP.PC]
-        STA compilerLastOpCode
-        
-        // Increment PC
-        INC ZP.PCL
-        if (Z)
+        loop
         {
-            INC ZP.PCH
+#ifdef DEBUG       
+            Tools.NL(); LDA #'>' Debug.COut();
+            LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
+            LDA #' ' Debug.COut(); LDA compilerOpCode Debug.HOut(); LDA #' ' Debug.COut(); 
+                                   LDA compilerOperand1 Debug.HOut(); LDA #' ' Debug.COut();
+#endif
+            // Check space for 2 bytes
+            LDA #2
+            CheckBufferSpace();
+            if (NC) 
+            { 
+                break; 
+            } // Buffer overflow
+        
+            // Write opcode
+            LDA compilerOpCode
+            STA [ZP.PC]
+            STA compilerLastOpCode
+            
+            // Increment PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+            
+            // Write operand
+            LDA compilerOperand1
+            STA [ZP.PC]
+            
+            // Increment PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+            
+            SEC // Success
+            break;
         }
         
-        // Write operand
-        LDA compilerOperand1
-        STA [ZP.PC]
-        
-        // Increment PC
-        INC ZP.PCL
-        if (Z)
-        {
-            INC ZP.PCH
-        }
-        
-        SEC // Success
+#ifdef TRACE
+        LDA #(emitOpCodeWithByteTrace % 256) STA ZP.TraceMessageL LDA #(emitOpCodeWithByteTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Emit opcode with two byte operands (word value)
     // Input: compilerOpCode = opcode value, compilerOperand1 = LSB, compilerOperand2 = MSB
     // Output: OpCode and operands written to buffer
     // Modifies: ZP.OpCodeBufferLengthL/H (incremented by 3), ZP.PC (incremented by 3)
+    const string emitOpCodeWithWordTrace = "EmitOpWord";
     EmitOpCodeWithWord()
     {
+#ifdef TRACE
+        LDA #(emitOpCodeWithWordTrace % 256) STA ZP.TraceMessageL LDA #(emitOpCodeWithWordTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        loop
+        {
 #ifdef DEBUG       
-        Tools.NL(); LDA #'>' Debug.COut();
-        LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
-        LDA #' ' Debug.COut(); LDA compilerOpCode Debug.HOut(); LDA #' ' Debug.COut(); 
-                               LDA compilerOperand1 Debug.HOut(); LDA #' ' Debug.COut();
-                               LDA compilerOperand2 Debug.HOut(); LDA #' ' Debug.COut();
+            Tools.NL(); LDA #'>' Debug.COut();
+            LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
+            LDA #' ' Debug.COut(); LDA compilerOpCode Debug.HOut(); LDA #' ' Debug.COut(); 
+                                   LDA compilerOperand1 Debug.HOut(); LDA #' ' Debug.COut();
+                                   LDA compilerOperand2 Debug.HOut(); LDA #' ' Debug.COut();
 #endif        
-        // Check space for 3 bytes
-        LDA #3
-        CheckBufferSpace();
-        if (NC) { return; } // Buffer overflow
-        
-        // Write opcode
-        LDA compilerOpCode
-        STA [ZP.PC]
-        STA compilerLastOpCode
-        
-        // Increment PC
-        INC ZP.PCL
-        if (Z)
-        {
-            INC ZP.PCH
+            // Check space for 3 bytes
+            LDA #3
+            CheckBufferSpace();
+            if (NC) 
+            { 
+                break; 
+            } // Buffer overflow
+            
+            // Write opcode
+            LDA compilerOpCode
+            STA [ZP.PC]
+            STA compilerLastOpCode
+            
+            // Increment PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+            
+            // Write LSB
+            LDA compilerOperand1
+            STA [ZP.PC]
+            
+            // Increment PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+            
+            // Write MSB  
+            LDA compilerOperand2
+            STA [ZP.PC]
+            
+            // Increment PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+            
+            SEC // Success
+            break;
         }
-        
-        // Write LSB
-        LDA compilerOperand1
-        STA [ZP.PC]
-        
-        // Increment PC
-        INC ZP.PCL
-        if (Z)
-        {
-            INC ZP.PCH
-        }
-        
-        // Write MSB  
-        LDA compilerOperand2
-        STA [ZP.PC]
-        
-        // Increment PC
-        INC ZP.PCL
-        if (Z)
-        {
-            INC ZP.PCH
-        }
-        
-        SEC // Success
+#ifdef TRACE
+        LDA #(emitOpCodeWithWordTrace % 256) STA ZP.TraceMessageL LDA #(emitOpCodeWithWordTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Calculate offset from compilation start to current tokenizer position
     // Output: ZP.ACCL/ZP.ACCH = offset from ZP.CompilerTokenPos to current ZP.TokenizerPos
+    const string calculateTokenOffsetTrace = "CalcTokOff";
     CalculateTokenOffset()
     {
+#ifdef TRACE
+        LDA #(calculateTokenOffsetTrace % 256) STA ZP.TraceMessageL LDA #(calculateTokenOffsetTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         // Calculate current tokenizer position - compilation start position
         SEC
         LDA ZP.TokenizerPosL
@@ -228,15 +298,24 @@ unit Compiler
         STA ZP.ACCH
         
         SEC // Success
+        
+#ifdef TRACE
+        LDA #(calculateTokenOffsetTrace % 256) STA ZP.TraceMessageL LDA #(calculateTokenOffsetTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Emit PUSHCSTRING opcode with word operand
     // Input: compilerOperand1 = string pointer LSB, compilerOperand2 = string pointer MSB  
     // Output: PUSHCSTRING opcode emitted with operands, C set if successful
     // Modifies: A, ZP.OpCodeBufferLengthL/H, buffer state
+    const string emitPushCStringTrace = "EmitPushStr";
     EmitPushCString()
     {
         PHA
+        
+#ifdef TRACE
+        LDA #(emitPushCStringTrace % 256) STA ZP.TraceMessageL LDA #(emitPushCStringTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         
         loop
         {
@@ -249,6 +328,10 @@ unit Compiler
             break;
         } // loop
         
+#ifdef TRACE
+        LDA #(emitPushCStringTrace % 256) STA ZP.TraceMessageL LDA #(emitPushCStringTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+        
         PLA
     }
     
@@ -256,11 +339,16 @@ unit Compiler
     // Input: Current token is IDENTIFIER
     // Output: PUSHGLOBAL opcode with node address emitted, C set if successful
     // Modifies: A, X, Y, ZP.TOP, ZP.IDX, compilerOperand1/2
+    const string emitPushGlobalTrace = "EmitPushGlob";
     EmitPushGlobal()
     {
         PHA
         PHX
         PHY
+        
+#ifdef TRACE
+        LDA #(emitPushGlobalTrace % 256) STA ZP.TraceMessageL LDA #(emitPushGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         
         loop // Single exit
         {
@@ -292,6 +380,10 @@ unit Compiler
             break;
         }
         
+#ifdef TRACE
+        LDA #(emitPushGlobalTrace % 256) STA ZP.TraceMessageL LDA #(emitPushGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+        
         PLY
         PLX
         PLA
@@ -302,44 +394,69 @@ unit Compiler
     // Input: A = bit value (0 or 1)
     // Output: PUSHBIT opcode emitted with value
     // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
+    const string emitPushBitTrace = "EmitPushBit";
     EmitPushBit()
     {
-        // Validate bit value (must be 0 or 1)
-        CMP #2
-        if (C) // >= 2, invalid
+#ifdef TRACE
+        PHA LDA #(emitPushBitTrace % 256) STA ZP.TraceMessageL LDA #(emitPushBitTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+#endif
+        loop
         {
-            Error.InvalidBitValue(); BIT ZP.EmulatorPCL
-            return;
+            // Validate bit value (must be 0 or 1)
+            CMP #2
+            if (C) // >= 2, invalid
+            {
+                Error.InvalidBitValue(); BIT ZP.EmulatorPCL
+                break;
+            }
+        
+            // Set up parameters for emission
+            STA compilerOperand1          // Store value as operand
+            LDA #OpCodeType.PUSHBIT
+            STA compilerOpCode
+            
+            EmitOpCodeWithByte();
+            break;
         }
-        
-        // Set up parameters for emission
-        STA compilerOperand1          // Store value as operand
-        LDA #OpCodeType.PUSHBIT
-        STA compilerOpCode
-        
-        EmitOpCodeWithByte();
+#ifdef TRACE
+        LDA #(emitPushBitTrace % 256) STA ZP.TraceMessageL LDA #(emitPushBitTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Emit PUSHBYTE opcode with immediate value
     // Input: A = byte value
     // Output: PUSHBYTE opcode emitted with value
     // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
+    const string emitPushByteTrace = "EmitPushByte";
     EmitPushByte()
     {
+#ifdef TRACE
+        PHA LDA #(emitPushByteTrace % 256) STA ZP.TraceMessageL LDA #(emitPushByteTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+#endif
+        
         // Set up parameters for emission
         STA compilerOperand1          // Store value as operand
         LDA #OpCodeType.PUSHBYTE
         STA compilerOpCode
         
         EmitOpCodeWithByte();
+        
+#ifdef TRACE
+        LDA #(emitPushByteTrace % 256) STA ZP.TraceMessageL LDA #(emitPushByteTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Emit PUSHINT or PUSHWORD opcode with word value
     // Input: ZP.TOPT = type (determines opcode), compilerOperand1 = LSB, compilerOperand2 = MSB
     // Output: Appropriate opcode emitted with value
     // Modifies: compilerOpCode, buffer state via EmitOpCodeWithWord()
+    const string emitPushWordTrace = "EmitPushWord";
     EmitPushWord()
     {
+#ifdef TRACE
+        LDA #(emitPushWordTrace % 256) STA ZP.TraceMessageL LDA #(emitPushWordTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         loop
         {
             // Select opcode based on type
@@ -366,14 +483,23 @@ unit Compiler
             Error.TypeMismatch(); BIT ZP.EmulatorPCL
             break;
         } // loop
+        
+#ifdef TRACE
+        LDA #(emitPushWordTrace % 256) STA ZP.TraceMessageL LDA #(emitPushWordTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Emit POPGLOBAL opcode to store to variable  
     // Input: No parameters (uses current token position for variable name offset)
     // Output: POPGLOBAL opcode emitted with token offset
     // Modifies: compilerOpCode, compilerOperand1, ZP.ACC (via CalculateTokenOffset), buffer state
+    const string emitPopGlobalTrace = "EmitPopGlob";
     EmitPopGlobal()
     {
+#ifdef TRACE
+        LDA #(emitPopGlobalTrace % 256) STA ZP.TraceMessageL LDA #(emitPopGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         loop
         {
             // Calculate offset to current token (variable name)
@@ -396,6 +522,10 @@ unit Compiler
             Error.BufferOverflow(); BIT ZP.EmulatorPCL
             break;
         } // loop
+        
+#ifdef TRACE
+        LDA #(emitPopGlobalTrace % 256) STA ZP.TraceMessageL LDA #(emitPopGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     
@@ -403,8 +533,13 @@ unit Compiler
     // Input: A = operation token (Tokens.PLUS, Tokens.MINUS, etc.)
     // Output: Corresponding arithmetic opcode emitted
     // Modifies: compilerOpCode, buffer state via EmitOpCode(), A/X/Y registers
+    const string emitArithmeticOpTrace = "EmitArithOp";
     EmitArithmeticOp()
     {
+#ifdef TRACE
+        PHA LDA #(emitArithmeticOpTrace % 256) STA ZP.TraceMessageL LDA #(emitArithmeticOpTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+#endif
+        
         loop
         {
             switch (A)
@@ -452,14 +587,23 @@ unit Compiler
             }
             break;
         } // loop
+        
+#ifdef TRACE
+        LDA #(emitArithmeticOpTrace % 256) STA ZP.TraceMessageL LDA #(emitArithmeticOpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Emit comparison operation opcode
     // Input: A = comparison token (Tokens.EQUALS, Tokens.LESSTHAN, etc.)
     // Output: Corresponding comparison opcode emitted
     // Modifies: compilerOpCode, buffer state via EmitOpCode(), A/X/Y registers
+    const string emitComparisonOpTrace = "EmitCmpOp";
     EmitComparisonOp()
     {
+#ifdef TRACE
+        PHA LDA #(emitComparisonOpTrace % 256) STA ZP.TraceMessageL LDA #(emitComparisonOpTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+#endif
+        
         loop
         {
             switch (A)
@@ -514,15 +658,23 @@ unit Compiler
             }
             break;
         } // loop
+        
+#ifdef TRACE
+        LDA #(emitComparisonOpTrace % 256) STA ZP.TraceMessageL LDA #(emitComparisonOpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
-
     
     // Emit logical operation opcode
     // Input: A = logical token (Tokens.AND, Tokens.OR, Tokens.NOT)
     // Output: Corresponding logical opcode emitted
     // Modifies: compilerOpCode, buffer state via EmitOpCode(), A/X/Y registers
+    const string emitLogicalOpTrace = "EmitLogOp";
     EmitLogicalOp()
     {
+#ifdef TRACE
+        PHA LDA #(emitLogicalOpTrace % 256) STA ZP.TraceMessageL LDA #(emitLogicalOpTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+#endif
+        
         loop
         {
             switch (A)
@@ -556,14 +708,23 @@ unit Compiler
             }
             break;
         } // loop
+        
+#ifdef TRACE
+        LDA #(emitLogicalOpTrace % 256) STA ZP.TraceMessageL LDA #(emitLogicalOpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Emit bitwise operation opcode
     // Input: A = bitwise token 
     // Output: Corresponding bitwise opcode emitted
     // Modifies: compilerOpCode, buffer state via EmitOpCode(), A/X/Y registers
+    const string emitBitwiseOpTrace = "EmitBitOp";
     EmitBitwiseOp()
     {
+#ifdef TRACE
+        PHA LDA #(emitBitwiseOpTrace % 256) STA ZP.TraceMessageL LDA #(emitBitwiseOpTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+#endif
+        
         loop
         {
             switch (A)
@@ -590,38 +751,69 @@ unit Compiler
             }
             break;
         } // loop
+        
+#ifdef TRACE
+        LDA #(emitBitwiseOpTrace % 256) STA ZP.TraceMessageL LDA #(emitBitwiseOpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Emit unary minus (negation) opcode
     // Output: NEG opcode emitted
     // Modifies: compilerOpCode, buffer state via EmitOpCode()
+    const string emitUnaryMinusTrace = "EmitNeg";
     EmitUnaryMinus()
     {
+#ifdef TRACE
+        LDA #(emitUnaryMinusTrace % 256) STA ZP.TraceMessageL LDA #(emitUnaryMinusTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         LDA #OpCodeType.NEG
         STA compilerOpCode
         EmitOpCode();
+        
+#ifdef TRACE
+        LDA #(emitUnaryMinusTrace % 256) STA ZP.TraceMessageL LDA #(emitUnaryMinusTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Emit system call opcode
     // Input: A = system call ID
     // Output: SYSCALL opcode emitted with ID
     // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
+    const string emitSysCallTrace = "EmitSysCall";
     EmitSysCall()
     {
+#ifdef TRACE
+        PHA LDA #(emitSysCallTrace % 256) STA ZP.TraceMessageL LDA #(emitSysCallTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+#endif
+        
         STA compilerOperand1      // Store ID as operand
         LDA #OpCodeType.SYSCALL
         STA compilerOpCode
         EmitOpCodeWithByte();
+        
+#ifdef TRACE
+        LDA #(emitSysCallTrace % 256) STA ZP.TraceMessageL LDA #(emitSysCallTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Emit ENTER opcode for function entry (stack frame setup)
     // Output: ENTER opcode with argument count emitted
     // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
+    const string emitEnterTrace = "EmitEnter";
     EmitEnter()
     {
+#ifdef TRACE
+        LDA #(emitEnterTrace % 256) STA ZP.TraceMessageL LDA #(emitEnterTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         LDA #OpCodeType.ENTER
         STA compilerOpCode
         EmitOpCode();
+        
+#ifdef TRACE
+        LDA #(emitEnterTrace % 256) STA ZP.TraceMessageL LDA #(emitEnterTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     
@@ -653,11 +845,16 @@ unit Compiler
     // Input: Current token is IDENTIFIER (function name), tokenizer positioned at function name
     // Output: CALL opcode with absolute name address emitted, C set if successful
     // Modifies: compilerOpCode, compilerOperand1/2, buffer state
+    const string emitCallTrace = "EmitCall";
     EmitCall()
     {
         PHA
         PHX
         PHY
+        
+#ifdef TRACE
+        LDA #(emitCallTrace % 256) STA ZP.TraceMessageL LDA #(emitCallTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         
         loop // Single exit
         {
@@ -689,6 +886,10 @@ unit Compiler
             break;
         }
         
+#ifdef TRACE
+        LDA #(emitCallTrace % 256) STA ZP.TraceMessageL LDA #(emitCallTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+        
         PLY
         PLX
         PLA
@@ -700,8 +901,13 @@ unit Compiler
     // Input: ZP.CurrentToken = current token
     // Output: Logical opcodes emitted, ZP.CurrentToken = token after expression
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
+    const string compileLogicalTrace = "CompLogical";
     compileLogical()
     {
+#ifdef TRACE
+        LDA #(compileLogicalTrace % 256) STA ZP.TraceMessageL LDA #(compileLogicalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
 #ifdef DEBUG
         LDA #'<'
         Debug.COut();
@@ -715,7 +921,7 @@ unit Compiler
             // Compile left operand (higher precedence)
             compileLogicalAnd();
             Error.CheckError();
-            if (NC) { return; }
+            if (NC) { break; }
             
             loop
             {
@@ -750,21 +956,31 @@ unit Compiler
         LDA #'>'
         Debug.COut();
 #endif
+
+#ifdef TRACE
+        LDA #(compileLogicalTrace % 256) STA ZP.TraceMessageL LDA #(compileLogicalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
+    // Compile logical AND operations
     // Input: ZP.CurrentToken = current token
     // Output: Logical AND opcodes emitted, ZP.CurrentToken = token after expression
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
+    const string compileLogicalAndTrace = "CompLogAnd";
     compileLogicalAnd()
     {
-    #ifdef DEBUG
+#ifdef TRACE
+        LDA #(compileLogicalAndTrace % 256) STA ZP.TraceMessageL LDA #(compileLogicalAndTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
+#ifdef DEBUG
         LDA #'<'
         Debug.COut();
         LDA #'C'
         Debug.COut();
         LDA #'A'
         Debug.COut();
-    #endif
+#endif
         
         loop
         {
@@ -798,30 +1014,39 @@ unit Compiler
             break;
         } // loop
         
-    #ifdef DEBUG
+#ifdef DEBUG
         LDA #'C'
         Debug.COut();
         LDA #'A'
         Debug.COut();
         LDA #'>'
         Debug.COut();
-    #endif
-    }
+#endif
 
+#ifdef TRACE
+        LDA #(compileLogicalAndTrace % 256) STA ZP.TraceMessageL LDA #(compileLogicalAndTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+    }
+    
     // Compile comparison operations (=, <>, <, >, <=, >=)
     // Input: ZP.CurrentToken = current token
     // Output: Comparison opcodes emitted, ZP.CurrentToken = token after expression
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
+    const string compileComparisonTrace = "CompCmp";
     compileComparison()
     {
-    #ifdef DEBUG
+#ifdef TRACE
+        LDA #(compileComparisonTrace % 256) STA ZP.TraceMessageL LDA #(compileComparisonTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
+#ifdef DEBUG
         LDA #'<'
         Debug.COut();
         LDA #'C'
         Debug.COut();
         LDA #'C'
         Debug.COut();
-    #endif
+#endif
         
         loop
         {
@@ -880,79 +1105,31 @@ unit Compiler
             break;
         } // loop
         
-    #ifdef DEBUG
+#ifdef DEBUG
         LDA #'C'
         Debug.COut();
         LDA #'C'
         Debug.COut();
         LDA #'>'
         Debug.COut();
-    #endif
-    }
+#endif
 
-    // Compile bitwise OR operations
-    // Input: ZP.CurrentToken = current token
-    // Output: Bitwise OR opcodes emitted, ZP.CurrentToken = token after expression  
-    // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
-    compileBitwiseOr()
-    {
-    #ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'O'
-        Debug.COut();
-    #endif
-        
-        loop
-        {
-            // Compile left operand (higher precedence)
-            compileBitwiseAnd();
-            Error.CheckError();
-            if (NC) { break; }
-            
-            loop
-            {
-                LDA ZP.CurrentToken
-                CMP #Tokens.BITWISE_OR
-                if (NZ) { break; }
-                
-                // Get next token for right operand
-                Tokenizer.NextToken();
-                Error.CheckError();
-                if (NC) { break; }
-                
-                // Compile right operand
-                compileBitwiseAnd();
-                Error.CheckError();
-                if (NC) { break; }
-                
-                // Emit bitwise OR opcode
-                LDA #Tokens.BITWISE_OR
-                EmitBitwiseOp();
-                Error.CheckError();
-                if (NC) { break; }
-            } // loop
-            break;
-        } // loop
-        
-    #ifdef DEBUG
-        LDA #'C'
-        Debug.COut();
-        LDA #'O'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
-    #endif
+#ifdef TRACE
+        LDA #(compileComparisonTrace % 256) STA ZP.TraceMessageL LDA #(compileComparisonTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
-
+    
     // Compile bitwise AND operations (&)
     // Input: ZP.CurrentToken = current token
     // Output: Bitwise AND opcodes emitted, ZP.CurrentToken = token after expression  
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
+    const string compileBitwiseAndTrace = "CompBitAnd";
     compileBitwiseAnd()
     {
+#ifdef TRACE
+        LDA #(compileBitwiseAndTrace % 256) STA ZP.TraceMessageL LDA #(compileBitwiseAndTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
     #ifdef DEBUG
         LDA #'<'
         Debug.COut();
@@ -1002,22 +1179,97 @@ unit Compiler
         LDA #'>'
         Debug.COut();
     #endif
-    }
 
+#ifdef TRACE
+        LDA #(compileBitwiseAndTrace % 256) STA ZP.TraceMessageL LDA #(compileBitwiseAndTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+    }
+    
+    // Compile bitwise OR operations
+    // Input: ZP.CurrentToken = current token
+    // Output: Bitwise OR opcodes emitted, ZP.CurrentToken = token after expression  
+    // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
+    const string compileBitwiseOrTrace = "CompBitOr";
+    compileBitwiseOr()
+    {
+#ifdef TRACE
+        LDA #(compileBitwiseOrTrace % 256) STA ZP.TraceMessageL LDA #(compileBitwiseOrTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
+#ifdef DEBUG
+        LDA #'<'
+        Debug.COut();
+        LDA #'C'
+        Debug.COut();
+        LDA #'O'
+        Debug.COut();
+#endif
+        
+        loop
+        {
+            // Compile left operand (higher precedence)
+            compileBitwiseAnd();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            loop
+            {
+                LDA ZP.CurrentToken
+                CMP #Tokens.BITWISE_OR
+                if (NZ) { break; }
+                
+                // Get next token for right operand
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Compile right operand
+                compileBitwiseAnd();
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Emit bitwise OR opcode
+                LDA #Tokens.BITWISE_OR
+                EmitBitwiseOp();
+                Error.CheckError();
+                if (NC) { break; }
+            } // loop
+            break;
+        } // loop
+        
+#ifdef DEBUG
+        LDA #'C'
+        Debug.COut();
+        LDA #'O'
+        Debug.COut();
+        LDA #'>'
+        Debug.COut();
+#endif
+
+#ifdef TRACE
+        LDA #(compileBitwiseOrTrace % 256) STA ZP.TraceMessageL LDA #(compileBitwiseOrTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+    }
+    
     // Compile additive operations (+, -)
     // Input: ZP.CurrentToken = current token
     // Output: Additive opcodes emitted, ZP.CurrentToken = token after expression
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
+    const string compileAdditiveTrace = "CompAdd";
     compileAdditive()
     {
-    #ifdef DEBUG
+#ifdef TRACE
+        LDA #(compileAdditiveTrace % 256) STA ZP.TraceMessageL LDA #(compileAdditiveTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
+#ifdef DEBUG
         LDA #'<'
         Debug.COut();
         LDA #'C'
         Debug.COut();
         LDA #'+'
         Debug.COut();
-    #endif
+#endif
         
         loop
         {
@@ -1078,30 +1330,39 @@ unit Compiler
             break;
         } // loop
         
-    #ifdef DEBUG
+#ifdef DEBUG
         LDA #'C'
         Debug.COut();
         LDA #'+'
         Debug.COut();
         LDA #'>'
         Debug.COut();
-    #endif
-    }
+#endif
 
+#ifdef TRACE
+        LDA #(compileAdditiveTrace % 256) STA ZP.TraceMessageL LDA #(compileAdditiveTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+    }
+    
     // Compile multiplicative operations (*, /, MOD)
     // Input: ZP.CurrentToken = current token
     // Output: Multiplicative opcodes emitted, ZP.CurrentToken = token after expression
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
+    const string compileMultiplicativeTrace = "CompMul";
     compileMultiplicative()
     {
-    #ifdef DEBUG
+#ifdef TRACE
+        LDA #(compileMultiplicativeTrace % 256) STA ZP.TraceMessageL LDA #(compileMultiplicativeTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
+#ifdef DEBUG
         LDA #'<'
         Debug.COut();
         LDA #'C'
         Debug.COut();
         LDA #'*'
         Debug.COut();
-    #endif
+#endif
         
         loop
         {
@@ -1157,30 +1418,39 @@ unit Compiler
             break;
         } // loop
         
-    #ifdef DEBUG
+#ifdef DEBUG
         LDA #'C'
         Debug.COut();
         LDA #'*'
         Debug.COut();
         LDA #'>'
         Debug.COut();
-    #endif
-    }
+#endif
 
+#ifdef TRACE
+        LDA #(compileMultiplicativeTrace % 256) STA ZP.TraceMessageL LDA #(compileMultiplicativeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+    }
+    
     // Compile unary operations (-, NOT)
     // Input: ZP.CurrentToken = current token
     // Output: Unary opcodes emitted, ZP.CurrentToken = token after expression
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
+    const string compileUnaryTrace = "CompUnary";
     compileUnary()
     {
-    #ifdef DEBUG
+#ifdef TRACE
+        LDA #(compileUnaryTrace % 256) STA ZP.TraceMessageL LDA #(compileUnaryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
+#ifdef DEBUG
         LDA #'<'
         Debug.COut();
         LDA #'C'
         Debug.COut();
         LDA #'U'
         Debug.COut();
-    #endif
+#endif
         
         loop
         {
@@ -1233,25 +1503,35 @@ unit Compiler
             break;
         } // loop
         
-    #ifdef DEBUG
+#ifdef DEBUG
         LDA #'C'
         Debug.COut();
         LDA #'U'
         Debug.COut();
         LDA #'>'
         Debug.COut();
-    #endif
+#endif
+
+#ifdef TRACE
+        LDA #(compileUnaryTrace % 256) STA ZP.TraceMessageL LDA #(compileUnaryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Parse and compile function argument list
     // Input: ZP.CurrentToken = LPAREN (opening parenthesis)
     // Output: Arguments compiled and pushed to stack in correct order, ZP.CurrentToken = RPAREN
     // Modifies: ZP.CurrentToken, buffer state, compilation state
+    const string compileArgumentListTrace = "CompArgs";
     compileArgumentList()
     {
         PHA
         PHX
         PHY
+        
+#ifdef TRACE
+        LDA #(compileArgumentListTrace % 256) STA ZP.TraceMessageL LDA #(compileArgumentListTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
 #ifdef DEBUG
         LDA #'[' Debug.COut();
 #endif
@@ -1309,17 +1589,28 @@ unit Compiler
 #ifdef DEBUG
         LDA #']' Debug.COut(); // Exit from argument list  
 #endif
+
+#ifdef TRACE
+        LDA #(compileArgumentListTrace % 256) STA ZP.TraceMessageL LDA #(compileArgumentListTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+        
         PLY
         PLX
         PLA
     }
     
     // Update compilePrimary() to handle function calls
+    const string compileFunctionCallOrVariableTrace = "CompFuncVar";
     compileFunctionCallOrVariable()
     {
         PHA
         PHX
         PHY
+        
+#ifdef TRACE
+        LDA #(compileFunctionCallOrVariableTrace % 256) STA ZP.TraceMessageL LDA #(compileFunctionCallOrVariableTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
 #ifdef DEBUG
         LDA #'<'
         Debug.COut();
@@ -1433,6 +1724,11 @@ unit Compiler
         LDA #'>'
         Debug.COut();
 #endif
+
+#ifdef TRACE
+        LDA #(compileFunctionCallOrVariableTrace % 256) STA ZP.TraceMessageL LDA #(compileFunctionCallOrVariableTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+        
         PLY
         PLX
         PLA
@@ -1442,15 +1738,11 @@ unit Compiler
     // Input: ZP.CurrentToken = current token
     // Output: Primary opcodes emitted, ZP.CurrentToken = token after expression
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), ZP.TOP/TOPT (via GetTokenNumber), ZP.ACC, buffer state, A/X/Y registers
+    const string compilePrimaryTrace = "CompPrimary";
     compilePrimary()
     {
-#ifdef DEBUG
-        LDA #'<'
-        Debug.COut();
-        LDA #'C'
-        Debug.COut();
-        LDA #'P'
-        Debug.COut();
+#ifdef TRACE
+        LDA #(compilePrimaryTrace % 256) STA ZP.TraceMessageL LDA #(compilePrimaryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         
         loop // Single exit pattern
@@ -1602,14 +1894,9 @@ unit Compiler
             
             break; // Normal exit point
         } // Single exit point
-        
-#ifdef DEBUG
-        LDA #'C'
-        Debug.COut();
-        LDA #'P'
-        Debug.COut();
-        LDA #'>'
-        Debug.COut();
+
+#ifdef TRACE
+        LDA #(compilePrimaryTrace % 256) STA ZP.TraceMessageL LDA #(compilePrimaryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
     
@@ -1647,8 +1934,17 @@ unit Compiler
     // Output: Function compiled to opcode buffer, SystemState set
     // Modifies: OpCode buffer, ZP.CurrentToken, ZP.TokenizerPos, compilation state
     // Error: Sets ZP.LastError if compilation fails
+    const string compileFunctionTrace = "CompFunc";
     CompileFunction()
     {
+        PHA
+        PHX
+        PHY
+        
+#ifdef TRACE
+        LDA #(compileFunctionTrace % 256) STA ZP.TraceMessageL LDA #(compileFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
     #ifdef DEBUG
         LDA #'<'
         Debug.COut();
@@ -1660,10 +1956,6 @@ unit Compiler
         Debug.COut();
     #endif
 
-        PHA
-        PHX
-        PHY
-        
         LDA ZP.ACCL
         STA compilerFuncArgs
         
@@ -1737,10 +2029,6 @@ unit Compiler
             break;
         }
         
-        PLY
-        PLX
-        PLA
-        
     #ifdef DEBUG
         LDA #'C'
         Debug.COut();
@@ -1751,6 +2039,14 @@ unit Compiler
         LDA #'>'
         Debug.COut();
     #endif
+
+#ifdef TRACE
+        LDA #(compileFunctionTrace % 256) STA ZP.TraceMessageL LDA #(compileFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+        
+        PLY
+        PLX
+        PLA
     }
 
     // Compile a single statement within a function
@@ -1758,8 +2054,13 @@ unit Compiler
     // Output: Statement compiled to opcodes, ZP.CurrentToken = token after statement  
     // Modifies: OpCode buffer, ZP.CurrentToken, compilation state
     // Error: Sets ZP.LastError if statement compilation fails
+    const string compileStatementTrace = "CompStmt";
     compileStatement()
     {
+#ifdef TRACE
+        LDA #(compileStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
     #ifdef DEBUG
         LDA #'<'
         Debug.COut();
@@ -1818,7 +2119,7 @@ unit Compiler
             
             State.SetSuccess();
             break;
-        }
+        } // loop
         
     #ifdef DEBUG
         LDA #'C'
@@ -1828,14 +2129,23 @@ unit Compiler
         LDA #'>'
         Debug.COut();
     #endif
+
+#ifdef TRACE
+        LDA #(compileStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
 
     // Compile PRINT statement
     // Input: ZP.CurrentToken = PRINT token
     // Output: PRINT statement compiled to opcodes
     // Modifies: OpCode buffer, ZP.CurrentToken, compilation state
+    const string compilePrintStatementTrace = "CompPrint";
     compilePrintStatement()
     {
+#ifdef TRACE
+        LDA #(compilePrintStatementTrace % 256) STA ZP.TraceMessageL LDA #(compilePrintStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
     #ifdef DEBUG
         LDA #'<'
         Debug.COut();
@@ -1895,14 +2205,23 @@ unit Compiler
         LDA #'>'
         Debug.COut();
     #endif
+
+#ifdef TRACE
+        LDA #(compilePrintStatementTrace % 256) STA ZP.TraceMessageL LDA #(compilePrintStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
 
     // Compile RETURN statement
     // Input: ZP.CurrentToken = RETURN token
     // Output: RETURN statement compiled to opcodes
     // Modifies: OpCode buffer, ZP.CurrentToken, compilation state
+    const string compileReturnStatementTrace = "CompReturn";
     compileReturnStatement()
     {
+#ifdef TRACE
+        LDA #(compileReturnStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileReturnStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         loop
         {
             // Get next token
@@ -1938,6 +2257,10 @@ unit Compiler
             State.SetSuccess();
             break;
         } // loop
+
+#ifdef TRACE
+        LDA #(compileReturnStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileReturnStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
 
     // Compile IF statement (stub for now)
@@ -1964,35 +2287,56 @@ unit Compiler
     // Input: None (uses compilerLastOpCode tracking)
     // Output: C set if last opcode is RETURN/RETURNVAL, NC if not
     // Modifies: Processor flags only
+    const string checkLastOpCodeIsReturnTrace = "ChkReturn";
     checkLastOpCodeIsReturn()
     {
-        LDA compilerLastOpCode
-        
-        // Check if it's RETURN or RETURNVAL
-        CMP #OpCodeType.RETURN
-        if (Z)
+#ifdef TRACE
+        LDA #(checkLastOpCodeIsReturnTrace % 256) STA ZP.TraceMessageL LDA #(checkLastOpCodeIsReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        loop
         {
-            SEC // Found RETURN
-            return;
+            LDA compilerLastOpCode
+            
+            // Check if it's RETURN or RETURNVAL
+            CMP #OpCodeType.RETURN
+            if (Z)
+            {
+                SEC // Found RETURN
+                break;
+            }
+            
+            CMP #OpCodeType.RETURNVAL
+            if (Z)
+            {
+                SEC // Found RETURNVAL
+                break;
+            }
+            
+            CLC // Not a RETURN opcode
+            break;
         }
         
-        CMP #OpCodeType.RETURNVAL
-        if (Z)
-        {
-            SEC // Found RETURNVAL
-            return;
-        }
-        
-        CLC // Not a RETURN opcode
+#ifdef TRACE
+        LDA #(checkLastOpCodeIsReturnTrace % 256) STA ZP.TraceMessageL LDA #(checkLastOpCodeIsReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // IDY -> compilerSavedTokenPos
+    const string setLiteralBaseTrace = "SetLitBase";
     SetLiteralBase()
     {
+#ifdef TRACE
+        LDA #(setLiteralBaseTrace % 256) STA ZP.TraceMessageL LDA #(setLiteralBaseTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
         LDA ZP.IDYL
         STA compilerLiteralBaseL
         LDA ZP.IDYH
         STA compilerLiteralBaseH
+        
+#ifdef TRACE
+        LDA #(setLiteralBaseTrace % 256) STA ZP.TraceMessageL LDA #(setLiteralBaseTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
 }
