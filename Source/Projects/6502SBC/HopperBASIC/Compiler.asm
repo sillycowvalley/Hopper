@@ -308,7 +308,7 @@ unit Compiler
     // Input: compilerOperand1 = string pointer LSB, compilerOperand2 = string pointer MSB  
     // Output: PUSHCSTRING opcode emitted with operands, C set if successful
     // Modifies: A, ZP.OpCodeBufferLengthL/H, buffer state
-    const string emitPushCStringTrace = "EmitPushStr";
+    const string emitPushCStringTrace = "EmitPUSHCSTRING";
     EmitPushCString()
     {
         PHA
@@ -339,7 +339,7 @@ unit Compiler
     // Input: Current token is IDENTIFIER
     // Output: PUSHGLOBAL opcode with node address emitted, C set if successful
     // Modifies: A, X, Y, ZP.TOP, ZP.IDX, compilerOperand1/2
-    const string emitPushGlobalTrace = "EmitPushGlob";
+    const string emitPushGlobalTrace = "Emit PUSHGLOBAL";
     EmitPushGlobal()
     {
         PHA
@@ -394,7 +394,7 @@ unit Compiler
     // Input: A = bit value (0 or 1)
     // Output: PUSHBIT opcode emitted with value
     // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
-    const string emitPushBitTrace = "EmitPushBit";
+    const string emitPushBitTrace = "Emit PUSHBIT";
     EmitPushBit()
     {
 #ifdef TRACE
@@ -427,7 +427,7 @@ unit Compiler
     // Input: A = byte value
     // Output: PUSHBYTE opcode emitted with value
     // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
-    const string emitPushByteTrace = "EmitPushByte";
+    const string emitPushByteTrace = "Emit PUSHBYTE";
     EmitPushByte()
     {
 #ifdef TRACE
@@ -450,7 +450,7 @@ unit Compiler
     // Input: ZP.TOPT = type (determines opcode), compilerOperand1 = LSB, compilerOperand2 = MSB
     // Output: Appropriate opcode emitted with value
     // Modifies: compilerOpCode, buffer state via EmitOpCodeWithWord()
-    const string emitPushWordTrace = "EmitPushWord";
+    const string emitPushWordTrace = "Emit PUSHWORD";
     EmitPushWord()
     {
 #ifdef TRACE
@@ -493,7 +493,7 @@ unit Compiler
     // Input: No parameters (uses current token position for variable name offset)
     // Output: POPGLOBAL opcode emitted with token offset
     // Modifies: compilerOpCode, compilerOperand1, ZP.ACC (via CalculateTokenOffset), buffer state
-    const string emitPopGlobalTrace = "EmitPopGlob";
+    const string emitPopGlobalTrace = "Emit POPGLOBAL";
     EmitPopGlobal()
     {
 #ifdef TRACE
@@ -533,7 +533,7 @@ unit Compiler
     // Input: A = operation token (Tokens.PLUS, Tokens.MINUS, etc.)
     // Output: Corresponding arithmetic opcode emitted
     // Modifies: compilerOpCode, buffer state via EmitOpCode(), A/X/Y registers
-    const string emitArithmeticOpTrace = "EmitArithOp";
+    const string emitArithmeticOpTrace = "Emit ADD";
     EmitArithmeticOp()
     {
 #ifdef TRACE
@@ -597,7 +597,7 @@ unit Compiler
     // Input: A = comparison token (Tokens.EQUALS, Tokens.LESSTHAN, etc.)
     // Output: Corresponding comparison opcode emitted
     // Modifies: compilerOpCode, buffer state via EmitOpCode(), A/X/Y registers
-    const string emitComparisonOpTrace = "EmitCmpOp";
+    const string emitComparisonOpTrace = "Emit EQ";
     EmitComparisonOp()
     {
 #ifdef TRACE
@@ -668,7 +668,7 @@ unit Compiler
     // Input: A = logical token (Tokens.AND, Tokens.OR, Tokens.NOT)
     // Output: Corresponding logical opcode emitted
     // Modifies: compilerOpCode, buffer state via EmitOpCode(), A/X/Y registers
-    const string emitLogicalOpTrace = "EmitLogOp";
+    const string emitLogicalOpTrace = "Emit LOGICAL_AND";
     EmitLogicalOp()
     {
 #ifdef TRACE
@@ -718,7 +718,7 @@ unit Compiler
     // Input: A = bitwise token 
     // Output: Corresponding bitwise opcode emitted
     // Modifies: compilerOpCode, buffer state via EmitOpCode(), A/X/Y registers
-    const string emitBitwiseOpTrace = "EmitBitOp";
+    const string emitBitwiseOpTrace = "Emit BITWISE_AND";
     EmitBitwiseOp()
     {
 #ifdef TRACE
@@ -760,7 +760,7 @@ unit Compiler
     // Emit unary minus (negation) opcode
     // Output: NEG opcode emitted
     // Modifies: compilerOpCode, buffer state via EmitOpCode()
-    const string emitUnaryMinusTrace = "EmitNeg";
+    const string emitUnaryMinusTrace = "Emit NEG";
     EmitUnaryMinus()
     {
 #ifdef TRACE
@@ -780,7 +780,7 @@ unit Compiler
     // Input: A = system call ID
     // Output: SYSCALL opcode emitted with ID
     // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
-    const string emitSysCallTrace = "EmitSysCall";
+    const string emitSysCallTrace = "Emit SYSCALL";
     EmitSysCall()
     {
 #ifdef TRACE
@@ -800,7 +800,7 @@ unit Compiler
     // Emit ENTER opcode for function entry (stack frame setup)
     // Output: ENTER opcode with argument count emitted
     // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
-    const string emitEnterTrace = "EmitEnter";
+    const string emitEnterTrace = "Emit ENTER";
     EmitEnter()
     {
 #ifdef TRACE
@@ -821,31 +821,49 @@ unit Compiler
     // Input: A = total stack slots to clean up (arguments + locals)
     // Output: RETURN opcode with cleanup count emitted
     // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
+    const string emitReturnTrace = "Emit RETURN";
     EmitReturn()
     {
+#ifdef TRACE
+        PHA LDA #(emitReturnTrace % 256) STA ZP.TraceMessageL LDA #(emitReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+#endif
+        
         STA compilerOperand1          // Store cleanup count as operand
         LDA #OpCodeType.RETURN
         STA compilerOpCode
         EmitOpCodeWithByte();
+        
+#ifdef TRACE
+        LDA #(emitReturnTrace % 256) STA ZP.TraceMessageL LDA #(emitReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Emit RETURNVAL opcode for function exit with return value
     // Input: A = total stack slots to clean up (arguments + locals)
     // Output: RETURNVAL opcode with cleanup count emitted (expects return value on stack)
     // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
+    const string emitReturnValTrace = "Emit RETURNVAL";
     EmitReturnVal()
     {
+#ifdef TRACE
+        PHA LDA #(emitReturnValTrace % 256) STA ZP.TraceMessageL LDA #(emitReturnValTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+#endif
+        
         STA compilerOperand1          // Store cleanup count as operand
         LDA #OpCodeType.RETURNVAL
         STA compilerOpCode
         EmitOpCodeWithByte();
+        
+#ifdef TRACE
+        LDA #(emitReturnValTrace % 256) STA ZP.TraceMessageL LDA #(emitReturnValTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }  
     
     // Emit CALL opcode for unresolved function call
     // Input: Current token is IDENTIFIER (function name), tokenizer positioned at function name
     // Output: CALL opcode with absolute name address emitted, C set if successful
     // Modifies: compilerOpCode, compilerOperand1/2, buffer state
-    const string emitCallTrace = "EmitCall";
+    const string emitCallTrace = "Emit CALL";
     EmitCall()
     {
         PHA
@@ -901,7 +919,7 @@ unit Compiler
     // Input: ZP.CurrentToken = current token
     // Output: Logical opcodes emitted, ZP.CurrentToken = token after expression
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
-    const string compileLogicalTrace = "CompLogical";
+    const string compileLogicalTrace = "CompLog // OR";
     compileLogical()
     {
 #ifdef TRACE
@@ -966,7 +984,7 @@ unit Compiler
     // Input: ZP.CurrentToken = current token
     // Output: Logical AND opcodes emitted, ZP.CurrentToken = token after expression
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
-    const string compileLogicalAndTrace = "CompLogAnd";
+    const string compileLogicalAndTrace = "CompAnd // AND";
     compileLogicalAnd()
     {
 #ifdef TRACE
@@ -1032,7 +1050,7 @@ unit Compiler
     // Input: ZP.CurrentToken = current token
     // Output: Comparison opcodes emitted, ZP.CurrentToken = token after expression
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
-    const string compileComparisonTrace = "CompCmp";
+    const string compileComparisonTrace = "CompCmp // = | <> | < > <= >=";
     compileComparison()
     {
 #ifdef TRACE
@@ -1123,7 +1141,7 @@ unit Compiler
     // Input: ZP.CurrentToken = current token
     // Output: Bitwise AND opcodes emitted, ZP.CurrentToken = token after expression  
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
-    const string compileBitwiseAndTrace = "CompBitAnd";
+    const string compileBitwiseAndTrace = "CompBitAnd // &";
     compileBitwiseAnd()
     {
 #ifdef TRACE
@@ -1189,7 +1207,7 @@ unit Compiler
     // Input: ZP.CurrentToken = current token
     // Output: Bitwise OR opcodes emitted, ZP.CurrentToken = token after expression  
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
-    const string compileBitwiseOrTrace = "CompBitOr";
+    const string compileBitwiseOrTrace = "CompBitOr // |";
     compileBitwiseOr()
     {
 #ifdef TRACE
@@ -1255,7 +1273,7 @@ unit Compiler
     // Input: ZP.CurrentToken = current token
     // Output: Additive opcodes emitted, ZP.CurrentToken = token after expression
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
-    const string compileAdditiveTrace = "CompAdd";
+    const string compileAdditiveTrace = "CompAdd // +";
     compileAdditive()
     {
 #ifdef TRACE
@@ -1348,7 +1366,7 @@ unit Compiler
     // Input: ZP.CurrentToken = current token
     // Output: Multiplicative opcodes emitted, ZP.CurrentToken = token after expression
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
-    const string compileMultiplicativeTrace = "CompMul";
+    const string compileMultiplicativeTrace = "CompMult // *";
     compileMultiplicative()
     {
 #ifdef TRACE
@@ -1436,7 +1454,7 @@ unit Compiler
     // Input: ZP.CurrentToken = current token
     // Output: Unary opcodes emitted, ZP.CurrentToken = token after expression
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
-    const string compileUnaryTrace = "CompUnary";
+    const string compileUnaryTrace = "CompUnary // -";
     compileUnary()
     {
 #ifdef TRACE
@@ -1521,7 +1539,7 @@ unit Compiler
     // Input: ZP.CurrentToken = LPAREN (opening parenthesis)
     // Output: Arguments compiled and pushed to stack in correct order, ZP.CurrentToken = RPAREN
     // Modifies: ZP.CurrentToken, buffer state, compilation state
-    const string compileArgumentListTrace = "CompArgs";
+    const string compileArgumentListTrace = "CompArgs // (...)";
     compileArgumentList()
     {
         PHA
@@ -1600,7 +1618,7 @@ unit Compiler
     }
     
     // Update compilePrimary() to handle function calls
-    const string compileFunctionCallOrVariableTrace = "CompFuncVar";
+    const string compileFunctionCallOrVariableTrace = "CompFuncVar // <identifier>";
     compileFunctionCallOrVariable()
     {
         PHA
@@ -1738,7 +1756,7 @@ unit Compiler
     // Input: ZP.CurrentToken = current token
     // Output: Primary opcodes emitted, ZP.CurrentToken = token after expression
     // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), ZP.TOP/TOPT (via GetTokenNumber), ZP.ACC, buffer state, A/X/Y registers
-    const string compilePrimaryTrace = "CompPrimary";
+    const string compilePrimaryTrace = "CompPrim // <literal>";
     compilePrimary()
     {
 #ifdef TRACE
@@ -1934,7 +1952,7 @@ unit Compiler
     // Output: Function compiled to opcode buffer, SystemState set
     // Modifies: OpCode buffer, ZP.CurrentToken, ZP.TokenizerPos, compilation state
     // Error: Sets ZP.LastError if compilation fails
-    const string compileFunctionTrace = "CompFunc";
+    const string compileFunctionTrace = "CompFunc // FUNC";
     CompileFunction()
     {
         PHA
@@ -2054,7 +2072,7 @@ unit Compiler
     // Output: Statement compiled to opcodes, ZP.CurrentToken = token after statement  
     // Modifies: OpCode buffer, ZP.CurrentToken, compilation state
     // Error: Sets ZP.LastError if statement compilation fails
-    const string compileStatementTrace = "CompStmt";
+    const string compileStatementTrace = "CompStmt // <statement>";
     compileStatement()
     {
 #ifdef TRACE
@@ -2139,7 +2157,7 @@ unit Compiler
     // Input: ZP.CurrentToken = PRINT token
     // Output: PRINT statement compiled to opcodes
     // Modifies: OpCode buffer, ZP.CurrentToken, compilation state
-    const string compilePrintStatementTrace = "CompPrint";
+    const string compilePrintStatementTrace = "CompPrint // PRINT";
     compilePrintStatement()
     {
 #ifdef TRACE
@@ -2215,7 +2233,7 @@ unit Compiler
     // Input: ZP.CurrentToken = RETURN token
     // Output: RETURN statement compiled to opcodes
     // Modifies: OpCode buffer, ZP.CurrentToken, compilation state
-    const string compileReturnStatementTrace = "CompReturn";
+    const string compileReturnStatementTrace = "CompReturn // RETURN";
     compileReturnStatement()
     {
 #ifdef TRACE
