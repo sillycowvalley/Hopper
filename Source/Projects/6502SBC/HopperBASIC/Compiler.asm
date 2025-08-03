@@ -1193,6 +1193,10 @@ unit Compiler
             LDA ZP.CurrentToken
             switch (A)
             {
+                case Tokens.WHILE:
+                {
+                    compileWhileStatement();
+                }
                 case Tokens.PRINT:
                 {
                     compilePrintStatement();
@@ -1354,6 +1358,261 @@ unit Compiler
         LDA #(compileReturnStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileReturnStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
+    
+    
+    // Helper: Calculate relative offset for jump instructions
+    // Input: ZP.ACC = position of jump instruction operand (where operand bytes start)
+    //        ZP.NEXT = target absolute address
+    // Output: ZP.NEXT = signed relative offset (target - pc_after_instruction)
+    // Note: Offset is relative to the byte AFTER the instruction completes
+    const string calculateRelativeOffsetTrace = "CalcOffset";
+    calculateRelativeOffset()
+    {
+    #ifdef TRACE
+        LDA #(calculateRelativeOffsetTrace % 256) STA ZP.TraceMessageL LDA #(calculateRelativeOffsetTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+
+        // Calculate PC after instruction: operand_pos + 2 (for JUMPW/JUMPZW operands)
+        // The operand position is already after the opcode byte, so +2 for the operand bytes
+        CLC
+        LDA ZP.ACCL
+        ADC #2  // 2 bytes for word operand
+        STA ZP.IDYL
+        LDA ZP.ACCH
+        ADC #0
+        STA ZP.IDYH
+        
+        // Calculate relative offset: target - pc_after_instruction
+        SEC
+        LDA ZP.NEXTL      // target address LSB
+        SBC ZP.IDYL       // subtract pc_after_instruction LSB
+        STA ZP.NEXTL      // store offset LSB
+        LDA ZP.NEXTH      // target address MSB  
+        SBC ZP.IDYH       // subtract pc_after_instruction MSB
+        STA ZP.NEXTH      // store offset MSB
+
+    #ifdef TRACE
+        LDA #(calculateRelativeOffsetTrace % 256) STA ZP.TraceMessageL LDA #(calculateRelativeOffsetTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+
+    // Helper method: Patch jump instruction operand with relative offset
+    // Input: ZP.ACC = position of jump instruction operand to patch
+    //        ZP.NEXT = target absolute address to convert and patch
+    // Output: Jump instruction patched with relative offset
+    // Modifies: OpCode buffer at specified position
+    // Error: Sets ZP.LastError if buffer access fails
+    const string patchJumpInstructionTrace = "PatchJump";
+    patchJumpInstruction()
+    {
+    #ifdef TRACE
+        LDA #(patchJumpInstructionTrace % 256) STA ZP.TraceMessageL LDA #(patchJumpInstructionTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+
+        loop // Single exit block
+        {
+            // Convert absolute target to relative offset
+            calculateRelativeOffset();
+            
+            // Calculate absolute address in opcode buffer
+            CLC
+            LDA #(Address.BasicOpCodeBuffer % 256)
+            ADC ZP.ACCL
+            STA ZP.IDXL
+            LDA #(Address.BasicOpCodeBuffer / 256)
+            ADC ZP.ACCH
+            STA ZP.IDXH
+            
+            // Patch operand LSB (at the operand position)
+            LDY #0
+            LDA ZP.NEXTL  // Now contains relative offset LSB
+            STA [ZP.IDX], Y  // Patch LSB
+            
+            // Patch operand MSB (position + 1)
+            INC ZP.IDXL
+            if (Z) { INC ZP.IDXH }
+            
+            LDA ZP.NEXTH  // Now contains relative offset MSB
+            STA [ZP.IDX], Y  // Patch MSB
+            
+            State.SetSuccess();
+            break;
+        } // Single exit block
+
+    #ifdef TRACE
+        LDA #(patchJumpInstructionTrace % 256) STA ZP.TraceMessageL LDA #(patchJumpInstructionTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+
+    // Compile WHILE...WEND statement
+    // Input: ZP.CurrentToken = WHILE token
+    // Output: WHILE loop compiled to opcodes with correct relative jumps
+    const string compileWhileStatementTrace = "CompWhile // WHILE...WEND";
+    compileWhileStatement()
+    {
+    #ifdef TRACE
+        LDA #(compileWhileStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileWhileStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+
+        loop // Single exit block
+        {
+            // Mark loop start position for WEND back-jump
+            LDA ZP.OpCodeBufferLengthL
+            PHA  // Save loop start LSB
+            LDA ZP.OpCodeBufferLengthH
+            PHA  // Save loop start MSB
+            PHA
+            PHA
+            
+            // Get and compile condition expression
+            Tokenizer.NextToken();  // Skip WHILE token
+            Error.CheckError();
+            if (NC) { State.SetFailure(); break; }
+            
+            compileLogical();       // Compile condition expression
+            Error.CheckError();
+            if (NC) { State.SetFailure(); break; }
+            
+            // Save operand position for later patching (after JUMPZW opcode byte)
+            PLA
+            PLA
+            LDA ZP.OpCodeBufferLengthL
+            ADC #1  // Add 1 to point to operand (after JUMPZW opcode byte)
+            PHA     // Push operand position LSB
+            LDA ZP.OpCodeBufferLengthH
+            ADC #0
+            PHA     // Push operand position MSB
+            
+            // Emit conditional exit jump (will patch address later)
+            LDA #OpCodeType.JUMPZW
+            STA Compiler.compilerOpCode
+            // Emit placeholder address (will be patched after WEND)
+            STZ Compiler.compilerOperand1  // Placeholder LSB
+            STZ Compiler.compilerOperand2  // Placeholder MSB
+            Emit.OpCodeWithWord();
+            Error.CheckError();
+            if (NC) { State.SetFailure(); break; }
+            
+            // Compile loop body statements until WEND
+            loop // Statement compilation loop
+            {
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) { State.SetFailure(); break; }
+                
+                LDA ZP.CurrentToken
+                
+                CMP #Tokens.WEND
+                if (Z) { break; }  // Found WEND - exit statement loop
+                
+                CMP #Tokens.EOF
+                if (Z) 
+                { 
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL  // Missing WEND
+                    State.SetFailure();
+                    break; 
+                }
+                
+                CMP #Tokens.EOL
+                if (Z)
+                {
+                    // Skip empty lines in loop body
+                    continue;
+                }
+                
+                // Compile statement in loop body
+                CompileStatement();  // RECURSIVE CALL - handles nested constructs
+                Error.CheckError();
+                if (NC) { State.SetFailure(); break; }
+            }
+            
+            // Check if we exited due to error
+            Error.CheckError();
+            if (NC) { State.SetFailure(); break; }
+            
+            // Pop exit jump operand position for patching
+            PLA
+            STA ZP.ACCH  // Exit jump operand position MSB
+            PLA  
+            STA ZP.ACCL  // Exit jump operand position LSB
+            
+            // Pop loop start position for back-jump
+            PLA
+            STA ZP.IDYH  // Loop start position MSB
+            PLA
+            STA ZP.IDYL  // Loop start position LSB
+            
+DumpVariables();     
+DumpBasicBuffers();
+loop {  }       
+            
+            // Emit unconditional jump back to condition evaluation (relative offset)
+            // Calculate relative offset for backward jump
+            // Current position for offset calculation (operand position after JUMPW opcode)
+            LDA ZP.OpCodeBufferLengthL
+            ADC #1  // Add 1 to get operand position (after JUMPW opcode byte)
+            STA ZP.ACCL  
+            LDA ZP.OpCodeBufferLengthH
+            ADC #0
+            STA ZP.ACCH
+            
+            // Target is loop start (in ZP.IDY)
+            LDA ZP.IDYL
+            STA ZP.NEXTL
+            LDA ZP.IDYH
+            STA ZP.NEXTH
+            
+            // Calculate relative offset for backward jump
+            calculateRelativeOffset();
+            
+            // Emit JUMPW with relative offset
+            LDA #OpCodeType.JUMPW
+            STA Compiler.compilerOpCode
+            LDA ZP.NEXTL  // Now contains relative offset LSB
+            STA Compiler.compilerOperand1
+            LDA ZP.NEXTH  // Now contains relative offset MSB
+            STA Compiler.compilerOperand2
+            Emit.OpCodeWithWord();
+            Error.CheckError();
+            if (NC) { State.SetFailure(); break; }
+            
+            // Patch the conditional exit jump to current position
+            // Calculate current opcode buffer position for exit target
+            LDA ZP.OpCodeBufferLengthL
+            STA ZP.NEXTL  // Current position LSB (exit target)
+            LDA ZP.OpCodeBufferLengthH
+            STA ZP.NEXTH  // Current position MSB (exit target)
+            
+            // Patch the JUMPZW instruction at saved operand position
+            // ACC contains the position of the JUMPZW operand to patch
+            // NEXT contains the current position (exit target)
+            patchJumpInstruction(); // Patch jump at ZP.ACC to target ZP.NEXT
+            Error.CheckError();
+            if (NC) { State.SetFailure(); break; }
+            
+            State.SetSuccess();
+            break;
+        } // Single exit block
+        
+        State.IsSuccess();
+        if (NC)
+        {
+            // Clean up stack on error path
+            PLA  // Discard exit jump operand position MSB
+            PLA  // Discard exit jump operand position LSB  
+            PLA  // Discard loop start position MSB
+            PLA  // Discard loop start position LSB
+        }
+        
+DumpBasicBuffers();
+DumpHeap();
+loop {  }        
+
+    #ifdef TRACE
+        LDA #(compileWhileStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileWhileStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+    
 
     // Compile IF statement (stub for now)
     // Input: ZP.CurrentToken = IF token
