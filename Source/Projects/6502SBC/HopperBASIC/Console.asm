@@ -415,6 +415,18 @@ unit Console
                         if (Z) { break; }
                     }
                 }
+                case Tokens.TRON:
+                {
+                    cmdTron();
+                    Error.CheckError();
+                    if (NC) { return; }
+                }
+                case Tokens.TROFF:
+                {
+                    cmdTroff();
+                    Error.CheckError();
+                    if (NC) { return; }
+                }
                 case Tokens.NEW:
                 {
                     cmdNew();
@@ -499,7 +511,11 @@ unit Console
                 {
                     // Not a console command, try to execute as a statement
                     Statement.Execute();
+Tools.NL(); LDA #'B' Tools.COut(); Debug.CFOut();  // Show carry flag result
+State.GetState(); Debug.HOut();  // 0=Failure, 1=Success, 2=Exiting
                     Error.CheckError();
+Tools.NL(); LDA #'A' Tools.COut(); Debug.CFOut();  // Show carry flag result
+State.GetState(); Debug.HOut();  // 0=Failure, 1=Success, 2=Exiting
                     if (NC)
                     {
                         return; // error occurred
@@ -728,6 +744,90 @@ unit Console
         LDA #(byeTrace % 256) STA ZP.TraceMessageL LDA #(byeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
+    
+    
+    // Execute TRON command - turn trace execution on
+    const string tronTrace = "TRON";
+    cmdTron()
+    {
+    #ifdef TRACECONSOLE
+        LDA #(tronTrace % 256) STA ZP.TraceMessageL LDA #(tronTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+#ifdef TRACE
+        Statement.IsCaptureModeOn();
+        if (C)
+        {
+            Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
+        }
+        else
+        {
+            Tokenizer.NextToken(); // consume 'TRON'
+            
+            // Verify end of line
+            LDA ZP.CurrentToken
+            CMP #Tokens.EOL
+            if (NZ)
+            {
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+            }
+            else
+            {
+                // Set bit 2 of ZP.FLAGS to enable trace execution
+                SMB2 ZP.FLAGS
+                Messages.PrintOK();
+            }
+        }
+#else
+        Error.OnlyInTrace(); BIT ZP.EmulatorPCL
+#endif        
+        
+    #ifdef TRACECONSOLE
+        LDA #(tronTrace % 256) STA ZP.TraceMessageL LDA #(tronTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+    
+    // Execute TROFF command - turn trace execution off
+    const string troffTrace = "TROFF";
+    cmdTroff()
+    {
+    #ifdef TRACECONSOLE
+        LDA #(troffTrace % 256) STA ZP.TraceMessageL LDA #(troffTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+#ifdef TRACE
+        Statement.IsCaptureModeOn();
+        if (C)
+        {
+            Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
+        }
+        else
+        {
+            Tokenizer.NextToken(); // consume 'TROFF'
+            
+            // Verify end of line
+            LDA ZP.CurrentToken
+            CMP #Tokens.EOL
+            if (NZ)
+            {
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+            }
+            else
+            {
+                // Clear bit 2 of ZP.FLAGS to disable trace execution
+                RMB2 ZP.FLAGS
+                Messages.PrintOK();
+            }
+        }
+#else
+        Error.OnlyInTrace(); BIT ZP.EmulatorPCL
+#endif  
+        
+        
+    #ifdef TRACECONSOLE
+        LDA #(troffTrace % 256) STA ZP.TraceMessageL LDA #(troffTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+    
 
     // Execute NEW command
 #ifdef TRACECONSOLE

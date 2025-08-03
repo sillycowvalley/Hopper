@@ -167,15 +167,14 @@ unit Executor
                     break; 
                 }
             }
-#ifdef TRACE
-            Trace.PrintIndent();
-#endif
-#ifdef DEBUG
-            Debug.NL(); LDA #']' Debug.COut();
-#endif
-#if defined(DEBUG) || defined(TRACE)
-            LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
-            LDA #' ' Debug.COut();
+#ifdef TRACE            
+            Trace.IsTracing();
+            if (C)
+            {
+                Trace.PrintIndent();
+                LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
+                LDA #' ' Debug.COut();
+            }
 #endif
 
             // Fetch opcode using indirect addressing
@@ -183,11 +182,13 @@ unit Executor
             LDA [ZP.PC], Y
             PHA // Save opcode
             
-#if defined(DEBUG) || defined(TRACE)
-            PHA Debug.HOut(); LDA #' ' Debug.COut(); PLA
-#endif
-#ifdef TRACE
-            Tools.NL(); 
+#ifdef TRACE            
+            Trace.IsTracing();
+            if (C)
+            {
+                PHA Debug.HOut(); LDA #' ' Debug.COut(); PLA
+                Tools.NL(); 
+            }
 #endif            
             // Advance PC
             INC ZP.PCL

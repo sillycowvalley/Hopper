@@ -43,6 +43,7 @@ unit Error
     const string notImplemented = "NOT IMPLEMENTED";
     const string internalError = "INTERNAL ERROR";
     const string onlyInDebug = "ONLY IN DEBUG BUILD";
+    const string onlyInTrace = "ONLY IN TRACE BUILD";
     const string typeMismatch = "TYPE MISMATCH";
     const string functionExists = "FUNCTION EXISTS";
     const string constantExists = "CONSTANT EXISTS";
@@ -118,7 +119,14 @@ unit Error
         STA ZP.LastErrorH
         CLC
     }
-    
+    OnlyInTrace() 
+    { 
+        LDA #(onlyInTrace % 256)
+        STA ZP.LastErrorL
+        LDA #(onlyInTrace / 256)
+        STA ZP.LastErrorH
+        CLC
+    }
     OnlyAtConsole() 
     { 
         LDA #(onlyAtConsole % 256)

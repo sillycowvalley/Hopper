@@ -59,6 +59,11 @@ program HopperBASIC
         // Clear system flags and set basic state
         STZ ZP.FLAGS
         SMB0 ZP.FLAGS  // Set "program loaded" flag for BASIC
+#ifdef TRACE
+        SMB2 ZP.FLAGS  // TRON by default
+#else
+        RMB2 ZP.FLAGS  // TROFF by default
+#endif        
         
         // Initialize BASIC-specific components
         Console.Initialize();  // This now initializes the tokenizer too

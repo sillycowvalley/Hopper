@@ -353,6 +353,8 @@ unit Statement
             }
         } // switch
         
+Tools.NL(); LDA #'E' Tools.COut(); Debug.CFOut();  // Show carry flag result
+
         if (C) // Only if statement executed successfully
         {
             LDA ZP.CurrentToken
@@ -756,7 +758,7 @@ unit Statement
         LDA #(SymbolType.VARIABLE << 4)
         STA stmtSymbol
         processSingleSymbolDeclaration();
-
+        
 #ifdef TRACE
         LDA #(executeVarDeclTrace % 256) STA ZP.TraceMessageL LDA #(executeVarDeclTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -1070,6 +1072,8 @@ unit Statement
             STA ZP.TOPL
             PLX
             
+Tools.NL(); LDA #'V' Tools.COut(); Debug.CFOut();  // Show carry flag result
+
             if (NC)
             {
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL

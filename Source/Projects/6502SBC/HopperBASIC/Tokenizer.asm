@@ -40,17 +40,19 @@ unit Tokenizer
         BUFFERS  = 0x0E,
         DUMP     = 0x0F,
         BYE      = 0x10,
-        REM      = 0x11,
-        COMMENT  = 0x12,
-        EOL      = 0x13,
+        TRON     = 0x11,
+        TROFF    = 0x12,
+        REM      = 0x13,
+        COMMENT  = 0x14,
+        EOL      = 0x15,
         
         // Type declarations
-        INT      = 0x14,
-        WORD     = 0x15,
-        BIT      = 0x16,
-        BYTE     = 0x17,
-        STRING   = 0x18,
-        CONST    = 0x19, 
+        INT      = 0x16,
+        WORD     = 0x17,
+        BIT      = 0x18,
+        BYTE     = 0x19,
+        STRING   = 0x1A,
+        CONST    = 0x1B, 
         
         // Language keywords
         PRINT    = 0x20,
@@ -180,6 +182,8 @@ unit Tokenizer
         4, Tokens.SAVE, 'S', 'A', 'V', 'E',       // Infrequent
         4, Tokens.VARS, 'V', 'A', 'R', 'S',       // Infrequent
         3, Tokens.REM, 'R', 'E', 'M',             // Infrequent
+        4, Tokens.TRON, 'T', 'R', 'O', 'N',       // Infrequent
+        5, Tokens.TROFF, 'T', 'R', 'O', 'F', 'F', // Infrequent
         0  // End marker
     };   
 

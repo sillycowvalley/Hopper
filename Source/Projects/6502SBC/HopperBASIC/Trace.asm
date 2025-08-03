@@ -1,9 +1,26 @@
 unit Trace
 {
+    // #define TRACESP (6502 SP for stack balance diagnosis)
+    
     uses "/Source/Runtime/6502/ZeroPage"
     uses "Tools"
     uses "Debug"
     
+    IsTracing()
+    {
+#ifdef TRACE        
+        if (BBS2, ZP.FLAGS)
+        {
+            SEC  // Bit 2 is set - tracing enabled
+        }
+        else
+        {
+            CLC  // Bit 2 is clear - tracing disabled
+        }
+#else
+        CLC
+#endif
+    }
 
 #if defined(DEBUG) || defined(TRACE)
     // Shared utilities (needed by Debug unit too)
@@ -52,6 +69,12 @@ unit Trace
     MethodEntry()
     {
         PHP
+        IsTracing();
+        if (NC)
+        {
+            PLP
+            return;
+        }
         PHA
         PHX
         PHY
@@ -60,10 +83,11 @@ unit Trace
         PHA
         LDA ZP.ACCH
         PHA
-        
+#ifdef TRACESP        
         // capture current stack pointer
-        //TSX
-        //PHX
+        TSX
+        PHX
+#endif
         
         Debug.ValidateHeap();
         
@@ -71,13 +95,14 @@ unit Trace
         
         // Print method name from ZP.TraceMessage
         LDA ZP.TraceMessageL STA ZP.ACCL LDA ZP.TraceMessageH STA ZP.ACCH Tools.PrintStringACC(); Debug.Space(); LDA #'{' Debug.COut(); 
-        
-        /*
+      
+#ifdef TRACESP  
         LDA #' ' Debug.COut();
         LDA #'S' Debug.COut(); 
         PLA Debug.HOut();  // Print current stack pointer
         LDA #' ' Debug.COut();
-        */
+#endif
+        
         LDA ZP.LastErrorL
         ORA ZP.LastErrorH
         if (NZ)
@@ -121,6 +146,13 @@ unit Trace
     MethodExit()
     {
         PHP
+        IsTracing();
+        if (NC)
+        {
+            PLP
+            return;
+        }
+        
         PHA
         PHX
         PHY
@@ -130,9 +162,11 @@ unit Trace
         LDA ZP.ACCH
         PHA
         
+#ifdef TRACESP
         // capture current stack pointer
-        //TSX
-        //PHX
+        TSX
+        PHX
+#endif
         
         Debug.ValidateHeap();
         
@@ -146,13 +180,13 @@ unit Trace
         // Print method name from ZP.TraceMessage
         LDA ZP.TraceMessageL STA ZP.ACCL LDA ZP.TraceMessageH STA ZP.ACCH Tools.PrintStringACC(); Debug.Space(); 
         
-        /*
+#ifdef TRACESP
         LDA #' ' Debug.COut();
         LDA #'S' Debug.COut();
         PLA Debug.HOut();  // Print current stack pointer
         LDA #' ' Debug.COut();
-        */
-        
+#endif
+
         LDA ZP.LastErrorL
         ORA ZP.LastErrorH
         if (NZ)

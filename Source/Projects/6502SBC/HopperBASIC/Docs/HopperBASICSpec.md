@@ -1,5 +1,5 @@
 # Hopper BASIC Specification v2.10
-**Document Type: Language Specification**
+**Document Type: Language Specification for Hopper BASIC**
 
 ## Project Objectives
 

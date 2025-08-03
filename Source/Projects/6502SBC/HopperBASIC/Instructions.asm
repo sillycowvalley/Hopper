@@ -53,7 +53,7 @@ unit Instructions
             CheckTypeCompatibility();
             break;
         }
-        
+Tools.NL(); LDA #'C' Tools.COut(); Debug.CFOut();  // Show carry flag result
         PLA
     }  
     
