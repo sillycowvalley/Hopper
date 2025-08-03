@@ -263,15 +263,6 @@ unit Statement
                 break;
             } 
             
-            
-            /*
-            State.IsExiting();
-            if (C)
-            {
-                State.SetSuccess();
-            }
-            */
-            
             // Result is now on stack
             break;
         } // single exit
@@ -279,6 +270,75 @@ unit Statement
 #ifdef TRACE
         LDA #(strEvaluateExpression % 256) STA ZP.TraceMessageL LDA #(strEvaluateExpression / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
+    }
+    
+    
+    // Add this to Statement.asm - follows same pattern as EvaluateExpression()
+
+    // Execute statement using JIT compilation
+    // Input: ZP.CurrentToken = first token of statement (or reset tokenizer position first)
+    // Output: Statement compiled and executed
+    //         ZP.CurrentToken = token after statement
+    //         C set if successful, NC if error
+    // Munts: Stack, ZP.CurrentToken, all ZP variables used by compilation/execution
+    // Error: Sets ZP.LastError if compilation or execution error
+    const string strExecuteStatement = "ExecStmt";
+    ExecuteStatement()
+    {
+    #ifdef TRACE
+        LDA #(strExecuteStatement % 256) STA ZP.TraceMessageL LDA #(strExecuteStatement / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        loop
+        {
+            // Set literal base to BasicTokenizerBuffer for REPL (same as EvaluateExpression)
+            LDA #(Address.BasicTokenizerBuffer % 256)
+            STA ZP.IDYL  
+            LDA #(Address.BasicTokenizerBuffer / 256) 
+            STA ZP.IDYH
+            Compiler.SetLiteralBase();
+            
+            // Initialize opcode buffer if this is the start of compilation  
+            Compiler.InitOpCodeBuffer();
+            Error.CheckError();
+            if (NC) { State.SetFailure(); break; }
+            
+            // Compile the statement (not expression)
+            Compiler.CompileStatement();
+            Error.CheckError();
+            if (NC) { State.SetFailure(); break; }
+            
+            // Save opcode buffer length after compilation 
+            LDA ZP.OpCodeBufferLengthL
+            PHA
+            LDA ZP.OpCodeBufferLengthH
+            PHA
+            
+            State.SetSuccess(); // Clear state
+            
+            // Execute the compiled statement opcodes
+            Executor.ExecuteOpCodes();
+            Error.CheckError();
+            
+            // Restore opcode buffer length
+            PLA
+            STA ZP.OpCodeBufferLengthH
+            PLA
+            STA ZP.OpCodeBufferLengthL
+            
+            Error.CheckError(); 
+            if (NC)
+            {
+                State.SetFailure(); 
+                break;
+            } 
+            
+            State.SetSuccess();
+            break;
+        }
+    
+    #ifdef TRACE
+        LDA #(strExecuteStatement % 256) STA ZP.TraceMessageL LDA #(strExecuteStatement / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
     }
     
     
@@ -597,85 +657,19 @@ unit Statement
             // Handle different identifier types
             switch (A)
             {
+                // TODO : this could all be unified under Statement.ExecuteStatement(), if REPL had its own buffers
                 case IdentifierType.Function:
                 {
                     // compile it as expression and execute
-                    EvaluateExpression(); // This will handle the function call compilation
+                    Statement.EvaluateExpression(); // this will handle the function call compilation
                     Error.CheckError();
                     break;
                 }
                 case IdentifierType.Global:
                 {
-                    // This is a variable - save the node address in statement storage
-                    LDA ZP.IDXL
-                    STA (stmtObjectPtr + 0)
-                    LDA ZP.IDXH
-                    STA (stmtObjectPtr + 1)
-                    
-                    // Move to next token - should be '=' for assignment
-                    Tokenizer.NextToken();
+                    // compile it as a statement and execute
+                    Statement.ExecuteStatement();
                     Error.CheckError();
-                    if (NC) { break; }
-                    
-                    // Check for assignment operator
-                    LDA ZP.CurrentToken
-                    CMP #Tokens.EQUALS
-                    if (NZ)
-                    {
-                        // Not an assignment - this might be a function call or syntax error
-                        Error.SyntaxError(); BIT ZP.EmulatorPCL
-                        CLC
-                        break;
-                    }
-                    
-                    // Move past the '=' token
-                    Tokenizer.NextToken();
-                    Error.CheckError();
-                    if (NC) { break; }
-                    
-                    // Evaluate the expression on the right side
-                    EvaluateExpression();
-                    
-                    Error.CheckError();
-                    if (NC) { break; }
-                    
-                    // Pop the expression result from the value stack
-                    Stacks.PopTop(); // Result in ZP.TOP, type in ZP.TOPT
-                    Error.CheckError();
-                    if (NC) { break; }
-                    
-                    // Restore the variable node address from statement storage
-                    LDA (stmtObjectPtr + 0)
-                    STA ZP.IDXL
-                    LDA (stmtObjectPtr + 1)
-                    STA ZP.IDXH
-                    
-                    // Get the variable's declared type for type checking
-                    Variables.GetType(); // Returns type in ZP.ACCT
-                    Error.CheckError();
-                    if (NC) { break; }
-                    
-                    LDA ZP.ACCT
-                    AND #0x0F  // Extract data type (low nibble)
-                    STA ZP.ACCT // Variable's declared type
-                    
-                    // Check type compatibility
-                    LDA ZP.TOPT // Expression result type
-                    CMP ZP.ACCT // Variable's declared type
-                    if (NZ)
-                    {
-                        // Type mismatch - check for valid assignment promotion
-                        CheckRHSTypeCompatibility(); // Uses ZP.TOP = RHS value, ZP.TOPT = RHS type, ZP.NEXTT = LHS type
-                        Error.CheckError();
-                        if (NC) { break; } // Assignment type promotion failed
-                    }
-                    
-                    // Assign the value to the variable
-                    Variables.SetValue(); // ZP.IDX = node, ZP.TOP = value
-                    Error.CheckError();
-                    if (NC) { break; }
-                    
-                    SEC // Success
                     break;
                 }
                 

@@ -1,9 +1,9 @@
 program HopperBASIC
 {
-    #define DEBUG
+    //#define DEBUG
     #define TRACE
     //#define TRACESP
-    //#define TRACEVERBOSE // details in Executor
+    #define TRACEVERBOSE // details in Executor
     
     //#define TRACECONSOLE // trace output for Console.asm and Listing.asm
     

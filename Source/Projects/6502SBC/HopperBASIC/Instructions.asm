@@ -52,7 +52,6 @@ unit Instructions
                 // Value is 0-255, but still need to check type compatibility
                 // Fall through to CheckTypeCompatibility()
             }
-            
             // For all types (including BIT), use general type compatibility checking
             LDA #1  // Arithmetic operation mode
             CheckTypeCompatibility();
@@ -61,8 +60,6 @@ unit Instructions
 #ifdef TRACE
         LDA #(checkRHS % 256) STA ZP.TraceMessageL LDA #(checkRHS / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
-
-
         PLA
     }  
     

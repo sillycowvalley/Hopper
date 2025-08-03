@@ -1037,13 +1037,14 @@ unit Executor
             
             // Move LHS type to correct register for CheckRHSTypeCompatibility
             LDA ZP.ACCT
+            AND #0x0F  // Extract data type (low nibble)
             STA ZP.NEXTT 
             
             // Check type compatibility for assignment
             Instructions.CheckRHSTypeCompatibility(); // Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
-            Error.CheckError();
             if (NC) 
             { 
+                Error.TypeMismatch();
                 State.SetFailure();
                 break; 
             }

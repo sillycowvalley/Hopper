@@ -418,7 +418,7 @@ unit Error
             State.IsFailure();
             if (C)
             {
-#if defined(DEBUG) || defined(TRACE)
+#if defined(DEBUG)
                 LDA #'F' Debug.COut(); LDA #'!' Debug.COut();
 #endif
                 CLC  // Failure
@@ -435,7 +435,7 @@ unit Error
             {
                 State.SetFailure();
             }
-#if defined(DEBUG) || defined(TRACE)
+#if defined(DEBUG)
             LDA #'E' Debug.COut(); LDA #'!' Debug.COut();
 #endif
             CLC  // Error occurred

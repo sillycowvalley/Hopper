@@ -1143,7 +1143,7 @@ unit Compiler
                 }
                 
                 // Compile the statement
-                compileStatement();
+                CompileStatement();
                 Error.CheckError();
                 if (NC) { State.SetFailure(); break; }
             }
@@ -1181,7 +1181,7 @@ unit Compiler
     // Modifies: OpCode buffer, ZP.CurrentToken, compilation state
     // Error: Sets ZP.LastError if statement compilation fails
     const string compileStatementTrace = "CompStmt // <statement>";
-    compileStatement()
+    CompileStatement()
     {
 #ifdef TRACE
         LDA #(compileStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
