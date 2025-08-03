@@ -352,6 +352,9 @@ unit Functions
         PHX
         PHY
         
+        // clear all FUNC opcodes before calling removing functions
+        FreeAllOpCodes(); 
+        
         loop
         {
             LDX #ZP.FunctionsList

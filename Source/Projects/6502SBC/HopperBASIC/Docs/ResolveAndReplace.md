@@ -27,7 +27,7 @@ After RETURN: [caller_data...] [return_value_or_zero]
 ```
 
 ### Return Statement Behavior
-- **`RETURN` (no expression)**: Leaves return slot as `BIT 0` (zero-initialized)
+- **`RETURN` (no expression)**: Leaves return slot as `VOID 0` (zero-initialized)
 - **`RETURNVAL` (with expression)**: Pops expression result into return slot, preserves type
 - **Both opcodes**: Clean up arguments + locals using cleanup_count operand
 - **Stack cleanup**: SP reduced by cleanup_count (arguments + locals, but NOT return slot)
@@ -36,7 +36,7 @@ After RETURN: [caller_data...] [return_value_or_zero]
 1. **Predictable stack layout** for all function calls
 2. **No crashes** on mixed `RETURN`/`RETURNVAL` patterns within same function  
 3. **Consistent caller cleanup** (always exactly one return slot)
-4. **Zero-initialized return slot** provides sensible default (`BIT 0`)
+4. **Zero-initialized return slot** provides sensible default (`VOID 0`)
 5. **Type information preserved** in parallel TypeStack
 6. **Future-proof**: Return type checking already built-in via TypeStack
 

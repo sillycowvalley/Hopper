@@ -1,4 +1,4 @@
-# Hopper BASIC Specification v2.10
+# Hopper BASIC Specification v2.11
 **Document Type: Language Specification for Hopper BASIC**
 
 ## Project Objectives
@@ -51,6 +51,7 @@ BEGIN
                     k = k + prime
                 WEND
                 count = count + 1
+            ENDIF
         NEXT i
     NEXT iter
     
@@ -68,7 +69,7 @@ END
 ### Fibonacci Benchmark with Functions
 ```basic
 FUNC Fibo(n)
-    IF n <= 1 THEN RETURN n
+    IF n <= 1 THEN RETURN n ENDIF
     RETURN Fibo(n-1) + Fibo(n-2)
 ENDFUNC
 
@@ -115,7 +116,7 @@ END
 ### Console Commands
 - ✅ **`NEW`** - Clear everything (program, variables, functions)
 - ✅ **`LIST`** - Display complete program: constants, variables, functions, main program (creation order)
-- ❌ **`RUN`** - Execute the main program (BEGIN/END block) - **stub implemented**
+- ✅ **`RUN`** - Execute the main program (BEGIN/END block)
 - ✅ **`CLEAR`** - Reset all variables to default values, keep definitions
 - ✅ **`VARS`** - Show constants first, then variables (creation order)
 - ✅ **`FUNCS`** - Show all functions in creation order (main program listed last as "BEGIN")
@@ -246,15 +247,15 @@ BIT isReady = FALSE
 INT count = 0
 
 ' Conditional logic
-IF isReady = TRUE THEN count = count + 1
+IF isReady = TRUE THEN count = count + 1 ENDIF
 
 ' BIT-only operations
 BIT result = isReady AND (count > 5)   ' Error: cannot mix BIT and numeric in expression
 BIT result = isReady AND TRUE          ' Correct: BIT-only expression
 
 ' Proper flag usage
-IF isReady = TRUE THEN PRINT "System ready"
-IF isReady <> FALSE THEN PRINT "Not false"
+IF isReady = TRUE THEN PRINT "System ready" ENDIF
+IF isReady <> FALSE THEN PRINT "Not false" ENDIF
 
 ' BIT assignment from expressions  
 BIT comparison = (count > 10)          ' Comparison result is BIT type
@@ -313,7 +314,8 @@ BIT flag = 0               ' TYPE MISMATCH - 0 is INT, not BIT
     - **Rejected**: All other types → TYPE MISMATCH
 
 #### Control Flow
-- ✅ **`IF expr THEN statement`** - Basic conditional execution
+- ✅ **`IF expr THEN statements ENDIF`** - Single/multi-line conditional execution with mandatory terminator
+- ✅ **`IF expr THEN statements ELSE statements ENDIF`** - Single/multi-line conditional with alternative path
 - ✅ **`RETURN [expr]`** - Return from function (parsing and execution complete)
 - ✅ **`END`** - End main program (parsing and execution complete)
 
@@ -491,9 +493,6 @@ FOR i = 1 TO 10              ' Missing NEXT i
 - ❌ **Array Indexing**: Zero-based array access with bounds checking
 - ❌ **Array Parameters**: Pass global arrays as function arguments
 
-### Management Commands
-- ❌ **RUN Command**: Execute stored main program (BEGIN/END block)
-
 ---
 
 ## Phase 3: Memory Functions and Enhanced I/O
@@ -613,7 +612,9 @@ print_list := print_item [ print_separator print_item ]*
 print_item := expression | string_literal
 print_separator := ";" | ","
 
-if_statement := IF expression THEN statement
+if_statement := IF expression THEN statement_block [ ELSE statement_block ] ENDIF
+
+statement_block := statement [ ":" statement ]*
 
 comment_statement := REM [ comment_text ]
                    | "'" [ comment_text ]
@@ -649,6 +650,38 @@ executable_statement := assignment
 - **Executable statements include**: assignments, FOR loops, PRINT, IF, function calls
 - **Declaration statements**: type declarations (`INT x`, `WORD y = 10`)
 - **Mixed order error**: Declaring locals after executable statements → "LOCAL DECLARATIONS MUST COME FIRST"
+
+### IF Statement Design
+
+**Syntax Philosophy**: Always requires terminator for consistent parsing
+```basic
+' Single-line usage
+IF x > 5 THEN PRINT "big" ENDIF
+IF x > 5 THEN PRINT "big" ELSE PRINT "small" ENDIF
+
+' Multi-line usage  
+IF x > 5 THEN
+    PRINT "Value is big"
+    count = count + 1
+ENDIF
+
+IF x > 5 THEN
+    PRINT "big"
+    PRINT "processing large value"
+ELSE
+    PRINT "small" 
+    PRINT "processing small value"
+ENDIF
+
+' Colon-separated statements within blocks
+IF ready THEN start_process() : log_message("Started") ENDIF
+```
+
+**Design Benefits:**
+- **Parse simplicity**: Always requires ENDIF terminator - no special cases
+- **Single-word keywords**: No `END IF` lookahead complexity  
+- **Line-agnostic**: Same parsing logic for single/multi-line usage
+- **Colon compatibility**: Works seamlessly with existing colon separator support
 
 ### Expressions
 ```
@@ -723,7 +756,7 @@ comment := REM any_characters_to_end_of_line
 ```
 NUMBER := decimal_digits | hex_number
 IDENTIFIER := letter [ letter | digit ]*
-KEYWORD := predefined language keywords (PRINT, IF, THEN, CONST, FOR, WHILE, etc.)
+KEYWORD := predefined language keywords (PRINT, IF, THEN, ELSE, ENDIF, CONST, FOR, WHILE, etc.)
 OPERATOR := "+" | "-" | "*" | "/" | "=" | "<>" | "<" | ">" | "<=" | ">=" | "&" | "|" | "(" | ")" | "[" | "]" | MOD | AND | OR | NOT | TO | STEP
 SEPARATOR := ":" | "," | ";"
 COMMENT := REM | "'"
@@ -771,7 +804,7 @@ CONST STRING msg = "Ready"  ' String constant
 ```basic
 PRINT 10 : PRINT 20
 INT x = 5 : PRINT x : x = x + 1 : PRINT x
-IF x < y THEN PRINT "x is smaller" : x = y
+IF x < y THEN PRINT "x is smaller" : x = y ENDIF
 CONST STRING greeting = "Hello" : PRINT greeting
 ```
 
@@ -931,12 +964,12 @@ Offset 2+:  null-terminated argument name string
 - **Function Declaration**: Complete FUNC/ENDFUNC and BEGIN/END syntax
 - **Function Storage**: Token stream capture and storage for function bodies
 - **Parameter Lists**: Argument parsing and storage in Functions system
-- **Multi-line Capture**: Interactive function definition across multiple input lines
+- **Multi-line Capture**: Interactive function definition across multiple lines
 - **Function Display**: FUNCS and LIST commands with formatted token stream rendering
 - **Function Calls**: Complete function call parsing in expressions and statements
 - **Console Commands**: NEW, CLEAR, VARS, FUNCS, LIST, FORGET, MEM, BYE, debug commands
 - **Statement Processing**: Multi-statement lines with colon separators
-- **IF/THEN Statements**: Basic conditional execution
+- **IF/THEN/ELSE/ENDIF Statements**: Complete conditional execution with mandatory terminators
 - **RETURN/END Statements**: Function and program termination (parsing and execution complete)
 - **Assignment**: Variable assignment with type checking
 - **Error Handling**: Proper error messages and recovery
@@ -947,10 +980,11 @@ Offset 2+:  null-terminated argument name string
 - **Function Execution**: Complete JIT compilation and execution with call stack management
 - **Function Call Resolution**: CALL→CALLF opcode patching for performance optimization
 - **Recursion Support**: Proper stack frame management enables recursive function calls
+- **RUN Command**: Execute stored main program (BEGIN/END block)
 
 ### 🎯 Current Status: Core Function System Complete
 
-**Major Achievement**: Function system with JIT compilation fully operational, enabling recursive function calls and complex program execution.
+**Major Achievement**: Function system with JIT compilation fully operational, enabling recursive function calls and complex program execution. IF statements with mandatory terminators provide structured control flow.
 
 ### ❌ Missing Components for Full Benchmark Support:
 1. **FOR/NEXT loops** - Basic iteration support (Next Priority)
@@ -961,7 +995,6 @@ Offset 2+:  null-terminated argument name string
 6. **Global array declarations** - `BIT flags[8191]` (global scope only)
 7. **Array indexing** - `flags[i] = TRUE`
 8. **Array function parameters** - Pass global arrays to functions
-9. **RUN Command** - Execute stored main program (BEGIN/END block)
 
 ### ❌ Missing Components for Memory Functions:
 1. **PEEK Function**: Built-in function to read memory bytes
@@ -988,6 +1021,8 @@ All implemented systems have comprehensive test coverage:
 - **BYTE Type**: Complete test suite passed with 8-bit arithmetic and type promotion rules
 - **Function execution**: Recursive function calls validated with FOO()→BAR() test case
 - **JIT compilation**: Expression compilation and opcode execution verified
+- **IF statements**: Single-line and multi-line conditional execution tested
+- **RUN command**: Main program execution verified
 
 ---
 
@@ -1032,7 +1067,7 @@ STRING status = "Active"
 **Display Order**: Functions in creation order, main program (BEGIN block) listed with special handling
 ```
 FUNC Fibo(n)
-    IF n <= 1 THEN RETURN n
+    IF n <= 1 THEN RETURN n ENDIF
     RETURN Fibo(n-1) + Fibo(n-2)
 ENDFUNC
 
@@ -1058,7 +1093,7 @@ BYTE port = 255
 STRING status = "Active"
 
 FUNC Fibo(n)
-    IF n <= 1 THEN RETURN n
+    IF n <= 1 THEN RETURN n ENDIF
     RETURN Fibo(n-1) + Fibo(n-2)
 ENDFUNC
 
@@ -1082,6 +1117,43 @@ END
 ---
 
 ## Usage Examples
+
+### IF Statement Examples
+```basic
+' Single-line conditional
+IF x > 5 THEN PRINT "big" ENDIF
+
+' Single-line with ELSE
+IF x > 5 THEN PRINT "big" ELSE PRINT "small" ENDIF
+
+' Multi-line conditional
+IF count > 100 THEN
+    PRINT "High count detected"
+    count = 0
+ENDIF
+
+' Multi-line with ELSE
+IF status = "ready" THEN
+    PRINT "Starting process"
+    start_operation()
+ELSE
+    PRINT "System not ready"
+    PRINT "Waiting..."
+ENDIF
+
+' Nested IF statements
+IF mode = 1 THEN
+    IF debug THEN PRINT "Debug mode active" ENDIF
+    process_data()
+ELSE
+    IF debug THEN PRINT "Production mode" ENDIF
+    validate_data()
+ENDIF
+
+' IF with colon-separated statements
+IF ready THEN start_process() : log_message("Started") ENDIF
+IF error THEN PRINT "Error occurred" : reset_system() : RETURN -1 ENDIF
+```
 
 ### FOR/NEXT Loop Examples (Future Implementation)
 ```basic
@@ -1194,6 +1266,9 @@ OK
 > PRINT complex
 TRUE
 
+> IF complex = TRUE THEN PRINT "Complex is true" ENDIF
+Complex is true
+
 > VARS
 CONST BIT DEBUGMODE = TRUE
 BIT FLAG1 = FALSE
@@ -1218,7 +1293,7 @@ Hello World
 > PRINT message  
 Updated Value
 
-> IF message = "Updated Value" THEN PRINT "Match"
+> IF message = "Updated Value" THEN PRINT "Match" ENDIF
 Match
 
 > VARS
@@ -1300,7 +1375,7 @@ ENDFUNC
 ```basic
 > FUNC Complex(x)
 * INT temp = x * 2
-* IF temp > 10 THEN temp = temp - 5
+* IF temp > 10 THEN temp = temp - 5 ENDIF
 * RETURN temp
 * ENDFUNC
 OK
@@ -1308,7 +1383,7 @@ OK
 > FUNCS Complex
 FUNC Complex(x)
     INT temp = x * 2
-    IF temp > 10 THEN temp = temp - 5
+    IF temp > 10 THEN temp = temp - 5 ENDIF
     RETURN temp
 ENDFUNC
 ```
@@ -1322,6 +1397,10 @@ ENDFUNC
 * PRINT result
 * END
 OK
+
+> RUN
+Starting program
+42
 
 > FUNCS
 BEGIN
@@ -1411,10 +1490,11 @@ BIT complex = (a OR b) AND NOT (b AND a)  ' TRUE
 PRINT result1 : PRINT result2 : PRINT result3 : PRINT result4 : PRINT complex
 ```
 
-### Multi-Statement Lines with BIT Types
+### Multi-Statement Lines with BIT Types and IF
 ```basic
 BIT flag1 = TRUE : BIT flag2 = FALSE : PRINT flag1 : PRINT flag2
-IF flag1 = TRUE THEN flag2 = TRUE : PRINT flag2 : PRINT "Done"
+IF flag1 = TRUE THEN flag2 = TRUE : PRINT flag2 : PRINT "Done" ENDIF
+IF flag1 AND flag2 THEN PRINT "Both true" ELSE PRINT "At least one false" ENDIF
 ```
 
 ### Hexadecimal Numbers
@@ -1436,7 +1516,6 @@ PRINT label : PRINT addr + offset    ' Prints Address, then 33024
 - **Global Arrays**: Single-dimensional arrays for all types (global scope only)
 - **Array Indexing**: Zero-based array access with bounds checking
 - **Array Parameters**: Pass global arrays as function arguments
-- **RUN Command**: Execute stored main program (BEGIN/END block)
 
 ### Phase 3: Memory Functions and Enhanced I/O
 - **PEEK Function**: Built-in memory read function
@@ -1454,4 +1533,4 @@ PRINT label : PRINT addr + offset    ' Prints Address, then 33024
 - **Embedded Features**: Real-time capabilities for microcontroller applications
 - **Optimization**: Performance tuning for 6502 constraints
 
-The current implementation provides a robust foundation with complete function execution, JIT compilation, and all core data types (INT, WORD, BIT, BYTE, STRING) fully implemented with proper type checking, promotion rules, and memory management. The function system breakthrough enables complex recursive programming and validates the core interpreter architecture before adding loop constructs and other advanced features needed for the benchmark programs.
+The current implementation provides a robust foundation with complete function execution, JIT compilation, structured IF statements with mandatory terminators, and all core data types (INT, WORD, BIT, BYTE, STRING) fully implemented with proper type checking, promotion rules, and memory management. The function system breakthrough and RUN command enable complex recursive programming and validate the core interpreter architecture before adding loop constructs and other advanced features needed for the benchmark programs.

@@ -22,6 +22,26 @@ unit Executor
     const uint executorTokenAddrL    = Address.BasicExecutorWorkspace + 15;  // token fetch addr low
     const uint executorTokenAddrH    = Address.BasicExecutorWorkspace + 16;  // token fetch addr high
     
+    // Reset Hopper VM to clean state before execution
+    Reset()
+    {
+        // Reset stacks (already proven to work in ExecuteOpCodes)
+        STZ ZP.SP    // Reset value/type stack pointer to 0
+        STZ ZP.BP    // Reset base pointer to 0
+        STZ ZP.CSP   // Reset call stack pointer to 0
+        
+        // Push return slot in case we are calling a function to start the VM
+        // If not, no biggie - just one wasted stack slot
+        LDA #BasicType.VOID
+        STA ZP.TOPT
+        STZ ZP.TOPL  
+        STZ ZP.TOPH
+        Stacks.PushTop();
+        
+        // Clear any error conditions
+        Error.ClearError();
+        State.SetSuccess();
+    }
     
     // Main entry point - Execute compiled opcodes
     // Input: ZP.OpCodeBufferLengthL/H contains opcode buffer length
@@ -40,8 +60,7 @@ unit Executor
 
         // CRITICAL: Reset stacks before execution to ensure clean state
         // Previous expression errors or interruptions could leave stacks inconsistent
-        STZ ZP.SP    // Reset value/type stack pointer to 0
-        STZ ZP.BP
+        Executor.Reset();
         
         loop // Single exit block
         {
@@ -417,6 +436,19 @@ unit Executor
                 executeNop();
             }
             
+            case OpCodeType.PUSH0:
+            {
+                executePush0();
+            }
+            case OpCodeType.PUSH1:
+            {
+                executePush1();
+            }
+            case OpCodeType.PUSHVOID:
+            {
+                executePushVoid();
+            }
+            
             // === ONE BYTE OPERAND OPCODES (0x40-0x7F) ===
             
             // Literal pushes (8-bit)
@@ -559,6 +591,63 @@ unit Executor
     
     // === CONTROL FLOW AND STACK MANIPULATION HANDLERS ===
     
+    // Common return processing for both RETURN and RETURNVAL opcodes
+    // Input: ZP.TOP = return value (16-bit), ZP.TOPT = return type
+    //        Operand byte = argument count (number of arguments to clean up)
+    // Output: Return value stored in return slot, stack frame restored, execution returned to caller
+    // Stack: Removes all arguments and locals, preserves return slot with return value
+    // State: Sets State.SetReturn() if returned to entry call, State.SetSuccess() otherwise
+    // Modifies: ZP.SP (stack cleanup), ZP.BP (restored), ZP.PC (restored), ZP.CSP (decremented)
+    //           Return slot contents (value and type), executorOperand1 (operand fetch)
+    // Preserves: All other zero page variables
+    // Error: Sets error state via Error.CheckError() if operand fetch fails
+    commonReturn()
+    {
+        loop
+        {
+            // Fetch cleanup count operand (number of locals)
+            FetchOperandWord();
+            Error.CheckError();
+            if (NC) { break; }
+            STA executorOperandL
+            
+            // Calculate return slot position: BP - (arg_count + 1)
+            SEC
+            LDA ZP.BP
+            SBC executorOperandL         // BP - arg_count
+            SEC
+            SBC #1                       // BP - arg_count - 1 = return slot position
+            TAX                          // X = return slot index
+            
+            // Store return value in return slot
+            LDA ZP.TOPL
+            STA Address.ValueStackLSB, X
+            LDA ZP.TOPH
+            STA Address.ValueStackMSB, X
+            LDA ZP.TOPT
+            STA Address.TypeStackLSB, X
+            
+             // Cleanup locals and arguments - set SP to return slot + 1
+            CLC
+            TXA                          // Return slot index
+            ADC #1                       // Return slot + 1
+            STA ZP.SP
+            
+            Stacks.PopBP();
+            Stacks.PopPC();
+            LDA ZP.CSP
+            if (Z) // CallStack pointer == 0?
+            {
+                State.SetReturn(); // popped back down to entry call
+            }
+            else
+            {
+                State.SetSuccess();
+            }
+            break;
+        } // exit loop
+    }
+    
     // Execute RETURN opcode - return from function
     const string executeReturnTrace = "RETURN // Return from function";
     executeReturn()
@@ -566,29 +655,33 @@ unit Executor
 #ifdef TRACE
         LDA #(executeReturnTrace % 256) STA ZP.TraceMessageL LDA #(executeReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-        
-        Stacks.PopBP();
-        Stacks.PopPC();
-        LDA ZP.CSP
-        if (Z) // CallStack pointer == 0?
-        {
-            State.SetReturn(); // popped back down to entry call
-        }
-        else
-        {
-            State.SetSuccess();
-        }
-        
+        LDA BasicType.VOID
+        STA ZP.TOPT
+        STZ ZP.TOPL
+        STZ ZP.TOPH
+        commonReturn();
+                
 #ifdef TRACE
         LDA #(executeReturnTrace % 256) STA ZP.TraceMessageL LDA #(executeReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
     
+    // Execute RETURNVAL opcode - return from function with value
+    // Input: cleanup_count operand, return value on top of stack
+    // Output: Return value moved to return slot, stack frame restored
+    // Modifies: Stack pointers, return slot contents
+    const string executeReturnValTrace = "RETURNVAL // Return with value";
     executeReturnVal()
     {
-        // TODO: Implement function return with value (pop return value from stack)
-        Error.NotImplemented(); BIT ZP.EmulatorPCL
-        State.SetFailure();
+#ifdef TRACE
+        LDA #(executeReturnValTrace % 256) STA ZP.TraceMessageL LDA #(executeReturnValTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        Stacks.PopTop();
+        commonReturn();        
+        
+#ifdef TRACE
+        LDA #(executeReturnValTrace % 256) STA ZP.TraceMessageL LDA #(executeReturnValTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Execute ENTER opcode - enter function frame
@@ -664,6 +757,73 @@ unit Executor
     }
     
     // === LITERAL PUSH HANDLERS (ONE BYTE OPERAND) ===
+    
+    // Execute PUSH0 opcode - push INT 0
+    const string executePush0Trace = "PUSH0 // Push INT 0";
+    executePush0()
+    {
+    #ifdef TRACE
+        LDA #(executePush0Trace % 256) STA ZP.TraceMessageL LDA #(executePush0Trace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        // Store INT 0 in ZP.TOP
+        STZ ZP.TOPL
+        STZ ZP.TOPH
+        LDA #BasicType.INT
+        STA ZP.TOPT
+        Stacks.PushTop();
+        
+        State.SetSuccess();
+        
+    #ifdef TRACE
+        LDA #(executePush0Trace % 256) STA ZP.TraceMessageL LDA #(executePush0Trace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+    
+    // Execute PUSH1 opcode - push INT 1
+    const string executePush1Trace = "PUSH1 // Push INT 1";
+    executePush1()
+    {
+    #ifdef TRACE
+        LDA #(executePush1Trace % 256) STA ZP.TraceMessageL LDA #(executePush1Trace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        // Store INT 1 in ZP.TOP
+        LDA #1
+        STA ZP.TOPL
+        STZ ZP.TOPH
+        LDA #BasicType.INT
+        STA ZP.TOPT
+        Stacks.PushTop();
+        
+        State.SetSuccess();
+        
+    #ifdef TRACE
+        LDA #(executePush1Trace % 256) STA ZP.TraceMessageL LDA #(executePush1Trace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+    
+    // Execute PUSHVOID opcode - push VOID 0
+    const string executePushVoidTrace = "PUSHVOID // Push VOID 0";
+    executePushVoid()
+    {
+    #ifdef TRACE
+        LDA #(executePushVoidTrace % 256) STA ZP.TraceMessageL LDA #(executePushVoidTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        // Store VOID 0 in ZP.TOP
+        STZ ZP.TOPL
+        STZ ZP.TOPH
+        LDA #BasicType.VOID
+        STA ZP.TOPT
+        Stacks.PushTop();
+        
+        State.SetSuccess();
+        
+    #ifdef TRACE
+        LDA #(executePushVoidTrace % 256) STA ZP.TraceMessageL LDA #(executePushVoidTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
     
     // Execute PUSHBIT opcode - push BIT immediate
     const string executePushBitTrace = "PUSHBIT // Push BIT immediate";
@@ -849,28 +1009,7 @@ unit Executor
         State.SetFailure();
     }
     
-    // === CONTROL FLOW HANDLERS (ONE BYTE OPERAND) ===
     
-    executeJumpB()
-    {
-        // TODO: Unconditional jump with signed byte offset
-        Error.NotImplemented(); BIT ZP.EmulatorPCL
-        State.SetFailure();
-    }
-    
-    executeJumpZB()
-    {
-        // TODO: Jump if zero with signed byte offset
-        Error.NotImplemented(); BIT ZP.EmulatorPCL
-        State.SetFailure();
-    }
-    
-    executeJumpNZB()
-    {
-        // TODO: Jump if non-zero with signed byte offset
-        Error.NotImplemented(); BIT ZP.EmulatorPCL
-        State.SetFailure();
-    }
     
     // === FUNCTION AND SYSTEM CALL HANDLERS (ONE BYTE OPERAND) ===
     
@@ -1128,26 +1267,309 @@ unit Executor
 #endif
     }
     
+    // === HELPER METHODS FOR JUMP OPERATIONS ===
+    
+    // Sign extend byte offset to word offset
+    // Input: A = signed byte offset (-128 to +127)
+    // Output: ZP.NEXT = sign-extended word offset
+    // Modifies: A, ZP.NEXTL, ZP.NEXTH
+    signExtendByteToWord()
+    {
+        STA ZP.NEXTL
+        
+        // Sign extension - based on IntMath.IntToLong pattern
+        ASL           // sign bit into carry
+        LDA #0x00
+        ADC #0xFF     // C set:   A = 0xFF + C = 0x00
+                      // C clear: A = 0xFF + C = 0xFF  
+        EOR #0xFF     // Flip all bits to match carry
+        
+        STA ZP.NEXTH
+    }
+    
+    // Pop expression result and validate it's a BIT type
+    // Input: Stack top must contain a BIT value
+    // Output: ZP.TOP = BIT value (0 or 1), NC if not BIT type
+    // Modifies: ZP.TOP, ZP.TOPT, ZP.SP, flags
+    popAndValidateBitType()
+    {
+        Stacks.PopTop();
+        
+        LDA ZP.TOPT
+        CMP #BasicType.BIT
+        if (Z)
+        {
+            SEC  // Success - is BIT type
+        }
+        else
+        {
+            Error.TypeMismatch(); BIT ZP.EmulatorPCL
+            CLC  // Failure - not BIT type
+        }
+    }
+    
+    // Apply signed offset to emulator PC
+    // Input: ZP.NEXT = signed 16-bit offset
+    // Output: ZP.EmulatorPC updated with new address
+    // Modifies: ZP.EmulatorPCL, ZP.EmulatorPCH, flags
+    applySignedOffsetToPC()
+    {
+        // Two's complement addition works for both positive and negative offsets
+        CLC
+        LDA ZP.PCL
+        ADC ZP.NEXTL
+        STA ZP.PCL
+        LDA ZP.PCH
+        ADC ZP.NEXTH
+        STA ZP.PCH
+    }
+    
+    // === CONTROL FLOW HANDLERS (ONE BYTE OPERANDS) ===
+    
+    const string executeJumpBTrace = "JUMPB // Unconditional jump with signed byte offset";
+    executeJumpB()
+    {
+#ifdef TRACE
+        LDA #(executeJumpBTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpBTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
+        // Fetch signed byte operand
+        FetchOperandByte();
+        State.CanContinue();
+        if (C)
+        {
+            // Sign extend byte to word
+            signExtendByteToWord();
+            
+            // Apply offset to PC
+            applySignedOffsetToPC();
+            
+            State.SetSuccess();
+        }
+        
+#ifdef TRACE
+        LDA #(executeJumpBTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpBTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+    }
+    
+    const string executeJumpZBTrace = "JUMPZB // Jump if zero with signed byte offset";
+    executeJumpZB()
+    {
+#ifdef TRACE
+        LDA #(executeJumpZBTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpZBTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
+        loop
+        {
+            // Pop and validate BIT type from stack
+            popAndValidateBitType();
+            if (NC) { break; }  // Type error already set
+            
+            // Check if value is zero (FALSE)
+            LDA ZP.TOPL
+            if (Z)  // Value is zero/FALSE - take the jump
+            {
+                // Fetch signed byte operand
+                FetchOperandByte();
+                State.CanContinue();
+                if (NC) { break; }
+                
+                // Sign extend byte to word
+                signExtendByteToWord();
+                
+                // Apply offset to PC
+                applySignedOffsetToPC();
+            }
+            else  // Value is non-zero/TRUE - skip the jump
+            {
+                // Still need to fetch and skip the operand
+                FetchOperandByte();
+                State.CanContinue();
+                if (NC) { break; }
+                // Don't apply offset - just continue to next instruction
+            }
+            
+            State.SetSuccess();
+            break;
+        }
+        
+#ifdef TRACE
+        LDA #(executeJumpZBTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpZBTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+    }
+    
+    const string executeJumpNZBTrace = "JUMPNZB // Jump if non-zero with signed byte offset";
+    executeJumpNZB()
+    {
+#ifdef TRACE
+        LDA #(executeJumpNZBTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpNZBTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
+        loop
+        {
+            // Pop and validate BIT type from stack
+            popAndValidateBitType();
+            if (NC) { break; }  // Type error already set
+            
+            // Check if value is non-zero (TRUE)
+            LDA ZP.TOPL
+            if (NZ)  // Value is non-zero/TRUE - take the jump
+            {
+                // Fetch signed byte operand
+                FetchOperandByte();
+                State.CanContinue();
+                if (NC) { break; }
+                
+                // Sign extend byte to word
+                signExtendByteToWord();
+                
+                // Apply offset to PC
+                applySignedOffsetToPC();
+            }
+            else  // Value is zero/FALSE - skip the jump
+            {
+                // Still need to fetch and skip the operand
+                FetchOperandByte();
+                State.CanContinue();
+                if (NC) { break; }
+                // Don't apply offset - just continue to next instruction
+            }
+            
+            State.SetSuccess();
+            break;
+        }
+        
+#ifdef TRACE
+        LDA #(executeJumpNZBTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpNZBTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+    }
+    
     // === CONTROL FLOW HANDLERS (TWO BYTE OPERANDS) ===
     
+    const string executeJumpWTrace = "JUMPW // Unconditional jump with signed word offset";
     executeJumpW()
     {
-        // TODO: Unconditional jump with signed word offset
-        Error.NotImplemented(); BIT ZP.EmulatorPCL
-        State.SetFailure();
+#ifdef TRACE
+        LDA #(executeJumpWTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpWTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
+        // Fetch 16-bit signed operand
+        FetchOperandWord();
+        State.CanContinue();
+        if (C)
+        {
+            // Operand is already in executorOperandL/H, move to ZP.NEXT
+            LDA executorOperandL
+            STA ZP.NEXTL
+            LDA executorOperandH
+            STA ZP.NEXTH
+            
+            // Apply offset to PC
+            applySignedOffsetToPC();
+            
+            State.SetSuccess();
+        }
+        
+#ifdef TRACE
+        LDA #(executeJumpWTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpWTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
+    const string executeJumpZWTrace = "JUMPZW // Jump if zero with signed word offset";
     executeJumpZW()
     {
-        // TODO: Jump if zero with signed word offset
-        Error.NotImplemented(); BIT ZP.EmulatorPCL
-        State.SetFailure();
+#ifdef TRACE
+        LDA #(executeJumpZWTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpZWTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
+        loop
+        {
+            // Pop and validate BIT type from stack
+            popAndValidateBitType();
+            if (NC) { break; }  // Type error already set
+            
+            // Check if value is zero (FALSE)
+            LDA ZP.TOPL
+            if (Z)  // Value is zero/FALSE - take the jump
+            {
+                // Fetch 16-bit signed operand
+                FetchOperandWord();
+                State.CanContinue();
+                if (NC) { break; }
+                
+                // Operand is already in executorOperandL/H, move to ZP.NEXT
+                LDA executorOperandL
+                STA ZP.NEXTL
+                LDA executorOperandH
+                STA ZP.NEXTH
+                
+                // Apply offset to PC
+                applySignedOffsetToPC();
+            }
+            else  // Value is non-zero/TRUE - skip the jump
+            {
+                // Still need to fetch and skip the operand
+                FetchOperandWord();
+                State.CanContinue();
+                if (NC) { break; }
+                // Don't apply offset - just continue to next instruction
+            }
+            
+            State.SetSuccess();
+            break;
+        }
+        
+#ifdef TRACE
+        LDA #(executeJumpZWTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpZWTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
+    const string executeJumpNZWTrace = "JUMPNZW // Jump if non-zero with signed word offset";
     executeJumpNZW()
     {
-        // TODO: Jump if non-zero with signed word offset
-        Error.NotImplemented(); BIT ZP.EmulatorPCL
-        State.SetFailure();
+#ifdef TRACE
+        LDA #(executeJumpNZWTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpNZWTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
+        loop
+        {
+            // Pop and validate BIT type from stack
+            popAndValidateBitType();
+            if (NC) { break; }  // Type error already set
+            
+            // Check if value is non-zero (TRUE)
+            LDA ZP.TOPL
+            if (NZ)  // Value is non-zero/TRUE - take the jump
+            {
+                // Fetch 16-bit signed operand
+                FetchOperandWord();
+                State.CanContinue();
+                if (NC) { break; }
+                
+                // Operand is already in executorOperandL/H, move to ZP.NEXT
+                LDA executorOperandL
+                STA ZP.NEXTL
+                LDA executorOperandH
+                STA ZP.NEXTH
+                
+                // Apply offset to PC
+                applySignedOffsetToPC();
+            }
+            else  // Value is zero/FALSE - skip the jump
+            {
+                // Still need to fetch and skip the operand
+                FetchOperandWord();
+                State.CanContinue();
+                if (NC) { break; }
+                // Don't apply offset - just continue to next instruction
+            }
+            
+            State.SetSuccess();
+            break;
+        }
+        
+#ifdef TRACE
+        LDA #(executeJumpNZWTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpNZWTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
 }

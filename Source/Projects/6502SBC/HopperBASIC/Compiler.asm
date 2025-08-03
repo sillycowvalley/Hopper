@@ -357,6 +357,8 @@ unit Compiler
             Error.CheckError();
             if (NC) { break; }
             
+PrintStringTOP();            
+            
             // Find the variable/constant by name
             STZ ZP.SymbolIteratorFilter  // Accept both variables and constants
             Variables.Find();  // Input: ZP.TOP = name, Output: ZP.IDX = node address
@@ -443,6 +445,26 @@ unit Compiler
         
 #ifdef TRACE
         LDA #(emitPushByteTrace % 256) STA ZP.TraceMessageL LDA #(emitPushByteTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+    }
+    
+    // Emit PUSHVOID opcode with zero value and VOID type
+    // Input: None (VOID always pushes 0 with VOID type)
+    // Output: PUSHVOID opcode emitted
+    // Modifies: compilerOpCode, buffer state via EmitOpCode()
+    const string emitPushVoidTrace = "Emit PUSHVOID";
+    EmitPushVoid()
+    {
+#ifdef TRACE
+        LDA #(emitPushVoidTrace % 256) STA ZP.TraceMessageL LDA #(emitPushVoidTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
+        LDA #OpCodeType.PUSHVOID
+        STA compilerOpCode
+        EmitOpCode();
+        
+#ifdef TRACE
+        LDA #(emitPushVoidTrace % 256) STA ZP.TraceMessageL LDA #(emitPushVoidTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
     
@@ -1418,6 +1440,7 @@ unit Compiler
         LDA #(compileArgumentListTrace % 256) STA ZP.TraceMessageL LDA #(compileArgumentListTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         
+        
 #ifdef DEBUG
         LDA #'[' Debug.COut();
 #endif
@@ -1525,6 +1548,11 @@ unit Compiler
                 
                 // Get the identifier token back
                 Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Create return slot (VOID 0)
+                EmitPushVoid();  
                 Error.CheckError();
                 if (NC) { break; }
                 

@@ -54,9 +54,10 @@ unit OpCodes
         NOP          = 0x16,  // No operation (useful for code generation/optimization)
         PUSH0        = 0x17,  // Push INT 0 (very common literal, no operand)
         PUSH1        = 0x18,  // Push INT 1 (very common literal, no operand)
+        PUSHVOID     = 0x19,  // Push VOID 0 (very common literal, no operand)
         
         // Function frame management
-        ENTER        = 0x19,  // Enter function frame - push BP, SP->BP
+        ENTER        = 0x1A,  // Enter function frame - push BP, SP->BP
         
         // Available: 0x1A-0x3F (38 opcodes remaining in this group)
         

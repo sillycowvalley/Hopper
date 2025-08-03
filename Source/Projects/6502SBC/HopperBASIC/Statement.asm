@@ -596,11 +596,9 @@ unit Statement
             {
                 case IdentifierType.Function:
                 {
-                    // This is a function call - compile it as expression and execute
+                    // compile it as expression and execute
                     EvaluateExpression(); // This will handle the function call compilation
                     Error.CheckError();
-                    if (NC) { break; }
-                    SEC // Success
                     break;
                 }
                 case IdentifierType.Global:

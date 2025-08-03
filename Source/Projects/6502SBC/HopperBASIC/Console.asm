@@ -1105,6 +1105,7 @@ unit Console
                 
                 Tokenizer.NextToken();
                 Statement.EvaluateExpression(); // executes 'indentifier()' as function call
+                
                 break;
             }
         }
