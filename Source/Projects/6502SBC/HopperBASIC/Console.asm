@@ -505,32 +505,57 @@ unit Console
                     Error.CheckError();
                     // RUN was a '$MAIN' function call (buffer is munted so even if there was a ':', no point)
                     // We can remove this when function compiling doesn't use shared token and buffers
+                    if (NC)
+                    {
+                        State.IsExiting();
+                        if (C)
+                        {
+                            State.SetFailure(); // don't "BYE" if we have a failure (probably syntax error from Executor)
+                        }
+                        CLC // Error branch
+                    }
+                    else
+                    {
+                        State.IsExiting();
+                        if (C)
+                        {
+                            State.SetSuccess(); // don't "BYE" if we are just Exiting REPL
+                        }
+                        SEC // No error branch
+                    }
                     return;
                 }
                 default:
                 {
                     // Not a console command, try to execute as a statement
                     Statement.Execute();
-Tools.NL(); LDA #'B' Tools.COut(); Debug.CFOut();  // Show carry flag result
-State.GetState(); Debug.HOut();  // 0=Failure, 1=Success, 2=Exiting
                     Error.CheckError();
-Tools.NL(); LDA #'A' Tools.COut(); Debug.CFOut();  // Show carry flag result
-State.GetState(); Debug.HOut();  // 0=Failure, 1=Success, 2=Exiting
                     if (NC)
                     {
-                        return; // error occurred
-                    }
-                    State.IsReturn();
-                    if (C)
-                    {
-                        // REPL was a function call (buffer is munted so even if there was a ':', no point)
-                        // We can remove this when function compiling doesn't use shared token and buffers
+                        State.IsExiting();
+                        if (C)
+                        {
+                            State.SetFailure(); // don't "BYE" if we have a failure (probably syntax error from Executor)
+                        }
+                        CLC // Error branch
                         return; 
                     }
-                    State.IsExiting();
-                    if (C)
+                    else
                     {
-                        State.SetSuccess(); // don't "BYE"
+                        State.IsReturn();
+                        if (C)
+                        {
+                            // REPL was a function call (buffer is munted so even if there was a ':', no point)
+                            // We can remove this when function compiling doesn't use shared token and buffers
+                            return; 
+                        }
+                        State.IsExiting();
+                        if (C)
+                        {
+                            State.SetSuccess(); // don't "BYE"
+                            return; // Exiting implies end of stream (REPL function call?)
+                        }
+                        SEC // No error branch
                     }
                 }
             }

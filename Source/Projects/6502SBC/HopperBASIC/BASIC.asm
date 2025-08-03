@@ -1,7 +1,8 @@
 program HopperBASIC
 {
     //#define DEBUG
-    #define TRACE
+    //#define TRACE
+    //#define TRACESP
     //#define TRACEVERBOSE // details in Executor
     
     //#define TRACECONSOLE // trace output for Console.asm and Listing.asm
@@ -106,7 +107,10 @@ program HopperBASIC
             if (NC)
             {
                 State.IsExiting();
-                if (C) { break; } // Exit on Ctrl+C during input
+                if (C) 
+                {
+                    break; // Exit on Ctrl+C during input
+                } 
                 Error.CheckAndPrint();
                 continue; // Error during input, show prompt again
             }

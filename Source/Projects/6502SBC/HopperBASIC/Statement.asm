@@ -353,8 +353,6 @@ unit Statement
             }
         } // switch
         
-Tools.NL(); LDA #'E' Tools.COut(); Debug.CFOut();  // Show carry flag result
-
         if (C) // Only if statement executed successfully
         {
             LDA ZP.CurrentToken
@@ -1071,8 +1069,6 @@ Tools.NL(); LDA #'E' Tools.COut(); Debug.CFOut();  // Show carry flag result
             PLA 
             STA ZP.TOPL
             PLX
-            
-Tools.NL(); LDA #'V' Tools.COut(); Debug.CFOut();  // Show carry flag result
 
             if (NC)
             {

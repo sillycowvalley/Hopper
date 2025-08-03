@@ -6,6 +6,14 @@ unit State
     // API Status: Clean
     // All public methods preserve caller state except for documented outputs
     // System state management for robust orchestration method coordination
+
+    // State display strings
+    const string stateSuccess = "SUCCESS";
+    const string stateFailure = "FAILURE"; 
+    const string stateExiting = "EXITING";
+    const string stateReturn = "RETURN";
+    const string stateUnknown = "UNKNOWN";
+
     
     flags SystemState 
     {
@@ -32,7 +40,7 @@ unit State
         LDA ZP.SystemState
     }
     
-    // Output: C implies failure (as in, yes condition = C no condition is NC)
+    // Output: C implies failure (as in, yes condition = C, no condition is NC)
     // Preserves: A register, modifies flags only
     IsFailure()
     {
@@ -50,25 +58,26 @@ unit State
         PLA
     }
     
-    // Output: C implies success (as in, yes condition = C no condition is NC)
-    // Preserves: A register, modifies flags only
-    IsSuccess()
+    // Check if current state indicates continuation is possible
+    // Output: C set if can continue (Success|Exiting|Return), NC if should stop (Failure)
+    // Preserves: A register
+    CanContinue()
     {
-        PHA  
+        PHA
         LDA ZP.SystemState
-        CMP #SystemState.Success
+        CMP #SystemState.Failure
         if (Z)
         {
-            SEC
+            CLC  // Failure
         }
         else
         {
-            CLC
+            SEC  // Success, Exiting or Return -> can continue
         }
         PLA
     }
     
-    // Output: C implies success (as in, yes condition = C, no condition is NC)
+    // Output: C implies Exiting (as in, yes condition = C, no condition is NC)
     // Preserves: A register, modifies flags only
     IsExiting()
     {
@@ -86,7 +95,25 @@ unit State
         PLA
     }
     
-    // Output: C implies success (as in, yes condition = C, no condition is NC)
+    // Output: C implies Success (as in, yes condition = C, no condition is NC)
+    // Preserves: A register, modifies flags only
+    IsSuccess()
+    {
+        PHA
+        LDA ZP.SystemState
+        CMP #SystemState.Success
+        if (Z)
+        {
+            SEC
+        }
+        else
+        {
+            CLC
+        }
+        PLA
+    }
+    
+    // Output: C implies Return (as in, yes condition = C, no condition is NC)
     // Preserves: A register, modifies flags only
     IsReturn()
     {
@@ -104,24 +131,7 @@ unit State
         PLA
     }
     
-    // Check if current state indicates continuation is possible
-    // Output: C set if can continue (Success), NC if should stop (Failure or Exiting)
-    // Preserves: A register
-    CanContinue()
-    {
-        PHA
-        LDA ZP.SystemState
-        CMP #SystemState.Success
-        if (Z)
-        {
-            SEC  // Success = can continue
-        }
-        else
-        {
-            CLC  // Failure or Exiting = cannot continue
-        }
-        PLA
-    }
+    
     
     // Convenience methods for common state changes
     // Input: None
@@ -159,24 +169,74 @@ unit State
         PLA
     }
     
-    
-    
-    // Check if current state indicates an error condition
-    // Output: C set if error (Failure), NC if not error (Success or Exiting)
-    // Preserves: A register
-    IsError()
+
+    // Print current system state as human-readable string
+    // Input: None
+    // Output: Current SystemState printed to serial
+    // Preserves: A, X, Y registers
+    PrintState()
     {
+        PHP
         PHA
+        PHX
+        PHY
+        
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
         LDA ZP.SystemState
-        CMP #SystemState.Failure
-        if (Z)
+        switch (A)
         {
-            SEC  // Failure = is error = C
+            case SystemState.Success:
+            {
+                LDA #(stateSuccess % 256)
+                STA ZP.ACCL
+                LDA #(stateSuccess / 256)
+                STA ZP.ACCH
+            }
+            case SystemState.Failure:
+            {
+                LDA #(stateFailure % 256)
+                STA ZP.ACCL
+                LDA #(stateFailure / 256)
+                STA ZP.ACCH
+            }
+            case SystemState.Exiting:
+            {
+                LDA #(stateExiting % 256)
+                STA ZP.ACCL
+                LDA #(stateExiting / 256)
+                STA ZP.ACCH
+            }
+            case SystemState.Return:
+            {
+                LDA #(stateReturn % 256)
+                STA ZP.ACCL
+                LDA #(stateReturn / 256)
+                STA ZP.ACCH
+            }
+            default:
+            {
+                LDA #(stateUnknown % 256)
+                STA ZP.ACCL
+                LDA #(stateUnknown / 256)
+                STA ZP.ACCH
+            }
         }
-        else
-        {
-            CLC // no error = NC
-        }
+        
+        Tools.PrintStringACC();
+        
         PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
+        PLY
+        PLX
+        PLA
+        PLP
     }
+    
 }

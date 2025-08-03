@@ -58,8 +58,6 @@ unit Instructions
             CheckTypeCompatibility();
             break;
         }
-Tools.NL(); LDA #'C' Tools.COut(); Debug.CFOut();  // Show carry flag result
-
 #ifdef TRACE
         LDA #(checkRHS % 256) STA ZP.TraceMessageL LDA #(checkRHS / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif

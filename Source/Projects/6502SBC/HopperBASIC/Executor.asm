@@ -47,7 +47,7 @@ unit Executor
         {
             // Initialize executor state
             InitExecutor();
-            State.CanContinue();
+            State.IsSuccess();
             if (NC) { break; } // Error already set by InitExecutor
             
             // Main execution loop (assume there is at least one opcode)
@@ -55,25 +55,32 @@ unit Executor
             {
                 // Fetch and execute next opcode
                 FetchOpCode();
-                State.CanContinue();
-                if (NC) { break; } // Error fetching opcode
+                State.IsSuccess(); // expect SystemState.Success to continue
+                if (NC) 
+                {
+                    break; // Error fetching opcode: SystemState.Exiting because EOF success
+                }
                 
                 // Dispatch opcode (A contains opcode value)
-                DispatchOpCode();
-                State.CanContinue();
-                if (NC) { break; } // Error executing opcode
+                DispatchOpCode(); // expect SystemState.Success to continue
+                State.IsSuccess();
+                if (NC)
+                {
+                    // SystemState.Failure - runtime error: Type Mismatch, Overflow, etc ..
+                    // SystemState.Return  - function return popped CallStack pointer (CSP) to zero
+                    break; 
+                }
 
                 // Check if we've reached end of opcodes
                 LDA ZP.PCL
                 CMP executorEndAddrL
-                if (NZ) { /* continue */ }
-                else
+                if (Z)
                 {
                     LDA ZP.PCH
                     CMP executorEndAddrH
                     if (Z) 
                     { 
-                        // REPL uses this exit - success
+                        // REPL uses this exit - EOF success
                         State.SetExiting();
                         break; 
                     }

@@ -390,9 +390,10 @@ unit Error
     {
         STZ ZP.LastErrorL
         STZ ZP.LastErrorH
+        State.SetSuccess();
     }
     
-    // Check if error has occurred
+    // Check if error has occurred, or if SystemState.Failure
     // Input: None
     // Output: C set if ok, NC if not ok (error occurred)
     // Modifies: Processor flags only
@@ -405,15 +406,30 @@ unit Error
         ORA ZP.LastErrorH
         if (Z)
         {
-            SEC  // No error
+            State.IsFailure();
+            if (C)
+            {
+#if defined(DEBUG) || defined(TRACE)
+                LDA #'F' Debug.COut(); LDA #'!' Debug.COut();
+#endif
+                CLC  // Failure
+            }
+            else
+            {
+                SEC  // No error or Failure
+            }
         }
         else
         {
-            CLC  // Error occurred
+            State.IsSuccess(); // don't alter Exiting or Return
+            if (C)
+            {
+                State.SetFailure();
+            }
 #if defined(DEBUG) || defined(TRACE)
-            LDA #'!'
-            Serial.WriteChar();
+            LDA #'E' Debug.COut(); LDA #'!' Debug.COut();
 #endif
+            CLC  // Error occurred
         }
         PLA
     }

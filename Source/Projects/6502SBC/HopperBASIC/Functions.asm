@@ -666,12 +666,17 @@ unit Functions
         SEC
     }   
     
-    
+    const string functionCompile = "FuncComp";
     Compile()
     {
         PHA
         PHX
         PHY
+        
+#ifdef TRACE
+        LDA #(functionCompile % 256) STA ZP.TraceMessageL LDA #(functionCompile / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+
         
         // Save main execution PC
         LDA ZP.PCL
@@ -790,8 +795,13 @@ unit Functions
             // Use Compiler.CompileExpression() to compile function body
             Compiler.CompileFunction();
             Error.CheckError();
+            
+            PLA
+            STA ZP.IDXH
+            PLA
+            STA ZP.IDXL
+            
             State.GetState();
-
             switch (A)
             {
                 case SystemState.Success:
@@ -801,21 +811,14 @@ unit Functions
                 case SystemState.Failure:
                 { 
                     // handle compilation error
+                    State.SetFailure();
                     break;
                 }
                 case SystemState.Exiting:   
                 { 
-                    // should not happen in compilation
+                    BRK // should not happen in compilation
                 }
             }
-            
-            
-            PLA
-            STA ZP.IDXH
-            PLA
-            STA ZP.IDXL
-            
-            if (NC) { break; }
             
             // Copy opcodes from BasicOpCodeBuffer to permanent function storage
             copyOpCodesToFunction();
@@ -825,7 +828,7 @@ unit Functions
             // Mark function as compiled
             SetCompiled();
             
-            SEC // Success
+            State.SetSuccess(); // should already be the case
             break;
         }
         
@@ -844,6 +847,11 @@ unit Functions
         STA ZP.PCH
         PLA
         STA ZP.PCL
+        
+#ifdef TRACE
+        LDA #(functionCompile % 256) STA ZP.TraceMessageL LDA #(functionCompile / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+
         
         PLY
         PLX
