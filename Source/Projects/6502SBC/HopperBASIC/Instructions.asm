@@ -24,6 +24,15 @@ unit Instructions
         
         loop
         {
+            // Check for VOID type first - never allow VOID assignments
+            LDA ZP.TOPT  // RHS type
+            CMP #BasicType.VOID
+            if (Z)
+            {
+                CLC  // Incompatible - cannot assign VOID to anything
+                break;
+            }
+            
             LDA ZP.NEXTT
             CMP #BasicType.BYTE
             if (Z)
@@ -35,8 +44,8 @@ unit Instructions
                     CLC  // Incompatible - value > 255
                     break;
                 }
-                SEC  // Compatible - value 0-255
-                break;
+                // Value is 0-255, but still need to check type compatibility
+                // Fall through to CheckTypeCompatibility()
             }
             
             // For all types (including BIT), use general type compatibility checking
@@ -72,6 +81,23 @@ unit Instructions
         
         loop
         {
+            // Check for VOID type first - never allow VOID in any operations
+            LDA ZP.NEXTT  // Left operand type
+            CMP #BasicType.VOID
+            if (Z)
+            {
+                CLC  // Incompatible - VOID cannot participate in operations
+                break;
+            }
+            
+            LDA ZP.TOPT  // Right operand type
+            CMP #BasicType.VOID
+            if (Z)
+            {
+                CLC  // Incompatible - VOID cannot participate in operations
+                break;
+            }
+        
             // Mode-specific type restrictions
             LDA ZP.ACCT
             CMP #1  // Arithmetic operations

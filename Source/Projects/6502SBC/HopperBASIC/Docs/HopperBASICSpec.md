@@ -1,4 +1,4 @@
-# Hopper BASIC Specification v2.9
+# Hopper BASIC Specification v2.10
 **Document Type: Language Specification**
 
 ## Project Objectives
@@ -343,49 +343,175 @@ BIT flag = 0               ' TYPE MISMATCH - 0 is INT, not BIT
 
 ---
 
-## Phase 2: String Support and Enhanced I/O
+## Phase 2: Loop Constructs & Array Support (Next Priority)
 
-### String Constants and Variables
-- ✅ **`CONST STRING name = "value"`** - Immutable string constants (name cannot be reassigned)
-- ✅ **`STRING name = "value"`** - Mutable string variables (name can be reassigned to different string literals)
-- ✅ **String literals**: `"Hello World"` in expressions, PRINT statements, and function arguments
-- ✅ **String comparison**: `IF name = "admin" THEN ...`
-- ✅ **Direct string printing**: `PRINT "Hello"`
-- ✅ **Function arguments**: `MyFunction("Hello", "World")`
+### FOR/NEXT Loop Implementation
+- ❌ **`FOR var = start TO end [STEP increment]`** - Counted loops (required for benchmarks)
+- ❌ **`NEXT var`** - End of FOR loop (required for benchmarks)
+
+#### FOR/NEXT Variable Rules (Strict Typing)
+
+**HopperBASIC enforces strict "define before use" policy for FOR loop variables:**
+
+##### ✅ **Required: Variable Must Be Pre-Declared**
+```basic
+INT i = 0              ' Must declare loop variable first
+FOR i = 1 TO 10        ' Loop variable already exists
+    PRINT i
+NEXT i
+```
+
+##### ❌ **Error: Loop Variable Must Exist**
+```basic
+FOR undeclared = 1 TO 10    ' ERROR: "UNDEFINED IDENTIFIER"
+    PRINT undeclared
+NEXT undeclared
+```
+
+##### ✅ **Allowed: Numeric Types Only**
+```basic
+INT counter = 0        ' ✅ Valid - signed integer
+WORD index = 0         ' ✅ Valid - unsigned integer  
+BYTE port = 0          ' ✅ Valid - 8-bit unsigned
+
+FOR counter = 1 TO 100    ' ✅ Valid numeric loop variable
+FOR index = 0 TO 65000    ' ✅ Valid numeric loop variable
+FOR port = 1 TO 255       ' ✅ Valid numeric loop variable
+```
+
+##### ❌ **Error: Invalid Loop Variable Types**
+```basic
+BIT flag = FALSE       
+FOR flag = 1 TO 5         ' ERROR: "TYPE MISMATCH" - BIT not numeric
+
+STRING name = "test"
+FOR name = 1 TO 10        ' ERROR: "TYPE MISMATCH" - STRING not numeric
+```
+
+##### ❌ **Error: Constants Cannot Be Loop Variables**
+```basic
+CONST INT max = 10
+FOR max = 1 TO 5          ' ERROR: "ILLEGAL ASSIGNMENT" - constants immutable
+    PRINT max
+NEXT max
+```
+
+##### ✅ **Type Safety: Bounds Checking**
+```basic
+INT small = 0
+FOR small = 1 TO 100      ' ✅ Valid - INT can hold 1-100
+
+FOR small = 1 TO 50000    ' ❌ Error: "NUMERIC OVERFLOW" - 50000 > 32767 (INT max)
+
+WORD large = 0  
+FOR large = 1 TO 50000    ' ✅ Valid - WORD can hold 1-50000
+```
+
+#### FOR/NEXT Scope Rules
+
+**Global Scope (No Restrictions):**
+```basic
+INT global1 = 5
+
+FUNC SomeFunction()
+    PRINT global1
+ENDFUNC
+
+INT global2              ' Can declare globals anywhere
+
+FOR global2 = 1 TO 10    ' Global variables work in FOR loops
+    PRINT global2
+NEXT global2
+```
+
+**Function Scope (C-Style Declaration Rules):**
+```basic
+FUNC CountToTen()
+    ' All local variables must be declared first (C-style)
+    INT i                ' ← All locals declared before any executable statements
+    INT result = 0
+    
+    ' Now executable statements begin
+    FOR i = 1 TO 10      ' ← Uses pre-declared local variable
+        result = result + i
+    NEXT i
+    PRINT result
+ENDFUNC
+```
+
+**Error: Mixed Declaration and Execution:**
+```basic
+FUNC BadExample()
+    INT result = 0       ' ← This is an executable statement
+    
+    FOR i = 1 TO 10      ' ❌ ERROR: Cannot declare 'i' here
+        result = result + i   ' Local declaration phase is closed
+    NEXT i
+ENDFUNC
+```
+
+#### FOR/NEXT Grammar
+```
+for_statement := FOR identifier "=" expression TO expression [ STEP expression ]
+                { statement }*
+                NEXT identifier
+
+where:
+- identifier must be previously declared numeric variable (INT, WORD, BYTE)
+- identifier cannot be a constant (CONST variables)
+- identifier in FOR must match identifier in NEXT
+- start_expression, end_expression, step_expression evaluated once at loop entry
+- STEP defaults to 1 if omitted
+- Loop terminates when variable exceeds end (positive STEP) or falls below end (negative STEP)
+```
+
+#### FOR/NEXT Error Messages
+```basic
+FOR undeclared = 1 TO 10     ' → "UNDEFINED IDENTIFIER"
+FOR constant = 1 TO 10       ' → "ILLEGAL ASSIGNMENT"  
+FOR bitvar = 1 TO 10         ' → "TYPE MISMATCH"
+FOR intvar = 1 TO 70000      ' → "NUMERIC OVERFLOW"
+FOR i = 1 TO 10              ' Missing NEXT i
+' ... statements
+' → "NEXT WITHOUT FOR" (if NEXT missing or wrong variable)
+```
+
+### Additional Loop Constructs
+- ❌ **`WHILE expr`...`WEND`** - Conditional loops (required for benchmarks)
+- ❌ **`DO`...`UNTIL expr`** - Post-test conditional loops
+- ❌ **`BREAK`** - Exit from loops early
+- ❌ **`CONTINUE`** - Skip to next loop iteration
+- ❌ **`CONT`** - Continue execution after break (console command)
+
+### Built-in Functions
+- ❌ **`MILLIS()`** - Get milliseconds since startup (returns WORD, required for benchmarks)
+
+### Array Support
+- ❌ **Global Arrays**: Single-dimensional arrays for all types (global scope only)
+- ❌ **Array Indexing**: Zero-based array access with bounds checking
+- ❌ **Array Parameters**: Pass global arrays as function arguments
+
+### Management Commands
+- ❌ **RUN Command**: Execute stored main program (BEGIN/END block)
+
+---
+
+## Phase 3: Memory Functions and Enhanced I/O
+
+### Memory Functions
+- ❌ **PEEK Function**: Built-in memory read function
+- ❌ **POKE Statement**: Built-in memory write statement
 
 ### Enhanced I/O
-- ✅ **`PRINT "string"`** - Direct string literal output
+- ❌ **Multiple PRINT Arguments**: Enhanced PRINT with separators
 - ❌ **`PRINT expr[,expr...]`** - Multiple values separated by spaces, newline at end
 - ❌ **`PRINT expr[;expr...]`** - Multiple values with no separation, newline at end
 - ❌ **`PRINT expr;`** - Output value with no newline (cursor stays on line)
 - ❌ **`PRINT expr,`** - Output value followed by space, no newline
 
-### String Type Behavior (By Design)
-**Supported:**
-```basic
-CONST STRING greeting = "Hello World"    // Immutable string constant
-STRING message = "Initial"               // Mutable string variable
-message = "New Value"                    // String reassignment allowed
-PRINT greeting                           // Direct string printing
-PRINT "Direct literal"                   // Direct string literals
-IF message = "OK" THEN PRINT "Success"   // String comparison
-MyFunction("Hello", message)             // String literals and variables as function arguments
-```
-
-**Deliberately Unsupported:**
-```basic
-message[0] = 'H'                         // Character modification (not supported)
-message = greeting + " World"            // String concatenation (not supported)
-INPUT message                            // String input (not supported)
-LEN(message)                             // String functions (not supported)
-MID(message, 1, 3)                       // String manipulation (not supported)
-```
-
-**Design Rationale:** STRING type supports both constant and variable string references, but string **contents** are always immutable. Variables can be reassigned to point to different string literals, but individual characters cannot be modified. This avoids complex string memory management while supporting essential string functionality for benchmarks and basic programs.
-
 ---
 
-## Phase 3: Storage and File Management
+## Phase 4: Storage and File Management
 
 ### Storage Commands
 - ❌ **`SAVE "name"`** - Save complete session to EEPROM (tokenized form)
@@ -401,24 +527,14 @@ MID(message, 1, 3)                       // String manipulation (not supported)
 
 ---
 
-## Phase 4: Extended Features
+## Phase 5: Enhanced Features
 
 ### Additional Types
 - ✅ **`BYTE name [= value]`** - 8-bit unsigned (0 to 255) for hardware I/O
 - ❌ **Arrays**: `INT numbers[10]` - single-dimensional arrays of integral types
 
-### Extended Control Flow
-- ❌ **`FOR var = start TO end [STEP increment]`** - Counted loops (required for benchmarks)
-- ❌ **`NEXT var`** - End of FOR loop (required for benchmarks)
-- ❌ **`WHILE expr`...`WEND`** - Conditional loops (required for benchmarks)
-- ❌ **`DO`...`UNTIL expr`** - Post-test conditional loops
-- ❌ **`BREAK`** - Exit from loops early
-- ❌ **`CONTINUE`** - Skip to next loop iteration
-- ❌ **`CONT`** - Continue execution after break (console command)
-
 ### Built-in Functions
 - ❌ **Math functions**: `ABS(x)`, `RND(x)`
-- ❌ **Memory functions**: `PEEK(address)`, `POKE(address, value)`
 - ❌ **Conversion functions**: Type conversion between INT/WORD/BYTE
 
 ### Hardware I/O (If space permits)
@@ -427,7 +543,6 @@ MID(message, 1, 3)                       // String manipulation (not supported)
 - ❌ **`PWM(pin, value)`** - Analog output
 - ❌ **`DELAY(milliseconds)`** - Pause execution
 - ❌ **`PINMODE(pin, mode)`** - Configure pin as input/output
-- ❌ **`MILLIS()`** - Get milliseconds since startup (returns WORD, required for benchmarks)
 
 ---
 
@@ -506,7 +621,8 @@ comment_statement := REM [ comment_text ]
 comment_text := any_characters_to_end_of_line
 
 function_definition := FUNC identifier "(" [ parameter_list ] ")"
-                      { statement }*
+                      { local_declaration }*
+                      { executable_statement }*
                       ENDFUNC
 
 main_program := BEGIN
@@ -516,7 +632,23 @@ main_program := BEGIN
 return_statement := RETURN [ expression ]
 
 parameter_list := identifier [ "," identifier ]*
+
+local_declaration := type_keyword identifier [ "=" expression ]
+
+executable_statement := assignment
+                      | print_statement  
+                      | if_statement
+                      | for_statement
+                      | while_statement
+                      | return_statement
+                      | function_call
 ```
+
+**Function Body Rules (C-Style Declaration Constraint):**
+- **Local variables must be declared before any executable statements**
+- **Executable statements include**: assignments, FOR loops, PRINT, IF, function calls
+- **Declaration statements**: type declarations (`INT x`, `WORD y = 10`)
+- **Mixed order error**: Declaring locals after executable statements → "LOCAL DECLARATIONS MUST COME FIRST"
 
 ### Expressions
 ```
@@ -821,7 +953,7 @@ Offset 2+:  null-terminated argument name string
 **Major Achievement**: Function system with JIT compilation fully operational, enabling recursive function calls and complex program execution.
 
 ### ❌ Missing Components for Full Benchmark Support:
-1. **FOR/NEXT loops** - Basic iteration support
+1. **FOR/NEXT loops** - Basic iteration support (Next Priority)
 2. **WHILE/WEND loops** - Conditional iteration  
 3. **Multiple PRINT arguments** - `PRINT name; "("; arg; ")"`
 4. **MILLIS() function** - System timer access
@@ -950,6 +1082,78 @@ END
 ---
 
 ## Usage Examples
+
+### FOR/NEXT Loop Examples (Future Implementation)
+```basic
+' Basic FOR loop with pre-declared variable
+INT i = 0
+FOR i = 1 TO 10
+    PRINT i
+NEXT i
+
+' FOR loop with STEP
+WORD counter = 0  
+FOR counter = 0 TO 100 STEP 10
+    PRINT counter
+NEXT counter
+
+' Nested FOR loops (from Sieve benchmark)
+WORD iter = 0
+WORD i = 0
+FOR iter = 1 TO 10
+    FOR i = 0 TO 1000
+        ' Process data
+    NEXT i
+NEXT iter
+
+' Function with local FOR loop variable (C-style declarations)
+FUNC CountDown(start)
+    ' All locals must be declared first
+    INT i
+    
+    ' Executable statements begin
+    FOR i = start TO 1 STEP -1
+        PRINT i
+    NEXT i
+    PRINT "Done!"
+ENDFUNC
+```
+
+### FOR/NEXT Error Examples
+```basic
+' Error: Undefined variable
+FOR undefined = 1 TO 10     ' → "UNDEFINED IDENTIFIER"
+    PRINT undefined
+NEXT undefined
+
+' Error: Wrong type
+BIT flag = FALSE
+FOR flag = 1 TO 5           ' → "TYPE MISMATCH"
+    PRINT flag
+NEXT flag
+
+' Error: Constant variable
+CONST INT max = 10
+FOR max = 1 TO 5            ' → "ILLEGAL ASSIGNMENT"
+    PRINT max  
+NEXT max
+
+' Error: Mismatched variable names
+INT i = 0
+FOR i = 1 TO 10
+    PRINT i
+NEXT j                      ' → "NEXT WITHOUT FOR" or "VARIABLE MISMATCH"
+
+' Error: C-style violation in function
+FUNC BadDeclaration()
+    INT result = 0          ' Executable statement
+    INT i                   ' → "LOCAL DECLARATIONS MUST COME FIRST"
+    
+    FOR i = 1 TO 10
+        result = result + i
+    NEXT i
+ENDFUNC
+```
 
 ### Function Execution and Recursion
 ```basic
@@ -1142,7 +1346,7 @@ current = "Updated" : PRINT current
 port = PEEK(0x5000) : PRINT port
 ```
 
-### Array Usage Examples
+### Array Usage Examples (Future Implementation)
 ```basic
 ' Global array declarations (allowed)
 INT numbers[10]  ' 20 bytes (2 bytes per INT)
@@ -1151,6 +1355,7 @@ BYTE buffer[256] ' 256 bytes (1 byte per BYTE)
 
 ' Array usage in main program  
 BEGIN
+    WORD i = 0
     FOR i = 0 TO 9
         numbers[i] = i * 2
     NEXT i
@@ -1160,6 +1365,8 @@ END
 
 ' Function with array parameter
 FUNC ProcessArray(arr, size)
+    WORD i = 0    ' Local variable declared first
+    
     FOR i = 0 TO size-1
         PRINT arr[i]
     NEXT i
@@ -1171,12 +1378,14 @@ FUNC BadExample()
 ENDFUNC
 ```
 
-### Array Scope Rules
+### Array Scope Rules (Future Implementation)
 ```basic
 ' ALLOWED: Global array declarations
 INT globalData[100]
 
 FUNC WorkWithArrays()
+    WORD i = 0    ' Local variable declared first
+    
     ' ALLOWED: Access global arrays
     globalData[0] = 42
     
@@ -1220,8 +1429,8 @@ PRINT label : PRINT addr + offset    ' Prints Address, then 33024
 
 ## Future Roadmap
 
-### Phase 2: Loop Constructs & Array Support (Next Priority)
-- **FOR/NEXT loops**: Counted iteration with STEP support
+### Phase 2: Loop Constructs & Array Support (Current Priority)
+- **FOR/NEXT loops**: Counted iteration with STEP support and strict variable rules
 - **WHILE/WEND loops**: Conditional iteration
 - **MILLIS() function**: System timer for benchmarks
 - **Global Arrays**: Single-dimensional arrays for all types (global scope only)

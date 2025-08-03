@@ -451,7 +451,6 @@ unit Objects
         {
             INC ZP.ACCH
         }
-Debug.AOut();        
         
         PLY
         PLX
