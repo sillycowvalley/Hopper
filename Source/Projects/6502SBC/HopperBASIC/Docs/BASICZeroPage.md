@@ -1,4 +1,5 @@
 # HopperBASIC Zero Page Allocation
+**Document Type: Zero Page Map**
 
 ## System Zero Page Usage (0x00-0x0F)
 

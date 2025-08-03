@@ -1,5 +1,5 @@
-
 ## Task: Standardize TRACE Macro Usage in HopperBASIC Codebase
+**Document Type: Development Protocol**
 
 ### Background
 The HopperBASIC project uses conditional compilation with `#ifdef TRACE` to enable method call tracing for debugging. Apply these standards consistently when adding or updating trace instrumentation.

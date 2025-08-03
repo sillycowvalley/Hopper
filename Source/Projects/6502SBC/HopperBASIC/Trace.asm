@@ -65,9 +65,7 @@ unit Trace
         //TSX
         //PHX
         
-        // Add heap validation at method entry
-        LDA #0xE1  // Entry checkpoint ID (0xE1 = Entry)
-        Debug.ChkHeap();
+        Debug.ValidateHeap();
         
         PrintIndent();
         
@@ -92,6 +90,12 @@ unit Trace
                 CLC
             }
             PHP
+
+            Error.IsFatal();
+            if (C)
+            {
+                LDA # 0x06 Debug.Crash(); // fail on CheckError in MethodEntry()
+            }
         }
         
         Debug.NL();
@@ -130,9 +134,7 @@ unit Trace
         //TSX
         //PHX
         
-         // Add heap validation at method exit
-        LDA #0xE0  // Exit checkpoint ID (0xE0 = Exit)
-        Debug.ChkHeap();
+        Debug.ValidateHeap();
         
         // Decrease indentation first
         DEC ZP.TraceIndent
@@ -163,6 +165,12 @@ unit Trace
                 CLC
             }
             PHP
+            
+            Error.IsFatal();
+            if (C)
+            {
+                LDA # 0x05 Debug.Crash(); // fail on CheckError in MethodExit()
+            }
         }
         
         Debug.NL();

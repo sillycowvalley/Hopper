@@ -1,4 +1,5 @@
 # HopperBASIC Function Definition and Execution Project
+**Document Type: Function Architecture**
 
 ## Overview
 

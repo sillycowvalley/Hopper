@@ -2,8 +2,9 @@ program HopperBASIC
 {
     //#define DEBUG
     #define TRACE
+    //#define TRACEVERBOSE // details in Executor
     
-    //#define TRACECONSOLE
+    //#define TRACECONSOLE // trace output for Console.asm and Listing.asm
     
     #define CPU_65C02S
     #define HOPPER_BASIC

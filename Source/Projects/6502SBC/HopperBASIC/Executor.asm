@@ -212,7 +212,7 @@ unit Executor
     const string fetchOperandByteTrace = "FetchByte // Fetch byte operand";
     FetchOperandByte()
     {
-#ifdef TRACE
+#ifdef TRACEVERBOSE
         LDA #(fetchOperandByteTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandByteTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         
@@ -251,7 +251,7 @@ unit Executor
             break;
         } // loop exit
         
-#ifdef TRACE
+#ifdef TRACEVERBOSE
         PHA LDA #(fetchOperandByteTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandByteTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
 #endif
     }
@@ -262,7 +262,7 @@ unit Executor
     const string fetchOperandWordTrace = "FetchWord // Fetch word operand";
     FetchOperandWord()
     {
-#ifdef TRACE
+#ifdef TRACEVERBOSE
         PHA LDA #(fetchOperandWordTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandWordTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
 #endif
         
@@ -284,7 +284,7 @@ unit Executor
             break;
         }
         
-#ifdef TRACE
+#ifdef TRACEVERBOSE
         LDA #(fetchOperandWordTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandWordTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
@@ -296,7 +296,7 @@ unit Executor
     DispatchOpCode()
     {
         TAY // for jump table optimization
-#ifdef TRACE
+#ifdef TRACEVERBOSE
         LDA #(dispatchOpCodeTrace % 256) STA ZP.TraceMessageL LDA #(dispatchOpCodeTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         // Use switch statement for opcode dispatch
@@ -522,7 +522,7 @@ unit Executor
             }
         }
         
-#ifdef TRACE
+#ifdef TRACEVERBOSE
         LDA #(dispatchOpCodeTrace % 256) STA ZP.TraceMessageL LDA #(dispatchOpCodeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }

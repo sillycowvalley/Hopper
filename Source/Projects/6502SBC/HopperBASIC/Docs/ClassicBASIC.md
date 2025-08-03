@@ -1,5 +1,5 @@
 # Integer BASIC vs Altair BASIC: A Technical Comparison
-
+**Document Type: Reference Material**
 ## Overview
 
 Two influential BASIC implementations emerged in the mid-1970s, each designed for different platforms and reflecting distinct design philosophies:

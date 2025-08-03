@@ -451,12 +451,6 @@ unit Console
                     Error.CheckError();
                     if (NC) { return; }
                 }
-                case Tokens.RUN:
-                {
-                    cmdRun();
-                    Error.CheckError();
-                    if (NC) { return; }
-                }
                 case Tokens.MEM:
                 {
                     CmdMem();
@@ -492,6 +486,14 @@ unit Console
                 case Tokens.DEL:
                 {
                     Error.NotImplemented(); BIT ZP.EmulatorPCL
+                }
+                case Tokens.RUN:
+                {
+                    cmdRun();
+                    Error.CheckError();
+                    // RUN was a '$MAIN' function call (buffer is munted so even if there was a ':', no point)
+                    // We can remove this when function compiling doesn't use shared token and buffers
+                    return;
                 }
                 default:
                 {
@@ -937,9 +939,6 @@ unit Console
                     Tools.PrintStringACC();
                     break;
                 }
-#ifdef DEBUG            
-                LDA #0x01 Debug.ChkHeap();
-#endif                
                 // Create tokens for: IDENTIFIER "$MAIN" LPAREN RPAREN EOL
                 LDX #0
                 
@@ -958,9 +957,6 @@ unit Console
                 }
                 INX
 
-#ifdef DEBUG                
-                LDA #0x02 Debug.ChkHeap();
-#endif
                 
                 // Token 2: LPAREN
                 LDA #Tokens.LPAREN
@@ -978,24 +974,11 @@ unit Console
                 INX
                 
                 // Clear tokenizer state
-                STZ ZP.TokenizerPosL
-                STZ ZP.TokenizerPosH
-                // Set buffer length**
-                STX ZP.TokenBufferLengthL
-                STZ ZP.TokenBufferLengthH
-                // Point to start of string literal (after IDENTIFIER token)
-                LDA #1  
-                STA ZP.TokenLiteralPosL
-                STZ ZP.TokenLiteralPosH
-                
                 Tokenizer.Initialize();
-#ifdef DEBUG
-                LDA #0x03 Debug.ChkHeap();
-#endif                    
+                INX
+                STX ZP.TokenBufferLengthL
+                
                 Tokenizer.NextToken();
-#ifdef DEBUG    
-                LDA #0x04 Debug.ChkHeap();
-#endif
                 Statement.EvaluateExpression(); // executes 'indentifier()' as function call
                 break;
             }

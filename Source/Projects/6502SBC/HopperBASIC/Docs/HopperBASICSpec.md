@@ -1,4 +1,5 @@
 # Hopper BASIC Specification v2.9
+**Document Type: Language Specification**
 
 ## Project Objectives
 

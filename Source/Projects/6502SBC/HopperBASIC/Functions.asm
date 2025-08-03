@@ -720,6 +720,8 @@ unit Functions
                 LDA [ZP.IDY], Y
                 CMP #Tokens.ENDFUNC
                 if (Z) { break; }
+                CMP #Tokens.END
+                if (Z) { break; }
                 CMP #Tokens.EOF  
                 if (Z) { break; }
                 
@@ -789,6 +791,7 @@ unit Functions
             Compiler.CompileFunction();
             Error.CheckError();
             State.GetState();
+
             switch (A)
             {
                 case SystemState.Success:

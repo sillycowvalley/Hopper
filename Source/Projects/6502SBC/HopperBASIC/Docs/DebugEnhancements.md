@@ -1,4 +1,5 @@
 # HopperBASIC Debug & Error Handling Refactoring Specification
+**Document Type: Debug Architecture**
 
 ## Overview
 Complete refactoring of debug output and error handling systems in HopperBASIC to support:

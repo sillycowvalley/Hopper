@@ -1,4 +1,6 @@
 # External Hopper VM Function Contracts
+**Document Type: API Reference**
+
 Documented based on actual source code analysis from /Source/Runtime/6502/
 
 //==============================================================================

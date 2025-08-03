@@ -1,4 +1,5 @@
 # Resolve-and-Replace Architecture for HopperBASIC
+**Document Type: Architecture Design**
 
 ## Core Concept: Runtime Symbol Resolution with Opcode Patching
 

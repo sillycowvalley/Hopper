@@ -1,4 +1,5 @@
 ## HopperBASIC Memory Layout (Refactored)
+**Document Type: Memory Layout**
 
 ### Buffer and Workspace Allocation
 

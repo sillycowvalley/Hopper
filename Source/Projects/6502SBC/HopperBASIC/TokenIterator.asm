@@ -497,6 +497,7 @@ unit TokenIterator
                 Serial.WriteChar();
             }
             case Tokens.STRING:
+            case Tokens.STRINGLIT:
             {
                 LDA #'"'
                 Serial.WriteChar();

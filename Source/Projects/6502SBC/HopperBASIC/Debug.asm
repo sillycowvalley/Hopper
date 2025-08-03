@@ -117,15 +117,16 @@ unit Debug
        STA ZP.U0  // Temporarily store A
        STX ZP.U1  // Temporarily store X
        STY ZP.U2  // Temporarily store Y
-       LDA ZP.ACCL
-       PHA
-       LDA ZP.ACCH
-       PHA
        
        LDA ZP.IDXL
        STA ZP.U3
        LDA ZP.IDXH
        STA ZP.U4
+       LDA ZP.ACCL
+       STA ZP.U5
+       LDA ZP.ACCH
+       STA ZP.U6
+       
        
        LDA #(debugVarsHeader % 256)
        STA ZP.ACCL
@@ -205,9 +206,9 @@ unit Debug
        Tools.PrintType();
        LDA #'-'
        Tools.COut();
-       LDA ZP.ACCH
+       LDA ZP.U6
        Serial.HexOut();
-       LDA ZP.ACCL
+       LDA ZP.U5
        Serial.HexOut();
        Space();
        
@@ -246,16 +247,16 @@ unit Debug
        
        NL();
        
+       LDA ZP.U6
+       STA ZP.ACCL
+       LDA ZP.U5
+       STA ZP.ACCH
        LDA ZP.U4
        STA ZP.IDXH
        LDA ZP.U3
        STA ZP.IDXL
        
-       PLA
-       STA ZP.ACCL
-       PLA
-       STA ZP.ACCH
-
+       
        // Restore registers
        LDY ZP.U2  // Restore Y
        LDX ZP.U1  // Restore X
@@ -344,52 +345,6 @@ unit Debug
         PLP  // Restore flags
     }
     
-    // Lightweight heap summary for use during iteration
-    // Input: None
-    // Output: Variable and function list head pointers printed to serial
-    // Preserves: Everything (minimal register usage for iteration safety)
-    DumpHeapSummary()
-    {
-        PHP  // Save flags
-        PHA
-        
-        LDA ZP.ACCL
-        PHA
-        LDA ZP.ACCH
-        PHA
-        
-        // Show the critical list head pointers
-        LDA #(listVL % 256)
-        STA ZP.ACCL
-        LDA #(listVL / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
-        LDA ZP.VariablesListH
-        Serial.HexOut();
-        LDA ZP.VariablesListL
-        Serial.HexOut();
-        Space();
-        
-        LDA #(listFL % 256)
-        STA ZP.ACCL
-        LDA #(listFL / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
-        LDA ZP.FunctionsListH
-        Serial.HexOut();
-        LDA ZP.FunctionsListL
-        Serial.HexOut();
-        Space();
-        
-        PLA
-        STA ZP.ACCH
-        PLA
-        STA ZP.ACCL
-        
-        PLA
-        PLP  // Restore flags
-    }
-
     // Debug output for iteration state
     // Input: None
     // Output: Current IDX pointer printed to serial for iteration tracking
@@ -397,6 +352,11 @@ unit Debug
     DumpIterationState()
     {
         PHP  // Save flags
+        PHA
+        
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
         PHA
         
         LDA #(listIT % 256)
@@ -411,8 +371,15 @@ unit Debug
         Space();
         
         PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
+        PLA
         PLP  // Restore flags
     }
+    
+    
 
 
     
@@ -1242,6 +1209,12 @@ unit Debug
         PHP  // Push processor status (including carry flag)
         PHA  // Save A register
         
+        // Save ACCL/ACCH
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
         LDA #(regIDX % 256)
         STA ZP.ACCL
         LDA #(regIDX / 256)
@@ -1252,6 +1225,12 @@ unit Debug
         LDA ZP.IDXL
         Serial.HexOut();
         Space();
+        
+        // Restore ACCL/ACCH
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
         
         PLA  // Restore A register
         PLP  // Pull processor status (restore carry flag)
@@ -1266,6 +1245,12 @@ unit Debug
         PHP  // Push processor status (including carry flag)
         PHA  // Save A register
         
+        // Save ACCL/ACCH
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
         LDA #(regIDY % 256)
         STA ZP.ACCL
         LDA #(regIDY / 256)
@@ -1276,6 +1261,12 @@ unit Debug
         LDA ZP.IDYL
         Serial.HexOut();
         Space();
+        
+        // Restore ACCL/ACCH
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
         
         PLA  // Restore A register
         PLP  // Pull processor status (restore carry flag)
@@ -1324,6 +1315,12 @@ unit Debug
         PHP  // Push processor status (including carry flag)
         PHA  // Save A register
         
+        // Save ACCL/ACCH
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
         LDA #(regACCT % 256)
         STA ZP.ACCL
         LDA #(regACCT / 256)
@@ -1332,6 +1329,12 @@ unit Debug
         LDA ZP.ACCT
         Serial.HexOut();
         Space();
+        
+        // Restore ACCL/ACCH
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
         
         PLA  // Restore A register
         PLP  // Pull processor status (restore carry flag)
@@ -1345,6 +1348,12 @@ unit Debug
     {
         PHP  // Push processor status (including carry flag)
         PHA  // Save A register
+        
+        // Save ACCL/ACCH
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
         
         LDA #(regNEXT % 256)
         STA ZP.ACCL
@@ -1361,6 +1370,12 @@ unit Debug
         Serial.HexOut();
         Space();
         
+        // Restore ACCL/ACCH
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
         PLA  // Restore A register
         PLP  // Pull processor status (restore carry flag)
     }
@@ -1373,6 +1388,12 @@ unit Debug
     {
         PHP  // Push processor status (including carry flag)
         PHA  // Save A register
+        
+        // Save ACCL/ACCH
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
         
         LDA #(regTOP % 256)
         STA ZP.ACCL
@@ -1389,6 +1410,12 @@ unit Debug
         Serial.HexOut();
         Space();
         
+        // Restore ACCL/ACCH
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
         PLA  // Restore A register
         PLP  // Pull processor status (restore carry flag)
     }
@@ -1402,14 +1429,31 @@ unit Debug
         PHP  // Push processor status (including carry flag)
         PHA  // Save A register
         
+        // Save ACCL/ACCH (critical since we're printing ACCL itself!)
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
+        // Store the ACCL value we want to print
+        LDA ZP.ACCL
+        PHA  // Save the value to print
+        
         LDA #(regACCL % 256)
         STA ZP.ACCL
         LDA #(regACCL / 256)
         STA ZP.ACCH
         Tools.PrintStringACC();
-        LDA ZP.ACCL
+        
+        PLA  // Get the value we want to print
         Serial.HexOut();
         Space();
+        
+        // Restore ACCL/ACCH
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
         
         PLA  // Restore A register
         PLP  // Pull processor status (restore carry flag)
@@ -1423,6 +1467,13 @@ unit Debug
     {
         PHP  // Push processor status (including carry flag)
         PHA
+        
+        // Save ACCL/ACCH
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
         if (C)
         {
             LDA #(statusC % 256)
@@ -1439,6 +1490,13 @@ unit Debug
             STA ZP.ACCH
             Tools.PrintStringACC();
         }
+        
+        // Restore ACCL/ACCH
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
         PLA
         PLP  // Pull processor status (restore carry flag)
     }
@@ -1451,6 +1509,13 @@ unit Debug
     {
         PHP  // Push processor status (including carry flag)
         PHA
+        
+        // Save ACCL/ACCH
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
         if (Z)
         {
             LDA #(statusZ % 256)
@@ -1467,6 +1532,13 @@ unit Debug
             STA ZP.ACCH
             Tools.PrintStringACC();
         }
+        
+        // Restore ACCL/ACCH
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
         PLA
         PLP  // Pull processor status (restore carry flag)
     }
@@ -1497,40 +1569,6 @@ unit Debug
         PLP
     }
     
-    
-
-    // Quick heap corruption checkpoint for trace points with diagnostics
-    // Input: A = checkpoint ID for identification
-    // Output: Shows corruption message with checkpoint ID and details if heap is corrupted
-    // Preserves: Everything
-    ChkHeap()
-    {
-        /*
-        PHA  // Save checkpoint ID
-        ValidateHeap();
-        if (NC)  // Heap corrupted
-        {
-            // Show corruption detected message with checkpoint ID
-            LDA #'!'
-            Tools.COut();
-            LDA #'H'
-            Tools.COut();
-            LDA #'C'
-            Tools.COut();
-            PLA  // Get checkpoint ID
-            Serial.HexOut();  // Show where corruption was detected
-            PHA  // Save it back
-            LDA #'!'
-            Tools.COut();
-            Tools.NL();
-            
-            // Add diagnostic information
-            dumpHeapCorruptionDetails();
-        }
-        PLA  // Restore checkpoint ID
-        */
-    }
-    
     DumpZeroPage()
     {
         PHP
@@ -1557,6 +1595,186 @@ unit Debug
     
 #endif // DEBUG
 
+    // Walk heap blocks for validation : errors if corrupt
+    // Input: None
+    // Output: Calls block processing for each heap block
+    // Modifies: ZP.M0-M3, ZP.U0, ZP.IDX, ZP.IDY, A, X, Y (internal operations)
+    // Preserves: All iteration-critical state (ZP.ACC, ZP.LCURRENT)
+    ValidateHeap()
+    {
+        PHA
+        PHX
+        PHY
+        
+        // Save iteration-critical state that we modify
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
+        
+        // Start at heap beginning: ZP.HEAPSTART is the page number
+        LDA ZP.HEAPSTART
+        STA ZP.IDXH
+        LDA #0
+        STA ZP.IDXL
+        
+        LDX #0  // Block counter
+        
+        loop
+        {
+            // Check if we're past the end of heap
+            // Calculate current page: IDX high byte - HEAPSTART
+            LDA ZP.IDXH
+            SEC
+            SBC ZP.HEAPSTART
+            CMP ZP.HEAPSIZE
+            if (C) { break; }  // Past end of heap
+            
+            // Check for zero block size (corrupted heap)
+            LDY #0
+            LDA [ZP.IDX], Y     // Low byte of size
+            STA ZP.M0
+            INY
+            LDA [ZP.IDX], Y     // High byte of size
+            STA ZP.M1
+            ORA ZP.M0           // Check if size is zero
+            if (Z) 
+            { 
+                Error.HeapCorruptError();
+                break;
+            }
+            
+            // Calculate block address (block address + 2 for data)
+            CLC
+            LDA ZP.IDXL
+            ADC #2
+            STA ZP.M2
+            LDA ZP.IDXH
+            ADC #0
+            STA ZP.M3
+            
+            // Check if this block is on the free list
+            // Save current position
+            LDA ZP.IDXL
+            PHA
+            LDA ZP.IDXH
+            PHA
+            
+            // Walk free list to see if this block is free
+            LDA ZP.FREELISTL
+            STA ZP.IDYL
+            LDA ZP.FREELISTH
+            STA ZP.IDYH
+            
+            STZ ZP.U0  // Flag: 0 = not found, 1 = found on free list
+            
+            loop
+            {
+                LDA ZP.IDYL
+                ORA ZP.IDYH
+                if (Z) { break; }  // End of free list
+                
+                // Compare addresses - current block vs free list entry
+                LDA ZP.IDYL
+                CMP ZP.M2
+                if (NZ) 
+                { 
+                    // Move to next free block
+                    LDA ZP.IDYL
+                    STA ZP.IDXL
+                    LDA ZP.IDYH
+                    STA ZP.IDXH
+                    
+                    // Get next pointer
+                    LDY #2
+                    LDA [ZP.IDX], Y
+                    STA ZP.IDYL
+                    INY
+                    LDA [ZP.IDX], Y
+                    STA ZP.IDYH
+                    continue; 
+                }
+                
+                LDA ZP.IDYH
+                CMP ZP.M3
+                if (NZ) 
+                { 
+                    // Move to next free block
+                    LDA ZP.IDYL
+                    STA ZP.IDXL
+                    LDA ZP.IDYH
+                    STA ZP.IDXH
+                    
+                    // Get next pointer
+                    LDY #2
+                    LDA [ZP.IDX], Y
+                    STA ZP.IDYL
+                    INY
+                    LDA [ZP.IDX], Y
+                    STA ZP.IDYH
+                    continue; 
+                }
+                
+                // Found it - this block is free
+                LDA #1
+                STA ZP.U0
+                break;
+            }
+            
+            // Restore current position
+            PLA
+            STA ZP.IDXH
+            PLA
+            STA ZP.IDXL
+            
+            // In case we want to do somthing with the block, at this point we have:
+            // ZP.IDX = pointer to block header
+            // ZP.M0/M1 = block size (including 2-byte header)
+            // ZP.M2/M3 = pointer to block data (header + 2)
+            // ZP.U0 = 0 if allocated, 1 if free
+            // X = block number
+            
+            // Block header at ZP.IDX
+            // Block data at ZP.M2/M3
+            // Block size in ZP.M0/M1 (total size including header)
+            // Free status in ZP.U0 (0=allocated, 1=free)
+            // Block number in X
+            
+            // Move to next block: current address + block size
+            CLC
+            LDA ZP.IDXL
+            ADC ZP.M0  // Add low byte of size
+            STA ZP.IDXL
+            LDA ZP.IDXH
+            ADC ZP.M1  // Add high byte of size
+            STA ZP.IDXH
+            
+            INX
+            CPX # 100  // Limit to 100 blocks to avoid infinite loops
+            if (Z) { break; }
+        }
+        CheckError(); // set C | NC
+        
+        // Restore saved state in reverse order
+        PLA
+        STA ZP.IDYH
+        PLA
+        STA ZP.IDYL
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        PLY
+        PLX
+        PLA
+    }
+
+
     // Crash instance in A
     Crash() // hard stop
     {
@@ -1582,6 +1800,8 @@ unit Debug
         LDA #' ' Tools.COut(); LDA #'S' Tools.COut(); LDA #'P' Tools.COut(); LDA #':' Tools.COut(); LDA #' ' Tools.COut();
         PLA
         Serial.HexOut(); // SP
+        
+        LDA #' ' Tools.COut(); CheckAndPrint();
 
 #if defined(DEBUG) || defined(TRACE)
         Tools.NL();

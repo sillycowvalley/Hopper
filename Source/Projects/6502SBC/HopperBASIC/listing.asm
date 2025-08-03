@@ -486,6 +486,19 @@ unit Listing
                 break;
             }
             
+            // Also display $MAIN function if it exists (after regular functions)
+            LDA #(Messages.BeginFunctionName % 256)
+            STA ZP.TOPL
+            LDA #(Messages.BeginFunctionName / 256)
+            STA ZP.TOPH
+            
+            Functions.Find(); // Input: ZP.TOP = "$MAIN" name, Output: ZP.IDX = node
+            if (C)
+            {
+                // Found $MAIN function - display it
+                displayFunction(); // Input: ZP.IDX = function node
+            }
+            
             State.SetSuccess();
             break;
         } // loop exit

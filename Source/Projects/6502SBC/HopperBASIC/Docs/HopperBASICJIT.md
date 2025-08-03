@@ -1,4 +1,5 @@
 # HopperBASIC JIT Compilation Project - Complete Status
+**Document Type: JIT Architecture**
 
 ## Overview
 

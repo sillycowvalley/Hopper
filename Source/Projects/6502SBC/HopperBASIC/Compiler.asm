@@ -1714,14 +1714,8 @@ unit Compiler
                 
                 case Tokens.IDENTIFIER:
                 {
-#ifdef DEBUG
-                    LDA #'{' Debug.COut();
-#endif
                     compileFunctionCallOrVariable();
                     Error.CheckError();
-#ifdef DEBUG
-                    LDA #'}' Debug.COut();
-#endif
                     break;
                 }
                 case Tokens.LPAREN:

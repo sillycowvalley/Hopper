@@ -1,4 +1,5 @@
 # HopperBASIC Symbol Table Design
+**Document Type: Symbol Architecture**
 
 ## Overview
 

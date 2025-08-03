@@ -36,6 +36,7 @@ unit Error
     const uint expectedExpression = 0x001A;
     const uint invalidBitValue = 0x001B;
     const uint illegalInFunctionMode = 0x001C;
+    const uint heapCorrupt = 0x001D;
 #else
     // Error message strings (moved from Messages.asm) and made private
     const string syntaxError = "SYNTAX ERROR";
@@ -67,12 +68,21 @@ unit Error
     const string invalidBitValue = "INVALID BIT VALUE";
     const string illegalInFunctionMode = "ILLEGAL IN FUNCTION MODE";
     const string onlyAtConsole = "ONLY AT CONSOLE";
+    const string heapCorrupt = "HEAP CORRUPT";
     
 #endif
     
     // One-liner error methods (PC must be set at call site with BIT ZP.EmulatorPCL)
     // Each method sets ZP.LastError and clears carry flag
     
+    HeapCorruptError()
+    {
+        LDA #(heapCorrupt % 256)
+        STA ZP.LastErrorL
+        LDA #(heapCorrupt / 256)
+        STA ZP.LastErrorH
+        CLC
+    }
     SyntaxError() 
     { 
         LDA #(syntaxError % 256)
@@ -438,6 +448,11 @@ unit Error
             return;  // No error
         }
         
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
         // Print the error message
         LDA #'?'
         Serial.WriteChar(); // '?' prefix
@@ -466,6 +481,11 @@ unit Error
         LDA #'\n'
         Serial.WriteChar(); // '\n' suffix
         
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
         // Clear the error
         ClearError();
         
@@ -475,5 +495,90 @@ unit Error
         PLA
         
         CLC  // Error was found and printed
+    }
+    
+    // Check if the current error in ZP.LastError is fatal
+    // Input: None (reads ZP.LastErrorL/H)  
+    // Output: C set if fatal, NC if not fatal
+    // Preserves: A, X, Y
+    // Munts: Processor flags only
+    IsFatal()
+    {
+        PHA
+        PHX
+        
+        loop // Single exit point
+        {
+            // Compare against fatal error codes/addresses
+            LDA ZP.LastErrorL
+            LDX ZP.LastErrorH
+            
+            // Check for notImplemented
+            CMP #(notImplemented % 256)
+            if (Z)
+            {
+#ifdef TERSE_ERRORS
+                SEC break;
+#else 
+                CPX #(notImplemented / 256)
+                if (Z) { SEC break; } // Fatal
+#endif
+            }
+            
+            // Check for internalError
+            CMP #(internalError % 256)
+            if (Z)
+            {
+#ifdef TERSE_ERRORS
+                SEC break;
+#else 
+                CPX #(internalError / 256)
+                if (Z) { SEC break; } // Fatal
+#endif
+            }
+            
+            // Check for outOfMemory
+            CMP #(outOfMemory % 256)
+            if (Z)
+            {
+#ifdef TERSE_ERRORS
+                SEC break;
+#else 
+                CPX #(outOfMemory / 256)
+                if (Z) { SEC break; } // Fatal
+#endif
+            }
+            
+            // Check for bufferOverflow
+            CMP #(bufferOverflow % 256)
+            if (Z)
+            {
+#ifdef TERSE_ERRORS
+                SEC break;
+#else 
+                CPX #(bufferOverflow / 256)
+                if (Z) { SEC break; } // Fatal
+#endif
+            }
+            
+            // Check for heapCorrupt
+            CMP #(heapCorrupt % 256)
+            if (Z)
+            {
+#ifdef TERSE_ERRORS
+                SEC break;
+#else 
+                CPX #(heapCorrupt / 256)
+                if (Z) { SEC break; } // Fatal
+#endif
+            }
+            
+            // Not a fatal error
+            CLC
+            break;
+        } // Single exit loop
+        
+        PLX
+        PLA
     }
 }

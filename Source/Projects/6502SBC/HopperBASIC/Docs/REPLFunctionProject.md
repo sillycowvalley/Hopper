@@ -1,4 +1,5 @@
 # REPL Function Unification Project
+**Document Type: REPL Architecture**
 
 ## Project Overview
 Refactor HopperBASIC to eliminate the dual execution paths (REPL vs Functions) by treating REPL expressions as temporary hidden functions. This unifies compilation, execution, and error handling while reducing code duplication and maintenance burden.
