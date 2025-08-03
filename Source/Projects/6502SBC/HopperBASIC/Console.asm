@@ -937,9 +937,9 @@ unit Console
                     Tools.PrintStringACC();
                     break;
                 }
-                
+#ifdef DEBUG            
                 LDA #0x01 Debug.ChkHeap();
-                
+#endif                
                 // Create tokens for: IDENTIFIER "$MAIN" LPAREN RPAREN EOL
                 LDX #0
                 
@@ -957,8 +957,10 @@ unit Console
                     INY
                 }
                 INX
-                
+
+#ifdef DEBUG                
                 LDA #0x02 Debug.ChkHeap();
+#endif
                 
                 // Token 2: LPAREN
                 LDA #Tokens.LPAREN
@@ -987,16 +989,14 @@ unit Console
                 STZ ZP.TokenLiteralPosH
                 
                 Tokenizer.Initialize();
-                                
+#ifdef DEBUG
                 LDA #0x03 Debug.ChkHeap();
-                                
+#endif                    
                 Tokenizer.NextToken();
-                
+#ifdef DEBUG    
                 LDA #0x04 Debug.ChkHeap();
-
-                Statement.EvaluateExpression();
-                
-                Messages.PrintOK();
+#endif
+                Statement.EvaluateExpression(); // executes 'indentifier()' as function call
                 break;
             }
         }

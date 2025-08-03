@@ -85,8 +85,14 @@ unit Memory
                 LDA # 0x40
                 break;
             }
-            LDA # 0x0B
-            Die();
+            
+            
+#if defined(HOPPER_BASIC)
+            LDA # 0x02 Debug.Crash(); // failed to find at least 16K of RAM
+#else
+            LDA # 0x0B Die(); // failed to find at least 16K of RAM
+#endif
+            
             break;
         } // loop
     }        
@@ -165,13 +171,19 @@ unit Memory
     // Input: ZP.ACC = requested size (16-bit) 
     // Output: ZP.IDX = allocated address (0x0000 if allocation failed)
     // Modifies: ZP.M* scratch space (internal to memory management operations)
+    const string memoryAllocate = "Allocate";
     Allocate()
     {
         PHP  // Push processor status (including carry flag)
         PHA
         PHX
         PHY
-        
+
+#ifdef TRACE
+        LDA #(memoryAllocate % 256) STA ZP.TraceMessageL LDA #(memoryAllocate / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+
+
         LDA ZP.ACCL
         PHA
         LDA ZP.ACCH
@@ -179,20 +191,15 @@ unit Memory
         
         Allocate.Allocate();
         
-#ifdef MEMDEBUG        
-        /*
-        LDA # 'A'
-        Tools.COut();
-        LDA # ':'
-        Tools.COut();
-        Tools.XOut();
-        */
-#endif
-        
         PLA
         STA ZP.ACCH
         PLA
         STA ZP.ACCL
+        
+#ifdef TRACE
+        LDA #(memoryAllocate % 256) STA ZP.TraceMessageL LDA #(memoryAllocate / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+
         
         PLY
         PLX
@@ -204,13 +211,18 @@ unit Memory
     // Input: ZP.IDX = address to free (must not be 0x0000)
     // Output: C set (success)
     // Modifies: ZP.M* scratch space (internal to memory management operations)
+    const string memoryFree = "Free";
     Free()
     {   
         PHP  // Push processor status (including carry flag)
         PHA
         PHX
         PHY
-        
+
+#ifdef TRACE
+        LDA #(memoryFree % 256) STA ZP.TraceMessageL LDA #(memoryFree / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+
         LDA ZP.IDXL
         PHA
         LDA ZP.IDXH
@@ -221,13 +233,14 @@ unit Memory
         LDA ZP.ACCH
         PHA
         
-#ifdef MEMDEBUG        
-        LDA # 'F'
-        Tools.COut();
-        LDA # ':'
-        Tools.COut();
-        Tools.XOut();
-#endif        
+#if defined(DEBUG) || defined(TRACE)
+        LDA IDXL
+        ORA IDXH
+        if (Z)
+        {
+            LDA # 0x01 Debug.Crash(); // this is a bug (to try to free nullptr)
+        }
+#endif
         
         Free.Free();
         
@@ -240,6 +253,10 @@ unit Memory
         STA ZP.IDXH
         PLA
         STA ZP.IDXL
+        
+#ifdef TRACE
+        LDA #(memoryFree % 256) STA ZP.TraceMessageL LDA #(memoryFree / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
         
         SEC // success
         

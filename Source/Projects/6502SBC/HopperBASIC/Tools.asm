@@ -423,6 +423,12 @@ unit Tools
             LDA [ZP.TOP], Y
             if (Z) { break; }
             INY
+#ifdef DEBUG
+            if (Z) // wrapped around from 0xFF to 0x00
+            {
+                LDA # 0x04  Debug.Crash(); // runaway StringLength() calculation
+            }
+#endif
         }
         
         // Restore caller's ZP.TOP

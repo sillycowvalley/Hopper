@@ -63,14 +63,12 @@ unit Free
         // address is in IDX
         // uses mfCURRENT
 
-#ifdef CHECKED
+#if defined(CHECKED)
         LDA IDXL
         ORA IDXH
         if (Z)
         {
-            // this is a bug (to try to free nullptr)
-            LDA # 0x0B 
-            Diagnostics.die();
+            LDA # 0x0B Diagnostics.die(); // this is a bug (to try to free nullptr)
         }
 #endif
         loop

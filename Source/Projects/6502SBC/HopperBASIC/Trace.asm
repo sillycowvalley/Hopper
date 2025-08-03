@@ -56,6 +56,11 @@ unit Trace
         PHX
         PHY
         
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
         // capture current stack pointer
         //TSX
         //PHX
@@ -94,6 +99,11 @@ unit Trace
         // Increase indentation
         INC ZP.TraceIndent
         
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
         PLY
         PLX
         PLA
@@ -110,6 +120,11 @@ unit Trace
         PHA
         PHX
         PHY
+        
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
         
         // capture current stack pointer
         //TSX
@@ -151,6 +166,11 @@ unit Trace
         }
         
         Debug.NL();
+        
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
         
         PLY
         PLX

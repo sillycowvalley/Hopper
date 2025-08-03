@@ -366,8 +366,11 @@ unit Allocate
             if (NC)
             {
                 // maBESTSIZE < ACC
-                LDA 0x0C
-                Diagnostics.die(); // Memory allocation failure
+#if defined(HOPPER_BASIC)
+                LDA #0x03 Debug.Crash(); // Memory allocation failure
+#else
+                LDA #0x0C Diagnostics.die(); // Memory allocation failure
+#endif
             }
     
             // (bestSize >= size)
