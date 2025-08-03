@@ -64,6 +64,7 @@ unit Error
     const string bufferOverflow = "BUFFER OVERFLOW";
     const string expectedRightParen = ") EXPECTED";
     const string expectedLeftParen = "( EXPECTED";
+    const string expectedEqual = "= EXPECTED";
     const string expectedQuote = "QUOTE EXPECTED";
     const string expectedExpression = "EXPRESSION EXPECTED";
     const string invalidBitValue = "INVALID BIT VALUE";
@@ -299,6 +300,14 @@ unit Error
         CLC
     }
     
+    ExpectedEqual() 
+    { 
+        LDA #(expectedEqual % 256)
+        STA ZP.LastErrorL
+        LDA #(expectedEqual / 256)
+        STA ZP.LastErrorH
+        CLC
+    }
     ExpectedRightParen() 
     { 
         LDA #(expectedRightParen % 256)

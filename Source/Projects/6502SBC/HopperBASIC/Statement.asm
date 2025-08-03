@@ -10,6 +10,8 @@ unit Statement
     uses "Variables"
     uses "Instructions"
     uses "FunctionDeclaration.asm"
+    uses "Emit"
+    uses "Compiler"
     
     friend FunctionDeclaration;
     
@@ -231,6 +233,7 @@ unit Statement
             STA ZP.IDYL  
             LDA #(Address.BasicTokenizerBuffer / 256) 
             STA ZP.IDYH
+            NOP
             Compiler.SetLiteralBase();
             Compiler.CompileExpression();
             Error.CheckError();
@@ -522,7 +525,7 @@ unit Statement
             if (Z)
             {
                 // No RETURN value - emit RETURN opcode
-                Compiler.EmitReturn();
+                Emit.Return();
                 Error.CheckError();
                 if (NC) { break; }
             }
@@ -534,7 +537,7 @@ unit Statement
                 if (NC) { break; }
                 
                 // Emit RETURNVAL opcode (expects value on stack)
-                Compiler.EmitReturnVal();
+                Emit.ReturnVal();
                 Error.CheckError();
                 if (NC) { break; }
             }

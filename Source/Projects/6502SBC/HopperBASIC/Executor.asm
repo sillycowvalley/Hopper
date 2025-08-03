@@ -995,11 +995,75 @@ unit Executor
         State.SetFailure();
     }
     
+    // Execute POPGLOBAL opcode - pop value from stack and store to global variable
+    // Input: PC points to operand bytes (node address LSB, MSB)
+    // Output: Value popped from stack and stored to variable, PC advanced by 2
+    // Modifies: A, X, Y, ZP.PC, ZP.IDX, ZP.TOP, ZP.TOPT, stack
+    const string executePopGlobalTrace = "POPGLOBAL // Pop to global by name";
     executePopGlobal()
     {
-        // TODO: Pop value and store in global variable by index
-        Error.NotImplemented(); BIT ZP.EmulatorPCL
-        State.SetFailure();
+    #ifdef TRACE
+        LDA #(executePopGlobalTrace % 256) STA ZP.TraceMessageL LDA #(executePopGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop
+        {
+            // Fetch node address (little-endian)
+            FetchOperandWord(); // Result in executorOperandL/H
+            Error.CheckError();
+            if (NC) 
+            { 
+                State.SetFailure();
+                break; 
+            }
+            
+            // Transfer node address to ZP.IDX
+            LDA executorOperandL
+            STA ZP.IDXL
+            LDA executorOperandH
+            STA ZP.IDXH
+            
+            // Get the variable's current type for compatibility checking
+            Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = type
+            Error.CheckError();
+            if (NC) 
+            { 
+                State.SetFailure();
+                break; 
+            }
+            
+            // Pop value from stack (RHS of assignment)
+            Stacks.PopTop(); // Result in ZP.TOP (value), ZP.TOPT (type)
+            
+            // Move LHS type to correct register for CheckRHSTypeCompatibility
+            LDA ZP.ACCT
+            STA ZP.NEXTT 
+            
+            // Check type compatibility for assignment
+            Instructions.CheckRHSTypeCompatibility(); // Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
+            Error.CheckError();
+            if (NC) 
+            { 
+                State.SetFailure();
+                break; 
+            }
+            
+            // Store the value to the variable
+            Variables.SetValue(); // Input: ZP.IDX = node address, ZP.TOP = value
+            Error.CheckError();
+            if (NC) 
+            { 
+                State.SetFailure();
+                break; 
+            }
+            
+            State.SetSuccess();
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(executePopGlobalTrace % 256) STA ZP.TraceMessageL LDA #(executePopGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
     }
     
     executePopLocal()

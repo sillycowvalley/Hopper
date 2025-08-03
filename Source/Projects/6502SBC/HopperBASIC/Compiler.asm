@@ -8,6 +8,9 @@ unit Compiler
     uses "State"
     uses "Tokenizer"
     uses "Tools"
+    uses "Emit"
+    
+    friend Emit;
     
     // API Status: Clean
     // All public methods preserve caller state except for documented outputs
@@ -26,8 +29,8 @@ unit Compiler
     const uint compilerFuncLocals     = Address.BasicCompilerWorkspace + 9;  // 1 byte - number of locals for current FUNC being compiled
     const uint compilerLiteralBaseL   = Address.BasicCompilerWorkspace + 10; // 1 byte - literal base address low
     const uint compilerLiteralBaseH   = Address.BasicCompilerWorkspace + 11; // 1 byte - literal base address high
-
-    
+    const uint compilerSavedNodeAddrL = Address.BasicCompilerWorkspace + 12; // 1 byte - saved node addr low
+    const uint compilerSavedNodeAddrH = Address.BasicCompilerWorkspace + 13; // 1 byte - saved node addr high
     
     // Initialize the opcode buffer for compilation
     // Output: OpCode buffer ready for emission
@@ -65,6 +68,62 @@ unit Compiler
         
 #ifdef TRACE
         LDA #(initOpCodeBufferTrace % 256) STA ZP.TraceMessageL LDA #(initOpCodeBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+    }
+    
+    // IDY -> compilerSavedTokenPos
+    const string setLiteralBaseTrace = "SetLitBase";
+    SetLiteralBase()
+    {
+#ifdef TRACE
+        LDA #(setLiteralBaseTrace % 256) STA ZP.TraceMessageL LDA #(setLiteralBaseTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
+        LDA ZP.IDYL
+        STA compilerLiteralBaseL
+        LDA ZP.IDYH
+        STA compilerLiteralBaseH
+        
+#ifdef TRACE
+        LDA #(setLiteralBaseTrace % 256) STA ZP.TraceMessageL LDA #(setLiteralBaseTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+    }
+    
+    // Check if the last emitted opcode is RETURN or RETURNVAL
+    // Input: None (uses compilerLastOpCode tracking)
+    // Output: C set if last opcode is RETURN/RETURNVAL, NC if not
+    // Modifies: Processor flags only
+    const string lastOpCodeIsReturnTrace = "ChkReturn";
+    checkLastOpCodeIsReturn()
+    {
+#ifdef TRACE
+        LDA #(lastOpCodeIsReturnTrace % 256) STA ZP.TraceMessageL LDA #(lastOpCodeIsReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        loop
+        {
+            LDA compilerLastOpCode
+            
+            // Check if it's RETURN or RETURNVAL
+            CMP #OpCodeType.RETURN
+            if (Z)
+            {
+                SEC // Found RETURN
+                break;
+            }
+            
+            CMP #OpCodeType.RETURNVAL
+            if (Z)
+            {
+                SEC // Found RETURNVAL
+                break;
+            }
+            
+            CLC // Not a RETURN opcode
+            break;
+        }
+        
+#ifdef TRACE
+        LDA #(lastOpCodeIsReturnTrace % 256) STA ZP.TraceMessageL LDA #(lastOpCodeIsReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
     
@@ -106,178 +165,7 @@ unit Compiler
 #endif
     }
     
-    // Emit a single-byte opcode (no operands)
-    // Input: compilerOpCode = opcode value
-    // Output: OpCode written to buffer
-    // Modifies: ZP.OpCodeBufferLengthL/H (incremented), ZP.PC (incremented)
-    const string emitOpCodeTrace = "EmitOp";
-    EmitOpCode()
-    {
-#ifdef TRACE
-        LDA #(emitOpCodeTrace % 256) STA ZP.TraceMessageL LDA #(emitOpCodeTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        
-        loop
-        {
-#ifdef DEBUG       
-            Tools.NL(); LDA #'>' Debug.COut();
-            LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
-            LDA #' ' Debug.COut(); LDA compilerOpCode Debug.HOut(); LDA #' ' Debug.COut();
-#endif        
-            // Check space for 1 byte
-            LDA #1
-            CheckBufferSpace();
-            if (NC) 
-            { 
-                break; 
-            } // Buffer overflow
-        
-            // Write opcode to buffer
-            LDA compilerOpCode
-            STA [ZP.PC]
-            STA compilerLastOpCode
-            
-            // Increment PC
-            INC ZP.PCL
-            if (Z)
-            {
-                INC ZP.PCH
-            }
-            
-            SEC // Success
-            break;
-        }
-#ifdef TRACE
-        LDA #(emitOpCodeTrace % 256) STA ZP.TraceMessageL LDA #(emitOpCodeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
     
-    // Emit opcode with one byte operand
-    // Input: compilerOpCode = opcode value, compilerOperand1 = operand byte
-    // Output: OpCode and operand written to buffer
-    // Modifies: ZP.OpCodeBufferLengthL/H (incremented by 2), ZP.PC (incremented by 2)
-    const string emitOpCodeWithByteTrace = "EmitOpByte";
-    EmitOpCodeWithByte()
-    {
-#ifdef TRACE
-        LDA #(emitOpCodeWithByteTrace % 256) STA ZP.TraceMessageL LDA #(emitOpCodeWithByteTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        loop
-        {
-#ifdef DEBUG       
-            Tools.NL(); LDA #'>' Debug.COut();
-            LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
-            LDA #' ' Debug.COut(); LDA compilerOpCode Debug.HOut(); LDA #' ' Debug.COut(); 
-                                   LDA compilerOperand1 Debug.HOut(); LDA #' ' Debug.COut();
-#endif
-            // Check space for 2 bytes
-            LDA #2
-            CheckBufferSpace();
-            if (NC) 
-            { 
-                break; 
-            } // Buffer overflow
-        
-            // Write opcode
-            LDA compilerOpCode
-            STA [ZP.PC]
-            STA compilerLastOpCode
-            
-            // Increment PC
-            INC ZP.PCL
-            if (Z)
-            {
-                INC ZP.PCH
-            }
-            
-            // Write operand
-            LDA compilerOperand1
-            STA [ZP.PC]
-            
-            // Increment PC
-            INC ZP.PCL
-            if (Z)
-            {
-                INC ZP.PCH
-            }
-            
-            SEC // Success
-            break;
-        }
-        
-#ifdef TRACE
-        LDA #(emitOpCodeWithByteTrace % 256) STA ZP.TraceMessageL LDA #(emitOpCodeWithByteTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
-    // Emit opcode with two byte operands (word value)
-    // Input: compilerOpCode = opcode value, compilerOperand1 = LSB, compilerOperand2 = MSB
-    // Output: OpCode and operands written to buffer
-    // Modifies: ZP.OpCodeBufferLengthL/H (incremented by 3), ZP.PC (incremented by 3)
-    const string emitOpCodeWithWordTrace = "EmitOpWord";
-    EmitOpCodeWithWord()
-    {
-#ifdef TRACE
-        LDA #(emitOpCodeWithWordTrace % 256) STA ZP.TraceMessageL LDA #(emitOpCodeWithWordTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        loop
-        {
-#ifdef DEBUG       
-            Tools.NL(); LDA #'>' Debug.COut();
-            LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
-            LDA #' ' Debug.COut(); LDA compilerOpCode Debug.HOut(); LDA #' ' Debug.COut(); 
-                                   LDA compilerOperand1 Debug.HOut(); LDA #' ' Debug.COut();
-                                   LDA compilerOperand2 Debug.HOut(); LDA #' ' Debug.COut();
-#endif        
-            // Check space for 3 bytes
-            LDA #3
-            CheckBufferSpace();
-            if (NC) 
-            { 
-                break; 
-            } // Buffer overflow
-            
-            // Write opcode
-            LDA compilerOpCode
-            STA [ZP.PC]
-            STA compilerLastOpCode
-            
-            // Increment PC
-            INC ZP.PCL
-            if (Z)
-            {
-                INC ZP.PCH
-            }
-            
-            // Write LSB
-            LDA compilerOperand1
-            STA [ZP.PC]
-            
-            // Increment PC
-            INC ZP.PCL
-            if (Z)
-            {
-                INC ZP.PCH
-            }
-            
-            // Write MSB  
-            LDA compilerOperand2
-            STA [ZP.PC]
-            
-            // Increment PC
-            INC ZP.PCL
-            if (Z)
-            {
-                INC ZP.PCH
-            }
-            
-            SEC // Success
-            break;
-        }
-#ifdef TRACE
-        LDA #(emitOpCodeWithWordTrace % 256) STA ZP.TraceMessageL LDA #(emitOpCodeWithWordTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
     
     // Calculate offset from compilation start to current tokenizer position
     // Output: ZP.ACCL/ZP.ACCH = offset from ZP.CompilerTokenPos to current ZP.TokenizerPos
@@ -304,636 +192,7 @@ unit Compiler
 #endif
     }
     
-    // Emit PUSHCSTRING opcode with word operand
-    // Input: compilerOperand1 = string pointer LSB, compilerOperand2 = string pointer MSB  
-    // Output: PUSHCSTRING opcode emitted with operands, C set if successful
-    // Modifies: A, ZP.OpCodeBufferLengthL/H, buffer state
-    const string emitPushCStringTrace = "EmitPUSHCSTRING";
-    EmitPushCString()
-    {
-        PHA
-        
-#ifdef TRACE
-        LDA #(emitPushCStringTrace % 256) STA ZP.TraceMessageL LDA #(emitPushCStringTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        
-        loop
-        {
-            // Set up opcode
-            LDA #OpCodeType.PUSHCSTRING
-            STA compilerOpCode
-            
-            // Emit opcode with word operand (uses compilerOperand1/2)
-            EmitOpCodeWithWord();
-            break;
-        } // loop
-        
-#ifdef TRACE
-        LDA #(emitPushCStringTrace % 256) STA ZP.TraceMessageL LDA #(emitPushCStringTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-        
-        PLA
-    }
     
-    // Emit PUSHGLOBAL opcode for identifier
-    // Input: Current token is IDENTIFIER
-    // Output: PUSHGLOBAL opcode with node address emitted, C set if successful
-    // Modifies: A, X, Y, ZP.TOP, ZP.IDX, compilerOperand1/2
-    const string emitPushGlobalTrace = "Emit PUSHGLOBAL";
-    EmitPushGlobal()
-    {
-        PHA
-        PHX
-        PHY
-        
-#ifdef TRACE
-        LDA #(emitPushGlobalTrace % 256) STA ZP.TraceMessageL LDA #(emitPushGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        
-        loop // Single exit
-        {
-            // Get the identifier name from the tokenizer
-            Tokenizer.GetTokenString(); // Result in ZP.TOP (name pointer)
-            Error.CheckError();
-            if (NC) { break; }
-            
-PrintStringTOP();            
-            
-            // Find the variable/constant by name
-            STZ ZP.SymbolIteratorFilter  // Accept both variables and constants
-            Variables.Find();  // Input: ZP.TOP = name, Output: ZP.IDX = node address
-            if (NC)
-            {
-                // Variable not found
-                Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
-                break;
-            }
-            
-            // Store node address as operands
-            LDA ZP.IDXL
-            STA compilerOperand1  // LSB
-            LDA ZP.IDXH
-            STA compilerOperand2  // MSB
-            
-            // Emit PUSHGLOBAL with word operand
-            LDA # OpCodeType.PUSHGLOBAL
-            STA compilerOpCode
-            EmitOpCodeWithWord();
-            break;
-        }
-        
-#ifdef TRACE
-        LDA #(emitPushGlobalTrace % 256) STA ZP.TraceMessageL LDA #(emitPushGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-        
-        PLY
-        PLX
-        PLA
-    }
-    
-    
-    // Emit PUSHBIT opcode with immediate value
-    // Input: A = bit value (0 or 1)
-    // Output: PUSHBIT opcode emitted with value
-    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
-    const string emitPushBitTrace = "Emit PUSHBIT";
-    EmitPushBit()
-    {
-#ifdef TRACE
-        PHA LDA #(emitPushBitTrace % 256) STA ZP.TraceMessageL LDA #(emitPushBitTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
-#endif
-        loop
-        {
-            // Validate bit value (must be 0 or 1)
-            CMP #2
-            if (C) // >= 2, invalid
-            {
-                Error.InvalidBitValue(); BIT ZP.EmulatorPCL
-                break;
-            }
-        
-            // Set up parameters for emission
-            STA compilerOperand1          // Store value as operand
-            LDA #OpCodeType.PUSHBIT
-            STA compilerOpCode
-            
-            EmitOpCodeWithByte();
-            break;
-        }
-#ifdef TRACE
-        LDA #(emitPushBitTrace % 256) STA ZP.TraceMessageL LDA #(emitPushBitTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
-    // Emit PUSHBYTE opcode with immediate value
-    // Input: A = byte value
-    // Output: PUSHBYTE opcode emitted with value
-    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
-    const string emitPushByteTrace = "Emit PUSHBYTE";
-    EmitPushByte()
-    {
-#ifdef TRACE
-        PHA LDA #(emitPushByteTrace % 256) STA ZP.TraceMessageL LDA #(emitPushByteTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
-#endif
-        
-        // Set up parameters for emission
-        STA compilerOperand1          // Store value as operand
-        LDA #OpCodeType.PUSHBYTE
-        STA compilerOpCode
-        
-        EmitOpCodeWithByte();
-        
-#ifdef TRACE
-        LDA #(emitPushByteTrace % 256) STA ZP.TraceMessageL LDA #(emitPushByteTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
-    // Emit PUSHVOID opcode with zero value and VOID type
-    // Input: None (VOID always pushes 0 with VOID type)
-    // Output: PUSHVOID opcode emitted
-    // Modifies: compilerOpCode, buffer state via EmitOpCode()
-    const string emitPushVoidTrace = "Emit PUSHVOID";
-    EmitPushVoid()
-    {
-#ifdef TRACE
-        LDA #(emitPushVoidTrace % 256) STA ZP.TraceMessageL LDA #(emitPushVoidTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        
-        LDA #OpCodeType.PUSHVOID
-        STA compilerOpCode
-        EmitOpCode();
-        
-#ifdef TRACE
-        LDA #(emitPushVoidTrace % 256) STA ZP.TraceMessageL LDA #(emitPushVoidTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
-    // Emit PUSHINT or PUSHWORD opcode with word value
-    // Input: ZP.TOPT = type (determines opcode), compilerOperand1 = LSB, compilerOperand2 = MSB
-    // Output: Appropriate opcode emitted with value
-    // Modifies: compilerOpCode, buffer state via EmitOpCodeWithWord()
-    const string emitPushWordTrace = "Emit PUSHWORD";
-    EmitPushWord()
-    {
-#ifdef TRACE
-        LDA #(emitPushWordTrace % 256) STA ZP.TraceMessageL LDA #(emitPushWordTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        
-        loop
-        {
-            // Select opcode based on type
-            LDA ZP.TOPT
-            CMP #BasicType.INT
-            if (Z)
-            {
-                LDA #OpCodeType.PUSHINT
-                STA compilerOpCode
-                EmitOpCodeWithWord();
-                break;
-            }
-            
-            CMP #BasicType.WORD
-            if (Z)
-            {
-                LDA #OpCodeType.PUSHWORD
-                STA compilerOpCode
-                EmitOpCodeWithWord();
-                break;
-            }
-            
-            // Invalid type for word push
-            Error.TypeMismatch(); BIT ZP.EmulatorPCL
-            break;
-        } // loop
-        
-#ifdef TRACE
-        LDA #(emitPushWordTrace % 256) STA ZP.TraceMessageL LDA #(emitPushWordTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
-    // Emit POPGLOBAL opcode to store to variable  
-    // Input: No parameters (uses current token position for variable name offset)
-    // Output: POPGLOBAL opcode emitted with token offset
-    // Modifies: compilerOpCode, compilerOperand1, ZP.ACC (via CalculateTokenOffset), buffer state
-    const string emitPopGlobalTrace = "Emit POPGLOBAL";
-    EmitPopGlobal()
-    {
-#ifdef TRACE
-        LDA #(emitPopGlobalTrace % 256) STA ZP.TraceMessageL LDA #(emitPopGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        
-        loop
-        {
-            // Calculate offset to current token (variable name)
-            CalculateTokenOffset();
-            if (NC) { break; }
-            
-            // Check if offset fits in single byte
-            LDA ZP.ACCH
-            if (Z) // High byte is 0, use single-byte operand
-            {
-                LDA ZP.ACCL
-                STA compilerOperand1
-                LDA #OpCodeType.POPGLOBAL
-                STA compilerOpCode
-                EmitOpCodeWithByte();
-                break;
-            }
-            
-            // Offset too large
-            Error.BufferOverflow(); BIT ZP.EmulatorPCL
-            break;
-        } // loop
-        
-#ifdef TRACE
-        LDA #(emitPopGlobalTrace % 256) STA ZP.TraceMessageL LDA #(emitPopGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
-    
-    // Emit arithmetic operation opcode
-    // Input: A = operation token (Tokens.PLUS, Tokens.MINUS, etc.)
-    // Output: Corresponding arithmetic opcode emitted
-    // Modifies: compilerOpCode, buffer state via EmitOpCode(), A/X/Y registers
-    const string emitArithmeticOpTrace = "Emit ADD";
-    EmitArithmeticOp()
-    {
-#ifdef TRACE
-        PHA LDA #(emitArithmeticOpTrace % 256) STA ZP.TraceMessageL LDA #(emitArithmeticOpTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
-#endif
-        
-        loop
-        {
-            switch (A)
-            {
-                case Tokens.PLUS:
-                {
-                    LDA #OpCodeType.ADD
-                    STA compilerOpCode
-                    EmitOpCode();
-                    break;
-                }
-                case Tokens.MINUS:
-                {
-                    LDA #OpCodeType.SUB
-                    STA compilerOpCode
-                    EmitOpCode();
-                    break;
-                }
-                case Tokens.MULTIPLY:
-                {
-                    LDA #OpCodeType.MUL
-                    STA compilerOpCode
-                    EmitOpCode();
-                    break;
-                }
-                case Tokens.DIVIDE:
-                {
-                    LDA #OpCodeType.DIV
-                    STA compilerOpCode
-                    EmitOpCode();
-                    break;
-                }
-                case Tokens.MOD:
-                {
-                    LDA #OpCodeType.MOD
-                    STA compilerOpCode
-                    EmitOpCode();
-                    break;
-                }
-                default:
-                {
-                    Error.InvalidOperator(); BIT ZP.EmulatorPCL
-                    break;
-                }
-            }
-            break;
-        } // loop
-        
-#ifdef TRACE
-        LDA #(emitArithmeticOpTrace % 256) STA ZP.TraceMessageL LDA #(emitArithmeticOpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
-    // Emit comparison operation opcode
-    // Input: A = comparison token (Tokens.EQUALS, Tokens.LESSTHAN, etc.)
-    // Output: Corresponding comparison opcode emitted
-    // Modifies: compilerOpCode, buffer state via EmitOpCode(), A/X/Y registers
-    const string emitComparisonOpTrace = "Emit EQ";
-    EmitComparisonOp()
-    {
-#ifdef TRACE
-        PHA LDA #(emitComparisonOpTrace % 256) STA ZP.TraceMessageL LDA #(emitComparisonOpTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
-#endif
-        
-        loop
-        {
-            switch (A)
-            {
-                case Tokens.EQUALS:
-                {
-                    LDA #OpCodeType.EQ
-                    STA compilerOpCode
-                    EmitOpCode();
-                    break;
-                }
-                case Tokens.NOTEQUAL:
-                {
-                    LDA #OpCodeType.NE
-                    STA compilerOpCode
-                    EmitOpCode();
-                    break;
-                }
-                case Tokens.LT:
-                {
-                    LDA #OpCodeType.LT
-                    STA compilerOpCode
-                    EmitOpCode();
-                    break;
-                }
-                case Tokens.GT:
-                {
-                    LDA #OpCodeType.GT
-                    STA compilerOpCode
-                    EmitOpCode();
-                    break;
-                }
-                case Tokens.LE:
-                {
-                    LDA #OpCodeType.LE
-                    STA compilerOpCode
-                    EmitOpCode();
-                    break;
-                }
-                case Tokens.GE:
-                {
-                    LDA #OpCodeType.GE
-                    STA compilerOpCode
-                    EmitOpCode();
-                    break;
-                }
-                default:
-                {
-                    Error.InvalidOperator(); BIT ZP.EmulatorPCL
-                    break;
-                }
-            }
-            break;
-        } // loop
-        
-#ifdef TRACE
-        LDA #(emitComparisonOpTrace % 256) STA ZP.TraceMessageL LDA #(emitComparisonOpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
-    // Emit logical operation opcode
-    // Input: A = logical token (Tokens.AND, Tokens.OR, Tokens.NOT)
-    // Output: Corresponding logical opcode emitted
-    // Modifies: compilerOpCode, buffer state via EmitOpCode(), A/X/Y registers
-    const string emitLogicalOpTrace = "Emit LOGICAL_AND";
-    EmitLogicalOp()
-    {
-#ifdef TRACE
-        PHA LDA #(emitLogicalOpTrace % 256) STA ZP.TraceMessageL LDA #(emitLogicalOpTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
-#endif
-        
-        loop
-        {
-            switch (A)
-            {
-                case Tokens.AND:
-                {
-                    LDA #OpCodeType.LOGICAL_AND
-                    STA compilerOpCode
-                    EmitOpCode();
-                    break;
-                }
-                case Tokens.OR:
-                {
-                    LDA #OpCodeType.LOGICAL_OR
-                    STA compilerOpCode
-                    EmitOpCode();
-                    break;
-                }
-                case Tokens.NOT:
-                {
-                    LDA #OpCodeType.LOGICAL_NOT
-                    STA compilerOpCode
-                    EmitOpCode();
-                    break;
-                }
-                default:
-                {
-                    Error.InvalidOperator(); BIT ZP.EmulatorPCL
-                    break;
-                }
-            }
-            break;
-        } // loop
-        
-#ifdef TRACE
-        LDA #(emitLogicalOpTrace % 256) STA ZP.TraceMessageL LDA #(emitLogicalOpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
-    // Emit bitwise operation opcode
-    // Input: A = bitwise token 
-    // Output: Corresponding bitwise opcode emitted
-    // Modifies: compilerOpCode, buffer state via EmitOpCode(), A/X/Y registers
-    const string emitBitwiseOpTrace = "Emit BITWISE_AND";
-    EmitBitwiseOp()
-    {
-#ifdef TRACE
-        PHA LDA #(emitBitwiseOpTrace % 256) STA ZP.TraceMessageL LDA #(emitBitwiseOpTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
-#endif
-        
-        loop
-        {
-            switch (A)
-            {
-                case Tokens.BITWISE_AND:
-                {
-                    LDA #OpCodeType.BITWISE_AND
-                    STA compilerOpCode
-                    EmitOpCode();
-                    break;
-                }
-                case Tokens.BITWISE_OR:
-                {
-                    LDA #OpCodeType.BITWISE_OR
-                    STA compilerOpCode
-                    EmitOpCode();
-                    break;
-                }
-                default:
-                {
-                    Error.InvalidOperator(); BIT ZP.EmulatorPCL
-                    break;
-                }
-            }
-            break;
-        } // loop
-        
-#ifdef TRACE
-        LDA #(emitBitwiseOpTrace % 256) STA ZP.TraceMessageL LDA #(emitBitwiseOpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
-    // Emit unary minus (negation) opcode
-    // Output: NEG opcode emitted
-    // Modifies: compilerOpCode, buffer state via EmitOpCode()
-    const string emitUnaryMinusTrace = "Emit NEG";
-    EmitUnaryMinus()
-    {
-#ifdef TRACE
-        LDA #(emitUnaryMinusTrace % 256) STA ZP.TraceMessageL LDA #(emitUnaryMinusTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        
-        LDA #OpCodeType.NEG
-        STA compilerOpCode
-        EmitOpCode();
-        
-#ifdef TRACE
-        LDA #(emitUnaryMinusTrace % 256) STA ZP.TraceMessageL LDA #(emitUnaryMinusTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
-    // Emit system call opcode
-    // Input: A = system call ID
-    // Output: SYSCALL opcode emitted with ID
-    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
-    const string emitSysCallTrace = "Emit SYSCALL";
-    EmitSysCall()
-    {
-#ifdef TRACE
-        PHA LDA #(emitSysCallTrace % 256) STA ZP.TraceMessageL LDA #(emitSysCallTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
-#endif
-        
-        STA compilerOperand1      // Store ID as operand
-        LDA #OpCodeType.SYSCALL
-        STA compilerOpCode
-        EmitOpCodeWithByte();
-        
-#ifdef TRACE
-        LDA #(emitSysCallTrace % 256) STA ZP.TraceMessageL LDA #(emitSysCallTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
-    // Emit ENTER opcode for function entry (stack frame setup)
-    // Output: ENTER opcode with argument count emitted
-    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
-    const string emitEnterTrace = "Emit ENTER";
-    EmitEnter()
-    {
-#ifdef TRACE
-        LDA #(emitEnterTrace % 256) STA ZP.TraceMessageL LDA #(emitEnterTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        
-        LDA #OpCodeType.ENTER
-        STA compilerOpCode
-        EmitOpCode();
-        
-#ifdef TRACE
-        LDA #(emitEnterTrace % 256) STA ZP.TraceMessageL LDA #(emitEnterTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
-    
-    // Emit RETURN opcode for function exit (no return value)
-    // Input: A = total stack slots to clean up (arguments + locals)
-    // Output: RETURN opcode with cleanup count emitted
-    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
-    const string emitReturnTrace = "Emit RETURN";
-    EmitReturn()
-    {
-#ifdef TRACE
-        PHA LDA #(emitReturnTrace % 256) STA ZP.TraceMessageL LDA #(emitReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
-#endif
-        
-        STA compilerOperand1          // Store cleanup count as operand
-        LDA #OpCodeType.RETURN
-        STA compilerOpCode
-        EmitOpCodeWithByte();
-        
-#ifdef TRACE
-        LDA #(emitReturnTrace % 256) STA ZP.TraceMessageL LDA #(emitReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
-    // Emit RETURNVAL opcode for function exit with return value
-    // Input: A = total stack slots to clean up (arguments + locals)
-    // Output: RETURNVAL opcode with cleanup count emitted (expects return value on stack)
-    // Modifies: compilerOpCode, compilerOperand1, buffer state via EmitOpCodeWithByte()
-    const string emitReturnValTrace = "Emit RETURNVAL";
-    EmitReturnVal()
-    {
-#ifdef TRACE
-        PHA LDA #(emitReturnValTrace % 256) STA ZP.TraceMessageL LDA #(emitReturnValTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
-#endif
-        
-        STA compilerOperand1          // Store cleanup count as operand
-        LDA #OpCodeType.RETURNVAL
-        STA compilerOpCode
-        EmitOpCodeWithByte();
-        
-#ifdef TRACE
-        LDA #(emitReturnValTrace % 256) STA ZP.TraceMessageL LDA #(emitReturnValTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }  
-    
-    // Emit CALL opcode for unresolved function call
-    // Input: Current token is IDENTIFIER (function name), tokenizer positioned at function name
-    // Output: CALL opcode with absolute name address emitted, C set if successful
-    // Modifies: compilerOpCode, compilerOperand1/2, buffer state
-    const string emitCallTrace = "Emit CALL";
-    EmitCall()
-    {
-        PHA
-        PHX
-        PHY
-        
-#ifdef TRACE
-        LDA #(emitCallTrace % 256) STA ZP.TraceMessageL LDA #(emitCallTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        
-        loop // Single exit
-        {
-#ifdef DEBUG
-            Tools.NL();
-            LDA ZP.TokenLiteralPosH Debug.HOut();
-            LDA ZP.TokenLiteralPosL Debug.HOut();
-#endif            
-            // Calculate absolute address of function name in token buffer
-            // The tokenizer's TokenLiteralPos points to the start of the identifier string
-            CLC
-            LDA #(Address.BasicTokenizerBuffer % 256)
-            ADC ZP.TokenLiteralPosL    // TokenLiteralPos points to identifier string
-            STA compilerOperand1       // Absolute address LSB
-            LDA #(Address.BasicTokenizerBuffer / 256)
-            ADC ZP.TokenLiteralPosH
-            STA compilerOperand2       // Absolute address MSB
-
-#ifdef DEBUG
-            LDA #'-' Debug.COut(); LDA #'>' Debug.COut();
-            LDA compilerOperand2 Debug.HOut();
-            LDA compilerOperand1 Debug.HOut();
-#endif                        
-                                   
-            // Emit CALL with absolute address (not offset!)
-            LDA # OpCodeType.CALL
-            STA compilerOpCode
-            EmitOpCodeWithWord();
-            break;
-        }
-        
-#ifdef TRACE
-        LDA #(emitCallTrace % 256) STA ZP.TraceMessageL LDA #(emitCallTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-        
-        PLY
-        PLX
-        PLA
-    }
     
     
     
@@ -973,7 +232,7 @@ PrintStringTOP();
                 
                 // Emit logical OR opcode
                 LDA #Tokens.OR
-                EmitLogicalOp();
+                Emit.LogicalOp();
                 Error.CheckError();
                 if (NC) { break; }
             } // loop
@@ -1023,7 +282,7 @@ PrintStringTOP();
                 
                 // Emit logical AND opcode
                 LDA #Tokens.AND
-                EmitLogicalOp();
+                Emit.LogicalOp();
                 Error.CheckError();
                 if (NC) { break; }
             } // loop
@@ -1089,7 +348,7 @@ PrintStringTOP();
                         
                         // Emit comparison opcode
                         PLA // Retrieve operator
-                        EmitComparisonOp();
+                        Emit.ComparisonOp();
                         Error.CheckError();
                         if (NC) { break; }
                         
@@ -1147,7 +406,7 @@ PrintStringTOP();
                 
                 // Emit bitwise AND opcode
                 LDA #Tokens.BITWISE_AND
-                EmitBitwiseOp();
+                Emit.BitwiseOp();
                 Error.CheckError();
                 if (NC) { break; }
             } // loop
@@ -1197,7 +456,7 @@ PrintStringTOP();
                 
                 // Emit bitwise OR opcode
                 LDA #Tokens.BITWISE_OR
-                EmitBitwiseOp();
+                Emit.BitwiseOp();
                 Error.CheckError();
                 if (NC) { break; }
             } // loop
@@ -1246,7 +505,7 @@ PrintStringTOP();
                     
                     // Emit addition opcode
                     LDA #Tokens.PLUS
-                    EmitArithmeticOp();
+                    Emit.ArithmeticOp();
                     Error.CheckError();
                     if (NC) { break; }
                     
@@ -1268,7 +527,7 @@ PrintStringTOP();
                     
                     // Emit subtraction opcode
                     LDA #Tokens.MINUS
-                    EmitArithmeticOp();
+                    Emit.ArithmeticOp();
                     Error.CheckError();
                     if (NC) { break; }
                     
@@ -1334,7 +593,7 @@ PrintStringTOP();
                         
                         // Emit arithmetic opcode
                         PLA // Retrieve operator
-                        EmitArithmeticOp();
+                        Emit.ArithmeticOp();
                         Error.CheckError();
                         if (NC) { break; }
                         
@@ -1386,7 +645,7 @@ PrintStringTOP();
                     if (NC) { break; }
                     
                     // Emit unary minus opcode
-                    EmitUnaryMinus();
+                    Emit.UnaryMinus();
                     Error.CheckError();
                     if (NC) { break; }
                 }
@@ -1404,7 +663,7 @@ PrintStringTOP();
                     
                     // Emit logical NOT opcode
                     LDA #Tokens.NOT
-                    EmitLogicalOp();
+                    Emit.LogicalOp();
                     Error.CheckError();
                     if (NC) { break; }
                 }
@@ -1552,12 +811,12 @@ PrintStringTOP();
                 if (NC) { break; }
                 
                 // Create return slot (VOID 0)
-                EmitPushVoid();  
+                Emit.PushVoid();  
                 Error.CheckError();
                 if (NC) { break; }
                 
                 // Emit function call opcode
-                EmitCall();
+                Emit.Call();
                 Error.CheckError();
                 if (NC) { break; }
                 
@@ -1610,7 +869,7 @@ PrintStringTOP();
                 if (NC) { break; }
                 
                 // Emit push global variable opcode (existing functionality)
-                EmitPushGlobal();
+                Emit.PushGlobal();
                 Error.CheckError();
                 if (NC) { break; }
             }
@@ -1648,7 +907,7 @@ PrintStringTOP();
                 {
                     // Emit PUSHBIT with value 1
                     LDA #1
-                    EmitPushBit();
+                    Emit.PushBit();
                     Error.CheckError();
                     if (NC) { break; }
                     
@@ -1661,7 +920,7 @@ PrintStringTOP();
                 {
                     // Emit PUSHBIT with value 0
                     LDA #0
-                    EmitPushBit();
+                    Emit.PushBit();
                     Error.CheckError();
                     if (NC) { break; }
                     
@@ -1683,7 +942,7 @@ PrintStringTOP();
                     if (Z)
                     {
                         LDA ZP.TOPL // BIT values are single byte
-                        EmitPushBit();
+                        Emit.PushBit();
                         Error.CheckError();
                         if (NC) { break; }
                     }
@@ -1693,7 +952,7 @@ PrintStringTOP();
                         if (Z)
                         {
                             LDA ZP.TOPL
-                            EmitPushByte();
+                            Emit.PushByte();
                             Error.CheckError();
                             if (NC) { break; }
                         }
@@ -1705,7 +964,7 @@ PrintStringTOP();
                             LDA ZP.TOPH
                             STA compilerOperand2  // MSB
                             
-                            EmitPushWord();
+                            Emit.PushWord();
                             Error.CheckError();
                             if (NC) { break; }
                         }
@@ -1730,7 +989,7 @@ PrintStringTOP();
                     LDA ZP.TOPH
                     STA compilerOperand2  // MSB
                     
-                    EmitPushCString();
+                    Emit.PushCString();
                     Error.CheckError();
                     if (NC) { break; }
                     
@@ -1853,7 +1112,7 @@ PrintStringTOP();
             Error.CheckError();
             if (NC) { State.SetFailure(); break; }
             
-            EmitEnter();
+            Emit.Enter();
             Error.CheckError();
             if (NC) { State.SetFailure(); break; }
             
@@ -1898,7 +1157,7 @@ PrintStringTOP();
             {
                 // Emit RETURN with locals cleanup count
                 LDA compilerFuncLocals
-                EmitReturn();
+                Emit.Return();
                 Error.CheckError();
                 if (NC) { State.SetFailure(); break; }
             }
@@ -2011,7 +1270,7 @@ PrintStringTOP();
             {
                 // Emit system call for print newline
                 LDA #SysCallType.PrintNewLine
-                EmitSysCall();
+                Emit.SysCall();
                 Error.CheckError();
                 if (NC) { State.SetFailure(); break; }
                 State.SetSuccess();
@@ -2025,13 +1284,13 @@ PrintStringTOP();
             
             // Emit system call to print the value on stack
             LDA #SysCallType.PrintValue
-            EmitSysCall();
+            Emit.SysCall();
             Error.CheckError();
             if (NC) { State.SetFailure(); break; }
             
             // Emit system call for newline
             LDA #SysCallType.PrintNewLine  
-            EmitSysCall();
+            Emit.SysCall();
             Error.CheckError();
             if (NC) { State.SetFailure(); break; }
             
@@ -2069,7 +1328,7 @@ PrintStringTOP();
             {
                 // No return value - emit RETURN
                 LDA #0  // No locals to clean up for now
-                EmitReturn();
+                Emit.Return();
                 Error.CheckError();
                 if (NC) { State.SetFailure(); break; }
                 State.SetSuccess();
@@ -2083,7 +1342,7 @@ PrintStringTOP();
             
             // Emit RETURNVAL (expects value on stack)
             LDA #0  // No locals to clean up for now
-            EmitReturnVal();
+            Emit.ReturnVal();
             Error.CheckError();
             if (NC) { State.SetFailure(); break; }
             
@@ -2119,7 +1378,7 @@ PrintStringTOP();
             Error.CheckError();
             if (NC) 
             { 
-                break; 
+                State.SetFailure(); break; 
             }
             switch (A)
             {
@@ -2128,18 +1387,83 @@ PrintStringTOP();
                     // Compile function call using existing logic
                     compileFunctionCallOrVariable();
                     Error.CheckError();
+                    if (NC) { State.SetFailure(); break; }
+                    
+                    // For function calls as statements, discard the return value
+                    Emit.DecSp();
+                    Error.CheckError();
+                    if (NC) { State.SetFailure(); break; }
+                    
+                    State.SetSuccess();
                     break;
                 }
                 case IdentifierType.Global:
                 {
-                    // Compile assignment: var = expr
-                    // TODO: Implement assignment compilation
-                    Error.NotImplemented(); BIT ZP.EmulatorPCL
+                    // Variable assignment: identifier = expression
+                    // Save variable node address for POPGLOBAL emission
+                    LDA ZP.IDXL
+                    STA (compilerSavedNodeAddrL + 0)
+                    LDA ZP.IDXH
+                    STA (compilerSavedNodeAddrH + 0)
+                    
+                    // Move to next token - should be '='
+                    Tokenizer.NextToken();
+                    Error.CheckError();
+                    if (NC) { State.SetFailure(); break; }
+                    
+                    LDA ZP.CurrentToken
+                    CMP #Tokens.EQUALS
+                    if (NZ)
+                    {
+                        Error.ExpectedEqual(); BIT ZP.EmulatorPCL
+                        State.SetFailure();
+                        break;
+                    }
+                    
+                    // Move past '=' to the expression
+                    Tokenizer.NextToken();
+                    Error.CheckError();
+                    if (NC) { State.SetFailure(); break; }
+                    
+                    // Compile the RHS expression
+                    compileLogical();
+                    Error.CheckError();
+                    if (NC) { State.SetFailure(); break; }
+                    
+                    // Emit POPGLOBAL with the saved node address
+                    LDA (compilerSavedNodeAddrL + 0)
+                    STA compilerOperand1  // LSB
+                    LDA (compilerSavedNodeAddrH + 0)
+                    STA compilerOperand2  // MSB
+                    
+                    LDA #OpCodeType.POPGLOBAL
+                    STA compilerOpCode
+                    Emit.OpCodeWithWord();
+                    Error.CheckError();
+                    if (NC) { State.SetFailure(); break; }
+                    
+                    State.SetSuccess();
                     break;
                 }
                 case IdentifierType.Constant:
                 {
+                    // Constants cannot be assigned to
                     Error.IllegalAssignment(); BIT ZP.EmulatorPCL
+                    State.SetFailure();
+                    break;
+                }
+                case IdentifierType.Keyword:
+                {
+                    // Keywords should not appear as statements
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
+                    State.SetFailure();
+                    break;
+                }
+                default:
+                {
+                    // Unknown identifier type
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
+                    State.SetFailure();
                     break;
                 }
             }
@@ -2147,60 +1471,4 @@ PrintStringTOP();
         } // single exit
     }
 
-    // Check if the last emitted opcode is RETURN or RETURNVAL
-    // Input: None (uses compilerLastOpCode tracking)
-    // Output: C set if last opcode is RETURN/RETURNVAL, NC if not
-    // Modifies: Processor flags only
-    const string checkLastOpCodeIsReturnTrace = "ChkReturn";
-    checkLastOpCodeIsReturn()
-    {
-#ifdef TRACE
-        LDA #(checkLastOpCodeIsReturnTrace % 256) STA ZP.TraceMessageL LDA #(checkLastOpCodeIsReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        loop
-        {
-            LDA compilerLastOpCode
-            
-            // Check if it's RETURN or RETURNVAL
-            CMP #OpCodeType.RETURN
-            if (Z)
-            {
-                SEC // Found RETURN
-                break;
-            }
-            
-            CMP #OpCodeType.RETURNVAL
-            if (Z)
-            {
-                SEC // Found RETURNVAL
-                break;
-            }
-            
-            CLC // Not a RETURN opcode
-            break;
-        }
-        
-#ifdef TRACE
-        LDA #(checkLastOpCodeIsReturnTrace % 256) STA ZP.TraceMessageL LDA #(checkLastOpCodeIsReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
-    // IDY -> compilerSavedTokenPos
-    const string setLiteralBaseTrace = "SetLitBase";
-    SetLiteralBase()
-    {
-#ifdef TRACE
-        LDA #(setLiteralBaseTrace % 256) STA ZP.TraceMessageL LDA #(setLiteralBaseTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        
-        LDA ZP.IDYL
-        STA compilerLiteralBaseL
-        LDA ZP.IDYH
-        STA compilerLiteralBaseH
-        
-#ifdef TRACE
-        LDA #(setLiteralBaseTrace % 256) STA ZP.TraceMessageL LDA #(setLiteralBaseTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
 }
