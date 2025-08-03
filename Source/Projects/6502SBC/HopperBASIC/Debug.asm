@@ -1355,9 +1355,9 @@ unit Debug
         LDA ZP.ACCH
         PHA
         
-        LDA #(regNEXT % 256)
+        LDA #(regNXT % 256)
         STA ZP.ACCL
-        LDA #(regNEXT / 256)
+        LDA #(regNXT / 256)
         STA ZP.ACCH
         Tools.PrintStringACC();
         LDA ZP.NEXTT
