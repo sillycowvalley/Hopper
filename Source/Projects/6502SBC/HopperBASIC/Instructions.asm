@@ -18,9 +18,14 @@ unit Instructions
     // Input: ZP.TOP = RHS value, ZP.TOPT = RHS type, ZP.NEXTT = LHS type
     // Output: C set if compatible, NC if incompatible
     // Modifies: Processor flags only
+    const string checkRHS = "CheckRHS";
     CheckRHSTypeCompatibility()
     {
         PHA
+#ifdef TRACE
+        LDA #(checkRHS % 256) STA ZP.TraceMessageL LDA #(checkRHS / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+
         
         loop
         {
@@ -54,6 +59,12 @@ unit Instructions
             break;
         }
 Tools.NL(); LDA #'C' Tools.COut(); Debug.CFOut();  // Show carry flag result
+
+#ifdef TRACE
+        LDA #(checkRHS % 256) STA ZP.TraceMessageL LDA #(checkRHS / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+
+
         PLA
     }  
     
@@ -68,10 +79,16 @@ Tools.NL(); LDA #'C' Tools.COut(); Debug.CFOut();  // Show carry flag result
     // Output: C set if compatible, NC set if TYPE MISMATCH
     //         ZP.NEXTT = operands type (updated based on operation mode and type promotion)
     // Modifies: processor flags
+    const string checkType = "CheckType";
     CheckTypeCompatibility()
     {
         PHA
         PHX
+        
+#ifdef TRACE
+        LDA #(checkType % 256) STA ZP.TraceMessageL LDA #(checkType / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+
         
         // Save original ZP.ACCT value
         LDX ZP.ACCT
@@ -455,6 +472,11 @@ Tools.NL(); LDA #'C' Tools.COut(); Debug.CFOut();  // Show carry flag result
         
         // Restore original ZP.ACCT
         STX ZP.ACCT
+        
+#ifdef TRACE
+        LDA #(checkType % 256) STA ZP.TraceMessageL LDA #(checkType / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+
         
         PLX
         PLA

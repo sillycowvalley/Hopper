@@ -122,6 +122,11 @@ unit Trace
                 LDA # 0x06 Debug.Crash(); // fail on CheckError in MethodEntry()
             }
         }
+        State.IsSuccess();
+        if (NC)
+        {
+            LDA #' ' Debug.COut(); LDA #'S' Debug.COut(); State.GetState(); Debug.HOut();  // 0=Failure, 1=Success, 2=Exiting, 3=Return
+        }
         
         Debug.NL();
         
@@ -206,6 +211,12 @@ unit Trace
                 LDA # 0x05 Debug.Crash(); // fail on CheckError in MethodExit()
             }
         }
+        State.IsSuccess();
+        if (NC)
+        {
+            LDA #' ' Debug.COut(); LDA #'S' Debug.COut(); State.GetState(); Debug.HOut();  // 0=Failure, 1=Success, 2=Exiting, 3=Return
+        }
+        
         
         Debug.NL();
         
