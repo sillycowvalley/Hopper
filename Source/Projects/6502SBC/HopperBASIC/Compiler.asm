@@ -1358,6 +1358,29 @@ unit Compiler
         LDA #(compileReturnStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileReturnStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
+
+    /* 
+    WHILE LOOP STRUCTURE GENERATED:
+
+    Position    Instruction         Description
+    --------    -----------         -----------
+    loop_start: PUSHGLOBAL I        } Condition
+                PUSHBYTE 10         } evaluation
+                LT                  } (I < 10)
+                JUMPZW forward_off  <- Exit if FALSE (I >= 10)
+                PRINT I             } Loop
+                I = I + 1           } body
+                JUMPW backward_off  <- Jump back to condition
+    loop_exit:  (next statement)
+
+    OFFSET CALCULATIONS:
+    - Forward offset  = loop_exit - jumpzw_operand_pos
+    - Backward offset = loop_start - (jumpw_pos + 3)
+
+    The +3 accounts for the JUMPW instruction itself (1 opcode + 2 operand bytes)
+    */
+
+
     
     // Compile WHILE...WEND statement
     // Input: ZP.CurrentToken = WHILE token
@@ -1376,31 +1399,32 @@ unit Compiler
             Error.CheckError();
             if (NC) { State.SetFailure(); break; }
             
-            // Mark loop start position for WEND back-jump (start of condition)
+            // Mark loop start position for backward jump (start of condition evaluation)
             LDA ZP.OpCodeBufferLengthL
             PHA  // Save loop start LSB
             LDA ZP.OpCodeBufferLengthH
             PHA  // Save loop start MSB
             
-            // Compile condition expression
+            // Compile condition expression (e.g., "I < 10")
             compileLogical();       
             
-            // Save operand position for later patching (JUMPZW operand position)
+            // Save forward jump operand position for later patching
+            // This is where JUMPZW operand will be stored (after the opcode byte)
             LDA ZP.OpCodeBufferLengthL
-            PHA     // Push operand position LSB (current position will be operand after opcode)
+            PHA     // Push operand position LSB
             LDA ZP.OpCodeBufferLengthH
             PHA     // Push operand position MSB
             
-            // for compileLogical (but only after we've consumed 4 stack slots) 
+            // Check for compilation errors after consuming all 4 stack slots
             Error.CheckError();
             if (NC) { State.SetFailure(); break; }
             
-            // Emit conditional exit jump (will patch address later)
+            // Emit conditional exit jump (placeholder - will be patched after WEND)
+            // JUMPZW: Jump if condition is zero/FALSE (exit loop when condition fails)
             LDA #OpCodeType.JUMPZW
             STA Compiler.compilerOpCode
-            // Emit placeholder address (will be patched after WEND)
-            STZ Compiler.compilerOperand1  // Placeholder LSB
-            STZ Compiler.compilerOperand2  // Placeholder MSB
+            STZ Compiler.compilerOperand1  // Placeholder LSB (will be patched)
+            STZ Compiler.compilerOperand2  // Placeholder MSB (will be patched)
             Emit.OpCodeWithWord();
             Error.CheckError();
             if (NC) { State.SetFailure(); break; }
@@ -1417,11 +1441,11 @@ unit Compiler
                 CMP #Tokens.WEND
                 if (Z) 
                 { 
-                    // Consume the WEND token before breaking
+                    // Found WEND - consume it and exit loop
                     Tokenizer.NextToken();
                     Error.CheckError();
                     if (NC) { State.SetFailure(); break; }
-                    break;  // Exit statement loop
+                    break;  // Exit statement compilation loop
                 }
                 
                 CMP #Tokens.EOF
@@ -1439,7 +1463,7 @@ unit Compiler
                     continue;
                 }
                 
-                // Compile statement in loop body
+                // Compile statement in loop body (PRINT, assignments, nested loops, etc.)
                 CompileStatement();  // RECURSIVE CALL - handles nested constructs
                 Error.CheckError();
                 if (NC) { State.SetFailure(); break; }
@@ -1449,78 +1473,91 @@ unit Compiler
             Error.CheckError();
             if (NC) { State.SetFailure(); break; }
             
-            // While exit jump operand position for patching
-            PLA
-            STA ZP.IDXH  // Exit jump operand position MSB
-            PLA  
-            STA ZP.IDXL  // Exit jump operand position LSB
+            // === OFFSET CALCULATION PHASE ===
+            // Pop saved positions from stack (in reverse order)
             
-            // While loop start position for back-jump
+            // Pop forward jump operand position (where JUMPZW operand needs patching)
+            PLA
+            STA ZP.IDXH  // Forward jump operand position MSB
+            PLA  
+            STA ZP.IDXL  // Forward jump operand position LSB
+            
+            // Pop loop start position (target for backward jump)
             PLA
             STA ZP.TOPH  // Loop start position MSB
             PLA
             STA ZP.TOPL  // Loop start position LSB
             
-            LDA ZP.OpCodeBufferLengthH // Loop bottom MSB
-            STA ZP.IDYH
-            LDA ZP.OpCodeBufferLengthL // Loop bottom LSB
-            STA ZP.IDYL
+            // Current position = end of loop body (where JUMPW will be emitted)
+            LDA ZP.OpCodeBufferLengthH
+            STA ZP.IDYH  // Current position MSB
+            LDA ZP.OpCodeBufferLengthL
+            STA ZP.IDYL  // Current position LSB
             
-            // forward offset
+            // === FORWARD JUMP OFFSET CALCULATION ===
+            // Calculate offset from JUMPZW operand position to loop exit
+            // Offset = loop_exit - jumpzw_operand_position
             SEC
-            LDA ZP.IDYL
-            SBC ZP.IDXL
-            STA ZP.NEXTL
-            LDA ZP.IDYH
-            SBC ZP.IDXH
-            STA ZP.NEXTH
+            LDA ZP.IDYL    // Current position (loop exit) LSB
+            SBC ZP.IDXL    // Subtract JUMPZW operand position LSB
+            STA ZP.NEXTL   // Store forward offset LSB
+            LDA ZP.IDYH    // Current position (loop exit) MSB
+            SBC ZP.IDXH    // Subtract JUMPZW operand position MSB
+            STA ZP.NEXTH   // Store forward offset MSB
             
-            // +3 for the JUMPW below itself
+            // === BACKWARD JUMP SETUP ===
+            // Account for the JUMPW instruction we're about to emit (3 bytes: opcode + 2 operands)
+            // This adjusts the current position to be after the JUMPW instruction
             CLC
             LDA ZP.IDYL
-            ADC #3
-            STA ZP.IDYL
+            ADC #3         // Add 3 bytes for JUMPW instruction
+            STA ZP.IDYL    // Updated current position LSB
             LDA ZP.IDYH
             ADC #0
-            STA ZP.IDYH
+            STA ZP.IDYH    // Updated current position MSB
             
-            // back offset
+            // === BACKWARD JUMP OFFSET CALCULATION ===
+            // Calculate offset from after JUMPW to loop start (condition evaluation)
+            // Offset = loop_start - position_after_jumpw
             SEC
-            LDA ZP.TOPL
-            SBC ZP.IDYL
-            STA ZP.TOPL
-            LDA ZP.TOPH
-            SBC ZP.IDYH
-            STA ZP.TOPH
+            LDA ZP.TOPL    // Loop start position LSB
+            SBC ZP.IDYL    // Subtract position after JUMPW LSB
+            STA ZP.TOPL    // Store backward offset LSB
+            LDA ZP.TOPH    // Loop start position MSB
+            SBC ZP.IDYH    // Subtract position after JUMPW MSB
+            STA ZP.TOPH    // Store backward offset MSB
             
-            // patch location
+            // === FORWARD JUMP PATCHING ===
+            // Calculate absolute address in opcode buffer for patching
             CLC
             LDA #(Address.BasicOpCodeBuffer % 256)
-            ADC ZP.IDXL
-            STA ZP.IDXL
+            ADC ZP.IDXL    // Add JUMPZW operand position
+            STA ZP.IDXL    // Absolute patch address LSB
             LDA #(Address.BasicOpCodeBuffer / 256)
-            ADC ZP.IDXH
-            STA ZP.IDXH
+            ADC ZP.IDXH    // Add JUMPZW operand position
+            STA ZP.IDXH    // Absolute patch address MSB
 
-            // patch the exit jump (after the WHILE condition)
-            LDY #1
-            LDA ZP.NEXTL
-            STA [IDX], Y
+            // Patch the JUMPZW operand bytes with calculated forward offset
+            LDY #1         // Skip opcode byte, point to first operand byte
+            LDA ZP.NEXTL   // Forward offset LSB
+            STA [ZP.IDX], Y   // Patch LSB
             INY
-            LDA ZP.NEXTH
-            STA [IDX], Y
+            LDA ZP.NEXTH   // Forward offset MSB
+            STA [ZP.IDX], Y   // Patch MSB
             
-            // jump back to WHILE condition
+            // === BACKWARD JUMP EMISSION ===
+            // Emit unconditional jump back to condition evaluation
             LDA #OpCodeType.JUMPW
             STA Compiler.compilerOpCode
-            LDA ZP.TOPL
+            LDA ZP.TOPL    // Backward offset LSB
             STA Compiler.compilerOperand1
-            LDA ZP.TOPH
+            LDA ZP.TOPH    // Backward offset MSB
             STA Compiler.compilerOperand2
             Emit.OpCodeWithWord();
             Error.CheckError();
             if (NC) { State.SetFailure(); break; }
             
+            // Final error check
             Error.CheckError();
             if (NC) { State.SetFailure(); break; }
             
@@ -1531,19 +1568,18 @@ unit Compiler
         State.IsSuccess();
         if (NC)
         {
-            // Clean up stack on error path
-            PLA  // Discard exit jump operand position MSB
-            PLA  // Discard exit jump operand position LSB  
+            // Clean up stack on error path (restore stack balance)
+            PLA  // Discard forward jump operand position MSB
+            PLA  // Discard forward jump operand position LSB  
             PLA  // Discard loop start position MSB
             PLA  // Discard loop start position LSB
         }
-        
-
 
     #ifdef TRACE
         LDA #(compileWhileStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileWhileStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     }
+
     
     
 
