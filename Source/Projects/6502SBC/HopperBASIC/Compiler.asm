@@ -1010,6 +1010,65 @@ unit Compiler // Compiler.asm
         Trace.MethodExit();
     #endif
     }
+    
+    // Compile SECONDS() function call
+    const string compileSecondsFunctionTrace = "CompSECONDS";
+    compileSecondsFunction()
+    {
+    #ifdef TRACE
+        LDA #(compileSecondsFunctionTrace % 256) STA ZP.TraceMessageL 
+        LDA #(compileSecondsFunctionTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit
+        {
+            // Expect opening parenthesis
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            LDA ZP.CurrentToken
+            CMP #Tokens.LPAREN
+            if (NZ) 
+            { 
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                break; 
+            }
+            
+            // Expect immediate closing parenthesis (no arguments)
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            LDA ZP.CurrentToken
+            CMP #Tokens.RPAREN
+            if (NZ) 
+            { 
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                break; 
+            }
+            
+            // Move past closing parenthesis
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Emit SECONDS opcode
+            LDA #OpCodeType.SECONDS
+            STA Compiler.compilerOpCode
+            Emit.OpCode();
+            
+            SEC // Success
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(compileSecondsFunctionTrace % 256) STA ZP.TraceMessageL 
+        LDA #(compileSecondsFunctionTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }
 
     // Compile RND(expression) function call
     const string compileRndFunctionTrace = "CompRND";
@@ -1382,6 +1441,13 @@ unit Compiler // Compiler.asm
                     if (NC) { break; }
                     break;
                 }
+                case Tokens.SECONDS:
+                {
+                    compileSecondsFunction();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    break;
+                }
                 case Tokens.RND:
                 {
                     compileRndFunction();
@@ -1605,6 +1671,9 @@ unit Compiler // Compiler.asm
                 }
                 default:
                 {
+#ifdef DEBUG
+                    Tokenizer.PrintKeyword();
+#endif                    
                     // TODO: Add more statement types as needed
                     Error.SyntaxError(); BIT ZP.EmulatorPCL
                     State.SetFailure();

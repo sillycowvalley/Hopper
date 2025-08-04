@@ -839,6 +839,23 @@ unit Emit
         LDA #(emitMillisTrace % 256) STA ZP.TraceMessageL LDA #(emitMillisTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     }
+    
+    // Emit SECONDS opcode - no operands needed
+    const string emitSecondsTrace = "Emit SECONDS";
+    Seconds()
+    {
+    #ifdef TRACE
+        LDA #(emitSecondsTrace % 256) STA ZP.TraceMessageL LDA #(emitSecondsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        LDA #OpCodeType.SECONDS
+        STA Compiler.compilerOpCode
+        Emit.OpCode(); // No operands
+        
+    #ifdef TRACE
+        LDA #(emitSecondsTrace % 256) STA ZP.TraceMessageL LDA #(emitSecondsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
 
     // Emit ABS opcode - operates on top of stack  
     const string emitAbsTrace = "Emit ABS";

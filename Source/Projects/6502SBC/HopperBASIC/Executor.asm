@@ -401,24 +401,36 @@ unit Executor
         LDA #(executeMillisTrace % 256) STA ZP.TraceMessageL LDA #(executeMillisTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
     #endif
         
-        loop // Single exit block
-        {
-            // TODO: Get actual system timer value
-            // For now, return a placeholder value
-            LDA ZP.TICK0  // Low byte of timer
-            STA ZP.TOPL
-            LDA ZP.TICK1  // High byte of timer  
-            STA ZP.TOPH
-            LDA #BasicType.WORD
-            STA ZP.TOPT
-            
-            Stacks.PushTop();
-            State.SetSuccess();
-            break;
-        }
+        LDA ZP.TICK0  // Low byte of timer
+        STA ZP.TOPL
+        LDA ZP.TICK1  // High byte of timer  
+        STA ZP.TOPH
+        LDA #BasicType.WORD
+        STA ZP.TOPT
+        
+        Stacks.PushTop();
+        State.SetSuccess();
         
     #ifdef TRACE
         LDA #(executeMillisTrace % 256) STA ZP.TraceMessageL LDA #(executeMillisTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+    
+    // Execute SECONDS opcode - get elapsed time in seconds
+    // Input: None
+    // Output: Current seconds (WORD) pushed to stack
+    const string executeSecondsTrace = "SECONDS // System timer";
+    executeSeconds()
+    {
+    #ifdef TRACE
+        LDA #(executeSecondsTrace % 256) STA ZP.TraceMessageL LDA #(executeSecondsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        Time.Seconds(); // calls Stack.PushTop();
+        State.SetSuccess();
+        
+    #ifdef TRACE
+        LDA #(executeSecondsTrace % 256) STA ZP.TraceMessageL LDA #(executeSecondsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     }
 
@@ -835,6 +847,10 @@ unit Executor
             case OpCodeType.MILLIS:
             {
                 executeMillis();
+            }
+            case OpCodeType.SECONDS:
+            {
+                executeSeconds();
             }
             
             // === ONE BYTE OPERAND OPCODES (0x40-0x7F) ===

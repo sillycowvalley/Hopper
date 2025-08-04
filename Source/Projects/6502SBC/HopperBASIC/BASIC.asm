@@ -1,7 +1,7 @@
 program HopperBASIC
 {
-    //#define DEBUG
-    //#define TRACE
+    #define DEBUG
+    #define TRACE
     //#define TRACESP
     //#define TRACEJIT     // detail for JIT / CALL->CALLF patching
     //#define TRACEVERBOSE // details in Executor
@@ -23,6 +23,7 @@ program HopperBASIC
     uses "/Source/Runtime/6502/Memory"
     uses "/Source/Runtime/6502/Utilities"
     uses "/Source/Runtime/6502/Stacks"
+    uses "/Source/Runtime/6502/Time"
     
     uses "Messages"
     uses "Error"

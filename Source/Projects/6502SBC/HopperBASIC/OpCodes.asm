@@ -62,6 +62,7 @@ unit OpCodes
         // Built-in functions with no arguments
         ABS          = 0x1B,  // Pop value, push absolute value
         MILLIS       = 0x1C,  // Push current milliseconds (WORD)
+        SECONDS      = 0x1D,  // Push current seconds (WORD)
         
         // === OPCODES WITH ONE BYTE OPERAND (0x40-0x7F) ===
         // Bits 7-6: 01 (one byte operand)

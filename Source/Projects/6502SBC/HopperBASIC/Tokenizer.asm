@@ -60,80 +60,81 @@ unit Tokenizer // Tokenizer.asm
         INPUT    = 0x9C,
         IF       = 0x9D,
         THEN     = 0x9E,
-        ELSE     = 0x9F,
-        ENDIF    = 0xA0,
-        FUNC     = 0xA1,
-        ENDFUNC  = 0xA2,
-        RETURN   = 0xA3,
-        BEGIN    = 0xA4,
-        END      = 0xA5,
-        FOR      = 0xA6,
-        TO       = 0xA7,
-        STEP     = 0xA8,
-        NEXT     = 0xA9,
-        WHILE    = 0xAA,
-        WEND     = 0xAB,
-        DO       = 0xAC,
-        UNTIL    = 0xAD,
-        BREAK    = 0xAE,
-        CONTINUE = 0xAF,
-        CONT     = 0xB0,
+        FUNC     = 0x9F,   // Keep original value
+        ENDFUNC  = 0xA0,   // Keep original value
+        RETURN   = 0xA1,
+        BEGIN    = 0xA2,
+        END      = 0xA3,
+        FOR      = 0xA4,
+        TO       = 0xA5,
+        STEP     = 0xA6,
+        NEXT     = 0xA7,
+        WHILE    = 0xA8,
+        WEND     = 0xA9,
+        DO       = 0xAA,
+        UNTIL    = 0xAB,
+        BREAK    = 0xAC,
+        CONTINUE = 0xAD,
+        CONT     = 0xAE,
+        ELSE     = 0xD5,   // Use unused value after existing operators
+        ENDIF    = 0xD6,   // Use unused value after existing operators
                
         // Logical keywords
-        AND      = 0xB1,
-        OR       = 0xB2,
-        NOT      = 0xB3,
-        MOD      = 0xB4,
+        AND      = 0xAF,
+        OR       = 0xB0,
+        NOT      = 0xB1,
+        MOD      = 0xB2,
         
         // Built-in literals
-        TRUE     = 0xB5,  // Built-in BIT constant (1)
-        FALSE    = 0xB6,  // Built-in BIT constant (0)
+        TRUE     = 0xB3,  // Built-in BIT constant (1)
+        FALSE    = 0xB4,  // Built-in BIT constant (0)
         
         // Built-in functions
-        ABS      = 0xB7,  // ABS(x) - absolute value
-        MILLIS   = 0xB8,  // MILLIS() - system timer 
-        PEEK     = 0xB9,  // PEEK(addr) - memory read
-        POKE     = 0xBA,  // POKE(addr, value) - memory write
-        RND      = 0xBB,  // RND(x) - random number
+        ABS      = 0xB5,  // ABS(x) - absolute value
+        MILLIS   = 0xB6,  // MILLIS() - system timer 
+        PEEK     = 0xB7,  // PEEK(addr) - memory read
+        POKE     = 0xB8,  // POKE(addr, value) - memory write
+        RND      = 0xB9,  // RND(x) - random number
+        SECONDS  = 0xBA,  // SECONDS() - system timer 
         
         // Sentinel marking end of keywords
-        lastKeyword = 0xBB,  // Updated to >= last keyword (RND)
+        lastKeyword = 0xBA,  // Updated to >= last keyword (RND)
         
         // Basic operators
-        EQUALS   = 0xBC,  // =
-        PLUS     = 0xBD,  // +
-        MINUS    = 0xBE,  // -
-        LPAREN   = 0xBF,  // (
-        RPAREN   = 0xC0,  // )
-        NOTEQUAL = 0xC1,  // <>
+        EQUALS   = 0xBA,  // =
+        PLUS     = 0xBB,  // +
+        MINUS    = 0xBC,  // -
+        LPAREN   = 0xBD,  // (
+        RPAREN   = 0xBE,  // )
+        NOTEQUAL = 0xBF,  // <>
         
         // Additional comparison operators
-        LT       = 0xC2,  // <
-        GT       = 0xC3,  // >
-        LE       = 0xC4,  // <=
-        GE       = 0xC5,  // >=
+        LT       = 0xC0,  // <
+        GT       = 0xC1,  // >
+        LE       = 0xC2,  // <=
+        GE       = 0xC3,  // >=
         
         // Arithmetic operators
-        MULTIPLY = 0xC6,  // *
-        DIVIDE   = 0xC7,  // /
+        MULTIPLY = 0xC4,  // *
+        DIVIDE   = 0xC5,  // /
         
-        BITWISE_AND = 0xC8,  // &
-        BITWISE_OR  = 0xC9,  // |
+        BITWISE_AND = 0xC6,  // &
+        BITWISE_OR  = 0xC7,  // |
         
         // Array and string operators
-        LBRACKET = 0xCA,  // [
-        RBRACKET = 0xCB,  // ]
-        LBRACE   = 0xCC,  // {
-        RBRACE   = 0xCD,  // }
+        LBRACKET = 0xC8,  // [
+        RBRACKET = 0xC9,  // ]
+        LBRACE   = 0xCA,  // {
+        RBRACE   = 0xCB,  // }
         
         // Literals and identifiers
-        NUMBER     = 0xCE,  // Numeric literal followed by null-terminated string
-        STRINGLIT  = 0xCF,  // String literal "text" followed by null-terminated string
-        IDENTIFIER = 0xD0,  // Variable/function name followed by null-terminated string
-        EOF        = 0xD1,  // End of file/input
-        COLON      = 0xD2,  // : statement separator
-        COMMA      = 0xD3,  // , parameter separator
-        SEMICOLON  = 0xD4,  // ; (future use)
+        NUMBER     = 0xCC,  // Numeric literal followed by null-terminated string
+        STRINGLIT  = 0xCD,  // String literal "text" followed by null-terminated string
+        IDENTIFIER = 0xCE,  // Variable/function name followed by null-terminated string
+        EOF        = 0xCF,  // End of file/input
+        COLON      = 0xD0,  // : statement separator
+        COMMA      = 0xD1,  // , parameter separator
+        SEMICOLON  = 0xD2,  // ; (future use)
     }
     
     // Keywords A-L (first character < 'M')
@@ -197,10 +198,11 @@ unit Tokenizer // Tokenizer.asm
         3, Tokens.REM, 'R', 'E', 'M',             // Infrequent
         4, Tokens.TRON, 'T', 'R', 'O', 'N',       // Infrequent
         5, Tokens.TROFF, 'T', 'R', 'O', 'F', 'F', // Infrequent
-        6, Tokens.MILLIS, 'M', 'I', 'L', 'L', 'I', 'S', // Built-in function (NEW)
-        4, Tokens.PEEK, 'P', 'E', 'E', 'K',       // Built-in function (NEW)
-        4, Tokens.POKE, 'P', 'O', 'K', 'E',       // Built-in function (NEW)
-        3, Tokens.RND, 'R', 'N', 'D',             // Built-in function (NEW)
+        6, Tokens.MILLIS, 'M', 'I', 'L', 'L', 'I', 'S', // Built-in function
+        4, Tokens.PEEK, 'P', 'E', 'E', 'K',       // Built-in function
+        4, Tokens.POKE, 'P', 'O', 'K', 'E',       // Built-in function
+        3, Tokens.RND, 'R', 'N', 'D',             // Built-in function
+        7, Tokens.SECONDS, 'S', 'E', 'C', 'O', 'N', 'D', 'S', // Built-in function
         0  // End marker
     };
 
@@ -327,8 +329,6 @@ unit Tokenizer // Tokenizer.asm
     // Error: If token not found in keywords table, prints nothing, C if printed, NC if not
     PrintKeyword()
     {
-
-        
         
         PHA  // Save token value
         PHX

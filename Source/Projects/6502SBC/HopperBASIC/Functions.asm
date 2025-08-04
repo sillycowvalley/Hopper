@@ -729,7 +729,7 @@ unit Functions
                     // get variable name for assignment
                     Variables.GetName();
                     
-                    // Copy name                    
+                    // <name>
                     LDA # Tokens.IDENTIFIER
                     STA [ZP.FDESTINATIONADDRESS]
                     IncLENGTH();
@@ -748,7 +748,7 @@ unit Functions
                         IncDESTINATIONADDRESS();
                     }
                     
-                    // Copy '='
+                    // '='
                     LDA # Tokens.EQUALS
                     STA [ZP.FDESTINATIONADDRESS]
                     IncLENGTH();
@@ -760,30 +760,52 @@ unit Functions
                     // Check if variable has initialization tokens
                     LDA ZP.NEXTL
                     ORA ZP.NEXTH
-                    if (Z) // No initialization tokens, skip this variable
+                    if (Z) 
                     {
-                        // Continue to next variable
-                        Variables.IterateNext();
-                        continue;
-                    }
-                    
-                    // NOTE: it is not possible to define a multiline variable so EOL is a good terminator
-                    
-                    // Copy variable initialization tokens to buffer
-                    // Input: ZP.NEXT = source tokens
-                    loop
-                    { 
-                        IncLENGTH();
-                        LDA [ZP.NEXT]
+                        // No initialization tokens
+                        
+                        LDA # Tokens.NUMBER
                         STA [ZP.FDESTINATIONADDRESS]
-                        CMP #Tokens.EOL
-                        if (Z)
-                        {
-                            IncDESTINATIONADDRESS();
-                            break;
-                        }
-                        IncNEXT();
+                        IncLENGTH();
                         IncDESTINATIONADDRESS();
+                        
+                        // '0'
+                        LDA # '0'
+                        STA [ZP.FDESTINATIONADDRESS]
+                        IncLENGTH();
+                        IncDESTINATIONADDRESS();
+                        
+                        // '\0'
+                        LDA # 0x00
+                        STA [ZP.FDESTINATIONADDRESS]
+                        IncLENGTH();
+                        IncDESTINATIONADDRESS();
+                        
+                        LDA # Tokens.EOL
+                        STA [ZP.FDESTINATIONADDRESS]
+                        IncLENGTH();
+                        IncDESTINATIONADDRESS();
+                    }
+                    else
+                    {
+                        // NOTE: it is not possible to define a multiline variable so EOL is a good terminator
+                        
+                        // Copy variable initialization tokens to buffer
+                        // Input: ZP.NEXT = source tokens
+                        loop
+                        { 
+                            IncLENGTH();
+                            LDA [ZP.NEXT]
+                            STA [ZP.FDESTINATIONADDRESS]
+                            CMP #Tokens.EOL
+                            if (Z)
+                            {
+                                IncDESTINATIONADDRESS();
+                                break;
+                            }
+                            IncNEXT();
+                            IncDESTINATIONADDRESS();
+                        }
                     }
                     
                     // Continue to next variable
