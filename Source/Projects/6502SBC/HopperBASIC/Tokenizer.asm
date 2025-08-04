@@ -76,8 +76,6 @@ unit Tokenizer // Tokenizer.asm
         BREAK    = 0xAC,
         CONTINUE = 0xAD,
         CONT     = 0xAE,
-        ELSE     = 0xD5,   // Use unused value after existing operators
-        ENDIF    = 0xD6,   // Use unused value after existing operators
                
         // Logical keywords
         AND      = 0xAF,
@@ -96,116 +94,146 @@ unit Tokenizer // Tokenizer.asm
         POKE     = 0xB8,  // POKE(addr, value) - memory write
         RND      = 0xB9,  // RND(x) - random number
         SECONDS  = 0xBA,  // SECONDS() - system timer 
+        DELAY    = 0xBB,  // DELAY(ms) - delay in milliseconds
         
         // Sentinel marking end of keywords
-        lastKeyword = 0xBA,  // Updated to >= last keyword (RND)
+        lastKeyword = 0xBB,  // Updated to DELAY (highest keyword value)
         
-        // Basic operators
-        EQUALS   = 0xBA,  // =
-        PLUS     = 0xBB,  // +
-        MINUS    = 0xBC,  // -
-        LPAREN   = 0xBD,  // (
-        RPAREN   = 0xBE,  // )
-        NOTEQUAL = 0xBF,  // <>
+        // Basic operators (start after lastKeyword)
+        EQUALS   = 0xBC,  // = (FIXED: was conflicting with SECONDS!)
+        PLUS     = 0xBD,  // +
+        MINUS    = 0xBE,  // -
+        LPAREN   = 0xBF,  // (
+        RPAREN   = 0xC0,  // )
+        NOTEQUAL = 0xC1,  // <>
         
         // Additional comparison operators
-        LT       = 0xC0,  // <
-        GT       = 0xC1,  // >
-        LE       = 0xC2,  // <=
-        GE       = 0xC3,  // >=
+        LT       = 0xC2,  // <
+        GT       = 0xC3,  // >
+        LE       = 0xC4,  // <=
+        GE       = 0xC5,  // >=
         
         // Arithmetic operators
-        MULTIPLY = 0xC4,  // *
-        DIVIDE   = 0xC5,  // /
+        MULTIPLY = 0xC6,  // *
+        DIVIDE   = 0xC7,  // /
         
-        BITWISE_AND = 0xC6,  // &
-        BITWISE_OR  = 0xC7,  // |
+        BITWISE_AND = 0xC8,  // &
+        BITWISE_OR  = 0xC9,  // |
         
         // Array and string operators
-        LBRACKET = 0xC8,  // [
-        RBRACKET = 0xC9,  // ]
-        LBRACE   = 0xCA,  // {
-        RBRACE   = 0xCB,  // }
+        LBRACKET = 0xCA,  // [
+        RBRACKET = 0xCB,  // ]
+        LBRACE   = 0xCC,  // {
+        RBRACE   = 0xCD,  // }
         
         // Literals and identifiers
-        NUMBER     = 0xCC,  // Numeric literal followed by null-terminated string
-        STRINGLIT  = 0xCD,  // String literal "text" followed by null-terminated string
-        IDENTIFIER = 0xCE,  // Variable/function name followed by null-terminated string
-        EOF        = 0xCF,  // End of file/input
-        COLON      = 0xD0,  // : statement separator
-        COMMA      = 0xD1,  // , parameter separator
-        SEMICOLON  = 0xD2,  // ; (future use)
+        NUMBER     = 0xCE,  // Numeric literal followed by null-terminated string
+        STRINGLIT  = 0xCF,  // String literal "text" followed by null-terminated string
+        IDENTIFIER = 0xD0,  // Variable/function name followed by null-terminated string
+        EOF        = 0xD1,  // End of file/input
+        COLON      = 0xD2,  // : statement separator
+        COMMA      = 0xD3,  // , parameter separator
+        SEMICOLON  = 0xD4,  // ; (future use)
+        
+        ELSE     = 0xD5,   // ELSE (for IF/THEN/ELSE)
+        ENDIF    = 0xD6,   // ENDIF (for IF/THEN/ELSE)
     }
     
-    // Keywords A-L (first character < 'M')
+    // Keywords A-L (first character < 'M') - Reorganized by frequency
+    // Keywords A-L (first character < 'M') - Reorganized by frequency
     const byte[] keywordsAL = {
-        2, Tokens.IF, 'I', 'F',                    // Very frequent
-        3, Tokens.INT, 'I', 'N', 'T',             // Very frequent  
-        3, Tokens.BIT, 'B', 'I', 'T',             // Very frequent
-        4, Tokens.BYTE, 'B', 'Y', 'T', 'E',       // Very frequent
-        3, Tokens.AND, 'A', 'N', 'D',             // Frequent
-        3, Tokens.FOR, 'F', 'O', 'R',             // Frequent
-        3, Tokens.END, 'E', 'N', 'D',             // Frequent
-        4, Tokens.FUNC, 'F', 'U', 'N', 'C',       // Frequent
-        5, Tokens.BEGIN, 'B', 'E', 'G', 'I', 'N', // Frequent
-        5, Tokens.CONST, 'C', 'O', 'N', 'S', 'T', // Frequent
-        5, Tokens.CLEAR, 'C', 'L', 'E', 'A', 'R', // Frequent console command
-        5, Tokens.INPUT, 'I', 'N', 'P', 'U', 'T', // Moderate
-        5, Tokens.BREAK, 'B', 'R', 'E', 'A', 'K', // Moderate
-        7, Tokens.ENDFUNC, 'E', 'N', 'D', 'F', 'U', 'N', 'C', // Moderate
+        // VERY FREQUENT (Rank 1-10)
+        2, Tokens.IF, 'I', 'F',                    // Rank 3 - Conditional branching
+        3, Tokens.FOR, 'F', 'O', 'R',             // Rank 2 - Loops
+        
+        // FREQUENT (Rank 11-20)  
+        3, Tokens.END, 'E', 'N', 'D',             // Rank 9 - Exit program
+        5, Tokens.INPUT, 'I', 'N', 'P', 'U', 'T', // Rank 13 - Prompt user
+        3, Tokens.INT, 'I', 'N', 'T',             // Rank 23 - Integer conversion/type
+        
+        // MODERATE (Rank 21-30)
+        2, Tokens.DO, 'D', 'O',                   // Rank 17 - Modern structured loops
+        
+        // INFREQUENT (Everything else - HopperBASIC specific and console commands)
+        3, Tokens.AND, 'A', 'N', 'D',             // Logic operator
+        3, Tokens.BIT, 'B', 'I', 'T',             // HopperBASIC data type
+        4, Tokens.BYTE, 'B', 'Y', 'T', 'E',       // HopperBASIC data type
+        5, Tokens.BEGIN, 'B', 'E', 'G', 'I', 'N', // HopperBASIC structured programming
+        5, Tokens.CONST, 'C', 'O', 'N', 'S', 'T', // HopperBASIC constants
+        4, Tokens.FUNC, 'F', 'U', 'N', 'C',       // HopperBASIC structured programming
+        7, Tokens.ENDFUNC, 'E', 'N', 'D', 'F', 'U', 'N', 'C', // HopperBASIC structured programming
+        4, Tokens.ELSE, 'E', 'L', 'S', 'E',       // Control flow extras (FIXED!)
+        5, Tokens.ENDIF, 'E', 'N', 'D', 'I', 'F', // Control flow extras
+        5, Tokens.FALSE, 'F', 'A', 'L', 'S', 'E', // Logic constant
+        5, Tokens.BREAK, 'B', 'R', 'E', 'A', 'K', // Loop control
+        
+        // Console commands (all infrequent)
+        5, Tokens.CLEAR, 'C', 'L', 'E', 'A', 'R', // Console command
         5, Tokens.FUNCS, 'F', 'U', 'N', 'C', 'S', // Console command
-        2, Tokens.DO, 'D', 'O',                   // Less frequent
-        5, Tokens.ELSE, 'E', 'L', 'S', 'E',       // Less frequent
-        5, Tokens.ENDIF, 'E', 'N', 'D', 'I', 'F', // Less frequent
-        5, Tokens.FALSE, 'F', 'A', 'L', 'S', 'E', // Less frequent
-        4, Tokens.CONT, 'C', 'O', 'N', 'T',       // Console command
+        4, Tokens.CONT, 'C', 'O', 'N', 'T',       // Console command  
         3, Tokens.BYE, 'B', 'Y', 'E',             // Console command
-        3, Tokens.DEL, 'D', 'E', 'L',             // Infrequent
-        3, Tokens.DIR, 'D', 'I', 'R',             // Infrequent
-        4, Tokens.DUMP, 'D', 'U', 'M', 'P',       // Infrequent (debug)
-        4, Tokens.HEAP, 'H', 'E', 'A', 'P',       // Infrequent (debug)
-        7, Tokens.BUFFERS, 'B', 'U', 'F', 'F', 'E', 'R', 'S', // Infrequent (debug)
-        6, Tokens.FORGET, 'F', 'O', 'R', 'G', 'E', 'T', // Infrequent
-        8, Tokens.CONTINUE, 'C', 'O', 'N', 'T', 'I', 'N', 'U', 'E', // Infrequent
-        4, Tokens.LOAD, 'L', 'O', 'A', 'D',       // Infrequent
-        4, Tokens.LIST, 'L', 'I', 'S', 'T',       // Infrequent
-        3, Tokens.ABS, 'A', 'B', 'S',             // Built-in function (NEW)
+        3, Tokens.DEL, 'D', 'E', 'L',             // File operation
+        3, Tokens.DIR, 'D', 'I', 'R',             // File operation
+        4, Tokens.DUMP, 'D', 'U', 'M', 'P',       // Debug command
+        4, Tokens.HEAP, 'H', 'E', 'A', 'P',       // Debug command
+        7, Tokens.BUFFERS, 'B', 'U', 'F', 'F', 'E', 'R', 'S', // Debug command
+        6, Tokens.FORGET, 'F', 'O', 'R', 'G', 'E', 'T', // Console command
+        8, Tokens.CONTINUE, 'C', 'O', 'N', 'T', 'I', 'N', 'U', 'E', // Console command
+        4, Tokens.LOAD, 'L', 'O', 'A', 'D',       // File operation
+        4, Tokens.LIST, 'L', 'I', 'S', 'T',       // Console command
+        
+        // Built-in functions (all infrequent)
+        3, Tokens.ABS, 'A', 'B', 'S',             // Built-in function
+        5, Tokens.DELAY, 'D', 'E', 'L', 'A', 'Y', // Built-in function
+        
         0  // End marker
     };
     
-    // Keywords M-Z (first character >= 'M')
+    // Keywords M-Z (first character >= 'M') - Reorganized by frequency  
     const byte[] keywordsMZ = {
-        5, Tokens.PRINT, 'P', 'R', 'I', 'N', 'T', // Very frequent
-        4, Tokens.WORD, 'W', 'O', 'R', 'D',       // Very frequent
-        3, Tokens.NOT, 'N', 'O', 'T',             // Frequent
-        2, Tokens.OR, 'O', 'R',                   // Frequent
-        3, Tokens.MOD, 'M', 'O', 'D',             // Frequent
-        4, Tokens.THEN, 'T', 'H', 'E', 'N',       // Frequent
-        4, Tokens.NEXT, 'N', 'E', 'X', 'T',       // Frequent
-        6, Tokens.RETURN, 'R', 'E', 'T', 'U', 'R', 'N', // Moderate
-        5, Tokens.WHILE, 'W', 'H', 'I', 'L', 'E', // Moderate
-        4, Tokens.TRUE, 'T', 'R', 'U', 'E',       // Moderate
-        2, Tokens.TO, 'T', 'O',                   // Moderate
-        6, Tokens.STRING, 'S', 'T', 'R', 'I', 'N', 'G', // Moderate
-        4, Tokens.STEP, 'S', 'T', 'E', 'P',       // Less frequent
-        4, Tokens.WEND, 'W', 'E', 'N', 'D',       // Less frequent
-        5, Tokens.UNTIL, 'U', 'N', 'T', 'I', 'L', // Less frequent
-        3, Tokens.NEW, 'N', 'E', 'W',             // Infrequent
-        3, Tokens.RUN, 'R', 'U', 'N',             // Infrequent
-        3, Tokens.MEM, 'M', 'E', 'M',             // Infrequent
-        4, Tokens.SAVE, 'S', 'A', 'V', 'E',       // Infrequent
-        4, Tokens.VARS, 'V', 'A', 'R', 'S',       // Infrequent
-        3, Tokens.REM, 'R', 'E', 'M',             // Infrequent
-        4, Tokens.TRON, 'T', 'R', 'O', 'N',       // Infrequent
-        5, Tokens.TROFF, 'T', 'R', 'O', 'F', 'F', // Infrequent
+        // VERY FREQUENT (Rank 1-10)
+        5, Tokens.PRINT, 'P', 'R', 'I', 'N', 'T', // Rank 1 - Output data
+        4, Tokens.NEXT, 'N', 'E', 'X', 'T',       // Rank 2 - FOR/NEXT loops
+        4, Tokens.THEN, 'T', 'H', 'E', 'N',       // Rank 3 - IF/THEN conditionals
+        
+        // FREQUENT (Rank 11-20)
+        3, Tokens.MOD, 'M', 'O', 'D',             // Rank 7 - Remainder arithmetic
+        
+        // MODERATE (Rank 21-30)
+        5, Tokens.WHILE, 'W', 'H', 'I', 'L', 'E', // Rank 16 - WHILE/WEND loops
+        4, Tokens.WEND, 'W', 'E', 'N', 'D',       // Rank 16 - WHILE/WEND loops
+        4, Tokens.STEP, 'S', 'T', 'E', 'P',       // Rank 18 - FOR loop increment
+        3, Tokens.RND, 'R', 'N', 'D',             // Rank 24 - Random number generation
+        
+        // INFREQUENT (Everything else - HopperBASIC specific and console commands)
+        4, Tokens.WORD, 'W', 'O', 'R', 'D',       // HopperBASIC data type
+        6, Tokens.STRING, 'S', 'T', 'R', 'I', 'N', 'G', // HopperBASIC data type
+        6, Tokens.RETURN, 'R', 'E', 'T', 'U', 'R', 'N', // HopperBASIC structured programming
+        3, Tokens.NOT, 'N', 'O', 'T',             // Logic operator
+        2, Tokens.OR, 'O', 'R',                   // Logic operator
+        4, Tokens.TRUE, 'T', 'R', 'U', 'E',       // Logic constant
+        2, Tokens.TO, 'T', 'O',                   // Control flow extras
+        5, Tokens.UNTIL, 'U', 'N', 'T', 'I', 'L', // Control flow extras
+        
+        // Console commands (all infrequent)
+        3, Tokens.NEW, 'N', 'E', 'W',             // Console command
+        3, Tokens.RUN, 'R', 'U', 'N',             // Console command
+        3, Tokens.MEM, 'M', 'E', 'M',             // Console command
+        4, Tokens.SAVE, 'S', 'A', 'V', 'E',       // File operation
+        4, Tokens.VARS, 'V', 'A', 'R', 'S',       // Console command
+        3, Tokens.REM, 'R', 'E', 'M',             // Comment (infrequent in programs)
+        4, Tokens.TRON, 'T', 'R', 'O', 'N',       // Debug command
+        5, Tokens.TROFF, 'T', 'R', 'O', 'F', 'F', // Debug command
+        
+        // Built-in functions (all infrequent)
         6, Tokens.MILLIS, 'M', 'I', 'L', 'L', 'I', 'S', // Built-in function
         4, Tokens.PEEK, 'P', 'E', 'E', 'K',       // Built-in function
         4, Tokens.POKE, 'P', 'O', 'K', 'E',       // Built-in function
-        3, Tokens.RND, 'R', 'N', 'D',             // Built-in function
         7, Tokens.SECONDS, 'S', 'E', 'C', 'O', 'N', 'D', 'S', // Built-in function
+        
         0  // End marker
     };
-
+    
     // Find keyword match for current identifier in working buffer
     // Input: Working buffer at Address.BasicProcessBuffer1, null-terminated
     // Output: A = token value if found, or 0 if not found
@@ -447,11 +475,11 @@ unit Tokenizer // Tokenizer.asm
         else
         {
             CMP #( Tokens.lastKeyword + 1)
-            if (C)  // >= lastKeyword + 1
+            if (C)  // A >= (lastKeyword + 1), meaning A > lastKeyword
             {
-                CLC  // Not a keyword
+                CLC  // Not a keyword (operators, literals, etc.)
             }
-            else
+            else    // A < (lastKeyword + 1), meaning A <= lastKeyword
             {
                 SEC  // Is a keyword
             }

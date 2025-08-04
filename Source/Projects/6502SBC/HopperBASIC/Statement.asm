@@ -194,8 +194,10 @@ unit Statement
             Error.CheckError();
             if (NC) { break; }
 #ifdef DEBUG
-            //LDA #'U' Debug.COut();
+            //Debug.HOut(); LDA #'U' Debug.COut();
+            //PrintStringTOP();
 #endif
+
             Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
             LDA # IdentifierType.Undefined
             CLC  // undefined identifier

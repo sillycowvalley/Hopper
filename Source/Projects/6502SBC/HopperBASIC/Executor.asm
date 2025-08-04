@@ -433,6 +433,24 @@ unit Executor
         LDA #(executeSecondsTrace % 256) STA ZP.TraceMessageL LDA #(executeSecondsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     }
+    
+    // Execute SECONDS opcode - get elapsed time in seconds
+    // Input: None
+    // Output: Current seconds (WORD) pushed to stack
+    const string executeDelayTrace = "DELAY // delay in milliseconds";
+    executeDelay()
+    {
+    #ifdef TRACE
+        LDA #(executeDelayTrace % 256) STA ZP.TraceMessageL LDA #(executeDelayTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        Time.Delay(); // calls Stack.PopTop();
+        State.SetSuccess();
+        
+    #ifdef TRACE
+        LDA #(executeDelayTrace % 256) STA ZP.TraceMessageL LDA #(executeDelayTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
 
     // Execute RND opcode - random number generator
     // Input: Stack top = max value, operand byte ignored
@@ -851,6 +869,10 @@ unit Executor
             case OpCodeType.SECONDS:
             {
                 executeSeconds();
+            }
+            case OpCodeType.DELAY:
+            {
+                executeDelay();
             }
             
             // === ONE BYTE OPERAND OPCODES (0x40-0x7F) ===

@@ -951,6 +951,73 @@ unit Compiler // Compiler.asm
         Trace.MethodExit();
     #endif
     }
+    
+    // Compile DELAY(expression) function call
+    const string compileDelayFunctionTrace = "CompDELAY";
+    compileDelayFunction()
+    {
+    #ifdef TRACE
+        LDA #(compileDelayFunctionTrace % 256) STA ZP.TraceMessageL 
+        LDA #(compileDelayFunctionTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit
+        {
+            // Expect opening parenthesis
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            LDA ZP.CurrentToken
+            CMP #Tokens.LPAREN
+            if (NZ) 
+            { 
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                break; 
+            }
+            
+            // Get argument expression
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Compile argument
+            compileLogical();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Expect closing parenthesis
+            LDA ZP.CurrentToken
+            CMP #Tokens.RPAREN
+            if (NZ) 
+            { 
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                break; 
+            }
+            
+            // Move past closing parenthesis
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Emit DELAY opcode
+            LDA #OpCodeType.DELAY
+            STA Compiler.compilerOpCode
+            Emit.OpCode();
+            
+            SEC // Success
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(compileDelayFunctionTrace % 256) STA ZP.TraceMessageL 
+        LDA #(compileDelayFunctionTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }
+    
+    
 
     // Compile MILLIS() function call
     const string compileMillisFunctionTrace = "CompMILLIS";
@@ -1462,13 +1529,7 @@ unit Compiler // Compiler.asm
                     if (NC) { break; }
                     break;
                 }
-                case Tokens.POKE:
-                {
-                    compilePokeStatement();
-                    Error.CheckError();
-                    if (NC) { break; }
-                    break;
-                }
+                
 
                 
                 default:
@@ -1668,6 +1729,20 @@ unit Compiler // Compiler.asm
                     Tokenizer.NextToken();
                     Error.CheckError();
                     if (NC) { State.SetFailure(); break; }
+                }
+                case Tokens.DELAY:
+                {
+                    compileDelayFunction();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    break;
+                }
+                case Tokens.POKE:
+                {
+                    compilePokeStatement();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    break;
                 }
                 default:
                 {

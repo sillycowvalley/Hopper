@@ -873,5 +873,21 @@ unit Emit
         LDA #(emitAbsTrace % 256) STA ZP.TraceMessageL LDA #(emitAbsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     }
+    // Emit DELAY opcode - operates on top of stack  
+    const string emitDelayTrace = "Emit DELAY";
+    Delay()
+    {
+    #ifdef TRACE
+        LDA #(emitDelayTrace % 256) STA ZP.TraceMessageL LDA #(emitDelayTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        LDA #OpCodeType.DELAY
+        STA Compiler.compilerOpCode
+        Emit.OpCode(); // No operands
+        
+    #ifdef TRACE
+        LDA #(emitDelayTrace % 256) STA ZP.TraceMessageL LDA #(emitDelayTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
 
 }

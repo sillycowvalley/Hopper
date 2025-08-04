@@ -59,10 +59,14 @@ unit OpCodes
         // Function frame management
         ENTER        = 0x1A,  // Enter function frame - push BP, SP->BP
         
-        // Built-in functions with no arguments
+        // Built-in functions with no arguments (all take arguments from stack)
         ABS          = 0x1B,  // Pop value, push absolute value
         MILLIS       = 0x1C,  // Push current milliseconds (WORD)
         SECONDS      = 0x1D,  // Push current seconds (WORD)
+        RND          = 0x1E,  // Pop max value, push random number (0 to max-1)
+        PEEK         = 0x1F,  // Pop address, push memory byte at that address
+        POKE         = 0x20,  // Pop value, pop address, write value to memory address
+        DELAY        = 0x21,  // Pop delay value in milliseconds
         
         // === OPCODES WITH ONE BYTE OPERAND (0x40-0x7F) ===
         // Bits 7-6: 01 (one byte operand)
@@ -88,10 +92,6 @@ unit OpCodes
         RETURN       = 0x49,  // Return from function (no return value)
         RETURNVAL    = 0x4A,  // Return from function (pop return value from stack)
         
-        // Built-in functions with one argument  
-        RND          = 0x4B,  // Pop seed, push random number [max_byte]
-        POKE         = 0x4C,  // Pop value, write to memory [addr_lsb] [addr_msb]
-        
         // === OPCODES WITH TWO BYTE OPERANDS (0x80-0xBF) ===
         // Bits 7-6: 10 (two byte operands)
         // Bits 5-0: OpCode (0-63 available)
@@ -115,10 +115,6 @@ unit OpCodes
         JUMPW        = 0x89,  // Unconditional jump [lsb] [msb]
         JUMPZW       = 0x8A,  // Jump if zero [lsb] [msb]
         JUMPNZW      = 0x8B,  // Jump if non-zero [lsb] [msb]
-        
-        // Built-in functions with two arguments
-        PEEK         = 0x8C,  // Push memory byte [addr_lsb] [addr_msb] 
-        DELAY        = 0x8D,  // Pop word delay in seconds
         
         // === RESERVED FOR FUTURE EXTENSIONS (0xC0-0xFF) ===
         // Bits 7-6: 11 (reserved)
@@ -162,6 +158,12 @@ unit OpCodes
     //     RETURN          - Return from function
     //     DUP             - Duplicate top stack value
     //     ENTER           - Enter function - setup stack frame
+    //     ABS             - Pop value, push absolute value
+    //     MILLIS          - Push current milliseconds
+    //     RND             - Pop max value, push random number
+    //     PEEK            - Pop address, push memory byte
+    //     POKE            - Pop value, pop address, write to memory
+    //     DELAY           - Pop delay value in milliseconds
     //
     // **Group 1: One Byte Operand (0x40-0x7F)**
     //   [OPCODE][OPERAND]
