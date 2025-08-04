@@ -37,6 +37,7 @@ unit Error
     const uint invalidBitValue = 0x001B;
     const uint illegalInFunctionMode = 0x001C;
     const uint heapCorrupt = 0x001D;
+    const uint illegalCharacter = 0x001E;
 #else
     // Error message strings (moved from Messages.asm) and made private
     const string syntaxError = "SYNTAX ERROR";
@@ -60,6 +61,7 @@ unit Error
     const string constantExpressionExpected = "CONSTANT EXPRESSION EXPECTED";
     const string illegalIdentifier = "ILLEGAL IDENTIFIER";
     const string illegalAssignment = "ILLEGAL ASSIGNMENT";
+    const string illegalCharacter = "ILLEGAL CHARACTER";
     const string invalidOperator = "INVALID OPERATOR";
     const string bufferOverflow = "BUFFER OVERFLOW";
     const string expectedRightParen = ") EXPECTED";
@@ -260,6 +262,15 @@ unit Error
         LDA #(constantExpressionExpected % 256)
         STA ZP.LastErrorL
         LDA #(constantExpressionExpected / 256)
+        STA ZP.LastErrorH
+        CLC
+    }
+    
+    IllegalCharacter()
+    { 
+        LDA #(illegalCharacter % 256)
+        STA ZP.LastErrorL
+        LDA #(illegalCharacter / 256)
         STA ZP.LastErrorH
         CLC
     }

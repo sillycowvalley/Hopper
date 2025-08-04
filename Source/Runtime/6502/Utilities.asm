@@ -97,6 +97,14 @@ unit Utilities
             INC ZP.ACCH
         }
     }
+    IncNEXT()
+    {
+        INC ZP.NEXTL
+        if (Z)
+        {
+            INC ZP.NEXTH
+        }
+    }
     DecACCx2()
     {
         PHA

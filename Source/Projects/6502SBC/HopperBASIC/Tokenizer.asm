@@ -1,4 +1,4 @@
-unit Tokenizer
+unit Tokenizer // Tokenizer.asm
 {
     uses "/Source/Runtime/6502/ZeroPage"
     uses "/Source/Runtime/6502/Serial"
@@ -21,109 +21,110 @@ unit Tokenizer
     }    
     
     // Complete Token definitions for HopperBASIC
+    // All values >= 0x80
     enum Tokens
     {
         // Console commands
-        NEW      = 0x01,
-        LIST     = 0x02,
-        RUN      = 0x03,
-        CLEAR    = 0x04,
-        VARS     = 0x05,
-        FUNCS    = 0x06,
-        FORGET   = 0x07,
-        SAVE     = 0x08,
-        LOAD     = 0x09,
-        DIR      = 0x0A,
-        DEL      = 0x0B,
-        MEM      = 0x0C,
-        HEAP     = 0x0D,
-        BUFFERS  = 0x0E,
-        DUMP     = 0x0F,
-        BYE      = 0x10,
-        TRON     = 0x11,
-        TROFF    = 0x12,
-        REM      = 0x13,
-        COMMENT  = 0x14,
-        EOL      = 0x15,
+        NEW      = 0x80,
+        LIST     = 0x81,
+        RUN      = 0x82,
+        CLEAR    = 0x83,
+        VARS     = 0x84,
+        FUNCS    = 0x85,
+        FORGET   = 0x86,
+        SAVE     = 0x87,
+        LOAD     = 0x88,
+        DIR      = 0x89,
+        DEL      = 0x8A,
+        MEM      = 0x8B,
+        HEAP     = 0x8C,
+        BUFFERS  = 0x8D,
+        DUMP     = 0x8E,
+        BYE      = 0x8F,
+        TRON     = 0x90,
+        TROFF    = 0x91,
+        REM      = 0x92,
+        COMMENT  = 0x93,
+        EOL      = 0x94,
         
         // Type declarations
-        INT      = 0x16,
-        WORD     = 0x17,
-        BIT      = 0x18,
-        BYTE     = 0x19,
-        STRING   = 0x1A,
-        CONST    = 0x1B, 
+        INT      = 0x95,
+        WORD     = 0x96,
+        BIT      = 0x97,
+        BYTE     = 0x98,
+        STRING   = 0x99,
+        CONST    = 0x9A, 
         
         // Language keywords
-        PRINT    = 0x20,
-        INPUT    = 0x21,
-        IF       = 0x22,
-        THEN     = 0x23,
-        FUNC     = 0x24,
-        ENDFUNC  = 0x25,
-        RETURN   = 0x26,
-        BEGIN    = 0x27,
-        END      = 0x28,
-        FOR      = 0x29,
-        TO       = 0x2A,
-        STEP     = 0x2B,
-        NEXT     = 0x2C,
-        WHILE    = 0x2D,
-        WEND     = 0x2E,
-        DO       = 0x2F,
-        UNTIL    = 0x30,
-        BREAK    = 0x31,
-        CONTINUE = 0x32,
-        CONT     = 0x33,
+        PRINT    = 0x9B,
+        INPUT    = 0x9C,
+        IF       = 0x9D,
+        THEN     = 0x9E,
+        FUNC     = 0x9F,
+        ENDFUNC  = 0xA0,
+        RETURN   = 0xA1,
+        BEGIN    = 0xA2,
+        END      = 0xA3,
+        FOR      = 0xA4,
+        TO       = 0xA5,
+        STEP     = 0xA6,
+        NEXT     = 0xA7,
+        WHILE    = 0xA8,
+        WEND     = 0xA9,
+        DO       = 0xAA,
+        UNTIL    = 0xAB,
+        BREAK    = 0xAC,
+        CONTINUE = 0xAD,
+        CONT     = 0xAE,
                
         // Logical keywords
-        AND      = 0x34,
-        OR       = 0x35,
-        NOT      = 0x36,
-        MOD      = 0x37,
+        AND      = 0xAF,
+        OR       = 0xB0,
+        NOT      = 0xB1,
+        MOD      = 0xB2,
         
         // Built-in literals
-        TRUE     = 0x38,  // Built-in BIT constant (1)
-        FALSE    = 0x39,  // Built-in BIT constant (0)
+        TRUE     = 0xB3,  // Built-in BIT constant (1)
+        FALSE    = 0xB4,  // Built-in BIT constant (0)
         
         // Sentinel marking end of keywords
-        lastKeyword = 0x39,
+        lastKeyword = 0xB4,
         
         // Basic operators
-        EQUALS   = 0x40,  // =
-        PLUS     = 0x41,  // +
-        MINUS    = 0x42,  // -
-        LPAREN   = 0x43,  // (
-        RPAREN   = 0x44,  // )
-        NOTEQUAL = 0x45,  // <>
+        EQUALS   = 0xB5,  // =
+        PLUS     = 0xB6,  // +
+        MINUS    = 0xB7,  // -
+        LPAREN   = 0xB8,  // (
+        RPAREN   = 0xB9,  // )
+        NOTEQUAL = 0xBA,  // <>
         
         // Additional comparison operators
-        LT       = 0x50,  // <
-        GT       = 0x51,  // >
-        LE       = 0x52,  // <=
-        GE       = 0x53,  // >=
+        LT       = 0xBB,  // <
+        GT       = 0xBC,  // >
+        LE       = 0xBD,  // <=
+        GE       = 0xBE,  // >=
         
         // Arithmetic operators
-        MULTIPLY = 0x58,  // *
-        DIVIDE   = 0x59,  // /
+        MULTIPLY = 0xBF,  // *
+        DIVIDE   = 0xC0,  // /
         
-        BITWISE_AND = 0x5A,  // &
-        BITWISE_OR  = 0x5B,  // |
+        BITWISE_AND = 0xC1,  // &
+        BITWISE_OR  = 0xC2,  // |
         
         // Array and string operators
-        LBRACKET = 0x5C,  // [
-        RBRACKET = 0x5D,  // ]
-        LBRACE   = 0x5E,  // {
-        RBRACE   = 0x5F,  // }
+        LBRACKET = 0xC3,  // [
+        RBRACKET = 0xC4,  // ]
+        LBRACE   = 0xC5,  // {
+        RBRACE   = 0xC6,  // }
         
         // Literals and identifiers
-        NUMBER     = 0x80,
-        STRINGLIT  = 0x81,  // String literal "text"
-        IDENTIFIER = 0x82,
-        EOF        = 0x83,
-        COLON      = 0x84, 
-        COMMA      = 0x85,
-        SEMICOLON  = 0x86,  // ;
+        NUMBER     = 0xC7,
+        STRINGLIT  = 0xC8,  // String literal "text"
+        IDENTIFIER = 0xC9,
+        EOF        = 0xCA,
+        COLON      = 0xCB, 
+        COMMA      = 0xCC,
+        SEMICOLON  = 0xCD,  // ;
     }
     
     // Keywords A-L (first character < 'M')
@@ -1162,6 +1163,14 @@ unit Tokenizer
                             return;
                         }
                         
+                        CMP # 0x80
+                        if (C)  // >= 128, invalid character
+                        {
+                            Error.IllegalCharacter(); BIT ZP.EmulatorPCL
+                            CLC
+                            return;
+                        }
+                        
                         LDA Address.BasicInputBuffer, X  // Read from input buffer
                         CMP #'"'
                         if (Z) // Found closing quote
@@ -1289,6 +1298,15 @@ unit Tokenizer
                         if (Z) { break; }
                         
                         LDA Address.BasicInputBuffer, X
+                        
+                        CMP # 0x80
+                        if (C)  // >= 128, invalid character
+                        {
+                            Error.IllegalCharacter(); BIT ZP.EmulatorPCL
+                            CLC
+                            return;
+                        }
+                        
                         IsAlphaNumeric();
                         if (NC) { break; }  // Not alphanumeric
                         
@@ -1819,6 +1837,12 @@ unit Tokenizer
                         CMP #0x7F
                         if (NC)  // < 127
                         {
+                            CMP # 0x80
+                            if (C)  // >= 128, reject
+                            {
+                                continue;  // Ignore extended ASCII
+                            }
+                            
                             CPX #Limits.BasicInputLength
                             if (Z) { continue; }  // Buffer full
                             
