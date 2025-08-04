@@ -64,7 +64,7 @@ program HopperBASIC
         STZ ZP.FLAGS
         SMB0 ZP.FLAGS  // Set "program loaded" flag for BASIC
 #ifdef TRACE
-        SMB2 ZP.FLAGS  // TRON by default
+        RMB2 ZP.FLAGS  // TROFF by default
 #else
         RMB2 ZP.FLAGS  // TROFF by default
 #endif        

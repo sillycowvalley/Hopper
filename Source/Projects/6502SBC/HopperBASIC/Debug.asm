@@ -1636,111 +1636,167 @@ unit Debug
         PLP
     }
     
-    
-    
     // Find function containing given address
     // Input: ZP.ACC = address to search for
     // Output: ZP.TOP = function name pointer if found, C set if found, NC if not found
-    // Preserves: ZP.ACC (search address), ZP.IDX
-    // Munts: ZP.IDY (function iteration), ZP.NEXT (opcode stream checks)
+    // Preserves: ZP.ACC (search address)
+    // Modifies: ZP.IDX, ZP.IDY, ZP.NEXT (during function iteration and range checks)
     findFunctionByAddress()
     {
-        PHA
-        PHX
-        PHY
-        
-        // Save ZP.IDX since we'll be iterating functions
-        LDA ZP.IDXL
-        PHA
-        LDA ZP.IDXH
-        PHA
-        
-        // Save ZP.NEXT since we'll use it for opcode range checks
-        LDA ZP.NEXTL
-        PHA
-        LDA ZP.NEXTH
-        PHA
-        
-        loop // Single exit block
-        {
-            // Start function iteration
-            Functions.IterateFunctions();
-            if (NC) 
-            { 
-                CLC // No functions found
-                break; 
-            }
-            
-            loop // Function iteration loop
-            {
-                // Get function's opcode stream
-                Functions.GetOpCodes(); // Input: ZP.IDX, Output: ZP.IDY = opcodes, C if compiled
-                if (NC) 
-                { 
-                    // Function not compiled, skip it
-                    Functions.IterateNext();
-                    if (NC) { break; } // No more functions
-                    continue;
-                }
-                
-                // Check if search address falls within this function's opcode range
-                // ZP.IDY = start of opcode stream
-                // Need to get the length somehow - for now, check if address >= start
-                
-                // Compare search address (ZP.ACC) with opcode stream start (ZP.IDY)
-                LDA ZP.ACCH
-                CMP ZP.IDYH
-                if (NC) // ACC.H >= IDY.H
-                {
-                    if (NZ) // ACC.H > IDY.H 
-                    {
-                        // Could be in this function, but need to check end bound
-                        // For now, assume it's a match and get the function name
-                        Functions.GetName(); // Input: ZP.IDX, Output: ZP.TOP = name pointer
-                        SEC // Found
-                        break;
-                    }
-                    else // ACC.H == IDY.H, check low byte
-                    {
-                        LDA ZP.ACCL
-                        CMP ZP.IDYL
-                        if (C) // ACC.L >= IDY.L
-                        {
-                            // Address is >= start of function opcodes
-                            Functions.GetName(); // Input: ZP.IDX, Output: ZP.TOP = name pointer
-                            SEC // Found
-                            break;
-                        }
-                    }
-                }
-                
-                // Try next function
-                Functions.IterateNext();
-                if (NC) { break; } // No more functions
-            }
-            
-            if (C) { break; } // Found a function
-            
-            CLC // Not found in any function
-            break;
-            
-        } // End single exit block
-        
-        // Restore ZP.NEXT
-        PLA
-        STA ZP.NEXTH
-        PLA
-        STA ZP.NEXTL
-        
-        // Restore ZP.IDX
-        PLA
-        STA ZP.IDXH
-        PLA
-        STA ZP.IDXL
-        
-        PLY
-        PLX
-        PLA
+       PHA
+       PHX
+       PHY
+       
+       // Save ZP.IDX since we'll be iterating functions
+       LDA ZP.IDXL
+       PHA
+       LDA ZP.IDXH
+       PHA
+       
+       // Save ZP.NEXT since we'll use it for range calculations
+       LDA ZP.NEXTL
+       PHA
+       LDA ZP.NEXTH
+       PHA
+       
+       loop // Single exit block
+       {
+           // Start function iteration
+           LDX #ZP.FunctionsList
+           Table.GetFirst(); // Result in ZP.IDX
+           if (NC) 
+           { 
+               CLC // No functions found
+               break; 
+           }
+           
+           loop // Function iteration loop
+           {
+               // Get function's opcode stream
+               Functions.GetOpCodes(); // Input: ZP.IDX, Output: ZP.IDY = opcodes start, C if compiled
+               if (NC) 
+               { 
+                   // Function not compiled, skip it
+                   Table.GetNext(); // Move to next function
+                   if (NC) { CLC break; } // No more functions, not found
+                   continue;
+               }
+               
+               // Get block size from memory manager (2 bytes before the allocated block)
+               SEC
+               LDA ZP.IDYL
+               SBC #2
+               STA ZP.NEXTL
+               LDA ZP.IDYH  
+               SBC #0
+               STA ZP.NEXTH
+               
+               // Load block size from memory manager header at [ZP.NEXT]
+               LDY #0
+               LDA [ZP.NEXT], Y    // LSB of block size
+               PHA
+               INY
+               LDA [ZP.NEXT], Y    // MSB of block size
+               STA ZP.NEXTH
+               PLA
+               STA ZP.NEXTL
+               // ZP.NEXT now contains block size
+               
+               // Calculate end address = start + (blocksize - 2)
+               // Opcode stream length <= blocksize - 2 bytes (memory manager overhead)
+               SEC
+               LDA ZP.NEXTL
+               SBC #2
+               STA ZP.NEXTL
+               LDA ZP.NEXTH
+               SBC #0
+               STA ZP.NEXTH
+               // ZP.NEXT now has opcode stream length
+               
+               CLC
+               LDA ZP.IDYL
+               ADC ZP.NEXTL
+               STA ZP.NEXTL
+               LDA ZP.IDYH
+               ADC ZP.NEXTH
+               STA ZP.NEXTH
+               // ZP.NEXT now has end address (start + length)
+               
+               // Check if searchPC >= start
+               LDA ZP.ACCH
+               CMP ZP.IDYH
+               if (NZ)
+               {
+                   if (NC) 
+                   { 
+                       // searchPC < start, try next function
+                       Table.GetNext();
+                       if (NC) { CLC break; } // No more functions
+                       continue; 
+                   }
+               }
+               else
+               {
+                   LDA ZP.ACCL
+                   CMP ZP.IDYL
+                   if (NC) 
+                   { 
+                       // searchPC < start, try next function
+                       Table.GetNext();
+                       if (NC) { CLC break; } // No more functions
+                       continue; 
+                   }
+               }
+               
+               // Check if searchPC < end
+               LDA ZP.ACCH
+               CMP ZP.NEXTH
+               if (NZ)
+               {
+                   if (C) 
+                   { 
+                       // searchPC >= end, try next function
+                       Table.GetNext();
+                       if (NC) { CLC break; } // No more functions
+                       continue; 
+                   }
+               }
+               else
+               {
+                   LDA ZP.ACCL
+                   CMP ZP.NEXTL
+                   if (C) 
+                   { 
+                       // searchPC >= end, try next function
+                       Table.GetNext();
+                       if (NC) { CLC break; } // No more functions
+                       continue; 
+                   }
+               }
+               
+               // Found it! searchPC is within [start, end)
+               Functions.GetName(); // Get function name in ZP.TOP
+               SEC // Found
+               break;
+           }
+           break; // Exit outer loop
+       }
+       
+       // Restore ZP.NEXT
+       PLA
+       STA ZP.NEXTH
+       PLA
+       STA ZP.NEXTL
+       
+       // Restore ZP.IDX
+       PLA
+       STA ZP.IDXH
+       PLA
+       STA ZP.IDXL
+       
+       PLY
+       PLX
+       PLA
     }
         
     // Enhanced DumpStack method for Debug.asm
@@ -1844,6 +1900,63 @@ DumpPage();
         STA ZP.ACCH
         Tools.PrintStringACC();
         
+        
+        
+        // Show current frame first (where we're executing now)
+        LDA #(framePrefix % 256)
+        STA ZP.ACCL
+        LDA #(framePrefix / 256)
+        STA ZP.ACCH
+        Tools.PrintStringACC();
+        LDA #'0'
+        Serial.WriteChar();
+        LDA #':'
+        Serial.WriteChar();
+        LDA #' '
+        Serial.WriteChar();
+        LDA #(framePC % 256)
+        STA ZP.ACCL
+        LDA #(framePC / 256)
+        STA ZP.ACCH
+        Tools.PrintStringACC();
+        
+        // Show current PC and try to resolve function name
+        LDA ZP.PCH
+        Serial.HexOut();
+        LDA ZP.PCL
+        Serial.HexOut();
+        
+        // Look up current function
+        LDA ZP.PCL
+        STA ZP.ACCL
+        LDA ZP.PCH
+        STA ZP.ACCH
+        findFunctionByAddress();
+        if (C)
+        {
+            LDA #' '
+            Serial.WriteChar();
+            LDA #'('
+            Serial.WriteChar();
+            Tools.PrintStringTOP();
+            LDA #')'
+            Serial.WriteChar();
+        }
+        
+        LDA #(frameBP % 256)
+        STA ZP.ACCL
+        LDA #(frameBP / 256)
+        STA ZP.ACCH
+        Tools.PrintStringACC();
+        LDA ZP.BP
+        Serial.HexOut();
+        LDA #(currentFrameMarker % 256)
+        STA ZP.ACCL
+        LDA #(currentFrameMarker / 256)
+        STA ZP.ACCH
+        Tools.PrintStringACC();
+        NL();
+        
         // Walk call stack backwards to show frame hierarchy
         // Call stack layout: [BP][PC][BP][PC]... where CSP points to next free slot
         LDX ZP.CSP
@@ -1913,36 +2026,6 @@ DumpPage();
                 INX  // Move to BP value (next slot)
                 LDA Address.CallStackLSB, X
                 Serial.HexOut();
-                
-                // Mark current frame and show function name
-                CPY #0
-                if (Z)
-                {
-                    // For current frame, try to show function name
-                    LDA Address.CallStackLSB, X
-                    STA ZP.ACCL
-                    LDA Address.CallStackMSB, X
-                    STA ZP.ACCH
-                    findFunctionByAddress();
-                    if (C)
-                    {
-                        LDA #' '
-                        Serial.WriteChar();
-                        LDA #'('
-                        Serial.WriteChar();
-                        Tools.PrintStringTOP();
-                        LDA #')'
-                        Serial.WriteChar();
-                    }
-                    else
-                    {
-                        LDA #(currentFrameMarker % 256)
-                        STA ZP.ACCL
-                        LDA #(currentFrameMarker / 256)
-                        STA ZP.ACCH
-                        Tools.PrintStringACC();
-                    }
-                }
                 
                 NL();
                 INY  // Increment frame counter

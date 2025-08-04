@@ -227,8 +227,6 @@ unit Emit
             Error.CheckError();
             if (NC) { break; }
             
-PrintStringTOP();            
-            
             // Find the variable/constant by name
             STZ ZP.SymbolIteratorFilter  // Accept both variables and constants
             Variables.Find();  // Input: ZP.TOP = name, Output: ZP.IDX = node address

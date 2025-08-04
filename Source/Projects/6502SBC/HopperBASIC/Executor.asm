@@ -697,6 +697,7 @@ unit Executor
         STA ZP.BP
         State.SetSuccess();
         
+        
 DumpStack();
         
 #ifdef TRACE
@@ -1180,7 +1181,7 @@ DumpStack();
             LDA # OpCodeType.CALLF
             STA [ZP.PC]
             
-    #ifdef DEBUG
+    #ifdef TRACEJIT
             LDA ZP.PCH Debug.HOut();
             LDA ZP.PCL Debug.HOut();
             LDA #' ' Debug.COut();
