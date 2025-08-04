@@ -1,5 +1,5 @@
 FUNC Fibo(n)
-    IF n <= 1 THEN RETURN n
+    IF n <= 1 THEN RETURN n ENDIF
     RETURN Fibo(n-1) + Fibo(n-2)
 ENDFUNC
 
@@ -8,24 +8,18 @@ FUNC Benchmark(name, arg, loops)
     WORD result
     WORD count
     WORD elapsed
-    WORD avgMs
+    WORD avgS
     
-    start = MILLIS()
+    start = SECONDS()
     
     FOR count = 0 TO loops-1
         result = Fibo(arg)
+    NEXT count
     
     elapsed = MILLIS() - start
-    avgMs = elapsed / loops
+    avgS = elapsed / loops
     
-    PRINT name
-    PRINT "("
-    PRINT arg
-    PRINT ") = "
-    PRINT result
-    PRINT " in "
-    PRINT avgMs
-    PRINT " ms average"
+    PRINT name, "(", arg, ") = ", result, " in ", avgS, " seconds average"
 ENDFUNC
 
 BEGIN

@@ -2,18 +2,19 @@
 CONST sizepl = 8191
 BIT flags[sizepl]
 
+WORD i
+WORD prime
+WORD k
+WORD count
+WORD iter
+WORD start
+WORD elapsed
+WORD avgMs
+
 BEGIN
-    WORD i
-    WORD prime
-    WORD k
-    WORD count
-    WORD iter
-    WORD start
-    WORD elapsed
-    WORD avgMs
     
     PRINT "10 iterations"
-    start = MILLIS()
+    start = SECONDS()
     
     FOR iter = 1 TO 10
         count = 0
@@ -21,6 +22,7 @@ BEGIN
         ' Initialize flags array to true
         FOR i = 0 TO sizepl-1
             flags[i] = TRUE
+        NEXT i
         
         ' Sieve algorithm
         FOR i = 0 TO sizepl-1
@@ -30,16 +32,16 @@ BEGIN
                 WHILE k < sizepl
                     flags[k] = FALSE
                     k = k + prime
+                WEND
                 count = count + 1
-    
-    elapsed = MILLIS() - start
-    avgMs = elapsed / 10
+            ENDIF
+        NEXT i
+    NEXT iter
+    elapsed = SECONDS() - start
+    avgS = elapsed / 10
     
     PRINT "Done."
-    PRINT count
-    PRINT " primes"
-    PRINT avgMs
-    PRINT " ms average"
+    PRINT count, " primes", avgS, " seconds average"
 END
 
 ' run the benchmark
