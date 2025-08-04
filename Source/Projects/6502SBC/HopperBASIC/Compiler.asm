@@ -701,7 +701,7 @@ unit Compiler // Compiler.asm
         
         
 #ifdef DEBUG
-        LDA #'[' Debug.COut();
+        //LDA #'[' Debug.COut();
 #endif
         loop // Single exit
         {
@@ -755,7 +755,7 @@ unit Compiler // Compiler.asm
             break; // Exit outer loop
         }
 #ifdef DEBUG
-        LDA #']' Debug.COut(); // Exit from argument list  
+        //LDA #']' Debug.COut(); // Exit from argument list  
 #endif
 
 #ifdef TRACE
@@ -797,7 +797,7 @@ unit Compiler // Compiler.asm
             if (Z)
             {
 #ifdef DEBUG
-        LDA #'(' Debug.COut();
+        //LDA #'(' Debug.COut();
 #endif
                 // This is a function call - restore tokenizer to identifier and emit call
                 LDA (compilerSavedTokenPosL + 0)
@@ -848,14 +848,14 @@ unit Compiler // Compiler.asm
                 Error.CheckError();
                 if (NC) { break; }
 #ifdef DEBUG
-        LDA #')' Debug.COut();
+        //LDA #')' Debug.COut();
 #endif
 
             }
             else
             {
 #ifdef DEBUG
-        LDA #'V' Debug.COut();
+        //LDA #'V' Debug.COut();
 #endif
                 // Not a function call - restore position and emit variable push
                 LDA (compilerSavedTokenPosL + 0)
@@ -1092,7 +1092,6 @@ unit Compiler // Compiler.asm
         LDA #(compileFunctionTrace % 256) STA ZP.TraceMessageL LDA #(compileFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         
-
         LDA ZP.ACCL
         STA compilerFuncArgs
         
@@ -1184,7 +1183,7 @@ unit Compiler // Compiler.asm
     CompileStatement()
     {
 #ifdef TRACE
-        LDA #(compileStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+        PHA LDA #(compileStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
 #endif
         
 
@@ -1244,7 +1243,7 @@ unit Compiler // Compiler.asm
         } // loop
         
 #ifdef TRACE
-        LDA #(compileStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+        PHA LDA #(compileStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
 #endif
     }
 
@@ -1596,8 +1595,13 @@ unit Compiler // Compiler.asm
     // Compile identifier statement (assignment or function call)
     // Input: ZP.CurrentToken = IDENTIFIER token
     // Output: Statement compiled to opcodes
+    const string compileIdentifierStatementTrace = "compIdentStmt";
     compileIdentifierStatement()
     {
+#ifdef TRACE
+        LDA #(compileIdentifierStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileIdentifierStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+    
         loop
         {
             // Typically called when ZP.CurrentToken is Tokens.IDENTIFIER, or a keyword
@@ -1697,6 +1701,11 @@ unit Compiler // Compiler.asm
             }
             break;
         } // single exit
+#ifdef TRACE
+        LDA #(compileIdentifierStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileIdentifierStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+
+        
     }
 
 }

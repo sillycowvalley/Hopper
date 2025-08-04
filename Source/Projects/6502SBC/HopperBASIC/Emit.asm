@@ -14,7 +14,7 @@ unit Emit
         
         loop
         {
-#ifdef DEBUG       
+#ifdef TRACEJIT
             Tools.NL(); LDA #'>' Debug.COut();
             LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
             LDA #' ' Debug.COut(); LDA Compiler.compilerOpCode Debug.HOut(); LDA #' ' Debug.COut();
@@ -59,7 +59,7 @@ unit Emit
 #endif
         loop
         {
-#ifdef DEBUG       
+#ifdef TRACEJIT       
             Tools.NL(); LDA #'>' Debug.COut();
             LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
             LDA #' ' Debug.COut(); LDA Compiler.compilerOpCode Debug.HOut(); LDA #' ' Debug.COut(); 
@@ -117,7 +117,7 @@ unit Emit
 #endif
         loop
         {
-#ifdef DEBUG       
+#ifdef TRACEJIT       
             Tools.NL(); LDA #'>' Debug.COut();
             LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
             LDA #' ' Debug.COut(); LDA Compiler.compilerOpCode Debug.HOut(); LDA #' ' Debug.COut(); 
@@ -768,7 +768,7 @@ PrintStringTOP();
         
         loop // Single exit
         {
-#ifdef DEBUG
+#ifdef TRACEJIT
             Tools.NL();
             LDA ZP.TokenLiteralPosH Debug.HOut();
             LDA ZP.TokenLiteralPosL Debug.HOut();
@@ -783,7 +783,7 @@ PrintStringTOP();
             ADC ZP.TokenLiteralPosH
             STA Compiler.compilerOperand2       // Absolute address MSB
 
-#ifdef DEBUG
+#ifdef TRACEJIT
             LDA #'-' Debug.COut(); LDA #'>' Debug.COut();
             LDA Compiler.compilerOperand2 Debug.HOut();
             LDA Compiler.compilerOperand1 Debug.HOut();

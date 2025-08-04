@@ -649,7 +649,7 @@ unit Functions
         
         Stacks.PushPC(); // after FetchOperandWord
         
-#ifdef DEBUG
+#ifdef TRACEJIT
         LDA #' ' Debug.COut(); LDA #'[' Debug.COut();
         LDA ZP.IDXH Debug.HOut(); LDA ZP.IDXL Debug.HOut();
         LDA #']' Debug.COut(); LDA #' ' Debug.COut();
@@ -662,7 +662,7 @@ unit Functions
         LDA [ZP.IDX], Y
         STA ZP.PCH
     
-#ifdef DEBUG
+#ifdef TRACEJIT
         LDA #' ' Debug.COut(); LDA #'-' Debug.COut();LDA #'>' Debug.COut(); LDA #' ' Debug.COut();
         LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
 #endif        

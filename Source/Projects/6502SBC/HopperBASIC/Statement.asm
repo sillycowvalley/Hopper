@@ -127,16 +127,16 @@ unit Statement
         PHY
         
 #ifdef TRACE
-        LDA #(resolveIdentifierTrace % 256) STA ZP.TraceMessageL LDA #(resolveIdentifierTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+        PHA LDA #(resolveIdentifierTrace % 256) STA ZP.TraceMessageL LDA #(resolveIdentifierTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
 #endif
         
         loop // Single exit block for clean error handling
         {
-            Tokenizer.IsKeyword();
+            Tokenizer.IsKeyword(); // Input: A = token value to check
             if (C)
             {
 #ifdef DEBUG
-                LDA #'K' Debug.COut();
+                //LDA #'K' Debug.COut();
 #endif
                 LDA # IdentifierType.Keyword
                 break; // success
@@ -159,7 +159,7 @@ unit Statement
                 if (Z)
                 { 
 #ifdef DEBUG
-                    LDA # 'V' Debug.COut();
+                    //LDA # 'V' Debug.COut();
 #endif
                     LDA # IdentifierType.Global
                     break; // success
@@ -168,7 +168,7 @@ unit Statement
                 if (Z)
                 { 
 #ifdef DEBUG
-                    LDA # 'C' Debug.COut();
+                    //LDA # 'C' Debug.COut();
 #endif        
                     LDA # IdentifierType.Constant
                     break; // success
@@ -186,7 +186,7 @@ unit Statement
             if (C)  
             {
 #ifdef DEBUG
-                LDA #'F' Debug.COut();
+                //LDA #'F' Debug.COut();
 #endif    
                 LDA # IdentifierType.Function
                 break; // success
@@ -194,7 +194,7 @@ unit Statement
             Error.CheckError();
             if (NC) { break; }
 #ifdef DEBUG
-            LDA #'U' Debug.COut();
+            //LDA #'U' Debug.COut();
 #endif
             Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
             LDA # IdentifierType.Undefined

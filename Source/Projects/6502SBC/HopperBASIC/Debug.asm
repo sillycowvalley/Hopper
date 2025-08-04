@@ -29,8 +29,27 @@ unit Debug
     const string regIDY = "IDY:";
     const string regSP = "SP:";
     const string regBP = "BP:";
+    const string regPC = "PC:";
     const string regACCL = "ACCL:";
     const string regACCT = "ACCT:";
+    
+    const string regCSP = "CSP:";
+    const string callStackHeader = "Call Stack (";
+    const string framesSuffix = " frames):\n";
+    const string framePrefix = "  Frame ";
+    const string framePC = ": PC=$";
+    const string frameBP = " BP:";
+    const string currentFrameMarker = " (current)";
+    const string valueStackHeader = "Value Stack (";
+    const string entriesSuffix = " entries):\n";
+    const string stackEllipsis = "  ... (truncated)\n";
+    const string bpMarker = " <- BP";
+    const string returnSlotMarker = " *** RETURN SLOT ***";
+    const string frameMarkerPrefix = "\n--- Frame ";
+    const string frameMarkerSuffix = " ---";
+    const string argMarker = " (arg)";
+    const string localMarker = " (local)";
+    
 
     // Status indicators
     const string statusFree = "FREE";
@@ -265,86 +284,6 @@ unit Debug
        PLP  // Restore flags
     }
 
-    // Dump the value stack for debugging
-    // Input: None
-    // Output: Stack pointer info and last 8 stack entries printed to serial
-    // Preserves: Everything (saves/restores all modified registers)
-    DumpStack()
-    {
-        PHP  // Save flags
-        PHA
-        PHX
-        PHY
-        
-        LDA #(debugStackHeader % 256)
-        STA ZP.ACCL
-        LDA #(debugStackHeader / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
-        
-        // Stack and base pointers
-        LDA #(regSP % 256)
-        STA ZP.ACCL
-        LDA #(regSP / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
-        LDA ZP.SP
-        Serial.HexOut();
-        Space();
-        
-        LDA #(regBP % 256)
-        STA ZP.ACCL
-        LDA #(regBP / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
-        LDA ZP.BP
-        Serial.HexOut();
-        NL();
-        
-        // Dump stack contents (last 8 entries)
-        LDX ZP.SP
-        LDY #8  // Show last 8 entries
-        
-        loop
-        {
-            CPY #0
-            if (Z) { break; }
-            
-            CPX #0
-            if (Z) { break; }
-            
-            DEX
-            
-            // Print stack index
-            TXA
-            Serial.HexOut();
-            LDA #':'
-            Tools.COut();
-            
-            // Print type
-            LDA Address.TypeStackLSB, X
-            Serial.HexOut();
-            LDA #'/'
-            Tools.COut();
-            
-            // Print value (MSB/LSB)
-            LDA Address.ValueStackMSB, X
-            Serial.HexOut();
-            LDA Address.ValueStackLSB, X
-            Serial.HexOut();
-            NL();
-            
-            DEY
-        }
-        
-        NL();
-        
-        PLY
-        PLX
-        PLA
-        PLP  // Restore flags
-    }
-    
     // Debug output for iteration state
     // Input: None
     // Output: Current IDX pointer printed to serial for iteration tracking
@@ -1380,6 +1319,110 @@ unit Debug
         PLP  // Pull processor status (restore carry flag)
     }
     
+    // Output PC register as "PC:hhll "
+    // Input: None (uses ZP.PC)
+    // Output: PC value with type printed to serial with label
+    // Preserves: Everything
+    PCOut()
+    {
+        PHP  // Push processor status (including carry flag)
+        PHA  // Save A register
+        
+        // Save ACCL/ACCH
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
+        LDA #(regPC % 256)
+        STA ZP.ACCL
+        LDA #(regPC / 256)
+        STA ZP.ACCH
+        Tools.PrintStringACC();
+        LDA ZP.PCH
+        Serial.HexOut();
+        LDA ZP.PCL
+        Serial.HexOut();
+        Space();
+        
+        // Restore ACCL/ACCH
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
+        PLA  // Restore A register
+        PLP  // Pull processor status (restore carry flag)
+    }
+    
+    // Output BP register as "BP:ll "
+    // Input: None (uses ZP.BP)
+    // Output: PC value with type printed to serial with label
+    // Preserves: Everything
+    BPOut()
+    {
+        PHP  // Push processor status (including carry flag)
+        PHA  // Save A register
+        
+        // Save ACCL/ACCH
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
+        LDA #(regBP % 256)
+        STA ZP.ACCL
+        LDA #(regBP / 256)
+        STA ZP.ACCH
+        Tools.PrintStringACC();
+        LDA ZP.BP
+        Serial.HexOut();
+        Space();
+        
+        // Restore ACCL/ACCH
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
+        PLA  // Restore A register
+        PLP  // Pull processor status (restore carry flag)
+    }
+    
+    // Output SP register as "SP:ll "
+    // Input: None (uses ZP.SP)
+    // Output: PC value with type printed to serial with label
+    // Preserves: Everything
+    SPOut()
+    {
+        PHP  // Push processor status (including carry flag)
+        PHA  // Save A register
+        
+        // Save ACCL/ACCH
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
+        LDA #(regSP % 256)
+        STA ZP.ACCL
+        LDA #(regSP / 256)
+        STA ZP.ACCH
+        Tools.PrintStringACC();
+        LDA ZP.SP
+        Serial.HexOut();
+        Space();
+        
+        // Restore ACCL/ACCH
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
+        PLA  // Restore A register
+        PLP  // Pull processor status (restore carry flag)
+    }
+    
     // Output TOP register as "TOP:type-hhll "
     // Input: None (uses ZP.TOP)
     // Output: TOP value with type printed to serial with label
@@ -1592,6 +1635,355 @@ unit Debug
         PLA
         PLP
     }
+    
+    
+        
+    // Enhanced DumpStack method for Debug.asm
+    // Input: None  
+    // Output: Comprehensive stack dump showing:
+    //   - Current stack pointers (CSP, SP, BP)
+    //   - Call stack with frame hierarchy and return addresses
+    //   - Value stack with frame boundaries, return slots, and position markers
+    // Preserves: Everything (saves/restores all modified registers and state)
+    // Format: 
+    //   CSP:05 SP:18 BP:12
+    //   Call Stack (2 frames):
+    //     Frame 0: PC=$2C45 BP:12 (current)
+    //     Frame 1: PC=$1A23 BP:08
+    //   Value Stack (18 entries):
+    //     11: I-003C (local)
+    //     10: W-1234 *** RETURN SLOT ***
+    //     09: B-01 (arg) <- BP
+    DumpStack()
+    {
+        PHP  // Save flags
+        PHA
+        PHX
+        PHY
+        
+        // Save ZP state that we'll modify during analysis
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
+        
+/*        
+Debug.NL(); Debug.PCOut(); Debug.SPOut(); Debug.BPOut();
+Debug.NL(); 
+
+LDA #3
+DumpPage();
+LDA #4
+DumpPage();
+LDA #5
+DumpPage();
+LDA #6
+DumpPage();
+LDA #7
+DumpPage();
+*/        
+        // Main header with current stack state
+        LDA #(debugStackHeader % 256)
+        STA ZP.ACCL
+        LDA #(debugStackHeader / 256)
+        STA ZP.ACCH
+        Tools.PrintStringACC();
+        
+        // Current stack pointers
+        LDA #(regCSP % 256)
+        STA ZP.ACCL
+        LDA #(regCSP / 256)
+        STA ZP.ACCH
+        Tools.PrintStringACC();
+        LDA ZP.CSP
+        Serial.HexOut();
+        Space();
+        
+        LDA #(regSP % 256)
+        STA ZP.ACCL
+        LDA #(regSP / 256)
+        STA ZP.ACCH
+        Tools.PrintStringACC();
+        LDA ZP.SP
+        Serial.HexOut();
+        Space();
+        
+        LDA #(regBP % 256)
+        STA ZP.ACCL
+        LDA #(regBP / 256)
+        STA ZP.ACCH
+        Tools.PrintStringACC();
+        LDA ZP.BP
+        Serial.HexOut();
+        NL();
+        
+        // Call Stack Analysis
+        LDA #(callStackHeader % 256)
+        STA ZP.ACCL
+        LDA #(callStackHeader / 256)
+        STA ZP.ACCH
+        Tools.PrintStringACC();
+        LDA ZP.CSP
+        Serial.HexOut();
+        LDA #(framesSuffix % 256)
+        STA ZP.ACCL
+        LDA #(framesSuffix / 256)
+        STA ZP.ACCH
+        Tools.PrintStringACC();
+        
+        // Walk call stack backwards to show frame hierarchy
+        // Call stack layout: [BP][PC][BP][PC]... where CSP points to next free slot
+        LDX ZP.CSP
+        LDY #0  // Frame counter
+        
+        loop
+        {
+            CPX #2  // Need at least 2 entries (PC + BP pair)
+            if (NC) { break; }  // Not enough for a complete frame
+            // Move to saved BP slot (most recent odd index)
+            DEX
+            
+            // Check if this is a return address slot (odd index)
+            TXA
+            AND #1
+            if (NZ)  // Odd index = return address
+            {
+                // Print frame info in cleaner format
+                LDA #(framePrefix % 256)
+                STA ZP.ACCL
+                LDA #(framePrefix / 256)
+                STA ZP.ACCH
+                Tools.PrintStringACC();
+                TYA
+                Serial.HexOut();
+                LDA #(framePC % 256)
+                STA ZP.ACCL
+                LDA #(framePC / 256)
+                STA ZP.ACCH
+                Tools.PrintStringACC();
+                
+                DEX  // Move to return address (even index)
+                LDA Address.CallStackMSB, X
+                Serial.HexOut();
+                LDA Address.CallStackLSB, X
+                Serial.HexOut();
+                
+                LDA #(frameBP % 256)
+                STA ZP.ACCL
+                LDA #(frameBP / 256)
+                STA ZP.ACCH
+                Tools.PrintStringACC();
+                
+                INX  // Back to BP slot (odd index)
+                LDA Address.CallStackLSB, X
+                Serial.HexOut();
+                                            
+                // Mark current frame
+                CPY #0
+                if (Z)
+                {
+                    LDA #(currentFrameMarker % 256)
+                    STA ZP.ACCL
+                    LDA #(currentFrameMarker / 256)
+                    STA ZP.ACCH
+                    Tools.PrintStringACC();
+                }
+                
+                NL();
+                INY
+            }
+            
+            CPY #8  // Limit to 8 frames to prevent runaway
+            if (Z) { break; }
+        }
+        
+        NL();
+        
+        // Value Stack Analysis
+        LDA #(valueStackHeader % 256)
+        STA ZP.ACCL
+        LDA #(valueStackHeader / 256)
+        STA ZP.ACCH
+        Tools.PrintStringACC();
+        LDA ZP.SP
+        Serial.HexOut();
+        LDA #(entriesSuffix % 256)
+        STA ZP.ACCL
+        LDA #(entriesSuffix / 256)
+        STA ZP.ACCH
+        Tools.PrintStringACC();
+        
+        // Value stack analysis with frame correlation
+        LDX ZP.SP
+        LDY #0  // Entry counter
+        
+        // Use ZP.U0 to track current frame being analyzed
+        STZ ZP.U0  // Start with frame 0 (current)
+        
+        loop
+        {
+            CPX #0
+            if (Z) { break; }  // Empty stack
+            
+            CPY #20  // Limit entries to prevent screen overflow
+            if (Z) 
+            { 
+                LDA #(stackEllipsis % 256)
+                STA ZP.ACCL
+                LDA #(stackEllipsis / 256)
+                STA ZP.ACCH
+                Tools.PrintStringACC();
+                break; 
+            }
+            
+            DEX  // Move to previous entry
+            
+            // Check if we've crossed into a new frame (BP boundary)
+            TXA
+            CMP ZP.BP
+            if (Z)
+            {
+                // Print frame boundary marker
+                LDA #(frameMarkerPrefix % 256)
+                STA ZP.ACCL
+                LDA #(frameMarkerPrefix / 256)
+                STA ZP.ACCH
+                Tools.PrintStringACC();
+                LDA ZP.U0
+                Serial.HexOut();
+                LDA #(frameMarkerSuffix % 256)
+                STA ZP.ACCL
+                LDA #(frameMarkerSuffix / 256)
+                STA ZP.ACCH
+                Tools.PrintStringACC();
+                INC ZP.U0  // Next frame
+            }
+            
+            // Print stack entry with intelligent labeling
+            TXA
+            Serial.HexOut();
+            LDA #':'
+            Tools.COut();
+            Space();
+            
+            // Print type and value
+            LDA Address.TypeStackLSB, X
+            Tools.PrintType();
+            LDA #'-'
+            Tools.COut();
+            LDA Address.ValueStackMSB, X
+            Serial.HexOut();
+            LDA Address.ValueStackLSB, X
+            Serial.HexOut();
+            
+            // Smart position identification
+            TXA
+            CMP ZP.BP
+            if (Z)
+            {
+                LDA #(bpMarker % 256)
+                STA ZP.ACCL
+                LDA #(bpMarker / 256)
+                STA ZP.ACCH
+                Tools.PrintStringACC();
+            }
+            else
+            {
+                // Use ZP.U1 to check if this is likely a return slot
+                // Return slots are typically VOID type or were initialized as BIT 0
+                STZ ZP.U1  // Assume not a return slot
+                
+                LDA Address.TypeStackLSB, X
+                CMP #Types.Undefined
+                if (Z)
+                {
+                    INC ZP.U1  // Likely return slot
+                }
+                else
+                {
+                    CMP #Types.Bool
+                    if (Z)
+                    {
+                        // Check if it's zero value (default return slot initialization)
+                        LDA Address.ValueStackLSB, X
+                        ORA Address.ValueStackMSB, X
+                        if (Z)
+                        {
+                            INC ZP.U1  // Likely return slot (BIT 0)
+                        }
+                    }
+                }
+                
+                LDA ZP.U1
+                if (NZ)
+                {
+                    LDA #(returnSlotMarker % 256)
+                    STA ZP.ACCL
+                    LDA #(returnSlotMarker / 256)
+                    STA ZP.ACCH
+                    Tools.PrintStringACC();
+                }
+                else
+                {
+                    // Show position relative to BP for context
+                    SEC
+                    TXA
+                    SBC ZP.BP
+                    if (NC)  // Below BP (arguments)
+                    {
+                        LDA #(argMarker % 256)
+                        STA ZP.ACCL
+                        LDA #(argMarker / 256)
+                        STA ZP.ACCH
+                        Tools.PrintStringACC();
+                    }
+                    else  // Above BP (locals/temps)
+                    {
+                        LDA #(localMarker % 256)
+                        STA ZP.ACCL
+                        LDA #(localMarker / 256)
+                        STA ZP.ACCH
+                        Tools.PrintStringACC();
+                    }
+                }
+            }
+            
+            NL();
+            INY
+        }
+        
+        NL();
+        
+        // Restore all saved state in reverse order
+        PLA
+        STA ZP.IDYH
+        PLA
+        STA ZP.IDYL
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
+        PLY
+        PLX
+        PLA
+        PLP  // Restore flags
+    }
+
+    
+    
     
 #endif // DEBUG
 

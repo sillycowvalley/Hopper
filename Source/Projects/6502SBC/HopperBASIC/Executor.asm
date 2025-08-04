@@ -693,9 +693,11 @@ unit Executor
 #endif
         
         Stacks.PushBP();
-        LDA ZP.BP
-        STA ZP.SP
+        LDA ZP.SP
+        STA ZP.BP
         State.SetSuccess();
+        
+DumpStack();
         
 #ifdef TRACE
         LDA #(executeEnterTrace % 256) STA ZP.TraceMessageL LDA #(executeEnterTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1097,7 +1099,7 @@ unit Executor
             LDA executorOperandH
             STA ZP.TOPH
             
-    #ifdef DEBUG
+    #ifdef TRACEJIT
             LDA #'@' Debug.COut(); 
             LDA executorOperandH Debug.HOut(); 
             LDA executorOperandL Debug.HOut();
@@ -1107,22 +1109,22 @@ unit Executor
             Functions.Find(); // Input: ZP.TOP = name
             if (NC)
             {
-    #ifdef DEBUG
+    #ifdef TRACEJIT
                 LDA #'?' Debug.COut(); LDA #'F' Debug.COut();
     #endif
                 Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
                 State.SetFailure();
                 break;
             }
-#ifdef DEBUG
+#ifdef TRACEJIT
             LDA #' ' Debug.COut(); LDA #'\'' Debug.COut(); Tools.PrintStringTOP(); LDA #'\'' Debug.COut(); LDA #' ' Debug.COut();
-            LDA #'=' Debug.COut(); LDA ZP.IDXH Debug.HOut(); LDA ZP.IDXL Debug.HOut(); LDA #' ' Debug.COut(); 
+            LDA #'=' Debug.COut(); LDA #'\'' Debug.COut(); LDA ZP.IDXH Debug.HOut(); LDA ZP.IDXL Debug.HOut(); LDA #' ' Debug.COut(); 
 #endif
             // ZP.IDX = function node address
             Functions.IsCompiled();
             if (NC)
             {
-#ifdef DEBUG
+#ifdef TRACEJIT
                 Tools.NL(); LDA #' ' Tools.NL(); LDA #'J' Debug.COut(); LDA #'I' Debug.COut(); LDA #'T' Debug.COut();
 #endif
                 // JIT
@@ -1135,14 +1137,11 @@ unit Executor
                 }
             }
             
-    #ifdef DEBUG
+    #ifdef TRACEJIT
             Tools.NL(); 
             LDA #'P' Debug.COut(); LDA #'A' Debug.COut(); LDA #'T' Debug.COut(); LDA #'C' Debug.COut(); LDA #'H' Debug.COut();
             LDA #':' Debug.COut(); LDA #' ' Debug.COut();
             Debug.XOut(); // IDX
-            
-            
-            
     #endif
             
             // 2. replace own opcode CALL -> CALLF, <index> by <address>
