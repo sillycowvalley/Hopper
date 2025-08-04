@@ -670,6 +670,7 @@ unit Functions
     }   
     
     // Helper method to copy function tokens to BasicTokenizerBuffer and set up tokenizer
+    // For $MAIN, also prepends tokens to reinitialize global variables at the start of each RUN
     // Input: ZP.IDX = function node address
     // Output: Tokenizer configured with function's tokens copied to BasicTokenizerBuffer
     //         ZP.ACCL/H = length of function tokens
@@ -680,139 +681,149 @@ unit Functions
         PHA
         PHX
         PHY
-        
-        // Get function body tokens
-        Functions.GetBody(); // Input: ZP.IDX = function node, Output: ZP.IDY = tokens pointer
-        
-        // Check if function has a body
-        LDA ZP.IDYL
-        ORA ZP.IDYH
-        if (Z)
-        {
-            Error.InternalError(); BIT ZP.EmulatorPCL
-            PLY
-            PLX
-            PLA
-            RTS
-        }
-        
-        // Calculate length of function token stream by scanning for end marker
-        LDY #0
-        STZ ZP.ACCL
-        STZ ZP.ACCH
-        
-        loop // Scan for length
-        {
-            LDA [ZP.IDY], Y
-            CMP #Tokens.ENDFUNC
-            if (Z) { break; }
-            CMP #Tokens.END
-            if (Z) { break; }
-            CMP #Tokens.EOF  
-            if (Z) { break; }
-            
-            INY
-            if (Z) { INC ZP.IDYH }
-            
-            INC ZP.ACCL
-            if (Z) { INC ZP.ACCH }
-        }
-        
-        // Set up source address (function's token stream)
-        LDA ZP.IDYL
-        STA ZP.FSOURCEADDRESSL
-        LDA ZP.IDYH
-        STA ZP.FSOURCEADDRESSH
-        
-        // Set up destination address (BasicTokenizerBuffer)
-        LDA #(Address.BasicTokenizerBuffer % 256)
-        STA ZP.FDESTINATIONADDRESSL
-        LDA #(Address.BasicTokenizerBuffer / 256)  
-        STA ZP.FDESTINATIONADDRESSH
-        
-        // Set up length for copy
-        LDA ZP.ACCL
-        STA ZP.FLENGTHL
-        LDA ZP.ACCH
-        STA ZP.FLENGTHH
-       
-        // Copy function tokens to tokenizer buffer
-        Tools.CopyBytes();
-        
-        // Configure tokenizer to read copied function tokens
-        LDA ZP.ACCL                   // Length of function tokens
-        STA ZP.TokenBufferLengthL
-        LDA ZP.ACCH
-        STA ZP.TokenBufferLengthH
-        
-        STZ ZP.TokenizerPosL          // Start at beginning of copied tokens
-        STZ ZP.TokenizerPosH 
-        
-        PLY
-        PLX
-        PLA
-    }
-    
-    // Helper method to copy function tokens to BasicTokenizerBuffer and set up tokenizer
-    // Input: ZP.IDX = function node address
-    // Output: Tokenizer configured with function's tokens copied to BasicTokenizerBuffer
-    //         ZP.ACCL/H = length of function tokens
-    // Modifies: ZP.IDY, ZP.ACC, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, ZP.FLENGTH
-    // Preserves: ZP.IDX (function node address)
-    copyFunctionTokensToBuffer2()
-    {
-        PHA
-        PHX
-        PHY
-        
-        // Get function body tokens
-        Functions.GetBody(); // Input: ZP.IDX = function node, Output: ZP.IDY = tokens pointer
-        
-        // Check if function has a body
-        LDA ZP.IDYL
-        ORA ZP.IDYH
-        if (Z)
-        {
-            Error.InternalError(); BIT ZP.EmulatorPCL
-            PLY
-            PLX
-            PLA
-            RTS
-        }
-        
-        LDA #(Address.BasicTokenizerBuffer % 256)
-        STA ZP.FDESTINATIONADDRESSL   // Destination: BasicTokenizerBuffer
-        LDA #(Address.BasicTokenizerBuffer / 256)  
-        STA ZP.FDESTINATIONADDRESSH
-        
-        // Length of function tokens
-        STZ ZP.FLENGTHL
-        STZ ZP.FLENGTHH
-        
-        // Copy function's token stream to BasicTokenizerBuffer for compilation
         loop
         {
-            IncLENGTH();
-            LDA [ZP.IDY]
-            STA [ZP.FDESTINATIONADDRESS]
-            CMP #Tokens.ENDFUNC
-            if (Z) { break; }
-            CMP #Tokens.END
-            if (Z) { break; }
-            CMP #Tokens.EOF  
-            if (Z) { break; }
-            IncIDY();
-            IncDESTINATIONADDRESS();
-        }
-        
-        // Configure tokenizer to read copied function tokens
-        LDA ZP.FLENGTHL                   // Length of function tokens
-        STA ZP.TokenBufferLengthL
-        LDA ZP.FLENGTHH
-        STA ZP.TokenBufferLengthH
-        
-        STZ ZP.TokenizerPosL          // Start at beginning of copied tokens
-        STZ ZP.TokenizerPosH 
+            // Get function body tokens
+            Functions.GetBody(); // Input: ZP.IDX = function node, Output: ZP.IDY = tokens pointer
+            
+            // Check if function has a body
+            LDA ZP.IDYL
+            ORA ZP.IDYH
+            if (Z)
+            {
+                Error.InternalError(); BIT ZP.EmulatorPCL
+                break;
+            }
+            
+            LDA #(Address.BasicTokenizerBuffer % 256)
+            STA ZP.FDESTINATIONADDRESSL   // Destination: BasicTokenizerBuffer
+            LDA #(Address.BasicTokenizerBuffer / 256)  
+            STA ZP.FDESTINATIONADDRESSH
+            
+            // Length of function tokens
+            STZ ZP.FLENGTHL
+            STZ ZP.FLENGTHH
+            
+            // Compare function name with "$MAIN"
+            Functions.GetName();
+            LDA #(Messages.BeginFunctionName % 256)
+            STA ZP.NEXTL
+            LDA #(Messages.BeginFunctionName / 256)
+            STA ZP.NEXTH
+            Tools.StringCompare(); // Input: ZP.TOP vs ZP.NEXT, Output: C set if match
+            if (C)
+            {
+                // Save current function node
+                LDA ZP.IDXL
+                PHA
+                LDA ZP.IDXH
+                PHA
+                
+                // Start iteration over all variables
+                Variables.IterateVariables();
+                // Returns: ZP.IDX = first variable node, C = found, NC = none
+                loop // Variable iteration loop
+                {
+                    if (NC) { SEC break; } // No more variables
+                    
+                    // get variable name for assignment
+                    Variables.GetName();
+                    
+                    // Copy name                    
+                    LDA # Tokens.IDENTIFIER
+                    STA [ZP.FDESTINATIONADDRESS]
+                    IncLENGTH();
+                    IncDESTINATIONADDRESS();
+                    loop
+                    {
+                        IncLENGTH();
+                        LDA [ZP.ACC]
+                        STA [ZP.FDESTINATIONADDRESS]
+                        if (Z)
+                        {
+                            IncDESTINATIONADDRESS();
+                            break;
+                        }
+                        IncACC();
+                        IncDESTINATIONADDRESS();
+                    }
+                    
+                    // Copy '='
+                    LDA # Tokens.EQUALS
+                    STA [ZP.FDESTINATIONADDRESS]
+                    IncLENGTH();
+                    IncDESTINATIONADDRESS();
+                    
+                    // Get variable initialization tokens
+                    Variables.GetTokens(); // Returns tokens pointer in ZP.NEXT
+                    
+                    // Check if variable has initialization tokens
+                    LDA ZP.NEXTL
+                    ORA ZP.NEXTH
+                    if (Z) // No initialization tokens, skip this variable
+                    {
+                        // Continue to next variable
+                        Variables.IterateNext();
+                        continue;
+                    }
+                    
+                    // NOTE: it is not possible to define a multiline variable so EOL is a good terminator
+                    
+                    // Copy variable initialization tokens to buffer
+                    // Input: ZP.NEXT = source tokens
+                    loop
+                    { 
+                        IncLENGTH();
+                        LDA [ZP.NEXT]
+                        STA [ZP.FDESTINATIONADDRESS]
+                        CMP #Tokens.EOL
+                        if (Z)
+                        {
+                            IncDESTINATIONADDRESS();
+                            break;
+                        }
+                        IncNEXT();
+                        IncDESTINATIONADDRESS();
+                    }
+                    
+                    // Continue to next variable
+                    Variables.IterateNext();
+                } // iterate variables loop
+                
+                // Restore main function node
+                PLA
+                STA ZP.IDXH
+                PLA
+                STA ZP.IDXL
+            }
+            
+            // Copy function's token stream to BasicTokenizerBuffer for compilation
+            loop
+            {
+                IncLENGTH();
+                LDA [ZP.IDY]
+                STA [ZP.FDESTINATIONADDRESS]
+                CMP #Tokens.ENDFUNC
+                if (Z) { break; }
+                CMP #Tokens.END
+                if (Z) { break; }
+                CMP #Tokens.EOF  
+                if (Z) { break; }
+                IncIDY();
+                IncDESTINATIONADDRESS();
+            }
+            
+            // Configure tokenizer to read copied function tokens
+            LDA ZP.FLENGTHL                   // Length of function tokens
+            STA ZP.TokenBufferLengthL
+            LDA ZP.FLENGTHH
+            STA ZP.TokenBufferLengthH
+            
+            STZ ZP.TokenizerPosL          // Start at beginning of copied tokens
+            STZ ZP.TokenizerPosH
+            
+            break;
+        } // single exit
         
         PLY
         PLX
@@ -851,7 +862,7 @@ unit Functions
             freeOpCodes(); // Free existing opcode stream if not null
                                     
             // Copy function tokens to BasicTokenizerBuffer and configure tokenizer
-            copyFunctionTokensToBuffer2();
+            copyFunctionTokensToBuffer();
             Error.CheckError();
             if (NC) { break; }
             
@@ -877,10 +888,6 @@ unit Functions
                 PLA
                 STA ZP.IDXL
             }
-            
-    DumpVariables();  
-    DumpBasicBuffers();            
-    DumpHeap();  
             
             LDA ZP.IDXL
             PHA

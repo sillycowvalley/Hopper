@@ -391,6 +391,11 @@ unit Variables
     // Munts: -
     GetTokens()
     {
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
+        
         Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
         
         // Copy to ZP.NEXT for consistency with interface
@@ -398,6 +403,11 @@ unit Variables
         STA ZP.NEXTL
         LDA ZP.IDYH
         STA ZP.NEXTH
+        
+        PLA
+        STA ZP.IDYH
+        PLA   
+        STA ZP.IDYL
         
         SEC  // Always succeeds
     }
