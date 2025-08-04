@@ -12,7 +12,9 @@ program HopperBASIC
     #define ROM_32K
     
 #if defined(TRACECONSOLE) || defined(TRACEVERBOSE)
+  #if !defined(TRACE)
     #define TRACE
+  #endif    
 #endif
     
     uses "/Source/Runtime/6502/Serial"

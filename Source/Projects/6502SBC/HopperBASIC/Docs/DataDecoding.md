@@ -1,5 +1,5 @@
 # HopperBASIC Memory Dump Analysis Guide
-**Document Type: Debug Analysis Guide**
+**Document Type: Dump and Decode Guide**
 
 ## Critical First Step: Get Current Source
 
