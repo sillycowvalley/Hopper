@@ -118,6 +118,7 @@ unit OpCodes
         
         // Built-in functions with two arguments
         PEEK         = 0x8C,  // Push memory byte [addr_lsb] [addr_msb] 
+        DELAY        = 0x8D,  // Pop word delay in seconds
         
         // === RESERVED FOR FUTURE EXTENSIONS (0xC0-0xFF) ===
         // Bits 7-6: 11 (reserved)
@@ -210,7 +211,6 @@ unit OpCodes
     // **System Call IDs:**
     // - **0x01**: PRINT_STRING - Pop CONSTSTRING from stack and print
     // - **0x02**: PRINT_NEWLINE - Print newline character
-    // - **0x03**: MILLIS - Push current milliseconds to stack (future)
     //
     // **Execution Speed Benefits:**
     // - **Single instruction fetch** reveals operand count via bit pattern
