@@ -77,6 +77,10 @@ program Optimize
                     Architecture = CPUArchitecture.M6502;
                     romSize = 0x1000;
                 }
+                if (pdValues.Contains("ROM_48K"))
+                {
+                    romSize = 0xC000;
+                }
                 if (pdValues.Contains("ROM_32K"))
                 {
                     romSize = 0x8000;

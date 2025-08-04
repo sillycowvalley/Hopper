@@ -230,6 +230,11 @@ program DASM
                         description = " for 65uino";
                         romSize = 0x1000;
                     }
+                    if (DefineExists("ROM_48K"))
+                    {
+                        description += " (48K ROM)";
+                        romSize = 0xC000;
+                    }
                     if (DefineExists("ROM_32K"))
                     {
                         description += " (32K ROM)";

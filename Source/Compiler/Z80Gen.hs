@@ -2176,6 +2176,10 @@ program Z80Gen
                     {
                         CodeStream.InitializeSymbolShortcuts();
                     }
+                    if (DefineExists("ROM_48K"))
+                    {
+                        romSize = 0xC000;
+                    }
                     if (DefineExists("ROM_32K"))
                     {
                         romSize = 0x8000;
