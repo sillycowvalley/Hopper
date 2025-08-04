@@ -1,4 +1,6 @@
-# Hopper BASIC Specification v2.11
+while_statement := WHILE expression
+                  { statement }*
+                  WEND# Hopper BASIC Specification v2.11
 **Document Type: Language Specification for Hopper BASIC**
 
 ## Project Objectives
@@ -177,6 +179,7 @@ END
 #### Control Flow
 - ✅ **`IF expr THEN statements ENDIF`** - Conditional execution
 - ✅ **`IF expr THEN statements ELSE statements ENDIF`** - With alternative
+- ✅ **`WHILE expr`...`WEND`** - Conditional loops  
 - ✅ **`RETURN [expr]`** - Return from function
 - ✅ **`END`** - End main program
 
@@ -206,7 +209,7 @@ END
 
 #### Built-in Functions
 - ✅ **`ABS(x)`** - Absolute value
-- ✅ **`RND(max)`** - Random number 0 to max-1
+- ❌ **`RND(max)`** - Random number (TODO - returns NotImplemented)
 - ✅ **`MILLIS()`** - Milliseconds since startup
 - ✅ **`SECONDS()`** - Seconds since startup
 
@@ -223,7 +226,7 @@ END
 - ❌ **`NEXT var`** - End of FOR loop
 
 ### Additional Loops
-- ❌ **`WHILE expr`...`WEND`** - Conditional loops
+- ✅ **`WHILE expr`...`WEND`** - Conditional loops  
 - ❌ **`DO`...`UNTIL expr`** - Post-test loops
 - ❌ **`BREAK`** - Exit loops early
 - ❌ **`CONTINUE`** - Skip to next iteration
@@ -295,6 +298,7 @@ statement := variable_decl
            | assignment
            | print_statement
            | if_statement
+           | while_statement
            | function_definition
            | main_program
            | return_statement
@@ -306,6 +310,9 @@ assignment := identifier "=" expression
 print_statement := PRINT [ expression ]
 
 if_statement := IF expression THEN statement_block [ ELSE statement_block ] ENDIF
+
+while_statement := WHILE expression { statement }* WEND
+
 statement_block := statement [ ":" statement ]*
 
 comment_statement := REM [ comment_text ] | "'" [ comment_text ]
@@ -414,22 +421,26 @@ string_literal := '"' { character }* '"'
 - Console commands (NEW, CLEAR, VARS, FUNCS, LIST, FORGET, MEM, BYE)
 - Statement processing with colon separators
 - IF/THEN/ELSE/ENDIF statements
-- RETURN/END statements
+- WHILE/WEND loops
+- RETURN statements with optional expression
+- END statement for main program
 - Assignment with type checking
 - BIT type with TRUE/FALSE literals
 - STRING type with literals and comparison
 - BYTE type with 8-bit arithmetic
 - Function execution with recursion
 - RUN command for main program
-- Built-in functions (ABS, RND, MILLIS, SECONDS)
+- Built-in functions (ABS, MILLIS, SECONDS)
 - Memory access (PEEK, POKE)
+- RND function (declared but TODO)
+- BEGIN/END main program definition
+- FUNC/ENDFUNC function definition
 
 ### ❌ Missing for Benchmarks
 1. FOR/NEXT loops - Basic iteration
-2. WHILE/WEND loops - Conditional iteration
-3. Multiple PRINT arguments - Complex output
-4. Global array declarations - Array support
-5. Array indexing - Array access
+2. Global array declarations - Array support
+3. Array indexing - Array access
+4. Multiple PRINT arguments - Complex output
 
 ---
 
