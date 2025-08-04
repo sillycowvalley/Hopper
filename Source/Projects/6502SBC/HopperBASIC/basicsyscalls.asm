@@ -31,6 +31,7 @@ unit BASICSysCalls
 #endif
        loop
        {
+
            FetchOperandByte();  // A = SYSCALL ID
            State.CanContinue();
            if (NC) { break; }
@@ -127,12 +128,13 @@ unit BASICSysCalls
                case SysCallType.Seconds:       // ID = 6
                {
                    // SECONDS function - get elapsed seconds
-                   Time.Seconds();              // Sets ZP.TOP*
+                   Time.Seconds();              
+                   LDY #0 // already pushed the result
                }
                case SysCallType.Delay:         // ID = 7
                {
                    // DELAY function - delay in milliseconds
-                   Time.Delay();                // Uses ZP.TOP*
+                   Time.DelayTOP();            // Uses ZP.TOP*
                }
                case SysCallType.Peek:          // ID = 8
                {

@@ -356,8 +356,6 @@ unit ComparisonInstructions
         
         if (NC)
         {
-            Debug.NL(); Debug.NOut(); Debug.TOut();
-            
             Error.TypeMismatch(); BIT ZP.EmulatorPCL
         }
         

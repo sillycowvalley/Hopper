@@ -89,7 +89,7 @@ unit Debug
     // Modifies: A, Z
     Space()
     {
-        LDA #' ' Tools.COut();
+        PHA LDA #' ' Tools.COut(); PLA
     }
     
     // Print null-terminated string to serial output
@@ -318,8 +318,151 @@ unit Debug
         PLP  // Restore flags
     }
     
+    Spaces()
+    {
+        CMP # 0
+        if (NZ)
+        {
+            loop
+            {
+                Space();
+                DEC
+                if (Z) { break; }
+            }
+        }
+    }
     
-
+    dumpBlockAscii()
+    {
+        PHX
+        PHY
+        Space();Space();
+        
+        LDX ZP.M5  // number of chars on this row     
+        
+        SEC
+        LDA #16
+        SBC ZP.M5
+        if (NZ)
+        {
+            CMP #8
+            if (C)
+            {
+                Space();
+            }
+            PHA Spaces(); PLA
+            PHA Spaces(); PLA
+            Spaces();
+        }
+        
+        LDA ZP.M4 // current index of start of row
+        TAY 
+        loop
+        {
+            LDA [ZP.IDX], Y
+            CMP #32
+            if (C)  // >= 32
+            {
+                CMP #127
+                if (C)  // > 127
+                {
+                    LDA #'.'
+                }
+            }
+            else
+            {
+                LDA #'.'
+            }
+            Serial.WriteChar();
+            INY
+            DEX
+            if (Z) { break; }
+        }
+        PLY
+        PLX
+    }
+    dumpBlockAddress()
+    {
+        NL();
+        LDA # 5 Spaces();
+        CLC
+        TYA
+        ADC ZP.IDXL
+        STA ZP.M6
+        LDA #0
+        ADC ZP.IDXH
+        HOut();
+        LDA ZP.M6
+        HOut();
+        LDA # ':' COut(); LDA # 11 Spaces();
+        STZ ZP.M5 // number of bytes on this row zero now
+    }
+    
+    // IDX - points to content (can be munted)
+    // U2  - size LSB
+    // U3  - size MSB 
+    dumpBlockContent()
+    {
+        PHX
+        PHY
+        
+        STZ ZP.M4
+        STZ ZP.M5 // number of bytes printed on this row
+        LDY # 0   // current position
+        LDX # 64  // max bytes to output
+        loop
+        {
+            CPY #0
+            if (NZ) // not first line
+            {
+                TYA
+                AND # 0x0F
+                if (Z)
+                {
+                    dumpBlockAscii();
+                }
+                CPX #0
+                if (Z)
+                {
+                    break; // limit of max bytes
+                }
+                
+                TYA
+                AND # 0x0F
+                if (Z)
+                {
+                    dumpBlockAddress(); 
+                    STY ZP.M4
+                }
+            }
+            TYA
+            AND # 0x07
+            if (Z)
+            {
+                Space(); // column space   
+            }
+            Space(); LDA [ZP.IDX], Y Debug.HOut();
+            INC ZP.M5
+            INY
+            DEX
+            LDA ZP.U2 // LSB
+            if (Z)
+            {
+                LDA ZP.U3
+                if (Z)
+                {
+                    dumpBlockAscii(); // partial row
+                    
+                    break; // ran out of bytes
+                }
+                DEC ZP.U3 // MSB
+            }
+            DEC ZP.U2 // LSB
+        } // loop
+        PLY
+        PLX
+    }
+    
 
     
     // Dump heap with state preservation for debugging
@@ -368,7 +511,7 @@ unit Debug
     
     // Internal heap dump implementation
     // Input: None
-    // Output: Detailed heap block analysis with hex/ASCII dump
+    // Output: Detailed heap block analysis with hex/ASCII dump (up to 64 bytes per block)
     // Modifies: ZP.M0-M3, ZP.U0, ZP.U2, ZP.U3, ZP.IDX, ZP.IDY, A, X, Y (internal operations)
     dumpHeap()
     {
@@ -460,10 +603,10 @@ unit Debug
             
             CLC
             LDA ZP.IDXL
-            ADC # 2
+            ADC #2
             STA ZP.M2
             LDA ZP.IDXH
-            ADC # 0
+            ADC #0
             
             // Print Alloc address (block address + 2)
             Serial.HexOut();
@@ -571,13 +714,7 @@ unit Debug
             
             LDA #')'
             Tools.COut();
-            Space();
-            Space();
-            Space();
-            Space();
-            
-            // Show first 16 bytes of block content (after 2-byte header)
-            
+                        
             // Restore current position for content dump
             LDA ZP.M2
             STA ZP.IDXL
@@ -595,7 +732,6 @@ unit Debug
             }
             
             // Calculate effective content size (block size - 2 for header)
-            // Block size is in ZP.M0 (low) and ZP.M1 (high)
             SEC
             LDA ZP.M0
             SBC #2
@@ -604,107 +740,16 @@ unit Debug
             SBC #0
             STA ZP.U3  // Content size high byte
             
-            // Limit to max 16 bytes for display
-            LDA ZP.U3
-            if (NZ)  // Size > 255, so limit to 16
+            LDA ZP.U0
+            if (Z) // USED
             {
-                LDA #16
-                STA ZP.U2
-                STZ ZP.U3
+                // IDX - points to content (can be munted)
+                // U2  - size LSB
+                // U3  - size MSB 
+                dumpBlockContent();
             }
-            else
-            {
-                LDA ZP.U2
-                CMP #16
-                if (C)  // Size >= 16, limit to 16
-                {
-                    LDA #16
-                    STA ZP.U2
-                }
-            }
-            
-            // First pass: dump hex bytes with spaces
-            LDY #0
-            loop
-            {
-                CPY ZP.U2
-                if (Z) { break; }
-                
-                LDA [ZP.IDX], Y
-                Serial.HexOut();
-                Space();
-                
-                INY
-                
-                // Add extra space after 8 bytes
-                CPY #8
-                if (Z)
-                {
-                    CPY ZP.U2  // Don't add space if we're at the end
-                    if (NZ)
-                    {
-                        Space();
-                        Space();
-                    }
-                }
-            }
-            
-            // Pad hex section to align ASCII (each byte takes 3 chars: "XX ")
-            // Need to reach 16*3 + 2 = 50 characters for full alignment
-            loop
-            {
-                CPY #16
-                if (Z) { break; }
-                
-                Space();
-                Space();
-                Space();
-                
-                INY
-                
-                // Add extra space after 8 bytes for alignment
-                CPY #8
-                if (Z)
-                {
-                    Space();
-                    Space();
-                }
-            }
-            
-            // Add spacing before ASCII dump
-            Space();
-            Space();
-            Space();
-            
-            // Second pass: dump same bytes as ASCII
-            LDY #0
-            loop
-            {
-                CPY ZP.U2
-                if (Z) { break; }
-                
-                LDA [ZP.IDX], Y
-                
-                // Check if printable (32-127)
-                CMP #32
-                if (C)  // >= 32
-                {
-                    CMP #127
-                    if (NC)  // <= 127
-                    {
-                        Tools.COut();  // Print the character
-                        INY
-                        continue;
-                    }
-                }
-                
-                // Not printable, print dot
-                LDA #'.'
-                Tools.COut();
-                INY
-            }
-            
-            NL();
+                                                
+            NL();  // End this block's output
             
             // Restore current position
             LDA ZP.M2
@@ -712,17 +757,17 @@ unit Debug
             LDA ZP.M3
             STA ZP.IDXH
             
-            // Move to next block: current address + block size
+            // Move to next block
             CLC
             LDA ZP.IDXL
-            ADC ZP.M0  // Add low byte of size
+            ADC ZP.M0
             STA ZP.IDXL
             LDA ZP.IDXH
-            ADC ZP.M1  // Add high byte of size
+            ADC ZP.M1
             STA ZP.IDXH
             
             INX
-            CPX #20  // Limit to 20 blocks to avoid infinite loops
+            CPX #20
             if (Z) 
             { 
                 LDA #(debugEllipsis % 256)
@@ -749,6 +794,9 @@ unit Debug
         PLX
         PLA
     }
+    
+    
+    
     
     // Dump a 256-byte page in hex+ASCII format for debugging
     // Input: A = page number (high byte of address)
