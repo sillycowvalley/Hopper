@@ -37,7 +37,7 @@ unit Debug
     const string callStackHeader = "Call Stack (";
     const string framesSuffix = " frames):\n";
     const string framePrefix = "  Frame ";
-    const string framePC = ": PC=$";
+    const string framePC = ": PC=0x";
     const string frameBP = " BP:";
     const string currentFrameMarker = " (current)";
     const string valueStackHeader = "Value Stack (";
@@ -1637,6 +1637,111 @@ unit Debug
     }
     
     
+    
+    // Find function containing given address
+    // Input: ZP.ACC = address to search for
+    // Output: ZP.TOP = function name pointer if found, C set if found, NC if not found
+    // Preserves: ZP.ACC (search address), ZP.IDX
+    // Munts: ZP.IDY (function iteration), ZP.NEXT (opcode stream checks)
+    findFunctionByAddress()
+    {
+        PHA
+        PHX
+        PHY
+        
+        // Save ZP.IDX since we'll be iterating functions
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
+        // Save ZP.NEXT since we'll use it for opcode range checks
+        LDA ZP.NEXTL
+        PHA
+        LDA ZP.NEXTH
+        PHA
+        
+        loop // Single exit block
+        {
+            // Start function iteration
+            Functions.IterateFunctions();
+            if (NC) 
+            { 
+                CLC // No functions found
+                break; 
+            }
+            
+            loop // Function iteration loop
+            {
+                // Get function's opcode stream
+                Functions.GetOpCodes(); // Input: ZP.IDX, Output: ZP.IDY = opcodes, C if compiled
+                if (NC) 
+                { 
+                    // Function not compiled, skip it
+                    Functions.IterateNext();
+                    if (NC) { break; } // No more functions
+                    continue;
+                }
+                
+                // Check if search address falls within this function's opcode range
+                // ZP.IDY = start of opcode stream
+                // Need to get the length somehow - for now, check if address >= start
+                
+                // Compare search address (ZP.ACC) with opcode stream start (ZP.IDY)
+                LDA ZP.ACCH
+                CMP ZP.IDYH
+                if (NC) // ACC.H >= IDY.H
+                {
+                    if (NZ) // ACC.H > IDY.H 
+                    {
+                        // Could be in this function, but need to check end bound
+                        // For now, assume it's a match and get the function name
+                        Functions.GetName(); // Input: ZP.IDX, Output: ZP.TOP = name pointer
+                        SEC // Found
+                        break;
+                    }
+                    else // ACC.H == IDY.H, check low byte
+                    {
+                        LDA ZP.ACCL
+                        CMP ZP.IDYL
+                        if (C) // ACC.L >= IDY.L
+                        {
+                            // Address is >= start of function opcodes
+                            Functions.GetName(); // Input: ZP.IDX, Output: ZP.TOP = name pointer
+                            SEC // Found
+                            break;
+                        }
+                    }
+                }
+                
+                // Try next function
+                Functions.IterateNext();
+                if (NC) { break; } // No more functions
+            }
+            
+            if (C) { break; } // Found a function
+            
+            CLC // Not found in any function
+            break;
+            
+        } // End single exit block
+        
+        // Restore ZP.NEXT
+        PLA
+        STA ZP.NEXTH
+        PLA
+        STA ZP.NEXTL
+        
+        // Restore ZP.IDX
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        PLY
+        PLX
+        PLA
+    }
         
     // Enhanced DumpStack method for Debug.asm
     // Input: None  
@@ -1648,8 +1753,8 @@ unit Debug
     // Format: 
     //   CSP:05 SP:18 BP:12
     //   Call Stack (2 frames):
-    //     Frame 0: PC=$2C45 BP:12 (current)
-    //     Frame 1: PC=$1A23 BP:08
+    //     Frame 0: PC=0x2C45 BP:12 (current)
+    //     Frame 1: PC=0x1A23 BP:08
     //   Value Stack (18 entries):
     //     11: I-003C (local)
     //     10: W-1234 *** RETURN SLOT ***
@@ -1748,6 +1853,7 @@ DumpPage();
         {
             CPX #2  // Need at least 2 entries (PC + BP pair)
             if (NC) { break; }  // Not enough for a complete frame
+            
             // Move to saved BP slot (most recent odd index)
             DEX
             
@@ -1756,7 +1862,7 @@ DumpPage();
             AND #1
             if (NZ)  // Odd index = return address
             {
-                // Print frame info in cleaner format
+                // Print frame info with function name lookup
                 LDA #(framePrefix % 256)
                 STA ZP.ACCL
                 LDA #(framePrefix / 256)
@@ -1771,38 +1877,76 @@ DumpPage();
                 Tools.PrintStringACC();
                 
                 DEX  // Move to return address (even index)
-                LDA Address.CallStackMSB, X
-                Serial.HexOut();
+                
+                // Load return address into ZP.ACC for function lookup
                 LDA Address.CallStackLSB, X
+                STA ZP.ACCL
+                LDA Address.CallStackMSB, X
+                STA ZP.ACCH
+                
+                // Print the address first
+                LDA ZP.ACCH
+                Serial.HexOut();
+                LDA ZP.ACCL
                 Serial.HexOut();
                 
+                // Try to find function containing this address
+                findFunctionByAddress(); // Input: ZP.ACC, Output: ZP.TOP = name, C if found
+                if (C)
+                {
+                    // Found function name - print it
+                    LDA #' '
+                    Serial.WriteChar();
+                    LDA #'('
+                    Serial.WriteChar();
+                    Tools.PrintStringTOP(); // Print function name
+                    LDA #')'
+                    Serial.WriteChar();
+                }
+                
+                // Print rest of frame info
                 LDA #(frameBP % 256)
                 STA ZP.ACCL
                 LDA #(frameBP / 256)
                 STA ZP.ACCH
                 Tools.PrintStringACC();
-                
-                INX  // Back to BP slot (odd index)
+                INX  // Move to BP value (next slot)
                 LDA Address.CallStackLSB, X
                 Serial.HexOut();
-                                            
-                // Mark current frame
+                
+                // Mark current frame and show function name
                 CPY #0
                 if (Z)
                 {
-                    LDA #(currentFrameMarker % 256)
+                    // For current frame, try to show function name
+                    LDA Address.CallStackLSB, X
                     STA ZP.ACCL
-                    LDA #(currentFrameMarker / 256)
+                    LDA Address.CallStackMSB, X
                     STA ZP.ACCH
-                    Tools.PrintStringACC();
+                    findFunctionByAddress();
+                    if (C)
+                    {
+                        LDA #' '
+                        Serial.WriteChar();
+                        LDA #'('
+                        Serial.WriteChar();
+                        Tools.PrintStringTOP();
+                        LDA #')'
+                        Serial.WriteChar();
+                    }
+                    else
+                    {
+                        LDA #(currentFrameMarker % 256)
+                        STA ZP.ACCL
+                        LDA #(currentFrameMarker / 256)
+                        STA ZP.ACCH
+                        Tools.PrintStringACC();
+                    }
                 }
                 
                 NL();
-                INY
+                INY  // Increment frame counter
             }
-            
-            CPY #8  // Limit to 8 frames to prevent runaway
-            if (Z) { break; }
         }
         
         NL();

@@ -1599,7 +1599,7 @@ unit Compiler // Compiler.asm
     compileIdentifierStatement()
     {
 #ifdef TRACE
-        LDA #(compileIdentifierStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileIdentifierStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+        PHA LDA #(compileIdentifierStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileIdentifierStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
 #endif
     
         loop
@@ -1702,7 +1702,7 @@ unit Compiler // Compiler.asm
             break;
         } // single exit
 #ifdef TRACE
-        LDA #(compileIdentifierStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileIdentifierStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+        PHA LDA #(compileIdentifierStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileIdentifierStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
 #endif
 
         
