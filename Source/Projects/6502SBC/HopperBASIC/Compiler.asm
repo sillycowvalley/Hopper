@@ -767,7 +767,6 @@ unit Compiler // Compiler.asm
         PLA
     }
     
-    // Update compilePrimary() to handle function calls
     const string compileFunctionCallOrVariableTrace = "CompFuncVar // <identifier>";
     compileFunctionCallOrVariable()
     {
@@ -886,6 +885,343 @@ unit Compiler // Compiler.asm
         PLX
         PLA
     }
+    
+    
+    // Compile ABS(expression) function call
+    const string compileAbsFunctionTrace = "CompABS";
+    compileAbsFunction()
+    {
+    #ifdef TRACE
+        LDA #(compileAbsFunctionTrace % 256) STA ZP.TraceMessageL 
+        LDA #(compileAbsFunctionTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit
+        {
+            // Expect opening parenthesis
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            LDA ZP.CurrentToken
+            CMP #Tokens.LPAREN
+            if (NZ) 
+            { 
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                break; 
+            }
+            
+            // Get argument expression
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Compile argument
+            compileLogical();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Expect closing parenthesis
+            LDA ZP.CurrentToken
+            CMP #Tokens.RPAREN
+            if (NZ) 
+            { 
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                break; 
+            }
+            
+            // Move past closing parenthesis
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Emit ABS opcode
+            LDA #OpCodeType.ABS
+            STA Compiler.compilerOpCode
+            Emit.OpCode();
+            
+            SEC // Success
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(compileAbsFunctionTrace % 256) STA ZP.TraceMessageL 
+        LDA #(compileAbsFunctionTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }
+
+    // Compile MILLIS() function call
+    const string compileMillisFunctionTrace = "CompMILLIS";
+    compileMillisFunction()
+    {
+    #ifdef TRACE
+        LDA #(compileMillisFunctionTrace % 256) STA ZP.TraceMessageL 
+        LDA #(compileMillisFunctionTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit
+        {
+            // Expect opening parenthesis
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            LDA ZP.CurrentToken
+            CMP #Tokens.LPAREN
+            if (NZ) 
+            { 
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                break; 
+            }
+            
+            // Expect immediate closing parenthesis (no arguments)
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            LDA ZP.CurrentToken
+            CMP #Tokens.RPAREN
+            if (NZ) 
+            { 
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                break; 
+            }
+            
+            // Move past closing parenthesis
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Emit MILLIS opcode
+            LDA #OpCodeType.MILLIS
+            STA Compiler.compilerOpCode
+            Emit.OpCode();
+            
+            SEC // Success
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(compileMillisFunctionTrace % 256) STA ZP.TraceMessageL 
+        LDA #(compileMillisFunctionTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }
+
+    // Compile RND(expression) function call
+    const string compileRndFunctionTrace = "CompRND";
+    compileRndFunction()
+    {
+    #ifdef TRACE
+        LDA #(compileRndFunctionTrace % 256) STA ZP.TraceMessageL 
+        LDA #(compileRndFunctionTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit
+        {
+            // Expect opening parenthesis
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            LDA ZP.CurrentToken
+            CMP #Tokens.LPAREN
+            if (NZ) 
+            { 
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                break; 
+            }
+            
+            // Get max value argument
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Compile argument
+            compileLogical();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Expect closing parenthesis
+            LDA ZP.CurrentToken
+            CMP #Tokens.RPAREN
+            if (NZ) 
+            { 
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                break; 
+            }
+            
+            // Move past closing parenthesis
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Emit RND opcode (max value already on stack from argument)
+            LDA #OpCodeType.RND
+            STA Compiler.compilerOpCode
+            STZ Compiler.compilerOperand1 // No immediate operand needed
+            Emit.OpCodeWithByte();
+            
+            SEC // Success
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(compileRndFunctionTrace % 256) STA ZP.TraceMessageL  LDA #(compileRndFunctionTrace / 256) STA ZP.TraceMessageH   Trace.MethodExit();
+    #endif
+    }
+
+    // Compile PEEK(address) function call
+    const string compilePeekFunctionTrace = "CompPEEK";
+    compilePeekFunction()
+    {
+    #ifdef TRACE
+        LDA #(compilePeekFunctionTrace % 256) STA ZP.TraceMessageL LDA #(compilePeekFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit
+        {
+            // Expect opening parenthesis
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            LDA ZP.CurrentToken
+            CMP #Tokens.LPAREN
+            if (NZ) 
+            { 
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                break; 
+            }
+            
+            // Get address argument
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Compile address expression
+            compileLogical();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Expect closing parenthesis
+            LDA ZP.CurrentToken
+            CMP #Tokens.RPAREN
+            if (NZ) 
+            { 
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                break; 
+            }
+            
+            // Move past closing parenthesis
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Emit PEEK opcode (address on stack from argument)
+            LDA #OpCodeType.PEEK
+            STA Compiler.compilerOpCode
+            STZ Compiler.compilerOperand1 // No immediate operands
+            STZ Compiler.compilerOperand2
+            Emit.OpCodeWithWord();
+            
+            SEC // Success
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(compilePeekFunctionTrace % 256) STA ZP.TraceMessageL LDA #(compilePeekFunctionTrace / 256) STA ZP.TraceMessageH  Trace.MethodExit();
+    #endif
+    }
+    
+    // Compile POKE statement
+    // Input: ZP.CurrentToken = POKE token
+    // Output: POKE statement compiled to opcodes
+    // Modifies: OpCode buffer, ZP.CurrentToken, compilation state
+    const string compilePokeStatementTrace = "CompPOKE // POKE";
+    compilePokeStatement()
+    {
+    #ifdef TRACE
+        LDA #(compilePokeStatementTrace % 256) STA ZP.TraceMessageL LDA #(compilePokeStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit block
+        {
+            // Expect opening parenthesis
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            LDA ZP.CurrentToken
+            CMP #Tokens.LPAREN
+            if (NZ) 
+            { 
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                break; 
+            }
+            
+            // Get address argument (first parameter)
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Compile address expression
+            compileLogical();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Expect comma separator
+            LDA ZP.CurrentToken
+            CMP #Tokens.COMMA
+            if (NZ) 
+            { 
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                break; 
+            }
+            
+            // Get value argument (second parameter)
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Compile value expression
+            compileLogical();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Expect closing parenthesis
+            LDA ZP.CurrentToken
+            CMP #Tokens.RPAREN
+            if (NZ) 
+            { 
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                break; 
+            }
+            
+            // Move past closing parenthesis
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Emit POKE opcode (address and value on stack from arguments)
+            LDA #OpCodeType.POKE
+            STA Compiler.compilerOpCode
+            STZ Compiler.compilerOperand1 // No immediate operand needed
+            Emit.OpCodeWithByte();
+            
+            SEC // Success
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(compilePokeStatementTrace % 256) STA ZP.TraceMessageL LDA #(compilePokeStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+    
     
     // Compile primary expressions (numbers, identifiers, parentheses)
     // Input: ZP.CurrentToken = current token
@@ -1031,6 +1367,44 @@ unit Compiler // Compiler.asm
                     Error.CheckError();
                     break;
                 }
+                
+                case Tokens.ABS:
+                {
+                    compileAbsFunction();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    break;
+                }
+                case Tokens.MILLIS:
+                {
+                    compileMillisFunction();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    break;
+                }
+                case Tokens.RND:
+                {
+                    compileRndFunction();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    break;
+                }
+                case Tokens.PEEK:
+                {
+                    compilePeekFunction();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    break;
+                }
+                case Tokens.POKE:
+                {
+                    compilePokeStatement();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    break;
+                }
+
+                
                 default:
                 {
                     // Unexpected token

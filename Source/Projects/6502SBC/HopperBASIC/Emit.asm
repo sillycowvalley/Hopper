@@ -823,6 +823,38 @@ unit Emit
     #endif
     }
 
+    // Emit MILLIS opcode - no operands needed
+    const string emitMillisTrace = "Emit MILLIS";
+    Millis()
+    {
+    #ifdef TRACE
+        LDA #(emitMillisTrace % 256) STA ZP.TraceMessageL LDA #(emitMillisTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        LDA #OpCodeType.MILLIS
+        STA Compiler.compilerOpCode
+        Emit.OpCode(); // No operands
+        
+    #ifdef TRACE
+        LDA #(emitMillisTrace % 256) STA ZP.TraceMessageL LDA #(emitMillisTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
 
+    // Emit ABS opcode - operates on top of stack  
+    const string emitAbsTrace = "Emit ABS";
+    Abs()
+    {
+    #ifdef TRACE
+        LDA #(emitAbsTrace % 256) STA ZP.TraceMessageL LDA #(emitAbsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        LDA #OpCodeType.ABS
+        STA Compiler.compilerOpCode
+        Emit.OpCode(); // No operands
+        
+    #ifdef TRACE
+        LDA #(emitAbsTrace % 256) STA ZP.TraceMessageL LDA #(emitAbsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
 
 }

@@ -59,7 +59,9 @@ unit OpCodes
         // Function frame management
         ENTER        = 0x1A,  // Enter function frame - push BP, SP->BP
         
-        // Available: 0x1A-0x3F (38 opcodes remaining in this group)
+        // Built-in functions with no arguments
+        ABS          = 0x1B,  // Pop value, push absolute value
+        MILLIS       = 0x1C,  // Push current milliseconds (WORD)
         
         // === OPCODES WITH ONE BYTE OPERAND (0x40-0x7F) ===
         // Bits 7-6: 01 (one byte operand)
@@ -85,7 +87,9 @@ unit OpCodes
         RETURN       = 0x49,  // Return from function (no return value)
         RETURNVAL    = 0x4A,  // Return from function (pop return value from stack)
         
-        // Available: 0x4B-0x7F (53 opcodes remaining in this group)
+        // Built-in functions with one argument  
+        RND          = 0x4B,  // Pop seed, push random number [max_byte]
+        POKE         = 0x4C,  // Pop value, write to memory [addr_lsb] [addr_msb]
         
         // === OPCODES WITH TWO BYTE OPERANDS (0x80-0xBF) ===
         // Bits 7-6: 10 (two byte operands)
@@ -111,7 +115,8 @@ unit OpCodes
         JUMPZW       = 0x8A,  // Jump if zero [lsb] [msb]
         JUMPNZW      = 0x8B,  // Jump if non-zero [lsb] [msb]
         
-        // Available: 0x8C-0xBF (52 opcodes remaining in this group)
+        // Built-in functions with two arguments
+        PEEK         = 0x8C,  // Push memory byte [addr_lsb] [addr_msb] 
         
         // === RESERVED FOR FUTURE EXTENSIONS (0xC0-0xFF) ===
         // Bits 7-6: 11 (reserved)
@@ -125,7 +130,6 @@ unit OpCodes
     {
         PrintValue = 0x01,    // Print value from stack (type from TypeStack: STRING, WORD, INT, BYTE, BIT)
         PrintNewLine = 0x02,   // Print newline character
-        Millis = 0x03,         // Push current milliseconds to stack (future)
     }
     
     // **Resolve-and-Replace Architecture:**

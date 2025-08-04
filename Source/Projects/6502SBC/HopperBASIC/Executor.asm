@@ -316,6 +316,385 @@ unit Executor
 #endif
     }
     
+    
+    
+    // Execute ABS opcode - absolute value
+    // Input: Value on stack
+    // Output: Absolute value pushed to stack
+    const string executeAbsTrace = "ABS // Absolute value";
+    executeAbs()
+    {
+    #ifdef TRACE
+        LDA #(executeAbsTrace % 256) STA ZP.TraceMessageL LDA #(executeAbsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit block
+        {
+            // Pop value from stack
+            Stacks.PopTop();  // Value in ZP.TOP, type in ZP.TOPT
+            
+            // Check type and compute absolute value
+            LDA ZP.TOPT
+            switch (A)
+            {
+                case BasicType.INT:
+                {
+                    // INT absolute value - check if negative
+                    LDA ZP.TOPH
+                    BMI negativeInt
+                    // Already positive, push back unchanged
+                    Stacks.PushTop();
+                    State.SetSuccess();
+                    break;
+                    
+                negativeInt:
+                    // Negate the value using two's complement
+                    SEC
+                    LDA #0
+                    SBC ZP.TOPL
+                    STA ZP.TOPL
+                    LDA #0
+                    SBC ZP.TOPH
+                    STA ZP.TOPH
+                    
+                    Stacks.PushTop();
+                    State.SetSuccess();
+                    break;
+                }
+                case BasicType.WORD:
+                {
+                    // WORD is always positive (unsigned)
+                    Stacks.PushTop();
+                    State.SetSuccess();
+                    break;
+                }
+                case BasicType.BYTE:
+                {
+                    // BYTE is always positive (unsigned)
+                    Stacks.PushTop();
+                    State.SetSuccess();
+                    break;
+                }
+                default:
+                {
+                    // Invalid type for ABS
+                    Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                    State.SetFailure();
+                    break;
+                }
+            }
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(executeAbsTrace % 256) STA ZP.TraceMessageL LDA #(executeAbsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+
+    // Execute MILLIS opcode - get system timer
+    // Input: None
+    // Output: Current milliseconds (WORD) pushed to stack
+    const string executeMillisTrace = "MILLIS // System timer";
+    executeMillis()
+    {
+    #ifdef TRACE
+        LDA #(executeMillisTrace % 256) STA ZP.TraceMessageL LDA #(executeMillisTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit block
+        {
+            // TODO: Get actual system timer value
+            // For now, return a placeholder value
+            LDA ZP.TICK0  // Low byte of timer
+            STA ZP.TOPL
+            LDA ZP.TICK1  // High byte of timer  
+            STA ZP.TOPH
+            LDA #BasicType.WORD
+            STA ZP.TOPT
+            
+            Stacks.PushTop();
+            State.SetSuccess();
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(executeMillisTrace % 256) STA ZP.TraceMessageL LDA #(executeMillisTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+
+    // Execute RND opcode - random number generator
+    // Input: Stack top = max value, operand byte ignored
+    // Output: Random number 0 to max-1 pushed to stack
+    const string executeRndTrace = "RND // Random number";
+    executeRnd()
+    {
+    #ifdef TRACE
+        LDA #(executeRndTrace % 256) STA ZP.TraceMessageL LDA #(executeRndTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit block
+        {
+            // Fetch operand byte (currently unused but required by opcode format)
+            FetchOperandByte();
+            State.CanContinue();
+            if (NC) { break; }
+            
+            // Pop max value from stack
+            Stacks.PopTop();  // Value in ZP.TOP, type in ZP.TOPT
+            
+            // Validate max value is numeric type (INT, WORD, or BYTE)
+            LDA ZP.TOPT
+            CMP #BasicType.INT
+            if (Z)
+            {
+                // Generate random number 0 to max-1
+                // TODO: Implement proper random number generation
+                // For now, use simple approach: return max-1 if max > 0, else 0
+                
+                Error.NotImplemented(); BIT ZP.EmulatorPCL
+                State.SetFailure();
+                
+                LDA ZP.TOPH
+                BNE positiveInt
+                LDA ZP.TOPL
+                if (Z)
+                {
+                    // Max is 0, return 0
+                    STZ ZP.TOPL
+                    STZ ZP.TOPH
+                }
+                else
+                {
+                positiveInt:
+                    // Return max-1 (placeholder for proper RNG)
+                    LDA ZP.TOPL
+                    if (Z)
+                    {
+                        DEC ZP.TOPH
+                        LDA #0xFF
+                        STA ZP.TOPL
+                    }
+                    else
+                    {
+                        DEC ZP.TOPL
+                    }
+                }
+                
+                LDA #BasicType.INT
+                STA ZP.TOPT
+                Stacks.PushTop();
+                State.SetSuccess();
+                break;
+            }
+            
+            CMP #BasicType.WORD
+            if (Z)
+            {
+                // Similar logic for WORD type
+                LDA ZP.TOPH
+                BNE positiveWord
+                LDA ZP.TOPL
+                if (Z)
+                {
+                    STZ ZP.TOPL
+                    STZ ZP.TOPH
+                }
+                else
+                {
+                positiveWord:
+                    LDA ZP.TOPL
+                    if (Z)
+                    {
+                        DEC ZP.TOPH
+                        LDA #0xFF
+                        STA ZP.TOPL
+                    }
+                    else
+                    {
+                        DEC ZP.TOPL
+                    }
+                }
+                
+                LDA #BasicType.WORD
+                STA ZP.TOPT
+                Stacks.PushTop();
+                State.SetSuccess();
+                break;
+            }
+            
+            CMP #BasicType.BYTE
+            if (Z)
+            {
+                // BYTE type random
+                LDA ZP.TOPL
+                if (Z)
+                {
+                    STZ ZP.TOPL
+                }
+                else
+                {
+                    DEC ZP.TOPL
+                }
+                STZ ZP.TOPH
+                
+                LDA #BasicType.BYTE
+                STA ZP.TOPT
+                Stacks.PushTop();
+                State.SetSuccess();
+                break;
+            }
+            
+            // Invalid type for RND
+            Error.TypeMismatch(); BIT ZP.EmulatorPCL
+            State.SetFailure();
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(executeRndTrace % 256) STA ZP.TraceMessageL LDA #(executeRndTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+
+    // Execute POKE opcode - write byte to memory  
+    // Input: Stack has address (WORD/INT) and value (BYTE), operand byte ignored
+    // Output: Memory written, nothing pushed to stack
+    const string executePokeTrace = "POKE // Write memory";
+    executePoke()
+    {
+    #ifdef TRACE
+        LDA #(executePokeTrace % 256) STA ZP.TraceMessageL LDA #(executePokeTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit block
+        {
+            // Fetch operand byte (currently unused)
+            FetchOperandByte();
+            State.CanContinue();
+            if (NC) { break; }
+            
+            // Pop value (second argument - what to write)
+            Stacks.PopTop();  // Value in ZP.TOP, type in ZP.TOPT
+            
+            // Validate value is BYTE type
+            LDA ZP.TOPT
+            CMP #BasicType.BYTE
+            if (NZ)
+            {
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                State.SetFailure();
+                break;
+            }
+            
+            // Save value to write
+            LDA ZP.TOPL
+            PHA
+            
+            // Pop address (first argument - where to write)
+            Stacks.PopTop();  // Address in ZP.TOP, type in ZP.TOPT
+            
+            // Validate address is WORD or INT type
+            LDA ZP.TOPT
+            CMP #BasicType.WORD
+            if (Z)
+            {
+                // Write byte to memory address
+                PLA  // Get value back
+                STA [ZP.TOP]  // Write to address
+                State.SetSuccess();
+                break;
+            }
+            
+            CMP #BasicType.INT
+            if (Z)
+            {
+                // Check INT is positive (valid address)
+                LDA ZP.TOPH
+                BMI invalidAddress
+                
+                // Write byte to memory address
+                PLA  // Get value back
+                STA [ZP.TOP]  // Write to address
+                State.SetSuccess();
+                break;
+            }
+            
+        invalidAddress:
+            PLA  // Clean stack
+            Error.TypeMismatch(); BIT ZP.EmulatorPCL
+            State.SetFailure();
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(executePokeTrace % 256) STA ZP.TraceMessageL LDA #(executePokeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+
+    // Execute PEEK opcode - read byte from memory
+    // Input: Two byte operands ignored, address popped from stack  
+    // Output: BYTE value at address pushed to stack
+    const string executePeekTrace = "PEEK // Read memory";
+    executePeek()
+    {
+    #ifdef TRACE
+        LDA #(executePeekTrace % 256) STA ZP.TraceMessageL LDA #(executePeekTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+        
+        loop // Single exit block
+        {
+            // Fetch two byte operands (currently unused but required by opcode format)
+            FetchOperandWord();
+            State.CanContinue();
+            if (NC) { break; }
+            
+            // Pop address from stack
+            Stacks.PopTop();  // Address in ZP.TOP, type in ZP.TOPT
+            
+            // Validate address is WORD or INT type
+            LDA ZP.TOPT
+            CMP #BasicType.WORD
+            if (Z)
+            {
+                // Read byte from memory address
+                LDA [ZP.TOP]
+                STA ZP.TOPL
+                STZ ZP.TOPH
+                LDA #BasicType.BYTE
+                STA ZP.TOPT
+                Stacks.PushTop();
+                State.SetSuccess();
+                break;
+            }
+            
+            CMP #BasicType.INT
+            if (Z)
+            {
+                // Check INT is positive (valid address)
+                LDA ZP.TOPH
+                BMI invalidAddress
+                
+                // Read byte from memory address
+                LDA [ZP.TOP]
+                STA ZP.TOPL
+                STZ ZP.TOPH
+                LDA #BasicType.BYTE
+                STA ZP.TOPT
+                Stacks.PushTop();
+                State.SetSuccess();
+                break;
+            }
+            
+        invalidAddress:
+            Error.TypeMismatch(); BIT ZP.EmulatorPCL
+            State.SetFailure();
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(executePeekTrace % 256) STA ZP.TraceMessageL LDA #(executePeekTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+    
     // Dispatch opcode to appropriate handler
     // Input: A contains opcode value
     // Output: SystemState set based on execution result
@@ -449,6 +828,15 @@ unit Executor
                 executePushVoid();
             }
             
+            case OpCodeType.ABS:
+            {
+                executeAbs();
+            }
+            case OpCodeType.MILLIS:
+            {
+                executeMillis();
+            }
+            
             // === ONE BYTE OPERAND OPCODES (0x40-0x7F) ===
             
             // Literal pushes (8-bit)
@@ -510,6 +898,14 @@ unit Executor
             {
                 executeSysCall();
             }
+            case OpCodeType.RND:
+            {
+                executeRnd();
+            }
+            case OpCodeType.POKE:
+            {
+                executePoke();
+            }
             
             // === TWO BYTE OPERAND OPCODES (0x80-0xBF) ===
             
@@ -536,6 +932,13 @@ unit Executor
             {
                 executeJumpNZW();
             }
+            case OpCodeType.PEEK:
+            {
+                executePeek();
+            }
+            
+            
+            
             default:
             {
                 executeNotImplemented();
