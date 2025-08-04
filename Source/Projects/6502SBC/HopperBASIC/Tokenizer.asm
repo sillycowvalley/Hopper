@@ -20,6 +20,8 @@ unit Tokenizer // Tokenizer.asm
         Keyword
     }    
     
+    
+    
     // Complete Token definitions for HopperBASIC
     // All values >= 0x80
     enum Tokens
@@ -87,44 +89,51 @@ unit Tokenizer // Tokenizer.asm
         TRUE     = 0xB3,  // Built-in BIT constant (1)
         FALSE    = 0xB4,  // Built-in BIT constant (0)
         
+        // Built-in functions
+        ABS      = 0xB5,  // ABS(x) - absolute value
+        MILLIS   = 0xB6,  // MILLIS() - system timer 
+        PEEK     = 0xB7,  // PEEK(addr) - memory read
+        POKE     = 0xB8,  // POKE(addr, value) - memory write
+        RND      = 0xB9,  // RND(x) - random number
+        
         // Sentinel marking end of keywords
-        lastKeyword = 0xB4,
+        lastKeyword = 0xB9,  // Updated to >= last keyword (RND)
         
         // Basic operators
-        EQUALS   = 0xB5,  // =
-        PLUS     = 0xB6,  // +
-        MINUS    = 0xB7,  // -
-        LPAREN   = 0xB8,  // (
-        RPAREN   = 0xB9,  // )
-        NOTEQUAL = 0xBA,  // <>
+        EQUALS   = 0xBA,  // =
+        PLUS     = 0xBB,  // +
+        MINUS    = 0xBC,  // -
+        LPAREN   = 0xBD,  // (
+        RPAREN   = 0xBE,  // )
+        NOTEQUAL = 0xBF,  // <>
         
         // Additional comparison operators
-        LT       = 0xBB,  // <
-        GT       = 0xBC,  // >
-        LE       = 0xBD,  // <=
-        GE       = 0xBE,  // >=
+        LT       = 0xC0,  // <
+        GT       = 0xC1,  // >
+        LE       = 0xC2,  // <=
+        GE       = 0xC3,  // >=
         
         // Arithmetic operators
-        MULTIPLY = 0xBF,  // *
-        DIVIDE   = 0xC0,  // /
+        MULTIPLY = 0xC4,  // *
+        DIVIDE   = 0xC5,  // /
         
-        BITWISE_AND = 0xC1,  // &
-        BITWISE_OR  = 0xC2,  // |
+        BITWISE_AND = 0xC6,  // &
+        BITWISE_OR  = 0xC7,  // |
         
         // Array and string operators
-        LBRACKET = 0xC3,  // [
-        RBRACKET = 0xC4,  // ]
-        LBRACE   = 0xC5,  // {
-        RBRACE   = 0xC6,  // }
+        LBRACKET = 0xC8,  // [
+        RBRACKET = 0xC9,  // ]
+        LBRACE   = 0xCA,  // {
+        RBRACE   = 0xCB,  // }
         
         // Literals and identifiers
-        NUMBER     = 0xC7,
-        STRINGLIT  = 0xC8,  // String literal "text"
-        IDENTIFIER = 0xC9,
-        EOF        = 0xCA,
-        COLON      = 0xCB, 
-        COMMA      = 0xCC,
-        SEMICOLON  = 0xCD,  // ;
+        NUMBER     = 0xCC,  //
+        STRINGLIT  = 0xCD,  // String literal "text"
+        IDENTIFIER = 0xCE,  //
+        EOF        = 0xCF,  //
+        COLON      = 0xD0,  //
+        COMMA      = 0xD1,  //
+        SEMICOLON  = 0xD2,  // ;
     }
     
     // Keywords A-L (first character < 'M')
@@ -145,6 +154,8 @@ unit Tokenizer // Tokenizer.asm
         7, Tokens.ENDFUNC, 'E', 'N', 'D', 'F', 'U', 'N', 'C', // Moderate
         5, Tokens.FUNCS, 'F', 'U', 'N', 'C', 'S', // Console command
         2, Tokens.DO, 'D', 'O',                   // Less frequent
+        5, Tokens.ELSE, 'E', 'L', 'S', 'E',       // Less frequent
+        5, Tokens.ENDIF, 'E', 'N', 'D', 'I', 'F', // Less frequent
         5, Tokens.FALSE, 'F', 'A', 'L', 'S', 'E', // Less frequent
         4, Tokens.CONT, 'C', 'O', 'N', 'T',       // Console command
         3, Tokens.BYE, 'B', 'Y', 'E',             // Console command
@@ -157,10 +168,11 @@ unit Tokenizer // Tokenizer.asm
         8, Tokens.CONTINUE, 'C', 'O', 'N', 'T', 'I', 'N', 'U', 'E', // Infrequent
         4, Tokens.LOAD, 'L', 'O', 'A', 'D',       // Infrequent
         4, Tokens.LIST, 'L', 'I', 'S', 'T',       // Infrequent
+        3, Tokens.ABS, 'A', 'B', 'S',             // Built-in function (NEW)
         0  // End marker
     };
     
-    // Keywords M-Z (first character >= 'M')  
+    // Keywords M-Z (first character >= 'M')
     const byte[] keywordsMZ = {
         5, Tokens.PRINT, 'P', 'R', 'I', 'N', 'T', // Very frequent
         4, Tokens.WORD, 'W', 'O', 'R', 'D',       // Very frequent
@@ -185,8 +197,12 @@ unit Tokenizer // Tokenizer.asm
         3, Tokens.REM, 'R', 'E', 'M',             // Infrequent
         4, Tokens.TRON, 'T', 'R', 'O', 'N',       // Infrequent
         5, Tokens.TROFF, 'T', 'R', 'O', 'F', 'F', // Infrequent
+        6, Tokens.MILLIS, 'M', 'I', 'L', 'L', 'I', 'S', // Built-in function (NEW)
+        4, Tokens.PEEK, 'P', 'E', 'E', 'K',       // Built-in function (NEW)
+        4, Tokens.POKE, 'P', 'O', 'K', 'E',       // Built-in function (NEW)
+        3, Tokens.RND, 'R', 'N', 'D',             // Built-in function (NEW)
         0  // End marker
-    };   
+    };
 
     // Find keyword match for current identifier in working buffer
     // Input: Working buffer at Address.BasicProcessBuffer1, null-terminated

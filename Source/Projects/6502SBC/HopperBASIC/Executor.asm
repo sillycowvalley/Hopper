@@ -697,8 +697,7 @@ unit Executor
         STA ZP.BP
         State.SetSuccess();
         
-        
-DumpStack();
+//DumpStack();
         
 #ifdef TRACE
         LDA #(executeEnterTrace % 256) STA ZP.TraceMessageL LDA #(executeEnterTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
