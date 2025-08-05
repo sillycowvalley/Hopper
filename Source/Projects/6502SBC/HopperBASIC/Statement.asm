@@ -365,10 +365,6 @@ unit Statement
                 Tokenizer.NextToken();
                 SEC  // Success
             }
-            case Tokens.PRINT:
-            {
-                executePrint();
-            }
             case Tokens.FUNC:
             {
                 FunctionDeclaration.ExecuteFunctionDeclaration();
@@ -377,10 +373,11 @@ unit Statement
             {
                 FunctionDeclaration.ExecuteBeginDeclaration();
             }
-            case Tokens.IDENTIFIER:
+            
+            case Tokens.PRINT:
+            case Tokens.IDENTIFIER: // Could be assignment or function call
             {
-                // Could be assignment or function call
-                executeIdentifier();
+                ExecuteStatement();
             }
             
             case Tokens.CONST:
@@ -424,138 +421,16 @@ unit Statement
         
 #ifdef TRACE
         LDA #(executeTrace % 256) STA ZP.TraceMessageL LDA #(executeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
-    // Execute PRINT statement
-    // Input: ZP.CurrentToken = PRINT token
-    // Output: Expression result printed to serial with newline
-    //         ZP.CurrentToken = token after PRINT statement
-    // Munts: Stack, ZP.CurrentToken, ZP.TOP, ZP.TOPT, all parsing variables
-    // Error: Sets ZP.LastError if expression evaluation fails
-    const string executePrintTrace = "ExecPrint";
-    executePrint()
-    {
-#ifdef TRACE
-        LDA #(executePrintTrace % 256) STA ZP.TraceMessageL LDA #(executePrintTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-
-        loop
-        {
-            // Get next token (should be start of expression)
-            Tokenizer.NextToken();
-            
-            Error.CheckError();
-            if (NC) { break; }
-            
-            // Check for end of line (PRINT with no arguments)
-            LDA ZP.CurrentToken
-            CMP #Tokens.EOL
-            if (Z)
-            {
-                // Just print a newline
-                LDA #'\n'
-                Serial.WriteChar();
-                
-                
-                SEC  // Success
-                break;
-            }
-            
-            // Evaluate the expression
-            EvaluateExpression();
-            Error.CheckError();
-            if (NC) { break; }
-            
-            // Top of stack now contains the result
-            // For now, assume it's a number and print it
-            Stacks.PopTop();  // Pop result into TOP, modifies X
-            Tools.PrintVariableValue();
-            
-            // Print newline
-            LDA #'\n'
-            Serial.WriteChar();
-            break;
-        } // exit loop
         
-        SEC  // Success
-
-#ifdef TRACE
-        LDA #(executePrintTrace % 256) STA ZP.TraceMessageL LDA #(executePrintTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-      
-    // Execute identifier statement (assignment or function call)
-    // Input: A = ZP.CurrentToken = IDENTIFIER token
-    // Output: C set if successful, NC if error
-    // Munts: Stack, ZP.CurrentToken, symbol tables, expression evaluation
-    // Error: Sets ZP.LastError if undefined variable, type mismatch, or syntax error
-    const string executeIdentifierTrace = "ExecId";
-    executeIdentifier()
-    {
-#ifdef TRACE
-        PHA LDA #(executeIdentifierTrace % 256) STA ZP.TraceMessageL LDA #(executeIdentifierTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
-#endif
-    
-        loop // Single exit block for clean error handling
+        IsTracing();
+        if (C)
         {
-            // Use ResolveIdentifier to determine what we have
-            Statement.ResolveIdentifier(); // symbol or function in IDX, A = IdentifierType
-            Error.CheckError();
-            if (NC) { break; } // Error - identifier not found or other error
-            
-            // Handle different identifier types
-            switch (A)
-            {
-                // TODO : this could all be unified under Statement.ExecuteStatement(), if REPL had its own buffers
-                case IdentifierType.Function:
-                {
-                    // compile it as expression and execute
-                    Statement.EvaluateExpression(); // this will handle the function call compilation
-                    Error.CheckError();
-                    break;
-                }
-                case IdentifierType.Global:
-                {
-                    // compile it as a statement and execute
-                    Statement.ExecuteStatement();
-                    Error.CheckError();
-                    break;
-                }
-                
-                case IdentifierType.Constant:
-                {
-                    // Constants cannot be assigned to
-                    Error.IllegalAssignment(); BIT ZP.EmulatorPCL
-                    CLC
-                    break;
-                }
-                
-                case IdentifierType.Keyword:
-                {
-                    // Keywords should not appear as statements
-                    Error.SyntaxError(); BIT ZP.EmulatorPCL
-                    CLC
-                    break;
-                }
-                
-                default:
-                {
-                    // TODO: Handle function calls when functions are implemented
-                    Error.NotImplemented(); BIT ZP.EmulatorPCL
-                    CLC
-                    break;
-                }
-            }
-            
-            break; // Exit the outer loop
-        } // end single exit block
-
-#ifdef TRACE
-        LDA #(executeIdentifierTrace % 256) STA ZP.TraceMessageL LDA #(executeIdentifierTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+            DumpBasicBuffers();
+        }
 #endif
     }
-        
+     
+    
     // Input: ZP.CurrentToken = CONST
     const string executeConstDeclTrace = "ExecConst";
     executeConstantDeclaration()

@@ -649,6 +649,13 @@ unit TokenIterator
                 LDA #' '
                 Serial.WriteChar();
             }
+            case Tokens.SEMICOLON:
+            {
+                LDA #';'
+                Serial.WriteChar();
+                LDA #' '
+                Serial.WriteChar();
+            }
             default:
             {
                 // Check if it's a keyword we haven't handled specifically

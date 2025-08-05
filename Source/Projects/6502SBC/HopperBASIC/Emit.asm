@@ -934,5 +934,113 @@ unit Emit
        LDA #(emitPokeTrace % 256) STA ZP.TraceMessageL LDA #(emitPokeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
    #endif
    }
+   
+    // Emit PRINTCHAR SYSCALL with specific character
+    // Input: A = character to print
+    // Output: PrintChar syscall emitted with character as argument
+    const string emitPrintCharTrace = "Emit PRINTCHAR";
+    PrintChar()
+    {
+    #ifdef TRACE
+        PHA LDA #(emitPrintCharTrace % 256) STA ZP.TraceMessageL LDA #(emitPrintCharTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+    #endif
+        
+        PHA  // Save character
+        
+        loop // Single exit block
+        {
+            // Emit PUSHBYTE with the character (A already contains character)
+            Emit.PushByte();  // Uses A register
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Emit the SYSCALL
+            LDA #SysCallType.PrintChar
+            Emit.SysCall();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            SEC // Success
+            break;
+        }
+        
+        PLA  // Restore character (for caller)
+        
+    #ifdef TRACE
+        LDA #(emitPrintCharTrace % 256) STA ZP.TraceMessageL LDA #(emitPrintCharTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+    
+    // Emit PrintChar for newline character
+    const string emitPrintNewLineTrace = "Emit PRINTNEWLINE";
+    PrintNewLine()
+    {
+    #ifdef TRACE
+        LDA #(emitPrintNewLineTrace % 256) STA ZP.TraceMessageL LDA #(emitPrintNewLineTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit block
+        {
+            LDA #'\n'
+            Emit.PrintChar();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            SEC // Success
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(emitPrintNewLineTrace % 256) STA ZP.TraceMessageL LDA #(emitPrintNewLineTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+    
+    // Emit PrintChar for space character  
+    const string emitPrintSpaceTrace = "Emit PRINTSPACE";
+    PrintSpace()
+    {
+    #ifdef TRACE
+        LDA #(emitPrintSpaceTrace % 256) STA ZP.TraceMessageL LDA #(emitPrintSpaceTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit block
+        {
+            LDA #' '
+            Emit.PrintChar();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            SEC // Success
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(emitPrintSpaceTrace % 256) STA ZP.TraceMessageL LDA #(emitPrintSpaceTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+    
+    // Emit PRINTVALUE SYSCALL - prints value from stack
+    const string emitPrintValueTrace = "Emit PRINTVALUE";
+    PrintValue()
+    {
+    #ifdef TRACE
+        LDA #(emitPrintValueTrace % 256) STA ZP.TraceMessageL LDA #(emitPrintValueTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit block
+        {
+            LDA #SysCallType.PrintValue
+            SysCall();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            SEC // Success
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(emitPrintValueTrace % 256) STA ZP.TraceMessageL LDA #(emitPrintValueTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
 
 }

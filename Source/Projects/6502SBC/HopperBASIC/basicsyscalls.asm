@@ -7,7 +7,7 @@ unit BASICSysCalls
    {
        // System functions (ID 1-2)
        PrintValue   = (0b00001 << 3) | (0 << 2) | 0b01,  // ID=1, void,    1 arg  = 0x09
-       PrintNewLine = (0b00010 << 3) | (0 << 2) | 0b00,  // ID=2, void,    0 args = 0x10
+       PrintChar    = (0b00010 << 3) | (0 << 2) | 0b01,  // ID=2, void,    1 arg  = 0x11
        
        // Built-in functions (ID 3-9)
        Abs          = (0b00011 << 3) | (1 << 2) | 0b01,  // ID=3, returns, 1 arg  = 0x1D
@@ -72,9 +72,11 @@ unit BASICSysCalls
                {
                    Tools.PrintVariableValue();  // Uses ZP.TOP*
                }
-               case SysCallType.PrintNewLine:  // ID = 2  
+               case SysCallType.PrintChar:     // ID = 2
                {
-                   LDA #'\n' Serial.WriteChar();
+                   // Character to print is in ZP.TOP (1 argument)
+                   LDA ZP.TOPL
+                   Serial.WriteChar();
                }
                case SysCallType.Abs:           // ID = 3
                {

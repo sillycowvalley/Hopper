@@ -529,8 +529,10 @@ unit Error
         PLA
         STA ZP.ACCL
         
-        // Clear the error
-        ClearError();
+        Error.ClearError();  // Clear error state before next command
+        State.SetSuccess();  // Reset state for clean start
+        STZ ZP.LastErrorL
+        STZ ZP.LastErrorH
         
         // Restore registers
         PLY

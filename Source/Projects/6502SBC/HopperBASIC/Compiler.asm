@@ -1745,64 +1745,154 @@ unit Compiler // Compiler.asm
 #endif
    }
 
-   // Compile PRINT statement
-   // Input: ZP.CurrentToken = PRINT token
-   // Output: PRINT statement compiled to opcodes
-   // Modifies: OpCode buffer, ZP.CurrentToken, compilation state
-   const string compilePrintStatementTrace = "CompPrint // PRINT";
-   compilePrintStatement()
-   {
-#ifdef TRACE
-       LDA #(compilePrintStatementTrace % 256) STA ZP.TraceMessageL LDA #(compilePrintStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-       
+    // Complete multi-argument PRINT statement compilation in Compiler.asm  
+    // Supports all classic BASIC PRINT syntax:
+    // PRINT expr[,expr...]      - Comma-separated with spaces
+    // PRINT expr[;expr...]      - Semicolon-separated, no spaces  
+    // PRINT expr,               - Trailing comma, no newline, add space
+    // PRINT expr;               - Trailing semicolon, no newline, no space
+    // PRINT                     - Empty line (newline only)
+    //
+    // Input: ZP.CurrentToken = PRINT token
+    // Output: PRINT statement compiled to opcodes
+    // Modifies: OpCode buffer, ZP.CurrentToken, compilation state
+    const string compilePrintStatementTrace = "CompPrint // PRINT";
+    compilePrintStatement()
+    {
+    #ifdef TRACE
+        LDA #(compilePrintStatementTrace % 256) STA ZP.TraceMessageL LDA #(compilePrintStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit block
+        {
+            // Get next token (should be start of expression, separator, or EOL)
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { State.SetFailure(); break; }
+            
+            // Check for PRINT with no arguments (just newline)
+            LDA ZP.CurrentToken
+            CMP #Tokens.EOL
+            if (Z)
+            {
+                // PRINT (newline only)
+                Emit.PrintNewLine();
+                Error.CheckError();
+                if (NC) { State.SetFailure(); break; }
+                State.SetSuccess();
+                break;
+            }
+            
+            // Check for PRINT with trailing separator only
+            LDA ZP.CurrentToken
+            CMP #Tokens.COMMA
+            if (Z)
+            {
+                // PRINT, - space and no newline
+                Emit.PrintSpace();
+                Error.CheckError();
+                if (NC) { State.SetFailure(); break; }
+                
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) { State.SetFailure(); break; }
+                State.SetSuccess();
+                break;
+            }
+            
+            CMP #Tokens.SEMICOLON
+            if (Z)
+            {
+                // PRINT; - no space, no newline
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) { State.SetFailure(); break; }
+                State.SetSuccess();
+                break;
+            }
+            
+            // Must have expression(s) - compile argument list
+            loop // Argument processing loop
+            {
+                // Compile current expression
+                compileLogical(); // Use full expression compilation
+                Error.CheckError();
+                if (NC) { State.SetFailure(); break; }
+                
+                // Emit system call to print the value on stack
+                Emit.PrintValue();
+                Error.CheckError();
+                if (NC) { State.SetFailure(); break; }
+                
+                // Check what follows this expression
+                LDA ZP.CurrentToken
+                CMP #Tokens.COMMA
+                if (Z)
+                {
+                    // Comma separator - add space and continue with next expression
+                    Emit.PrintSpace();
+                    Error.CheckError();
+                    if (NC) { State.SetFailure(); break; }
+                    
+                    // Get next token for next expression
+                    Tokenizer.NextToken();
+                    Error.CheckError();
+                    if (NC) { State.SetFailure(); break; }
+                    
+                    // Check if this is a trailing comma (followed by EOL)
+                    LDA ZP.CurrentToken
+                    CMP #Tokens.EOL
+                    if (Z)
+                    {
+                        // Trailing comma - no newline, we're done
+                        State.SetSuccess();
+                        break; // Exit argument loop
+                    }
+                    
+                    // Continue with next expression
+                    continue;
+                }
+                
+                CMP #Tokens.SEMICOLON
+                if (Z)
+                {
+                    // Semicolon separator - no space, continue with next expression
+                    // Get next token for next expression
+                    Tokenizer.NextToken();
+                    Error.CheckError();
+                    if (NC) { State.SetFailure(); break; }
+                    
+                    // Check if this is a trailing semicolon (followed by EOL)
+                    LDA ZP.CurrentToken
+                    CMP #Tokens.EOL
+                    if (Z)
+                    {
+                        // Trailing semicolon - no newline, we're done
+                        State.SetSuccess();
+                        break; // Exit argument loop
+                    }
+                    
+                    // Continue with next expression
+                    continue;
+                }
+                
+                // No separator - end of expression list
+                // Default behavior: add newline
+                Emit.PrintNewLine();
+                Error.CheckError();
+                if (NC) { State.SetFailure(); break; }
+                
+                State.SetSuccess();
+                break; // Exit argument loop
+            } // End of argument processing loop
+            
+            break; // Exit main loop
+        } // loop
 
-       loop // Single exit block
-       {
-           // Get next token (should be start of expression to print)
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { State.SetFailure(); break; }
-           
-           // Check for PRINT with no arguments (just newline)
-           LDA ZP.CurrentToken
-           CMP #Tokens.EOL
-           if (Z)
-           {
-               // Emit system call for print newline
-               LDA #SysCallType.PrintNewLine
-               Emit.SysCall();
-               Error.CheckError();
-               if (NC) { State.SetFailure(); break; }
-               State.SetSuccess();
-               break;
-           }
-           
-           // Compile the expression to print
-           compileLogical(); // Use full expression compilation
-           Error.CheckError();
-           if (NC) { State.SetFailure(); break; }
-           
-           // Emit system call to print the value on stack
-           LDA #SysCallType.PrintValue
-           Emit.SysCall();
-           Error.CheckError();
-           if (NC) { State.SetFailure(); break; }
-           
-           // Emit system call for newline
-           LDA #SysCallType.PrintNewLine  
-           Emit.SysCall();
-           Error.CheckError();
-           if (NC) { State.SetFailure(); break; }
-           
-           State.SetSuccess(); // Success
-           break;
-       } // loop
-
-#ifdef TRACE
-       LDA #(compilePrintStatementTrace % 256) STA ZP.TraceMessageL LDA #(compilePrintStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-   }
+    #ifdef TRACE
+        LDA #(compilePrintStatementTrace % 256) STA ZP.TraceMessageL LDA #(compilePrintStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
 
    // Compile RETURN statement
    // Input: ZP.CurrentToken = RETURN token

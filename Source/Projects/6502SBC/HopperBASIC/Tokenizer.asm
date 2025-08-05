@@ -1042,6 +1042,14 @@ unit Tokenizer // Tokenizer.asm
                     if (NC) { return; }
                     INX
                 }
+                case ';':
+                {
+                    LDA #Tokens.SEMICOLON
+                    appendToTokenBuffer();
+                    Error.CheckError();
+                    if (NC) { return; }
+                    INX
+                }
                 case '=':
                 {
                     LDA #Tokens.EQUALS

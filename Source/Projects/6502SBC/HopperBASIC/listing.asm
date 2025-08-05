@@ -250,6 +250,10 @@ unit Listing
         // Display function body (token stream)
         displayFunctionBody(); // Input: ZP.IDX = function node
         
+        // Print ENDFUNC to close the function  
+        LDA #Tokens.ENDFUNC
+        Tokenizer.PrintKeyword();
+        
         Tools.NL();
         Tools.NL(); // Extra blank line after function
 #ifdef TRACECONSOLE
