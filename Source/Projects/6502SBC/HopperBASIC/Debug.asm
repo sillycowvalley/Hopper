@@ -119,6 +119,7 @@ unit Debug
     // Print string from STR
     printString()
     {
+        PHY
         LDY #0
         loop
         {
@@ -127,6 +128,7 @@ unit Debug
             Serial.WriteChar();
             INY
         }
+        PLY
     }
     
     // Print null-terminated string from IDX
@@ -1742,19 +1744,7 @@ unit Debug
     DumpIterationState()
     {
         PHP PHA PHY
-        
-        LDA ZP.ACCL
-        PHA
-        LDA ZP.ACCH
-        PHA
-        
         dumpIterationState();
-        
-        PLA
-        STA ZP.ACCH
-        PLA
-        STA ZP.ACCL
-        
         PLY PLA PLP
     }
     
@@ -1813,29 +1803,7 @@ unit Debug
     DumpBasicBuffers()
     {
         PHP PHA PHX PHY
-        
-        // Save state
-        LDA ZP.IDXL
-        PHA
-        LDA ZP.IDXH
-        PHA
-        LDA ZP.ACCL
-        PHA
-        LDA ZP.ACCH
-        PHA
-        
         dumpBasicBuffers();
-        
-        // Restore state
-        PLA
-        STA ZP.ACCH
-        PLA
-        STA ZP.ACCL
-        PLA
-        STA ZP.IDXH
-        PLA
-        STA ZP.IDXL
-        
         PLY PLX PLA PLP
     }
     

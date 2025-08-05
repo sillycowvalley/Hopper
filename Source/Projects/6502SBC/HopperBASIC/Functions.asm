@@ -151,6 +151,27 @@ unit Functions
         
         PLA
     }
+    GetNameSTR() // temporary: migrating from TOP to STR
+    {
+        LDA ZP.TOPL
+        PHA
+        LDA ZP.TOPH
+        PHA
+        
+        GetName();
+        if (C)
+        {
+            LDA ZP.TOPL
+            STA ZP.STRL
+            LDA ZP.TOPH
+            STA ZP.STRH
+        }
+        
+        PLA
+        STA ZP.TOPH
+        PLA
+        STA ZP.TOPL
+    }
     
     // Set arguments list head pointer in function node
     // Input: ZP.IDX = function node address, ZP.IDY = arguments list head

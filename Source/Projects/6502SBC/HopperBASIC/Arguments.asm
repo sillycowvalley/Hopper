@@ -212,6 +212,28 @@ unit Arguments
         PLA
     }
     
+    GetNameSTR() // temporary: migrating from TOP to STR
+    {
+        LDA ZP.TOPL
+        PHA
+        LDA ZP.TOPH
+        PHA
+        
+        GetName();
+        if (C)
+        {
+            LDA ZP.TOPL
+            STA ZP.STRL
+            LDA ZP.TOPH
+            STA ZP.STRH
+        }
+        
+        PLA
+        STA ZP.TOPH
+        PLA
+        STA ZP.TOPL
+    }
+    
     // Find argument by index for BP offset calculation
     // Input: ZP.IDX = function node address, ZP.ACCL = argument index
     // Output: ZP.IDY = argument node address, C set if found, NC if index out of range
