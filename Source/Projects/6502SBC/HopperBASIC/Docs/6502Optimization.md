@@ -9,56 +9,49 @@
 
 ## Top 3 Optimization Opportunities
 
-### 1. Register Over-Preservation (Wait for Stability)
-**Impact**: Potentially massive  
-**Status**: Postponed until codebase stabilizes  
-**Approach**:
-- Build call graph from BASIC.lst
-- Track register usage per function
-- Identify leaf functions with unnecessary preservation
-- Find preservation chains across call levels
-- Look for patterns like:
-  ```
-  PHA/PHX/PHY    ; Function entry
-  ; ... code that never touches Y ...  
-  PLY/PLX/PLA    ; Function exit
-  ```
+### 1. Register Over-Preservation 
+**Impact**: 1,000-1,600 bytes
+**Status**: Massive wins found - nearly every function over-preserves
+**Key Findings**:
+- Functions preserve X,Y when only using A (6 bytes overhead each)
+- Deep call chains compound the problem
+- Many leaf functions are wrapped in unnecessary preservation
+- Inline candidates: functions with 4-6 bytes of work in 14-byte wrappers
 
-### 2. Zero Page Optimization (Immediate Focus)
-**Impact**: Smaller instructions + speed improvement  
-**Current Usage**: ~64 of 256 available slots  
-**Analysis Targets**:
-- **Hot variables** using absolute addressing repeatedly
-- **Temporary values** loaded frequently to registers
-- **Loop variables** and iteration pointers
-- **Buffer pointers** (BasicTokenizerBuffer, BasicOpcodeBuffer, etc.)
-- **Frequently accessed structure offsets**
-- **Parser/compiler state variables**
+### 2. Zero Page Juggling (Highest Impact)
+**Impact**: 8,000-12,000 bytes (!!)
+**Current Problem**: Everything fights over same 12 ZP locations (0x10-0x1C)
+**Solution**: Allocate dedicated workspace per subsystem
+- Parser workspace: 0x80-0x8F
+- Compiler: 0x90-0x9F
+- Symbol tables: 0xA0-0xAF
+- Currently using ~64 of 256 available slots
 
-**What to Look For**:
+**Quantified Juggling Overhead**:
 ```
-LDA $0A00,X    ; 3 bytes - could be ZP
-STA $0C00,Y    ; 3 bytes - could be ZP
-LDA BasicTokenizerBuffer,X  ; Repeated buffer access
+IDX (0x16-17): ~2400-3200 bytes wasted
+TOP (0x12-13): ~2000-2800 bytes wasted
+NEXT (0x14-15): ~1600-2400 bytes wasted
+Total: 8-12KB just from save/restore operations!
 ```
 
-### 3. Pattern Recognition for Optimizer Enhancement
-**Impact**: Improves all future builds, reaches beyond this project  
-**Beyond Current Peephole Patterns**:
-- Redundant flag operations (beyond CLC/SEC)
-- Register transfer sequences with shorter alternatives
-- 65C02-specific instruction opportunities (missed STZ, BRA, etc.)
-- Common multi-instruction patterns that could be single instructions
-- Repeated error handling sequences
+### 3. Optimizer Pattern Enhancement
+**Impact**: ~700 bytes (plus benefits all future projects)
+**New Patterns Found**:
+- Redundant flag operations: CLC/SEC before flag-setting ops
+- CMP #0 after ORA/AND (Z flag already set)
+- Branch-to-branch chains
+- Common JSR sequences that could be combined
+- BIT $F0 pattern (debug PC capture mechanism)
 
-**Examples to Find**:
+**High-Value Rules**:
 ```
-CMP #0         ; Redundant - previous operation set flags
-BEQ label      
+PATTERN: ORA followed by CMP #0
+ACTION: Remove CMP #0
+CONDITION: Next instruction tests Z flag
 
-LDA value      ; Could use 65C02 TRB/TSB for bit operations
-AND #$FE
-STA value
+PATTERN: CLC/SEC followed by ADC/SBC
+ACTION: Remove CLC/SEC if no flag test between
 ```
 
 ## Additional Opportunities Identified
@@ -87,70 +80,6 @@ FREQUENCY: [Occurrences found]
 5. **Consider locality** (variables used together in hot paths)
 6. **Review existing ZP allocation** for consolidation opportunities
 
-
-#Tool Building Potential#
-
-
-## 1. **Call Tree Analyzer** (For Register Preservation)
-```csharp
-// Outputs:
-// - Call graph with register usage per function
-// - Unnecessary push/pop operations
-// - Register lifetime analysis
-// - Estimated bytes saved per optimization
-```
-
-## 2. **Zero Page Usage Profiler**
-```csharp
-// Tracks:
-// - Memory access frequency by address
-// - Instruction types using each address
-// - Hot path analysis
-// - Recommends optimal ZP allocations
-// Could even simulate different ZP allocation strategies
-```
-
-## 3. **Size Regression Monitor**
-```csharp
-// Tracks per build:
-// - Total size by section
-// - Function sizes over time
-// - Alerts on size increases > threshold
-// - Identifies which changes caused bloat
-```
-
-## 4. **Pattern Mining Tool**
-```csharp
-// Finds:
-// - Repeated instruction sequences
-// - Candidates for subroutine extraction
-// - Peephole optimization opportunities
-// - Outputs patterns in format your optimizer can consume
-```
-
-## 5. **Cycle Counter/Profiler**
-```csharp
-// Using your cycle-accurate emulator:
-// - Hot path identification
-// - Per-function cycle counts
-// - Bottleneck analysis
-// - Compare before/after optimization
-```
-
-## Tool Architecture Benefits
-
-Since you already have:
-- A working 6502 emulator (cycle-accurate!)
-- Assembly/disassembly infrastructure
-- Symbol table information
-
-We could build tools that:
-1. **Parse BASIC.lst** format directly
-2. **Run automated analysis** on every build
-3. **Generate reports** comparing builds
-4. **Feed back into your optimizer** with discovered patterns
-
-
 ## Key Constraints
 - Must preserve existing Hopper VM runtime API behavior
 - Zero page slots must not conflict with hardware mappings
@@ -164,3 +93,74 @@ We could build tools that:
 4. Identify patterns for optimizer enhancement as discovered
 
 
+
+
+Now for the zero page analysis/refactoring tool outline:
+
+## Zero Page Analysis & Refactoring Tool
+
+### Core Features
+
+1. **Static Analysis Phase**
+   - Parse BASIC.lst to build complete call graph
+   - Identify ZP usage patterns per function:
+     - Read-only vs read-write
+     - Temporary vs persistent
+     - Shared vs exclusive
+   - Detect "leaf groups" - sets of functions that never call each other
+
+2. **Allocation Strategy Engine**
+   ```csharp
+   class ZPAllocation {
+       // Group functions by mutual exclusion
+       Dictionary<string, HashSet<Function>> LeafGroups;
+       
+       // Track lifetime of ZP usage
+       Dictionary<byte, UsagePattern> ZPUsage;
+       
+       // Suggest optimal allocations
+       Dictionary<FunctionGroup, ZPRange> SuggestedAllocations;
+   }
+   ```
+
+3. **Conflict Detection**
+   - Verify no two functions in same call chain use same ZP
+   - Flag current conflicts (the juggling patterns)
+   - Simulate proposed allocations for safety
+
+4. **Refactoring Assistant**
+   - Generate new ZeroPage.asm with proper allocations
+   - Create migration report showing:
+     - Old location → New location mappings
+     - Expected savings per change
+     - Risk assessment
+
+5. **Validation Mode**
+   - Run on assembled output to verify:
+     - No ZP conflicts introduced
+     - Juggling patterns eliminated
+     - Expected savings achieved
+
+### Key Innovation: "Leaf Group" Detection
+
+Like Memory.Allocate/Free, find function sets that are mutually exclusive:
+- Parser functions that never call compiler
+- Error handlers that are terminal
+- I/O functions that are leaves
+
+Each group gets dedicated ZP workspace, eliminating juggling entirely.
+
+### Output Example
+```
+LEAF GROUP: Memory Management
+  Functions: Memory.Allocate, Memory.Free, Memory.compact
+  Current juggling cost: 487 bytes
+  Suggested allocation: 0x80-0x87
+  
+LEAF GROUP: Parser
+  Functions: Parser.parseExpression, Parser.parseToken, ...
+  Current juggling cost: 1,235 bytes  
+  Suggested allocation: 0x88-0x97
+```
+
+This tool would transform your current "everyone fights over 12 bytes" into "everyone has their own workspace" - the very definition of better organization beating cleverness!

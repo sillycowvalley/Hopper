@@ -1,9 +1,6 @@
 unit Time
 {
     friend W65C22, PIA6821;
-    
-    uses "/Source/Runtime/6502/ZeroPage"
-    
 #if defined(W65C22_VIA) || defined(M6840_PTM)
     uses "/Source/Runtime/6502/Long"
     uses "/Source/Runtime/6502/Types"

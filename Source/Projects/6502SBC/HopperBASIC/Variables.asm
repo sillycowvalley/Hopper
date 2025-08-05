@@ -1,7 +1,5 @@
 unit Variables
 {
-    uses "/Source/Runtime/6502/ZeroPage"
-    uses "/Source/Runtime/6502/Memory"
     uses "Objects"
     uses "BasicTypes"
     uses "Messages"

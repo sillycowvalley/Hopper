@@ -1,7 +1,5 @@
 unit Statement
 {
-    uses "/Source/Runtime/6502/ZeroPage"
-    uses "/Source/Runtime/6502/Stacks"
     uses "Messages"
     uses "Error"
     uses "Tokenizer"
@@ -379,18 +377,6 @@ unit Statement
             {
                 FunctionDeclaration.ExecuteBeginDeclaration();
             }
-            case Tokens.IF:
-            {
-                executeIf();
-            }
-            case Tokens.RETURN:
-            {
-                executeReturn();
-            }
-            case Tokens.END:
-            {
-                executeEnd();
-            }
             case Tokens.IDENTIFIER:
             {
                 // Could be assignment or function call
@@ -498,70 +484,7 @@ unit Statement
         LDA #(executePrintTrace % 256) STA ZP.TraceMessageL LDA #(executePrintTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
-    
-    // Execute IF statement
-    // Input: ZP.CurrentToken = IF token
-    // Output: Conditional statement executed if condition is true
-    //         ZP.CurrentToken = token after IF statement
-    // Munts: Stack, ZP.CurrentToken, ZP.TOP, ZP.TOPT, all parsing variables
-    // Error: Sets ZP.LastError if syntax error or expression evaluation fails
-    const string executeIfTrace = "ExecIf";
-    executeIf()
-    {
-#ifdef TRACE
-        LDA #(executeIfTrace % 256) STA ZP.TraceMessageL LDA #(executeIfTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-
-        loop
-        {
-            // Get next token (should be start of condition expression)
-            Tokenizer.NextToken();
-            Error.CheckError();
-            if (NC) { break; }
-            
-            // Evaluate the condition
-            EvaluateExpression();
-            Error.CheckError();
-            if (NC) { break; }
-            
-            // Check for THEN keyword
-            LDA ZP.CurrentToken
-            CMP #Tokens.THEN
-            if (NZ)
-            {
-                Error.SyntaxError(); BIT ZP.EmulatorPCL
-                CLC  // Error
-                break;
-            }
-            
-            // Get the condition result
-            Stacks.PopTop();  // Pop condition into ZP.TOP, modifies X  
-            
-            // Check if condition is true (non-zero)
-            LDA ZP.TOPL
-            ORA ZP.TOPH
-            if (Z)
-            {
-                // Condition is false, skip to end of line
-                SEC  // Success (skip)
-                break;
-            }
-            
-            // Condition is true, get next token and execute statement
-            Tokenizer.NextToken();
-            Error.CheckError();
-            if (NC) { break; }
-            
-            // Recursively execute the statement after THEN
-            Execute();
-            break;
-        } // loop
-
-#ifdef TRACE
-        LDA #(executeIfTrace % 256) STA ZP.TraceMessageL LDA #(executeIfTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
+    /*
     // Execute RETURN statement (stub implementation)
     // Input: ZP.CurrentToken = RETURN token
     // Output: Error (not implemented)
@@ -613,30 +536,10 @@ unit Statement
         LDA #(executeReturnTrace % 256) STA ZP.TraceMessageL LDA #(executeReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
+    */
         
     
-    // Execute END statement (stub implementation)
-    // Input: ZP.CurrentToken = END token
-    // Output: Error (not implemented)
-    // Munts: ZP.LastError
-    // Error: Always sets ZP.LastError (not implemented)
-    const string executeEndTrace = "ExecEnd";
-    executeEnd()
-    {
-#ifdef TRACE
-        LDA #(executeEndTrace % 256) STA ZP.TraceMessageL LDA #(executeEndTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-
-        // TODO: End program execution when we have program support
-        Error.NotImplemented(); BIT ZP.EmulatorPCL
-        CLC  // Error
-        BRK
-
-#ifdef TRACE
-        LDA #(executeEndTrace % 256) STA ZP.TraceMessageL LDA #(executeEndTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
+      
     // Execute identifier statement (assignment or function call)
     // Input: A = ZP.CurrentToken = IDENTIFIER token
     // Output: C set if successful, NC if error

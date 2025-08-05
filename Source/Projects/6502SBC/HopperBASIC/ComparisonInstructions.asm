@@ -1,8 +1,5 @@
 unit ComparisonInstructions
 {
-    uses "/Source/Runtime/6502/ZeroPage"
-    uses "/Source/Runtime/6502/Stacks"
-    uses "/Source/Runtime/6502/IntMath"
     uses "Error"
     uses "Tools"
     uses "BasicTypes"

@@ -1,6 +1,5 @@
 unit Error
 {
-    uses "/Source/Runtime/6502/ZeroPage"
     
     // API Status: Clean
     // All public methods preserve caller state except for documented outputs

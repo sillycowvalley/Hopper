@@ -1,6 +1,8 @@
 unit Long
 {
+#ifndef HOPPER_BASIC
     uses "/Source/Runtime/6502/ZeroPage"
+#endif
     uses "Float"
     
     friend Time, Float, GC, IntMath;

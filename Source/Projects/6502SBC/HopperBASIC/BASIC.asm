@@ -18,8 +18,10 @@ program HopperBASIC
   #endif    
 #endif
     
+    uses "./ZeroPage"
+    uses "./MemoryMap"
+    
     uses "/Source/Runtime/6502/Serial"
-    uses "/Source/Runtime/6502/ZeroPage"
     uses "/Source/Runtime/6502/Memory"
     uses "/Source/Runtime/6502/Utilities"
     uses "/Source/Runtime/6502/Stacks"

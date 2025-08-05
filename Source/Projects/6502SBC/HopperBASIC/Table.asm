@@ -1,7 +1,5 @@
 unit Table
 {
-    uses "/Source/Runtime/6502/ZeroPage"
-    uses "/Source/Runtime/6502/Memory"
     
     // API Status: Clean
     // All public methods preserve caller state except for documented outputs

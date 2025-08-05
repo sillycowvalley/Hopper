@@ -1,15 +1,14 @@
 unit Serial
 {
-    uses "ZeroPage"
-    uses "MemoryMap"
-    
     // Zero Page locations used by Serial:
     const byte InWritePointer        = ZP.SerialInWritePointer;
     const byte InReadPointer         = ZP.SerialInReadPointer;
     const byte BreakFlag             = ZP.SerialBreakFlag;
+#ifndef HOPPER_BASIC
     const byte WorkSpaceHexIn        = ZP.W0;
-#ifndef CPU_65C02S    
+  #ifndef CPU_65C02S    
     const byte WorkSpaceWaitForChar  = ZP.W1;
+  #endif
 #endif
     
     // Location of the Serial input buffer (256 bytes)

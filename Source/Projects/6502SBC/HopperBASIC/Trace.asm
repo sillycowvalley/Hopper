@@ -2,7 +2,6 @@ unit Trace
 {
     // #define TRACESP (6502 SP for stack balance diagnosis)
     
-    uses "/Source/Runtime/6502/ZeroPage"
     uses "Tools"
     uses "Debug"
     

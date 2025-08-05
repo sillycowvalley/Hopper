@@ -1,7 +1,5 @@
 unit TokenIterator
 {
-    uses "/Source/Runtime/6502/ZeroPage"
-    uses "/Source/Runtime/6502/Serial"
     uses "Tokenizer"
     uses "Messages"
     

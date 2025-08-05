@@ -1,7 +1,8 @@
 unit Free
 {
+#ifndef HOPPER_BASIC
     uses "ZeroPage"
-    
+#endif
     friend Memory, GC, String, List;
         
     const byte mfCURRENT = IDYL;

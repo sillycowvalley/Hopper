@@ -1,8 +1,9 @@
 unit Allocate
 {
+#ifndef HOPPER_BASIC
     uses "ZeroPage"
     uses "Diagnostics"
-    
+#endif
     friend Memory, GC, List;
     
 

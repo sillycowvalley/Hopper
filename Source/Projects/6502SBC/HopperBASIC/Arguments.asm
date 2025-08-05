@@ -1,7 +1,5 @@
 unit Arguments
 {
-    uses "/Source/Runtime/6502/ZeroPage"
-    uses "/Source/Runtime/6502/Memory"
     uses "BasicTypes"
     uses "Tools"
     

@@ -1,7 +1,5 @@
 unit Memory
 {
-    uses "ZeroPage"
-    
     uses "Allocate.asm"
     uses "Free.asm"
     

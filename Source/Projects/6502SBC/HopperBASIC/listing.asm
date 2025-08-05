@@ -1,7 +1,5 @@
 unit Listing
 {
-    uses "/Source/Runtime/6502/ZeroPage"
-    uses "/Source/Runtime/6502/Serial"
     uses "Messages"
     uses "Error"
     uses "State"

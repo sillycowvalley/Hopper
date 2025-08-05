@@ -1,8 +1,5 @@
 unit Tokenizer // Tokenizer.asm
 {
-    uses "/Source/Runtime/6502/ZeroPage"
-    uses "/Source/Runtime/6502/Serial"
-    uses "/Source/Runtime/6502/MemoryMap"
     uses "Limits"
     uses "Tools"
     uses "Messages"

@@ -1,6 +1,5 @@
 unit Objects
 {
-    uses "/Source/Runtime/6502/ZeroPage"
     uses "BasicTypes"
     uses "Table"
     uses "Tools"

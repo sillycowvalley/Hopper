@@ -1,7 +1,5 @@
 unit FunctionDeclaration
 {
-    uses "/Source/Runtime/6502/ZeroPage"
-    uses "/Source/Runtime/6502/Stacks"
     uses "Messages"
     uses "Error"
     uses "Tokenizer"

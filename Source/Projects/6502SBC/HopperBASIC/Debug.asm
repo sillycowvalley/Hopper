@@ -127,24 +127,24 @@ unit Debug
     // Dump key zero page variables for debugging
     // Input: None
     // Output: Key registers and variables printed to serial in formatted layout
-    // Preserves: Everything (uses temporary ZP.U0-U4 for state preservation)
+    // Preserves: Everything (uses temporary ZP.DB7-U4 for state preservation)
     DumpVariables()
     {
        PHP  // Save flags
        
        // Store registers in zero page temporarily so we can display them
-       STA ZP.U0  // Temporarily store A
-       STX ZP.U1  // Temporarily store X
-       STY ZP.U2  // Temporarily store Y
+       STA ZP.DB7  // Temporarily store A
+       STX ZP.DB9  // Temporarily store X
+       STY ZP.DB10  // Temporarily store Y
        
        LDA ZP.IDXL
-       STA ZP.U3
+       STA ZP.DB11
        LDA ZP.IDXH
-       STA ZP.U4
+       STA ZP.DB12
        LDA ZP.ACCL
-       STA ZP.U5
+       STA ZP.DB13
        LDA ZP.ACCH
-       STA ZP.U6
+       STA ZP.DB14
        
        
        LDA #(debugVarsHeader % 256)
@@ -159,7 +159,7 @@ unit Debug
        LDA #(regA / 256)
        STA ZP.ACCH
        Tools.PrintStringACC();
-       LDA ZP.U0
+       LDA ZP.DB7
        Serial.HexOut();
        Space();
        
@@ -169,7 +169,7 @@ unit Debug
        LDA #(regX / 256)
        STA ZP.ACCH
        Tools.PrintStringACC();
-       LDA ZP.U1
+       LDA ZP.DB9
        Serial.HexOut();
        Space();
        
@@ -179,7 +179,7 @@ unit Debug
        LDA #(regY / 256)
        STA ZP.ACCH
        Tools.PrintStringACC();
-       LDA ZP.U2
+       LDA ZP.DB10
        Serial.HexOut();
        Space();
        
@@ -225,9 +225,9 @@ unit Debug
        Tools.PrintType();
        LDA #'-'
        Tools.COut();
-       LDA ZP.U6
+       LDA ZP.DB14
        Serial.HexOut();
-       LDA ZP.U5
+       LDA ZP.DB13
        Serial.HexOut();
        Space();
        
@@ -237,9 +237,9 @@ unit Debug
        LDA #(regIDX / 256)
        STA ZP.ACCH
        Tools.PrintStringACC();
-       LDA ZP.U4
+       LDA ZP.DB12
        Serial.HexOut();
-       LDA ZP.U3
+       LDA ZP.DB11
        Serial.HexOut();
        Space();
        
@@ -266,20 +266,20 @@ unit Debug
        
        NL();
        
-       LDA ZP.U6
+       LDA ZP.DB14
        STA ZP.ACCL
-       LDA ZP.U5
+       LDA ZP.DB13
        STA ZP.ACCH
-       LDA ZP.U4
+       LDA ZP.DB12
        STA ZP.IDXH
-       LDA ZP.U3
+       LDA ZP.DB11
        STA ZP.IDXL
        
        
        // Restore registers
-       LDY ZP.U2  // Restore Y
-       LDX ZP.U1  // Restore X
-       LDA ZP.U0  // Restore A
+       LDY ZP.DB10  // Restore Y
+       LDX ZP.DB9  // Restore X
+       LDA ZP.DB7  // Restore A
        
        PLP  // Restore flags
     }
@@ -338,11 +338,11 @@ unit Debug
         PHY
         Space();Space();
         
-        LDX ZP.M5  // number of chars on this row     
+        LDX ZP.DB5  // number of chars on this row     
         
         SEC
         LDA #16
-        SBC ZP.M5
+        SBC ZP.DB5
         if (NZ)
         {
             CMP #8
@@ -355,7 +355,7 @@ unit Debug
             Spaces();
         }
         
-        LDA ZP.M4 // current index of start of row
+        LDA ZP.DB4 // current index of start of row
         TAY 
         loop
         {
@@ -388,14 +388,14 @@ unit Debug
         CLC
         TYA
         ADC ZP.IDXL
-        STA ZP.M6
+        STA ZP.DB6
         LDA #0
         ADC ZP.IDXH
         HOut();
-        LDA ZP.M6
+        LDA ZP.DB6
         HOut();
         LDA # ':' COut(); LDA # 11 Spaces();
-        STZ ZP.M5 // number of bytes on this row zero now
+        STZ ZP.DB5 // number of bytes on this row zero now
     }
     
     // IDX - points to content (can be munted)
@@ -406,8 +406,8 @@ unit Debug
         PHX
         PHY
         
-        STZ ZP.M4
-        STZ ZP.M5 // number of bytes printed on this row
+        STZ ZP.DB4
+        STZ ZP.DB5 // number of bytes printed on this row
         LDY # 0   // current position
         LDX # 64  // max bytes to output
         loop
@@ -432,7 +432,7 @@ unit Debug
                 if (Z)
                 {
                     dumpBlockAddress(); 
-                    STY ZP.M4
+                    STY ZP.DB4
                 }
             }
             TYA
@@ -442,22 +442,22 @@ unit Debug
                 Space(); // column space   
             }
             Space(); LDA [ZP.IDX], Y Debug.HOut();
-            INC ZP.M5
+            INC ZP.DB5
             INY
             DEX
-            LDA ZP.U2 // LSB
+            LDA ZP.DB10 // LSB
             if (Z)
             {
-                LDA ZP.U3
+                LDA ZP.DB11
                 if (Z)
                 {
                     dumpBlockAscii(); // partial row
                     
                     break; // ran out of bytes
                 }
-                DEC ZP.U3 // MSB
+                DEC ZP.DB11 // MSB
             }
-            DEC ZP.U2 // LSB
+            DEC ZP.DB10 // LSB
         } // loop
         PLY
         PLX
@@ -512,7 +512,7 @@ unit Debug
     // Internal heap dump implementation
     // Input: None
     // Output: Detailed heap block analysis with hex/ASCII dump (up to 64 bytes per block)
-    // Modifies: ZP.M0-M3, ZP.U0, ZP.U2, ZP.U3, ZP.IDX, ZP.IDY, A, X, Y (internal operations)
+    // Modifies: ZP.DB0-M3, ZP.DB7, ZP.DB10, ZP.DB11, ZP.IDX, ZP.IDY, A, X, Y (internal operations)
     dumpHeap()
     {
         PHA
@@ -577,11 +577,11 @@ unit Debug
             // Check for zero block size (corrupted heap)
             LDY #0
             LDA [ZP.IDX], Y     // Low byte of size
-            STA ZP.M0
+            STA ZP.DB0
             INY
             LDA [ZP.IDX], Y     // High byte of size
-            STA ZP.M1
-            ORA ZP.M0           // Check if size is zero
+            STA ZP.DB1
+            ORA ZP.DB0           // Check if size is zero
             if (Z) 
             { 
                 LDA #(debugZeroBlock % 256)
@@ -604,21 +604,21 @@ unit Debug
             CLC
             LDA ZP.IDXL
             ADC #2
-            STA ZP.M2
+            STA ZP.DB2
             LDA ZP.IDXH
             ADC #0
             
             // Print Alloc address (block address + 2)
             Serial.HexOut();
-            LDA ZP.M2
+            LDA ZP.DB2
             Serial.HexOut();
             LDA #':'
             Tools.COut();
             
             // Print block size (from header)
-            LDA ZP.M1  // High byte
+            LDA ZP.DB1  // High byte
             Serial.HexOut();
-            LDA ZP.M0  // Low byte
+            LDA ZP.DB0  // Low byte
             Serial.HexOut();
             
             // Check if this block is on the free list
@@ -628,9 +628,9 @@ unit Debug
             
             // Save current position
             LDA ZP.IDXL
-            STA ZP.M2
+            STA ZP.DB2
             LDA ZP.IDXH
-            STA ZP.M3
+            STA ZP.DB3
             
             // Walk free list to see if this block is free
             LDA ZP.FREELISTL
@@ -638,7 +638,7 @@ unit Debug
             LDA ZP.FREELISTH
             STA ZP.IDYH
             
-            STZ ZP.U0  // Flag: 0 = not found, 1 = found on free list
+            STZ ZP.DB7  // Flag: 0 = not found, 1 = found on free list
             
             loop
             {
@@ -648,7 +648,7 @@ unit Debug
                 
                 // Compare addresses - current block vs free list entry
                 LDA ZP.IDYL
-                CMP ZP.M2
+                CMP ZP.DB2
                 if (NZ) 
                 { 
                     // Move to next free block
@@ -668,7 +668,7 @@ unit Debug
                 }
                 
                 LDA ZP.IDYH
-                CMP ZP.M3
+                CMP ZP.DB3
                 if (NZ) 
                 { 
                     // Move to next free block
@@ -689,12 +689,12 @@ unit Debug
                 
                 // Found it - this block is free
                 LDA #1
-                STA ZP.U0
+                STA ZP.DB7
                 break;
             }
             
             // Print status based on flag
-            LDA ZP.U0
+            LDA ZP.DB7
             if (NZ)
             {
                 LDA #(statusFree % 256)
@@ -716,9 +716,9 @@ unit Debug
             Tools.COut();
                         
             // Restore current position for content dump
-            LDA ZP.M2
+            LDA ZP.DB2
             STA ZP.IDXL
-            LDA ZP.M3
+            LDA ZP.DB3
             STA ZP.IDXH
             
             // Skip the 2-byte header to get to content
@@ -733,14 +733,14 @@ unit Debug
             
             // Calculate effective content size (block size - 2 for header)
             SEC
-            LDA ZP.M0
+            LDA ZP.DB0
             SBC #2
-            STA ZP.U2  // Content size low byte
-            LDA ZP.M1
+            STA ZP.DB10  // Content size low byte
+            LDA ZP.DB1
             SBC #0
-            STA ZP.U3  // Content size high byte
+            STA ZP.DB11  // Content size high byte
             
-            LDA ZP.U0
+            LDA ZP.DB7
             if (Z) // USED
             {
                 // IDX - points to content (can be munted)
@@ -752,18 +752,18 @@ unit Debug
             NL();  // End this block's output
             
             // Restore current position
-            LDA ZP.M2
+            LDA ZP.DB2
             STA ZP.IDXL
-            LDA ZP.M3
+            LDA ZP.DB3
             STA ZP.IDXH
             
             // Move to next block
             CLC
             LDA ZP.IDXL
-            ADC ZP.M0
+            ADC ZP.DB0
             STA ZP.IDXL
             LDA ZP.IDXH
-            ADC ZP.M1
+            ADC ZP.DB1
             STA ZP.IDXH
             
             INX
@@ -801,7 +801,7 @@ unit Debug
     // Dump a 256-byte page in hex+ASCII format for debugging
     // Input: A = page number (high byte of address)
     // Output: Complete page contents printed in 16 lines of 16 bytes each
-    // Modifies: ZP.M0, ZP.M1 (internal operations)
+    // Modifies: ZP.DB0, ZP.DB1 (internal operations)
     // Preserves: All other state
     DumpPage()
     {
@@ -810,8 +810,8 @@ unit Debug
         PHY
         
         // Set up M0/M1 to point to the page (preserve IDX)
-        STA ZP.M1   // Page number in high byte
-        STZ ZP.M0   // Start at offset 0
+        STA ZP.DB1   // Page number in high byte
+        STZ ZP.DB0   // Start at offset 0
         
         // Print 16 lines of 16 bytes each
         LDX # 0  // Line counter (0-15)
@@ -819,7 +819,7 @@ unit Debug
         loop
         {
             // Print address for this line (page:offset)
-            LDA ZP.M1
+            LDA ZP.DB1
             Serial.HexOut();
             
             TXA
@@ -837,7 +837,7 @@ unit Debug
                 CPY #16
                 if (Z) { break; }
                 
-                LDA [ZP.M0], Y
+                LDA [ZP.DB0], Y
                 Serial.HexOut();
                 Space();
                 
@@ -862,7 +862,7 @@ unit Debug
                 CPY #16
                 if (Z) { break; }
                 
-                LDA [ZP.M0], Y
+                LDA [ZP.DB0], Y
                 
                 // Check if printable (32-127)
                 CMP #32
@@ -887,12 +887,12 @@ unit Debug
             
             // Move to next line (add 16 to M0/M1)
             CLC
-            LDA ZP.M0
+            LDA ZP.DB0
             ADC #16
-            STA ZP.M0
+            STA ZP.DB0
             if (C)
             {
-                INC ZP.M1  // This shouldn't happen within a page
+                INC ZP.DB1  // This shouldn't happen within a page
             }
             
             INX
@@ -948,9 +948,9 @@ unit Debug
         
         // Dump input buffer (first 64 bytes)
         LDA #(Address.BasicInputBuffer & 0xFF)
-        STA ZP.M0
+        STA ZP.DB0
         LDA #(Address.BasicInputBuffer >> 8)
-        STA ZP.M1
+        STA ZP.DB1
         DumpMemoryBlock();
         
         // TokenizerBuffer (TokPos:XXXX TokBufLen:XXXX CurTok:XX) - First 64 bytes:
@@ -993,9 +993,9 @@ unit Debug
         
         // Dump tokenizer buffer (first 64 bytes)
         LDA #(Address.BasicTokenizerBuffer & 0xFF)
-        STA ZP.M0
+        STA ZP.DB0
         LDA #(Address.BasicTokenizerBuffer >> 8)
-        STA ZP.M1
+        STA ZP.DB1
         DumpMemoryBlock();
         
         // OpCodeBuffer (OpCodeLen:XXXX PC:XXXX) - First 64 bytes:
@@ -1029,9 +1029,9 @@ unit Debug
         
         // Dump opcode buffer (first 64 bytes)
         LDA #(Address.BasicOpCodeBuffer & 0xFF)
-        STA ZP.M0
+        STA ZP.DB0
         LDA #(Address.BasicOpCodeBuffer >> 8)
-        STA ZP.M1
+        STA ZP.DB1
         DumpMemoryBlock();
         
         // Show Error pointers if set
@@ -1064,10 +1064,10 @@ unit Debug
     }
     
     // Dump a 64-byte memory block in hex+ASCII format for debugging
-    // Input: ZP.M0/ZP.M1 = start address to dump
+    // Input: ZP.DB0/ZP.DB1 = start address to dump
     // Output: 64 bytes (4 lines of 16 bytes) printed in hex+ASCII format
     // Modifies: A, X, Y (internal operations)
-    // Preserves: ZP.M0/ZP.M1 (start address preserved)
+    // Preserves: ZP.DB0/ZP.DB1 (start address preserved)
     DumpMemoryBlock()
     {
         PHA
@@ -1075,9 +1075,9 @@ unit Debug
         PHY
         
         // Save original address
-        LDA ZP.M0
+        LDA ZP.DB0
         PHA
-        LDA ZP.M1
+        LDA ZP.DB1
         PHA
         
         // Print 4 lines of 16 bytes each (64 bytes total)
@@ -1089,9 +1089,9 @@ unit Debug
             if (Z) { break; }  // Done with 4 lines
             
             // Print address for this line
-            LDA ZP.M1
+            LDA ZP.DB1
             Serial.HexOut();
-            LDA ZP.M0
+            LDA ZP.DB0
             Serial.HexOut();
             LDA #':'
             Tools.COut();
@@ -1104,7 +1104,7 @@ unit Debug
                 CPY #16
                 if (Z) { break; }
                 
-                LDA [ZP.M0], Y
+                LDA [ZP.DB0], Y
                 Serial.HexOut();
                 Space();
                 
@@ -1129,7 +1129,7 @@ unit Debug
                 CPY #16
                 if (Z) { break; }
                 
-                LDA [ZP.M0], Y
+                LDA [ZP.DB0], Y
                 
                 // Check if printable (32-127)
                 CMP #32
@@ -1154,12 +1154,12 @@ unit Debug
             
             // Move to next line (add 16 to address)
             CLC
-            LDA ZP.M0
+            LDA ZP.DB0
             ADC #16
-            STA ZP.M0
+            STA ZP.DB0
             if (C)
             {
-                INC ZP.M1
+                INC ZP.DB1
             }
             
             INX
@@ -1167,9 +1167,9 @@ unit Debug
         
         // Restore original address
         PLA
-        STA ZP.M1
+        STA ZP.DB1
         PLA
-        STA ZP.M0
+        STA ZP.DB0
         
         PLY
         PLX
@@ -2100,8 +2100,8 @@ DumpPage();
         LDX ZP.SP
         LDY #0  // Entry counter
         
-        // Use ZP.U0 to track current frame being analyzed
-        STZ ZP.U0  // Start with frame 0 (current)
+        // Use ZP.DB7 to track current frame being analyzed
+        STZ ZP.DB7  // Start with frame 0 (current)
         
         loop
         {
@@ -2132,14 +2132,14 @@ DumpPage();
                 LDA #(frameMarkerPrefix / 256)
                 STA ZP.ACCH
                 Tools.PrintStringACC();
-                LDA ZP.U0
+                LDA ZP.DB7
                 Serial.HexOut();
                 LDA #(frameMarkerSuffix % 256)
                 STA ZP.ACCL
                 LDA #(frameMarkerSuffix / 256)
                 STA ZP.ACCH
                 Tools.PrintStringACC();
-                INC ZP.U0  // Next frame
+                INC ZP.DB7  // Next frame
             }
             
             // Print stack entry with intelligent labeling
@@ -2172,15 +2172,15 @@ DumpPage();
             }
             else
             {
-                // Use ZP.U1 to check if this is likely a return slot
+                // Use ZP.DB9 to check if this is likely a return slot
                 // Return slots are typically VOID type or were initialized as BIT 0
-                STZ ZP.U1  // Assume not a return slot
+                STZ ZP.DB9  // Assume not a return slot
                 
                 LDA Address.TypeStackLSB, X
                 CMP #Types.Undefined
                 if (Z)
                 {
-                    INC ZP.U1  // Likely return slot
+                    INC ZP.DB9  // Likely return slot
                 }
                 else
                 {
@@ -2192,12 +2192,12 @@ DumpPage();
                         ORA Address.ValueStackMSB, X
                         if (Z)
                         {
-                            INC ZP.U1  // Likely return slot (BIT 0)
+                            INC ZP.DB9  // Likely return slot (BIT 0)
                         }
                     }
                 }
                 
-                LDA ZP.U1
+                LDA ZP.DB9
                 if (NZ)
                 {
                     LDA #(returnSlotMarker % 256)
@@ -2265,7 +2265,7 @@ DumpPage();
     // Walk heap blocks for validation : errors if corrupt
     // Input: None
     // Output: Calls block processing for each heap block
-    // Modifies: ZP.M0-M3, ZP.U0, ZP.IDX, ZP.IDY, A, X, Y (internal operations)
+    // Modifies: ZP.DB0-M3, ZP.DB7, ZP.IDX, ZP.IDY, A, X, Y (internal operations)
     // Preserves: All iteration-critical state (ZP.ACC, ZP.LCURRENT)
     ValidateHeap()
     {
@@ -2304,11 +2304,11 @@ DumpPage();
             // Check for zero block size (corrupted heap)
             LDY #0
             LDA [ZP.IDX], Y     // Low byte of size
-            STA ZP.M0
+            STA ZP.DB0
             INY
             LDA [ZP.IDX], Y     // High byte of size
-            STA ZP.M1
-            ORA ZP.M0           // Check if size is zero
+            STA ZP.DB1
+            ORA ZP.DB0           // Check if size is zero
             if (Z) 
             { 
                 Error.HeapCorruptError();
@@ -2319,10 +2319,10 @@ DumpPage();
             CLC
             LDA ZP.IDXL
             ADC #2
-            STA ZP.M2
+            STA ZP.DB2
             LDA ZP.IDXH
             ADC #0
-            STA ZP.M3
+            STA ZP.DB3
             
             // Check if this block is on the free list
             // Save current position
@@ -2337,7 +2337,7 @@ DumpPage();
             LDA ZP.FREELISTH
             STA ZP.IDYH
             
-            STZ ZP.U0  // Flag: 0 = not found, 1 = found on free list
+            STZ ZP.DB7  // Flag: 0 = not found, 1 = found on free list
             
             loop
             {
@@ -2347,7 +2347,7 @@ DumpPage();
                 
                 // Compare addresses - current block vs free list entry
                 LDA ZP.IDYL
-                CMP ZP.M2
+                CMP ZP.DB2
                 if (NZ) 
                 { 
                     // Move to next free block
@@ -2367,7 +2367,7 @@ DumpPage();
                 }
                 
                 LDA ZP.IDYH
-                CMP ZP.M3
+                CMP ZP.DB3
                 if (NZ) 
                 { 
                     // Move to next free block
@@ -2388,7 +2388,7 @@ DumpPage();
                 
                 // Found it - this block is free
                 LDA #1
-                STA ZP.U0
+                STA ZP.DB7
                 break;
             }
             
@@ -2400,24 +2400,24 @@ DumpPage();
             
             // In case we want to do somthing with the block, at this point we have:
             // ZP.IDX = pointer to block header
-            // ZP.M0/M1 = block size (including 2-byte header)
-            // ZP.M2/M3 = pointer to block data (header + 2)
-            // ZP.U0 = 0 if allocated, 1 if free
+            // ZP.DB0/M1 = block size (including 2-byte header)
+            // ZP.DB2/M3 = pointer to block data (header + 2)
+            // ZP.DB7 = 0 if allocated, 1 if free
             // X = block number
             
             // Block header at ZP.IDX
-            // Block data at ZP.M2/M3
-            // Block size in ZP.M0/M1 (total size including header)
-            // Free status in ZP.U0 (0=allocated, 1=free)
+            // Block data at ZP.DB2/M3
+            // Block size in ZP.DB0/M1 (total size including header)
+            // Free status in ZP.DB7 (0=allocated, 1=free)
             // Block number in X
             
             // Move to next block: current address + block size
             CLC
             LDA ZP.IDXL
-            ADC ZP.M0  // Add low byte of size
+            ADC ZP.DB0  // Add low byte of size
             STA ZP.IDXL
             LDA ZP.IDXH
-            ADC ZP.M1  // Add high byte of size
+            ADC ZP.DB1  // Add high byte of size
             STA ZP.IDXH
             
             INX

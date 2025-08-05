@@ -1,7 +1,5 @@
 unit Compiler // Compiler.asm
 {
-   uses "/Source/Runtime/6502/ZeroPage"
-   uses "/Source/Runtime/6502/Stacks"
    uses "OpCodes"
    uses "Messages"
    uses "Error"

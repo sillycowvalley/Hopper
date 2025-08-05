@@ -1,10 +1,5 @@
 unit Console
 {
-    uses "/Source/Runtime/6502/ZeroPage"
-    uses "/Source/Runtime/6502/Serial"
-    uses "/Source/Runtime/6502/Memory"
-    uses "/Source/Runtime/6502/Stacks"
-    uses "/Source/Runtime/6502/MemoryMap"
     uses "Messages"
     uses "Error"
     uses "State"

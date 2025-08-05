@@ -1,10 +1,9 @@
 unit Instructions
 {
-    uses "/Source/Runtime/6502/ZeroPage"
-    uses "/Source/Runtime/6502/Stacks"
-    uses "/Source/Runtime/6502/IntMath"
     uses "Error"
     uses "BasicTypes"
+    
+    uses "/Source/Runtime/6502/IntMath"
     
     // Instruction implementation for HopperBASIC operations
     // Preserves caller state except for documented outputs:

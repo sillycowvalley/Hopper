@@ -1,6 +1,5 @@
 unit Functions
 {
-    uses "/Source/Runtime/6502/ZeroPage"
     uses "Objects"
     uses "Arguments"
     uses "BasicTypes"

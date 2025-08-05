@@ -1,8 +1,5 @@
 unit BASICSysCalls
 {
-   uses "/Source/Runtime/6502/ZeroPage"
-   uses "/Source/Runtime/6502/Stacks"
-   uses "/Source/Runtime/6502/Time"
    
    // System call IDs for SYSCALL opcode
    // Bit layout: Bit 7-3: Function ID, Bit 2: Return Value, Bit 1-0: Argument Count
@@ -37,6 +34,10 @@ unit BASICSysCalls
            if (NC) { break; }
            
            TAY  // Preserve full SYSCALL ID in Y
+           
+#ifdef TRACE
+        //TYA Debug.HOut(); Debug.NL(); 
+#endif
            
            // Handle arguments based on count (bits 1-0)
            TYA

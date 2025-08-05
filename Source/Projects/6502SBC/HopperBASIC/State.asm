@@ -1,6 +1,5 @@
 unit State
 {
-    uses "/Source/Runtime/6502/ZeroPage"
     uses "Error"
     
     // API Status: Clean

@@ -1,10 +1,6 @@
 unit IntMath
 {
 
-#ifdef HOPPER_BASIC
-    uses "Error"
-#endif
-
     MulShared()
     {
         // TOP = NEXT * TOP
