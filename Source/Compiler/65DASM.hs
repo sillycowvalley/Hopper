@@ -500,8 +500,14 @@ program DASM
                         comment = comment.Replace("//", "  ");
                         comment = commentPrefix + comment;
                     }
-                    hasmFile.Append(disassembly.Pad(' ', commentColumn) + comment + Char.EOL);
-                    
+                    if (comment.Length != 0)
+                    {
+                        hasmFile.Append(disassembly.Pad(' ', commentColumn) + comment + Char.EOL);
+                    }
+                    else
+                    {
+                        hasmFile.Append(disassembly + Char.EOL);
+                    }                  
                     index    += length;
                     address  += length;
                     codeSize += length;
