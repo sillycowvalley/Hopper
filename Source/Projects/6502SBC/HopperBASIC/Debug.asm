@@ -1273,7 +1273,7 @@ unit Debug
         }
     }
     
-    findFunctionByAddress()  // ACC = search address, returns TOP = name, C if found
+    findFunctionByAddressSTR()  // ACC = search address, returns STR = name, C if found
     {
         // Save state we'll modify
         PHX
@@ -1398,7 +1398,7 @@ unit Debug
                 }
                 
                 // Found it!
-                Functions.GetName();
+                Functions.GetName(); // -> STR
                 SEC
                 break;
             }
@@ -1478,12 +1478,12 @@ unit Debug
         STA ZP.ACCL
         LDA ZP.PCH
         STA ZP.ACCH
-        findFunctionByAddress();
+        findFunctionByAddressSTR();
         if (C)
         {
             space();
             LDA #'(' cOut();
-            Tools.PrintStringTOP();  // Keep this - TOP already set by findFunctionByAddress
+            Tools.PrintStringSTR();  // Keep this - STR already set by findFunctionByAddress
             LDA #')' cOut();
         }
         
@@ -1521,14 +1521,14 @@ unit Debug
             
             // Print frame info
             LDA #(framePrefix % 256)
-            STA ZP.STR
+            STA ZP.STRL
             LDA #(framePrefix / 256)
             STA ZP.STRH
             printString();
             TYA
             hOut();
             LDA #(framePC % 256)
-            STA ZP.STR
+            STA ZP.STRL
             LDA #(framePC / 256)
             STA ZP.STRH
             printString();
@@ -1546,12 +1546,12 @@ unit Debug
             hOut();
             
             // Find function
-            findFunctionByAddress();
+            findFunctionByAddressSTR();
             if (C)
             {
                 space();
                 LDA #'(' cOut();
-                Tools.PrintStringTOP();  // Keep this - TOP already set by findFunctionByAddress
+                Tools.PrintStringSTR();  // Keep this - STR already set by findFunctionByAddress
                 LDA #')' cOut();
             }
             
@@ -1574,14 +1574,14 @@ unit Debug
         
         // Value Stack
         LDA #(valueStackHeader % 256)
-        STA ZP.STR
+        STA ZP.STRL
         LDA #(valueStackHeader / 256)
         STA ZP.STRH
         printString();
         LDA ZP.SP
         hOut();
         LDA #(entriesSuffix % 256)
-        STA ZP.STR
+        STA ZP.STRL
         LDA #(entriesSuffix / 256)
         STA ZP.STRH
         printString();
@@ -1615,14 +1615,14 @@ unit Debug
             {
                 // Frame boundary marker
                 LDA #(frameMarkerPrefix % 256)
-                STA ZP.STR
+                STA ZP.STRL
                 LDA #(frameMarkerPrefix / 256)
                 STA ZP.STRH
                 printString();
                 LDA ZP.DB7
                 hOut();
                 LDA #(frameMarkerSuffix % 256)
-                STA ZP.STR
+                STA ZP.STRL
                 LDA #(frameMarkerSuffix / 256)
                 STA ZP.STRH
                 printString();
@@ -1651,7 +1651,7 @@ unit Debug
             if (Z)
             {
                 LDA #(bpMarker % 256)
-                STA ZP.STR
+                STA ZP.STRL
                 LDA #(bpMarker / 256)
                 STA ZP.STRH
                 printString();
@@ -1684,7 +1684,7 @@ unit Debug
                 if (NZ)
                 {
                     LDA #(returnSlotMarker % 256)
-                    STA ZP.STR
+                    STA ZP.STRL
                     LDA #(returnSlotMarker / 256)
                     STA ZP.STRH
                     printString();
@@ -1697,7 +1697,7 @@ unit Debug
                     if (NC)
                     {
                         LDA #(argMarker % 256)
-                        STA ZP.STR
+                        STA ZP.STRL
                         LDA #(argMarker / 256)
                         STA ZP.STRH
                         printString();
@@ -1705,7 +1705,7 @@ unit Debug
                     else
                     {
                         LDA #(localMarker % 256)
-                        STA ZP.STR
+                        STA ZP.STRL
                         LDA #(localMarker / 256)
                         STA ZP.STRH
                         printString();

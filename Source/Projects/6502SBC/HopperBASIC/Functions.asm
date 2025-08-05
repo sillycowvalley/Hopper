@@ -132,7 +132,7 @@ unit Functions
     
     // Get function name
     // Input: ZP.IDX = function node address
-    // Output: ZP.TOP = name pointer (points into node data), C set (always succeeds)
+    // Output: ZP.STR = name pointer (points into node data), C set (always succeeds)
     // Munts: -
     GetName()
     {
@@ -142,35 +142,14 @@ unit Functions
         CLC
         LDA ZP.IDXL
         ADC #Objects.snName
-        STA ZP.TOPL
+        STA ZP.STRL
         LDA ZP.IDXH
         ADC #0
-        STA ZP.TOPH
+        STA ZP.STRH
         
         SEC  // Always succeeds
         
         PLA
-    }
-    GetNameSTR() // temporary: migrating from TOP to STR
-    {
-        LDA ZP.TOPL
-        PHA
-        LDA ZP.TOPH
-        PHA
-        
-        GetName();
-        if (C)
-        {
-            LDA ZP.TOPL
-            STA ZP.STRL
-            LDA ZP.TOPH
-            STA ZP.STRH
-        }
-        
-        PLA
-        STA ZP.TOPH
-        PLA
-        STA ZP.TOPL
     }
     
     // Set arguments list head pointer in function node
@@ -725,12 +704,12 @@ unit Functions
             STZ ZP.FLENGTHH
             
             // Compare function name with "$MAIN"
-            Functions.GetName();
+            Functions.GetName(); // -> STR
             LDA #(Messages.BeginFunctionName % 256)
-            STA ZP.NEXTL
+            STA ZP.STR2L
             LDA #(Messages.BeginFunctionName / 256)
-            STA ZP.NEXTH
-            Tools.StringCompare(); // Input: ZP.TOP vs ZP.NEXT, Output: C set if match
+            STA ZP.STR2H
+            Tools.StringCompareSTR(); // Input: ZP.STR vs ZP.STR2, Output: C set if match
             if (C)
             {
                 // Save current function node
@@ -747,7 +726,7 @@ unit Functions
                     if (NC) { SEC break; } // No more variables
                     
                     // get variable name for assignment
-                    Variables.GetNameSTR();
+                    Variables.GetName(); // -> STR
                     
                     // <name>
                     LDA # Tokens.IDENTIFIER

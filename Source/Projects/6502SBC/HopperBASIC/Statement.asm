@@ -484,61 +484,6 @@ unit Statement
         LDA #(executePrintTrace % 256) STA ZP.TraceMessageL LDA #(executePrintTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
-    /*
-    // Execute RETURN statement (stub implementation)
-    // Input: ZP.CurrentToken = RETURN token
-    // Output: Error (not implemented)
-    // Munts: ZP.LastError, ZP.CurrentToken, stack if expression provided
-    // Error: Always sets ZP.LastError (not implemented)
-    const string executeReturnTrace = "ExecReturn";
-    executeReturn()
-    {
-#ifdef TRACE
-        LDA #(executeReturnTrace % 256) STA ZP.TraceMessageL LDA #(executeReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-
-        loop
-        {
-            // Get next token
-            Tokenizer.NextToken();
-            Error.CheckError();
-            if (NC) { break; }
-            
-            // Check if there's an expression to RETURN
-            LDA ZP.CurrentToken
-            CMP #Tokens.EOL
-            if (Z)
-            {
-                // No RETURN value - emit RETURN opcode
-                Emit.Return();
-                Error.CheckError();
-                if (NC) { break; }
-            }
-            else
-            {
-                // Evaluate RETURN expression
-                EvaluateExpression();
-                Error.CheckError();
-                if (NC) { break; }
-                
-                // Emit RETURNVAL opcode (expects value on stack)
-                Emit.ReturnVal();
-                Error.CheckError();
-                if (NC) { break; }
-            }
-            
-            CLC  // Error
-            BRK
-            break;
-        } // loop
-
-#ifdef TRACE
-        LDA #(executeReturnTrace % 256) STA ZP.TraceMessageL LDA #(executeReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    */
-        
-    
       
     // Execute identifier statement (assignment or function call)
     // Input: A = ZP.CurrentToken = IDENTIFIER token

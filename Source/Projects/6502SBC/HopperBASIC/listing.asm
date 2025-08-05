@@ -19,10 +19,19 @@ unit Listing
     // Commands consume their tokens and display output to serial
     
     // Check if function name starts with '$' (hidden function)
-    IsVisibleFunction()
+    IsVisibleFunctionTOP()
     {
         PHA
         LDA [ZP.TOP]  // Get first character
+        CMP #'$'
+        if (Z) { CLC } else { SEC }
+        PLA
+    }
+    // Check if function name starts with '$' (hidden function)
+    IsVisibleFunctionSTR()
+    {
+        PHA
+        LDA [ZP.STR]  // Get first character
         CMP #'$'
         if (Z) { CLC } else { SEC }
         PLA
@@ -44,10 +53,10 @@ unit Listing
 #endif
         
         // Get the function name FIRST (before any other operations that might corrupt ZP.IDX)
-        Functions.GetName(); // Input: ZP.IDX, Output: ZP.TOP = name pointer
+        Functions.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
         
         // Check if this is the special "BEGIN" function (main program)
-        checkForBeginFunction(); // Input: ZP.TOP, Returns C if this is the BEGIN function
+        checkForBeginFunctionSTR(); // Input: ZP.STR, Returns C if this is the BEGIN function
         if (C)
         {
             // Display as BEGIN...END block (no FUNC keyword, no parameters)
@@ -56,7 +65,7 @@ unit Listing
         else
         {
             // Display as regular FUNC...ENDFUNC
-            displayRegularFunction(); // Input: ZP.IDX = function node, ZP.TOP = name
+            displayRegularFunctionSTR(); // Input: ZP.IDX = function node, ZP.STR = name
         }
 #ifdef TRACECONSOLE
         LDA #(displayFunctionTrace % 256) STA ZP.TraceMessageL LDA #(displayFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -68,11 +77,11 @@ unit Listing
     }
 
     // Check if function name is "BEGIN"
-    // Input: ZP.TOP = function name pointer
+    // Input: ZP.STR = function name pointer
     // Output: C set if name is "BEGIN", NC if regular function
     // Preserves: ZP.TOP, all other registers
     const string checkBeginFuncTrace = "ChkBegin";
-    checkForBeginFunction()
+    checkForBeginFunctionSTR()
     {
         PHA
         PHY
@@ -90,12 +99,12 @@ unit Listing
         
         // Set up comparison with "BEGIN" string
         LDA #(Messages.BeginFunctionName % 256)
-        STA ZP.NEXTL
+        STA ZP.STR2L
         LDA #(Messages.BeginFunctionName / 256)
-        STA ZP.NEXTH
+        STA ZP.STR2H
         
         // Compare function name with "BEGIN"
-        Tools.StringCompare(); // Input: ZP.TOP vs ZP.NEXT, Output: C set if match
+        Tools.StringCompareSTR(); // Input: ZP.STR vs ZP.STR2, Output: C set if match
 
 #ifdef TRACECONSOLE
         LDA #(checkBeginFuncTrace % 256) STA ZP.TraceMessageL LDA #(checkBeginFuncTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -157,7 +166,7 @@ unit Listing
     // Input: ZP.IDX = function node, ZP.TOP = name pointer (from Functions.GetName)
     // Output: Complete function printed to serial
     const string displayRegFuncTrace = "DispReg";
-    displayRegularFunction()
+    displayRegularFunctionSTR()
     {
         PHA
         PHX
@@ -180,8 +189,8 @@ unit Listing
         LDA #' '
         Serial.WriteChar();
         
-        // Print the function name (already in ZP.TOP from caller)
-        Tools.PrintStringTOP();
+        // Print the function name (already in ZP.STR from caller)
+        Tools.PrintStringSTR();
         
         // Restore function node for Arguments operations
         PLA
@@ -211,8 +220,8 @@ unit Listing
                 if (NC) { break; } // No more arguments
                 
                 // Get and print argument name
-                Arguments.GetName(); // Input: ZP.IDY = argument node, Output: ZP.TOP = name pointer
-                Tools.PrintStringTOP();
+                Arguments.GetName(); // Input: ZP.IDY = argument node, Output: ZP.STR = name pointer, always succeeds
+                Tools.PrintStringSTR();
                 
                 // Check if there's another argument
                 Arguments.IterateNext(); // Input: ZP.IDY = current arg, Output: ZP.IDY = next arg
@@ -306,8 +315,8 @@ unit Listing
         {
             if (NC) { break; }  // No more functions
             
-            Functions.GetName(); // ZP.TOP = name pointer
-            IsVisibleFunction();
+            Functions.GetName(); // -> ZP.STR = name pointer
+            IsVisibleFunctionSTR();
             if (C) 
             { 
                 displayFunction(); // Input: ZP.IDX = function node
@@ -336,7 +345,7 @@ unit Listing
             Functions.Find(); // Input: ZP.TOP = name, Output: ZP.IDX = node
             if (C)
             {
-                IsVisibleFunction();
+                IsVisibleFunctionTOP();
             }
             if (NC) 
             { 
@@ -560,7 +569,7 @@ unit Listing
                 Serial.WriteChar();
                 
                 // Get and print the constant name
-                Variables.GetNameSTR(); // Input: ZP.IDX, Output: ZP.ACC = name pointer
+                Variables.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
                 Tools.PrintStringSTR();
                 
                 // Print " = "
@@ -627,7 +636,7 @@ unit Listing
                 Serial.WriteChar();
                 
                 // Get and print the variable name
-                Variables.GetNameSTR(); // Input: ZP.IDX, Output: ZP.ACC = name pointer
+                Variables.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
                 Tools.PrintStringSTR();
                 
                 // Print " = "

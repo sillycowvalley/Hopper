@@ -365,7 +365,7 @@ unit Variables
     // Input: ZP.IDX = symbol node address (from Find or iteration)
     // Output: ZP.STR = name pointer (points into node data), always succeeds
     // Munts: -
-    GetNameSTR()
+    GetName()
     {
         PHA
         
