@@ -1,5 +1,7 @@
 unit Address // MemoryMap.asm
 {
+    const uint HardwareStack        = 0x0100;
+    
     const uint SerialInBuffer       = 0x0200;  // 256-byte buffer 0x0200-0x02FF
     
     const uint CallStackLSB         = 0x0300;  // LSBs of 256 call stack slots

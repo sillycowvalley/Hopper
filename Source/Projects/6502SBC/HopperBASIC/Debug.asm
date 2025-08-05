@@ -381,138 +381,11 @@ unit Debug
         PLY
         PLX
     }
-    dumpBlockAddress()
-    {
-        NL();
-        LDA # 5 Spaces();
-        CLC
-        TYA
-        ADC ZP.IDXL
-        STA ZP.DB6
-        LDA #0
-        ADC ZP.IDXH
-        HOut();
-        LDA ZP.DB6
-        HOut();
-        LDA # ':' COut(); LDA # 11 Spaces();
-        STZ ZP.DB5 // number of bytes on this row zero now
-    }
-    
-    // IDX - points to content (can be munted)
-    // U2  - size LSB
-    // U3  - size MSB 
-    dumpBlockContent()
-    {
-        PHX
-        PHY
-        
-        STZ ZP.DB4
-        STZ ZP.DB5 // number of bytes printed on this row
-        LDY # 0   // current position
-        LDX # 64  // max bytes to output
-        loop
-        {
-            CPY #0
-            if (NZ) // not first line
-            {
-                TYA
-                AND # 0x0F
-                if (Z)
-                {
-                    dumpBlockAscii();
-                }
-                CPX #0
-                if (Z)
-                {
-                    break; // limit of max bytes
-                }
-                
-                TYA
-                AND # 0x0F
-                if (Z)
-                {
-                    dumpBlockAddress(); 
-                    STY ZP.DB4
-                }
-            }
-            TYA
-            AND # 0x07
-            if (Z)
-            {
-                Space(); // column space   
-            }
-            Space(); LDA [ZP.IDX], Y Debug.HOut();
-            INC ZP.DB5
-            INY
-            DEX
-            LDA ZP.DB10 // LSB
-            if (Z)
-            {
-                LDA ZP.DB11
-                if (Z)
-                {
-                    dumpBlockAscii(); // partial row
-                    
-                    break; // ran out of bytes
-                }
-                DEC ZP.DB11 // MSB
-            }
-            DEC ZP.DB10 // LSB
-        } // loop
-        PLY
-        PLX
-    }
-    
-
-    
-    // Dump heap with state preservation for debugging
-    // Input: None
-    // Output: Complete heap analysis with allocation status printed to serial
-    // Modifies: ZP.M* scratch space (internal to heap analysis operations)
-    // Preserves: All iteration-critical state (ZP.ACC, ZP.LCURRENT)
-    DumpHeap()
-    {
-        PHP  // Save flags
-        PHA
-        PHX
-        PHY
-        
-        // Save iteration-critical state
-        LDA ZP.ACCL
-        PHA
-        LDA ZP.ACCH
-        PHA
-        
-        // Save any other state that might be important
-        LDA ZP.LCURRENTL
-        PHA
-        LDA ZP.LCURRENTH
-        PHA
-        
-        // Call the internal dumpHeap
-        dumpHeap();
-        
-        // Restore saved state
-        PLA
-        STA ZP.LCURRENTH
-        PLA
-        STA ZP.LCURRENTL
-        
-        PLA
-        STA ZP.ACCH
-        PLA
-        STA ZP.ACCL
-        
-        PLY
-        PLX
-        PLA
-        PLP  // Restore flags
-    }
     
     // Internal heap dump implementation
     // Input: None
     // Output: Detailed heap block analysis with hex/ASCII dump (up to 64 bytes per block)
-    // Modifies: ZP.DB0-M3, ZP.DB7, ZP.DB10, ZP.DB11, ZP.IDX, ZP.IDY, A, X, Y (internal operations)
+    // Modifies: ZP.DB0-DB7, ZP.IDX, ZP.IDY, A, X, Y (internal operations)
     dumpHeap()
     {
         PHA
@@ -601,16 +474,16 @@ unit Debug
             Tools.COut();
             Space();
             
+            // Print Alloc address (block address + 2) - using A instead of DB2
             CLC
             LDA ZP.IDXL
             ADC #2
-            STA ZP.DB2
+            PHA         // Save low byte on stack
             LDA ZP.IDXH
             ADC #0
             
-            // Print Alloc address (block address + 2)
             Serial.HexOut();
-            LDA ZP.DB2
+            PLA         // Get low byte from stack
             Serial.HexOut();
             LDA #':'
             Tools.COut();
@@ -626,73 +499,62 @@ unit Debug
             LDA #'('
             Tools.COut();
             
-            // Save current position
+            // Save current position on stack (the header address)
             LDA ZP.IDXL
-            STA ZP.DB2
+            PHA
             LDA ZP.IDXH
-            STA ZP.DB3
-            
+            PHA
+
             // Walk free list to see if this block is free
             LDA ZP.FREELISTL
             STA ZP.IDYL
             LDA ZP.FREELISTH
             STA ZP.IDYH
-            
+
             STZ ZP.DB7  // Flag: 0 = not found, 1 = found on free list
-            
+
             loop
             {
                 LDA ZP.IDYL
                 ORA ZP.IDYH
                 if (Z) { break; }  // End of free list
                 
-                // Compare addresses - current block vs free list entry
-                LDA ZP.IDYL
-                CMP ZP.DB2
-                if (NZ) 
-                { 
-                    // Move to next free block
-                    LDA ZP.IDYL
-                    STA ZP.IDXL
-                    LDA ZP.IDYH
-                    STA ZP.IDXH
-                    
-                    // Get next pointer
-                    LDY #2
-                    LDA [ZP.IDX], Y
-                    STA ZP.IDYL
-                    INY
-                    LDA [ZP.IDX], Y
-                    STA ZP.IDYH
-                    continue; 
+                // Compare addresses - both are headers, no adjustment needed!
+                // First compare low bytes
+                TSX
+                INX
+                INX         // Adjust to point to saved IDXL (stack+2)
+                LDA HardwareStack, X
+                CMP ZP.IDYL
+                if (Z)      // Low bytes match, now check high bytes
+                {
+                    TSX
+                    INX     // Adjust to point to saved IDXH (stack+1) - NOT stack+3!
+                    LDA HardwareStack, X
+                    CMP ZP.IDYH
+                    if (Z)  // High bytes also match - found it!
+                    {
+                        // Found it - this block is free
+                        LDA #1
+                        STA ZP.DB7
+                        
+                        // DEBUG: Found free block
+                        break;
+                    }
                 }
                 
-                LDA ZP.IDYH
-                CMP ZP.DB3
-                if (NZ) 
-                { 
-                    // Move to next free block
-                    LDA ZP.IDYL
-                    STA ZP.IDXL
-                    LDA ZP.IDYH
-                    STA ZP.IDXH
-                    
-                    // Get next pointer
-                    LDY #2
-                    LDA [ZP.IDX], Y
-                    STA ZP.IDYL
-                    INY
-                    LDA [ZP.IDX], Y
-                    STA ZP.IDYH
-                    continue; 
-                }
-                
-                // Found it - this block is free
-                LDA #1
-                STA ZP.DB7
-                break;
+                // No match - move to next free block
+                // IDY points to the header, next pointer is at offset 2
+                LDY #2
+                LDA [ZP.IDY], Y
+                PHA         // Save next low
+                INY
+                LDA [ZP.IDY], Y
+                STA ZP.IDYH
+                PLA
+                STA ZP.IDYL
             }
-            
+
             // Print status based on flag
             LDA ZP.DB7
             if (NZ)
@@ -711,15 +573,15 @@ unit Debug
                 STA ZP.ACCH
                 Tools.PrintStringACC();
             }
-            
+
             LDA #')'
             Tools.COut();
-                        
-            // Restore current position for content dump
-            LDA ZP.DB2
-            STA ZP.IDXL
-            LDA ZP.DB3
+                                
+            // Restore current position from stack
+            PLA
             STA ZP.IDXH
+            PLA
+            STA ZP.IDXL
             
             // Skip the 2-byte header to get to content
             CLC
@@ -735,27 +597,31 @@ unit Debug
             SEC
             LDA ZP.DB0
             SBC #2
-            STA ZP.DB10  // Content size low byte
+            STA ZP.DB2  // Content size low byte
             LDA ZP.DB1
             SBC #0
-            STA ZP.DB11  // Content size high byte
+            STA ZP.DB3  // Content size high byte
             
             LDA ZP.DB7
             if (Z) // USED
             {
                 // IDX - points to content (can be munted)
-                // U2  - size LSB
-                // U3  - size MSB 
+                // DB2 - size LSB
+                // DB3 - size MSB 
                 dumpBlockContent();
             }
                                                 
             NL();  // End this block's output
             
-            // Restore current position
-            LDA ZP.DB2
+            // Restore header position to move to next block
+            SEC
+            LDA ZP.IDXL
+            SBC #2
             STA ZP.IDXL
-            LDA ZP.DB3
-            STA ZP.IDXH
+            if (NC)
+            {
+                DEC ZP.IDXH
+            }
             
             // Move to next block
             CLC
@@ -794,6 +660,135 @@ unit Debug
         PLX
         PLA
     }
+
+    dumpBlockAddress()
+    {
+        NL();
+        LDA # 5 Spaces();
+        CLC
+        TYA
+        ADC ZP.IDXL
+        PHA         // Push low byte of address for later
+        LDA #0
+        ADC ZP.IDXH
+        HOut();
+        PLA         // Pull low byte of address
+        HOut();
+        LDA # ':' COut(); LDA # 11 Spaces();
+        STZ ZP.DB5 // number of bytes on this row zero now
+    }
+    
+    // IDX - points to content (can be munted)
+    // DB2 - size LSB
+    // DB3 - size MSB 
+    dumpBlockContent()
+    {
+        PHX
+        PHY
+        
+        STZ ZP.DB4
+        STZ ZP.DB5 // number of bytes printed on this row
+        LDY # 0   // current position
+        LDX # 64  // max bytes to output
+        loop
+        {
+            CPY #0
+            if (NZ) // not first line
+            {
+                TYA
+                AND # 0x0F
+                if (Z)
+                {
+                    dumpBlockAscii();
+                }
+                CPX #0
+                if (Z)
+                {
+                    break; // limit of max bytes
+                }
+                
+                TYA
+                AND # 0x0F
+                if (Z)
+                {
+                    dumpBlockAddress(); 
+                    STY ZP.DB4
+                }
+            }
+            TYA
+            AND # 0x07
+            if (Z)
+            {
+                Space(); // column space   
+            }
+            Space(); LDA [ZP.IDX], Y Debug.HOut();
+            INC ZP.DB5
+            INY
+            DEX
+            LDA ZP.DB2 // LSB
+            if (Z)
+            {
+                LDA ZP.DB3
+                if (Z)
+                {
+                    dumpBlockAscii(); // partial row
+                    
+                    break; // ran out of bytes
+                }
+                DEC ZP.DB3 // MSB
+            }
+            DEC ZP.DB2 // LSB
+        } // loop
+        PLY
+        PLX
+    }
+
+    
+    // Dump heap with state preservation for debugging
+    // Input: None
+    // Output: Complete heap analysis with allocation status printed to serial
+    // Modifies: ZP.M* scratch space (internal to heap analysis operations)
+    // Preserves: All iteration-critical state (ZP.ACC, ZP.LCURRENT)
+    DumpHeap()
+    {
+        PHP  // Save flags
+        PHA
+        PHX
+        PHY
+        
+        // Save iteration-critical state
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
+        // Save any other state that might be important
+        LDA ZP.LCURRENTL
+        PHA
+        LDA ZP.LCURRENTH
+        PHA
+        
+        // Call the internal dumpHeap
+        dumpHeap();
+        
+        // Restore saved state
+        PLA
+        STA ZP.LCURRENTH
+        PLA
+        STA ZP.LCURRENTL
+        
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
+        PLY
+        PLX
+        PLA
+        PLP  // Restore flags
+    }
+    
+    
     
     
     
@@ -1884,21 +1879,6 @@ unit Debug
         LDA ZP.IDYH
         PHA
         
-/*        
-Debug.NL(); Debug.PCOut(); Debug.SPOut(); Debug.BPOut();
-Debug.NL(); 
-
-LDA #3
-DumpPage();
-LDA #4
-DumpPage();
-LDA #5
-DumpPage();
-LDA #6
-DumpPage();
-LDA #7
-DumpPage();
-*/        
         // Main header with current stack state
         LDA #(debugStackHeader % 256)
         STA ZP.ACCL
