@@ -276,7 +276,12 @@ unit ZP // ZeroPage.asm
     const byte STRL                 = 0x74;  // String low (alias)
     const byte STRH                 = 0x75;  // String high
     
-    // 0x76-0xEB: Available (118 bytes!)
+    
+    const byte STR2  = 0x76;  // String pointer 2
+    const byte STR2L = 0x76;  // String 2 low (alias)
+    const byte STR2H = 0x77;  // String 2 high
+
+    // 0x78-0xEB: Available (116 bytes!)
 
     // HARDWARE I/O (IMMOVABLE - Platform Hardware Addresses)
     const byte ACIACONTROL          = 0xEC;  // 6850 ACIA control register
