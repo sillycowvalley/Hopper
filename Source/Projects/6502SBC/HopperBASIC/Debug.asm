@@ -2050,7 +2050,7 @@ unit Debug
         STA ZP.STR
         LDA #(debugCrashHeader / 256)
         STA ZP.STRH
-        Tools.PrintString();
+        Tools.PrintStringSTR();
         
         PLA
         Serial.HexOut();
@@ -2059,7 +2059,7 @@ unit Debug
         STA ZP.STR
         LDA #(regSP / 256)
         STA ZP.STRH
-        Tools.PrintString();
+        Tools.PrintStringSTR();
         PLA
         Serial.HexOut();
         

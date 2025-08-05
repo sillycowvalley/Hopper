@@ -97,6 +97,16 @@ unit Utilities
             INC ZP.ACCH
         }
     }
+#ifdef HOPPER_BASIC
+    IncSTR()
+    {
+        INC ZP.STRL
+        if (Z)
+        {
+            INC ZP.STRH
+        }
+    }
+#endif
     IncNEXT()
     {
         INC ZP.NEXTL

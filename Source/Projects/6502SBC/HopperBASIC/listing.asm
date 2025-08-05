@@ -560,8 +560,8 @@ unit Listing
                 Serial.WriteChar();
                 
                 // Get and print the constant name
-                Variables.GetName(); // Input: ZP.IDX, Output: ZP.ACC = name pointer
-                Tools.PrintStringACC();
+                Variables.GetNameSTR(); // Input: ZP.IDX, Output: ZP.ACC = name pointer
+                Tools.PrintStringSTR();
                 
                 // Print " = "
                 LDA #' '
@@ -627,8 +627,8 @@ unit Listing
                 Serial.WriteChar();
                 
                 // Get and print the variable name
-                Variables.GetName(); // Input: ZP.IDX, Output: ZP.ACC = name pointer
-                Tools.PrintStringACC();
+                Variables.GetNameSTR(); // Input: ZP.IDX, Output: ZP.ACC = name pointer
+                Tools.PrintStringSTR();
                 
                 // Print " = "
                 LDA #' '

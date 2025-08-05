@@ -89,7 +89,7 @@ unit Trace
         PrintIndent();
         
         // Print method name from ZP.TraceMessage
-        LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Tools.PrintString(); Debug.Space(); LDA #'{' Debug.COut(); 
+        LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Tools.PrintStringSTR(); Debug.Space(); LDA #'{' Debug.COut(); 
       
 #ifdef TRACESP  
         LDA #' ' Debug.COut();
@@ -113,7 +113,7 @@ unit Trace
 #ifdef TERSE_ERRORS
             LDA ZP.LastErrorL Debug.HOut();
 #else
-            LDA ZP.LastErrorL STA ZP.STRL LDA ZP.LastErrorH STA ZP.STRH Tools.PrintString();
+            LDA ZP.LastErrorL STA ZP.STRL LDA ZP.LastErrorH STA ZP.STRH Tools.PrintStringSTR();
 #endif
             LDA #')' Debug.COut(); LDA #' ' Debug.COut(); 
             PLP
@@ -173,10 +173,10 @@ unit Trace
         
         PrintIndent();
         
-        LDA #(endBrace % 256) STA ZP.STRL LDA #(endBrace / 256) STA ZP.STRH Tools.PrintString(); // ' } // '
+        LDA #(endBrace % 256) STA ZP.STRL LDA #(endBrace / 256) STA ZP.STRH Tools.PrintStringSTR(); // ' } // '
         
         // Print method name from ZP.TraceMessage
-        LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Tools.PrintString(); Debug.Space(); 
+        LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Tools.PrintStringSTR(); Debug.Space(); 
         
 #ifdef TRACESP
         LDA #' ' Debug.COut();
@@ -200,7 +200,7 @@ unit Trace
 #ifdef TERSE_ERRORS
             LDA ZP.LastErrorL Debug.HOut();
 #else
-            LDA ZP.LastErrorL STA ZP.STRL LDA ZP.LastErrorH STA ZP.STRH Tools.PrintString();
+            LDA ZP.LastErrorL STA ZP.STRL LDA ZP.LastErrorH STA ZP.STRH Tools.PrintStringSTR();
 #endif
             LDA #')' Debug.COut(); LDA #' ' Debug.COut(); 
             PLP
@@ -236,7 +236,7 @@ unit Trace
     {
         PHA
         
-        LDA #(convergenceMarker % 256) STA ZP.STRL LDA #(convergenceMarker / 256) STA ZP.STRH Tools.PrintString();
+        LDA #(convergenceMarker % 256) STA ZP.STRL LDA #(convergenceMarker / 256) STA ZP.STRH Tools.PrintStringSTR();
         
         PLA
     }

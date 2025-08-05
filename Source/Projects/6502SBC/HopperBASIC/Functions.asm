@@ -747,7 +747,7 @@ unit Functions
                     if (NC) { SEC break; } // No more variables
                     
                     // get variable name for assignment
-                    Variables.GetName();
+                    Variables.GetNameSTR();
                     
                     // <name>
                     LDA # Tokens.IDENTIFIER
@@ -757,14 +757,14 @@ unit Functions
                     loop
                     {
                         IncLENGTH();
-                        LDA [ZP.ACC]
+                        LDA [ZP.STR]
                         STA [ZP.FDESTINATIONADDRESS]
                         if (Z)
                         {
                             IncDESTINATIONADDRESS();
                             break;
                         }
-                        IncACC();
+                        IncSTR();
                         IncDESTINATIONADDRESS();
                     }
                     

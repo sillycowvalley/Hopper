@@ -363,9 +363,9 @@ unit Variables
     }    
     // Get name pointer from symbol node
     // Input: ZP.IDX = symbol node address (from Find or iteration)
-    // Output: ZP.ACC = name pointer (points into node data), C set (always succeeds)
+    // Output: ZP.STR = name pointer (points into node data), always succeeds
     // Munts: -
-    GetName()
+    GetNameSTR()
     {
         PHA
         
@@ -373,12 +373,10 @@ unit Variables
         CLC
         LDA ZP.IDXL
         ADC #Objects.snName
-        STA ZP.ACCL
+        STA ZP.STRL
         LDA ZP.IDXH
         ADC #0
-        STA ZP.ACCH
-        
-        SEC  // Always succeeds
+        STA ZP.STRH
         
         PLA
     }

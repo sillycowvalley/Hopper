@@ -56,7 +56,7 @@ unit Tools
     // Input: ZP.STR = pointer to null-terminated string
     // Output: String printed to serial
     // Preserves: Everything
-    PrintString()
+    PrintStringSTR()
     {
         PHA
         PHY
