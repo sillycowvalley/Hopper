@@ -100,10 +100,14 @@ unit Memory
         // Assumes that:
         // - entire program was loaded at HopperData (typically $0800)
         // - size in pages of loaded program is in PROGSIZE
-        
+
+#ifdef HOPPER_BASIC
+        LDA # (Address.HopperData >> 8)
+#else
         CLC
         LDA # (Address.HopperData >> 8)
         ADC ZP.PROGSIZE  // program size in pages (rounded up to the nearest page)
+#endif
         STA ZP.HEAPSTART
         
         // if RAM does not end at 0x80 (0x7FFF) then respect the value of RamSize (like 0x5000 for Ben Eater 6502)

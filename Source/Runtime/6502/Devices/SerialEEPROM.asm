@@ -84,7 +84,8 @@ unit SerialEEPROM
         PLA TAY
 #endif
     }
-    
+
+#if !defined(HOPPER_BASIC)
     // Load complete Hopper program from Serial EEPROM to RAM
     // Input: ZP.PROGSIZE = program size in 256-byte pages
     // Output: Program loaded from EEPROM to HopperData address
@@ -122,7 +123,7 @@ unit SerialEEPROM
             if (Z) { break; }
         }
     }
-    
+#endif
     // Copy one RAM page (serialPageSize bytes) to EEPROM
     // Input: ZP.IDX = RAM source address (16-bit)
     //        ZP.IDY = EEPROM destination address (16-bit)
@@ -194,7 +195,7 @@ unit SerialEEPROM
 #endif
         PLA
     }
-    
+#if !defined(HOPPER_BASIC)
     // Save complete Hopper program from RAM to Serial EEPROM
     // Input: ZP.PROGSIZE = program size in 256-byte pages
     // Output: Program saved from HopperData address to EEPROM
@@ -232,7 +233,8 @@ unit SerialEEPROM
             if (Z) { break; }
         }
     }
-    
+#endif
+
     // Write single 256-byte page from RAM to EEPROM
     // Input: ZP.IDX = RAM source address (16-bit, page-aligned recommended)
     //        ZP.IDY = EEPROM destination address (16-bit, page-aligned recommended)
