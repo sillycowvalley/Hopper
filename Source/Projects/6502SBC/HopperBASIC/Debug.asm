@@ -19,10 +19,7 @@ unit Debug
     const string debugZeroBlock = "ZERO\n";
     const string debugEllipsis = "...\n";
     
-    // Register and status labels
-    const string regA = "A:";
-    const string regX = "X:";
-    const string regY = "Y:";
+    // Register and status labels (3+ characters only)
     const string regTOP = "TOP:";
     const string regNXT = "NEXT:";
     const string regACC = "ACC:";
@@ -33,8 +30,9 @@ unit Debug
     const string regPC = "PC:";
     const string regACCL = "ACCL:";
     const string regACCT = "ACCT:";
-    
     const string regCSP = "CSP:";
+    
+    // Stack dump strings
     const string callStackHeader = "Call Stack (";
     const string framesSuffix = " frames):\n";
     const string framePrefix = "  Frame ";
@@ -51,12 +49,10 @@ unit Debug
     const string argMarker = " (arg)";
     const string localMarker = " (local)";
     
-    // Status indicators
+    // Status indicators (3+ characters only)
     const string statusFree = "FREE";
     const string statusUsed = "USED";
-    const string statusC = "C ";
     const string statusNC = "NC ";
-    const string statusZ = "Z ";
     const string statusNZ = "NZ ";
     
     // Buffer labels
@@ -320,10 +316,7 @@ unit Debug
     {
         if (C)
         {
-            LDA #(statusC % 256)
-            STA ZP.STR
-            LDA #(statusC / 256)
-            STA ZP.STRH
+            LDA #'C' cOut(); LDA #' ' cOut();
         }
         else
         {
@@ -331,18 +324,15 @@ unit Debug
             STA ZP.STR
             LDA #(statusNC / 256)
             STA ZP.STRH
+            printString();
         }
-        printString();
     }
     
     zfOut()  // Output zero flag status
     {
         if (Z)
         {
-            LDA #(statusZ % 256)
-            STA ZP.STR
-            LDA #(statusZ / 256)
-            STA ZP.STRH
+            LDA #'Z' cOut(); LDA #' ' cOut();
         }
         else
         {
@@ -350,8 +340,8 @@ unit Debug
             STA ZP.STR
             LDA #(statusNZ / 256)
             STA ZP.STRH
+            printString();
         }
-        printString();
     }
     
     // === Public output methods (preserve state) ===
@@ -455,15 +445,11 @@ unit Debug
         ORA ZP.LastErrorH
         if (NZ)
         {
-            LDA #'{'
-            cOut();
-            LDA #'E'
-            cOut();
+            LDA #'{' cOut(); LDA #'E' cOut();
             PLA
             hOut();  // Show checkpoint ID where error was first detected
             PHA
-            LDA #'}'
-            cOut();
+            LDA #'}' cOut();
         }
         PLA PLP
     }
@@ -484,31 +470,19 @@ unit Debug
         printString();
         
         // A register
-        LDA #(regA % 256)
-        STA ZP.STR
-        LDA #(regA / 256)
-        STA ZP.STRH
-        printString();
+        LDA #'A' cOut(); LDA #':' cOut();
         LDA ZP.DB7
         hOut();
         space();
         
         // X register
-        LDA #(regX % 256)
-        STA ZP.STR
-        LDA #(regX / 256)
-        STA ZP.STRH
-        printString();
+        LDA #'X' cOut(); LDA #':' cOut();
         LDA ZP.DB8
         hOut();
         space();
         
         // Y register
-        LDA #(regY % 256)
-        STA ZP.STR
-        LDA #(regY / 256)
-        STA ZP.STRH
-        printString();
+        LDA #'Y' cOut(); LDA #':' cOut();
         LDA ZP.DB9
         hOut();
         space();
@@ -572,8 +546,7 @@ unit Debug
         hOut();
         PLA
         hOut();
-        LDA #':'
-        cOut();
+        LDA #':' cOut();
         LDA #11
         TAX
         CPX #0
@@ -833,12 +806,10 @@ unit Debug
             }
             
             // Print block number
-            LDA #'['
-            cOut();
+            LDA #'[' cOut();
             LDA ZP.DB12  // Use DB12 instead of X
             hOut();
-            LDA #']'
-            cOut();
+            LDA #']' cOut();
             space();
             
             // Print Alloc address (block + 2)
@@ -851,8 +822,7 @@ unit Debug
             hOut();
             PLA
             hOut();
-            LDA #':'
-            cOut();
+            LDA #':' cOut();
             
             // Print block size
             LDA ZP.DB3
@@ -862,8 +832,7 @@ unit Debug
             
             // Check if on free list
             space();
-            LDA #'('
-            cOut();
+            LDA #'(' cOut();
             
             // Save current block address
             LDA ZP.DB0
@@ -937,8 +906,7 @@ unit Debug
                 printString();
             }
             
-            LDA #')'
-            cOut();
+            LDA #')' cOut();
             
             LDA ZP.DB9
             if (Z)  // USED
@@ -1021,8 +989,7 @@ unit Debug
             ASL ASL ASL ASL
             NOP
             hOut();
-            LDA #':'
-            cOut();
+            LDA #':' cOut();
             space();
             
             // Print 16 hex bytes
@@ -1073,8 +1040,7 @@ unit Debug
                 }
                 
                 // Not printable
-                LDA #'.'
-                cOut();
+                LDA #'.' cOut();
                 INY
             }
             
@@ -1234,8 +1200,7 @@ unit Debug
             hOut();
             LDA ZP.DB0
             hOut();
-            LDA #':'
-            cOut();
+            LDA #':' cOut();
             space();
             
             // Print 16 hex bytes
@@ -1286,8 +1251,7 @@ unit Debug
                 }
                 
                 // Not printable
-                LDA #'.'
-                cOut();
+                LDA #'.' cOut();
                 INY
             }
             
@@ -1494,10 +1458,7 @@ unit Debug
         LDA #(framePrefix / 256)
         STA ZP.STRH
         printString();
-        LDA #'0'
-        Serial.WriteChar();
-        LDA #':'
-        Serial.WriteChar();
+        LDA #'0' cOut(); LDA #':' cOut();
         space();
         LDA #(framePC % 256)
         STA ZP.STR
@@ -1519,11 +1480,9 @@ unit Debug
         if (C)
         {
             space();
-            LDA #'('
-            Serial.WriteChar();
+            LDA #'(' cOut();
             Tools.PrintStringTOP();  // Keep this - TOP already set by findFunctionByAddress
-            LDA #')'
-            Serial.WriteChar();
+            LDA #')' cOut();
         }
         
         LDA #(frameBP % 256)
@@ -1589,11 +1548,9 @@ unit Debug
             if (C)
             {
                 space();
-                LDA #'('
-                Serial.WriteChar();
+                LDA #'(' cOut();
                 Tools.PrintStringTOP();  // Keep this - TOP already set by findFunctionByAddress
-                LDA #')'
-                Serial.WriteChar();
+                LDA #')' cOut();
             }
             
             // Print BP from odd index (BP)
@@ -1674,15 +1631,13 @@ unit Debug
             // Print entry
             TXA
             hOut();
-            LDA #':'
-            cOut();
+            LDA #':' cOut();
             space();
             
             // Type and value
             LDA Address.TypeStackLSB, X
             Tools.PrintType();
-            LDA #'-'
-            cOut();
+            LDA #'-' cOut();
             LDA Address.ValueStackMSB, X
             hOut();
             LDA Address.ValueStackLSB, X
@@ -2123,32 +2078,20 @@ unit Debug
         
         Tools.NL();
         
-        LDA ZP.STR
-        PHA
-        LDA ZP.STRH
-        PHA
         LDA #(debugCrashHeader % 256)
         STA ZP.STR
         LDA #(debugCrashHeader / 256)
         STA ZP.STRH
         printString();
-        PLA
-        STA ZP.STRH
-        PLA
-        STA ZP.STR
         
         PLA
         Serial.HexOut();
-        LDA #' '
-        Tools.COut();
-        LDA #'S'
-        Tools.COut();
-        LDA #'P'
-        Tools.COut();
-        LDA #':'
-        Tools.COut();
-        LDA #' '
-        Tools.COut();
+        LDA #' ' cOut(); 
+        LDA #(regSP % 256)
+        STA ZP.STR
+        LDA #(regSP / 256)
+        STA ZP.STRH
+        printString();
         PLA
         Serial.HexOut();
         
