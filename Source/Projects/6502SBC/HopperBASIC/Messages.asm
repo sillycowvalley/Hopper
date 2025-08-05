@@ -18,6 +18,7 @@ unit Messages
     
     // String constant for BEGIN function name
     const string BeginFunctionName = "$MAIN";
+    const string ReplFunctionName  = "$REPL";
     
     
     // Print OK message

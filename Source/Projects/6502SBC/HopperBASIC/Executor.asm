@@ -194,14 +194,15 @@ unit Executor // Executor.asm
                    break; 
                }
            }
-#ifdef TRACE            
-           Trace.IsTracing();
-           if (C)
-           {
-               Trace.PrintIndent();
+#ifdef TRACEJIT            
+           //Trace.IsTracing();
+           //if (C)
+           //{
+               //Trace.PrintIndent();
+               Tools.NL(); 
                LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
                LDA #' ' Debug.COut();
-           }
+           //}
 #endif
 
            // Fetch opcode using indirect addressing
@@ -209,13 +210,12 @@ unit Executor // Executor.asm
            LDA [ZP.PC], Y
            PHA // Save opcode
            
-#ifdef TRACE            
-           Trace.IsTracing();
-           if (C)
-           {
+#ifdef TRACEJIT
+           //Trace.IsTracing();
+           //if (C)
+           //{
                PHA Debug.HOut(); LDA #' ' Debug.COut(); PLA
-               Tools.NL(); 
-           }
+           //}
 #endif            
            // Advance PC
            INC ZP.PCL
@@ -241,7 +241,7 @@ unit Executor // Executor.asm
    FetchOperandByte()
    {
 #ifdef TRACEVERBOSE
-       LDA #(fetchOperandByteTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandByteTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+       //LDA #(fetchOperandByteTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandByteTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
        loop
@@ -267,6 +267,15 @@ unit Executor // Executor.asm
                
            PHA // Save operand
            
+#ifdef TRACEJIT
+           //Trace.IsTracing();
+           //if (C)
+           //{
+               PHA Debug.HOut(); LDA #' ' Debug.COut(); PLA
+           //}
+#endif            
+
+           
            // Advance PC
            INC ZP.PCL
            if (Z)
@@ -280,7 +289,7 @@ unit Executor // Executor.asm
        } // loop exit
        
 #ifdef TRACEVERBOSE
-       PHA LDA #(fetchOperandByteTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandByteTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
+       //PHA LDA #(fetchOperandByteTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandByteTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
 #endif
    }
    
@@ -291,7 +300,7 @@ unit Executor // Executor.asm
    FetchOperandWord()
    {
 #ifdef TRACEVERBOSE
-       PHA LDA #(fetchOperandWordTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandWordTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+       //PHA LDA #(fetchOperandWordTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandWordTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
 #endif
        
        loop
@@ -313,7 +322,7 @@ unit Executor // Executor.asm
        }
        
 #ifdef TRACEVERBOSE
-       LDA #(fetchOperandWordTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandWordTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+       //LDA #(fetchOperandWordTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandWordTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
    
@@ -556,7 +565,7 @@ unit Executor // Executor.asm
            State.CanContinue();
            if (C) 
            {
-               State.SetSuccess();
+               State.SetSuccess(); // Exiting or Success
            }
            else
            {
@@ -608,9 +617,13 @@ unit Executor // Executor.asm
        loop
        {
            // Fetch cleanup count operand (number of locals)
-           FetchOperandWord();
-           Error.CheckError();
-           if (NC) { break; }
+           
+           FetchOperandByte();
+           State.CanContinue();
+           if (NC)
+           {
+               break;
+           }
            STA executorOperandL
            
            // Calculate return slot position: BP - (arg_count + 1)

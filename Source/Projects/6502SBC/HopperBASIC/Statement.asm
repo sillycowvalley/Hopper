@@ -11,7 +11,7 @@ unit Statement
     uses "Emit"
     uses "Compiler"
     
-    friend FunctionDeclaration;
+    friend FunctionDeclaration, Console;
     
     // Private Statement layer storage - BasicStatementWorkspace (32 bytes)
     const uint stmtNamePtr     = Address.BasicStatementWorkspace;      // 2 bytes - identifier name pointer
@@ -29,6 +29,7 @@ unit Statement
     const uint funcCaptureStartPos   = Address.BasicStatementWorkspace + 20; // 2 bytes - start position in token buffer
     const uint funcOriginalLength    = Address.BasicStatementWorkspace + 22; // 2 bytes - original buffer length when capture started
     
+    const uint replFunctionPtr       = Address.BasicStatementWorkspace + 24; // 2 bytes
     
     flags CaptureMode
     {
@@ -356,6 +357,7 @@ unit Statement
 #endif
 
         LDA ZP.CurrentToken
+        
         switch (A)
         {
             case Tokens.REM:
@@ -425,7 +427,7 @@ unit Statement
         IsTracing();
         if (C)
         {
-            DumpBasicBuffers();
+            DumpBuffers();
         }
 #endif
     }
@@ -844,7 +846,7 @@ unit Statement
         }
         
 #ifdef DEBUG
-        //DumpBasicBuffers();
+        //DumpBuffers();
         //DumpHeap();
 #endif
 

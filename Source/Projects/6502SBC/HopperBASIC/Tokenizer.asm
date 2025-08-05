@@ -6,6 +6,8 @@ unit Tokenizer // Tokenizer.asm
     uses "Error"  // Added Error unit
     uses "BasicTypes"
     
+    friend Console;
+    
     enum IdentifierType
     {
         Undefined,

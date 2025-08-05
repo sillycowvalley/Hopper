@@ -1800,7 +1800,7 @@ unit Debug
         PLY PLX PLA
     }
     
-    DumpBasicBuffers()
+    DumpBuffers()
     {
         PHP PHA PHX PHY
         dumpBasicBuffers();
@@ -2071,7 +2071,7 @@ unit Debug
         Tools.NL();
         DumpVariables();
         DumpZeroPage();
-        DumpBasicBuffers();
+        DumpBuffers();
         DumpHeap();
 #endif
         loop {}
