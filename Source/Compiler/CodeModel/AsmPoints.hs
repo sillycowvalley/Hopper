@@ -138,6 +138,7 @@ unit AsmPoints
                 case OpCode.STA_iz:
                 case OpCode.PHA:
                 case OpCode.CMP_n:
+                case OpCode.CMP_z:
                 {
                     walkStats |= WalkStats.ReadA;
                 }

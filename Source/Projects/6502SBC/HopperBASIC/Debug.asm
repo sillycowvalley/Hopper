@@ -593,39 +593,63 @@ unit Debug
     {
         PHX
         PHY  // Save Y since caller needs it
-        space();
-        space();
+        
+        // For partial rows, we need to align to column 61 (where ASCII starts)
+        // Full row: 5 (indent) + 4 (addr) + 1 (:) + 48 (16 hex bytes with spaces) + 1 (extra space at col 8) + 2 = 61
+        // Current position after N bytes: 5 + 4 + 1 + (N*3) + (1 if N>8) + 2
         
         LDX ZP.DB5  // Number of chars on this row
         
-        SEC
-        LDA #16
-        SBC ZP.DB5
-        if (NZ)
-        {
-            CMP #8
-            if (C)
-            {
-                space();
-            }
-            PHA
-            TAX
-            CPX #0
-            if (NZ)
-            {
-                loop
-                {
-                    space();
-                    space();
-                    space();
-                    DEX
-                    if (Z) { break; }
-                }
-            }
-            PLA
+        // Skip if no chars to print
+        CPX #0
+        if (Z) 
+        { 
+            PLY
+            PLX
+            RTS
         }
         
-        // Restore Y to start of row
+        // Calculate current position after hex output
+        // Base: 5 + 4 + 1 + 2 = 12
+        LDA #12
+        STA ZP.DB13
+        
+        // Add 3 for each byte printed
+        TXA
+        ASL         // x2
+        CLC
+        ADC ZP.DB5  // x3
+        CLC
+        ADC ZP.DB13
+        STA ZP.DB13
+        
+        // Add 1 if we printed more than 8 bytes (for column separator)
+        CPX #9
+        if (C)
+        {
+            INC ZP.DB13
+        }
+        
+        // Now pad to column 61
+        SEC
+        LDA #61
+        SBC ZP.DB13
+        TAX
+        
+        // Print padding spaces
+        loop
+        {
+            CPX #0
+            if (Z) { break; }
+            space();
+            DEX
+        }
+        
+        // Add the standard 2-space gap before ASCII
+        space();
+        space();
+        
+        // Print the ASCII characters
         LDY ZP.DB4  // Start of row position
         LDX ZP.DB5  // Number of chars to print
         loop
@@ -638,19 +662,22 @@ unit Debug
             if (C)  // >= 32
             {
                 CMP #127
-                if (C)  // > 127
+                if (NC)  // <= 126
                 {
-                    LDA #'.'
+                    Serial.WriteChar();
+                    INY
+                    DEX
+                    continue;
                 }
             }
-            else
-            {
-                LDA #'.'
-            }
+            
+            // Not printable
+            LDA #'.'
             Serial.WriteChar();
             INY
             DEX
         }
+        
         PLY  // Restore Y
         PLX
     }
@@ -660,7 +687,7 @@ unit Debug
     // DB3 - size MSB
     dumpBlockContent()
     {
-        STZ ZP.DB4
+        STZ ZP.DB4  // Start of current row
         STZ ZP.DB5  // Bytes printed on this row
         LDY #0      // Current position
         LDX #64     // Max bytes to output
@@ -669,7 +696,16 @@ unit Debug
         {
             // Check if we've printed 64 bytes
             CPX #0
-            if (Z) { break; }  // Max bytes limit
+            if (Z) 
+            { 
+                // Hit 64 byte limit, check if partial row
+                LDA ZP.DB5
+                if (NZ)  // Bytes on current row
+                {
+                    dumpBlockAscii();
+                }
+                break;
+            }
             
             // Check if we've printed all content bytes
             LDA ZP.DB2
@@ -677,39 +713,43 @@ unit Debug
             if (Z) 
             { 
                 // No more content, dump any partial row
-                TYA
-                AND #0x0F
-                if (NZ)  // Partial row exists
+                LDA ZP.DB5
+                if (NZ)  // Bytes on current row
                 {
                     dumpBlockAscii();
                 }
                 break; 
             }
             
-            CPY #0
-            if (NZ)  // Not first line
+            // Check if starting a new row (not first byte and Y is multiple of 16)
+            TYA
+            if (NZ)  // Not first byte
             {
-                TYA
                 AND #0x0F
-                if (Z)
+                if (Z)  // Starting new row
                 {
+                    // First dump ASCII for previous row
                     dumpBlockAscii();
+                    // Then start new row
                     dumpBlockAddress();
-                    STY ZP.DB4
+                    STY ZP.DB4  // Save row start
+                    STZ ZP.DB5  // Reset byte count
                 }
             }
             
+            // Add column spacing
             TYA
             AND #0x07
             if (Z)
             {
-                space();  // Column space
+                space();  // Column space every 8 bytes
             }
             
+            // Print hex byte
             space();
             LDA [ZP.DB0], Y
             hOut();
-            INC ZP.DB5
+            INC ZP.DB5  // Count bytes on this row
             INY
             DEX
             
@@ -1270,6 +1310,7 @@ unit Debug
     findFunctionByAddress()  // ACC = search address, returns TOP = name, C if found
     {
         // Save state we'll modify
+        PHX
         LDA ZP.IDXL
         STA ZP.DB10
         LDA ZP.IDXH
@@ -1407,6 +1448,7 @@ unit Debug
         STA ZP.IDXH
         LDA ZP.DB10
         STA ZP.IDXL
+        PLX
     }
     
     dumpStack()
@@ -1498,74 +1540,75 @@ unit Debug
         Tools.PrintStringACC();
         nL();
         
-        // Walk call stack
+        // Walk call stack backwards from CSP
         LDX ZP.CSP
-        LDY #0  // Frame counter
+        LDY #1  // Frame counter (start at 1 since we already showed frame 0)
         
         loop
         {
-            CPX #2
-            if (NC) { break; }
+            // Need at least 2 entries (PC + BP pair) before current position
+            // Check if we're at the beginning
+            CPX #0
+            if (Z) { break; }  // Can't go lower
             
-            DEX
+            CPX #1  
+            if (Z) { break; }  // Only 1 entry left, can't make a pair
             
-            TXA
-            AND #1
-            if (NZ)  // Odd = return address
+            // CSP points to next free slot, so back up to previous frame
+            DEX  // Move to BP of previous frame
+            DEX  // Move to PC of previous frame
+            
+            // Print frame info
+            LDA #(framePrefix % 256)
+            STA ZP.ACCL
+            LDA #(framePrefix / 256)
+            STA ZP.ACCH
+            Tools.PrintStringACC();
+            TYA
+            hOut();
+            LDA #(framePC % 256)
+            STA ZP.ACCL
+            LDA #(framePC / 256)
+            STA ZP.ACCH
+            Tools.PrintStringACC();
+            
+            // Load return address from even index (PC)
+            LDA Address.CallStackLSB, X
+            STA ZP.ACCL
+            LDA Address.CallStackMSB, X
+            STA ZP.ACCH
+            
+            // Print address
+            LDA ZP.ACCH
+            hOut();
+            LDA ZP.ACCL
+            hOut();
+            
+            // Find function
+            findFunctionByAddress();
+            if (C)
             {
-                // Print frame info
-                LDA #(framePrefix % 256)
-                STA ZP.ACCL
-                LDA #(framePrefix / 256)
-                STA ZP.ACCH
-                Tools.PrintStringACC();
-                TYA
-                hOut();
-                LDA #(framePC % 256)
-                STA ZP.ACCL
-                LDA #(framePC / 256)
-                STA ZP.ACCH
-                Tools.PrintStringACC();
-                
-                DEX  // Move to return address
-                
-                // Load return address
-                LDA Address.CallStackLSB, X
-                STA ZP.ACCL
-                LDA Address.CallStackMSB, X
-                STA ZP.ACCH
-                
-                // Print address
-                LDA ZP.ACCH
-                hOut();
-                LDA ZP.ACCL
-                hOut();
-                
-                // Find function
-                findFunctionByAddress();
-                if (C)
-                {
-                    space();
-                    LDA #'('
-                    Serial.WriteChar();
-                    Tools.PrintStringTOP();
-                    LDA #')'
-                    Serial.WriteChar();
-                }
-                
-                // Print BP
-                LDA #(frameBP % 256)
-                STA ZP.ACCL
-                LDA #(frameBP / 256)
-                STA ZP.ACCH
-                Tools.PrintStringACC();
-                INX
-                LDA Address.CallStackLSB, X
-                hOut();
-                
-                nL();
-                INY
+                space();
+                LDA #'('
+                Serial.WriteChar();
+                Tools.PrintStringTOP();
+                LDA #')'
+                Serial.WriteChar();
             }
+            
+            // Print BP from odd index (BP)
+            LDA #(frameBP % 256)
+            STA ZP.ACCL
+            LDA #(frameBP / 256)
+            STA ZP.ACCH
+            Tools.PrintStringACC();
+            INX  // Move to BP position (odd index)
+            LDA Address.CallStackLSB, X
+            hOut();
+            DEX  // Back to PC position
+            
+            nL();
+            INY  // Increment frame counter
         }
         
         nL();
@@ -1604,7 +1647,7 @@ unit Debug
                 break;
             }
             
-            DEX
+            DEX  // Move to previous entry
             
             // Check for frame boundary
             TXA
@@ -1625,6 +1668,7 @@ unit Debug
                 STA ZP.ACCH
                 Tools.PrintStringACC();
                 INC ZP.DB7
+                nL();
             }
             
             // Print entry
