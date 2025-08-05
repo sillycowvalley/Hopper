@@ -78,10 +78,6 @@ unit Trace
         PHX
         PHY
         
-        LDA ZP.ACCL
-        PHA
-        LDA ZP.ACCH
-        PHA
 #ifdef TRACESP        
         // capture current stack pointer
         TSX
@@ -93,7 +89,7 @@ unit Trace
         PrintIndent();
         
         // Print method name from ZP.TraceMessage
-        LDA ZP.TraceMessageL STA ZP.ACCL LDA ZP.TraceMessageH STA ZP.ACCH Tools.PrintStringACC(); Debug.Space(); LDA #'{' Debug.COut(); 
+        LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Tools.PrintString(); Debug.Space(); LDA #'{' Debug.COut(); 
       
 #ifdef TRACESP  
         LDA #' ' Debug.COut();
@@ -117,7 +113,7 @@ unit Trace
 #ifdef TERSE_ERRORS
             LDA ZP.LastErrorL Debug.HOut();
 #else
-            LDA ZP.LastErrorL STA ZP.ACCL LDA ZP.LastErrorH STA ZP.ACCH Tools.PrintStringACC();
+            LDA ZP.LastErrorL STA ZP.STRL LDA ZP.LastErrorH STA ZP.STRH Tools.PrintString();
 #endif
             LDA #')' Debug.COut(); LDA #' ' Debug.COut(); 
             PLP
@@ -139,11 +135,6 @@ unit Trace
         
         // Increase indentation
         INC ZP.TraceIndent
-        
-        PLA
-        STA ZP.ACCH
-        PLA
-        STA ZP.ACCL
         
         PLY
         PLX
@@ -169,11 +160,6 @@ unit Trace
         PHX
         PHY
         
-        LDA ZP.ACCL
-        PHA
-        LDA ZP.ACCH
-        PHA
-        
 #ifdef TRACESP
         // capture current stack pointer
         TSX
@@ -187,10 +173,10 @@ unit Trace
         
         PrintIndent();
         
-        LDA #(endBrace % 256) STA ZP.ACCL LDA #(endBrace / 256) STA ZP.ACCH Tools.PrintStringACC(); // ' } // '
+        LDA #(endBrace % 256) STA ZP.STRL LDA #(endBrace / 256) STA ZP.STRH Tools.PrintString(); // ' } // '
         
         // Print method name from ZP.TraceMessage
-        LDA ZP.TraceMessageL STA ZP.ACCL LDA ZP.TraceMessageH STA ZP.ACCH Tools.PrintStringACC(); Debug.Space(); 
+        LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Tools.PrintString(); Debug.Space(); 
         
 #ifdef TRACESP
         LDA #' ' Debug.COut();
@@ -214,7 +200,7 @@ unit Trace
 #ifdef TERSE_ERRORS
             LDA ZP.LastErrorL Debug.HOut();
 #else
-            LDA ZP.LastErrorL STA ZP.ACCL LDA ZP.LastErrorH STA ZP.ACCH Tools.PrintStringACC();
+            LDA ZP.LastErrorL STA ZP.STRL LDA ZP.LastErrorH STA ZP.STRH Tools.PrintString();
 #endif
             LDA #')' Debug.COut(); LDA #' ' Debug.COut(); 
             PLP
@@ -236,11 +222,6 @@ unit Trace
         
         Debug.NL();
         
-        PLA
-        STA ZP.ACCH
-        PLA
-        STA ZP.ACCL
-        
         PLY
         PLX
         PLA
@@ -255,7 +236,7 @@ unit Trace
     {
         PHA
         
-        LDA #(convergenceMarker % 256) STA ZP.ACCL LDA #(convergenceMarker / 256) STA ZP.ACCH Tools.PrintStringACC();
+        LDA #(convergenceMarker % 256) STA ZP.STRL LDA #(convergenceMarker / 256) STA ZP.STRH Tools.PrintString();
         
         PLA
     }

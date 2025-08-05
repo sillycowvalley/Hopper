@@ -36,14 +36,12 @@ unit BASICSysCalls
            TAY  // Preserve full SYSCALL ID in Y
            
 #ifdef TRACE
-           /*
-           TYA Debug.HOut(); Debug.NL(); 
+           //TYA Debug.HOut(); Debug.NL(); 
            CMP # SysCallType.Delay
            if (Z)
            {
                DumpStack();
            }
-           */
 #endif           
            // Handle arguments based on count (bits 1-0)
            TYA

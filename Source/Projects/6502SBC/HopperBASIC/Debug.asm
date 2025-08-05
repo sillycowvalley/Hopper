@@ -120,13 +120,13 @@ unit Debug
         }
     }
     
-    // Print label string from DB0/DB1
-    printLabel()
+    // Print string from STR
+    printString()
     {
         LDY #0
         loop
         {
-            LDA [ZP.DB0], Y
+            LDA [ZP.STR], Y
             if (Z) { break; }
             Serial.WriteChar();
             INY
@@ -175,10 +175,10 @@ unit Debug
     xOut()  // Output IDX register
     {
         LDA #(regIDX % 256)
-        STA ZP.DB0
+        STA ZP.STR
         LDA #(regIDX / 256)
-        STA ZP.DB1
-        printLabel();
+        STA ZP.STRH
+        printString();
         LDA ZP.IDXH
         hOut();
         LDA ZP.IDXL
@@ -189,10 +189,10 @@ unit Debug
     yOut()  // Output IDY register
     {
         LDA #(regIDY % 256)
-        STA ZP.DB0
+        STA ZP.STR
         LDA #(regIDY / 256)
-        STA ZP.DB1
-        printLabel();
+        STA ZP.STRH
+        printString();
         LDA ZP.IDYH
         hOut();
         LDA ZP.IDYL
@@ -203,10 +203,10 @@ unit Debug
     aOut()  // Output ACC register
     {
         LDA #(regACC % 256)
-        STA ZP.DB0
+        STA ZP.STR
         LDA #(regACC / 256)
-        STA ZP.DB1
-        printLabel();
+        STA ZP.STRH
+        printString();
         LDA ZP.ACCH
         hOut();
         LDA ZP.ACCL
@@ -217,10 +217,10 @@ unit Debug
     atOut()  // Output ACCT register
     {
         LDA #(regACCT % 256)
-        STA ZP.DB0
+        STA ZP.STR
         LDA #(regACCT / 256)
-        STA ZP.DB1
-        printLabel();
+        STA ZP.STRH
+        printString();
         LDA ZP.ACCT
         hOut();
         space();
@@ -229,10 +229,10 @@ unit Debug
     nOut()  // Output NEXT register with type
     {
         LDA #(regNXT % 256)
-        STA ZP.DB0
+        STA ZP.STR
         LDA #(regNXT / 256)
-        STA ZP.DB1
-        printLabel();
+        STA ZP.STRH
+        printString();
         LDA ZP.NEXTT
         Tools.PrintType();
         LDA #'-'
@@ -247,10 +247,10 @@ unit Debug
     tOut()  // Output TOP register with type
     {
         LDA #(regTOP % 256)
-        STA ZP.DB0
+        STA ZP.STR
         LDA #(regTOP / 256)
-        STA ZP.DB1
-        printLabel();
+        STA ZP.STRH
+        printString();
         LDA ZP.TOPT
         Tools.PrintType();
         LDA #'-'
@@ -265,10 +265,10 @@ unit Debug
     pcOut()  // Output PC register
     {
         LDA #(regPC % 256)
-        STA ZP.DB0
+        STA ZP.STR
         LDA #(regPC / 256)
-        STA ZP.DB1
-        printLabel();
+        STA ZP.STRH
+        printString();
         LDA ZP.PCH
         hOut();
         LDA ZP.PCL
@@ -279,10 +279,10 @@ unit Debug
     bpOut()  // Output BP register
     {
         LDA #(regBP % 256)
-        STA ZP.DB0
+        STA ZP.STR
         LDA #(regBP / 256)
-        STA ZP.DB1
-        printLabel();
+        STA ZP.STRH
+        printString();
         LDA ZP.BP
         hOut();
         space();
@@ -291,10 +291,10 @@ unit Debug
     spOut()  // Output SP register
     {
         LDA #(regSP % 256)
-        STA ZP.DB0
+        STA ZP.STR
         LDA #(regSP / 256)
-        STA ZP.DB1
-        printLabel();
+        STA ZP.STRH
+        printString();
         LDA ZP.SP
         hOut();
         space();
@@ -306,10 +306,10 @@ unit Debug
         STA ZP.DB15  // Save value to print
         
         LDA #(regACCL % 256)
-        STA ZP.DB0
+        STA ZP.STR
         LDA #(regACCL / 256)
-        STA ZP.DB1
-        printLabel();
+        STA ZP.STRH
+        printString();
         
         LDA ZP.DB15
         hOut();
@@ -321,18 +321,18 @@ unit Debug
         if (C)
         {
             LDA #(statusC % 256)
-            STA ZP.DB0
+            STA ZP.STR
             LDA #(statusC / 256)
-            STA ZP.DB1
+            STA ZP.STRH
         }
         else
         {
             LDA #(statusNC % 256)
-            STA ZP.DB0
+            STA ZP.STR
             LDA #(statusNC / 256)
-            STA ZP.DB1
+            STA ZP.STRH
         }
-        printLabel();
+        printString();
     }
     
     zfOut()  // Output zero flag status
@@ -340,18 +340,18 @@ unit Debug
         if (Z)
         {
             LDA #(statusZ % 256)
-            STA ZP.DB0
+            STA ZP.STR
             LDA #(statusZ / 256)
-            STA ZP.DB1
+            STA ZP.STRH
         }
         else
         {
             LDA #(statusNZ % 256)
-            STA ZP.DB0
+            STA ZP.STR
             LDA #(statusNZ / 256)
-            STA ZP.DB1
+            STA ZP.STRH
         }
-        printLabel();
+        printString();
     }
     
     // === Public output methods (preserve state) ===
@@ -478,37 +478,37 @@ unit Debug
         STY ZP.DB9  // Y
         
         LDA #(debugVarsHeader % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(debugVarsHeader / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         
         // A register
         LDA #(regA % 256)
-        STA ZP.DB0
+        STA ZP.STR
         LDA #(regA / 256)
-        STA ZP.DB1
-        printLabel();
+        STA ZP.STRH
+        printString();
         LDA ZP.DB7
         hOut();
         space();
         
         // X register
         LDA #(regX % 256)
-        STA ZP.DB0
+        STA ZP.STR
         LDA #(regX / 256)
-        STA ZP.DB1
-        printLabel();
+        STA ZP.STRH
+        printString();
         LDA ZP.DB8
         hOut();
         space();
         
         // Y register
         LDA #(regY % 256)
-        STA ZP.DB0
+        STA ZP.STR
         LDA #(regY / 256)
-        STA ZP.DB1
-        printLabel();
+        STA ZP.STRH
+        printString();
         LDA ZP.DB9
         hOut();
         space();
@@ -537,10 +537,10 @@ unit Debug
     dumpIterationState()
     {
         LDA #(listIT % 256)
-        STA ZP.DB0
+        STA ZP.STR
         LDA #(listIT / 256)
-        STA ZP.DB1
-        printLabel();
+        STA ZP.STRH
+        printString();
         LDA ZP.IDXH
         hOut();
         LDA ZP.IDXL
@@ -767,16 +767,16 @@ unit Debug
     dumpHeap()
     {
         LDA #(debugHeapHeader % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(debugHeapHeader / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         
         LDA #(listVL % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(listVL / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         LDA ZP.VariablesListH
         hOut();
         LDA ZP.VariablesListL
@@ -784,10 +784,10 @@ unit Debug
         space();
         
         LDA #(listFL % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(listFL / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         LDA ZP.FunctionsListH
         hOut();
         LDA ZP.FunctionsListL
@@ -825,10 +825,10 @@ unit Debug
             if (Z)
             {
                 LDA #(debugZeroBlock % 256)
-                STA ZP.ACCL
+                STA ZP.STR
                 LDA #(debugZeroBlock / 256)
-                STA ZP.ACCH
-                Tools.PrintStringACC();
+                STA ZP.STRH
+                printString();
                 break;
             }
             
@@ -923,18 +923,18 @@ unit Debug
             if (NZ)
             {
                 LDA #(statusFree % 256)
-                STA ZP.ACCL
+                STA ZP.STR
                 LDA #(statusFree / 256)
-                STA ZP.ACCH
-                Tools.PrintStringACC();
+                STA ZP.STRH
+                printString();
             }
             else
             {
                 LDA #(statusUsed % 256)
-                STA ZP.ACCL
+                STA ZP.STR
                 LDA #(statusUsed / 256)
-                STA ZP.ACCH
-                Tools.PrintStringACC();
+                STA ZP.STRH
+                printString();
             }
             
             LDA #')'
@@ -992,10 +992,10 @@ unit Debug
             if (Z)
             {
                 LDA #(debugEllipsis % 256)
-                STA ZP.ACCL
+                STA ZP.STR
                 LDA #(debugEllipsis / 256)
-                STA ZP.ACCH
-                Tools.PrintStringACC();
+                STA ZP.STRH
+                printString();
                 break;
             }
         }
@@ -1099,24 +1099,24 @@ unit Debug
     dumpBasicBuffers()
     {
         LDA #(debugBasicHeader % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(debugBasicHeader / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         
         // InputBuffer
         LDA #(basicInputBufferLabel % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(basicInputBufferLabel / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         LDA ZP.BasicInputLength
         hOut();
         LDA #(basicBufferSuffix % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(basicBufferSuffix / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         
         // Dump input buffer
         LDA #(Address.BasicInputBuffer & 0xFF)
@@ -1127,10 +1127,10 @@ unit Debug
         
         // TokenizerBuffer
         LDA #(basicTokenizerBufferLabel % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(basicTokenizerBufferLabel / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         
         LDA ZP.TokenizerPosH
         hOut();
@@ -1138,10 +1138,10 @@ unit Debug
         hOut();
         
         LDA #(basicTokBufLenLabel % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(basicTokBufLenLabel / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         
         LDA ZP.TokenBufferLengthH
         hOut();
@@ -1149,19 +1149,19 @@ unit Debug
         hOut();
         
         LDA #(basicCurTokLabel % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(basicCurTokLabel / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         
         LDA ZP.CurrentToken
         hOut();
         
         LDA #(basicBufferSuffix % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(basicBufferSuffix / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         
         // Dump tokenizer buffer
         LDA #(Address.BasicTokenizerBuffer & 0xFF)
@@ -1172,10 +1172,10 @@ unit Debug
         
         // OpCodeBuffer
         LDA #(basicOpCodeBufferLabel % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(basicOpCodeBufferLabel / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         
         LDA ZP.OpCodeBufferLengthH
         hOut();
@@ -1183,10 +1183,10 @@ unit Debug
         hOut();
         
         LDA #(basicPCLabel % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(basicPCLabel / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         
         LDA ZP.PCH
         hOut();
@@ -1194,10 +1194,10 @@ unit Debug
         hOut();
         
         LDA #(basicBufferSuffix % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(basicBufferSuffix / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         
         // Dump opcode buffer
         LDA #(Address.BasicOpCodeBuffer & 0xFF)
@@ -1208,10 +1208,10 @@ unit Debug
         
         // Error pointers
         LDA #(basicErrorLabel % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(basicErrorLabel / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         LDA ZP.LastErrorH
         hOut();
         LDA ZP.LastErrorL
@@ -1455,17 +1455,17 @@ unit Debug
     {
         // Main header
         LDA #(debugStackHeader % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(debugStackHeader / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         
         // Stack pointers
         LDA #(regCSP % 256)
-        STA ZP.DB0
+        STA ZP.STR
         LDA #(regCSP / 256)
-        STA ZP.DB1
-        printLabel();
+        STA ZP.STRH
+        printString();
         LDA ZP.CSP
         hOut();
         space();
@@ -1476,34 +1476,34 @@ unit Debug
         
         // Call Stack
         LDA #(callStackHeader % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(callStackHeader / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         LDA ZP.CSP
         hOut();
         LDA #(framesSuffix % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(framesSuffix / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         
         // Current frame
         LDA #(framePrefix % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(framePrefix / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         LDA #'0'
         Serial.WriteChar();
         LDA #':'
         Serial.WriteChar();
         space();
         LDA #(framePC % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(framePC / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         
         LDA ZP.PCH
         hOut();
@@ -1521,23 +1521,23 @@ unit Debug
             space();
             LDA #'('
             Serial.WriteChar();
-            Tools.PrintStringTOP();
+            Tools.PrintStringTOP();  // Keep this - TOP already set by findFunctionByAddress
             LDA #')'
             Serial.WriteChar();
         }
         
         LDA #(frameBP % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(frameBP / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         LDA ZP.BP
         hOut();
         LDA #(currentFrameMarker % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(currentFrameMarker / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         nL();
         
         // Walk call stack backwards from CSP
@@ -1560,17 +1560,17 @@ unit Debug
             
             // Print frame info
             LDA #(framePrefix % 256)
-            STA ZP.ACCL
+            STA ZP.STR
             LDA #(framePrefix / 256)
-            STA ZP.ACCH
-            Tools.PrintStringACC();
+            STA ZP.STRH
+            printString();
             TYA
             hOut();
             LDA #(framePC % 256)
-            STA ZP.ACCL
+            STA ZP.STR
             LDA #(framePC / 256)
-            STA ZP.ACCH
-            Tools.PrintStringACC();
+            STA ZP.STRH
+            printString();
             
             // Load return address from even index (PC)
             LDA Address.CallStackLSB, X
@@ -1591,17 +1591,17 @@ unit Debug
                 space();
                 LDA #'('
                 Serial.WriteChar();
-                Tools.PrintStringTOP();
+                Tools.PrintStringTOP();  // Keep this - TOP already set by findFunctionByAddress
                 LDA #')'
                 Serial.WriteChar();
             }
             
             // Print BP from odd index (BP)
             LDA #(frameBP % 256)
-            STA ZP.ACCL
+            STA ZP.STR
             LDA #(frameBP / 256)
-            STA ZP.ACCH
-            Tools.PrintStringACC();
+            STA ZP.STRH
+            printString();
             INX  // Move to BP position (odd index)
             LDA Address.CallStackLSB, X
             hOut();
@@ -1615,17 +1615,17 @@ unit Debug
         
         // Value Stack
         LDA #(valueStackHeader % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(valueStackHeader / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         LDA ZP.SP
         hOut();
         LDA #(entriesSuffix % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(entriesSuffix / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         
         LDX ZP.SP
         LDY #0  // Entry counter
@@ -1640,10 +1640,10 @@ unit Debug
             if (Z)
             {
                 LDA #(stackEllipsis % 256)
-                STA ZP.ACCL
+                STA ZP.STR
                 LDA #(stackEllipsis / 256)
-                STA ZP.ACCH
-                Tools.PrintStringACC();
+                STA ZP.STRH
+                printString();
                 break;
             }
             
@@ -1656,17 +1656,17 @@ unit Debug
             {
                 // Frame boundary marker
                 LDA #(frameMarkerPrefix % 256)
-                STA ZP.ACCL
+                STA ZP.STR
                 LDA #(frameMarkerPrefix / 256)
-                STA ZP.ACCH
-                Tools.PrintStringACC();
+                STA ZP.STRH
+                printString();
                 LDA ZP.DB7
                 hOut();
                 LDA #(frameMarkerSuffix % 256)
-                STA ZP.ACCL
+                STA ZP.STR
                 LDA #(frameMarkerSuffix / 256)
-                STA ZP.ACCH
-                Tools.PrintStringACC();
+                STA ZP.STRH
+                printString();
                 INC ZP.DB7
                 nL();
             }
@@ -1694,10 +1694,10 @@ unit Debug
             if (Z)
             {
                 LDA #(bpMarker % 256)
-                STA ZP.ACCL
+                STA ZP.STR
                 LDA #(bpMarker / 256)
-                STA ZP.ACCH
-                Tools.PrintStringACC();
+                STA ZP.STRH
+                printString();
             }
             else
             {
@@ -1727,10 +1727,10 @@ unit Debug
                 if (NZ)
                 {
                     LDA #(returnSlotMarker % 256)
-                    STA ZP.ACCL
+                    STA ZP.STR
                     LDA #(returnSlotMarker / 256)
-                    STA ZP.ACCH
-                    Tools.PrintStringACC();
+                    STA ZP.STRH
+                    printString();
                 }
                 else
                 {
@@ -1740,18 +1740,18 @@ unit Debug
                     if (NC)
                     {
                         LDA #(argMarker % 256)
-                        STA ZP.ACCL
+                        STA ZP.STR
                         LDA #(argMarker / 256)
-                        STA ZP.ACCH
-                        Tools.PrintStringACC();
+                        STA ZP.STRH
+                        printString();
                     }
                     else
                     {
                         LDA #(localMarker % 256)
-                        STA ZP.ACCL
+                        STA ZP.STR
                         LDA #(localMarker / 256)
-                        STA ZP.ACCH
-                        Tools.PrintStringACC();
+                        STA ZP.STRH
+                        printString();
                     }
                 }
             }
@@ -1766,10 +1766,10 @@ unit Debug
     dumpZeroPage()
     {
         LDA #(debugZeroPageHeader % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(debugZeroPageHeader / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         nL();
         LDA #0
         dumpPage();
@@ -2123,19 +2123,19 @@ unit Debug
         
         Tools.NL();
         
-        LDA ZP.ACCL
+        LDA ZP.STR
         PHA
-        LDA ZP.ACCH
+        LDA ZP.STRH
         PHA
         LDA #(debugCrashHeader % 256)
-        STA ZP.ACCL
+        STA ZP.STR
         LDA #(debugCrashHeader / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        printString();
         PLA
-        STA ZP.ACCL
+        STA ZP.STRH
         PLA
-        STA ZP.ACCH
+        STA ZP.STR
         
         PLA
         Serial.HexOut();

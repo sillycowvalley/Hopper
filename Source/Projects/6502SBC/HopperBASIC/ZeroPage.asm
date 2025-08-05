@@ -253,6 +253,11 @@ unit ZP // ZeroPage.asm
     const byte LRESULT6  = 0xA2;
     const byte LRESULT7  = 0xA3;
     
+    const byte STR       = 0xA4;
+    const byte STRL      = 0xA4;
+    const byte STRH      = 0xA5;
+    
+    
 
     
     
