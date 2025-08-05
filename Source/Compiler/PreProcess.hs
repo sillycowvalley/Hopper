@@ -682,7 +682,7 @@ program PreProcess
                 }
                 if (IsVerbose)
                 {
-                    PrintLn(); Print('"' + sourcePath + "\" -> uses " + usesPath + "\" ");
+                    PrintLn(); Print('"' + sourcePath + "\" -> uses " + usesPath + "\" ", Colour.DarkGray, Colour.Black);
                 }
             }
             

@@ -11,13 +11,9 @@ unit ZP // ZeroPage.asm
     
     const byte FLAGS                = 0x02;
     
-    // Bit 7 - MCU platform
-    // Bit 6 - Program exited (ended well or badly via Die)
-    // Bit 5 - breakpoint/s exist
-    // Bit 4 - in debugger (Runtime.InDebugger, not FLAGS)
-    // Bit 3 - 8 bit SP and BP
-    // Bit 2 - checked build
-    // Bit 1 - running at Warp (no checks for <ctrl><C>)
+    // Bit 6 - Program exited  (ended well or badly via Crash or Die)
+    // Bit 3 - 8 bit SP and BP (always true?)
+    // Bit 2 - TRON | TROFF
     // Bit 0 - a program has been loaded
     
     const byte SP                   = 0x03;
