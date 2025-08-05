@@ -23,6 +23,8 @@ program PreProcess
     
     bool isExperimental;
     bool IsExperimental { get { return isExperimental; } set { isExperimental = value; } }
+    bool isVerbose;
+    bool IsVerbose { get { return isVerbose; } set { isVerbose = value; } }
     
     bool isZ80;
     bool IsZ80      { get { return isZ80; }      set { isZ80 = value; } }
@@ -677,6 +679,10 @@ program PreProcess
                 if (!usesPath.StartsWith('/') && (CurrentDirectory == "/"))
                 {
                     usesPath = "/" + usesPath;
+                }
+                if (IsVerbose)
+                {
+                    PrintLn(); Print('"' + sourcePath + "\" -> uses " + usesPath + "\" ");
                 }
             }
             
@@ -1683,6 +1689,7 @@ program PreProcess
         PrintLn("    -a          : preprocess assembly");
         PrintLn("    -t          : preprocess assembly as part of the Tigger C toolchain");
         PrintLn("    -z          : for Z80 compiler");
+        PrintLn("    -v          : verbose output (show 'uses' resolution)");
     }
     Hopper()
     {  
@@ -1723,6 +1730,10 @@ program PreProcess
                       case "-x":
                       {
                           isExperimental = true;   
+                      }
+                      case "-v":
+                      {
+                          isVerbose = true;   
                       }
                       case "-a":
                       {
