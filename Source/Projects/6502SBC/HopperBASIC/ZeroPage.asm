@@ -196,8 +196,6 @@ unit ZP // ZeroPage.asm
     const byte DB13                 = M13;
     const byte DB14                 = M14;
     const byte DB15                 = M15;
-    const byte DB16                 = 0x70;
-    const byte DB17                 = 0x71;
     
     // Potential cross-over with Hopper VM APIs
     const byte FSOURCEADDRESS  = 0x80;
