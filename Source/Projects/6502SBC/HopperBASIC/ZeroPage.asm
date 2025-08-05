@@ -1,5 +1,33 @@
 unit ZP // ZeroPage.asm
 {
+    // ==============================================================================
+    // HOPPER 6502 ZERO PAGE ALLOCATION MAP
+    // ==============================================================================
+    //
+    // CRITICAL: The following zero page locations are IMMOVABLE and must not be changed:
+    //
+    // 0x00-0x05: CORE VM REGISTERS (Architecture Dependent)
+    //   - PC (0x00-0x01): Program counter - core to instruction execution
+    //   - FLAGS (0x02): System flags register - bit positions are API contracts
+    //   - SP, BP, CSP (0x03-0x05): Stack pointers - assumed by all stack operations
+    //
+    // 0x20-0x25: EMULATOR INTERFACE (Hardcoded in C# Emulator)
+    //   - TICK0-3 (0x20-0x23): Timer tick counters
+    //     * Reading TICK0 triggers snapshot of all 4 bytes in emulator
+    //     * Reading TICK3 triggers snapshot of all 4 bytes in emulator  
+    //   - EmulatorPCL/H (0x24-0x25): PC capture for debugging
+    //     * BIT $24 instruction triggers PC capture in emulator
+    //     * Used by Debug.asm for crash dumps and breakpoints
+    //
+    // 0xEC-0xFF: HARDWARE I/O (Platform Hardware Addresses)
+    //   - ACIA registers (0xEC-0xED): Serial communication
+    //   - VIA registers (0xF0-0xFF): Parallel I/O, timers, interrupts
+    //   - These are physical hardware addresses, not arbitrary choices
+    //
+    // All other zero page locations can be reorganized as needed for optimization.
+    // When modifying this file, ensure these critical addresses remain unchanged.
+    // ==============================================================================
+
     // 0x00..0x1F : core to Hopper VM
     //                   - Heap Manager : FREELIST, HEAPSTART, HEAPSIZE
     //                   - Call Stack   : CSP, PC
@@ -73,14 +101,15 @@ unit ZP // ZeroPage.asm
     const byte TICK1                = 0x21;
     const byte TICK2                = 0x22;
     const byte TICK3                = 0x23;
-    const byte TARGET0              = 0x24;
-    const byte TARGET1              = 0x25;
-    const byte TARGET2              = 0x26;
-    const byte TARGET3              = 0x27;
+    
+    // BIT this address to lock the current PC into this and the next slot (update in .NET emulator if changed)
+    const byte EmulatorPCL          = 0x24;  
+    const byte EmulatorPCH          = 0x25;
+    
     
     // dribs and draps of Hopper Runtime
-    const byte WorkSpaceHexIn        = 0x28; // Serial.asm
-    const byte WorkSpaceWaitForChar  = 0x29; // Serial.asm
+    const byte WorkSpaceHexIn        = 0x26; // Serial.asm
+    const byte WorkSpaceWaitForChar  = 0x27; // Serial.asm
     
     
     
@@ -150,8 +179,6 @@ unit ZP // ZeroPage.asm
     const byte SymbolTemp1          = 0x4E;  // General temporary storage
     const byte SymbolTemp2          = 0x4F;  // General temporary storage
 
-    const byte EmulatorPCL          = 0x50;  // BIT this address to lock the current PC into this and the next slot (update in .NET emulator if changed)
-    const byte EmulatorPCH          = 0x51;
     const byte TraceMessageL        = 0x52;  // used by Trace.asm
     const byte TraceMessageH        = 0x53;
     const byte SystemState          = 0x54;  // Success, Failure, Exiting
@@ -160,7 +187,7 @@ unit ZP // ZeroPage.asm
     
     
     
-    // 0x30 .. 0x3F
+    // 0x30 .. 0x3F : complex leaf node methods that never call one-another:
     // used by 'M'emory manager functions : Memory.Allocate and Memory.Free
     const byte M0                   = 0x60;
     const byte M1                   = 0x61;
@@ -196,6 +223,30 @@ unit ZP // ZeroPage.asm
     const byte DB13                 = M13;
     const byte DB14                 = M14;
     const byte DB15                 = M15;
+    
+    // Only used by Time.Delay()
+    const byte TARGET0              = M0;
+    const byte TARGET1              = M1;
+    const byte TARGET2              = M2;
+    const byte TARGET3              = M3;
+    
+    // Time.divMod() workspace (currently using 0x9C-0x9F for LRESULT4-7)
+    // Only used by Time.Seconds():
+    const byte LRESULT0 = M0;
+    const byte LRESULT1 = M1;
+    const byte LRESULT2 = M2;
+    const byte LRESULT3 = M3;
+    const byte LRESULT4 = M4;
+    const byte LRESULT5 = M5;
+    const byte LRESULT6 = M6;
+    const byte LRESULT7 = M7;
+    
+    
+    // IntMath extended workspace (we never even use the high WORD of the result of a WORD * WORD operation)
+    const byte UWIDE4 = M0;
+    const byte UWIDE5 = M1;
+    const byte UWIDE6 = M2;
+    const byte UWIDE7 = M3;
     
     // Potential cross-over with Hopper VM APIs
     const byte FSOURCEADDRESS  = 0x80;
@@ -244,14 +295,6 @@ unit ZP // ZeroPage.asm
     const byte LTOP1  = 0x99;
     const byte LTOP2  = 0x9A;
     const byte LTOP3  = 0x9B;
-    const byte LRESULT0 = 0x9C;
-    const byte LRESULT1  = 0x9D;
-    const byte LRESULT2  = 0x9E;
-    const byte LRESULT3  = 0x9F;
-    const byte LRESULT4  = 0xA0;
-    const byte LRESULT5  = 0xA1;
-    const byte LRESULT6  = 0xA2;
-    const byte LRESULT7  = 0xA3;
     
     const byte STR       = 0xA4;
     const byte STRL      = 0xA4;
