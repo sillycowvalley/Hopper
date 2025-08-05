@@ -4,127 +4,148 @@
 ## Overview
 The 6502's zero page (0x00-0xFF) provides fast 8-bit addressing. HopperBASIC allocates this precious resource across VM core, BASIC runtime, and hardware I/O.
 
-## Core VM Variables (0x00-0x1F)
+## Critical Immovable Addresses
+
+### Core VM Registers (0x00-0x05) - Architecture Dependent
+- **0x00-0x01**: PC/PCL/PCH - Program counter (core to instruction execution)
+- **0x02**: FLAGS - System flags register (bit positions are API contracts)
+- **0x03-0x05**: SP/BP/CSP - Stack pointers (assumed by all stack operations)
+
+### Emulator Interface (0x1D-0x22) - Hardcoded in C# Emulator
+- **0x1D-0x20**: TICK0-3 - Timer tick counters
+  - Reading TICK0 triggers snapshot of all 4 bytes
+  - Reading TICK3 triggers snapshot of all 4 bytes
+- **0x21-0x22**: EmulatorPCL/H - PC capture for debugging
+  - BIT $21 instruction triggers PC capture
+  - Used by Debug.asm for crash dumps and breakpoints
+
+### Hardware I/O (0xEC-0xFF) - Platform Hardware Addresses
+- **0xEC-0xED**: ACIA registers - Serial communication
+- **0xF0-0xFF**: VIA registers - Parallel I/O, timers, interrupts
+- These are physical hardware addresses, not arbitrary choices
+
+## Memory Map
+
+### Core VM Variables (0x00-0x1C)
 
 | Address | Symbol | Description |
 |---------|--------|-------------|
-| 0x00-0x01 | PC/PCL/PCH | Program counter |
-| 0x02 | FLAGS | System flags byte (see below) |
-| 0x03 | SP | Stack pointer |
-| 0x04 | BP | Base pointer |
-| 0x05 | CSP | Call stack pointer |
+| 0x00-0x01 | PC/PCL/PCH | Program counter (IMMOVABLE) |
+| 0x02 | FLAGS | System flags byte (IMMOVABLE) |
+| 0x03 | SP | Stack pointer (IMMOVABLE) |
+| 0x04 | BP | Base pointer (IMMOVABLE) |
+| 0x05 | CSP | Call stack pointer (IMMOVABLE) |
 | 0x06-0x07 | FREELIST/FREELISTL/FREELISTH | Heap free list pointer |
 | 0x08 | HEAPSTART | Heap start page |
 | 0x09 | HEAPSIZE | Heap size in pages |
 | 0x0A | SerialInWritePointer | Serial buffer write position |
 | 0x0B | SerialInReadPointer | Serial buffer read position |
 | 0x0C | SerialBreakFlag | Serial break detected |
-| 0x0D-0x0E | CODESTART/CODESTARTL/CODESTARTH | Code start address |
-| 0x0F | TraceIndent | Debug trace indentation level |
-| 0x10-0x11 | ACC/ACCL/ACCH | Accumulator register |
-| 0x12-0x13 | TOP/TOPL/TOPH | Top of stack value |
-| 0x14-0x15 | NEXT/NEXTL/NEXTH | Next stack value |
-| 0x16-0x17 | IDX/IDXL/IDXH | Index X register |
-| 0x18-0x19 | IDY/IDYL/IDYH | Index Y register |
-| 0x1A | ACCT | Accumulator type |
-| 0x1B | TOPT | Top type |
-| 0x1C | NEXTT | Next type |
-| 0x1D | PROGSIZE | Program size |
-| 0x1E | I2CInWritePtr | I2C buffer write pointer |
-| 0x1F | I2CInReadPtr | I2C buffer read pointer |
+| 0x0D | TraceIndent | Debug trace indentation level |
+| 0x0E-0x0F | ACC/ACCL/ACCH | Accumulator register |
+| 0x10-0x11 | TOP/TOPL/TOPH | Top of stack value |
+| 0x12-0x13 | NEXT/NEXTL/NEXTH | Next stack value |
+| 0x14-0x15 | IDX/IDXL/IDXH | Index X register |
+| 0x16-0x17 | IDY/IDYL/IDYH | Index Y register |
+| 0x18 | ACCT | Accumulator type |
+| 0x19 | TOPT | Top type |
+| 0x1A | NEXTT | Next type |
+| 0x1B | I2CInWritePtr | I2C buffer write pointer |
+| 0x1C | I2CInReadPtr | I2C buffer read pointer |
 
-## Time & Workspace (0x20-0x2F)
+### Timer & Debug (0x1D-0x24)
 
 | Address | Symbol | Description |
 |---------|--------|-------------|
-| 0x20-0x23 | TICK0-3 | Timer tick counter (32-bit) |
-| 0x24-0x27 | TARGET0-3 | Timer target value (32-bit) |
-| 0x28 | WorkSpaceHexIn | Serial.asm workspace |
-| 0x29 | WorkSpaceWaitForChar | Serial.asm workspace |
-| 0x2A-0x2F | - | Currently unused |
+| 0x1D-0x20 | TICK0-3 | Timer tick counter (IMMOVABLE) |
+| 0x21-0x22 | EmulatorPCL/H | PC capture (IMMOVABLE) |
+| 0x23 | WorkSpaceHexIn | Serial.asm workspace |
+| 0x24 | WorkSpaceWaitForChar | Serial.asm workspace |
 
-## BASIC Core Variables (0x30-0x3F)
-
-| Address | Symbol | Description |
-|---------|--------|-------------|
-| 0x30 | BasicInputLength | Length of current input line |
-| 0x31-0x32 | TokenBufferLength/L/H | Token buffer size (16-bit) |
-| 0x33-0x34 | TokenizerPos/L/H | Current tokenizer position |
-| 0x35-0x36 | LastErrorL/H | Error message pointer |
-| 0x37 | CurrentToken | Cached current token type |
-| 0x38-0x39 | TokenLiteralPosL/H | Literal data position |
-| 0x3A-0x3B | OpCodeBufferLength/L/H | JIT buffer length |
-| 0x3C-0x3D | CompilerTokenPos/L/H | Compiler token position |
-| 0x3E | CompilerFlags | Compilation flags |
-| 0x3F | OpCodeTemp | Temporary opcode byte |
-
-## Symbol Tables (0x40-0x4F)
+### BASIC Core Variables (0x25-0x34)
 
 | Address | Symbol | Description |
 |---------|--------|-------------|
-| 0x40-0x41 | VariablesList/L/H | Variables table head pointer |
-| 0x42-0x43 | FunctionsList/L/H | Functions table head pointer |
-| 0x44 | SymbolType | Current symbol type/data type |
-| 0x45-0x46 | SymbolValue/L/H | Symbol value storage |
-| 0x47-0x48 | SymbolName/L/H | Symbol name pointer |
-| 0x49-0x4A | SymbolTokens/L/H | Symbol tokens pointer |
-| 0x4B | SymbolIteratorFilter | Symbol iteration filter |
-| 0x4C | SymbolLength | Symbol name length |
-| 0x4D-0x4F | SymbolTemp0-2 | Temporary storage |
+| 0x25 | BasicInputLength | Length of current input line |
+| 0x26-0x27 | TokenBufferLength/L/H | Token buffer size (16-bit) |
+| 0x28-0x29 | TokenizerPos/L/H | Current tokenizer position |
+| 0x2A-0x2B | LastErrorL/H | Error message pointer |
+| 0x2C | CurrentToken | Cached current token type |
+| 0x2D-0x2E | TokenLiteralPosL/H | Literal data position |
+| 0x2F-0x30 | OpCodeBufferLength/L/H | JIT buffer length |
+| 0x31-0x32 | CompilerTokenPos/L/H | Compiler token position |
+| 0x33 | CompilerFlags | Compilation flags |
+| 0x34 | OpCodeTemp | Temporary opcode byte |
 
-## Debug & State (0x50-0x5F)
-
-| Address | Symbol | Description |
-|---------|--------|-------------|
-| 0x50-0x51 | EmulatorPCL/H | PC capture for debug (BIT 0x50 trigger) |
-| 0x52-0x53 | TraceMessageL/H | Trace message pointer |
-| 0x54 | SystemState | Success/Failure/Exiting state |
-| 0x55-0x5F | - | Currently unused |
-
-## Memory Manager Workspace (0x60-0x6F)
+### Symbol Tables (0x35-0x44)
 
 | Address | Symbol | Description |
 |---------|--------|-------------|
-| 0x60-0x6F | M0-M15 | Memory.Allocate/Free workspace |
-| 0x60-0x6F | DB0-DB15 | Debug.asm aliases (when not allocating) |
+| 0x35-0x36 | VariablesList/L/H | Variables table head pointer |
+| 0x37-0x38 | FunctionsList/L/H | Functions table head pointer |
+| 0x39 | SymbolType | Current symbol type/data type |
+| 0x3A-0x3B | SymbolValue/L/H | Symbol value storage |
+| 0x3C-0x3D | SymbolName/L/H | Symbol name pointer |
+| 0x3E-0x3F | SymbolTokens/L/H | Symbol tokens pointer |
+| 0x40 | SymbolIteratorFilter | Symbol iteration filter |
+| 0x41 | SymbolLength | Symbol name length |
+| 0x42-0x44 | SymbolTemp0-2 | Temporary storage |
 
-## Unused Region (0x70-0x7F)
-
-| Address | Symbol | Description |
-|---------|--------|-------------|
-| 0x70-0x7F | - | Currently unused (16 bytes available) |
-
-## Function Workspace (0x80-0x8F)
-
-| Address | Symbol | Description |
-|---------|--------|-------------|
-| 0x80-0x81 | FSOURCEADDRESS/L/H | Source address for operations |
-| 0x82-0x83 | FDESTINATIONADDRESS/L/H | Destination address |
-| 0x84-0x85 | FLENGTH/L/H | Transfer/operation length |
-| 0x86-0x87 | LCURRENT/L/H | List current pointer |
-| 0x88-0x89 | LHEAD/L/H | List head pointer |
-| 0x8A | FSIGN | Sign flag |
-| 0x8B | LHEADX | List head extension |
-| 0x8C-0x8D | LPREVIOUS/L/H | List previous pointer |
-| 0x8E-0x8F | LNEXT/L/H | List next pointer |
-
-## Math Workspace (0x90-0xA5)
+### Debug & State (0x45-0x47)
 
 | Address | Symbol | Description |
 |---------|--------|-------------|
-| 0x90-0x93 | UWIDE0-3 | IntMath.asm workspace |
-| 0x94-0x97 | LNEXT0-3 | Long math next operand |
-| 0x98-0x9B | LTOP0-3 | Long math top operand |
-| 0x9C-0xA3 | LRESULT0-7 | Long math result (64-bit) |
-| 0xA4-0xA5 | STR/STRL/STRH | String pointer |
+| 0x45-0x46 | TraceMessageL/H | Trace message pointer |
+| 0x47 | SystemState | Success/Failure/Exiting state |
 
-## Large Unused Region (0xA6-0xEB)
+### Shared Leaf Function Workspace (0x48-0x57)
+
+Complex leaf methods that never call each other can share this space:
+- Memory.Allocate and Memory.Free (mutually exclusive)
+- Debug.asm (never calls Memory functions)
+- Time.Delay() and Time.Seconds() (mutually exclusive)
+- IntMath operations (leaf functions)
+
+| Address | Symbol | Description | Aliases |
+|---------|--------|-------------|---------|
+| 0x48-0x57 | M0-M15 | Multi-use workspace | See below |
+
+**Workspace Aliases:**
+- **Debug.asm**: DB0-DB15 (alias for M0-M15)
+- **Time.Delay()**: TARGET0-3 (alias for M0-M3)
+- **Time.Seconds()**: LRESULT0-7 (alias for M0-M7)
+- **IntMath**: UWIDE4-7 (alias for M0-M3)
+
+### Function Parameters (0x58-0x67)
 
 | Address | Symbol | Description |
 |---------|--------|-------------|
-| 0xA6-0xEB | - | Currently unused (70 bytes available!) |
+| 0x58-0x59 | FSOURCEADDRESS/L/H | Source address for operations |
+| 0x5A-0x5B | FDESTINATIONADDRESS/L/H | Destination address |
+| 0x5C-0x5D | FLENGTH/L/H | Transfer/operation length |
+| 0x5E-0x5F | LCURRENT/L/H | List current pointer |
+| 0x60-0x61 | LHEAD/L/H | List head pointer |
+| 0x62 | FSIGN | Sign flag |
+| 0x63 | LHEADX | List head extension |
+| 0x64-0x65 | LPREVIOUS/L/H | List previous pointer |
+| 0x66-0x67 | LNEXT/L/H | List next pointer |
 
-## Hardware I/O (0xEC-0xFF)
+### Math Workspace (0x68-0x75)
+
+| Address | Symbol | Description |
+|---------|--------|-------------|
+| 0x68-0x6B | UWIDE0-3 | IntMath 32-bit multiply |
+| 0x6C-0x6F | LNEXT0-3 | Long math next operand |
+| 0x70-0x73 | LTOP0-3 | Long math top operand |
+| 0x74-0x75 | STR/STRL/STRH | String pointer |
+
+### Large Unused Region (0x76-0xEB)
+
+| Address | Symbol | Description |
+|---------|--------|-------------|
+| 0x76-0xEB | - | Currently unused (118 bytes available!) |
+
+### Hardware I/O (0xEC-0xFF) - IMMOVABLE
 
 | Address | Symbol | Description |
 |---------|--------|-------------|
@@ -152,16 +173,16 @@ The 6502's zero page (0x00-0xFF) provides fast 8-bit addressing. HopperBASIC all
 
 | Bit | Description |
 |-----|-------------|
-| 7 | MCU platform indicator |
+| 7 | MCU platform indicator (unused in BASIC) |
 | 6 | Program exited (ended well or via Crash/Die) |
-| 5 | Breakpoints exist |
-| 4 | In debugger |
-| 3 | 8-bit SP and BP (always true?) |
+| 5 | Breakpoints exist (unused in BASIC) |
+| 4 | In debugger (unused in BASIC) |
+| 3 | 8-bit SP and BP (always true) |
 | 2 | TRON/TROFF (trace on/off) |
-| 1 | Warp mode |
+| 1 | Warp mode (unused in BASIC) |
 | 0 | Program has been loaded |
 
-## CompilerFlags Bits (0x3E)
+## CompilerFlags Bits (0x33)
 
 | Bit | Description |
 |-----|-------------|
@@ -171,6 +192,7 @@ The 6502's zero page (0x00-0xFF) provides fast 8-bit addressing. HopperBASIC all
 ## Optimization Opportunities
 
 Based on the 6502Optimization.md analysis:
-- **Heavy contention on 0x10-0x1C** (ACC, TOP, NEXT, IDX, IDY)
-- **Large unused regions**: 0x55-0x5F (11 bytes), 0x70-0x7F (16 bytes), 0xA6-0xEB (70 bytes)
-- **Total unused**: 97 bytes available for dedicated subsystem workspaces
+- **Heavy contention on 0x0E-0x1A** (ACC, TOP, NEXT, IDX, IDY) - "fighting over 12 bytes"
+- **Large unused region**: 0x76-0xEB (118 bytes available)
+- **Shared workspace model** (0x48-0x57) shows how leaf functions can efficiently share ZP
+- **Total optimization potential**: 8-12KB savings by eliminating ZP juggling
