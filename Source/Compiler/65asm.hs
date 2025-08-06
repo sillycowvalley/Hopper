@@ -1704,6 +1704,10 @@ program Assemble
                     is65uino = true;
                     Asm6502.SetOrg(0xF000);
                 }
+                else if (Symbols.DefineExists("ROM_48K"))
+                {
+                    Asm6502.SetOrg(0x4000);
+                }
                 else if (Symbols.DefineExists("ROM_16K"))
                 {
                     Asm6502.SetOrg(0xC000);
