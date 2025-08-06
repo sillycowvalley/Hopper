@@ -43,12 +43,12 @@ program Info
             Symbols.New();
             string jsonPath = codePath.Replace(".code", ".sym");
             
-            if (!Symbols.Import(jsonPath))
+            if (!Symbols.Import(jsonPath, false))
             {
                 PrintLn("Failed to load symbols from '" + jsonPath + "'");
                 break;
             }
-            if (!ParseCode(codePath, true, false))
+            if (!ParseCode(codePath, true, true))
             {
                 PrintLn("Failed to load code from '" + codePath + "'");
                 break;

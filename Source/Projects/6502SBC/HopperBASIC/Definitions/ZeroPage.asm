@@ -35,13 +35,13 @@ unit ZP // ZeroPage.asm
     
     const byte FLAGS                = 0x02;  // System flags register
     // FLAGS bits:
-    // Bit 7 - MCU platform (unused in BASIC)
-    // Bit 6 - Program exited (ended well or badly via Crash or Die)
-    // Bit 5 - Breakpoints exist (unused in BASIC)
-    // Bit 4 - In debugger (unused in BASIC)
-    // Bit 3 - 8 bit SP and BP (unused in BASIC - always true)
+    // Bit 7 - (unused in BASIC)
+    // Bit 6 - (unused in BASIC)
+    // Bit 5 - (unused in BASIC)
+    // Bit 4 - (unused in BASIC)
+    // Bit 3 - (unused in BASIC)
     // Bit 2 - TRON | TROFF (trace on/off)
-    // Bit 1 - Warp mode (unused in BASIC)
+    // Bit 1 - Temporary exit flag for Console.processTokens() loop control
     // Bit 0 - Program has been loaded
     
     const byte SP                   = 0x03;  // Stack pointer

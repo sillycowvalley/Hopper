@@ -89,6 +89,10 @@ unit Statement // Statement.asm
             CLC // NC = not CaptureMode.Func
         }
     }
+    GetCaptureMode()
+    {
+        LDA funcCaptureMode
+    }
     
     
     SetIsConstant()
@@ -258,6 +262,14 @@ unit Statement // Statement.asm
                 States.SetFailure(); 
                 break;
             } 
+            // Exiting means the Executor ran out of OpCodes before it encountered a RETURN
+            // Still a good outcome (when evaluation an expression rather than executing a statement)
+            States.GetState();
+            CMP #State.Exiting
+            if (Z)
+            {
+                States.SetSuccess();  // Convert EXITING to SUCCESS for expressions
+            }
             
             // Result is now on stack
             break;
@@ -422,7 +434,7 @@ unit Statement // Statement.asm
         IsTracing();
         if (C)
         {
-            DumpBuffers();
+            //DumpBuffers();
         }
 #endif
     }

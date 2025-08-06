@@ -12,7 +12,9 @@ unit Tokens
     }    
     
     // Complete Token definitions for HopperBASIC
-    // All values >= 0x80
+    // All values >= 0x80 
+    // See the implementation of Tokenizer.Rollback to understand why we set the high bit of tokens and
+    // why we limit our characaters in literals to ASCII (0..127)
     enum Token
     {
         // Console commands

@@ -1008,6 +1008,7 @@ unit Tokenizer // Tokenizer.asm
     //         For literals, ZP.TokenLiteralPos = position of inline data
     //         ZP.TokenizerPos advanced past token and any inline data
     // Munts: ZP.CurrentToken, ZP.TokenizerPos, ZP.TokenLiteralPos, ZP.IDX, A, Y
+    // Preserves: X
     NextToken()
     {
         // 16-bit comparison: if (TokenizerPos >= TokenBufferLength)
@@ -1457,6 +1458,64 @@ unit Tokenizer // Tokenizer.asm
         ADC ZP.TokenLiteralPosH
         STA ZP.TOPH
         
+        PLA
+    }
+    Rollback()
+    {
+        PHA
+        PHY
+        
+        loop
+        {
+            // Check if we're at the beginning (can't rollback)
+            LDA ZP.TokenizerPosL
+            ORA ZP.TokenizerPosH
+            if (Z)
+            {
+                // Already at position 0, can't rollback
+                Error.CannotRollback(); BIT ZP.EmulatorPCL
+                PLY
+                PLA
+                break;
+            }
+            
+            // Start scanning backwards
+            loop
+            {
+                // Decrement TokenizerPos
+                LDA ZP.TokenizerPosL
+                if (Z)
+                {
+                    DEC ZP.TokenizerPosH
+                }
+                DEC ZP.TokenizerPosL
+                
+                // Check if we've reached the beginning
+                LDA ZP.TokenizerPosL
+                ORA ZP.TokenizerPosH
+                if (Z)
+                {
+                    // We're at position 0 - this is the start
+                    break;
+                }
+                
+                // Read the byte at current position
+                setTokenizerPointer(); // Sets ZP.IDX = BasicTokenizerBuffer + TokenizerPos
+                LDY #0
+                LDA [ZP.IDX], Y
+                
+                // Check if high bit is set (it's a token)
+                if (MI) { break; } // Branch if minus (bit 7 set) - we found a token!
+                // Not a token, continue scanning backwards
+            }
+            
+            // TokenizerPos now points to the previous token
+            // Clear CurrentToken to force re-read on next NextToken()
+            STZ ZP.CurrentToken
+            break;
+        }
+        
+        PLY
         PLA
     }
     
