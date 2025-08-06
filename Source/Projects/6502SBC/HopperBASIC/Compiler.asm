@@ -1599,11 +1599,6 @@ unit Compiler // Compiler.asm
            {
                // Check for end of function
                LDA ZP.CurrentToken
-               CMP #Token.ENDFUNC
-               if (Z) { break; } // End of regular function
-               
-               CMP #Token.END  
-               if (Z) { break; } // End of BEGIN function
                
                CMP #Token.EOF
                if (Z) { break; } // End of token stream

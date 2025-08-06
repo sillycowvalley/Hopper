@@ -563,10 +563,10 @@ unit FunctionDeclaration // FunctionDeclaration.asm
     const string completePartialFunctionTrace = "CompPartFunc";
     CompletePartialFunction()
     {
-#ifdef TRACE
+    #ifdef TRACE
         LDA #(completePartialFunctionTrace % 256) STA ZP.TraceMessageL LDA #(completePartialFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-    
+    #endif
+
         loop // Single exit block for error handling
         {
             // Reset to start of function buffer
@@ -665,30 +665,63 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             LDA ZP.TokenizerPosH
             STA ZP.FSOURCEADDRESSH
             
-            // Find ENDFUNC or END to calculate body length
+            // Save position BEFORE each token so we can stop BEFORE ENDFUNC/END
             loop
             {
+                // Save position BEFORE getting next token
+                LDA ZP.TokenizerPosL
+                PHA
+                LDA ZP.TokenizerPosH
+                PHA
+                
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) 
+                { 
+                    PLA  // Clean up stack
+                    PLA
+                    break; 
+                }
+                
                 LDA ZP.CurrentToken
                 CMP #Token.ENDFUNC
-                if (Z) { break; }
+                if (Z) 
+                { 
+                    // Found ENDFUNC - restore position to BEFORE it
+                    PLA
+                    STA ZP.TokenizerPosH
+                    PLA
+                    STA ZP.TokenizerPosL
+                    break; 
+                }
                 
                 CMP #Token.END
-                if (Z) { break; } 
+                if (Z) 
+                { 
+                    // Found END - restore position to BEFORE it
+                    PLA
+                    STA ZP.TokenizerPosH
+                    PLA
+                    STA ZP.TokenizerPosL
+                    break; 
+                }
                 
                 CMP #Token.EOF
                 if (Z)
                 {
+                    PLA  // Clean up stack
+                    PLA
                     Error.SyntaxError(); BIT ZP.EmulatorPCL
                     break;
                 }
                 
-                Tokenizer.NextToken();
-                Error.CheckError();
-                if (NC) { break; }
+                // Not a terminator, discard saved position and continue
+                PLA
+                PLA
             }
             if (NC) { break; }
             
-            // Calculate body length (current pos - start pos)
+            // Calculate body length (position BEFORE terminator - start pos)
             SEC
             LDA ZP.TokenizerPosL
             SBC ZP.FSOURCEADDRESSL
@@ -697,7 +730,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             SBC ZP.FSOURCEADDRESSH
             STA ZP.FLENGTHH
             
-            // Create token stream for function body
+            // Create token stream for function body (without ENDFUNC/END)
             Statement.CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
             Error.CheckError();
             if (NC) { break; }
@@ -724,8 +757,8 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             break;
         }
         
-#ifdef TRACE
+    #ifdef TRACE
         LDA #(completePartialFunctionTrace % 256) STA ZP.TraceMessageL LDA #(completePartialFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
+    #endif
     }
 }

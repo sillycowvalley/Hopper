@@ -63,7 +63,7 @@ unit Variables
             {
                 break;
             }
-            
+                 
             LDA ZP.ACCT
             AND #0x0F
             CMP #BASICType.STRING
@@ -71,6 +71,7 @@ unit Variables
             {
                 SetValue();
             }
+            SEC // success
             break;
         } // end of single exit block
         
@@ -219,8 +220,12 @@ unit Variables
             CMP #SymbolType.VARIABLE
             if (NZ)  // Not a variable
             {
-                Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                break;
+                CMP #SymbolType.CONSTANT
+                if (NZ)  // Not a constant
+                {
+                    Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                    break;
+                }
             }
             
             // Check if this is a STRING variable needing memory management
@@ -233,8 +238,9 @@ unit Variables
                 FreeStringValue(); // Free existing string memory
                 Error.CheckError();
                 if (NC) { break; }
+                
                 // Allocate and copy new string (ZP.TOP has source string pointer)
-                AllocateAndCopyString(); // Returns new string pointer in ZP.IDY
+                AllocateAndCopyString(); // Returns new string pointer in ZP.TOP -> ZP.IDY
                 Error.CheckError();
                 if (NC) { break; }
             }

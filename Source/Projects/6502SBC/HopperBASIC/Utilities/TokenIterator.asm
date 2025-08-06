@@ -237,8 +237,7 @@ unit TokenIterator // TokenIterator.asm
     {
         switch (A)
         {
-            case Token.ENDFUNC:
-            case Token.END:
+            case Token.EOF:
             case Token.NEXT:
             case Token.WEND:
             case Token.UNTIL:

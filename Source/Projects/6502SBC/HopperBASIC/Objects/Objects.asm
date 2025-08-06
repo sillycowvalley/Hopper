@@ -248,8 +248,12 @@ unit Objects
             CMP #SymbolType.VARIABLE
             if (NZ)
             {
-                CLC  // Not a variable
-                break;
+                CMP #SymbolType.CONSTANT
+                if (NZ)
+                {
+                    CLC  // Not a variable or constant
+                    break;
+                }
             }
             
             // Update value (offset snValue to snValue+1)

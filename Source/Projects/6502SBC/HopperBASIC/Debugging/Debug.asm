@@ -202,6 +202,10 @@ unit Debug // Debug.asm
         LDA #(regACC / 256)
         STA ZP.STRH
         printString();
+        LDA ZP.ACCT
+        BASICTypes.PrintType();
+        LDA #':'
+        cOut();
         LDA ZP.ACCH
         hOut();
         LDA ZP.ACCL
@@ -230,7 +234,7 @@ unit Debug // Debug.asm
         printString();
         LDA ZP.NEXTT
         BASICTypes.PrintType();
-        LDA #'-'
+        LDA #':'
         cOut();
         LDA ZP.NEXTH
         hOut();
@@ -248,7 +252,7 @@ unit Debug // Debug.asm
         printString();
         LDA ZP.TOPT
         BASICTypes.PrintType();
-        LDA #'-'
+        LDA #':'
         cOut();
         LDA ZP.TOPH
         hOut();
@@ -1630,13 +1634,13 @@ unit Debug // Debug.asm
             // Print entry
             TXA
             hOut();
-            LDA #':' cOut();
+            LDA #' ' cOut();
             space();
             
             // Type and value
             LDA Address.TypeStackLSB, X
             BASICTypes.PrintType();
-            LDA #'-' cOut();
+            LDA #':' cOut();
             LDA Address.ValueStackMSB, X
             hOut();
             LDA Address.ValueStackLSB, X

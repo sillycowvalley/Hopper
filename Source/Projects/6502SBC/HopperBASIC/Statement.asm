@@ -451,7 +451,11 @@ unit Statement // Statement.asm
         loop
         {
             Tokenizer.NextToken(); // consume 'CONST'
-            if (NC) { break; } // error exit
+            if (NC) 
+            {
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                break; // error exit
+            } 
             
             // we want a constant expression
             LDA #1
@@ -504,8 +508,17 @@ unit Statement // Statement.asm
             STZ (stmtStringPtr + 0)
             STZ (stmtStringPtr + 1)
 
-            LDA ZP.CurrentToken
-            STA stmtType
+            LDX ZP.CurrentToken
+            
+            // Output: C set if token is a type keyword, NC if not a type keyword, A = BASICType
+            BASICTypes.FromToken();
+            if (NC)
+            {
+                // expecting INT WORD BYTE BIT STRING
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                CLC break;
+            }
+            STA stmtType // LHS type
             
             Tokenizer.NextToken();
             Error.CheckError();
@@ -656,6 +669,7 @@ unit Statement // Statement.asm
                                 break; // error exit
                             }
                         }
+                        SEC
                     }
                     case Token.EOL:
                     case Token.COLON:
@@ -670,7 +684,7 @@ unit Statement // Statement.asm
                             break; // error exit
                         }
                         LDA stmtType
-                        CMP #Token.STRING
+                        CMP # BASICType.STRING
                         if (Z)
                         {
                             // STRING default: allocate copy of EmptyString
@@ -711,7 +725,7 @@ unit Statement // Statement.asm
                         CLC
                         break; // error exit
                     }
-                }
+                } // switch
                 
                 SEC  // Success
                 break;
@@ -724,41 +738,12 @@ unit Statement // Statement.asm
             break;
         } // loop
         
-        LDX stmtType
         loop
         {
-            if (NC) { break; } // error exit
-            switch(X)
+            if (NC)
             {
-                case Token.WORD:
-                {
-                    LDX #BASICType.WORD
-                }
-                case Token.INT:
-                {
-                    LDX # BASICType.INT
-                }
-                case Token.BIT:
-                {
-                    LDX #BASICType.BIT
-                }
-                case Token.BYTE:
-                {
-                    LDX #BASICType.BYTE
-                }
-                case Token.STRING:
-                {
-                    LDX #BASICType.STRING
-                }
-                default:
-                {
-                    Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                    CLC // what's this?
-                    break;
-                }
+                break; // error exit
             }
-            
-            PHX
             LDA ZP.TOPL
             PHA
             LDA ZP.TOPH
@@ -767,10 +752,8 @@ unit Statement // Statement.asm
             PHA
             LDA ZP.NEXTH
             PHA
-
-            STX ZP.NEXTT // LHS type
             
-            LDA ZP.TOPT // did we have "= <expression>"?
+            LDA ZP.NEXTT // did we have "= <expression>"?
             if (NZ)
             {
                 LDA ZP.NEXTL
@@ -779,6 +762,9 @@ unit Statement // Statement.asm
                 STA ZP.TOPH
                 LDA ZP.NEXTT
                 STA ZP.TOPT
+                
+                LDA stmtType
+                STA ZP.NEXTT // LHS type
                 
                 // RHS in TOP
                 // LHS type in NEXTT
@@ -797,7 +783,7 @@ unit Statement // Statement.asm
             STA ZP.TOPH
             PLA 
             STA ZP.TOPL
-            PLX
+            
 
             if (NC)
             {
@@ -806,7 +792,7 @@ unit Statement // Statement.asm
             }
             
             // Pack symbolType|dataType: VARIABLE(1) in high nibble, dataType in low nibble
-            TXA  // dataType in A
+            LDA stmtType  // dataType
             ORA stmtSymbol // high nibble is VARIABLE<<4 of CONSTANT<<4
             STA ZP.ACCT
             
@@ -827,7 +813,6 @@ unit Statement // Statement.asm
                 STZ (stmtTokensPtr+1)
             }
             Functions.FreeAllOpCodes(); // compiled FUNCs potentially stale now
-            
             break;
         } // loop
         

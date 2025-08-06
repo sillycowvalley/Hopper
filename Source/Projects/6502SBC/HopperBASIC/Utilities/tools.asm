@@ -124,45 +124,7 @@ unit Tools // Tools.asm
         PLP  // Pull processor status (restore carry flag)
     }
     
-    // Print variable value with proper type formatting
-    // Input: ZP.TOP = value, ZP.TOPT = type
-    // Output: Value printed to serial (TRUE/FALSE for BIT, numeric for others)
-    // Preserves: Everything
-    PrintVariableValue()
-    {
-        PHA
-        
-        // Special handling for BIT type - print TRUE/FALSE instead of 1/0
-        LDX ZP.TOPT
-        switch(X)
-        {
-            case BASICType.BIT:
-            {
-                LDA ZP.TOPL
-                CMP #0
-                if (Z)
-                {
-                    LDA #Token.FALSE
-                    Tokens.PrintKeyword();
-                }
-                else
-                {
-                    LDA #Token.TRUE
-                    Tokens.PrintKeyword();
-                }
-            }
-            case BASICType.STRING:
-            {
-                PrintStringTOP();  // Print the actual string content
-            }
-            default:
-            {
-                PrintDecimalWord(); // Numeric types
-            }
-        }
-        
-        PLA
-    }
+    
     
     // Print 16-bit decimal number with no leading zeros
     // Input: ZP.TOP = 16-bit number to print (0-65535)

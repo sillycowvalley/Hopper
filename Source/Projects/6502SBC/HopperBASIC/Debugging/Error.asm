@@ -457,7 +457,11 @@ unit Error // Error.asm
                 States.SetFailure();
             }
 #if defined(DEBUG)
-            LDA #'E' Debug.COut(); LDA #'!' Debug.COut();
+            IsTracing();
+            if (C)
+            {
+                LDA #'E' Debug.COut(); LDA #'!' Debug.COut();
+            }
 #endif
             CLC  // Error occurred
         }

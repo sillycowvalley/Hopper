@@ -70,7 +70,7 @@ unit BASICSysCalls
            {
                case SysCallType.PrintValue:    // ID = 1
                {
-                   Tools.PrintVariableValue();  // Uses ZP.TOP*
+                   BASICTypes.PrintValue();  // Uses ZP.TOP*, CLC = no quotes
                }
                case SysCallType.PrintChar:     // ID = 2
                {

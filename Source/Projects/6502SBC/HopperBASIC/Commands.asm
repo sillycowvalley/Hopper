@@ -139,6 +139,15 @@ unit Commands
                 }
             }
             
+            // Then display all constants
+            Variables.IterateConstants();
+            loop
+            {
+                if (NC) { break; }  // No more constants
+                displayConstant(); // Input: ZP.IDX = constant node
+                Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
+            }
+            
             // Display all variables first
             Variables.IterateVariables();
             loop
@@ -149,15 +158,7 @@ unit Commands
                 Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
             }
             
-            // Then display all constants
-            Variables.IterateConstants();
-            loop
-            {
-                if (NC) { break; }  // No more constants
-                
-                displayConstant(); // Input: ZP.IDX = constant node
-                Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
-            }
+            
             
             break;
         }
@@ -174,18 +175,65 @@ unit Commands
     {
         PHA
         
-        // Check if specific function requested
-        LDA ZP.STRL
-        ORA ZP.STRH
-        if (Z)
+        loop
         {
+            Statement.IsCaptureModeOn();
+            if (C)
+            {
+                Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
+                States.SetFailure();
+                break;
+            }
+            
+            // Check if specific function requested
+            LDA ZP.STRL
+            ORA ZP.STRH
+            if (NZ)
+            {
+                // Specific function requested - just show that one
+                // Need to copy ZP.STR to ZP.TOP for Functions.Find()
+                LDA ZP.STRL
+                STA ZP.TOPL
+                LDA ZP.STRH
+                STA ZP.TOPH
+                
+                Functions.Find(); // Input: ZP.TOP = name, Output: ZP.IDX = node
+                if (NC)
+                {
+                    Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
+                    States.SetFailure();
+                    break;
+                }
+                
+                displayFunctionWithBody(); // Input: ZP.IDX = function node
+                States.SetSuccess();
+                break;
+            }
+            
+            CmdVars(); // constants and variables
+            
             // ZP.STR is null - show all functions with bodies
             displayAllFunctionsWithBodies();
-        }
-        else
-        {
-            // ZP.STR contains function name - show specific function
-            displaySpecificFunctionWithBody();
+            Error.CheckError();
+            if (NC)
+            {
+                States.SetFailure(); 
+                break;
+            }
+
+            // Also display $MAIN function if it exists (even though it's "hidden")
+            LDA #(Messages.BeginFunctionName % 256)
+            STA ZP.TOPL
+            LDA #(Messages.BeginFunctionName / 256)
+            STA ZP.TOPH
+
+            Functions.Find(); // Input: ZP.TOP = "$MAIN" name, Output: ZP.IDX = node
+            if (C)
+            {
+                // Found $MAIN function - display it as BEGIN/END
+                displayFunctionWithBody(); // Input: ZP.IDX = function node
+            }
+            break;
         }
         
         PLA
@@ -313,28 +361,24 @@ unit Commands
         // Get variable type
         Variables.GetType(); // Input: ZP.IDX, Output: A = type
         
-        // Print type keyword
-        Tokens.PrintKeyword(); // Input: A = token type
+        LDA ZP.ACCT
+        AND #0x0F
+        BASICTypes.PrintType(); // Input: A = dataType
         LDA #' ' Serial.WriteChar();
         
         // Print variable name
         Variables.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
         Tools.PrintStringSTR();
         
-        // Check if variable has initialization
-        Variables.GetTokens(); // Input: ZP.IDX, Output: ZP.IDY = tokens or null
-        LDA ZP.IDYL
-        ORA ZP.IDYH
-        if (NZ)
-        {
-            // Has initialization - print it
-            LDA #' ' Serial.WriteChar();
-            LDA #'=' Serial.WriteChar();
-            LDA #' ' Serial.WriteChar();
-            
-            // Use TokenIterator to render the initialization expression
-            TokenIterator.RenderTokenStream(); // Input: ZP.IDY = tokens pointer
-        }
+        LDA #' ' Serial.WriteChar();
+        LDA #'=' Serial.WriteChar();
+        LDA #' ' Serial.WriteChar();
+        
+        // Get and print current value
+        Variables.GetValue(); // ZP.TOP = value, ZP.TOPT = dataType
+        
+        // Input: ZP.TOP = value, ZP.TOPT = type, C = quote strings
+        BASICTypes.PrintValue();
         
         Tools.NL();
         
@@ -357,24 +401,26 @@ unit Commands
         LDA #' ' Serial.WriteChar();
         
         // Get constant type
-        Variables.GetType(); // Input: ZP.IDX, Output: A = type
+        Variables.GetType(); // Input: ZP.IDX, Output: ACCT = type
         
-        // Print type keyword
-        Tokens.PrintKeyword(); // Input: A = token type
+        LDA ZP.ACCT
+        AND #0x0F
+        BASICTypes.PrintType(); // Input: A = dataType
         LDA #' ' Serial.WriteChar();
         
         // Print constant name
         Variables.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
         Tools.PrintStringSTR();
         
-        // Constants always have initialization
         LDA #' ' Serial.WriteChar();
         LDA #'=' Serial.WriteChar();
         LDA #' ' Serial.WriteChar();
         
-        // Get and print initialization
-        Variables.GetTokens(); // Input: ZP.IDX, Output: ZP.IDY = tokens
-        TokenIterator.RenderTokenStream(); // Input: ZP.IDY = tokens pointer
+        // Get and print current value
+        Variables.GetValue(); // ZP.TOP = value, ZP.TOPT = dataType
+        
+        // Input: ZP.TOP = value, ZP.TOPT = type, C = quote strings
+        BASICTypes.PrintValue();
         
         Tools.NL();
         
@@ -600,6 +646,7 @@ unit Commands
         {
             // Use TokenIterator to render the function body
             TokenIterator.RenderTokenStream(); // Input: ZP.IDY = tokens pointer
+            Tools.NL(); 
         }
         
         // Get function name to check if it's BEGIN

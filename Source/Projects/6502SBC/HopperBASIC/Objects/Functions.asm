@@ -58,7 +58,7 @@ unit Functions
             INY
             STA [ZP.IDX], Y
             
-            
+            SEC // success
             break;
         } // end of single exit block
         
@@ -821,10 +821,6 @@ unit Functions
                 IncLENGTH();
                 LDA [ZP.IDY]
                 STA [ZP.FDESTINATIONADDRESS]
-                CMP #Token.ENDFUNC
-                if (Z) { break; }
-                CMP #Token.END
-                if (Z) { break; }
                 CMP #Token.EOF  
                 if (Z) { break; }
                 IncIDY();

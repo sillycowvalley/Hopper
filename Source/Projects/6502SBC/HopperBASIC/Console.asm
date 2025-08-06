@@ -582,17 +582,13 @@ unit Console
                                 {
                                     // Print OK for successful declarations
                                     // X = token saved before rollback
-                                    switch (X)
+                                    
+                                    // Input: X is token
+                                    // Output: C set if token is a type keyword, NC if not a type keyword, A = BASICType
+                                    BASICTypes.FromToken(); 
+                                    if (C)
                                     {
-                                        case #Token.INT:
-                                        case #Token.WORD:
-                                        case #Token.BYTE:
-                                        case #Token.BIT:
-                                        case #Token.STRING:
-                                        case #Token.CONST:
-                                        {
-                                            Messages.PrintOK();
-                                        }
+                                        Messages.PrintOK();
                                     }
                                 }
                             }
