@@ -840,6 +840,33 @@ unit Value
 }
 ```
 
+## Statement.asm Disposition
+
+### What Happens to Statement.asm
+
+After refactoring, **90% of Statement.asm becomes dead code**. The unit essentially disappears as its core functionality is replaced by the new unified architecture.
+
+#### Replaced/Removed:
+- `Execute()` method → Replaced by CommandDispatch.Dispatch()
+- `ExecuteStatement()` → Replaced by Execute.Run(ExecutionContext.Statement)
+- `EvaluateExpression()` → Replaced by Execute.Run(ExecutionContext.Expression)
+- All execute*Declaration() methods → Consolidated through $REPL function
+- Buffer management code → Handled by $REPL function isolation
+- Complex state tracking → Unified through SystemState
+
+#### Retained (but relocated):
+- `ResolveIdentifier()` → Move to Compiler.asm (its only client)
+- Capture mode management → Move to Console.asm (console-specific state)
+- Constant/variable helpers → Move to relevant units or delete if unused
+
+#### Final Disposition:
+**Delete Statement.asm entirely**. Its surviving functionality should be moved to more appropriate units:
+- Identifier resolution belongs in the Compiler
+- Capture mode belongs in the Console
+- The unit name "Statement" no longer reflects its minimal remaining purpose
+
+This is a positive outcome - eliminating an entire unit that was the source of execution path complexity demonstrates the effectiveness of the refactoring.
+
 ## Implementation Strategy
 
 ### Single-Step Implementation
