@@ -1,11 +1,6 @@
 unit Compiler // Compiler.asm
 {
-   uses "OpCodes"
-   uses "Messages"
-   uses "Error"
-   uses "State"
    uses "Tokenizer"
-   uses "Tools"
    uses "Emit"
    
    friend Emit;
@@ -215,7 +210,7 @@ unit Compiler // Compiler.asm
            loop
            {
                LDA ZP.CurrentToken
-               CMP #Tokens.OR
+               CMP #Token.OR
                if (NZ) { break; }
                
                // Get next token for right operand
@@ -229,7 +224,7 @@ unit Compiler // Compiler.asm
                if (NC) { break; }
                
                // Emit logical OR opcode
-               LDA #Tokens.OR
+               LDA #Token.OR
                Emit.LogicalOp();
                Error.CheckError();
                if (NC) { break; }
@@ -265,7 +260,7 @@ unit Compiler // Compiler.asm
            loop
            {
                LDA ZP.CurrentToken
-               CMP #Tokens.AND
+               CMP #Token.AND
                if (NZ) { break; }
                
                // Get next token for right operand
@@ -279,7 +274,7 @@ unit Compiler // Compiler.asm
                if (NC) { break; }
                
                // Emit logical AND opcode
-               LDA #Tokens.AND
+               LDA #Token.AND
                Emit.LogicalOp();
                Error.CheckError();
                if (NC) { break; }
@@ -317,12 +312,12 @@ unit Compiler // Compiler.asm
                LDA ZP.CurrentToken
                switch (A)
                {
-                   case Tokens.EQUALS:
-                   case Tokens.NOTEQUAL:
-                   case Tokens.LT:
-                   case Tokens.GT:
-                   case Tokens.LE:
-                   case Tokens.GE:
+                   case Token.EQUALS:
+                   case Token.NOTEQUAL:
+                   case Token.LT:
+                   case Token.GT:
+                   case Token.LE:
+                   case Token.GE:
                    {
                        PHA // Save operator on stack
                        
@@ -389,7 +384,7 @@ unit Compiler // Compiler.asm
            loop
            {
                LDA ZP.CurrentToken
-               CMP #Tokens.BITWISE_AND
+               CMP #Token.BITWISE_AND
                if (NZ) { break; }
                
                // Get next token for right operand
@@ -403,7 +398,7 @@ unit Compiler // Compiler.asm
                if (NC) { break; }
                
                // Emit bitwise AND opcode
-               LDA #Tokens.BITWISE_AND
+               LDA #Token.BITWISE_AND
                Emit.BitwiseOp();
                Error.CheckError();
                if (NC) { break; }
@@ -439,7 +434,7 @@ unit Compiler // Compiler.asm
            loop
            {
                LDA ZP.CurrentToken
-               CMP #Tokens.BITWISE_OR
+               CMP #Token.BITWISE_OR
                if (NZ) { break; }
                
                // Get next token for right operand
@@ -453,7 +448,7 @@ unit Compiler // Compiler.asm
                if (NC) { break; }
                
                // Emit bitwise OR opcode
-               LDA #Tokens.BITWISE_OR
+               LDA #Token.BITWISE_OR
                Emit.BitwiseOp();
                Error.CheckError();
                if (NC) { break; }
@@ -488,7 +483,7 @@ unit Compiler // Compiler.asm
            loop
            {
                LDA ZP.CurrentToken
-               CMP #Tokens.PLUS
+               CMP #Token.PLUS
                if (Z)
                {
                    // Get next token for right operand
@@ -502,7 +497,7 @@ unit Compiler // Compiler.asm
                    if (NC) { break; }
                    
                    // Emit addition opcode
-                   LDA #Tokens.PLUS
+                   LDA #Token.PLUS
                    Emit.ArithmeticOp();
                    Error.CheckError();
                    if (NC) { break; }
@@ -510,7 +505,7 @@ unit Compiler // Compiler.asm
                    continue;
                }
                
-               CMP #Tokens.MINUS
+               CMP #Token.MINUS
                if (Z)
                {
                    // Get next token for right operand
@@ -524,7 +519,7 @@ unit Compiler // Compiler.asm
                    if (NC) { break; }
                    
                    // Emit subtraction opcode
-                   LDA #Tokens.MINUS
+                   LDA #Token.MINUS
                    Emit.ArithmeticOp();
                    Error.CheckError();
                    if (NC) { break; }
@@ -565,9 +560,9 @@ unit Compiler // Compiler.asm
                LDA ZP.CurrentToken
                switch (A)
                {
-                   case Tokens.MULTIPLY:
-                   case Tokens.DIVIDE:
-                   case Tokens.MOD:
+                   case Token.MULTIPLY:
+                   case Token.DIVIDE:
+                   case Token.MOD:
                    {
                        PHA // Save operator on stack
                        
@@ -630,7 +625,7 @@ unit Compiler // Compiler.asm
            LDA ZP.CurrentToken
            switch (A)
            {
-               case Tokens.MINUS:
+               case Token.MINUS:
                {
                    // Get next token for operand
                    Tokenizer.NextToken();
@@ -647,7 +642,7 @@ unit Compiler // Compiler.asm
                    Error.CheckError();
                    if (NC) { break; }
                }
-               case Tokens.NOT:
+               case Token.NOT:
                {
                    // Get next token for operand
                    Tokenizer.NextToken();
@@ -660,7 +655,7 @@ unit Compiler // Compiler.asm
                    if (NC) { break; }
                    
                    // Emit logical NOT opcode
-                   LDA #Tokens.NOT
+                   LDA #Token.NOT
                    Emit.LogicalOp();
                    Error.CheckError();
                    if (NC) { break; }
@@ -710,7 +705,7 @@ unit Compiler // Compiler.asm
            
            // Check for empty argument list
            LDA ZP.CurrentToken
-           CMP #Tokens.RPAREN
+           CMP #Token.RPAREN
            if (Z)
            {
                SEC // Success - empty argument list
@@ -727,7 +722,7 @@ unit Compiler // Compiler.asm
                
                // Check what comes next
                LDA ZP.CurrentToken
-               CMP #Tokens.RPAREN
+               CMP #Token.RPAREN
                if (Z)
                {
                    SEC // Success - end of argument list
@@ -735,7 +730,7 @@ unit Compiler // Compiler.asm
                }
                
                // Expect comma for more arguments
-               CMP #Tokens.COMMA
+               CMP #Token.COMMA
                if (NZ)
                {
                    Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -790,7 +785,7 @@ unit Compiler // Compiler.asm
            if (NC) { break; }
            
            LDA ZP.CurrentToken
-           CMP #Tokens.LPAREN
+           CMP #Token.LPAREN
            if (Z)
            {
 #ifdef DEBUG
@@ -819,7 +814,7 @@ unit Compiler // Compiler.asm
                
                // Expect opening parenthesis
                LDA ZP.CurrentToken
-               CMP #Tokens.LPAREN
+               CMP #Token.LPAREN
                if (NZ)
                {
                    Error.ExpectedLeftParen(); BIT ZP.EmulatorPCL
@@ -833,7 +828,7 @@ unit Compiler // Compiler.asm
                
                // Expect closing parenthesis (should be current token after argument parsing)
                LDA ZP.CurrentToken
-               CMP #Tokens.RPAREN
+               CMP #Token.RPAREN
                if (NZ)
                {
                    Error.ExpectedRightParen(); BIT ZP.EmulatorPCL
@@ -903,7 +898,7 @@ unit Compiler // Compiler.asm
            if (NC) { break; }
            
            LDA ZP.CurrentToken
-           CMP #Tokens.LPAREN
+           CMP #Token.LPAREN
            if (NZ) 
            { 
                Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -922,7 +917,7 @@ unit Compiler // Compiler.asm
            
            // Expect closing parenthesis
            LDA ZP.CurrentToken
-           CMP #Tokens.RPAREN
+           CMP #Token.RPAREN
            if (NZ) 
            { 
                Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -966,7 +961,7 @@ unit Compiler // Compiler.asm
            if (NC) { break; }
            
            LDA ZP.CurrentToken
-           CMP #Tokens.LPAREN
+           CMP #Token.LPAREN
            if (NZ) 
            { 
                Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -985,7 +980,7 @@ unit Compiler // Compiler.asm
            
            // Expect closing parenthesis
            LDA ZP.CurrentToken
-           CMP #Tokens.RPAREN
+           CMP #Token.RPAREN
            if (NZ) 
            { 
                Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -1031,7 +1026,7 @@ unit Compiler // Compiler.asm
            if (NC) { break; }
            
            LDA ZP.CurrentToken
-           CMP #Tokens.LPAREN
+           CMP #Token.LPAREN
            if (NZ) 
            { 
                Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -1044,7 +1039,7 @@ unit Compiler // Compiler.asm
            if (NC) { break; }
            
            LDA ZP.CurrentToken
-           CMP #Tokens.RPAREN
+           CMP #Token.RPAREN
            if (NZ) 
            { 
                Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -1088,7 +1083,7 @@ unit Compiler // Compiler.asm
            if (NC) { break; }
            
            LDA ZP.CurrentToken
-           CMP #Tokens.LPAREN
+           CMP #Token.LPAREN
            if (NZ) 
            { 
                Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -1101,7 +1096,7 @@ unit Compiler // Compiler.asm
            if (NC) { break; }
            
            LDA ZP.CurrentToken
-           CMP #Tokens.RPAREN
+           CMP #Token.RPAREN
            if (NZ) 
            { 
                Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -1145,7 +1140,7 @@ unit Compiler // Compiler.asm
            if (NC) { break; }
            
            LDA ZP.CurrentToken
-           CMP #Tokens.LPAREN
+           CMP #Token.LPAREN
            if (NZ) 
            { 
                Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -1164,7 +1159,7 @@ unit Compiler // Compiler.asm
            
            // Expect closing parenthesis
            LDA ZP.CurrentToken
-           CMP #Tokens.RPAREN
+           CMP #Token.RPAREN
            if (NZ) 
            { 
                Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -1204,7 +1199,7 @@ unit Compiler // Compiler.asm
            if (NC) { break; }
            
            LDA ZP.CurrentToken
-           CMP #Tokens.LPAREN
+           CMP #Token.LPAREN
            if (NZ) 
            { 
                Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -1223,7 +1218,7 @@ unit Compiler // Compiler.asm
            
            // Expect closing parenthesis
            LDA ZP.CurrentToken
-           CMP #Tokens.RPAREN
+           CMP #Token.RPAREN
            if (NZ) 
            { 
                Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -1266,7 +1261,7 @@ unit Compiler // Compiler.asm
            if (NC) { break; }
            
            LDA ZP.CurrentToken
-           CMP #Tokens.LPAREN
+           CMP #Token.LPAREN
            if (NZ) 
            { 
                Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -1285,7 +1280,7 @@ unit Compiler // Compiler.asm
            
            // Expect comma separator
            LDA ZP.CurrentToken
-           CMP #Tokens.COMMA
+           CMP #Token.COMMA
            if (NZ) 
            { 
                Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -1304,7 +1299,7 @@ unit Compiler // Compiler.asm
            
            // Expect closing parenthesis
            LDA ZP.CurrentToken
-           CMP #Tokens.RPAREN
+           CMP #Token.RPAREN
            if (NZ) 
            { 
                Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -1345,7 +1340,7 @@ unit Compiler // Compiler.asm
            LDA ZP.CurrentToken
            switch (A)
            {
-               case Tokens.TRUE:
+               case Token.TRUE:
                {
                    // Emit PUSHBIT with value 1
                    LDA #1
@@ -1358,7 +1353,7 @@ unit Compiler // Compiler.asm
                    Error.CheckError();
                    break;
                }
-               case Tokens.FALSE:
+               case Token.FALSE:
                {
                    // Emit PUSHBIT with value 0
                    LDA #0
@@ -1371,7 +1366,7 @@ unit Compiler // Compiler.asm
                    Error.CheckError();
                    break;
                }
-               case Tokens.NUMBER:
+               case Token.NUMBER:
                {
                    // Get number value and type
                    Tokenizer.GetTokenNumber(); // Result in ZP.TOP, type in ZP.TOPT
@@ -1417,7 +1412,7 @@ unit Compiler // Compiler.asm
                    Error.CheckError();
                    break;
                }
-               case Tokens.STRINGLIT:
+               case Token.STRINGLIT:
                {
                    // Get string content pointer
                    Tokenizer.GetTokenString(); // Result in ZP.TOP
@@ -1441,13 +1436,13 @@ unit Compiler // Compiler.asm
                    break;
                }
                
-               case Tokens.IDENTIFIER:
+               case Token.IDENTIFIER:
                {
                    compileFunctionCallOrVariable();
                    Error.CheckError();
                    break;
                }
-               case Tokens.LPAREN:
+               case Token.LPAREN:
                {
                    // Get next token (start of sub-expression)
                    Tokenizer.NextToken();
@@ -1461,7 +1456,7 @@ unit Compiler // Compiler.asm
                    
                    // Expect closing parenthesis
                    LDA ZP.CurrentToken
-                   CMP #Tokens.RPAREN
+                   CMP #Token.RPAREN
                    if (NZ)
                    {
                        Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -1474,35 +1469,35 @@ unit Compiler // Compiler.asm
                    break;
                }
                
-               case Tokens.ABS:
+               case Token.ABS:
                {
                    compileAbsFunction();
                    Error.CheckError();
                    if (NC) { break; }
                    break;
                }
-               case Tokens.MILLIS:
+               case Token.MILLIS:
                {
                    compileMillisFunction();
                    Error.CheckError();
                    if (NC) { break; }
                    break;
                }
-               case Tokens.SECONDS:
+               case Token.SECONDS:
                {
                    compileSecondsFunction();
                    Error.CheckError();
                    if (NC) { break; }
                    break;
                }
-               case Tokens.RND:
+               case Token.RND:
                {
                    compileRndFunction();
                    Error.CheckError();
                    if (NC) { break; }
                    break;
                }
-               case Tokens.PEEK:
+               case Token.PEEK:
                {
                    compilePeekFunction();
                    Error.CheckError();
@@ -1603,16 +1598,16 @@ unit Compiler // Compiler.asm
            {
                // Check for end of function
                LDA ZP.CurrentToken
-               CMP #Tokens.ENDFUNC
+               CMP #Token.ENDFUNC
                if (Z) { break; } // End of regular function
                
-               CMP #Tokens.END  
+               CMP #Token.END  
                if (Z) { break; } // End of BEGIN function
                
-               CMP #Tokens.EOF
+               CMP #Token.EOF
                if (Z) { break; } // End of token stream
                
-               CMP #Tokens.EOL
+               CMP #Token.EOL
                if (Z)
                {
                    // Skip empty lines
@@ -1673,51 +1668,51 @@ unit Compiler // Compiler.asm
            LDA ZP.CurrentToken
            switch (A)
            {
-               case Tokens.WHILE:
+               case Token.WHILE:
                {
                    compileWhileStatement();
                }
-               case Tokens.PRINT:
+               case Token.PRINT:
                {
                    compilePrintStatement();
                    Error.CheckError();
                    if (NC) { State.SetFailure(); break; }
                }
-               case Tokens.RETURN:
+               case Token.RETURN:
                {
                    compileReturnStatement();
                    Error.CheckError();
                    if (NC) { State.SetFailure(); break; }
                }
-               case Tokens.IF:
+               case Token.IF:
                {
                    compileIfStatement();
                    Error.CheckError();
                    if (NC) { State.SetFailure(); break; }
                }
-               case Tokens.IDENTIFIER:
+               case Token.IDENTIFIER:
                {
                    // Could be assignment or function call
                    compileIdentifierStatement();
                    Error.CheckError();
                    if (NC) { State.SetFailure(); break; }
                }
-               case Tokens.REM:
-               case Tokens.COMMENT:
+               case Token.REM:
+               case Token.COMMENT:
                {
                    // Skip comments - advance to next token
                    Tokenizer.NextToken();
                    Error.CheckError();
                    if (NC) { State.SetFailure(); break; }
                }
-               case Tokens.DELAY:
+               case Token.DELAY:
                {
                    compileDelayFunction();
                    Error.CheckError();
                    if (NC) { break; }
                    break;
                }
-               case Tokens.POKE:
+               case Token.POKE:
                {
                    compilePokeStatement();
                    Error.CheckError();
@@ -1772,7 +1767,7 @@ unit Compiler // Compiler.asm
             
             // Check for PRINT with no arguments (just newline)
             LDA ZP.CurrentToken
-            CMP #Tokens.EOL
+            CMP #Token.EOL
             if (Z)
             {
                 // PRINT (newline only)
@@ -1785,7 +1780,7 @@ unit Compiler // Compiler.asm
             
             // Check for PRINT with trailing separator only
             LDA ZP.CurrentToken
-            CMP #Tokens.COMMA
+            CMP #Token.COMMA
             if (Z)
             {
                 // PRINT, - space and no newline
@@ -1800,7 +1795,7 @@ unit Compiler // Compiler.asm
                 break;
             }
             
-            CMP #Tokens.SEMICOLON
+            CMP #Token.SEMICOLON
             if (Z)
             {
                 // PRINT; - no space, no newline
@@ -1826,7 +1821,7 @@ unit Compiler // Compiler.asm
                 
                 // Check what follows this expression
                 LDA ZP.CurrentToken
-                CMP #Tokens.COMMA
+                CMP #Token.COMMA
                 if (Z)
                 {
                     // Comma separator - add space and continue with next expression
@@ -1841,7 +1836,7 @@ unit Compiler // Compiler.asm
                     
                     // Check if this is a trailing comma (followed by EOL)
                     LDA ZP.CurrentToken
-                    CMP #Tokens.EOL
+                    CMP #Token.EOL
                     if (Z)
                     {
                         // Trailing comma - no newline, we're done
@@ -1853,7 +1848,7 @@ unit Compiler // Compiler.asm
                     continue;
                 }
                 
-                CMP #Tokens.SEMICOLON
+                CMP #Token.SEMICOLON
                 if (Z)
                 {
                     // Semicolon separator - no space, continue with next expression
@@ -1864,7 +1859,7 @@ unit Compiler // Compiler.asm
                     
                     // Check if this is a trailing semicolon (followed by EOL)
                     LDA ZP.CurrentToken
-                    CMP #Tokens.EOL
+                    CMP #Token.EOL
                     if (Z)
                     {
                         // Trailing semicolon - no newline, we're done
@@ -1914,7 +1909,7 @@ unit Compiler // Compiler.asm
            
            // Check if there's a return expression
            LDA ZP.CurrentToken
-           CMP #Tokens.EOL
+           CMP #Token.EOL
            if (Z)
            {
                // No return value - emit RETURN
@@ -2025,7 +2020,7 @@ unit Compiler // Compiler.asm
                
                LDA ZP.CurrentToken
                
-               CMP #Tokens.WEND
+               CMP #Token.WEND
                if (Z) 
                { 
                    // Found WEND - consume it and exit loop
@@ -2035,7 +2030,7 @@ unit Compiler // Compiler.asm
                    break;  // Exit statement compilation loop
                }
                
-               CMP #Tokens.EOF
+               CMP #Token.EOF
                if (Z) 
                { 
                    Error.SyntaxError(); BIT ZP.EmulatorPCL  // Missing WEND
@@ -2043,7 +2038,7 @@ unit Compiler // Compiler.asm
                    break; 
                }
                
-               CMP #Tokens.EOL
+               CMP #Token.EOL
                if (Z)
                {
                    // Skip empty lines in loop body
@@ -2192,7 +2187,7 @@ unit Compiler // Compiler.asm
    
        loop
        {
-           // Typically called when ZP.CurrentToken is Tokens.IDENTIFIER, or a keyword
+           // Typically called when ZP.CurrentToken is Token.IDENTIFIER, or a keyword
            // Output: symbol or function in IDX, A = IdentifierType
            Statement.ResolveIdentifier(); // Uses same logic as REPL
            Error.CheckError();
@@ -2232,7 +2227,7 @@ unit Compiler // Compiler.asm
                    if (NC) { State.SetFailure(); break; }
                    
                    LDA ZP.CurrentToken
-                   CMP #Tokens.EQUALS
+                   CMP #Token.EQUALS
                    if (NZ)
                    {
                        Error.ExpectedEqual(); BIT ZP.EmulatorPCL

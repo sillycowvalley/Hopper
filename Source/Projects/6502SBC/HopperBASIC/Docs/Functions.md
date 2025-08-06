@@ -200,7 +200,7 @@ executeREPL()
     loop
     {
         getCurrentToken();  // Token at PC
-        CMP #Tokens.EOL
+        CMP #Token.EOL
         if (Z) { break; }  // End of line
         
         Statement.Execute();
@@ -217,7 +217,7 @@ executeFunction()
     loop
     {
         getCurrentToken();  // Token at PC
-        CMP #Tokens.RETURN
+        CMP #Token.RETURN
         if (Z) 
         { 
             executeReturn();  // Restores PC/BP from call stack

@@ -1,11 +1,6 @@
-unit Statement
+unit Statement // Statement.asm
 {
-    uses "Messages"
-    uses "Error"
     uses "Tokenizer"
-    uses "Tools"
-    
-    uses "Variables"
     uses "Instructions"
     uses "FunctionDeclaration.asm"
     uses "Emit"
@@ -114,7 +109,7 @@ unit Statement
     }
     
     
-    // Typically called when ZP.CurrentToken is Tokens.IDENTIFIER, or a keyword
+    // Typically called when ZP.CurrentToken is Token.IDENTIFIER, or a keyword
     // Output: symbol or function in IDX, A = IdentifierType
     const string resolveIdentifierTrace = "ResolveId";
     ResolveIdentifier()
@@ -360,37 +355,37 @@ unit Statement
         
         switch (A)
         {
-            case Tokens.REM:
-            case Tokens.COMMENT:
+            case Token.REM:
+            case Token.COMMENT:
             {
                 // Comments are no-ops - just advance to next token
                 Tokenizer.NextToken();
                 SEC  // Success
             }
-            case Tokens.FUNC:
+            case Token.FUNC:
             {
                 FunctionDeclaration.ExecuteFunctionDeclaration();
             }
-            case Tokens.BEGIN:
+            case Token.BEGIN:
             {
                 FunctionDeclaration.ExecuteBeginDeclaration();
             }
             
-            case Tokens.PRINT:
-            case Tokens.IDENTIFIER: // Could be assignment or function call
+            case Token.PRINT:
+            case Token.IDENTIFIER: // Could be assignment or function call
             {
                 ExecuteStatement();
             }
             
-            case Tokens.CONST:
+            case Token.CONST:
             {
                 executeConstantDeclaration();
             }
-            case Tokens.INT:
-            case Tokens.WORD:
-            case Tokens.BIT:
-            case Tokens.BYTE:
-            case Tokens.STRING:
+            case Token.INT:
+            case Token.WORD:
+            case Token.BIT:
+            case Token.BYTE:
+            case Token.STRING:
             {
                 executeVariableDeclaration();
             }
@@ -406,14 +401,14 @@ unit Statement
         if (C) // Only if statement executed successfully
         {
             LDA ZP.CurrentToken
-            CMP #Tokens.REM
+            CMP #Token.REM
             if (Z)
             {
                 Tokenizer.NextToken(); // Skip REM and consume comment text
             }
             else
             {
-                CMP #Tokens.COMMENT  
+                CMP #Token.COMMENT  
                 if (Z)
                 {
                     Tokenizer.NextToken(); // Skip COMMENT and consume comment text
@@ -507,10 +502,10 @@ unit Statement
             // Check that we have an identifier
             LDA ZP.CurrentToken
             
-            CMP # Tokens.IDENTIFIER
+            CMP # Token.IDENTIFIER
             if (NZ)
             {
-                Tokenizer.IsKeyword();
+                Tokens.IsKeyword();
                 if (C)
                 {
                     Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
@@ -592,7 +587,7 @@ unit Statement
                 LDX ZP.CurrentToken
                 switch (X)
                 {
-                    case Tokens.EQUALS:
+                    case Token.EQUALS:
                     {
                         // Save tokenizer position before expression
                         LDA ZP.TokenizerPosL
@@ -650,8 +645,8 @@ unit Statement
                             }
                         }
                     }
-                    case Tokens.EOL:
-                    case Tokens.COLON:
+                    case Token.EOL:
+                    case Token.COLON:
                     {
                         LDA stmtSymbol
                         CMP # (SymbolType.CONSTANT << 4)
@@ -663,7 +658,7 @@ unit Statement
                             break; // error exit
                         }
                         LDA stmtType
-                        CMP #Tokens.STRING
+                        CMP #Token.STRING
                         if (Z)
                         {
                             // STRING default: allocate copy of EmptyString
@@ -723,23 +718,23 @@ unit Statement
             if (NC) { break; } // error exit
             switch(X)
             {
-                case Tokens.WORD:
+                case Token.WORD:
                 {
                     LDX #BasicType.WORD
                 }
-                case Tokens.INT:
+                case Token.INT:
                 {
                     LDX # BasicType.INT
                 }
-                case Tokens.BIT:
+                case Token.BIT:
                 {
                     LDX #BasicType.BIT
                 }
-                case Tokens.BYTE:
+                case Token.BYTE:
                 {
                     LDX #BasicType.BYTE
                 }
-                case Tokens.STRING:
+                case Token.STRING:
                 {
                     LDX #BasicType.STRING
                 }

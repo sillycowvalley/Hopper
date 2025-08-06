@@ -192,7 +192,7 @@ STRING message = "Hello"                 // Mutable strings (Phase 4+)
 
 **Detection Logic** in `compilePrimary()`:
 ```hopper
-case Tokens.IDENTIFIER:
+case Token.IDENTIFIER:
 {
     // Look ahead to distinguish variable vs function call
     if (nextToken == LPAREN)

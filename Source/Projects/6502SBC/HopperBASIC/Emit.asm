@@ -420,7 +420,7 @@ unit Emit
    
    
    // Emit arithmetic operation opcode
-   // Input: A = operation token (Tokens.PLUS, Tokens.MINUS, etc.)
+   // Input: A = operation token (Token.PLUS, Token.MINUS, etc.)
    // Output: Corresponding arithmetic opcode emitted
    // Modifies: compilerOpCode, buffer state via Emit.OpCode(), A/X/Y registers
    const string emitArithmeticOpTrace = "Emit ADD";
@@ -434,35 +434,35 @@ unit Emit
        {
            switch (A)
            {
-               case Tokens.PLUS:
+               case Token.PLUS:
                {
                    LDA #OpCodeType.ADD
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
-               case Tokens.MINUS:
+               case Token.MINUS:
                {
                    LDA #OpCodeType.SUB
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
-               case Tokens.MULTIPLY:
+               case Token.MULTIPLY:
                {
                    LDA #OpCodeType.MUL
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
-               case Tokens.DIVIDE:
+               case Token.DIVIDE:
                {
                    LDA #OpCodeType.DIV
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
-               case Tokens.MOD:
+               case Token.MOD:
                {
                    LDA #OpCodeType.MOD
                    STA Compiler.compilerOpCode
@@ -484,7 +484,7 @@ unit Emit
    }
    
    // Emit comparison operation opcode
-   // Input: A = comparison token (Tokens.EQUALS, Tokens.LESSTHAN, etc.)
+   // Input: A = comparison token (Token.EQUALS, Token.LESSTHAN, etc.)
    // Output: Corresponding comparison opcode emitted
    // Modifies: compilerOpCode, buffer state via Emit.OpCode(), A/X/Y registers
    const string emitComparisonOpTrace = "Emit EQ";
@@ -498,42 +498,42 @@ unit Emit
        {
            switch (A)
            {
-               case Tokens.EQUALS:
+               case Token.EQUALS:
                {
                    LDA #OpCodeType.EQ
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
-               case Tokens.NOTEQUAL:
+               case Token.NOTEQUAL:
                {
                    LDA #OpCodeType.NE
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
-               case Tokens.LT:
+               case Token.LT:
                {
                    LDA #OpCodeType.LT
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
-               case Tokens.GT:
+               case Token.GT:
                {
                    LDA #OpCodeType.GT
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
-               case Tokens.LE:
+               case Token.LE:
                {
                    LDA #OpCodeType.LE
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
-               case Tokens.GE:
+               case Token.GE:
                {
                    LDA #OpCodeType.GE
                    STA Compiler.compilerOpCode
@@ -555,7 +555,7 @@ unit Emit
    }
    
    // Emit logical operation opcode
-   // Input: A = logical token (Tokens.AND, Tokens.OR, Tokens.NOT)
+   // Input: A = logical token (Token.AND, Token.OR, Token.NOT)
    // Output: Corresponding logical opcode emitted
    // Modifies: compilerOpCode, buffer state via Emit.OpCode(), A/X/Y registers
    const string emitLogicalOpTrace = "Emit LOGICAL_AND";
@@ -569,21 +569,21 @@ unit Emit
        {
            switch (A)
            {
-               case Tokens.AND:
+               case Token.AND:
                {
                    LDA #OpCodeType.LOGICAL_AND
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
-               case Tokens.OR:
+               case Token.OR:
                {
                    LDA #OpCodeType.LOGICAL_OR
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
-               case Tokens.NOT:
+               case Token.NOT:
                {
                    LDA #OpCodeType.LOGICAL_NOT
                    STA Compiler.compilerOpCode
@@ -619,14 +619,14 @@ unit Emit
        {
            switch (A)
            {
-               case Tokens.BITWISE_AND:
+               case Token.BITWISE_AND:
                {
                    LDA #OpCodeType.BITWISE_AND
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
-               case Tokens.BITWISE_OR:
+               case Token.BITWISE_OR:
                {
                    LDA #OpCodeType.BITWISE_OR
                    STA Compiler.compilerOpCode

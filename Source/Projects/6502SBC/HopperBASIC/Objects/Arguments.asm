@@ -1,8 +1,5 @@
 unit Arguments
 {
-    uses "BasicTypes"
-    uses "Tools"
-    
     // Argument table management - arguments list head stored directly in function node
     // No separate "table head storage" - function node field points directly to first argument
     

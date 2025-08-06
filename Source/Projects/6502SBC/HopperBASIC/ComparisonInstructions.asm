@@ -1,8 +1,5 @@
-unit ComparisonInstructions
+unit ComparisonInstructions // ComparisonInstructions.asm
 {
-    uses "Error"
-    uses "Tools"
-    uses "BasicTypes"
     
     // Signed 16-bit comparison of NEXT vs TOP
     // Input: ZP.NEXT, ZP.TOP (16-bit signed values)

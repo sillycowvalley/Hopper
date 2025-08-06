@@ -1,4 +1,4 @@
-unit Debug
+unit Debug // Debug.asm
 {
     // API Status: Clean  
     // All public methods preserve caller state except for documented outputs
@@ -6,7 +6,6 @@ unit Debug
     // Optimized for size using public/private pattern and DB0-DB15 slots
     
     uses "Tools"      // For convenience wrappers
-    uses "BasicTypes" // For type printing
     
     // Debug strings - main headers
     const string debugVarsHeader = "\n== VARS ==\n";
@@ -232,7 +231,7 @@ unit Debug
         STA ZP.STRH
         printString();
         LDA ZP.NEXTT
-        Tools.PrintType();
+        BASICTypes.PrintType();
         LDA #'-'
         cOut();
         LDA ZP.NEXTH
@@ -250,7 +249,7 @@ unit Debug
         STA ZP.STRH
         printString();
         LDA ZP.TOPT
-        Tools.PrintType();
+        BASICTypes.PrintType();
         LDA #'-'
         cOut();
         LDA ZP.TOPH
@@ -1638,7 +1637,7 @@ unit Debug
             
             // Type and value
             LDA Address.TypeStackLSB, X
-            Tools.PrintType();
+            BASICTypes.PrintType();
             LDA #'-' cOut();
             LDA Address.ValueStackMSB, X
             hOut();

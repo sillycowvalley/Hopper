@@ -2,9 +2,6 @@ unit Functions
 {
     uses "Objects"
     uses "Arguments"
-    uses "BasicTypes"
-    uses "Messages"
-    uses "Error"
         
     flags FunctionFlags
     {
@@ -729,7 +726,7 @@ unit Functions
                     Variables.GetName(); // -> STR
                     
                     // <name>
-                    LDA # Tokens.IDENTIFIER
+                    LDA # Token.IDENTIFIER
                     STA [ZP.FDESTINATIONADDRESS]
                     IncLENGTH();
                     IncDESTINATIONADDRESS();
@@ -748,7 +745,7 @@ unit Functions
                     }
                     
                     // '='
-                    LDA # Tokens.EQUALS
+                    LDA # Token.EQUALS
                     STA [ZP.FDESTINATIONADDRESS]
                     IncLENGTH();
                     IncDESTINATIONADDRESS();
@@ -763,7 +760,7 @@ unit Functions
                     {
                         // No initialization tokens
                         
-                        LDA # Tokens.NUMBER
+                        LDA # Token.NUMBER
                         STA [ZP.FDESTINATIONADDRESS]
                         IncLENGTH();
                         IncDESTINATIONADDRESS();
@@ -780,7 +777,7 @@ unit Functions
                         IncLENGTH();
                         IncDESTINATIONADDRESS();
                         
-                        LDA # Tokens.EOL
+                        LDA # Token.EOL
                         STA [ZP.FDESTINATIONADDRESS]
                         IncLENGTH();
                         IncDESTINATIONADDRESS();
@@ -796,7 +793,7 @@ unit Functions
                             IncLENGTH();
                             LDA [ZP.NEXT]
                             STA [ZP.FDESTINATIONADDRESS]
-                            CMP #Tokens.EOL
+                            CMP #Token.EOL
                             if (Z)
                             {
                                 IncDESTINATIONADDRESS();
@@ -824,11 +821,11 @@ unit Functions
                 IncLENGTH();
                 LDA [ZP.IDY]
                 STA [ZP.FDESTINATIONADDRESS]
-                CMP #Tokens.ENDFUNC
+                CMP #Token.ENDFUNC
                 if (Z) { break; }
-                CMP #Tokens.END
+                CMP #Token.END
                 if (Z) { break; }
-                CMP #Tokens.EOF  
+                CMP #Token.EOF  
                 if (Z) { break; }
                 IncIDY();
                 IncDESTINATIONADDRESS();

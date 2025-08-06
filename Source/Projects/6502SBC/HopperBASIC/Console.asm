@@ -1,17 +1,9 @@
 unit Console
 {
-    uses "Messages"
-    uses "Error"
-    uses "State"
-    uses "Tools"
     uses "Tokenizer"
     uses "Statement"
     
-    uses "Objects"
-    uses "Variables"
-    uses "Functions"
-    
-    uses "Listing"
+    uses "Commands"
     
     // Initialize console system
     Initialize()
@@ -113,7 +105,7 @@ unit Console
             STZ ZP.TokenizerPosH
             Tokenizer.NextToken();
             LDA ZP.CurrentToken
-            CMP #Tokens.EOL
+            CMP #Token.EOL
             if (Z)
             {
                 State.SetSuccess(); // Continue (empty line)
@@ -176,10 +168,10 @@ unit Console
         Tokenizer.NextToken();
         
         LDA ZP.CurrentToken
-        CMP #Tokens.FUNC
+        CMP #Token.FUNC
         if (NZ)
         {
-            CMP #Tokens.BEGIN
+            CMP #Token.BEGIN
             if (NZ)
             {
                 // Restore position and exit - not a function
@@ -195,7 +187,7 @@ unit Console
                 {
                     Tokenizer.NextToken();
                     LDA ZP.CurrentToken
-                    CMP #Tokens.EOL
+                    CMP #Token.EOL
                     if (Z) 
                     { 
                         // Restore position
@@ -208,7 +200,7 @@ unit Console
                         break; // incomplete BEGIN found
                     }
                     
-                    CMP #Tokens.END
+                    CMP #Token.END
                     if (Z)
                     {
                         // Restore position
@@ -228,7 +220,7 @@ unit Console
             {
                 Tokenizer.NextToken();
                 LDA ZP.CurrentToken
-                CMP #Tokens.EOL
+                CMP #Token.EOL
                 if (Z) 
                 { 
                     // Restore position
@@ -241,7 +233,7 @@ unit Console
                     break; // incomplete function found
                 }
                 
-                CMP #Tokens.ENDFUNC
+                CMP #Token.ENDFUNC
                 if (Z)
                 {
                     // Restore position
@@ -326,7 +318,7 @@ unit Console
                     
                     Tokenizer.NextToken();
                     LDA ZP.CurrentToken
-                    CMP #Tokens.ENDFUNC
+                    CMP #Token.ENDFUNC
                     if (Z)
                     {
                         SEC // Found ENDFUNC
@@ -347,7 +339,7 @@ unit Console
                         
                         Tokenizer.NextToken();
                         LDA ZP.CurrentToken
-                        CMP #Tokens.END
+                        CMP #Token.END
                         if (Z)
                         {
                             SEC // Found END
@@ -401,11 +393,11 @@ unit Console
                 LDA ZP.CurrentToken
                 switch (A)
                 {
-                    case Tokens.EOL:
+                    case Token.EOL:
                     {
                         LDA #0 // No argument - default to page 0
                     }
-                    case Tokens.NUMBER:
+                    case Token.NUMBER:
                     {
                         Tokenizer.GetTokenNumber();
                         Tokenizer.NextToken(); // consume the argument
@@ -416,7 +408,7 @@ unit Console
                             break;
                         }
                         LDA ZP.CurrentToken
-                        CMP # Tokens.EOL
+                        CMP # Token.EOL
                         if (NZ)
                         {
                             CLC // was expecting EOL
@@ -586,7 +578,7 @@ unit Console
             
             // Verify end of line
             LDA ZP.CurrentToken
-            CMP #Tokens.EOL
+            CMP #Token.EOL
             if (NZ)
             {
                 Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -627,7 +619,7 @@ unit Console
             
             // Verify end of line
             LDA ZP.CurrentToken
-            CMP #Tokens.EOL
+            CMP #Token.EOL
             if (NZ)
             {
                 Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -735,7 +727,7 @@ unit Console
                 
                 // Expect identifier name
                 LDA ZP.CurrentToken
-                CMP #Tokens.IDENTIFIER
+                CMP #Token.IDENTIFIER
                 if (NZ)
                 {
                     Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -770,7 +762,7 @@ unit Console
                     
                     // Verify end of line
                     LDA ZP.CurrentToken
-                    CMP #Tokens.EOL
+                    CMP #Token.EOL
                     if (NZ)
                     {
                         Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -799,7 +791,7 @@ unit Console
                     
                     // Verify end of line
                     LDA ZP.CurrentToken
-                    CMP #Tokens.EOL
+                    CMP #Token.EOL
                     if (NZ)
                     {
                         Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -864,7 +856,7 @@ unit Console
                 LDX #0
                 
                 // Token 1: IDENTIFIER
-                LDA #Tokens.IDENTIFIER
+                LDA #Token.IDENTIFIER
                 STA Address.BasicTokenizerBuffer, X
                 INX
                 LDY #0
@@ -880,17 +872,17 @@ unit Console
 
                 
                 // Token 2: LPAREN
-                LDA #Tokens.LPAREN
+                LDA #Token.LPAREN
                 STA Address.BasicTokenizerBuffer, X
                 INX
                 
                 // Token 3: RPAREN
-                LDA #Tokens.RPAREN
+                LDA #Token.RPAREN
                 STA Address.BasicTokenizerBuffer, X
                 INX
                 
                 // Token 4: EOL
-                LDA #Tokens.EOL
+                LDA #Token.EOL
                 STA Address.BasicTokenizerBuffer, X
                 INX
                 
@@ -949,101 +941,101 @@ unit Console
             LDA ZP.CurrentToken
             
             // Check for end of line first
-            CMP #Tokens.EOL
+            CMP #Token.EOL
             if (Z) { break; }  // End of all statements
             
-            CMP #Tokens.EOF
+            CMP #Token.EOF
             if (Z) { break; }  // End of all statements
             
             // Execute the current statement/command
             switch (A)
             {
                 // CONSOLE COMMANDS - Execute directly (existing pattern)
-                case Tokens.TRON:
+                case Token.TRON:
                 {
                     cmdTron();
                     Error.CheckError();
                     if (NC) { return; }
                 }
-                case Tokens.TROFF:
+                case Token.TROFF:
                 {
                     cmdTroff();
                     Error.CheckError();
                     if (NC) { return; }
                 }
-                case Tokens.NEW:
+                case Token.NEW:
                 {
                     cmdNew();
                     Error.CheckError();
                     if (NC) { return; }
                 }
-                case Tokens.CLEAR:
+                case Token.CLEAR:
                 {
                     cmdClear();
                     Error.CheckError();
                     if (NC) { return; }
                 }
-                case Tokens.FORGET:
+                case Token.FORGET:
                 {
                     cmdForget();
                     Error.CheckError();
                     if (NC) { return; }
                 }
-                case Tokens.VARS:
+                case Token.VARS:
                 {
-                    Listing.CmdVars();
+                    Commands.CmdVars();
                     Error.CheckError();
                     if (NC) { return; }
                 }
-                case Tokens.LIST:
+                case Token.LIST:
                 {
-                    Listing.CmdList();
+                    Commands.CmdList();
                     Error.CheckError();
                     if (NC) { return; }
                 }
-                case Tokens.FUNCS:
+                case Token.FUNCS:
                 {
-                    Listing.CmdFuncs();
+                    Commands.CmdFuncs();
                     Error.CheckError();
                     if (NC) { return; }
                 }
-                case Tokens.MEM:
+                case Token.MEM:
                 {
                     CmdMem();
                     Error.CheckError();
                     if (NC) { return; }
                 }
-                case Tokens.HEAP:
+                case Token.HEAP:
                 {
                     cmdHeap();
                     Error.CheckError();
                     if (NC) { return; }
                 }
-                case Tokens.BUFFERS:
+                case Token.BUFFERS:
                 {
                     cmdBuffers();
                     Error.CheckError();
                     if (NC) { return; }
                 }
-                case Tokens.DUMP:
+                case Token.DUMP:
                 {
                     cmdDump();
                     Error.CheckError();
                     if (NC) { return; }
                 }
-                case Tokens.BYE:
+                case Token.BYE:
                 {
                     cmdBye();
                     return; // BYE sets SystemState.Exiting
                 }
-                case Tokens.SAVE:
-                case Tokens.LOAD:
-                case Tokens.DIR:
-                case Tokens.DEL:
+                case Token.SAVE:
+                case Token.LOAD:
+                case Token.DIR:
+                case Token.DEL:
                 {
                     Error.NotImplemented(); BIT ZP.EmulatorPCL
                 }
-                case Tokens.RUN:
+                case Token.RUN:
                 {
                     cmdRun();
                     Error.CheckError();
@@ -1071,8 +1063,8 @@ unit Console
                 }
                 
                 // COMMENTS - Skip over them
-                case Tokens.REM:
-                case Tokens.COMMENT:
+                case Token.REM:
+                case Token.COMMENT:
                 {
                     // Comments at top level are just ignored
                     // Skip to end of line or next colon
@@ -1080,9 +1072,9 @@ unit Console
                     {
                         Tokenizer.NextToken();
                         LDA ZP.CurrentToken
-                        CMP #Tokens.EOL
+                        CMP #Token.EOL
                         if (Z) { break; }
-                        CMP #Tokens.COLON
+                        CMP #Token.COLON
                         if (Z) { break; }
                     }
                 }
@@ -1164,13 +1156,13 @@ unit Console
 
             // After executing statement, check what comes next
             LDA ZP.CurrentToken
-            CMP #Tokens.EOL
+            CMP #Token.EOL
             if (Z)
             {
                 break; // End of line
             }  
             
-            CMP #Tokens.COLON
+            CMP #Token.COLON
             if (Z) 
             { 
                 continue;  // Found colon, continue with next statement
@@ -1212,14 +1204,14 @@ unit Console
         switch (A)
         {
             // These are definitely safe for direct execution
-            case Tokens.INT:
-            case Tokens.WORD:  
-            case Tokens.BIT:
-            case Tokens.BYTE:
-            case Tokens.STRING:
-            case Tokens.CONST:
-            case Tokens.FUNC:
-            case Tokens.BEGIN:
+            case Token.INT:
+            case Token.WORD:  
+            case Token.BIT:
+            case Token.BYTE:
+            case Token.STRING:
+            case Token.CONST:
+            case Token.FUNC:
+            case Token.BEGIN:
             {
                 // Restore tokenizer position
                 PLA
@@ -1285,7 +1277,7 @@ unit Console
                 STA ZP.TOPH
             }
             
-            LDA # Tokens.EOF
+            LDA # Token.EOF
             Tokenizer.appendToTokenBuffer();
             Error.CheckError();
             if (NC) { break; }
@@ -1370,7 +1362,7 @@ unit Console
             LDX #0
             
             // Token 1: IDENTIFIER
-            LDA #Tokens.IDENTIFIER
+            LDA #Token.IDENTIFIER
             STA Address.BasicTokenizerBuffer, X
             INX
             
@@ -1387,17 +1379,17 @@ unit Console
             INX // Skip past null terminator
             
             // Token 2: LPAREN
-            LDA #Tokens.LPAREN
+            LDA #Token.LPAREN
             STA Address.BasicTokenizerBuffer, X
             INX
             
             // Token 3: RPAREN
-            LDA #Tokens.RPAREN
+            LDA #Token.RPAREN
             STA Address.BasicTokenizerBuffer, X
             INX
             
             // Token 4: EOL
-            LDA #Tokens.EOL
+            LDA #Token.EOL
             STA Address.BasicTokenizerBuffer, X
             INX
             
@@ -1561,10 +1553,10 @@ unit Console
         loop // Scan until end of line
         {
             LDA ZP.CurrentToken
-            CMP #Tokens.EOL
+            CMP #Token.EOL
             if (Z) { SEC break; } // Found end
             
-            CMP #Tokens.EOF
+            CMP #Token.EOF
             if (Z) { SEC break; } // Found end
             
             // Advance to next token

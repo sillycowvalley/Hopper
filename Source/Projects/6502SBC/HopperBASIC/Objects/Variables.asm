@@ -1,9 +1,6 @@
 unit Variables
 {
     uses "Objects"
-    uses "BasicTypes"
-    uses "Messages"
-    uses "Error"
     uses "Table"
     
     // Variable management using Objects foundation

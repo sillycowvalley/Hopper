@@ -1,4 +1,4 @@
-unit Trace
+unit Trace // Trace.asm
 {
     // #define TRACESP (6502 SP for stack balance diagnosis)
     

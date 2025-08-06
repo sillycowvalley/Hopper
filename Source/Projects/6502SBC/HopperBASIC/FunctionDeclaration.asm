@@ -1,15 +1,7 @@
-unit FunctionDeclaration
+unit FunctionDeclaration // FunctionDeclaration.asm
 {
-    uses "Messages"
-    uses "Error"
     uses "Tokenizer"
-    uses "Tools"
-    uses "Trace"
-    
     uses "Instructions"
-    
-    uses "Functions" 
-    uses "Arguments"
     
     
     // Execute BEGIN declaration statement (main program)
@@ -78,7 +70,7 @@ unit FunctionDeclaration
             
             // Check if this is an incomplete BEGIN block (ends with EOL)
             LDA ZP.CurrentToken
-            CMP #Tokens.EOL
+            CMP #Token.EOL
             if (Z)
             {
                 // Incomplete BEGIN block - set up for capture mode
@@ -123,10 +115,10 @@ unit FunctionDeclaration
             
             // Check that we have an identifier
             LDA ZP.CurrentToken
-            CMP #Tokens.IDENTIFIER
+            CMP #Token.IDENTIFIER
             if (NZ)
             {
-                Tokenizer.IsKeyword();
+                Tokens.IsKeyword();
                 if (C)
                 {
                     Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
@@ -195,7 +187,7 @@ unit FunctionDeclaration
             if (NC) { break; }
             
             LDA ZP.CurrentToken
-            CMP #Tokens.LPAREN
+            CMP #Token.LPAREN
             if (NZ)
             {
                 Error.ExpectedLeftParen(); BIT ZP.EmulatorPCL
@@ -233,7 +225,7 @@ unit FunctionDeclaration
             
             // Expect closing parenthesis (should be current token after parseParameterList)
             LDA ZP.CurrentToken
-            CMP #Tokens.RPAREN
+            CMP #Token.RPAREN
             if (NZ)
             {
                 Error.ExpectedRightParen(); BIT ZP.EmulatorPCL
@@ -247,7 +239,7 @@ unit FunctionDeclaration
             
             // Check if this is an incomplete function (ends with EOL)
             LDA ZP.CurrentToken
-            CMP #Tokens.EOL
+            CMP #Token.EOL
             if (Z)
             {
                 // Incomplete function - set up for capture mode
@@ -291,7 +283,7 @@ unit FunctionDeclaration
             
             // Check for empty parameter list
             LDA ZP.CurrentToken
-            CMP #Tokens.RPAREN
+            CMP #Token.RPAREN
             if (Z)
             {
                 SEC // Success - empty parameter list
@@ -303,7 +295,7 @@ unit FunctionDeclaration
             {
                 // Expect identifier
                 LDA ZP.CurrentToken
-                CMP #Tokens.IDENTIFIER
+                CMP #Token.IDENTIFIER
                 if (NZ)
                 {
                     Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -333,7 +325,7 @@ unit FunctionDeclaration
                 
                 // Check what comes next
                 LDA ZP.CurrentToken
-                CMP #Tokens.RPAREN
+                CMP #Token.RPAREN
                 if (Z)
                 {
                     SEC // Success - end of parameter list
@@ -341,7 +333,7 @@ unit FunctionDeclaration
                 }
                 
                 // Expect comma for more parameters
-                CMP #Tokens.COMMA
+                CMP #Token.COMMA
                 if (NZ)
                 {
                     Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -389,7 +381,7 @@ unit FunctionDeclaration
             loop
             {
                 LDA ZP.CurrentToken
-                CMP #Tokens.EOF
+                CMP #Token.EOF
                 if (Z)
                 {
                     // Hit end of input without finding END
@@ -397,7 +389,7 @@ unit FunctionDeclaration
                     break;
                 }
                 
-                CMP #Tokens.END
+                CMP #Token.END
                 if (Z)
                 {
                     // Found END - we're done
@@ -487,7 +479,7 @@ unit FunctionDeclaration
             loop
             {
                 LDA ZP.CurrentToken
-                CMP #Tokens.EOF
+                CMP #Token.EOF
                 if (Z)
                 {
                     // Hit end of input without finding ENDFUNC
@@ -495,7 +487,7 @@ unit FunctionDeclaration
                     break;
                 }
                 
-                CMP #Tokens.ENDFUNC
+                CMP #Token.ENDFUNC
                 if (Z)
                 {
                     // Found ENDFUNC - we're done
@@ -587,7 +579,7 @@ unit FunctionDeclaration
             if (NC) { break; }
             
             LDA ZP.CurrentToken
-            CMP #Tokens.FUNC
+            CMP #Token.FUNC
             if (Z)
             {
                 // Get function name
@@ -596,7 +588,7 @@ unit FunctionDeclaration
                 if (NC) { break; }
                 
                 LDA ZP.CurrentToken
-                CMP #Tokens.IDENTIFIER
+                CMP #Token.IDENTIFIER
                 if (NZ)
                 {
                     Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -616,7 +608,7 @@ unit FunctionDeclaration
                     if (NC) { break; }
                     
                     LDA ZP.CurrentToken
-                    CMP #Tokens.RPAREN
+                    CMP #Token.RPAREN
                     if (Z) 
                     { 
                         Tokenizer.NextToken(); // Move past RPAREN to start of body
@@ -625,7 +617,7 @@ unit FunctionDeclaration
                         break; 
                     }
                     
-                    CMP #Tokens.EOF
+                    CMP #Token.EOF
                     if (Z)
                     {
                         Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -639,7 +631,7 @@ unit FunctionDeclaration
             }
             else
             {
-                CMP #Tokens.BEGIN
+                CMP #Token.BEGIN
                 if (NZ)
                 {
                     Error.InternalError(); BIT ZP.EmulatorPCL
@@ -677,13 +669,13 @@ unit FunctionDeclaration
             loop
             {
                 LDA ZP.CurrentToken
-                CMP #Tokens.ENDFUNC
+                CMP #Token.ENDFUNC
                 if (Z) { break; }
                 
-                CMP #Tokens.END
+                CMP #Token.END
                 if (Z) { break; } 
                 
-                CMP #Tokens.EOF
+                CMP #Token.EOF
                 if (Z)
                 {
                     Error.SyntaxError(); BIT ZP.EmulatorPCL

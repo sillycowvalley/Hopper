@@ -1,10 +1,5 @@
 unit Executor // Executor.asm
 {
-   uses "OpCodes"
-   uses "Variables"
-   uses "Error"
-   uses "State"  // Add State dependency
-   uses "BasicTypes"
    uses "Instructions"
    uses "ComparisonInstructions"
    uses "BASICSysCalls"

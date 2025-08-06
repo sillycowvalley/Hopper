@@ -1,16 +1,9 @@
-unit Listing
+unit Commands // Commands.asm
 {
-    uses "Messages"
-    uses "Error"
-    uses "State"
     uses "Tools"
     uses "Tokenizer"
     uses "TokenIterator"
     
-    uses "Objects"
-    uses "Variables"
-    uses "Functions"
-    uses "Arguments"
     uses "Statement"  // For IsCaptureModeOn()
     uses "Console"   // For FunctionModeError()
     
@@ -140,7 +133,7 @@ unit Listing
         PHA
         
         // Print "BEGIN"
-        LDA #Tokens.BEGIN
+        LDA #Token.BEGIN
         Tokenizer.PrintKeyword();
         
         // Restore function node for body display
@@ -184,7 +177,7 @@ unit Listing
         PHA
         
         // Print "FUNC "
-        LDA #Tokens.FUNC
+        LDA #Token.FUNC
         Tokenizer.PrintKeyword();
         LDA #' '
         Serial.WriteChar();
@@ -251,7 +244,7 @@ unit Listing
         displayFunctionBody(); // Input: ZP.IDX = function node
         
         // Print ENDFUNC to close the function  
-        LDA #Tokens.ENDFUNC
+        LDA #Token.ENDFUNC
         Tokenizer.PrintKeyword();
         
         Tools.NL();
@@ -376,7 +369,7 @@ unit Listing
             
             // Verify end of line
             LDA ZP.CurrentToken
-            CMP #Tokens.EOL
+            CMP #Token.EOL
             if (NZ) 
             { 
                 Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -421,7 +414,7 @@ unit Listing
             
             // Check if there's a function name argument
             LDA ZP.CurrentToken
-            CMP #Tokens.IDENTIFIER
+            CMP #Token.IDENTIFIER
             if (Z)
             {
                 // Display specific function
@@ -436,7 +429,7 @@ unit Listing
                 break;
             }
             
-            CMP #Tokens.EOL
+            CMP #Token.EOL
             if (NZ)
             {
                 // Invalid argument
@@ -554,8 +547,8 @@ unit Listing
                 if (NC) { break; }  // No more constants
                 
                 // Print "CONST "
-                LDA #Tokens.CONST
-                Tokenizer.PrintKeyword();   
+                LDA #Token.CONST
+                Tokens.PrintKeyword();   
                 LDA #' '
                 Serial.WriteChar();
                 
@@ -566,7 +559,7 @@ unit Listing
                 LDA ZP.ACCT
                 AND #0x0F
                 STA ZP.ACCT
-                Tools.PrintType(); // Input: A = dataType
+                BASICTypes.PrintType(); // Input: A = dataType
                 
                 // Print space
                 LDA #' '
@@ -633,7 +626,7 @@ unit Listing
                 // Get packed type and extract data type
                 LDA ZP.ACCT
                 AND #0x0F
-                Tools.PrintType(); // Input: A = dataType
+                Tokens.PrintType(); // Input: A = dataType
                 
                 // Print space
                 LDA #' '

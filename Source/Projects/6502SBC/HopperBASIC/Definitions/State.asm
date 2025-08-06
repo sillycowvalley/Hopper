@@ -1,7 +1,5 @@
-unit State
+unit State // State.asm
 {
-    uses "Error"
-    
     // API Status: Clean
     // All public methods preserve caller state except for documented outputs
     // System state management for robust orchestration method coordination

@@ -1,19 +1,17 @@
 unit TokenIterator
 {
     uses "Tokenizer"
-    uses "Messages"
     
     // API Status: Clean
     // Simple token stream iterator for function body display
-    // Uses ZP.L* scratch space - DO NOT call Table/Objects/Variables/Functions APIs while iterating
     
-    // Memory layout for token iterator state - BASIC ZP allocation (0x40-0x4F, 16 bytes available)
-    const byte tokIterCurrent        = 0x40;  // 0x40: current token value (1 byte)
-    const byte tokIterBaseL          = 0x41;  // 0x41: token stream base pointer low (1 byte)
-    const byte tokIterBaseH          = 0x42;  // 0x42: token stream base pointer high (1 byte)
-    const byte tokIterIndentLevel    = 0x43;  // 0x43: current indentation level (1 byte, in units of 4 spaces)
-    // 12 bytes remaining for future token iterator needs (0x44-0x4F)
-
+    
+    // Memory layout for token iterator state
+    const byte tokIterCurrent        = ZP.M0;  // current token value (1 byte)
+    const byte tokIterBaseL          = ZP.M1;  // token stream base pointer low (1 byte)
+    const byte tokIterBaseH          = ZP.M2;  // token stream base pointer high (1 byte)
+    const byte tokIterIndentLevel    = ZP.M3;  // current indentation level (1 byte, in units of 4 spaces)
+    
 
     
     
@@ -85,11 +83,11 @@ unit TokenIterator
             LDA tokIterCurrent
             switch (A)
             {
-                case Tokens.NUMBER:
-                case Tokens.IDENTIFIER:
-                case Tokens.STRING:
-                case Tokens.REM:
-                case Tokens.COMMENT:
+                case Token.NUMBER:
+                case Token.IDENTIFIER:
+                case Token.STRING:
+                case Token.REM:
+                case Token.COMMENT:
                 {
                     // These tokens have inline string data - skip past the string
                     skipInlineString();
@@ -230,11 +228,11 @@ unit TokenIterator
     {
         switch (A)
         {
-            case Tokens.FUNC:
-            case Tokens.IF:
-            case Tokens.FOR:
-            case Tokens.WHILE:
-            case Tokens.BEGIN:
+            case Token.FUNC:
+            case Token.IF:
+            case Token.FOR:
+            case Token.WHILE:
+            case Token.BEGIN:
             { SEC return; }
         }
         
@@ -249,11 +247,11 @@ unit TokenIterator
     {
         switch (A)
         {
-            case Tokens.ENDFUNC:
-            case Tokens.END:
-            case Tokens.NEXT:
-            case Tokens.WEND:
-            case Tokens.UNTIL:
+            case Token.ENDFUNC:
+            case Token.END:
+            case Token.NEXT:
+            case Token.WEND:
+            case Token.UNTIL:
             { SEC return; }
         }
         CLC // Not an indent-decreasing token
@@ -366,14 +364,14 @@ unit TokenIterator
             GetCurrent(); // A = current token value
             
             // Check for statement terminators or end of stream
-            CMP #Tokens.EOL
+            CMP #Token.EOL
             if (Z) 
             { 
                 Next(); // Skip EOL and continue
                 SEC // More statements may follow
                 break; 
             }
-            CMP #Tokens.COLON
+            CMP #Token.COLON
             if (Z) 
             { 
                 Next(); // Skip colon and continue  
@@ -431,14 +429,14 @@ unit TokenIterator
             GetCurrent(); // A = current token value
             
             // Check for statement terminators or end of stream
-            CMP #Tokens.EOL
+            CMP #Token.EOL
             if (Z) 
             { 
                 Next(); // Skip EOL and continue
                 SEC // More statements may follow
                 break; 
             }
-            CMP #Tokens.COLON
+            CMP #Token.COLON
             if (Z) 
             { 
                 Next(); // Skip colon and continue  
@@ -480,22 +478,22 @@ unit TokenIterator
         
         switch (A)
         {
-            case Tokens.NUMBER:
+            case Token.NUMBER:
             {
                 GetCurrentData(); // ZP.IDY = pointer to number string
                 Tools.PrintStringIDY();
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.IDENTIFIER:
+            case Token.IDENTIFIER:
             {
                 GetCurrentData(); // ZP.IDY = pointer to identifier string
                 Tools.PrintStringIDY();
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.STRING:
-            case Tokens.STRINGLIT:
+            case Token.STRING:
+            case Token.STRINGLIT:
             {
                 LDA #'"'
                 Serial.WriteChar();
@@ -506,9 +504,9 @@ unit TokenIterator
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.REM:
+            case Token.REM:
             {
-                LDA #Tokens.REM
+                LDA #Token.REM
                 Tokenizer.PrintKeyword();
                 LDA #' '
                 Serial.WriteChar();
@@ -517,7 +515,7 @@ unit TokenIterator
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.COMMENT:
+            case Token.COMMENT:
             {
                 LDA #'\''
                 Serial.WriteChar();
@@ -526,82 +524,82 @@ unit TokenIterator
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.TRUE:
+            case Token.TRUE:
             {
-                LDA #Tokens.TRUE
+                LDA #Token.TRUE
                 Tokenizer.PrintKeyword();
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.FALSE:
+            case Token.FALSE:
             {
-                LDA #Tokens.FALSE
+                LDA #Token.FALSE
                 Tokenizer.PrintKeyword();
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.EQUALS:
+            case Token.EQUALS:
             {
                 LDA #'='
                 Serial.WriteChar();
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.PLUS:
+            case Token.PLUS:
             {
                 LDA #'+'
                 Serial.WriteChar();
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.MINUS:
+            case Token.MINUS:
             {
                 LDA #'-'
                 Serial.WriteChar();
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.MULTIPLY:
+            case Token.MULTIPLY:
             {
                 LDA #'*'
                 Serial.WriteChar();
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.DIVIDE:
+            case Token.DIVIDE:
             {
                 LDA #'/'
                 Serial.WriteChar();
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.LPAREN:
+            case Token.LPAREN:
             {
                 LDA #'('
                 Serial.WriteChar();
             }
-            case Tokens.RPAREN:
+            case Token.RPAREN:
             {
                 LDA #')'
                 Serial.WriteChar();
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.LT:
+            case Token.LT:
             {
                 LDA #'<'
                 Serial.WriteChar();
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.GT:
+            case Token.GT:
             {
                 LDA #'>'
                 Serial.WriteChar();
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.LE:
+            case Token.LE:
             {
                 LDA #'<'
                 Serial.WriteChar();
@@ -610,7 +608,7 @@ unit TokenIterator
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.GE:
+            case Token.GE:
             {
                 LDA #'>'
                 Serial.WriteChar();
@@ -619,7 +617,7 @@ unit TokenIterator
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.NOTEQUAL:
+            case Token.NOTEQUAL:
             {
                 LDA #'<'
                 Serial.WriteChar();
@@ -628,28 +626,28 @@ unit TokenIterator
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.BITWISE_AND:
+            case Token.BITWISE_AND:
             {
                 LDA #'&'
                 Serial.WriteChar();
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.BITWISE_OR:
+            case Token.BITWISE_OR:
             {
                 LDA #'|'
                 Serial.WriteChar();
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.COMMA:
+            case Token.COMMA:
             {
                 LDA #','
                 Serial.WriteChar();
                 LDA #' '
                 Serial.WriteChar();
             }
-            case Tokens.SEMICOLON:
+            case Token.SEMICOLON:
             {
                 LDA #';'
                 Serial.WriteChar();

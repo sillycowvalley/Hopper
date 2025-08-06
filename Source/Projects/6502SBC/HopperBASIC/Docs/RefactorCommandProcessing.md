@@ -38,10 +38,10 @@ Command keyword handling is duplicated across:
 3. **Execution Contexts**: Makes result handling explicit and consistent
 4. **Token Flags**: Enables context-aware command processing
 5. **Jump Table Optimization**: Leverages Hopper Assembly's efficient switch for dispatch
-6. **Embrace $REPL Function**: Use it for ALL execution paths to solve buffer munting
-   - Keep $REPL function alive and reuse it
-   - Update its token stream for each REPL line
-   - Ensures nested compilation (function calls) doesn't corrupt REPL state
+6. **Buffer Save/Restore**: Direct solution to buffer munting without function overhead
+   - Save/restore buffers when nested compilation needed
+   - Simpler and faster than $REPL function approach
+   - Uses ~1KB RAM for save areas
 
 ## Refactored Architecture Design
 
@@ -57,7 +57,7 @@ unit State
     {
         Failure = 0,    // Zero for easy testing
         Success = 1,    // Normal completion
-        Exiting = 2,    // User exit request
+        Exiting = 2,    // User exit request (Ctrl+C or BYE)
         Return  = 3     // Function returned value
     }
     
@@ -65,16 +65,8 @@ unit State
     // Input: ZP.ACCL/H = error message pointer
     // Output: SystemState set to Failure, LastError set
     // Modifies: ZP.SystemState, ZP.LastErrorL/H
-    const string setErrorTrace = "SetErr";
     SetError()
     {
-#ifdef TRACE
-        PHA
-        LDA #(setErrorTrace % 256) STA ZP.TraceMessageL 
-        LDA #(setErrorTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-        PLA
-#endif
         loop
         {
             PHA
@@ -87,29 +79,11 @@ unit State
             PLA
             break;
         }
-#ifdef TRACE
-        PHA
-        LDA #(setErrorTrace % 256) STA ZP.TraceMessageL 
-        LDA #(setErrorTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-        PLA
-#endif
     }
     
     // Clear all state for fresh operation
-    // Input: None
-    // Output: SystemState set to Success, LastError cleared
-    // Modifies: ZP.SystemState, ZP.LastErrorL/H
-    const string resetTrace = "Reset";
     Reset()
     {
-#ifdef TRACE
-        PHA
-        LDA #(resetTrace % 256) STA ZP.TraceMessageL 
-        LDA #(resetTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-        PLA
-#endif
         loop
         {
             STZ ZP.LastErrorL
@@ -118,29 +92,12 @@ unit State
             STA ZP.SystemState
             break;
         }
-#ifdef TRACE
-        PHA
-        LDA #(resetTrace % 256) STA ZP.TraceMessageL 
-        LDA #(resetTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-        PLA
-#endif
     }
     
     // Check if we should continue processing
-    // Input: None
     // Output: C if should continue, NC if should stop
-    // Modifies: Flags only
-    const string shouldContinueTrace = "ShouldCont";
     ShouldContinue()
     {
-#ifdef TRACE
-        PHA
-        LDA #(shouldContinueTrace % 256) STA ZP.TraceMessageL 
-        LDA #(shouldContinueTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-        PLA
-#endif
         loop
         {
             PHA
@@ -150,142 +107,144 @@ unit State
             PLA
             break;
         }
-#ifdef TRACE
-        PHA
-        LDA #(shouldContinueTrace % 256) STA ZP.TraceMessageL 
-        LDA #(shouldContinueTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-        PLA
-#endif
     }
+    
+    // Check for break and set appropriate state
+    // Output: C if break detected, NC if not
+    CheckBreak()
+    {
+        loop
+        {
+            BIT ZP.SerialBreakFlag
+            if (MI)
+            {
+                // Break detected (bit 7 set)
+                LDA #SystemState.Exiting
+                STA ZP.SystemState
+                SEC
+            }
+            else
+            {
+                CLC
+            }
+            break;
+        }
+    }
+    
+    // Helper predicates
+    IsFailure()  { LDA ZP.SystemState; CMP #SystemState.Failure; }
+    IsSuccess()  { LDA ZP.SystemState; CMP #SystemState.Success; }
+    IsExiting()  { LDA ZP.SystemState; CMP #SystemState.Exiting; }
+    IsReturn()   { LDA ZP.SystemState; CMP #SystemState.Return; }
+    
+    SetSuccess() { LDA #SystemState.Success; STA ZP.SystemState; }
+    SetExiting() { LDA #SystemState.Exiting; STA ZP.SystemState; }
+    SetReturn()  { LDA #SystemState.Return;  STA ZP.SystemState; }
 }
 ```
 
-### 2. REPL Function Management (ReplFunction.asm - new unit)
+### 2. Buffer Management (BufferManager.asm - new unit)
+
+Direct buffer save/restore solution to buffer munting problem:
 
 ```asm
-unit ReplFunction
+unit BufferManager
 {
-    // Storage for $REPL function node address
-    uint replFunctionNode
+    // Buffer save areas (in available RAM)
+    const uint savedTokenBuffer = 0x1000;  // 512 bytes at 0x1000-0x11FF
+    const uint savedOpcodeBuffer = 0x1200; // 512 bytes at 0x1200-0x13FF
     
-    // Initialize $REPL function (called once at startup)
+    // Save state storage
+    uint savedTokenBufferLengthL
+    uint savedTokenBufferLengthH
+    uint savedTokenizerPosL
+    uint savedTokenizerPosH
+    uint savedOpcodeBufferLengthL
+    uint savedOpcodeBufferLengthH
+    uint savedCurrentToken
+    
+    // Save current compilation context
     // Input: None
-    // Output: $REPL function created in function table
-    // Modifies: Function table, memory allocation
-    const string initializeTrace = "InitREPL";
-    Initialize()
+    // Output: Token and opcode buffers saved
+    // Modifies: Save areas, saved state variables
+    SaveContext()
     {
-#ifdef TRACE
-        LDA #(initializeTrace % 256) STA ZP.TraceMessageL 
-        LDA #(initializeTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-#endif
         loop
         {
-            // Set up $REPL function name
-            LDA #(Messages.ReplFunctionName % 256)
-            STA ZP.TOPL
-            LDA #(Messages.ReplFunctionName / 256)
-            STA ZP.TOPH
+            // Save lengths and positions
+            LDA ZP.TokenBufferLengthL
+            STA savedTokenBufferLengthL
+            LDA ZP.TokenBufferLengthH
+            STA savedTokenBufferLengthH
+            LDA ZP.TokenizerPosL
+            STA savedTokenizerPosL
+            LDA ZP.TokenizerPosH
+            STA savedTokenizerPosH
+            LDA ZP.OpCodeBufferLengthL
+            STA savedOpcodeBufferLengthL
+            LDA ZP.OpCodeBufferLengthH
+            STA savedOpcodeBufferLengthH
+            LDA ZP.CurrentToken
+            STA savedCurrentToken
             
-            // No arguments
-            STZ ZP.NEXTL
-            STZ ZP.NEXTH
-            
-            // Empty initial body
-            STZ ZP.IDYL
-            STZ ZP.IDYH
-            
-            // Declare the function
-            Functions.Declare();
-            State.IsFailure();
-            if (C) { break; }
-            
-            // Save function node for reuse
-            LDA ZP.IDXL
-            STA replFunctionNode
-            LDA ZP.IDXH
-            STA (replFunctionNode + 1)
-            
-            State.SetSuccess();
+            // Copy buffers (512 bytes each)
+            // Using page-by-page copy for efficiency
+            LDY #0
+            LDX #0
+            copyLoop:
+            {
+                LDA Address.BasicTokenizerBuffer, X
+                STA savedTokenBuffer, X
+                LDA Address.BasicOpCodeBuffer, X
+                STA savedOpcodeBuffer, X
+                INX
+                if (NZ) { JMP copyLoop; }
+                INY
+                CPY #2  // 512 bytes = 2 pages
+                if (NZ) { JMP copyLoop; }
+            }
             break;
         }
-#ifdef TRACE
-        LDA #(initializeTrace % 256) STA ZP.TraceMessageL 
-        LDA #(initializeTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-#endif
     }
     
-    // Update $REPL function with new token stream
-    // Input: BasicTokenizerBuffer contains new tokens
-    //        ZP.TokenBufferLength set
-    // Output: $REPL function body updated
-    // Modifies: Function node token stream
-    const string updateTrace = "UpdateREPL";
-    UpdateTokens()
+    // Restore previous compilation context
+    RestoreContext()
     {
-#ifdef TRACE
-        LDA #(updateTrace % 256) STA ZP.TraceMessageL 
-        LDA #(updateTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-#endif
         loop
         {
-            // Load $REPL function node
-            LDA replFunctionNode
-            STA ZP.IDXL
-            LDA (replFunctionNode + 1)
-            STA ZP.IDXH
+            // Restore buffers
+            LDY #0
+            LDX #0
+            restoreLoop:
+            {
+                LDA savedTokenBuffer, X
+                STA Address.BasicTokenizerBuffer, X
+                LDA savedOpcodeBuffer, X
+                STA Address.BasicOpCodeBuffer, X
+                INX
+                if (NZ) { JMP restoreLoop; }
+                INY
+                CPY #2
+                if (NZ) { JMP restoreLoop; }
+            }
             
-            // Update its token stream
-            Functions.UpdateTokenStream(); // New method needed
-            State.IsFailure();
-            if (C) { break; }
-            
-            State.SetSuccess();
+            // Restore state
+            LDA savedTokenBufferLengthL
+            STA ZP.TokenBufferLengthL
+            LDA savedTokenBufferLengthH
+            STA ZP.TokenBufferLengthH
+            LDA savedTokenizerPosL
+            STA ZP.TokenizerPosL
+            LDA savedTokenizerPosH
+            STA ZP.TokenizerPosH
+            LDA savedOpcodeBufferLengthL
+            STA ZP.OpCodeBufferLengthL
+            LDA savedOpcodeBufferLengthH
+            STA ZP.OpCodeBufferLengthH
+            LDA savedCurrentToken
+            STA ZP.CurrentToken
             break;
         }
-#ifdef TRACE
-        LDA #(updateTrace % 256) STA ZP.TraceMessageL 
-        LDA #(updateTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-#endif
-    }
-    
-    // Execute the $REPL function
-    // Input: $REPL function updated with current tokens
-    // Output: Function executed, result may be on stack
-    // Modifies: Execution state, stack
-    const string executeTrace = "ExecREPL";
-    Execute()
-    {
-#ifdef TRACE
-        LDA #(executeTrace % 256) STA ZP.TraceMessageL 
-        LDA #(executeTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-#endif
-        loop
-        {
-            // Load $REPL function node
-            LDA replFunctionNode
-            STA ZP.IDXL
-            LDA (replFunctionNode + 1)
-            STA ZP.IDXH
-            
-            // Execute it through unified path
-            LDA #ExecutionContext.Function
-            STA ZP.ACCL
-            Execute.Run();
-            
-            break;
-        }
-#ifdef TRACE
-        LDA #(executeTrace % 256) STA ZP.TraceMessageL 
-        LDA #(executeTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-#endif
     }
 }
 ```
@@ -303,21 +262,15 @@ unit Execute
         Expression = 3,  // RHS evaluation - always leaves value on stack
     }
     
-    // Single unified execution entry point
+    // Single unified execution entry point with buffer management
     // Input: ZP.ACCL = ExecutionContext
     //        ZP.IDX = function node (for Function/Program contexts)
     //        Tokens in BasicTokenizerBuffer (for Statement/Expression contexts)
     // Output: SystemState set (Success/Failure/Return/Exiting)
     //         Result on stack if applicable
     //         LastError set if Failure
-    const string runTrace = "ExecRun";
     Run()
     {
-#ifdef TRACE
-        LDA #(runTrace % 256) STA ZP.TraceMessageL 
-        LDA #(runTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-#endif
         PHA
         PHX
         PHY
@@ -329,37 +282,51 @@ unit Execute
             
             State.Reset();
             
+            // Save context for nested compilation (functions only)
+            LDA executeContext
+            CMP #ExecutionContext.Function
+            if (Z)
+            {
+                BufferManager.SaveContext();
+            }
+            
+            // Check for break before compilation
+            State.CheckBreak();
+            if (C) { JMP runCleanup; }
+            
             compile();
             State.IsFailure();
-            if (C) { break; }
+            if (C) { JMP runCleanup; }
+            
+            // Check for break after compilation
+            State.CheckBreak();
+            if (C) { JMP runCleanup; }
             
             execute();
             State.IsFailure();
-            if (C) { break; }
+            if (C) { JMP runCleanup; }
             
             handleResult();
+            
+        runCleanup:
+            // Restore context if saved
+            LDA executeContext
+            CMP #ExecutionContext.Function
+            if (Z)
+            {
+                BufferManager.RestoreContext();
+            }
             break;
         }
         
         PLY
         PLX
         PLA
-#ifdef TRACE
-        LDA #(runTrace % 256) STA ZP.TraceMessageL 
-        LDA #(runTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-#endif
     }
     
     // Internal compilation phase
-    const string compileTrace = "Compile";
     compile()
     {
-#ifdef TRACE
-        LDA #(compileTrace % 256) STA ZP.TraceMessageL 
-        LDA #(compileTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-#endif
         loop
         {
             Compiler.InitOpCodeBuffer();
@@ -387,7 +354,7 @@ unit Execute
                 }
                 default:
                 {
-                    // Compile statements
+                    // Compile statements with break checking
                     STZ ZP.TokenizerPosL
                     STZ ZP.TokenizerPosH
                     Tokenizer.NextToken();
@@ -398,43 +365,21 @@ unit Execute
             }
             break;
         }
-#ifdef TRACE
-        LDA #(compileTrace % 256) STA ZP.TraceMessageL 
-        LDA #(compileTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-#endif
     }
     
     // Internal execution phase
-    const string executeTrace = "Execute";
     execute()
     {
-#ifdef TRACE
-        LDA #(executeTrace % 256) STA ZP.TraceMessageL 
-        LDA #(executeTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-#endif
         loop
         {
             Executor.ExecuteOpCodes();
             break;
         }
-#ifdef TRACE
-        LDA #(executeTrace % 256) STA ZP.TraceMessageL 
-        LDA #(executeTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-#endif
     }
     
     // Internal result handling
-    const string handleResultTrace = "HandleRes";
     handleResult()
     {
-#ifdef TRACE
-        LDA #(handleResultTrace % 256) STA ZP.TraceMessageL 
-        LDA #(handleResultTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-#endif
         loop
         {
             State.IsFailure();
@@ -474,11 +419,6 @@ unit Execute
             }
             break;
         }
-#ifdef TRACE
-        LDA #(handleResultTrace % 256) STA ZP.TraceMessageL 
-        LDA #(handleResultTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-#endif
     }
     
     uint executeContext
@@ -516,46 +456,21 @@ unit CommandDispatch
     // Check token category
     // Input: A = token
     // Output: A = token flags
-    // Modifies: A, X
-    const string getTokenFlagsTrace = "GetTokFlg";
     GetTokenFlags()
     {
-#ifdef TRACE
-        PHA
-        LDA #(getTokenFlagsTrace % 256) STA ZP.TraceMessageL 
-        LDA #(getTokenFlagsTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-        PLA
-#endif
         loop
         {
             TAX
             LDA tokenCategories, X
             break;
         }
-#ifdef TRACE
-        PHA
-        LDA #(getTokenFlagsTrace % 256) STA ZP.TraceMessageL 
-        LDA #(getTokenFlagsTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-        PLA
-#endif
     }
     
     // Optimized dispatch using Hopper Assembly jump table
     // Input: X = token, Y = allowed flags
     // Output: Calls appropriate handler, sets SystemState
-    // Modifies: SystemState, LastError if error
-    const string dispatchTrace = "Dispatch";
     Dispatch()
     {
-#ifdef TRACE
-        PHA
-        LDA #(dispatchTrace % 256) STA ZP.TraceMessageL 
-        LDA #(dispatchTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-        PLA
-#endif
         loop
         {
             STY allowedFlags
@@ -590,7 +505,7 @@ unit CommandDispatch
                 case Tokens.BUFFERS: { cmdBuffers(); }
                 case Tokens.DUMP:    { cmdDump(); }
                 
-                // Statement commands - all go through $REPL
+                // Statement commands - all go through unified execution
                 case Tokens.PRINT:
                 case Tokens.IF:
                 case Tokens.WHILE:
@@ -606,7 +521,7 @@ unit CommandDispatch
                 case Tokens.BEGIN:
                 case Tokens.IDENTIFIER:
                 {
-                    executeViaRepl();
+                    executeStatement();
                 }
                 
                 default:
@@ -620,86 +535,99 @@ unit CommandDispatch
             }
             break;
         }
-#ifdef TRACE
-        PHA
-        LDA #(dispatchTrace % 256) STA ZP.TraceMessageL 
-        LDA #(dispatchTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-        PLA
-#endif
     }
     
-    // Execute statement/declaration via $REPL function
-    const string executeViaReplTrace = "ExecViaREPL";
-    executeViaRepl()
+    // Execute statement through unified path
+    executeStatement()
     {
-#ifdef TRACE
-        LDA #(executeViaReplTrace % 256) STA ZP.TraceMessageL 
-        LDA #(executeViaReplTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-#endif
         loop
         {
-            // Update $REPL with current token buffer
-            ReplFunction.UpdateTokens();
-            State.IsFailure();
-            if (C) { break; }
-            
-            // Execute through $REPL
-            ReplFunction.Execute();
+            // Execute through unified path
+            LDA #ExecutionContext.Statement
+            STA ZP.ACCL
+            Execute.Run();
             break;
         }
-#ifdef TRACE
-        LDA #(executeViaReplTrace % 256) STA ZP.TraceMessageL 
-        LDA #(executeViaReplTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-#endif
     }
     
     uint allowedFlags
 }
 ```
 
-### 5. Simplified Console Layer (Console.asm modifications)
+### 5. Break Handling Strategy
 
+Strategic break check points throughout the system:
+
+#### In Executor.asm - main dispatch loop
 ```asm
-// Initialize console (called at startup)
-const string initConsoleTrace = "InitCon";
-InitializeConsole()
+executeOpcodesLoop:
 {
-#ifdef TRACE
-    LDA #(initConsoleTrace % 256) STA ZP.TraceMessageL 
-    LDA #(initConsoleTrace / 256) STA ZP.TraceMessageH 
-    Trace.MethodEntry();
-#endif
-    loop
+    // Check for break at top of each opcode
+    BIT ZP.SerialBreakFlag
+    if (MI)
     {
-        // Initialize $REPL function once
-        ReplFunction.Initialize();
-        State.IsFailure();
-        if (C) { break; }
-        
-        // Other initialization...
+        LDA #SystemState.Exiting
+        STA ZP.SystemState
         break;
     }
-#ifdef TRACE
-    LDA #(initConsoleTrace % 256) STA ZP.TraceMessageL 
-    LDA #(initConsoleTrace / 256) STA ZP.TraceMessageH 
-    Trace.MethodExit();
-#endif
+    
+    // Fetch and execute opcode...
 }
+```
 
-// New simplified console input processing
-const string processInputTrace = "ProcInput";
-processInput()
+#### In Compiler.asm - between statements
+```asm
+compileStatements()
 {
-#ifdef TRACE
-    LDA #(processInputTrace % 256) STA ZP.TraceMessageL 
-    LDA #(processInputTrace / 256) STA ZP.TraceMessageH 
-    Trace.MethodEntry();
-#endif
     loop
     {
+        // Check for break between statements
+        State.CheckBreak();
+        if (C) { break; }
+        
+        // Compile next statement...
+        compileStatement();
+        
+        // Check for colon separator
+        LDA ZP.CurrentToken
+        CMP #Tokens.COLON
+        if (Z)
+        {
+            Tokenizer.NextToken();
+            JMP compileStatements; // Continue with next statement
+        }
+        break;
+    }
+}
+```
+
+#### In Console.asm - input processing
+```asm
+processInput()
+{
+    loop
+    {
+        // Check for break before processing
+        BIT ZP.SerialBreakFlag
+        if (MI)
+        {
+            // Clear break flag
+            STZ ZP.SerialBreakFlag
+            
+            // Exit capture mode if active
+            Statement.IsCaptureModeOn();
+            if (C)
+            {
+                Console.ExitFunctionCaptureMode();
+            }
+            
+            // Print message and reset
+            Messages.PrintBreak();
+            State.SetSuccess();
+            break;
+        }
+        
+        // Tokenize input
         Tokenizer.TokenizeLine();
         State.IsFailure();
         if (C) 
@@ -736,153 +664,67 @@ processInput()
         }
         break;
     }
-#ifdef TRACE
-    LDA #(processInputTrace % 256) STA ZP.TraceMessageL 
-    LDA #(processInputTrace / 256) STA ZP.TraceMessageH 
-    Trace.MethodExit();
-#endif
 }
 ```
 
-### 6. Value Stack Helper (Value.asm - new unit)
 
-```asm
-unit Value
-{
-    // Check if value stack has a value
-    // Input: None
-    // Output: C if value exists, NC if empty
-    // Modifies: Flags only
-    const string hasValueTrace = "HasVal";
-    HasValue()
-    {
-#ifdef TRACE
-        PHA
-        LDA #(hasValueTrace % 256) STA ZP.TraceMessageL 
-        LDA #(hasValueTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-        PLA
-#endif
-        loop
-        {
-            LDA ZP.VSP
-            if (Z) { CLC } else { SEC }
-            break;
-        }
-#ifdef TRACE
-        PHA
-        LDA #(hasValueTrace % 256) STA ZP.TraceMessageL 
-        LDA #(hasValueTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-        PLA
-#endif
-    }
-    
-    // Push void value
-    // Input: None
-    // Output: Void value pushed to stack
-    // Modifies: Stack, ZP.ACCL/H
-    const string pushVoidTrace = "PushVoid";
-    PushVoid()
-    {
-#ifdef TRACE
-        PHA
-        LDA #(pushVoidTrace % 256) STA ZP.TraceMessageL 
-        LDA #(pushVoidTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-        PLA
-#endif
-        loop
-        {
-            LDA #Types.Void
-            PHA
-            STZ ZP.ACCL
-            STZ ZP.ACCH
-            Stacks.PushValue();
-            break;
-        }
-#ifdef TRACE
-        PHA
-        LDA #(pushVoidTrace % 256) STA ZP.TraceMessageL 
-        LDA #(pushVoidTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-        PLA
-#endif
-    }
-    
-    // Pop and discard top value
-    // Input: Stack has at least one value
-    // Output: Top value removed
-    // Modifies: Stack
-    const string popTrace = "Pop";
-    Pop()
-    {
-#ifdef TRACE
-        PHA
-        LDA #(popTrace % 256) STA ZP.TraceMessageL 
-        LDA #(popTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-        PLA
-#endif
-        loop
-        {
-            Stacks.PopValue();
-            break;
-        }
-#ifdef TRACE
-        PHA
-        LDA #(popTrace % 256) STA ZP.TraceMessageL 
-        LDA #(popTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-        PLA
-#endif
-    }
-}
-```
 
 ## Statement.asm Disposition
 
-### What Happens to Statement.asm
-
 After refactoring, **90% of Statement.asm becomes dead code**. The unit essentially disappears as its core functionality is replaced by the new unified architecture.
 
-#### Replaced/Removed:
+### Replaced/Removed:
 - `Execute()` method → Replaced by CommandDispatch.Dispatch()
 - `ExecuteStatement()` → Replaced by Execute.Run(ExecutionContext.Statement)
 - `EvaluateExpression()` → Replaced by Execute.Run(ExecutionContext.Expression)
-- All execute*Declaration() methods → Consolidated through $REPL function
-- Buffer management code → Handled by $REPL function isolation
+- All execute*Declaration() methods → Consolidated through unified execution
+- Buffer management code → Handled by BufferManager
 - Complex state tracking → Unified through SystemState
 
-#### Retained (but relocated):
+### Retained (but relocated):
 - `ResolveIdentifier()` → Move to Compiler.asm (its only client)
 - Capture mode management → Move to Console.asm (console-specific state)
 - Constant/variable helpers → Move to relevant units or delete if unused
 
-#### Final Disposition:
+### Final Disposition:
 **Delete Statement.asm entirely**. Its surviving functionality should be moved to more appropriate units:
 - Identifier resolution belongs in the Compiler
 - Capture mode belongs in the Console
 - The unit name "Statement" no longer reflects its minimal remaining purpose
 
-This is a positive outcome - eliminating an entire unit that was the source of execution path complexity demonstrates the effectiveness of the refactoring.
+This elimination of an entire unit demonstrates the effectiveness of the refactoring.
 
 ## Implementation Strategy
 
-### Single-Step Implementation
-1. Create all new units (State.asm enhancements, ReplFunction.asm, Execute.asm, CommandDispatch.asm, Value.asm)
-2. Modify Console.asm to use new architecture
-3. Update all existing command handlers to use SystemState
-4. Remove old execution paths
-5. Test manually using scenarios below
+### Phase 1: Core Infrastructure (Day 1)
+1. Enhance State.asm with new methods
+2. Create BufferManager.asm
+3. Create Execute.asm with unified execution
+4. Create CommandDispatch.asm with token tables
+5. Create Value.asm helpers
+
+### Phase 2: Integration (Day 2)
+1. Modify Console.asm to use new dispatch
+2. Update all command handlers to use SystemState
+3. Add break checking at strategic points
+4. Update Compiler/Executor for buffer management
+5. Test basic functionality
+
+### Phase 3: Cleanup (Day 3)
+1. Remove Statement.asm entirely
+2. Move ResolveIdentifier() to Compiler.asm
+3. Move capture mode to Console.asm
+4. Remove duplicate switch statements
+5. Full testing suite
 
 ### Code Generation Requirements
 - All methods use single-exit pattern (loop/break)
 - No `return` statements
-- All major methods include TRACE blocks
+- All major methods include TRACE blocks (when defined)
 - Method headers document inputs/outputs/modifies
 - Use SystemState for all inter-system communication
 - C/NC only for leaf-node APIs
+- Check for break (Ctrl+C) at strategic points
 
 ## Manual Testing Scenarios
 
@@ -949,23 +791,55 @@ This is a positive outcome - eliminating an entire unit that was the source of e
 2. WHILE loops with function calls
 3. RETURN statements in functions
 
+### Break Handling
+1. Ctrl+C during program execution - Should stop cleanly
+2. Ctrl+C during WHILE loop - Should exit loop
+3. Ctrl+C during function definition - Should exit capture mode
+4. Ctrl+C during compilation - Should abort compilation
+
 ## Success Criteria
 
 1. **Single Execution Path**: All code compilation/execution goes through Execute.Run()
 2. **Consistent State Management**: SystemState used everywhere, C/NC only in leaf nodes
 3. **No Duplicate Switches**: Each token handled in exactly one place
-4. **$REPL Function Reuse**: Single $REPL function updated and reused for all REPL operations
-5. **No Buffer Munting**: Nested compilation preserves outer context
+4. **Buffer Save/Restore**: Nested compilation preserves outer context without function overhead
+5. **No Buffer Munting**: Problem solved with ~1KB RAM overhead
 6. **Clear Error Handling**: Every error sets both SystemState.Failure and LastError
-7. **All Test Scenarios Pass**: Manual testing covers all code paths
+7. **Responsive Break Handling**: Ctrl+C works reliably at any point
+8. **All Test Scenarios Pass**: Manual testing covers all code paths
 
 ## Expected Benefits
 
-1. **Maintainability**: 40% less code through deduplication
-2. **Clarity**: Single clear execution model
-3. **Performance**: Faster dispatch through jump tables, reused $REPL function
+1. **Maintainability**: 40% less code through deduplication, entire Statement.asm unit eliminated
+2. **Clarity**: Single clear execution model with explicit buffer management
+3. **Performance**: Faster dispatch through jump tables, direct buffer save/restore
 4. **Extensibility**: Easy to add new commands/contexts
 5. **Reliability**: Consistent state management reduces bugs
 6. **Correctness**: Buffer munting problem solved permanently
+7. **Responsiveness**: Proper break handling throughout
 
-This refactoring will transform HopperBASIC from a system with multiple ad-hoc execution paths into a clean, unified architecture that solves the fundamental buffer munting problem while being easier to understand, maintain, and extend.
+## Risk Mitigation
+
+### RAM Usage
+- 1KB for buffer save areas at 0x1000-0x13FF
+- Acceptable given we have 32KB+ RAM
+- Could reduce to 512 bytes if needed (save only used portions)
+
+### Performance Impact
+- Buffer copy: ~2000 cycles (negligible vs. current inefficiencies)
+- State checks: <10 cycles per check
+- Net positive due to eliminated redundant compilation
+
+### Compatibility
+- All existing BASIC programs continue working
+- No changes to user-visible behavior
+- Error messages remain the same
+
+### Testing Coverage
+- Manual test suite covers all paths
+- Each phase tested before proceeding
+- Rollback plan: Keep Statement.asm until proven
+
+## Conclusion
+
+This refactoring transforms HopperBASIC from a system with multiple ad-hoc execution paths into a clean, unified architecture that solves the fundamental buffer munting problem while being easier to understand, maintain, and extend. The investment of ~1KB RAM for buffer save areas is minimal compared to the benefits of correct operation and reduced code complexity.

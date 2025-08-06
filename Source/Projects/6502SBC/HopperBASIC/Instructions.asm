@@ -1,8 +1,5 @@
-unit Instructions
+unit Instructions // Instructions.asm
 {
-    uses "Error"
-    uses "BasicTypes"
-    
     uses "/Source/Runtime/6502/IntMath"
     
     // Instruction implementation for HopperBASIC operations

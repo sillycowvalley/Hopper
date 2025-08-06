@@ -1,57 +1,9 @@
-unit Tools
+unit Tools // Tools.asm
 {
     // API Status: Clean
     // All public methods preserve caller state except for documented outputs
     // Production utilities only - debug functionality moved to Debug.asm
  
-    uses "BasicTypes"
-    
-    // Print BasicType enum value as readable string
-    // Input: A = BasicType enum value, ZP.TOP contains value (or pointer)
-    // Output: Type name printed to serial
-    // Preserves: Everything
-    PrintType()
-    {
-        PHA
-        
-        // Convert BasicType to corresponding Token and use keyword table
-        switch (A)
-        {
-            case BasicType.INT:
-            {
-                LDA #Tokens.INT
-                Tokenizer.PrintKeyword();
-            }
-            case BasicType.WORD:
-            {
-                LDA #Tokens.WORD
-                Tokenizer.PrintKeyword();
-            }
-            case BasicType.BIT:
-            {
-                LDA #Tokens.BIT
-                Tokenizer.PrintKeyword();
-            }
-            case BasicType.BYTE:
-            {
-                LDA #Tokens.BYTE
-                Tokenizer.PrintKeyword();
-            }
-            case BasicType.STRING:
-            {
-                LDA #Tokens.STRING
-                Tokenizer.PrintKeyword();
-            }
-            default:
-            {
-                // Unknown type
-                Serial.HexOut();
-            }
-        }
-        
-        PLA
-    }
-    
     // Print null-terminated string to serial output
     // Input: ZP.STR = pointer to null-terminated string
     // Output: String printed to serial
@@ -190,12 +142,12 @@ unit Tools
                 CMP #0
                 if (Z)
                 {
-                    LDA #Tokens.FALSE
+                    LDA #Token.FALSE
                     Tokenizer.PrintKeyword();
                 }
                 else
                 {
-                    LDA #Tokens.TRUE
+                    LDA #Token.TRUE
                     Tokenizer.PrintKeyword();
                 }
             }
