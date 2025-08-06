@@ -82,7 +82,18 @@ Hopper is a modern programming language designed to run efficiently on small dev
       bool IsValid(file this) system;                             // All runtimes
       ```
 
-11. **Common Method Patterns:**
+11. **Nested Type Declarations:**
+   - When declaring nested generic types, separate closing angle brackets with spaces
+   - The tokenizer interprets `>>` as the right-shift operator, not as two closing brackets
+   ```hopper
+   <uint, <byte> > methodCode;     // Correct - space between > >
+   <uint, <byte>> methodCode;      // Error - tokenizer sees >> as shift operator
+   
+   <string, <uint, string> > nestedMap;  // Correct for deeply nested types
+   <string, <uint, string>> nestedMap;   // Error - same tokenizer issue
+   ```
+
+12. **Common Method Patterns:**
     - Try methods return bool with ref output:
       ```hopper
       bool TryParse(string content, ref uint returnValue)
@@ -99,7 +110,7 @@ Hopper is a modern programming language designed to run efficiently on small dev
       uint ForeColour { get { return defaultForeColour; } set { defaultForeColour = value; }}
       ```
 
-12. **Platform Abstractions:**
+13. **Platform Abstractions:**
     - Hardware capabilities defined by conditional compilation:
       ```hopper
       #if defined(BOARD_HAS_LED)
@@ -122,7 +133,7 @@ Hopper is a modern programming language designed to run efficiently on small dev
       #endif
       ```
 
-13. **Common Syntax Pitfalls to Avoid:**
+14. **Common Syntax Pitfalls to Avoid:**
    - Don't use `fn` or `func` keywords - methods are declared directly with their return type (or no return type for procedures)
    - Don't use `var` except as the implied iterator type in `foreach` loops
    - Always use C-style `for` loops: `for (uint i = 0; i < max; i++)`

@@ -19,6 +19,11 @@ unit File
     file Create(string fullpath) system;
     Append(file this, byte content) system;
     Append(file this, string content) system;
+    Append(file this, char content)
+    {
+        this.Append(byte(content));
+    }
+    
     Flush(file this) system;
     
     bool Exists(ref string filePath, ref string extension, string searchFolder)

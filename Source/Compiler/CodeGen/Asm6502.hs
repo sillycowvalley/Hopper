@@ -40,6 +40,32 @@ unit Asm6502
         ZeroPageRelative=0x8000,  // nn,dd     z_e
     }
     
+    string AddressingModesToString(AddressingModes mode)
+    {
+        string name;
+        switch (mode)
+        {
+            case AddressingModes.Implied:           { name = "Implied"; }
+            case AddressingModes.Accumulator:       { name = "Accumulator"; }
+            case AddressingModes.Immediate:         { name = "Immediate"; }
+            case AddressingModes.Absolute:          { name = "Absolute"; }
+            case AddressingModes.AbsoluteX:         { name = "AbsoluteX"; }
+            case AddressingModes.AbsoluteY:         { name = "AbsoluteY"; }
+            case AddressingModes.AbsoluteIndirect:  { name = "AbsoluteIndirect"; }
+            case AddressingModes.AbsoluteIndirectX: { name = "AbsoluteIndirectX"; }
+            case AddressingModes.ZeroPage:          { name = "ZeroPage"; }
+            case AddressingModes.ZeroPageX:         { name = "ZeroPageX"; }
+            case AddressingModes.ZeroPageY:         { name = "ZeroPageY"; }
+            case AddressingModes.ZeroPageIndirect:  { name = "ZeroPageIndirect"; }
+            case AddressingModes.XIndexedZeroPage:  { name = "XIndexedZeroPage"; }
+            case AddressingModes.YIndexedZeroPage:  { name = "YIndexedZeroPage"; }
+            case AddressingModes.Relative:          { name = "Relative"; }
+            case AddressingModes.ZeroPageRelative:  { name = "ZeroPageRelative"; }
+            default:                                { name = "Unknown"; }
+        }
+        return name;
+    }
+    
     string ToString(OpCode instruction)
     {
         string name = Asm6502.GetName(instruction);
