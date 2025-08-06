@@ -605,7 +605,7 @@ unit Statement
                         Error.CheckError();
                         if (C)
                         {
-                            EvaluateExpression();
+                            Statement.EvaluateExpression();
                             Error.CheckError();
                         }
                         
