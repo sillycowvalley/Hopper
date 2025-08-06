@@ -1832,8 +1832,8 @@ unit Compiler // Compiler.asm
                     
                     // Check if this is a trailing comma (followed by EOL)
                     LDA ZP.CurrentToken
-                    CMP #Token.EOL
-                    if (Z)
+                    Tokens.IsEndOfStatement();
+                    if (C)
                     {
                         // Trailing comma - no newline, we're done
                         States.SetSuccess();
@@ -1855,8 +1855,8 @@ unit Compiler // Compiler.asm
                     
                     // Check if this is a trailing semicolon (followed by EOL)
                     LDA ZP.CurrentToken
-                    CMP #Token.EOL
-                    if (Z)
+                    Tokens.IsEndOfStatement();
+                    if (C)
                     {
                         // Trailing semicolon - no newline, we're done
                         States.SetSuccess();

@@ -94,12 +94,14 @@ unit BASICTypes // BASICTypes.asm
     }
     
     // Print variable value with proper type formatting
-    // Input: ZP.TOP = value, ZP.TOPT = type, C = quote strings, NC = no quotes
+    // Input: ZP.TOP = value, ZP.TOPT = type, C =  quote strings, NC = no quotes
     // Output: Value printed to serial (TRUE/FALSE for BIT, numeric for others)
     // Preserves: Everything
     PrintValue()
     {
         PHA
+        PHX
+        PHP
         
         // Special handling for BIT type - print TRUE/FALSE instead of 1/0
         LDX ZP.TOPT
@@ -122,15 +124,18 @@ unit BASICTypes // BASICTypes.asm
             }
             case BASICType.STRING:
             {
+                PLP
                 if (C)
                 {
                     LDA #'"' Serial.WriteChar();
-                }
-                PrintStringTOP();  // Print the actual string content
-                if (C)
-                {
+                    PrintStringTOP();  // Print the actual string content
                     LDA #'"' Serial.WriteChar();
                 }
+                else
+                {
+                    PrintStringTOP();  // Print the actual string content
+                }
+                PHP
             }
             default:
             {
@@ -138,6 +143,8 @@ unit BASICTypes // BASICTypes.asm
             }
         }
         
+        PLP
+        PLX
         PLA
     }
 }

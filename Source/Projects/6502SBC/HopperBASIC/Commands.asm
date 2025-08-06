@@ -378,6 +378,7 @@ unit Commands
         Variables.GetValue(); // ZP.TOP = value, ZP.TOPT = dataType
         
         // Input: ZP.TOP = value, ZP.TOPT = type, C = quote strings
+        SEC
         BASICTypes.PrintValue();
         
         Tools.NL();
@@ -420,6 +421,7 @@ unit Commands
         Variables.GetValue(); // ZP.TOP = value, ZP.TOPT = dataType
         
         // Input: ZP.TOP = value, ZP.TOPT = type, C = quote strings
+        SEC
         BASICTypes.PrintValue();
         
         Tools.NL();

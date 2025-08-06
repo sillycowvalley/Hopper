@@ -478,4 +478,27 @@ unit Tokens
             }
         }
     }
+    
+    // Check if current token is a statement terminator
+    // Input: A = token to check
+    // Output: C set if token ends a statement, NC if statement continues
+    // Checks for: COLON (statement separator), EOF (end of stream), EOL (end of line)
+    // Preserves: A, X, Y
+    // Usage: Helps PRINT and other statements recognize when to stop processing arguments
+    IsEndOfStatement()
+    {
+        switch (A)
+        {
+            case Token.COLON: // another statement follows
+            case Token.EOF:   // end of stream
+            case Token.EOL:   // end of line
+            {
+                SEC
+            }
+            default:
+            {
+                CLC  // (fixed typo: was SLC)
+            }
+        }
+    }
 }

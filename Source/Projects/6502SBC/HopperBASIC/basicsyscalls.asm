@@ -70,7 +70,9 @@ unit BASICSysCalls
            {
                case SysCallType.PrintValue:    // ID = 1
                {
+                   CLC // no quotes
                    BASICTypes.PrintValue();  // Uses ZP.TOP*, CLC = no quotes
+                   SEC // all good
                }
                case SysCallType.PrintChar:     // ID = 2
                {
