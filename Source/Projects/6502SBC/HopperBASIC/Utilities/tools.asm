@@ -136,22 +136,22 @@ unit Tools // Tools.asm
         LDX ZP.TOPT
         switch(X)
         {
-            case BasicType.BIT:
+            case BASICType.BIT:
             {
                 LDA ZP.TOPL
                 CMP #0
                 if (Z)
                 {
                     LDA #Token.FALSE
-                    Tokenizer.PrintKeyword();
+                    Tokens.PrintKeyword();
                 }
                 else
                 {
                     LDA #Token.TRUE
-                    Tokenizer.PrintKeyword();
+                    Tokens.PrintKeyword();
                 }
             }
-            case BasicType.STRING:
+            case BASICType.STRING:
             {
                 PrintStringTOP();  // Print the actual string content
             }
@@ -189,7 +189,7 @@ unit Tools // Tools.asm
         
         // Check if this is a signed type that's negative
         LDA ZP.TOPT
-        CMP #BasicType.INT
+        CMP #BASICType.INT
         if (Z)  // INT type
         {
             BIT ZP.TOPH  // Test sign bit

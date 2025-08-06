@@ -1,7 +1,5 @@
 unit Messages // Messages.asm
 {
-    uses "Tools"
-    
     // API Status: Clean
     // All public methods preserve caller state except for documented outputs
     // No accidental side effects or register corruption

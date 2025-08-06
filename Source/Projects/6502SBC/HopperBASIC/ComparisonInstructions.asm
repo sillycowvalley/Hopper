@@ -132,14 +132,14 @@ unit ComparisonInstructions // ComparisonInstructions.asm
             if (Z)
             {
                 LDA ZP.NEXTT
-                CMP # BasicType.BIT
+                CMP # BASICType.BIT
                 if (Z)
                 {
                     CLC
                     break;    
                 } 
                 LDA ZP.TOPT
-                CMP # BasicType.BIT
+                CMP # BASICType.BIT
                 if (Z)
                 {   
                     CLC
@@ -147,14 +147,14 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                 }
                 SEC
                 LDA ZP.NEXTT
-                CMP # BasicType.STRING
+                CMP # BASICType.STRING
                 if (Z)
                 {
                     CLC
                     break;    
                 } 
                 LDA ZP.TOPT
-                CMP # BasicType.STRING
+                CMP # BASICType.STRING
                 if (Z)
                 {   
                     CLC
@@ -168,11 +168,11 @@ unit ComparisonInstructions // ComparisonInstructions.asm
             if (Z)
             {
                 LDA ZP.NEXTT
-                CMP # BasicType.BIT
+                CMP # BASICType.BIT
                 if (Z)
                 {
                     LDA ZP.TOPT
-                    CMP # BasicType.BIT    
+                    CMP # BASICType.BIT    
                     if (NZ)
                     {
                         CLC   
@@ -180,11 +180,11 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                     }
                 }
                 LDA ZP.TOPT
-                CMP # BasicType.BIT
+                CMP # BASICType.BIT
                 if (Z)
                 {
                     LDA ZP.NEXTT
-                    CMP # BasicType.BIT    
+                    CMP # BASICType.BIT    
                     if (NZ)
                     {
                         CLC   
@@ -192,11 +192,11 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                     }
                 }
                 LDA ZP.NEXTT
-                CMP # BasicType.STRING
+                CMP # BASICType.STRING
                 if (Z)
                 {
                     LDA ZP.TOPT
-                    CMP # BasicType.STRING    
+                    CMP # BASICType.STRING    
                     if (NZ)
                     {
                         CLC   
@@ -204,11 +204,11 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                     }
                 }
                 LDA ZP.TOPT
-                CMP # BasicType.STRING
+                CMP # BASICType.STRING
                 if (Z)
                 {
                     LDA ZP.NEXTT
-                    CMP # BasicType.STRING    
+                    CMP # BASICType.STRING    
                     if (NZ)
                     {
                         CLC   
@@ -242,12 +242,12 @@ unit ComparisonInstructions // ComparisonInstructions.asm
             
             // Handle STRING type combinations
             LDA ZP.NEXTT
-            CMP #BasicType.STRING
+            CMP #BASICType.STRING
             if (Z)
             {
                 // Left operand is STRING
                 LDA ZP.TOPT
-                CMP #BasicType.STRING
+                CMP #BASICType.STRING
                 if (Z)
                 {
                     // Both operands are STRING - compare string content
@@ -269,7 +269,7 @@ unit ComparisonInstructions // ComparisonInstructions.asm
             {
                 // Left operand is not STRING, check right operand
                 LDA ZP.TOPT
-                CMP #BasicType.STRING
+                CMP #BASICType.STRING
                 if (Z)
                 {
                     // non-STRING vs STRING = type mismatch
@@ -298,7 +298,7 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                 // Only INT vs WORD|BYTE combinations remain
                 
                 LDA ZP.NEXTT
-                CMP #BasicType.INT
+                CMP #BASICType.INT
                 if (Z)
                 {
                     // Left is INT, right is WORD/BYTE
@@ -314,7 +314,7 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                 }
                 
                 LDA ZP.TOPT
-                CMP #BasicType.INT
+                CMP #BASICType.INT
                 if (Z)
                 {
                     // Right is INT, left is WORD/BYTE  
@@ -377,12 +377,12 @@ unit ComparisonInstructions // ComparisonInstructions.asm
             
             // Handle STRING type combinations
             LDA ZP.NEXTT
-            CMP #BasicType.STRING
+            CMP #BASICType.STRING
             if (Z)
             {
                 // Left operand is STRING
                 LDA ZP.TOPT
-                CMP #BasicType.STRING
+                CMP #BASICType.STRING
                 if (Z)
                 {
                     // Both operands are STRING - compare string content
@@ -404,7 +404,7 @@ unit ComparisonInstructions // ComparisonInstructions.asm
             {
                 // Left operand is not STRING, check right operand
                 LDA ZP.TOPT
-                CMP #BasicType.STRING
+                CMP #BASICType.STRING
                 if (Z)
                 {
                     // non-STRING vs STRING = type mismatch
@@ -433,7 +433,7 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                 // Only INT vs WORD|BYTE combinations remain
                 
                 LDA ZP.NEXTT
-                CMP #BasicType.INT
+                CMP #BASICType.INT
                 if (Z)
                 {
                     // Left is INT, right is WORD/BYTE
@@ -449,7 +449,7 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                 }
                 
                 LDA ZP.TOPT
-                CMP #BasicType.INT
+                CMP #BASICType.INT
                 if (Z)
                 {
                     // Right is INT, left is WORD/BYTE
@@ -503,11 +503,11 @@ unit ComparisonInstructions // ComparisonInstructions.asm
             LDX #1 // default to  unsigned compare
             
             LDA ZP.NEXTT
-            CMP #BasicType.INT
+            CMP #BASICType.INT
             if (Z)
             {
                 LDA ZP.TOPT
-                CMP #BasicType.INT
+                CMP #BASICType.INT
                 if (Z)
                 {
                     // both INT
@@ -535,7 +535,7 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                 }
             }
             LDA ZP.TOPT
-            CMP #BasicType.INT
+            CMP #BASICType.INT
             if (Z)
             {
                 // WORD vs INT
@@ -643,15 +643,15 @@ unit ComparisonInstructions // ComparisonInstructions.asm
             {
                 // Check if it's an unsupported type (BIT or STRING)
                 LDA ZP.NEXTT
-                CMP #BasicType.BIT
+                CMP #BASICType.BIT
                 if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                CMP #BasicType.STRING  
+                CMP #BASICType.STRING  
                 if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
                 
                 LDA ZP.TOPT
-                CMP #BasicType.BIT
+                CMP #BASICType.BIT
                 if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                CMP #BasicType.STRING
+                CMP #BASICType.STRING
                 if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
                 
                 // Otherwise it's a numeric type mismatch
@@ -746,15 +746,15 @@ unit ComparisonInstructions // ComparisonInstructions.asm
             {
                 // Check if it's an unsupported type (BIT or STRING)
                 LDA ZP.NEXTT
-                CMP #BasicType.BIT
+                CMP #BASICType.BIT
                 if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                CMP #BasicType.STRING  
+                CMP #BASICType.STRING  
                 if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
                 
                 LDA ZP.TOPT
-                CMP #BasicType.BIT
+                CMP #BASICType.BIT
                 if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                CMP #BasicType.STRING
+                CMP #BASICType.STRING
                 if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
                 
                 // Otherwise it's a numeric type mismatch
@@ -849,15 +849,15 @@ unit ComparisonInstructions // ComparisonInstructions.asm
             {
                 // Check if it's an unsupported type (BIT or STRING)
                 LDA ZP.NEXTT
-                CMP #BasicType.BIT
+                CMP #BASICType.BIT
                 if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                CMP #BasicType.STRING  
+                CMP #BASICType.STRING  
                 if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
                 
                 LDA ZP.TOPT
-                CMP #BasicType.BIT
+                CMP #BASICType.BIT
                 if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                CMP #BasicType.STRING
+                CMP #BASICType.STRING
                 if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
                 
                 // Otherwise it's a numeric type mismatch
@@ -953,15 +953,15 @@ unit ComparisonInstructions // ComparisonInstructions.asm
             {
                 // Check if it's an unsupported type (BIT or STRING)
                 LDA ZP.NEXTT
-                CMP #BasicType.BIT
+                CMP #BASICType.BIT
                 if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                CMP #BasicType.STRING  
+                CMP #BASICType.STRING  
                 if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
                 
                 LDA ZP.TOPT
-                CMP #BasicType.BIT
+                CMP #BASICType.BIT
                 if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                CMP #BasicType.STRING
+                CMP #BASICType.STRING
                 if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
                 
                 // Otherwise it's a numeric type mismatch

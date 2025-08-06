@@ -48,7 +48,7 @@ Command keyword handling is duplicated across:
 ### Core Principle: SystemState-Centric Communication
 **Decision**: Abandon C/NC flags for inter-system communication. Use SystemState as the primary mechanism, with C/NC only for leaf-node APIs.
 
-### 1. State Management (State.asm)
+### 1. State Management (States.asm)
 
 ```asm
 unit State
@@ -74,7 +74,7 @@ unit State
             STA ZP.LastErrorL
             LDA ZP.ACCH
             STA ZP.LastErrorH
-            LDA #SystemState.Failure
+            LDA #State.Failure
             STA ZP.SystemState
             PLA
             break;
@@ -88,7 +88,7 @@ unit State
         {
             STZ ZP.LastErrorL
             STZ ZP.LastErrorH
-            LDA #SystemState.Success
+            LDA #State.Success
             STA ZP.SystemState
             break;
         }
@@ -102,7 +102,7 @@ unit State
         {
             PHA
             LDA ZP.SystemState
-            CMP #SystemState.Failure
+            CMP #State.Failure
             if (Z) { CLC } else { SEC }
             PLA
             break;
@@ -119,7 +119,7 @@ unit State
             if (MI)
             {
                 // Break detected (bit 7 set)
-                LDA #SystemState.Exiting
+                LDA #State.Exiting
                 STA ZP.SystemState
                 SEC
             }
@@ -132,14 +132,14 @@ unit State
     }
     
     // Helper predicates
-    IsFailure()  { LDA ZP.SystemState; CMP #SystemState.Failure; }
-    IsSuccess()  { LDA ZP.SystemState; CMP #SystemState.Success; }
-    IsExiting()  { LDA ZP.SystemState; CMP #SystemState.Exiting; }
-    IsReturn()   { LDA ZP.SystemState; CMP #SystemState.Return; }
+    IsFailure()  { LDA ZP.SystemState; CMP #State.Failure; }
+    IsSuccess()  { LDA ZP.SystemState; CMP #State.Success; }
+    IsExiting()  { LDA ZP.SystemState; CMP #State.Exiting; }
+    IsReturn()   { LDA ZP.SystemState; CMP #State.Return; }
     
-    SetSuccess() { LDA #SystemState.Success; STA ZP.SystemState; }
-    SetExiting() { LDA #SystemState.Exiting; STA ZP.SystemState; }
-    SetReturn()  { LDA #SystemState.Return;  STA ZP.SystemState; }
+    SetSuccess() { LDA #State.Success; STA ZP.SystemState; }
+    SetExiting() { LDA #State.Exiting; STA ZP.SystemState; }
+    SetReturn()  { LDA #State.Return;  STA ZP.SystemState; }
 }
 ```
 
@@ -280,7 +280,7 @@ unit Execute
             LDA ZP.ACCL
             STA executeContext
             
-            State.Reset();
+            States.Reset();
             
             // Save context for nested compilation (functions only)
             LDA executeContext
@@ -291,19 +291,19 @@ unit Execute
             }
             
             // Check for break before compilation
-            State.CheckBreak();
+            States.CheckBreak();
             if (C) { JMP runCleanup; }
             
             compile();
-            State.IsFailure();
+            States.IsFailure();
             if (C) { JMP runCleanup; }
             
             // Check for break after compilation
-            State.CheckBreak();
+            States.CheckBreak();
             if (C) { JMP runCleanup; }
             
             execute();
-            State.IsFailure();
+            States.IsFailure();
             if (C) { JMP runCleanup; }
             
             handleResult();
@@ -330,7 +330,7 @@ unit Execute
         loop
         {
             Compiler.InitOpCodeBuffer();
-            State.IsFailure();
+            States.IsFailure();
             if (C) { break; }
             
             LDA executeContext
@@ -348,7 +348,7 @@ unit Execute
                     STZ ZP.TokenizerPosL
                     STZ ZP.TokenizerPosH
                     Tokenizer.NextToken();
-                    State.IsFailure();
+                    States.IsFailure();
                     if (C) { break; }
                     Compiler.CompileExpression();
                 }
@@ -358,7 +358,7 @@ unit Execute
                     STZ ZP.TokenizerPosL
                     STZ ZP.TokenizerPosH
                     Tokenizer.NextToken();
-                    State.IsFailure();
+                    States.IsFailure();
                     if (C) { break; }
                     Compiler.CompileStatements();
                 }
@@ -382,7 +382,7 @@ unit Execute
     {
         loop
         {
-            State.IsFailure();
+            States.IsFailure();
             if (C) { break; }
             
             LDA executeContext
@@ -390,31 +390,31 @@ unit Execute
             {
                 case ExecutionContext.Program:
                 {
-                    State.IsReturn();
+                    States.IsReturn();
                     if (C)
                     {
                         Value.Pop(); // Discard any return value
                     }
-                    State.SetSuccess();
+                    States.SetSuccess();
                 }
                 case ExecutionContext.Function:
                 {
-                    State.IsReturn();
+                    States.IsReturn();
                     if (NC)
                     {
                         Value.PushVoid();
                     }
-                    State.SetSuccess();
+                    States.SetSuccess();
                 }
                 case ExecutionContext.Statement:
                 {
                     // Leave result on stack if expression
-                    State.SetSuccess();
+                    States.SetSuccess();
                 }
                 case ExecutionContext.Expression:
                 {
                     // Value already on stack
-                    State.SetSuccess();
+                    States.SetSuccess();
                 }
             }
             break;
@@ -484,7 +484,7 @@ unit CommandDispatch
                 STA ZP.ACCL
                 LDA #(Messages.TokenNotAllowed / 256)
                 STA ZP.ACCH
-                State.SetError();
+                States.SetError();
                 break;
             }
             
@@ -530,7 +530,7 @@ unit CommandDispatch
                     STA ZP.ACCL
                     LDA #(Messages.UnknownToken / 256)
                     STA ZP.ACCH
-                    State.SetError();
+                    States.SetError();
                 }
             }
             break;
@@ -566,7 +566,7 @@ executeOpcodesLoop:
     BIT ZP.SerialBreakFlag
     if (MI)
     {
-        LDA #SystemState.Exiting
+        LDA #State.Exiting
         STA ZP.SystemState
         break;
     }
@@ -582,7 +582,7 @@ compileStatements()
     loop
     {
         // Check for break between statements
-        State.CheckBreak();
+        States.CheckBreak();
         if (C) { break; }
         
         // Compile next statement...
@@ -623,13 +623,13 @@ processInput()
             
             // Print message and reset
             Messages.PrintBreak();
-            State.SetSuccess();
+            States.SetSuccess();
             break;
         }
         
         // Tokenize input
         Tokenizer.TokenizeLine();
-        State.IsFailure();
+        States.IsFailure();
         if (C) 
         { 
             Error.CheckAndPrint();
@@ -642,14 +642,14 @@ processInput()
         CommandDispatch.Dispatch();
         
         // Handle execution result
-        State.IsFailure();
+        States.IsFailure();
         if (C)
         {
             Error.CheckAndPrint();
             break;
         }
         
-        State.IsExiting();
+        States.IsExiting();
         if (C) { break; }
         
         // Check if there's a result to print
@@ -697,7 +697,7 @@ This elimination of an entire unit demonstrates the effectiveness of the refacto
 ## Implementation Strategy
 
 ### Phase 1: Core Infrastructure (Day 1)
-1. Enhance State.asm with new methods
+1. Enhance States.asm with new methods
 2. Create BufferManager.asm
 3. Create Execute.asm with unified execution
 4. Create CommandDispatch.asm with token tables
@@ -804,7 +804,7 @@ This elimination of an entire unit demonstrates the effectiveness of the refacto
 3. **No Duplicate Switches**: Each token handled in exactly one place
 4. **Buffer Save/Restore**: Nested compilation preserves outer context without function overhead
 5. **No Buffer Munting**: Problem solved with ~1KB RAM overhead
-6. **Clear Error Handling**: Every error sets both SystemState.Failure and LastError
+6. **Clear Error Handling**: Every error sets both State.Failure and LastError
 7. **Responsive Break Handling**: Ctrl+C works reliably at any point
 8. **All Test Scenarios Pass**: Manual testing covers all code paths
 

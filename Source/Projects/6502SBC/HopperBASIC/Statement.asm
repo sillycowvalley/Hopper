@@ -126,7 +126,7 @@ unit Statement // Statement.asm
         
         loop // Single exit block for clean error handling
         {
-            Tokenizer.IsKeyword(); // Input: A = token value to check
+            Tokens.IsKeyword(); // Input: A = token value to check
             if (C)
             {
 #ifdef DEBUG
@@ -233,7 +233,7 @@ unit Statement // Statement.asm
             Compiler.SetLiteralBase();
             Compiler.CompileExpression();
             Error.CheckError();
-            if (NC) { State.SetFailure(); break; }
+            if (NC) { States.SetFailure(); break; }
             
             // Save opcode buffer length after compilation (important for function calls from REPL)
             LDA ZP.OpCodeBufferLengthL
@@ -241,7 +241,7 @@ unit Statement // Statement.asm
             LDA ZP.OpCodeBufferLengthH
             PHA
             
-            State.SetSuccess(); // clear
+            States.SetSuccess(); // clear
             
             // 2. Execute opcodes ? result on stack
             Executor.ExecuteOpCodes();
@@ -255,7 +255,7 @@ unit Statement // Statement.asm
             Error.CheckError(); 
             if (NC)
             {
-                State.SetFailure(); 
+                States.SetFailure(); 
                 break;
             } 
             
@@ -296,12 +296,12 @@ unit Statement // Statement.asm
             // Initialize opcode buffer if this is the start of compilation  
             Compiler.InitOpCodeBuffer();
             Error.CheckError();
-            if (NC) { State.SetFailure(); break; }
+            if (NC) { States.SetFailure(); break; }
             
             // Compile the statement (not expression)
             Compiler.CompileStatement();
             Error.CheckError();
-            if (NC) { State.SetFailure(); break; }
+            if (NC) { States.SetFailure(); break; }
             
             // Save opcode buffer length after compilation 
             LDA ZP.OpCodeBufferLengthL
@@ -309,7 +309,7 @@ unit Statement // Statement.asm
             LDA ZP.OpCodeBufferLengthH
             PHA
             
-            State.SetSuccess(); // Clear state
+            States.SetSuccess(); // Clear state
             
             // Execute the compiled statement opcodes
             Executor.ExecuteOpCodes();
@@ -324,11 +324,11 @@ unit Statement // Statement.asm
             Error.CheckError(); 
             if (NC)
             {
-                State.SetFailure(); 
+                States.SetFailure(); 
                 break;
             } 
             
-            State.SetSuccess();
+            States.SetSuccess();
             break;
         }
     
@@ -720,23 +720,23 @@ unit Statement // Statement.asm
             {
                 case Token.WORD:
                 {
-                    LDX #BasicType.WORD
+                    LDX #BASICType.WORD
                 }
                 case Token.INT:
                 {
-                    LDX # BasicType.INT
+                    LDX # BASICType.INT
                 }
                 case Token.BIT:
                 {
-                    LDX #BasicType.BIT
+                    LDX #BASICType.BIT
                 }
                 case Token.BYTE:
                 {
-                    LDX #BasicType.BYTE
+                    LDX #BASICType.BYTE
                 }
                 case Token.STRING:
                 {
-                    LDX #BasicType.STRING
+                    LDX #BASICType.STRING
                 }
                 default:
                 {

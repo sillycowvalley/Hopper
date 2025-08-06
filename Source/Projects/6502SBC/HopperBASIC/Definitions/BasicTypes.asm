@@ -1,6 +1,6 @@
 unit BASICTypes // BASICTypes.asm
 {
-    enum BasicType
+    enum BASICType
     {
         VOID   = 0x00, // function return type indicating no return value (internal)
         INT    = 0x02, // Types.Int
@@ -22,30 +22,30 @@ unit BASICTypes // BASICTypes.asm
         // Convert BasicType to corresponding Token and use keyword table
         switch (A)
         {
-            case BasicType.INT:
+            case BASICType.INT:
             {
                 LDA #Token.INT
-                Tokenizer.PrintKeyword();
+                Tokens.PrintKeyword();
             }
-            case BasicType.WORD:
+            case BASICType.WORD:
             {
                 LDA #Token.WORD
-                Tokenizer.PrintKeyword();
+                Tokens.PrintKeyword();
             }
-            case BasicType.BIT:
+            case BASICType.BIT:
             {
                 LDA #Token.BIT
-                Tokenizer.PrintKeyword();
+                Tokens.PrintKeyword();
             }
-            case BasicType.BYTE:
+            case BASICType.BYTE:
             {
                 LDA #Token.BYTE
-                Tokenizer.PrintKeyword();
+                Tokens.PrintKeyword();
             }
-            case BasicType.STRING:
+            case BASICType.STRING:
             {
                 LDA #Token.STRING
-                Tokenizer.PrintKeyword();
+                Tokens.PrintKeyword();
             }
             default:
             {

@@ -1,25 +1,15 @@
-unit TokenIterator
+unit TokenIterator // TokenIterator.asm
 {
     uses "Tokenizer"
     
     // API Status: Clean
     // Simple token stream iterator for function body display
     
-    
-    // Memory layout for token iterator state
-    const byte tokIterCurrent        = ZP.M0;  // current token value (1 byte)
-    const byte tokIterBaseL          = ZP.M1;  // token stream base pointer low (1 byte)
-    const byte tokIterBaseH          = ZP.M2;  // token stream base pointer high (1 byte)
-    const byte tokIterIndentLevel    = ZP.M3;  // current indentation level (1 byte, in units of 4 spaces)
-    
-
-    
-    
     // Initialize token iterator at start of token stream
     // Input: ZP.IDY = token stream base pointer (16-bit)
     // Output: Iterator positioned at first token, C set if stream has content, NC if empty/null
-    // Modifies: ZP.LCURRENTL/H (position = 0), tokIterCurrent (first token), tokIterBaseL/H (base pointer)
-    // Uses: ZP.L* scratch space (cannot call symbol table APIs after this until done iterating)
+    // Modifies: ZP.TOKPOSL/H (position = 0), TOKCUR (first token), TOKBASEL/H (base pointer)
+    // Uses: ZP.TOK* scratch space (cannot call symbol table APIs after this until done iterating)
     Start()
     {
         PHA
@@ -27,9 +17,9 @@ unit TokenIterator
         
         // Save token stream base pointer
         LDA ZP.IDYL
-        STA tokIterBaseL
+        STA ZP.TOKBASEL
         LDA ZP.IDYH
-        STA tokIterBaseH
+        STA ZP.TOKBASEH
         
         // Check for null pointer
         LDA ZP.IDYL
@@ -37,7 +27,7 @@ unit TokenIterator
         if (Z)
         {
             // Null stream - set current token to 0 and return NC
-            STZ tokIterCurrent
+            STZ ZP.TOKCUR
             PLY
             PLA
             CLC
@@ -45,13 +35,13 @@ unit TokenIterator
         }
         
         // Initialize position to 0
-        STZ ZP.LCURRENTL
-        STZ ZP.LCURRENTH
+        STZ ZP.TOKPOSL
+        STZ ZP.TOKPOSH
         
         // Load first token
         LDY #0
         LDA [ZP.IDY], Y
-        STA tokIterCurrent
+        STA ZP.TOKCUR
         
         // Check if stream is empty (first token is 0)
         if (Z)
@@ -70,8 +60,8 @@ unit TokenIterator
     // Advance to next token in stream
     // Input: Iterator must be initialized with Start()
     // Output: C set if advanced to valid token, NC if reached end of stream
-    // Modifies: ZP.LCURRENTL/H (advanced), tokIterCurrent (next token value)
-    // Uses: ZP.L* scratch space (cannot call symbol table APIs while iterating)
+    // Modifies: ZP.TOKPOSL/H (advanced), TOKCUR (next token value)
+    // Uses: ZP.TOK* scratch space (cannot call symbol table APIs while iterating)
     Next()
     {
         PHA
@@ -80,7 +70,7 @@ unit TokenIterator
         loop // Single exit block
         {
             // Current token determines how many bytes to skip
-            LDA tokIterCurrent
+            LDA ZP.TOKCUR
             switch (A)
             {
                 case Token.NUMBER:
@@ -96,27 +86,27 @@ unit TokenIterator
                 default:
                 {
                     // Regular token - just advance by 1 byte
-                    INC ZP.LCURRENTL
+                    INC ZP.TOKPOSL
                     if (Z)
                     {
-                        INC ZP.LCURRENTH
+                        INC ZP.TOKPOSH
                     }
                 }
             }
             
             // Calculate current address: base + position
             CLC
-            LDA tokIterBaseL
-            ADC ZP.LCURRENTL
-            STA ZP.IDYL
-            LDA tokIterBaseH
-            ADC ZP.LCURRENTH
-            STA ZP.IDYH
+            LDA ZP.TOKBASEL
+            ADC ZP.TOKPOSL
+            STA ZP.STRL
+            LDA ZP.TOKBASEH
+            ADC ZP.TOKPOSH
+            STA ZP.STRH
             
             // Load token at current position
             LDY #0
-            LDA [ZP.IDY], Y
-            STA tokIterCurrent
+            LDA [ZP.STR], Y
+            STA ZP.TOKCUR
             
             // Check if we hit end of stream (token = 0)
             if (Z)
@@ -134,9 +124,9 @@ unit TokenIterator
     }
     
     // Skip past null-terminated string at current position
-    // Input: ZP.LCURRENTL/H = current position pointing to start of string
-    // Output: ZP.LCURRENTL/H advanced past null terminator, C set if successful, NC if error
-    // Modifies: ZP.LCURRENTL/H (advanced), ZP.IDY (temporary address calculation)
+    // Input: ZP.TOKPOSL/H = current position pointing to start of string
+    // Output: ZP.TOKPOSL/H advanced past null terminator, C set if successful, NC if error
+    // Modifies: ZP.TOKPOSL/H (advanced), ZP.TOKADDR* (temporary address calculation)
     skipInlineString()
     {
         PHA
@@ -145,31 +135,31 @@ unit TokenIterator
         loop
         {
             // Advance position by 1 byte first
-            INC ZP.LCURRENTL
+            INC ZP.TOKPOSL
             if (Z)
             {
-                INC ZP.LCURRENTH
+                INC ZP.TOKPOSH
             }
             
             // Calculate current address: base + position
             CLC
-            LDA tokIterBaseL
-            ADC ZP.LCURRENTL
-            STA ZP.IDYL
-            LDA tokIterBaseH
-            ADC ZP.LCURRENTH
-            STA ZP.IDYH
+            LDA ZP.TOKBASEL
+            ADC ZP.TOKPOSL
+            STA ZP.STRL
+            LDA ZP.TOKBASEH
+            ADC ZP.TOKPOSH
+            STA ZP.STRH
             
             // Load character at current position
             LDY #0
-            LDA [ZP.IDY], Y
+            LDA [ZP.STR], Y
             if (Z) 
             { 
                 // Found null terminator - advance past it
-                INC ZP.LCURRENTL
+                INC ZP.STRL
                 if (Z)
                 {
-                    INC ZP.LCURRENTH
+                    INC ZP.STRH
                 }
                 SEC  // Success
                 break; 
@@ -188,12 +178,12 @@ unit TokenIterator
     // Preserves: Everything except A
     GetCurrent()
     {
-        LDA tokIterCurrent
+        LDA ZP.TOKCUR
     }
     
     // Get pointer to current token's inline data (for literals)
     // Input: Iterator positioned at token with inline data (NUMBER, IDENTIFIER, STRING, REM, COMMENT)
-    // Output: ZP.IDY = pointer to start of inline data (after token byte)
+    // Output: ZP.STR* = pointer to start of inline data (after token byte)
     // Preserves: Iterator position, all registers except output
     GetCurrentData()
     {
@@ -201,18 +191,18 @@ unit TokenIterator
         
         // Calculate address after current token: base + position + 1
         CLC
-        LDA tokIterBaseL
-        ADC ZP.LCURRENTL
-        STA ZP.IDYL
-        LDA tokIterBaseH
-        ADC ZP.LCURRENTH
-        STA ZP.IDYH
+        LDA ZP.TOKBASEL
+        ADC ZP.TOKPOSL
+        STA ZP.STRL
+        LDA ZP.TOKBASEH
+        ADC ZP.TOKPOSH
+        STA ZP.STRH
         
         // Advance past the token byte to point at data
-        INC ZP.IDYL
+        INC ZP.STRL
         if (Z)
         {
-            INC ZP.IDYH
+            INC ZP.STRH
         }
         
         PLA
@@ -257,8 +247,8 @@ unit TokenIterator
         CLC // Not an indent-decreasing token
     }
 
-    // Print current indentation (tokIterIndentLevel * 4 spaces)
-    // Input: None (uses tokIterIndentLevel)
+    // Print current indentation (TOKINDENT * 4 spaces)
+    // Input: None (uses TOKINDENT)
     // Output: Appropriate number of spaces printed to serial
     // Preserves: Everything
     printIndentation()
@@ -266,7 +256,7 @@ unit TokenIterator
         PHA
         PHX
         
-        LDX tokIterIndentLevel
+        LDX ZP.TOKINDENT
         loop
         {
             CPX #0
@@ -292,7 +282,7 @@ unit TokenIterator
     // Render token stream as formatted BASIC code with indentation
     // Input: ZP.IDY = token stream pointer (16-bit)
     // Output: Token stream rendered to serial with proper formatting and 4-space indentation
-    // Modifies: ZP.L* scratch space (TokenIterator state), serial output
+    // Modifies: ZP.TOK* scratch space (TokenIterator state), serial output
     // Uses: TokenIterator scratch space (cannot call symbol table APIs while rendering)
     RenderTokenStream()
     {
@@ -313,7 +303,7 @@ unit TokenIterator
         
         // Initialize indentation level to 1 (we're inside a function/BEGIN block)
         LDA #1
-        STA tokIterIndentLevel
+        STA ZP.TOKINDENT
         
         // Render each statement in the token stream
         loop
@@ -334,7 +324,7 @@ unit TokenIterator
     // Render a single statement with smart indentation
     // Input: Iterator positioned at start of statement
     // Output: Statement rendered to serial with proper indentation, iterator advanced past statement
-    // Modifies: Iterator position, tokIterIndentLevel, serial output
+    // Modifies: Iterator position, TOKINDENT, serial output
     renderStatementWithIndent()
     {
         PHA
@@ -347,10 +337,10 @@ unit TokenIterator
         if (C)
         {
             // Decrease indent before printing this statement
-            LDA tokIterIndentLevel
+            LDA ZP.TOKINDENT
             if (NZ) // Prevent underflow
             {
-                DEC tokIterIndentLevel
+                DEC ZP.TOKINDENT
             }
         }
         
@@ -391,7 +381,7 @@ unit TokenIterator
             if (C)
             {
                 // This token increases indent level for subsequent statements
-                INC tokIterIndentLevel
+                INC ZP.TOKINDENT
             }
             PLA // Restore token for rendering
             
@@ -480,15 +470,15 @@ unit TokenIterator
         {
             case Token.NUMBER:
             {
-                GetCurrentData(); // ZP.IDY = pointer to number string
-                Tools.PrintStringIDY();
+                GetCurrentData(); // ZP.TOKADDR* = pointer to number string
+                Tools.PrintStringSTR();
                 LDA #' '
                 Serial.WriteChar();
             }
             case Token.IDENTIFIER:
             {
-                GetCurrentData(); // ZP.IDY = pointer to identifier string
-                Tools.PrintStringIDY();
+                GetCurrentData(); // ZP.TOKADDR* = pointer to identifier string
+                Tools.PrintStringSTR();
                 LDA #' '
                 Serial.WriteChar();
             }
@@ -497,8 +487,8 @@ unit TokenIterator
             {
                 LDA #'"'
                 Serial.WriteChar();
-                GetCurrentData(); // ZP.IDY = pointer to string content
-                Tools.PrintStringIDY();
+                GetCurrentData(); // ZP.TOKADDR* = pointer to string content
+                Tools.PrintStringSTR();
                 LDA #'"'
                 Serial.WriteChar();
                 LDA #' '
@@ -507,11 +497,11 @@ unit TokenIterator
             case Token.REM:
             {
                 LDA #Token.REM
-                Tokenizer.PrintKeyword();
+                Tokens.PrintKeyword();
                 LDA #' '
                 Serial.WriteChar();
-                GetCurrentData(); // ZP.IDY = pointer to comment text
-                Tools.PrintStringIDY();
+                GetCurrentData(); // ZP.TOKADDR* = pointer to comment text
+                Tools.PrintStringSTR();
                 LDA #' '
                 Serial.WriteChar();
             }
@@ -519,22 +509,22 @@ unit TokenIterator
             {
                 LDA #'\''
                 Serial.WriteChar();
-                GetCurrentData(); // ZP.IDY = pointer to comment text
-                Tools.PrintStringIDY();
+                GetCurrentData(); // ZP.TOKADDR* = pointer to comment text
+                Tools.PrintStringSTR();
                 LDA #' '
                 Serial.WriteChar();
             }
             case Token.TRUE:
             {
                 LDA #Token.TRUE
-                Tokenizer.PrintKeyword();
+                Tokens.PrintKeyword();
                 LDA #' '
                 Serial.WriteChar();
             }
             case Token.FALSE:
             {
                 LDA #Token.FALSE
-                Tokenizer.PrintKeyword();
+                Tokens.PrintKeyword();
                 LDA #' '
                 Serial.WriteChar();
             }
@@ -658,12 +648,12 @@ unit TokenIterator
             {
                 // Check if it's a keyword we haven't handled specifically
                 PHA // Save token value
-                Tokenizer.IsKeyword();
+                Tokens.IsKeyword();
                 if (C)
                 {
                     // Print keyword
                     PLA
-                    Tokenizer.PrintKeyword();
+                    Tokens.PrintKeyword();
                     LDA #' '
                     Serial.WriteChar(); // Space after keywords
                 }

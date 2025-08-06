@@ -18,7 +18,7 @@ unit Console
         Statement.SetCaptureMode();
         
         // Initialize state system
-        State.SetSuccess();
+        States.SetSuccess();
     }
     
     // Read a line of input and tokenize it
@@ -40,8 +40,8 @@ unit Console
         }
         
         Error.CheckError();
-        if (NC) { State.SetFailure(); }  // Return if tokenization failed
-        else { State.SetSuccess(); }
+        if (NC) { States.SetFailure(); }  // Return if tokenization failed
+        else { States.SetSuccess(); }
     }
     
     // Enhanced ProcessLine() to handle function capture mode
@@ -60,12 +60,12 @@ unit Console
         }
         
         // Check SystemState and propagate
-        State.GetState();
+        States.GetState();
         switch (A)
         {
-            case SystemState.Success:   { /* continue */ }
-            case SystemState.Failure:   { return; }
-            case SystemState.Exiting:   { return; }
+            case State.Success:   { /* continue */ }
+            case State.Failure:   { return; }
+            case State.Exiting:   { return; }
         }
     }
     
@@ -80,7 +80,7 @@ unit Console
         {
             // Check for tokenization errors
             Error.CheckError();
-            if (NC) { State.SetFailure(); break; }
+            if (NC) { States.SetFailure(); break; }
             
             // Check for empty line (just EOL token)
             LDA ZP.TokenBufferLengthL
@@ -108,7 +108,7 @@ unit Console
             CMP #Token.EOL
             if (Z)
             {
-                State.SetSuccess(); // Continue (empty line)
+                States.SetSuccess(); // Continue (empty line)
                 break;
             }
             
@@ -129,20 +129,20 @@ unit Console
     {
         // Always process the tokens first (this creates the function node)
         processTokens();
-        State.IsExiting();
+        States.IsExiting();
         if (NC)
         {
             // not exiting
             Error.CheckError();
             if (NC)
             {
-                State.SetFailure();
+                States.SetFailure();
             }
             else
             {
                 // After processing, check if we just processed an incomplete function
                 detectIncompleteFunction();
-                State.SetSuccess(); // Continue
+                States.SetSuccess(); // Continue
             }
         }
     }
@@ -263,7 +263,7 @@ unit Console
         {
             // Check for tokenization errors
             Error.CheckError();
-            if (NC) { State.SetFailure(); break; }
+            if (NC) { States.SetFailure(); break; }
             
             // Check if this line contains ENDFUNC (completing the function)
             detectFunctionEnd();
@@ -276,10 +276,10 @@ unit Console
                 
                 FunctionDeclaration.CompletePartialFunction();
                 Error.CheckError();
-                if (NC) { State.SetFailure(); break; }
+                if (NC) { States.SetFailure(); break; }
             }
             
-            State.SetSuccess(); // Continue (either in capture mode or completed)
+            States.SetSuccess(); // Continue (either in capture mode or completed)
             break;
         }
         
@@ -551,7 +551,7 @@ unit Console
 #endif
         
         // BYE command works in both modes - allows escape from function capture
-        State.SetExiting(); // Set exit status instead of fragile CLC
+        States.SetExiting(); // Set exit status instead of fragile CLC
         
 #ifdef TRACECONSOLE
         LDA #(byeTrace % 256) STA ZP.TraceMessageL LDA #(byeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -924,7 +924,7 @@ unit Console
         
         // Clear any error state that might have been set during capture
         Error.ClearError();
-        State.SetSuccess();
+        States.SetSuccess();
         
 #ifdef TRACECONSOLE
         LDA #(exitFuncModeTrace % 256) STA ZP.TraceMessageL LDA #(exitFuncModeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1026,14 +1026,14 @@ unit Console
                 case Token.BYE:
                 {
                     cmdBye();
-                    return; // BYE sets SystemState.Exiting
+                    return; // BYE sets State.Exiting
                 }
                 case Token.SAVE:
                 case Token.LOAD:
                 case Token.DIR:
                 case Token.DEL:
                 {
-                    Error.NotImplemented(); BIT ZP.EmulatorPCL
+                    TODO(); BIT ZP.EmulatorPCL
                 }
                 case Token.RUN:
                 {
@@ -1043,19 +1043,19 @@ unit Console
                     // We can remove this when function compiling doesn't use shared token and buffers
                     if (NC)
                     {
-                        State.IsExiting();
+                        States.IsExiting();
                         if (C)
                         {
-                            State.SetFailure(); // don't "BYE" if we have a failure (probably syntax error from Executor)
+                            States.SetFailure(); // don't "BYE" if we have a failure (probably syntax error from Executor)
                         }
                         CLC // Error branch
                     }
                     else
                     {
-                        State.IsExiting();
+                        States.IsExiting();
                         if (C)
                         {
-                            State.SetSuccess(); // don't "BYE" if we are just Exiting REPL
+                            States.SetSuccess(); // don't "BYE" if we are just Exiting REPL
                         }
                         SEC // No error branch
                     }
@@ -1094,26 +1094,26 @@ unit Console
                         Error.CheckError();
                         if (NC)
                         {
-                            State.IsExiting();
+                            States.IsExiting();
                             if (C)
                             {
-                                State.SetFailure(); // don't "BYE" if we have a failure
+                                States.SetFailure(); // don't "BYE" if we have a failure
                             }
                             CLC // Error branch
                             return; 
                         }
                         else
                         {
-                            State.IsReturn();
+                            States.IsReturn();
                             if (C)
                             {
                                 // REPL was a function call (buffer is munted so even if there was a ':', no point)
                                 return; 
                             }
-                            State.IsExiting();
+                            States.IsExiting();
                             if (C)
                             {
-                                State.SetSuccess(); // don't "BYE"
+                                States.SetSuccess(); // don't "BYE"
                                 return; // Exiting implies end of stream (REPL function call?)
                             }
                             SEC // No error branch
@@ -1126,26 +1126,26 @@ unit Console
                         Error.CheckError();
                         if (NC)
                         {
-                            State.IsExiting();
+                            States.IsExiting();
                             if (C)
                             {
-                                State.SetFailure(); // don't "BYE" if we have a failure
+                                States.SetFailure(); // don't "BYE" if we have a failure
                             }
                             CLC // Error branch
                             return; 
                         }
                         else
                         {
-                            State.IsReturn();
+                            States.IsReturn();
                             if (C)
                             {
                                 // REPL was a function call (buffer is munted so even if there was a ':', no point)
                                 return; 
                             }
-                            State.IsExiting();
+                            States.IsExiting();
                             if (C)
                             {
-                                State.SetSuccess(); // don't "BYE"
+                                States.SetSuccess(); // don't "BYE"
                                 return; // Exiting implies end of stream (REPL function call?)
                             }
                             SEC // No error branch
@@ -1522,7 +1522,7 @@ unit Console
                 break;  // Propagate execution error
             }
             SEC // Success
-            State.IsFailure(); // not Success|Return|Exiting
+            States.IsFailure(); // not Success|Return|Exiting
             if (C)
             {
                 CLC

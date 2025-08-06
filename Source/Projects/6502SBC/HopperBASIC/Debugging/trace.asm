@@ -2,9 +2,6 @@ unit Trace // Trace.asm
 {
     // #define TRACESP (6502 SP for stack balance diagnosis)
     
-    uses "Tools"
-    uses "Debug"
-    
     IsTracing()
     {
 #ifdef TRACE        
@@ -98,10 +95,10 @@ unit Trace // Trace.asm
         LDA #' ' Debug.COut();
 #endif
         
-        State.IsSuccess();
+        States.IsSuccess();
         if (NC)
         {
-            LDA #' ' Debug.COut(); State.PrintState();
+            LDA #' ' Debug.COut(); States.PrintState();
         }
         
         LDA ZP.LastErrorL
@@ -185,10 +182,10 @@ unit Trace // Trace.asm
         LDA #' ' Debug.COut();
 #endif
 
-        State.IsSuccess();
+        States.IsSuccess();
         if (NC)
         {
-            LDA #' ' Debug.COut(); State.PrintState();
+            LDA #' ' Debug.COut(); States.PrintState();
         }
         
         LDA ZP.LastErrorL

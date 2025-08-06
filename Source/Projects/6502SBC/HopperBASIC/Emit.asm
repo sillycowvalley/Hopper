@@ -190,7 +190,7 @@ unit Emit
        loop
        {
            // Set up opcode
-           LDA #OpCodeType.PUSHCSTRING
+           LDA #OpCode.PUSHCSTRING
            STA Compiler.compilerOpCode
            
            // Emit opcode with word operand (uses compilerOperand1/2)
@@ -244,7 +244,7 @@ unit Emit
            STA Compiler.compilerOperand2  // MSB
            
            // Emit PUSHGLOBAL with word operand
-           LDA # OpCodeType.PUSHGLOBAL
+           LDA # OpCode.PUSHGLOBAL
            STA Compiler.compilerOpCode
            Emit.OpCodeWithWord();
            break;
@@ -282,7 +282,7 @@ unit Emit
        
            // Set up parameters for emission
            STA Compiler.compilerOperand1          // Store value as operand
-           LDA #OpCodeType.PUSHBIT
+           LDA #OpCode.PUSHBIT
            STA Compiler.compilerOpCode
            
            Emit.OpCodeWithByte();
@@ -306,7 +306,7 @@ unit Emit
        
        // Set up parameters for emission
        STA Compiler.compilerOperand1          // Store value as operand
-       LDA #OpCodeType.PUSHBYTE
+       LDA #OpCode.PUSHBYTE
        STA Compiler.compilerOpCode
        
        Emit.OpCodeWithByte();
@@ -327,7 +327,7 @@ unit Emit
        LDA #(emitPushVoidTrace % 256) STA ZP.TraceMessageL LDA #(emitPushVoidTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
-       LDA #OpCodeType.PUSHVOID
+       LDA #OpCode.PUSHVOID
        STA Compiler.compilerOpCode
        Emit.OpCode();
        
@@ -351,19 +351,19 @@ unit Emit
        {
            // Select opcode based on type
            LDA ZP.TOPT
-           CMP #BasicType.INT
+           CMP #BASICType.INT
            if (Z)
            {
-               LDA #OpCodeType.PUSHINT
+               LDA #OpCode.PUSHINT
                STA Compiler.compilerOpCode
                Emit.OpCodeWithWord();
                break;
            }
            
-           CMP #BasicType.WORD
+           CMP #BASICType.WORD
            if (Z)
            {
-               LDA #OpCodeType.PUSHWORD
+               LDA #OpCode.PUSHWORD
                STA Compiler.compilerOpCode
                Emit.OpCodeWithWord();
                break;
@@ -402,7 +402,7 @@ unit Emit
            {
                LDA ZP.ACCL
                STA Compiler.compilerOperand1
-               LDA #OpCodeType.POPGLOBAL
+               LDA #OpCode.POPGLOBAL
                STA Compiler.compilerOpCode
                Emit.OpCodeWithByte();
                break;
@@ -436,35 +436,35 @@ unit Emit
            {
                case Token.PLUS:
                {
-                   LDA #OpCodeType.ADD
+                   LDA #OpCode.ADD
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
                case Token.MINUS:
                {
-                   LDA #OpCodeType.SUB
+                   LDA #OpCode.SUB
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
                case Token.MULTIPLY:
                {
-                   LDA #OpCodeType.MUL
+                   LDA #OpCode.MUL
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
                case Token.DIVIDE:
                {
-                   LDA #OpCodeType.DIV
+                   LDA #OpCode.DIV
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
                case Token.MOD:
                {
-                   LDA #OpCodeType.MOD
+                   LDA #OpCode.MOD
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
@@ -500,42 +500,42 @@ unit Emit
            {
                case Token.EQUALS:
                {
-                   LDA #OpCodeType.EQ
+                   LDA #OpCode.EQ
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
                case Token.NOTEQUAL:
                {
-                   LDA #OpCodeType.NE
+                   LDA #OpCode.NE
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
                case Token.LT:
                {
-                   LDA #OpCodeType.LT
+                   LDA #OpCode.LT
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
                case Token.GT:
                {
-                   LDA #OpCodeType.GT
+                   LDA #OpCode.GT
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
                case Token.LE:
                {
-                   LDA #OpCodeType.LE
+                   LDA #OpCode.LE
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
                case Token.GE:
                {
-                   LDA #OpCodeType.GE
+                   LDA #OpCode.GE
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
@@ -571,21 +571,21 @@ unit Emit
            {
                case Token.AND:
                {
-                   LDA #OpCodeType.LOGICAL_AND
+                   LDA #OpCode.LOGICAL_AND
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
                case Token.OR:
                {
-                   LDA #OpCodeType.LOGICAL_OR
+                   LDA #OpCode.LOGICAL_OR
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
                case Token.NOT:
                {
-                   LDA #OpCodeType.LOGICAL_NOT
+                   LDA #OpCode.LOGICAL_NOT
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
@@ -621,14 +621,14 @@ unit Emit
            {
                case Token.BITWISE_AND:
                {
-                   LDA #OpCodeType.BITWISE_AND
+                   LDA #OpCode.BITWISE_AND
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
                case Token.BITWISE_OR:
                {
-                   LDA #OpCodeType.BITWISE_OR
+                   LDA #OpCode.BITWISE_OR
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
@@ -657,7 +657,7 @@ unit Emit
        LDA #(emitUnaryMinusTrace % 256) STA ZP.TraceMessageL LDA #(emitUnaryMinusTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
-       LDA #OpCodeType.NEG
+       LDA #OpCode.NEG
        STA Compiler.compilerOpCode
        Emit.OpCode();
        
@@ -678,7 +678,7 @@ unit Emit
 #endif
        
        STA Compiler.compilerOperand1      // Store ID as operand
-       LDA #OpCodeType.SYSCALL
+       LDA #OpCode.SYSCALL
        STA Compiler.compilerOpCode
        Emit.OpCodeWithByte();
        
@@ -697,7 +697,7 @@ unit Emit
        LDA #(emitEnterTrace % 256) STA ZP.TraceMessageL LDA #(emitEnterTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
-       LDA #OpCodeType.ENTER
+       LDA #OpCode.ENTER
        STA Compiler.compilerOpCode
        Emit.OpCode();
        
@@ -719,7 +719,7 @@ unit Emit
 #endif
        
        STA Compiler.compilerOperand1          // Store cleanup count as operand
-       LDA #OpCodeType.RETURN
+       LDA #OpCode.RETURN
        STA Compiler.compilerOpCode
        Emit.OpCodeWithByte();
        
@@ -740,7 +740,7 @@ unit Emit
 #endif
        
        STA Compiler.compilerOperand1          // Store cleanup count as operand
-       LDA #OpCodeType.RETURNVAL
+       LDA #OpCode.RETURNVAL
        STA Compiler.compilerOpCode
        Emit.OpCodeWithByte();
        
@@ -788,7 +788,7 @@ unit Emit
 #endif                        
                                   
            // Emit CALL with absolute address (not offset!)
-           LDA # OpCodeType.CALL
+           LDA # OpCode.CALL
            STA Compiler.compilerOpCode
            Emit.OpCodeWithWord();
            break;
@@ -814,7 +814,7 @@ unit Emit
        LDA #(emitDecSpTrace % 256) STA ZP.TraceMessageL LDA #(emitDecSpTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
    #endif
        
-       LDA #OpCodeType.DECSP
+       LDA #OpCode.DECSP
        STA Compiler.compilerOpCode
        Emit.OpCode();
        

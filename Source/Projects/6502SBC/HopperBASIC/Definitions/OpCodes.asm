@@ -12,7 +12,7 @@ unit OpCodes
    // - Future expansion: 64 opcodes reserved for complex instructions
    // - Resolve-and-replace: Unresolved opcodes patch to fast versions after first execution
    
-   enum OpCodeType
+   enum OpCode
    {
        // === INVALID OPCODE ===
        INVALID      = 0x00,  // Invalid opcode - triggers error

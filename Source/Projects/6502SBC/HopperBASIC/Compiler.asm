@@ -1,5 +1,6 @@
 unit Compiler // Compiler.asm
 {
+   uses "./Definitions/OpCodes"
    uses "Tokenizer"
    uses "Emit"
    
@@ -54,7 +55,7 @@ unit Compiler // Compiler.asm
        // Clear compiler flags
        STZ ZP.CompilerFlags
        
-       LDA # OpCodeType.INVALID
+       LDA # OpCode.INVALID
        STA compilerLastOpCode
        
        SEC // Success
@@ -97,14 +98,14 @@ unit Compiler // Compiler.asm
            LDA compilerLastOpCode
            
            // Check if it's RETURN or RETURNVAL
-           CMP #OpCodeType.RETURN
+           CMP #OpCode.RETURN
            if (Z)
            {
                SEC // Found RETURN
                break;
            }
            
-           CMP #OpCodeType.RETURNVAL
+           CMP #OpCode.RETURNVAL
            if (Z)
            {
                SEC // Found RETURNVAL
@@ -1375,7 +1376,7 @@ unit Compiler // Compiler.asm
                    
                    // Emit appropriate push opcode based on type and value
                    LDA ZP.TOPT
-                   CMP #BasicType.BIT
+                   CMP #BASICType.BIT
                    if (Z)
                    {
                        LDA ZP.TOPL // BIT values are single byte
@@ -1385,7 +1386,7 @@ unit Compiler // Compiler.asm
                    }
                    else
                    {
-                       CMP #BasicType.BYTE
+                       CMP #BASICType.BYTE
                        if (Z)
                        {
                            LDA ZP.TOPL
@@ -1537,14 +1538,14 @@ unit Compiler // Compiler.asm
        // Initialize opcode buffer if this is the start of compilation
        InitOpCodeBuffer();
        Error.CheckError();
-       if (NC) { State.SetFailure(); return; }
+       if (NC) { States.SetFailure(); return; }
        
        // Compile the expression using same precedence as Expression.asm
        compileLogical();
        Error.CheckError();
-       if (NC) { State.SetFailure(); return; }
+       if (NC) { States.SetFailure(); return; }
        
-       State.SetSuccess();
+       States.SetSuccess();
 
 #ifdef TRACE
        LDA #(strCompileExpression % 256) STA ZP.TraceMessageL LDA #(strCompileExpression / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1576,7 +1577,7 @@ unit Compiler // Compiler.asm
            // Initialize opcode buffer
            InitOpCodeBuffer();
            Error.CheckError();
-           if (NC) { State.SetFailure(); break; }
+           if (NC) { States.SetFailure(); break; }
            
            // Reset tokenizer to start of function body
            STZ ZP.TokenizerPosL
@@ -1585,11 +1586,11 @@ unit Compiler // Compiler.asm
            // Get first token of function body
            Tokenizer.NextToken();
            Error.CheckError();
-           if (NC) { State.SetFailure(); break; }
+           if (NC) { States.SetFailure(); break; }
            
            Emit.Enter();
            Error.CheckError();
-           if (NC) { State.SetFailure(); break; }
+           if (NC) { States.SetFailure(); break; }
            
            STZ compilerFuncLocals // no locals yet
            
@@ -1613,18 +1614,18 @@ unit Compiler // Compiler.asm
                    // Skip empty lines
                    Tokenizer.NextToken();
                    Error.CheckError();
-                   if (NC) { State.SetFailure(); break; }
+                   if (NC) { States.SetFailure(); break; }
                    continue;
                }
                
                // Compile the statement
                CompileStatement();
                Error.CheckError();
-               if (NC) { State.SetFailure(); break; }
+               if (NC) { States.SetFailure(); break; }
            }
            
            Error.CheckError();
-           if (NC) { State.SetFailure(); break; }
+           if (NC) { States.SetFailure(); break; }
            
            // Check if last opcode was RETURN or RETURNVAL
            checkLastOpCodeIsReturn();
@@ -1634,10 +1635,10 @@ unit Compiler // Compiler.asm
                LDA compilerFuncLocals
                Emit.Return();
                Error.CheckError();
-               if (NC) { State.SetFailure(); break; }
+               if (NC) { States.SetFailure(); break; }
            }
            
-           State.SetSuccess(); // Success
+           States.SetSuccess(); // Success
            break;
        }
 
@@ -1676,26 +1677,26 @@ unit Compiler // Compiler.asm
                {
                    compilePrintStatement();
                    Error.CheckError();
-                   if (NC) { State.SetFailure(); break; }
+                   if (NC) { States.SetFailure(); break; }
                }
                case Token.RETURN:
                {
                    compileReturnStatement();
                    Error.CheckError();
-                   if (NC) { State.SetFailure(); break; }
+                   if (NC) { States.SetFailure(); break; }
                }
                case Token.IF:
                {
                    compileIfStatement();
                    Error.CheckError();
-                   if (NC) { State.SetFailure(); break; }
+                   if (NC) { States.SetFailure(); break; }
                }
                case Token.IDENTIFIER:
                {
                    // Could be assignment or function call
                    compileIdentifierStatement();
                    Error.CheckError();
-                   if (NC) { State.SetFailure(); break; }
+                   if (NC) { States.SetFailure(); break; }
                }
                case Token.REM:
                case Token.COMMENT:
@@ -1703,7 +1704,7 @@ unit Compiler // Compiler.asm
                    // Skip comments - advance to next token
                    Tokenizer.NextToken();
                    Error.CheckError();
-                   if (NC) { State.SetFailure(); break; }
+                   if (NC) { States.SetFailure(); break; }
                }
                case Token.DELAY:
                {
@@ -1722,16 +1723,16 @@ unit Compiler // Compiler.asm
                default:
                {
 #ifdef DEBUG
-                   Tokenizer.PrintKeyword();
+                   Tokens.PrintKeyword();
 #endif                    
                    // TODO: Add more statement types as needed
                    Error.SyntaxError(); BIT ZP.EmulatorPCL
-                   State.SetFailure();
+                   States.SetFailure();
                    break;
                }
            }
            
-           State.SetSuccess();
+           States.SetSuccess();
            break;
        } // loop
        
@@ -1763,7 +1764,7 @@ unit Compiler // Compiler.asm
             // Get next token (should be start of expression, separator, or EOL)
             Tokenizer.NextToken();
             Error.CheckError();
-            if (NC) { State.SetFailure(); break; }
+            if (NC) { States.SetFailure(); break; }
             
             // Check for PRINT with no arguments (just newline)
             LDA ZP.CurrentToken
@@ -1773,8 +1774,8 @@ unit Compiler // Compiler.asm
                 // PRINT (newline only)
                 Emit.PrintNewLine();
                 Error.CheckError();
-                if (NC) { State.SetFailure(); break; }
-                State.SetSuccess();
+                if (NC) { States.SetFailure(); break; }
+                States.SetSuccess();
                 break;
             }
             
@@ -1786,12 +1787,12 @@ unit Compiler // Compiler.asm
                 // PRINT, - space and no newline
                 Emit.PrintSpace();
                 Error.CheckError();
-                if (NC) { State.SetFailure(); break; }
+                if (NC) { States.SetFailure(); break; }
                 
                 Tokenizer.NextToken();
                 Error.CheckError();
-                if (NC) { State.SetFailure(); break; }
-                State.SetSuccess();
+                if (NC) { States.SetFailure(); break; }
+                States.SetSuccess();
                 break;
             }
             
@@ -1801,8 +1802,8 @@ unit Compiler // Compiler.asm
                 // PRINT; - no space, no newline
                 Tokenizer.NextToken();
                 Error.CheckError();
-                if (NC) { State.SetFailure(); break; }
-                State.SetSuccess();
+                if (NC) { States.SetFailure(); break; }
+                States.SetSuccess();
                 break;
             }
             
@@ -1812,12 +1813,12 @@ unit Compiler // Compiler.asm
                 // Compile current expression
                 compileLogical(); // Use full expression compilation
                 Error.CheckError();
-                if (NC) { State.SetFailure(); break; }
+                if (NC) { States.SetFailure(); break; }
                 
                 // Emit system call to print the value on stack
                 Emit.PrintValue();
                 Error.CheckError();
-                if (NC) { State.SetFailure(); break; }
+                if (NC) { States.SetFailure(); break; }
                 
                 // Check what follows this expression
                 LDA ZP.CurrentToken
@@ -1827,12 +1828,12 @@ unit Compiler // Compiler.asm
                     // Comma separator - add space and continue with next expression
                     Emit.PrintSpace();
                     Error.CheckError();
-                    if (NC) { State.SetFailure(); break; }
+                    if (NC) { States.SetFailure(); break; }
                     
                     // Get next token for next expression
                     Tokenizer.NextToken();
                     Error.CheckError();
-                    if (NC) { State.SetFailure(); break; }
+                    if (NC) { States.SetFailure(); break; }
                     
                     // Check if this is a trailing comma (followed by EOL)
                     LDA ZP.CurrentToken
@@ -1840,7 +1841,7 @@ unit Compiler // Compiler.asm
                     if (Z)
                     {
                         // Trailing comma - no newline, we're done
-                        State.SetSuccess();
+                        States.SetSuccess();
                         break; // Exit argument loop
                     }
                     
@@ -1855,7 +1856,7 @@ unit Compiler // Compiler.asm
                     // Get next token for next expression
                     Tokenizer.NextToken();
                     Error.CheckError();
-                    if (NC) { State.SetFailure(); break; }
+                    if (NC) { States.SetFailure(); break; }
                     
                     // Check if this is a trailing semicolon (followed by EOL)
                     LDA ZP.CurrentToken
@@ -1863,7 +1864,7 @@ unit Compiler // Compiler.asm
                     if (Z)
                     {
                         // Trailing semicolon - no newline, we're done
-                        State.SetSuccess();
+                        States.SetSuccess();
                         break; // Exit argument loop
                     }
                     
@@ -1875,9 +1876,9 @@ unit Compiler // Compiler.asm
                 // Default behavior: add newline
                 Emit.PrintNewLine();
                 Error.CheckError();
-                if (NC) { State.SetFailure(); break; }
+                if (NC) { States.SetFailure(); break; }
                 
-                State.SetSuccess();
+                States.SetSuccess();
                 break; // Exit argument loop
             } // End of argument processing loop
             
@@ -1905,7 +1906,7 @@ unit Compiler // Compiler.asm
            // Get next token
            Tokenizer.NextToken();
            Error.CheckError();
-           if (NC) { State.SetFailure(); break; }
+           if (NC) { States.SetFailure(); break; }
            
            // Check if there's a return expression
            LDA ZP.CurrentToken
@@ -1916,23 +1917,23 @@ unit Compiler // Compiler.asm
                LDA #0  // No locals to clean up for now
                Emit.Return();
                Error.CheckError();
-               if (NC) { State.SetFailure(); break; }
-               State.SetSuccess();
+               if (NC) { States.SetFailure(); break; }
+               States.SetSuccess();
                break;
            }
            
            // Compile return expression
            compileLogical();
            Error.CheckError();
-           if (NC) { State.SetFailure(); break; }
+           if (NC) { States.SetFailure(); break; }
            
            // Emit RETURNVAL (expects value on stack)
            LDA #0  // No locals to clean up for now
            Emit.ReturnVal();
            Error.CheckError();
-           if (NC) { State.SetFailure(); break; }
+           if (NC) { States.SetFailure(); break; }
            
-           State.SetSuccess();
+           States.SetSuccess();
            break;
        } // loop
 
@@ -1979,7 +1980,7 @@ unit Compiler // Compiler.asm
            // Get and compile condition expression
            Tokenizer.NextToken();  // Skip WHILE token
            Error.CheckError();
-           if (NC) { State.SetFailure(); break; }
+           if (NC) { States.SetFailure(); break; }
            
            // Mark loop start position for backward jump (start of condition evaluation)
            LDA ZP.OpCodeBufferLengthL
@@ -1999,24 +2000,24 @@ unit Compiler // Compiler.asm
            
            // Check for compilation errors after consuming all 4 stack slots
            Error.CheckError();
-           if (NC) { State.SetFailure(); break; }
+           if (NC) { States.SetFailure(); break; }
            
            // Emit conditional exit jump (placeholder - will be patched after WEND)
            // JUMPZW: Jump if condition is zero/FALSE (exit loop when condition fails)
-           LDA #OpCodeType.JUMPZW
+           LDA #OpCode.JUMPZW
            STA Compiler.compilerOpCode
            STZ Compiler.compilerOperand1  // Placeholder LSB (will be patched)
            STZ Compiler.compilerOperand2  // Placeholder MSB (will be patched)
            Emit.OpCodeWithWord();
            Error.CheckError();
-           if (NC) { State.SetFailure(); break; }
+           if (NC) { States.SetFailure(); break; }
            
            // Compile loop body statements until WEND
            loop // Statement compilation loop
            {
                Tokenizer.NextToken();
                Error.CheckError();
-               if (NC) { State.SetFailure(); break; }
+               if (NC) { States.SetFailure(); break; }
                
                LDA ZP.CurrentToken
                
@@ -2026,7 +2027,7 @@ unit Compiler // Compiler.asm
                    // Found WEND - consume it and exit loop
                    Tokenizer.NextToken();
                    Error.CheckError();
-                   if (NC) { State.SetFailure(); break; }
+                   if (NC) { States.SetFailure(); break; }
                    break;  // Exit statement compilation loop
                }
                
@@ -2034,7 +2035,7 @@ unit Compiler // Compiler.asm
                if (Z) 
                { 
                    Error.SyntaxError(); BIT ZP.EmulatorPCL  // Missing WEND
-                   State.SetFailure();
+                   States.SetFailure();
                    break; 
                }
                
@@ -2048,12 +2049,12 @@ unit Compiler // Compiler.asm
                // Compile statement in loop body (PRINT, assignments, nested loops, etc.)
                CompileStatement();  // RECURSIVE CALL - handles nested constructs
                Error.CheckError();
-               if (NC) { State.SetFailure(); break; }
+               if (NC) { States.SetFailure(); break; }
            }
            
            // Check if we exited due to error
            Error.CheckError();
-           if (NC) { State.SetFailure(); break; }
+           if (NC) { States.SetFailure(); break; }
            
            // === OFFSET CALCULATION PHASE ===
            // Pop saved positions from stack (in reverse order)
@@ -2129,7 +2130,7 @@ unit Compiler // Compiler.asm
            
            // === BACKWARD JUMP EMISSION ===
            // Emit unconditional jump back to condition evaluation
-           LDA #OpCodeType.JUMPW
+           LDA #OpCode.JUMPW
            STA Compiler.compilerOpCode
            LDA ZP.TOPL    // Backward offset LSB
            STA Compiler.compilerOperand1
@@ -2137,17 +2138,17 @@ unit Compiler // Compiler.asm
            STA Compiler.compilerOperand2
            Emit.OpCodeWithWord();
            Error.CheckError();
-           if (NC) { State.SetFailure(); break; }
+           if (NC) { States.SetFailure(); break; }
            
            // Final error check
            Error.CheckError();
-           if (NC) { State.SetFailure(); break; }
+           if (NC) { States.SetFailure(); break; }
            
-           State.SetSuccess();
+           States.SetSuccess();
            break;
        } // Single exit block
        
-       State.IsSuccess();
+       States.IsSuccess();
        if (NC)
        {
            // Clean up stack on error path (restore stack balance)
@@ -2171,8 +2172,8 @@ unit Compiler // Compiler.asm
    compileIfStatement()
    {
        // TODO: Implement IF statement compilation
-       Error.NotImplemented(); BIT ZP.EmulatorPCL
-       State.SetFailure();
+       TODO(); BIT ZP.EmulatorPCL
+       States.SetFailure();
    }
 
    // Compile identifier statement (assignment or function call)
@@ -2193,7 +2194,7 @@ unit Compiler // Compiler.asm
            Error.CheckError();
            if (NC) 
            { 
-               State.SetFailure(); break; 
+               States.SetFailure(); break; 
            }
            switch (A)
            {
@@ -2202,14 +2203,14 @@ unit Compiler // Compiler.asm
                    // Compile function call using existing logic
                    compileFunctionCallOrVariable();
                    Error.CheckError();
-                   if (NC) { State.SetFailure(); break; }
+                   if (NC) { States.SetFailure(); break; }
                    
                    // For function calls as statements, discard the return value
                    Emit.DecSp();
                    Error.CheckError();
-                   if (NC) { State.SetFailure(); break; }
+                   if (NC) { States.SetFailure(); break; }
                    
-                   State.SetSuccess();
+                   States.SetSuccess();
                    break;
                }
                case IdentifierType.Global:
@@ -2224,26 +2225,26 @@ unit Compiler // Compiler.asm
                    // Move to next token - should be '='
                    Tokenizer.NextToken();
                    Error.CheckError();
-                   if (NC) { State.SetFailure(); break; }
+                   if (NC) { States.SetFailure(); break; }
                    
                    LDA ZP.CurrentToken
                    CMP #Token.EQUALS
                    if (NZ)
                    {
                        Error.ExpectedEqual(); BIT ZP.EmulatorPCL
-                       State.SetFailure();
+                       States.SetFailure();
                        break;
                    }
                    
                    // Move past '=' to the expression
                    Tokenizer.NextToken();
                    Error.CheckError();
-                   if (NC) { State.SetFailure(); break; }
+                   if (NC) { States.SetFailure(); break; }
                    
                    // Compile the RHS expression
                    compileLogical();
                    Error.CheckError();
-                   if (NC) { State.SetFailure(); break; }
+                   if (NC) { States.SetFailure(); break; }
                    
                    // Emit POPGLOBAL with the saved node address
                    LDA (compilerSavedNodeAddrL + 0)
@@ -2251,34 +2252,34 @@ unit Compiler // Compiler.asm
                    LDA (compilerSavedNodeAddrH + 0)
                    STA compilerOperand2  // MSB
                    
-                   LDA #OpCodeType.POPGLOBAL
+                   LDA #OpCode.POPGLOBAL
                    STA compilerOpCode
                    Emit.OpCodeWithWord();
                    Error.CheckError();
-                   if (NC) { State.SetFailure(); break; }
+                   if (NC) { States.SetFailure(); break; }
                    
-                   State.SetSuccess();
+                   States.SetSuccess();
                    break;
                }
                case IdentifierType.Constant:
                {
                    // Constants cannot be assigned to
                    Error.IllegalAssignment(); BIT ZP.EmulatorPCL
-                   State.SetFailure();
+                   States.SetFailure();
                    break;
                }
                case IdentifierType.Keyword:
                {
                    // Keywords should not appear as statements
                    Error.SyntaxError(); BIT ZP.EmulatorPCL
-                   State.SetFailure();
+                   States.SetFailure();
                    break;
                }
                default:
                {
                    // Unknown identifier type
                    Error.SyntaxError(); BIT ZP.EmulatorPCL
-                   State.SetFailure();
+                   States.SetFailure();
                    break;
                }
            }

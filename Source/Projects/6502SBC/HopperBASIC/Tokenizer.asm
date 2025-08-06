@@ -1,7 +1,6 @@
 unit Tokenizer // Tokenizer.asm
 {
     uses "./Definitions/Limits"
-    uses "Tools"
     uses "./Definitions/Messages"
     uses "./Debugging/Error"  // Added Error unit
     uses "./Definitions/BasicTypes"
@@ -454,12 +453,12 @@ unit Tokenizer // Tokenizer.asm
         BIT ZP.TOPH
         if (MI)
         {
-            LDA #BasicType.WORD   // 32768-65535
+            LDA #BASICType.WORD   // 32768-65535
             STA ZP.TOPT
         }
         else
         {
-            LDA #BasicType.INT    // 0-32767
+            LDA #BASICType.INT    // 0-32767
             STA ZP.TOPT
         }
     }
@@ -1269,18 +1268,18 @@ unit Tokenizer // Tokenizer.asm
             BIT ZP.TOPH          // Check high bit
             if (MI)
             {
-                LDA #BasicType.WORD   // Large positive (32768-65535)
+                LDA #BASICType.WORD   // Large positive (32768-65535)
                 STA ZP.TOPT
             }
             else
             {
-                LDA #BasicType.INT    // Medium positive (256-32767)
+                LDA #BASICType.INT    // Medium positive (256-32767)
                 STA ZP.TOPT       
             }
         }
         else
         {
-            LDA #BasicType.BYTE   // Values 2-255 are BYTE
+            LDA #BASICType.BYTE   // Values 2-255 are BYTE
             STA ZP.TOPT
         }
     }

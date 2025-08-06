@@ -31,7 +31,7 @@ unit Variables
             
             LDA ZP.ACCT
             AND #0x0F
-            CMP #BasicType.STRING
+            CMP #BASICType.STRING
             if (Z)
             {
                 // save the source string address and clear 'value'
@@ -49,7 +49,7 @@ unit Variables
             
             LDA ZP.ACCT
             AND #0x0F
-            CMP #BasicType.STRING
+            CMP #BASICType.STRING
             if (Z)
             {
                 // restore source string pointer
@@ -66,7 +66,7 @@ unit Variables
             
             LDA ZP.ACCT
             AND #0x0F
-            CMP #BasicType.STRING
+            CMP #BASICType.STRING
             if (Z)
             {
                 SetValue();
@@ -226,7 +226,7 @@ unit Variables
             // Check if this is a STRING variable needing memory management
             LDA ZP.ACCT  // symbolType|dataType from Objects.GetData()
             AND #0x0F    // Extract data type (low nibble)
-            CMP #BasicType.STRING
+            CMP #BASICType.STRING
             if (Z)
             {
                 // STRING variable - need to free old string and allocate new
@@ -733,7 +733,7 @@ unit Variables
             // Check if it's a STRING variable
             LDA ZP.ACCT
             AND #0x0F  // Extract data type (low nibble)
-            CMP #BasicType.STRING
+            CMP #BASICType.STRING
             if (NZ)
             {
                 // Not a STRING variable - nothing to free

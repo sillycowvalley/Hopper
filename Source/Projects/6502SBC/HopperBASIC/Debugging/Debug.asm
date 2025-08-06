@@ -5,8 +5,6 @@ unit Debug // Debug.asm
     // Debug-only functionality with conditional compilation guards
     // Optimized for size using public/private pattern and DB0-DB15 slots
     
-    uses "Tools"      // For convenience wrappers
-    
     // Debug strings - main headers
     const string debugVarsHeader = "\n== VARS ==\n";
     const string debugStackHeader = "\n== STACK ==\n";

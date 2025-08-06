@@ -1,8 +1,5 @@
 unit Objects
 {
-    uses "Table"
-    uses "Tools"
-    
     friend Variables, Functions, Arguments;
     
     // Symbol table implementation using Table foundation

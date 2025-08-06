@@ -95,7 +95,7 @@ unit Error // Error.asm
         CLC
     }
     
-    NotImplemented() 
+    TODO() 
     { 
         LDA #(notImplemented % 256)
         STA ZP.LastErrorL
@@ -409,10 +409,10 @@ unit Error // Error.asm
     {
         STZ ZP.LastErrorL
         STZ ZP.LastErrorH
-        State.SetSuccess();
+        States.SetSuccess();
     }
     
-    // Check if error has occurred, or if SystemState.Failure
+    // Check if error has occurred, or if State.Failure
     // Input: None
     // Output: C set if ok, NC if not ok (error occurred)
     // Modifies: Processor flags only
@@ -425,7 +425,7 @@ unit Error // Error.asm
         ORA ZP.LastErrorH
         if (Z)
         {
-            State.IsFailure();
+            States.IsFailure();
             if (C)
             {
 #if defined(DEBUG)
@@ -440,10 +440,10 @@ unit Error // Error.asm
         }
         else
         {
-            State.IsSuccess(); // don't alter Exiting or Return
+            States.IsSuccess(); // don't alter Exiting or Return
             if (C)
             {
-                State.SetFailure();
+                States.SetFailure();
             }
 #if defined(DEBUG)
             LDA #'E' Debug.COut(); LDA #'!' Debug.COut();
@@ -464,7 +464,7 @@ unit Error // Error.asm
         if (C)
         {
             // LastError not set, check SystemState
-            State.CanContinue(); // C if all good, NC if error or exit
+            States.CanContinue(); // C if all good, NC if error or exit
         }
         PLA
     }
@@ -530,7 +530,7 @@ unit Error // Error.asm
         STA ZP.ACCL
         
         Error.ClearError();  // Clear error state before next command
-        State.SetSuccess();  // Reset state for clean start
+        States.SetSuccess();  // Reset state for clean start
         STZ ZP.LastErrorL
         STZ ZP.LastErrorH
         

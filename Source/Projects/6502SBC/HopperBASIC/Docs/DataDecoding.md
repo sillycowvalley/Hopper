@@ -7,7 +7,7 @@
 
 1. Search `"tokenizer.asm unit program"` for latest token enum values
 2. Search `"OpCodes.asm enum OpCodeType"` for opcode definitions  
-3. Search `"BASICSysCalls.asm enum SysCallType"` for OpCodeType.SYSCALL sub-opcode definitions  
+3. Search `"BASICSysCalls.asm enum SysCallType"` for OpCode.SYSCALL sub-opcode definitions  
 4. Search `"ZeroPage.asm HOPPER_BASIC ifdef"` for current ZP layout
 5. Search `"Objects.asm structure node offset"` for heap object structure
 6. Search `"Functions.asm Variables.asm"` for symbol table specifics

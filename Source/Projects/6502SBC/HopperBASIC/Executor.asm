@@ -3,8 +3,6 @@ unit Executor // Executor.asm
    uses "Instructions"
    uses "ComparisonInstructions"
    uses "BASICSysCalls"
-   uses "Tools"
-   
    
    friend Functions;
    
@@ -28,7 +26,7 @@ unit Executor // Executor.asm
        
        // Push return slot in case we are calling a function to start the VM
        // If not, no biggie - just one wasted stack slot
-       LDA #BasicType.VOID
+       LDA #BASICType.VOID
        STA ZP.TOPT
        STZ ZP.TOPL  
        STZ ZP.TOPH
@@ -36,7 +34,7 @@ unit Executor // Executor.asm
        
        // Clear any error conditions
        Error.ClearError();
-       State.SetSuccess();
+       States.SetSuccess();
    }
    
    // Main entry point - Execute compiled opcodes
@@ -62,7 +60,7 @@ unit Executor // Executor.asm
        {
            // Initialize executor state
            InitExecutor();
-           State.IsSuccess();
+           States.IsSuccess();
            if (NC) { break; } // Error already set by InitExecutor
            
            // Main execution loop (assume there is at least one opcode)
@@ -70,19 +68,19 @@ unit Executor // Executor.asm
            {
                // Fetch and execute next opcode
                FetchOpCode();
-               State.IsSuccess(); // expect SystemState.Success to continue
+               States.IsSuccess(); // expect State.Success to continue
                if (NC) 
                {
-                   break; // Error fetching opcode: SystemState.Exiting because EOF success
+                   break; // Error fetching opcode: State.Exiting because EOF success
                }
                
                // Dispatch opcode (A contains opcode value)
-               DispatchOpCode(); // expect SystemState.Success to continue
-               State.IsSuccess();
+               DispatchOpCode(); // expect State.Success to continue
+               States.IsSuccess();
                if (NC)
                {
-                   // SystemState.Failure - runtime error: Type Mismatch, Overflow, etc ..
-                   // SystemState.Return  - function return popped CallStack pointer (CSP) to zero
+                   // State.Failure - runtime error: Type Mismatch, Overflow, etc ..
+                   // State.Return  - function return popped CallStack pointer (CSP) to zero
                    break; 
                }
 
@@ -96,11 +94,11 @@ unit Executor // Executor.asm
                    if (Z) 
                    { 
                        // REPL uses this exit - EOF success
-                       State.SetExiting();
+                       States.SetExiting();
                        break; 
                    }
                }
-               State.IsReturn();
+               States.IsReturn();
                if (C)
                {
                    break; // other exit conditions like popping the last return address from the callstack
@@ -151,11 +149,11 @@ unit Executor // Executor.asm
        if (Z)
        {
            Error.InternalError(); BIT ZP.EmulatorPCL
-           State.SetFailure();
+           States.SetFailure();
        }
        else
        {
-           State.SetSuccess();
+           States.SetSuccess();
        }
        
 #ifdef TRACE
@@ -185,7 +183,7 @@ unit Executor // Executor.asm
                if (Z) 
                { 
                    // At end of buffer
-                   State.SetExiting();
+                   States.SetExiting();
                    break; 
                }
            }
@@ -220,7 +218,7 @@ unit Executor // Executor.asm
            }
            
            PLA // Restore opcode to A
-           State.SetSuccess();
+           States.SetSuccess();
            break;
        }
        
@@ -252,7 +250,7 @@ unit Executor // Executor.asm
                { 
                    // At end of buffer - should exit successfully
                    Error.InternalError(); BIT ZP.EmulatorPCL
-                   State.SetFailure();
+                   States.SetFailure();
                    break; 
                }
            }
@@ -279,7 +277,7 @@ unit Executor // Executor.asm
            }
            
            PLA // Restore operand to A
-           State.SetSuccess();
+           States.SetSuccess();
            break;
        } // loop exit
        
@@ -302,17 +300,17 @@ unit Executor // Executor.asm
        {
            // Fetch low byte
            FetchOperandByte();
-           State.CanContinue();
+           States.CanContinue();
            if (NC) { break; }
            STA executorOperandL
            
            // Fetch high byte
            FetchOperandByte();
-           State.CanContinue();
+           States.CanContinue();
            if (NC) { break; }
            STA executorOperandH
            
-           State.SetSuccess();
+           States.SetSuccess();
            break;
        }
        
@@ -338,118 +336,118 @@ unit Executor // Executor.asm
            // === NO OPERAND OPCODES (0x00-0x3F) ===
            
            // Arithmetic operations
-           case OpCodeType.ADD:
+           case OpCode.ADD:
            {
                Instructions.Addition();
            }
-           case OpCodeType.SUB:
+           case OpCode.SUB:
            {
                Instructions.Subtraction();
            }
-           case OpCodeType.MUL:
+           case OpCode.MUL:
            {
                Instructions.Multiply();
            }
-           case OpCodeType.DIV:
+           case OpCode.DIV:
            {
                Instructions.Divide();
            }
-           case OpCodeType.MOD:
+           case OpCode.MOD:
            {
                Instructions.Modulo();
            }
-           case OpCodeType.NEG:
+           case OpCode.NEG:
            {
                Instructions.UnaryMinus();
            }
            
            // Bitwise operations
-           case OpCodeType.BITWISE_AND:
+           case OpCode.BITWISE_AND:
            {
                Instructions.BitwiseAnd();
            }
-           case OpCodeType.BITWISE_OR:
+           case OpCode.BITWISE_OR:
            {
                Instructions.BitwiseOr();
            }
            
            // Logical operations (BIT operands only)
-           case OpCodeType.LOGICAL_AND:
+           case OpCode.LOGICAL_AND:
            {
                Instructions.LogicalAnd();
            }
-           case OpCodeType.LOGICAL_OR:
+           case OpCode.LOGICAL_OR:
            {
                Instructions.LogicalOr();
            }
-           case OpCodeType.LOGICAL_NOT:
+           case OpCode.LOGICAL_NOT:
            {
                Instructions.LogicalNot();
            }
            
            // Comparison operations (all return BIT)
-           case OpCodeType.EQ:
+           case OpCode.EQ:
            {
                ComparisonInstructions.Equal();
            }
-           case OpCodeType.NE:
+           case OpCode.NE:
            {
                ComparisonInstructions.NotEqual();
            }
-           case OpCodeType.LT:
+           case OpCode.LT:
            {
                ComparisonInstructions.LessThan();
            }
-           case OpCodeType.GT:
+           case OpCode.GT:
            {
                ComparisonInstructions.GreaterThan();
            }
-           case OpCodeType.LE:
+           case OpCode.LE:
            {
                ComparisonInstructions.LessEqual();
            }
-           case OpCodeType.GE:
+           case OpCode.GE:
            {
                ComparisonInstructions.GreaterEqual();
            }
            
            // Function operations
-           case OpCodeType.ENTER:
+           case OpCode.ENTER:
            {
                executeEnter();
            }
-           case OpCodeType.RETURN:
+           case OpCode.RETURN:
            {
                executeReturn();
            }
-           case OpCodeType.RETURNVAL:
+           case OpCode.RETURNVAL:
            {
                executeReturnVal();
            }
            
            // Stack manipulation
-           case OpCodeType.DECSP:
+           case OpCode.DECSP:
            {
                executeDecSp();
            }
-           case OpCodeType.DUP:
+           case OpCode.DUP:
            {
                executeDup();
            }
-           case OpCodeType.NOP:
+           case OpCode.NOP:
            {
                executeNop();
            }
            
-           case OpCodeType.PUSH0:
+           case OpCode.PUSH0:
            {
                executePush0();
            }
-           case OpCodeType.PUSH1:
+           case OpCode.PUSH1:
            {
                executePush1();
            }
-           case OpCodeType.PUSHVOID:
+           case OpCode.PUSHVOID:
            {
                executePushVoid();
            }
@@ -457,61 +455,61 @@ unit Executor // Executor.asm
            // === ONE BYTE OPERAND OPCODES (0x40-0x7F) ===
            
            // Literal pushes (8-bit)
-           case OpCodeType.PUSHBIT:
+           case OpCode.PUSHBIT:
            {
                executePushBit();
            }
-           case OpCodeType.PUSHBYTE:
+           case OpCode.PUSHBYTE:
            {
                executePushByte();
            }
-           case OpCodeType.PUSHCSTRING:
+           case OpCode.PUSHCSTRING:
            {
                executePushCString();
            }
            
            // Variable operations
-           case OpCodeType.PUSHGLOBAL:
+           case OpCode.PUSHGLOBAL:
            {
                executePushGlobal();
            }
-           case OpCodeType.PUSHLOCAL:
+           case OpCode.PUSHLOCAL:
            {
                executePushLocal();
            }
-           case OpCodeType.POPGLOBAL:
+           case OpCode.POPGLOBAL:
            {
                executePopGlobal();
            }
-           case OpCodeType.POPLOCAL:
+           case OpCode.POPLOCAL:
            {
                executePopLocal();
            }
            
            // Control flow (short jumps)
-           case OpCodeType.JUMPB:
+           case OpCode.JUMPB:
            {
                executeJumpB();
            }
-           case OpCodeType.JUMPZB:
+           case OpCode.JUMPZB:
            {
                executeJumpZB();
            }
-           case OpCodeType.JUMPNZB:
+           case OpCode.JUMPNZB:
            {
                executeJumpNZB();
            }
            
            // Function and system calls
-           case OpCodeType.CALL:
+           case OpCode.CALL:
            {
                executeCall();
            }
-           case OpCodeType.CALLF:
+           case OpCode.CALLF:
            {
                executeCallF();
            }
-           case OpCodeType.SYSCALL:
+           case OpCode.SYSCALL:
            {
                ExecuteSysCall();
            }
@@ -519,25 +517,25 @@ unit Executor // Executor.asm
            // === TWO BYTE OPERAND OPCODES (0x80-0xBF) ===
            
            // Literal pushes (16-bit)
-           case OpCodeType.PUSHINT:
+           case OpCode.PUSHINT:
            {
                executePushInt();
            }
-           case OpCodeType.PUSHWORD:
+           case OpCode.PUSHWORD:
            {
                executePushWord();
            }
            
            // Control flow (long jumps)
-           case OpCodeType.JUMPW:
+           case OpCode.JUMPW:
            {
                executeJumpW();
            }
-           case OpCodeType.JUMPZW:
+           case OpCode.JUMPZW:
            {
                executeJumpZW();
            }
-           case OpCodeType.JUMPNZW:
+           case OpCode.JUMPNZW:
            {
                executeJumpNZW();
            }
@@ -552,15 +550,15 @@ unit Executor // Executor.asm
        Error.CheckError();
        if (NC) 
        { 
-           State.SetFailure(); 
+           States.SetFailure(); 
        }
        else
        {
            // Only set success if no error occurred
-           State.CanContinue();
+           States.CanContinue();
            if (C) 
            {
-               State.SetSuccess(); // Exiting or Success
+               States.SetSuccess(); // Exiting or Success
            }
            else
            {
@@ -584,11 +582,11 @@ unit Executor // Executor.asm
 #ifdef DEBUG
        LDA #'?' Debug.COut();
        TYA Debug.HOut();
-       Debug.DumpBasicBuffers();
+       Debug.DumpBuffers();
 #endif                
        // Unknown opcode
-       Error.NotImplemented(); BIT ZP.EmulatorPCL
-       State.SetFailure();
+       TODO(); BIT ZP.EmulatorPCL
+       States.SetFailure();
        
 #ifdef TRACE
        LDA #(executeNotImplementedTrace % 256) STA ZP.TraceMessageL LDA #(executeNotImplementedTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -602,7 +600,7 @@ unit Executor // Executor.asm
    //        Operand byte = argument count (number of arguments to clean up)
    // Output: Return value stored in return slot, stack frame restored, execution returned to caller
    // Stack: Removes all arguments and locals, preserves return slot with return value
-   // State: Sets State.SetReturn() if returned to entry call, State.SetSuccess() otherwise
+   // State: Sets States.SetReturn() if returned to entry call, States.SetSuccess() otherwise
    // Modifies: ZP.SP (stack cleanup), ZP.BP (restored), ZP.PC (restored), ZP.CSP (decremented)
    //           Return slot contents (value and type), executorOperand1 (operand fetch)
    // Preserves: All other zero page variables
@@ -614,7 +612,7 @@ unit Executor // Executor.asm
            // Fetch cleanup count operand (number of locals)
            
            FetchOperandByte();
-           State.CanContinue();
+           States.CanContinue();
            if (NC)
            {
                break;
@@ -648,11 +646,11 @@ unit Executor // Executor.asm
            LDA ZP.CSP
            if (Z) // CallStack pointer == 0?
            {
-               State.SetReturn(); // popped back down to entry call
+               States.SetReturn(); // popped back down to entry call
            }
            else
            {
-               State.SetSuccess();
+               States.SetSuccess();
            }
            break;
        } // exit loop
@@ -665,7 +663,7 @@ unit Executor // Executor.asm
 #ifdef TRACE
        LDA #(executeReturnTrace % 256) STA ZP.TraceMessageL LDA #(executeReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-       LDA BasicType.VOID
+       LDA BASICType.VOID
        STA ZP.TOPT
        STZ ZP.TOPL
        STZ ZP.TOPH
@@ -705,7 +703,7 @@ unit Executor // Executor.asm
        Stacks.PushBP();
        LDA ZP.SP
        STA ZP.BP
-       State.SetSuccess();
+       States.SetSuccess();
        
 //DumpStack();
        
@@ -724,7 +722,7 @@ unit Executor // Executor.asm
        
        // Decrement stack pointer (discard top value)
        DEC ZP.SP
-       State.SetSuccess();
+       States.SetSuccess();
        
 #ifdef TRACE
        LDA #(executeDecSpTrace % 256) STA ZP.TraceMessageL LDA #(executeDecSpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -745,7 +743,7 @@ unit Executor // Executor.asm
        Stacks.PushTop(); // Push it back
        LDA ZP.TOPT  
        Stacks.PushTop(); // Push duplicate
-       State.SetSuccess();
+       States.SetSuccess();
        
 #ifdef TRACE
        LDA #(executeDupTrace % 256) STA ZP.TraceMessageL LDA #(executeDupTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -761,7 +759,7 @@ unit Executor // Executor.asm
 #endif
        
        // No operation - do nothing
-       State.SetSuccess();
+       States.SetSuccess();
        
 #ifdef TRACE
        LDA #(executeNopTrace % 256) STA ZP.TraceMessageL LDA #(executeNopTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -781,11 +779,11 @@ unit Executor // Executor.asm
        // Store INT 0 in ZP.TOP
        STZ ZP.TOPL
        STZ ZP.TOPH
-       LDA #BasicType.INT
+       LDA #BASICType.INT
        STA ZP.TOPT
        Stacks.PushTop();
        
-       State.SetSuccess();
+       States.SetSuccess();
        
    #ifdef TRACE
        LDA #(executePush0Trace % 256) STA ZP.TraceMessageL LDA #(executePush0Trace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -804,11 +802,11 @@ unit Executor // Executor.asm
        LDA #1
        STA ZP.TOPL
        STZ ZP.TOPH
-       LDA #BasicType.INT
+       LDA #BASICType.INT
        STA ZP.TOPT
        Stacks.PushTop();
        
-       State.SetSuccess();
+       States.SetSuccess();
        
    #ifdef TRACE
        LDA #(executePush1Trace % 256) STA ZP.TraceMessageL LDA #(executePush1Trace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -826,11 +824,11 @@ unit Executor // Executor.asm
        // Store VOID 0 in ZP.TOP
        STZ ZP.TOPL
        STZ ZP.TOPH
-       LDA #BasicType.VOID
+       LDA #BASICType.VOID
        STA ZP.TOPT
        Stacks.PushTop();
        
-       State.SetSuccess();
+       States.SetSuccess();
        
    #ifdef TRACE
        LDA #(executePushVoidTrace % 256) STA ZP.TraceMessageL LDA #(executePushVoidTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -847,17 +845,17 @@ unit Executor // Executor.asm
        
        // Fetch operand byte
        FetchOperandByte();
-       State.CanContinue();
+       States.CanContinue();
        if (C)
        {
            // Store in ZP.TOP as BIT value (0 or 1)
            STA ZP.TOPL
            LDA #0
            STA ZP.TOPH
-           LDA # BasicType.BIT
+           LDA # BASICType.BIT
            Stacks.PushTop();
            
-           State.SetSuccess();
+           States.SetSuccess();
        }
        
 #ifdef TRACE
@@ -875,7 +873,7 @@ unit Executor // Executor.asm
        
        // Fetch operand byte
        FetchOperandByte();
-       State.CanContinue();
+       States.CanContinue();
        if (C)
        {
            
@@ -883,10 +881,10 @@ unit Executor // Executor.asm
            STA ZP.TOPL
            LDA #0
            STA ZP.TOPH
-           LDA # BasicType.BYTE
+           LDA # BASICType.BYTE
            Stacks.PushTop();
            
-           State.SetSuccess();
+           States.SetSuccess();
        }
        
 #ifdef TRACE
@@ -912,7 +910,7 @@ unit Executor // Executor.asm
            Error.CheckError();
            if (NC) 
            { 
-               State.SetFailure();
+               States.SetFailure();
                break; 
            }
            
@@ -921,7 +919,7 @@ unit Executor // Executor.asm
            STA ZP.TOPL
            LDA executorOperandH
            STA ZP.TOPH
-           LDA #BasicType.STRING
+           LDA #BASICType.STRING
            STA ZP.TOPT
            
            // Push to stack with STRING type
@@ -929,11 +927,11 @@ unit Executor // Executor.asm
            Error.CheckError();
            if (NC) 
            { 
-               State.SetFailure();
+               States.SetFailure();
                break; 
            }
            
-           State.SetSuccess();
+           States.SetSuccess();
            break;
        }
        
@@ -962,7 +960,7 @@ unit Executor // Executor.asm
            Error.CheckError();
            if (NC) 
            { 
-               State.SetFailure();
+               States.SetFailure();
                break; 
            }
            
@@ -977,7 +975,7 @@ unit Executor // Executor.asm
            Error.CheckError();
            if (NC) 
            { 
-               State.SetFailure();
+               States.SetFailure();
                break; 
            }
            
@@ -987,11 +985,11 @@ unit Executor // Executor.asm
            Error.CheckError();
            if (NC) 
            { 
-               State.SetFailure();
+               States.SetFailure();
                break; 
            }
            
-           State.SetSuccess();
+           States.SetSuccess();
            break;
        }
        
@@ -1003,8 +1001,8 @@ unit Executor // Executor.asm
    executePushLocal()
    {
        // TODO: Fetch local variable by BP offset and push value
-       Error.NotImplemented(); BIT ZP.EmulatorPCL
-       State.SetFailure();
+       TODO(); BIT ZP.EmulatorPCL
+       States.SetFailure();
    }
    
    // Execute POPGLOBAL opcode - pop value from stack and store to global variable
@@ -1025,7 +1023,7 @@ unit Executor // Executor.asm
            Error.CheckError();
            if (NC) 
            { 
-               State.SetFailure();
+               States.SetFailure();
                break; 
            }
            
@@ -1040,7 +1038,7 @@ unit Executor // Executor.asm
            Error.CheckError();
            if (NC) 
            { 
-               State.SetFailure();
+               States.SetFailure();
                break; 
            }
            
@@ -1057,7 +1055,7 @@ unit Executor // Executor.asm
            if (NC) 
            { 
                Error.TypeMismatch();
-               State.SetFailure();
+               States.SetFailure();
                break; 
            }
            
@@ -1066,11 +1064,11 @@ unit Executor // Executor.asm
            Error.CheckError();
            if (NC) 
            { 
-               State.SetFailure();
+               States.SetFailure();
                break; 
            }
            
-           State.SetSuccess();
+           States.SetSuccess();
            break;
        }
        
@@ -1082,8 +1080,8 @@ unit Executor // Executor.asm
    executePopLocal()
    {
        // TODO: Pop value and store in local variable by BP offset
-       Error.NotImplemented(); BIT ZP.EmulatorPCL
-       State.SetFailure();
+       TODO(); BIT ZP.EmulatorPCL
+       States.SetFailure();
    }
    
    
@@ -1101,7 +1099,7 @@ unit Executor // Executor.asm
        loop
        {
            FetchOperandWord();
-           State.CanContinue();
+           States.CanContinue();
            if (NC) { break; }
    
            LDA executorOperandL
@@ -1123,7 +1121,7 @@ unit Executor // Executor.asm
                LDA #'?' Debug.COut(); LDA #'F' Debug.COut();
    #endif
                Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
-               State.SetFailure();
+               States.SetFailure();
                break;
            }
 #ifdef TRACEJIT
@@ -1139,7 +1137,7 @@ unit Executor // Executor.asm
 #endif
                // JIT
                Functions.Compile();
-               State.CanContinue();
+               States.CanContinue();
                if (NC)
                {
                    // handle error
@@ -1187,7 +1185,7 @@ unit Executor // Executor.asm
                DEC ZP.PCH
            }
            DEC ZP.PCL
-           LDA # OpCodeType.CALLF
+           LDA # OpCode.CALLF
            STA [ZP.PC]
            
    #ifdef TRACEJIT
@@ -1206,7 +1204,7 @@ unit Executor // Executor.asm
            
    #endif
            
-           State.SetSuccess();
+           States.SetSuccess();
            break;
        } // loop
        
@@ -1247,7 +1245,7 @@ unit Executor // Executor.asm
        
        // Fetch 16-bit operand
        FetchOperandWord();
-       State.CanContinue();
+       States.CanContinue();
        if (C)
        {
            
@@ -1256,10 +1254,10 @@ unit Executor // Executor.asm
            STA ZP.TOPL
            LDA executorOperandH
            STA ZP.TOPH
-           LDA # BasicType.INT
+           LDA # BASICType.INT
            Stacks.PushTop();
            
-           State.SetSuccess();
+           States.SetSuccess();
        }
        
 #ifdef TRACE
@@ -1277,7 +1275,7 @@ unit Executor // Executor.asm
        
        // Fetch 16-bit operand
        FetchOperandWord();
-       State.CanContinue();
+       States.CanContinue();
        if (C)
        {
            
@@ -1286,10 +1284,10 @@ unit Executor // Executor.asm
            STA ZP.TOPL
            LDA executorOperandH
            STA ZP.TOPH
-           LDA # BasicType.WORD
+           LDA # BASICType.WORD
            Stacks.PushTop();
            
-           State.SetSuccess();
+           States.SetSuccess();
        }
        
 #ifdef TRACE
@@ -1326,7 +1324,7 @@ unit Executor // Executor.asm
        Stacks.PopTop();
        
        LDA ZP.TOPT
-       CMP #BasicType.BIT
+       CMP #BASICType.BIT
        if (Z)
        {
            SEC  // Success - is BIT type
@@ -1365,7 +1363,7 @@ unit Executor // Executor.asm
        
        // Fetch signed byte operand
        FetchOperandByte();
-       State.CanContinue();
+       States.CanContinue();
        if (C)
        {
            // Sign extend byte to word
@@ -1374,7 +1372,7 @@ unit Executor // Executor.asm
            // Apply offset to PC
            applySignedOffsetToPC();
            
-           State.SetSuccess();
+           States.SetSuccess();
        }
        
 #ifdef TRACE
@@ -1401,7 +1399,7 @@ unit Executor // Executor.asm
            {
                // Fetch signed byte operand
                FetchOperandByte();
-               State.CanContinue();
+               States.CanContinue();
                if (NC) { break; }
                
                // Sign extend byte to word
@@ -1414,12 +1412,12 @@ unit Executor // Executor.asm
            {
                // Still need to fetch and skip the operand
                FetchOperandByte();
-               State.CanContinue();
+               States.CanContinue();
                if (NC) { break; }
                // Don't apply offset - just continue
            }
            
-           State.SetSuccess();
+           States.SetSuccess();
            break;
        }
        
@@ -1447,7 +1445,7 @@ unit Executor // Executor.asm
            {
                // Fetch signed byte operand
                FetchOperandByte();
-               State.CanContinue();
+               States.CanContinue();
                if (NC) { break; }
                
                // Sign extend byte to word
@@ -1460,12 +1458,12 @@ unit Executor // Executor.asm
            {
                // Still need to fetch and skip the operand
                FetchOperandByte();
-               State.CanContinue();
+               States.CanContinue();
                if (NC) { break; }
                // Don't apply offset - just continue to next instruction
            }
            
-           State.SetSuccess();
+           States.SetSuccess();
            break;
        }
        
@@ -1485,7 +1483,7 @@ unit Executor // Executor.asm
        
        // Fetch 16-bit signed operand
        FetchOperandWord();
-       State.CanContinue();
+       States.CanContinue();
        if (C)
        {
            // Operand is already in executorOperandL/H, move to ZP.NEXT
@@ -1497,7 +1495,7 @@ unit Executor // Executor.asm
            // Apply offset to PC
            applySignedOffsetToPC();
            
-           State.SetSuccess();
+           States.SetSuccess();
        }
        
 #ifdef TRACE
@@ -1524,7 +1522,7 @@ unit Executor // Executor.asm
            {
                // Fetch 16-bit signed operand
                FetchOperandWord();
-               State.CanContinue();
+               States.CanContinue();
                if (NC) { break; }
                
                // Operand is already in executorOperandL/H, move to ZP.NEXT
@@ -1540,12 +1538,12 @@ unit Executor // Executor.asm
            {
                // Still need to fetch and skip the operand
                FetchOperandWord();
-               State.CanContinue();
+               States.CanContinue();
                if (NC) { break; }
                // Don't apply offset - just continue to next instruction
            }
            
-           State.SetSuccess();
+           States.SetSuccess();
            break;
        }
        
@@ -1573,7 +1571,7 @@ unit Executor // Executor.asm
            {
                // Fetch 16-bit signed operand
                FetchOperandWord();
-               State.CanContinue();
+               States.CanContinue();
                if (NC) { break; }
                
                // Operand is already in executorOperandL/H, move to ZP.NEXT
@@ -1589,12 +1587,12 @@ unit Executor // Executor.asm
            {
                // Still need to fetch and skip the operand
                FetchOperandWord();
-               State.CanContinue();
+               States.CanContinue();
                if (NC) { break; }
                // Don't apply offset - just continue to next instruction
            }
            
-           State.SetSuccess();
+           States.SetSuccess();
            break;
        }
        

@@ -1,4 +1,4 @@
-unit State // State.asm
+unit States // States.asm
 {
     // API Status: Clean
     // All public methods preserve caller state except for documented outputs
@@ -12,7 +12,7 @@ unit State // State.asm
     const string stateUnknown = "UNKNOWN";
 
     
-    flags SystemState 
+    flags State 
     {
         Failure = 0,        // Zero for easy testing (CMP -> Z flag)
         Success = 1,        // Normal completion
@@ -43,7 +43,7 @@ unit State // State.asm
     {
         PHA
         LDA ZP.SystemState
-        CMP #SystemState.Failure
+        CMP #State.Failure
         if (Z)
         {
             SEC
@@ -62,7 +62,7 @@ unit State // State.asm
     {
         PHA
         LDA ZP.SystemState
-        CMP #SystemState.Failure
+        CMP #State.Failure
         if (Z)
         {
             CLC  // Failure
@@ -80,7 +80,7 @@ unit State // State.asm
     {
         PHA
         LDA ZP.SystemState
-        CMP #SystemState.Exiting
+        CMP #State.Exiting
         if (Z)
         {
             SEC
@@ -98,7 +98,7 @@ unit State // State.asm
     {
         PHA
         LDA ZP.SystemState
-        CMP #SystemState.Success
+        CMP #State.Success
         if (Z)
         {
             SEC
@@ -116,7 +116,7 @@ unit State // State.asm
     {
         PHA
         LDA ZP.SystemState
-        CMP #SystemState.Return
+        CMP #State.Return
         if (Z)
         {
             SEC
@@ -138,7 +138,7 @@ unit State // State.asm
     SetSuccess()
     {
         PHA
-        LDA #SystemState.Success
+        LDA #State.Success
         STA ZP.SystemState
         PLA
     }
@@ -146,7 +146,7 @@ unit State // State.asm
     SetFailure()
     {
         PHA
-        LDA #SystemState.Failure  
+        LDA #State.Failure  
         STA ZP.SystemState
         PLA
     }
@@ -154,14 +154,14 @@ unit State // State.asm
     SetExiting()
     {
         PHA
-        LDA #SystemState.Exiting
+        LDA #State.Exiting
         STA ZP.SystemState
         PLA
     }
     SetReturn()
     {
         PHA
-        LDA #SystemState.Return
+        LDA #State.Return
         STA ZP.SystemState
         PLA
     }
@@ -186,28 +186,28 @@ unit State // State.asm
         LDA ZP.SystemState
         switch (A)
         {
-            case SystemState.Success:
+            case State.Success:
             {
                 LDA #(stateSuccess % 256)
                 STA ZP.ACCL
                 LDA #(stateSuccess / 256)
                 STA ZP.ACCH
             }
-            case SystemState.Failure:
+            case State.Failure:
             {
                 LDA #(stateFailure % 256)
                 STA ZP.ACCL
                 LDA #(stateFailure / 256)
                 STA ZP.ACCH
             }
-            case SystemState.Exiting:
+            case State.Exiting:
             {
                 LDA #(stateExiting % 256)
                 STA ZP.ACCL
                 LDA #(stateExiting / 256)
                 STA ZP.ACCH
             }
-            case SystemState.Return:
+            case State.Return:
             {
                 LDA #(stateReturn % 256)
                 STA ZP.ACCL

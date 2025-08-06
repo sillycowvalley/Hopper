@@ -57,7 +57,7 @@ enum SystemState
 // Helper methods per unit
 SetState() { STA executorState; /* set compatibility flags */ }
 GetState() { LDA executorState; /* set compatibility flags */ }
-IsFailure() { LDA executorState; CMP #SystemState.Failure; }
+IsFailure() { LDA executorState; CMP #State.Failure; }
 ```
 
 ## Implementation Strategy
@@ -164,9 +164,9 @@ Console.processTokens()
             Functions.GetState();
             switch (A)
             {
-                case SystemState.Success:   { executeReplFunction(); }
-                case SystemState.Exiting:   { Console.SetState(SystemState.Exiting); }
-                case SystemState.Failure:   { displayError(); }
+                case State.Success:   { executeReplFunction(); }
+                case State.Exiting:   { Console.SetState(State.Exiting); }
+                case State.Failure:   { displayError(); }
             }
         }
     }
@@ -179,7 +179,7 @@ Console.processTokens()
 if (isGlobalDeclaration() && !isReplFunction())
 {
     // Error: Global declarations only allowed in REPL
-    Compiler.SetState(SystemState.Failure);
+    Compiler.SetState(State.Failure);
     setError(Messages.IllegalInFunctionMode);
 }
 ```
@@ -314,7 +314,7 @@ enum SystemState
 // Helper methods per unit
 SetState() { STA executorState; /* set compatibility flags */ }
 GetState() { LDA executorState; /* set compatibility flags */ }
-IsFailure() { LDA executorState; CMP #SystemState.Failure; }
+IsFailure() { LDA executorState; CMP #State.Failure; }
 ```
 
 ## Implementation Strategy
@@ -421,9 +421,9 @@ Console.processTokens()
             Functions.GetState();
             switch (A)
             {
-                case SystemState.Success:   { executeReplFunction(); }
-                case SystemState.Exiting:   { Console.SetState(SystemState.Exiting); }
-                case SystemState.Failure:   { displayError(); }
+                case State.Success:   { executeReplFunction(); }
+                case State.Exiting:   { Console.SetState(State.Exiting); }
+                case State.Failure:   { displayError(); }
             }
         }
     }
@@ -436,7 +436,7 @@ Console.processTokens()
 if (isGlobalDeclaration() && !isReplFunction())
 {
     // Error: Global declarations only allowed in REPL
-    Compiler.SetState(SystemState.Failure);
+    Compiler.SetState(State.Failure);
     setError(Messages.IllegalInFunctionMode);
 }
 ```

@@ -64,7 +64,7 @@ Millis()
 {
     LDA #SysCallType.Millis
     STA Compiler.compilerOperand1
-    LDA #OpCodeType.SYSCALL
+    LDA #OpCode.SYSCALL
     STA Compiler.compilerOpCode
     Emit.OpCodeWithByte();
 }
@@ -73,7 +73,7 @@ Seconds()
 {
     LDA #SysCallType.Seconds
     STA Compiler.compilerOperand1
-    LDA #OpCodeType.SYSCALL
+    LDA #OpCode.SYSCALL
     STA Compiler.compilerOpCode
     Emit.OpCodeWithByte();
 }
@@ -82,7 +82,7 @@ Abs()
 {
     LDA #SysCallType.Abs
     STA Compiler.compilerOperand1
-    LDA #OpCodeType.SYSCALL
+    LDA #OpCode.SYSCALL
     STA Compiler.compilerOpCode
     Emit.OpCodeWithByte();
 }
@@ -91,7 +91,7 @@ Delay()
 {
     LDA #SysCallType.Delay
     STA Compiler.compilerOperand1
-    LDA #OpCodeType.SYSCALL
+    LDA #OpCode.SYSCALL
     STA Compiler.compilerOpCode
     Emit.OpCodeWithByte();
 }
@@ -101,7 +101,7 @@ Rnd()
 {
     LDA #SysCallType.Rnd
     STA Compiler.compilerOperand1
-    LDA #OpCodeType.SYSCALL
+    LDA #OpCode.SYSCALL
     STA Compiler.compilerOpCode
     Emit.OpCodeWithByte();
 }
@@ -110,7 +110,7 @@ Peek()
 {
     LDA #SysCallType.Peek
     STA Compiler.compilerOperand1
-    LDA #OpCodeType.SYSCALL
+    LDA #OpCode.SYSCALL
     STA Compiler.compilerOpCode
     Emit.OpCodeWithByte();
 }
@@ -119,7 +119,7 @@ Poke()
 {
     LDA #SysCallType.Poke
     STA Compiler.compilerOperand1
-    LDA #OpCodeType.SYSCALL
+    LDA #OpCode.SYSCALL
     STA Compiler.compilerOpCode
     Emit.OpCodeWithByte();
 }
@@ -141,13 +141,13 @@ executePoke()
 **Remove switch cases from DispatchOpCode():**
 ```hopper
 // DELETE THESE CASES:
-case OpCodeType.ABS: { executeAbs(); }
-case OpCodeType.MILLIS: { executeMillis(); }
-case OpCodeType.SECONDS: { executeSeconds(); }
-case OpCodeType.DELAY: { executeDelay(); }
-case OpCodeType.RND: { executeRnd(); }
-case OpCodeType.PEEK: { executePeek(); }
-case OpCodeType.POKE: { executePoke(); }
+case OpCode.ABS: { executeAbs(); }
+case OpCode.MILLIS: { executeMillis(); }
+case OpCode.SECONDS: { executeSeconds(); }
+case OpCode.DELAY: { executeDelay(); }
+case OpCode.RND: { executeRnd(); }
+case OpCode.PEEK: { executePeek(); }
+case OpCode.POKE: { executePoke(); }
 ```
 
 **Replace executeSysCall() method completely:**
@@ -163,7 +163,7 @@ executeSysCall()
 #endif
     
     FetchOperandByte();  // A = SYSCALL ID
-    State.CanContinue();
+    States.CanContinue();
     if (NC) 
     { 
 #ifdef TRACE
@@ -199,8 +199,8 @@ executeSysCall()
         { 
             // Handle 3-argument functions (future expansion)
             // TODO: Implement when needed
-            Error.NotImplemented(); BIT ZP.EmulatorPCL
-            State.SetFailure();
+            TODO(); BIT ZP.EmulatorPCL
+            States.SetFailure();
 #ifdef TRACE
             LDA #(executeSysCallTrace % 256) STA ZP.TraceMessageL 
             LDA #(executeSysCallTrace / 256) STA ZP.TraceMessageH 
@@ -231,7 +231,7 @@ executeSysCall()
             LDA ZP.TOPT
             switch (A)
             {
-                case BasicType.INT:
+                case BASICType.INT:
                 {
                     // INT absolute value - check if negative
                     LDA ZP.TOPH
@@ -250,8 +250,8 @@ executeSysCall()
                     STA ZP.TOPH
                     break;
                 }
-                case BasicType.WORD:
-                case BasicType.BYTE:
+                case BASICType.WORD:
+                case BASICType.BYTE:
                 {
                     // WORD/BYTE always positive (unsigned)
                     break;
@@ -259,7 +259,7 @@ executeSysCall()
                 default:
                 {
                     Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                    State.SetFailure();
+                    States.SetFailure();
 #ifdef TRACE
                     LDA #(executeSysCallTrace % 256) STA ZP.TraceMessageL 
                     LDA #(executeSysCallTrace / 256) STA ZP.TraceMessageH 
@@ -287,7 +287,7 @@ executeSysCall()
             // MILLIS function - get system timer
             LDA ZP.TICK0 STA ZP.TOPL     // Get system timer
             LDA ZP.TICK1 STA ZP.TOPH
-            LDA #BasicType.WORD STA ZP.TOPT
+            LDA #BASICType.WORD STA ZP.TOPT
         }
         case (SysCallType.Seconds >> 3):       // ID = 6
         {
@@ -326,8 +326,8 @@ executeSysCall()
         }
         default:
         {
-            Error.NotImplemented(); BIT ZP.EmulatorPCL
-            State.SetFailure();
+            TODO(); BIT ZP.EmulatorPCL
+            States.SetFailure();
             
 #ifdef TRACE
             LDA #(executeSysCallTrace % 256) STA ZP.TraceMessageL 
@@ -346,7 +346,7 @@ executeSysCall()
         Stacks.PushTop();  // Push return value from ZP.TOP*
     }
     
-    State.SetSuccess();
+    States.SetSuccess();
     
 #ifdef TRACE
     LDA #(executeSysCallTrace % 256) STA ZP.TraceMessageL 

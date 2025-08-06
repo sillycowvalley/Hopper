@@ -16,7 +16,7 @@ Complete refactoring of debug output and error handling systems in HopperBASIC t
 
 ## Architecture Refactoring
 
-### Five-Unit Split: Tools.asm → Tools.asm + Debug.asm + Trace.asm + Error.asm + State.asm
+### Five-Unit Split: Tools.asm → Tools.asm + Debug.asm + Trace.asm + Error.asm + States.asm
 
 **Tools.asm** (Production utilities only)
 - String operations (`StringLength`, `StringCompare`, `CopyBytes`)
@@ -41,7 +41,7 @@ Complete refactoring of debug output and error handling systems in HopperBASIC t
 - Comprehensive error checking (`CheckErrorAndStatus()`)
 - Future: Terse mode compilation support
 
-**State.asm** (System state management)
+**States.asm** (System state management)
 - Universal state management replacing fragile C|NC flags
 - State helper methods (`SetSuccess()`, `SetFailure()`, `IsExiting()`, etc.)
 - Robust state propagation for complex flows
@@ -132,7 +132,7 @@ unit Error
         if (C)
         {
             // LastError not set, check SystemState
-            State.CanContinue(); // C if all good, NC if error or exit
+            States.CanContinue(); // C if all good, NC if error or exit
         }
         PLA
     }
@@ -154,7 +154,7 @@ unit Error
 - **Benefit**: Cleaner code, fewer register stack operations, more robust state management
 
 **Error Detection Enhancement:**
-- **State.IsError()**: Checks only SystemState.Failure
+- **States.IsError()**: Checks only State.Failure
 - **Error.CheckErrorAndStatus()**: Comprehensive check of both error systems
 - **Benefit**: Granular control when needed, comprehensive checking at decision points
 
@@ -215,7 +215,7 @@ unit State
     {
         PHA
         LDA ZP.SystemState
-        CMP #SystemState.Failure
+        CMP #State.Failure
         if (Z) { SEC } else { CLC }
         PLA
     }
@@ -224,7 +224,7 @@ unit State
     {
         PHA  
         LDA ZP.SystemState
-        CMP #SystemState.Success
+        CMP #State.Success
         if (Z) { SEC } else { CLC }
         PLA
     }
@@ -233,7 +233,7 @@ unit State
     {
         PHA
         LDA ZP.SystemState
-        CMP #SystemState.Exiting
+        CMP #State.Exiting
         if (Z) { SEC } else { CLC }
         PLA
     }
@@ -245,7 +245,7 @@ unit State
     {
         PHA
         LDA ZP.SystemState
-        CMP #SystemState.Success
+        CMP #State.Success
         if (Z) { SEC } else { CLC }
         PLA
     }
@@ -257,7 +257,7 @@ unit State
     {
         PHA
         LDA ZP.SystemState
-        CMP #SystemState.Failure
+        CMP #State.Failure
         if (Z) { SEC } else { CLC }
         PLA
     }
@@ -266,7 +266,7 @@ unit State
     SetSuccess()
     {
         PHA
-        LDA #SystemState.Success
+        LDA #State.Success
         STA ZP.SystemState
         PLA
     }
@@ -274,7 +274,7 @@ unit State
     SetFailure()
     {
         PHA
-        LDA #SystemState.Failure  
+        LDA #State.Failure  
         STA ZP.SystemState
         PLA
     }
@@ -282,7 +282,7 @@ unit State
     SetExiting()
     {
         PHA
-        LDA #SystemState.Exiting
+        LDA #State.Exiting
         STA ZP.SystemState
         PLA
     }
@@ -322,16 +322,16 @@ Console.ProcessLine()
     // No PHP/PLP needed - not preserving fragile C flags
     
     executeUnifiedStatement();  // Leaf API call
-    if (NC) { State.SetFailure(); return; }
+    if (NC) { States.SetFailure(); return; }
     
     // Handle complex state flows
     checkForExit();
-    State.GetState();
+    States.GetState();
     switch (A)
     {
-        case SystemState.Success:   { /* continue */ }
-        case SystemState.Failure:   { /* handle error */ }
-        case SystemState.Exiting:   { /* propagate exit */ }
+        case State.Success:   { /* continue */ }
+        case State.Failure:   { /* handle error */ }
+        case State.Exiting:   { /* propagate exit */ }
     }
 }
 
@@ -339,7 +339,7 @@ Console.ProcessLine()
 interpreterLoop()
 {
     Console.ProcessLine();
-    State.IsExiting();
+    States.IsExiting();
     if (C) { cleanup(); exit(); }
 }
 ```
@@ -350,7 +350,7 @@ interpreterLoop()
 complexOperation();
 Error.CheckErrorAndStatus();
 if (NC) { 
-    State.IsExiting();
+    States.IsExiting();
     if (C) { exit(); }
     else { displayError(); }
 }
@@ -606,23 +606,23 @@ Functions.Compile()
     // No PHP/PLP needed
     
     Memory.Allocate();
-    if (NC) { State.SetFailure(); return; }
+    if (NC) { States.SetFailure(); return; }
     
     Tokenizer.TokenizeLine();
-    if (NC) { State.SetFailure(); return; }
+    if (NC) { States.SetFailure(); return; }
     
-    State.SetSuccess();
+    States.SetSuccess();
 }
 
 // Caller uses SystemState:
 someHigherLevel()
 {
     Functions.Compile();
-    State.GetState();
+    States.GetState();
     switch (A)
     {
-        case SystemState.Success: { continue; }
-        case SystemState.Failure: { handleError(); }
+        case State.Success: { continue; }
+        case State.Failure: { handleError(); }
     }
 }
 ```
@@ -630,19 +630,19 @@ someHigherLevel()
 ### Error Checking Patterns
 ```hopper
 // Granular SystemState-only check:
-State.IsError();
+States.IsError();
 if (C) { handleStateFailure(); }
 
 // Comprehensive error check at decision points:
 Error.CheckErrorAndStatus();
 if (NC) { 
-    State.IsExiting();
+    States.IsExiting();
     if (C) { exit(); }
     else { displayError(); }
 }
 
 // Quick continuation check:
-State.CanContinue();
+States.CanContinue();
 if (NC) { return; }  // Stop execution
 ```
 
@@ -678,22 +678,22 @@ ComplexMethod()
     Memory.Allocate();
     if (NC) 
     { 
-        State.SetFailure(); 
+        States.SetFailure(); 
         PLA
         return; 
     }
     
     // Call other orchestration methods
     someOtherOrchestrationMethod();
-    State.GetState();
+    States.GetState();
     switch (A)
     {
-        case SystemState.Success:   { /* continue */ }
-        case SystemState.Failure:   { PLA; return; }
-        case SystemState.Exiting:   { State.SetExiting(); PLA; return; }
+        case State.Success:   { /* continue */ }
+        case State.Failure:   { PLA; return; }
+        case State.Exiting:   { States.SetExiting(); PLA; return; }
     }
     
-    State.SetSuccess();
+    States.SetSuccess();
     PLA
 }
 ```
@@ -749,7 +749,7 @@ DebugOutputHere();  // May preserve flags internally
     
     // Production logic never depends on debug state
     leafApi();
-    if (NC) { State.SetFailure(); break; }
+    if (NC) { States.SetFailure(); break; }
     
 #ifdef TRACE
 TracePointHere();   // May preserve flags internally
@@ -772,7 +772,7 @@ DebugMethod()
     if (NC)
     {
         // Debug allocation failed - just exit quietly
-        // Don't call State.SetFailure() - this is debug code
+        // Don't call States.SetFailure() - this is debug code
         PLA
         return;
     }
@@ -902,15 +902,15 @@ Console.ProcessTokens()
     // No PHP/PLP needed
     
     Tokenizer.TokenizeLine();
-    if (NC) { State.SetFailure(); return; }
+    if (NC) { States.SetFailure(); return; }
     
     Statement.Execute();
-    State.GetState();
+    States.GetState();
     switch (A)
     {
-        case SystemState.Success:   { /* continue */ }
-        case SystemState.Exiting:   { ExitFunctionCaptureMode(); return; }
-        case SystemState.Failure:   { /* handle error */ }
+        case State.Success:   { /* continue */ }
+        case State.Exiting:   { ExitFunctionCaptureMode(); return; }
+        case State.Failure:   { /* handle error */ }
     }
 }
 
@@ -928,7 +928,7 @@ mainInterpreterLoop()
     Error.CheckErrorAndStatus();  // Check both error systems
     if (NC) 
     { 
-        State.IsExiting();
+        States.IsExiting();
         if (C) { cleanup(); exit(); }
         else { displayError(); }
     }
@@ -1012,7 +1012,7 @@ This validates that the unification is working correctly:
 ## Implementation Checklist
 
 ### Phase 1: State Management System ✅ **COMPLETE**
-- [x] **Create State.asm**
+- [x] **Create States.asm**
   - [x] Define SystemState enum (Failure, Success, Exiting)
   - [x] Implement SetState(), GetState(), IsFailure(), IsSuccess(), IsExiting()
   - [x] Add convenience methods (SetSuccess(), SetFailure(), SetExiting())
@@ -1024,7 +1024,7 @@ This validates that the unification is working correctly:
 - [x] **Update ZeroPage.asm**
   - [x] Add ZP.SystemState allocation (1 byte at 0x4A)
 - [x] **Update InitializeBASIC()**
-  - [x] Add State.Initialize() call
+  - [x] Add States.Initialize() call
 - [ ] **Refactor PHP/PLP usage:**
   - [ ] Remove PHP/PLP from orchestration methods (Console, Statement, Functions, etc.)
   - [ ] Keep PHP/PLP only in small debug utilities (Debug.COut(), Debug.HOut(), etc.)

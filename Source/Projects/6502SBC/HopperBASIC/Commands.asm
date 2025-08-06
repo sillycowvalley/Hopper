@@ -1,9 +1,8 @@
 unit Commands // Commands.asm
 {
-    uses "Tools"
-    uses "Tokenizer"
-    uses "TokenIterator"
+    uses "./Utilities/TokenIterator"
     
+    uses "Tokenizer"
     uses "Statement"  // For IsCaptureModeOn()
     uses "Console"   // For FunctionModeError()
     
@@ -134,7 +133,7 @@ unit Commands // Commands.asm
         
         // Print "BEGIN"
         LDA #Token.BEGIN
-        Tokenizer.PrintKeyword();
+        Tokens.PrintKeyword();
         
         // Restore function node for body display
         PLA
@@ -178,7 +177,7 @@ unit Commands // Commands.asm
         
         // Print "FUNC "
         LDA #Token.FUNC
-        Tokenizer.PrintKeyword();
+        Tokens.PrintKeyword();
         LDA #' '
         Serial.WriteChar();
         
@@ -245,7 +244,7 @@ unit Commands // Commands.asm
         
         // Print ENDFUNC to close the function  
         LDA #Token.ENDFUNC
-        Tokenizer.PrintKeyword();
+        Tokens.PrintKeyword();
         
         Tools.NL();
         Tools.NL(); // Extra blank line after function
@@ -400,7 +399,7 @@ unit Commands // Commands.asm
             if (C)
             {
                 Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
-                State.SetFailure();
+                States.SetFailure();
                 break;
             }
             
@@ -408,7 +407,7 @@ unit Commands // Commands.asm
             Error.CheckError();
             if (NC) 
             { 
-                State.SetFailure(); 
+                States.SetFailure(); 
                 break; 
             }
             
@@ -422,10 +421,10 @@ unit Commands // Commands.asm
                 Error.CheckError();
                 if (NC) 
                 { 
-                    State.SetFailure(); 
+                    States.SetFailure(); 
                     break;
                 }
-                State.SetSuccess();
+                States.SetSuccess();
                 break;
             }
             
@@ -434,13 +433,13 @@ unit Commands // Commands.asm
             {
                 // Invalid argument
                 Error.SyntaxError(); BIT ZP.EmulatorPCL
-                State.SetFailure();
+                States.SetFailure();
                 break;
             }
             
             // Display all functions
             displayAllFunctions();
-            State.SetSuccess();
+            States.SetSuccess();
             break;
         } // loop exit
 #ifdef TRACECONSOLE
@@ -465,7 +464,7 @@ unit Commands // Commands.asm
             if (C)
             {
                 Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
-                State.SetFailure();
+                States.SetFailure();
                 break;
             }
             
@@ -477,7 +476,7 @@ unit Commands // Commands.asm
             Error.CheckError();
             if (NC) 
             {
-                State.SetFailure(); 
+                States.SetFailure(); 
                 break; 
             }
             
@@ -486,7 +485,7 @@ unit Commands // Commands.asm
             Error.CheckError();
             if (NC)
             {
-                State.SetFailure(); 
+                States.SetFailure(); 
                 break;
             }
             
@@ -503,7 +502,7 @@ unit Commands // Commands.asm
                 displayFunction(); // Input: ZP.IDX = function node
             }
             
-            State.SetSuccess();
+            States.SetSuccess();
             break;
         } // loop exit
 #ifdef TRACECONSOLE
@@ -527,7 +526,7 @@ unit Commands // Commands.asm
             if (C)
             {
                 Error.OnlyAtConsole(); BIT ZP.EmulatorPCL
-                State.SetFailure();
+                States.SetFailure();
                 break;
             }
             
@@ -535,7 +534,7 @@ unit Commands // Commands.asm
             Error.CheckError();
             if (NC) 
             { 
-                State.SetFailure(); 
+                States.SetFailure(); 
                 break;
             }
             
@@ -579,7 +578,7 @@ unit Commands // Commands.asm
                 
                 LDA ZP.ACCT
                 AND #0x0F
-                CMP #BasicType.STRING
+                CMP #BASICType.STRING
                 if (Z)
                 {
                     LDA #'"'
@@ -592,7 +591,7 @@ unit Commands // Commands.asm
                 
                 LDA ZP.ACCT
                 AND #0x0F
-                CMP #BasicType.STRING
+                CMP #BASICType.STRING
                 if (Z)
                 {
                     LDA #'"'
@@ -626,7 +625,7 @@ unit Commands // Commands.asm
                 // Get packed type and extract data type
                 LDA ZP.ACCT
                 AND #0x0F
-                Tokens.PrintType(); // Input: A = dataType
+                BASICTypes.PrintType(); // Input: A = dataType
                 
                 // Print space
                 LDA #' '
@@ -646,7 +645,7 @@ unit Commands // Commands.asm
                 
                 LDA ZP.ACCT
                 AND #0x0F
-                CMP #BasicType.STRING
+                CMP #BASICType.STRING
                 if (Z)
                 {
                     LDA #'"'
@@ -659,7 +658,7 @@ unit Commands // Commands.asm
                 
                 LDA ZP.ACCT
                 AND #0x0F
-                CMP #BasicType.STRING
+                CMP #BASICType.STRING
                 if (Z)
                 {
                     LDA #'"'
@@ -680,7 +679,7 @@ unit Commands // Commands.asm
                 Tools.NL();
             }
             
-            State.SetSuccess();
+            States.SetSuccess();
             break;
         } // exit loop
 #ifdef TRACECONSOLE

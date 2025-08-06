@@ -225,12 +225,14 @@ unit ZP // ZeroPage.asm
     const byte UWIDE7               = M3;
     
     // TokenIterator used by listing commands (LIST, FUNCS) to enumerate function bodies
-    const byte TOKCUR    = M0;  // Current token value (was ZP.M0/tokIterCurrent)
-    const byte TOKBASEL  = M1;  // Token stream base pointer low (was ZP.M1/tokIterBaseL)
-    const byte TOKBASEH  = M2;  // Token stream base pointer high (was ZP.M2/tokIterBaseH)
-    const byte TOKINDENT = M3;  // Current indentation level (was ZP.M3/tokIterIndentLevel)
-    const byte TOKPOSL   = M4;  // Token position/offset low (additional slot)
-    const byte TOKPOSH   = M5;  // Token position/offset high (additional slot)
+    const byte TOKCUR     = M0;  // Current token value
+    const byte TOKBASE    = M1;
+    const byte TOKBASEL   = M1;  // Token stream base pointer low
+    const byte TOKBASEH   = M2;  // Token stream base pointer high
+    const byte TOKINDENT  = M3;  // Current indentation level
+    const byte TOKPOS     = M4;
+    const byte TOKPOSL    = M4;  // Token position/offset low
+    const byte TOKPOSH    = M5;  // Token position/offset high
     
     // FUNCTION PARAMETER WORKSPACE
     const byte FSOURCEADDRESS       = 0x58;  // Source address parameter

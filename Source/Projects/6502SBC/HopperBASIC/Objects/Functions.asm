@@ -920,20 +920,20 @@ unit Functions
             PLA
             STA ZP.IDXL
             
-            State.GetState();
+            States.GetState();
             switch (A)
             {
-                case SystemState.Success:
+                case State.Success:
                 {
                     // continue
                 }
-                case SystemState.Failure:
+                case State.Failure:
                 { 
                     // handle compilation error
-                    State.SetFailure();
+                    States.SetFailure();
                     break;
                 }
-                case SystemState.Exiting:   
+                case State.Exiting:   
                 { 
                     BRK // should not happen in compilation
                 }
@@ -947,7 +947,7 @@ unit Functions
             // Mark function as compiled
             SetCompiled();
             
-            State.SetSuccess(); // should already be the case
+            States.SetSuccess(); // should already be the case
             break;
         }
         

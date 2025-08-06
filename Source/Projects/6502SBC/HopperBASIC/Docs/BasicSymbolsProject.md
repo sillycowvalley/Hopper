@@ -509,7 +509,7 @@ LDA #(testName / 256)
 STA ZP.TOPH
 
 // Pack symbolType|dataType: VARIABLE(1) in high nibble, INT(2) in low nibble
-LDA #((SymbolType.VARIABLE << 4) | BasicType.INT)
+LDA #((SymbolType.VARIABLE << 4) | BASICType.INT)
 STA ZP.ACCT
 
 LDA #42
@@ -544,7 +544,7 @@ if (C)  // Found
     
     LDA ZP.ACCT
     AND #0x0F           // Extract data type (low nibble)
-    CMP #BasicType.INT
+    CMP #BASICType.INT
     // ZP.IDYL/H contains the value (42)
     // ZP.NEXTL/H contains tokens pointer
 }

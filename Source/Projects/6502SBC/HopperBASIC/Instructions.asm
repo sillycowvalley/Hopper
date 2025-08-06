@@ -27,7 +27,7 @@ unit Instructions // Instructions.asm
         {
             // Check for VOID type first - never allow VOID assignments
             LDA ZP.TOPT  // RHS type
-            CMP #BasicType.VOID
+            CMP #BASICType.VOID
             if (Z)
             {
                 CLC  // Incompatible - cannot assign VOID to anything
@@ -35,7 +35,7 @@ unit Instructions // Instructions.asm
             }
             
             LDA ZP.NEXTT
-            CMP #BasicType.BYTE
+            CMP #BASICType.BYTE
             if (Z)
             {
                 // Special case for BYTE type - only allows values 0-255
@@ -91,7 +91,7 @@ unit Instructions // Instructions.asm
         {
             // Check for VOID type first - never allow VOID in any operations
             LDA ZP.NEXTT  // Left operand type
-            CMP #BasicType.VOID
+            CMP #BASICType.VOID
             if (Z)
             {
                 CLC  // Incompatible - VOID cannot participate in operations
@@ -99,7 +99,7 @@ unit Instructions // Instructions.asm
             }
             
             LDA ZP.TOPT  // Right operand type
-            CMP #BasicType.VOID
+            CMP #BASICType.VOID
             if (Z)
             {
                 CLC  // Incompatible - VOID cannot participate in operations
@@ -113,7 +113,7 @@ unit Instructions // Instructions.asm
             {
                 // Arithmetic: reject BIT types
                 LDA ZP.NEXTT
-                CMP #BasicType.BIT
+                CMP #BASICType.BIT
                 if (Z)
                 {
                     CLC  // Set NC - type mismatch
@@ -121,7 +121,7 @@ unit Instructions // Instructions.asm
                 }
                 
                 LDA ZP.TOPT
-                CMP #BasicType.BIT
+                CMP #BASICType.BIT
                 if (Z)
                 {
                     CLC  // Set NC - type mismatch
@@ -144,7 +144,7 @@ unit Instructions // Instructions.asm
                     {
                         // Logical: only BIT types allowed
                         LDA ZP.NEXTT
-                        CMP #BasicType.BIT
+                        CMP #BASICType.BIT
                         if (NZ)
                         {
                             CLC  // Set NC - type mismatch
@@ -152,7 +152,7 @@ unit Instructions // Instructions.asm
                         }
                         
                         LDA ZP.TOPT
-                        CMP #BasicType.BIT
+                        CMP #BASICType.BIT
                         if (NZ)
                         {
                             CLC  // Set NC - type mismatch
@@ -160,7 +160,7 @@ unit Instructions // Instructions.asm
                         }
                         
                         // Both are BIT - set result type and compatible flag
-                        LDA #BasicType.BIT
+                        LDA #BASICType.BIT
                         STA ZP.NEXTT
                         SEC  // Set C - compatible
                         break;
@@ -187,14 +187,14 @@ unit Instructions // Instructions.asm
             
             // BYTE vs INT - always compatible, promotes to INT
             LDA ZP.NEXTT
-            CMP #BasicType.BYTE
+            CMP #BASICType.BYTE
             if (Z)
             {
                 LDA ZP.TOPT
-                CMP #BasicType.INT
+                CMP #BASICType.INT
                 if (Z)
                 {
-                    LDA #BasicType.INT
+                    LDA #BASICType.INT
                     STA ZP.NEXTT
                     LDA ZP.ACCT
                     SEC  // Set C - compatible
@@ -204,11 +204,11 @@ unit Instructions // Instructions.asm
             
             // INT vs BYTE - always compatible, promotes to INT  
             LDA ZP.NEXTT
-            CMP #BasicType.INT
+            CMP #BASICType.INT
             if (Z)
             {
                 LDA ZP.TOPT
-                CMP #BasicType.BYTE
+                CMP #BASICType.BYTE
                 if (Z)
                 {
                     LDA ZP.ACCT
@@ -219,14 +219,14 @@ unit Instructions // Instructions.asm
             
             // BYTE vs WORD - always compatible, promotes to WORD
             LDA ZP.NEXTT
-            CMP #BasicType.BYTE
+            CMP #BASICType.BYTE
             if (Z)
             {
                 LDA ZP.TOPT
-                CMP #BasicType.WORD
+                CMP #BASICType.WORD
                 if (Z)
                 {
-                    LDA #BasicType.WORD
+                    LDA #BASICType.WORD
                     STA ZP.NEXTT  // Promote to WORD for all operations except comparisons
                     LDA ZP.ACCT
                     SEC  // Set C - compatible
@@ -236,11 +236,11 @@ unit Instructions // Instructions.asm
             
             // WORD vs BYTE - always compatible, promotes to WORD
             LDA ZP.NEXTT
-            CMP #BasicType.WORD
+            CMP #BASICType.WORD
             if (Z)
             {
                 LDA ZP.TOPT
-                CMP #BasicType.BYTE
+                CMP #BASICType.BYTE
                 if (Z)
                 {
                     // WORD is already the promoted type (no change to ZP.NEXTT needed)
@@ -252,11 +252,11 @@ unit Instructions // Instructions.asm
             
             // WORD vs INT - runtime compatibility check required
             LDA ZP.NEXTT
-            CMP #BasicType.WORD
+            CMP #BASICType.WORD
             if (Z)
             {
                 LDA ZP.TOPT
-                CMP #BasicType.INT
+                CMP #BASICType.INT
                 if (Z)
                 {
                     // Check if this is a comparison operation
@@ -287,7 +287,7 @@ unit Instructions // Instructions.asm
                                 break;
                             }
                             // WORD = 32767: promote to INT for signed comparison
-                            LDA #BasicType.INT
+                            LDA #BASICType.INT
                             STA ZP.NEXTT
                             SEC  // Set C - compatible
                             break;
@@ -295,7 +295,7 @@ unit Instructions // Instructions.asm
                         else
                         {
                             // INT >= 0: promote to WORD for unsigned comparison
-                            LDA #BasicType.WORD
+                            LDA #BASICType.WORD
                             STA ZP.NEXTT
                             SEC  // Set C - compatible
                             break;
@@ -311,7 +311,7 @@ unit Instructions // Instructions.asm
                         if (Z)
                         {
                             // Allow the operation - arithmetic will handle the sign correctly
-                            LDA #BasicType.WORD  // Promote to WORD type
+                            LDA #BASICType.WORD  // Promote to WORD type
                             STA ZP.NEXTT
                             SEC  // Set C - compatible
                             break;
@@ -320,7 +320,7 @@ unit Instructions // Instructions.asm
                         CLC  // Set NC - incompatible (for non-arithmetic only)
                         break;
                     }
-                    LDA #BasicType.WORD
+                    LDA #BASICType.WORD
                     STA ZP.NEXTT
                     
                     // INT is non-negative, compatible with WORD
@@ -332,11 +332,11 @@ unit Instructions // Instructions.asm
             
             // INT vs WORD - runtime compatibility check required
             LDA ZP.NEXTT
-            CMP #BasicType.INT
+            CMP #BASICType.INT
             if (Z)
             {
                 LDA ZP.TOPT
-                CMP #BasicType.WORD
+                CMP #BASICType.WORD
                 if (Z)
                 {
                     // Check if this is a comparison operation
@@ -367,7 +367,7 @@ unit Instructions // Instructions.asm
                                 break;
                             }
                             // WORD = 32767: promote to INT for signed comparison
-                            LDA #BasicType.INT
+                            LDA #BASICType.INT
                             STA ZP.NEXTT
                             SEC  // Set C - compatible
                             break;
@@ -375,7 +375,7 @@ unit Instructions // Instructions.asm
                         else
                         {
                             // INT >= 0: promote to WORD for unsigned comparison
-                            LDA #BasicType.WORD
+                            LDA #BASICType.WORD
                             STA ZP.NEXTT
                             SEC  // Set C - compatible
                             break;
@@ -393,7 +393,7 @@ unit Instructions // Instructions.asm
                         if (Z)
                         {
                             // Allow the operation - arithmetic will handle the sign correctly
-                            LDA #BasicType.WORD  // Promote to WORD type
+                            LDA #BASICType.WORD  // Promote to WORD type
                             STA ZP.NEXTT
                             SEC  // Set C - compatible
                             break;
@@ -402,7 +402,7 @@ unit Instructions // Instructions.asm
                         CLC  // Set NC - incompatible (for non-arithmetic only)
                         break;
                     }
-                    LDA #BasicType.WORD
+                    LDA #BASICType.WORD
                     STA ZP.NEXTT
                     
                     // INT is non-negative, compatible with WORD
@@ -413,18 +413,18 @@ unit Instructions // Instructions.asm
             } // INT vs WORD
             
             LDA ZP.NEXTT
-            CMP #BasicType.STRING
+            CMP #BASICType.STRING
             if (Z)
             {
                 LDA ZP.TOPT  
-                CMP #BasicType.STRING
+                CMP #BASICType.STRING
                 if (Z)
                 {
                     // STRING vs STRING - only valid for equality operations
                     LDA ZP.ACCT
                     if (Z)  // Equality comparison mode
                     {
-                        LDA #BasicType.BIT  // Result type is BIT
+                        LDA #BASICType.BIT  // Result type is BIT
                         STA ZP.NEXTT
                         SEC  // Compatible
                         break;
@@ -443,11 +443,11 @@ unit Instructions // Instructions.asm
             }
 
             LDA ZP.TOPT
-            CMP #BasicType.STRING
+            CMP #BASICType.STRING
             if (Z)
             {
                 LDA ZP.NEXTT
-                CMP #BasicType.STRING
+                CMP #BASICType.STRING
                 if (NZ)
                 {
                     CLC  // non-STRING with STRING is invalid
@@ -628,7 +628,7 @@ unit Instructions // Instructions.asm
             
             // Check if this is WORD 32768 (special case for -32768)
             LDA ZP.TOPT
-            CMP #BasicType.WORD
+            CMP #BASICType.WORD
             if (Z)
             {
                 LDA ZP.TOPH
@@ -639,11 +639,11 @@ unit Instructions // Instructions.asm
                     if (Z)  // Exactly 32768
                     {
                         // Convert WORD 32768 to INT -32768 directly
-                        LDA #BasicType.INT
+                        LDA #BASICType.INT
                         STA ZP.TOPT
                         // Value 0x8000 is correct for -32768
                         
-                        LDA #BasicType.INT
+                        LDA #BASICType.INT
                         Stacks.PushTop();
                         SEC
                         break;
@@ -653,7 +653,7 @@ unit Instructions // Instructions.asm
             
             // Handle normal cases
             LDA ZP.TOPT
-            CMP #BasicType.INT
+            CMP #BASICType.INT
             if (Z)
             {
                 // INT - negate using two's complement
@@ -678,11 +678,11 @@ unit Instructions // Instructions.asm
                 STA ZP.TOPH
                 
                 // Force result type to INT (all negative numbers are INT)
-                LDA #BasicType.INT
+                LDA #BASICType.INT
                 STA ZP.TOPT
             }
             
-            LDA #BasicType.INT
+            LDA #BASICType.INT
             Stacks.PushTop();
             SEC
             break;
@@ -720,7 +720,7 @@ unit Instructions // Instructions.asm
             }
             
             LDA ZP.NEXTT
-            CMP #BasicType.INT
+            CMP #BASICType.INT
             if (Z)
             {
                 // INT - handle signed multiplication
@@ -792,7 +792,7 @@ unit Instructions // Instructions.asm
             }
             
             LDA ZP.NEXTT
-            CMP #BasicType.INT
+            CMP #BASICType.INT
             if (Z)
             {
                 // INT - handle signed division
@@ -857,7 +857,7 @@ unit Instructions // Instructions.asm
             }
             
             LDA ZP.NEXTT
-            CMP #BasicType.INT
+            CMP #BASICType.INT
             if (Z)
             {
                 // INT - handle signed modulo
@@ -1100,7 +1100,7 @@ unit Instructions // Instructions.asm
             
             // Check if operand is BIT type (only valid for logical NOT)
             LDA ZP.TOPT
-            CMP #BasicType.BIT
+            CMP #BASICType.BIT
             if (NZ)
             {
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL

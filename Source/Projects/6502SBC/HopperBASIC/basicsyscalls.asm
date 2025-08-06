@@ -30,7 +30,7 @@ unit BASICSysCalls
        {
 
            FetchOperandByte();  // A = SYSCALL ID
-           State.CanContinue();
+           States.CanContinue();
            if (NC) { break; }
            
            TAY  // Preserve full SYSCALL ID in Y
@@ -60,8 +60,8 @@ unit BASICSysCalls
                case 3: 
                { 
                    // Handle 3-argument functions (future expansion)
-                   Error.NotImplemented(); BIT ZP.EmulatorPCL
-                   State.SetFailure();
+                   TODO(); BIT ZP.EmulatorPCL
+                   States.SetFailure();
                    break;
                }
            }
@@ -86,7 +86,7 @@ unit BASICSysCalls
                    LDA ZP.TOPT
                    switch (A)
                    {
-                       case BasicType.INT:
+                       case BASICType.INT:
                        {
                            // INT absolute value - check if negative
                            LDA ZP.TOPH
@@ -102,8 +102,8 @@ unit BASICSysCalls
                                STA ZP.TOPH
                            }
                        }
-                       case BasicType.WORD:
-                       case BasicType.BYTE:
+                       case BASICType.WORD:
+                       case BASICType.BYTE:
                        {
                            // WORD/BYTE always positive (unsigned)
     
@@ -111,7 +111,7 @@ unit BASICSysCalls
                        default:
                        {
                            Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                           State.SetFailure();
+                           States.SetFailure();
                            break;
                        }
                    }
@@ -123,14 +123,14 @@ unit BASICSysCalls
                    // Output: ZP.TOP* contains random number 0 to max-1
                    
                    // TODO: Replace with actual implementation
-                   Error.NotImplemented(); BIT ZP.EmulatorPCL
+                   TODO(); BIT ZP.EmulatorPCL
                }
                case SysCallType.Millis:        // ID = 5
                {
                    // MILLIS function - get system timer
                    LDA ZP.TICK0 STA ZP.TOPL     // Get system timer
                    LDA ZP.TICK1 STA ZP.TOPH
-                   LDA #BasicType.WORD STA ZP.TOPT
+                   LDA #BASICType.WORD STA ZP.TOPT
                }
                case SysCallType.Seconds:       // ID = 6
                {
@@ -153,25 +153,25 @@ unit BASICSysCalls
                    LDA ZP.TOPT
                    switch(A)
                    {
-                       case BasicType.WORD:
-                       case BasicType.BYTE:
+                       case BASICType.WORD:
+                       case BASICType.BYTE:
                        {
                        }
-                       case BasicType.INT:
+                       case BASICType.INT:
                        {
                            // Check INT is positive (valid address)
                            LDA ZP.TOPH
                            if (MI)
                            {
                                Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                               State.SetFailure();
+                               States.SetFailure();
                                break;
                            }
                        }
                        default:
                        {
                            Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                           State.SetFailure();
+                           States.SetFailure();
                            break;
                        }
                    } // switch on type            
@@ -179,7 +179,7 @@ unit BASICSysCalls
                    LDA [ZP.TOP]
                    STA ZP.TOPL
                    STZ ZP.TOPH
-                   LDA #BasicType.BYTE
+                   LDA #BASICType.BYTE
                    STA ZP.TOPT
                }
                case SysCallType.Poke:          // ID = 9
@@ -191,26 +191,26 @@ unit BASICSysCalls
                    LDA ZP.NEXTT
                    switch (A)
                    {
-                       case BasicType.WORD:
-                       case BasicType.BYTE:
+                       case BASICType.WORD:
+                       case BASICType.BYTE:
                        {
                            // Validate value is 0..255 (any type)
                            LDA ZP.TOPH
                            if (NZ)
                            {
                                Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                               State.SetFailure();
+                               States.SetFailure();
                                break;
                            }
                        }
-                       case BasicType.INT:
+                       case BASICType.INT:
                        {
                            // Check INT is positive (valid address)
                            LDA ZP.NEXTH
                            if (MI)
                            {
                                Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                               State.SetFailure();
+                               States.SetFailure();
                                break;
                            }
                            
@@ -219,14 +219,14 @@ unit BASICSysCalls
                            if (NZ)
                            {
                                Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                               State.SetFailure();
+                               States.SetFailure();
                                break;
                            }
                        }
                        default:
                        {
                            Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                           State.SetFailure();
+                           States.SetFailure();
                            break;
                        }
                    } // switch on type
@@ -236,8 +236,8 @@ unit BASICSysCalls
                }
                default:
                {
-                   Error.NotImplemented(); BIT ZP.EmulatorPCL
-                   State.SetFailure();
+                   TODO(); BIT ZP.EmulatorPCL
+                   States.SetFailure();
                    break;
                }
            }
@@ -250,7 +250,7 @@ unit BASICSysCalls
                Stacks.PushTop();  // Push return value from ZP.TOP*
            }
            
-           State.SetSuccess();
+           States.SetSuccess();
            break;
        } // loop exit
 #ifdef TRACE
