@@ -95,14 +95,12 @@ unit OpCodes
        PUSHCSTRING  = 0x82,  // Push CONSTSTRING pointer [addr_lsb] [addr_msb]
        
        // Function calls (unresolved → resolved)
-       CALL         = 0x83,  // Call function by name [name_offset_lsb] [name_offset_msb] (unresolved)
-       CALLF        = 0x84,  // Call function fast [node_lsb] [node_msb] (resolved)
+       CALL         = 0x83,  // Call function by name [name_offset_lsb] [name_offset_msb]
+       CALLF        = 0x84,  // Call function fast [node_lsb] [node_msb] (resolved on first call)
        
        // Global variable operations (unresolved → resolved)
-       PUSHGLOBAL   = 0x85,  // Push global by name [name_offset_lsb] [name_offset_msb] (unresolved)
-       POPGLOBAL    = 0x86,  // Pop to global by name [name_offset_lsb] [name_offset_msb] (unresolved)
-       PUSHGLOBALF  = 0x87,  // Push global fast [node_lsb] [node_msb] (resolved)
-       POPGLOBALF   = 0x88,  // Pop to global fast [node_lsb] [node_msb] (resolved)
+       PUSHGLOBAL   = 0x87,  // Push global [node_lsb] [node_msb] (resolved at compile time)
+       POPGLOBAL    = 0x88,  // Pop to global [node_lsb] [node_msb] (resolved at compile time)
        
        // Control flow (long jumps)
        JUMPW        = 0x89,  // Unconditional jump [lsb] [msb]
@@ -116,114 +114,4 @@ unit OpCodes
        //                array access, advanced control flow
    }
    
-   // **Resolve-and-Replace Architecture:**
-   //
-   // **Unresolved OpCodes (First Execution):**
-   // - CALL: Function call by name offset in token buffer
-   // - PUSHGLOBAL/POPGLOBAL: Variable access by name offset in token buffer
-   //
-   // **Resolved OpCodes (Subsequent Executions):**
-   // - CALLF: Direct function call via node address (2-3x faster)
-   // - PUSHGLOBALF/POPGLOBALF: Direct variable access via node address (2-3x faster)
-   //
-   // **Resolution Process:**
-   // 1. First execution hits unresolved opcode (e.g., CALL)
-   // 2. Resolve name to node address via symbol table lookup
-   // 3. Patch opcode stream: Change CALL → CALLF, replace name offset with node address
-   // 4. Execute resolved opcode immediately
-   // 5. Subsequent executions use fast resolved opcode directly
-   //
-   // **Instruction Format Summary:**
-   //
-   // **Group 0: No Operands (0x01-0x3F, 0x00=INVALID)**
-   //   [OPCODE]
-   //   Examples:
-   //     ADD             - Pop two values, push sum
-   //     NEG             - Pop value, push negation
-   //     EQ              - Pop two values, push equality result
-   //     RETURN          - Return from function
-   //     DUP             - Duplicate top stack value
-   //     ENTER           - Enter function - setup stack frame
-   //
-   // **Group 1: One Byte Operand (0x40-0x7F)**
-   //   [OPCODE][OPERAND]
-   //   Examples: 
-   //     PUSH0               - Push INT 0 (no operand needed)
-   //     PUSH1               - Push INT 1 (no operand needed)
-   //     PUSHBIT 0x01        - Push BIT value 1
-   //     PUSHBYTE 0xFF       - Push BYTE value 255
-   //     PUSHLOCAL 0x02      - Push local at offset +2
-   //     PUSHLOCAL 0xFE      - Push argument at offset -2 (signed)
-   //     JUMPB 0x0A          - Jump forward 10 bytes
-   //     JUMPB 0xF6          - Jump backward 10 bytes (signed)
-   //     SYSCALL 0x2C        - System call MILLIS (ID=5, returns, 0 args)
-   //     SYSCALL 0x1D        - System call ABS (ID=3, returns, 1 arg)
-   //     SYSCALL 0x39        - System call DELAY (ID=7, void, 1 arg)
-   //
-   // **Group 2: Two Byte Operands (0x80-0xBF)**
-   //   [OPCODE][LSB][MSB]
-   //   Examples:
-   //     PUSHINT 0x39 0x30   - Push INT value 12345 (0x3039)
-   //     PUSHWORD 0xFF 0xFF  - Push WORD value 65535
-   //     PUSHCSTRING 0x10 0x0A - Push CONSTSTRING pointer to token buffer address 0x0A10
-   //     
-   //     // Unresolved (first execution):
-   //     PUSHGLOBAL 0x0C 0x00 - Push global by name at token offset 0x000C
-   //     POPGLOBAL 0x0C 0x00  - Pop to global by name at token offset 0x000C
-   //     CALL 0x18 0x00       - Call function by name at token offset 0x0018
-   //     
-   //     // Resolved (subsequent executions):
-   //     PUSHGLOBALF 0x10 0x40 - Push global variable at node address 0x4010
-   //     POPGLOBALF 0x10 0x40  - Pop to global variable at node address 0x4010
-   //     CALLF 0x20 0x40       - Call function at node address 0x4020
-   //     
-   //     JUMPW 0x00 0x01     - Jump forward 256 bytes
-   //     JUMPW 0x00 0xFF     - Jump backward 256 bytes (signed)
-   //
-   // **Group 3: Reserved (0xC0-0xFF)**
-   //   Reserved for future complex instructions or extensions
-   //
-   // **Variable Access Encoding:**
-   // - **Global addresses**: 16-bit node addresses from Variables.Find() or Functions.Find()
-   // - **Name offsets**: 16-bit offset from compilation start in token buffer
-   // - **Local offsets**: -128 to +127 (signed byte)
-   //   - **Negative**: Function arguments (-128 to -1, closest to BP)
-   //   - **Positive**: Local variables (1 to +127, further from BP)  
-   //   - **Zero**: Reserved/invalid
-   // - **Jump deltas**: Signed relative to byte AFTER the instruction
-   //
-   // **System Call IDs (Flags-based encoding):**
-   // - **Bit 7-3**: Function ID (0-31)
-   // - **Bit 2**: Return Value (0=void, 1=returns value)
-   // - **Bit 1-0**: Argument Count (00=0, 01=1, 10=2, 11=3)
-   //
-   // **Built-in Functions via SYSCALL:**
-   // - **0x09**: PrintValue - Print value from stack (1 arg, void)
-   // - **0x10**: PrintNewLine - Print newline character (0 args, void)
-   // - **0x1D**: ABS(x) - Absolute value (1 arg, returns value)
-   // - **0x25**: RND(x) - Random number 0 to x-1 (1 arg, returns value)
-   // - **0x2C**: MILLIS() - Current milliseconds (0 args, returns WORD)
-   // - **0x34**: SECONDS() - Current seconds (0 args, returns WORD)
-   // - **0x39**: DELAY(x) - Delay x milliseconds (1 arg, void)
-   // - **0x45**: PEEK(addr) - Read memory byte (1 arg, returns BYTE)
-   // - **0x4A**: POKE(addr, value) - Write memory byte (2 args, void)
-   //
-   // **Execution Speed Benefits:**
-   // - **Single instruction fetch** reveals operand count via bit pattern
-   // - **No lookup table** needed for instruction length determination
-   // - **Fast opcode dispatching** with simple bit operations and switch statements
-   // - **Resolved opcodes** eliminate symbol table traversal (2-3x performance improvement)
-   // - **SYSCALL dispatch** uses bit operations for argument count and return handling
-   //
-   // **Node-Based Access Benefits:**
-   // - **Type Safety**: Node contains both value and type information
-   // - **PUSHGLOBALF**: Uses Variables.GetValue() → ZP.TOP + ZP.TOPT with correct type
-   // - **POPGLOBALF**: Uses Variables.GetType() + CheckRHSTypeCompatibility() for assignments
-   // - **CALLF**: Direct function execution via node address with parameter type checking
-   //
-   // **String Literal Architecture:**
-   // - **PUSHCSTRING**: Pushes 16-bit pointer to null-terminated string
-   // - **CONSTSTRING type**: Immutable string pointers that fit in 16-bit value stack
-   // - **Smart equality**: Pointer comparison first, then content comparison if different
-   // - **Token buffer persistence**: Strings remain valid in REPL and function contexts
-}
+   
