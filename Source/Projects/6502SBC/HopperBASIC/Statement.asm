@@ -261,21 +261,13 @@ unit Statement // Statement.asm
             PLA
             STA ZP.OpCodeBufferContentSizeL
             
-            
             Error.CheckError(); 
             if (NC)
             {
                 States.SetFailure(); 
                 break;
             } 
-            // Exiting means the Executor ran out of OpCodes before it encountered a RETURN
-            // Still a good outcome (when evaluation an expression rather than executing a statement)
-            States.GetState();
-            CMP #State.Exiting
-            if (Z)
-            {
-                States.SetSuccess();  // Convert EXITING to SUCCESS for expressions
-            }
+            States.SetSuccess(); // TODO : consider State.Return vs State.Success in terms of stack slot
             
             // Result is now on stack
             break;

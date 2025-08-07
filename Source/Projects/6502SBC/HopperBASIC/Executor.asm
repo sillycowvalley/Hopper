@@ -58,27 +58,24 @@ unit Executor // Executor.asm
            loop
            {
                // Fetch and execute next opcode
-               FetchOpCode();
-               States.IsSuccess(); // expect State.Success to continue
-               if (NC) 
-               {
-                   break; // Error fetching opcode: State.Exiting because EOF success
-               }
-               
-               // Dispatch opcode (A contains opcode value)
+               FetchOpCode(); // -> A
                DispatchOpCode(); // expect State.Success to continue
+               
+               // Check if any instruction set an error
+               Error.CheckError();
+               if (NC) 
+               { 
+                   States.SetFailure();
+               }
                States.IsSuccess();
                if (NC)
                {
-                   // State.Failure - runtime error: Type Mismatch, Overflow, etc ..
-                   // State.Return  - function return popped CallStack pointer (CSP) to zero
+                   // State.Failure - runtime error: Type Mismatch, Overflow, etc .. 
+                   // State.Exiting - HALT or EOF - clean exit from REPL
+                   // State.Return  - popping the CSP to zero
                    break; 
                }
-               States.IsReturn();
-               if (C)
-               {
-                   break; // other exit conditions like popping the last return address from the callstack
-               }
+               // State.Success - get another opcode ..
            } // loop
            break;
        } // Single exit block
@@ -102,6 +99,12 @@ unit Executor // Executor.asm
        LDA #(initExecutorTrace % 256) STA ZP.TraceMessageL LDA #(initExecutorTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
+        // Set PC to start of opcode buffer
+        LDA ZP.OpCodeBufferL
+        STA ZP.PCL
+        LDA ZP.OpCodeBufferH
+        STA ZP.PCH
+        
        // Validate buffer length is not zero
        LDA ZP.OpCodeBufferContentSizeL
        ORA ZP.OpCodeBufferContentSizeH
@@ -165,7 +168,6 @@ unit Executor // Executor.asm
            }
            
            PLA // Restore opcode to A
-           States.SetSuccess();
            break;
        }
        
@@ -485,27 +487,6 @@ unit Executor // Executor.asm
                executeNotImplemented();
            }
        }
-       
-       // Check if any instruction set an error state
-       Error.CheckError();
-       if (NC) 
-       { 
-           States.SetFailure(); 
-       }
-       else
-       {
-           // Only set success if no error occurred
-           States.CanContinue();
-           if (C) 
-           {
-               States.SetSuccess(); // Exiting or Success
-           }
-           else
-           {
-               // State was already set to Failure, Return or Exiting by instruction
-           }
-       }
-       
 #ifdef TRACEVERBOSE
        LDA #(dispatchOpCodeTrace % 256) STA ZP.TraceMessageL LDA #(dispatchOpCodeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
