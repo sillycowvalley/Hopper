@@ -29,9 +29,9 @@ unit Address // MemoryMap.asm
     
     const uint BASICOpCodeBuffer      = 0x0C00;  // 512 bytes - JIT compiled BASIC function opcodes
     
-    const uint REPLTokenizerBuffer    = 0x0E00;  // 512 bytes - tokenized REPL line storage
+    const uint REPLTokenizerBuffer    = 0x0E00;  // 256 bytes - tokenized REPL line storage
     
-    const uint REPLOpCodeBuffer       = 0x0F00;  // 512 bytes - compiled REPL line OpCode storage
+    const uint REPLOpCodeBuffer       = 0x0F00;  // 256 bytes - compiled REPL line OpCode storage
 
     const uint HopperData             = 0x1000;  // start of Hopper RAM (program, then heap)
     
