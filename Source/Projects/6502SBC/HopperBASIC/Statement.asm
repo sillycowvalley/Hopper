@@ -894,7 +894,7 @@ unit Statement // Statement.asm
             LDA ZP.TokenBufferL
             ADC ZP.FSOURCEADDRESSL
             STA ZP.FSOURCEADDRESSL
-            LDA ZP.TokenBufferL
+            LDA ZP.TokenBufferH
             ADC ZP.FSOURCEADDRESSH
             STA ZP.FSOURCEADDRESSH
             

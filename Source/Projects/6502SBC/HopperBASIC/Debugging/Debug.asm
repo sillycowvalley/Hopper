@@ -53,11 +53,13 @@ unit Debug // Debug.asm
     const string statusNZ = "NZ ";
     
     // Buffer labels
-    const string basicInputBufferLabel = "\nInputBuffer (InBufLen:";
-    const string basicTokenizerBufferLabel = "\nTokenizerBuffer (TokPos:";
-    const string basicTokBufLenLabel = " TokBufLen:";
+    const string basicInputBufferLabel = "\nInputBuffer (Size:";
+    const string basicTokenizerBufferLabel = "\nTokenizerBuffer (Addr:";
+    const string basicTokPosLabel = " Pos:";
+    const string basicTokBufSizeLabel = " Size:";
     const string basicCurTokLabel = " CurTok:";
-    const string basicOpCodeBufferLabel = "\nOpCodeBuffer (OpCodeLen:";
+    const string basicOpCodeBufferLabel = "\nOpCodeBuffer (Addr:";
+    const string basicOpCodeSizeLabel = " Size:";
     const string basicPCLabel = " PC:";
     const string basicBufferSuffix = ") - First 64 bytes:\n";
     const string basicErrorLabel = "\nLastError: ";
@@ -1106,9 +1108,9 @@ unit Debug // Debug.asm
         LDA ZP.TokenizerPosL
         hOut();
         
-        LDA #(basicTokBufLenLabel % 256)
+        LDA #(basicTokenizerBufferLabel  % 256)
         STA ZP.STR
-        LDA #(basicTokBufLenLabel / 256)
+        LDA #(basicTokenizerBufferLabel  / 256)
         STA ZP.STRH
         printString();
         
@@ -1170,9 +1172,9 @@ unit Debug // Debug.asm
         
         // Dump opcode buffer
         LDA ZP.OpCodeBufferH
-        STA ZP.DB0
-        LDA ZP.OpCodeBufferL
         STA ZP.DB1
+        LDA ZP.OpCodeBufferL
+        STA ZP.DB0
         dumpMemoryBlock(); // address: DB1 = MSB, DB0 = LSB
         
         // Error pointers
