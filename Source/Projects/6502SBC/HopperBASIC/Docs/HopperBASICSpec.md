@@ -213,7 +213,7 @@ END
 - **`ABS(x)`** - Absolute value
 - **`MILLIS()`** - Milliseconds since startup
 - **`SECONDS()`** - Seconds since startup
-- **`DELAY(ms)`** - Pause for a tdelay in milliseconds
+- **`DELAY(ms)`** - Pause for a delay in milliseconds
 - **`PEEK(addr)`** - Read byte from memory
 - **`POKE(addr, value)`** - Write byte to memory
 
