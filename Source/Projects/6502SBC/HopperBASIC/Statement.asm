@@ -239,6 +239,11 @@ unit Statement // Statement.asm
             Error.CheckError();
             if (NC) { States.SetFailure(); break; }
             
+            // Emit HALT for REPL
+            Emit.Halt();
+            Error.CheckError();
+            if (NC) { States.SetFailure(); break; }
+            
             // Save opcode buffer length after compilation (important for function calls from REPL)
             LDA ZP.OpCodeBufferContentSizeL
             PHA
@@ -313,6 +318,11 @@ unit Statement // Statement.asm
             
             // Compile the statement (not expression)
             Compiler.CompileStatement();
+            Error.CheckError();
+            if (NC) { States.SetFailure(); break; }
+            
+            // Emit HALT for REPL
+            Emit.Halt();
             Error.CheckError();
             if (NC) { States.SetFailure(); break; }
             

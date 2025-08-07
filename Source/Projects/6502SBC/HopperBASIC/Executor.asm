@@ -7,14 +7,10 @@ unit Executor // Executor.asm
    friend Functions;
    
    // Memory layout for executor state - BasicExecutorWorkspace (32 bytes)
-   const uint executorStartAddrL    = Address.BasicExecutorWorkspace + 9;   // opcode buffer start low
-   const uint executorStartAddrH    = Address.BasicExecutorWorkspace + 10;  // opcode buffer start high
-   const uint executorEndAddrL      = Address.BasicExecutorWorkspace + 11;  // opcode buffer end low
-   const uint executorEndAddrH      = Address.BasicExecutorWorkspace + 12;  // opcode buffer end high
-   const uint executorOperandL      = Address.BasicExecutorWorkspace + 13;  // current operand low
-   const uint executorOperandH      = Address.BasicExecutorWorkspace + 14;  // current operand high
-   const uint executorTokenAddrL    = Address.BasicExecutorWorkspace + 15;  // token fetch addr low
-   const uint executorTokenAddrH    = Address.BasicExecutorWorkspace + 16;  // token fetch addr high
+   const uint executorOperandL      = Address.BasicExecutorWorkspace +  9;  // current operand low
+   const uint executorOperandH      = Address.BasicExecutorWorkspace + 10;  // current operand high
+   const uint executorTokenAddrL    = Address.BasicExecutorWorkspace + 11;  // token fetch addr low
+   const uint executorTokenAddrH    = Address.BasicExecutorWorkspace + 12;  // token fetch addr high
    
    // Reset Hopper VM to clean state before REPL execution
    Reset()
@@ -78,21 +74,6 @@ unit Executor // Executor.asm
                    // State.Return  - function return popped CallStack pointer (CSP) to zero
                    break; 
                }
-
-               // Check if we've reached end of opcodes
-               LDA ZP.PCL
-               CMP executorEndAddrL
-               if (Z)
-               {
-                   LDA ZP.PCH
-                   CMP executorEndAddrH
-                   if (Z) 
-                   { 
-                       // REPL uses this exit - EOF success
-                       States.SetExiting();
-                       break; 
-                   }
-               }
                States.IsReturn();
                if (C)
                {
@@ -120,23 +101,6 @@ unit Executor // Executor.asm
 #ifdef TRACE
        LDA #(initExecutorTrace % 256) STA ZP.TraceMessageL LDA #(initExecutorTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-       
-       // Set start address to BasicOpCodeBuffer
-       LDA ZP.OpCodeBufferL
-       STA executorStartAddrL
-       STA ZP.PCL // Start execution at beginning
-       LDA ZP.OpCodeBufferH
-       STA executorStartAddrH
-       STA ZP.PCH
-       
-       // Calculate end address = start + length
-       CLC
-       LDA executorStartAddrL
-       ADC ZP.OpCodeBufferContentSizeL
-       STA executorEndAddrL
-       LDA executorStartAddrH
-       ADC ZP.OpCodeBufferContentSizeH
-       STA executorEndAddrH
        
        // Validate buffer length is not zero
        LDA ZP.OpCodeBufferContentSizeL
@@ -170,18 +134,6 @@ unit Executor // Executor.asm
        {
            // Check bounds
            LDA ZP.PCL
-           CMP executorEndAddrL
-           if (Z)
-           {
-               LDA ZP.PCH
-               CMP executorEndAddrH
-               if (Z) 
-               { 
-                   // At end of buffer
-                   States.SetExiting();
-                   break; 
-               }
-           }
 #ifdef TRACEJIT            
            //Trace.IsTracing();
            //if (C)
@@ -234,21 +186,9 @@ unit Executor // Executor.asm
        
        loop
        {
-           // Check bounds
+           
            LDA ZP.PCL
-           CMP executorEndAddrL
-           if (Z)
-           {
-               LDA ZP.PCH
-               CMP executorEndAddrH
-               if (Z) 
-               { 
-                   // At end of buffer - should exit successfully
-                   Error.InternalError(); BIT ZP.EmulatorPCL
-                   States.SetFailure();
-                   break; 
-               }
-           }
+           
            // Fetch operand
            LDY #0
            LDA [ZP.PC], Y
@@ -404,6 +344,11 @@ unit Executor // Executor.asm
            case OpCode.GE:
            {
                ComparisonInstructions.GreaterEqual();
+           }
+           
+           case OpCode.HALT:
+           {
+               executeHalt();
            }
            
            // Function operations
@@ -649,6 +594,19 @@ unit Executor // Executor.asm
            }
            break;
        } // exit loop
+   }
+   
+   // Execute HALT opcode - return from REPL
+   const string executeHaltTrace = "HALT // Return from REPL";
+   executeHalt()
+   {
+#ifdef TRACE
+       LDA #(executeHaltTrace % 256) STA ZP.TraceMessageL LDA #(executeHaltTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+       States.SetExiting();
+#ifdef TRACE
+       LDA #(executeHaltTrace % 256) STA ZP.TraceMessageL LDA #(executeHaltTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
    }
    
    // Execute RETURN opcode - return from function

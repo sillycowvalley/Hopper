@@ -1042,5 +1042,28 @@ unit Emit
         LDA #(emitPrintValueTrace % 256) STA ZP.TraceMessageL LDA #(emitPrintValueTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     }
+    
+    // Emit HALT opcode to terminate execution
+    // Output: HALT opcode emitted
+    // Modifies: compilerOpCode, buffer state via Emit.OpCode()
+    const string emitHaltTrace = "Emit HALT";
+    Halt()
+    {
+    #ifdef TRACE
+        LDA #(emitHaltTrace % 256) STA ZP.TraceMessageL 
+        LDA #(emitHaltTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        LDA #OpCode.HALT
+        STA Compiler.compilerOpCode
+        Emit.OpCode();
+        
+    #ifdef TRACE
+        LDA #(emitHaltTrace % 256) STA ZP.TraceMessageL 
+        LDA #(emitHaltTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }
 
 }

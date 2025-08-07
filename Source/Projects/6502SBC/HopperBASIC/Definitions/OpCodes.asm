@@ -56,6 +56,8 @@ unit OpCodes
        PUSH1        = 0x18,  // Push INT 1 (very common literal, no operand)
        PUSHVOID     = 0x19,  // Push VOID 0 (very common literal, no operand)
        
+       HALT         = 0x20,  // end of REPL opcode stream
+       
        // Function frame management
        ENTER        = 0x1A,  // Enter function frame - push BP, SP->BP
        
