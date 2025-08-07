@@ -213,6 +213,7 @@ END
 - **`ABS(x)`** - Absolute value
 - **`MILLIS()`** - Milliseconds since startup
 - **`SECONDS()`** - Seconds since startup
+- **`DELAY(ms)`** - Pause for a tdelay in milliseconds
 - **`PEEK(addr)`** - Read byte from memory
 - **`POKE(addr, value)`** - Write byte to memory
 
@@ -247,7 +248,6 @@ END
 - ❌ **`READ(pin)`** - Digital input
 - ❌ **`WRITE(pin, value)`** - Digital output
 - ❌ **`PWM(pin, value)`** - Analog output
-- ❌ **`DELAY(ms)`** - Pause execution
 - ❌ **`PINMODE(pin, mode)`** - Configure pins
 
 ---
@@ -356,6 +356,7 @@ primary_expr := number | identifier | string_literal | TRUE | FALSE
 built_in_function := ABS "(" expression ")"
                   | PEEK "(" expression ")"
                   | POKE "(" expression "," expression ")"
+                  | DELAY "(" expression ")"
                   | MILLIS "(" ")"
                   | SECONDS "(" ")"
 ```
