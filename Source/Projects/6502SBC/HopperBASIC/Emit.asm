@@ -174,36 +174,7 @@ unit Emit
 #endif
    }
    
-   // Emit PUSHCSTRING opcode with word operand
-   // Input: compilerOperand1 = string pointer LSB, compilerOperand2 = string pointer MSB  
-   // Output: PUSHCSTRING opcode emitted with operands, C set if successful
-   // Modifies: A, ZP.OpCodeBufferContentSizeL/H, buffer state
-   const string emitPushCStringTrace = "EmitPUSHCSTRING";
-   PushCString()
-   {
-       PHA
-       
-#ifdef TRACE
-       LDA #(emitPushCStringTrace % 256) STA ZP.TraceMessageL LDA #(emitPushCStringTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-       
-       loop
-       {
-           // Set up opcode
-           LDA #OpCode.PUSHCSTRING
-           STA Compiler.compilerOpCode
-           
-           // Emit opcode with word operand (uses compilerOperand1/2)
-           Emit.OpCodeWithWord();
-           break;
-       } // loop
-       
-#ifdef TRACE
-       LDA #(emitPushCStringTrace % 256) STA ZP.TraceMessageL LDA #(emitPushCStringTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-       
-       PLA
-   }
+   
    
    // Emit PUSHGLOBAL opcode for identifier
    // Input: Current token is IDENTIFIER
@@ -749,61 +720,7 @@ unit Emit
 #endif
    }  
    
-   // Emit CALL opcode for unresolved function call
-   // Input: Current token is IDENTIFIER (function name), tokenizer positioned at function name
-   // Output: CALL opcode with absolute name address emitted, C set if successful
-   // Modifies: compilerOpCode, compilerOperand1/2, buffer state
-   const string emitCallTrace = "Emit CALL";
-   Call()
-   {
-       PHA
-       PHX
-       PHY
-       
-#ifdef TRACE
-       LDA #(emitCallTrace % 256) STA ZP.TraceMessageL LDA #(emitCallTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-       
-       loop // Single exit
-       {
-#ifdef TRACEJIT
-           Tools.NL();
-           LDA ZP.TokenLiteralPosH Debug.HOut();
-           LDA ZP.TokenLiteralPosL Debug.HOut();
-#endif            
-           // Calculate absolute address of function name in token buffer
-           // The tokenizer's TokenLiteralPos points to the start of the identifier string
-           CLC
-           //LDA Compiler.compilerLiteralBaseL
-           LDA ZP.TokenBufferL
-           ADC ZP.TokenLiteralPosL    // TokenLiteralPos points to identifier string
-           STA Compiler.compilerOperand1       // Absolute address LSB
-           //LDA Compiler.compilerLiteralBaseH
-           LDA ZP.TokenBufferH
-           ADC ZP.TokenLiteralPosH
-           STA Compiler.compilerOperand2       // Absolute address MSB
-
-#ifdef TRACEJIT
-           LDA #'-' Debug.COut(); LDA #'>' Debug.COut();
-           LDA Compiler.compilerOperand2 Debug.HOut();
-           LDA Compiler.compilerOperand1 Debug.HOut();
-#endif                        
-                                  
-           // Emit CALL with absolute address (not offset!)
-           LDA # OpCode.CALL
-           STA Compiler.compilerOpCode
-           Emit.OpCodeWithWord();
-           break;
-       }
-       
-#ifdef TRACE
-       LDA #(emitCallTrace % 256) STA ZP.TraceMessageL LDA #(emitCallTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-       
-       PLY
-       PLX
-       PLA
-   }
+   
    
    // Emit DECSP opcode to discard top stack value
    // Input: None
@@ -1067,5 +984,108 @@ unit Emit
         Trace.MethodExit();
     #endif
     }
+    
+    
+    // Emit CALL opcode for unresolved function call
+   // Input: Current token is IDENTIFIER (function name), tokenizer positioned at function name
+   // Output: CALL opcode with absolute name address emitted, C set if successful
+   // Modifies: compilerOpCode, compilerOperand1/2, buffer state
+   const string emitCallTrace = "Emit CALL";
+   Call()
+   {
+       PHA
+       PHX
+       PHY
+       
+#ifdef TRACE
+       LDA #(emitCallTrace % 256) STA ZP.TraceMessageL LDA #(emitCallTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+       
+       loop // Single exit
+       {
+#ifdef TRACEJIT
+           Tools.NL();
+           LDA ZP.TokenLiteralPosH Debug.HOut();
+           LDA ZP.TokenLiteralPosL Debug.HOut();
+#endif            
+           // Calculate absolute address of function name in token buffer
+           // The tokenizer's TokenLiteralPos points to the start of the identifier string
+           CLC
+           LDA ZP.TokenBufferL
+           ADC ZP.TokenLiteralPosL    // TokenLiteralPos points to identifier string
+           STA Compiler.compilerOperand1       // Absolute address LSB
+           LDA ZP.TokenBufferH
+           ADC ZP.TokenLiteralPosH
+           STA Compiler.compilerOperand2       // Absolute address MSB
+
+#ifdef TRACEJIT
+           LDA #'-' Debug.COut(); LDA #'>' Debug.COut();
+           LDA Compiler.compilerOperand2 Debug.HOut();
+           LDA Compiler.compilerOperand1 Debug.HOut();
+#endif                        
+                                  
+           // Emit CALL with absolute address (not offset!)
+           LDA # OpCode.CALL
+           STA Compiler.compilerOpCode
+           Emit.OpCodeWithWord();
+           break;
+       }
+       
+#ifdef TRACE
+       LDA #(emitCallTrace % 256) STA ZP.TraceMessageL LDA #(emitCallTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+       
+       PLY
+       PLX
+       PLA
+   }
+   
+   
+   // Emit PUSHCSTRING opcode with word operand
+   // Input: compilerOperand1 = string pointer LSB, compilerOperand2 = string pointer MSB  
+   // Output: PUSHCSTRING opcode emitted with operands, C set if successful
+   // Modifies: A, ZP.OpCodeBufferContentSizeL/H, buffer state
+   const string emitPushCStringTrace = "EmitPUSHCSTRING";
+   PushCString()
+   {
+       PHA
+       
+#ifdef TRACE
+       LDA #(emitPushCStringTrace % 256) STA ZP.TraceMessageL LDA #(emitPushCStringTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+       loop
+       {
+            // Get string content pointer
+            Tokenizer.GetTokenString(); // Result in ZP.TOP
+            Error.CheckError();
+            if (NC) { break; }
+
+            
+//LDA ZP.TokenLiteralPosH Debug.HOut();
+//LDA ZP.TokenLiteralPosL Debug.HOut();
+
+
+            // OFFSET : compiling STRINGLIT
+            // Emit PUSHCSTRING with pointer to string content
+            LDA ZP.TOPL
+            STA Compiler.compilerOperand1  // LSB
+            LDA ZP.TOPH
+            STA Compiler.compilerOperand2  // MSB
+
+            // Set up opcode
+            LDA #OpCode.PUSHCSTRING
+            STA Compiler.compilerOpCode
+
+            // Emit opcode with word operand (uses compilerOperand1/2)
+            Emit.OpCodeWithWord();
+            break;
+       } // loop
+       
+#ifdef TRACE
+       LDA #(emitPushCStringTrace % 256) STA ZP.TraceMessageL LDA #(emitPushCStringTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+       
+       PLA
+   }
 
 }

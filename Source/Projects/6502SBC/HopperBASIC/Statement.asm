@@ -233,7 +233,6 @@ unit Statement // Statement.asm
             STA ZP.IDYL  
             LDA ZP.TokenBufferH
             STA ZP.IDYH
-            NOP
             Compiler.SetLiteralBase();
             Compiler.CompileExpression();
             Error.CheckError();

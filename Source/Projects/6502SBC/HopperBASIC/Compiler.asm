@@ -1415,18 +1415,6 @@ unit Compiler // Compiler.asm
                }
                case Token.STRINGLIT:
                {
-                   // Get string content pointer
-                   Tokenizer.GetTokenString(); // Result in ZP.TOP
-                   Error.CheckError();
-                   if (NC) { break; }
-                   
-                   // OFFSET : compiling STRINGLIT
-                   // Emit PUSHCSTRING with pointer to string content
-                   LDA ZP.TOPL
-                   STA compilerOperand1  // LSB
-                   LDA ZP.TOPH
-                   STA compilerOperand2  // MSB
-                   
                    Emit.PushCString();
                    Error.CheckError();
                    if (NC) { break; }

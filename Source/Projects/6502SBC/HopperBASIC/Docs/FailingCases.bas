@@ -2,7 +2,6 @@ WORD ELAPSED
 WORD I = 0
 
 FUNC ONE()
-    PRINT "ONE"
     RETURN 1
 ENDFUNC
 
@@ -27,6 +26,16 @@ END
 LIST
 
 RUN
+
+
+FUNC FOO()
+    PRINT "Hello World"
+ENDFUNC
+
+FOO()
+
+
+
 
 NEW
 int i = 10
