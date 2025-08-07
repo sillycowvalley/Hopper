@@ -1,6 +1,6 @@
 program HopperBASIC
 {
-    //#define DEBUG
+    #define DEBUG
     //#define TRACE
     //#define TRACESP
     //#define TRACEJIT     // detail for JIT / CALL->CALLF patching

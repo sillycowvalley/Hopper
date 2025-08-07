@@ -115,9 +115,54 @@ unit OpCodes
    }
    
    
-   const string opcodeUNDEFINED = "UNDEFINED\0";
-   const string opcodeINVALID = "INVALID\0";
-   const string opcodeADD     = "ADD\0";
+   // String constants for all opcodes
+   const string opcodeUNDEFINED = "UNDEFINED";
+   const string opcodeINVALID = "INVALID";
+   const string opcodeADD = "ADD";
+   const string opcodeSUB = "SUB";
+   const string opcodeMUL = "MUL";
+   const string opcodeDIV = "DIV";
+   const string opcodeMOD = "MOD";
+   const string opcodeNEG = "NEG";
+   const string opcodeBITWISE_AND = "BITWISE_AND";
+   const string opcodeBITWISE_OR = "BITWISE_OR";
+   const string opcodeLOGICAL_AND = "LOGICAL_AND";
+   const string opcodeLOGICAL_OR = "LOGICAL_OR";
+   const string opcodeLOGICAL_NOT = "LOGICAL_NOT";
+   const string opcodeEQ = "EQ";
+   const string opcodeNE = "NE";
+   const string opcodeLT = "LT";
+   const string opcodeGT = "GT";
+   const string opcodeLE = "LE";
+   const string opcodeGE = "GE";
+   const string opcodeDECSP = "DECSP";
+   const string opcodeDUP = "DUP";
+   const string opcodeNOP = "NOP";
+   const string opcodePUSH0 = "PUSH0";
+   const string opcodePUSH1 = "PUSH1";
+   const string opcodePUSHVOID = "PUSHVOID";
+   const string opcodeHALT = "HALT";
+   const string opcodeENTER = "ENTER";
+   const string opcodePUSHBIT = "PUSHBIT";
+   const string opcodePUSHBYTE = "PUSHBYTE";
+   const string opcodePUSHLOCAL = "PUSHLOCAL";
+   const string opcodePOPLOCAL = "POPLOCAL";
+   const string opcodeJUMPB = "JUMPB";
+   const string opcodeJUMPZB = "JUMPZB";
+   const string opcodeJUMPNZB = "JUMPNZB";
+   const string opcodeSYSCALL = "SYSCALL";
+   const string opcodeRETURN = "RETURN";
+   const string opcodeRETURNVAL = "RETURNVAL";
+   const string opcodePUSHINT = "PUSHINT";
+   const string opcodePUSHWORD = "PUSHWORD";
+   const string opcodePUSHCSTRING = "PUSHCSTRING";
+   const string opcodeCALL = "CALL";
+   const string opcodeCALLF = "CALLF";
+   const string opcodePUSHGLOBAL = "PUSHGLOBAL";
+   const string opcodePOPGLOBAL = "POPGLOBAL";
+   const string opcodeJUMPW = "JUMPW";
+   const string opcodeJUMPZW = "JUMPZW";
+   const string opcodeJUMPNZW = "JUMPNZW";
    
 #ifdef DEBUG
    // Input: opcode in X
@@ -138,6 +183,314 @@ unit OpCodes
                 LDA #(opcodeADD % 256)
                 STA ZP.STRL
                 LDA #(opcodeADD / 256)
+                STA ZP.STRH
+            }
+            case OpCode.SUB:
+            {
+                LDA #(opcodeSUB % 256)
+                STA ZP.STRL
+                LDA #(opcodeSUB / 256)
+                STA ZP.STRH
+            }
+            case OpCode.MUL:
+            {
+                LDA #(opcodeMUL % 256)
+                STA ZP.STRL
+                LDA #(opcodeMUL / 256)
+                STA ZP.STRH
+            }
+            case OpCode.DIV:
+            {
+                LDA #(opcodeDIV % 256)
+                STA ZP.STRL
+                LDA #(opcodeDIV / 256)
+                STA ZP.STRH
+            }
+            case OpCode.MOD:
+            {
+                LDA #(opcodeMOD % 256)
+                STA ZP.STRL
+                LDA #(opcodeMOD / 256)
+                STA ZP.STRH
+            }
+            case OpCode.NEG:
+            {
+                LDA #(opcodeNEG % 256)
+                STA ZP.STRL
+                LDA #(opcodeNEG / 256)
+                STA ZP.STRH
+            }
+            case OpCode.BITWISE_AND:
+            {
+                LDA #(opcodeBITWISE_AND % 256)
+                STA ZP.STRL
+                LDA #(opcodeBITWISE_AND / 256)
+                STA ZP.STRH
+            }
+            case OpCode.BITWISE_OR:
+            {
+                LDA #(opcodeBITWISE_OR % 256)
+                STA ZP.STRL
+                LDA #(opcodeBITWISE_OR / 256)
+                STA ZP.STRH
+            }
+            case OpCode.LOGICAL_AND:
+            {
+                LDA #(opcodeLOGICAL_AND % 256)
+                STA ZP.STRL
+                LDA #(opcodeLOGICAL_AND / 256)
+                STA ZP.STRH
+            }
+            case OpCode.LOGICAL_OR:
+            {
+                LDA #(opcodeLOGICAL_OR % 256)
+                STA ZP.STRL
+                LDA #(opcodeLOGICAL_OR / 256)
+                STA ZP.STRH
+            }
+            case OpCode.LOGICAL_NOT:
+            {
+                LDA #(opcodeLOGICAL_NOT % 256)
+                STA ZP.STRL
+                LDA #(opcodeLOGICAL_NOT / 256)
+                STA ZP.STRH
+            }
+            case OpCode.EQ:
+            {
+                LDA #(opcodeEQ % 256)
+                STA ZP.STRL
+                LDA #(opcodeEQ / 256)
+                STA ZP.STRH
+            }
+            case OpCode.NE:
+            {
+                LDA #(opcodeNE % 256)
+                STA ZP.STRL
+                LDA #(opcodeNE / 256)
+                STA ZP.STRH
+            }
+            case OpCode.LT:
+            {
+                LDA #(opcodeLT % 256)
+                STA ZP.STRL
+                LDA #(opcodeLT / 256)
+                STA ZP.STRH
+            }
+            case OpCode.GT:
+            {
+                LDA #(opcodeGT % 256)
+                STA ZP.STRL
+                LDA #(opcodeGT / 256)
+                STA ZP.STRH
+            }
+            case OpCode.LE:
+            {
+                LDA #(opcodeLE % 256)
+                STA ZP.STRL
+                LDA #(opcodeLE / 256)
+                STA ZP.STRH
+            }
+            case OpCode.GE:
+            {
+                LDA #(opcodeGE % 256)
+                STA ZP.STRL
+                LDA #(opcodeGE / 256)
+                STA ZP.STRH
+            }
+            case OpCode.DECSP:
+            {
+                LDA #(opcodeDECSP % 256)
+                STA ZP.STRL
+                LDA #(opcodeDECSP / 256)
+                STA ZP.STRH
+            }
+            case OpCode.DUP:
+            {
+                LDA #(opcodeDUP % 256)
+                STA ZP.STRL
+                LDA #(opcodeDUP / 256)
+                STA ZP.STRH
+            }
+            case OpCode.NOP:
+            {
+                LDA #(opcodeNOP % 256)
+                STA ZP.STRL
+                LDA #(opcodeNOP / 256)
+                STA ZP.STRH
+            }
+            case OpCode.PUSH0:
+            {
+                LDA #(opcodePUSH0 % 256)
+                STA ZP.STRL
+                LDA #(opcodePUSH0 / 256)
+                STA ZP.STRH
+            }
+            case OpCode.PUSH1:
+            {
+                LDA #(opcodePUSH1 % 256)
+                STA ZP.STRL
+                LDA #(opcodePUSH1 / 256)
+                STA ZP.STRH
+            }
+            case OpCode.PUSHVOID:
+            {
+                LDA #(opcodePUSHVOID % 256)
+                STA ZP.STRL
+                LDA #(opcodePUSHVOID / 256)
+                STA ZP.STRH
+            }
+            case OpCode.HALT:
+            {
+                LDA #(opcodeHALT % 256)
+                STA ZP.STRL
+                LDA #(opcodeHALT / 256)
+                STA ZP.STRH
+            }
+            case OpCode.ENTER:
+            {
+                LDA #(opcodeENTER % 256)
+                STA ZP.STRL
+                LDA #(opcodeENTER / 256)
+                STA ZP.STRH
+            }
+            case OpCode.PUSHBIT:
+            {
+                LDA #(opcodePUSHBIT % 256)
+                STA ZP.STRL
+                LDA #(opcodePUSHBIT / 256)
+                STA ZP.STRH
+            }
+            case OpCode.PUSHBYTE:
+            {
+                LDA #(opcodePUSHBYTE % 256)
+                STA ZP.STRL
+                LDA #(opcodePUSHBYTE / 256)
+                STA ZP.STRH
+            }
+            case OpCode.PUSHLOCAL:
+            {
+                LDA #(opcodePUSHLOCAL % 256)
+                STA ZP.STRL
+                LDA #(opcodePUSHLOCAL / 256)
+                STA ZP.STRH
+            }
+            case OpCode.POPLOCAL:
+            {
+                LDA #(opcodePOPLOCAL % 256)
+                STA ZP.STRL
+                LDA #(opcodePOPLOCAL / 256)
+                STA ZP.STRH
+            }
+            case OpCode.JUMPB:
+            {
+                LDA #(opcodeJUMPB % 256)
+                STA ZP.STRL
+                LDA #(opcodeJUMPB / 256)
+                STA ZP.STRH
+            }
+            case OpCode.JUMPZB:
+            {
+                LDA #(opcodeJUMPZB % 256)
+                STA ZP.STRL
+                LDA #(opcodeJUMPZB / 256)
+                STA ZP.STRH
+            }
+            case OpCode.JUMPNZB:
+            {
+                LDA #(opcodeJUMPNZB % 256)
+                STA ZP.STRL
+                LDA #(opcodeJUMPNZB / 256)
+                STA ZP.STRH
+            }
+            case OpCode.SYSCALL:
+            {
+                LDA #(opcodeSYSCALL % 256)
+                STA ZP.STRL
+                LDA #(opcodeSYSCALL / 256)
+                STA ZP.STRH
+            }
+            case OpCode.RETURN:
+            {
+                LDA #(opcodeRETURN % 256)
+                STA ZP.STRL
+                LDA #(opcodeRETURN / 256)
+                STA ZP.STRH
+            }
+            case OpCode.RETURNVAL:
+            {
+                LDA #(opcodeRETURNVAL % 256)
+                STA ZP.STRL
+                LDA #(opcodeRETURNVAL / 256)
+                STA ZP.STRH
+            }
+            case OpCode.PUSHINT:
+            {
+                LDA #(opcodePUSHINT % 256)
+                STA ZP.STRL
+                LDA #(opcodePUSHINT / 256)
+                STA ZP.STRH
+            }
+            case OpCode.PUSHWORD:
+            {
+                LDA #(opcodePUSHWORD % 256)
+                STA ZP.STRL
+                LDA #(opcodePUSHWORD / 256)
+                STA ZP.STRH
+            }
+            case OpCode.PUSHCSTRING:
+            {
+                LDA #(opcodePUSHCSTRING % 256)
+                STA ZP.STRL
+                LDA #(opcodePUSHCSTRING / 256)
+                STA ZP.STRH
+            }
+            case OpCode.CALL:
+            {
+                LDA #(opcodeCALL % 256)
+                STA ZP.STRL
+                LDA #(opcodeCALL / 256)
+                STA ZP.STRH
+            }
+            case OpCode.CALLF:
+            {
+                LDA #(opcodeCALLF % 256)
+                STA ZP.STRL
+                LDA #(opcodeCALLF / 256)
+                STA ZP.STRH
+            }
+            case OpCode.PUSHGLOBAL:
+            {
+                LDA #(opcodePUSHGLOBAL % 256)
+                STA ZP.STRL
+                LDA #(opcodePUSHGLOBAL / 256)
+                STA ZP.STRH
+            }
+            case OpCode.POPGLOBAL:
+            {
+                LDA #(opcodePOPGLOBAL % 256)
+                STA ZP.STRL
+                LDA #(opcodePOPGLOBAL / 256)
+                STA ZP.STRH
+            }
+            case OpCode.JUMPW:
+            {
+                LDA #(opcodeJUMPW % 256)
+                STA ZP.STRL
+                LDA #(opcodeJUMPW / 256)
+                STA ZP.STRH
+            }
+            case OpCode.JUMPZW:
+            {
+                LDA #(opcodeJUMPZW % 256)
+                STA ZP.STRL
+                LDA #(opcodeJUMPZW / 256)
+                STA ZP.STRH
+            }
+            case OpCode.JUMPNZW:
+            {
+                LDA #(opcodeJUMPNZW % 256)
+                STA ZP.STRL
+                LDA #(opcodeJUMPNZW / 256)
                 STA ZP.STRH
             }
             default:

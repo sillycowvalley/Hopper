@@ -4,7 +4,7 @@ unit Compiler // Compiler.asm
    uses "Tokenizer"
    uses "Emit"
    
-   friend Emit;
+   friend Emit, Functions;
    
    // API Status: Clean
    // All public methods preserve caller state except for documented outputs
@@ -1617,8 +1617,9 @@ unit Compiler // Compiler.asm
                CompileStatement();
                Error.CheckError();
                if (NC) { States.SetFailure(); break; }
-           }
+           } // Statement compilation loop
            
+           Emit.Halt(); // DASM needs this
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
            

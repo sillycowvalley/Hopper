@@ -34,102 +34,103 @@ unit Tokens
         HEAP     = 0x8C,
         BUFFERS  = 0x8D,
         DUMP     = 0x8E,
-        BYE      = 0x8F,
-        TRON     = 0x90,
-        TROFF    = 0x91,
-        REM      = 0x92,
-        COMMENT  = 0x93,
-        EOL      = 0x94,
+        DASM     = 0x8F,  // NEW: Disassemble command
+        BYE      = 0x90,
+        TRON     = 0x91,
+        TROFF    = 0x92,
+        REM      = 0x93,
+        COMMENT  = 0x94,
+        EOL      = 0x95,
         
         // Type declarations
-        INT      = 0x95,
-        WORD     = 0x96,
-        BIT      = 0x97,
-        BYTE     = 0x98,
-        STRING   = 0x99,
-        CONST    = 0x9A, 
+        INT      = 0x96,
+        WORD     = 0x97,
+        BIT      = 0x98,
+        BYTE     = 0x99,
+        STRING   = 0x9A,
+        CONST    = 0x9B, 
         
         // Language keywords
-        PRINT    = 0x9B,
-        INPUT    = 0x9C,
-        IF       = 0x9D,
-        THEN     = 0x9E,
-        ELSE     = 0x9F,   // MOVED HERE (was 0xD5)
-        ENDIF    = 0xA0,   // MOVED HERE (was 0xD6)
-        FUNC     = 0xA1,   // Shifted down
-        ENDFUNC  = 0xA2,   // Shifted down
-        RETURN   = 0xA3,   // Shifted down
-        BEGIN    = 0xA4,   // Shifted down
-        END      = 0xA5,   // Shifted down
-        FOR      = 0xA6,   // Shifted down
-        TO       = 0xA7,   // Shifted down
-        STEP     = 0xA8,   // Shifted down
-        NEXT     = 0xA9,   // Shifted down
-        WHILE    = 0xAA,   // Shifted down
-        WEND     = 0xAB,   // Shifted down
-        DO       = 0xAC,   // Shifted down
-        UNTIL    = 0xAD,   // Shifted down
-        BREAK    = 0xAE,   // Shifted down
-        CONTINUE = 0xAF,   // Shifted down
-        CONT     = 0xB0,   // Shifted down
+        PRINT    = 0x9C,
+        INPUT    = 0x9D,
+        IF       = 0x9E,
+        THEN     = 0x9F,
+        ELSE     = 0xA0,
+        ENDIF    = 0xA1,
+        FUNC     = 0xA2,
+        ENDFUNC  = 0xA3,
+        RETURN   = 0xA4,
+        BEGIN    = 0xA5,
+        END      = 0xA6,
+        FOR      = 0xA7,
+        TO       = 0xA8,
+        STEP     = 0xA9,
+        NEXT     = 0xAA,
+        WHILE    = 0xAB,
+        WEND     = 0xAC,
+        DO       = 0xAD,
+        UNTIL    = 0xAE,
+        BREAK    = 0xAF,
+        CONTINUE = 0xB0,
+        CONT     = 0xB1,
                
         // Logical keywords
-        AND      = 0xB1,   // Shifted down
-        OR       = 0xB2,   // Shifted down
-        NOT      = 0xB3,   // Shifted down
-        MOD      = 0xB4,   // Shifted down
+        AND      = 0xB2,
+        OR       = 0xB3,
+        NOT      = 0xB4,
+        MOD      = 0xB5,
         
         // Built-in literals
-        TRUE     = 0xB5,   // Shifted down
-        FALSE    = 0xB6,   // Shifted down
+        TRUE     = 0xB6,
+        FALSE    = 0xB7,
         
         // Built-in functions
-        ABS      = 0xB7,   // Shifted down
-        MILLIS   = 0xB8,   // Shifted down
-        PEEK     = 0xB9,   // Shifted down
-        POKE     = 0xBA,   // Shifted down
-        RND      = 0xBB,   // Shifted down
-        SECONDS  = 0xBC,   // Shifted down
-        DELAY    = 0xBD,   // Shifted down
+        ABS      = 0xB8,
+        MILLIS   = 0xB9,
+        PEEK     = 0xBA,
+        POKE     = 0xBB,
+        RND      = 0xBC,
+        SECONDS  = 0xBD,
+        DELAY    = 0xBE,
         
         // Sentinel marking end of keywords
-        lastKeyword = 0xBD,  // Updated to DELAY (highest keyword value)
+        lastKeyword = 0xBE,  // Updated to DELAY (highest keyword value)
         
         // Basic operators (start after lastKeyword)
-        EQUALS   = 0xBE,  // =
-        PLUS     = 0xBF,  // +
-        MINUS    = 0xC0,  // -
-        LPAREN   = 0xC1,  // (
-        RPAREN   = 0xC2,  // )
-        NOTEQUAL = 0xC3,  // <>
+        EQUALS   = 0xBF,  // =
+        PLUS     = 0xC0,  // +
+        MINUS    = 0xC1,  // -
+        LPAREN   = 0xC2,  // (
+        RPAREN   = 0xC3,  // )
+        NOTEQUAL = 0xC4,  // <>
         
         // Additional comparison operators
-        LT       = 0xC4,  // 
-        GT       = 0xC5,  // >
-        LE       = 0xC6,  // <=
-        GE       = 0xC7,  // >=
+        LT       = 0xC5,  // <
+        GT       = 0xC6,  // >
+        LE       = 0xC7,  // <=
+        GE       = 0xC8,  // >=
         
         // Arithmetic operators
-        MULTIPLY = 0xC8,  // *
-        DIVIDE   = 0xC9,  // /
+        MULTIPLY = 0xC9,  // *
+        DIVIDE   = 0xCA,  // /
         
-        BITWISE_AND = 0xCA,  // &
-        BITWISE_OR  = 0xCB,  // |
+        BITWISE_AND = 0xCB,  // &
+        BITWISE_OR  = 0xCC,  // |
         
         // Array and string operators
-        LBRACKET = 0xCC,  // [
-        RBRACKET = 0xCD,  // ]
-        LBRACE   = 0xCE,  // {
-        RBRACE   = 0xCF,  // }
+        LBRACKET = 0xCD,  // [
+        RBRACKET = 0xCE,  // ]
+        LBRACE   = 0xCF,  // {
+        RBRACE   = 0xD0,  // }
         
         // Literals and identifiers
-        NUMBER     = 0xD0,  // Numeric literal
-        STRINGLIT  = 0xD1,  // String literal
-        IDENTIFIER = 0xD2,  // Variable/function name
-        EOF        = 0xD3,  // End of file/input
-        COLON      = 0xD4,  // : statement separator
-        COMMA      = 0xD5,  // , parameter separator
-        SEMICOLON  = 0xD6,  // ; (future use)
+        NUMBER     = 0xD1,  // Numeric literal
+        STRINGLIT  = 0xD2,  // String literal
+        IDENTIFIER = 0xD3,  // Variable/function name
+        EOF        = 0xD4,  // End of file/input
+        COLON      = 0xD5,  // : statement separator
+        COMMA      = 0xD6,  // , parameter separator
+        SEMICOLON  = 0xD7,  // ; (future use)
     }
     
     // Keywords A-L (first character < 'M') - Reorganized by frequency
@@ -169,6 +170,7 @@ unit Tokens
         3, Token.DEL, 'D', 'E', 'L',             // File operation
         3, Token.DIR, 'D', 'I', 'R',             // File operation
         4, Token.DUMP, 'D', 'U', 'M', 'P',       // Debug command
+        4, Token.DASM, 'D', 'A', 'S', 'M',       // Debug command - disassemble
         4, Token.HEAP, 'H', 'E', 'A', 'P',       // Debug command
         7, Token.BUFFERS, 'B', 'U', 'F', 'F', 'E', 'R', 'S', // Debug command
         6, Token.FORGET, 'F', 'O', 'R', 'G', 'E', 'T', // Console command

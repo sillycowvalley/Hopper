@@ -866,8 +866,22 @@ unit Functions
         PHA
         LDA ZP.CurrentToken
         PHA
+NL(); 
+        // Save current compiler state
+        LDA Compiler.compilerLiteralBaseH
+        PHA
+        HOut();
+        LDA Compiler.compilerLiteralBaseL
+        PHA
+        HOut();
         
+
         BufferManager.UseBASICBuffers();
+        
+        // Get function's original token stream address
+        Functions.GetBody(); // Input: ZP.IDX = function node, Output: ZP.IDY = token stream
+NL(); XOut();
+        //Compiler.SetLiteralBase(); // Input: ZP.IDY = token stream address
         
         loop // Single exit block
         {
@@ -947,6 +961,11 @@ unit Functions
         
         BufferManager.UseREPLBuffers();
         
+        // Restore current compiler state
+        PLA
+        STA Compiler.compilerLiteralBaseL
+        PLA
+        STA Compiler.compilerLiteralBaseH
         // Restore tokenizer state
         PLA
         STA ZP.CurrentToken

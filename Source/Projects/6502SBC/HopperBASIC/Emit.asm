@@ -774,9 +774,11 @@ unit Emit
            // Calculate absolute address of function name in token buffer
            // The tokenizer's TokenLiteralPos points to the start of the identifier string
            CLC
+           //LDA Compiler.compilerLiteralBaseL
            LDA ZP.TokenBufferL
            ADC ZP.TokenLiteralPosL    // TokenLiteralPos points to identifier string
            STA Compiler.compilerOperand1       // Absolute address LSB
+           //LDA Compiler.compilerLiteralBaseH
            LDA ZP.TokenBufferH
            ADC ZP.TokenLiteralPosH
            STA Compiler.compilerOperand2       // Absolute address MSB

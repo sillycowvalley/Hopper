@@ -1,6 +1,7 @@
 unit Commands
 {
     uses "./Utilities/TokenIterator"
+    uses "./Debugging/Dasm"
 
     // API Status: Clean
     // All public methods execute console commands using prepared arguments
@@ -199,8 +200,11 @@ unit Commands
                 States.SetSuccess();
                 break;
             }
-            
-            CmdVars(); // constants and variables
+            TXA
+            if (Z) // X=0 -> LIST
+            {
+                CmdVars(); // constants and variables
+            }
             
             // ZP.STR is null - show all functions with bodies
             displayAllFunctionsWithBodies();
@@ -230,7 +234,7 @@ unit Commands
     }
     
     // Execute FUNCS command - display all functions or specific function
-    // Input: ZP.STR = function name or null (0x0000) for all
+    // Input: ZP.STR = function name or null (0x0000) for all, X=0 for LIST, X=1 for DASM
     // Output: Function(s) displayed to serial
     CmdFuncs()
     {
@@ -422,6 +426,7 @@ unit Commands
     }
     
     // Display all functions (signatures only)
+    // X=0 for LIST, X=1 for DASM
     displayAllFunctions()
     {
         PHA
@@ -453,6 +458,7 @@ unit Commands
     }
     
     // Display specific function (signature only)
+    // X=0 for LIST, X=1 for DASM
     displaySpecificFunction()
     {
         PHA
@@ -491,6 +497,7 @@ unit Commands
     }
     
     // Display all functions with bodies (for LIST command)
+    // X=0 for LIST, X=1 for DASM
     displayAllFunctionsWithBodies()
     {
         PHA
@@ -518,6 +525,7 @@ unit Commands
     }
     
     // Display specific function with body (for LIST command)
+    // X=0 for LIST, X=1 for DASM
     displaySpecificFunctionWithBody()
     {
         PHA
@@ -598,6 +606,7 @@ unit Commands
         PLA
     }
     
+    
     // Display complete function with body
     // Input: ZP.IDX = function node
     displayFunctionWithBody()
@@ -621,15 +630,24 @@ unit Commands
         PLA
         STA ZP.IDXL
         
-        // Display body
-        Functions.GetBody(); // Input: ZP.IDX, Output: ZP.IDY = tokens pointer
-        LDA ZP.IDYL
-        ORA ZP.IDYH
-        if (NZ)
+        TXA
+        if (Z) // X == 0 for LIST
         {
-            // Use TokenIterator to render the function body
-            TokenIterator.RenderTokenStream(); // Input: ZP.IDY = tokens pointer
+            // Display body
+            Functions.GetBody(); // Input: ZP.IDX, Output: ZP.IDY = tokens pointer
+            LDA ZP.IDYL
+            ORA ZP.IDYH
+            if (NZ)
+            {
+                // Use TokenIterator to render the function body
+                TokenIterator.RenderTokenStream(); // Input: ZP.IDY = tokens pointer
+            }
         }
+        else
+        {
+            Dasm.DisassembleFunctionOpCodes();
+        }
+            
         
         // Get function name to check if it's BEGIN
         Functions.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer

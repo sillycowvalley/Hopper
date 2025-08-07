@@ -436,6 +436,14 @@ unit Console // Console.asm
                 }
                 case Token.LIST:
                 {
+                    LDX #0 // LIST
+                    parseList();
+                    Error.CheckError();
+                    if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
+                }
+                case Token.DASM:
+                {
+                    LDX #1 // DASM
                     parseList();
                     Error.CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
