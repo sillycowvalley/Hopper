@@ -2,6 +2,7 @@ WORD ELAPSED
 WORD I = 0
 
 FUNC ONE()
+    PRINT "ONE"
     RETURN 1
 ENDFUNC
 
@@ -175,23 +176,42 @@ PRINT "Start";
 
 INT I = 0
 BEGIN
-    IF  (I = 10) THEN
+    IF (I = 10) THEN
         PRINT "FALSE"
     ENDIF
-    IF  (I <> 10) THEN
+    IF (I <> 10) THEN
         PRINT "TRUE"
     ENDIF
-    IF  (I <> 10) THEN
+    IF (I <> 10) THEN
         PRINT "TRUE"
     ELSE
         PRINT "FALSE"
     ENDIF
-    IF  (I = 10) THEN
+    IF (I = 10) THEN
         PRINT "FALSE"
     ELSE
         PRINT "TRUE"
     ENDIF
-    
 END
 RUN
 
+INT I = 0
+BEGIN
+    IF (I = 10) THEN
+        PRINT "FALSE"
+    ELSE
+        PRINT "TRUE"
+    ENDIF
+END
+RUN
+
+
+INT I = 0
+BEGIN
+    DO
+        I = I + 1
+        PRINT I
+    UNTIL I = 10
+    PRINT "OK"
+END
+RUN
