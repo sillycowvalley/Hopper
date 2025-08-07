@@ -280,6 +280,8 @@ unit Tokenizer // Tokenizer.asm
         PHA  // Save byte to append
         loop
         {
+            // TODO : REPL buffer is only 256 bytes in size
+            
             // 16-bit boundary check: if (TokenBufferContentSize >= 512) return error
             LDA ZP.TokenBufferContentSizeH
             CMP #(Limits.TokenizerBufferLength >> 8)  // Compare high byte (2)
