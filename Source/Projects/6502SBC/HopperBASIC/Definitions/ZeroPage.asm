@@ -39,7 +39,7 @@ unit ZP // ZeroPage.asm
     // Bit 6 - (unused in BASIC)
     // Bit 5 - (unused in BASIC)
     // Bit 4 - (unused in BASIC)
-    // Bit 3 - (unused in BASIC)
+    // Bit 3 - (REPL mode flag
     // Bit 2 - TRON | TROFF (trace on/off)
     // Bit 1 - Temporary exit flag for Console.processTokens() loop control
     // Bit 0 - Program has been loaded
@@ -105,9 +105,9 @@ unit ZP // ZeroPage.asm
     // HOPPER BASIC CORE
     const byte BasicInputLength     = 0x25;  // Input buffer character count
     
-    const byte TokenBufferLength    = 0x26;  // Token buffer size (16-bit)
-    const byte TokenBufferLengthL   = 0x26;  // Token buffer low (alias)
-    const byte TokenBufferLengthH   = 0x27;  // Token buffer high
+    const byte TokenBufferContentSize    = 0x26;  // current Token buffer content size (16-bit)
+    const byte TokenBufferContentSizeL   = 0x26;  // Token buffer content size low (alias)
+    const byte TokenBufferContentSizeH   = 0x27;  // Token buffer content size high
     const byte TokenizerPos         = 0x28;  // Current tokenizer position (16-bit)
     const byte TokenizerPosL        = 0x28;  // Tokenizer pos low (alias)  
     const byte TokenizerPosH        = 0x29;  // Tokenizer pos high
@@ -290,8 +290,17 @@ unit ZP // ZeroPage.asm
     const byte STR2  = 0x76;  // String pointer 2
     const byte STR2L = 0x76;  // String 2 low (alias)
     const byte STR2H = 0x77;  // String 2 high
+    
+    // Zero Page buffer pointers starting at 0x78
+    // These point to the currently active buffer set (either BASIC or REPL)
 
-    // 0x78-0xEB: Available (116 bytes!)
+    const byte TokenBuffer         = 0x78;  // Low byte of current tokenizer buffer pointer
+    const byte TokenBufferL        = 0x78;
+    const byte TokenBufferH        = 0x79;  // High byte of current tokenizer buffer pointer
+    const byte OpCodeBufferL       = 0x7A;  // Low byte of current opcode buffer pointer
+    const byte OpCodeBufferH       = 0x7B;  // High byte of current opcode buffer pointer
+
+    // 0x7C-0xEB: Available (110 bytes!)
 
     // HARDWARE I/O (IMMOVABLE - Platform Hardware Addresses)
     const byte ACIACONTROL          = 0xEC;  // 6850 ACIA control register

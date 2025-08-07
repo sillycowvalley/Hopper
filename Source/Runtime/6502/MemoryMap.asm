@@ -12,27 +12,7 @@ unit Address // MemoryMap.asm
     
     const uint I2CInBuffer          = 0x0800;  // 256-byte buffer 0x0800-0x08FF for I2C.RequestFrom
     
-#if defined(HOPPER_BASIC)
-    // HopperBASIC buffers
-    const uint BasicInputBuffer        = 0x0900;  // 128 bytes - raw user input
-    
-    const uint BasicCompilerWorkspace  = 0x0980;  // 32 bytes - compiler.asm
-    
-    const uint BasicStatementWorkspace = 0x09A0;  // 32 bytes - statemet.asm
-    
-    const uint BasicExecutorWorkspace  = 0x09C0;  // 32 bytes - executor.asm  
-    
-    const uint BasicProcessBuffer      = 0x09E0;  // 32 bytes - used to convert string literals to uppercase in tokenizer.asm
-    
-    const uint BasicTokenizerBuffer   = 0x0A00;  // 512 bytes - tokenized line storage
-    
-    const uint BasicOpCodeBuffer      = 0x0C00;  // 512 bytes - JIT compiled opcodes
-
-    const uint HopperData             = 0x0E00;  // start of Hopper RAM (program, then heap)
-    
-#else    
     const uint HopperData             = 0x0900;  // start of Hopper RAM (program, then heap)
-#endif
     
 
 #if defined(BENEATER_IO)
