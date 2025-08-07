@@ -38,6 +38,7 @@ unit Error // Error.asm
     const uint heapCorrupt = 0x001D;
     const uint illegalCharacter = 0x001E;
     const string cannotRollback = 0x001F
+    const string ctrlC = 0x0020
 #else
     // Error message strings (moved from Messages.asm) and made private
     const string syntaxError = "SYNTAX ERROR";
@@ -74,11 +75,21 @@ unit Error // Error.asm
     const string onlyAtConsole = "ONLY AT CONSOLE";
     const string heapCorrupt = "HEAP CORRUPT";
     const string cannotRollback = "CANNOT ROLLBACK";
+    const string ctrlC = "BREAK";
     
 #endif
     
     // One-liner error methods (PC must be set at call site with BIT ZP.EmulatorPCL)
     // Each method sets ZP.LastError and clears carry flag
+    
+    Break()
+    {
+        LDA #(ctrlC % 256)
+        STA ZP.LastErrorL
+        LDA #(ctrlC / 256)
+        STA ZP.LastErrorH
+        CLC
+    }
     
     CannotRollback()
     {

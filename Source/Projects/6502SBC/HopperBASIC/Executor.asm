@@ -73,6 +73,13 @@ unit Executor // Executor.asm
                    // State.Return  - popping the CSP to zero
                    break; 
                }
+               LDA ZP.SerialBreakFlag
+               if (NZ) 
+               {
+                    Error.Break();  // "BREAK" error message
+                    States.SetFailure();
+                    break;
+               }
                // State.Success - get another opcode ..
            } // loop
            break;
