@@ -133,7 +133,8 @@ unit ZP // ZeroPage.asm
     const byte TokenBuffer          = 0x35;  // Low byte of current tokenizer buffer pointer
     const byte TokenBufferL         = 0x35;
     const byte TokenBufferH         = 0x36;  // High byte of current tokenizer buffer pointer
-    const byte OpCodeBufferL        = 0x37;  // Low byte of current opcode buffer pointer
+    const byte OpCodeBuffer         = 0x37; // Low byte of current opcode buffer pointer
+    const byte OpCodeBufferL        = 0x37;
     const byte OpCodeBufferH        = 0x38;  // High byte of current opcode buffer pointer
 
     // SYMBOL TABLE MANAGEMENT
