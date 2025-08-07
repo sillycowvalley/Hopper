@@ -127,10 +127,10 @@ unit Executor // Executor.asm
 #endif
        
        // Set start address to BasicOpCodeBuffer
-       LDA #(Address.BasicOpCodeBuffer % 256)
+       LDA ZP.OpCodeBufferL
        STA executorStartAddrL
        STA ZP.PCL // Start execution at beginning
-       LDA #(Address.BasicOpCodeBuffer / 256)
+       LDA ZP.OpCodeBufferH
        STA executorStartAddrH
        STA ZP.PCH
        

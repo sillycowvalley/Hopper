@@ -228,10 +228,10 @@ unit Statement // Statement.asm
 #endif
         loop
         {
-            // Set literal base to BasicTokenizerBuffer for REPL
-            LDA #(Address.BasicTokenizerBuffer % 256)
+            // Set literal base to TokenizerBuffer for REPL
+            LDA ZP.TokenBufferL
             STA ZP.IDYL  
-            LDA #(Address.BasicTokenizerBuffer / 256) 
+            LDA ZP.TokenBufferH
             STA ZP.IDYH
             NOP
             Compiler.SetLiteralBase();
@@ -298,10 +298,10 @@ unit Statement // Statement.asm
     #endif
         loop
         {
-            // Set literal base to BasicTokenizerBuffer for REPL (same as EvaluateExpression)
-            LDA #(Address.BasicTokenizerBuffer % 256)
+            // Set literal base to TokenizerBuffer for REPL (same as EvaluateExpression)
+            LDA ZP.TokenBufferL
             STA ZP.IDYL  
-            LDA #(Address.BasicTokenizerBuffer / 256) 
+            LDA ZP.TokenBufferH
             STA ZP.IDYH
             Compiler.SetLiteralBase();
             
@@ -889,12 +889,12 @@ unit Statement // Statement.asm
                 break;
             }
             
-            // Set up copy: source = BasicTokenizerBuffer + saved position
+            // Set up copy: source = TokenizerBuffer + saved position
             CLC
-            LDA # ( Address.BasicTokenizerBuffer & 0xFF)
+            LDA ZP.TokenBufferL
             ADC ZP.FSOURCEADDRESSL
             STA ZP.FSOURCEADDRESSL
-            LDA # ( Address.BasicTokenizerBuffer >> 8)
+            LDA ZP.TokenBufferL
             ADC ZP.FSOURCEADDRESSH
             STA ZP.FSOURCEADDRESSH
             

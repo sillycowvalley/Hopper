@@ -1027,9 +1027,9 @@ unit Functions
             STA ZP.ACCH
             
             // Set up copy parameters
-            LDA #(Address.BasicOpCodeBuffer % 256)
+            LDA ZP.OpCodeBufferL
             STA ZP.FSOURCEADDRESSL        // Source: BasicOpCodeBuffer
-            LDA #(Address.BasicOpCodeBuffer / 256)
+            LDA ZP.OpCodeBufferH
             STA ZP.FSOURCEADDRESSH
             
             LDA ZP.ACCL

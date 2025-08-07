@@ -82,7 +82,7 @@ unit Console // Console.asm
             if (NC) { States.SetFailure(); break; }
             
             // Check for empty line (just EOL token)
-            LDA ZP.TokenBufferLengthL
+            LDA ZP.TokenBufferContentSizeL
             CMP #1
             if (NZ) 
             { 
@@ -91,7 +91,7 @@ unit Console // Console.asm
                 break;
             }
             
-            LDA ZP.TokenBufferLengthH
+            LDA ZP.TokenBufferContentSizeH
             if (NZ)
             {
                 // Definitely more than one token
@@ -369,8 +369,8 @@ unit Console // Console.asm
         
         // Additional cleanup when exiting function capture mode:
         // Reset tokenizer buffer to clear partial function data
-        STZ ZP.TokenBufferLengthL
-        STZ ZP.TokenBufferLengthH
+        STZ ZP.TokenBufferContentSizeL
+        STZ ZP.TokenBufferContentSizeH
         STZ ZP.TokenizerPosL
         STZ ZP.TokenizerPosH
         
@@ -984,11 +984,15 @@ unit Console // Console.asm
                 // Construct token buffer with function call to $MAIN()
                 // Token buffer will contain: IDENTIFIER "$MAIN" LPAREN RPAREN EOL
                 
+                // TODO
+                // Switch to REPL buffers for RUN command
+                // BufferManager.UseREPLBuffers();
+                
                 // Token 0: IDENTIFIER
-                LDX #0
+                LDY #0
                 LDA #Token.IDENTIFIER
-                STA Address.BasicTokenizerBuffer, X
-                INX
+                STA [ZP.TokenBuffer], Y
+                INY
                 
                 // Token 1: "$MAIN\0"
                 LDA ZP.IDXL
@@ -1003,37 +1007,35 @@ unit Console // Console.asm
                 STA ZP.TOPH
                 
                 // Inline the name
-                INX
-                LDY #0
+                LDX #0
                 loop
                 {
-                    LDA [ZP.TOP], Y
-                    STA Address.BasicTokenizerBuffer, X
+                    LDA Messages.BeginFunctionName, X
+                    STA [ZP.TokenBuffer], Y
                     if (Z) { break; } // that was '\0'
                     INX
                     INY
                 }
-                INX
+                INY
                 
                 // Token 2: LPAREN
                 LDA #Token.LPAREN
-                STA Address.BasicTokenizerBuffer, X
-                INX
+                STA [ZP.TokenBuffer], Y
+                INY
                 
                 // Token 3: RPAREN
                 LDA #Token.RPAREN
-                STA Address.BasicTokenizerBuffer, X
-                INX
+                STA [ZP.TokenBuffer], Y
+                INY
                 
                 // Token 4: EOL
                 LDA #Token.EOL
-                STA Address.BasicTokenizerBuffer, X
-                INX
+                STA [ZP.TokenBuffer], Y
+                INY
                 
                 // Clear tokenizer state
                 Tokenizer.Initialize();
-                INX
-                STX ZP.TokenBufferLengthL
+                STY ZP.TokenBufferContentSizeL
                 
                 // Execute the function call
                 Tokenizer.NextToken();

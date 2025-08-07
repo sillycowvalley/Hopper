@@ -28,7 +28,7 @@ unit Compiler // Compiler.asm
    
    // Initialize the opcode buffer for compilation
    // Output: OpCode buffer ready for emission
-   // Modifies: ZP.OpCodeBufferLengthL/H (set to 0), ZP.CompilerTokenPosL/H (set to current), ZP.CompilerFlags (cleared), ZP.PC (set to buffer start)
+   // Modifies: ZP.OpCodeBufferContentSizeL/H (set to 0), ZP.CompilerTokenPosL/H (set to current), ZP.CompilerFlags (cleared), ZP.PC (set to buffer start)
    const string initOpCodeBufferTrace = "InitOpBuf";
    InitOpCodeBuffer()
    {
@@ -37,13 +37,13 @@ unit Compiler // Compiler.asm
 #endif
        
        // Clear opcode buffer length
-       STZ ZP.OpCodeBufferLengthL
-       STZ ZP.OpCodeBufferLengthH
+       STZ ZP.OpCodeBufferContentSizeL
+       STZ ZP.OpCodeBufferContentSizeH
        
        // Initialize PC to start of opcode buffer
-       LDA #(Address.BasicOpCodeBuffer % 256)
+       LDA ZP.OpCodeBufferL
        STA ZP.PCL
-       LDA #(Address.BasicOpCodeBuffer / 256)
+       LDA ZP.OpCodeBufferH
        STA ZP.PCH
        
        // Save current tokenizer position for literal references
@@ -135,14 +135,14 @@ unit Compiler // Compiler.asm
        {
            // Add required bytes to current buffer length
            CLC
-           ADC ZP.OpCodeBufferLengthL
-           STA ZP.OpCodeBufferLengthL
-           LDA ZP.OpCodeBufferLengthH
+           ADC ZP.OpCodeBufferContentSizeL
+           STA ZP.OpCodeBufferContentSizeL
+           LDA ZP.OpCodeBufferContentSizeH
            ADC #0
-           STA ZP.OpCodeBufferLengthH
+           STA ZP.OpCodeBufferContentSizeH
            
            // Compare against buffer size (512 bytes = 0x0200)
-           LDA ZP.OpCodeBufferLengthH
+           LDA ZP.OpCodeBufferContentSizeH
            CMP #0x02
            if (C) // >= 0x0200, overflow
            {
@@ -1554,7 +1554,7 @@ unit Compiler // Compiler.asm
    
    
    // Compile function body from tokens to opcodes  
-   // Input: Function tokens already copied to BasicTokenizerBuffer, ZP.TokenBufferLength set, ZP.ACCL = number of arguments for FUNC
+   // Input: Function tokens already copied to TokenBuffer, ZP.TokenBufferContentSize set, ZP.ACCL = number of arguments for FUNC
    // Output: Function compiled to opcode buffer, SystemState set
    // Modifies: OpCode buffer, ZP.CurrentToken, ZP.TokenizerPos, compilation state
    // Error: Sets ZP.LastError if compilation fails
@@ -1978,9 +1978,9 @@ unit Compiler // Compiler.asm
            if (NC) { States.SetFailure(); break; }
            
            // Mark loop start position for backward jump (start of condition evaluation)
-           LDA ZP.OpCodeBufferLengthL
+           LDA ZP.OpCodeBufferContentSizeL
            PHA  // Save loop start LSB
-           LDA ZP.OpCodeBufferLengthH
+           LDA ZP.OpCodeBufferContentSizeH
            PHA  // Save loop start MSB
            
            // Compile condition expression (e.g., "I < 10")
@@ -1988,9 +1988,9 @@ unit Compiler // Compiler.asm
            
            // Save forward jump operand position for later patching
            // This is where JUMPZW operand will be stored (after the opcode byte)
-           LDA ZP.OpCodeBufferLengthL
+           LDA ZP.OpCodeBufferContentSizeL
            PHA     // Push operand position LSB
-           LDA ZP.OpCodeBufferLengthH
+           LDA ZP.OpCodeBufferContentSizeH
            PHA     // Push operand position MSB
            
            // Check for compilation errors after consuming all 4 stack slots
@@ -2067,9 +2067,9 @@ unit Compiler // Compiler.asm
            STA ZP.TOPL  // Loop start position LSB
            
            // Current position = end of loop body (where JUMPW will be emitted)
-           LDA ZP.OpCodeBufferLengthH
+           LDA ZP.OpCodeBufferContentSizeH
            STA ZP.IDYH  // Current position MSB
-           LDA ZP.OpCodeBufferLengthL
+           LDA ZP.OpCodeBufferContentSizeL
            STA ZP.IDYL  // Current position LSB
            
            // === FORWARD JUMP OFFSET CALCULATION ===
@@ -2108,10 +2108,10 @@ unit Compiler // Compiler.asm
            // === FORWARD JUMP PATCHING ===
            // Calculate absolute address in opcode buffer for patching
            CLC
-           LDA #(Address.BasicOpCodeBuffer % 256)
+           LDA ZP.OpCodeBufferL
            ADC ZP.IDXL    // Add JUMPZW operand position
            STA ZP.IDXL    // Absolute patch address LSB
-           LDA #(Address.BasicOpCodeBuffer / 256)
+           LDA ZP.OpCodeBufferL
            ADC ZP.IDXH    // Add JUMPZW operand position
            STA ZP.IDXH    // Absolute patch address MSB
 

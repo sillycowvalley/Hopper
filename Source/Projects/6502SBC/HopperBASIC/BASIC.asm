@@ -6,11 +6,11 @@ program HopperBASIC
     //#define TRACEJIT     // detail for JIT / CALL->CALLF patching
     //#define TRACEVERBOSE // details in Executor
     
-    //#define TRACECONSOLE // trace output for Console.asm and Listing.asm
+    //#define TRACECONSOLE // trace output for Console.asm and Command.asm
     
     #define CPU_65C02S
     #define HOPPER_BASIC
-    #define ROM_32K
+    #define ROM_48K
     
 #if defined(TRACECONSOLE) || defined(TRACEVERBOSE)
   #if !defined(TRACE)
@@ -18,29 +18,36 @@ program HopperBASIC
   #endif    
 #endif
     
-    uses "./ZeroPage"
-    uses "./MemoryMap"
+    uses "./Definitions/ZeroPage"
+    uses "./Definitions/MemoryMap"
+    uses "./Definitions/Messages"
+    uses "./Definitions/BASICTypes"
+    uses "./Definitions/States"
+    uses "./Debugging/Error"
+    uses "./Debugging/Debug"
+    uses "./Debugging/Trace"
     
+    uses "/Source/Runtime/6502/Types"
     uses "/Source/Runtime/6502/Serial"
     uses "/Source/Runtime/6502/Memory"
     uses "/Source/Runtime/6502/Utilities"
     uses "/Source/Runtime/6502/Stacks"
     uses "/Source/Runtime/6502/Time"
     
-    uses "Messages"
-    uses "Error"
-    uses "State"
-    uses "Debug"
-    uses "Trace"
-    uses "Tools"
+    uses "./Objects/Table"
+    uses "./Objects/Objects"
+    uses "./Objects/Variables"
+    uses "./Objects/Arguments"
+    uses "./Objects/Functions"
     
-    
+    uses "./Utilities/Tools"
+    uses "./Utilities/BufferManager"
     uses "Tokenizer"
     uses "FunctionDeclaration.asm"
     uses "Statement"
     uses "Compiler"
     
-    uses "Functions"
+    
     
     uses "Instructions"
     uses "ComparisonInstructions"
@@ -53,7 +60,7 @@ program HopperBASIC
     InitializeBASIC()
     {
         Error.ClearError();
-        State.SetSuccess();    // Initialize state system
+        States.SetSuccess();    // Initialize state system
         Trace.Initialize();    // Initialize trace system (NOP in production code)
         
         // Initialize serial communication first
@@ -74,9 +81,8 @@ program HopperBASIC
         
         // Initialize BASIC-specific components
         Console.Initialize();  // This now initializes the tokenizer too
-        
-        // Clear program size (we're not a traditional Hopper program)
-        STZ ZP.PROGSIZE
+     
+        BufferManager.UseBASICBuffers(); // just so we have an initialized default   
     }
     
     
@@ -90,7 +96,7 @@ program HopperBASIC
         STA ZP.ACCH
         Tools.PrintStringACC();
         
-        Console.CmdMem();
+        Commands.CmdMem();
     }
     
     // Main interpreter loop
@@ -112,7 +118,7 @@ program HopperBASIC
             Error.CheckErrorAndStatus();
             if (NC)
             {
-                State.IsExiting();
+                States.IsExiting();
                 if (C) 
                 {
                     break; // Exit on Ctrl+C during input
@@ -137,7 +143,7 @@ program HopperBASIC
             Console.ProcessLine();
             
             // Check for exit first (regardless of error state)
-            State.IsExiting();
+            States.IsExiting();
             if (C) { break; } // BYE command - clean exit
             
             // Then check for errors
@@ -172,7 +178,7 @@ program HopperBASIC
         INC ZP.SerialBreakFlag
         
         // Set exit state to break out of interpreter loop
-        State.SetExiting();
+        States.SetExiting();
     }
     
     // Main entry point

@@ -1092,7 +1092,7 @@ unit Debug // Debug.asm
         STA ZP.DB0
         LDA #(Address.BasicInputBuffer >> 8)
         STA ZP.DB1
-        dumpMemoryBlock();
+        dumpMemoryBlock(); // address: DB1 = MSB, DB0 = LSB
         
         // TokenizerBuffer
         LDA #(basicTokenizerBufferLabel % 256)
@@ -1112,9 +1112,9 @@ unit Debug // Debug.asm
         STA ZP.STRH
         printString();
         
-        LDA ZP.TokenBufferLengthH
+        LDA ZP.TokenBufferContentSizeH
         hOut();
-        LDA ZP.TokenBufferLengthL
+        LDA ZP.TokenBufferContentSizeL
         hOut();
         
         LDA #(basicCurTokLabel % 256)
@@ -1133,22 +1133,22 @@ unit Debug // Debug.asm
         printString();
         
         // Dump tokenizer buffer
-        LDA #(Address.BasicTokenizerBuffer & 0xFF)
-        STA ZP.DB0
-        LDA #(Address.BasicTokenizerBuffer >> 8)
+        LDA ZP.TokenBufferH
         STA ZP.DB1
-        dumpMemoryBlock();
+        LDA ZP.TokenBufferL
+        STA ZP.DB0
+        dumpMemoryBlock(); // address: DB1 = MSB, DB0 = LSB
         
         // OpCodeBuffer
-        LDA #(basicOpCodeBufferLabel % 256)
+        LDA #( basicOpCodeBufferLabel % 256)
         STA ZP.STR
         LDA #(basicOpCodeBufferLabel / 256)
         STA ZP.STRH
         printString();
         
-        LDA ZP.OpCodeBufferLengthH
+        LDA ZP.OpCodeBufferContentSizeH
         hOut();
-        LDA ZP.OpCodeBufferLengthL
+        LDA ZP.OpCodeBufferContentSizeL
         hOut();
         
         LDA #(basicPCLabel % 256)
@@ -1169,11 +1169,11 @@ unit Debug // Debug.asm
         printString();
         
         // Dump opcode buffer
-        LDA #(Address.BasicOpCodeBuffer & 0xFF)
+        LDA ZP.OpCodeBufferH
         STA ZP.DB0
-        LDA #(Address.BasicOpCodeBuffer >> 8)
+        LDA ZP.OpCodeBufferL
         STA ZP.DB1
-        dumpMemoryBlock();
+        dumpMemoryBlock(); // address: DB1 = MSB, DB0 = LSB
         
         // Error pointers
         LDA #(basicErrorLabel % 256)
@@ -1188,7 +1188,7 @@ unit Debug // Debug.asm
         nL();
     }
     
-    dumpMemoryBlock()  // DB0/DB1 = address
+    dumpMemoryBlock()  // address: DB1 = MSB, DB0 = LSB
     {
         // Print 4 lines of 16 bytes each (64 bytes total)
         LDX #0  // Line counter

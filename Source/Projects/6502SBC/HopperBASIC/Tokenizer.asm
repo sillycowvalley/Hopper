@@ -13,46 +13,46 @@ unit Tokenizer // Tokenizer.asm
     // Initialize tokenizer state
     // Input: None
     // Output: Tokenizer state cleared and ready for use
-    // Munts: ZP.TokenizerPos, ZP.TokenBufferLength, ZP.BasicInputLength, ZP.CurrentToken, ZP.TokenLiteralPos
+    // Munts: ZP.TokenizerPos, ZP.TokenBufferContentSize, ZP.BasicInputLength, ZP.CurrentToken, ZP.TokenLiteralPos
     Initialize()
     {
         STZ ZP.TokenizerPosL
         STZ ZP.TokenizerPosH
-        STZ ZP.TokenBufferLengthL
-        STZ ZP.TokenBufferLengthH
+        STZ ZP.TokenBufferContentSizeL
+        STZ ZP.TokenBufferContentSizeH
         STZ ZP.BasicInputLength
         STZ ZP.CurrentToken
         STZ ZP.TokenLiteralPosL
         STZ ZP.TokenLiteralPosH
     }
     
-    // Set IDX = BasicTokenizerBuffer + TokenizerPos
+    // Set IDX = TokenizerBuffer + TokenizerPos
     // Input: None (uses ZP.TokenizerPos)
     // Output: ZP.IDX = pointer to current position in token buffer
     // Munts: ZP.IDX
     setTokenizerPointer()
     {
         CLC
-        LDA #(Address.BasicTokenizerBuffer & 0xFF)
+        LDA ZP.TokenBufferL
         ADC ZP.TokenizerPosL
         STA ZP.IDXL
-        LDA #(Address.BasicTokenizerBuffer >> 8)
+        LDA ZP.TokenBufferH
         ADC ZP.TokenizerPosH
         STA ZP.IDXH
     }
     
-    // Set IDX = BasicTokenizerBuffer + TokenBufferLength
-    // Input: None (uses ZP.TokenBufferLength)
+    // Set IDX = TokenizerBuffer + TokenBufferContentSize
+    // Input: None (uses ZP.TokenBufferContentSize)
     // Output: ZP.IDX = pointer to end of token buffer
     // Munts: ZP.IDX
     setTokenBufferEndPointer()
     {
         CLC
-        LDA #(Address.BasicTokenizerBuffer & 0xFF)
-        ADC ZP.TokenBufferLengthL
+        LDA ZP.TokenBufferL
+        ADC ZP.TokenBufferContentSizeL
         STA ZP.IDXL
-        LDA #(Address.BasicTokenizerBuffer >> 8)
-        ADC ZP.TokenBufferLengthH
+        LDA ZP.TokenBufferH
+        ADC ZP.TokenBufferContentSizeH
         STA ZP.IDXH
     }
     
@@ -69,32 +69,32 @@ unit Tokenizer // Tokenizer.asm
         }
     }
     
-    // Increment 16-bit TokenBufferLength
-    // Input: None (uses ZP.TokenBufferLength)
-    // Output: ZP.TokenBufferLength incremented by 1
-    // Munts: ZP.TokenBufferLength
-    incrementTokenBufferLength()
+    // Increment 16-bit TokenBufferContentSize
+    // Input: None (uses ZP.TokenBufferContentSize)
+    // Output: ZP.TokenBufferContentSize incremented by 1
+    // Munts: ZP.TokenBufferContentSize
+    incrementTokenBufferContentSize()
     {
-        INC ZP.TokenBufferLengthL
+        INC ZP.TokenBufferContentSizeL
         if (Z)
         {
-            INC ZP.TokenBufferLengthH
+            INC ZP.TokenBufferContentSizeH
         }
     }
     
-    // Compare 16-bit values - TokenizerPos vs TokenBufferLength
-    // Input: None (uses ZP.TokenizerPos, ZP.TokenBufferLength)
-    // Output: Z set if equal, C set if TokenizerPos >= TokenBufferLength
+    // Compare 16-bit values - TokenizerPos vs TokenBufferContentSize
+    // Input: None (uses ZP.TokenizerPos, ZP.TokenBufferContentSize)
+    // Output: Z set if equal, C set if TokenizerPos >= TokenBufferContentSize
     // Preserves: Everything
     CompareTokenizerPosToLength()
     {
         LDA ZP.TokenizerPosH
-        CMP ZP.TokenBufferLengthH
+        CMP ZP.TokenBufferContentSizeH
         if (NZ) { return; }  // Not equal, C flag is correct
         
         // High bytes equal, compare low bytes
         LDA ZP.TokenizerPosL
-        CMP ZP.TokenBufferLengthL
+        CMP ZP.TokenBufferContentSizeL
     }
     
     // Skip whitespace in input buffer at position X
@@ -271,7 +271,7 @@ unit Tokenizer // Tokenizer.asm
     // Append byte to token buffer using 16-bit addressing
     // Input: A = byte to append
     // Output: C set if successful, NC if buffer full (error set in ZP.LastError)
-    // Munts: ZP.TokenBufferLength, ZP.IDX, A, Y
+    // Munts: ZP.TokenBufferContentSize, ZP.IDX, A, Y
     // Error: Sets ZP.LastError if buffer overflow
     appendToTokenBuffer()
     {
@@ -280,9 +280,9 @@ unit Tokenizer // Tokenizer.asm
         PHA  // Save byte to append
         loop
         {
-            // 16-bit boundary check: if (TokenBufferLength >= 512) return error
-            LDA ZP.TokenBufferLengthH
-            CMP #(Limits.BasicTokenizerBufferLength >> 8)  // Compare high byte (2)
+            // 16-bit boundary check: if (TokenBufferContentSize >= 512) return error
+            LDA ZP.TokenBufferContentSizeH
+            CMP #(Limits.TokenizerBufferLength >> 8)  // Compare high byte (2)
             if (C)  // >= 2
             {
                 if (NZ)  // > 2, definitely full
@@ -292,8 +292,8 @@ unit Tokenizer // Tokenizer.asm
                     break;
                 }
                 // High byte = 2, check low byte
-                LDA ZP.TokenBufferLengthL
-                CMP #(Limits.BasicTokenizerBufferLength & 0xFF)  // Compare low byte (0)
+                LDA ZP.TokenBufferContentSizeL
+                CMP #(Limits.TokenizerBufferLength & 0xFF)  // Compare low byte (0)
                 if (C)  // >= 512, buffer full
                 {
                     Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -315,7 +315,7 @@ unit Tokenizer // Tokenizer.asm
             STA [ZP.IDX], Y
             
             // Increment 16-bit length
-            incrementTokenBufferLength();
+            incrementTokenBufferContentSize();
             SEC // all good
         }
         PLY
@@ -479,9 +479,9 @@ unit Tokenizer // Tokenizer.asm
 
     // Tokenize complete line from BasicInputBuffer into BasicTokenizerBuffer
     // Input: BasicInputBuffer contains raw input, ZP.BasicInputLength = input length, mode in A
-    // Output: Tokens stored in BasicTokenizerBuffer, ZP.TokenBufferLength = total length
+    // Output: Tokens stored in BasicTokenizerBuffer, ZP.TokenBufferContentSize = total length
     //         ZP.TokenizerPos reset to 0
-    // Munts: ZP.TokenBufferLength, ZP.TokenizerPos, ZP.IDX, A, X, Y
+    // Munts: ZP.TokenBufferContentSize, ZP.TokenizerPos, ZP.IDX, A, X, Y
     // Error: Sets ZP.LastError if tokenization fails
     TokenizeLineWithMode()
     {
@@ -489,8 +489,8 @@ unit Tokenizer // Tokenizer.asm
         if (Z)
         {
             // Replace mode - clear token buffer
-            STZ ZP.TokenBufferLengthL
-            STZ ZP.TokenBufferLengthH
+            STZ ZP.TokenBufferContentSizeL
+            STZ ZP.TokenBufferContentSizeH
             Error.ClearError();
         }
         
@@ -722,9 +722,9 @@ unit Tokenizer // Tokenizer.asm
                     if (NC) { return; }
                     
                     // Store starting position of string content
-                    LDA ZP.TokenBufferLengthL
+                    LDA ZP.TokenBufferContentSizeL
                     STA ZP.TokenLiteralPosL
-                    LDA ZP.TokenBufferLengthH
+                    LDA ZP.TokenBufferContentSizeH
                     STA ZP.TokenLiteralPosH
                     
                     INX // Skip opening quote
@@ -1011,9 +1011,9 @@ unit Tokenizer // Tokenizer.asm
     // Preserves: X
     NextToken()
     {
-        // 16-bit comparison: if (TokenizerPos >= TokenBufferLength)
+        // 16-bit comparison: if (TokenizerPos >= TokenBufferContentSize)
         CompareTokenizerPosToLength();
-        if (C)  // TokenizerPos >= TokenBufferLength
+        if (C)  // TokenizerPos >= TokenBufferContentSize
         {
             LDA # Token.EOF
             STA ZP.CurrentToken
@@ -1166,11 +1166,11 @@ unit Tokenizer // Tokenizer.asm
         STZ ZP.TOPH
         
         // Set up 16-bit pointer to saved literal position in token buffer
-        LDA #(Address.BasicTokenizerBuffer & 0xFF)
+        LDA ZP.TokenBufferL
         CLC
         ADC ZP.TokenLiteralPosL
         STA ZP.IDXL
-        LDA #(Address.BasicTokenizerBuffer >> 8)
+        LDA ZP.TokenBufferH
         ADC ZP.TokenLiteralPosH
         STA ZP.IDXH
         
@@ -1295,15 +1295,15 @@ unit Tokenizer // Tokenizer.asm
         {
             // Check if we're at or past end of token buffer
             LDA ZP.TokenizerPosL
-            CMP ZP.TokenBufferLengthL
+            CMP ZP.TokenBufferContentSizeL
             if (NZ)
             {
                 // Not at end - check the byte at current position
-                LDA #(Address.BasicTokenizerBuffer & 0xFF)
+                LDA ZP.TokenBufferL
                 CLC
                 ADC ZP.TokenizerPosL
                 STA ZP.IDXL
-                LDA #(Address.BasicTokenizerBuffer >> 8)
+                LDA ZP.TokenBufferH
                 ADC ZP.TokenizerPosH
                 STA ZP.IDXH
                 
@@ -1325,7 +1325,7 @@ unit Tokenizer // Tokenizer.asm
             
             // Check high byte
             LDA ZP.TokenizerPosH  
-            CMP ZP.TokenBufferLengthH
+            CMP ZP.TokenBufferContentSizeH
             if (Z) { break; }  // At end
             
             // Past end - shouldn't happen
@@ -1449,12 +1449,12 @@ unit Tokenizer // Tokenizer.asm
         
         // Calculate address of string content in token buffer
         // String content starts at TokenLiteralPos offset in token buffer
-        LDA #(Address.BasicTokenizerBuffer % 256)
+        LDA ZP.TokenBufferL
         CLC
         ADC ZP.TokenLiteralPosL
         STA ZP.TOPL
         
-        LDA #(Address.BasicTokenizerBuffer / 256)
+        LDA ZP.TokenBufferH
         ADC ZP.TokenLiteralPosH
         STA ZP.TOPH
         
