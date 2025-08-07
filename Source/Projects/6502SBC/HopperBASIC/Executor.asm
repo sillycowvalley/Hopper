@@ -50,9 +50,7 @@ unit Executor // Executor.asm
        {
            // Initialize executor state
            InitExecutor();
-           States.IsSuccess();
-           
-           if (NC) { break; } // Error already set by InitExecutor
+           if (NC) { break; } // empty opcode stream -> State.Failure set
            
            // Main execution loop (assume there is at least one opcode)
            loop
@@ -105,18 +103,20 @@ unit Executor // Executor.asm
         LDA ZP.OpCodeBufferH
         STA ZP.PCH
         
-       // Validate buffer length is not zero
-       LDA ZP.OpCodeBufferContentSizeL
-       ORA ZP.OpCodeBufferContentSizeH
-       if (Z)
-       {
-           Error.InternalError(); BIT ZP.EmulatorPCL
-           States.SetFailure();
-       }
-       else
-       {
-           States.SetSuccess();
-       }
+        // Validate buffer length is not zero
+        LDA ZP.OpCodeBufferContentSizeL
+        ORA ZP.OpCodeBufferContentSizeH
+        if (Z)
+        {
+            Error.InternalError(); BIT ZP.EmulatorPCL
+            States.SetFailure();
+            CLC
+        }
+        else
+        {
+            States.SetSuccess();
+            SEC
+        }
        
 #ifdef TRACE
        LDA #(initExecutorTrace % 256) STA ZP.TraceMessageL LDA #(initExecutorTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
