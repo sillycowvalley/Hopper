@@ -1667,6 +1667,14 @@ unit Compiler // Compiler.asm
                case Token.WHILE:
                {
                    compileWhileStatement();
+                   Error.CheckError();
+                   if (NC) { States.SetFailure(); break; }
+               }
+               case Token.DO:
+               {
+                   compileDoUntilStatement();
+                   Error.CheckError();
+                   if (NC) { States.SetFailure(); break; }
                }
                case Token.PRINT:
                {
@@ -1937,28 +1945,150 @@ unit Compiler // Compiler.asm
 #endif
    }
 
-   /* 
-   WHILE LOOP STRUCTURE GENERATED:
+   // Compile DO...UNTIL statement  
+    // Input: ZP.CurrentToken = DO token
+    // Output: DO...UNTIL loop compiled to opcodes with backward jump
+    const string compileDoUntilStatementTrace = "CompDo // DO...UNTIL";
+    compileDoUntilStatement()
+    {
+    #ifdef TRACE
+        LDA #(compileDoUntilStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileDoUntilStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
 
-   Position    Instruction         Description
-   --------    -----------         -----------
-   loop_start: PUSHGLOBAL I        } Condition
-               PUSHBYTE 10         } evaluation
-               LT                  } (I < 10)
-               JUMPZW forward_off  <- Exit if FALSE (I >= 10)
-               PRINT I             } Loop
-               I = I + 1           } body
-               JUMPW backward_off  <- Jump back to condition
-   loop_exit:  (next statement)
+        loop // Single exit block
+        {
+            // Skip DO token
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { States.SetFailure(); break; }
+            
+            // Mark loop start position for backward jump
+            LDA ZP.OpCodeBufferContentSizeL
+            PHA  // Save loop start LSB
+            LDA ZP.OpCodeBufferContentSizeH
+            PHA  // Save loop start MSB
+            
+            // Compile loop body statements until UNTIL
+            loop // Statement compilation loop
+            {
+                LDA ZP.CurrentToken
+                
+                CMP #Token.UNTIL
+                if (Z) 
+                { 
+                    // Found UNTIL - exit body compilation (don't consume yet)
+                    break;
+                }
+                
+                CMP #Token.EOF
+                if (Z) 
+                { 
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL  // Missing UNTIL
+                    States.SetFailure();
+                    break; 
+                }
+                
+                CMP #Token.EOL
+                if (Z)
+                {
+                    // Skip empty lines in loop body
+                    Tokenizer.NextToken();
+                    Error.CheckError();
+                    if (NC) { States.SetFailure(); break; }
+                    continue;
+                }
+                
+                // Compile statement in loop body
+                CompileStatement();  // RECURSIVE CALL - handles nested constructs
+                Error.CheckError();
+                if (NC) { States.SetFailure(); break; }
+            }
+            
+            // Check if we exited due to error
+            Error.CheckError();
+            if (NC) { States.SetFailure(); break; }
+            
+            // We should be at UNTIL now
+            LDA ZP.CurrentToken
+            CMP #Token.UNTIL
+            if (NZ)
+            {
+                Error.SyntaxError(); BIT ZP.EmulatorPCL  // Expected UNTIL
+                States.SetFailure();
+                break;
+            }
+            
+            // Skip UNTIL token and compile condition expression
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { States.SetFailure(); break; }
+            
+            // Compile condition expression (e.g., "I = 10")
+            compileLogical();
+            Error.CheckError();
+            if (NC) { States.SetFailure(); break; }
+            
+            // === BACKWARD JUMP CALCULATION ===
+            // Pop loop start position
+            PLA
+            STA ZP.TOPH  // Loop start position MSB
+            PLA
+            STA ZP.TOPL  // Loop start position LSB
+            
+            // Current position = where JUMPZW will be emitted
+            LDA ZP.OpCodeBufferContentSizeL
+            STA ZP.IDYL  // Current position LSB
+            LDA ZP.OpCodeBufferContentSizeH
+            STA ZP.IDYH  // Current position MSB
+            
+            // Account for the JUMPZW instruction we're about to emit (3 bytes)
+            // PC will be at current_position + 3 after fetching JUMPZW
+            CLC
+            LDA ZP.IDYL
+            ADC #3
+            STA ZP.IDYL  // Position after JUMPZW
+            LDA ZP.IDYH
+            ADC #0
+            STA ZP.IDYH
+            
+            // Calculate backward offset: loop_start - position_after_jumpzw
+            // This will be negative (jumping backward)
+            SEC
+            LDA ZP.TOPL  // Loop start LSB
+            SBC ZP.IDYL  // Subtract position after JUMPZW
+            STA ZP.TOPL  // Backward offset LSB
+            LDA ZP.TOPH  // Loop start MSB
+            SBC ZP.IDYH  // Subtract position after JUMPZW
+            STA ZP.TOPH  // Backward offset MSB
+            
+            // Emit JUMPZW with backward offset
+            // Jump if condition is FALSE (i.e., UNTIL condition not met yet)
+            LDA #OpCode.JUMPZW
+            STA Compiler.compilerOpCode
+            LDA ZP.TOPL  // Backward offset LSB
+            STA Compiler.compilerOperand1
+            LDA ZP.TOPH  // Backward offset MSB
+            STA Compiler.compilerOperand2
+            Emit.OpCodeWithWord();
+            Error.CheckError();
+            if (NC) { States.SetFailure(); break; }
+            
+            States.SetSuccess();
+            break;
+        } // Single exit block
+        
+        States.IsSuccess();
+        if (NC)
+        {
+            // Clean up stack on error path (restore stack balance)
+            PLA  // Discard loop start position MSB
+            PLA  // Discard loop start position LSB
+        }
 
-   OFFSET CALCULATIONS:
-   - Forward offset  = loop_exit - jumpzw_operand_pos
-   - Backward offset = loop_start - (jumpw_pos + 3)
-
-   The +3 accounts for the JUMPW instruction itself (1 opcode + 2 operand bytes)
-   */
-
-
+    #ifdef TRACE
+        LDA #(compileDoUntilStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileDoUntilStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
    
    // Compile WHILE...WEND statement
    // Input: ZP.CurrentToken = WHILE token
@@ -2124,6 +2254,9 @@ unit Compiler // Compiler.asm
            STA [ZP.IDX], Y   // Patch MSB
            
            // === BACKWARD JUMP EMISSION ===
+           // Note: When JUMPW executes, PC has already advanced past 
+           // the 3-byte instruction, so offset is from position after JUMPW
+           //
            // Emit unconditional jump back to condition evaluation
            LDA #OpCode.JUMPW
            STA Compiler.compilerOpCode
@@ -2161,15 +2294,356 @@ unit Compiler // Compiler.asm
    
    
 
-   // Compile IF statement (stub for now)
-   // Input: ZP.CurrentToken = IF token
-   // Output: Error (not implemented)
-   compileIfStatement()
-   {
-       // TODO: Implement IF statement compilation
-       TODO(); BIT ZP.EmulatorPCL
-       States.SetFailure();
-   }
+   // Compile IF...THEN...ELSE...ENDIF statement
+    // Input: ZP.CurrentToken = IF token
+    // Output: IF statement compiled to opcodes with correct forward jumps
+    const string compileIfStatementTrace = "CompIf // IF...THEN...ELSE...ENDIF";
+    compileIfStatement()
+    {
+    #ifdef TRACE
+        LDA #(compileIfStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileIfStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+
+        // Save CompilerTemp for nesting
+        LDA ZP.CompilerTemp
+        PHA  // Preserve parent's counter
+        
+        // Initialize counter for this IF
+        STZ ZP.CompilerTemp  // Track how many 2-byte positions we push
+
+        loop // Single exit block
+        {
+            // Get and compile condition expression
+            Tokenizer.NextToken();  // Skip IF token
+            Error.CheckError();
+            if (NC) { States.SetFailure(); break; }
+            
+            // Compile condition expression (e.g., "X > 10")
+            compileLogical();
+            Error.CheckError();
+            if (NC) { States.SetFailure(); break; }
+            
+            // Expect THEN token
+            LDA ZP.CurrentToken
+            CMP #Token.THEN
+            if (NZ)
+            {
+                Error.SyntaxError(); BIT ZP.EmulatorPCL  // Missing THEN
+                States.SetFailure();
+                break;
+            }
+            
+            // Save position where JUMPZW operand will be (for patching)
+            LDA ZP.OpCodeBufferContentSizeL
+            PHA     // Push JUMPZW operand position LSB
+            LDA ZP.OpCodeBufferContentSizeH
+            PHA     // Push JUMPZW operand position MSB
+            INC ZP.CompilerTemp  // Track that we pushed 2 bytes
+            
+            // Emit conditional jump to ELSE/ENDIF (placeholder - will be patched)
+            // JUMPZW: Jump if condition is zero/FALSE (skip THEN block)
+            LDA #OpCode.JUMPZW
+            STA Compiler.compilerOpCode
+            STZ Compiler.compilerOperand1  // Placeholder LSB (will be patched)
+            STZ Compiler.compilerOperand2  // Placeholder MSB (will be patched)
+            Emit.OpCodeWithWord();
+            Error.CheckError();
+            if (NC) { States.SetFailure(); break; }
+            
+            // Compile THEN block statements
+            loop // THEN statement compilation loop
+            {
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) { States.SetFailure(); break; }
+                
+                LDA ZP.CurrentToken
+                
+                CMP #Token.ELSE
+                if (Z) { break; }  // Found ELSE - exit THEN compilation
+                
+                CMP #Token.ENDIF
+                if (Z) { break; }  // Found ENDIF - exit THEN compilation
+                
+                CMP #Token.EOF
+                if (Z)
+                {
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL  // Missing ENDIF
+                    States.SetFailure();
+                    break;
+                }
+                
+                CMP #Token.EOL
+                if (Z)
+                {
+                    // Skip empty lines in THEN block
+                    continue;
+                }
+                
+                // Compile statement in THEN block
+                CompileStatement();  // RECURSIVE CALL - handles nested constructs
+                Error.CheckError();
+                if (NC) { States.SetFailure(); break; }
+            }
+            
+            // Check if we exited due to error
+            Error.CheckError();
+            if (NC) { States.SetFailure(); break; }
+            
+            // Check if we have ELSE clause
+            LDA ZP.CurrentToken
+            CMP #Token.ELSE
+            if (Z)
+            {
+                // === ELSE CLAUSE PRESENT ===
+                
+                // Save position where JUMPW operand will be (for patching)
+                // This jump skips the ELSE block after THEN executes
+                LDA ZP.OpCodeBufferContentSizeL
+                PHA     // Push JUMPW operand position LSB
+                LDA ZP.OpCodeBufferContentSizeH
+                PHA     // Push JUMPW operand position MSB
+                INC ZP.CompilerTemp  // Track that we pushed 2 more bytes (now 2 positions total)
+                
+                // Emit unconditional jump to ENDIF (placeholder - will be patched)
+                LDA #OpCode.JUMPW
+                STA Compiler.compilerOpCode
+                STZ Compiler.compilerOperand1  // Placeholder LSB (will be patched)
+                STZ Compiler.compilerOperand2  // Placeholder MSB (will be patched)
+                Emit.OpCodeWithWord();
+                Error.CheckError();
+                if (NC) { States.SetFailure(); break; }
+                
+                // === PATCH FIRST JUMP (JUMPZW) ===
+                // It should jump here (start of ELSE block)
+                
+                // Current position = start of ELSE block
+                LDA ZP.OpCodeBufferContentSizeL
+                STA ZP.IDYL  // Current position LSB
+                LDA ZP.OpCodeBufferContentSizeH
+                STA ZP.IDYH  // Current position MSB
+                
+                // Get saved JUMPZW operand position (but don't pop yet - we have JUMPW position on top)
+                TSX
+                LDA 0x0104,X  // JUMPZW operand position LSB (skip JUMPW positions)
+                STA ZP.IDXL
+                LDA 0x0103,X  // JUMPZW operand position MSB
+                STA ZP.IDXH
+                
+                // Calculate forward offset: current_position - jumpzw_operand_position
+                SEC
+                LDA ZP.IDYL    // Current position LSB
+                SBC ZP.IDXL    // JUMPZW operand position LSB
+                STA ZP.NEXTL   // Forward offset LSB
+                LDA ZP.IDYH    // Current position MSB
+                SBC ZP.IDXH    // JUMPZW operand position MSB
+                STA ZP.NEXTH   // Forward offset MSB
+                
+                // Adjust for PC being 3 bytes past the JUMPZW instruction start
+                SEC
+                LDA ZP.NEXTL
+                SBC #3
+                STA ZP.NEXTL
+                LDA ZP.NEXTH
+                SBC #0
+                STA ZP.NEXTH
+                
+                // Patch the JUMPZW operand
+                CLC
+                LDA ZP.OpCodeBufferL
+                ADC ZP.IDXL    // Add JUMPZW operand position
+                STA ZP.IDXL    // Absolute patch address LSB
+                LDA ZP.OpCodeBufferH
+                ADC ZP.IDXH
+                STA ZP.IDXH    // Absolute patch address MSB
+                
+                LDY #1         // Skip opcode byte, point to first operand byte
+                LDA ZP.NEXTL   // Forward offset LSB
+                STA [ZP.IDX], Y   // Patch LSB
+                INY
+                LDA ZP.NEXTH   // Forward offset MSB
+                STA [ZP.IDX], Y   // Patch MSB
+                
+                // Compile ELSE block statements
+                loop // ELSE statement compilation loop
+                {
+                    Tokenizer.NextToken();
+                    Error.CheckError();
+                    if (NC) { States.SetFailure(); break; }
+                    
+                    LDA ZP.CurrentToken
+                    
+                    CMP #Token.ENDIF
+                    if (Z)
+                    {
+                        // Found ENDIF - consume it and exit
+                        Tokenizer.NextToken();
+                        Error.CheckError();
+                        if (NC) { States.SetFailure(); break; }
+                        break;  // Exit ELSE compilation
+                    }
+                    
+                    CMP #Token.EOF
+                    if (Z)
+                    {
+                        Error.SyntaxError(); BIT ZP.EmulatorPCL  // Missing ENDIF
+                        States.SetFailure();
+                        break;
+                    }
+                    
+                    CMP #Token.EOL
+                    if (Z)
+                    {
+                        // Skip empty lines in ELSE block
+                        continue;
+                    }
+                    
+                    // Compile statement in ELSE block
+                    CompileStatement();  // RECURSIVE CALL
+                    Error.CheckError();
+                    if (NC) { States.SetFailure(); break; }
+                }
+                
+                // Check if we exited due to error
+                Error.CheckError();
+                if (NC) { States.SetFailure(); break; }
+                
+                // === PATCH SECOND JUMP (JUMPW) ===
+                // It should jump here (after ENDIF)
+                
+                // Pop JUMPW operand position
+                PLA
+                STA ZP.IDXH  // JUMPW operand position MSB
+                PLA
+                STA ZP.IDXL  // JUMPW operand position LSB
+                DEC ZP.CompilerTemp  // We popped one position
+                
+                // Current position = after ENDIF
+                LDA ZP.OpCodeBufferContentSizeL
+                STA ZP.IDYL  // Current position LSB
+                LDA ZP.OpCodeBufferContentSizeH
+                STA ZP.IDYH  // Current position MSB
+                
+                // Calculate forward offset: current_position - jumpw_operand_position
+                SEC
+                LDA ZP.IDYL    // Current position LSB
+                SBC ZP.IDXL    // JUMPW operand position LSB
+                STA ZP.NEXTL   // Forward offset LSB
+                LDA ZP.IDYH    // Current position MSB
+                SBC ZP.IDXH    // JUMPW operand position MSB
+                STA ZP.NEXTH   // Forward offset MSB
+                
+                // Patch the JUMPW operand
+                CLC
+                LDA ZP.OpCodeBufferL
+                ADC ZP.IDXL    // Add JUMPW operand position
+                STA ZP.IDXL    // Absolute patch address LSB
+                LDA ZP.OpCodeBufferH
+                ADC ZP.IDXH
+                STA ZP.IDXH    // Absolute patch address MSB
+                
+                LDY #1         // Skip opcode byte, point to first operand byte
+                LDA ZP.NEXTL   // Forward offset LSB
+                STA [ZP.IDX], Y   // Patch LSB
+                INY
+                LDA ZP.NEXTH   // Forward offset MSB
+                STA [ZP.IDX], Y   // Patch MSB
+                
+                // Pop and discard the already-patched JUMPZW position
+                PLA  // Discard JUMPZW operand position MSB
+                PLA  // Discard JUMPZW operand position LSB
+                DEC ZP.CompilerTemp  // We popped the second position
+            }
+            else
+            {
+                // === NO ELSE CLAUSE ===
+                // CurrentToken should be ENDIF
+                
+                LDA ZP.CurrentToken
+                CMP #Token.ENDIF
+                if (NZ)
+                {
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL  // Expected ENDIF
+                    States.SetFailure();
+                    break;
+                }
+                
+                // Consume ENDIF token
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) { States.SetFailure(); break; }
+                
+                // === PATCH ONLY JUMP (JUMPZW) ===
+                // It should jump here (after ENDIF)
+                
+                // Pop JUMPZW operand position
+                PLA
+                STA ZP.IDXH  // JUMPZW operand position MSB
+                PLA
+                STA ZP.IDXL  // JUMPZW operand position LSB
+                DEC ZP.CompilerTemp  // We popped the position
+                
+                // Current position = after ENDIF
+                LDA ZP.OpCodeBufferContentSizeL
+                STA ZP.IDYL  // Current position LSB
+                LDA ZP.OpCodeBufferContentSizeH
+                STA ZP.IDYH  // Current position MSB
+                
+                // Calculate forward offset: current_position - jumpzw_operand_position
+                SEC
+                LDA ZP.IDYL    // Current position LSB
+                SBC ZP.IDXL    // JUMPZW operand position LSB
+                STA ZP.NEXTL   // Forward offset LSB
+                LDA ZP.IDYH    // Current position MSB
+                SBC ZP.IDXH    // JUMPZW operand position MSB
+                STA ZP.NEXTH   // Forward offset MSB
+                
+                // Patch the JUMPZW operand
+                CLC
+                LDA ZP.OpCodeBufferL
+                ADC ZP.IDXL    // Add JUMPZW operand position
+                STA ZP.IDXL    // Absolute patch address LSB
+                LDA ZP.OpCodeBufferH
+                ADC ZP.IDXH
+                STA ZP.IDXH    // Absolute patch address MSB
+                
+                LDY #1         // Skip opcode byte, point to first operand byte
+                LDA ZP.NEXTL   // Forward offset LSB
+                STA [ZP.IDX], Y   // Patch LSB
+                INY
+                LDA ZP.NEXTH   // Forward offset MSB
+                STA [ZP.IDX], Y   // Patch MSB
+            }
+            
+            States.SetSuccess();
+            break;
+        } // Single exit block
+        
+        States.IsSuccess();
+        if (NC)
+        {
+            // Clean up stack on error path using counter
+            LDA ZP.CompilerTemp
+            if (NZ)  // If counter > 0, we have positions to pop
+            {
+                loop
+                {
+                    PLA  // Discard MSB
+                    PLA  // Discard LSB
+                    DEC ZP.CompilerTemp
+                    if (Z) { break; }  // Done when counter reaches 0
+                }
+            }
+        }
+        
+        // At the very end (after error cleanup):
+        PLA
+        STA ZP.CompilerTemp  // Restore parent's counter
+
+    #ifdef TRACE
+        LDA #(compileIfStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileIfStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
 
    // Compile identifier statement (assignment or function call)
    // Input: ZP.CurrentToken = IDENTIFIER token

@@ -300,10 +300,11 @@ unit ZP // ZeroPage.asm
 
     // 0x7C-0xEB: Available (112 bytes!)
     
-    // TODO : move XPC to Compiler section
+    // TODO : move to Compiler section
     const byte XPC                  = 0x7C;  // Compiler Program counter low
     const byte XPCL                 = 0x7C;  // Compiler Program counter low (alias)
     const byte XPCH                 = 0x7D;  // Compiler Program counter high
+    const byte CompilerTemp         = 0x7E;  // Temporary workspace used by the Compiler
     
 
     // HARDWARE I/O (IMMOVABLE - Platform Hardware Addresses)

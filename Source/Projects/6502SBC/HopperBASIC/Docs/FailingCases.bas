@@ -27,18 +27,16 @@ LIST
 
 RUN
 
-FORGET FOO
+NEW
+int i = 10
+func pr()
+    i = i + 1
+    print i
+endfunc
 
-HEAP
+pr() : pr()
 
-BEGIN
-    PRINT "Hello"
-END
-
-LIST
-
-RUN
-
+pr() : pr() : pr()
 
 
 
@@ -173,3 +171,27 @@ BYTE value = 255
 PRINT count; "/"; value
 
 PRINT "Start";
+
+
+INT I = 0
+BEGIN
+    IF  (I = 10) THEN
+        PRINT "FALSE"
+    ENDIF
+    IF  (I <> 10) THEN
+        PRINT "TRUE"
+    ENDIF
+    IF  (I <> 10) THEN
+        PRINT "TRUE"
+    ELSE
+        PRINT "FALSE"
+    ENDIF
+    IF  (I = 10) THEN
+        PRINT "FALSE"
+    ELSE
+        PRINT "TRUE"
+    ENDIF
+    
+END
+RUN
+

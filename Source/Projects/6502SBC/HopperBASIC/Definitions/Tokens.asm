@@ -15,6 +15,7 @@ unit Tokens
     // All values >= 0x80 
     // See the implementation of Tokenizer.Rollback to understand why we set the high bit of tokens and
     // why we limit our characaters in literals to ASCII (0..127)
+    // Complete Token definitions for HopperBASIC
     enum Token
     {
         // Console commands
@@ -53,83 +54,82 @@ unit Tokens
         INPUT    = 0x9C,
         IF       = 0x9D,
         THEN     = 0x9E,
-        FUNC     = 0x9F,   // Keep original value
-        ENDFUNC  = 0xA0,   // Keep original value
-        RETURN   = 0xA1,
-        BEGIN    = 0xA2,
-        END      = 0xA3,
-        FOR      = 0xA4,
-        TO       = 0xA5,
-        STEP     = 0xA6,
-        NEXT     = 0xA7,
-        WHILE    = 0xA8,
-        WEND     = 0xA9,
-        DO       = 0xAA,
-        UNTIL    = 0xAB,
-        BREAK    = 0xAC,
-        CONTINUE = 0xAD,
-        CONT     = 0xAE,
+        ELSE     = 0x9F,   // MOVED HERE (was 0xD5)
+        ENDIF    = 0xA0,   // MOVED HERE (was 0xD6)
+        FUNC     = 0xA1,   // Shifted down
+        ENDFUNC  = 0xA2,   // Shifted down
+        RETURN   = 0xA3,   // Shifted down
+        BEGIN    = 0xA4,   // Shifted down
+        END      = 0xA5,   // Shifted down
+        FOR      = 0xA6,   // Shifted down
+        TO       = 0xA7,   // Shifted down
+        STEP     = 0xA8,   // Shifted down
+        NEXT     = 0xA9,   // Shifted down
+        WHILE    = 0xAA,   // Shifted down
+        WEND     = 0xAB,   // Shifted down
+        DO       = 0xAC,   // Shifted down
+        UNTIL    = 0xAD,   // Shifted down
+        BREAK    = 0xAE,   // Shifted down
+        CONTINUE = 0xAF,   // Shifted down
+        CONT     = 0xB0,   // Shifted down
                
         // Logical keywords
-        AND      = 0xAF,
-        OR       = 0xB0,
-        NOT      = 0xB1,
-        MOD      = 0xB2,
+        AND      = 0xB1,   // Shifted down
+        OR       = 0xB2,   // Shifted down
+        NOT      = 0xB3,   // Shifted down
+        MOD      = 0xB4,   // Shifted down
         
         // Built-in literals
-        TRUE     = 0xB3,  // Built-in BIT constant (1)
-        FALSE    = 0xB4,  // Built-in BIT constant (0)
+        TRUE     = 0xB5,   // Shifted down
+        FALSE    = 0xB6,   // Shifted down
         
         // Built-in functions
-        ABS      = 0xB5,  // ABS(x) - absolute value
-        MILLIS   = 0xB6,  // MILLIS() - system timer 
-        PEEK     = 0xB7,  // PEEK(addr) - memory read
-        POKE     = 0xB8,  // POKE(addr, value) - memory write
-        RND      = 0xB9,  // RND(x) - random number
-        SECONDS  = 0xBA,  // SECONDS() - system timer 
-        DELAY    = 0xBB,  // DELAY(ms) - delay in milliseconds
+        ABS      = 0xB7,   // Shifted down
+        MILLIS   = 0xB8,   // Shifted down
+        PEEK     = 0xB9,   // Shifted down
+        POKE     = 0xBA,   // Shifted down
+        RND      = 0xBB,   // Shifted down
+        SECONDS  = 0xBC,   // Shifted down
+        DELAY    = 0xBD,   // Shifted down
         
         // Sentinel marking end of keywords
-        lastKeyword = 0xBB,  // Updated to DELAY (highest keyword value)
+        lastKeyword = 0xBD,  // Updated to DELAY (highest keyword value)
         
         // Basic operators (start after lastKeyword)
-        EQUALS   = 0xBC,  // = (FIXED: was conflicting with SECONDS!)
-        PLUS     = 0xBD,  // +
-        MINUS    = 0xBE,  // -
-        LPAREN   = 0xBF,  // (
-        RPAREN   = 0xC0,  // )
-        NOTEQUAL = 0xC1,  // <>
+        EQUALS   = 0xBE,  // =
+        PLUS     = 0xBF,  // +
+        MINUS    = 0xC0,  // -
+        LPAREN   = 0xC1,  // (
+        RPAREN   = 0xC2,  // )
+        NOTEQUAL = 0xC3,  // <>
         
         // Additional comparison operators
-        LT       = 0xC2,  // <
-        GT       = 0xC3,  // >
-        LE       = 0xC4,  // <=
-        GE       = 0xC5,  // >=
+        LT       = 0xC4,  // 
+        GT       = 0xC5,  // >
+        LE       = 0xC6,  // <=
+        GE       = 0xC7,  // >=
         
         // Arithmetic operators
-        MULTIPLY = 0xC6,  // *
-        DIVIDE   = 0xC7,  // /
+        MULTIPLY = 0xC8,  // *
+        DIVIDE   = 0xC9,  // /
         
-        BITWISE_AND = 0xC8,  // &
-        BITWISE_OR  = 0xC9,  // |
+        BITWISE_AND = 0xCA,  // &
+        BITWISE_OR  = 0xCB,  // |
         
         // Array and string operators
-        LBRACKET = 0xCA,  // [
-        RBRACKET = 0xCB,  // ]
-        LBRACE   = 0xCC,  // {
-        RBRACE   = 0xCD,  // }
+        LBRACKET = 0xCC,  // [
+        RBRACKET = 0xCD,  // ]
+        LBRACE   = 0xCE,  // {
+        RBRACE   = 0xCF,  // }
         
         // Literals and identifiers
-        NUMBER     = 0xCE,  // Numeric literal followed by null-terminated string
-        STRINGLIT  = 0xCF,  // String literal "text" followed by null-terminated string
-        IDENTIFIER = 0xD0,  // Variable/function name followed by null-terminated string
-        EOF        = 0xD1,  // End of file/input
-        COLON      = 0xD2,  // : statement separator
-        COMMA      = 0xD3,  // , parameter separator
-        SEMICOLON  = 0xD4,  // ; (future use)
-        
-        ELSE     = 0xD5,   // ELSE (for IF/THEN/ELSE)
-        ENDIF    = 0xD6,   // ENDIF (for IF/THEN/ELSE)
+        NUMBER     = 0xD0,  // Numeric literal
+        STRINGLIT  = 0xD1,  // String literal
+        IDENTIFIER = 0xD2,  // Variable/function name
+        EOF        = 0xD3,  // End of file/input
+        COLON      = 0xD4,  // : statement separator
+        COMMA      = 0xD5,  // , parameter separator
+        SEMICOLON  = 0xD6,  // ; (future use)
     }
     
     // Keywords A-L (first character < 'M') - Reorganized by frequency
@@ -137,7 +137,8 @@ unit Tokens
     const byte[] keywordsAL = {
         // VERY FREQUENT (Rank 1-10)
         2, Token.IF, 'I', 'F',                    // Rank 3 - Conditional branching
-        3, Token.FOR, 'F', 'O', 'R',             // Rank 2 - Loops
+        3, Token.FOR, 'F', 'O', 'R',              // Rank 2 - Loops
+        2, Token.DO, 'D', 'O',                    // DO...UNTIL loops
         
         // FREQUENT (Rank 11-20)  
         3, Token.END, 'E', 'N', 'D',             // Rank 9 - Exit program
