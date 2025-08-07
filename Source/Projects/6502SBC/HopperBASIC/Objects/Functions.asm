@@ -864,6 +864,8 @@ unit Functions
         PHA
         LDA ZP.TokenBufferContentSizeH
         PHA
+        LDA ZP.CurrentToken
+        PHA
         
         BufferManager.UseBASICBuffers();
         
@@ -946,6 +948,8 @@ unit Functions
         BufferManager.UseREPLBuffers();
         
         // Restore tokenizer state
+        PLA
+        STA ZP.CurrentToken
         PLA
         STA ZP.TokenBufferContentSizeH
         PLA

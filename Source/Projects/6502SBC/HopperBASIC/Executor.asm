@@ -77,7 +77,7 @@ unit Executor // Executor.asm
            } // loop
            break;
        } // Single exit block
-
+       
 #ifdef TRACE
        LDA #(strExecuteOpCodes % 256) STA ZP.TraceMessageL LDA #(strExecuteOpCodes / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif

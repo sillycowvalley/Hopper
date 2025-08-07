@@ -37,11 +37,11 @@ unit BASICSysCalls
            
 #ifdef TRACE
            //TYA Debug.HOut(); Debug.NL(); 
-           CMP # SysCallType.Delay
-           if (Z)
-           {
-               DumpStack();
-           }
+           //CMP # SysCallType.Delay
+           //if (Z)
+           //{
+           //   DumpStack();
+           //}
 #endif           
            // Handle arguments based on count (bits 1-0)
            TYA
