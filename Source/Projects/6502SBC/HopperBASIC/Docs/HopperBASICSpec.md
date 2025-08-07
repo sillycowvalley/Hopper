@@ -1,6 +1,4 @@
-while_statement := WHILE expression
-                  { statement }*
-                  WEND# Hopper BASIC Specification v2.11
+# Hopper BASIC Specification v2.12
 **Document Type: Language Specification for Hopper BASIC**
 
 ## Project Objectives
@@ -108,128 +106,123 @@ END
 
 ---
 
-## Phase 1: Core Functionality (Current Implementation)
+## Phase 1: Core Functionality (Completed)
 
 ### Console Commands
-- ✅ **`NEW`** - Clear everything (program, variables, functions)
-- ✅ **`LIST`** - Display complete program in creation order
-- ✅ **`RUN`** - Execute the main program (BEGIN/END block)
-- ✅ **`CLEAR`** - Reset all variables to default values
-- ✅ **`VARS`** - Show constants and variables in creation order
-- ✅ **`FUNCS`** - Show all functions including main program
-- ✅ **`FORGET name`** - Remove variable or function
-- ✅ **`MEM`** - Show available memory
-- ✅ **`BYE`** - Exit interpreter
+- **`NEW`** - Clear everything (program, variables, functions)
+- **`LIST`** - Display complete program in creation order
+- **`RUN`** - Execute the main program (BEGIN/END block)
+- **`CLEAR`** - Reset all variables to default values
+- **`VARS`** - Show constants and variables in creation order
+- **`FUNCS`** - Show all functions including main program
+- **`FORGET name`** - Remove variable or function
+- **`MEM`** - Show available memory
+- **`BYE`** - Exit interpreter
 
 ### Debug Commands (DEBUG build only)
-- ✅ **`HEAP`** - Show heap memory layout
-- ✅ **`BUFFERS`** - Show tokenizer and opcode buffer contents
-- ✅ **`DUMP [page]`** - Hex dump of memory page (default: page 0)
+- **`HEAP`** - Show heap memory layout
+- **`BUFFERS`** - Show tokenizer and opcode buffer contents
+- **`DUMP [page]`** - Hex dump of memory page (default: page 0)
 
 ### Variable Declaration Commands
-- ✅ **`INT name [= value]`** - Signed integer (-32768 to 32767)
-- ✅ **`WORD name [= value]`** - Unsigned integer (0 to 65535)
-- ✅ **`BIT name [= value]`** - Boolean (TRUE or FALSE only)
-- ✅ **`BYTE name [= value]`** - 8-bit unsigned (0 to 255)
-- ✅ **`STRING name = "value"`** - Mutable string variable
+- **`INT name [= value]`** - Signed integer (-32768 to 32767)
+- **`WORD name [= value]`** - Unsigned integer (0 to 65535)
+- **`BIT name [= value]`** - Boolean (TRUE or FALSE only)
+- **`BYTE name [= value]`** - 8-bit unsigned (0 to 255)
+- **`STRING name = "value"`** - Mutable string variable
 
 ### Constant Declaration Commands
-- ✅ **`CONST INT name = value`** - Immutable signed integer
-- ✅ **`CONST WORD name = value`** - Immutable unsigned integer
-- ✅ **`CONST BIT name = value`** - Immutable boolean
-- ✅ **`CONST BYTE name = value`** - Immutable 8-bit unsigned
-- ✅ **`CONST STRING name = "value"`** - Immutable string
+- **`CONST INT name = value`** - Immutable signed integer
+- **`CONST WORD name = value`** - Immutable unsigned integer
+- **`CONST BIT name = value`** - Immutable boolean
+- **`CONST BYTE name = value`** - Immutable 8-bit unsigned
+- **`CONST STRING name = "value"`** - Immutable string
 
 ### Definition Commands
-- ✅ **`FUNC name(params)`** - Function definition (multi-line capture)
-- ✅ **`BEGIN`** - Main program definition (multi-line capture)
+- **`FUNC name(params)`** - Function definition (multi-line capture)
+- **`BEGIN`** - Main program definition (multi-line capture)
 
 ### Core Language Features
 
 #### Basic I/O
-- ✅ **`PRINT expr`** - Output single value with newline
-- ✅ **`PRINT`** - Output empty line
-- ✅ **`PRINT "string"`** - Direct string literal output
-- ❌ **Multiple PRINT arguments** - Not implemented
+- **`PRINT expr`** - Output single value with newline
+- **`PRINT`** - Output empty line
+- **`PRINT "string"`** - Direct string literal output
+- **`PRINT expr[,expr...]`** - Comma-separated values with spacing
+- **`PRINT expr[;expr...]`** - Semicolon-separated values without spacing
+- **`PRINT expr,`** - Trailing comma suppresses newline with spacing
+- **`PRINT expr;`** - Trailing semicolon suppresses newline
 
 #### Statement Separators
-- ✅ **Colon (`:`) separator** - Multiple statements per line
+- **Colon (`:`) separator** - Multiple statements per line
 
 #### Comments
-- ✅ **`REM [comment]`** - Full-form comment
-- ✅ **`' [comment]`** - Short-form comment
+- **`REM [comment]`** - Full-form comment
+- **`' [comment]`** - Short-form comment
 
 #### Expressions & Operators
-- ✅ **Arithmetic**: `+ - * / MOD`
-- ✅ **Bitwise**: `& |` (AND, OR)
-- ✅ **Unary**: `-` (negation), `NOT` (logical)
-- ✅ **Comparison**: `= <> < > <= >=` (returns BIT type)
-- ✅ **Logical**: `AND OR NOT` (BIT operands only)
-- ✅ **Parentheses**: `( )` for precedence
+- **Arithmetic**: `+ - * / MOD`
+- **Bitwise**: `& |` (AND, OR)
+- **Unary**: `-` (negation), `NOT` (logical)
+- **Comparison**: `= <> < > <= >=` (returns BIT type)
+- **Logical**: `AND OR NOT` (BIT operands only)
+- **Parentheses**: `( )` for precedence
 
 #### Type System
-- ✅ **INT**: 16-bit signed (-32768 to 32767)
-- ✅ **WORD**: 16-bit unsigned (0 to 65535)
-- ✅ **BIT**: Pure boolean (TRUE or FALSE only)
-- ✅ **BYTE**: 8-bit unsigned (0 to 255)
-- ✅ **STRING**: Immutable strings with mutable references
-- ✅ **Type promotion**: Automatic between compatible types
-- ✅ **Type safety**: Comprehensive checking with errors
+- **INT**: 16-bit signed (-32768 to 32767)
+- **WORD**: 16-bit unsigned (0 to 65535)
+- **BIT**: Pure boolean (TRUE or FALSE only)
+- **BYTE**: 8-bit unsigned (0 to 255)
+- **STRING**: Immutable strings with mutable references
+- **Type promotion**: Automatic between compatible types
+- **Type safety**: Comprehensive checking with errors
 
 #### Control Flow
-- ✅ **`IF expr THEN statements ENDIF`** - Conditional execution
-- ✅ **`IF expr THEN statements ELSE statements ENDIF`** - With alternative
-- ✅ **`WHILE expr`...`WEND`** - Conditional loops  
-- ✅ **`RETURN [expr]`** - Return from function
-- ✅ **`END`** - End main program
+- **`IF expr THEN statements [ELSE statements] ENDIF`** - Conditional execution
+- **`WHILE expr`...`WEND`** - Pre-test conditional loops
+- **`DO`...`UNTIL expr`** - Post-test conditional loops
+- **`RETURN [expr]`** - Return from function
+- **`END`** - End main program
 
 #### Assignment
-- ✅ **`var = expr`** - Assignment with type checking
+- **`var = expr`** - Assignment with type checking
 
 #### JIT Compilation System
-- ✅ **Expression compilation** - Infix to postfix opcodes
-- ✅ **Stack-based execution** - Using Hopper VM stacks
-- ✅ **Buffer management** - 512-byte opcode buffer
-- ✅ **Opcode dispatch** - Complete instruction set
+- **Expression compilation** - Infix to postfix opcodes
+- **Stack-based execution** - Using Hopper VM stacks
+- **Buffer management** - 512-byte opcode buffer
+- **Opcode dispatch** - Complete instruction set
+- **Jump patching** - Forward and backward jump resolution
 
 #### Function System
-- ✅ **Function declaration** - FUNC/ENDFUNC syntax
-- ✅ **Parameter parsing** - Comma-separated parameters
-- ✅ **Multi-line capture** - Interactive definition
-- ✅ **BEGIN/END blocks** - Main program as function
-- ✅ **Function storage** - Token stream storage
-- ✅ **Arguments system** - Parameter management
-- ✅ **Function listing** - FUNCS command display
-- ✅ **Symbol table** - Functions and variables
-- ✅ **Function calls** - Parse and execute
-- ✅ **Function execution** - JIT compilation
-- ✅ **Call resolution** - CALL→CALLF optimization
-- ✅ **Return values** - RETURN statement handling
-- ✅ **Call stack** - Recursion support
+- **Function declaration** - FUNC/ENDFUNC syntax
+- **Parameter parsing** - Comma-separated parameters
+- **Multi-line capture** - Interactive definition
+- **BEGIN/END blocks** - Main program as function
+- **Function storage** - Token stream storage
+- **Arguments system** - Parameter management
+- **Function listing** - FUNCS command display
+- **Symbol table** - Functions and variables
+- **Function calls** - Parse and execute
+- **Function execution** - JIT compilation
+- **Call resolution** - CALL→CALLF optimization
+- **Return values** - RETURN statement handling
+- **Call stack** - Recursion support
 
 #### Built-in Functions
-- ✅ **`ABS(x)`** - Absolute value
-- ❌ **`RND(max)`** - Random number (TODO - returns NotImplemented)
-- ✅ **`MILLIS()`** - Milliseconds since startup
-- ✅ **`SECONDS()`** - Seconds since startup
-
-#### Memory Access
-- ✅ **`PEEK(addr)`** - Read byte from memory
-- ✅ **`POKE(addr, value)`** - Write byte to memory
+- **`ABS(x)`** - Absolute value
+- **`MILLIS()`** - Milliseconds since startup
+- **`SECONDS()`** - Seconds since startup
+- **`PEEK(addr)`** - Read byte from memory
+- **`POKE(addr, value)`** - Write byte to memory
 
 ---
 
-## Phase 2: Loop Constructs & Array Support (Next Priority)
+## Phase 2: Loop Constructs & Array Support (Required for Benchmarks)
 
 ### FOR/NEXT Loops
 - ❌ **`FOR var = start TO end [STEP increment]`** - Counted loops
 - ❌ **`NEXT var`** - End of FOR loop
-
-### Additional Loops
-- ✅ **`WHILE expr`...`WEND`** - Conditional loops  
-- ❌ **`DO`...`UNTIL expr`** - Post-test loops
-- ❌ **`BREAK`** - Exit loops early
-- ❌ **`CONTINUE`** - Skip to next iteration
 
 ### Array Support
 - ❌ **Global Arrays** - Single-dimensional arrays
@@ -238,17 +231,7 @@ END
 
 ---
 
-## Phase 3: Enhanced I/O
-
-### Enhanced PRINT
-- ❌ **`PRINT expr[,expr...]`** - Comma-separated values
-- ❌ **`PRINT expr[;expr...]`** - No separation
-- ❌ **`PRINT expr;`** - No newline after
-- ❌ **`PRINT expr,`** - Space, no newline
-
----
-
-## Phase 4: Storage and File Management
+## Phase 3: Storage and File Management
 
 ### Storage Commands
 - ❌ **`SAVE "name"`** - Save to EEPROM
@@ -258,18 +241,36 @@ END
 
 ---
 
-## Phase 5: Enhanced Features
+## Phase 4: Hardware I/O
 
-### Additional Functions
-- ❌ **Conversion functions** - Type conversions
-- ❌ **String functions** - Basic manipulation
-
-### Hardware I/O
+### Hardware Commands
 - ❌ **`READ(pin)`** - Digital input
 - ❌ **`WRITE(pin, value)`** - Digital output
 - ❌ **`PWM(pin, value)`** - Analog output
 - ❌ **`DELAY(ms)`** - Pause execution
 - ❌ **`PINMODE(pin, mode)`** - Configure pins
+
+---
+
+## Phase 5: Extended Functions
+
+### Additional Functions
+- ❌ **`RND(max)`** - Random number generation
+- ❌ **`INPUT prompt`** - User input with prompt
+
+---
+
+## Phase 6: Advanced Features (Future Consideration)
+
+### Advanced Control Flow
+- ❌ **`BREAK`** - Exit loops early
+- ❌ **`CONTINUE`** - Skip to next iteration
+
+### String Manipulation
+- ❌ **String functions** - Basic string operations
+
+### Type Conversion
+- ❌ **Conversion functions** - Explicit type conversions
 
 ---
 
@@ -299,6 +300,7 @@ statement := variable_decl
            | print_statement
            | if_statement
            | while_statement
+           | do_until_statement
            | function_definition
            | main_program
            | return_statement
@@ -307,11 +309,16 @@ statement := variable_decl
 
 assignment := identifier "=" expression
 
-print_statement := PRINT [ expression ]
+print_statement := PRINT [ print_list ]
+print_list := print_item [ separator print_item ]* [ separator ]
+print_item := expression
+separator := "," | ";"
 
 if_statement := IF expression THEN statement_block [ ELSE statement_block ] ENDIF
 
 while_statement := WHILE expression { statement }* WEND
+
+do_until_statement := DO { statement }* UNTIL expression
 
 statement_block := statement [ ":" statement ]*
 
@@ -347,7 +354,6 @@ primary_expr := number | identifier | string_literal | TRUE | FALSE
               | "(" expression ")" | function_call | built_in_function
 
 built_in_function := ABS "(" expression ")"
-                  | RND "(" expression ")"
                   | PEEK "(" expression ")"
                   | POKE "(" expression "," expression ")"
                   | MILLIS "(" ")"
@@ -383,6 +389,7 @@ string_literal := '"' { character }* '"'
 2. Opcode generation to 512-byte buffer
 3. Type checking at compile time
 4. Literal optimization
+5. Jump offset calculation and patching
 
 **Execution Phase:**
 1. Stack machine using Hopper VM stacks
@@ -392,8 +399,8 @@ string_literal := '"' { character }* '"'
 
 **Opcode Set:**
 - No Operands: Arithmetic, logical, comparison operations
-- One Byte: PUSHBIT, PUSHBYTE, CALL, CALLF, SYSCALL
-- Two Bytes: PUSHINT, PUSHWORD, PUSHCSTRING, PUSHGLOBAL, jumps
+- One Byte: PUSHBIT, PUSHBYTE, CALL, CALLF, SYSCALL, JUMPB series
+- Two Bytes: PUSHINT, PUSHWORD, PUSHCSTRING, PUSHGLOBAL, JUMPW series
 
 ### Memory Management
 - **Symbol Table**: 4-layer architecture for variables/functions
@@ -411,57 +418,48 @@ string_literal := '"' { character }* '"'
 
 ## Current Implementation Status
 
-### ✅ Completed
-- Symbol table system with 4-layer architecture
-- Complete expression evaluation with JIT compilation
-- Type system with promotion and safety
-- Variable and constant management
-- Function declaration, storage, and execution
-- Multi-line capture for functions and main program
-- Console commands (NEW, CLEAR, VARS, FUNCS, LIST, FORGET, MEM, BYE)
-- Statement processing with colon separators
-- IF/THEN/ELSE/ENDIF statements
-- WHILE/WEND loops
-- RETURN statements with optional expression
-- END statement for main program
-- Assignment with type checking
-- BIT type with TRUE/FALSE literals
-- STRING type with literals and comparison
-- BYTE type with 8-bit arithmetic
-- Function execution with recursion
-- RUN command for main program
-- Built-in functions (ABS, MILLIS, SECONDS)
-- Memory access (PEEK, POKE)
-- RND function (declared but TODO)
-- BEGIN/END main program definition
-- FUNC/ENDFUNC function definition
+### Phase 1: Core Functionality - COMPLETE
+All features listed in Phase 1 are fully implemented and tested, including:
+- Complete symbol table system with 4-layer architecture
+- Full expression evaluation with JIT compilation
+- Type system with automatic promotion and comprehensive safety
+- All control flow structures (IF/THEN/ELSE/ENDIF, WHILE/WEND, DO/UNTIL)
+- Function system with recursion and parameter passing
+- PRINT statement with all formatting options
+- All console and debug commands
+- Built-in functions except RND (moved to Phase 5)
 
-### ❌ Missing for Benchmarks
-1. FOR/NEXT loops - Basic iteration
-2. Global array declarations - Array support
-3. Array indexing - Array access
-4. Multiple PRINT arguments - Complex output
+### Phase 2: Requirements for Benchmarks - IN PROGRESS
+Missing components needed to run benchmark programs:
+1. FOR/NEXT loops with STEP support
+2. Global array declarations
+3. Array indexing and access
+4. Local variables for functions
 
 ---
 
 ## Development Guidelines Compliance
 
-- **Rule #0**: ✅ Project knowledge current and authoritative
-- **Rule #1**: ✅ No silent failures - proper error handling
-- **Rule #4**: ✅ Complete methods generated
-- **Rule #5**: ✅ Analysis-first debugging approach
-- **Rule #7**: ✅ C/NC flags for success/failure
-- **Rule #8**: ✅ CamelCase identifiers
-- **Rule #9**: ✅ Direct enum syntax
-- **Rule #10**: ✅ Proper switch statement usage
+- **Rule #0**: Project knowledge current and authoritative
+- **Rule #1**: No silent failures - proper error handling throughout
+- **Rule #2**: Stack preferred over zero page for temporaries
+- **Rule #3**: Clear flag comments (Set Z/Set NZ)
+- **Rule #4**: Complete methods always generated
+- **Rule #5**: Analysis-first debugging approach
+- **Rule #6**: X-indexed zero page indirect addressing forbidden
+- **Rule #7**: C/NC flags for success/failure status
+- **Rule #8**: CamelCase identifiers used consistently
+- **Rule #9**: Direct enum syntax without qualification
+- **Rule #10**: Proper switch statement usage without break
 
 ### Code Quality
 - Comprehensive error handling with C/NC status
 - Memory leak prevention with proper cleanup
-- Type safety throughout operations
+- Type safety throughout all operations
 - Clear documentation and interfaces
 - Debugging support via Tools.Dump* methods
 - Clean APIs with register preservation
+- Nested structure support with proper state management
 
 ---
 
@@ -495,6 +493,29 @@ OK
 ```basic
 > IF x > 10 THEN PRINT "Big" ELSE PRINT "Small" ENDIF
 Big
+
+> INT i = 0
+> WHILE i < 5
+*   PRINT i
+*   i = i + 1
+* WEND
+
+> DO
+*   PRINT "At least once"
+*   i = i + 1
+* UNTIL i > 10
+```
+
+### Advanced PRINT
+```basic
+> PRINT "Value:", x, "Count:", count
+Value: 11 Count: 0
+
+> PRINT "Compact";x;"text"
+Compact11text
+
+> PRINT "No newline",
+No newline > 
 ```
 
 ### Memory Access
@@ -509,8 +530,8 @@ OK
 ```basic
 > PRINT ABS(-42)
 42
-> PRINT RND(10)
-7
+> PRINT MILLIS()
+12345
 ```
 
-The implementation provides a solid foundation with complete function execution, JIT compilation, and all core data types. The main missing components for the benchmarks are loop constructs and array support.
+The implementation provides a robust foundation with complete function execution, JIT compilation, comprehensive control flow, and all core data types. The primary remaining work for benchmark compatibility is the implementation of FOR/NEXT loops and array support.
