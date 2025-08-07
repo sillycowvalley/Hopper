@@ -871,10 +871,12 @@ unit Functions
         LDA ZP.TokenBufferContentSizeH
         PHA
         
+        BufferManager.UseBASICBuffers();
+        
         loop // Single exit block
         {
             freeOpCodes(); // Free existing opcode stream if not null
-                                    
+                             
             // Copy function tokens to ZP.TokenBuffer and configure tokenizer
             copyFunctionTokensToBuffer();
             Error.CheckError();
@@ -946,6 +948,8 @@ unit Functions
             States.SetSuccess(); // should already be the case
             break;
         }
+        
+        BufferManager.UseREPLBuffers();
         
         // Restore tokenizer state
         PLA
@@ -1045,11 +1049,15 @@ unit Functions
             // Copy opcodes to permanent storage
             Tools.CopyBytes();
             
-            // Restore function node address
+            // Restore function node address 
             PLA
             STA ZP.IDXH
             PLA
             STA ZP.IDXL
+            // push it again to maintain stack balance on exit
+            PHA
+            LDA ZP.IDXH
+            PHA
             
             // Store opcode storage address in function node
             LDY #Objects.snOpCodes
@@ -1062,6 +1070,12 @@ unit Functions
             SEC // Success
             break;
         }
+        
+        // Restore function node address (needs to be here in case of failure exit)
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
         
         PLY
         PLX

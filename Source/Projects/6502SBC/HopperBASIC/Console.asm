@@ -984,10 +984,6 @@ unit Console // Console.asm
                 // Construct token buffer with function call to $MAIN()
                 // Token buffer will contain: IDENTIFIER "$MAIN" LPAREN RPAREN EOL
                 
-                // TODO
-                // Switch to REPL buffers for RUN command
-                // BufferManager.UseREPLBuffers();
-                
                 // Token 0: IDENTIFIER
                 LDY #0
                 LDA #Token.IDENTIFIER
@@ -1040,7 +1036,7 @@ unit Console // Console.asm
                 // Execute the function call
                 Tokenizer.NextToken();
                 Statement.EvaluateExpression(); // executes 'identifier()' as function call
-                
+              
                 break;
             }
         }

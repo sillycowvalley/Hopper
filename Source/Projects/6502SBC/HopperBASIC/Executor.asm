@@ -16,21 +16,13 @@ unit Executor // Executor.asm
    const uint executorTokenAddrL    = Address.BasicExecutorWorkspace + 15;  // token fetch addr low
    const uint executorTokenAddrH    = Address.BasicExecutorWorkspace + 16;  // token fetch addr high
    
-   // Reset Hopper VM to clean state before execution
+   // Reset Hopper VM to clean state before REPL execution
    Reset()
    {
        // Reset stacks (already proven to work in ExecuteOpCodes)
        STZ ZP.SP    // Reset value/type stack pointer to 0
        STZ ZP.BP    // Reset base pointer to 0
        STZ ZP.CSP   // Reset call stack pointer to 0
-       
-       // Push return slot in case we are calling a function to start the VM
-       // If not, no biggie - just one wasted stack slot
-       LDA #BASICType.VOID
-       STA ZP.TOPT
-       STZ ZP.TOPL  
-       STZ ZP.TOPH
-       Stacks.PushTop();
        
        // Clear any error conditions
        Error.ClearError();
@@ -56,11 +48,14 @@ unit Executor // Executor.asm
        // Previous expression errors or interruptions could leave stacks inconsistent
        Executor.Reset();
        
+
+       
        loop // Single exit block
        {
            // Initialize executor state
            InitExecutor();
            States.IsSuccess();
+           
            if (NC) { break; } // Error already set by InitExecutor
            
            // Main execution loop (assume there is at least one opcode)

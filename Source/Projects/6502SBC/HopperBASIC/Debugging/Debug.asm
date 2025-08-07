@@ -9,7 +9,6 @@ unit Debug // Debug.asm
     const string debugVarsHeader = "\n== VARS ==\n";
     const string debugStackHeader = "\n== STACK ==\n";
     const string debugHeapHeader = "\n== HEAP DUMP ==\n";
-    const string debugBasicHeader = "\n== BASIC BUFFERS ==\n";
     const string debugCrashHeader = "\n== CRASH ==\n";
     const string debugZeroPageHeader = "\n== ZERO PAGE ==\n";
     
@@ -28,6 +27,9 @@ unit Debug // Debug.asm
     const string regACCL = "ACCL:";
     const string regACCT = "ACCT:";
     const string regCSP = "CSP:";
+    
+    const string regOP = "OpCodes:";
+    const string regTP = "Tokens:";
     
     // Stack dump strings
     const string callStackHeader = "Call Stack (";
@@ -63,6 +65,11 @@ unit Debug // Debug.asm
     const string basicPCLabel = " PC:";
     const string basicBufferSuffix = ") - First 64 bytes:\n";
     const string basicErrorLabel = "\nLastError: ";
+    const string replBuffersHeader = "\n=== REPL BUFFERS";
+    const string functionBuffersHeader = "\n=== FUNCTION BUFFERS";
+    const string lineBufferHeader = "\n=== LINE BUFFER";
+    const string activeMarker = " (ACTIVE)";
+    const string sectionSuffix = " ===\n";
     
     // Common formatting - only keep multi-use strings
     const string listVL = "VL:";
@@ -168,6 +175,34 @@ unit Debug // Debug.asm
     }
     
     // === Private output methods (use DB slots, no preservation) ===
+    
+    tpOut()  // Output TokenBuffer register
+    {
+        LDA #(regTP % 256)
+        STA ZP.STR
+        LDA #(regTP / 256)
+        STA ZP.STRH
+        printString();
+        LDA ZP.TokenBufferH
+        hOut();
+        LDA ZP.TokenBufferL
+        hOut();
+        space();
+    }
+    
+    opOut()  // Output OpCodeBuffer register
+    {
+        LDA #(regOP % 256)
+        STA ZP.STR
+        LDA #(regOP / 256)
+        STA ZP.STRH
+        printString();
+        LDA ZP.OpCodeBufferH
+        hOut();
+        LDA ZP.OpCodeBufferL
+        hOut();
+        space();
+    }
     
     xOut()  // Output IDX register
     {
@@ -350,6 +385,19 @@ unit Debug // Debug.asm
     }
     
     // === Public output methods (preserve state) ===
+    
+    TPOut()
+    {
+        PHP PHA PHY
+        tpOut();
+        PLY PLA PLP
+    }
+    OPOut()
+    {
+        PHP PHA PHY
+        opOut();
+        PLY PLA PLP
+    }
     
     XOut()
     {
@@ -1069,13 +1117,18 @@ unit Debug // Debug.asm
     
     dumpBasicBuffers()
     {
-        LDA #(debugBasicHeader % 256)
+        LDA #(lineBufferHeader % 256)
         STA ZP.STR
-        LDA #(debugBasicHeader / 256)
+        LDA #(lineBufferHeader / 256)
+        STA ZP.STRH
+        printString();
+        LDA #(sectionSuffix % 256)
+        STA ZP.STR
+        LDA #(sectionSuffix / 256)
         STA ZP.STRH
         printString();
         
-        // InputBuffer
+        // InputBuffer (shared between REPL and BASIC)
         LDA #(basicInputBufferLabel % 256)
         STA ZP.STR
         LDA #(basicInputBufferLabel / 256)
@@ -1096,37 +1149,86 @@ unit Debug // Debug.asm
         STA ZP.DB1
         dumpMemoryBlock(); // address: DB1 = MSB, DB0 = LSB
         
-        // TokenizerBuffer
+        // === REPL BUFFERS ===
+        LDA #(replBuffersHeader % 256)
+        STA ZP.STR
+        LDA #(replBuffersHeader / 256)
+        STA ZP.STRH
+        printString();
+        
+        // Check if REPL buffers are active
+        LDA ZP.TokenBufferH
+        CMP #(Address.REPLTokenizerBuffer >> 8)
+        if (Z)
+        {
+            LDA ZP.TokenBufferL
+            CMP #(Address.REPLTokenizerBuffer & 0xFF)
+            if (Z)
+            {
+                // REPL is active
+                LDA #(activeMarker % 256)
+                STA ZP.STR
+                LDA #(activeMarker / 256)
+                STA ZP.STRH
+                printString();
+            }
+        }
+        
+        LDA #(sectionSuffix % 256)
+        STA ZP.STR
+        LDA #(sectionSuffix / 256)
+        STA ZP.STRH
+        printString();
+        
+        // REPL TokenizerBuffer
         LDA #(basicTokenizerBufferLabel % 256)
         STA ZP.STR
         LDA #(basicTokenizerBufferLabel / 256)
         STA ZP.STRH
         printString();
         
-        LDA ZP.TokenizerPosH
+        // Print REPL tokenizer buffer address
+        LDA #(Address.REPLTokenizerBuffer >> 8)
         hOut();
-        LDA ZP.TokenizerPosL
-        hOut();
-        
-        LDA #(basicTokenizerBufferLabel  % 256)
-        STA ZP.STR
-        LDA #(basicTokenizerBufferLabel  / 256)
-        STA ZP.STRH
-        printString();
-        
-        LDA ZP.TokenBufferContentSizeH
-        hOut();
-        LDA ZP.TokenBufferContentSizeL
+        LDA #(Address.REPLTokenizerBuffer & 0xFF)
         hOut();
         
-        LDA #(basicCurTokLabel % 256)
-        STA ZP.STR
-        LDA #(basicCurTokLabel / 256)
-        STA ZP.STRH
-        printString();
-        
-        LDA ZP.CurrentToken
-        hOut();
+        // Print position label and value (if REPL is active)
+        LDA ZP.TokenBufferH
+        CMP #(Address.REPLTokenizerBuffer >> 8)
+        if (Z)
+        {
+            LDA #(basicTokPosLabel % 256)
+            STA ZP.STR
+            LDA #(basicTokPosLabel / 256)
+            STA ZP.STRH
+            printString();
+            
+            LDA ZP.TokenizerPosH
+            hOut();
+            LDA ZP.TokenizerPosL
+            hOut();
+            
+            LDA #(basicTokBufSizeLabel % 256)
+            STA ZP.STR
+            LDA #(basicTokBufSizeLabel / 256)
+            STA ZP.STRH
+            printString();
+            
+            LDA ZP.TokenBufferContentSizeH
+            hOut();
+            LDA ZP.TokenBufferContentSizeL
+            hOut();
+            
+            LDA #(basicCurTokLabel % 256)
+            STA ZP.STR
+            LDA #(basicCurTokLabel / 256)
+            STA ZP.STRH
+            printString();
+            
+            LDA ZP.CurrentToken
+            hOut();
+        }
         
         LDA #(basicBufferSuffix % 256)
         STA ZP.STR
@@ -1134,35 +1236,53 @@ unit Debug // Debug.asm
         STA ZP.STRH
         printString();
         
-        // Dump tokenizer buffer
-        LDA ZP.TokenBufferH
+        // Dump REPL tokenizer buffer
+        LDA #(Address.REPLTokenizerBuffer >> 8)
         STA ZP.DB1
-        LDA ZP.TokenBufferL
+        LDA #(Address.REPLTokenizerBuffer & 0xFF)
         STA ZP.DB0
-        dumpMemoryBlock(); // address: DB1 = MSB, DB0 = LSB
+        dumpMemoryBlock();
         
-        // OpCodeBuffer
-        LDA #( basicOpCodeBufferLabel % 256)
+        // REPL OpCodeBuffer
+        LDA #(basicOpCodeBufferLabel % 256)
         STA ZP.STR
         LDA #(basicOpCodeBufferLabel / 256)
         STA ZP.STRH
         printString();
         
-        LDA ZP.OpCodeBufferContentSizeH
+        // Print REPL opcode buffer address
+        LDA #(Address.REPLOpCodeBuffer >> 8)
         hOut();
-        LDA ZP.OpCodeBufferContentSizeL
+        LDA #(Address.REPLOpCodeBuffer & 0xFF)
         hOut();
         
-        LDA #(basicPCLabel % 256)
-        STA ZP.STR
-        LDA #(basicPCLabel / 256)
-        STA ZP.STRH
-        printString();
-        
-        LDA ZP.PCH
-        hOut();
-        LDA ZP.PCL
-        hOut();
+        // Print size and PC (if REPL is active)
+        LDA ZP.OpCodeBufferH
+        CMP #(Address.REPLOpCodeBuffer >> 8)
+        if (Z)
+        {
+            LDA #(basicOpCodeSizeLabel % 256)
+            STA ZP.STR
+            LDA #(basicOpCodeSizeLabel / 256)
+            STA ZP.STRH
+            printString();
+            
+            LDA ZP.OpCodeBufferContentSizeH
+            hOut();
+            LDA ZP.OpCodeBufferContentSizeL
+            hOut();
+            
+            LDA #(basicPCLabel % 256)
+            STA ZP.STR
+            LDA #(basicPCLabel / 256)
+            STA ZP.STRH
+            printString();
+            
+            LDA ZP.PCH
+            hOut();
+            LDA ZP.PCL
+            hOut();
+        }
         
         LDA #(basicBufferSuffix % 256)
         STA ZP.STR
@@ -1170,12 +1290,160 @@ unit Debug // Debug.asm
         STA ZP.STRH
         printString();
         
-        // Dump opcode buffer
-        LDA ZP.OpCodeBufferH
+        // Dump REPL opcode buffer
+        LDA #(Address.REPLOpCodeBuffer >> 8)
         STA ZP.DB1
-        LDA ZP.OpCodeBufferL
+        LDA #(Address.REPLOpCodeBuffer & 0xFF)
         STA ZP.DB0
-        dumpMemoryBlock(); // address: DB1 = MSB, DB0 = LSB
+        dumpMemoryBlock();
+        
+        // === BASIC BUFFERS ===
+        LDA #(functionBuffersHeader % 256)
+        STA ZP.STR
+        LDA #(functionBuffersHeader / 256)
+        STA ZP.STRH
+        printString();
+        
+        // Check if BASIC buffers are active
+        LDA ZP.TokenBufferH
+        CMP #(Address.BASICTokenizerBuffer >> 8)
+        if (Z)
+        {
+            LDA ZP.TokenBufferL
+            CMP #(Address.BASICTokenizerBuffer & 0xFF)
+            if (Z)
+            {
+                // BASIC is active
+                LDA #(activeMarker % 256)
+                STA ZP.STR
+                LDA #(activeMarker / 256)
+                STA ZP.STRH
+                printString();
+            }
+        }
+        
+        LDA #(sectionSuffix % 256)
+        STA ZP.STR
+        LDA #(sectionSuffix / 256)
+        STA ZP.STRH
+        printString();
+        
+        // BASIC TokenizerBuffer
+        LDA #(basicTokenizerBufferLabel % 256)
+        STA ZP.STR
+        LDA #(basicTokenizerBufferLabel / 256)
+        STA ZP.STRH
+        printString();
+        
+        // Print BASIC tokenizer buffer address
+        LDA #(Address.BASICTokenizerBuffer >> 8)
+        hOut();
+        LDA #(Address.BASICTokenizerBuffer & 0xFF)
+        hOut();
+        
+        // Print position label and value (if BASIC is active)
+        LDA ZP.TokenBufferH
+        CMP #(Address.BASICTokenizerBuffer >> 8)
+        if (Z)
+        {
+            LDA #(basicTokPosLabel % 256)
+            STA ZP.STR
+            LDA #(basicTokPosLabel / 256)
+            STA ZP.STRH
+            printString();
+            
+            LDA ZP.TokenizerPosH
+            hOut();
+            LDA ZP.TokenizerPosL
+            hOut();
+            
+            LDA #(basicTokBufSizeLabel % 256)
+            STA ZP.STR
+            LDA #(basicTokBufSizeLabel / 256)
+            STA ZP.STRH
+            printString();
+            
+            LDA ZP.TokenBufferContentSizeH
+            hOut();
+            LDA ZP.TokenBufferContentSizeL
+            hOut();
+            
+            LDA #(basicCurTokLabel % 256)
+            STA ZP.STR
+            LDA #(basicCurTokLabel / 256)
+            STA ZP.STRH
+            printString();
+            
+            LDA ZP.CurrentToken
+            hOut();
+        }
+        
+        LDA #(basicBufferSuffix % 256)
+        STA ZP.STR
+        LDA #(basicBufferSuffix / 256)
+        STA ZP.STRH
+        printString();
+        
+        // Dump BASIC tokenizer buffer
+        LDA #(Address.BASICTokenizerBuffer >> 8)
+        STA ZP.DB1
+        LDA #(Address.BASICTokenizerBuffer & 0xFF)
+        STA ZP.DB0
+        dumpMemoryBlock();
+        
+        // BASIC OpCodeBuffer
+        LDA #(basicOpCodeBufferLabel % 256)
+        STA ZP.STR
+        LDA #(basicOpCodeBufferLabel / 256)
+        STA ZP.STRH
+        printString();
+        
+        // Print BASIC opcode buffer address
+        LDA #(Address.BASICOpCodeBuffer >> 8)
+        hOut();
+        LDA #(Address.BASICOpCodeBuffer & 0xFF)
+        hOut();
+        
+        // Print size and PC (if BASIC is active)
+        LDA ZP.OpCodeBufferH
+        CMP #(Address.BASICOpCodeBuffer >> 8)
+        if (Z)
+        {
+            LDA #(basicOpCodeSizeLabel % 256)
+            STA ZP.STR
+            LDA #(basicOpCodeSizeLabel / 256)
+            STA ZP.STRH
+            printString();
+            
+            LDA ZP.OpCodeBufferContentSizeH
+            hOut();
+            LDA ZP.OpCodeBufferContentSizeL
+            hOut();
+            
+            LDA #(basicPCLabel % 256)
+            STA ZP.STR
+            LDA #(basicPCLabel / 256)
+            STA ZP.STRH
+            printString();
+            
+            LDA ZP.PCH
+            hOut();
+            LDA ZP.PCL
+            hOut();
+        }
+        
+        LDA #(basicBufferSuffix % 256)
+        STA ZP.STR
+        LDA #(basicBufferSuffix / 256)
+        STA ZP.STRH
+        printString();
+        
+        // Dump BASIC opcode buffer
+        LDA #(Address.BASICOpCodeBuffer >> 8)
+        STA ZP.DB1
+        LDA #(Address.BASICOpCodeBuffer & 0xFF)
+        STA ZP.DB0
+        dumpMemoryBlock();
         
         // Error pointers
         LDA #(basicErrorLabel % 256)
@@ -1808,6 +2076,51 @@ unit Debug // Debug.asm
         PHP PHA PHX PHY
         dumpBasicBuffers();
         PLY PLX PLA PLP
+    }
+    
+    // munts A (context id)
+    DumpRuntime()
+    {
+        PHP PHX PHY
+        
+        NL(); COut(); Space(); TPOut(); OPOut(); PCOut(); SPOut(); BPOut(); Space(); PrintState();
+        
+        IsFailure();
+        if (C)
+        {
+            Space();
+            LDA ZP.LastErrorL
+            ORA ZP.LastErrorH
+            if (NZ)
+            {
+                // Print the error message
+                LDA #'?'
+                Serial.WriteChar(); // '?' prefix
+                LDA ZP.LastErrorL
+                STA ZP.ACCL
+                LDA ZP.LastErrorH
+                STA ZP.ACCH
+                Tools.PrintStringACC();
+                
+                // 6502 PC
+                LDA #' '
+                Serial.WriteChar();
+                LDA #'('
+                Serial.WriteChar();
+                LDA #'0'
+                Serial.WriteChar();
+                LDA #'x'
+                Serial.WriteChar();
+                LDA ZP.EmulatorPCH
+                Serial.HexOut();
+                LDA ZP.EmulatorPCL
+                Serial.HexOut();
+                LDA #')'
+                Serial.WriteChar();
+            }
+        }
+        
+        PLY PLX PLP
     }
     
     DumpStack()

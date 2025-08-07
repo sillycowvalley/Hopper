@@ -29,6 +29,15 @@ FORGET FOO
 
 HEAP
 
+BEGIN
+    PRINT "Hello"
+END
+
+LIST
+
+RUN
+
+
 
 
 

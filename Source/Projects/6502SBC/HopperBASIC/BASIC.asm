@@ -82,7 +82,9 @@ program HopperBASIC
         // Initialize BASIC-specific components
         Console.Initialize();  // This now initializes the tokenizer too
      
-        BufferManager.UseBASICBuffers(); // just so we have an initialized default   
+        // By default, we are using REPL buffers
+        // only in Functions.Compile do we toggle to BASIC buffers and back
+        BufferManager.UseREPLBuffers();
     }
     
     

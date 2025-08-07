@@ -2,10 +2,6 @@ unit Commands
 {
     uses "./Utilities/TokenIterator"
 
-    const string noVariablesMsg = "NO VARIABLES\n";
-    const string noFunctionsMsg = "NO FUNCTIONS\n";
-    
-    
     // API Status: Clean
     // All public methods execute console commands using prepared arguments
     // No tokenizer interaction for command parsing
@@ -113,7 +109,7 @@ unit Commands
     
     // Execute VARS command - display all variables and constants
     // Input: None
-    // Output: All variables displayed to serial, or "NO VARIABLES" message
+    // Output: All variables displayed to serial
     CmdVars()
     {
         PHA
@@ -129,12 +125,6 @@ unit Commands
                 Variables.IterateConstants(); // Output: ZP.IDX = first constant, C set if found
                 if (NC)
                 {
-                    // No variables or constants
-                    LDA #(noVariablesMsg % 256)
-                    STA ZP.STRL
-                    LDA #(noVariablesMsg / 256)
-                    STA ZP.STRH
-                    Tools.PrintStringSTR();
                     break;
                 }
             }
@@ -440,16 +430,7 @@ unit Commands
         
         // Check if we have any functions
         Functions.IterateFunctions(); // Output: ZP.IDX = first function, C set if found
-        if (NC)
-        {
-            // No functions
-            LDA #(noFunctionsMsg % 256)
-            STA ZP.STRL
-            LDA #(noFunctionsMsg / 256)
-            STA ZP.STRH
-            Tools.PrintStringSTR();
-        }
-        else
+        if (C)
         {
             // Iterate through functions
             loop

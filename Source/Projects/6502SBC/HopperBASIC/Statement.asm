@@ -256,6 +256,7 @@ unit Statement // Statement.asm
             PLA
             STA ZP.OpCodeBufferContentSizeL
             
+            
             Error.CheckError(); 
             if (NC)
             {
@@ -906,6 +907,21 @@ unit Statement // Statement.asm
             
             // Copy the token stream
             Tools.CopyBytes();
+            
+            // ADD: Append EOF after the copied tokens
+            // FDESTINATIONADDRESS points to start, add FLENGTH to get to end
+            CLC
+            LDA ZP.FDESTINATIONADDRESSL
+            ADC ZP.FLENGTHL
+            STA ZP.ACCL
+            LDA ZP.FDESTINATIONADDRESSH
+            ADC ZP.FLENGTHH
+            STA ZP.ACCH
+            
+            // Write EOF token
+            LDA #Token.EOF
+            LDY #0
+            STA [ZP.ACC], Y
             
             // Destination = allocated memory
             LDA ZP.IDXL
