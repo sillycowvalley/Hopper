@@ -115,3 +115,40 @@ unit OpCodes
    }
    
    
+   const string opcodeUNDEFINED = "UNDEFINED\0";
+   const string opcodeINVALID = "INVALID\0";
+   const string opcodeADD     = "ADD\0";
+   
+#ifdef DEBUG
+   // Input: opcode in X
+   // Output: string pointer in ZP.STR
+   ToString()
+   {
+        switch (X)
+        {
+            case OpCode.INVALID:
+            {
+                LDA #(opcodeINVALID % 256)
+                STA ZP.STRL
+                LDA #(opcodeINVALID / 256)
+                STA ZP.STRH
+            }
+            case OpCode.ADD:
+            {
+                LDA #(opcodeADD % 256)
+                STA ZP.STRL
+                LDA #(opcodeADD / 256)
+                STA ZP.STRH
+            }
+            default:
+            {
+                LDA #(opcodeUNDEFINED % 256)
+                STA ZP.STRL
+                LDA #(opcodeUNDEFINED / 256)
+                STA ZP.STRH
+            }
+        }
+   }
+#endif
+
+}
