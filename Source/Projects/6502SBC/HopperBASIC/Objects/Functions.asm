@@ -855,12 +855,6 @@ unit Functions
         LDA #(functionCompile % 256) STA ZP.TraceMessageL LDA #(functionCompile / 256) STA ZP.TraceMessageH Trace.MethodEntry();
     #endif
         
-        // Save main execution PC
-        LDA ZP.PCL
-        PHA
-        LDA ZP.PCH
-        PHA
-        
         // Save current tokenizer state
         LDA ZP.TokenizerPosL
         PHA
@@ -960,12 +954,6 @@ unit Functions
         STA ZP.TokenizerPosH
         PLA
         STA ZP.TokenizerPosL
-        
-        // Restore main execution PC  
-        PLA
-        STA ZP.PCH
-        PLA
-        STA ZP.PCL
         
     #ifdef TRACE
         LDA #(functionCompile % 256) STA ZP.TraceMessageL LDA #(functionCompile / 256) STA ZP.TraceMessageH Trace.MethodExit();

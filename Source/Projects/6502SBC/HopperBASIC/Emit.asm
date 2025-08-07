@@ -4,7 +4,7 @@ unit Emit
    // Emit a single-byte opcode (no operands)
    // Input: compilerOpCode = opcode value
    // Output: OpCode written to buffer
-   // Modifies: ZP.OpCodeBufferContentSizeL/H (incremented), ZP.PC (incremented)
+   // Modifies: ZP.OpCodeBufferContentSizeL/H (incremented), ZP.XPC (incremented)
    const string emitOpCodeTrace = "EmitOp";
    OpCode()
    {
@@ -16,7 +16,7 @@ unit Emit
        {
 #ifdef TRACEJIT
            Tools.NL(); LDA #'>' Debug.COut();
-           LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
+           LDA ZP.XPCH Debug.HOut(); LDA ZP.XPCL Debug.HOut();
            LDA #' ' Debug.COut(); LDA Compiler.compilerOpCode Debug.HOut(); LDA #' ' Debug.COut();
 #endif        
            // Check space for 1 byte
@@ -29,14 +29,14 @@ unit Emit
        
            // Write opcode to buffer
            LDA Compiler.compilerOpCode
-           STA [ZP.PC]
+           STA [ZP.XPC]
            STA Compiler.compilerLastOpCode
            
            // Increment PC
-           INC ZP.PCL
+           INC ZP.XPCL
            if (Z)
            {
-               INC ZP.PCH
+               INC ZP.XPCH
            }
            
            SEC // Success
@@ -50,7 +50,7 @@ unit Emit
    // Emit opcode with one byte operand
    // Input: compilerOpCode = opcode value, compilerOperand1 = operand byte
    // Output: OpCode and operand written to buffer
-   // Modifies: ZP.OpCodeBufferContentSizeL/H (incremented by 2), ZP.PC (incremented by 2)
+   // Modifies: ZP.OpCodeBufferContentSizeL/H (incremented by 2), ZP.XPC (incremented by 2)
    const string emitOpCodeWithByteTrace = "EmitOpByte";
    OpCodeWithByte()
    {
@@ -61,7 +61,7 @@ unit Emit
        {
 #ifdef TRACEJIT       
            Tools.NL(); LDA #'>' Debug.COut();
-           LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
+           LDA ZP.XPCH Debug.HOut(); LDA ZP.XPCL Debug.HOut();
            LDA #' ' Debug.COut(); LDA Compiler.compilerOpCode Debug.HOut(); LDA #' ' Debug.COut(); 
                                   LDA Compiler.compilerOperand1 Debug.HOut(); LDA #' ' Debug.COut();
 #endif
@@ -75,25 +75,25 @@ unit Emit
        
            // Write opcode
            LDA Compiler.compilerOpCode
-           STA [ZP.PC]
+           STA [ZP.XPC]
            STA Compiler.compilerLastOpCode
            
            // Increment PC
-           INC ZP.PCL
+           INC ZP.XPCL
            if (Z)
            {
-               INC ZP.PCH
+               INC ZP.XPCH
            }
            
            // Write operand
            LDA Compiler.compilerOperand1
-           STA [ZP.PC]
+           STA [ZP.XPC]
            
            // Increment PC
-           INC ZP.PCL
+           INC ZP.XPCL
            if (Z)
            {
-               INC ZP.PCH
+               INC ZP.XPCH
            }
            
            SEC // Success
@@ -108,7 +108,7 @@ unit Emit
    // Emit opcode with two byte operands (word value)
    // Input: compilerOpCode = opcode value, compilerOperand1 = LSB, compilerOperand2 = MSB
    // Output: OpCode and operands written to buffer
-   // Modifies: ZP.OpCodeBufferContentSizeL/H (incremented by 3), ZP.PC (incremented by 3)
+   // Modifies: ZP.OpCodeBufferContentSizeL/H (incremented by 3), ZP.XPC (incremented by 3)
    const string emitOpCodeWithWordTrace = "EmitOpWord";
    OpCodeWithWord()
    {
@@ -119,7 +119,7 @@ unit Emit
        {
 #ifdef TRACEJIT       
            Tools.NL(); LDA #'>' Debug.COut();
-           LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
+           LDA ZP.XPCH Debug.HOut(); LDA ZP.XPCL Debug.HOut();
            LDA #' ' Debug.COut(); LDA Compiler.compilerOpCode Debug.HOut(); LDA #' ' Debug.COut(); 
                                   LDA Compiler.compilerOperand1 Debug.HOut(); LDA #' ' Debug.COut();
                                   LDA Compiler.compilerOperand2 Debug.HOut(); LDA #' ' Debug.COut();
@@ -134,36 +134,36 @@ unit Emit
            
            // Write opcode
            LDA Compiler.compilerOpCode
-           STA [ZP.PC]
+           STA [ZP.XPC]
            STA Compiler.compilerLastOpCode
            
            // Increment PC
-           INC ZP.PCL
+           INC ZP.XPCL
            if (Z)
            {
-               INC ZP.PCH
+               INC ZP.XPCH
            }
            
            // Write LSB
            LDA Compiler.compilerOperand1
-           STA [ZP.PC]
+           STA [ZP.XPC]
            
            // Increment PC
-           INC ZP.PCL
+           INC ZP.XPCL
            if (Z)
            {
-               INC ZP.PCH
+               INC ZP.XPCH
            }
            
            // Write MSB  
            LDA Compiler.compilerOperand2
-           STA [ZP.PC]
+           STA [ZP.XPC]
            
            // Increment PC
-           INC ZP.PCL
+           INC ZP.XPCL
            if (Z)
            {
-               INC ZP.PCH
+               INC ZP.XPCH
            }
            
            SEC // Success

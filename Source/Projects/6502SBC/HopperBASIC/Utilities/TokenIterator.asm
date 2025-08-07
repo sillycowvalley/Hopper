@@ -15,46 +15,53 @@ unit TokenIterator // TokenIterator.asm
         PHA
         PHY
         
-        // Save token stream base pointer
-        LDA ZP.IDYL
-        STA ZP.TOKBASEL
-        LDA ZP.IDYH
-        STA ZP.TOKBASEH
-        
-        // Check for null pointer
-        LDA ZP.IDYL
-        ORA ZP.IDYH
-        if (Z)
+        loop // Single exit block
         {
-            // Null stream - set current token to 0 and return NC
-            STZ ZP.TOKCUR
-            PLY
-            PLA
-            CLC
-            return;
-        }
-        
-        // Initialize position to 0
-        STZ ZP.TOKPOSL
-        STZ ZP.TOKPOSH
-        
-        // Load first token
-        LDY #0
-        LDA [ZP.IDY], Y
-        STA ZP.TOKCUR
-        
-        // Check if stream is empty (first token is 0)
-        if (Z)
-        {
-            PLY
-            PLA
-            CLC  // Empty stream
-            return;
+            // Save token stream base pointer
+            LDA ZP.IDYL
+            STA ZP.TOKBASEL
+            LDA ZP.IDYH
+            STA ZP.TOKBASEH
+            
+            // Check for null pointer
+            LDA ZP.IDYL
+            ORA ZP.IDYH
+            if (Z)
+            {
+                // Null stream - set current token to 0 and return NC
+                STZ ZP.TOKCUR
+                CLC  // Empty stream
+                break;
+            }
+            
+            // Initialize position to 0
+            STZ ZP.TOKPOSL
+            STZ ZP.TOKPOSH
+            
+            // Load first token
+            LDY #0
+            LDA [ZP.IDY], Y
+            STA ZP.TOKCUR
+            
+            // Check if stream is empty (first token is 0 or EOF)
+            if (Z)
+            {
+                CLC  // Empty stream (null terminator)
+                break;
+            }
+            CMP #Token.EOF
+            if (Z)
+            {
+                CLC  // Empty stream (starts with EOF)
+                break;
+            }
+            
+            SEC  // Stream has content
+            break;
         }
         
         PLY
         PLA
-        SEC  // Stream has content
     }
     
     // Advance to next token in stream
@@ -78,6 +85,7 @@ unit TokenIterator // TokenIterator.asm
                 case Token.STRING:
                 case Token.REM:
                 case Token.COMMENT:
+                case Token.STRINGLIT:
                 {
                     // These tokens have inline string data - skip past the string
                     skipInlineString();
@@ -112,6 +120,12 @@ unit TokenIterator // TokenIterator.asm
             if (Z)
             {
                 CLC  // End of stream
+                break;
+            }
+            CMP #Token.EOF
+            if (Z)
+            {
+                CLC  // End of stream (EOF token)
                 break;
             }
             
@@ -156,10 +170,10 @@ unit TokenIterator // TokenIterator.asm
             if (Z) 
             { 
                 // Found null terminator - advance past it
-                INC ZP.STRL
+                INC ZP.TOKPOSL    
                 if (Z)
                 {
-                    INC ZP.STRH
+                    INC ZP.TOKPOSH
                 }
                 SEC  // Success
                 break; 
@@ -373,6 +387,12 @@ unit TokenIterator // TokenIterator.asm
                 CLC // End of stream
                 break; 
             }
+            CMP #Token.EOF 
+            if (Z) 
+            { 
+                CLC // End of stream
+                break; 
+            }
             
             // Check if this token increases indentation (for next statement)
             PHA // Save token for rendering
@@ -433,6 +453,12 @@ unit TokenIterator // TokenIterator.asm
                 break; 
             }
             CMP #0 // Null terminator
+            if (Z) 
+            { 
+                CLC // End of stream
+                break; 
+            }
+            CMP #Token.EOF
             if (Z) 
             { 
                 CLC // End of stream

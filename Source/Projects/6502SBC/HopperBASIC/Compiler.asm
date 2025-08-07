@@ -28,7 +28,7 @@ unit Compiler // Compiler.asm
    
    // Initialize the opcode buffer for compilation
    // Output: OpCode buffer ready for emission
-   // Modifies: ZP.OpCodeBufferContentSizeL/H (set to 0), ZP.CompilerTokenPosL/H (set to current), ZP.CompilerFlags (cleared), ZP.PC (set to buffer start)
+   // Modifies: ZP.OpCodeBufferContentSizeL/H (set to 0), ZP.CompilerTokenPosL/H (set to current), ZP.CompilerFlags (cleared), ZP.XPC (set to buffer start)
    const string initOpCodeBufferTrace = "InitOpBuf";
    InitOpCodeBuffer()
    {
@@ -42,9 +42,9 @@ unit Compiler // Compiler.asm
        
        // Initialize PC to start of opcode buffer
        LDA ZP.OpCodeBufferL
-       STA ZP.PCL
+       STA ZP.XPCL
        LDA ZP.OpCodeBufferH
-       STA ZP.PCH
+       STA ZP.XPCH
        
        // Save current tokenizer position for literal references
        LDA ZP.TokenizerPosL
@@ -2111,7 +2111,7 @@ unit Compiler // Compiler.asm
            LDA ZP.OpCodeBufferL
            ADC ZP.IDXL    // Add JUMPZW operand position
            STA ZP.IDXL    // Absolute patch address LSB
-           LDA ZP.OpCodeBufferL
+           LDA ZP.OpCodeBufferH
            ADC ZP.IDXH    // Add JUMPZW operand position
            STA ZP.IDXH    // Absolute patch address MSB
 

@@ -299,6 +299,11 @@ unit ZP // ZeroPage.asm
     const byte STR2H                = 0x7B;  // String 2 high
 
     // 0x7C-0xEB: Available (112 bytes!)
+    
+    const byte XPC                  = 0x7C;  // Compiler Program counter low
+    const byte XPCL                 = 0x7C;  // Compiler Program counter low (alias)
+    const byte XPCH                 = 0x7D;  // Compiler Program counter high
+    
 
     // HARDWARE I/O (IMMOVABLE - Platform Hardware Addresses)
     const byte ACIACONTROL          = 0xEC;  // 6850 ACIA control register

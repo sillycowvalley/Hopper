@@ -49,7 +49,7 @@ unit BufferManager // BufferManager.asm
         
         PLA
     }
-    
+    /*
     IsREPLMode()
     {
         // Test bit 7 of FLAGS
@@ -79,4 +79,5 @@ unit BufferManager // BufferManager.asm
         PLA
         STA ZP.PCL
     }
+    */
 }
