@@ -240,9 +240,9 @@ unit Statement // Statement.asm
             if (NC) { States.SetFailure(); break; }
             
             // Save opcode buffer length after compilation (important for function calls from REPL)
-            LDA ZP.OpCodeBufferLengthL
+            LDA ZP.OpCodeBufferContentSizeL
             PHA
-            LDA ZP.OpCodeBufferLengthH
+            LDA ZP.OpCodeBufferContentSizeH
             PHA
             
             States.SetSuccess(); // clear
@@ -252,9 +252,9 @@ unit Statement // Statement.asm
             
             // Restore opcode buffer length after execution (important for function calls from REPL)
             PLA
-            STA ZP.OpCodeBufferLengthH
+            STA ZP.OpCodeBufferContentSizeH
             PLA
-            STA ZP.OpCodeBufferLengthL
+            STA ZP.OpCodeBufferContentSizeL
             
             Error.CheckError(); 
             if (NC)
@@ -316,9 +316,9 @@ unit Statement // Statement.asm
             if (NC) { States.SetFailure(); break; }
             
             // Save opcode buffer length after compilation 
-            LDA ZP.OpCodeBufferLengthL
+            LDA ZP.OpCodeBufferContentSizeL
             PHA
-            LDA ZP.OpCodeBufferLengthH
+            LDA ZP.OpCodeBufferContentSizeH
             PHA
             
             States.SetSuccess(); // Clear state
@@ -329,9 +329,9 @@ unit Statement // Statement.asm
             
             // Restore opcode buffer length
             PLA
-            STA ZP.OpCodeBufferLengthH
+            STA ZP.OpCodeBufferContentSizeH
             PLA
-            STA ZP.OpCodeBufferLengthL
+            STA ZP.OpCodeBufferContentSizeL
             
             Error.CheckError(); 
             if (NC)

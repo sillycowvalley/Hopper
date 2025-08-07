@@ -4,7 +4,7 @@ unit Emit
    // Emit a single-byte opcode (no operands)
    // Input: compilerOpCode = opcode value
    // Output: OpCode written to buffer
-   // Modifies: ZP.OpCodeBufferLengthL/H (incremented), ZP.PC (incremented)
+   // Modifies: ZP.OpCodeBufferContentSizeL/H (incremented), ZP.PC (incremented)
    const string emitOpCodeTrace = "EmitOp";
    OpCode()
    {
@@ -50,7 +50,7 @@ unit Emit
    // Emit opcode with one byte operand
    // Input: compilerOpCode = opcode value, compilerOperand1 = operand byte
    // Output: OpCode and operand written to buffer
-   // Modifies: ZP.OpCodeBufferLengthL/H (incremented by 2), ZP.PC (incremented by 2)
+   // Modifies: ZP.OpCodeBufferContentSizeL/H (incremented by 2), ZP.PC (incremented by 2)
    const string emitOpCodeWithByteTrace = "EmitOpByte";
    OpCodeWithByte()
    {
@@ -108,7 +108,7 @@ unit Emit
    // Emit opcode with two byte operands (word value)
    // Input: compilerOpCode = opcode value, compilerOperand1 = LSB, compilerOperand2 = MSB
    // Output: OpCode and operands written to buffer
-   // Modifies: ZP.OpCodeBufferLengthL/H (incremented by 3), ZP.PC (incremented by 3)
+   // Modifies: ZP.OpCodeBufferContentSizeL/H (incremented by 3), ZP.PC (incremented by 3)
    const string emitOpCodeWithWordTrace = "EmitOpWord";
    OpCodeWithWord()
    {
@@ -177,7 +177,7 @@ unit Emit
    // Emit PUSHCSTRING opcode with word operand
    // Input: compilerOperand1 = string pointer LSB, compilerOperand2 = string pointer MSB  
    // Output: PUSHCSTRING opcode emitted with operands, C set if successful
-   // Modifies: A, ZP.OpCodeBufferLengthL/H, buffer state
+   // Modifies: A, ZP.OpCodeBufferContentSizeL/H, buffer state
    const string emitPushCStringTrace = "EmitPUSHCSTRING";
    PushCString()
    {

@@ -665,10 +665,10 @@ unit Functions
         SEC
     }   
     
-    // Helper method to copy function tokens to BasicTokenizerBuffer and set up tokenizer
+    // Helper method to copy function tokens to ZP.TokenBuffer and set up tokenizer
     // For $MAIN, also prepends tokens to reinitialize global variables at the start of each RUN
     // Input: ZP.IDX = function node address
-    // Output: Tokenizer configured with function's tokens copied to BasicTokenizerBuffer
+    // Output: Tokenizer configured with function's tokens copied to ZP.TokenBuffer
     //         ZP.ACCL/H = length of function tokens
     // Modifies: ZP.IDY, ZP.ACC, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, ZP.FLENGTH
     // Preserves: ZP.IDX (function node address)
@@ -691,9 +691,9 @@ unit Functions
                 break;
             }
             
-            LDA #(Address.BasicTokenizerBuffer % 256)
-            STA ZP.FDESTINATIONADDRESSL   // Destination: BasicTokenizerBuffer
-            LDA #(Address.BasicTokenizerBuffer / 256)  
+            LDA ZP.TokenBufferL
+            STA ZP.FDESTINATIONADDRESSL   // Destination: ZP.TokenBuffer
+            LDA ZP.TokenBufferH
             STA ZP.FDESTINATIONADDRESSH
             
             // Length of function tokens
@@ -815,7 +815,7 @@ unit Functions
                 STA ZP.IDXL
             }
             
-            // Copy function's token stream to BasicTokenizerBuffer for compilation
+            // Copy function's token stream to ZP.TokenBuffer for compilation
             loop
             {
                 IncLENGTH();
@@ -829,9 +829,9 @@ unit Functions
             
             // Configure tokenizer to read copied function tokens
             LDA ZP.FLENGTHL                   // Length of function tokens
-            STA ZP.TokenBufferLengthL
+            STA ZP.TokenBufferContentSizeL
             LDA ZP.FLENGTHH
-            STA ZP.TokenBufferLengthH
+            STA ZP.TokenBufferContentSizeH
             
             STZ ZP.TokenizerPosL          // Start at beginning of copied tokens
             STZ ZP.TokenizerPosH
@@ -866,16 +866,16 @@ unit Functions
         PHA
         LDA ZP.TokenizerPosH
         PHA
-        LDA ZP.TokenBufferLengthL
+        LDA ZP.TokenBufferContentSizeL
         PHA
-        LDA ZP.TokenBufferLengthH
+        LDA ZP.TokenBufferContentSizeH
         PHA
         
         loop // Single exit block
         {
             freeOpCodes(); // Free existing opcode stream if not null
                                     
-            // Copy function tokens to BasicTokenizerBuffer and configure tokenizer
+            // Copy function tokens to ZP.TokenBuffer and configure tokenizer
             copyFunctionTokensToBuffer();
             Error.CheckError();
             if (NC) { break; }
@@ -949,9 +949,9 @@ unit Functions
         
         // Restore tokenizer state
         PLA
-        STA ZP.TokenBufferLengthH
+        STA ZP.TokenBufferContentSizeH
         PLA
-        STA ZP.TokenBufferLengthL
+        STA ZP.TokenBufferContentSizeL
         PLA
         STA ZP.TokenizerPosH
         PLA
@@ -994,8 +994,8 @@ unit Functions
         loop // Single exit block
         {
             // Check if we have any opcodes to copy
-            LDA ZP.OpCodeBufferLengthL
-            ORA ZP.OpCodeBufferLengthH
+            LDA ZP.OpCodeBufferContentSizeL
+            ORA ZP.OpCodeBufferContentSizeH
             if (Z)
             {
                 // No opcodes - this shouldn't happen but handle gracefully
@@ -1004,9 +1004,9 @@ unit Functions
             }
             
             // Allocate memory for opcode storage
-            LDA ZP.OpCodeBufferLengthL
+            LDA ZP.OpCodeBufferContentSizeL
             STA ZP.ACCL
-            LDA ZP.OpCodeBufferLengthH
+            LDA ZP.OpCodeBufferContentSizeH
             STA ZP.ACCH
             
             Memory.Allocate(); // Returns address in ZP.IDX
@@ -1037,9 +1037,9 @@ unit Functions
             LDA ZP.ACCH
             STA ZP.FDESTINATIONADDRESSH
             
-            LDA ZP.OpCodeBufferLengthL    // Length: opcode buffer length
+            LDA ZP.OpCodeBufferContentSizeL    // Length: opcode buffer length
             STA ZP.FLENGTHL
-            LDA ZP.OpCodeBufferLengthH
+            LDA ZP.OpCodeBufferContentSizeH
             STA ZP.FLENGTHH
             
             // Copy opcodes to permanent storage

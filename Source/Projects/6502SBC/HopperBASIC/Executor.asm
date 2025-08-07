@@ -38,7 +38,7 @@ unit Executor // Executor.asm
    }
    
    // Main entry point - Execute compiled opcodes
-   // Input: ZP.OpCodeBufferLengthL/H contains opcode buffer length
+   // Input: ZP.OpCodeBufferContentSizeL/H contains opcode buffer length
    // Output: SystemState set (Success, Failure, or Exiting)
    // Uses: BasicOpCodeBuffer at Address.BasicOpCodeBuffer (0x0C00)
    const string strExecuteOpCodes = "ExecOpCodes // Execute compiled opcodes";
@@ -117,7 +117,7 @@ unit Executor // Executor.asm
    }
    
    // Initialize executor state from opcode buffer
-   // Input: ZP.OpCodeBufferLengthL/H contains opcode buffer length
+   // Input: ZP.OpCodeBufferContentSizeL/H contains opcode buffer length
    // Output: SystemState set (Success or Failure)
    const string initExecutorTrace = "InitExec // Initialize executor state";
    InitExecutor()
@@ -137,15 +137,15 @@ unit Executor // Executor.asm
        // Calculate end address = start + length
        CLC
        LDA executorStartAddrL
-       ADC ZP.OpCodeBufferLengthL
+       ADC ZP.OpCodeBufferContentSizeL
        STA executorEndAddrL
        LDA executorStartAddrH
-       ADC ZP.OpCodeBufferLengthH
+       ADC ZP.OpCodeBufferContentSizeH
        STA executorEndAddrH
        
        // Validate buffer length is not zero
-       LDA ZP.OpCodeBufferLengthL
-       ORA ZP.OpCodeBufferLengthH
+       LDA ZP.OpCodeBufferContentSizeL
+       ORA ZP.OpCodeBufferContentSizeH
        if (Z)
        {
            Error.InternalError(); BIT ZP.EmulatorPCL
