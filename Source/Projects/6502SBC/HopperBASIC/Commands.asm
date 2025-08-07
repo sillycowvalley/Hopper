@@ -629,7 +629,6 @@ unit Commands
         {
             // Use TokenIterator to render the function body
             TokenIterator.RenderTokenStream(); // Input: ZP.IDY = tokens pointer
-            Tools.NL(); 
         }
         
         // Get function name to check if it's BEGIN

@@ -39,7 +39,7 @@ unit ZP // ZeroPage.asm
     // Bit 6 - (unused in BASIC)
     // Bit 5 - (unused in BASIC)
     // Bit 4 - (unused in BASIC)
-    // Bit 3 - (REPL mode flag
+    // Bit 3 - (reserved for REPL mode flag - not currently in use)
     // Bit 2 - TRON | TROFF (trace on/off)
     // Bit 1 - Temporary exit flag for Console.processTokens() loop control
     // Bit 0 - Program has been loaded
@@ -300,6 +300,7 @@ unit ZP // ZeroPage.asm
 
     // 0x7C-0xEB: Available (112 bytes!)
     
+    // TODO : move XPC to Compiler section
     const byte XPC                  = 0x7C;  // Compiler Program counter low
     const byte XPCL                 = 0x7C;  // Compiler Program counter low (alias)
     const byte XPCH                 = 0x7D;  // Compiler Program counter high

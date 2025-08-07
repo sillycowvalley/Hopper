@@ -642,8 +642,24 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 STA ZP.TOPL
                 LDA #(Messages.BeginFunctionName / 256)
                 STA ZP.TOPH
-                // Already at body start after BEGIN token - no parameters to skip
-                // Tokenizer is positioned correctly after BEGIN
+                
+                // Skip EOL after BEGIN if present (from multi-line capture)
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) { break; }
+                
+                LDA ZP.CurrentToken
+                CMP #Token.EOL
+                if (NZ)
+                {
+                    // Not EOL - back up tokenizer so we don't skip real body token
+                    DEC ZP.TokenizerPosL
+                    if (Z)
+                    {
+                        DEC ZP.TokenizerPosH
+                    }
+                }
+                // Now positioned at actual body start (past any EOL)
             }
             
             // Find the function that was already declared
