@@ -63,7 +63,6 @@ unit Variables
             {
                 break;
             }
-                 
             LDA ZP.ACCT
             AND #BASICType.TYPEMASK
             CMP #BASICType.STRING
@@ -204,7 +203,7 @@ unit Variables
         PHA
         LDA ZP.ACCH  
         PHA
-        
+
         loop // start of single exit block
         {
             // Get current symbol info
@@ -226,7 +225,7 @@ unit Variables
             
             // Check if this is a STRING variable needing memory management
             LDA ZP.ACCT  // symbolType|dataType from Objects.GetData()
-            AND #BASICType.MASK
+            AND #BASICType.TYPEMASK
             CMP #BASICType.STRING
             if (Z)
             {

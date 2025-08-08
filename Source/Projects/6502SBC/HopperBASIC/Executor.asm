@@ -999,60 +999,7 @@ unit Executor // Executor.asm
             // Check if variable has VAR bit set
             LDA ZP.ACCT
             AND #BASICType.VAR
-            if (NZ)  // Variable has VAR bit - allow type change
-            {
-                // Check if changing from STRING to something else
-                LDA ZP.ACCT
-                AND #BASICType.MASK  // Get current underlying type
-                CMP #BASICType.STRING
-                if (Z)  // Currently STRING
-                {
-                    LDA ZP.TOPT  // New type
-                    CMP #BASICType.STRING
-                    if (NZ)  // Changing from STRING to non-STRING
-                    {
-                        // Free string memory will be handled by SetValue
-                    }
-                }
-                
-                // Update the variable's type in the node while preserving SymbolType
-                LDA ZP.ACCT
-                AND #SymbolType.MASK  // Keep SymbolType bits (0xE0)
-                STA ZP.ACCT          // Save SymbolType portion
-                
-                LDA ZP.TOPT          // New type from RHS
-                AND #BASICType.TYPEMASK  // Make sure no stray bits
-                ORA #BASICType.VAR   // Add VAR bit
-                ORA ZP.ACCT          // Combine with SymbolType
-                STA ZP.ACCT          // Full packed byte
-                
-                // Update type in node directly
-                LDY # Objects.snType
-                STA [ZP.IDX], Y
-                
-                // After updating the type in the node:
-                LDA ZP.TOPT  // New type from RHS
-                CMP #BASICType.STRING
-                if (Z)  // Changing TO STRING
-                {
-                    // Need to allocate and copy the string
-                    // ZP.TOP contains the token buffer pointer
-                    Variables.AllocateAndCopyString(); // Returns new pointer in ZP.IDY
-                    Error.CheckError();
-                    if (NC) 
-                    { 
-                        States.SetFailure();
-                        break; 
-                    }
-                    // Now ZP.IDY has the heap-allocated copy
-                    LDA ZP.IDYL
-                    STA ZP.TOPL
-                    LDA ZP.IDYH
-                    STA ZP.TOPH
-                }
-                
-            }
-            else  // Non-VAR variable - use normal type checking
+            if (Z) // Non-VAR variable - use normal type checking
             {
                 // Move LHS type to correct register for CheckRHSTypeCompatibility
                 LDA ZP.ACCT
@@ -1068,18 +1015,16 @@ unit Executor // Executor.asm
                     break; 
                 }
             }
-           
-           // Store the value to the variable
-           Variables.SetValue(); // Input: ZP.IDX = node address, ZP.TOP = value
-           Error.CheckError();
-           if (NC) 
-           { 
-               States.SetFailure();
-               break; 
-           }
-           
-           States.SetSuccess();
-           break;
+            // Store the value to the variable
+            Variables.SetValue(); // Input: ZP.IDX = node address, ZP.TOP = value
+            Error.CheckError();
+            if (NC) 
+            { 
+                States.SetFailure();
+                break; 
+            }
+            States.SetSuccess();
+            break;
        }
        
    #ifdef TRACE
