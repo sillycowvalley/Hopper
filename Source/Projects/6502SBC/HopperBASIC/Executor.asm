@@ -984,31 +984,90 @@ unit Executor // Executor.asm
            LDA executorOperandH
            STA ZP.IDXH
            
-           // Get the variable's current type for compatibility checking
-           Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = type
-           Error.CheckError();
-           if (NC) 
-           { 
-               States.SetFailure();
-               break; 
-           }
-           
-           // Pop value from stack (RHS of assignment)
-           Stacks.PopTop(); // Result in ZP.TOP (value), ZP.TOPT (type)
-           
-           // Move LHS type to correct register for CheckRHSTypeCompatibility
-           LDA ZP.ACCT
-           AND #0x0F  // Extract data type (low nibble)
-           STA ZP.NEXTT 
-           
-           // Check type compatibility for assignment
-           Instructions.CheckRHSTypeCompatibility(); // Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
-           if (NC) 
-           { 
-               Error.TypeMismatch();
-               States.SetFailure();
-               break; 
-           }
+            // Get the variable's current type for compatibility checking
+            Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = type
+            Error.CheckError();
+            if (NC) 
+            { 
+                States.SetFailure();
+                break; 
+            }
+
+            // Pop value from stack (RHS of assignment)
+            Stacks.PopTop(); // Result in ZP.TOP (value), ZP.TOPT (type)
+
+            // Check if variable has VAR bit set
+            LDA ZP.ACCT
+            AND #BASICType.VAR
+            if (NZ)  // Variable has VAR bit - allow type change
+            {
+                // Check if changing from STRING to something else
+                LDA ZP.ACCT
+                AND #BASICType.MASK  // Get current underlying type
+                CMP #BASICType.STRING
+                if (Z)  // Currently STRING
+                {
+                    LDA ZP.TOPT  // New type
+                    CMP #BASICType.STRING
+                    if (NZ)  // Changing from STRING to non-STRING
+                    {
+                        // Free string memory will be handled by SetValue
+                    }
+                }
+                
+                // Update the variable's type in the node while preserving SymbolType
+                LDA ZP.ACCT
+                AND #SymbolType.MASK  // Keep SymbolType bits (0xE0)
+                STA ZP.ACCT          // Save SymbolType portion
+                
+                LDA ZP.TOPT          // New type from RHS
+                AND #BASICType.TYPEMASK  // Make sure no stray bits
+                ORA #BASICType.VAR   // Add VAR bit
+                ORA ZP.ACCT          // Combine with SymbolType
+                STA ZP.ACCT          // Full packed byte
+                
+                // Update type in node directly
+                LDY # Objects.snType
+                STA [ZP.IDX], Y
+                
+                // After updating the type in the node:
+                LDA ZP.TOPT  // New type from RHS
+                CMP #BASICType.STRING
+                if (Z)  // Changing TO STRING
+                {
+                    // Need to allocate and copy the string
+                    // ZP.TOP contains the token buffer pointer
+                    Variables.AllocateAndCopyString(); // Returns new pointer in ZP.IDY
+                    Error.CheckError();
+                    if (NC) 
+                    { 
+                        States.SetFailure();
+                        break; 
+                    }
+                    // Now ZP.IDY has the heap-allocated copy
+                    LDA ZP.IDYL
+                    STA ZP.TOPL
+                    LDA ZP.IDYH
+                    STA ZP.TOPH
+                }
+                
+            }
+            else  // Non-VAR variable - use normal type checking
+            {
+                // Move LHS type to correct register for CheckRHSTypeCompatibility
+                LDA ZP.ACCT
+                AND #BASICType.MASK  // Extract data type
+                STA ZP.NEXTT 
+                
+                // Check type compatibility for assignment
+                Instructions.CheckRHSTypeCompatibility(); // Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
+                if (NC) 
+                { 
+                    Error.TypeMismatch();
+                    States.SetFailure();
+                    break; 
+                }
+            }
            
            // Store the value to the variable
            Variables.SetValue(); // Input: ZP.IDX = node address, ZP.TOP = value

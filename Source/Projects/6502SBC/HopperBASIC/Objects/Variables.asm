@@ -30,7 +30,7 @@ unit Variables
             }
             
             LDA ZP.ACCT
-            AND #BASICType.MASK
+            AND #BASICType.TYPEMASK
             CMP #BASICType.STRING
             if (Z)
             {
@@ -48,7 +48,7 @@ unit Variables
             Objects.Add();
             
             LDA ZP.ACCT
-            AND #BASICType.MASK
+            AND #BASICType.TYPEMASK
             CMP #BASICType.STRING
             if (Z)
             {
@@ -65,7 +65,7 @@ unit Variables
             }
                  
             LDA ZP.ACCT
-            AND #BASICType.MASK
+            AND #BASICType.TYPEMASK
             CMP #BASICType.STRING
             if (Z)
             {
@@ -174,7 +174,7 @@ unit Variables
             STA ZP.TOPH
             
             LDA ZP.ACCT
-            AND #BASICType.MASK
+            AND #BASICType.TYPEMASK   // masks off VAR bit (0x10)
             STA ZP.TOPT
             
             SEC  // Success

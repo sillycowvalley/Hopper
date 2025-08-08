@@ -130,6 +130,7 @@ END
 - **`BIT name [= value]`** - Boolean (TRUE or FALSE only)
 - **`BYTE name [= value]`** - 8-bit unsigned (0 to 255)
 - **`STRING name = "value"`** - Mutable string variable
+- **`VAR name [= value]`** - Runtime-typed variable (duck typing)
 
 ### Constant Declaration Commands
 - **`CONST INT name = value`** - Immutable signed integer

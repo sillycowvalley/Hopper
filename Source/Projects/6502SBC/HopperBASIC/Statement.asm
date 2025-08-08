@@ -400,6 +400,7 @@ unit Statement // Statement.asm
             case Token.BIT:
             case Token.BYTE:
             case Token.STRING:
+            case Token.VAR: 
             {
                 executeVariableDeclaration();
             }
@@ -446,10 +447,9 @@ unit Statement // Statement.asm
     const string executeConstDeclTrace = "ExecConst";
     executeConstantDeclaration()
     {
-#ifdef TRACE
+    #ifdef TRACE
         LDA #(executeConstDeclTrace % 256) STA ZP.TraceMessageL LDA #(executeConstDeclTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-
+    #endif
         loop
         {
             Tokenizer.NextToken(); // consume 'CONST'
@@ -458,6 +458,16 @@ unit Statement // Statement.asm
                 Error.SyntaxError(); BIT ZP.EmulatorPCL
                 break; // error exit
             } 
+            
+            // Check that VAR is not used with CONST
+            LDA ZP.CurrentToken
+            CMP #Token.VAR
+            if (Z)
+            {
+                // CONST VAR is invalid - constants cannot change type
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                break; // error exit
+            }
             
             // we want a constant expression
             LDA #1
@@ -468,10 +478,10 @@ unit Statement // Statement.asm
             processSingleSymbolDeclaration();
             break;
         } // single exit
-
-#ifdef TRACE
+        
+    #ifdef TRACE
         LDA #(executeConstDeclTrace % 256) STA ZP.TraceMessageL LDA #(executeConstDeclTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
+    #endif
     }
     
     // Execute variable declaration statement
@@ -520,6 +530,17 @@ unit Statement // Statement.asm
                 Error.SyntaxError(); BIT ZP.EmulatorPCL
                 CLC break;
             }
+            
+            // Check if this is a VAR type declaration
+            CMP #BASICType.VAR
+            if (Z)
+            {
+                // VAR type starts untyped but will adopt type from initialization
+                // Keep as pure VAR for now, will be updated later
+                STA stmtType
+            }
+            
+            
             STA stmtType // LHS type
             
             Tokenizer.NextToken();
@@ -685,6 +706,23 @@ unit Statement // Statement.asm
                             CLC
                             break; // error exit
                         }
+                        
+                        LDA stmtType
+                        CMP #BASICType.VAR  // Check if pure VAR (not VAR with underlying type)
+                        if (Z)  // Pure VAR variable without initialization
+                        {
+                            // Default VAR to INT with value 0
+                            LDA #BASICType.INT
+                            ORA #BASICType.VAR
+                            STA stmtType
+                            STZ ZP.NEXTL
+                            STZ ZP.NEXTH
+                            LDA #BASICType.INT
+                            STA ZP.NEXTT
+                            SEC  // Success
+                            break;
+                        }
+                        
                         LDA stmtType
                         CMP # BASICType.STRING
                         if (Z)
@@ -765,12 +803,22 @@ unit Statement // Statement.asm
                 LDA ZP.NEXTT
                 STA ZP.TOPT
                 
+                // Check if this is a VAR variable
                 LDA stmtType
-                STA ZP.NEXTT // LHS type
-                
-                // RHS in TOP
-                // LHS type in NEXTT
-                CheckRHSTypeCompatibility();
+                AND #BASICType.VAR
+                if (NZ)  // VAR variable - skip type checking
+                {
+                    SEC  // Always compatible
+                }
+                else  // Non-VAR variable - check type compatibility
+                {
+                    LDA stmtType
+                    STA ZP.NEXTT // LHS type
+                    
+                    // RHS in TOP
+                    // LHS type in NEXTT
+                    CheckRHSTypeCompatibility();
+                }
             }
             else
             {
@@ -792,6 +840,18 @@ unit Statement // Statement.asm
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
+            
+            // For VAR variables, update type based on initialization
+            LDA stmtType
+            AND #BASICType.VAR
+            if (NZ)  // VAR variable
+            {
+                // Set type to RHS type while preserving VAR bit
+                LDA ZP.NEXTT  // RHS type from expression
+                ORA #BASICType.VAR  // Keep VAR bit
+                STA stmtType
+            }
+            
             
             // Pack symbolType|dataType: SymbolType in top 3 bits, dataType in bottom 5 bits
             LDA stmtType  // dataType (bottom 5 bits)

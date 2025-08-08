@@ -346,6 +346,7 @@ unit Commands
     
     // Display a variable declaration
     // Input: ZP.IDX = variable node
+    // In Commands.asm, displayVariable() method:
     displayVariable()
     {
         PHA
@@ -353,11 +354,36 @@ unit Commands
         PHY
         
         // Get variable type
-        Variables.GetType(); // Input: ZP.IDX, Output: A = type
+        Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = type
         
+        // Save the full type for later
         LDA ZP.ACCT
-        AND #0x0F
-        BASICTypes.PrintType(); // Input: A = dataType
+        PHA
+        
+        // Check if it has VAR bit set
+        AND #BASICType.VAR
+        if (NZ)  // Variable has VAR bit
+        {
+            // Print "VAR" first
+            LDA #Token.VAR
+            Tokens.PrintKeyword();
+            
+            // Then print current underlying type in parentheses
+            LDA #'(' Serial.WriteChar();
+            PLA
+            PHA  // Keep it on stack
+            AND #BASICType.TYPEMASK  // Get underlying type without VAR bit
+            BASICTypes.PrintType();
+            LDA #')' Serial.WriteChar();
+        }
+        else  // Regular typed variable
+        {
+            PLA
+            PHA  // Keep it on stack
+            AND #BASICType.MASK
+            BASICTypes.PrintType();
+        }
+        
         LDA #' ' Serial.WriteChar();
         
         // Print variable name
@@ -368,7 +394,10 @@ unit Commands
         LDA #'=' Serial.WriteChar();
         LDA #' ' Serial.WriteChar();
         
-        // Get and print current value
+        // Clean up stack
+        PLA  // Remove saved type
+        
+        // Get and print current value (this needs fresh call to get value)
         Variables.GetValue(); // ZP.TOP = value, ZP.TOPT = dataType
         
         // Input: ZP.TOP = value, ZP.TOPT = type, C = quote strings

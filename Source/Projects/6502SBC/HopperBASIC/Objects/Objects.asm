@@ -1,6 +1,6 @@
 unit Objects
 {
-    friend Variables, Functions, Locals;
+    friend Variables, Functions, Locals, Executor;
     
     // Symbol table implementation using Table foundation
     // ZP.VariableListL/H stores the variables/constants table head pointer
