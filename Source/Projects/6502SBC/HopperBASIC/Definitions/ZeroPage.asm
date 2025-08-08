@@ -308,7 +308,7 @@ unit ZP // ZeroPage.asm
     
     const byte XID                  = 0x7F;  // Executure token buffer pointer Program counter low
     const byte XIDL                 = 0x7F;
-    const byte XIDH                 = 0x7E;
+    const byte XIDH                 = 0x80;
     
 
     // HARDWARE I/O (IMMOVABLE - Platform Hardware Addresses)

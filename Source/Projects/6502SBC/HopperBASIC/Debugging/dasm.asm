@@ -27,15 +27,16 @@ unit Dasm
         
         loop // Single exit block
         {
-            Space(); Space(); Space(); // indent
+            Objects.GetTokens();
+            LDA ZP.IDYL
+            STA ZP.XIDL 
+            LDA ZP.IDYH
+            STA ZP.XIDH 
+            
+            NL(); Space(); Space(); Space(); // indent
             LDA #'[' COut(); LDA ZP.IDXH HOut();LDA ZP.IDXL HOut(); LDA #']' COut();
             LDA #'[' COut(); LDA ZP.XIDH HOut();LDA ZP.XIDL HOut(); LDA #']' COut();
             NL();
-            Objects.GetTokens();
-            LDA ZP.IDYL
-            STA ZP.XIDL
-            LDA ZP.IDYH
-            STA ZP.XIDH
             
             // Get opcode stream pointer from function
             Functions.GetOpCodes(); // Input: ZP.IDX, Output: ZP.IDY = opcode stream, C if compiled

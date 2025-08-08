@@ -47,19 +47,19 @@ VL:XXXX FL:XXXX
 1. **Get current Tokens enum** from latest Tokenizer.asm
 2. **For each token byte**: Look up value in enum
 3. **Handle inline data**: These tokens have null-terminated strings following:
-   - `NUMBER` (0xD2) - followed by number string like "42\0"
-   - `IDENTIFIER` (0xD4) - followed by identifier name  
-   - `STRINGLIT` (0xD3) - followed by string content
-   - `REM` (0x92) - followed by comment text
-   - `COMMENT` (0x93) - followed by comment text
+   - `NUMBER` (0xC7) - followed by number string like "42\0"
+   - `IDENTIFIER` (0xC9) - followed by identifier name  
+   - `STRINGLIT` (0xC8) - followed by string content
+   - `REM` (0x93) - followed by comment text
+   - `COMMENT` (0x94) - followed by comment text
 
 ### Table Format
 ```markdown
 | Offset | Hex | Token | Description | Inline Data |
 |--------|-----|-------|-------------|-------------|
-| 0A00 | D2 | NUMBER | Numeric literal | "20" |
+| 0A00 | C7 | NUMBER | Numeric literal | "20" |
 | 0A01-0A03 | 32 30 00 | - | Inline string data | - |
-| 0A04 | 94 | EOL | End of line marker | - |
+| 0A04 | 95 | EOL | End of line marker | - |
 ```
 
 ## OpCodeBuffer Decoding
@@ -132,7 +132,7 @@ Offset 4+:  null-terminated name
 ```markdown
 | Variable | Node Addr | Next→ | Type | Value | Tokens→ | OpCodes→ | Name |
 |----------|-----------|-------|------|-------|---------|----------|------|
-| **C** | 0E0A | 0E22 | VAR+INT (0x21) | 0 | 0E02 | 0000 | "C" |
+| **C** | 0E0A | 0E22 | VAR+INT (0x22) | 0 | 0E02 | 0000 | "C" |
 ```
 
 ```markdown
@@ -314,29 +314,30 @@ LOCAL    = 0xA0   // Local variables (positive BP offset)
 MASK     = 0xE0   // Top 3 bits
 ```
 
-### BASICType Values (from BasicTypes.asm)
+### BASICType Values (from BASICTypes.asm)
 ```
-VOID   = 0x00   // Function return type (internal use)
-INT    = 0x01   // Signed 16-bit integer
-BYTE   = 0x02   // Unsigned 8-bit value
-WORD   = 0x03   // Unsigned 16-bit value
-BIT    = 0x04   // Boolean value (0 or 1)
-ARRAY  = 0x05   // Array type
-STRING = 0x06   // String type
-VAR    = 0x10   // Runtime-determined type bit
-MASK   = 0x1F   // Bottom 5 bits
+VOID     = 0x00   // Function return type (internal use)
+INT      = 0x02   // Signed 16-bit integer
+BYTE     = 0x03   // Unsigned 8-bit value
+WORD     = 0x04   // Unsigned 16-bit value
+BIT      = 0x06   // Boolean value (0 or 1)
+ARRAY    = 0x07   // Array type
+STRING   = 0x0F   // String type
+VAR      = 0x10   // Runtime-determined type bit
+TYPEMASK = 0x0F   // Mask for basic type without VAR bit
+MASK     = 0x1F   // Bottom 5 bits
 ```
 
 ### Decoding Examples
 ```markdown
 | Packed Byte | SymbolType (top 3 bits) | BASICType (bottom 5 bits) | Meaning |
 |-------------|--------------------------|---------------------------|---------|
-| 0x21 | VARIABLE (0x20) | INT (0x01) | INT variable |
-| 0x42 | CONSTANT (0x40) | BYTE (0x02) | BYTE constant |
-| 0x26 | VARIABLE (0x20) | STRING (0x06) | STRING variable |
-| 0x61 | FUNCTION (0x60) | INT (0x01) | Function returning INT |
-| 0x81 | ARGUMENT (0x80) | INT (0x01) | INT argument |
-| 0xA3 | LOCAL (0xA0) | WORD (0x03) | WORD local variable |
+| 0x22 | VARIABLE (0x20) | INT (0x02) | INT variable |
+| 0x43 | CONSTANT (0x40) | BYTE (0x03) | BYTE constant |
+| 0x2F | VARIABLE (0x20) | STRING (0x0F) | STRING variable |
+| 0x62 | FUNCTION (0x60) | INT (0x02) | Function returning INT |
+| 0x82 | ARGUMENT (0x80) | INT (0x02) | INT argument |
+| 0xA4 | LOCAL (0xA0) | WORD (0x04) | WORD local variable |
 ```
 
 ### Extraction Process
@@ -349,7 +350,7 @@ CMP #SymbolType.VARIABLE  ; Direct comparison (0x20)
 ; To extract BASICType:
 LDA packed_byte
 AND #0x1F        ; Mask bottom 5 bits
-CMP #BASICType.INT        ; Direct comparison (0x01)
+CMP #BASICType.INT        ; Direct comparison (0x02)
 ```
 
 ## Linked List Following
@@ -375,7 +376,7 @@ CMP #BASICType.INT        ; Direct comparison (0x01)
 1. **Read token byte**: Compare against Tokens enum
 2. **Check for inline data**: NUMBER, IDENTIFIER, STRINGLIT, REM, COMMENT
 3. **Skip past strings**: Find null terminator (0x00)
-4. **Continue until**: EOL (0x94) or null terminator
+4. **Continue until**: EOL (0x95) or null terminator
 
 ### Key Token Values (from Tokenizer.asm - check current source!)
 Common tokens include:
@@ -388,7 +389,7 @@ Common tokens include:
 
 ### Example Pattern
 ```
-D2 32 30 00 94 = NUMBER "20" + EOL
+C7 32 30 00 95 = NUMBER "20" + EOL
 ```
 
 ## Function Flags Analysis
@@ -475,6 +476,7 @@ D2 32 30 00 94 = NUMBER "20" + EOL
 - **Packed type format**: Top 3 bits for SymbolType, bottom 5 for BASICType
 - **No shifting needed**: Direct comparison after masking
 - **VAR type bit**: New BASICType.VAR (0x10) for runtime-determined types
-- **Extended types**: Room for 32 BASICTypes with 5-bit field
+- **Extended types**: Room for 16 BASICTypes with bottom 4 bits (TYPEMASK=0x0F)
+- **Type values changed**: INT=0x02, BYTE=0x03, WORD=0x04, BIT=0x06, STRING=0x0F
 
 Remember: **Always verify consistency** between related structures and use **latest source definitions** from project knowledge. The new packed format simplifies type checking by eliminating shifts while providing more room for type expansion.

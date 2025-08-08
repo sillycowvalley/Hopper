@@ -2,16 +2,21 @@ unit BASICTypes // BASICTypes.asm
 {
     enum BASICType
     {
-        VOID    = 0x00, // function return type indicating no return value (internal)
-        INT     = 0x01, // Types.Int
-        BYTE    = 0x02, // Types.Byte
-        WORD    = 0x03, // Types.UInt
-        BIT     = 0x04, // Types.Bool
-        ARRAY   = 0x05, // 
-        STRING  = 0x06, // Types.String
-        VAR     = 0x10, // bit that makes a variable type specifiable at runtime (like arguments)
+        VOID     = 0x00, // Hopper VM Types.Undefined (function return type indicating no return value (internal))
         
-        MASK    = 0x1F,
+        INT      = 0x02, // Hopper VM Types.Int
+        BYTE     = 0x03, // Hopper VM Types.Byte
+        WORD     = 0x04, // Hopper VM Types.UInt
+        
+        BIT      = 0x06, // Hopper VM Types.Bool - must 0x06!
+        ARRAY    = 0x07,
+        
+        STRING   = 0x0F, // Hopper VM Types.String
+        
+        VAR      = 0x10, // bit that makes a variable type specifiable at runtime (like arguments)
+        
+        TYPEMASK = 0x0F,
+        MASK     = 0x1F,
     }
     
     // Print BasicType enum value as readable string

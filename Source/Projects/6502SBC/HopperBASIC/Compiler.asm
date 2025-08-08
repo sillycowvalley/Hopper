@@ -1573,6 +1573,13 @@ unit Compiler // Compiler.asm
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
            
+#ifdef DEBUG
+// XIDHERE xS    
+//NL(); LDA #'C' COut(); LDA #'F' COut(); LDA #'!' COut();
+//Space(); LDA ZP.TokenBufferH HOut(); LDA ZP.TokenBufferL HOut();
+#endif
+           
+           
            Emit.Enter();
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
