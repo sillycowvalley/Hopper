@@ -47,9 +47,9 @@ VL:XXXX FL:XXXX
 1. **Get current Tokens enum** from latest Tokenizer.asm
 2. **For each token byte**: Look up value in enum
 3. **Handle inline data**: These tokens have null-terminated strings following:
-   - `NUMBER` (0xC7) - followed by number string like "42\0"
-   - `IDENTIFIER` (0xC9) - followed by identifier name  
-   - `STRINGLIT` (0xC8) - followed by string content
+   - `NUMBER` (0xD2) - followed by number string like "42\0"
+   - `IDENTIFIER` (0xD4) - followed by identifier name  
+   - `STRINGLIT` (0xD3) - followed by string content
    - `REM` (0x92) - followed by comment text
    - `COMMENT` (0x93) - followed by comment text
 
@@ -57,9 +57,9 @@ VL:XXXX FL:XXXX
 ```markdown
 | Offset | Hex | Token | Description | Inline Data |
 |--------|-----|-------|-------------|-------------|
-| 0A00 | C7 | NUMBER | Numeric literal | "20" |
-| 0A01-0A02 | 32 30 00 | - | Inline string data | - |
-| 0A03 | 94 | EOL | End of line marker | - |
+| 0A00 | D2 | NUMBER | Numeric literal | "20" |
+| 0A01-0A03 | 32 30 00 | - | Inline string data | - |
+| 0A04 | 94 | EOL | End of line marker | - |
 ```
 
 ## OpCodeBuffer Decoding
@@ -89,7 +89,7 @@ Offset 0-1: next pointer
 Offset 2:   symbolType|dataType (packed byte)
 Offset 3-4: tokens pointer (16-bit)
 Offset 5-6: value (16-bit) 
-Offset 7-8: opcode stream pointer (16-bit) - NEW! Unused for variables
+Offset 7-8: opcode stream pointer (16-bit) - unused for variables
 Offset 9+:  null-terminated name string
 ```
 
@@ -99,14 +99,16 @@ Offset 0-1: next pointer
 Offset 2:   function flags byte (FunctionFlags enum)
 Offset 3-4: function body tokens pointer (16-bit)
 Offset 5-6: arguments list head pointer (16-bit)
-Offset 7-8: opcode stream pointer (16-bit) - NEW!
+Offset 7-8: opcode stream pointer (16-bit)
 Offset 9+:  null-terminated name string
 ```
 
-From Arguments.asm - **Argument Node**:
+From Locals.asm - **Argument/Local Node**:
 ```
 Offset 0-1: next pointer
-Offset 2+:  null-terminated argument name
+Offset 2:   symbolType|dataType (packed byte)
+Offset 3:   BP offset (signed byte: negative for args, positive for locals)
+Offset 4+:  null-terminated name
 ```
 
 ### Heap Analysis Process
@@ -130,7 +132,7 @@ Offset 2+:  null-terminated argument name
 ```markdown
 | Variable | Node Addr | Next→ | Type | Value | Tokens→ | OpCodes→ | Name |
 |----------|-----------|-------|------|-------|---------|----------|------|
-| **C** | 0E0A | 0E22 | INT (0x12) | 0 | 0E02 | 0000 | "C" |
+| **C** | 0E0A | 0E22 | VAR+INT (0x21) | 0 | 0E02 | 0000 | "C" |
 ```
 
 ```markdown
@@ -196,27 +198,42 @@ From ZeroPage.asm - **BASIC-specific allocations**:
 | 0x34 | OpCodeTemp | Temporary opcode construction |
 ```
 
-#### Symbol Table Management (0x35-0x47)
+#### Buffer Pointers (0x35-0x38)
 ```markdown
 | Address | Variable | Description |
 |---------|----------|-------------|
-| 0x35-0x36 | VariablesList | Variables table head pointer |
-| 0x37-0x38 | FunctionsList | Functions table head pointer |
-| 0x39 | SymbolType | Current symbol type|datatype |
-| 0x3A-0x3B | SymbolValue | Symbol value (16-bit) |
-| 0x3C-0x3D | SymbolName | Symbol name pointer (16-bit) |
-| 0x3E-0x3F | SymbolTokens | Symbol tokens pointer (16-bit) |
-| 0x40 | SymbolIteratorFilter | Symbol iteration filter |
-| 0x41-0x44 | SymbolLength, SymbolTemp0-2 | Symbol workspace |
-| 0x45-0x46 | TraceMessage | Trace message pointer (16-bit) |
-| 0x47 | SystemState | Success/Failure/Exiting state |
+| 0x35-0x36 | TokenBuffer | Current tokenizer buffer pointer |
+| 0x37-0x38 | OpCodeBuffer | Current opcode buffer pointer |
 ```
 
-#### Shared Leaf Function Workspace (0x48-0x57) - M0-M15
+#### Symbol Table Management (0x39-0x48)
 ```markdown
 | Address | Variable | Description |
 |---------|----------|-------------|
-| 0x48-0x57 | M0-M15 | Multi-use workspace (16 bytes) |
+| 0x39-0x3A | VariablesList | Variables table head pointer |
+| 0x3B-0x3C | FunctionsList | Functions table head pointer |
+| 0x3D | SymbolType | Current symbol type|datatype |
+| 0x3E-0x3F | SymbolValue | Symbol value (16-bit) |
+| 0x40-0x41 | SymbolName | Symbol name pointer (16-bit) |
+| 0x42-0x43 | SymbolTokens | Symbol tokens pointer (16-bit) |
+| 0x44 | SymbolIteratorFilter | Symbol iteration filter |
+| 0x45 | SymbolLength | Symbol name length |
+| 0x46-0x48 | SymbolTemp0-2 | Symbol workspace |
+```
+
+#### Debug & State (0x49-0x4B)
+```markdown
+| Address | Variable | Description |
+|---------|----------|-------------|
+| 0x49-0x4A | TraceMessage | Trace message pointer (16-bit) |
+| 0x4B | SystemState | Success/Failure/Exiting state |
+```
+
+#### Shared Leaf Function Workspace (0x4C-0x5B) - M0-M15
+```markdown
+| Address | Variable | Description |
+|---------|----------|-------------|
+| 0x4C-0x5B | M0-M15 | Multi-use workspace (16 bytes) |
 ```
 
 **Critical**: These variables are shared between leaf functions that never call each other:
@@ -226,27 +243,33 @@ From ZeroPage.asm - **BASIC-specific allocations**:
 - **Time.Seconds()**: Uses M0-M7 (aliased as LRESULT0-7)
 - **IntMath**: Uses M0-M3 (aliased as UWIDE4-7)
 
-#### Function Parameter Workspace (0x58-0x77)
+#### Function Parameter Workspace (0x5C-0x77)
 ```markdown
 | Address | Variable | Description |
 |---------|----------|-------------|
-| 0x58-0x59 | FSOURCEADDRESS | Source address parameter |
-| 0x5A-0x5B | FDESTINATIONADDRESS | Destination address parameter |
-| 0x5C-0x5D | FLENGTH | Length parameter |
-| 0x5E-0x5F | LCURRENT | List current pointer |
-| 0x60-0x61 | LHEAD | List head pointer |
-| 0x62 | FSIGN | Sign flag for math operations |
-| 0x63 | LHEADX | List head extension |
-| 0x64-0x65 | LPREVIOUS | List previous pointer |
-| 0x66-0x67 | LNEXT | List next pointer |
-| 0x68-0x6B | UWIDE0-3 | IntMath 32-bit multiply workspace |
-| 0x6C-0x6F | LNEXT0-3 | Long math next operand |
-| 0x70-0x73 | LTOP0-3 | Long math top operand |
-| 0x74-0x75 | STR/STRL/STRH | String pointer |
-| 0x76-0x77 | STR2/STR2L/STR2H | String pointer 2 |
+| 0x5C-0x5D | FSOURCEADDRESS | Source address parameter |
+| 0x5E-0x5F | FDESTINATIONADDRESS | Destination address parameter |
+| 0x60-0x61 | FLENGTH | Length parameter |
+| 0x62-0x63 | LCURRENT | List current pointer |
+| 0x64-0x65 | LHEAD | List head pointer |
+| 0x66 | FSIGN | Sign flag for math operations |
+| 0x67 | LHEADX | List head extension |
+| 0x68-0x69 | LPREVIOUS | List previous pointer |
+| 0x6A-0x6B | LNEXT | List next pointer |
+| 0x6C-0x6F | UWIDE0-3 | IntMath 32-bit multiply workspace |
+| 0x70-0x73 | LNEXT0-3 | Long math next operand |
+| 0x74-0x75 | LTOP0-3 | Long math top operand (partial) |
+| 0x76-0x77 | STR/STRL/STRH | String pointer |
 ```
 
-#### Available Space (0x78-0xEB) - 116 bytes available!
+#### Extended Workspace (0x78-0x79)
+```markdown
+| Address | Variable | Description |
+|---------|----------|-------------|
+| 0x78-0x79 | STR2/STR2L/STR2H | String pointer 2 |
+```
+
+#### Available Space (0x7A-0xEB) - 114 bytes available!
 This is a significant expansion from the previous layout.
 
 #### Hardware I/O (0xEC-0xFF) - IMMOVABLE
@@ -268,43 +291,82 @@ This is a significant expansion from the previous layout.
 ```markdown
 | Address | Variable | Value | Description |
 |---------|----------|-------|-------------|
-| 0x35-0x36 | VariablesList | 0x0E0A | Variables table head |
-| 0x37-0x38 | FunctionsList | 0x0E4A | Functions table head |
+| 0x39-0x3A | VariablesList | 0x0E0A | Variables table head |
+| 0x3B-0x3C | FunctionsList | 0x0E4A | Functions table head |
 ```
 
 ## Data Type Decoding
 
-### SymbolType|DataType Packed Byte
-- **High nibble**: SymbolType (VARIABLE=1, CONSTANT=2, FUNCTION=3, ARGUMENT=4)
-- **Low nibble**: BasicType (INT=2, WORD=4, BIT=6, BYTE=3, STRING=0xF)
-- **Example**: 0x12 = VARIABLE(1) + INT(2)
+### SymbolType|DataType Packed Byte (NEW FORMAT - 2025)
+The packed byte format uses:
+- **Top 3 bits (mask 0xE0)**: SymbolType 
+- **Bottom 5 bits (mask 0x1F)**: BASICType
 
-### BasicType Values (from BasicTypes.asm)
-```
-VOID = 0x00, INT = 0x02, BYTE = 0x03, WORD = 0x04, 
-BIT = 0x06, STRING = 0x0F, ARRAY = 0x12
-```
+**No shifting required** - values are directly comparable after masking.
 
 ### SymbolType Values (from Objects.asm)
 ```
-VARIABLE = 0x01, CONSTANT = 0x02, FUNCTION = 0x03, ARGUMENT = 0x04
+VARIABLE = 0x20   // Mutable values
+CONSTANT = 0x40   // Immutable values
+FUNCTION = 0x60   // Executable code blocks
+ARGUMENT = 0x80   // Function parameters (negative BP offset)
+LOCAL    = 0xA0   // Local variables (positive BP offset)
+MASK     = 0xE0   // Top 3 bits
+```
+
+### BASICType Values (from BasicTypes.asm)
+```
+VOID   = 0x00   // Function return type (internal use)
+INT    = 0x01   // Signed 16-bit integer
+BYTE   = 0x02   // Unsigned 8-bit value
+WORD   = 0x03   // Unsigned 16-bit value
+BIT    = 0x04   // Boolean value (0 or 1)
+ARRAY  = 0x05   // Array type
+STRING = 0x06   // String type
+VAR    = 0x10   // Runtime-determined type bit
+MASK   = 0x1F   // Bottom 5 bits
+```
+
+### Decoding Examples
+```markdown
+| Packed Byte | SymbolType (top 3 bits) | BASICType (bottom 5 bits) | Meaning |
+|-------------|--------------------------|---------------------------|---------|
+| 0x21 | VARIABLE (0x20) | INT (0x01) | INT variable |
+| 0x42 | CONSTANT (0x40) | BYTE (0x02) | BYTE constant |
+| 0x26 | VARIABLE (0x20) | STRING (0x06) | STRING variable |
+| 0x61 | FUNCTION (0x60) | INT (0x01) | Function returning INT |
+| 0x81 | ARGUMENT (0x80) | INT (0x01) | INT argument |
+| 0xA3 | LOCAL (0xA0) | WORD (0x03) | WORD local variable |
+```
+
+### Extraction Process
+```assembly
+; To extract SymbolType:
+LDA packed_byte
+AND #0xE0        ; Mask top 3 bits
+CMP #SymbolType.VARIABLE  ; Direct comparison (0x20)
+
+; To extract BASICType:
+LDA packed_byte
+AND #0x1F        ; Mask bottom 5 bits
+CMP #BASICType.INT        ; Direct comparison (0x01)
 ```
 
 ## Linked List Following
 
 ### Variables List Chain
-1. **Start**: VariablesList pointer (0x35-0x36)
+1. **Start**: VariablesList pointer (0x39-0x3A)
 2. **Follow**: next pointer at offset 0-1 of each node
 3. **Terminate**: When next pointer = 0x0000
 
 ### Functions List Chain  
-1. **Start**: FunctionsList pointer (0x37-0x38)
+1. **Start**: FunctionsList pointer (0x3B-0x3C)
 2. **Follow**: next pointer at offset 0-1 of each node
 3. **Terminate**: When next pointer = 0x0000
 
-### Arguments List Chain (per function)
+### Arguments/Locals List Chain (per function)
 1. **Start**: Arguments pointer from function node offset 5-6
-2. **Follow**: next pointer at offset 0-1 of each argument node
+2. **Follow**: next pointer at offset 0-1 of each argument/local node
 3. **Terminate**: When next pointer = 0x0000
 
 ## Token Stream Decoding
@@ -315,29 +377,24 @@ VARIABLE = 0x01, CONSTANT = 0x02, FUNCTION = 0x03, ARGUMENT = 0x04
 3. **Skip past strings**: Find null terminator (0x00)
 4. **Continue until**: EOL (0x94) or null terminator
 
-### Key Token Values (from Tokenizer.asm)
-```
-NEW=0x80, LIST=0x81, RUN=0x82, CLEAR=0x83, VARS=0x84, FUNCS=0x85
-INT=0x95, WORD=0x96, BIT=0x97, BYTE=0x98, STRING=0x99, CONST=0x9A
-PRINT=0x9B, INPUT=0x9C, IF=0x9D, THEN=0x9E, FUNC=0x9F, ENDFUNC=0xA0
-RETURN=0xA1, BEGIN=0xA2, END=0xA3, FOR=0xA4, TO=0xA5, STEP=0xA6, NEXT=0xA7
-WHILE=0xA8, WEND=0xA9, DO=0xAA, UNTIL=0xAB, BREAK=0xAC, CONTINUE=0xAD
-AND=0xAF, OR=0xB0, NOT=0xB1, MOD=0xB2, TRUE=0xB3, FALSE=0xB4
-ABS=0xB5, MILLIS=0xB6, PEEK=0xB7, POKE=0xB8, RND=0xB9, SECONDS=0xBA, DELAY=0xBB
-EQUALS=0xBC, PLUS=0xBD, MINUS=0xBE, MULTIPLY=0xBF, DIVIDE=0xC0
-LPAREN=0xC1, RPAREN=0xC2, COMMA=0xC3, SEMIC=0xC4, LBRACKET=0xC5, RBRACKET=0xC6
-NUMBER=0xC7, STRINGLIT=0xC8, IDENTIFIER=0xC9, EOF=0xCA, lastToken=0xCA
-```
+### Key Token Values (from Tokenizer.asm - check current source!)
+Common tokens include:
+- Control: NEW, LIST, RUN, CLEAR, VARS, FUNCS
+- Types: INT, WORD, BIT, BYTE, STRING, CONST, VAR
+- Statements: PRINT, INPUT, IF, THEN, FUNC, ENDFUNC
+- Flow: FOR, TO, STEP, NEXT, WHILE, WEND, DO, UNTIL
+- Operators: EQUALS, PLUS, MINUS, MULTIPLY, DIVIDE
+- Literals: NUMBER, STRINGLIT, IDENTIFIER, TRUE, FALSE
 
 ### Example Pattern
 ```
-C7 32 30 00 94 = NUMBER "20" + EOL
+D2 32 30 00 94 = NUMBER "20" + EOL
 ```
 
 ## Function Flags Analysis
 
 ### FunctionFlags enum (from Functions.asm)
-- **None = 0x00**: Token stream only
+- **None = 0x00**: Token stream only, not compiled
 - **Compiled = 0x01**: Has compiled opcodes  
 - **NotCompiledMask = 0xFE**: Mask to clear compiled flag
 - **Bits 1-7**: Reserved for future use (optimization flags, etc.)
@@ -364,7 +421,7 @@ C7 32 30 00 94 = NUMBER "20" + EOL
 ### Variable Declaration Sequence
 1. **Token stream created**: Contains initialization expression
 2. **Variable node created**: Points to token stream (offset 3-4)
-3. **Added to list**: Linked into VariablesList chain (0x35-0x36)
+3. **Added to list**: Linked into VariablesList chain (0x39-0x3A)
 
 ### Function Definition Sequence  
 1. **Function node created**: Basic structure with flags=0x00
@@ -388,7 +445,7 @@ C7 32 30 00 94 = NUMBER "20" + EOL
 
 ### Type Inconsistencies  
 - **Wrong object sizes**: 8-byte objects claiming to be 18-byte nodes
-- **Invalid type values**: SymbolType/BasicType outside valid ranges
+- **Invalid type values**: SymbolType/BASICType outside valid ranges
 - **Mismatched pointers**: Token pointers not pointing to token streams
 - **Invalid flags**: Function flags with reserved bits set
 
@@ -407,11 +464,17 @@ C7 32 30 00 94 = NUMBER "20" + EOL
 ### Enhanced Node Structure  
 - **Opcode pointers**: All nodes now have offset 7-8 for future expansion
 - **Function separation**: Clear distinction between variables and functions
-- **Argument lists**: Proper linked list structure for function parameters
+- **Argument/Local lists**: Proper linked list structure with BP offsets
 
 ### Zero Page Optimization
-- **116 bytes available**: Large expansion at 0x78-0xEB
+- **114 bytes available**: Large expansion at 0x7A-0xEB
 - **Shared workspace**: M0-M15 efficiently shared between leaf functions
-- **Clean separation**: BASIC core uses 0x25-0x47, shared workspace at 0x48-0x77
+- **Clean separation**: BASIC core uses 0x25-0x48, shared workspace at 0x4C-0x77
 
-Remember: **Always verify consistency** between related structures and use **latest source definitions** from project knowledge. The significant zero page reorganization provides much more workspace for future features while maintaining clean separation between VM core, BASIC core, and shared workspace areas.
+### Important Changes for 2025
+- **Packed type format**: Top 3 bits for SymbolType, bottom 5 for BASICType
+- **No shifting needed**: Direct comparison after masking
+- **VAR type bit**: New BASICType.VAR (0x10) for runtime-determined types
+- **Extended types**: Room for 32 BASICTypes with 5-bit field
+
+Remember: **Always verify consistency** between related structures and use **latest source definitions** from project knowledge. The new packed format simplifies type checking by eliminating shifts while providing more room for type expansion.

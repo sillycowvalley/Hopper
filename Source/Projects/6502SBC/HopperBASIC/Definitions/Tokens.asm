@@ -96,7 +96,7 @@ unit Tokens
         RND      = 0xBC,
         SECONDS  = 0xBD,
         DELAY    = 0xBE,
-        //ENTER    = 0xBF,
+        VAR      = 0xBF,
         
         // Sentinel marking end of keywords
         lastKeyword = 0xBF,
@@ -199,6 +199,7 @@ unit Tokens
         
         // FREQUENT (Rank 11-20)
         3, Token.MOD, 'M', 'O', 'D',             // Rank 7 - Remainder arithmetic
+        3, Token.VAR, 'V', 'A', 'R',             // Uninitialized type
         
         // MODERATE (Rank 21-30)
         5, Token.WHILE, 'W', 'H', 'I', 'L', 'E', // Rank 16 - WHILE/WEND loops

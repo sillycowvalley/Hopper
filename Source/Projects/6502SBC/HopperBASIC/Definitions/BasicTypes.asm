@@ -3,14 +3,15 @@ unit BASICTypes // BASICTypes.asm
     enum BASICType
     {
         VOID    = 0x00, // function return type indicating no return value (internal)
-        INT     = 0x02, // Types.Int
-        BYTE    = 0x03, // Types.Byte
-        WORD    = 0x04, // Types.UInt
-        BIT     = 0x06, // Types.Bool
-        ARRAY   = 0x07, // 
-        VARIANT = 0x08, // for runtime defined types like arguments, VAR type?
-        STRING  = 0x0F, // Types.String
+        INT     = 0x01, // Types.Int
+        BYTE    = 0x02, // Types.Byte
+        WORD    = 0x03, // Types.UInt
+        BIT     = 0x04, // Types.Bool
+        ARRAY   = 0x05, // 
+        STRING  = 0x06, // Types.String
+        VAR     = 0x10, // bit that makes a variable type specifiable at runtime (like arguments)
         
+        MASK    = 0x1F,
     }
     
     // Print BasicType enum value as readable string
@@ -49,6 +50,18 @@ unit BASICTypes // BASICTypes.asm
                 LDA #Token.STRING
                 Tokens.PrintKeyword();
             }
+            case BASICType.VAR:
+            {
+                LDA #Token.VAR
+                Tokens.PrintKeyword();
+            }
+            /*
+            case BASICType.ARRAY:
+            {
+                LDA #Token.ARRAY
+                Tokens.PrintKeyword();
+            }
+            */
             default:
             {
                 // Unknown type
@@ -88,6 +101,18 @@ unit BASICTypes // BASICTypes.asm
                 LDA # BASICType.STRING
                 SEC
             }
+            case #Token.VAR:
+            {
+                LDA # BASICType.VAR
+                SEC
+            }
+            /*
+            case #Token.ARRAY:
+            {
+                LDA # BASICType.ARRAY
+                SEC
+            }
+            */
             default:
             {
                 CLC

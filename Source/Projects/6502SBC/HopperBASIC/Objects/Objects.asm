@@ -6,14 +6,16 @@ unit Objects
     // ZP.VariableListL/H stores the variables/constants table head pointer
     // ZP.FunctionsListL/H stores the functions table head pointer
     
-    // Symbol types
-    enum SymbolType
+    // Symbol types: only top 3 bits (even digits)
+    flags SymbolType
     {
-        VARIABLE = 0x01,   // Mutable values
-        CONSTANT = 0x02,   // Immutable values  
-        FUNCTION = 0x03,   // Executable code blocks
-        ARGUMENT = 0x04,   // Function parameters (negative BP offset)
-        LOCAL    = 0x05    // Local variables (positive BP offset)
+        VARIABLE = 0x20,   // Mutable values
+        CONSTANT = 0x40,   // Immutable values  
+        FUNCTION = 0x60,   // Executable code blocks
+        ARGUMENT = 0x80,   // Function parameters (negative BP offset)
+        LOCAL    = 0xA0,   // Local variables (positive BP offset)
+        
+        MASK     = 0xE0,
     }
     
     // Symbol node memory map:
@@ -244,8 +246,7 @@ unit Objects
             // Get symbolType (high nibble of packed byte at snType)
             LDY #snType
             LDA [ZP.IDX], Y
-            AND #0xF0  // Extract high nibble
-            LSR LSR LSR LSR  // Shift to low nibble
+            AND #SymbolType.MASK
             CMP #SymbolType.VARIABLE
             if (NZ)
             {
@@ -597,10 +598,7 @@ unit Objects
             // Get symbol type from current node
             LDY #snType
             LDA [ZP.IDX], Y
-            AND #0xF0  // Extract high nibble
-            LSR LSR LSR LSR  // Shift to low nibble
-            
-            // Compare with filter
+            AND #SymbolType.MASK
             CMP ZP.SymbolIteratorFilter
             if (Z)
             {

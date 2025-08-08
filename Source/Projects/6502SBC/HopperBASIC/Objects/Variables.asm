@@ -30,7 +30,7 @@ unit Variables
             }
             
             LDA ZP.ACCT
-            AND #0x0F
+            AND #BASICType.MASK
             CMP #BASICType.STRING
             if (Z)
             {
@@ -48,7 +48,7 @@ unit Variables
             Objects.Add();
             
             LDA ZP.ACCT
-            AND #0x0F
+            AND #BASICType.MASK
             CMP #BASICType.STRING
             if (Z)
             {
@@ -65,7 +65,7 @@ unit Variables
             }
                  
             LDA ZP.ACCT
-            AND #0x0F
+            AND #BASICType.MASK
             CMP #BASICType.STRING
             if (Z)
             {
@@ -120,9 +120,7 @@ unit Variables
             Variables.GetType();
             
             LDA ZP.ACCT
-            AND #0xF0  // Extract symbol type (high nibble)
-            LSR LSR LSR LSR  // Shift to low nibble
-            
+            AND #SymbolType.MASK
             CMP ZP.SymbolTemp0  // Compare with expected type
             if (Z)              // Types match
             {
@@ -157,11 +155,11 @@ unit Variables
             
             // Check if it's a variable or constant
             LDA ZP.ACCT
-            AND #0xF0  // Extract symbol type (high nibble)
-            CMP # (SymbolType.VARIABLE << 4)
+            AND #SymbolType.MASK
+            CMP #SymbolType.VARIABLE
             if (NZ)
             { 
-                CMP # (SymbolType.CONSTANT << 4)
+                CMP #SymbolType.CONSTANT
                 if (NZ)
                 {
                     // Not a variable or constant
@@ -176,7 +174,7 @@ unit Variables
             STA ZP.TOPH
             
             LDA ZP.ACCT
-            AND #0x0F  // Extract data type (low nibble)
+            AND #BASICType.MASK
             STA ZP.TOPT
             
             SEC  // Success
@@ -214,9 +212,7 @@ unit Variables
             
             // Check if it's a variable
             LDA ZP.ACCT
-            AND #0xF0  // Extract symbol type (high nibble)
-            LSR LSR LSR LSR  // Shift to low nibble
-            
+            AND #SymbolType.MASK
             CMP #SymbolType.VARIABLE
             if (NZ)  // Not a variable
             {
@@ -230,7 +226,7 @@ unit Variables
             
             // Check if this is a STRING variable needing memory management
             LDA ZP.ACCT  // symbolType|dataType from Objects.GetData()
-            AND #0x0F    // Extract data type (low nibble)
+            AND #BASICType.MASK
             CMP #BASICType.STRING
             if (Z)
             {
@@ -295,14 +291,14 @@ unit Variables
         
         // Check if it's a variable or constant
         LDA ZP.ACCT
-        AND #0xF0  // Extract symbol type (high nibble)
+        AND #SymbolType.MASK
         switch (A)
         {
-            case (SymbolType.VARIABLE << 4):
+            case SymbolType.VARIABLE:
             {
                 SEC  // Success
             }
-            case (SymbolType.CONSTANT << 4):
+            case SymbolType.CONSTANT:
             {
                 SEC  // Success
             }
@@ -340,9 +336,7 @@ unit Variables
             
             // Check if it's a variable or constant
             LDA ZP.ACCT
-            AND #0xF0  // Extract symbol type (high nibble)
-            LSR LSR LSR LSR  // Shift to low nibble
-            
+            AND #SymbolType.MASK
             CMP #SymbolType.VARIABLE
             if (Z)
             {

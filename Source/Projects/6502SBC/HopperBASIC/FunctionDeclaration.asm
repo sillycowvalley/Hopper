@@ -162,8 +162,8 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 if (NC) { break; }
                 
                 LDA ZP.ACCT
-                AND #0xF0  // Extract symbol type (high nibble)
-                CMP #(SymbolType.CONSTANT << 4)
+                AND #SymbolType.MASK
+                CMP #SymbolType.CONSTANT
                 if (Z)
                 {
                     Error.ConstantExists(); BIT ZP.EmulatorPCL

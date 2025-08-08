@@ -1008,7 +1008,7 @@ unit Console // Console.asm
             {
                 
                 LDA ZP.ACCT
-                AND #0x0F
+                AND #BASICType.MASK
                 switch (A)
                 {
                     case BASICType.STRING:

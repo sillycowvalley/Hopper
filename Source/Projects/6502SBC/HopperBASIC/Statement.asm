@@ -152,8 +152,8 @@ unit Statement // Statement.asm
                 // Get symbol type and check
                 Variables.GetType();
                 LDA ZP.ACCT
-                AND #0xF0  // Extract symbol type (high nibble)
-                CMP # (SymbolType.VARIABLE << 4)
+                AND #SymbolType.MASK
+                CMP #SymbolType.VARIABLE
                 if (Z)
                 { 
 #ifdef DEBUG
@@ -162,7 +162,7 @@ unit Statement // Statement.asm
                     LDA # IdentifierType.Global
                     break; // success
                 }
-                CMP # (SymbolType.CONSTANT << 4)
+                CMP #SymbolType.CONSTANT
                 if (Z)
                 { 
 #ifdef DEBUG
@@ -463,7 +463,7 @@ unit Statement // Statement.asm
             LDA #1
             SetIsConstant();
             
-            LDA #(SymbolType.CONSTANT << 4)
+            LDA #SymbolType.CONSTANT
             STA stmtSymbol
             processSingleSymbolDeclaration();
             break;
@@ -488,7 +488,7 @@ unit Statement // Statement.asm
         LDA #(executeVarDeclTrace % 256) STA ZP.TraceMessageL LDA #(executeVarDeclTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
 
-        LDA #(SymbolType.VARIABLE << 4)
+        LDA #SymbolType.VARIABLE
         STA stmtSymbol
         processSingleSymbolDeclaration();
         
@@ -580,13 +580,13 @@ unit Statement // Statement.asm
                     STA ZP.NEXTT // Temporarily store existing type
                     
                     // Compare with new symbol type being declared
-                    LDA stmtSymbol // New symbol type (VARIABLE or CONSTANT << 4)
+                    LDA stmtSymbol // New symbol type (VARIABLE or CONSTANT)
                     CMP ZP.NEXTT
                     if (NZ)
                     {
                         // Type mismatch - show appropriate error
                         LDA ZP.NEXTT
-                        CMP #(SymbolType.CONSTANT << 4)
+                        CMP #SymbolType.CONSTANT
                         if (Z)
                         {
                             Error.ConstantExists(); BIT ZP.EmulatorPCL
@@ -660,7 +660,7 @@ unit Statement // Statement.asm
                         Stacks.PopNext();  // Result in ZP.NEXT, type in ZP.NEXTT,  modifies X
                         
                         LDA stmtSymbol
-                        CMP # (SymbolType.CONSTANT << 4)
+                        CMP #SymbolType.CONSTANT
                         if (Z)
                         {
                             IsConstant();
@@ -677,7 +677,7 @@ unit Statement // Statement.asm
                     case Token.COLON:
                     {
                         LDA stmtSymbol
-                        CMP # (SymbolType.CONSTANT << 4)
+                        CMP #SymbolType.CONSTANT
                         if (Z)
                         {
                             // constants must be initialized
@@ -793,9 +793,9 @@ unit Statement // Statement.asm
                 break;
             }
             
-            // Pack symbolType|dataType: VARIABLE(1) in high nibble, dataType in low nibble
-            LDA stmtType  // dataType
-            ORA stmtSymbol // high nibble is VARIABLE<<4 of CONSTANT<<4
+            // Pack symbolType|dataType: SymbolType in top 3 bits, dataType in bottom 5 bits
+            LDA stmtType  // dataType (bottom 5 bits)
+            ORA stmtSymbol // SymbolType (top 3 bits)
             STA ZP.ACCT
             
             LDA (stmtTokensPtr+0)
