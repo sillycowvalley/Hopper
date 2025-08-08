@@ -9,11 +9,10 @@ unit Locals
     // Offset 3:   BP offset (signed byte: negative for args, positive for locals)
     // Offset 4+:  null-terminated name
 
-    const byte localOverhead = 4;      // Fixed fields before name
+    const byte localOverhead = 3;      // Fixed fields before name
     const byte lnNext = 0;             // Next pointer (2 bytes)
     const byte lnType = 2;             // symbolType|dataType packed byte
-    const byte lnOffset = 3;           // BP offset (signed byte)
-    const byte lnName = 4;             // Name field start
+    const byte lnName = 3;             // Name field start
     
     // Add argument to function's arguments list at the end for correct order
     // Input: ZP.IDX = function node address, ZP.TOP = argument name
@@ -574,6 +573,69 @@ unit Locals
         PLA
         STA ZP.NEXTL
         
+        PLA
+    }
+    
+    // Resolve local/argument by name in current function context
+    // Input: ZP.TOP = name pointer
+    // Output: C = found, ZP.IDX = node address if found
+    // Modifies: ZP.IDX, ZP.LCURRENT
+    Resolve()
+    {
+        PHA
+        PHX
+        PHY
+        
+        loop
+        {
+            // Check if we're compiling a function
+            LDA (Compiler.compilerFuncArgs + 0)     // Are we in a function?
+            if (Z)                          // Zero means not in a function
+            {
+                CLC  // Not found - not in function context
+                break;
+            }
+            
+            // Get the function node being compiled
+            LDA (Compiler.compilerSavedNodeAddrL + 0)
+            STA ZP.IDXL
+            LDA (Compiler.compilerSavedNodeAddrH + 0)
+            STA ZP.IDXH
+            
+            // Look for local/argument by name
+            Find(); // Input: ZP.IDX = function, ZP.TOP = name
+            // Output: C = found, ZP.IDY = node, ZP.ACCL = index
+            if (C)
+            {
+                // Found - calculate BP offset
+                // For arguments: offset = -(arg_count - index)
+                // For locals (future): offset = index
+                
+                
+                // Calculate it from index
+                LDA (compilerFuncArgs + 0)  // Get arg_count
+                SEC
+                SBC ZP.ACCL                  // arg_count - index
+                EOR #0xFF
+                CLC
+                ADC #1                       // Two's complement for negative
+                STA ZP.ACCL                  // Store signed BP offset
+                
+                // Copy node address to IDX
+                LDA ZP.IDYL
+                STA ZP.IDXL
+                LDA ZP.IDYH
+                STA ZP.IDXH
+                SEC  // Found
+                break;
+            }
+            
+            CLC  // Not found
+            break;
+        }
+        
+        PLY
+        PLX
         PLA
     }
 }

@@ -113,8 +113,10 @@ unit Statement // Statement.asm
     }
     
     
-    // Typically called when ZP.CurrentToken is Token.IDENTIFIER, or a keyword
-    // Output: symbol or function in IDX, A = IdentifierType
+    // Resolve identifier to its type
+    // Input: ZP.CurrentToken = IDENTIFIER token or keyword
+    // Output: A = IdentifierType, ZP.IDX = node address (if found)
+    // Modifies: ZP.TOP, ZP.IDX, ZP.ACCT
     const string resolveIdentifierTrace = "ResolveId";
     ResolveIdentifier()
     {
@@ -124,19 +126,20 @@ unit Statement // Statement.asm
         LDY ZP.ACCT
         PHY
         
-#ifdef TRACE
+    #ifdef TRACE
         PHA LDA #(resolveIdentifierTrace % 256) STA ZP.TraceMessageL LDA #(resolveIdentifierTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
-#endif
+    #endif
         
         loop // Single exit block for clean error handling
         {
+            // 1. Check if it's a keyword
             Tokens.IsKeyword(); // Input: A = token value to check
             if (C)
             {
-#ifdef DEBUG
+    #ifdef DEBUG
                 //LDA #'K' Debug.COut();
-#endif
-                LDA # IdentifierType.Keyword
+    #endif
+                LDA #IdentifierType.Keyword
                 break; // success
             }
             
@@ -145,78 +148,52 @@ unit Statement // Statement.asm
             Error.CheckError();
             if (NC) { break; }
             
-            STZ ZP.SymbolIteratorFilter  // Accept any symbol type (variable or constant)
-            Variables.Find(); // ZP.IDX = symbol node address
-            if (C) // Symbol found
-            {
-                // Get symbol type and check
-                Variables.GetType();
-                LDA ZP.ACCT
-                AND #SymbolType.MASK
-                CMP #SymbolType.VARIABLE
-                if (Z)
-                { 
-#ifdef DEBUG
-                    //LDA # 'V' Debug.COut();
-#endif
-                    LDA # IdentifierType.Global
-                    break; // success
-                }
-                CMP #SymbolType.CONSTANT
-                if (Z)
-                { 
-#ifdef DEBUG
-                    //LDA # 'C' Debug.COut();
-#endif        
-                    LDA # IdentifierType.Constant
-                    break; // success
-                }
-                // what's this?
-                Error.InternalError(); BIT ZP.EmulatorPCL
-                CLC
-            }
-            Error.CheckError();
-            if (NC) { break; }
-            
-            // function by same name exists? name pointer in TOP
-            LDX #ZP.FunctionsList
-            Objects.Find();
-            if (C)  
-            {
-#ifdef DEBUG
-                //LDA #'F' Debug.COut();
-#endif    
-                LDA # IdentifierType.Function
-                break; // success
-            }
-            Error.CheckError();
-            if (NC) { break; }
-#ifdef DEBUG
-            //Debug.HOut(); LDA #'U' Debug.COut();
-            //PrintStringTOP();
-#endif
-#ifdef TRACE
-            IsTracing();
+            // 2. Check if it's a local or argument (if we're in a function)
+            Locals.Resolve(); // Input: ZP.TOP = name, Output: C = found, ZP.IDX = node
             if (C)
             {
-                NL(); PrintStringTOP();
+    #ifdef DEBUG
+                //LDA #'L' Debug.COut();
+    #endif
+                // Determine if it's an argument or local based on BP offset
+                LDA #IdentifierType.Local  // Could be Local or Argument
+                break; // success
             }
-#endif
-
-
-            Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
-            LDA # IdentifierType.Undefined
-            CLC  // undefined identifier
+            
+            // 3. Check if it's a global variable or constant
+            Variables.Resolve(); // Input: ZP.TOP = name, Output: C = found, A = type, ZP.IDX = node
+            if (C)
+            {
+                // A contains IdentifierType.Global or IdentifierType.Constant
+                break; // success
+            }
+            
+            // 4. Check if it's a function
+            Functions.Find(); // Input: ZP.TOP = name, Output: C = found, ZP.IDX = node
+            if (C)
+            {
+    #ifdef DEBUG
+                //LDA #'F' Debug.COut();
+    #endif
+                LDA #IdentifierType.Function
+                break; // success
+            }
+            
+            // Not found anywhere
+            LDA #IdentifierType.Undefined
+            CLC
             break;
         } // end of single exit block
-
-#ifdef TRACE
-        PHA LDA #(resolveIdentifierTrace % 256) STA ZP.TraceMessageL LDA #(resolveIdentifierTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
-#endif
-
-        PLY
-        STY ZP.ACCT
         
+        // Store result type (A register already has it)
+        STA ZP.ACCT
+        
+    #ifdef TRACE
+        LDA #(resolveIdentifierTrace % 256) STA ZP.TraceMessageL LDA #(resolveIdentifierTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+        
+        PLY
+        STA ZP.ACCT
         PLY
         PLX
     }

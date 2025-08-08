@@ -949,13 +949,6 @@ unit Executor // Executor.asm
 #endif
    }    
    
-   executePushLocal()
-   {
-       // TODO: Fetch local variable by BP offset and push value
-       TODO(); BIT ZP.EmulatorPCL
-       States.SetFailure();
-   }
-   
    // Execute POPGLOBAL opcode - pop value from stack and store to global variable
    // Input: PC points to operand bytes (node address LSB, MSB)
    // Output: Value popped from stack and stored to variable, PC advanced by 2
@@ -1031,14 +1024,6 @@ unit Executor // Executor.asm
        LDA #(executePopGlobalTrace % 256) STA ZP.TraceMessageL LDA #(executePopGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
    #endif
    }
-   
-   executePopLocal()
-   {
-       // TODO: Pop value and store in local variable by BP offset
-       TODO(); BIT ZP.EmulatorPCL
-       States.SetFailure();
-   }
-   
    
    
    // === FUNCTION AND SYSTEM CALL HANDLERS (ONE BYTE OPERAND) ===
@@ -1533,4 +1518,91 @@ unit Executor // Executor.asm
        LDA #(executeJumpNZWTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpNZWTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
+   
+    // Execute PUSHLOCAL opcode - push local variable or argument value
+    // Input: PC points to operand byte (signed BP offset)
+    // Output: Local/argument value pushed to stack, PC advanced by 1
+    // Modifies: A, X, Y, ZP.PC, ZP.TOP, ZP.TOPT, stack
+    const string executePushLocalTrace = "PUSHLOCAL // Push local/arg by BP offset";
+    executePushLocal()
+    {
+    #ifdef TRACE
+        LDA #(executePushLocalTrace % 256) STA ZP.TraceMessageL LDA #(executePushLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        // Fetch signed offset operand
+        FetchOperandByte(); // Result in A
+        States.CanContinue();
+        if (C)
+        {
+            // Add signed offset to BP (handles negative naturally)
+            CLC
+            ADC ZP.BP
+            TAY                     // Y = stack position
+            
+            // Fetch value and type from stack position
+            LDA Address.ValueStackLSB, Y
+            STA ZP.TOPL
+            LDA Address.ValueStackMSB, Y
+            STA ZP.TOPH
+            LDA Address.TypeStackLSB, Y
+            STA ZP.TOPT
+            
+            LDA ZP.TOPT
+            Stacks.PushTop();
+            Error.CheckError();
+            if (NC) 
+            { 
+                States.SetFailure();
+            }
+            else
+            {
+                States.SetSuccess();
+            }
+        }
+        
+    #ifdef TRACE
+        LDA #(executePushLocalTrace % 256) STA ZP.TraceMessageL LDA #(executePushLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    } 
+    
+    // Execute POPLOCAL opcode - pop value from stack and store to local/argument
+    // Input: PC points to operand byte (signed BP offset)
+    // Output: Value popped from stack and stored to local/argument, PC advanced by 1
+    // Modifies: A, X, Y, ZP.PC, ZP.TOP, ZP.TOPT, stack
+    const string executePopLocalTrace = "POPLOCAL // Pop to local/arg by BP offset";
+    executePopLocal()
+    {
+    #ifdef TRACE
+        LDA #(executePopLocalTrace % 256) STA ZP.TraceMessageL LDA #(executePopLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        // Fetch signed offset operand
+        FetchOperandByte(); // Result in A
+        States.CanContinue();
+        if (C)
+        {
+            // Add signed offset to BP (handles negative naturally)
+            CLC
+            ADC ZP.BP
+            TAY                     // Y = stack position
+            
+            // Pop value from stack
+            Stacks.PopTop(); // Result in ZP.TOP, ZP.TOPT
+            
+            // Store to calculated stack position
+            LDA ZP.TOPL
+            STA Address.ValueStackLSB, Y
+            LDA ZP.TOPH
+            STA Address.ValueStackMSB, Y
+            LDA ZP.TOPT
+            STA Address.TypeStackLSB, Y
+            
+            States.SetSuccess();
+        }
+        
+    #ifdef TRACE
+        LDA #(executePopLocalTrace % 256) STA ZP.TraceMessageL LDA #(executePopLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
 }

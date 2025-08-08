@@ -4,7 +4,7 @@ unit Compiler // Compiler.asm
    uses "Tokenizer"
    uses "Emit"
    
-   friend Emit, Functions;
+   friend Emit, Functions, Locals;
    
    // API Status: Clean
    // All public methods preserve caller state except for documented outputs
@@ -758,124 +758,189 @@ unit Compiler // Compiler.asm
        PLA
    }
    
-   const string compileFunctionCallOrVariableTrace = "CompFuncVar // <identifier>";
-   compileFunctionCallOrVariable()
-   {
-       PHA
-       PHX
-       PHY
-       
-#ifdef TRACE
-       LDA #(compileFunctionCallOrVariableTrace % 256) STA ZP.TraceMessageL LDA #(compileFunctionCallOrVariableTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-       
-       loop // Single exit
-       {
-           // Save current token position for potential function name resolution
-           LDA ZP.TokenizerPosL
-           STA (compilerSavedTokenPosL + 0)
-           LDA ZP.TokenizerPosH
-           STA (compilerSavedTokenPosH + 0)
-           
-           // Look ahead to see if this is a function call (identifier followed by '(')
-           Tokenizer.NextToken(); // Get token after identifier
-           Error.CheckError();
-           if (NC) { break; }
-           
-           LDA ZP.CurrentToken
-           CMP #Token.LPAREN
-           if (Z)
-           {
-#ifdef DEBUG
-       //LDA #'(' Debug.COut();
-#endif
-               // This is a function call - restore tokenizer to identifier and emit call
-               LDA (compilerSavedTokenPosL + 0)
-               STA ZP.TokenizerPosL
-               LDA (compilerSavedTokenPosH + 0)
-               STA ZP.TokenizerPosH
-               
-               // Get the identifier token back
-               Tokenizer.NextToken();
-               Error.CheckError();
-               if (NC) { break; }
-               
-               // Create return slot (VOID 0)
-               Emit.PushVoid();  
-               Error.CheckError();
-               if (NC) { break; }
-               
-               // Emit function call opcode
-               Emit.Call();
-               Error.CheckError();
-               if (NC) { break; }
-               
-               // Expect opening parenthesis
-               LDA ZP.CurrentToken
-               CMP #Token.LPAREN
-               if (NZ)
-               {
-                   Error.ExpectedLeftParen(); BIT ZP.EmulatorPCL
-                   break;
-               }
-               
-               // Parse function arguments
-               compileArgumentList();
-               Error.CheckError();
-               if (NC) { break; }
-               
-               // Expect closing parenthesis (should be current token after argument parsing)
-               LDA ZP.CurrentToken
-               CMP #Token.RPAREN
-               if (NZ)
-               {
-                   Error.ExpectedRightParen(); BIT ZP.EmulatorPCL
-                   break;
-               }
-               
-               // Get next token after closing parenthesis
-               Tokenizer.NextToken();
-               Error.CheckError();
-               if (NC) { break; }
-#ifdef DEBUG
-       //LDA #')' Debug.COut();
-#endif
+   // Compile variable reference or function argument
+    // Input: ZP.CurrentToken = IDENTIFIER token
+    // Output: PUSHGLOBAL or PUSHLOCAL opcode emitted
+    // Modifies: ZP.CurrentToken, buffer state, ZP.IDX, ZP.TOP
+    const string compileVariableOrArgumentTrace = "CompVarArg // <identifier>";
+    compileVariableOrArgument()
+    {
+        PHA
+        PHX
+        PHY
+        
+    #ifdef TRACE
+        LDA #(compileVariableOrArgumentTrace % 256) STA ZP.TraceMessageL LDA #(compileVariableOrArgumentTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit
+        {
+            // Check if we're compiling a function and this identifier is an argument
+            LDA (compilerFuncArgs + 0)     // Are we in a function?
+            if (NZ)                         // Non-zero means we're compiling a function
+            {
+                // Try to find this identifier as an argument
+                // Get the function node being compiled
+                LDA (compilerSavedNodeAddrL + 0)
+                STA ZP.IDXL
+                LDA (compilerSavedNodeAddrH + 0)
+                STA ZP.IDXH
+                
+                // Look for argument by name
+                Locals.Find();              // Input: ZP.IDX = function, ZP.TOP = name
+                if (C)                      // Found as argument
+                {
+                    // ZP.ACCL contains argument index (0-based)
+                    // Calculate BP offset: -(arg_count - index)
+                    LDA (compilerFuncArgs + 0)
+                    SEC
+                    SBC ZP.ACCL             // arg_count - index
+                    
+                    // Negate to get negative offset
+                    EOR #0xFF
+                    CLC
+                    ADC #1                  // Two's complement
+                    
+                    // Emit PUSHLOCAL with negative offset
+                    Emit.PushLocal();       // A contains signed offset
+                    Error.CheckError();
+                    if (NC) { break; }
+                    
+                    // Get next token and continue
+                    Tokenizer.NextToken();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    
+                    SEC                     // Success
+                    break;                  // Exit - we handled it as an argument
+                }
+            }
+            
+            // Not an argument - emit push global variable opcode
+            Emit.PushGlobal();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            SEC // Success
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(compileVariableOrArgumentTrace % 256) STA ZP.TraceMessageL LDA #(compileVariableOrArgumentTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+        
+        PLY
+        PLX
+        PLA
+    }
 
-           }
-           else
-           {
-#ifdef DEBUG
-       //LDA #'V' Debug.COut();
-#endif
-               // Not a function call - restore position and emit variable push
-               LDA (compilerSavedTokenPosL + 0)
-               STA ZP.TokenizerPosL
-               LDA (compilerSavedTokenPosH + 0)
-               STA ZP.TokenizerPosH
-               
-               // Get the identifier token back
-               Tokenizer.NextToken();
-               Error.CheckError();
-               if (NC) { break; }
-               
-               // Emit push global variable opcode (existing functionality)
-               Emit.PushGlobal();
-               Error.CheckError();
-               if (NC) { break; }
-           }
-           
-           SEC // Success
-           break;
-       }
-
-#ifdef TRACE
-       LDA #(compileFunctionCallOrVariableTrace % 256) STA ZP.TraceMessageL LDA #(compileFunctionCallOrVariableTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-       
-       PLY
-       PLX
-       PLA
-   }
+    const string compileFunctionCallOrVariableTrace = "CompFuncVar // <identifier>";
+    compileFunctionCallOrVariable()
+    {
+        PHA
+        PHX
+        PHY
+        
+    #ifdef TRACE
+        LDA #(compileFunctionCallOrVariableTrace % 256) STA ZP.TraceMessageL LDA #(compileFunctionCallOrVariableTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit
+        {
+            // Save identifier position for CALL opcode emission
+            LDA ZP.TokenizerPosL
+            STA (compilerSavedTokenPosL + 0)
+            LDA ZP.TokenizerPosH
+            STA (compilerSavedTokenPosH + 0)
+            
+            // Look ahead to see if this is a function call (identifier followed by '(')
+            Tokenizer.NextToken(); // Get token after identifier
+            Error.CheckError();
+            if (NC) { break; }
+            
+            LDA ZP.CurrentToken
+            CMP #Token.LPAREN
+            if (Z)
+            {
+    #ifdef DEBUG
+        //LDA #'(' Debug.COut();
+    #endif
+                // This is a function call
+                // Create return slot (VOID 0) first
+                Emit.PushVoid();  
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Parse function arguments (this pushes them to stack)
+                compileArgumentList();
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Expect closing parenthesis (should be current token after argument parsing)
+                LDA ZP.CurrentToken
+                CMP #Token.RPAREN
+                if (NZ)
+                {
+                    Error.ExpectedRightParen(); BIT ZP.EmulatorPCL
+                    break;
+                }
+                
+                // Now emit CALL opcode AFTER arguments are pushed
+                // Restore function name position
+                LDA (compilerSavedTokenPosL + 0)
+                STA ZP.TokenizerPosL
+                LDA (compilerSavedTokenPosH + 0)
+                STA ZP.TokenizerPosH
+                
+                // Get the identifier token for CALL
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Emit function call opcode
+                Emit.Call();
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Get next token after closing parenthesis
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) { break; }
+    #ifdef DEBUG
+        //LDA #')' Debug.COut();
+    #endif
+            }
+            else
+            {
+    #ifdef DEBUG
+        //LDA #'V' Debug.COut();
+    #endif
+                // Not a function call - use Rollback for cleaner code
+                Tokenizer.Rollback();  // Back to identifier
+                
+                // Get the identifier token
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Compile as variable or argument
+                compileVariableOrArgument();
+                Error.CheckError();
+                if (NC) { break; }
+            }
+            
+            SEC // Success
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(compileFunctionCallOrVariableTrace % 256) STA ZP.TraceMessageL LDA #(compileFunctionCallOrVariableTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+        
+        PLY
+        PLX
+        PLA
+    }
    
    
    // Compile ABS(expression) function call

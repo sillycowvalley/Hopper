@@ -794,6 +794,64 @@ unit Variables
         PLX
         PLA
     }
+    
+    // Resolve variable or constant by name
+    // Input: ZP.TOP = name pointer  
+    // Output: C = found, A = IdentifierType, ZP.IDX = node address if found
+    // Modifies: ZP.IDX, ZP.ACCT
+    Resolve()
+    {
+        PHA
+        PHX
+        PHY
+        
+        loop
+        {
+            STZ ZP.SymbolIteratorFilter  // Accept any symbol type
+            Find(); // ZP.IDX = symbol node address
+            if (NC) // Not found
+            {
+                CLC
+                break;
+            }
+            
+            // Get symbol type and determine identifier type
+            GetType(); // Output: ZP.ACCT = symbolType|dataType
+            
+            LDA ZP.ACCT
+            AND #SymbolType.MASK
+            CMP #SymbolType.VARIABLE
+            if (Z)
+            { 
+    #ifdef DEBUG
+                //LDA #'V' Debug.COut();
+    #endif
+                LDA #IdentifierType.Global
+                SEC  // Found
+                break;
+            }
+            
+            CMP #SymbolType.CONSTANT
+            if (Z)
+            { 
+    #ifdef DEBUG
+                //LDA #'C' Debug.COut();
+    #endif        
+                LDA #IdentifierType.Constant
+                SEC  // Found
+                break;
+            }
+            
+            // Unknown symbol type - shouldn't happen
+            Error.InternalError(); BIT ZP.EmulatorPCL
+            CLC
+            break;
+        }
+        
+        PLY
+        PLX
+        PLA
+    }
 
 
 }

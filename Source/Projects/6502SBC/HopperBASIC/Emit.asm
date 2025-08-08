@@ -1083,5 +1083,47 @@ unit Emit
        
        PLA
    }
+   
+   // Emit PUSHLOCAL opcode to load argument/local
+    // Input: A = signed BP offset (negative for args, positive for locals)
+    // Output: PUSHLOCAL opcode emitted with offset
+    // Modifies: compilerOpCode, compilerOperand1, buffer state via Emit.OpCodeWithByte()
+    const string emitPushLocalTrace = "Emit PUSHLOCAL";
+    PushLocal()
+    {
+    #ifdef TRACE
+        PHA LDA #(emitPushLocalTrace % 256) STA ZP.TraceMessageL LDA #(emitPushLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+    #endif
+        
+        STA Compiler.compilerOperand1      // Store offset as operand
+        LDA #OpCode.PUSHLOCAL
+        STA Compiler.compilerOpCode
+        Emit.OpCodeWithByte();
+        
+    #ifdef TRACE
+        LDA #(emitPushLocalTrace % 256) STA ZP.TraceMessageL LDA #(emitPushLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+
+    // Emit POPLOCAL opcode to store to argument/local
+    // Input: A = signed BP offset (negative for args, positive for locals)
+    // Output: POPLOCAL opcode emitted with offset
+    // Modifies: compilerOpCode, compilerOperand1, buffer state via Emit.OpCodeWithByte()
+    const string emitPopLocalTrace = "Emit POPLOCAL";
+    PopLocal()
+    {
+    #ifdef TRACE
+        PHA LDA #(emitPopLocalTrace % 256) STA ZP.TraceMessageL LDA #(emitPopLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+    #endif
+        
+        STA Compiler.compilerOperand1      // Store offset as operand
+        LDA #OpCode.POPLOCAL
+        STA Compiler.compilerOpCode
+        Emit.OpCodeWithByte();
+        
+    #ifdef TRACE
+        LDA #(emitPopLocalTrace % 256) STA ZP.TraceMessageL LDA #(emitPopLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
 
 }
