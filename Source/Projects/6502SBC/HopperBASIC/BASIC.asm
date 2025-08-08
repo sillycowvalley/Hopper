@@ -37,7 +37,7 @@ program HopperBASIC
     uses "./Objects/Table"
     uses "./Objects/Objects"
     uses "./Objects/Variables"
-    uses "./Objects/Arguments"
+    uses "./Objects/Locals"
     uses "./Objects/Functions"
     
     uses "./Utilities/Tools"

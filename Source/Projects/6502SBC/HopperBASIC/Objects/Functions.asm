@@ -1,16 +1,8 @@
 unit Functions
 {
     uses "Objects"
-    uses "Arguments"
+    uses "Locals"
         
-    flags FunctionFlags
-    {
-        None            = 0x00,
-        Compiled        = 0x01,    // Bit 0: 1 = opcodes compiled, 0 = tokens only
-        NotCompiledMask = 0xFE,
-        // Bits 1-7: Available for future use (optimization flags, etc.)
-    }
-    
     // Function management building on Objects foundation
     // Functions use the existing Objects node structure:
     // Offset 0-1: next pointer (managed by Table unit)
@@ -172,7 +164,7 @@ unit Functions
         loop // start of single exit block
         {
             // Clear existing arguments first
-            Arguments.Clear();  // munts ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
+            Locals.Clear();  // munts ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
             
             // Restore function node address and new arguments list head
             PLA
@@ -267,7 +259,7 @@ unit Functions
             }
             
             // Clear all arguments before removing function
-            Arguments.Clear();  // preserves IDX munts ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
+            Locals.Clear();  // preserves IDX munts ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
             
             // Free function body tokens if they exist
             Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
@@ -359,7 +351,7 @@ unit Functions
             if (NC) { break; }  // No more functions
             
             // Clear all arguments for this function (NOP if arguments list head pointer is null)
-            Arguments.Clear();  // munts ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
+            Locals.Clear();  // munts ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
             
             // Get function body tokens pointer and free it if non-zero
             Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
@@ -533,7 +525,7 @@ unit Functions
             
             // Free opcodes for current function (ZP.IDX)
             freeOpCodes(); // Frees opcode stream and nulls pointer
-            ClearCompiled(); // Mark as tokens-only
+            //ClearCompiled(); // Mark as tokens-only
             
             // Move to next function
             IterateNext(); // ZP.IDX = next function
@@ -571,31 +563,14 @@ unit Functions
     // Output: C set if compiled, NC if tokens only
     IsCompiled()
     {
-        LDY # Objects.snFlags
+        LDY # Objects.snOpCodes
         LDA [ZP.IDX], Y
-        AND #FunctionFlags.Compiled
-        if (NZ) { SEC } else { CLC }
+        INX
+        ORA [ZP.IDX], Y
+        if (NZ)
+        { SEC } else { CLC }
     }
     
-    // Mark function as compiled  
-    // Input: ZP.IDX = function node address
-    SetCompiled()
-    {
-        LDY # Objects.snFlags
-        LDA [ZP.IDX], Y
-        ORA #FunctionFlags.Compiled
-        STA [ZP.IDX], Y
-    }
-    
-    // Mark function as tokens only (clear compiled flag)
-    // Input: ZP.IDX = function node address  
-    ClearCompiled()
-    {
-        LDY # Objects.snFlags
-        LDA [ZP.IDX], Y
-        AND #FunctionFlags.NotCompiledMask
-        STA [ZP.IDX], Y
-    }
     
     // Retrieve opcode stream for execution
     // Input: ZP.IDX = function node address
@@ -606,10 +581,8 @@ unit Functions
         PHY
         
         // Check if function is compiled
-        LDY # Objects.snFlags 
-        LDA [ZP.IDX], Y
-        AND # FunctionFlags.Compiled
-        if (Z) // Not compiled
+        IsCompiled();
+        if (NC) // Not compiled
         {
             // Return null pointer
             STZ ZP.IDYL
@@ -909,7 +882,7 @@ unit Functions
                 STA ZP.IDXH
                 
                 // has arguments
-                Arguments.GetCount(); // ZP.ACCL = argument count
+                Locals.GetCount(); // ZP.ACCL = argument count
                 
                 PLA
                 STA ZP.IDXH
@@ -953,9 +926,6 @@ unit Functions
             copyOpCodesToFunction();
             Error.CheckError();
             if (NC) { break; }
-            
-            // Mark function as compiled
-            SetCompiled();
             
             States.SetSuccess(); // should already be the case
             break;

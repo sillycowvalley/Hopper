@@ -686,17 +686,17 @@ unit Commands
         if (NZ)
         {
             // Has arguments - iterate through them
-            Arguments.IterateStart(); // Input: ZP.IDX = function node, Output: ZP.IDY = first argument
+            Locals.IterateStart(); // Input: ZP.IDX = function node, Output: ZP.IDY = first argument
             loop
             {
                 if (NC) { break; } // No more arguments (handles empty list case)
                 
                 // Get and print argument name
-                Arguments.GetName(); // Input: ZP.IDY = argument node, Output: ZP.STR = name pointer
+                Locals.GetName(); // Input: ZP.IDY = argument node, Output: ZP.STR = name pointer
                 Tools.PrintStringSTR();
                 
                 // Check if there's another argument
-                Arguments.IterateNext(); // Input: ZP.IDY = current arg, Output: ZP.IDY = next arg
+                Locals.IterateNext(); // Input: ZP.IDY = current arg, Output: ZP.IDY = next arg
                 if (C)
                 {
                     // More arguments - print comma separator

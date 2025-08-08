@@ -314,7 +314,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 LDA (Statement.stmtObjectPtr + 1)
                 STA ZP.IDXH
                 
-                Arguments.Add(); // Input: ZP.IDX = function node, ZP.TOP = argument name
+                Locals.Add(); // Input: ZP.IDX = function node, ZP.TOP = argument name
                 Error.CheckError();
                 if (NC) { break; }
                 

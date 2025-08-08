@@ -1,15 +1,19 @@
-unit Arguments
+unit Locals
 {
-    // Argument table management - arguments list head stored directly in function node
-    // No separate "table head storage" - function node field points directly to first argument
+    uses "./Objects/Objects"
     
-    // Argument Node Structure:
+    // In Locals.asm
+    // Unified node structure for both arguments and locals
     // Offset 0-1: next pointer
-    // Offset 2+:  null-terminated argument name
-    
-    const byte argOverhead = 2;     // Fixed fields before name
-    const byte anNext = 0;          // Next pointer offset (2 bytes)
-    const byte anName = 2;          // Name field offset (variable length)
+    // Offset 2:   symbolType|dataType (packed byte like Objects)
+    // Offset 3:   BP offset (signed byte: negative for args, positive for locals)
+    // Offset 4+:  null-terminated name
+
+    const byte localOverhead = 4;      // Fixed fields before name
+    const byte lnNext = 0;             // Next pointer (2 bytes)
+    const byte lnType = 2;             // symbolType|dataType packed byte
+    const byte lnOffset = 3;           // BP offset (signed byte)
+    const byte lnName = 4;             // Name field start
     
     // Add argument to function's arguments list at the end for correct order
     // Input: ZP.IDX = function node address, ZP.TOP = argument name
@@ -55,7 +59,7 @@ unit Arguments
             initializeNode();
             
             // New node's next = NULL
-            LDY #anNext
+            LDY # lnNext
             LDA #0
             STA [ZP.LCURRENT], Y
             INY
@@ -65,7 +69,7 @@ unit Arguments
             // Start with address of function's arguments field
             CLC
             LDA ZP.LHEADL
-            ADC #Objects.snArguments
+            ADC # Objects.snLocals
             STA ZP.LPREVIOUSL       // Points to insertion location
             LDA ZP.LHEADH
             ADC #0
@@ -88,7 +92,7 @@ unit Arguments
                 // LPREVIOUS = &(LNEXT->next)
                 CLC
                 LDA ZP.LNEXTL
-                ADC #anNext
+                ADC # lnNext
                 STA ZP.LPREVIOUSL
                 LDA ZP.LNEXTH
                 ADC #0
@@ -131,7 +135,7 @@ unit Arguments
         loop // start of single exit block
         {
             // Get arguments list head from function node (IDX preserved)
-            LDY #Objects.snArguments
+            LDY #Objects.snLocals
             LDA [ZP.IDX], Y
             STA ZP.LCURRENTL
             INY
@@ -164,7 +168,7 @@ unit Arguments
                 }
                 
                 // Move to next argument - use LCURRENT throughout
-                LDY #anNext
+                LDY # lnNext
                 LDA [ZP.LCURRENT], Y
                 STA ZP.LNEXTL
                 INY
@@ -198,7 +202,7 @@ unit Arguments
         // Calculate address of name field in argument node
         CLC
         LDA ZP.IDYL
-        ADC #anName
+        ADC # lnName
         STA ZP.STRL
         LDA ZP.IDYH
         ADC #0
@@ -224,7 +228,7 @@ unit Arguments
             STA ZP.SymbolTemp0
             
             // Get arguments list head from function node (IDX preserved)
-            LDY #Objects.snArguments
+            LDY #Objects.snLocals
             LDA [ZP.IDX], Y
             STA ZP.LCURRENTL
             INY
@@ -260,7 +264,7 @@ unit Arguments
                 }
                 
                 // Move to next argument - use LCURRENT throughout
-                LDY #anNext
+                LDY # lnNext
                 LDA [ZP.LCURRENT], Y
                 STA ZP.LNEXTL
                 INY
@@ -293,7 +297,7 @@ unit Arguments
         PHX
         
         // Get arguments list head from function node (IDX preserved)
-        LDY #Objects.snArguments
+        LDY #Objects.snLocals
         LDA [ZP.IDX], Y
         STA ZP.LCURRENTL
         INY
@@ -312,7 +316,7 @@ unit Arguments
             INC ZP.ACCL  // Increment count
             
             // Move to next argument (use LCURRENT, not IDX)
-            LDY #anNext
+            LDY # lnNext
             LDA [ZP.LCURRENT], Y
             STA ZP.LNEXTL        // Use LNEXT as temp
             INY
@@ -342,7 +346,7 @@ unit Arguments
         PHA
         
         // Get arguments list head from function node (IDX preserved)
-        LDY #Objects.snArguments
+        LDY # Objects.snLocals
         LDA [ZP.IDX], Y
         STA ZP.IDYL
         INY
@@ -374,7 +378,7 @@ unit Arguments
         PHA
         
         // Get next pointer from current argument node
-        LDY #anNext
+        LDY # lnNext
         LDA [ZP.IDY], Y
         STA ZP.LCURRENTL
         INY
@@ -421,7 +425,7 @@ unit Arguments
         loop
         {
             // Get first argument from function node (use saved address)
-            LDY #Objects.snArguments
+            LDY #Objects.snLocals
             LDA [ZP.SymbolTemp0], Y
             STA ZP.IDXL
             INY
@@ -434,7 +438,7 @@ unit Arguments
             if (Z) { break; }
             
             // Get next pointer from first argument (use IDY instead of IDX)
-            LDY #anNext
+            LDY # lnNext
             LDA [ZP.IDX], Y
             STA ZP.LNEXTL
             INY
@@ -442,7 +446,7 @@ unit Arguments
             STA ZP.LNEXTH
             
             // Store the next pointer as the new head argument
-            LDY #Objects.snArguments
+            LDY #Objects.snLocals
             LDA ZP.LNEXTL
             STA [ZP.SymbolTemp0], Y
             INY
@@ -473,7 +477,7 @@ unit Arguments
     calculateNodeSize()
     {
         // Start with fixed overhead
-        LDA #argOverhead
+        LDA # localOverhead
         STA ZP.ACCL
         STZ ZP.ACCH
         
@@ -523,7 +527,7 @@ unit Arguments
         // Set up destination address (node + anName)
         CLC
         LDA ZP.IDXL
-        ADC #anName
+        ADC # lnName
         STA ZP.FDESTINATIONADDRESSL
         LDA ZP.IDXH
         ADC #0
@@ -555,7 +559,7 @@ unit Arguments
         // Calculate address of name field in argument node
         CLC
         LDA ZP.LCURRENTL
-        ADC #anName
+        ADC # lnName
         STA ZP.NEXTL         // Use NEXT for string2 pointer
         LDA ZP.LCURRENTH
         ADC #0

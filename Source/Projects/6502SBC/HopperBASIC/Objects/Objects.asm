@@ -1,6 +1,6 @@
 unit Objects
 {
-    friend Variables, Functions, Arguments;
+    friend Variables, Functions, Locals;
     
     // Symbol table implementation using Table foundation
     // ZP.VariableListL/H stores the variables/constants table head pointer
@@ -12,7 +12,8 @@ unit Objects
         VARIABLE = 0x01,   // Mutable values
         CONSTANT = 0x02,   // Immutable values  
         FUNCTION = 0x03,   // Executable code blocks
-        ARGUMENT = 0x04    // Function parameters
+        ARGUMENT = 0x04,   // Function parameters (negative BP offset)
+        LOCAL    = 0x05    // Local variables (positive BP offset)
     }
     
     // Symbol node memory map:
@@ -29,7 +30,7 @@ unit Objects
     const byte snFlags = 2;              // flags for functions
     const byte snTokens = 3;             // Tokens pointer field offset (2 bytes)
     const byte snValue = 5;              // Value/args field offset (2 bytes)
-    const byte snArguments = 5;          // same slot as Values, better name for Function arguments
+    const byte snLocals = 5;             // same slot as Values, better name for Function arguments|locals
     const byte snOpCodes = 7;            // OpCode stream pointer offset (2 bytes) - NEW!
     const byte snName = 9;               // Name field offset (variable length) - shifted by 2
     
