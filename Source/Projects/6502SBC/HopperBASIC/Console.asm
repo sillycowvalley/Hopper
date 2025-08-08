@@ -947,6 +947,149 @@ unit Console // Console.asm
         PLA
     }
     
+        // Initialize all global variables with their declared values
+    // Called before executing $MAIN to ensure consistent state
+    // Input: None
+    // Output: All variables initialized to their declared values
+    //         C set if successful, NC if error during initialization
+    // Munts: Token buffer, all execution-related ZP variables
+    const string initGlobsTrace = "initGlobs";
+    initializeGlobals()
+    {
+        PHA
+        PHX
+        PHY
+        
+#ifdef TRACECONSOLE
+        LDA #(initGlobsTrace % 256) STA ZP.TraceMessageL LDA #(initGlobsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
+        // Start iteration over all variables
+        Variables.IterateVariables();
+        // Returns: ZP.IDX = first variable node, C = found, NC = none
+        loop // Variable iteration loop
+        {
+            if (NC) { SEC break; } // No more variables - success
+            
+            // Clear tokenizer state
+            Tokenizer.Initialize();
+            
+            // Get variable name for assignment
+            Variables.GetName(); // -> ZP.STR
+            Variables.GetTokens(); // Returns tokens pointer in ZP.NEXT
+            Variables.GetType(); // -> ZP.ACCT
+            
+            
+            // Add IDENTIFIER token
+            LDA #Token.IDENTIFIER
+            Tokenizer.appendToTokenBuffer(); // munts IDX!
+            
+            // Copy variable name to buffer
+            loop
+            {
+                LDA [ZP.STR]
+                if (Z)
+                {
+                    Tokenizer.appendToTokenBuffer(); // null terminator
+                    break; // Copied null terminator
+                }
+                Tokenizer.appendToTokenBuffer();
+                IncSTR();
+            }
+            
+            // Add '=' token
+            LDA #Token.EQUALS
+            Tokenizer.appendToTokenBuffer();
+            
+            // Check if variable has initialization tokens
+            LDA ZP.NEXTL
+            ORA ZP.NEXTH
+            if (Z) 
+            {
+                
+                LDA ZP.ACCT
+                AND #0x0F
+                switch (A)
+                {
+                    case BASICType.STRING:
+                    {
+                        LDA # Token.STRINGLIT
+                        Tokenizer.appendToTokenBuffer();
+                        // '\0' (null terminator for string literal)
+                        LDA #0x00
+                        Tokenizer.appendToTokenBuffer();
+                    }
+                    case BASICType.BIT:
+                    {
+                        LDA #Token.FALSE
+                        Tokenizer.appendToTokenBuffer();
+                    }
+                    default:
+                    {
+                        // No initialization tokens - use default value 0
+                        LDA #Token.NUMBER
+                        Tokenizer.appendToTokenBuffer();
+                        
+                        // '0'
+                        LDA #'0'
+                        Tokenizer.appendToTokenBuffer();
+                        
+                        // '\0' (null terminator for number string)
+                        LDA #0x00
+                        Tokenizer.appendToTokenBuffer();
+                    }
+                }
+                // Add EOL token
+                LDA #Token.EOF
+                Tokenizer.appendToTokenBuffer();
+            }
+            else
+            {
+                // Copy variable initialization tokens to buffer
+                // Note: Variable declarations are single-line, so EOL is a good terminator
+                loop
+                { 
+                    LDA [ZP.NEXT]
+                    CMP #Token.EOL // TODO : switch to EOF
+                    if (Z)
+                    {
+                        LDA #Token.EOF
+                        Tokenizer.appendToTokenBuffer();
+                        break; // Found EOL terminator
+                    }
+                    Tokenizer.appendToTokenBuffer();
+                    IncNEXT();
+                }
+            }
+            
+            STZ ZP.TokenizerPosL
+            STZ ZP.TokenizerPosH
+            
+            // Execute the initialization statement
+            Tokenizer.NextToken(); // Get first token
+            
+            Statement.ExecuteStatement();
+            Error.CheckError();
+            if (NC) 
+            { 
+                // Error during initialization
+                CLC
+                break;
+            }
+        
+            
+            // Continue to next variable
+            Variables.IterateNext();
+        } // iterate variables loop
+        
+#ifdef TRACECONSOLE
+        LDA #(initGlobsTrace % 256) STA ZP.TraceMessageL LDA #(initGlobsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+        PLY
+        PLX
+        PLA
+    }
+    
     // ========================================================================
     // RUN Command - Stays in Console because it's BASIC execution
     // ========================================================================
@@ -968,6 +1111,8 @@ unit Console // Console.asm
         {
             Tokenizer.NextToken(); // consume 'RUN'
             
+            initializeGlobals();
+            
             loop // Single exit block
             {
                 // Find the $MAIN function
@@ -988,58 +1133,39 @@ unit Console // Console.asm
                     Tools.NL();
                     break;
                 }
+                // Clear tokenizer state
+                Tokenizer.Initialize();
                 
                 // Construct token buffer with function call to $MAIN()
                 // Token buffer will contain: IDENTIFIER "$MAIN" LPAREN RPAREN EOL
-                
-                // Token 0: IDENTIFIER
-                LDY #0
-                LDA #Token.IDENTIFIER
-                STA [ZP.TokenBuffer], Y
-                INY
-                
-                // Token 1: "$MAIN\0"
-                LDA ZP.IDXL
-                STA ZP.TOPL
-                LDA ZP.IDXH
-                STA ZP.TOPH
-                
                 Functions.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
-                LDA ZP.STRL
-                STA ZP.TOPL
-                LDA ZP.STRH
-                STA ZP.TOPH
+                
+                // IDENTIFIER
+                LDA #Token.IDENTIFIER
+                Tokenizer.appendToTokenBuffer(); // munts IDX!
                 
                 // Inline the name
                 LDX #0
                 loop
                 {
                     LDA Messages.BeginFunctionName, X
-                    STA [ZP.TokenBuffer], Y
-                    if (Z) { break; } // that was '\0'
+                    if (Z)
+                    {
+                        Tokenizer.appendToTokenBuffer();
+                        break; 
+                    }
+                    Tokenizer.appendToTokenBuffer();
                     INX
-                    INY
                 }
-                INY
                 
-                // Token 2: LPAREN
                 LDA #Token.LPAREN
-                STA [ZP.TokenBuffer], Y
-                INY
+                Tokenizer.appendToTokenBuffer();
                 
-                // Token 3: RPAREN
                 LDA #Token.RPAREN
-                STA [ZP.TokenBuffer], Y
-                INY
+                Tokenizer.appendToTokenBuffer();
                 
-                // Token 4: EOL
-                LDA #Token.EOL
-                STA [ZP.TokenBuffer], Y
-                INY
-                
-                // Clear tokenizer state
-                Tokenizer.Initialize();
-                STY ZP.TokenBufferContentSizeL
+                LDA #Token.EOF
+                Tokenizer.appendToTokenBuffer();
                 
                 // Execute the function call
                 Tokenizer.NextToken();

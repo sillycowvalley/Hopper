@@ -645,11 +645,6 @@ unit Functions
         
         Stacks.PushPC(); // after FetchOperandWord
         
-#ifdef TRACEJIT
-        LDA #' ' Debug.COut(); LDA #'[' Debug.COut();
-        LDA ZP.IDXH Debug.HOut(); LDA ZP.IDXL Debug.HOut();
-        LDA #']' Debug.COut(); LDA #' ' Debug.COut();
-#endif        
         
         LDY #Objects.snOpCodes
         LDA [ZP.IDX], Y
@@ -657,11 +652,16 @@ unit Functions
         INY
         LDA [ZP.IDX], Y
         STA ZP.PCH
+        
+        LDY #Objects.snTokens
+        LDA [ZP.IDX], Y
+        STA ZP.XIDL
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.XIDH
+        
+        Stacks.PushXID();
     
-#ifdef TRACEJIT
-        LDA #' ' Debug.COut(); LDA #'-' Debug.COut();LDA #'>' Debug.COut(); LDA #' ' Debug.COut();
-        LDA ZP.PCH Debug.HOut(); LDA ZP.PCL Debug.HOut();
-#endif        
         SEC
     }   
     
@@ -700,6 +700,7 @@ unit Functions
             STZ ZP.FLENGTHL
             STZ ZP.FLENGTHH
             
+            /*
             // Compare function name with "$MAIN"
             Functions.GetName(); // -> STR
             LDA #(Messages.BeginFunctionName % 256)
@@ -814,6 +815,7 @@ unit Functions
                 PLA
                 STA ZP.IDXL
             }
+            */
             
             // Copy function's token stream to ZP.TokenBuffer for compilation
             loop
@@ -875,10 +877,6 @@ unit Functions
         LDA ZP.OpCodeBufferL
         PHA
         LDA ZP.OpCodeBufferH
-        PHA
-        LDA Compiler.compilerLiteralBaseL
-        PHA
-        LDA Compiler.compilerLiteralBaseH
         PHA
         
         // Always use BASIC buffers for compilation, never REPL
@@ -964,10 +962,6 @@ unit Functions
         }
         
         // restore buffers (they may be REPL or BASIC)
-        PLA 
-        STA Compiler.compilerLiteralBaseH
-        PLA
-        STA Compiler.compilerLiteralBaseL
         PLA
         STA ZP.OpCodeBufferH
         PLA

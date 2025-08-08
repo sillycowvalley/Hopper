@@ -44,8 +44,6 @@ unit Executor // Executor.asm
        // Previous expression errors or interruptions could leave stacks inconsistent
        Executor.Reset();
        
-
-       
        loop // Single exit block
        {
            // Initialize executor state
@@ -570,6 +568,7 @@ unit Executor // Executor.asm
            STA ZP.SP
            
            Stacks.PopBP();
+           Stacks.PopXID();
            Stacks.PopPC();
            LDA ZP.CSP
            if (Z) // CallStack pointer == 0?
@@ -854,12 +853,23 @@ unit Executor // Executor.asm
                States.SetFailure();
                break; 
            }
-           
+#ifdef DEBUG
+// XIDHERE xS    
+//NL(); LDA #'x' COut(); LDA #'S' COut(); LDA #',' COut();
+//Space(); LDA ZP.XIDH HOut(); LDA ZP.XIDL HOut();
+//Space(); LDA executorOperandH HOut(); LDA executorOperandL HOut();
+#endif
            // Store pointer in ZP.TOP as STRING value
+           CLC
            LDA executorOperandL
+           ADC ZP.XIDL
            STA ZP.TOPL
            LDA executorOperandH
+           ADC ZP.XIDH
            STA ZP.TOPH
+#ifdef DEBUG
+//Space(); LDA ZP.TOPH HOut(); LDA ZP.TOPL HOut();
+#endif    
            LDA #BASICType.STRING
            STA ZP.TOPT
            
@@ -1042,40 +1052,41 @@ unit Executor // Executor.asm
            FetchOperandWord();
            States.CanContinue();
            if (NC) { break; }
-   
+#ifdef DEBUG
+// XIDHERE xC        
+//NL(); LDA #'x' COut(); LDA #'C' COut(); LDA #',' COut();
+//Space(); LDA ZP.XIDH HOut(); LDA ZP.XIDL HOut();
+//Space(); LDA executorOperandH HOut(); LDA executorOperandL HOut();
+#endif
+           CLC
            LDA executorOperandL
+           ADC ZP.XIDL
            STA ZP.TOPL
            LDA executorOperandH
+           ADC ZP.XIDH
            STA ZP.TOPH
-           
-   #ifdef TRACEJIT
-           LDA #'@' Debug.COut(); 
-           LDA executorOperandH Debug.HOut(); 
-           LDA executorOperandL Debug.HOut();
-   #endif            
-           
+#ifdef DEBUG
+//Space(); LDA ZP.TOPH HOut(); LDA ZP.TOPL HOut();
+#endif
            // 1. resolve Function <index> to function call <address>
            Functions.Find(); // Input: ZP.TOP = name
            if (NC)
            {
-   #ifdef TRACEJIT
-               LDA #'?' Debug.COut(); LDA #'F' Debug.COut();
-   #endif
+
+//NL(); LDA executorOperandH HOut(); LDA executorOperandL HOut();
+//NL(); LDA ZP.XIDH HOut(); LDA ZP.XIDL HOut();
+//NL(); LDA ZP.TOPH HOut(); LDA ZP.TOPL HOut();
+//NL(); PrintStringTOP();
+//DumpBuffers();           
+           
                Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
                States.SetFailure();
                break;
            }
-#ifdef TRACEJIT
-           LDA #' ' Debug.COut(); LDA #'\'' Debug.COut(); Tools.PrintStringTOP(); LDA #'\'' Debug.COut(); LDA #' ' Debug.COut();
-           LDA #'=' Debug.COut(); LDA #'\'' Debug.COut(); LDA ZP.IDXH Debug.HOut(); LDA ZP.IDXL Debug.HOut(); LDA #' ' Debug.COut(); 
-#endif
            // ZP.IDX = function node address
            Functions.IsCompiled();
            if (NC)
            {
-#ifdef TRACEJIT
-               Tools.NL(); LDA #' ' Tools.NL(); LDA #'J' Debug.COut(); LDA #'I' Debug.COut(); LDA #'T' Debug.COut();
-#endif
                // JIT
                Functions.Compile();
                States.CanContinue();
@@ -1085,13 +1096,6 @@ unit Executor // Executor.asm
                    break;
                }
            }
-           
-   #ifdef TRACEJIT
-           Tools.NL(); 
-           LDA #'P' Debug.COut(); LDA #'A' Debug.COut(); LDA #'T' Debug.COut(); LDA #'C' Debug.COut(); LDA #'H' Debug.COut();
-           LDA #':' Debug.COut(); LDA #' ' Debug.COut();
-           Debug.XOut(); // IDX
-   #endif
            
            // 2. replace own opcode CALL -> CALLF, <index> by <address>
            // 3, PC -= 3 (so CALLF happens instead)
@@ -1128,22 +1132,6 @@ unit Executor // Executor.asm
            DEC ZP.PCL
            LDA # OpCode.CALLF
            STA [ZP.PC]
-           
-   #ifdef TRACEJIT
-           LDA ZP.PCH Debug.HOut();
-           LDA ZP.PCL Debug.HOut();
-           LDA #' ' Debug.COut();
-           LDY # 0
-           LDA [ZP.PC], Y
-           Debug.HOut(); LDA #' ' Debug.COut();
-           INY
-           LDA [ZP.PC], Y
-           Debug.HOut(); LDA #' ' Debug.COut();
-           INY
-           LDA [ZP.PC], Y
-           Debug.HOut(); LDA #' ' Debug.COut();
-           
-   #endif
            
            States.SetSuccess();
            break;

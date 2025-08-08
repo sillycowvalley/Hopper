@@ -1003,26 +1003,16 @@ unit Emit
        
        loop // Single exit
        {
-#ifdef TRACEJIT
-           Tools.NL();
-           LDA ZP.TokenLiteralPosH Debug.HOut();
-           LDA ZP.TokenLiteralPosL Debug.HOut();
-#endif            
-           // Calculate absolute address of function name in token buffer
-           // The tokenizer's TokenLiteralPos points to the start of the identifier string
-           CLC
-           LDA ZP.TokenBufferL
-           ADC ZP.TokenLiteralPosL    // TokenLiteralPos points to identifier string
-           STA Compiler.compilerOperand1       // Absolute address LSB
-           LDA ZP.TokenBufferH
-           ADC ZP.TokenLiteralPosH
-           STA Compiler.compilerOperand2       // Absolute address MSB
-
-#ifdef TRACEJIT
-           LDA #'-' Debug.COut(); LDA #'>' Debug.COut();
-           LDA Compiler.compilerOperand2 Debug.HOut();
-           LDA Compiler.compilerOperand1 Debug.HOut();
-#endif                        
+#ifdef DEBUG
+// XID cC
+//NL(); LDA #'c' COut(); LDA #'C' COut(); LDA #',' COut();
+//Space(); LDA ZP.TokenBufferH HOut(); LDA ZP.TokenBufferL HOut(); Space();
+//Space(); LDA ZP.TokenLiteralPosH HOut(); LDA ZP.TokenLiteralPosL HOut();
+#endif
+           LDA ZP.TokenLiteralPosL
+           STA Compiler.compilerOperand1  // LSB
+           LDA ZP.TokenLiteralPosH
+           STA Compiler.compilerOperand2  // MSB
                                   
            // Emit CALL with absolute address (not offset!)
            LDA # OpCode.CALL
@@ -1059,18 +1049,24 @@ unit Emit
             Tokenizer.GetTokenString(); // Result in ZP.TOP
             Error.CheckError();
             if (NC) { break; }
-
             
-//LDA ZP.TokenLiteralPosH Debug.HOut();
-//LDA ZP.TokenLiteralPosL Debug.HOut();
-
-
             // OFFSET : compiling STRINGLIT
             // Emit PUSHCSTRING with pointer to string content
-            LDA ZP.TOPL
+            LDA ZP.TokenLiteralPosL
             STA Compiler.compilerOperand1  // LSB
-            LDA ZP.TOPH
+            LDA ZP.TokenLiteralPosH
             STA Compiler.compilerOperand2  // MSB
+
+#ifdef DEBUG
+// XIDHERE cS        
+//NL(); LDA #'c' COut(); LDA #'S' COut(); LDA #',' COut();
+//Space(); LDA ZP.TokenBufferH HOut(); LDA ZP.TokenBufferL HOut(); Space();
+//Space(); LDA ZP.TokenLiteralPosH HOut(); LDA ZP.TokenLiteralPosL HOut();
+#endif
+
+
+
+            
 
             // Set up opcode
             LDA #OpCode.PUSHCSTRING

@@ -35,10 +35,6 @@ unit Stacks // Stacks.asm
         LDY ZP.CSP
         LDA Address.CallStackLSB, Y
         STA ZP.BP
-#ifdef HOPPER_BASIC
-        //Tools.NL(); LDA #'C' Tools.COut(); LDA #'C' Tools.COut(); LDA ZP.CSP Tools.HOut();
-        //Tools.NL(); LDA #'B' Tools.COut(); LDA #'P' Tools.COut(); LDA ZP.BP Tools.HOut();
-#endif        
     }
     PushBP()
     {
@@ -46,10 +42,6 @@ unit Stacks // Stacks.asm
         LDA ZP.BP
         STA Address.CallStackLSB, X
         INC ZP.CSP
-#ifdef HOPPER_BASIC
-        //Tools.NL(); LDA #'C' Tools.COut(); LDA #'C' Tools.COut(); LDA ZP.CSP Tools.HOut();
-        //Tools.NL(); LDA #'B' Tools.COut(); LDA #'P' Tools.COut(); LDA ZP.BP Tools.HOut();
-#endif        
     }
     PopPC()
     {
@@ -59,10 +51,6 @@ unit Stacks // Stacks.asm
         STA ZP.PCL
         LDA Address.CallStackMSB, Y
         STA ZP.PCH
-#ifdef HOPPER_BASIC
-        //Tools.NL(); LDA #'C' Tools.COut(); LDA #'C' Tools.COut(); LDA ZP.CSP Tools.HOut();
-        //Tools.NL(); LDA #'P' Tools.COut(); LDA #'C' Tools.COut(); LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
-#endif        
     }
     PushPC()
     {
@@ -72,11 +60,29 @@ unit Stacks // Stacks.asm
         LDA ZP.PCH
         STA Address.CallStackMSB, Y
         INC ZP.CSP
-#ifdef HOPPER_BASIC
-        //Tools.NL(); LDA #'C' Tools.COut(); LDA #'C' Tools.COut(); LDA ZP.CSP Tools.HOut();
-        //Tools.NL(); LDA #'P' Tools.COut(); LDA #'C' Tools.COut(); LDA ZP.PCH Tools.HOut(); LDA ZP.PCL Tools.HOut();
-#endif        
     }
+    
+#ifdef HOPPER_BASIC
+    PopXID()
+    {
+        DEC ZP.CSP    
+        LDY ZP.CSP
+        LDA Address.CallStackLSB, Y
+        STA ZP.XIDL
+        LDA Address.CallStackMSB, Y
+        STA ZP.XIDH
+    }
+    PushXID()
+    {
+        LDY ZP.CSP
+        LDA ZP.XIDL
+        STA Address.CallStackLSB, Y
+        LDA ZP.XIDH
+        STA Address.CallStackMSB, Y
+        INC ZP.CSP
+    }
+#endif
+    
     PopTop()
     {
         DEC ZP.SP

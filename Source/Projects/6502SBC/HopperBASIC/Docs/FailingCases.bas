@@ -28,20 +28,52 @@ LIST
 RUN
 
 
-FUNC FOO()
-    PRINT "Hello World"
-ENDFUNC
 
-FOO()
+
+NEW
+
+PRINT "Hello"; : PRINT "World";
+PRINT "Hello"; : PRINT "World";
+
+
+FUNC FOO()
+    PRINT "Hello";
+    PRINT "World";
+ENDFUNC
+FOO();
+FOO();
+
+BEGIN
+    PRINT "Hello";
+    PRINT "World";
+END
+RUN
+RUN
+
+DASM
+
+
+STRING SPACER = "Space"
+
+RUN
+RUN
+
+DASM
+
 
 
 
 
 NEW
 int i = 10
+
+func ppr()
+{
+    print i
+}
 func pr()
     i = i + 1
-    print i
+    ppr()
 endfunc
 
 pr() : pr()
@@ -224,3 +256,19 @@ BEGIN
     PRINT "OK"
 END
 RUN
+
+
+
+INT INTEGER = 10
+string STR = "value"
+bit BOOL = true
+
+vars
+
+begin
+end
+
+run
+
+vars
+

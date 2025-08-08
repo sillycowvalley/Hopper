@@ -2,7 +2,7 @@ unit BufferManager // BufferManager.asm
 {
     UseREPLBuffers()
     {
-        //SMB3 ZP.FLAGS // Set REPL mode flag
+        SMB3 ZP.FLAGS // Set REPL mode flag
         
         // Point tokenizer to REPL buffer
         LDA #(REPLTokenizerBuffer % 256)
@@ -19,7 +19,7 @@ unit BufferManager // BufferManager.asm
     
     UseBASICBuffers()
     {
-        //RMB3 ZP.FLAGS // Clear REPL mode flag
+        RMB3 ZP.FLAGS // Clear REPL mode flag
         
         // Point tokenizer to BASIC function buffer
         LDA #(BASICTokenizerBuffer % 256)
@@ -34,7 +34,6 @@ unit BufferManager // BufferManager.asm
         STA ZP.OpCodeBufferH
     }
     
-    /*
     IsREPLMode()
     {
         // Test bit 7 of FLAGS
@@ -48,5 +47,5 @@ unit BufferManager // BufferManager.asm
             CLC
         }
     }
-    */
+    
 }

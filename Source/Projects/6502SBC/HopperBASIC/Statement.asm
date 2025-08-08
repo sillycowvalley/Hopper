@@ -195,6 +195,14 @@ unit Statement // Statement.asm
             //Debug.HOut(); LDA #'U' Debug.COut();
             //PrintStringTOP();
 #endif
+#ifdef TRACE
+            IsTracing();
+            if (C)
+            {
+                NL(); PrintStringTOP();
+            }
+#endif
+
 
             Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
             LDA # IdentifierType.Undefined
@@ -229,10 +237,6 @@ unit Statement // Statement.asm
         loop
         {
             // Set literal base to TokenizerBuffer for REPL
-            LDA ZP.TokenBufferL
-            STA ZP.IDYL  
-            LDA ZP.TokenBufferH
-            STA ZP.IDYH
             Compiler.SetLiteralBase();
             Compiler.CompileExpression();
             Error.CheckError();
@@ -296,10 +300,6 @@ unit Statement // Statement.asm
         loop
         {
             // Set literal base to TokenizerBuffer for REPL (same as EvaluateExpression)
-            LDA ZP.TokenBufferL
-            STA ZP.IDYL  
-            LDA ZP.TokenBufferH
-            STA ZP.IDYH
             Compiler.SetLiteralBase();
             
             // Initialize opcode buffer if this is the start of compilation  

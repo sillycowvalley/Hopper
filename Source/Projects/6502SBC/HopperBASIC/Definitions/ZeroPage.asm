@@ -306,6 +306,10 @@ unit ZP // ZeroPage.asm
     const byte XPCH                 = 0x7D;  // Compiler Program counter high
     const byte CompilerTemp         = 0x7E;  // Temporary workspace used by the Compiler
     
+    const byte XID                  = 0x7F;  // Executure token buffer pointer Program counter low
+    const byte XIDL                 = 0x7F;
+    const byte XIDH                 = 0x7E;
+    
 
     // HARDWARE I/O (IMMOVABLE - Platform Hardware Addresses)
     const byte ACIACONTROL          = 0xEC;  // 6850 ACIA control register

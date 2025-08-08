@@ -13,18 +13,14 @@ unit Compiler // Compiler.asm
    // Private Compiler layer storage - BasicCompilerWorkspace (32 bytes)
    const uint compilerSavedTokenPosL = Address.BasicCompilerWorkspace;      // 1 byte - saved tokenizer pos low
    const uint compilerSavedTokenPosH = Address.BasicCompilerWorkspace + 1;  // 1 byte - saved tokenizer pos high
-   const uint compilerLiteralOffsetL = Address.BasicCompilerWorkspace + 2;  // 1 byte - literal offset low
-   const uint compilerLiteralOffsetH = Address.BasicCompilerWorkspace + 3;  // 1 byte - literal offset high
-   const uint compilerOpCode         = Address.BasicCompilerWorkspace + 4;  // 1 byte - opcode to emit
-   const uint compilerOperand1       = Address.BasicCompilerWorkspace + 5;  // 1 byte - first operand
-   const uint compilerOperand2       = Address.BasicCompilerWorkspace + 6;  // 1 byte - second operand
-   const uint compilerLastOpCode     = Address.BasicCompilerWorkspace + 7;  // 1 byte - last opcode emitted
-   const uint compilerFuncArgs       = Address.BasicCompilerWorkspace + 8;  // 1 byte - number of arguments for current FUNC being compiled
-   const uint compilerFuncLocals     = Address.BasicCompilerWorkspace + 9;  // 1 byte - number of locals for current FUNC being compiled
-   const uint compilerLiteralBaseL   = Address.BasicCompilerWorkspace + 10; // 1 byte - literal base address low
-   const uint compilerLiteralBaseH   = Address.BasicCompilerWorkspace + 11; // 1 byte - literal base address high
-   const uint compilerSavedNodeAddrL = Address.BasicCompilerWorkspace + 12; // 1 byte - saved node addr low
-   const uint compilerSavedNodeAddrH = Address.BasicCompilerWorkspace + 13; // 1 byte - saved node addr high
+   const uint compilerOpCode         = Address.BasicCompilerWorkspace + 2;  // 1 byte - opcode to emit
+   const uint compilerOperand1       = Address.BasicCompilerWorkspace + 3;  // 1 byte - first operand
+   const uint compilerOperand2       = Address.BasicCompilerWorkspace + 4;  // 1 byte - second operand
+   const uint compilerLastOpCode     = Address.BasicCompilerWorkspace + 5;  // 1 byte - last opcode emitted
+   const uint compilerFuncArgs       = Address.BasicCompilerWorkspace + 6;  // 1 byte - number of arguments for current FUNC being compiled
+   const uint compilerFuncLocals     = Address.BasicCompilerWorkspace + 7;  // 1 byte - number of locals for current FUNC being compiled
+   const uint compilerSavedNodeAddrL = Address.BasicCompilerWorkspace + 8;  // 1 byte - saved node addr low
+   const uint compilerSavedNodeAddrH = Address.BasicCompilerWorkspace + 9;  // 1 byte - saved node addr high
    
    // Initialize the opcode buffer for compilation
    // Output: OpCode buffer ready for emission
@@ -64,8 +60,7 @@ unit Compiler // Compiler.asm
        LDA #(initOpCodeBufferTrace % 256) STA ZP.TraceMessageL LDA #(initOpCodeBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
-   
-   // IDY -> compilerSavedTokenPos
+   // ZP.TokenBuffer -> ZP.XID
    const string setLiteralBaseTrace = "SetLitBase";
    SetLiteralBase()
    {
@@ -73,10 +68,12 @@ unit Compiler // Compiler.asm
        LDA #(setLiteralBaseTrace % 256) STA ZP.TraceMessageL LDA #(setLiteralBaseTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
-       LDA ZP.IDYL
-       STA compilerLiteralBaseL
-       LDA ZP.IDYH
-       STA compilerLiteralBaseH
+    LDA ZP.TokenBufferL
+    STA ZP.IDYL
+    STA ZP.XIDL
+    LDA ZP.TokenBufferH
+    STA ZP.IDYH
+    STA ZP.XIDH
        
 #ifdef TRACE
        LDA #(setLiteralBaseTrace % 256) STA ZP.TraceMessageL LDA #(setLiteralBaseTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();

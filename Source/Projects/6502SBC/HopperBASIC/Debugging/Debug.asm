@@ -174,6 +174,30 @@ unit Debug // Debug.asm
         PLA PLP
     }
     
+    Printable()
+    {
+        PHA
+        loop
+        {
+            CMP #32
+            if (C)  // >= 32
+            {
+                CMP #127
+                if (NC)  // <= 126
+                {
+                    COut();
+                    break;
+                }
+            }
+            
+            // Not printable
+            LDA #'.' COut();
+            
+            break;
+        } // exit loop
+        PLA
+    }
+    
     // === Private output methods (use DB slots, no preservation) ===
     
     tpOut()  // Output TokenBuffer register
@@ -684,22 +708,7 @@ unit Debug // Debug.asm
             if (Z) { break; }
             
             LDA [ZP.DB0], Y
-            CMP #32
-            if (C)  // >= 32
-            {
-                CMP #127
-                if (NC)  // <= 126
-                {
-                    Serial.WriteChar();
-                    INY
-                    DEX
-                    continue;
-                }
-            }
-            
-            // Not printable
-            LDA #'.'
-            Serial.WriteChar();
+            Printable();
             INY
             DEX
         }
@@ -1078,22 +1087,7 @@ unit Debug // Debug.asm
                 if (Z) { break; }
                 
                 LDA [ZP.DB0], Y
-                
-                // Check if printable
-                CMP #32
-                if (C)  // >= 32
-                {
-                    CMP #127
-                    if (NC)  // <= 127
-                    {
-                        cOut();
-                        INY
-                        continue;
-                    }
-                }
-                
-                // Not printable
-                LDA #'.' cOut();
+                Printable();
                 INY
             }
             
@@ -1157,21 +1151,15 @@ unit Debug // Debug.asm
         printString();
         
         // Check if REPL buffers are active
-        LDA ZP.TokenBufferH
-        CMP #(Address.REPLTokenizerBuffer >> 8)
-        if (Z)
+        IsREPLMode();
+        if (C)
         {
-            LDA ZP.TokenBufferL
-            CMP #(Address.REPLTokenizerBuffer & 0xFF)
-            if (Z)
-            {
-                // REPL is active
-                LDA #(activeMarker % 256)
-                STA ZP.STR
-                LDA #(activeMarker / 256)
-                STA ZP.STRH
-                printString();
-            }
+            // REPL is active
+            LDA #(activeMarker % 256)
+            STA ZP.STR
+            LDA #(activeMarker / 256)
+            STA ZP.STRH
+            printString();
         }
         
         LDA #(sectionSuffix % 256)
@@ -1509,22 +1497,7 @@ unit Debug // Debug.asm
                 if (Z) { break; }
                 
                 LDA [ZP.DB0], Y
-                
-                // Check if printable
-                CMP #32
-                if (C)  // >= 32
-                {
-                    CMP #127
-                    if (NC)  // <= 127
-                    {
-                        cOut();
-                        INY
-                        continue;
-                    }
-                }
-                
-                // Not printable
-                LDA #'.' cOut();
+                Printable();
                 INY
             }
             
@@ -2069,6 +2042,101 @@ unit Debug // Debug.asm
         PHA PHX PHY
         dumpPage();
         PLY PLX PLA
+    }
+    
+    DumpTokenBuffer()
+    {
+        PHP PHA PHX PHY
+        LDA ZP.XIDL
+        PHA
+        LDA ZP.XIDH
+        PHA
+        
+        IsREPLMode();
+        if (C)
+        {
+            LDA #(Address.REPLTokenizerBuffer & 0xFF)
+            STA ZP.XIDL
+            LDA #(Address.REPLTokenizerBuffer >> 8)
+            STA ZP.XIDH
+        }
+        else
+        {
+            LDA #(Address.BASICTokenizerBuffer & 0xFF)
+            STA ZP.XIDL
+            LDA #(Address.BASICTokenizerBuffer >> 8)
+            STA ZP.XIDH
+        }
+        DumpXIDBuffer();
+        
+        PLA
+        STA ZP.XIDH
+        PLA
+        STA ZP.XIDL
+        PLY PLX PLA PLP
+    }
+    DumpREPLBuffer()
+    {
+        PHP PHA PHX PHY
+        LDA ZP.XIDL
+        PHA
+        LDA ZP.XIDH
+        PHA
+        
+        LDA #(Address.REPLTokenizerBuffer & 0xFF)
+        STA ZP.XIDL
+        LDA #(Address.REPLTokenizerBuffer >> 8)
+        STA ZP.XIDH
+        DumpXIDBuffer();
+        
+        PLA
+        STA ZP.XIDH
+        PLA
+        STA ZP.XIDL
+        PLY PLX PLA PLP
+    }
+    
+    DumpXIDBuffer()
+    {
+        // XID
+        PHP PHA PHX PHY
+        
+        NL();
+        LDA ZP.XIDH HOut(); LDA ZP.XIDL HOut(); LDA #':' COut(); Space();
+        
+        LDA ZP.TokenBufferContentSizeL
+        TAX
+        LDY #0
+        loop
+        {
+            LDA [ZP.XID], Y
+            HOut(); Space();
+            INY
+            DEX
+            if (Z) { break; }
+        }
+        Space();
+        LDA ZP.TokenBufferContentSizeL
+        TAX
+        LDY #0
+        loop
+        {
+            LDA [ZP.XID], Y
+            Printable();
+            INY
+            DEX
+            if (Z) { break; }
+        }
+        
+        
+        /*
+        LDA ZP.XIDL
+        STA ZP.DB0
+        LDA ZP.XIDH
+        STA ZP.DB1
+        dumpMemoryBlock(); // address: DB1 = MSB, DB0 = LSB
+        */
+        PLY PLX PLA PLP
     }
     
     DumpBuffers()

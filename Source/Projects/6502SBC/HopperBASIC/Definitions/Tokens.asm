@@ -16,6 +16,10 @@ unit Tokens
     // See the implementation of Tokenizer.Rollback to understand why we set the high bit of tokens and
     // why we limit our characaters in literals to ASCII (0..127)
     // Complete Token definitions for HopperBASIC
+    // Complete Token definitions for HopperBASIC
+    // All values >= 0x80 
+    // See the implementation of Tokenizer.Rollback to understand why we set the high bit of tokens and
+    // why we limit our characaters in literals to ASCII (0..127)
     enum Token
     {
         // Console commands
@@ -34,7 +38,7 @@ unit Tokens
         HEAP     = 0x8C,
         BUFFERS  = 0x8D,
         DUMP     = 0x8E,
-        DASM     = 0x8F,  // NEW: Disassemble command
+        DASM     = 0x8F,
         BYE      = 0x90,
         TRON     = 0x91,
         TROFF    = 0x92,
@@ -92,45 +96,46 @@ unit Tokens
         RND      = 0xBC,
         SECONDS  = 0xBD,
         DELAY    = 0xBE,
+        //ENTER    = 0xBF,
         
         // Sentinel marking end of keywords
-        lastKeyword = 0xBE,  // Updated to DELAY (highest keyword value)
+        lastKeyword = 0xBF,
         
         // Basic operators (start after lastKeyword)
-        EQUALS   = 0xBF,  // =
-        PLUS     = 0xC0,  // +
-        MINUS    = 0xC1,  // -
-        LPAREN   = 0xC2,  // (
-        RPAREN   = 0xC3,  // )
-        NOTEQUAL = 0xC4,  // <>
+        EQUALS   = 0xC0,  // =
+        PLUS     = 0xC1,  // +
+        MINUS    = 0xC2,  // -
+        LPAREN   = 0xC3,  // (
+        RPAREN   = 0xC4,  // )
+        NOTEQUAL = 0xC5,  // <>
         
         // Additional comparison operators
-        LT       = 0xC5,  // <
-        GT       = 0xC6,  // >
-        LE       = 0xC7,  // <=
-        GE       = 0xC8,  // >=
+        LT       = 0xC6,  // 
+        GT       = 0xC7,  // >
+        LE       = 0xC8,  // <=
+        GE       = 0xC9,  // >=
         
         // Arithmetic operators
-        MULTIPLY = 0xC9,  // *
-        DIVIDE   = 0xCA,  // /
+        MULTIPLY = 0xCA,  // *
+        DIVIDE   = 0xCB,  // /
         
-        BITWISE_AND = 0xCB,  // &
-        BITWISE_OR  = 0xCC,  // |
+        BITWISE_AND = 0xCC,  // &
+        BITWISE_OR  = 0xCD,  // |
         
         // Array and string operators
-        LBRACKET = 0xCD,  // [
-        RBRACKET = 0xCE,  // ]
-        LBRACE   = 0xCF,  // {
-        RBRACE   = 0xD0,  // }
+        LBRACKET = 0xCE,  // [
+        RBRACKET = 0xCF,  // ]
+        LBRACE   = 0xD0,  // {
+        RBRACE   = 0xD1,  // }
         
         // Literals and identifiers
-        NUMBER     = 0xD1,  // Numeric literal
-        STRINGLIT  = 0xD2,  // String literal
-        IDENTIFIER = 0xD3,  // Variable/function name
-        EOF        = 0xD4,  // End of file/input
-        COLON      = 0xD5,  // : statement separator
-        COMMA      = 0xD6,  // , parameter separator
-        SEMICOLON  = 0xD7,  // ; (future use)
+        NUMBER     = 0xD2,  // Numeric literal
+        STRINGLIT  = 0xD3,  // String literal
+        IDENTIFIER = 0xD4,  // Variable/function name
+        EOF        = 0xD5,  // End of file/input
+        COLON      = 0xD6,  // : statement separator
+        COMMA      = 0xD7,  // , parameter separator
+        SEMICOLON  = 0xD8,  // ; (future use)
     }
     
     // Keywords A-L (first character < 'M') - Reorganized by frequency

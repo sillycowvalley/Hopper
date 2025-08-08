@@ -27,10 +27,21 @@ unit Dasm
         
         loop // Single exit block
         {
+            Space(); Space(); Space(); // indent
+            LDA #'[' COut(); LDA ZP.IDXH HOut();LDA ZP.IDXL HOut(); LDA #']' COut();
+            LDA #'[' COut(); LDA ZP.XIDH HOut();LDA ZP.XIDL HOut(); LDA #']' COut();
+            NL();
+            Objects.GetTokens();
+            LDA ZP.IDYL
+            STA ZP.XIDL
+            LDA ZP.IDYH
+            STA ZP.XIDH
+            
             // Get opcode stream pointer from function
             Functions.GetOpCodes(); // Input: ZP.IDX, Output: ZP.IDY = opcode stream, C if compiled
             if (NC)
             {
+                break;
                 // Function not compiled - no opcodes to disassemble
                 Functions.Compile();
                 Functions.GetOpCodes();
@@ -52,7 +63,7 @@ unit Dasm
             // Iterate through opcode stream
             loop
             {
-                Space(); Space(); Space();Space(); // indent
+                Space(); Space();Space();Space(); // indent
                 
                 // Print address (4 hex digits)
                 LDA ZP.IDYH HOut(); LDA ZP.IDYL HOut(); LDA #':' COut(); Space();
@@ -150,9 +161,12 @@ unit Dasm
                         {
                             case OpCode.CALL:
                             {
+                                CLC
                                 LDA ZP.ACCL
+                                ADC ZP.XIDL
                                 STA ZP.TOPL
                                 LDA ZP.ACCH
+                                ADC ZP.XIDH
                                 STA ZP.TOPH
                                 Functions.Find();
                                 if (C)
@@ -188,6 +202,14 @@ unit Dasm
                             }
                             case OpCode.PUSHCSTRING:
                             {
+                                CLC
+                                LDA ZP.XIDL
+                                ADC ZP.ACCL
+                                STA ZP.ACCL
+                                LDA ZP.XIDH
+                                ADC ZP.ACCH
+                                STA ZP.ACCH
+                                 
                                 LDA #'(' COut();
                                 PrintStringACC();
                                 LDA #')' COut();
