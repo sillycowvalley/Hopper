@@ -7,6 +7,7 @@
 - **No global iterators** - FOR/NEXT only allowed inside functions (FUNC or BEGIN)
 - **Classic BASIC behavior** - Loop variable retains overflow value after loop completion
 - **Expressions evaluated once** - FROM, TO, and STEP expressions captured at loop start
+- **Stack-based temporaries** - TO and STEP values live on stack during loop execution
 
 ### Syntax
 ```basic
@@ -18,18 +19,41 @@ NEXT i
 ### Compilation Strategy
 When encountering FOR:
 1. Create implicit local for iterator if not exists (allocate slot, increment `compilerFuncLocals`)
-2. Evaluate `<from>` expression → store in iterator variable
-3. Evaluate `<to>` expression → store as hidden local (BP+n+1)
-4. Evaluate `<step>` if present (default 1) → store as hidden local (BP+n+2)
-5. Record loop start position for NEXT
+2. Evaluate `<from>` expression → POPLOCAL to iterator variable
+3. Evaluate `<to>` expression → leave on stack (becomes temporary at SP-2)
+4. If STEP present: evaluate `<step>` expression → leave on stack (at SP-1)
+   Otherwise: PUSH1 → leave on stack (at SP-1)
+5. Save loop start position with PHA/PLA
+6. Save iterator variable in ZP.IDX (preserved through compilation)
 
 When encountering NEXT:
-1. Verify variable name matches most recent FOR
-2. Add step to iterator: `iterator = iterator + step`
-3. Compare with limit based on step sign:
-   - Positive step: continue if `iterator <= limit`
-   - Negative step: continue if `iterator >= limit`
-4. Jump back to loop start if continuing
+1. Verify variable name matches ZP.IDX (current FOR iterator)
+2. Emit increment code:
+   ```
+   PUSHLOCAL iterator
+   PUSHLOCAL [SP-1]    ; Get step from stack temporary
+   ADD
+   POPLOCAL iterator
+   ```
+3. Emit comparison:
+   ```
+   PUSHLOCAL iterator
+   PUSHLOCAL [SP-2]    ; Get limit from stack temporary
+   [LE or GE based on step sign]
+   JUMPNZW loop_start
+   ```
+4. Emit cleanup: DECSP, DECSP (remove TO and STEP temporaries)
+5. Restore parent FOR context if nested
+
+### Stack Layout During Loop
+```
+[STEP value]      <- SP-1 (temporary)
+[TO value]        <- SP-2 (temporary)
+[Local n]         <- BP+n
+...
+[Iterator]        <- BP+k (actual local)
+[Local 0]         <- BP
+```
 
 ### Example Compilation
 ```basic
@@ -38,14 +62,12 @@ FOR i = 1 TO 10 STEP 2
 NEXT i
 ```
 
-Compiles to approximately:
+Compiles to:
 ```
-PUSH1                    ; Start value
+PUSH1                   ; Start value
 POPLOCAL i              ; Store in iterator
-PUSHBYTE 10             ; TO value
-POPLOCAL hidden_limit   ; Store limit
-PUSHBYTE 2              ; STEP value  
-POPLOCAL hidden_step    ; Store step
+PUSHBYTE 10             ; TO value - stays on stack
+PUSHBYTE 2              ; STEP value - stays on stack
 
 loop_start:
 PUSHLOCAL i
@@ -55,22 +77,27 @@ SYSCALL PRINTCHAR       ; Newline
 
 ; NEXT implementation:
 PUSHLOCAL i
-PUSHLOCAL hidden_step
+DUP                     ; Get step from SP-1 position
 ADD
-POPLOCAL i              ; i = i + step
+POPLOCAL i              
 
 PUSHLOCAL i
-PUSHLOCAL hidden_limit
-LE                      ; i <= limit (for positive step)
+[access SP-2 for limit] ; Need to access TO value
+LE                      
 JUMPNZW loop_start
+
+DECSP                   ; Remove STEP
+DECSP                   ; Remove TO
+; Iterator i remains as local
 ```
 
 ### Implementation Notes
-- Must track FOR context for proper NEXT matching
-- Support nested FOR loops with separate contexts
-- Iterator variable accessible after loop with overflow value
-- All three values (iterator, limit, step) are locals in current function frame
-- No cleanup needed - locals cleaned up with function exit
+- Use PHA/PLA to manage jump-back address during compilation
+- Use ZP.IDX to track current FOR iterator variable
+- Preserve ZP.IDX around expression evaluations and statement compilation
+- Stack temporaries accessed via relative addressing during execution
+- No explicit hidden locals needed - stack provides temporary storage
+- Nested FOR loops naturally handled by saving/restoring ZP.IDX
 
 ---
 
@@ -127,10 +154,12 @@ BitInvMasks: .byte $FE,$FD,$FB,$F7,$EF,$DF,$BF,$7F
 
 ### Phase 1: FOR/NEXT
 - Create implicit local for iterator variable
-- Allocate hidden locals for limit and step
+- Leave TO and STEP values on stack as temporaries
 - Implement FOR compilation with expression evaluation
-- Implement NEXT with increment and comparison
-- Handle nested loops correctly
+- Implement NEXT with stack-relative access to temporaries
+- Use PHA/PLA for jump address, ZP.IDX for iterator tracking
+- Handle nested loops via ZP.IDX save/restore
+- Clean up with DECSP after loop
 - Test with benchmarks
 
 ### Phase 2: Arrays
@@ -150,35 +179,35 @@ BitInvMasks: .byte $FE,$FD,$FB,$F7,$EF,$DF,$BF,$7F
 ### FOR/NEXT
 ```basic
 FUNC TestSimpleFor()
-    ' Simple loop
-    FOR I = 1 TO 10
-        PRINT I
-    NEXT I
-    PRINT "After loop: "; I  ' Should print 11
+    ' Simple loop - i becomes implicit local
+    FOR i = 1 TO 10
+        PRINT i
+    NEXT i
+    PRINT "After loop: "; i  ' Should print 11
 ENDFUNC
 
 FUNC TestNestedFor()
-    ' Nested loops
-    FOR I = 1 TO 3
-        FOR J = 1 TO 3
-            PRINT I * J
-        NEXT J
-    NEXT I
+    ' Nested loops - both become locals
+    FOR i = 1 TO 3
+        FOR j = 1 TO 3
+            PRINT i * j
+        NEXT j
+    NEXT i
 ENDFUNC
 
 FUNC TestStepFor()
     ' With STEP
-    FOR I = 10 TO 1 STEP -1
-        PRINT I
-    NEXT I
+    FOR i = 10 TO 1 STEP -1
+        PRINT i
+    NEXT i
 ENDFUNC
 
 FUNC TestDynamicFor(n)
-    ' Dynamic bounds
-    FOR I = n/2 TO n*2
-        PRINT I
+    ' Dynamic bounds - evaluated once
+    FOR i = n/2 TO n*2
+        PRINT i
         n = n + 1  ' Doesn't affect loop bounds
-    NEXT I
+    NEXT i
 ENDFUNC
 ```
 
@@ -189,21 +218,21 @@ BIT ARRAY prime[8191]
 
 BEGIN
     ' Initialize all as prime (0)
-    FOR I = 2 TO 90
-        IF prime[I] = 0 THEN
-            FOR J = I * 2 TO 8190 STEP I
-                prime[J] = 1
-            NEXT J
+    FOR i = 2 TO 90
+        IF prime[i] = 0 THEN
+            FOR j = i * 2 TO 8190 STEP i
+                prime[j] = 1
+            NEXT j
         ENDIF
-    NEXT I
+    NEXT i
     
     ' Count primes
     INT count = 0
-    FOR I = 2 TO 8190
-        IF prime[I] = 0 THEN
+    FOR i = 2 TO 8190
+        IF prime[i] = 0 THEN
             count = count + 1
         ENDIF
-    NEXT I
+    NEXT i
     PRINT count; " primes found"
 END
 ```
@@ -212,34 +241,35 @@ END
 
 ## Technical Notes
 
-### FOR/NEXT Context Tracking
+### FOR/NEXT Compilation State
 ```asm
-CompilerForContext       // Stack of FOR loop contexts
-CompilerForDepth         // Current nesting depth
-CompilerForVariable      // Current FOR variable for NEXT matching
-CompilerForLoopStart     // Address to jump back to
+; During compilation, manage with:
+PHA/PLA                 ; Jump-back address
+ZP.IDX                  ; Current FOR iterator variable
+; Nested loops: save/restore ZP.IDX around inner FOR
 ```
+
+### Stack Access During Execution
+Need mechanism to access stack temporaries at known offsets:
+- SP-1: STEP value
+- SP-2: TO value
+- May need new opcodes or use existing DUP/indexed access
 
 ### Error Conditions
 - FOR without NEXT
 - NEXT without FOR
 - NEXT with wrong variable name
 - FOR at global scope (not in function)
-- Nested FOR with same variable name
-
-### Memory Management
-- FOR iterator and hidden locals cleaned up with function frame
-- No special cleanup needed
-- Arrays allocated on heap, persist until explicit removal
+- Nested FOR with same variable name (allowed but iterator shadowed)
 
 ### Success Criteria
 1. FOR/NEXT loops work with implicit locals
 2. Loop variable retains overflow value after completion
-3. Nested FOR loops work correctly
-4. Dynamic bounds evaluated once at loop start
-5. STEP works with positive and negative values
-6. Fibonacci benchmark runs with FOR loops
-7. Sieve benchmark runs with BIT array
-8. No memory leaks or stack corruption
+3. Stack temporaries properly managed
+4. Nested FOR loops work correctly
+5. Dynamic bounds evaluated once at loop start
+6. STEP works with positive and negative values
+7. No stack corruption from temporaries
+8. DECSP cleanup after loop completion
 9. DASM clearly shows loop structure
 10. Error detection for mismatched FOR/NEXT
