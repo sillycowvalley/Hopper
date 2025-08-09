@@ -96,45 +96,46 @@ unit Tokens
         SECONDS  = 0xBD,
         DELAY    = 0xBE,
         VAR      = 0xBF,
+        CLS      = 0xC0,  // Clear screen command
         
         // Sentinel marking end of keywords
-        lastKeyword = 0xBF,
+        lastKeyword = 0xC0,
         
         // Basic operators (start after lastKeyword)
-        EQUALS   = 0xC0,  // =
-        PLUS     = 0xC1,  // +
-        MINUS    = 0xC2,  // -
-        LPAREN   = 0xC3,  // (
-        RPAREN   = 0xC4,  // )
-        NOTEQUAL = 0xC5,  // <>
+        EQUALS   = 0xC1,  // =
+        PLUS     = 0xC2,  // +
+        MINUS    = 0xC3,  // -
+        LPAREN   = 0xC4,  // (
+        RPAREN   = 0xC5,  // )
+        NOTEQUAL = 0xC6,  // <>
         
         // Additional comparison operators
-        LT       = 0xC6,  // 
-        GT       = 0xC7,  // >
-        LE       = 0xC8,  // <=
-        GE       = 0xC9,  // >=
+        LT       = 0xC7,  // <
+        GT       = 0xC8,  // >
+        LE       = 0xC9,  // <=
+        GE       = 0xCA,  // >=
         
         // Arithmetic operators
-        MULTIPLY = 0xCA,  // *
-        DIVIDE   = 0xCB,  // /
+        MULTIPLY = 0xCB,  // *
+        DIVIDE   = 0xCC,  // /
         
-        BITWISE_AND = 0xCC,  // &
-        BITWISE_OR  = 0xCD,  // |
+        BITWISE_AND = 0xCD,  // &
+        BITWISE_OR  = 0xCE,  // |
         
         // Array and string operators
-        LBRACKET = 0xCE,  // [
-        RBRACKET = 0xCF,  // ]
-        LBRACE   = 0xD0,  // {
-        RBRACE   = 0xD1,  // }
+        LBRACKET = 0xCF,  // [
+        RBRACKET = 0xD0,  // ]
+        LBRACE   = 0xD1,  // {
+        RBRACE   = 0xD2,  // }
         
         // Literals and identifiers
-        NUMBER     = 0xD2,  // Numeric literal
-        STRINGLIT  = 0xD3,  // String literal
-        IDENTIFIER = 0xD4,  // Variable/function name
-        EOF        = 0xD5,  // End of file/input
-        COLON      = 0xD6,  // : statement separator
-        COMMA      = 0xD7,  // , parameter separator
-        SEMICOLON  = 0xD8,  // ; (future use)
+        NUMBER     = 0xD3,  // Numeric literal
+        STRINGLIT  = 0xD4,  // String literal
+        IDENTIFIER = 0xD5,  // Variable/function name
+        EOF        = 0xD6,  // End of file/input
+        COLON      = 0xD7,  // : statement separator
+        COMMA      = 0xD8,  // , parameter separator
+        SEMICOLON  = 0xD9,  // ; (future use)
     }
     
     // Keywords A-L (first character < 'M') - Reorganized by frequency
@@ -168,6 +169,7 @@ unit Tokens
         
         // Console commands (all infrequent)
         5, Token.CLEAR, 'C', 'L', 'E', 'A', 'R', // Console command
+        3, Token.CLS, 'C', 'L', 'S',             // Clear screen command
         5, Token.FUNCS, 'F', 'U', 'N', 'C', 'S', // Console command
         4, Token.CONT, 'C', 'O', 'N', 'T',       // Console command  
         3, Token.BYE, 'B', 'Y', 'E',             // Console command

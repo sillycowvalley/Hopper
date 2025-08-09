@@ -350,6 +350,7 @@ unit Statement // Statement.asm
             }
             
             case Token.PRINT:
+            case Token.CLS:
             case Token.IDENTIFIER: // Could be assignment or function call
             {
                 ExecuteStatement();

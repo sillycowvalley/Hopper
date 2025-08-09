@@ -56,10 +56,12 @@ unit OpCodes
        PUSH1        = 0x18,  // Push INT 1 (very common literal, no operand)
        PUSHVOID     = 0x19,  // Push VOID 0 (very common literal, no operand)
        
-       HALT         = 0x20,  // end of REPL opcode stream
+       HALT         = 0x1A,  // end of REPL opcode stream
        
        // Function frame management
-       ENTER        = 0x1A,  // Enter function frame - push BP, SP->BP
+       ENTER        = 0x1B,  // Enter function frame - push BP, SP->BP
+       
+       CLEARSCREEN  = 0x1C,
        
        // === OPCODES WITH ONE BYTE OPERAND (0x40-0x7F) ===
        // Bits 7-6: 01 (one byte operand)

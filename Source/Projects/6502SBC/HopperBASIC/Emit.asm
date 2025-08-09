@@ -47,6 +47,26 @@ unit Emit
 #endif
    }
    
+    // Emit CLS (clear screen) opcode
+    // Input: None
+    // Output: CLEARSCREEN opcode added to buffer
+    // Modifies: compilerOpCode, buffer state via Emit.OpCode()
+    const string emitClearScreenTrace = "Emit CLS";
+    ClearScreen()
+    {
+    #ifdef TRACE
+        LDA #(emitClearScreenTrace % 256) STA ZP.TraceMessageL LDA #(emitClearScreenTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        LDA #OpCode.CLEARSCREEN
+        STA Compiler.compilerOpCode
+        Emit.OpCode();
+        
+    #ifdef TRACE
+        LDA #(emitClearScreenTrace % 256) STA ZP.TraceMessageL LDA #(emitClearScreenTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+   
    // Emit opcode with one byte operand
    // Input: compilerOpCode = opcode value, compilerOperand1 = operand byte
    // Output: OpCode and operand written to buffer

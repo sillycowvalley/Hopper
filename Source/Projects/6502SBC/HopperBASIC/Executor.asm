@@ -351,6 +351,10 @@ PLX PLA
            {
                executeHalt();
            }
+           case OpCode.CLEARSCREEN:
+           {
+               executeClearScreen();
+           }
            
            // Function operations
            case OpCode.ENTER:
@@ -1624,4 +1628,11 @@ PLX PLA
         LDA #(executePushLocalTrace % 256) STA ZP.TraceMessageL LDA #(executePushLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     } 
+    
+    executeClearScreen()
+    {
+        // Send ANSI escape sequence to clear screen
+        LDA #0x0C  // Form feed
+        Serial.WriteChar();
+    }
 }

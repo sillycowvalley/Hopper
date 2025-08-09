@@ -1804,6 +1804,12 @@ unit Compiler // Compiler.asm
                    Error.CheckError();
                    if (NC) { States.SetFailure(); break; }
                }
+               case Token.CLS:
+               {
+                   compileCLSStatement();
+                   Error.CheckError();
+                   if (NC) { States.SetFailure(); break; }
+               }
                case Token.RETURN:
                {
                    STZ compilerCanDeclareLocals // no more locals after this
@@ -3222,6 +3228,38 @@ unit Compiler // Compiler.asm
         }
         
         PLA
+    }
+    
+    // Compile CLS statement - clear screen
+    // Input: ZP.CurrentToken = CLS token
+    // Output: CLS opcode emitted to buffer
+    // Modifies: OpCode buffer, ZP.CurrentToken
+    const string compileCLSStatementTrace = "CompCLS // CLS";
+    compileCLSStatement()
+    {
+    #ifdef TRACE
+        LDA #(compileCLSStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileCLSStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit block
+        {
+            // Get next token - should be EOL or COLON (CLS takes no arguments)
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { States.SetFailure(); break; }
+            
+            // Emit the CLS opcode
+            Emit.ClearScreen();
+            Error.CheckError();
+            if (NC) { States.SetFailure(); break; }
+            
+            States.SetSuccess();
+            break;
+        } // loop
+        
+    #ifdef TRACE
+        LDA #(compileCLSStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileCLSStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
     }
 
 }
