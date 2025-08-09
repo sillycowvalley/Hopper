@@ -1597,17 +1597,10 @@ PLX PLA
         States.CanContinue();
         if (C)
         {
-            // Add signed offset to BP (handles negative naturally)
-            CLC
-            ADC ZP.BP
-            TAY                     // Y = stack position
+            // signed BP offset  in A
+            Stacks.GetStack();
             
-            // Fetch value and type from stack position
-            LDA Address.ValueStackLSB, Y
-            STA ZP.TOPL
-            LDA Address.ValueStackMSB, Y
-            STA ZP.TOPH
-            LDA Address.TypeStackLSB, Y
+            LDA ZP.TOPT
             AND #BASICType.TYPEMASK   // masks off VAR bit (0x10)
             STA ZP.TOPT
             

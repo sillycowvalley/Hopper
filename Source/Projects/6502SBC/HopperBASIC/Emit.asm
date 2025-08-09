@@ -195,6 +195,91 @@ unit Emit
    }
    
    
+   // Emit opcode with three byte operands (byte + word)
+   // Input: compilerOpCode = opcode value, 
+   //        compilerOperand1 = first byte operand,
+   //        compilerOperand2 = word LSB, 
+   //        compilerOperand3 = word MSB
+   // Output: OpCode and operands written to buffer
+   // Modifies: ZP.OpCodeBufferContentSizeL/H (incremented by 4), ZP.XPC (incremented by 4)
+   const string emitOpCodeWithThreeBytesTrace = "EmitOp3B";
+   OpCodeWithThreeBytes()
+   {
+#ifdef TRACE
+       LDA #(emitOpCodeWithThreeBytesTrace % 256) STA ZP.TraceMessageL LDA #(emitOpCodeWithThreeBytesTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+       loop
+       {
+#ifdef TRACEJIT       
+           Tools.NL(); LDA #'>' Debug.COut();
+           LDA ZP.XPCH Debug.HOut(); LDA ZP.XPCL Debug.HOut();
+           LDA #' ' Debug.COut(); LDA Compiler.compilerOpCode Debug.HOut(); LDA #' ' Debug.COut(); 
+                                  LDA Compiler.compilerOperand1 Debug.HOut(); LDA #' ' Debug.COut();
+                                  LDA Compiler.compilerOperand2 Debug.HOut(); LDA #' ' Debug.COut();
+                                  LDA Compiler.compilerOperand3 Debug.HOut(); LDA #' ' Debug.COut();
+#endif        
+           // Check space for 4 bytes
+           LDA #4
+           CheckBufferSpace();
+           if (NC) 
+           { 
+               break; 
+           } // Buffer overflow
+           
+           // Write opcode
+           LDA Compiler.compilerOpCode
+           STA [ZP.XPC]
+           STA Compiler.compilerLastOpCode
+           
+           // Increment PC
+           INC ZP.XPCL
+           if (Z)
+           {
+               INC ZP.XPCH
+           }
+           
+           // Write first operand (iterator offset)
+           LDA Compiler.compilerOperand1
+           STA [ZP.XPC]
+           
+           // Increment PC
+           INC ZP.XPCL
+           if (Z)
+           {
+               INC ZP.XPCH
+           }
+           
+           // Write second operand (jump offset LSB)
+           LDA Compiler.compilerOperand2
+           STA [ZP.XPC]
+           
+           // Increment PC
+           INC ZP.XPCL
+           if (Z)
+           {
+               INC ZP.XPCH
+           }
+           
+           // Write third operand (jump offset MSB)  
+           LDA Compiler.compilerOperand3
+           STA [ZP.XPC]
+           
+           // Increment PC
+           INC ZP.XPCL
+           if (Z)
+           {
+               INC ZP.XPCH
+           }
+           
+           SEC // Success
+           break;
+       }
+#ifdef TRACE
+       LDA #(emitOpCodeWithThreeBytesTrace % 256) STA ZP.TraceMessageL LDA #(emitOpCodeWithThreeBytesTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+   }
+   
+   
    
    // Emit PUSHGLOBAL opcode for identifier
    // Input: Current token is IDENTIFIER
@@ -1144,5 +1229,60 @@ unit Emit
         LDA #(emitPopLocalTrace % 256) STA ZP.TraceMessageL LDA #(emitPopLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     }
+    
+    
+   // Emit FORCHK opcode for initial FOR loop check
+   // Input: A = iterator BP offset (signed)
+   //        X = forward jump offset LSB
+   //        Y = forward jump offset MSB
+   // Output: FORCHK opcode emitted with iterator offset and jump offset
+   // Modifies: compilerOpCode, compilerOperand1-3, buffer state via OpCodeWithThreeBytes()
+   const string emitForCheckTrace = "Emit FORCHK";
+   ForCheck()
+   {
+#ifdef TRACE
+       PHA LDA #(emitForCheckTrace % 256) STA ZP.TraceMessageL LDA #(emitForCheckTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+#endif
+       
+       // Set up parameters for emission
+       STA Compiler.compilerOperand1      // Store iterator offset as first operand
+       STX Compiler.compilerOperand2      // Store jump offset LSB
+       STY Compiler.compilerOperand3      // Store jump offset MSB
+       LDA #OpCode.FORCHK
+       STA Compiler.compilerOpCode
+       
+       Emit.OpCodeWithThreeBytes();
+       
+#ifdef TRACE
+       LDA #(emitForCheckTrace % 256) STA ZP.TraceMessageL LDA #(emitForCheckTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+   }
+   
+   // Emit FORIT opcode for FOR loop iteration (increment and check)
+   // Input: A = iterator BP offset (signed)
+   //        X = backward jump offset LSB
+   //        Y = backward jump offset MSB
+   // Output: FORIT opcode emitted with iterator offset and jump offset
+   // Modifies: compilerOpCode, compilerOperand1-3, buffer state via OpCodeWithThreeBytes()
+   const string emitForIterateTrace = "Emit FORIT";
+   ForIterate()
+   {
+#ifdef TRACE
+       PHA LDA #(emitForIterateTrace % 256) STA ZP.TraceMessageL LDA #(emitForIterateTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+#endif
+       
+       // Set up parameters for emission
+       STA Compiler.compilerOperand1      // Store iterator offset as first operand
+       STX Compiler.compilerOperand2      // Store jump offset LSB
+       STY Compiler.compilerOperand3      // Store jump offset MSB
+       LDA #OpCode.FORIT
+       STA Compiler.compilerOpCode
+       
+       Emit.OpCodeWithThreeBytes();
+       
+#ifdef TRACE
+       LDA #(emitForIterateTrace % 256) STA ZP.TraceMessageL LDA #(emitForIterateTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+   }
 
 }

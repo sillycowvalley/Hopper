@@ -84,6 +84,7 @@ unit Stacks // Stacks.asm
     
     // Input: A = signed offset from BP
     // Output: ZP.TOP = value at BP+offset, ZP.TOPT = type
+    // Modifies: A, Y
     GetStack()
     {
         CLC
@@ -98,7 +99,7 @@ unit Stacks // Stacks.asm
     }
     
     // Input: A = signed offset from BP, ZP.TOP = value to store
-    // Modifies: Y
+    // Modifies: A, Y
     SetStack()
     {
         CLC
