@@ -871,23 +871,8 @@ unit Functions
             GetArguments(); // ZP.IDY = arguments list head pointer
             if (C)
             {
-                LDA ZP.IDXL
-                PHA
-                LDA ZP.IDXH 
-                PHA
-                
-                LDA ZP.IDYL
-                STA ZP.IDXL
-                LDA ZP.IDYH
-                STA ZP.IDXH
-                
                 // has arguments
                 Locals.GetCount(); // ZP.ACCL = argument count
-                
-                PLA
-                STA ZP.IDXH
-                PLA
-                STA ZP.IDXL
             }
             
             LDA ZP.IDXL
