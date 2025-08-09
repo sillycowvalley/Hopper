@@ -107,6 +107,104 @@ program DASM
         return code;
     }
     
+    // Helper method to render jump table in pretty format (for disassembly)
+    RenderJumpTablePretty(file hasmFile, <byte> code, ref uint index, ref uint address, 
+                          ref uint codeSize, uint tableSizeInWords, 
+                          <uint,uint> methodAddresses, string commentPrefix)
+    {
+        string previousComment;
+        for (byte i = 0; i < tableSizeInWords; i++)
+        {
+            uint tableEntry = code[index] + code[index+tableSizeInWords] << 8; 
+            string comment = "";
+            if (methodAddresses.Contains(tableEntry))
+            {
+                uint methodIndex = methodAddresses[tableEntry];
+                <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
+                if (methodSymbols.Count != 0)
+                {
+                    string nm = methodSymbols["name"];
+                    comment = "// -> " + nm + "()";
+                    if (comment == previousComment)
+                    {
+                        comment = "// ->            ''";
+                    }
+                    else
+                    {
+                        previousComment = comment;
+                    }
+                }
+            }
+            hasmFile.Append("    0x" + address.ToHexString(4) + " 0x" + i.ToHexString(2) + " 0x" + 
+                                       tableEntry.ToHexString(4) + "    " + comment + Char.EOL); 
+            index++;
+            address++;
+            codeSize++;
+        }
+        index    += tableSizeInWords;
+        address  += tableSizeInWords;
+        codeSize += tableSizeInWords;
+    }
+    
+    // Helper method to render jump table as raw data (for code generation)
+    RenderJumpTableRaw(file outputFile, <byte> code, ref uint index, ref uint address, ref uint codeSize, uint tableSizeInWords)
+    {
+        uint bytesWritten = 0;
+        
+        // Dump LSBs first
+        for (byte i = 0; i < tableSizeInWords; i++)
+        {
+            if (bytesWritten % 16 == 0)
+            {
+                if (bytesWritten > 0)
+                {
+                    outputFile.Append(Char.EOL);
+                }
+                outputFile.Append("0x" + address.ToHexString(4) + " ");
+            }
+            else if (bytesWritten % 8 == 0)
+            {
+                outputFile.Append(" ");
+            }
+            outputFile.Append(" 0x" + code[index].ToHexString(2));
+            index++;
+            address++;
+            bytesWritten++;
+        }
+        
+        codeSize += bytesWritten;
+        outputFile.Append(Char.EOL);
+        
+        bytesWritten = 0;
+            
+        // Dump MSBs
+        for (byte i = 0; i < tableSizeInWords; i++)
+        {
+            if (bytesWritten % 16 == 0)
+            {
+                if (bytesWritten > 0)
+                {
+                    outputFile.Append(Char.EOL);
+                }
+                outputFile.Append("0x" + address.ToHexString(4) + " ");
+            }
+            else if (bytesWritten % 8 == 0)
+            {
+                outputFile.Append(" ");
+            }
+            outputFile.Append(" 0x" + code[index].ToHexString(2));
+            index++;
+            address++;
+            bytesWritten++;
+        }
+        
+        if (bytesWritten % 16 != 0)
+        {
+            outputFile.Append(Char.EOL);
+        }
+        codeSize += bytesWritten;
+    }
+    
     BadArguments()
     {
         PrintLn("Invalid arguments for 65DASM:");
@@ -514,38 +612,8 @@ program DASM
                     
                     if (instruction == OpCode.JMP_inn)
                     {
-                        string previousComment;
-                        for (byte i = 0; i < tableSizeInWords; i++)
-                        {
-                            uint tableEntry = code[index] + code[index+tableSizeInWords] << 8; 
-                            comment = "";
-                            if (methodAddresses.Contains(tableEntry))
-                            {
-                                uint methodIndex = methodAddresses[tableEntry];
-                                <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
-                                if (methodSymbols.Count != 0)
-                                {
-                                    string nm = methodSymbols["name"];
-                                    comment = "// -> " + nm + "()";
-                                    if (comment == previousComment)
-                                    {
-                                        comment = "// ->            ''";
-                                    }
-                                    else
-                                    {
-                                        previousComment = comment;
-                                    }
-                                }
-                            }
-                            hasmFile.Append("    0x" + address.ToHexString(4) + " 0x" + i.ToHexString(2) + " 0x" + 
-                                                       tableEntry.ToHexString(4) + "    " + comment + Char.EOL); 
-                            index++;
-                            address++;
-                            codeSize++;
-                        }
-                        index    += tableSizeInWords;
-                        address  += tableSizeInWords;
-                        codeSize += tableSizeInWords;
+                        RenderJumpTablePretty(hasmFile, code, ref index, ref address, ref codeSize, tableSizeInWords, methodAddresses, commentPrefix);
+                        //RenderJumpTableRaw(hasmFile, code, ref index, ref address, ref codeSize, tableSizeInWords);
                     }
                 }
                 hasmFile.Append("" +  Char.EOL);

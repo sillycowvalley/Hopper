@@ -94,7 +94,7 @@ program Generate
             }
             else if ((instruction == OpCode.CPY_n) || (instruction == OpCode.CPX_n))
             {
-                tableEntries = code[index+1]+1;
+                tableEntries = code[index+1];
             }
             if (instruction == callInstruction)
             {

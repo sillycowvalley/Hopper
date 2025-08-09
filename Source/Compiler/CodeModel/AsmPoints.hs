@@ -508,7 +508,7 @@ unit AsmPoints
             }
             if ((opCode == OpCode.CPX_n) || (opCode == OpCode.CPY_n))
             {
-                tableSizeInWords = operand + 1;
+                tableSizeInWords = operand;
             }
             if (opCode == opcodeJMPIndex)
             {
