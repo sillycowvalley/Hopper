@@ -192,11 +192,11 @@ unit Compiler // Compiler.asm
    // Input: ZP.CurrentToken = current token
    // Output: Logical opcodes emitted, ZP.CurrentToken = token after expression
    // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
-   const string compileLogicalTrace = "CompLog // OR";
-   compileLogical()
+   const string compileExpressionTreelTrace = "CompExprTree // OR";
+   compileExpressionTree()
    {
 #ifdef TRACE
-       LDA #(compileLogicalTrace % 256) STA ZP.TraceMessageL LDA #(compileLogicalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+       LDA #(compileExpressionTreelTrace % 256) STA ZP.TraceMessageL LDA #(compileExpressionTreelTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
        loop
@@ -233,7 +233,7 @@ unit Compiler // Compiler.asm
            
 
 #ifdef TRACE
-       LDA #(compileLogicalTrace % 256) STA ZP.TraceMessageL LDA #(compileLogicalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+       LDA #(compileExpressionTreelTrace % 256) STA ZP.TraceMessageL LDA #(compileExpressionTreelTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
    
@@ -1030,7 +1030,7 @@ unit Compiler // Compiler.asm
            if (NC) { break; }
            
            // Compile argument
-           compileLogical();
+           compileExpressionTree();
            Error.CheckError();
            if (NC) { break; }
            
@@ -1093,7 +1093,7 @@ unit Compiler // Compiler.asm
            if (NC) { break; }
            
            // Compile argument
-           compileLogical();
+           compileExpressionTree();
            Error.CheckError();
            if (NC) { break; }
            
@@ -1272,7 +1272,7 @@ unit Compiler // Compiler.asm
            if (NC) { break; }
            
            // Compile argument
-           compileLogical();
+           compileExpressionTree();
            Error.CheckError();
            if (NC) { break; }
            
@@ -1331,7 +1331,7 @@ unit Compiler // Compiler.asm
            if (NC) { break; }
            
            // Compile address expression
-           compileLogical();
+           compileExpressionTree();
            Error.CheckError();
            if (NC) { break; }
            
@@ -1393,7 +1393,7 @@ unit Compiler // Compiler.asm
            if (NC) { break; }
            
            // Compile address expression
-           compileLogical();
+           compileExpressionTree();
            Error.CheckError();
            if (NC) { break; }
            
@@ -1412,7 +1412,7 @@ unit Compiler // Compiler.asm
            if (NC) { break; }
            
            // Compile value expression
-           compileLogical();
+           compileExpressionTree();
            Error.CheckError();
            if (NC) { break; }
            
@@ -1557,7 +1557,7 @@ unit Compiler // Compiler.asm
                    if (NC) { break; }
                    
                    // Parse the sub-expression
-                   compileLogical();
+                   compileExpressionTree();
                    Error.CheckError();
                    if (NC) { break; }
                    
@@ -1647,7 +1647,7 @@ unit Compiler // Compiler.asm
        if (NC) { States.SetFailure(); return; }
        
        // Compile the expression using same precedence as Expression.asm
-       compileLogical();
+       compileExpressionTree();
        Error.CheckError();
        if (NC) { States.SetFailure(); return; }
        
@@ -1703,6 +1703,7 @@ unit Compiler // Compiler.asm
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
            
+           
            Emit.Enter();
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
@@ -1734,10 +1735,6 @@ unit Compiler // Compiler.asm
                if (NC) { States.SetFailure(); break; }
            } // Statement compilation loop
            
-           Emit.Halt(); // DASM needs this
-           Error.CheckError();
-           if (NC) { States.SetFailure(); break; }
-           
            // Check if last opcode was RETURN or RETURNVAL
            checkLastOpCodeIsReturn();
            if (NC) // Last opcode was not RETURN
@@ -1750,6 +1747,9 @@ unit Compiler // Compiler.asm
                 Error.CheckError();
                 if (NC) { States.SetFailure(); break; }
            }
+           Emit.Halt();  // sentinel for ending opcode iteration
+           Error.CheckError();
+           if (NC) { States.SetFailure(); break; }
            
            States.SetSuccess(); // Success
            break;
@@ -1958,7 +1958,7 @@ unit Compiler // Compiler.asm
             loop // Argument processing loop
             {
                 // Compile current expression
-                compileLogical(); // Use full expression compilation
+                compileExpressionTree(); // Use full expression compilation
                 Error.CheckError();
                 if (NC) { States.SetFailure(); break; }
                 
@@ -2072,7 +2072,7 @@ unit Compiler // Compiler.asm
            }
            
            // Compile return expression
-           compileLogical();
+           compileExpressionTree();
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
            
@@ -2170,7 +2170,7 @@ unit Compiler // Compiler.asm
             if (NC) { States.SetFailure(); break; }
             
             // Compile condition expression (e.g., "I = 10")
-            compileLogical();
+            compileExpressionTree();
             Error.CheckError();
             if (NC) { States.SetFailure(); break; }
             
@@ -2260,7 +2260,7 @@ unit Compiler // Compiler.asm
            PHA  // Save loop start MSB
            
            // Compile condition expression (e.g., "I < 10")
-           compileLogical();       
+           compileExpressionTree();       
            
            // Save forward jump operand position for later patching
            // This is where JUMPZW operand will be stored (after the opcode byte)
@@ -2465,7 +2465,7 @@ unit Compiler // Compiler.asm
             if (NC) { States.SetFailure(); break; }
             
             // Compile condition expression (e.g., "X > 10")
-            compileLogical();
+            compileExpressionTree();
             Error.CheckError();
             if (NC) { States.SetFailure(); break; }
             
@@ -2894,7 +2894,6 @@ unit Compiler // Compiler.asm
                 }
                 default:
                 {
-NL(); HOut();
                     // WORD, INT
                     STA ZP.TOPT
                     Emit.PushWord();
@@ -2904,14 +2903,10 @@ NL(); HOut();
             Error.CheckError();
             if (NC) { break; }
 
-NL(); HOut();
-                
             // Create local using Locals.Add (it handles allocation and linking)
             // Need to set up the type in the node
             ORA #SymbolType.LOCAL  // Combine with LOCAL
             STA ZP.SymbolType  // Locals.Add expects this
-            
-NL(); HOut();
             
             // ZP.IDX still has function node, ZP.TOP has name
             Locals.Add();  // Reuse existing Add method
@@ -2934,7 +2929,7 @@ NL(); HOut();
                 if (NC) { break; }
                 
                 // Compile initialization expression
-                CompileExpression();
+                compileExpressionTree();
                 Error.CheckError();
                 if (NC) { break; }
                 
@@ -3031,7 +3026,7 @@ NL(); HOut();
                 }
                 
                 // Compile the RHS expression (this WILL munt ZP.IDX and ZP.ACCL)
-                compileLogical();
+                compileExpressionTree();
                 Error.CheckError();
                 if (NC) 
                 { 
