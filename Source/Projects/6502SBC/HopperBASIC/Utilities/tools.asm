@@ -77,6 +77,30 @@ unit Tools // Tools.asm
     } 
     
     // Print null-terminated string to serial output
+    // Input: ZP.NEXT = pointer to null-terminated string
+    // Output: String printed to serial
+    // Preserves: Everything
+    PrintStringNEXT()
+    {
+        PHA
+        PHY
+        
+        LDY #0              // Initialize string index
+        
+        loop                // Print each character until null terminator
+        {
+            LDA [ZP.NEXT], Y // Load character from string
+            if (Z) { break; } // Exit if null terminator found
+            
+            Serial.WriteChar(); // Print the character
+            INY             // Move to next character
+        }
+        
+        PLY
+        PLA
+    }
+    
+    // Print null-terminated string to serial output
     // Input: ZP.IDY = pointer to null-terminated string
     // Output: String printed to serial
     // Preserves: Everything

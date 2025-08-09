@@ -969,7 +969,16 @@ unit Console // Console.asm
         // Returns: ZP.IDX = first variable node, C = found, NC = none
         loop // Variable iteration loop
         {
-            if (NC) { SEC break; } // No more variables - success
+            if (NC) 
+            {
+                SEC break; // No more variables - success
+            }
+            
+            // Save the current variable node
+            LDA ZP.IDXL
+            PHA
+            LDA ZP.IDXH
+            PHA
             
             // Clear tokenizer state
             Tokenizer.Initialize();
@@ -978,7 +987,6 @@ unit Console // Console.asm
             Variables.GetName(); // -> ZP.STR
             Variables.GetTokens(); // Returns tokens pointer in ZP.NEXT
             Variables.GetType(); // -> ZP.ACCT
-            
             
             // Add IDENTIFIER token
             LDA #Token.IDENTIFIER
@@ -1073,9 +1081,16 @@ unit Console // Console.asm
             if (NC) 
             { 
                 // Error during initialization
+                PLA PLA
                 CLC
                 break;
             }
+            
+            // Restore variable node before continuing iteration
+            PLA
+            STA ZP.IDXH
+            PLA
+            STA ZP.IDXL
         
             
             // Continue to next variable

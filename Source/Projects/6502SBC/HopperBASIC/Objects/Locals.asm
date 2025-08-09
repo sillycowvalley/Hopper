@@ -6,8 +6,7 @@ unit Locals
     // Unified node structure for both arguments and locals
     // Offset 0-1: next pointer
     // Offset 2:   symbolType|dataType (packed byte like Objects)
-    // Offset 3:   BP offset (signed byte: negative for args, positive for locals)
-    // Offset 4+:  null-terminated name
+    // Offset 3+:  null-terminated name
 
     const byte localOverhead = 3;      // Fixed fields before name
     const byte lnNext = 0;             // Next pointer (2 bytes)
@@ -578,11 +577,10 @@ unit Locals
     
     // Resolve local/argument by name in current function context
     // Input: ZP.TOP = name pointer
-    // Output: C = found, ZP.IDX = node address if found
+    // Output: C = found, ZP.IDX = node address if found, BP offset in ACCL (signed byte)
     // Modifies: ZP.IDX, ZP.LCURRENT
     Resolve()
     {
-        PHA
         PHX
         PHY
         
@@ -613,7 +611,7 @@ unit Locals
                 
                 
                 // Calculate it from index
-                LDA (compilerFuncArgs + 0)  // Get arg_count
+                LDA (Compiler.compilerFuncArgs + 0)  // Get arg_count
                 SEC
                 SBC ZP.ACCL                  // arg_count - index
                 EOR #0xFF
@@ -626,6 +624,10 @@ unit Locals
                 STA ZP.IDXL
                 LDA ZP.IDYH
                 STA ZP.IDXH
+                
+                // Determine if it's an argument or local based on BP offset
+                LDA #IdentifierType.Local  // Could be Local or Argument
+                
                 SEC  // Found
                 break;
             }
@@ -636,6 +638,5 @@ unit Locals
         
         PLY
         PLX
-        PLA
     }
 }

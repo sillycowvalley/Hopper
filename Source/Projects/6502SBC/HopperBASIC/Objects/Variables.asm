@@ -89,6 +89,15 @@ unit Variables
         PHX
         PHY
         
+// DEBUG: Variables.Find called
+Debug.NL();
+LDA #'F' Debug.COut();
+LDA #'N' Debug.COut();
+LDA #'D' Debug.COut();
+LDA #':' Debug.COut();
+Tools.PrintStringTOP();
+
+        
         LDA ZP.ACCT
         PHA
         
@@ -801,14 +810,31 @@ unit Variables
     // Modifies: ZP.IDX, ZP.ACCT
     Resolve()
     {
-        PHA
         PHX
         PHY
         
         loop
         {
+        
+// DEBUG: About to search for variable
+Debug.NL();
+LDA #'V' Debug.COut();
+LDA #'R' Debug.COut();
+LDA #':' Debug.COut();
+Tools.PrintStringTOP();
+        
             STZ ZP.SymbolIteratorFilter  // Accept any symbol type
             Find(); // ZP.IDX = symbol node address
+            
+// DEBUG: Find result
+PHP
+LDA #'V' Debug.COut();
+LDA #'F' Debug.COut();
+LDA #':' Debug.COut();
+if (C) { LDA #'Y' Debug.COut(); } else { LDA #'N' Debug.COut(); }
+Debug.NL();
+PLP
+            
             if (NC) // Not found
             {
                 CLC
@@ -823,9 +849,6 @@ unit Variables
             CMP #SymbolType.VARIABLE
             if (Z)
             { 
-    #ifdef DEBUG
-                //LDA #'V' Debug.COut();
-    #endif
                 LDA #IdentifierType.Global
                 SEC  // Found
                 break;
@@ -834,9 +857,6 @@ unit Variables
             CMP #SymbolType.CONSTANT
             if (Z)
             { 
-    #ifdef DEBUG
-                //LDA #'C' Debug.COut();
-    #endif        
                 LDA #IdentifierType.Constant
                 SEC  // Found
                 break;
@@ -850,7 +870,6 @@ unit Variables
         
         PLY
         PLX
-        PLA
     }
 
 

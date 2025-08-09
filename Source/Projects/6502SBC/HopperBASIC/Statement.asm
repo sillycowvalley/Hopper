@@ -136,9 +136,6 @@ unit Statement // Statement.asm
             Tokens.IsKeyword(); // Input: A = token value to check
             if (C)
             {
-    #ifdef DEBUG
-                //LDA #'K' Debug.COut();
-    #endif
                 LDA #IdentifierType.Keyword
                 break; // success
             }
@@ -148,15 +145,16 @@ unit Statement // Statement.asm
             Error.CheckError();
             if (NC) { break; }
             
+// DEBUG: Print the name we're looking for
+Debug.NL();
+LDA #'?' Debug.COut();
+Tools.PrintStringTOP();
+LDA #'?' Debug.COut();
+            
             // 2. Check if it's a local or argument (if we're in a function)
             Locals.Resolve(); // Input: ZP.TOP = name, Output: C = found, ZP.IDX = node
             if (C)
             {
-    #ifdef DEBUG
-                //LDA #'L' Debug.COut();
-    #endif
-                // Determine if it's an argument or local based on BP offset
-                LDA #IdentifierType.Local  // Could be Local or Argument
                 break; // success
             }
             
@@ -172,9 +170,6 @@ unit Statement // Statement.asm
             Functions.Find(); // Input: ZP.TOP = name, Output: C = found, ZP.IDX = node
             if (C)
             {
-    #ifdef DEBUG
-                //LDA #'F' Debug.COut();
-    #endif
                 LDA #IdentifierType.Function
                 break; // success
             }
@@ -193,9 +188,9 @@ unit Statement // Statement.asm
     #endif
         
         PLY
-        STA ZP.ACCT
         PLY
         PLX
+        LDA ZP.ACCT // IdentifierType 
     }
     
     // Evaluate expression using JIT compilation
@@ -291,6 +286,18 @@ unit Statement // Statement.asm
             
             // Emit HALT for REPL
             Emit.Halt();
+            
+// DEBUG: Check HALT emission
+PHP
+Debug.NL();
+LDA #'H' Debug.COut();
+LDA #'A' Debug.COut();
+LDA #':' Debug.COut();
+if (C) { LDA #'C' Debug.COut(); } else { LDA #'N' Debug.COut(); }
+Debug.NL();
+PLP
+            
+            
             Error.CheckError();
             if (NC) { States.SetFailure(); break; }
             
@@ -302,8 +309,27 @@ unit Statement // Statement.asm
             
             States.SetSuccess(); // Clear state
             
+// Before ExecuteOpCodes
+PHP
+Debug.NL();
+LDA #'X' Debug.COut();
+LDA #'O' Debug.COut();
+LDA #':' Debug.COut();
+Debug.NL();
+PLP
+            
             // Execute the compiled statement opcodes
             Executor.ExecuteOpCodes();
+            
+PHP
+Debug.NL();
+LDA #'X' Debug.COut();
+LDA #'R' Debug.COut();
+LDA #':' Debug.COut();
+if (C) { LDA #'C' Debug.COut(); } else { LDA #'N' Debug.COut(); }
+Debug.NL();
+PLP
+            
             Error.CheckError();
             
             // Restore opcode buffer length
@@ -892,7 +918,7 @@ unit Statement // Statement.asm
     // Output: ZP.FDESTINATIONADDRESS = pointer to allocated token stream copy
     // Munts: ZP.IDXL, ZP.IDXH, ZP.ACCL, ZP.ACCH, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS
     // Error: Sets ZP.LastError if memory allocation fails
-    const string createTokenStreamTrace = "CreateTok";
+    const string createTokenStreamTrace = "CreateTokStr";
     CreateTokenStream()
     {
         PHA
@@ -916,6 +942,7 @@ unit Statement // Statement.asm
             STA ZP.ACCL
             LDA ZP.FLENGTHH
             STA ZP.ACCH
+            IncACC(); // for the EOF
             Memory.Allocate();  // Returns address in ZP.IDX
             
             LDA ZP.IDXL

@@ -690,10 +690,16 @@ unit Compiler // Compiler.asm
        LDA #(compileArgumentListTrace % 256) STA ZP.TraceMessageL LDA #(compileArgumentListTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
-       
-#ifdef DEBUG
-       //LDA #'[' Debug.COut();
-#endif
+
+Debug.NL();
+LDA #'<' Debug.COut();
+LDA #'A' Debug.COut();
+LDA #'R' Debug.COut();
+LDA #'G' Debug.COut();
+LDA ZP.CurrentToken
+Debug.HOut();
+
+
        loop // Single exit
        {
            // Get token after opening parenthesis
@@ -745,9 +751,16 @@ unit Compiler // Compiler.asm
            
            break; // Exit outer loop
        }
-#ifdef DEBUG
-       //LDA #']' Debug.COut(); // Exit from argument list  
-#endif
+
+// Before each exit point
+Debug.NL();
+LDA #'A' Debug.COut();
+LDA #'R' Debug.COut();
+LDA #'G' Debug.COut();
+LDA ZP.CurrentToken
+Debug.HOut();
+LDA #'>' Debug.COut();
+
 
 #ifdef TRACE
        LDA #(compileArgumentListTrace % 256) STA ZP.TraceMessageL LDA #(compileArgumentListTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -862,9 +875,17 @@ unit Compiler // Compiler.asm
             CMP #Token.LPAREN
             if (Z)
             {
-    #ifdef DEBUG
-        //LDA #'(' Debug.COut();
-    #endif
+            
+// After detecting LPAREN (around line where it does CMP #Token.LPAREN)
+Debug.NL();
+LDA #'[' Debug.COut();
+LDA #'F' Debug.COut();
+LDA #'C' Debug.COut();
+LDA #':' Debug.COut();
+Debug.HOut(); // Print current token
+LDA #']' Debug.COut();
+            
+            
                 // This is a function call
                 // Create return slot (VOID 0) first
                 Emit.PushVoid();  
@@ -901,6 +922,15 @@ unit Compiler // Compiler.asm
                 Emit.Call();
                 Error.CheckError();
                 if (NC) { break; }
+                
+// After Emit.Call() returns
+Debug.NL();
+LDA #'P' Debug.COut();
+LDA #'C' Debug.COut();
+LDA #':' Debug.COut();
+LDA ZP.CurrentToken
+Debug.HOut();
+                
                 
                 // Get next token after closing parenthesis
                 Tokenizer.NextToken();

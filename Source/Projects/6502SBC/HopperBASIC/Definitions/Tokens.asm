@@ -6,8 +6,7 @@ unit Tokens
         Global,
         Constant,
         Function,
-        Argument,
-        Local,
+        Local, // Local or Argument depending on BP offser (+ve or -ve)
         Keyword
     }    
     

@@ -124,7 +124,7 @@ unit Trace // Trace.asm
             Error.IsFatal();
             if (C)
             {
-                LDA # 0x05 Debug.Crash(); // fail on CheckError in MethodExit()
+                LDA # 0x05 Debug.Crash(); // fail on CheckError in MethodEntry()
             }
         }
         
@@ -211,7 +211,7 @@ unit Trace // Trace.asm
             Error.IsFatal();
             if (C)
             {
-                LDA # 0x05 Debug.Crash(); // fail on CheckError in MethodExit()
+                LDA # 0x06 Debug.Crash(); // fail on CheckError in MethodExit()
             }
         }
         

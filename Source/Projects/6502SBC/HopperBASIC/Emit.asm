@@ -1000,6 +1000,13 @@ unit Emit
 #ifdef TRACE
        LDA #(emitCallTrace % 256) STA ZP.TraceMessageL LDA #(emitCallTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
+
+Debug.NL();
+LDA #'C' Debug.COut();
+LDA #'A' Debug.COut();
+LDA #'L' Debug.COut();
+LDA #'L' Debug.COut();
+LDA #'!' Debug.COut();
        
        loop // Single exit
        {

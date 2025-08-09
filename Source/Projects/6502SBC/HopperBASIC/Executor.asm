@@ -53,32 +53,40 @@ unit Executor // Executor.asm
            // Main execution loop (assume there is at least one opcode)
            loop
            {
-               // Fetch and execute next opcode
-               FetchOpCode(); // -> A
-               DispatchOpCode(); // expect State.Success to continue
-               
-               // Check if any instruction set an error
-               Error.CheckError();
-               if (NC) 
-               { 
+                // Fetch and execute next opcode
+                FetchOpCode(); // -> A
+                DispatchOpCode(); // expect State.Success to continue
+
+                // Check if any instruction set an error
+                Error.CheckError();
+                if (NC) 
+                { 
                    States.SetFailure();
-               }
-               States.IsSuccess();
-               if (NC)
-               {
-                   // State.Failure - runtime error: Type Mismatch, Overflow, etc .. 
-                   // State.Exiting - HALT or EOF - clean exit from REPL
-                   // State.Return  - popping the CSP to zero
-                   break; 
-               }
-               LDA ZP.SerialBreakFlag
-               if (NZ) 
-               {
+                }
+                States.CanContinue();  // Returns C for Success|Exiting|Return, NC for Failure
+                if (NC)
+                {
+                    // State.Failure - runtime error
+                    CLC
+                    break;  // Exit with NC
+                }
+                States.IsSuccess();
+                if (NC)
+                {
+                    // State.Exiting or State.Return - successful completion
+                    SEC
+                    break;  // Exit with C (from CanContinue)
+                }
+                // State.Success - continue executing
+                LDA ZP.SerialBreakFlag
+                if (NZ) 
+                {
                     Error.Break();  // "BREAK" error message
                     States.SetFailure();
+                    CLC
                     break;
-               }
-               // State.Success - get another opcode ..
+                }
+                // State.Success - get another opcode ..
            } // loop
            break;
        } // Single exit block
