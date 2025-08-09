@@ -75,8 +75,8 @@ unit ZP // ZeroPage.asm
 
     // used by firmware for 'W'orkspace
     // (for example, Serial also uses these, especially on 6502 where PLX, PLY, PHX and PHY are missing)
-    const byte W0                   = 0x20;
-    const byte W1                   = 0x21;
+    const byte W0                   = 0x20; // switch table jumps use this slot!!
+    const byte W1                   = 0x21; // switch table jumps use this slot!!
     const byte W2                   = 0x22; // used by packed syscalls
     const byte W3                   = 0x23;
     const byte W4                   = 0x24;

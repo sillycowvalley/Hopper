@@ -11,12 +11,12 @@ unit ZP // ZeroPage.asm
     //   - FLAGS (0x02): System flags register - bit positions are API contracts
     //   - SP, BP, CSP (0x03-0x05): Stack pointers - assumed by all stack operations
     //
-    // 0x20-0x25: EMULATOR INTERFACE (Hardcoded in C# Emulator)
-    //   - TICK0-3 (0x20-0x23): Timer tick counters
+    // 0x22-0x25: EMULATOR INTERFACE (Hardcoded in C# Emulator) 
+    //   - TICK0-3 (0x22-0x25): Timer tick counters [SHIFTED +2 from original 0x20-0x23]
     //     * Reading TICK0 triggers snapshot of all 4 bytes in emulator
     //     * Reading TICK3 triggers snapshot of all 4 bytes in emulator  
-    //   - EmulatorPCL/H (0x24-0x25): PC capture for debugging
-    //     * BIT $24 instruction triggers PC capture in emulator
+    //   - EmulatorPCL/H (0x1D-0x1E): PC capture for debugging
+    //     * BIT $1D instruction triggers PC capture in emulator
     //     * Used by Debug.asm for crash dumps and breakpoints
     //
     // 0xEC-0xFF: HARDWARE I/O (Platform Hardware Addresses)
@@ -88,85 +88,90 @@ unit ZP // ZeroPage.asm
     
     const byte I2CInWritePtr        = 0x1B;  // I2C buffer write pointer
     const byte I2CInReadPtr         = 0x1C;  // I2C buffer read pointer
+
+    const byte EmulatorPCL          = 0x1D;  // BIT this to capture PC
+    const byte EmulatorPCH          = 0x1E;  // Captured PC high byte
     
-    // EMULATOR INTERFACE (IMMOVABLE)
-    const byte TICK0                = 0x1D;  // Timer tick byte 0 (LSB)
-    const byte TICK1                = 0x1E;  // Timer tick byte 1
-    const byte TICK2                = 0x1F;  // Timer tick byte 2
-    const byte TICK3                = 0x20;  // Timer tick byte 3 (MSB)
+    // 0x1F: Available
     
-    const byte EmulatorPCL          = 0x21;  // BIT this to capture PC
-    const byte EmulatorPCH          = 0x22;  // Captured PC high byte
+    const byte JumpTableLSB         = 0x20;  // RESERVED - Jump table LSB
+    const byte JumpTableMSB         = 0x21;  // RESERVED - Jump table MSB
+    
+    // EMULATOR INTERFACE (IMMOVABLE - shifted +2 from original)
+    const byte TICK0                = 0x22;  // Timer tick byte 0 (LSB)
+    const byte TICK1                = 0x23;  // Timer tick byte 1
+    const byte TICK2                = 0x24;  // Timer tick byte 2
+    const byte TICK3                = 0x25;  // Timer tick byte 3 (MSB)
     
     // MISC VM WORKSPACE
-    const byte WorkSpaceHexIn       = 0x23;  // Serial.asm hex input workspace
-    const byte WorkSpaceWaitForChar = 0x24;  // Serial.asm wait workspace
+    const byte WorkSpaceHexIn       = 0x26;  // Serial.asm hex input workspace
+    const byte WorkSpaceWaitForChar = 0x27;  // Serial.asm wait workspace
     
     // HOPPER BASIC CORE - TOKENIZER & COMPILER
-    const byte BasicInputLength     = 0x25;  // Input buffer character count
+    const byte BasicInputLength     = 0x28;  // Input buffer character count
     
-    const byte TokenBufferContentSize    = 0x26;  // current Token buffer content size (16-bit)
-    const byte TokenBufferContentSizeL   = 0x26;  // Token buffer content size low (alias)
-    const byte TokenBufferContentSizeH   = 0x27;  // Token buffer content size high
-    const byte TokenizerPos         = 0x28;  // Current tokenizer position (16-bit)
-    const byte TokenizerPosL        = 0x28;  // Tokenizer pos low (alias)  
-    const byte TokenizerPosH        = 0x29;  // Tokenizer pos high
+    const byte TokenBufferContentSize    = 0x29;  // current Token buffer content size (16-bit)
+    const byte TokenBufferContentSizeL   = 0x29;  // Token buffer content size low (alias)
+    const byte TokenBufferContentSizeH   = 0x2A;  // Token buffer content size high
+    const byte TokenizerPos         = 0x2B;  // Current tokenizer position (16-bit)
+    const byte TokenizerPosL        = 0x2B;  // Tokenizer pos low (alias)  
+    const byte TokenizerPosH        = 0x2C;  // Tokenizer pos high
 
-    const byte LastErrorL           = 0x2A;  // Error message pointer low
-    const byte LastErrorH           = 0x2B;  // Error message pointer high
+    const byte LastErrorL           = 0x2D;  // Error message pointer low
+    const byte LastErrorH           = 0x2E;  // Error message pointer high
 
-    const byte CurrentToken         = 0x2C;  // Cached current token type
+    const byte CurrentToken         = 0x2F;  // Cached current token type
 
-    const byte TokenLiteralPosL     = 0x2D;  // Literal data position low
-    const byte TokenLiteralPosH     = 0x2E;  // Literal data position high
+    const byte TokenLiteralPosL     = 0x30;  // Literal data position low
+    const byte TokenLiteralPosH     = 0x31;  // Literal data position high
 
-    const byte OpCodeBufferContentSize   = 0x2F;  // size of content in JIT buffer (16-bit)
-    const byte OpCodeBufferContentSizeL  = 0x2F;  // OpCode content size low (alias)
-    const byte OpCodeBufferContentSizeH  = 0x30;  // OpCode content size high
-    const byte CompilerTokenPos     = 0x31;  // Compiler position (16-bit)
-    const byte CompilerTokenPosL    = 0x31;  // Compiler pos low (alias)
-    const byte CompilerTokenPosH    = 0x32;  // Compiler pos high
-    const byte CompilerFlags        = 0x33;  // Compilation state flags
-    const byte OpCodeTemp           = 0x34;  // Temporary opcode construction
+    const byte OpCodeBufferContentSize   = 0x32;  // size of content in JIT buffer (16-bit)
+    const byte OpCodeBufferContentSizeL  = 0x32;  // OpCode content size low (alias)
+    const byte OpCodeBufferContentSizeH  = 0x33;  // OpCode content size high
+    const byte CompilerTokenPos     = 0x34;  // Compiler position (16-bit)
+    const byte CompilerTokenPosL    = 0x34;  // Compiler pos low (alias)
+    const byte CompilerTokenPosH    = 0x35;  // Compiler pos high
+    const byte CompilerFlags        = 0x36;  // Compilation state flags
+    const byte OpCodeTemp           = 0x37;  // Temporary opcode construction
     
     // Buffer pointers - point to the currently active buffer set (either BASIC or REPL)
-    const byte TokenBuffer          = 0x35;  // Low byte of current tokenizer buffer pointer
-    const byte TokenBufferL         = 0x35;
-    const byte TokenBufferH         = 0x36;  // High byte of current tokenizer buffer pointer
-    const byte OpCodeBuffer         = 0x37; // Low byte of current opcode buffer pointer
-    const byte OpCodeBufferL        = 0x37;
-    const byte OpCodeBufferH        = 0x38;  // High byte of current opcode buffer pointer
+    const byte TokenBuffer          = 0x38;  // Low byte of current tokenizer buffer pointer
+    const byte TokenBufferL         = 0x38;
+    const byte TokenBufferH         = 0x39;  // High byte of current tokenizer buffer pointer
+    const byte OpCodeBuffer         = 0x3A;  // Low byte of current opcode buffer pointer
+    const byte OpCodeBufferL        = 0x3A;
+    const byte OpCodeBufferH        = 0x3B;  // High byte of current opcode buffer pointer
 
     // SYMBOL TABLE MANAGEMENT
-    const byte VariablesList        = 0x39;  // Variables table head (16-bit)
-    const byte VariablesListL       = 0x39;  // Variables list low (alias)
-    const byte VariablesListH       = 0x3A;  // Variables list high
+    const byte VariablesList        = 0x3C;  // Variables table head (16-bit)
+    const byte VariablesListL       = 0x3C;  // Variables list low (alias)
+    const byte VariablesListH       = 0x3D;  // Variables list high
 
-    const byte FunctionsList        = 0x3B;  // Functions table head (16-bit)
-    const byte FunctionsListL       = 0x3B;  // Functions list low (alias)
-    const byte FunctionsListH       = 0x3C;  // Functions list high
+    const byte FunctionsList        = 0x3E;  // Functions table head (16-bit)
+    const byte FunctionsListL       = 0x3E;  // Functions list low (alias)
+    const byte FunctionsListH       = 0x3F;  // Functions list high
 
-    const byte SymbolType           = 0x3D;  // Current symbol type|datatype
-    const byte SymbolValue          = 0x3E;  // Symbol value (16-bit)
-    const byte SymbolValueL         = 0x3E;  // Symbol value low (alias)
-    const byte SymbolValueH         = 0x3F;  // Symbol value high
-    const byte SymbolName           = 0x40;  // Symbol name pointer (16-bit)
-    const byte SymbolNameL          = 0x40;  // Symbol name low (alias)
-    const byte SymbolNameH          = 0x41;  // Symbol name high
-    const byte SymbolTokens         = 0x42;  // Symbol tokens pointer (16-bit)
-    const byte SymbolTokensL        = 0x42;  // Symbol tokens low (alias)
-    const byte SymbolTokensH        = 0x43;  // Symbol tokens high
-    const byte SymbolIteratorFilter = 0x44;  // Symbol iteration filter
+    const byte SymbolType           = 0x40;  // Current symbol type|datatype
+    const byte SymbolValue          = 0x41;  // Symbol value (16-bit)
+    const byte SymbolValueL         = 0x41;  // Symbol value low (alias)
+    const byte SymbolValueH         = 0x42;  // Symbol value high
+    const byte SymbolName           = 0x43;  // Symbol name pointer (16-bit)
+    const byte SymbolNameL          = 0x43;  // Symbol name low (alias)
+    const byte SymbolNameH          = 0x44;  // Symbol name high
+    const byte SymbolTokens         = 0x45;  // Symbol tokens pointer (16-bit)
+    const byte SymbolTokensL        = 0x45;  // Symbol tokens low (alias)
+    const byte SymbolTokensH        = 0x46;  // Symbol tokens high
+    const byte SymbolIteratorFilter = 0x47;  // Symbol iteration filter
 
-    const byte SymbolLength         = 0x45;  // Symbol name length
-    const byte SymbolTemp0          = 0x46;  // Symbol temporary 0
-    const byte SymbolTemp1          = 0x47;  // Symbol temporary 1
-    const byte SymbolTemp2          = 0x48;  // Symbol temporary 2
+    const byte SymbolLength         = 0x48;  // Symbol name length
+    const byte SymbolTemp0          = 0x49;  // Symbol temporary 0
+    const byte SymbolTemp1          = 0x4A;  // Symbol temporary 1
+    const byte SymbolTemp2          = 0x4B;  // Symbol temporary 2
 
     // DEBUG & TRACE SUPPORT
-    const byte TraceMessageL        = 0x49;  // Trace message pointer low
-    const byte TraceMessageH        = 0x4A;  // Trace message pointer high
-    const byte SystemState          = 0x4B;  // Success/Failure/Exiting state
+    const byte TraceMessageL        = 0x4C;  // Trace message pointer low
+    const byte TraceMessageH        = 0x4D;  // Trace message pointer high
+    const byte SystemState          = 0x4E;  // Success/Failure/Exiting state
     
     // SHARED LEAF FUNCTION WORKSPACE
     // Complex leaf methods that never call each other can share this space:
@@ -175,22 +180,22 @@ unit ZP // ZeroPage.asm
     // - Time.Delay() and Time.Seconds() (mutually exclusive)
     // - IntMath operations (leaf functions)
     
-    const byte M0                   = 0x4C;  // Multi-use workspace 0
-    const byte M1                   = 0x4D;  // Multi-use workspace 1
-    const byte M2                   = 0x4E;  // Multi-use workspace 2
-    const byte M3                   = 0x4F;  // Multi-use workspace 3
-    const byte M4                   = 0x50;  // Multi-use workspace 4
-    const byte M5                   = 0x51;  // Multi-use workspace 5
-    const byte M6                   = 0x52;  // Multi-use workspace 6
-    const byte M7                   = 0x53;  // Multi-use workspace 7
-    const byte M8                   = 0x54;  // Multi-use workspace 8
-    const byte M9                   = 0x55;  // Multi-use workspace 9
-    const byte M10                  = 0x56;  // Multi-use workspace 10
-    const byte M11                  = 0x57;  // Multi-use workspace 11
-    const byte M12                  = 0x58;  // Multi-use workspace 12
-    const byte M13                  = 0x59;  // Multi-use workspace 13
-    const byte M14                  = 0x5A;  // Multi-use workspace 14
-    const byte M15                  = 0x5B;  // Multi-use workspace 15
+    const byte M0                   = 0x4F;  // Multi-use workspace 0
+    const byte M1                   = 0x50;  // Multi-use workspace 1
+    const byte M2                   = 0x51;  // Multi-use workspace 2
+    const byte M3                   = 0x52;  // Multi-use workspace 3
+    const byte M4                   = 0x53;  // Multi-use workspace 4
+    const byte M5                   = 0x54;  // Multi-use workspace 5
+    const byte M6                   = 0x55;  // Multi-use workspace 6
+    const byte M7                   = 0x56;  // Multi-use workspace 7
+    const byte M8                   = 0x57;  // Multi-use workspace 8
+    const byte M9                   = 0x58;  // Multi-use workspace 9
+    const byte M10                  = 0x59;  // Multi-use workspace 10
+    const byte M11                  = 0x5A;  // Multi-use workspace 11
+    const byte M12                  = 0x5B;  // Multi-use workspace 12
+    const byte M13                  = 0x5C;  // Multi-use workspace 13
+    const byte M14                  = 0x5D;  // Multi-use workspace 14
+    const byte M15                  = 0x5E;  // Multi-use workspace 15
     
     // Debug.asm aliases (never calls Memory functions)
     const byte DB0                  = M0;
@@ -243,73 +248,72 @@ unit ZP // ZeroPage.asm
     const byte TOKPOSH    = M5;  // Token position/offset high
     
     // FUNCTION PARAMETER WORKSPACE
-    const byte FSOURCEADDRESS       = 0x5C;  // Source address parameter
-    const byte FSOURCEADDRESSL      = 0x5C;  // Source low (alias)
-    const byte FSOURCEADDRESSH      = 0x5D;  // Source high
+    const byte FSOURCEADDRESS       = 0x5F;  // Source address parameter
+    const byte FSOURCEADDRESSL      = 0x5F;  // Source low (alias)
+    const byte FSOURCEADDRESSH      = 0x60;  // Source high
     
-    const byte FDESTINATIONADDRESS  = 0x5E;  // Destination address parameter
-    const byte FDESTINATIONADDRESSL = 0x5E;  // Destination low (alias)
-    const byte FDESTINATIONADDRESSH = 0x5F;  // Destination high
+    const byte FDESTINATIONADDRESS  = 0x61;  // Destination address parameter
+    const byte FDESTINATIONADDRESSL = 0x61;  // Destination low (alias)
+    const byte FDESTINATIONADDRESSH = 0x62;  // Destination high
 
-    const byte FLENGTH              = 0x60;  // Length parameter
-    const byte FLENGTHL             = 0x60;  // Length low (alias)
-    const byte FLENGTHH             = 0x61;  // Length high
+    const byte FLENGTH              = 0x63;  // Length parameter
+    const byte FLENGTHL             = 0x63;  // Length low (alias)
+    const byte FLENGTHH             = 0x64;  // Length high
     
-    const byte LCURRENT             = 0x62;  // List current pointer
-    const byte LCURRENTL            = 0x62;  // Current low (alias)
-    const byte LCURRENTH            = 0x63;  // Current high
+    const byte LCURRENT             = 0x65;  // List current pointer
+    const byte LCURRENTL            = 0x65;  // Current low (alias)
+    const byte LCURRENTH            = 0x66;  // Current high
     
-    const byte LHEAD                = 0x64;  // List head pointer
-    const byte LHEADL               = 0x64;  // Head low (alias)
-    const byte LHEADH               = 0x65;  // Head high
+    const byte LHEAD                = 0x67;  // List head pointer
+    const byte LHEADL               = 0x67;  // Head low (alias)
+    const byte LHEADH               = 0x68;  // Head high
     
-    const byte FSIGN                = 0x66;  // Sign flag for math operations
+    const byte FSIGN                = 0x69;  // Sign flag for math operations
     
-    const byte LHEADX               = 0x67;  // List head extension
+    const byte LHEADX               = 0x6A;  // List head extension
     
-    const byte LPREVIOUS            = 0x68;  // List previous pointer
-    const byte LPREVIOUSL           = 0x68;  // Previous low (alias)
-    const byte LPREVIOUSH           = 0x69;  // Previous high
+    const byte LPREVIOUS            = 0x6B;  // List previous pointer
+    const byte LPREVIOUSL           = 0x6B;  // Previous low (alias)
+    const byte LPREVIOUSH           = 0x6C;  // Previous high
     
-    const byte LNEXT                = 0x6A;  // List next pointer
-    const byte LNEXTL               = 0x6A;  // Next low (alias)
-    const byte LNEXTH               = 0x6B;  // Next high
+    const byte LNEXT                = 0x6D;  // List next pointer
+    const byte LNEXTL               = 0x6D;  // Next low (alias)
+    const byte LNEXTH               = 0x6E;  // Next high
 
     // MATH WORKSPACE
-    const byte UWIDE0               = 0x6C;  // IntMath 32-bit multiply low
-    const byte UWIDE1               = 0x6D;  // IntMath 32-bit multiply
-    const byte UWIDE2               = 0x6E;  // IntMath 32-bit multiply
-    const byte UWIDE3               = 0x6F;  // IntMath 32-bit multiply high
+    const byte UWIDE0               = 0x6F;  // IntMath 32-bit multiply low
+    const byte UWIDE1               = 0x70;  // IntMath 32-bit multiply
+    const byte UWIDE2               = 0x71;  // IntMath 32-bit multiply
+    const byte UWIDE3               = 0x72;  // IntMath 32-bit multiply high
     
-    const byte LNEXT0               = 0x70;  // Long math next operand byte 0
-    const byte LNEXT1               = 0x71;  // Long math next operand byte 1
-    const byte LNEXT2               = 0x72;  // Long math next operand byte 2
-    const byte LNEXT3               = 0x73;  // Long math next operand byte 3
-    const byte LTOP0                = 0x74;  // Long math top operand byte 0
-    const byte LTOP1                = 0x75;  // Long math top operand byte 1
-    const byte LTOP2                = 0x76;  // Long math top operand byte 2
-    const byte LTOP3                = 0x77;  // Long math top operand byte 3
+    const byte LNEXT0               = 0x73;  // Long math next operand byte 0
+    const byte LNEXT1               = 0x74;  // Long math next operand byte 1
+    const byte LNEXT2               = 0x75;  // Long math next operand byte 2
+    const byte LNEXT3               = 0x76;  // Long math next operand byte 3
+    const byte LTOP0                = 0x77;  // Long math top operand byte 0
+    const byte LTOP1                = 0x78;  // Long math top operand byte 1
+    const byte LTOP2                = 0x79;  // Long math top operand byte 2
+    const byte LTOP3                = 0x7A;  // Long math top operand byte 3
     
-    const byte STR                  = 0x78;  // String pointer
-    const byte STRL                 = 0x78;  // String low (alias)
-    const byte STRH                 = 0x79;  // String high
+    const byte STR                  = 0x7B;  // String pointer
+    const byte STRL                 = 0x7B;  // String low (alias)
+    const byte STRH                 = 0x7C;  // String high
     
-    const byte STR2                 = 0x7A;  // String pointer 2
-    const byte STR2L                = 0x7A;  // String 2 low (alias)
-    const byte STR2H                = 0x7B;  // String 2 high
+    const byte STR2                 = 0x7D;  // String pointer 2
+    const byte STR2L                = 0x7D;  // String 2 low (alias)
+    const byte STR2H                = 0x7E;  // String 2 high
 
-    // 0x7C-0xEB: Available (112 bytes!)
-    
     // TODO : move to Compiler section
-    const byte XPC                  = 0x7C;  // Compiler Program counter low
-    const byte XPCL                 = 0x7C;  // Compiler Program counter low (alias)
-    const byte XPCH                 = 0x7D;  // Compiler Program counter high
-    const byte CompilerTemp         = 0x7E;  // Temporary workspace used by the Compiler
+    const byte XPC                  = 0x7F;  // Compiler Program counter low
+    const byte XPCL                 = 0x7F;  // Compiler Program counter low (alias)
+    const byte XPCH                 = 0x80;  // Compiler Program counter high
+    const byte CompilerTemp         = 0x81;  // Temporary workspace used by the Compiler
     
-    const byte XID                  = 0x7F;  // Executure token buffer pointer Program counter low
-    const byte XIDL                 = 0x7F;
-    const byte XIDH                 = 0x80;
+    const byte XID                  = 0x82;  // Executor token buffer pointer Program counter low
+    const byte XIDL                 = 0x82;
+    const byte XIDH                 = 0x83;
     
+    // 0x84-0xEB: Available (104 bytes!)
 
     // HARDWARE I/O (IMMOVABLE - Platform Hardware Addresses)
     const byte ACIACONTROL          = 0xEC;  // 6850 ACIA control register

@@ -194,13 +194,8 @@ unit Executor // Executor.asm
    // Output: A contains operand byte, ZP.PC advanced, SystemState set
    FetchOperandByte()
    {
-#ifdef TRACEVERBOSE
-       //LDA #(fetchOperandByteTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandByteTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-       
        loop
        {
-           
            LDA ZP.PCL
            
            // Fetch operand
@@ -229,10 +224,6 @@ unit Executor // Executor.asm
            States.SetSuccess();
            break;
        } // loop exit
-       
-#ifdef TRACEVERBOSE
-       //PHA LDA #(fetchOperandByteTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandByteTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
-#endif
    }
    
    // Fetch word operand from buffer (little-endian)
@@ -240,10 +231,6 @@ unit Executor // Executor.asm
    // Output: executorOperandL/H contains word, ZP.PC advanced by 2, SystemState set
    FetchOperandWord()
    {
-#ifdef TRACEVERBOSE
-       //PHA LDA #(fetchOperandWordTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandWordTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
-#endif
-       
        loop
        {
            // Fetch low byte
@@ -261,10 +248,6 @@ unit Executor // Executor.asm
            States.SetSuccess();
            break;
        }
-       
-#ifdef TRACEVERBOSE
-       //LDA #(fetchOperandWordTrace % 256) STA ZP.TraceMessageL LDA #(fetchOperandWordTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
    }
    
    // Dispatch opcode to appropriate handler
@@ -273,12 +256,10 @@ unit Executor // Executor.asm
    DispatchOpCode()
    {
        TAY // for jump table optimization
-#ifdef TRACEVERBOSE
-       LDA #(dispatchOpCodeTrace % 256) STA ZP.TraceMessageL LDA #(dispatchOpCodeTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
+       
        // Use switch statement for opcode dispatch
        // Register Y contains the opcode value
-       switch (Y)
+       switch (Y) // bug in jump table
        {
            // === NO OPERAND OPCODES (0x00-0x3F) ===
            
@@ -497,9 +478,6 @@ unit Executor // Executor.asm
                executeNotImplemented();
            }
        }
-#ifdef TRACEVERBOSE
-       LDA #(dispatchOpCodeTrace % 256) STA ZP.TraceMessageL LDA #(dispatchOpCodeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
    }
    
    // Execute unknown opcode
