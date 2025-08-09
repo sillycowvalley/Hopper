@@ -164,11 +164,12 @@ unit OpCodes
    const string opcodeJUMPZW = "JUMPZW";
    const string opcodeJUMPNZW = "JUMPNZW";
    
-#ifdef DEBUG
+#if defined(DEBUG) || defined(TRACEEXE)
    // Input: opcode in X
    // Output: string pointer in ZP.STR
    ToString()
    {
+        PHA
         switch (X)
         {
             case OpCode.INVALID:
@@ -500,7 +501,8 @@ unit OpCodes
                 LDA #(opcodeUNDEFINED / 256)
                 STA ZP.STRH
             }
-        }
+        } // switch
+        PLA
    }
 #endif
 

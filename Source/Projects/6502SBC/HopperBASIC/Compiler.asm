@@ -691,16 +691,6 @@ unit Compiler // Compiler.asm
        LDA #(compileArgumentListTrace % 256) STA ZP.TraceMessageL LDA #(compileArgumentListTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
-
-Debug.NL();
-LDA #'<' Debug.COut();
-LDA #'A' Debug.COut();
-LDA #'R' Debug.COut();
-LDA #'G' Debug.COut();
-LDA ZP.CurrentToken
-Debug.HOut();
-
-
        loop // Single exit
        {
            // Get token after opening parenthesis
@@ -752,17 +742,6 @@ Debug.HOut();
            
            break; // Exit outer loop
        }
-
-// Before each exit point
-Debug.NL();
-LDA #'A' Debug.COut();
-LDA #'R' Debug.COut();
-LDA #'G' Debug.COut();
-LDA ZP.CurrentToken
-Debug.HOut();
-LDA #'>' Debug.COut();
-
-
 #ifdef TRACE
        LDA #(compileArgumentListTrace % 256) STA ZP.TraceMessageL LDA #(compileArgumentListTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -796,8 +775,8 @@ LDA #'>' Debug.COut();
             if (NC) { break; }
             
             // Check if we're compiling a function and this identifier is an argument
-            LDA (compilerFuncArgs + 0)     // Are we in a function?
-            if (NZ)                         // Non-zero means we're compiling a function
+            InFunction();     // Are we in a function?
+            if (C)
             {
                 // Try to find this identifier as an argument
                 // Get the function node being compiled
@@ -822,6 +801,7 @@ LDA #'>' Debug.COut();
                     break;  // Exit - we handled it
                 }
             }
+            SEC
             
             // Not an argument - emit push global variable opcode
             Emit.PushGlobal();
@@ -2840,100 +2820,98 @@ LDA #'>' Debug.COut();
                 Error.SyntaxError(); BIT ZP.EmulatorPCL
                 break;
             }
-            PHA  // Save type
+            STA ZP.NEXTT // save type
             
-            loop
+            // Move to identifier
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Verify we have an identifier
+            LDA ZP.CurrentToken
+            CMP #Token.IDENTIFIER
+            if (NZ)
             {
-                // Move to identifier
-                Tokenizer.NextToken();
-                Error.CheckError();
-                if (NC) { break; }
-                
-                // Verify we have an identifier
-                LDA ZP.CurrentToken
-                CMP #Token.IDENTIFIER
-                if (NZ)
-                {
-                    Error.SyntaxError(); BIT ZP.EmulatorPCL
-                    break;
-                }
-                
-                // Get the identifier name
-                Tokenizer.GetTokenString();  // Result in ZP.TOP
-                Error.CheckError();
-                if (NC) { break; }
-                
-                // Check for duplicate among existing locals/arguments
-                LDA compilerSavedNodeAddrL
-                STA ZP.IDXL
-                LDA compilerSavedNodeAddrH
-                STA ZP.IDXH
-                Locals.Find();  // Uses existing Find with compareNames
-                if (C)  // Found - duplicate
-                {
-                    Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
-                    break;
-                }
-                
-                // Increment local count
-                INC compilerFuncLocals
-
-                STZ compilerOperand1
-                STZ compilerOperand2
-                        
-                // Create the slot by pushing appropriate default value
-                LDA Statement.stmtType  // Get the type we saved
-                AND #BASICType.MASK  // Mask off any VAR bit
-                switch (A)
-                {
-                    case BASICType.STRING:
-                    {
-                        // Push empty string
-                        LDA #(Variables.EmptyString % 256)
-                        STA compilerOperand1 // LSB
-                        LDA #(Variables.EmptyString / 256)
-                        STA compilerOperand2 // MSB
-                        Emit.PushCString();
-                    }
-                    case BASICType.BIT:
-                    {
-                        LDA #0
-                        Emit.PushBit();
-                    }
-                    case BASICType.BYTE:
-                    {
-                        // Emit PUSHBYTE 0
-                        LDA #0
-                        Emit.PushByte();
-                    }
-                    case BASICType.VAR:
-                    {
-                        LDA #BASICType.INT
-                        ORA #BASICType.VAR
-                        STA ZP.TOPT
-                        Emit.PushWord();
-                    }
-                    default:
-                    {
-                        // WORD, INT
-                        STA ZP.TOPT
-                        Emit.PushWord();
-                    }
-                }
-                Error.CheckError();
-                if (NC) { break; }
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
                 break;
             }
-            PLA  // Restore type
-            STA Statement.stmtType
+            
+            // Get the identifier name
+            Tokenizer.GetTokenString();  // Result in ZP.TOP
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Check for duplicate among existing locals/arguments
+            LDA compilerSavedNodeAddrL
+            STA ZP.IDXL
+            LDA compilerSavedNodeAddrH
+            STA ZP.IDXH
+            Locals.Find();  // Uses existing Find with compareNames
+            if (C)  // Found - duplicate
+            {
+                Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
+                break;
+            }
+            SEC
+            
+            // Increment local count
+            INC compilerFuncLocals
+
+            STZ compilerOperand1
+            STZ compilerOperand2
+                    
+            // Create the slot by pushing appropriate default value
+            LDA ZP.NEXTT          // Get the type we saved
+            AND #BASICType.MASK   // Mask off any VAR bit
+            switch (A)
+            {
+                case BASICType.STRING:
+                {
+                    // Push empty string
+                    LDA #(Variables.EmptyString % 256)
+                    STA compilerOperand1 // LSB
+                    LDA #(Variables.EmptyString / 256)
+                    STA compilerOperand2 // MSB
+                    Emit.PushCString();
+                }
+                case BASICType.BIT:
+                {
+                    LDA #0
+                    Emit.PushBit();
+                }
+                case BASICType.BYTE:
+                {
+                    // Emit PUSHBYTE 0
+                    LDA #0
+                    Emit.PushByte();
+                }
+                case BASICType.VAR:
+                {
+                    LDA #BASICType.INT
+                    ORA #BASICType.VAR
+                    STA ZP.TOPT
+                    Emit.PushWord();
+                }
+                default:
+                {
+NL(); HOut();
+                    // WORD, INT
+                    STA ZP.TOPT
+                    Emit.PushWord();
+                }
+            } // switch
             
             Error.CheckError();
             if (NC) { break; }
+
+NL(); HOut();
                 
             // Create local using Locals.Add (it handles allocation and linking)
             // Need to set up the type in the node
             ORA #SymbolType.LOCAL  // Combine with LOCAL
             STA ZP.SymbolType  // Locals.Add expects this
+            
+NL(); HOut();
             
             // ZP.IDX still has function node, ZP.TOP has name
             Locals.Add();  // Reuse existing Add method
@@ -3205,5 +3183,29 @@ LDA #'>' Debug.COut();
 
        
    }
+   
+    // Check if we're currently compiling within a function context
+    // Input: None
+    // Output: C set if in function context (BEGIN or FUNC), NC if not
+    // Modifies: Processor flags only
+    // Note: Works for BEGIN, FUNC with args, and FUNC without args
+    InFunction()
+    {
+        PHA
+        
+        // Check if we have a saved function node
+        LDA compilerSavedNodeAddrL
+        ORA compilerSavedNodeAddrH
+        if (NZ)
+        {
+            SEC  // We're in a function context
+        }
+        else
+        {
+            CLC  // Not in a function context
+        }
+        
+        PLA
+    }
 
 }

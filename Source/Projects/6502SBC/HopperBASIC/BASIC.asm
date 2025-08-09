@@ -4,19 +4,13 @@ program HopperBASIC
     #define TRACE
     //#define TRACESP
     //#define TRACEJIT     // detail for JIT / CALL->CALLF patching
-    //#define TRACEVERBOSE // details in Executor
+    //#define TRACEEXE // instructions in Executor
     
     //#define TRACECONSOLE // trace output for Console.asm and Command.asm
     
     #define CPU_65C02S
     #define HOPPER_BASIC
     #define ROM_48K
-    
-#if defined(TRACECONSOLE) || defined(TRACEVERBOSE)
-  #if !defined(TRACE)
-    #define TRACE
-  #endif    
-#endif
     
     uses "./Definitions/ZeroPage"
     uses "./Definitions/MemoryMap"

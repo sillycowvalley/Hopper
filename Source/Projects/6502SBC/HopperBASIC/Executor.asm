@@ -899,141 +899,6 @@ unit Executor // Executor.asm
 #endif
    }
    
-   // === VARIABLE OPERATION HANDLERS (ONE BYTE OPERAND) ===
-   
-   // Execute PUSHGLOBAL opcode - push global variable value
-   // Input: PC points to operand bytes (node address LSB, MSB)
-   // Output: Variable value pushed to stack, PC advanced by 2
-   // Modifies: A, X, Y, ZP.PC, ZP.IDX, ZP.TOP, ZP.TOPT, stack
-   const string executePushGlobalTrace = "PUSHGLOBAL // Push global by name";
-   executePushGlobal()
-   {
-#ifdef TRACE
-       LDA #(executePushGlobalTrace % 256) STA ZP.TraceMessageL LDA #(executePushGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-       
-       loop
-       {
-           // Fetch node address (little-endian)
-           FetchOperandWord(); // Result in executorOperandL/H
-           Error.CheckError();
-           if (NC) 
-           { 
-               States.SetFailure();
-               break; 
-           }
-           
-           // Transfer node address to ZP.IDX
-           LDA executorOperandL
-           STA ZP.IDXL
-           LDA executorOperandH
-           STA ZP.IDXH
-           
-           // Get the variable's value and type
-           Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = type
-           Error.CheckError();
-           if (NC) 
-           { 
-               States.SetFailure();
-               break; 
-           }
-           
-           // Push value to stack with type
-           LDA ZP.TOPT
-           Stacks.PushTop(); // Push value and type to stack
-           Error.CheckError();
-           if (NC) 
-           { 
-               States.SetFailure();
-               break; 
-           }
-           
-           States.SetSuccess();
-           break;
-       }
-       
-#ifdef TRACE
-       LDA #(executePushGlobalTrace % 256) STA ZP.TraceMessageL LDA #(executePushGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-   }    
-   
-   // Execute POPGLOBAL opcode - pop value from stack and store to global variable
-   // Input: PC points to operand bytes (node address LSB, MSB)
-   // Output: Value popped from stack and stored to variable, PC advanced by 2
-   // Modifies: A, X, Y, ZP.PC, ZP.IDX, ZP.TOP, ZP.TOPT, stack
-   const string executePopGlobalTrace = "POPGLOBAL // Pop to global by name";
-   executePopGlobal()
-   {
-   #ifdef TRACE
-       LDA #(executePopGlobalTrace % 256) STA ZP.TraceMessageL LDA #(executePopGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-   #endif
-       
-       loop
-       {
-           // Fetch node address (little-endian)
-           FetchOperandWord(); // Result in executorOperandL/H
-           Error.CheckError();
-           if (NC) 
-           { 
-               States.SetFailure();
-               break; 
-           }
-           
-           // Transfer node address to ZP.IDX
-           LDA executorOperandL
-           STA ZP.IDXL
-           LDA executorOperandH
-           STA ZP.IDXH
-           
-            // Get the variable's current type for compatibility checking
-            Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = type
-            Error.CheckError();
-            if (NC) 
-            { 
-                States.SetFailure();
-                break; 
-            }
-
-            // Pop value from stack (RHS of assignment)
-            Stacks.PopTop(); // Result in ZP.TOP (value), ZP.TOPT (type)
-
-            // Check if variable has VAR bit set
-            LDA ZP.ACCT
-            AND #BASICType.VAR
-            if (Z) // Non-VAR variable - use normal type checking
-            {
-                // Move LHS type to correct register for CheckRHSTypeCompatibility
-                LDA ZP.ACCT
-                AND #BASICType.MASK  // Extract data type
-                STA ZP.NEXTT 
-                
-                // Check type compatibility for assignment
-                Instructions.CheckRHSTypeCompatibility(); // Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
-                if (NC) 
-                { 
-                    Error.TypeMismatch();
-                    States.SetFailure();
-                    break; 
-                }
-            }
-            // Store the value to the variable
-            Variables.SetValue(); // Input: ZP.IDX = node address, ZP.TOP = value
-            Error.CheckError();
-            if (NC) 
-            { 
-                States.SetFailure();
-                break; 
-            }
-            States.SetSuccess();
-            break;
-       }
-       
-   #ifdef TRACE
-       LDA #(executePopGlobalTrace % 256) STA ZP.TraceMessageL LDA #(executePopGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-   #endif
-   }
-   
-   
    // === FUNCTION AND SYSTEM CALL HANDLERS (ONE BYTE OPERAND) ===
    
    // Execute CALL opcode - call function by name (unresolved)
@@ -1527,6 +1392,213 @@ unit Executor // Executor.asm
 #endif
    }
    
+    // === VARIABLE OPERATION HANDLERS (ONE BYTE OPERAND) ===
+   
+    // Execute PUSHGLOBAL opcode - push global variable value
+    // Input: PC points to operand bytes (node address LSB, MSB)
+    // Output: Variable value pushed to stack, PC advanced by 2
+    // Modifies: A, X, Y, ZP.PC, ZP.IDX, ZP.TOP, ZP.TOPT, stack
+    const string executePushGlobalTrace = "PUSHGLOBAL // Push global by name";
+    executePushGlobal()
+    {
+    #ifdef TRACE
+       LDA #(executePushGlobalTrace % 256) STA ZP.TraceMessageL LDA #(executePushGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+       
+       loop
+       {
+           // Fetch node address (little-endian)
+           FetchOperandWord(); // Result in executorOperandL/H
+           Error.CheckError();
+           if (NC) 
+           { 
+               States.SetFailure();
+               break; 
+           }
+           
+           // Transfer node address to ZP.IDX
+           LDA executorOperandL
+           STA ZP.IDXL
+           LDA executorOperandH
+           STA ZP.IDXH
+           
+           // Get the variable's value and type
+           Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = type
+           Error.CheckError();
+           if (NC) 
+           { 
+               States.SetFailure();
+               break; 
+           }
+           
+           // Push value to stack with type
+           LDA ZP.TOPT
+           Stacks.PushTop(); // Push value and type to stack
+           Error.CheckError();
+           if (NC) 
+           { 
+               States.SetFailure();
+               break; 
+           }
+           
+           States.SetSuccess();
+           break;
+       }
+       
+    #ifdef TRACE
+       LDA #(executePushGlobalTrace % 256) STA ZP.TraceMessageL LDA #(executePushGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    } 
+   
+    // Execute POPGLOBAL opcode - pop value from stack and store to global variable
+    // Input: PC points to operand bytes (node address LSB, MSB)
+    // Output: Value popped from stack and stored to variable, PC advanced by 2
+    // Modifies: A, X, Y, ZP.PC, ZP.IDX, ZP.TOP, ZP.TOPT, stack
+    const string executePopGlobalTrace = "POPGLOBAL // Pop to global by name";
+    executePopGlobal()
+    {
+    #ifdef TRACE
+       LDA #(executePopGlobalTrace % 256) STA ZP.TraceMessageL LDA #(executePopGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+       
+       loop
+       {
+           // Fetch node address (little-endian)
+           FetchOperandWord(); // Result in executorOperandL/H
+           Error.CheckError();
+           if (NC) 
+           { 
+               States.SetFailure();
+               break; 
+           }
+           
+           // Transfer node address to ZP.IDX
+           LDA executorOperandL
+           STA ZP.IDXL
+           LDA executorOperandH
+           STA ZP.IDXH
+           
+            // Get the variable's current type for compatibility checking
+            Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = type
+            Error.CheckError();
+            if (NC) 
+            { 
+                States.SetFailure();
+                break; 
+            }
+            // Pop value from stack (RHS of assignment)
+            Stacks.PopTop(); // Result in ZP.TOP (value), ZP.TOPT (type)
+            // Check if variable has VAR bit set
+            LDA ZP.ACCT
+            AND #BASICType.VAR
+            if (Z) // Non-VAR variable - use normal type checking
+            {
+                // Move LHS type to correct register for CheckRHSTypeCompatibility
+                LDA ZP.ACCT
+                AND #BASICType.MASK  // Extract data type
+                STA ZP.NEXTT 
+                
+                // Check type compatibility for assignment
+                Instructions.CheckRHSTypeCompatibility(); // Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
+                if (NC) 
+                { 
+                    Error.TypeMismatch();
+                    States.SetFailure();
+                    break; 
+                }
+            }
+            // Store the value to the variable
+            Variables.SetValue(); // Input: ZP.IDX = node address, ZP.TOP = value
+            Error.CheckError();
+            if (NC) 
+            { 
+                States.SetFailure();
+                break; 
+            }
+            States.SetSuccess();
+            break;
+       }
+       
+    #ifdef TRACE
+       LDA #(executePopGlobalTrace % 256) STA ZP.TraceMessageL LDA #(executePopGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+    
+    // Execute POPLOCAL opcode - pop value from stack and store to local/argument
+    // Input: PC points to operand byte (signed BP offset)
+    // Output: Value popped from stack and stored to local/argument, PC advanced by 1
+    // Modifies: A, X, Y, ZP.PC, ZP.TOP, ZP.TOPT, stack
+    const string executePopLocalTrace = "POPLOCAL // Pop to local/arg by BP offset";
+    executePopLocal()
+    {
+    #ifdef TRACE
+        LDA #(executePopLocalTrace % 256) STA ZP.TraceMessageL LDA #(executePopLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop
+        {
+            // Fetch signed offset operand
+            FetchOperandByte(); // Result in A
+            States.CanContinue();
+            if (C)
+            {
+                
+                // Add signed offset to BP (handles negative naturally)
+                CLC
+                ADC ZP.BP
+                TAY                     // Y = stack position
+                
+                // get the type of the variable slot
+                LDA Address.TypeStackLSB, Y
+                STA ZP.ACCT
+                
+                // Pop value from stack
+                Stacks.PopTop(); // Result in ZP.TOP, ZP.TOPT
+                
+                // Check if variable has VAR bit set
+                LDA ZP.ACCT
+                AND #BASICType.VAR
+                if (Z) // Non-VAR variable - use normal type checking
+                {
+                    // Move LHS type to correct register for CheckRHSTypeCompatibility
+                    LDA ZP.ACCT
+                    AND #BASICType.MASK  // Extract data type
+                    STA ZP.NEXTT 
+                    // Check type compatibility for assignment
+                    Instructions.CheckRHSTypeCompatibility(); // Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
+                    if (NC) 
+                    { 
+                        Error.TypeMismatch();
+                        States.SetFailure();
+                        break; 
+                    }
+                }
+                else
+                {
+                    // VAR type: keep the VAR bit in the slot
+                    LDA ZP.TOPT
+                    ORA #BASICType.VAR
+                    STA ZP.TOPT
+                }
+                
+                // Store to calculated stack position
+                LDA ZP.TOPL
+                STA Address.ValueStackLSB, Y
+                LDA ZP.TOPH
+                STA Address.ValueStackMSB, Y
+                LDA ZP.TOPT
+                STA Address.TypeStackLSB, Y
+                
+                States.SetSuccess();
+            }
+            break;
+        } // single exit
+        
+    #ifdef TRACE
+        LDA #(executePopLocalTrace % 256) STA ZP.TraceMessageL LDA #(executePopLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+    
     // Execute PUSHLOCAL opcode - push local variable or argument value
     // Input: PC points to operand byte (signed BP offset)
     // Output: Local/argument value pushed to stack, PC advanced by 1
@@ -1554,6 +1626,7 @@ unit Executor // Executor.asm
             LDA Address.ValueStackMSB, Y
             STA ZP.TOPH
             LDA Address.TypeStackLSB, Y
+            AND #BASICType.TYPEMASK   // masks off VAR bit (0x10)
             STA ZP.TOPT
             
             LDA ZP.TOPT
@@ -1573,44 +1646,4 @@ unit Executor // Executor.asm
         LDA #(executePushLocalTrace % 256) STA ZP.TraceMessageL LDA #(executePushLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     } 
-    
-    // Execute POPLOCAL opcode - pop value from stack and store to local/argument
-    // Input: PC points to operand byte (signed BP offset)
-    // Output: Value popped from stack and stored to local/argument, PC advanced by 1
-    // Modifies: A, X, Y, ZP.PC, ZP.TOP, ZP.TOPT, stack
-    const string executePopLocalTrace = "POPLOCAL // Pop to local/arg by BP offset";
-    executePopLocal()
-    {
-    #ifdef TRACE
-        LDA #(executePopLocalTrace % 256) STA ZP.TraceMessageL LDA #(executePopLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-    #endif
-        
-        // Fetch signed offset operand
-        FetchOperandByte(); // Result in A
-        States.CanContinue();
-        if (C)
-        {
-            // Add signed offset to BP (handles negative naturally)
-            CLC
-            ADC ZP.BP
-            TAY                     // Y = stack position
-            
-            // Pop value from stack
-            Stacks.PopTop(); // Result in ZP.TOP, ZP.TOPT
-            
-            // Store to calculated stack position
-            LDA ZP.TOPL
-            STA Address.ValueStackLSB, Y
-            LDA ZP.TOPH
-            STA Address.ValueStackMSB, Y
-            LDA ZP.TOPT
-            STA Address.TypeStackLSB, Y
-            
-            States.SetSuccess();
-        }
-        
-    #ifdef TRACE
-        LDA #(executePopLocalTrace % 256) STA ZP.TraceMessageL LDA #(executePopLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-    #endif
-    }
 }

@@ -43,8 +43,8 @@ unit Debug // Debug.asm
     const string stackEllipsis = "  ... (truncated)\n";
     const string bpMarker = " <- BP";
     const string returnSlotMarker = " *** RETURN SLOT ***";
-    const string frameMarkerPrefix = "\n--- Frame ";
-    const string frameMarkerSuffix = " ---";
+    //const string frameMarkerPrefix = "\n--- Frame ";
+    //const string frameMarkerSuffix = " ---";
     const string argMarker = " (arg)";
     const string localMarker = " (local)";
     
@@ -1853,6 +1853,7 @@ unit Debug // Debug.asm
             DEX  // Move to previous entry
             
             // Check for frame boundary
+            /*
             TXA
             CMP ZP.BP
             if (Z)
@@ -1873,6 +1874,7 @@ unit Debug // Debug.asm
                 INC ZP.DB7
                 nL();
             }
+            */
             
             // Print entry
             TXA

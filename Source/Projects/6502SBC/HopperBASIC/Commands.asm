@@ -710,6 +710,8 @@ unit Commands
         PHX
         PHY
         
+        LDX #0
+        
         LDA ZP.IDYL
         ORA ZP.IDYH
         if (NZ)
@@ -720,20 +722,28 @@ unit Commands
             {
                 if (NC) { break; } // No more arguments (handles empty list case)
                 
-                // Get and print argument name
-                Locals.GetName(); // Input: ZP.IDY = argument node, Output: ZP.STR = name pointer
-                Tools.PrintStringSTR();
-                
+                Locals.GetType(); // Input: ZP.IDY, Output: ZP.ACCT = symbolType|dataType
+                LDA ZP.ACCT
+                AND # SymbolType.MASK
+                CMP # SymbolType.ARGUMENT
+                if (Z)
+                {
+                    CPX #0
+                    if (NZ)
+                    {
+                        // we've already seen arguments - print comma separator
+                        LDA #','
+                        Serial.WriteChar();
+                        LDA #' '
+                        Serial.WriteChar();
+                    }
+                    // Get and print argument name
+                    Locals.GetName(); // Input: ZP.IDY = argument node, Output: ZP.STR = name pointer
+                    Tools.PrintStringSTR();
+                    INX
+                }
                 // Check if there's another argument
                 Locals.IterateNext(); // Input: ZP.IDY = current arg, Output: ZP.IDY = next arg
-                if (C)
-                {
-                    // More arguments - print comma separator
-                    LDA #','
-                    Serial.WriteChar();
-                    LDA #' '
-                    Serial.WriteChar();
-                }
             }
         }
         

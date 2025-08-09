@@ -130,6 +130,7 @@ unit Locals
     // Output: C set if found, NC if not found
     //         If found: ZP.IDY = node address
     //                   ZP.ACCL = BP offset (signed: negative for args, positive for locals)
+    //                   ZP.ACCT = type
     // Modifies: ZP.IDY, ZP.ACCL, ZP.LCURRENT
     Find()
     {
@@ -167,8 +168,8 @@ unit Locals
                     // Found - determine BP offset based on type
                     LDY #lnType
                     LDA [ZP.LCURRENT], Y
-                    AND #SymbolType.MASK
-                    CMP #SymbolType.LOCAL
+                    AND # SymbolType.MASK
+                    CMP # SymbolType.LOCAL
                     if (Z)  // It's a local
                     {
                         // For locals, BP offset is positive (1-based)
@@ -222,7 +223,7 @@ unit Locals
     
     // Get local name pointer from local node
     // Input: ZP.IDY = local node address
-    // Output: ZP.TOP = local name pointer, C set (always succeeds)
+    // Output: ZP.TOP = local name pointer
     // Munts: -
     GetName()
     {
@@ -237,6 +238,23 @@ unit Locals
         ADC #0
         STA ZP.STRH
         
+        PLA
+    }
+    
+    // Get local type from local node
+    // Input: ZP.IDY = local node address
+    // Output: ZP.ACCT = (SymbolType.LOCAL or SymbolType.ARGUMENT) | BASICType
+    // Munts: -
+    GetType()
+    {
+        PHA
+        PHY
+        
+        LDY # lnType
+        LDA [ZP.IDY], Y 
+        STA ZP.ACCT
+                   
+        PLY
         PLA
     }
     
@@ -618,9 +636,8 @@ unit Locals
         
         loop
         {
-            // Check if we're compiling a function
-            LDA (Compiler.compilerFuncArgs + 0)     // Are we in a function?
-            if (Z)                                 // Zero means not in a function
+            InFunction();     // Are we in a function?
+            if (NC)
             {
                 CLC  // Not found - not in function context
                 break;

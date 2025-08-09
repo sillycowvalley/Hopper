@@ -28,61 +28,79 @@ unit BASICTypes // BASICTypes.asm
     PrintType()
     {
         PHA
-        
-        // Convert BasicType to corresponding Token and use keyword table
-        switch (A)
+        PHX
+        TAX
+
+        AND # BASICType.VAR
+        if (NZ)
         {
-            case BASICType.INT:
+            LDA #Token.VAR
+            Tokens.PrintKeyword();
+            TXA
+            AND # BASICType.TYPEMASK
+            if (NZ)
             {
-                LDA #Token.INT
-                Tokens.PrintKeyword();
-            }
-            case BASICType.WORD:
+                // VAR contains a type
+                LDA #'(' COut();
+                TXA
+                PrintType();
+                LDA #')' COut();
+            }    
+        }
+        else
+        {
+            // Convert BasicType to corresponding Token and use keyword table
+            switch (X)
             {
-                LDA #Token.WORD
-                Tokens.PrintKeyword();
-            }
-            case BASICType.BIT:
-            {
-                LDA #Token.BIT
-                Tokens.PrintKeyword();
-            }
-            case BASICType.BYTE:
-            {
-                LDA #Token.BYTE
-                Tokens.PrintKeyword();
-            }
-            case BASICType.STRING:
-            {
-                LDA #Token.STRING
-                Tokens.PrintKeyword();
-            }
-            case BASICType.VAR:
-            {
-                LDA #Token.VAR
-                Tokens.PrintKeyword();
-            }
-            /*
-            case BASICType.ARRAY:
-            {
-                LDA #Token.ARRAY
-                Tokens.PrintKeyword();
-            }
-            */
-            case BASICType.VOID:
-            {
-                LDA #(voidName % 256)
-                STA ZP.STRL
-                LDA #(voidName / 256)
-                STA ZP.STRH
-                PrintStringSTR();
-            }
-            default:
-            {
-                // Unknown type
-                Serial.HexOut();
+                case BASICType.INT:
+                {
+                    LDA #Token.INT
+                    Tokens.PrintKeyword();
+                }
+                case BASICType.WORD:
+                {
+                    LDA #Token.WORD
+                    Tokens.PrintKeyword();
+                }
+                case BASICType.BIT:
+                {
+                    LDA #Token.BIT
+                    Tokens.PrintKeyword();
+                }
+                case BASICType.BYTE:
+                {
+                    LDA #Token.BYTE
+                    Tokens.PrintKeyword();
+                }
+                case BASICType.STRING:
+                {
+                    LDA #Token.STRING
+                    Tokens.PrintKeyword();
+                }
+                /*
+                case BASICType.ARRAY:
+                {
+                    LDA #Token.ARRAY
+                    Tokens.PrintKeyword();
+                }
+                */
+                case BASICType.VOID:
+                {
+                    LDA #(voidName % 256)
+                    STA ZP.STRL
+                    LDA #(voidName / 256)
+                    STA ZP.STRH
+                    PrintStringSTR();
+                }
+                default:
+                {
+                    // Unknown type
+                    Serial.HexOut();
+                }
             }
         }
+        
+        PLX
         PLA
     }
     // Input: X
