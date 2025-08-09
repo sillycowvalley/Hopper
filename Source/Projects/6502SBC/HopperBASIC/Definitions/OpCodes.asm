@@ -109,11 +109,17 @@ unit OpCodes
        JUMPZW       = 0x8A,  // Jump if zero [lsb] [msb]
        JUMPNZW      = 0x8B,  // Jump if non-zero [lsb] [msb]
        
-       // === RESERVED FOR FUTURE EXTENSIONS (0xC0-0xFF) ===
-       // Bits 7-6: 11 (reserved)
-       // Reserved for future complex instructions or extensions
-       // Potential uses: Variable-length operands, complex string operations,
-       //                array access, advanced control flow
+
+        // === THREE-OPERAND OPCODES (0xC0-0xFF) ===
+        // Bits 7-6: 11 (three operand bytes)
+        // All opcodes in this range have exactly 3 operand bytes
+
+        FORCHK = 0xC0,  // FOR initial check [iterator_offset] [forward_offset_lsb] [forward_offset_msb]
+                        // Compares iterator with limit, jumps forward if out of range
+                        
+        FORIT  = 0xC1,  // FOR iterate [iterator_offset] [backward_offset_lsb] [backward_offset_msb]  
+                        // Increments iterator by step, checks limit, jumps back if continuing
+       
    }
    
    
@@ -165,6 +171,8 @@ unit OpCodes
    const string opcodeJUMPW = "JUMPW";
    const string opcodeJUMPZW = "JUMPZW";
    const string opcodeJUMPNZW = "JUMPNZW";
+   const string opcodeFORCHK = "FORCHK";
+   const string opcodeFORIT  = "FORIT";
    
 #if defined(DEBUG) || defined(TRACEEXE)
    // Input: opcode in X
@@ -494,6 +502,20 @@ unit OpCodes
                 LDA #(opcodeJUMPNZW % 256)
                 STA ZP.STRL
                 LDA #(opcodeJUMPNZW / 256)
+                STA ZP.STRH
+            }
+            case OpCode.FORCHK:
+            {
+                LDA #(opcodeFORCHK % 256)
+                STA ZP.STRL
+                LDA #(opcodeFORCHK / 256)
+                STA ZP.STRH
+            }
+            case OpCode.FORIT:
+            {
+                LDA #(opcodeFORIT % 256)
+                STA ZP.STRL
+                LDA #(opcodeFORIT / 256)
                 STA ZP.STRH
             }
             default:

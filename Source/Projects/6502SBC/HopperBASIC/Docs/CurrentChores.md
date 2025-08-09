@@ -3,11 +3,14 @@
 ## FOR/NEXT Loops
 
 ### Design Decisions
+- **Two-opcode approach** - FORCHK for initial check, FORIT for increment-and-check
 - **Implicit local creation** - Loop variable automatically becomes a local if not already declared
+- **Stack-based iterator** - Iterator is a proper local variable (BP-relative)
 - **No global iterators** - FOR/NEXT only allowed inside functions (FUNC or BEGIN)
 - **Classic BASIC behavior** - Loop variable retains overflow value after loop completion
 - **Expressions evaluated once** - FROM, TO, and STEP expressions captured at loop start
-- **Stack-based temporaries** - TO and STEP values live on stack during loop execution
+- **Stack temporaries** - TO and STEP values naturally placed on stack at SP-2 and SP-1
+- **Zero-iteration support** - FORCHK ensures loops can skip entirely if initial conditions not met
 
 ### Syntax
 ```basic
@@ -17,33 +20,65 @@ NEXT i
 ```
 
 ### Compilation Strategy
-When encountering FOR:
-1. Create implicit local for iterator if not exists (allocate slot, increment `compilerFuncLocals`)
-2. Evaluate `<from>` expression → POPLOCAL to iterator variable
-3. Evaluate `<to>` expression → leave on stack (becomes temporary at SP-2)
-4. If STEP present: evaluate `<step>` expression → leave on stack (at SP-1)
-   Otherwise: PUSH1 → leave on stack (at SP-1)
-5. Save loop start position with PHA/PLA
-6. Save iterator variable in ZP.IDX (preserved through compilation)
 
-When encountering NEXT:
-1. Verify variable name matches ZP.IDX (current FOR iterator)
-2. Emit increment code:
+#### New Opcodes Required
+```asm
+// In OpCodes.asm enum OpCode:
+
+// === THREE-OPERAND OPCODES (0xC0-0xFF) ===
+// Bits 7-6: 11 (three operand bytes)
+// All opcodes in this range have exactly 3 operand bytes
+
+FORCHK = 0xC0,  // FOR initial check [iterator_offset] [forward_offset_lsb] [forward_offset_msb]
+                // Compares iterator with limit at SP-2
+                // Jumps forward if out of range (zero-iteration case)
+                // Falls through if loop should execute
+                
+FORIT  = 0xC1,  // FOR iterate [iterator_offset] [backward_offset_lsb] [backward_offset_msb]  
+                // Increments iterator by step at SP-1
+                // Compares with limit at SP-2
+                // Jumps back to loop body if continuing
+                // Falls through when loop completes
+```
+
+#### Compiler Workspace
+```asm
+const uint compilerForIteratorOffset = Address.BasicCompilerWorkspace + 11; 
+// 1 byte - signed BP offset of current FOR iterator
+```
+
+#### When encountering FOR:
+1. PHA current `compilerForIteratorOffset` (for nested loops)
+2. Parse iterator name
+3. Create implicit local if not exists:
+   - Allocate local slot (increment `compilerFuncLocals`)
+   - Calculate BP offset for iterator
+   - Store offset in `compilerForIteratorOffset`
+4. Evaluate `<from>` expression → POPLOCAL to iterator
+5. Evaluate `<to>` expression → leave on stack (becomes SP-2)
+6. If STEP present: evaluate `<step>` → leave on stack (becomes SP-1)
+   Otherwise: PUSH1 → leave on stack (becomes SP-1)
+7. PHA current PC (location after FORCHK for backward jump target)
+8. Emit FORCHK opcode with placeholder forward offset:
    ```
-   PUSHLOCAL iterator
-   PUSHLOCAL [SP-1]    ; Get step from stack temporary
-   ADD
-   POPLOCAL iterator
+   FORCHK [iterator_offset] [0x00] [0x00]  ; To be patched
    ```
-3. Emit comparison:
-   ```
-   PUSHLOCAL iterator
-   PUSHLOCAL [SP-2]    ; Get limit from stack temporary
-   [LE or GE based on step sign]
-   JUMPNZW loop_start
-   ```
-4. Emit cleanup: DECSP, DECSP (remove TO and STEP temporaries)
-5. Restore parent FOR context if nested
+9. PHA location of FORCHK's offset operands (for later patching)
+
+#### For each statement in the loop body:
+10. Compile statements normally
+
+#### When encountering NEXT:
+11. Verify variable name matches current iterator (same BP offset as `compilerForIteratorOffset`)
+12. PLA to get FORCHK patch location
+13. PLA to get loop body start position (target for FORIT's backward jump)
+14. Calculate and emit FORIT with backward jump offset:
+    ```
+    FORIT [iterator_offset] [backward_offset_lsb] [backward_offset_msb]
+    ```
+15. Patch FORCHK with forward jump offset (current PC + 4 for the DECSPs)
+16. Emit cleanup: DECSP, DECSP (remove TO and STEP temporaries)
+17. PLA to restore parent `compilerForIteratorOffset` (if nested)
 
 ### Stack Layout During Loop
 ```
@@ -51,7 +86,7 @@ When encountering NEXT:
 [TO value]        <- SP-2 (temporary)
 [Local n]         <- BP+n
 ...
-[Iterator]        <- BP+k (actual local)
+[Iterator]        <- BP+k (actual local variable)
 [Local 0]         <- BP
 ```
 
@@ -65,39 +100,196 @@ NEXT i
 Compiles to:
 ```
 PUSH1                   ; Start value
-POPLOCAL i              ; Store in iterator
-PUSHBYTE 10             ; TO value - stays on stack
-PUSHBYTE 2              ; STEP value - stays on stack
+POPLOCAL k              ; Store in iterator at BP+k
+PUSHBYTE 10             ; TO value - naturally on stack at SP-2
+PUSHBYTE 2              ; STEP value - naturally on stack at SP-1
 
-loop_start:
-PUSHLOCAL i
+FORCHK k exit           ; Check: is 1 <= 10? Yes, fall through
+                        ; Would jump to exit if out of range
+
+loop_body:              ; (e.g., PC = 0x1004)
+PUSHLOCAL k             ; Load iterator (correctly starts at 1)
 SYSCALL PRINT
 PUSHBYTE 10
 SYSCALL PRINTCHAR       ; Newline
 
-; NEXT implementation:
-PUSHLOCAL i
-DUP                     ; Get step from SP-1 position
-ADD
-POPLOCAL i              
+FORIT k loop_body       ; Increment i by 2, check if 3 <= 10
+                        ; If yes, jump back to loop_body
+                        ; If no, fall through
 
-PUSHLOCAL i
-[access SP-2 for limit] ; Need to access TO value
-LE                      
-JUMPNZW loop_start
-
+exit:
 DECSP                   ; Remove STEP
 DECSP                   ; Remove TO
-; Iterator i remains as local
+; Iterator remains as local variable with final value (11 in this case)
+```
+
+### FORCHK Opcode Implementation (in Executor.asm)
+```asm
+executeFORCHK()
+{
+    // Fetch operands
+    FetchOperandByte();     // Iterator BP offset in A
+    STA executorOperandL    
+    FetchOperandWord();     // Forward jump offset in executorOperand1/2
+    
+    // Load iterator value (initial value, no increment)
+    LDA executorOperandL
+    CLC
+    ADC ZP.BP
+    TAY
+    LDA Address.ValueStackLSB, Y
+    STA ZP.TOPL
+    LDA Address.ValueStackMSB, Y
+    STA ZP.TOPH
+    
+    // Check step sign (at SP-1) to determine comparison direction
+    LDY ZP.SP
+    DEY
+    LDA Address.ValueStackMSB, Y
+    BPL positiveStep
+    
+negativeStep:
+    // For negative step: check if iterator >= limit
+    DEY                     ; SP-2 (limit)
+    LDA ZP.TOPH
+    CMP Address.ValueStackMSB, Y
+    if (C) { return; }      ; Iterator high >= limit high, continue loop
+    if (NZ) { doJump(); }   ; Iterator high < limit high, exit loop
+    LDA ZP.TOPL
+    CMP Address.ValueStackLSB, Y
+    if (C) { return; }      ; Iterator low >= limit low, continue loop
+    doJump();               ; Iterator < limit, exit loop
+    
+positiveStep:
+    // For positive step: check if iterator <= limit
+    DEY                     ; SP-2 (limit)
+    LDA Address.ValueStackMSB, Y
+    CMP ZP.TOPH
+    if (C) { return; }      ; Limit high > iterator high, continue loop
+    if (NZ) { doJump(); }   ; Limit high < iterator high, exit loop
+    LDA Address.ValueStackLSB, Y
+    CMP ZP.TOPL
+    if (NC) { return; }     ; Limit low >= iterator low, continue loop
+    
+doJump:
+    // Take the forward jump (exit loop)
+    CLC
+    LDA ZP.PCL
+    ADC executorOperand1
+    STA ZP.PCL
+    LDA ZP.PCH
+    ADC executorOperand2
+    STA ZP.PCH
+}
+```
+
+### FORIT Opcode Implementation (in Executor.asm)
+```asm
+executeFORIT()
+{
+    // Fetch operands
+    FetchOperandByte();     // Iterator BP offset in A
+    STA executorOperandL    
+    FetchOperandWord();     // Backward jump offset in executorOperand1/2
+    
+    // Load iterator value
+    LDA executorOperandL
+    CLC
+    ADC ZP.BP
+    TAY
+    LDA Address.ValueStackLSB, Y
+    STA ZP.TOPL
+    LDA Address.ValueStackMSB, Y
+    STA ZP.TOPH
+    
+    // Add step (at SP-1)
+    LDY ZP.SP
+    DEY
+    CLC
+    LDA Address.ValueStackLSB, Y
+    ADC ZP.TOPL
+    STA ZP.TOPL
+    LDA Address.ValueStackMSB, Y
+    ADC ZP.TOPH
+    STA ZP.TOPH
+    
+    // Store updated iterator
+    LDA executorOperandL
+    CLC
+    ADC ZP.BP
+    TAY
+    LDA ZP.TOPL
+    STA Address.ValueStackLSB, Y
+    LDA ZP.TOPH
+    STA Address.ValueStackMSB, Y
+    
+    // Check step sign (at SP-1) to determine comparison direction
+    LDY ZP.SP
+    DEY
+    LDA Address.ValueStackMSB, Y
+    BPL positiveStep
+    
+negativeStep:
+    // For negative step: check if iterator >= limit
+    DEY                     ; SP-2 (limit)
+    LDA ZP.TOPH
+    CMP Address.ValueStackMSB, Y
+    if (C) { doJump(); }    ; Iterator high >= limit high, continue loop
+    if (NZ) { return; }     ; Iterator high < limit high, exit loop
+    LDA ZP.TOPL
+    CMP Address.ValueStackLSB, Y
+    if (C) { doJump(); }    ; Iterator low >= limit low, continue loop
+    return;                 ; Iterator < limit, exit loop
+    
+positiveStep:
+    // For positive step: check if iterator <= limit
+    DEY                     ; SP-2 (limit)
+    LDA Address.ValueStackMSB, Y
+    CMP ZP.TOPH
+    if (C) { doJump(); }    ; Limit high > iterator high, continue loop
+    if (NZ) { return; }     ; Limit high < iterator high, exit loop
+    LDA Address.ValueStackLSB, Y
+    CMP ZP.TOPL
+    if (NC) { doJump(); }   ; Limit low >= iterator low, continue loop
+    return;                 ; Limit > iterator, exit loop
+    
+doJump:
+    // Take the backward jump (continue loop)
+    CLC
+    LDA ZP.PCL
+    ADC executorOperand1
+    STA ZP.PCL
+    LDA ZP.PCH
+    ADC executorOperand2
+    STA ZP.PCH
+}
 ```
 
 ### Implementation Notes
-- Use PHA/PLA to manage jump-back address during compilation
-- Use ZP.IDX to track current FOR iterator variable
-- Preserve ZP.IDX around expression evaluations and statement compilation
-- Stack temporaries accessed via relative addressing during execution
-- No explicit hidden locals needed - stack provides temporary storage
-- Nested FOR loops naturally handled by saving/restoring ZP.IDX
+- **Two-opcode design**: FORCHK for initial check, FORIT for iterate-and-check
+- **Zero-iteration support**: FORCHK ensures loops can execute zero times
+- **Natural stack usage**: TO and STEP values placed naturally by existing push opcodes
+- **BP offset tracking**: Single byte in compiler workspace tracks current iterator offset
+- **Nested loops**: PHA/PLA pattern preserves parent loop context
+- **Expression preservation**: PHA/PLA around expression evaluation preserves offsets
+- **Type checking**: Iterator must be numeric type (INT, WORD, BYTE)
+- **Signed offsets**: Both opcodes use signed 16-bit offsets for flexible jumping
+- **Three-operand format**: Both opcodes in 0xC0-0xFF range with 3 operand bytes
+
+### Benefits of Two-Opcode Approach
+1. **Correctness**: Zero-iteration loops work properly
+2. **Performance**: Only two opcode dispatches per loop (initial + per iteration)
+3. **Code size**: Compact - 4 bytes for FORCHK, 4 bytes for FORIT
+4. **Simplicity**: Clear separation between initial check and iteration
+5. **No patching complexity**: Forward offset known when FORIT is emitted
+6. **Debugging**: Clear loop structure with distinct entry and iteration points
+7. **Memory efficiency**: No additional zero page usage beyond compiler workspace
+
+### Challenges Addressed
+1. **Zero-iteration loops**: ✅ Solved - FORCHK handles initial check
+2. **Stack-relative access**: ✅ Solved - Both opcodes directly access SP-1 and SP-2
+3. **Step sign detection**: ✅ Solved - Both opcodes check sign at runtime
+4. **Type promotion**: Handle mixed types in FROM/TO/STEP expressions during compilation
 
 ---
 
@@ -153,13 +345,13 @@ BitInvMasks: .byte $FE,$FD,$FB,$F7,$EF,$DF,$BF,$7F
 ## Implementation Priority
 
 ### Phase 1: FOR/NEXT
-- Create implicit local for iterator variable
-- Leave TO and STEP values on stack as temporaries
-- Implement FOR compilation with expression evaluation
-- Implement NEXT with stack-relative access to temporaries
-- Use PHA/PLA for jump address, ZP.IDX for iterator tracking
-- Handle nested loops via ZP.IDX save/restore
-- Clean up with DECSP after loop
+- Add FORCHK and FORIT opcodes to OpCodes.asm (0xC0 and 0xC1)
+- Update executor dispatch to handle 0xC0-0xFF as 3-operand opcodes
+- Implement executeFORCHK and executeFORIT in Executor.asm
+- Add compilerForIteratorOffset to compiler workspace
+- Implement FOR parsing and compilation
+- Implement NEXT parsing with FORIT emission
+- Handle nested loops via PHA/PLA pattern
 - Test with benchmarks
 
 ### Phase 2: Arrays
@@ -202,6 +394,14 @@ FUNC TestStepFor()
     NEXT i
 ENDFUNC
 
+FUNC TestZeroIteration()
+    ' Zero-iteration loop
+    FOR i = 10 TO 1 STEP 1
+        PRINT "Should not print"
+    NEXT i
+    PRINT "Correctly skipped"
+ENDFUNC
+
 FUNC TestDynamicFor(n)
     ' Dynamic bounds - evaluated once
     FOR i = n/2 TO n*2
@@ -241,35 +441,28 @@ END
 
 ## Technical Notes
 
-### FOR/NEXT Compilation State
-```asm
-; During compilation, manage with:
-PHA/PLA                 ; Jump-back address
-ZP.IDX                  ; Current FOR iterator variable
-; Nested loops: save/restore ZP.IDX around inner FOR
-```
-
-### Stack Access During Execution
-Need mechanism to access stack temporaries at known offsets:
-- SP-1: STEP value
-- SP-2: TO value
-- May need new opcodes or use existing DUP/indexed access
+### Stack Management
+- **SP-relative access**: FORCHK and FORIT directly access SP-1 and SP-2
+- **BP-relative access**: Iterator stored as regular local variable
+- **Compiler state**: Single byte tracks current iterator offset
+- **Nested context**: PHA/PLA preserves parent loop state
 
 ### Error Conditions
 - FOR without NEXT
-- NEXT without FOR
+- NEXT without FOR  
 - NEXT with wrong variable name
 - FOR at global scope (not in function)
-- Nested FOR with same variable name (allowed but iterator shadowed)
+- Type mismatches in loop expressions
 
 ### Success Criteria
 1. FOR/NEXT loops work with implicit locals
-2. Loop variable retains overflow value after completion
-3. Stack temporaries properly managed
-4. Nested FOR loops work correctly
-5. Dynamic bounds evaluated once at loop start
-6. STEP works with positive and negative values
-7. No stack corruption from temporaries
-8. DECSP cleanup after loop completion
-9. DASM clearly shows loop structure
-10. Error detection for mismatched FOR/NEXT
+2. Zero-iteration loops execute correctly
+3. Loop variable retains overflow value after completion
+4. Stack temporaries (TO/STEP) properly managed
+5. Nested FOR loops work correctly
+6. Dynamic bounds evaluated once at loop start
+7. STEP works with positive and negative values
+8. No stack corruption from temporaries
+9. DECSP cleanup after loop completion
+10. FORCHK and FORIT opcodes handle all edge cases
+11. Signed jump offsets work for all loop sizes

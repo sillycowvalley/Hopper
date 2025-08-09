@@ -81,6 +81,36 @@ unit Stacks // Stacks.asm
         STA Address.CallStackMSB, Y
         INC ZP.CSP
     }
+    
+    // Input: A = signed offset from BP
+    // Output: ZP.TOP = value at BP+offset, ZP.TOPT = type
+    GetStack()
+    {
+        CLC
+        ADC ZP.BP
+        TAY
+        LDA Address.ValueStackLSB, Y
+        STA ZP.TOPL
+        LDA Address.ValueStackMSB, Y
+        STA ZP.TOPH
+        LDA Address.TypeStackLSB, Y
+        STA ZP.TOPT
+    }
+    
+    // Input: A = signed offset from BP, ZP.TOP = value to store
+    // Modifies: Y
+    SetStack()
+    {
+        CLC
+        ADC ZP.BP
+        TAY
+        LDA ZP.TOPL
+        STA Address.ValueStackLSB, Y
+        LDA ZP.TOPH
+        STA Address.ValueStackMSB, Y
+        LDA ZP.TOPT
+        STA Address.TypeStackLSB, Y
+    }
 #endif
     
     PopTop()
