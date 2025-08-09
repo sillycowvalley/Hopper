@@ -148,8 +148,8 @@ unit Locals
             LDA [ZP.IDX], Y
             STA ZP.LCURRENTH
             
-            LDX #0  // Index counter for arguments
-            
+            LDX #0  // Index counter for arguments and locals
+            STZ ZP.ACCL
             loop
             {
                 // Check if we've reached end of list
@@ -169,15 +169,8 @@ unit Locals
                     LDY #lnType
                     LDA [ZP.LCURRENT], Y
                     AND # SymbolType.MASK
-                    CMP # SymbolType.LOCAL
-                    if (Z)  // It's a local
-                    {
-                        // For locals, BP offset is positive (1-based)
-                        INX  // X has been counting from 0
-                        TXA
-                        STX ZP.ACCL  // Positive BP offset
-                    }
-                    else  // It's an argument
+                    CMP # SymbolType.ARGUMENT
+                    if (Z)  // It's an argument
                     {
                         // For arguments: BP offset = -(arg_count - index)
                         STX ZP.ACCL  // Save index first
@@ -188,6 +181,10 @@ unit Locals
                         CLC
                         ADC #1  // Two's complement for negative
                         STA ZP.ACCL  // Negative BP offset
+                    }
+                    else
+                    {
+                        // For locals, BP offset is positive (0-based), already in ZP.ACCL
                     }
                     
                     // Copy node address to IDY
@@ -210,7 +207,19 @@ unit Locals
                 PLA
                 STA ZP.LCURRENTL
                 
-                INX  // Increment index
+                // After moving to next node, check type to update counters
+                LDY #lnType
+                LDA [ZP.LCURRENT], Y
+                AND #SymbolType.MASK
+                CMP #SymbolType.ARGUMENT
+                if (Z)
+                {
+                    INX  // Increment local counter
+                }
+                else
+                {
+                    INC ZP.ACCL
+                }
             }
             
             break;

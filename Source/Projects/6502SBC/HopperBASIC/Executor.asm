@@ -519,7 +519,7 @@ PLX PLA
    
    // Common return processing for both RETURN and RETURNVAL opcodes
    // Input: ZP.TOP = return value (16-bit), ZP.TOPT = return type
-   //        Operand byte = argument count (number of arguments to clean up)
+   //        Operand byte = argument count (number of arguments and locals to clean up)
    // Output: Return value stored in return slot, stack frame restored, execution returned to caller
    // Stack: Removes all arguments and locals, preserves return slot with return value
    // State: Sets States.SetReturn() if returned to entry call, States.SetSuccess() otherwise
@@ -547,7 +547,11 @@ PLX PLA
            SBC executorOperandL         // BP - arg_count
            SEC
            SBC #1                       // BP - arg_count - 1 = return slot position
-           TAX                          // X = return slot index
+           STA ZP.SP
+           
+           TAX                     
+           DEX     
+           // X = return slot index // SP-1
            
            // Store return value in return slot
            LDA ZP.TOPL
@@ -556,12 +560,6 @@ PLX PLA
            STA Address.ValueStackMSB, X
            LDA ZP.TOPT
            STA Address.TypeStackLSB, X
-           
-            // Cleanup locals and arguments - set SP to return slot + 1
-           CLC
-           TXA                          // Return slot index
-           ADC #1                       // Return slot + 1
-           STA ZP.SP
            
            Stacks.PopBP();
            Stacks.PopXID();

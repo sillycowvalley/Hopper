@@ -115,7 +115,7 @@ unit Statement // Statement.asm
     
     // Resolve identifier to its type
     // Input: ZP.CurrentToken = IDENTIFIER token or keyword
-    // Output: ZP.ACCT = IdentifierType, ZP.IDX = node address (if found)
+    // Output: ZP.ACCT = IdentifierType, ZP.IDX = node address (if found), ZP.ACCL as BP offset if Local
     // Modifies: ZP.TOP, ZP.IDX, ZP.ACCT
     const string resolveIdentifierTrace = "ResolveId";
     ResolveIdentifier()
@@ -162,7 +162,7 @@ unit Statement // Statement.asm
             }
             
             // 4. Check if it's a function
-            Functions.Find(); // Input: ZP.TOP = name, Output: C = found, ZP.IDX = node
+            Functions.Find(); // Input: ZP.TOP = name, Output: C = found, ZP.IDX = node, ZP.ACCL = signed one byte BP offset
             if (C)
             {
                 LDA # IdentifierType.Function

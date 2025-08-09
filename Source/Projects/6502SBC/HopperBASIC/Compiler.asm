@@ -2076,8 +2076,10 @@ unit Compiler // Compiler.asm
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
            
-           // Emit RETURNVAL (expects value on stack)
-           LDA #0  // No locals to clean up for now
+           // Emit RETURN with locals cleanup count
+           LDA compilerFuncArgs
+           CLC
+           ADC compilerFuncLocals  // Total slots to clean
            Emit.ReturnVal();
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
@@ -2934,7 +2936,8 @@ unit Compiler // Compiler.asm
                 if (NC) { break; }
                 
                 // Emit POPLOCAL with positive offset
-                LDA compilerFuncLocals  // Positive BP offset
+                LDA compilerFuncLocals  // Positive BP offset (0-based)
+                DEC A
                 Emit.PopLocal();
                 Error.CheckError();
                 if (NC) { break; }
