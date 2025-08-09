@@ -1,5 +1,68 @@
 unit Dasm
 {
+
+    // SYSCALL formatting:
+    printSysCallName()
+    {
+        // Input: A = SYSCALL ID
+        // Output: Prints syscall name and details
+        PHA
+        
+        // Extract function ID (bits 7-3)
+        LSR
+        LSR
+        LSR
+        AND #0x1F
+        
+        // Map syscall ID to Token value for keyword printing
+        switch (A)
+        {
+            case 1:  
+            case 2:  { LDA #Token.PRINT      Tokens.PrintKeyword(); }  // PrintValue and PrintChar
+            case 3:  { LDA #Token.ABS        Tokens.PrintKeyword(); }  // ABS
+            case 4:  { LDA #Token.RND        Tokens.PrintKeyword(); }  // RND
+            case 5:  { LDA #Token.MILLIS     Tokens.PrintKeyword(); }  // MILLIS
+            case 6:  { LDA #Token.SECONDS    Tokens.PrintKeyword(); }  // SECONDS
+            case 7:  { LDA #Token.DELAY      Tokens.PrintKeyword(); }  // DELAY
+            case 8:  { LDA #Token.PEEK       Tokens.PrintKeyword(); }  // PEEK
+            case 9:  { LDA #Token.POKE       Tokens.PrintKeyword(); }  // POKE
+            default: { LDA #'?' COut(); LDA #'?' COut(); LDA #'?' COut(); }  // Unknown
+        }
+        
+        PLA
+        PHA
+        
+        // Show argument count and return type in parentheses
+        LDA #'(' COut();
+        
+        PLA
+        PHA
+        AND #0x03  // Extract argument count
+        if (Z)
+        {
+            // No args - just show return type
+        }
+        else
+        {
+            ORA #'0'  // Convert to ASCII digit
+            COut();
+            LDA #',' COut(); Space();
+        }
+        
+        PLA
+        AND #0x04  // Check return bit
+        if (Z)
+        {
+            LDA #BASICType.VOID     BASICTypes.PrintType();
+        }
+        else
+        {
+            LDA #Token.RETURN       Tokens.PrintKeyword();
+        }
+        
+        LDA #')' COut();
+    }
+
     // Disassemble complete function body's opcode stream
     // Input: ZP.IDX = function node
     // Output: Disassembly printed to serial, one line per opcode
@@ -151,7 +214,122 @@ unit Dasm
                         {
                             case OpCode.SYSCALL:
                             {
-                                // TODO
+                                LDA ZP.ACCL
+                                printSysCallName();
+                            }
+                            case OpCode.PUSHBYTE:
+                            {
+                                // Show decimal value in parentheses
+                                LDA #'(' COut();
+                                
+                                STZ ZP.TOPH  // BYTE is unsigned
+                                LDA ZP.ACCL
+                                STA ZP.TOPL
+                                LDA #BASICType.BYTE
+                                STA ZP.TOPT
+                                Tools.PrintDecimalWord();
+                                
+                                LDA #')' COut();
+                            }
+                            case OpCode.PUSHBIT:
+                            {
+                                // Show TRUE or FALSE
+                                LDA #'(' COut();
+                                LDA ZP.ACCL
+                                if (Z)
+                                {
+                                    LDA #Token.FALSE     Tokens.PrintKeyword();
+                                }
+                                else
+                                {
+                                    LDA #Token.TRUE     Tokens.PrintKeyword();
+                                }
+                                LDA #')' COut();
+                            }
+                            case OpCode.PUSHLOCAL:
+                            case OpCode.POPLOCAL:
+                            {
+                                // Format BP offset nicely: [BP-2] or [BP+1]
+                                LDA #'[' COut();
+                                LDA #'B' COut();
+                                LDA #'P' COut();
+                                
+                                // Sign extend the byte to 16-bit word
+                                LDA ZP.ACCL
+                                STA ZP.TOPL
+                                if (PL)  // Positive or zero
+                                {
+                                    STZ ZP.TOPH  // Zero high byte for positive
+                                    if (NZ)      // Don't print + for zero
+                                    {
+                                        LDA #'+' COut();
+                                    }
+                                }
+                                else  // Negative
+                                {
+                                    LDA #0xFF
+                                    STA ZP.TOPH  // Sign extend for negative
+                                }
+                                
+                                LDA #BASICType.INT
+                                STA ZP.TOPT
+                                Tools.PrintDecimalWord();  // Handles negative numbers correctly
+                                
+                                LDA #']' COut();
+                            }
+                            case OpCode.JUMPB:
+                            case OpCode.JUMPZB:
+                            case OpCode.JUMPNZB:
+                            {
+                                // Format jump offset nicely
+                                LDA #'(' COut();
+                                
+                                // Sign extend to 16-bit for printing
+                                LDA ZP.ACCL
+                                STA ZP.TOPL
+                                if (PL)
+                                {
+                                    STZ ZP.TOPH
+                                    if (NZ)
+                                    {
+                                        LDA #'+' COut();
+                                    }
+                                }
+                                else
+                                {
+                                    LDA #0xFF
+                                    STA ZP.TOPH
+                                }
+                                
+                                LDA #BASICType.INT
+                                STA ZP.TOPT
+                                Tools.PrintDecimalWord();
+                                
+                                LDA #' ' COut(); 
+                                LDA #'-' COut(); 
+                                LDA #'>' COut(); 
+                                LDA #' ' COut();
+                                
+                                // Calculate target address
+                                CLC
+                                LDA ZP.IDYL
+                                ADC ZP.ACCL
+                                STA ZP.ACCL
+                                LDA ZP.IDYH
+                                if (MI)  // Original offset was negative
+                                {
+                                    ADC #0xFF  // Sign extend
+                                }
+                                else
+                                {
+                                    ADC #0
+                                }
+                                STA ZP.ACCH
+                                
+                                LDA ZP.ACCH HOut();
+                                LDA ZP.ACCL HOut();
+                                
+                                LDA #')' COut();
                             }
                         }
                     }
@@ -177,6 +355,36 @@ unit Dasm
                                     PrintStringSTR();
                                     LDA #')' COut();
                                 }
+                            }
+                            case OpCode.PUSHINT:
+                            {
+                                // Show signed decimal value in parentheses
+                                LDA #'(' COut();
+                                
+                                LDA ZP.ACCL
+                                STA ZP.TOPL
+                                LDA ZP.ACCH
+                                STA ZP.TOPH
+                                LDA #BASICType.INT
+                                STA ZP.TOPT
+                                Tools.PrintDecimalWord();
+                                
+                                LDA #')' COut();
+                            }
+                            case OpCode.PUSHWORD:
+                            {
+                                // Show unsigned decimal value in parentheses
+                                LDA #'(' COut();
+                                
+                                LDA ZP.ACCL
+                                STA ZP.TOPL
+                                LDA ZP.ACCH
+                                STA ZP.TOPH
+                                LDA #BASICType.WORD
+                                STA ZP.TOPT
+                                Tools.PrintDecimalWord();
+                                
+                                LDA #')' COut();
                             }
                             case OpCode.CALLF:
                             {

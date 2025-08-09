@@ -789,14 +789,10 @@ LDA #'>' Debug.COut();
         loop // Single exit
         {
             
-NL(); LDA #'#' COut(); LDA (compilerFuncArgs + 0) HOut();
-
-             // Get the identifier name first!
+            // Get the identifier name first!
             Tokenizer.GetTokenString();  // Result in ZP.TOP
             Error.CheckError();
             if (NC) { break; }
-            
-PrintStringTOP();
             
             // Check if we're compiling a function and this identifier is an argument
             LDA (compilerFuncArgs + 0)     // Are we in a function?
@@ -847,15 +843,6 @@ PrintStringTOP();
             SEC // Success
             break;
         }
-        
-// ADD THIS DEBUG:
-Debug.NL();
-LDA #'V' Debug.COut();
-LDA #'A' Debug.COut();
-LDA #'E' Debug.COut();  // "VAE" = Variable/Argument End
-LDA #':' Debug.COut();
-LDA ZP.CurrentToken
-Debug.HOut();
         
     #ifdef TRACE
         LDA #(compileVariableOrArgumentTrace % 256) STA ZP.TraceMessageL LDA #(compileVariableOrArgumentTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();

@@ -19,6 +19,8 @@ unit BASICTypes // BASICTypes.asm
         MASK     = 0x1F,
     }
     
+    const string voidName = "VOID";
+    
     // Print BasicType enum value as readable string
     // Input: A = BasicType enum value, ZP.TOP contains value (or pointer)
     // Output: Type name printed to serial
@@ -67,6 +69,14 @@ unit BASICTypes // BASICTypes.asm
                 Tokens.PrintKeyword();
             }
             */
+            case BASICType.VOID:
+            {
+                LDA #(voidName % 256)
+                STA ZP.STRL
+                LDA #(voidName / 256)
+                STA ZP.STRH
+                PrintStringSTR();
+            }
             default:
             {
                 // Unknown type
@@ -118,6 +128,7 @@ unit BASICTypes // BASICTypes.asm
                 SEC
             }
             */
+            
             default:
             {
                 CLC
