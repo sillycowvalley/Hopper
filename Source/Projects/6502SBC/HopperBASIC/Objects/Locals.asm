@@ -13,8 +13,8 @@ unit Locals
     const byte lnType = 2;             // symbolType|dataType packed byte
     const byte lnName = 3;             // Name field start
     
-    // Add argument to function's arguments list at the end for correct order
-    // Input: ZP.IDX = function node address, ZP.TOP = argument name
+    // Add local to function's locals list at the end for correct order
+    // Input: ZP.IDX = function node address, ZP.TOP = local name
     // Output: C set if successful, NC if allocation failed
     // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT, ZP.LPREVIOUS, 
     //        ZP.SymbolType, ZP.SymbolNameL/H, ZP.SymbolLength
@@ -50,11 +50,15 @@ unit Locals
             }
             
             LDA ZP.IDXL
-            STA ZP.LCURRENTL        // New argument node
+            STA ZP.LCURRENTL        // New local node
             LDA ZP.IDXH
             STA ZP.LCURRENTH
             
             initializeNode();
+            
+            LDY #lnType
+            LDA ZP.SymbolType  // set by caller
+            STA [ZP.LCURRENT], Y
             
             // New node's next = NULL
             LDY # lnNext
@@ -64,7 +68,7 @@ unit Locals
             STA [ZP.LCURRENT], Y
             
             // 2. Find insertion point (pointer-to-pointer pattern)
-            // Start with address of function's arguments field
+            // Start with address of function's locals field
             CLC
             LDA ZP.LHEADL
             ADC # Objects.snLocals
@@ -120,19 +124,31 @@ unit Locals
         PLA
     }
     
-    // Find argument by name in function's arguments list
-    // Input: ZP.IDX = function node address, ZP.TOP = argument name
-    // Output: ZP.IDY = argument node address, ZP.ACCL = argument index, C set if found, NC if not found
-    // Munts: ZP.LCURRENT, ZP.LNEXT
+    // Find local variable or argument by name in function
+    // Input: ZP.IDX = function node address
+    //        ZP.TOP = name string pointer to find
+    // Output: C set if found, NC if not found
+    //         If found: ZP.IDY = node address
+    //                   ZP.ACCL = BP offset (signed: negative for args, positive for locals)
+    // Modifies: ZP.IDY, ZP.ACCL, ZP.LCURRENT
     Find()
     {
         PHA
         PHX
         PHY
         
-        loop // start of single exit block
+LDA #'L' Debug.COut();
+LDA #'F' Debug.COut();
+LDA #':' Debug.COut();
+Tools.PrintStringTOP();  // Name being searched
+LDA #'[' Debug.COut();
+LDA ZP.IDXH Debug.HOut();
+LDA ZP.IDXL Debug.HOut();  // Function node
+LDA #']' Debug.COut();
+        
+        loop // Single exit
         {
-            // Get arguments list head from function node (IDX preserved)
+            // Get locals/arguments list head from function node
             LDY #Objects.snLocals
             LDA [ZP.IDX], Y
             STA ZP.LCURRENTL
@@ -140,7 +156,7 @@ unit Locals
             LDA [ZP.IDX], Y
             STA ZP.LCURRENTH
             
-            STZ ZP.ACCL  // Argument index counter
+            LDX #0  // Index counter for arguments
             
             loop
             {
@@ -153,51 +169,92 @@ unit Locals
                     break;
                 }
                 
-                // Compare argument name
-                compareNames();
+// After calculateNameAddress() before compareNames()
+Debug.NL();
+LDA #'?' Debug.COut();
+Tools.PrintStringTOP();  // Search name
+LDA #'=' Debug.COut();
+LDA #'?' Debug.COut();
+// Print the local's name at ZP.LCURRENT + lnName
+CLC
+LDA ZP.LCURRENTL
+ADC #lnName
+STA ZP.STRL
+LDA ZP.LCURRENTH
+ADC #0
+STA ZP.STRH
+Tools.PrintStringSTR();  // Local's name
+LDA #'?' Debug.COut();
+                
+                // Compare names using existing compareNames helper
+                compareNames();  // Uses ZP.LCURRENT and ZP.TOP
                 if (C)  // Names match
                 {
+                    // Found - determine BP offset based on type
+                    LDY #lnType
+                    LDA [ZP.LCURRENT], Y
+                    AND #SymbolType.MASK
+                    CMP #SymbolType.LOCAL
+                    if (Z)  // It's a local
+                    {
+                        // For locals, BP offset is positive (1-based)
+                        INX  // X has been counting from 0
+                        TXA
+                        STX ZP.ACCL  // Positive BP offset
+                    }
+                    else  // It's an argument
+                    {
+                        // For arguments: BP offset = -(arg_count - index)
+                        STX ZP.ACCL  // Save index first
+                        LDA (Compiler.compilerFuncArgs + 0)  // Get arg_count
+                        SEC
+                        SBC ZP.ACCL  // arg_count - index
+                        EOR #0xFF
+                        CLC
+                        ADC #1  // Two's complement for negative
+                        STA ZP.ACCL  // Negative BP offset
+                    }
+                    
                     // Copy node address to IDY
                     LDA ZP.LCURRENTL
                     STA ZP.IDYL
                     LDA ZP.LCURRENTH
                     STA ZP.IDYH
+                    
+                    SEC  // Found
                     break;
                 }
                 
-                // Move to next argument - use LCURRENT throughout
-                LDY # lnNext
+                // Move to next node
+                LDY #lnNext
                 LDA [ZP.LCURRENT], Y
-                STA ZP.LNEXTL
+                PHA
                 INY
                 LDA [ZP.LCURRENT], Y
-                STA ZP.LNEXTH
-                
-                // LCURRENT = LNEXT (never touch IDX)
-                LDA ZP.LNEXTL
-                STA ZP.LCURRENTL
-                LDA ZP.LNEXTH
                 STA ZP.LCURRENTH
+                PLA
+                STA ZP.LCURRENTL
                 
-                INC ZP.ACCL  // Increment argument index
+                INX  // Increment index
             }
-            break;  // Only one path through outer loop
-        } // end of single exit block
+            
+            break;
+        }
         
         PLY
         PLX
         PLA
     }
     
-    // Get argument name pointer from argument node
-    // Input: ZP.IDY = argument node address
-    // Output: ZP.TOP = argument name pointer, C set (always succeeds)
+    // Get local name pointer from local node
+    // Input: ZP.IDY = local node address
+    // Output: ZP.TOP = local name pointer, C set (always succeeds)
     // Munts: -
     GetName()
     {
         PHA
         
-        // Calculate address of name field in argument node
+        // Calculate address of name field in local node
         CLC
         LDA ZP.IDYL
         ADC # lnName
@@ -209,9 +266,9 @@ unit Locals
         PLA
     }
     
-    // Find argument by index for BP offset calculation
-    // Input: ZP.IDX = function node address, ZP.ACCL = argument index
-    // Output: ZP.IDY = argument node address, C set if found, NC if index out of range
+    // Find local by index for BP offset calculation
+    // Input: ZP.IDX = function node address, ZP.ACCL = local index
+    // Output: ZP.IDY = local node address, C set if found, NC if index out of range
     // Munts: ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0
     FindByIndex()
     {
@@ -225,7 +282,7 @@ unit Locals
             LDA ZP.ACCL
             STA ZP.SymbolTemp0
             
-            // Get arguments list head from function node (IDX preserved)
+            // Get locals list head from function node (IDX preserved)
             LDY #Objects.snLocals
             LDA [ZP.IDX], Y
             STA ZP.LCURRENTL
@@ -261,7 +318,7 @@ unit Locals
                     break;
                 }
                 
-                // Move to next argument - use LCURRENT throughout
+                // Move to next local - use LCURRENT throughout
                 LDY # lnNext
                 LDA [ZP.LCURRENT], Y
                 STA ZP.LNEXTL
@@ -285,16 +342,16 @@ unit Locals
         PLA
     }
     
-    // Get argument count in function's arguments list
+    // Get local count in function's locals list
     // Input: ZP.IDX = function node address
-    // Output: ZP.ACCL = argument count, C set (always succeeds)
+    // Output: ZP.ACCL = local count, C set (always succeeds)
     // Munts: ZP.LCURRENT, ZP.LNEXT
     GetCount()
     {
         PHA
         PHX
         
-        // Get arguments list head from function node (IDX preserved)
+        // Get locals list head from function node (IDX preserved)
         LDY #Objects.snLocals
         LDA [ZP.IDX], Y
         STA ZP.LCURRENTL
@@ -313,7 +370,7 @@ unit Locals
             
             INC ZP.ACCL  // Increment count
             
-            // Move to next argument (use LCURRENT, not IDX)
+            // Move to next local (use LCURRENT, not IDX)
             LDY # lnNext
             LDA [ZP.LCURRENT], Y
             STA ZP.LNEXTL        // Use LNEXT as temp
@@ -335,15 +392,15 @@ unit Locals
         // IDX unchanged!
     }
     
-    // Start iteration over arguments in function's list
+    // Start iteration over locals in function's list
     // Input: ZP.IDX = function node address
-    // Output: ZP.IDY = first argument node, C set if found, NC if no arguments
+    // Output: ZP.IDY = first local node, C set if found, NC if no locals
     // Munts: -
     IterateStart()
     {
         PHA
         
-        // Get arguments list head from function node (IDX preserved)
+        // Get locals list head from function node (IDX preserved)
         LDY # Objects.snLocals
         LDA [ZP.IDX], Y
         STA ZP.IDYL
@@ -356,26 +413,26 @@ unit Locals
         ORA ZP.IDYH
         if (Z)
         {
-            CLC  // No arguments
+            CLC  // No locals
         }
         else
         {
-            SEC  // Found first argument
+            SEC  // Found first local
         }
         
         PLA
         // IDX unchanged - still points to function node
     }
     
-    // Continue argument iteration
-    // Input: ZP.IDY = current argument node
-    // Output: ZP.IDY = next argument node, C set if found, NC if end of arguments
+    // Continue local iteration
+    // Input: ZP.IDY = current local node
+    // Output: ZP.IDY = next local node, C set if found, NC if end of locals
     // Munts: ZP.LCURRENT
     IterateNext()
     {
         PHA
         
-        // Get next pointer from current argument node
+        // Get next pointer from current local node
         LDY # lnNext
         LDA [ZP.IDY], Y
         STA ZP.LCURRENTL
@@ -394,19 +451,19 @@ unit Locals
         ORA ZP.IDYH
         if (Z)
         {
-            CLC  // End of arguments
+            CLC  // End of locals
         }
         else
         {
-            SEC  // Found next argument
+            SEC  // Found next local
         }
         
         PLA
     }
     
-    // Clear all arguments in function's list with proper memory cleanup
+    // Clear all locals in function's list with proper memory cleanup
     // Input: ZP.IDX = function node address
-    // Output: Function's arguments field set to null, all argument nodes freed, C set (always succeeds)
+    // Output: Function's locals field set to null, all local nodes freed, C set (always succeeds)
     // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
     Clear()
     {
@@ -422,7 +479,7 @@ unit Locals
         
         loop
         {
-            // Get first argument from function node (use saved address)
+            // Get first local from function node (use saved address)
             LDY #Objects.snLocals
             LDA [ZP.SymbolTemp0], Y
             STA ZP.IDXL
@@ -430,12 +487,12 @@ unit Locals
             LDA [ZP.SymbolTemp0], Y
             STA ZP.IDXH
             
-            // Check if arguments list is empty
+            // Check if locals list is empty
             LDA ZP.IDXL
             ORA ZP.IDXH
             if (Z) { break; }
             
-            // Get next pointer from first argument (use IDY instead of IDX)
+            // Get next pointer from first local (use IDY instead of IDX)
             LDY # lnNext
             LDA [ZP.IDX], Y
             STA ZP.LNEXTL
@@ -443,7 +500,7 @@ unit Locals
             LDA [ZP.IDX], Y
             STA ZP.LNEXTH
             
-            // Store the next pointer as the new head argument
+            // Store the next pointer as the new head local
             LDY #Objects.snLocals
             LDA ZP.LNEXTL
             STA [ZP.SymbolTemp0], Y
@@ -451,7 +508,7 @@ unit Locals
             LDA ZP.LNEXTH
             STA [ZP.SymbolTemp0], Y
             
-            // Free the current argument node
+            // Free the current local node
             Memory.Free();       // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
         }
         
@@ -468,8 +525,8 @@ unit Locals
         PLA
     }
     
-    // Internal helper: Calculate required argument node size
-    // Input: ZP.SymbolName = argument name pointer
+    // Internal helper: Calculate required local node size
+    // Input: ZP.SymbolName = local name pointer
     // Output: ZP.ACC = total node size (16-bit), ZP.SymbolLength = name length including null
     // Munts: -
     calculateNodeSize()
@@ -500,7 +557,7 @@ unit Locals
         if (C) { INC ZP.ACCH }
     }
     
-    // Internal helper: Initialize fields in newly allocated argument node
+    // Internal helper: Initialize fields in newly allocated local node
     // Input: ZP.IDX = node address
     //        ZP.SymbolName = name pointer, ZP.SymbolLength = name length
     // Note: Next pointer will be set by caller
@@ -511,7 +568,7 @@ unit Locals
         copyNameToNode();
     }
     
-    // Internal helper: Copy argument name string to node
+    // Internal helper: Copy local name string to node
     // Input: ZP.IDX = node address, ZP.SymbolName = name pointer, ZP.SymbolLength = name length
     // Munts: ZP.FSOURCEADDRESSL/H, ZP.FDESTINATIONADDRESSL/H, ZP.FLENGTHL/H
     copyNameToNode()
@@ -540,8 +597,8 @@ unit Locals
         Tools.CopyBytes();
     }
     
-    // Internal helper: Compare argument names
-    // Input: ZP.LCURRENT = argument node address, ZP.TOP = target name
+    // Internal helper: Compare local names
+    // Input: ZP.LCURRENT = local node address, ZP.TOP = target name
     // Output: C if names match, NC if different
     // Munts: ZP.NEXT (temporarily)
     compareNames()
@@ -577,10 +634,11 @@ unit Locals
     
     // Resolve local/argument by name in current function context
     // Input: ZP.TOP = name pointer
-    // Output: C = found, ZP.IDX = node address if found, BP offset in ACCL (signed byte)
+    // Output: C = found, ZP.IDX = node address if found, BP offset in ZP.ACCL (signed byte), type in ACCT
     // Modifies: ZP.IDX, ZP.LCURRENT
     Resolve()
     {
+        PHA
         PHX
         PHY
         
@@ -588,7 +646,7 @@ unit Locals
         {
             // Check if we're compiling a function
             LDA (Compiler.compilerFuncArgs + 0)     // Are we in a function?
-            if (Z)                          // Zero means not in a function
+            if (Z)                                 // Zero means not in a function
             {
                 CLC  // Not found - not in function context
                 break;
@@ -601,33 +659,18 @@ unit Locals
             STA ZP.IDXH
             
             // Look for local/argument by name
-            Find(); // Input: ZP.IDX = function, ZP.TOP = name
-            // Output: C = found, ZP.IDY = node, ZP.ACCL = index
+            Find();  // Returns BP offset in ACCL directly!
             if (C)
             {
-                // Found - calculate BP offset
-                // For arguments: offset = -(arg_count - index)
-                // For locals (future): offset = index
-                
-                
-                // Calculate it from index
-                LDA (Compiler.compilerFuncArgs + 0)  // Get arg_count
-                SEC
-                SBC ZP.ACCL                  // arg_count - index
-                EOR #0xFF
-                CLC
-                ADC #1                       // Two's complement for negative
-                STA ZP.ACCL                  // Store signed BP offset
-                
-                // Copy node address to IDX
+                // Found - ZP.ACCL already has BP offset
+                // ZP.IDY has node address, copy to IDX
                 LDA ZP.IDYL
                 STA ZP.IDXL
                 LDA ZP.IDYH
                 STA ZP.IDXH
                 
-                // Determine if it's an argument or local based on BP offset
-                LDA #IdentifierType.Local  // Could be Local or Argument
-                
+                LDA #IdentifierType.Local  // Works for both locals and arguments
+                STA ZP.ACCT
                 SEC  // Found
                 break;
             }
@@ -638,5 +681,6 @@ unit Locals
         
         PLY
         PLX
+        PLA
     }
 }

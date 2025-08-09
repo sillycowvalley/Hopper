@@ -6,7 +6,7 @@ unit Statement // Statement.asm
     uses "Emit"
     uses "Compiler"
     
-    friend FunctionDeclaration, Console;
+    friend FunctionDeclaration, Console, Compiler;
     
     // Private Statement layer storage - BasicStatementWorkspace (32 bytes)
     const uint stmtNamePtr     = Address.BasicStatementWorkspace;      // 2 bytes - identifier name pointer
@@ -115,21 +115,21 @@ unit Statement // Statement.asm
     
     // Resolve identifier to its type
     // Input: ZP.CurrentToken = IDENTIFIER token or keyword
-    // Output: A = IdentifierType, ZP.IDX = node address (if found)
+    // Output: ZP.ACCT = IdentifierType, ZP.IDX = node address (if found)
     // Modifies: ZP.TOP, ZP.IDX, ZP.ACCT
     const string resolveIdentifierTrace = "ResolveId";
     ResolveIdentifier()
     {
+        PHA
         PHX
-        PHY
-        
-        LDY ZP.ACCT
         PHY
         
     #ifdef TRACE
         PHA LDA #(resolveIdentifierTrace % 256) STA ZP.TraceMessageL LDA #(resolveIdentifierTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
     #endif
+
         
+                        
         loop // Single exit block for clean error handling
         {
             // 1. Check if it's a keyword
@@ -137,6 +137,7 @@ unit Statement // Statement.asm
             if (C)
             {
                 LDA #IdentifierType.Keyword
+                STA ZP.ACCT
                 break; // success
             }
             
@@ -144,22 +145,24 @@ unit Statement // Statement.asm
             Tokenizer.GetTokenString();  // Result in ZP.TOP
             Error.CheckError();
             if (NC) { break; }
-#ifdef DEBUG   
-// DEBUG: Print the name we're looking for
+
+// After Tokenizer.GetTokenString()
 Debug.NL();
-LDA #'?' Debug.COut();
-Tools.PrintStringTOP();
-LDA #'?' Debug.COut();
-#endif 
+LDA #'R' Debug.COut();
+LDA #'E' Debug.COut();
+LDA #'S' Debug.COut();
+LDA #':' Debug.COut();
+Tools.PrintStringTOP();  
+
             // 2. Check if it's a local or argument (if we're in a function)
-            Locals.Resolve(); // Input: ZP.TOP = name, Output: C = found, ZP.IDX = node
+            Locals.Resolve(); // Input: ZP.TOP = name, Output: C = found, ZP.IDX = node, ACCT = type
             if (C)
             {
                 break; // success
             }
             
             // 3. Check if it's a global variable or constant
-            Variables.Resolve(); // Input: ZP.TOP = name, Output: C = found, A = type, ZP.IDX = node
+            Variables.Resolve(); // Input: ZP.TOP = name, Output: C = found, ACCT = type, ZP.IDX = node
             if (C)
             {
                 // A contains IdentifierType.Global or IdentifierType.Constant
@@ -170,7 +173,8 @@ LDA #'?' Debug.COut();
             Functions.Find(); // Input: ZP.TOP = name, Output: C = found, ZP.IDX = node
             if (C)
             {
-                LDA #IdentifierType.Function
+                LDA # IdentifierType.Function
+                STA ZP.ACCT
                 break; // success
             }
             
@@ -180,17 +184,20 @@ LDA #'?' Debug.COut();
             break;
         } // end of single exit block
         
-        // Store result type (A register already has it)
-        STA ZP.ACCT
+PHA
+LDA #'=' Debug.COut();
+LDA ZP.ACCT Debug.HOut();  // Tyoe
+LDA ZP.ACCL Debug.HOut();  // BP offset (if local)
+PLA        
+        
         
     #ifdef TRACE
-        LDA #(resolveIdentifierTrace % 256) STA ZP.TraceMessageL LDA #(resolveIdentifierTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+        PHA LDA #(resolveIdentifierTrace % 256) STA ZP.TraceMessageL LDA #(resolveIdentifierTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
     #endif
         
         PLY
-        PLY
         PLX
-        LDA ZP.ACCT // IdentifierType 
+        PLA
     }
     
     // Evaluate expression using JIT compilation

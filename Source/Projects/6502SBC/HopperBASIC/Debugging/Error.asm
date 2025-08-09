@@ -37,8 +37,9 @@ unit Error // Error.asm
     const uint illegalInFunctionMode = 0x001C;
     const uint heapCorrupt = 0x001D;
     const uint illegalCharacter = 0x001E;
-    const string cannotRollback = 0x001F
-    const string ctrlC = 0x0020
+    const uint cannotRollback = 0x001F
+    const uint ctrlC = 0x0020
+    const uint lateDeclaration  = 0x0020;
 #else
     // Error message strings (moved from Messages.asm) and made private
     const string syntaxError = "SYNTAX ERROR";
@@ -76,6 +77,7 @@ unit Error // Error.asm
     const string heapCorrupt = "HEAP CORRUPT";
     const string cannotRollback = "CANNOT ROLLBACK";
     const string ctrlC = "BREAK";
+    const string lateDeclaration = "NO MORE LOCALS";
     
 #endif
     
@@ -87,6 +89,14 @@ unit Error // Error.asm
         LDA #(ctrlC % 256)
         STA ZP.LastErrorL
         LDA #(ctrlC / 256)
+        STA ZP.LastErrorH
+        CLC
+    }
+    LateDeclaration()
+    {
+        LDA #(lateDeclaration % 256)
+        STA ZP.LastErrorL
+        LDA #(lateDeclaration / 256)
         STA ZP.LastErrorH
         CLC
     }

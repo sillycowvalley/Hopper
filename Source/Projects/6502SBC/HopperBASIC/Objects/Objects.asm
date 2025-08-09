@@ -591,26 +591,9 @@ PLP
         ADC #0
         STA ZP.NEXTH
         
-#ifdef DEBUG
-// DEBUG: Print both names being compared
-LDA # '[' Debug.COut();
-Tools.PrintStringTOP();  // Search name
-LDA # 'v' Debug.COut();
-Tools.PrintStringNEXT(); // Node name
-LDA # ']' Debug.COut();
-#endif
-        
         // Compare strings
         Tools.StringCompare(); // TOP vs NEXT, sets C if equal
       
-#ifdef DEBUG  
-// DEBUG: Result
-PHP
-if (C) { LDA # 'M' Debug.COut(); } else { LDA # 'X' Debug.COut(); }
-Debug.NL();
-PLP
-#endif
-        
         PLA
         STA ZP.NEXTH
         PLA

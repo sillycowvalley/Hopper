@@ -807,10 +807,11 @@ Tools.PrintStringTOP();
     
     // Resolve variable or constant by name
     // Input: ZP.TOP = name pointer  
-    // Output: C = found, A = IdentifierType, ZP.IDX = node address if found
+    // Output: C = found, ZP.ACCT = IdentifierType, ZP.IDX = node address if found
     // Modifies: ZP.IDX, ZP.ACCT
     Resolve()
     {
+        PHA
         PHX
         PHY
         
@@ -851,6 +852,7 @@ PLP
             if (Z)
             { 
                 LDA #IdentifierType.Global
+                STA ZP.ACCT
                 SEC  // Found
                 break;
             }
@@ -859,6 +861,7 @@ PLP
             if (Z)
             { 
                 LDA #IdentifierType.Constant
+                STA ZP.ACCT
                 SEC  // Found
                 break;
             }
@@ -871,6 +874,7 @@ PLP
         
         PLY
         PLX
+        PLA
     }
 
 

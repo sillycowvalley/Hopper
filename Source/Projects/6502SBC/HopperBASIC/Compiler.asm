@@ -11,16 +11,17 @@ unit Compiler // Compiler.asm
    // Buffer management and opcode emission with proper bounds checking
    
    // Private Compiler layer storage - BasicCompilerWorkspace (32 bytes)
-   const uint compilerSavedTokenPosL = Address.BasicCompilerWorkspace;      // 1 byte - saved tokenizer pos low
-   const uint compilerSavedTokenPosH = Address.BasicCompilerWorkspace + 1;  // 1 byte - saved tokenizer pos high
-   const uint compilerOpCode         = Address.BasicCompilerWorkspace + 2;  // 1 byte - opcode to emit
-   const uint compilerOperand1       = Address.BasicCompilerWorkspace + 3;  // 1 byte - first operand
-   const uint compilerOperand2       = Address.BasicCompilerWorkspace + 4;  // 1 byte - second operand
-   const uint compilerLastOpCode     = Address.BasicCompilerWorkspace + 5;  // 1 byte - last opcode emitted
-   const uint compilerFuncArgs       = Address.BasicCompilerWorkspace + 6;  // 1 byte - number of arguments for current FUNC being compiled
-   const uint compilerFuncLocals     = Address.BasicCompilerWorkspace + 7;  // 1 byte - number of locals for current FUNC being compiled
-   const uint compilerSavedNodeAddrL = Address.BasicCompilerWorkspace + 8;  // 1 byte - saved node addr low
-   const uint compilerSavedNodeAddrH = Address.BasicCompilerWorkspace + 9;  // 1 byte - saved node addr high
+   const uint compilerSavedTokenPosL   = Address.BasicCompilerWorkspace;      // 1 byte - saved tokenizer pos low
+   const uint compilerSavedTokenPosH   = Address.BasicCompilerWorkspace + 1;  // 1 byte - saved tokenizer pos high
+   const uint compilerOpCode           = Address.BasicCompilerWorkspace + 2;  // 1 byte - opcode to emit
+   const uint compilerOperand1         = Address.BasicCompilerWorkspace + 3;  // 1 byte - first operand
+   const uint compilerOperand2         = Address.BasicCompilerWorkspace + 4;  // 1 byte - second operand
+   const uint compilerLastOpCode       = Address.BasicCompilerWorkspace + 5;  // 1 byte - last opcode emitted
+   const uint compilerFuncArgs         = Address.BasicCompilerWorkspace + 6;  // 1 byte - number of arguments for current FUNC being compiled
+   const uint compilerFuncLocals       = Address.BasicCompilerWorkspace + 7;  // 1 byte - number of locals for current FUNC being compiled
+   const uint compilerSavedNodeAddrL   = Address.BasicCompilerWorkspace + 8;  // 1 byte - saved node addr low
+   const uint compilerSavedNodeAddrH   = Address.BasicCompilerWorkspace + 9;  // 1 byte - saved node addr high
+   const uint compilerCanDeclareLocals = Address.BasicCompilerWorkspace + 10; // 1 byte - flag for statement seen to prevent further local declarations
    
    // Initialize the opcode buffer for compilation
    // Output: OpCode buffer ready for emission
@@ -805,33 +806,20 @@ LDA #'>' Debug.COut();
                 LDA (compilerSavedNodeAddrH + 0)
                 STA ZP.IDXH
                 
-                // Look for argument by name
-                Locals.Find();              // Input: ZP.IDX = function, ZP.TOP = name
-                if (C)                      // Found as argument
+                // Look for argument/local by name
+                Locals.Find();  // Input: ZP.IDX = function, ZP.TOP = name
+                if (C)  // Found as argument or local
                 {
-                    // ZP.ACCL contains argument index (0-based)
-                    // Calculate BP offset: -(arg_count - index)
-                    LDA (compilerFuncArgs + 0)
-                    SEC
-                    SBC ZP.ACCL             // arg_count - index
+                    // ZP.ACCL now contains the BP offset directly (no calculation needed!)
+                    LDA ZP.ACCL
                     
-                    // Negate to get negative offset
-                    EOR #0xFF
-                    CLC
-                    ADC #1                  // Two's complement
-                    
-                    // Emit PUSHLOCAL with negative offset
-                    Emit.PushLocal();       // A contains signed offset
+                    // Emit PUSHLOCAL with the offset
+                    Emit.PushLocal();  // A contains signed BP offset
                     Error.CheckError();
                     if (NC) { break; }
                     
-                    // Get next token and continue
-                    //Tokenizer.NextToken();
-                    //Error.CheckError();
-                    //if (NC) { break; }
-                    
-                    SEC                     // Success
-                    break;                  // Exit - we handled it as an argument
+                    SEC  // Success
+                    break;  // Exit - we handled it
                 }
             }
             
@@ -1729,6 +1717,10 @@ Debug.HOut();SEC
        
         LDA ZP.ACCL
         STA compilerFuncArgs    
+        
+        LDA #1
+        STA compilerCanDeclareLocals // locals are allowed
+        
 #ifdef DEBUG
 LDA #'#' COut(); LDA   compilerFuncArgs HOut();
 #endif
@@ -1800,11 +1792,13 @@ LDA #'#' COut(); LDA   compilerFuncArgs HOut();
            checkLastOpCodeIsReturn();
            if (NC) // Last opcode was not RETURN
            {
-               // Emit RETURN with locals cleanup count
-               LDA compilerFuncLocals
-               Emit.Return();
-               Error.CheckError();
-               if (NC) { States.SetFailure(); break; }
+                // Emit RETURN with locals cleanup count
+                LDA compilerFuncArgs
+                CLC
+                ADC compilerFuncLocals  // Total slots to clean
+                Emit.Return();  // Pass total count
+                Error.CheckError();
+                if (NC) { States.SetFailure(); break; }
            }
            
            States.SetSuccess(); // Success
@@ -1819,6 +1813,8 @@ LDA #'#' COut(); LDA   compilerFuncArgs HOut();
        PLX
        PLA
    }
+   
+   
 
    // Compile a single statement within a function
    // Input: ZP.CurrentToken = first token of statement
@@ -1840,12 +1836,14 @@ LDA #'#' COut(); LDA   compilerFuncArgs HOut();
            {
                case Token.WHILE:
                {
+                   STZ compilerCanDeclareLocals // no more locals after this
                    compileWhileStatement();
                    Error.CheckError();
                    if (NC) { States.SetFailure(); break; }
                }
                case Token.DO:
                {
+                   STZ compilerCanDeclareLocals // no more locals after this
                    compileDoUntilStatement();
                    Error.CheckError();
                    if (NC) { States.SetFailure(); break; }
@@ -1858,12 +1856,14 @@ LDA #'#' COut(); LDA   compilerFuncArgs HOut();
                }
                case Token.RETURN:
                {
+                   STZ compilerCanDeclareLocals // no more locals after this
                    compileReturnStatement();
                    Error.CheckError();
                    if (NC) { States.SetFailure(); break; }
                }
                case Token.IF:
                {
+                   STZ compilerCanDeclareLocals // no more locals after this
                    compileIfStatement();
                    Error.CheckError();
                    if (NC) { States.SetFailure(); break; }
@@ -1893,6 +1893,26 @@ LDA #'#' COut(); LDA   compilerFuncArgs HOut();
                case Token.POKE:
                {
                    compilePokeStatement();
+                   Error.CheckError();
+                   if (NC) { break; }
+                   break;
+               }
+               case Token.INT:
+               case Token.WORD:
+               case Token.BYTE:
+               case Token.BIT:
+               case Token.STRING:
+               case Token.VAR:
+               {
+                   // Check if we've already seen flow altering statements
+                    LDA compilerCanDeclareLocals
+                    if (Z)
+                    {
+                        Error.LateDeclaration(); BIT ZP.EmulatorPCL  // "Declarations must come before statements"
+                        States.SetFailure();
+                        break;
+                    }
+                   compileLocalDeclaration();
                    Error.CheckError();
                    if (NC) { break; }
                    break;
@@ -2090,13 +2110,15 @@ LDA #'#' COut(); LDA   compilerFuncArgs HOut();
            CMP #Token.EOL
            if (Z)
            {
-               // No return value - emit RETURN
-               LDA #0  // No locals to clean up for now
-               Emit.Return();
-               Error.CheckError();
-               if (NC) { States.SetFailure(); break; }
-               States.SetSuccess();
-               break;
+                // No return value - emit RETURN
+                LDA compilerFuncArgs
+                CLC
+                ADC compilerFuncLocals  // Total slots to clean
+                Emit.Return();  // Pass total count
+                Error.CheckError();
+                if (NC) { States.SetFailure(); break; }
+                States.SetSuccess();
+                break;
            }
            
            // Compile return expression
@@ -2818,6 +2840,333 @@ LDA #'#' COut(); LDA   compilerFuncArgs HOut();
         LDA #(compileIfStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileIfStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     }
+    
+    // Compile local variable declaration inside a function
+    // Input: ZP.CurrentToken = type token (INT, WORD, BYTE, BIT, VAR)
+    // Output: Local variable created and added to function's locals list
+    //         ZP.CurrentToken = token after declaration
+    // Modifies: compilerFuncLocals, ZP.CurrentToken, heap allocation
+    // Error: Sets ZP.LastError if syntax error or memory allocation fails
+    const string compileLocalDeclTrace = "CompLocDecl";
+    compileLocalDeclaration()
+    {
+        PHA
+        PHX
+        PHY
+        
+    #ifdef TRACE
+        LDA #(compileLocalDeclTrace % 256) STA ZP.TraceMessageL 
+        LDA #(compileLocalDeclTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit
+        {
+            // Get the type from current token
+            LDX ZP.CurrentToken
+            BASICTypes.FromToken();  // Output: C set if valid type, A = BASICType
+            if (NC)
+            {
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                break;
+            }
+            PHA  // Save type
+            
+            loop
+            {
+                // Move to identifier
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Verify we have an identifier
+                LDA ZP.CurrentToken
+                CMP #Token.IDENTIFIER
+                if (NZ)
+                {
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
+                    break;
+                }
+                
+                // Get the identifier name
+                Tokenizer.GetTokenString();  // Result in ZP.TOP
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Check for duplicate among existing locals/arguments
+                LDA compilerSavedNodeAddrL
+                STA ZP.IDXL
+                LDA compilerSavedNodeAddrH
+                STA ZP.IDXH
+                Locals.Find();  // Uses existing Find with compareNames
+                if (C)  // Found - duplicate
+                {
+                    Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
+                    break;
+                }
+                
+                // Increment local count
+                INC compilerFuncLocals
+
+                STZ compilerOperand1
+                STZ compilerOperand2
+                        
+                // Create the slot by pushing appropriate default value
+                LDA Statement.stmtType  // Get the type we saved
+                AND #BASICType.MASK  // Mask off any VAR bit
+                switch (A)
+                {
+                    case BASICType.STRING:
+                    {
+                        // Push empty string
+                        LDA #(Variables.EmptyString % 256)
+                        STA compilerOperand1 // LSB
+                        LDA #(Variables.EmptyString / 256)
+                        STA compilerOperand2 // MSB
+                        Emit.PushCString();
+                    }
+                    case BASICType.BIT:
+                    {
+                        LDA #0
+                        Emit.PushBit();
+                    }
+                    case BASICType.BYTE:
+                    {
+                        // Emit PUSHBYTE 0
+                        LDA #0
+                        Emit.PushByte();
+                    }
+                    case BASICType.VAR:
+                    {
+                        LDA #BASICType.INT
+                        ORA #BASICType.VAR
+                        STA ZP.TOPT
+                        Emit.PushWord();
+                    }
+                    default:
+                    {
+                        // WORD, INT
+                        STA ZP.TOPT
+                        Emit.PushWord();
+                    }
+                }
+                Error.CheckError();
+                if (NC) { break; }
+                
+// After Stacks.PushTop()
+Debug.NL();
+LDA #'S' Debug.COut();
+LDA #'L' Debug.COut();
+LDA #'O' Debug.COut();
+LDA #'T' Debug.COut();
+LDA #'+' Debug.COut();
+LDA compilerFuncLocals Debug.HOut();
+Debug.NL();                
+                
+                break;
+            }
+            PLA  // Restore type
+            STA Statement.stmtType
+            
+            Error.CheckError();
+            if (NC) { break; }
+                
+            // Create local using Locals.Add (it handles allocation and linking)
+            // Need to set up the type in the node
+            ORA #SymbolType.LOCAL  // Combine with LOCAL
+            STA ZP.SymbolType  // Locals.Add expects this
+            
+            // ZP.IDX still has function node, ZP.TOP has name
+            Locals.Add();  // Reuse existing Add method
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Move past identifier
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            // Check for initialization
+            LDA ZP.CurrentToken
+            CMP #Token.EQUALS
+            if (Z)
+            {
+                // Move past '='
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Compile initialization expression
+                CompileExpression();
+                Error.CheckError();
+                if (NC) { break; }
+                
+                // Emit POPLOCAL with positive offset
+                LDA compilerFuncLocals  // Positive BP offset
+                Emit.PopLocal();
+                Error.CheckError();
+                if (NC) { break; }
+            }
+            
+            SEC  // Success
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(compileLocalDeclTrace % 256) STA ZP.TraceMessageL 
+        LDA #(compileLocalDeclTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+        
+        PLY
+        PLX
+        PLA
+    }
+    
+    // Compile assignment statement for both global and local variables
+    // Input: ZP.ACCT = IdentifierType (Global or Local)
+    //        ZP.IDX = variable/local node address  
+    //        ZP.ACCL = BP offset (for locals only, signed byte)
+    //        ZP.CurrentToken = current token (should be identifier)
+    // Output: Assignment compiled to opcodes
+    //         ZP.CurrentToken = token after complete assignment
+    //         C set if successful, NC if error
+    // Modifies: ZP.CurrentToken, opcode buffer, ZP.IDX (restored), 
+    //           compilerOperand1/2, compilerOpCode, stack for expression evaluation
+    // Error: Sets ZP.LastError if '=' expected, expression compilation fails,
+    //        or opcode emission fails
+    const string compileAssignmentTrace = "CompAssign";
+    compileAssignment()
+    {
+        PHA
+        PHX
+        PHY
+        
+    #ifdef TRACE
+        LDA #(compileAssignmentTrace % 256) STA ZP.TraceMessageL 
+        LDA #(compileAssignmentTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit
+        {
+            // Save identifier type on stack
+            PHA  // Save A (IdentifierType)
+            
+            // Save node address (will be munted by expression compilation)
+            LDA ZP.IDXL
+            PHA
+            LDA ZP.IDXH
+            PHA
+            
+            // Save BP offset for locals (will be munted by expression compilation)
+            LDA ZP.ACCL
+            PHA
+            
+            loop
+            {
+                // Move to next token - should be '='
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) 
+                { 
+                    States.SetFailure(); 
+                    break; 
+                }
+                
+                // Verify we have '='
+                LDA ZP.CurrentToken
+                CMP #Token.EQUALS
+                if (NZ)
+                {
+                    Error.ExpectedEqual(); BIT ZP.EmulatorPCL
+                    States.SetFailure();
+                    break;
+                }
+                
+                // Move past '=' to the expression
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) 
+                { 
+                    States.SetFailure(); 
+                    break; 
+                }
+                
+                // Compile the RHS expression (this WILL munt ZP.IDX and ZP.ACCL)
+                compileLogical();
+                Error.CheckError();
+                if (NC) 
+                { 
+                    States.SetFailure(); 
+                    break; 
+                }
+                break;
+            }
+            
+            // Restore saved values
+            PLA  // Restore BP offset
+            STA ZP.ACCL
+            PLA  // Restore IDXH
+            STA ZP.IDXH
+            PLA  // Restore IDXL
+            STA ZP.IDXL
+            PLA  // Restore IdentifierType
+            
+            CanContinue();
+            if (NC)
+            {
+                break;
+            }
+            
+            // Emit appropriate POP instruction based on identifier type
+            LDA ZP.ACCT
+            CMP #IdentifierType.Local
+            if (Z)
+            {
+                // Local variable - use POPLOCAL with BP offset
+                LDA ZP.ACCL  // BP offset (signed)
+                Emit.PopLocal();  // A contains BP offset
+                Error.CheckError();
+                if (NC) 
+                { 
+                    States.SetFailure(); 
+                    break; 
+                }
+            }
+            else  // Must be Global
+            {
+                // Global variable - use POPGLOBAL with node address
+                LDA ZP.IDXL
+                STA compilerOperand1  // LSB
+                LDA ZP.IDXH
+                STA compilerOperand2  // MSB
+                
+                LDA #OpCode.POPGLOBAL
+                STA compilerOpCode
+                Emit.OpCodeWithWord();
+                Error.CheckError();
+                if (NC) 
+                { 
+                    States.SetFailure(); 
+                    break; 
+                }
+            }
+            
+            States.SetSuccess();
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(compileAssignmentTrace % 256) STA ZP.TraceMessageL 
+        LDA #(compileAssignmentTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+        
+        PLY
+        PLX
+        PLA
+    }
 
    // Compile identifier statement (assignment or function call)
    // Input: ZP.CurrentToken = IDENTIFIER token
@@ -2839,6 +3188,7 @@ LDA #'#' COut(); LDA   compilerFuncArgs HOut();
            { 
                States.SetFailure(); break; 
            }
+           LDA ZP.ACCT
            switch (A)
            {
                case IdentifierType.Function:
@@ -2856,54 +3206,16 @@ LDA #'#' COut(); LDA   compilerFuncArgs HOut();
                    States.SetSuccess();
                    break;
                }
-               case IdentifierType.Global:
-               {
-                   // Variable assignment: identifier = expression
-                   // Save variable node address for POPGLOBAL emission
-                   LDA ZP.IDXL
-                   STA (compilerSavedNodeAddrL + 0)
-                   LDA ZP.IDXH
-                   STA (compilerSavedNodeAddrH + 0)
-                   
-                   // Move to next token - should be '='
-                   Tokenizer.NextToken();
-                   Error.CheckError();
-                   if (NC) { States.SetFailure(); break; }
-                   
-                   LDA ZP.CurrentToken
-                   CMP #Token.EQUALS
-                   if (NZ)
-                   {
-                       Error.ExpectedEqual(); BIT ZP.EmulatorPCL
-                       States.SetFailure();
-                       break;
-                   }
-                   
-                   // Move past '=' to the expression
-                   Tokenizer.NextToken();
-                   Error.CheckError();
-                   if (NC) { States.SetFailure(); break; }
-                   
-                   // Compile the RHS expression
-                   compileLogical();
-                   Error.CheckError();
-                   if (NC) { States.SetFailure(); break; }
-                   
-                   // Emit POPGLOBAL with the saved node address
-                   LDA (compilerSavedNodeAddrL + 0)
-                   STA compilerOperand1  // LSB
-                   LDA (compilerSavedNodeAddrH + 0)
-                   STA compilerOperand2  // MSB
-                   
-                   LDA #OpCode.POPGLOBAL
-                   STA compilerOpCode
-                   Emit.OpCodeWithWord();
-                   Error.CheckError();
-                   if (NC) { States.SetFailure(); break; }
-                   
-                   States.SetSuccess();
-                   break;
-               }
+                case IdentifierType.Global:
+                case IdentifierType.Local:  // Add this case
+                {
+                    compileAssignment();
+                    Error.CheckError();
+                    if (NC) { States.SetFailure(); break; }
+                    States.SetSuccess();
+                    break;
+                }
+               
                case IdentifierType.Constant:
                {
                    // Constants cannot be assigned to
@@ -2911,60 +3223,6 @@ LDA #'#' COut(); LDA   compilerFuncArgs HOut();
                    States.SetFailure();
                    break;
                }
-                case IdentifierType.Local:
-                {
-                    // Local/Argument assignment: identifier = expression
-                    // ZP.IDX already contains the node address
-                    // ZP.ACCL already contains the BP offset (from Locals.Resolve)
-                    
-                    // Save BP offset for POPLOCAL emission
-                    LDA ZP.ACCL
-                    PHA
-                    
-                    // Move to next token - should be '='
-                    Tokenizer.NextToken();
-                    Error.CheckError();
-                    if (NC) { States.SetFailure(); break; }
-                    
-                    LDA ZP.CurrentToken
-                    CMP #Token.EQUALS
-                    if (NZ)
-                    {
-                        Error.ExpectedEqual(); BIT ZP.EmulatorPCL
-                        PLA  // Clean up stack
-                        States.SetFailure();
-                        break;
-                    }
-                    
-                    // Move past '=' to the expression
-                    Tokenizer.NextToken();
-                    Error.CheckError();
-                    if (NC) 
-                    { 
-                        PLA  // Clean up stack
-                        States.SetFailure(); 
-                        break; 
-                    }
-                    
-                    // Compile the RHS expression
-                    compileLogical();
-                    Error.CheckError();
-                    if (NC) 
-                    { 
-                        PLA  // Clean up stack
-                        States.SetFailure(); 
-                        break; 
-                    }
-                    
-                    // Emit POPLOCAL with the saved BP offset
-                    PLA  // Restore BP offset
-                    Emit.PopLocal();  // A contains BP offset
-                    Error.CheckError();
-                    if (NC) { States.SetFailure(); break; }
-                    
-                    States.SetSuccess();
-                    break;
-                }
                case IdentifierType.Keyword:
                {
                    // Keywords should not appear as statements
