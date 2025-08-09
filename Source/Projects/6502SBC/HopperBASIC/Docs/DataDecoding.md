@@ -15,6 +15,97 @@
 
 **Rule**: Project knowledge is authoritative and current. Never use cached/remembered values.
 
+## CompactStack Format
+
+### Overview
+The CompactStack display shows the top 20 stack elements in a single line format, representing the stack state **AFTER** each instruction has executed. This provides a concise view of stack evolution during execution.
+
+### Format Structure
+```
+PC OpCode MNEMONIC operands...
+                      t:xxxx t:xxxx|t:xxxx t:xxxx ...
+```
+
+- **First line**: Instruction that just executed (PC, opcode byte, mnemonic, operands)
+- **Second line**: Stack state after execution
+  - Leftmost element is at SP-1 (top of stack)
+  - Elements proceed right toward older entries
+  - `|` marks the BP (Base Pointer) position
+  - Maximum 20 elements displayed
+
+### Type Indicators
+Single-character type codes for readability:
+
+| Code | BASICType | Value | Description |
+|------|-----------|-------|-------------|
+| `v` | VOID | 0x00 | Uninitialized/undefined slot |
+| `i` | INT | 0x02 | Signed 16-bit integer |
+| `b` | BYTE | 0x03 | Unsigned 8-bit value (lowercase b) |
+| `u` | WORD | 0x04 | Unsigned 16-bit value (UInt) |
+| `B` | BIT | 0x06 | Boolean value - TRUE/FALSE (uppercase B) |
+| `s` | STRING | 0x0F | String pointer |
+
+**Note**: The uppercase `B` for BIT type is intuitive as it represents Boolean values, while lowercase `b` represents BYTE values. This distinction helps quickly differentiate between the two types.
+
+### VAR Type Indication
+Slots with the VAR bit set (0x10) are enclosed in brackets:
+- `[i:0042]` - VAR slot containing INT value 0x0042
+- `[v:0000]` - VAR slot currently uninitialized
+- `b:0042` - Regular BYTE slot (not VAR)
+
+### Example Analysis
+```
+0F02 84 CALLF 02 10
+                      v:0000|v:0000
+103B 1A ENTER
+                     |v:0000 v:0000
+103C 80 PUSHINT 00 00
+                      i:0000|v:0000 v:0000
+103F 41 PUSHBYTE 0A
+                      b:000A i:0000|v:0000 v:0000
+1041 43 POPLOCAL 00
+                      b:000A|v:0000 v:0000
+```
+
+**Interpretation**:
+1. **CALLF**: Pushes two void return slots (v:0000)
+2. **ENTER**: Establishes BP between the return slots (note `|` moves left)
+3. **PUSHINT**: Adds INT value 0x0000 to stack
+4. **PUSHBYTE**: Adds BYTE value 0x0A to stack
+5. **POPLOCAL**: Removes top value, stores to local slot 0 (replacing void in frame)
+
+### Key Observations
+- **BP positioning**: After ENTER, BP typically sits between return slots and locals
+- **Stack growth**: New values appear on the left (top of stack)
+- **Type preservation**: Types are maintained through operations
+- **Frame structure**: BP marker clearly delineates function frames
+
+### Common Patterns
+
+#### Function Call Setup
+```
+v:0000|v:0000           // Two return slots pushed by CALLF
+|v:0000 v:0000          // BP established by ENTER
+```
+
+#### Local Variable Storage
+```
+b:000A i:0000|v:0000    // Values on stack
+b:000A|v:0000           // After POPLOCAL stores to frame
+```
+
+#### Expression Evaluation
+```
+i:0005 i:0003|...       // Two operands
+i:0008|...              // After ADD operation
+```
+
+### Debugging Benefits
+- **Immediate visibility**: See stack effects of each instruction
+- **Type tracking**: Verify type consistency through operations
+- **Frame boundaries**: Clear view of function call structure
+- **Memory efficiency**: 20 elements provide sufficient context without clutter
+
 ## Buffer Type Identification
 
 ### TokenizerBuffer Format

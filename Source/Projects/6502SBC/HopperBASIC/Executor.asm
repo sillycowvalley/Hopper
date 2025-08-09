@@ -56,6 +56,10 @@ unit Executor // Executor.asm
                 // Fetch and execute next opcode
                 FetchOpCode(); // -> A
                 DispatchOpCode(); // expect State.Success to continue
+                
+#ifdef TRACEEXE                
+                Debug.CompactStack();
+#endif
 
                 // Check if any instruction set an error
                 Error.CheckError();
@@ -224,6 +228,11 @@ unit Executor // Executor.asm
            States.SetSuccess();
            break;
        } // loop exit
+       
+PHA
+HOut(); Space(); 
+PLX
+
    }
    
    // Fetch word operand from buffer (little-endian)
@@ -256,7 +265,11 @@ unit Executor // Executor.asm
    DispatchOpCode()
    {
        TAY // for jump table optimization
-       
+#ifdef TRACEEXE
+PHA PHX
+NL(); LDA ZP.PCH HOut(); LDA ZP.PCL HOut(); Space(); TYA TAX HOut(); Space(); OpCodes.ToString(); PrintStringSTR();Space(); 
+PLX PLA
+#endif
        // Use switch statement for opcode dispatch
        // Register Y contains the opcode value
        switch (Y) // bug in jump table
