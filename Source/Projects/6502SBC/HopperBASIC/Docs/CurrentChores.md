@@ -1,79 +1,76 @@
 # HopperBASIC Remaining Implementation Tasks
 
-## Local Variables
+## FOR/NEXT Loops
 
-### Current State
-- PUSHLOCAL/POPLOCAL opcodes implemented and working for arguments
-- Arguments use negative BP offsets (BP-1, BP-2, etc.)  
-- ENTER opcode exists but doesn't allocate space for locals
-- Functions can access arguments but cannot declare local variables
+### Design Decisions
+- **Implicit local creation** - Loop variable automatically becomes a local if not already declared
+- **No global iterators** - FOR/NEXT only allowed inside functions (FUNC or BEGIN)
+- **Classic BASIC behavior** - Loop variable retains overflow value after loop completion
+- **Expressions evaluated once** - FROM, TO, and STEP expressions captured at loop start
 
-### Required Implementation
-
-#### 1. Parse Local Variable Declarations
-Detect variable declarations inside function bodies after FUNC header:
+### Syntax
 ```basic
-FUNC TEST(A)              ' A is ARGUMENT at BP-1
-    INT X = 10            ' X is LOCAL at BP+1
-    WORD Y = A + 5        ' Y is LOCAL at BP+2
-    STRING S = "Hello"    ' S is LOCAL at BP+3
-    RETURN X + Y
-ENDFUNC
+FOR i = <from> TO <to> [STEP <step>]
+    ' Loop body
+NEXT i
 ```
 
-**Changes needed:**
-- Create nodes with `SymbolType.LOCAL | dataType`
-- Assign positive BP offsets starting at BP+1
-- Track count in `compilerFuncLocals`
-- Add to same linked list as arguments
+### Compilation Strategy
+When encountering FOR:
+1. Create implicit local for iterator if not exists (allocate slot, increment `compilerFuncLocals`)
+2. Evaluate `<from>` expression → store in iterator variable
+3. Evaluate `<to>` expression → store as hidden local (BP+n+1)
+4. Evaluate `<step>` if present (default 1) → store as hidden local (BP+n+2)
+5. Record loop start position for NEXT
 
-#### 2. Modify ENTER Opcode
-Currently ENTER just sets up BP. Must extend to allocate local space:
-```asm
-executeEnter()
-{
-    ; Existing: Save BP, set new BP
-    
-    ; NEW: Reserve space for locals
-    FetchOperandByte()  ; A = local count
-    if (NZ)
-    {
-        TAX
-        loop
-        {
-            STZ ZP.TOPL
-            STZ ZP.TOPH
-            LDA #BASICType.VOID
-            STA ZP.TOPT
-            Stacks.PushTop()
-            DEX
-            if (Z) { break; }
-        }
-    }
-}
+When encountering NEXT:
+1. Verify variable name matches most recent FOR
+2. Add step to iterator: `iterator = iterator + step`
+3. Compare with limit based on step sign:
+   - Positive step: continue if `iterator <= limit`
+   - Negative step: continue if `iterator >= limit`
+4. Jump back to loop start if continuing
+
+### Example Compilation
+```basic
+FOR i = 1 TO 10 STEP 2
+    PRINT i
+NEXT i
 ```
 
-#### 3. STRING Cleanup in RETURN/RETURNVAL
-Future consideration when string operations are added - locals in token buffer won't need cleanup, but heap-allocated strings will.
+Compiles to approximately:
+```
+PUSH1                    ; Start value
+POPLOCAL i              ; Store in iterator
+PUSHBYTE 10             ; TO value
+POPLOCAL hidden_limit   ; Store limit
+PUSHBYTE 2              ; STEP value  
+POPLOCAL hidden_step    ; Store step
 
----
+loop_start:
+PUSHLOCAL i
+SYSCALL PRINT
+PUSHBYTE 10
+SYSCALL PRINTCHAR       ; Newline
 
-## VAR Type Locals
+; NEXT implementation:
+PUSHLOCAL i
+PUSHLOCAL hidden_step
+ADD
+POPLOCAL i              ; i = i + step
 
-### Design
-```basic
-FUNC VARTEST(V)
-    VAR LOCAL = V    ' Type determined at runtime
-    LOCAL = LOCAL + 1
-    RETURN LOCAL
-ENDFUNC
+PUSHLOCAL i
+PUSHLOCAL hidden_limit
+LE                      ; i <= limit (for positive step)
+JUMPNZW loop_start
 ```
 
 ### Implementation Notes
-- Store as `SymbolType.LOCAL | BASICType.VAR`
-- Type checking happens at assignment time
-- May need STRING cleanup if assigned STRING value (future)
-- Same BP offset mechanism as typed locals
+- Must track FOR context for proper NEXT matching
+- Support nested FOR loops with separate contexts
+- Iterator variable accessible after loop with overflow value
+- All three values (iterator, limit, step) are locals in current function frame
+- No cleanup needed - locals cleaned up with function exit
 
 ---
 
@@ -126,67 +123,17 @@ BitInvMasks: .byte $FE,$FD,$FB,$F7,$EF,$DF,$BF,$7F
 
 ---
 
-## FOR/NEXT Loops
-
-### Design
-FOR/NEXT requires three implicit locals:
-1. **Counter** - Current loop value (BP+n)
-2. **Limit** - TO value evaluated once (BP+n+1)
-3. **Step** - STEP value, default 1 (BP+n+2)
-
-### Compilation Strategy
-```basic
-FOR I = start TO end STEP increment
-```
-Compiles to:
-```
-PUSH start → POPLOCAL counter
-PUSH end → POPLOCAL limit  
-PUSH increment → POPLOCAL step
-
-loop_start:
-    ; Body
-    
-    ; NEXT:
-    PUSHLOCAL counter
-    PUSHLOCAL step
-    ADD
-    POPLOCAL counter
-    
-    PUSHLOCAL counter
-    PUSHLOCAL limit
-    [LE or GE based on step sign]
-    JUMPNZW loop_start
-```
-
-### Implementation Notes
-- Must verify NEXT variable matches FOR variable
-- Handle nested FOR loops correctly  
-- Step sign determines termination comparison (LE vs GE)
-- All three loop variables are implicit locals
-
----
-
 ## Implementation Priority
 
-### Phase 1: Basic Locals
-- Parse INT, WORD, BYTE, BIT local declarations
-- Modify ENTER to allocate space
-- Assign positive BP offsets
-- Test with simple functions
-
-### Phase 2: VAR Locals  
-- Add VAR type local support
-- Runtime type determination
-- Test with mixed-type operations
-
-### Phase 3: FOR/NEXT
-- Allocate three implicit locals
-- Implement initialization and increment
-- Handle NEXT matching and nesting
+### Phase 1: FOR/NEXT
+- Create implicit local for iterator variable
+- Allocate hidden locals for limit and step
+- Implement FOR compilation with expression evaluation
+- Implement NEXT with increment and comparison
+- Handle nested loops correctly
 - Test with benchmarks
 
-### Phase 4: Arrays
+### Phase 2: Arrays
 - Parse array declarations
 - Implement heap allocation with headers
 - Add indexing operations
@@ -200,124 +147,99 @@ loop_start:
 
 ## Testing Strategy
 
-### Local Variables
-```basic
-' Basic locals
-FUNC LOCALS1(A, B)
-    INT X = A + B
-    WORD Y = 100
-    RETURN X + Y
-ENDFUNC
-
-' VAR locals
-FUNC VARLOCAL(V)
-    VAR X = V
-    VAR Y = 10
-    RETURN X + Y
-ENDFUNC
-
-' Recursion with locals
-FUNC FACTORIAL(N)
-    INT RESULT = 1
-    IF N > 1 THEN
-        RESULT = N * FACTORIAL(N - 1)
-    ENDIF
-    RETURN RESULT
-ENDFUNC
-```
-
 ### FOR/NEXT
 ```basic
-' Simple loop
-FOR I = 1 TO 10
-    PRINT I
-NEXT I
+FUNC TestSimpleFor()
+    ' Simple loop
+    FOR I = 1 TO 10
+        PRINT I
+    NEXT I
+    PRINT "After loop: "; I  ' Should print 11
+ENDFUNC
 
-' Nested loops
-FOR I = 1 TO 3
-    FOR J = 1 TO 3
-        PRINT I * J
-    NEXT J
-NEXT I
+FUNC TestNestedFor()
+    ' Nested loops
+    FOR I = 1 TO 3
+        FOR J = 1 TO 3
+            PRINT I * J
+        NEXT J
+    NEXT I
+ENDFUNC
 
-' With STEP
-FOR I = 10 TO 1 STEP -1
-    PRINT I
-NEXT I
+FUNC TestStepFor()
+    ' With STEP
+    FOR I = 10 TO 1 STEP -1
+        PRINT I
+    NEXT I
+ENDFUNC
+
+FUNC TestDynamicFor(n)
+    ' Dynamic bounds
+    FOR I = n/2 TO n*2
+        PRINT I
+        n = n + 1  ' Doesn't affect loop bounds
+    NEXT I
+ENDFUNC
 ```
 
 ### Arrays
 ```basic
 ' Sieve of Eratosthenes
 BIT ARRAY prime[8191]
-FOR I = 2 TO 90
-    IF prime[I] = 0 THEN
-        FOR J = I * 2 TO 8190 STEP I
-            prime[J] = 1
-        NEXT J
-    ENDIF
-NEXT I
+
+BEGIN
+    ' Initialize all as prime (0)
+    FOR I = 2 TO 90
+        IF prime[I] = 0 THEN
+            FOR J = I * 2 TO 8190 STEP I
+                prime[J] = 1
+            NEXT J
+        ENDIF
+    NEXT I
+    
+    ' Count primes
+    INT count = 0
+    FOR I = 2 TO 8190
+        IF prime[I] = 0 THEN
+            count = count + 1
+        ENDIF
+    NEXT I
+    PRINT count; " primes found"
+END
 ```
 
 ---
 
-## Technical Notes and Caveats
+## Technical Notes
 
-### Stack Frame Architecture
-**Value Stack** (data only):
-```
-[Local Variable n]       <- Higher addresses
-...
-[Local Variable 0]       <- BP points here
-[Argument n]           
-...
-[Argument 0]
-[Return Value placeholder] <- Lower addresses
+### FOR/NEXT Context Tracking
+```asm
+CompilerForContext       // Stack of FOR loop contexts
+CompilerForDepth         // Current nesting depth
+CompilerForVariable      // Current FOR variable for NEXT matching
+CompilerForLoopStart     // Address to jump back to
 ```
 
-**Call Stack** (separate, control flow):
-```
-[Saved BP]
-[Return Address]
-```
+### Error Conditions
+- FOR without NEXT
+- NEXT without FOR
+- NEXT with wrong variable name
+- FOR at global scope (not in function)
+- Nested FOR with same variable name
 
 ### Memory Management
-- All heap-based with linked lists
-- Global variables: Single linked list
-- Functions: Separate linked list  
-- Arrays: Part of global variable list
-- String literals in functions live in token buffer (no cleanup)
-- Stack frame cleanup trivial - stacks reset on RUN
+- FOR iterator and hidden locals cleaned up with function frame
+- No special cleanup needed
+- Arrays allocated on heap, persist until explicit removal
 
-### Shadowing Rules
-- Locals may not duplicate argument names
-- Search order: locals → arguments → globals
-- Local shadows global of same name
-
-### Compilation Context Tracking
-```asm
-CompilerFunctionLocals   // Count of locals in current function
-CompilerFunctionArgs     // Count of arguments  
-CompilerInFunction       // Flag: compiling function vs main
-CompilerFrameOffset      // Current offset for next local
-```
-
-### Error Handling
-- Stack unwinding simple: Reset CSP = 0, SP = 0, BP = 0
-- No dynamic allocation to clean up (except globals)
-- Hardware stack remains untouched
-- Ctrl-C break checks `ZP.SerialBreakFlag` in dispatch loop
-
----
-
-## Success Criteria
-1. Local variables can be declared in functions
-2. Locals properly scoped (not visible outside function)
-3. VAR locals work with runtime typing
-4. FOR/NEXT loops work with implicit locals
-5. Arrays work with fixed element types
-6. Nested FOR loops work correctly
-7. Fibonacci benchmark runs with locals
-8. Sieve benchmark runs with BIT array
-9. No memory leaks or stack corruption
-10. DASM clearly shows [BP+n] for locals
+### Success Criteria
+1. FOR/NEXT loops work with implicit locals
+2. Loop variable retains overflow value after completion
+3. Nested FOR loops work correctly
+4. Dynamic bounds evaluated once at loop start
+5. STEP works with positive and negative values
+6. Fibonacci benchmark runs with FOR loops
+7. Sieve benchmark runs with BIT array
+8. No memory leaks or stack corruption
+9. DASM clearly shows loop structure
+10. Error detection for mismatched FOR/NEXT

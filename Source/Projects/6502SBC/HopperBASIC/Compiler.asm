@@ -878,18 +878,6 @@ LDA #'>' Debug.COut();
             CMP #Token.LPAREN
             if (Z)
             {
-#ifdef DEBUG
-// This is a function call
-Debug.NL();
-LDA #'[' Debug.COut();
-LDA #'F' Debug.COut();
-LDA #'C' Debug.COut();
-LDA #':' Debug.COut();
-LDA ZP.CurrentToken
-Debug.HOut();
-LDA #']' Debug.COut();
-#endif
-                
                 // Create return slot (VOID 0) first
                 Emit.PushVoid();  
                 Error.CheckError();
@@ -995,14 +983,6 @@ LDA #']' Debug.COut();
                 Tokenizer.NextToken();
                 Error.CheckError();
                 if (NC) { break; }
-#ifdef DEBUG
-Debug.NL();
-LDA #'P' Debug.COut();
-LDA #'C' Debug.COut();
-LDA #':' Debug.COut();
-LDA ZP.CurrentToken
-Debug.HOut();SEC
-#endif
             }
             else
             {
@@ -1721,9 +1701,6 @@ Debug.HOut();SEC
         LDA #1
         STA compilerCanDeclareLocals // locals are allowed
         
-#ifdef DEBUG
-LDA #'#' COut(); LDA   compilerFuncArgs HOut();
-#endif
         //Save the function node address for argument lookups
         LDA ZP.IDXL
         STA compilerSavedNodeAddrL
@@ -1745,13 +1722,6 @@ LDA #'#' COut(); LDA   compilerFuncArgs HOut();
            Tokenizer.NextToken();
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
-           
-#ifdef DEBUG
-// XIDHERE xS    
-//NL(); LDA #'C' COut(); LDA #'F' COut(); LDA #'!' COut();
-//Space(); LDA ZP.TokenBufferH HOut(); LDA ZP.TokenBufferL HOut();
-#endif
-           
            
            Emit.Enter();
            Error.CheckError();
@@ -2952,17 +2922,6 @@ LDA #'#' COut(); LDA   compilerFuncArgs HOut();
                 }
                 Error.CheckError();
                 if (NC) { break; }
-                
-// After Stacks.PushTop()
-Debug.NL();
-LDA #'S' Debug.COut();
-LDA #'L' Debug.COut();
-LDA #'O' Debug.COut();
-LDA #'T' Debug.COut();
-LDA #'+' Debug.COut();
-LDA compilerFuncLocals Debug.HOut();
-Debug.NL();                
-                
                 break;
             }
             PLA  // Restore type

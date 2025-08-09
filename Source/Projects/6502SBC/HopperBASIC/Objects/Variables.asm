@@ -89,16 +89,6 @@ unit Variables
         PHX
         PHY
         
-#ifdef DEBUG
-// DEBUG: Variables.Find called
-Debug.NL();
-LDA #'F' Debug.COut();
-LDA #'N' Debug.COut();
-LDA #'D' Debug.COut();
-LDA #':' Debug.COut();
-Tools.PrintStringTOP();
-#endif
-        
         LDA ZP.ACCT
         PHA
         
@@ -817,26 +807,8 @@ Tools.PrintStringTOP();
         
         loop
         {
-#ifdef DEBUG
-// DEBUG: About to search for variable
-Debug.NL();
-LDA #'V' Debug.COut();
-LDA #'R' Debug.COut();
-LDA #':' Debug.COut();
-Tools.PrintStringTOP();
-#endif
             STZ ZP.SymbolIteratorFilter  // Accept any symbol type
             Find(); // ZP.IDX = symbol node address
-#ifdef DEBUG      
-// DEBUG: Find result
-PHP
-LDA #'V' Debug.COut();
-LDA #'F' Debug.COut();
-LDA #':' Debug.COut();
-if (C) { LDA #'Y' Debug.COut(); } else { LDA #'N' Debug.COut(); }
-Debug.NL();
-PLP
-#endif         
             if (NC) // Not found
             {
                 CLC

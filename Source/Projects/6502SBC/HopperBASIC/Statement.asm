@@ -146,14 +146,6 @@ unit Statement // Statement.asm
             Error.CheckError();
             if (NC) { break; }
 
-// After Tokenizer.GetTokenString()
-Debug.NL();
-LDA #'R' Debug.COut();
-LDA #'E' Debug.COut();
-LDA #'S' Debug.COut();
-LDA #':' Debug.COut();
-Tools.PrintStringTOP();  
-
             // 2. Check if it's a local or argument (if we're in a function)
             Locals.Resolve(); // Input: ZP.TOP = name, Output: C = found, ZP.IDX = node, ACCT = type
             if (C)
@@ -183,13 +175,6 @@ Tools.PrintStringTOP();
             CLC
             break;
         } // end of single exit block
-        
-PHA
-LDA #'=' Debug.COut();
-LDA ZP.ACCT Debug.HOut();  // Tyoe
-LDA ZP.ACCL Debug.HOut();  // BP offset (if local)
-PLA        
-        
         
     #ifdef TRACE
         PHA LDA #(resolveIdentifierTrace % 256) STA ZP.TraceMessageL LDA #(resolveIdentifierTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
@@ -293,20 +278,6 @@ PLA
             
             // Emit HALT for REPL
             Emit.Halt();
-   
-#ifdef DEBUG                     
-// DEBUG: Check HALT emission
-PHP
-Debug.NL();
-LDA #'H' Debug.COut();
-LDA #'A' Debug.COut();
-LDA #':' Debug.COut();
-if (C) { LDA #'C' Debug.COut(); } else { LDA #'N' Debug.COut(); }
-Debug.NL();
-PLP
-#endif
-            
-            
             Error.CheckError();
             if (NC) { States.SetFailure(); break; }
             
@@ -317,32 +288,9 @@ PLP
             PHA
             
             States.SetSuccess(); // Clear state
-   
-#ifdef DEBUG
-// Before ExecuteOpCodes
-PHP
-Debug.NL();
-LDA #'X' Debug.COut();
-LDA #'O' Debug.COut();
-LDA #':' Debug.COut();
-Debug.NL();
-PLP
-#endif
             
             // Execute the compiled statement opcodes
             Executor.ExecuteOpCodes();
-   
-#ifdef DEBUG         
-PHP
-Debug.NL();
-LDA #'X' Debug.COut();
-LDA #'R' Debug.COut();
-LDA #':' Debug.COut();
-if (C) { LDA #'C' Debug.COut(); } else { LDA #'N' Debug.COut(); }
-Debug.NL();
-PLP
-#endif
-            
             Error.CheckError();
             
             // Restore opcode buffer length
@@ -914,11 +862,6 @@ PLP
             STA ZP.IDXH
             Memory.Free();
         }
-        
-#ifdef DEBUG
-        //DumpBuffers();
-        //DumpHeap();
-#endif
 
 #ifdef TRACE
         LDA #(processSingleSymbolDeclTrace % 256) STA ZP.TraceMessageL LDA #(processSingleSymbolDeclTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();

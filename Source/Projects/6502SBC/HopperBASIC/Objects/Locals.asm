@@ -137,15 +137,6 @@ unit Locals
         PHX
         PHY
         
-LDA #'L' Debug.COut();
-LDA #'F' Debug.COut();
-LDA #':' Debug.COut();
-Tools.PrintStringTOP();  // Name being searched
-LDA #'[' Debug.COut();
-LDA ZP.IDXH Debug.HOut();
-LDA ZP.IDXL Debug.HOut();  // Function node
-LDA #']' Debug.COut();
-        
         loop // Single exit
         {
             // Get locals/arguments list head from function node
@@ -168,23 +159,6 @@ LDA #']' Debug.COut();
                     CLC  // Not found
                     break;
                 }
-                
-// After calculateNameAddress() before compareNames()
-Debug.NL();
-LDA #'?' Debug.COut();
-Tools.PrintStringTOP();  // Search name
-LDA #'=' Debug.COut();
-LDA #'?' Debug.COut();
-// Print the local's name at ZP.LCURRENT + lnName
-CLC
-LDA ZP.LCURRENTL
-ADC #lnName
-STA ZP.STRL
-LDA ZP.LCURRENTH
-ADC #0
-STA ZP.STRH
-Tools.PrintStringSTR();  // Local's name
-LDA #'?' Debug.COut();
                 
                 // Compare names using existing compareNames helper
                 compareNames();  // Uses ZP.LCURRENT and ZP.TOP

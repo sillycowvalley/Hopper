@@ -157,15 +157,6 @@ unit Objects
         {
             // Start iteration
             Table.GetFirst(); // Returns first node in IDX
-         
-#ifdef DEBUG   
-// DEBUG: Print list head
-Debug.NL();
-LDA #'H' Debug.COut();
-LDA #':' Debug.COut();
-Debug.XOut();
-#endif
-            
             loop
             {
                 // Check if we've reached end of list
@@ -173,34 +164,11 @@ Debug.XOut();
                 ORA ZP.IDXH
                 if (Z)
                 {
-#ifdef DEBUG          
-// DEBUG: End of list
-Debug.NL();
-LDA #'E' Debug.COut();
-LDA #'O' Debug.COut();
-LDA #'L' Debug.COut();
-#endif
                     CLC  // Not found
                     break;
                 }
-#ifdef DEBUG          
-// DEBUG: Checking node
-LDA # 'N' Debug.COut();
-LDA # ':' Debug.COut();
-Debug.XOut();
-LDA #' ' Debug.COut();
-#endif    
                 // Compare name at snName offset
                 compareNames();
-                
-#ifdef DEBUG
-// DEBUG: Comparison result
-PHP
-Debug.NL();
-if (C) { LDA #'=' Debug.COut(); } else { LDA #'!' Debug.COut(); }
-PLP
-#endif
-                
                 if (C) // Names match
                 {
                     break;
