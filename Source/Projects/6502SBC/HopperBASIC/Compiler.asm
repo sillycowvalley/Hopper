@@ -2681,6 +2681,15 @@ unit Compiler // Compiler.asm
                 SBC ZP.IDXH    // JUMPW operand position MSB
                 STA ZP.NEXTH   // Forward offset MSB
                 
+                // Adjust for PC being 3 bytes past the JUMPW instruction start
+                SEC
+                LDA ZP.NEXTL
+                SBC #3
+                STA ZP.NEXTL
+                LDA ZP.NEXTH
+                SBC #0
+                STA ZP.NEXTH
+                
                 // Patch the JUMPW operand
                 CLC
                 LDA ZP.OpCodeBufferL
@@ -2745,6 +2754,15 @@ unit Compiler // Compiler.asm
                 LDA ZP.IDYH    // Current position MSB
                 SBC ZP.IDXH    // JUMPZW operand position MSB
                 STA ZP.NEXTH   // Forward offset MSB
+                
+                //Adjust for PC being 3 bytes past the JUMPZW instruction
+                SEC
+                LDA ZP.NEXTL
+                SBC #3         
+                STA ZP.NEXTL
+                LDA ZP.NEXTH
+                SBC #0
+                STA ZP.NEXTH
                 
                 // Patch the JUMPZW operand
                 CLC
@@ -2937,7 +2955,7 @@ unit Compiler // Compiler.asm
                 
                 // Emit POPLOCAL with positive offset
                 LDA compilerFuncLocals  // Positive BP offset (0-based)
-                DEC A
+                DEC A 
                 Emit.PopLocal();
                 Error.CheckError();
                 if (NC) { break; }
@@ -3061,7 +3079,7 @@ unit Compiler // Compiler.asm
             {
                 // Local variable - use POPLOCAL with BP offset
                 LDA ZP.ACCL  // BP offset (signed)
-                Emit.PopLocal();  // A contains BP offset
+                Emit.PopLocal();
                 Error.CheckError();
                 if (NC) 
                 { 

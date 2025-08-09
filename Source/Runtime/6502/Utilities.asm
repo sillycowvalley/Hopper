@@ -89,6 +89,15 @@ unit Utilities // Utilities.asm
             INC ZP.PCH
         }
     }
+    DecPC()
+    {
+        LDA PCL
+        if (Z)
+        {
+            DEC PCH
+        }
+        DEC PCL
+    }
     IncACC()
     {
         INC ZP.ACCL

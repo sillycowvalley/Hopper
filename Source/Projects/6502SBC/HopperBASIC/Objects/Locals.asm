@@ -148,8 +148,8 @@ unit Locals
             LDA [ZP.IDX], Y
             STA ZP.LCURRENTH
             
-            LDX #0  // Index counter for arguments and locals
-            STZ ZP.ACCL
+            LDX #0       // Index counter for arguments
+            STZ ZP.ACCH  // Index counter for locals
             loop
             {
                 // Check if we've reached end of list
@@ -184,7 +184,9 @@ unit Locals
                     }
                     else
                     {
-                        // For locals, BP offset is positive (0-based), already in ZP.ACCL
+                        // For locals, BP offset is positive (0-based)
+                        LDA ZP.ACCH
+                        STA ZP.ACCL
                     }
                     
                     // Copy node address to IDY
@@ -197,17 +199,7 @@ unit Locals
                     break;
                 }
                 
-                // Move to next node
-                LDY #lnNext
-                LDA [ZP.LCURRENT], Y
-                PHA
-                INY
-                LDA [ZP.LCURRENT], Y
-                STA ZP.LCURRENTH
-                PLA
-                STA ZP.LCURRENTL
-                
-                // After moving to next node, check type to update counters
+                // count the arguments and locals that we skip
                 LDY #lnType
                 LDA [ZP.LCURRENT], Y
                 AND #SymbolType.MASK
@@ -218,10 +210,21 @@ unit Locals
                 }
                 else
                 {
-                    INC ZP.ACCL
+                    INC ZP.ACCH
                 }
+                
+                // Move to next node
+                LDY #lnNext
+                LDA [ZP.LCURRENT], Y
+                PHA
+                INY
+                LDA [ZP.LCURRENT], Y
+                STA ZP.LCURRENTH
+                PLA
+                STA ZP.LCURRENTL
+                
+                
             }
-            
             break;
         }
         

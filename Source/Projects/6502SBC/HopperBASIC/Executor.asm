@@ -228,11 +228,6 @@ unit Executor // Executor.asm
            States.SetSuccess();
            break;
        } // loop exit
-       
-PHA
-HOut(); Space(); 
-PLX
-
    }
    
    // Fetch word operand from buffer (little-endian)
@@ -267,7 +262,7 @@ PLX
        TAY // for jump table optimization
 #ifdef TRACEEXE
 PHA PHX
-NL(); LDA ZP.PCH HOut(); LDA ZP.PCL HOut(); Space(); TYA TAX HOut(); Space(); OpCodes.ToString(); PrintStringSTR();Space(); 
+NL(); DecPC(); LDA ZP.PCH HOut(); LDA ZP.PCL HOut(); IncPC(); Space(); TYA TAX HOut(); Space(); OpCodes.ToString(); PrintStringSTR();Space(); 
 PLX PLA
 #endif
        // Use switch statement for opcode dispatch
@@ -545,10 +540,7 @@ PLX PLA
            SEC
            LDA ZP.BP
            SBC executorOperandL         // BP - arg_count
-           SEC
-           SBC #1                       // BP - arg_count - 1 = return slot position
            STA ZP.SP
-           
            TAX                     
            DEX     
            // X = return slot index // SP-1
@@ -1294,7 +1286,7 @@ PLX PLA
            if (NC) { break; }  // Type error already set
            
            // Check if value is zero (FALSE)
-           LDA ZP.TOPL
+           LDA ZP.TOPL           
            if (Z)  // Value is zero/FALSE - take the jump
            {
                // Fetch 16-bit signed operand

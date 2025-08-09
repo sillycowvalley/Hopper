@@ -2222,104 +2222,29 @@ unit Debug // Debug.asm
     // Internal compact stack implementation
     compactStack()
     {
-    
-        nL();
-        LDY #21
         loop
         {
-            space();
-            DEY
-            if (Z) { break; }
-        }
-        
-        // Stack values from SP-19 to SP (newest on left, top on right)
-        LDX ZP.SP
-        LDY #0          // Counter for 20 elements
-        
-        LDA ZP.BP
-        CMP ZP.SP
-        if (Z)
-        {
-            LDA #'|' cOut();
-        }
-        else
-        {
-            space();
-        }
-        loop
-        {
-            CPY #20
-            if (Z) { break; }
-            
-            DEX  // Point to actual stack element (SP-1 is top)
-            
-            STZ ZP.ACCL
-            LDA Address.TypeStackLSB, X
-            AND #BASICType.VAR
-            if (NZ)
+            nL();
+            LDY #21
+            loop
             {
-                // variant type
-                LDA #1
-                STA ZP.ACCL
-                LDA #'[' 
-                cOut();
-            }
-            // Print type nibble
-            LDA Address.TypeStackLSB, X
-            AND #BASICType.TYPEMASK   // Get just the type nibble (mask off VAR bit)
-            switch (A)
-            {
-                case BASICType.INT:
-                {
-                    LDA #'i' cOut();
-                }
-                case BASICType.VOID:
-                {
-                    LDA #'v' cOut();
-                }
-                case BASICType.WORD:
-                {
-                    LDA #'w' cOut();
-                }
-                case BASICType.BYTE:
-                {
-                    LDA #'b' cOut();
-                }
-                case BASICType.BIT:
-                {
-                    LDA #'B' cOut();
-                }
-                case BASICType.STRING:
-                {
-                    LDA #'s' cOut();
-                }
-                case BASICType.ARRAY:
-                {
-                    LDA #'a' cOut();
-                }
-                default:
-                {
-                    hNibbleOut();  // Print single hex nibble
-                }
-            }
-            LDA #':' cOut();
-            
-            // Print value (4 hex digits)
-            LDA Address.ValueStackMSB, X
-            hOut();
-            LDA Address.ValueStackLSB, X
-            hOut();
-            
-            LDA ZP.ACCL
-            if (NZ)
-            {
-                LDA #']' 
-                cOut();
+                space();
+                DEY
+                if (Z) { break; }
             }
             
-            // Print separator - '|' after BP, space otherwise
-            TXA
-            CMP ZP.BP
+            // Stack values from SP-19 to SP (newest on left, top on right)
+            LDX ZP.SP
+            CPX #0
+            if (Z) 
+            {
+                break; // empty stack
+            }
+            
+            LDY #0          // Counter for 20 elements
+            
+            LDA ZP.BP
+            CMP ZP.SP
             if (Z)
             {
                 LDA #'|' cOut();
@@ -2328,16 +2253,99 @@ unit Debug // Debug.asm
             {
                 space();
             }
-            
-            CPX #0xFF
-            if (Z) 
+            loop
             {
-                break;
+                CPY #20
+                if (Z) { break; }
+                
+                DEX  // Point to actual stack element (SP-1 is top)
+                
+                STZ ZP.ACCL
+                LDA Address.TypeStackLSB, X
+                AND #BASICType.VAR
+                if (NZ)
+                {
+                    // variant type
+                    LDA #1
+                    STA ZP.ACCL
+                    LDA #'[' 
+                    cOut();
+                }
+                // Print type nibble
+                LDA Address.TypeStackLSB, X
+                AND #BASICType.TYPEMASK   // Get just the type nibble (mask off VAR bit)
+                switch (A)
+                {
+                    case BASICType.INT:
+                    {
+                        LDA #'i' cOut();
+                    }
+                    case BASICType.VOID:
+                    {
+                        LDA #'v' cOut();
+                    }
+                    case BASICType.WORD:
+                    {
+                        LDA #'w' cOut();
+                    }
+                    case BASICType.BYTE:
+                    {
+                        LDA #'b' cOut();
+                    }
+                    case BASICType.BIT:
+                    {
+                        LDA #'B' cOut();
+                    }
+                    case BASICType.STRING:
+                    {
+                        LDA #'s' cOut();
+                    }
+                    case BASICType.ARRAY:
+                    {
+                        LDA #'a' cOut();
+                    }
+                    default:
+                    {
+                        hNibbleOut();  // Print single hex nibble
+                    }
+                }
+                LDA #':' cOut();
+                
+                // Print value (4 hex digits)
+                LDA Address.ValueStackMSB, X
+                hOut();
+                LDA Address.ValueStackLSB, X
+                hOut();
+                
+                LDA ZP.ACCL
+                if (NZ)
+                {
+                    LDA #']' 
+                    cOut();
+                }
+                
+                // Print separator - '|' after BP, space otherwise
+                TXA
+                CMP ZP.BP
+                if (Z)
+                {
+                    LDA #'|' cOut();
+                }
+                else
+                {
+                    space();
+                }
+                
+                CPX #0xFF
+                if (Z) 
+                {
+                    break;
+                }
+                
+                INY
             }
-            
-            INY
-        }
-        
+            break;
+        } // single exit
         
     }
     
