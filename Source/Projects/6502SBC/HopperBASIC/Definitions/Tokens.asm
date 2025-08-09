@@ -391,10 +391,12 @@ unit Tokens
             LDA #(keywordsMZ / 256)
             STA ZP.IDYH
             printKeywordFromTable();
+#ifdef DEBUG
             if (NC)
             {
                 ALOut();
             }
+#endif
         }
         
         PLA

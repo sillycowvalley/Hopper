@@ -443,8 +443,12 @@ unit Console // Console.asm
                 }
                 case Token.DASM:
                 {
+#ifdef DEBUG
                     LDX #1 // DASM
                     parseList();
+#else
+                    parseDasm();
+#endif
                     Error.CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
                 }
@@ -855,6 +859,7 @@ unit Console // Console.asm
     parseHeap()    { Error.OnlyInDebug(); BIT ZP.EmulatorPCL }
     parseBuffers() { Error.OnlyInDebug(); BIT ZP.EmulatorPCL }
     parseDump()    { Error.OnlyInDebug(); BIT ZP.EmulatorPCL }
+    parseDasm()    { Error.OnlyInDebug(); BIT ZP.EmulatorPCL }
 #endif
 
 #ifdef TRACE

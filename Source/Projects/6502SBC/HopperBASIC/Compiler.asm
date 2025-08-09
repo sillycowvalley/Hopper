@@ -890,6 +890,7 @@ LDA #'>' Debug.COut();
             CMP #Token.LPAREN
             if (Z)
             {
+#ifdef DEBUG
 // This is a function call
 Debug.NL();
 LDA #'[' Debug.COut();
@@ -899,6 +900,7 @@ LDA #':' Debug.COut();
 LDA ZP.CurrentToken
 Debug.HOut();
 LDA #']' Debug.COut();
+#endif
                 
                 // Create return slot (VOID 0) first
                 Emit.PushVoid();  
@@ -1005,14 +1007,14 @@ LDA #']' Debug.COut();
                 Tokenizer.NextToken();
                 Error.CheckError();
                 if (NC) { break; }
-                
+#ifdef DEBUG
 Debug.NL();
 LDA #'P' Debug.COut();
 LDA #'C' Debug.COut();
 LDA #':' Debug.COut();
 LDA ZP.CurrentToken
 Debug.HOut();SEC
-
+#endif
             }
             else
             {
@@ -1727,9 +1729,9 @@ Debug.HOut();SEC
        
         LDA ZP.ACCL
         STA compilerFuncArgs    
-        
+#ifdef DEBUG
 LDA #'#' COut(); LDA   compilerFuncArgs HOut();
- 
+#endif
         //Save the function node address for argument lookups
         LDA ZP.IDXL
         STA compilerSavedNodeAddrL

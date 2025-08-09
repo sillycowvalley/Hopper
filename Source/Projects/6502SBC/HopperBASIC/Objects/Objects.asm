@@ -157,12 +157,14 @@ unit Objects
         {
             // Start iteration
             Table.GetFirst(); // Returns first node in IDX
-            
+         
+#ifdef DEBUG   
 // DEBUG: Print list head
 Debug.NL();
 LDA #'H' Debug.COut();
 LDA #':' Debug.COut();
 Debug.XOut();
+#endif
             
             loop
             {
@@ -171,30 +173,33 @@ Debug.XOut();
                 ORA ZP.IDXH
                 if (Z)
                 {
-                
+#ifdef DEBUG          
 // DEBUG: End of list
 Debug.NL();
 LDA #'E' Debug.COut();
 LDA #'O' Debug.COut();
 LDA #'L' Debug.COut();
+#endif
                     CLC  // Not found
                     break;
                 }
-                
+#ifdef DEBUG          
 // DEBUG: Checking node
 LDA # 'N' Debug.COut();
 LDA # ':' Debug.COut();
 Debug.XOut();
 LDA #' ' Debug.COut();
-                
+#endif    
                 // Compare name at snName offset
                 compareNames();
                 
+#ifdef DEBUG
 // DEBUG: Comparison result
 PHP
 Debug.NL();
 if (C) { LDA #'=' Debug.COut(); } else { LDA #'!' Debug.COut(); }
 PLP
+#endif
                 
                 if (C) // Names match
                 {
@@ -586,23 +591,25 @@ PLP
         ADC #0
         STA ZP.NEXTH
         
-        
+#ifdef DEBUG
 // DEBUG: Print both names being compared
 LDA # '[' Debug.COut();
 Tools.PrintStringTOP();  // Search name
 LDA # 'v' Debug.COut();
 Tools.PrintStringNEXT(); // Node name
 LDA # ']' Debug.COut();
-        
+#endif
         
         // Compare strings
         Tools.StringCompare(); // TOP vs NEXT, sets C if equal
-        
+      
+#ifdef DEBUG  
 // DEBUG: Result
 PHP
 if (C) { LDA # 'M' Debug.COut(); } else { LDA # 'X' Debug.COut(); }
 Debug.NL();
 PLP
+#endif
         
         PLA
         STA ZP.NEXTH

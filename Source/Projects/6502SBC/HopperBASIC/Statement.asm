@@ -144,13 +144,13 @@ unit Statement // Statement.asm
             Tokenizer.GetTokenString();  // Result in ZP.TOP
             Error.CheckError();
             if (NC) { break; }
-            
+#ifdef DEBUG   
 // DEBUG: Print the name we're looking for
 Debug.NL();
 LDA #'?' Debug.COut();
 Tools.PrintStringTOP();
 LDA #'?' Debug.COut();
-            
+#endif 
             // 2. Check if it's a local or argument (if we're in a function)
             Locals.Resolve(); // Input: ZP.TOP = name, Output: C = found, ZP.IDX = node
             if (C)
@@ -286,7 +286,8 @@ LDA #'?' Debug.COut();
             
             // Emit HALT for REPL
             Emit.Halt();
-            
+   
+#ifdef DEBUG                     
 // DEBUG: Check HALT emission
 PHP
 Debug.NL();
@@ -296,6 +297,7 @@ LDA #':' Debug.COut();
 if (C) { LDA #'C' Debug.COut(); } else { LDA #'N' Debug.COut(); }
 Debug.NL();
 PLP
+#endif
             
             
             Error.CheckError();
@@ -308,7 +310,8 @@ PLP
             PHA
             
             States.SetSuccess(); // Clear state
-            
+   
+#ifdef DEBUG
 // Before ExecuteOpCodes
 PHP
 Debug.NL();
@@ -317,10 +320,12 @@ LDA #'O' Debug.COut();
 LDA #':' Debug.COut();
 Debug.NL();
 PLP
+#endif
             
             // Execute the compiled statement opcodes
             Executor.ExecuteOpCodes();
-            
+   
+#ifdef DEBUG         
 PHP
 Debug.NL();
 LDA #'X' Debug.COut();
@@ -329,6 +334,7 @@ LDA #':' Debug.COut();
 if (C) { LDA #'C' Debug.COut(); } else { LDA #'N' Debug.COut(); }
 Debug.NL();
 PLP
+#endif
             
             Error.CheckError();
             
