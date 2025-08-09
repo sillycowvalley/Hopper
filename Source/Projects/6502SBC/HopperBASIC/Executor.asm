@@ -192,7 +192,6 @@ unit Executor // Executor.asm
    // Fetch single byte operand from buffer
    // Input: ZP.PC points to operand position
    // Output: A contains operand byte, ZP.PC advanced, SystemState set
-   const string fetchOperandByteTrace = "FetchByte // Fetch byte operand";
    FetchOperandByte()
    {
 #ifdef TRACEVERBOSE
@@ -239,7 +238,6 @@ unit Executor // Executor.asm
    // Fetch word operand from buffer (little-endian)
    // Input: ZP.PC points to operand position
    // Output: executorOperandL/H contains word, ZP.PC advanced by 2, SystemState set
-   const string fetchOperandWordTrace = "FetchWord // Fetch word operand";
    FetchOperandWord()
    {
 #ifdef TRACEVERBOSE
@@ -272,7 +270,6 @@ unit Executor // Executor.asm
    // Dispatch opcode to appropriate handler
    // Input: A contains opcode value
    // Output: SystemState set based on execution result
-   const string dispatchOpCodeTrace = "Dispatch // Dispatch opcode";
    DispatchOpCode()
    {
        TAY // for jump table optimization
