@@ -2265,9 +2265,10 @@ unit Compiler // Compiler.asm
            
            // Mark loop start position for backward jump (start of condition evaluation)
            LDA ZP.OpCodeBufferContentSizeL
-           PHA  // Save loop start LSB
+           STA ZP.TOPL
            LDA ZP.OpCodeBufferContentSizeH
-           PHA  // Save loop start MSB
+           STA ZP.TOPH
+           Stacks.PushTop();
            
            // Compile condition expression (e.g., "I < 10")
            compileExpressionTree();       
@@ -2275,9 +2276,10 @@ unit Compiler // Compiler.asm
            // Save forward jump operand position for later patching
            // This is where JUMPZW operand will be stored (after the opcode byte)
            LDA ZP.OpCodeBufferContentSizeL
-           PHA     // Push operand position LSB
+           STA ZP.TOPL
            LDA ZP.OpCodeBufferContentSizeH
-           PHA     // Push operand position MSB
+           STA ZP.TOPH
+           Stacks.PushTop();
            
            // Check for compilation errors after consuming all 4 stack slots
            Error.CheckError();
@@ -2341,16 +2343,10 @@ unit Compiler // Compiler.asm
            // Pop saved positions from stack (in reverse order)
            
            // Pop forward jump operand position (where JUMPZW operand needs patching)
-           PLA
-           STA ZP.IDXH  // Forward jump operand position MSB
-           PLA  
-           STA ZP.IDXL  // Forward jump operand position LSB
+           Stacks.PopIDX();
            
            // Pop loop start position (target for backward jump)
-           PLA
-           STA ZP.TOPH  // Loop start position MSB
-           PLA
-           STA ZP.TOPL  // Loop start position LSB
+           Stacks.PopTop();
            
            // Current position = end of loop body (where JUMPW will be emitted)
            LDA ZP.OpCodeBufferContentSizeH
@@ -2465,7 +2461,7 @@ unit Compiler // Compiler.asm
         PHA  // Preserve parent's counter
         
         // Initialize counter for this IF
-        STZ ZP.CompilerTemp  // Track how many 2-byte positions we push
+        STZ ZP.CompilerTemp  // Track how many patch positions we push
 
         loop // Single exit block
         {
@@ -2490,12 +2486,21 @@ unit Compiler // Compiler.asm
             }
             
             // Save position where JUMPZW operand will be (for patching)
+            
             LDA ZP.OpCodeBufferContentSizeL
             PHA     // Push JUMPZW operand position LSB
             LDA ZP.OpCodeBufferContentSizeH
             PHA     // Push JUMPZW operand position MSB
-            INC ZP.CompilerTemp  // Track that we pushed 2 bytes
+            /*
+            LDA ZP.OpCodeBufferContentSizeL
+            STA ZP.TOPL
+            LDA ZP.OpCodeBufferContentSizeH
+            STA ZP.TOPH
+            Stacks.PushTop();
+            */
             
+            INC ZP.CompilerTemp  // Track that we pushed a patch position 
+                        
             // Emit conditional jump to ELSE/ENDIF (placeholder - will be patched)
             // JUMPZW: Jump if condition is zero/FALSE (skip THEN block)
             LDA #OpCode.JUMPZW
@@ -2555,11 +2560,19 @@ unit Compiler // Compiler.asm
                 
                 // Save position where JUMPW operand will be (for patching)
                 // This jump skips the ELSE block after THEN executes
+                
                 LDA ZP.OpCodeBufferContentSizeL
                 PHA     // Push JUMPW operand position LSB
                 LDA ZP.OpCodeBufferContentSizeH
                 PHA     // Push JUMPW operand position MSB
-                INC ZP.CompilerTemp  // Track that we pushed 2 more bytes (now 2 positions total)
+                /*
+                LDA ZP.OpCodeBufferContentSizeL
+                STA ZP.TOPL
+                LDA ZP.OpCodeBufferContentSizeH
+                STA ZP.TOPH
+                Stacks.PushTop();
+                */
+                INC ZP.CompilerTemp  // Track that we pushed another patch position (now 2 positions total)
                 
                 // Emit unconditional jump to ENDIF (placeholder - will be patched)
                 LDA #OpCode.JUMPW
@@ -2668,10 +2681,13 @@ unit Compiler // Compiler.asm
                 // It should jump here (after ENDIF)
                 
                 // Pop JUMPW operand position
+                
                 PLA
                 STA ZP.IDXH  // JUMPW operand position MSB
                 PLA
                 STA ZP.IDXL  // JUMPW operand position LSB
+                
+                //Stacks.PopIDX();
                 DEC ZP.CompilerTemp  // We popped one position
                 
                 // Current position = after ENDIF
@@ -2717,6 +2733,7 @@ unit Compiler // Compiler.asm
                 // Pop and discard the already-patched JUMPZW position
                 PLA  // Discard JUMPZW operand position MSB
                 PLA  // Discard JUMPZW operand position LSB
+                //DEC ZP.SP
                 DEC ZP.CompilerTemp  // We popped the second position
             }
             else
@@ -2742,10 +2759,13 @@ unit Compiler // Compiler.asm
                 // It should jump here (after ENDIF)
                 
                 // Pop JUMPZW operand position
+                
                 PLA
                 STA ZP.IDXH  // JUMPZW operand position MSB
                 PLA
                 STA ZP.IDXL  // JUMPZW operand position LSB
+                
+                //Stacks.PopIDX();
                 DEC ZP.CompilerTemp  // We popped the position
                 
                 // Current position = after ENDIF
@@ -2804,6 +2824,7 @@ unit Compiler // Compiler.asm
                 {
                     PLA  // Discard MSB
                     PLA  // Discard LSB
+                    //DEC ZP.SP
                     DEC ZP.CompilerTemp
                     if (Z) { break; }  // Done when counter reaches 0
                 }
