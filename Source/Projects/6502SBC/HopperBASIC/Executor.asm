@@ -1935,12 +1935,7 @@ PLX PLA
         loop // Single exit block
         {
             // Fetch iterator BP offset
-            //FetchOperandByte(); // Result in A
-            // clear state
-            LDA #State.Success
-            STA ZP.SystemState
-        
-            // Fetch operand
+                     // Fetch operand
             LDA [ZP.PC]
            
             // Advance PC
@@ -1953,10 +1948,6 @@ PLX PLA
             STA Executor.executorOperandBP
             
             // Fetch backward jump offset (16-bit)
-            //FetchOperandWord(); // Result in executorOperandL/H
-            // clear state
-            LDA #State.Success
-            STA ZP.SystemState
            
             LDA [ZP.PC]
             STA executorOperandL // Save operand
@@ -1978,11 +1969,8 @@ PLX PLA
                 INC ZP.PCH
             }
             
-            // Load iterator value (safe)
+            // Load iterator value
             LDA Executor.executorOperandBP
-            
-            
-            //Stacks.GetStackTopBP();  // Iterator in ZP.TOP/TOPT
             CLC
             ADC ZP.BP
             TAY
@@ -1999,13 +1987,8 @@ PLX PLA
             INC ZP.TOPL
             if (Z) { INC ZP.TOPH }
             
-            // Store updated iterator back with WORD type (safe)
-            LDA #(BASICType.WORD | BASICType.VAR)
-            STA ZP.TOPT
+            // Store updated iterator back with WORD type
             LDA Executor.executorOperandBP
-            
-            
-            //Stacks.SetStackTopBP();
             CLC
             ADC ZP.BP
             TAY
@@ -2013,14 +1996,11 @@ PLX PLA
             STA Address.ValueStackLSB, Y
             LDA ZP.TOPH
             STA Address.ValueStackMSB, Y
-            LDA ZP.TOPT
+            LDA #(BASICType.WORD | BASICType.VAR)
             STA Address.TypeStackLSB, Y
             
             // Get TO value from stack (safe)
             LDA #0xFE  // -2 from SP
-            
-            
-            // Stacks.GetStackNextSP();  // TO in ZP.NEXT/NEXTT
             CLC
             ADC ZP.SP
             TAY
@@ -2040,7 +2020,6 @@ PLX PLA
             if (NC)  // TO high < iterator high
             {
                 // Exit loop
-                States.SetSuccess();
                 break;
             }
             if (NZ)  // TO high > iterator high
@@ -2054,7 +2033,6 @@ PLX PLA
                 ADC Executor.executorOperandH
                 STA ZP.PCH
                 
-                States.SetSuccess();
                 break;
             }
             
@@ -2063,7 +2041,7 @@ PLX PLA
             CMP ZP.TOPL   // iterator low
             if (NC)  // TO < iterator - exit
             {
-                States.SetSuccess();
+                // Exit loop
                 break;
             }
             
@@ -2076,10 +2054,11 @@ PLX PLA
             ADC Executor.executorOperandH
             STA ZP.PCH
             
-            States.SetSuccess();
             break;
-            
         } // Single exit block
+        LDA #State.Success
+        STA ZP.SystemState
+        
         
     #ifdef TRACE
         LDA #(executeFORITFTrace % 256) STA ZP.TraceMessageL 
