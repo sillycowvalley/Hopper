@@ -21,7 +21,6 @@ unit Instructions // Instructions.asm
 #ifdef TRACE
         LDA #(checkRHS % 256) STA ZP.TraceMessageL LDA #(checkRHS / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-
         
         loop
         {
@@ -61,8 +60,8 @@ unit Instructions // Instructions.asm
     
     // Check if two types are compatible for operations
     // Input: ZP.NEXTT = left operand type, ZP.TOPT = right operand type
-    //        ZP.NEXT = left value, ZP.TOP = right value (for WORD/INT range check)
-    //        ZP.ACCT = operation mode:
+    //        ZP.NEXT  = left value, ZP.TOP = right value (for WORD/INT range check)
+    //        A        = operation mode:
     //          0 = Equality comparison (=, <>) - BIT types only allowed with other BIT types, result is BIT
     //          1 = Arithmetic (+, -, *, /, %) - BIT types rejected, result is promoted numeric type
     //          2 = Bitwise (&, |) - BIT types rejected, result is promoted numeric type
@@ -79,16 +78,49 @@ unit Instructions // Instructions.asm
 #ifdef TRACE
         LDA #(checkType % 256) STA ZP.TraceMessageL LDA #(checkType / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-
         
         // Save original ZP.ACCT value
         LDX ZP.ACCT
+        
         
         // Store operation mode in ZP.ACCT for internal use
         STA ZP.ACCT
         
         loop
         {
+            // super common cases
+            CMP #1 // Arithmetic mode
+            if (Z)
+            {
+                LDA ZP.NEXTT
+                CMP #BASICType.WORD
+                if (Z)
+                {
+                    LDA ZP.TOPT
+                    CMP #BASICType.WORD
+                    if (Z)
+                    {
+                        SEC
+                        break;
+                    }
+                }
+                else
+                {
+                    LDA ZP.NEXTT
+                    CMP #BASICType.BYTE
+                    if (Z)
+                    {
+                        LDA ZP.TOPT
+                        CMP #BASICType.BYTE
+                        if (Z)
+                        {
+                            SEC
+                            break;
+                        }
+                    }
+                }
+            }
+            
             // Check for VOID type first - never allow VOID in any operations
             LDA ZP.NEXTT  // Left operand type
             CMP #BASICType.VOID

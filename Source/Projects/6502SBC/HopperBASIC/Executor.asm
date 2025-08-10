@@ -1660,12 +1660,13 @@ PLX PLA
         }
         
         // signed BP offset  in A
-        
         // Stacks.GetStackTopBP() -> Stacks.PushTop()
         CLC
         ADC ZP.BP
         TAY
+        
         LDX ZP.SP
+        
         LDA Address.ValueStackLSB, Y
         STA Address.ValueStackLSB, X
         LDA Address.ValueStackMSB, Y
