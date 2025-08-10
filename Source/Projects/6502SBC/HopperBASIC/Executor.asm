@@ -485,6 +485,16 @@ PLX PLA
                executeJumpNZW();
            }
            
+           // === THREE BYTE OPERAND OPCODES (0xC0-0xFF) ===
+           case OpCode.FORCHK:
+           {
+               executeFORCHK();
+           }
+           case OpCode.FORIT:
+           {
+               executeFORIT();
+           }
+           
            default:
            {
                executeNotImplemented();
@@ -1627,5 +1637,13 @@ PLX PLA
         // Send ANSI escape sequence to clear screen
         LDA #0x0C  // Form feed
         Serial.WriteChar();
+    }
+    executeFORCHK()
+    {
+        executeNotImplemented();
+    }
+    executeFORIT()
+    {
+        executeNotImplemented();
     }
 }
