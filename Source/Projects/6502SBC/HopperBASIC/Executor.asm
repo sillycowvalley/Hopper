@@ -1932,8 +1932,7 @@ PLX PLA
             if (Z) { INC ZP.TOPH }
             
             // Store updated iterator back
-            LDA ZP.TOPT
-            ORA #BASICType.VAR
+            LDA #(BASICType.WORD | BASICType.VAR) // TODO: should preserve original VAR-ness but GetStackTopBP strips it
             STA ZP.TOPT
             LDA Executor.executorOperandBP
             Stacks.SetStackTopBP();
