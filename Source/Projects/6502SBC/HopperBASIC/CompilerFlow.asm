@@ -797,6 +797,26 @@ unit CompilerFlow
            Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, ZP.ACCL = BP offset
            if (NC)
            {
+               // Not a local - check if it's a global
+               STZ ZP.SymbolIteratorFilter  // Look for variables
+               Variables.Find();  // Check global variables
+               if (C)
+               {
+                   // Iterator exists as a global - not allowed!
+                   Error.ForIteratorLocal(); BIT ZP.EmulatorPCL  // "FOR iterator must be local"
+                   States.SetFailure();
+                   break;
+               }
+                
+               // Iterator not found - check if we can create implicit local
+               LDA Compiler.compilerCanDeclareLocals
+               if (Z)  // Can't create new locals
+               {
+                   Error.LateDeclaration(); BIT ZP.EmulatorPCL
+                   States.SetFailure();
+                   break;
+               }
+                
                // Iterator not found - create implicit local
                // First push a default value to create the stack slot
                Emit.PushEmptyVar();
@@ -819,6 +839,8 @@ unit CompilerFlow
                
                INC Compiler.compilerFuncLocals  // Track new local
            }
+           
+           STZ Compiler.compilerCanDeclareLocals // no more locals after this
            
            // Save iterator BP offset (A contains it from either Find or Add)
            LDA ZP.ACCL

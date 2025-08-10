@@ -200,7 +200,7 @@ unit Dasm
                 
                 OpCodes.ToString(); // X = opcode, returns ZP.STR
                 Space(); Space(); Tools.PrintStringSTR();
-                LDY # 12 // pad to width
+                LDY # 13 // pad to width
                 loop
                 {
                     LDA [ZP.STR]

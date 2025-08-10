@@ -2347,6 +2347,8 @@ unit Debug // Debug.asm
             break;
         } // single exit
         
+        space(); LDA ZP.SP HOut();space(); LDA ZP.BP HOut();
+        
     }
     
     // Print single hex nibble (low 4 bits of A)

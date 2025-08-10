@@ -85,7 +85,7 @@ unit Stacks // Stacks.asm
     // Input: A = signed offset from BP
     // Output: ZP.TOP = value at BP+offset, ZP.TOPT = type
     // Modifies: A, Y
-    GetStackTop()
+    GetStackTopBP()
     {
         CLC
         ADC ZP.BP
@@ -95,13 +95,14 @@ unit Stacks // Stacks.asm
         LDA Address.ValueStackMSB, Y
         STA ZP.TOPH
         LDA Address.TypeStackLSB, Y
+        AND #BASICType.TYPEMASK  // Strip VAR bit 
         STA ZP.TOPT
     }
     
     // Input: A = signed offset from BP
     // Output: ZP.NEXT = value at BP+offset, ZP.NEXTT = type
     // Modifies: A, Y
-    GetStackNext()
+    GetStackNextBP()
     {
         CLC
         ADC ZP.BP
@@ -111,12 +112,47 @@ unit Stacks // Stacks.asm
         LDA Address.ValueStackMSB, Y
         STA ZP.NEXTH
         LDA Address.TypeStackLSB, Y
+        AND #BASICType.TYPEMASK  // Strip VAR bit 
+        STA ZP.NEXTT
+    }
+    
+    // Input: A = signed offset from SP
+    // Output: ZP.TOP = value at SP+offset, ZP.TOPT = type
+    // Modifies: A, Y
+    GetStackTopSP()
+    {
+        CLC
+        ADC ZP.SP
+        TAY
+        LDA Address.ValueStackLSB, Y
+        STA ZP.TOPL
+        LDA Address.ValueStackMSB, Y
+        STA ZP.TOPH
+        LDA Address.TypeStackLSB, Y
+        AND #BASICType.TYPEMASK  // Strip VAR bit 
+        STA ZP.TOPT
+    }
+    
+    // Input: A = signed offset from SP
+    // Output: ZP.NEXT = value at SP+offset, ZP.NEXTT = type
+    // Modifies: A, Y
+    GetStackNextSP()
+    {
+        CLC
+        ADC ZP.SP
+        TAY
+        LDA Address.ValueStackLSB, Y
+        STA ZP.NEXTL
+        LDA Address.ValueStackMSB, Y
+        STA ZP.NEXTH
+        LDA Address.TypeStackLSB, Y
+        AND #BASICType.TYPEMASK  // Strip VAR bit 
         STA ZP.NEXTT
     }
     
     // Input: A = signed offset from BP, ZP.TOP = value to store
     // Modifies: A, Y
-    SetStackTop()
+    SetStackTopBP()
     {
         CLC
         ADC ZP.BP
@@ -141,6 +177,18 @@ unit Stacks // Stacks.asm
         LDA Address.TypeStackLSB, X
         STA ZP.TOPT
     }
+    PopNext()
+    {
+        DEC ZP.SP
+        LDX ZP.SP
+        LDA Address.ValueStackLSB, X
+        STA ZP.NEXTL
+        LDA Address.ValueStackMSB, X
+        STA ZP.NEXTH
+        LDA Address.TypeStackLSB, X
+        STA ZP.NEXTT
+    }
+
     PushTop() // type is in A
     {
         LDY ZP.SP
@@ -160,17 +208,6 @@ unit Stacks // Stacks.asm
         LDA ZP.IDXH
         STA Address.ValueStackMSB, Y
         INC ZP.SP
-    }
-    PopNext()
-    {
-        DEC ZP.SP
-        LDX ZP.SP
-        LDA Address.ValueStackLSB, X
-        STA ZP.NEXTL
-        LDA Address.ValueStackMSB, X
-        STA ZP.NEXTH
-        LDA Address.TypeStackLSB, X
-        STA ZP.NEXTT
     }
     PopTopNext()
     {

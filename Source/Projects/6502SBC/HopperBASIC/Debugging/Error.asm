@@ -42,6 +42,7 @@ unit Error // Error.asm
     const uint lateDeclaration  = 0x0021;
     const uint missingNext = 0x0022;
     const uint nextMismatch = 0x0023
+    const uint forIteratorLocal = 0x0024;
     
     
 #else
@@ -84,6 +85,7 @@ unit Error // Error.asm
     const string lateDeclaration = "NO MORE LOCALS";
     const string missingNext = "MISSING NEXT";
     const string nextMismatch = "NEXT MISMATCH";
+    const string forIteratorLocal = "FOR ITERATOR MUST BE LOCAL";
     
     
     
@@ -105,6 +107,14 @@ unit Error // Error.asm
         LDA #(lateDeclaration % 256)
         STA ZP.LastErrorL
         LDA #(lateDeclaration / 256)
+        STA ZP.LastErrorH
+        CLC
+    }
+    ForIteratorLocal()
+    {
+        LDA #(forIteratorLocal % 256)
+        STA ZP.LastErrorL
+        LDA #(forIteratorLocal / 256)
         STA ZP.LastErrorH
         CLC
     }

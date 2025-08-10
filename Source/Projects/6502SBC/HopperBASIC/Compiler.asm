@@ -1829,7 +1829,6 @@ unit Compiler // Compiler.asm
                }
                case Token.FOR:
                {
-                   STZ compilerCanDeclareLocals // no more locals after this
                    CompilerFlow.CompileForStatement();
                    Error.CheckError();
                    if (NC) { States.SetFailure(); break; }

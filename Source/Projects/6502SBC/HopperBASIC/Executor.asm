@@ -1637,11 +1637,7 @@ PLX PLA
         if (C)
         {
             // signed BP offset  in A
-            Stacks.GetStackTop();
-            
-            LDA ZP.TOPT
-            AND #BASICType.TYPEMASK   // masks off VAR bit (0x10)
-            STA ZP.TOPT
+            Stacks.GetStackTopBP(); // masks away VAR bit
             
             LDA ZP.TOPT
             Stacks.PushTop();
@@ -1693,11 +1689,9 @@ PLX PLA
             States.CanContinue();
             if (NC) { break; }
             
-            // First, get STEP value to check sign (at BP+offset+2)
-            LDA Executor.executorOperandBP
-            CLC
-            ADC #2
-            Stacks.GetStackTop();  // STEP in ZP.TOP/TOPT
+            // First, get STEP value to check sign
+            LDA #0xFF
+            Stacks.GetStackTopSP();  // [SP-1] => STEP in ZP.TOP/TOPT, strips BASICTypes.VAR
             
             // Store direction in X based on STEP sign
             LDX #0  // Assume positive
@@ -1709,14 +1703,19 @@ PLX PLA
             
             // Load iterator value (at BP+offset)
             LDA Executor.executorOperandBP
-            Stacks.GetStackTop();  // Iterator in ZP.TOP/TOPT, preserves X
+            Stacks.GetStackTopBP();  // Iterator in ZP.TOP/TOPT, preserves X, strips BASICTypes.VAR
+            // Load TO value
+            LDA #0xFE
+            Stacks.GetStackNextSP();  //[SP-2] => TO in ZP.NEXT/NEXTT, strips BASICTypes.VAR
+
+            // Now TOP = iterator, NEXT = TO
+            // Push them for the comparison instructions
+            LDA ZP.TOPT
+            Stacks.PushTop();   // Push iterator => NEXT slot
+            LDA ZP.NEXTT
+            Stacks.PushNext();  // Push TO       => TOP slot
             
-            // Load TO value (at BP+offset+1)
-            LDA Executor.executorOperandBP
-            INC
-            NOP
-            Stacks.GetStackNext();  // TO in ZP.NEXT/NEXTT
-            
+                
             // Now TOP = iterator, NEXT = TO
             // Use comparison based on STEP direction
             CPX #0
@@ -1727,8 +1726,8 @@ PLX PLA
                 ComparisonInstructions.GreaterEqual();  // Sets Z if iterator >= TO
                 States.CanContinue();
                 if (NC) { break; }  // Type mismatch
-                
-                if (Z)
+                Stacks.PopA();
+                if (NZ) // TRUE'
                 {
                     // Iterator >= TO, continue loop
                     States.SetSuccess();
@@ -1740,11 +1739,11 @@ PLX PLA
             {
                 // For positive STEP: check if iterator <= TO
                 // Continue if iterator <= TO, exit if iterator > TO
-                ComparisonInstructions.LessEqual();  // Sets Z if iterator <= TO
+                ComparisonInstructions.LessEqual();
                 States.CanContinue();
                 if (NC) { break; }  // Type mismatch
-                
-                if (Z)
+                Stacks.PopA();   
+                if (NZ) // 'TRUE'
                 {
                     // Iterator <= TO, continue loop
                     States.SetSuccess();
@@ -1797,11 +1796,9 @@ PLX PLA
             States.CanContinue();
             if (NC) { break; }
             
-            // Get STEP value (at BP+offset+2)
-            LDA Executor.executorOperandBP
-            CLC
-            ADC #2
-            Stacks.GetStackNext();  // STEP in ZP.NEXT/NEXTT
+            // Get STEP value
+            LDA #0xFF
+            Stacks.GetStackNextSP();  // [SP-1] => STEP in ZP.NEXT/NEXTT
             
             // Store direction in X based on STEP sign
             LDX #0  // Assume positive
@@ -1811,23 +1808,36 @@ PLX PLA
                 LDX #1  // Negative STEP
             }
             
+            
             // Load iterator value (at BP+offset)
             LDA Executor.executorOperandBP
-            Stacks.GetStackTop();  // Iterator in ZP.TOP/TOPT, preserves X
-            
+            Stacks.GetStackTopBP();  // Iterator in ZP.TOP/TOPT, preserves X, strips BASICTypes.VAR
+
             // Add STEP to iterator (TOP = iterator + NEXT)
+            LDA ZP.TOPT
+            Stacks.PushTop();   // Push iterator => NEXT slot
+            LDA ZP.NEXTT
+            Stacks.PushNext();  // Push STEP     => TOP slot
             Instructions.Addition();  // Handles signed/unsigned, type checking, preserves X
+            PHX Stacks.PopTop(); PLX
+            
             States.CanContinue(); // preserves X
             if (NC) { break; }  // Type mismatch or overflow
-            
+
             // Store updated iterator back (TOP now has new value)
             LDA Executor.executorOperandBP
-            Stacks.SetStackTop();  // Store ZP.TOP/TOPT to BP+offset, preserves X
+            Stacks.SetStackTopBP();  // Store ZP.TOP/TOPT to BP+offset, preserves X
             
-            // Load TO value for comparison (at BP+offset+1)
-            LDA Executor.executorOperandBP
-            INC A
-            Stacks.GetStackNext();  // TO in ZP.NEXT/NEXTT, preserves X
+            // Load TO value for comparison
+            LDA #0xFE
+            Stacks.GetStackNextSP();  // [SP-2] => TO in ZP.NEXT/NEXTT, preserves X, strips BASICTypes.VAR
+            
+            // Now TOP = iterator, NEXT = TO
+            // Push them for the comparison instructions
+            LDA ZP.TOPT
+            Stacks.PushTop();   // Push iterator => NEXT slot
+            LDA ZP.NEXTT
+            Stacks.PushNext();  // Push       TO => TOP slot
             
             // TOP = updated iterator, NEXT = TO
             // Use comparison based on STEP direction
@@ -1836,11 +1846,11 @@ PLX PLA
             {
                 // For negative STEP: check if iterator >= TO
                 // Continue if iterator >= TO, exit if iterator < TO
-                ComparisonInstructions.GreaterEqual();  // Sets Z if iterator >= TO
+                ComparisonInstructions.GreaterEqual();
                 States.CanContinue();
                 if (NC) { break; }  // Type mismatch
-                
-                if (NZ)
+                Stacks.PopA();   
+                if (Z) // 'FALSE'
                 {
                     // Iterator < TO, exit loop (fall through)
                     States.SetSuccess();
@@ -1852,11 +1862,11 @@ PLX PLA
             {
                 // For positive STEP: check if iterator <= TO
                 // Continue if iterator <= TO, exit if iterator > TO
-                ComparisonInstructions.LessEqual();  // Sets Z if iterator <= TO
+                ComparisonInstructions.LessEqual();
                 States.CanContinue();
                 if (NC) { break; }  // Type mismatch
-                
-                if (NZ)
+                Stacks.PopA();
+                if (Z) // FALSE
                 {
                     // Iterator > TO, exit loop (fall through)
                     States.SetSuccess();

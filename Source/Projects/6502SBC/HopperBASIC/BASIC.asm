@@ -4,7 +4,7 @@ program HopperBASIC
     #define TRACE
     //#define TRACESP
     //#define TRACEJIT     // detail for JIT / CALL->CALLF patching
-    #define TRACEEXE // instructions in Executor
+    //#define TRACEEXE // instructions in Executor
     
     //#define TRACECONSOLE // trace output for Console.asm and Command.asm
     
