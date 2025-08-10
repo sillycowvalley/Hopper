@@ -1897,7 +1897,7 @@ PLX PLA
         LDA #(executeFORITTrace % 256) STA ZP.TraceMessageL LDA #(executeFORITTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     }
-    
+    /*
     // Execute FORITF opcode - Fast FOR loop iterate (optimized for positive ranges)
     // Stack layout: TO at SP-2, STEP at SP-1 (ignored, always 1)
     // Operands: [0] = iterator BP offset, [1-2] = backward jump offset (continue loop)
@@ -1985,4 +1985,103 @@ PLX PLA
         Trace.MethodExit();
     #endif
     }
+    */
+    
+ // Execute FORITF opcode - Hybrid: safe stack access, inlined computation
+// Stack layout: TO at SP-2, STEP at SP-1 (ignored, always 1)
+// Operands: [0] = iterator BP offset, [1-2] = backward jump offset
+const string executeFORITFTrace = "FORITF // Fast iterate";
+executeFORITF()
+{
+#ifdef TRACE
+    LDA #(executeFORITFTrace % 256) STA ZP.TraceMessageL 
+    LDA #(executeFORITFTrace / 256) STA ZP.TraceMessageH 
+    Trace.MethodEntry();
+#endif
+    
+    loop // Single exit block
+    {
+        // Fetch iterator BP offset
+        FetchOperandByte(); // Result in A
+        States.CanContinue();
+        if (NC) { break; }
+        STA Executor.executorOperandBP
+        
+        // Fetch backward jump offset (16-bit)
+        FetchOperandWord(); // Result in executorOperandL/H
+        States.CanContinue();
+        if (NC) { break; }
+        
+        // Load iterator value (safe)
+        LDA Executor.executorOperandBP
+        Stacks.GetStackTopBP();  // Iterator in ZP.TOP/TOPT
+        
+        // Inline increment
+        INC ZP.TOPL
+        if (Z) { INC ZP.TOPH }
+        
+        // Store updated iterator back with WORD type (safe)
+        LDA #(BASICType.WORD | BASICType.VAR)
+        STA ZP.TOPT
+        LDA Executor.executorOperandBP
+        Stacks.SetStackTopBP();
+        
+        // Get TO value from stack (safe)
+        LDA #0xFE  // -2 from SP
+        Stacks.GetStackNextSP();  // TO in ZP.NEXT/NEXTT
+        
+        // Inline comparison: TO >= iterator?
+        // Compare high bytes first
+        LDA ZP.NEXTH  // TO high
+        CMP ZP.TOPH   // iterator high
+        if (NC)  // TO high < iterator high
+        {
+            // Exit loop
+            States.SetSuccess();
+            break;
+        }
+        if (NZ)  // TO high > iterator high
+        {
+            // Continue loop - jump back
+            CLC
+            LDA ZP.PCL
+            ADC Executor.executorOperandL
+            STA ZP.PCL
+            LDA ZP.PCH
+            ADC Executor.executorOperandH
+            STA ZP.PCH
+            
+            States.SetSuccess();
+            break;
+        }
+        
+        // High bytes equal, check low bytes
+        LDA ZP.NEXTL  // TO low
+        CMP ZP.TOPL   // iterator low
+        if (NC)  // TO < iterator - exit
+        {
+            States.SetSuccess();
+            break;
+        }
+        
+        // TO >= iterator - continue loop
+        CLC
+        LDA ZP.PCL
+        ADC Executor.executorOperandL
+        STA ZP.PCL
+        LDA ZP.PCH
+        ADC Executor.executorOperandH
+        STA ZP.PCH
+        
+        States.SetSuccess();
+        break;
+        
+    } // Single exit block
+    
+#ifdef TRACE
+    LDA #(executeFORITFTrace % 256) STA ZP.TraceMessageL 
+    LDA #(executeFORITFTrace / 256) STA ZP.TraceMessageH 
+    Trace.MethodExit();
+#endif
+}
 }

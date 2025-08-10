@@ -26,6 +26,7 @@ unit Compiler // Compiler.asm
    const uint compilerCanDeclareLocals  = Address.BasicCompilerWorkspace + 11; // 1 byte - flag for statement seen to prevent further local declarations
    const uint compilerForIteratorOffset = Address.BasicCompilerWorkspace + 12; // 1 byte - signed one byte offset, location of for iterator relative to BP
    const uint compilerOptimizingFor     = Address.BasicCompilerWorkspace + 13; // 1 byte - state still good for optimizing FOR to FORF
+   const uint compilerForIteratorType   = Address.BasicCompilerWorkspace + 14; // 1 byte - type of user or intrinsic for iterator variable
    
    // Initialize the opcode buffer for compilation
    // Output: OpCode buffer ready for emission
@@ -2226,7 +2227,9 @@ unit Compiler // Compiler.asm
                     
             // Create the slot by pushing appropriate default value
             LDA ZP.NEXTT          // Get the type we saved
+            
             AND #BASICType.MASK   // Mask off any VAR bit
+            PHA
             switch (A)
             {
                 case BASICType.STRING:
@@ -2260,6 +2263,7 @@ unit Compiler // Compiler.asm
                     Emit.PushWord();
                 }
             } // switch
+            PLA
             
             Error.CheckError();
             if (NC) { break; }
@@ -2267,7 +2271,7 @@ unit Compiler // Compiler.asm
             // Create local using Locals.Add (it handles allocation and linking)
             // Need to set up the type in the node
             ORA #SymbolType.LOCAL  // Combine with LOCAL
-            STA ZP.SymbolType  // Locals.Add expects this
+            STA ZP.SymbolType  // argument for Locals.Add()
             
             // ZP.IDX still has function node, ZP.TOP has name
             Locals.Add();  // Reuse existing Add method

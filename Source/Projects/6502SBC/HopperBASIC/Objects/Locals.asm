@@ -130,7 +130,6 @@ unit Locals
     // Output: C set if found, NC if not found
     //         If found: ZP.IDY = node address
     //                   ZP.ACCL = BP offset (signed: negative for args, positive for locals)
-    //                   ZP.ACCT = type
     // Modifies: ZP.IDY, ZP.ACCL, ZP.LCURRENT
     Find()
     {

@@ -22,7 +22,7 @@ unit BASICTypes // BASICTypes.asm
     const string voidName = "VOID";
     
     // Print BasicType enum value as readable string
-    // Input: A = BasicType enum value, ZP.TOP contains value (or pointer)
+    // Input: A = BasicType enum value
     // Output: Type name printed to serial
     // Preserves: Everything
     PrintType()
@@ -50,7 +50,9 @@ unit BASICTypes // BASICTypes.asm
         else
         {
             // Convert BasicType to corresponding Token and use keyword table
-            switch (X)
+            TXA
+            AND # BASICType.TYPEMASK
+            switch (A)
             {
                 case BASICType.INT:
                 {

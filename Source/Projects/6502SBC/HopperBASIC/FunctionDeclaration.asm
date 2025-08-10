@@ -316,7 +316,8 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 
                 LDA #SymbolType.ARGUMENT
                 ORA #BASICType.VAR 
-                STA ZP.SymbolType
+                STA ZP.SymbolType // argument for Locals.Add()
+                
                 Locals.Add(); // Input: ZP.IDX = function node, ZP.TOP = argument name
                 Error.CheckError();
                 if (NC) { break; }
