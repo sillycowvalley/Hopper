@@ -178,9 +178,9 @@ FUNC Fibo(n)
 ENDFUNC
 
 BEGIN
-    WORD ELAPSED = MILLIS()
-    PRINT FIBO(10)
-    PRINT MILLIS()-ELAPSED;
+    WORD ELAPSED = SECONDS()
+    PRINT FIBO(24)
+    PRINT MILLIS()-SECONDS;
     PRINT " seconds"
 END
 
@@ -280,6 +280,28 @@ BEGIN
     PRINT SECONDS() - START; " seconds"
 END
 RUN
+
+
+
+BEGIN
+    VAR START = SECONDS()
+    VAR S
+    WORD J
+    FOR I = 1 TO 10
+        S = 0
+        FOR J = 1 TO 10
+            S = S + J
+        NEXT J
+        PRINT ".";
+    NEXT I
+    PRINT S
+    PRINT SECONDS() - START; " seconds"
+END
+RUN
+
+
+
+
 
 
 BEGIN
