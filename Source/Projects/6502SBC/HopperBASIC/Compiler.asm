@@ -2120,9 +2120,11 @@ unit Compiler // Compiler.asm
             
             // Mark loop start position for backward jump
             LDA ZP.OpCodeBufferContentSizeL
-            PHA  // Save loop start LSB
+            STA ZP.TOPL
             LDA ZP.OpCodeBufferContentSizeH
-            PHA  // Save loop start MSB
+            STA ZP.TOPH
+            Stacks.PushTop();
+            
             
             // Compile loop body statements until UNTIL
             loop // Statement compilation loop
@@ -2186,10 +2188,7 @@ unit Compiler // Compiler.asm
             
             // === BACKWARD JUMP CALCULATION ===
             // Pop loop start position
-            PLA
-            STA ZP.TOPH  // Loop start position MSB
-            PLA
-            STA ZP.TOPL  // Loop start position LSB
+            Stacks.PopTop();
             
             // Current position = where JUMPZW will be emitted
             LDA ZP.OpCodeBufferContentSizeL
