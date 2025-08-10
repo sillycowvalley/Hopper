@@ -212,8 +212,8 @@ unit Stacks // Stacks.asm
     PopTopNext()
     {
 #ifdef INLINE_EXPANSIONS  
-        DEC ZP.SP
         LDX ZP.SP
+        DEX
         LDA Address.ValueStackLSB, X
         STA ZP.TOPL
         LDA Address.ValueStackMSB, X
@@ -221,8 +221,8 @@ unit Stacks // Stacks.asm
         LDA Address.TypeStackLSB, X
         STA ZP.TOPT 
         
-        DEC ZP.SP
         DEX
+        STX ZP.SP
         LDA Address.ValueStackLSB, X
         STA ZP.NEXTL
         LDA Address.ValueStackMSB, X

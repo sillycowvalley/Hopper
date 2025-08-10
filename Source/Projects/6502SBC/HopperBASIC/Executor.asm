@@ -1939,9 +1939,6 @@ PLX PLA
             INC ZP.PCL
             if (Z) { INC ZP.PCH }
             // BP offset -> A
-           
-            //STA Executor.executorOperandBP
-            //LDA Executor.executorOperandBP
             
             // Load iterator value
             CLC
@@ -1951,20 +1948,21 @@ PLX PLA
             STA ZP.TOPL
             LDA Address.ValueStackMSB, Y
             STA ZP.TOPH
-            
+
+            // Store updated iterator++ back with WORD type
             INC ZP.TOPL
-            if (Z) { INC ZP.TOPH }
-            
-            // Store updated iterator back with WORD type
+            if (Z) 
+            {
+                INC ZP.TOPH 
+                LDA ZP.TOPH
+                STA Address.ValueStackMSB, Y
+            }
             LDA ZP.TOPL
             STA Address.ValueStackLSB, Y
-            LDA ZP.TOPH
-            STA Address.ValueStackMSB, Y
             LDA #(BASICType.WORD | BASICType.VAR)
             STA Address.TypeStackLSB, Y
-            
-            
-            
+
+                        
             // Get TO value from stack (safe)
             LDA #0xFE  // -2 from SP
             CLC
@@ -1974,11 +1972,6 @@ PLX PLA
             STA ZP.NEXTL
             LDA Address.ValueStackMSB, Y
             STA ZP.NEXTH
-            LDA Address.TypeStackLSB, Y
-            AND #BASICType.TYPEMASK  // Strip VAR bit 
-            STA ZP.NEXTT
-            
-            
             
             // Inline comparison: TO >= iterator?
             // Compare high bytes first
@@ -1986,7 +1979,7 @@ PLX PLA
             CMP ZP.TOPH   // iterator high
             if (NC)  // TO high < iterator high
             {
-                // Exit loop
+                // Exit loop: PC += 2
                 CLC
                 LDA ZP.PCL
                 ADC #2
@@ -2021,7 +2014,7 @@ PLX PLA
             CMP ZP.TOPL   // iterator low
             if (NC)  // TO < iterator - exit
             {
-                // Exit loop
+                // Exit loop: PC += 2
                 CLC
                 LDA ZP.PCL
                 ADC #2

@@ -170,22 +170,6 @@ END
 
 
 
-FUNC Fibo(n)
-    IF n <= 1 THEN
-        RETURN n
-    ENDIF
-    RETURN Fibo(n-1) + Fibo(n-2)
-ENDFUNC
-
-BEGIN
-    WORD ELAPSED = SECONDS()
-    PRINT FIBO(24)
-    PRINT MILLIS()-SECONDS;
-    PRINT " seconds"
-END
-
-
-
 
 
 FUNC FOO(C)
@@ -265,10 +249,11 @@ END
 RUN
 
 
+
 BEGIN
     VAR START = SECONDS()
-    WORD S
-    WORD J
+    VAR S
+    VAR J
     FOR I = 1 TO 10
         S = 0
         FOR J = 1 TO 1000
@@ -283,35 +268,19 @@ RUN
 
 
 
-BEGIN
-    VAR START = SECONDS()
-    VAR S
-    WORD J
-    FOR I = 1 TO 10
-        S = 0
-        FOR J = 1 TO 10
-            S = S + J
-        NEXT J
-        PRINT ".";
-    NEXT I
-    PRINT S
-    PRINT SECONDS() - START; " seconds"
-END
-RUN
 
-
-
-
-
+FUNC Fibo(n)
+    IF n <= 1 THEN
+        RETURN n
+    ENDIF
+    RETURN Fibo(n-1) + Fibo(n-2)
+ENDFUNC
 
 BEGIN
-    WORD START = SECONDS()
-    WORD S
-    FOR J = 1 TO 1000
-        S = S + J
-    NEXT J
-    PRINT ".";
-    PRINT S
-    PRINT SECONDS() - START; " seconds"
+    WORD ELAPSED = SECONDS()
+    PRINT FIBO(24)
+    PRINT SECONDS()-ELAPSED;
+    PRINT " seconds"
 END
+
 
