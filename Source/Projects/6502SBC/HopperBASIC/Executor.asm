@@ -1935,19 +1935,65 @@ PLX PLA
         loop // Single exit block
         {
             // Fetch iterator BP offset
-            FetchOperandByte(); // Result in A
-            States.CanContinue();
-            if (NC) { break; }
+            //FetchOperandByte(); // Result in A
+            // clear state
+            LDA #State.Success
+            STA ZP.SystemState
+        
+            // Fetch operand
+            LDA [ZP.PC]
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+           
             STA Executor.executorOperandBP
             
             // Fetch backward jump offset (16-bit)
-            FetchOperandWord(); // Result in executorOperandL/H
-            States.CanContinue();
-            if (NC) { break; }
+            //FetchOperandWord(); // Result in executorOperandL/H
+            // clear state
+            LDA #State.Success
+            STA ZP.SystemState
+           
+            LDA [ZP.PC]
+            STA executorOperandL // Save operand
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+           
+            LDA [ZP.PC]
+            STA executorOperandH // Save operand
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
             
             // Load iterator value (safe)
             LDA Executor.executorOperandBP
-            Stacks.GetStackTopBP();  // Iterator in ZP.TOP/TOPT
+            
+            
+            //Stacks.GetStackTopBP();  // Iterator in ZP.TOP/TOPT
+            CLC
+            ADC ZP.BP
+            TAY
+            LDA Address.ValueStackLSB, Y
+            STA ZP.TOPL
+            LDA Address.ValueStackMSB, Y
+            STA ZP.TOPH
+            LDA Address.TypeStackLSB, Y
+            AND #BASICType.TYPEMASK  // Strip VAR bit 
+            STA ZP.TOPT
+            
             
             // Inline increment
             INC ZP.TOPL
@@ -1957,12 +2003,36 @@ PLX PLA
             LDA #(BASICType.WORD | BASICType.VAR)
             STA ZP.TOPT
             LDA Executor.executorOperandBP
-            Stacks.SetStackTopBP();
+            
+            
+            //Stacks.SetStackTopBP();
+            CLC
+            ADC ZP.BP
+            TAY
+            LDA ZP.TOPL
+            STA Address.ValueStackLSB, Y
+            LDA ZP.TOPH
+            STA Address.ValueStackMSB, Y
+            LDA ZP.TOPT
+            STA Address.TypeStackLSB, Y
             
             // Get TO value from stack (safe)
             LDA #0xFE  // -2 from SP
-            Stacks.GetStackNextSP();  // TO in ZP.NEXT/NEXTT
             
+            
+            // Stacks.GetStackNextSP();  // TO in ZP.NEXT/NEXTT
+            CLC
+            ADC ZP.SP
+            TAY
+            LDA Address.ValueStackLSB, Y
+            STA ZP.NEXTL
+            LDA Address.ValueStackMSB, Y
+            STA ZP.NEXTH
+            LDA Address.TypeStackLSB, Y
+            AND #BASICType.TYPEMASK  // Strip VAR bit 
+            STA ZP.NEXTT
+
+                        
             // Inline comparison: TO >= iterator?
             // Compare high bytes first
             LDA ZP.NEXTH  // TO high
