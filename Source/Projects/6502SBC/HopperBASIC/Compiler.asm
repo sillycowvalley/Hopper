@@ -2486,18 +2486,12 @@ unit Compiler // Compiler.asm
             }
             
             // Save position where JUMPZW operand will be (for patching)
-            
-            LDA ZP.OpCodeBufferContentSizeL
-            PHA     // Push JUMPZW operand position LSB
-            LDA ZP.OpCodeBufferContentSizeH
-            PHA     // Push JUMPZW operand position MSB
-            /*
             LDA ZP.OpCodeBufferContentSizeL
             STA ZP.TOPL
             LDA ZP.OpCodeBufferContentSizeH
             STA ZP.TOPH
             Stacks.PushTop();
-            */
+            
             
             INC ZP.CompilerTemp  // Track that we pushed a patch position 
                         
@@ -2560,18 +2554,12 @@ unit Compiler // Compiler.asm
                 
                 // Save position where JUMPW operand will be (for patching)
                 // This jump skips the ELSE block after THEN executes
-                
-                LDA ZP.OpCodeBufferContentSizeL
-                PHA     // Push JUMPW operand position LSB
-                LDA ZP.OpCodeBufferContentSizeH
-                PHA     // Push JUMPW operand position MSB
-                /*
                 LDA ZP.OpCodeBufferContentSizeL
                 STA ZP.TOPL
                 LDA ZP.OpCodeBufferContentSizeH
                 STA ZP.TOPH
                 Stacks.PushTop();
-                */
+                
                 INC ZP.CompilerTemp  // Track that we pushed another patch position (now 2 positions total)
                 
                 // Emit unconditional jump to ENDIF (placeholder - will be patched)
@@ -2593,11 +2581,10 @@ unit Compiler // Compiler.asm
                 STA ZP.IDYH  // Current position MSB
                 
                 // Get saved JUMPZW operand position (but don't pop yet - we have JUMPW position on top)
-                TSX
-                LDA 0x0104,X  // JUMPZW operand position LSB (skip JUMPW positions)
-                STA ZP.IDXL
-                LDA 0x0103,X  // JUMPZW operand position MSB
-                STA ZP.IDXH
+                Stacks.PopIDX();
+                Stacks.PopIDX();
+                INC ZP.SP // but don't pop yet
+                INC ZP.SP
                 
                 // Calculate forward offset: current_position - jumpzw_operand_position
                 SEC
@@ -2681,13 +2668,7 @@ unit Compiler // Compiler.asm
                 // It should jump here (after ENDIF)
                 
                 // Pop JUMPW operand position
-                
-                PLA
-                STA ZP.IDXH  // JUMPW operand position MSB
-                PLA
-                STA ZP.IDXL  // JUMPW operand position LSB
-                
-                //Stacks.PopIDX();
+                Stacks.PopIDX();
                 DEC ZP.CompilerTemp  // We popped one position
                 
                 // Current position = after ENDIF
@@ -2731,9 +2712,7 @@ unit Compiler // Compiler.asm
                 STA [ZP.IDX], Y   // Patch MSB
                 
                 // Pop and discard the already-patched JUMPZW position
-                PLA  // Discard JUMPZW operand position MSB
-                PLA  // Discard JUMPZW operand position LSB
-                //DEC ZP.SP
+                DEC ZP.SP
                 DEC ZP.CompilerTemp  // We popped the second position
             }
             else
@@ -2759,13 +2738,7 @@ unit Compiler // Compiler.asm
                 // It should jump here (after ENDIF)
                 
                 // Pop JUMPZW operand position
-                
-                PLA
-                STA ZP.IDXH  // JUMPZW operand position MSB
-                PLA
-                STA ZP.IDXL  // JUMPZW operand position LSB
-                
-                //Stacks.PopIDX();
+                Stacks.PopIDX();
                 DEC ZP.CompilerTemp  // We popped the position
                 
                 // Current position = after ENDIF
@@ -2822,9 +2795,7 @@ unit Compiler // Compiler.asm
             {
                 loop
                 {
-                    PLA  // Discard MSB
-                    PLA  // Discard LSB
-                    //DEC ZP.SP
+                    DEC ZP.SP
                     DEC ZP.CompilerTemp
                     if (Z) { break; }  // Done when counter reaches 0
                 }
