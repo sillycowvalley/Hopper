@@ -1253,9 +1253,19 @@ unit CompilerFlow
            
            // Calculate backward jump offset for FORIT
            // Current position + 4 (FORIT size) = position after FORIT
-           CLC
-           LDA ZP.OpCodeBufferContentSizeL
-           ADC #4
+           LDA Compiler.compilerOptimizingFor
+           if (NZ) // Optimized
+           {
+               CLC
+               LDA ZP.OpCodeBufferContentSizeL
+               ADC #2
+           }
+           else
+           {
+               CLC
+               LDA ZP.OpCodeBufferContentSizeL
+               ADC #4
+           }
            STA ZP.IDYL
            LDA ZP.OpCodeBufferContentSizeH
            ADC #0

@@ -1980,17 +1980,6 @@ PLX PLA
             
             
             
-            // Fetch backward jump offset (16-bit)
-            LDA [ZP.PC]
-            STA executorOperandL // Save operand
-            INC ZP.PCL
-            if (Z) { INC ZP.PCH }
-                       
-            LDA [ZP.PC]
-            STA executorOperandH // Save operand
-            INC ZP.PCL
-            if (Z) { INC ZP.PCH }
-                        
             // Inline comparison: TO >= iterator?
             // Compare high bytes first
             LDA ZP.NEXTH  // TO high
@@ -1998,10 +1987,24 @@ PLX PLA
             if (NC)  // TO high < iterator high
             {
                 // Exit loop
+                CLC
+                LDA ZP.PCL
+                ADC #2
+                STA ZP.PCL
+                LDA ZP.PCH
+                ADC #0
+                STA ZP.PCH
                 break;
             }
             if (NZ)  // TO high > iterator high
             {
+                // Fetch backward jump offset (16-bit)
+                LDY #1
+                LDA [ZP.PC]
+                STA executorOperandL // Save operand
+                LDA [ZP.PC], Y
+                STA executorOperandH // Save operand
+                
                 // Continue loop - jump back
                 CLC
                 LDA ZP.PCL
@@ -2010,7 +2013,6 @@ PLX PLA
                 LDA ZP.PCH
                 ADC Executor.executorOperandH
                 STA ZP.PCH
-                
                 break;
             }
             
@@ -2020,8 +2022,22 @@ PLX PLA
             if (NC)  // TO < iterator - exit
             {
                 // Exit loop
+                CLC
+                LDA ZP.PCL
+                ADC #2
+                STA ZP.PCL
+                LDA ZP.PCH
+                ADC #0
+                STA ZP.PCH
                 break;
             }
+            
+            // Fetch backward jump offset (16-bit)
+            LDY #1
+            LDA [ZP.PC]
+            STA executorOperandL // Save operand
+            LDA [ZP.PC], Y
+            STA executorOperandH // Save operand
             
             // TO >= iterator - continue loop
             CLC
@@ -2031,9 +2047,9 @@ PLX PLA
             LDA ZP.PCH
             ADC Executor.executorOperandH
             STA ZP.PCH
-            
             break;
         } // Single exit block
+        
         LDA #State.Success
         STA ZP.SystemState
         
