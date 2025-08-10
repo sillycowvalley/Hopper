@@ -2,6 +2,7 @@ WORD ELAPSED
 WORD I = 0
 
 FUNC ONE()
+    PRINT "ONE"
     RETURN 1
 ENDFUNC
 
@@ -68,151 +69,18 @@ NEW
 int i = 10
 
 func ppr()
-{
     print i
-}
+endfunc
 func pr()
     i = i + 1
     ppr()
 endfunc
 
-pr() : pr()
+heap
 
-pr() : pr() : pr()
-
-
+pr()
 
 
-FUNC Fibonacci(n)
-    IF n <= 1 THEN 
-        RETURN n
-    ENDIF
-    RETURN Fibonacci(n-1) + Fibonacci(n-2)
-ENDFUNC
-
-BEGIN
-    PRINT Fibonacci(10) : ' Should print 55
-END
-
-
-
-
-BEGIN
-    PRINT "Hello World"
-END
-
-BEGIN
-    PRINT "A", "B", "C"
-END
-
-BEGIN
-    PRINT "X"; "Y"; "Z"
-END
-
-BEGIN
-    PRINT "Name:", "John"; " Age:", 25
-END
-
-BEGIN
-    PRINT "Loading",
-    PRINT "Done"
-END
-
-BEGIN
-    PRINT "Progress: ";
-    PRINT "100%"
-END
-
-INT x = 10
-INT y = 20
-BEGIN
-    PRINT "x =", x, "y =", y
-END
-
-STRING name = "Fibonacci"
-INT arg = 10
-INT result = 55
-BEGIN
-    PRINT name; "("; arg; ") = "; result
-END
-
-BEGIN
-    PRINT "Result:", 5 + 3 * 2; " (calculated)"
-END
-
-BEGIN
-    PRINT
-    PRINT "Empty line above"
-    PRINT
-END
-
-BEGIN
-    PRINT "A",
-    PRINT "B",
-    PRINT "C"
-END
-
-BEGIN
-    PRINT "Multi"; "line"; "output"
-    PRINT "Second", "line", "here"
-END
-
-BIT flag = TRUE
-BEGIN
-    PRINT "Flag is", flag
-END
-
-WORD count = 42
-BYTE value = 255
-BEGIN
-    PRINT count; "/"; value
-END
-
-BEGIN
-    PRINT "Start";
-    PRINT;
-    PRINT "End"
-END
-
-
-
-PRINT "Hello World"
-
-PRINT "A", "B", "C"
-
-PRINT "X"; "Y"; "Z"
-
-PRINT "Name:", "John"; " Age:", 25
-
-PRINT "Loading",
-
-PRINT "Progress: ";
-
-INT x = 10
-INT y = 20
-PRINT "x =", x, "y =", y
-
-STRING name = "Fibonacci"
-INT arg = 10
-INT result = 55
-PRINT name; "("; arg; ") = "; result
-
-PRINT "Result:", 5 + 3 * 2; " (calculated)"
-
-PRINT
-
-PRINT "A",
-
-PRINT "Multi"; "line"; "output"
-
-BIT flag = TRUE
-PRINT "Flag is", flag
-
-WORD count = 42
-BYTE value = 255
-PRINT count; "/"; value
-
-PRINT "Start";
 
 
 INT I = 0
@@ -238,10 +106,10 @@ RUN
 
 INT I = 0
 BEGIN
-    IF (I = 10) THEN
-        PRINT "FALSE"
+    IF (I <> 10) THEN
+        PRINT "IF"
     ELSE
-        PRINT "TRUE"
+        PRINT "ELSE"
     ENDIF
 END
 RUN
@@ -257,6 +125,23 @@ BEGIN
 END
 RUN
 
+BEGIN
+    FOR I = 1 TO 10
+        PRINT I
+    NEXT I
+    FOR I = 1 TO 10 STEP 2
+        PRINT I
+    NEXT I
+    FOR I = 10 TO 1 STEP -2
+        PRINT I
+    NEXT I
+END
+
+TRON
+
+
+
+
 
 
 INT INTEGER = 10
@@ -271,4 +156,124 @@ end
 run
 
 vars
+
+FUNC FOO(C)
+    WORD B = C
+    PRINT B
+ENDFUNC
+BEGIN
+    INT A = 1000
+    FOO(A)
+END
+
+
+
+
+
+FUNC Fibo(n)
+    IF n <= 1 THEN
+        RETURN n
+    ENDIF
+    RETURN Fibo(n-1) + Fibo(n-2)
+ENDFUNC
+
+BEGIN
+    WORD ELAPSED = MILLIS()
+    PRINT FIBO(10)
+    PRINT MILLIS()-ELAPSED;
+    PRINT " seconds"
+END
+
+
+
+
+
+FUNC FOO(C)
+    INT B = C
+    RETURN 10 * B
+ENDFUNC
+
+BEGIN
+    INT A
+    A = 5
+    PRINT A
+    PRINT FOO(A)
+END
+RUN
+DASM
+
+BEGIN
+    IF (1 <= 1) THEN
+        PRINT "HERE"
+    ENDIF
+    PRINT "PASSED"
+END
+
+
+
+
+
+BEGIN
+    FOR I = 1 TO 10
+        PRINT I
+    NEXT I
+END
+RUN
+DASM
+
+BEGIN
+    INT J
+    STRING STR = "HELLO"
+    FOR J = 1 TO 10
+        PRINT J
+    NEXT J
+    PRINT STR
+END
+
+BEGIN
+    FOR I = 1 TO 10 STEP 2
+        PRINT I
+    NEXT I
+END
+
+BEGIN
+    FOR I = 10 TO 0 STEP -2
+        PRINT I
+    NEXT I
+END
+
+BEGIN
+    FOR I = 1 TO 10
+        FOR J = 1 TO 10
+            PRINT "J:", J
+        NEXT J
+        PRINT "I", I
+    NEXT I
+END
+
+BEGIN
+    VAR START = SECONDS()
+    WORD S
+    WORD J
+    FOR I = 1 TO 10
+        S = 0
+        FOR J = 1 TO 1000
+            S = S + J
+        NEXT J
+        PRINT ".";
+    NEXT I
+    PRINT S
+    PRINT SECONDS() - START; " seconds"
+END
+
+BEGIN
+    WORD START = SECONDS()
+    WORD S
+    FOR J = 1 TO 1000
+        S = S + J
+    NEXT J
+    PRINT ".";
+    PRINT S
+    PRINT SECONDS() - START; " seconds"
+END
 

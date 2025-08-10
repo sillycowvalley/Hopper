@@ -807,6 +807,12 @@ unit CompilerFlow
                    States.SetFailure();
                    break;
                }
+
+               // restore ZP.IDX after Variables.Find()
+               LDA Compiler.compilerSavedNodeAddrL
+               STA ZP.IDXL
+               LDA Compiler.compilerSavedNodeAddrH
+               STA ZP.IDXH
                 
                // Iterator not found - check if we can create implicit local
                LDA Compiler.compilerCanDeclareLocals
