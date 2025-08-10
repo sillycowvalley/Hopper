@@ -1,4 +1,4 @@
-# Hopper BASIC Specification v2.12
+# Hopper BASIC Specification v2.13
 **Document Type: Language Specification for Hopper BASIC**
 
 ## Project Objectives
@@ -182,6 +182,7 @@ END
 - **`IF expr THEN statements [ELSE statements] ENDIF`** - Conditional execution
 - **`WHILE expr`...`WEND`** - Pre-test conditional loops
 - **`DO`...`UNTIL expr`** - Post-test conditional loops
+- **`FOR var = start TO end [STEP increment]`...`NEXT [var]`** - Counted loops ✅
 - **`RETURN [expr]`** - Return from function
 - **`END`** - End main program
 
@@ -192,23 +193,26 @@ END
 - **Expression compilation** - Infix to postfix opcodes
 - **Stack-based execution** - Using Hopper VM stacks
 - **Buffer management** - 512-byte opcode buffer
-- **Opcode dispatch** - Complete instruction set
+- **Opcode dispatch** - Complete instruction set including FORCHK/FORIT
 - **Jump patching** - Forward and backward jump resolution
+- **Local variable management** - BP-relative addressing for locals and arguments
 
 #### Function System
 - **Function declaration** - FUNC/ENDFUNC syntax
-- **Parameter parsing** - Comma-separated parameters
+- **Parameter parsing** - Comma-separated parameters ✅
+- **Local variables** - Declarations within functions (positive BP offset) ✅
+- **Arguments** - Function parameters (negative BP offset) ✅
 - **Multi-line capture** - Interactive definition
 - **BEGIN/END blocks** - Main program as function
 - **Function storage** - Token stream storage
-- **Arguments system** - Parameter management
+- **Arguments system** - Full parameter management with BP-relative access ✅
 - **Function listing** - FUNCS command display
-- **Symbol table** - Functions and variables
-- **Function calls** - Parse and execute
-- **Function execution** - JIT compilation
+- **Symbol table** - Functions, variables, locals, and arguments
+- **Function calls** - Parse and execute with argument passing
+- **Function execution** - JIT compilation with stack frame management
 - **Call resolution** - CALL→CALLF optimization
 - **Return values** - RETURN statement handling
-- **Call stack** - Recursion support
+- **Call stack** - Full recursion support with BP/SP management
 
 #### Built-in Functions
 - **`ABS(x)`** - Absolute value
@@ -220,13 +224,15 @@ END
 
 ---
 
-## Phase 2: Loop Constructs & Array Support (Required for Benchmarks)
+## Phase 2: Loop Constructs & Array Support (Partially Complete)
 
-### FOR/NEXT Loops
-- ❌ **`FOR var = start TO end [STEP increment]`** - Counted loops
-- ❌ **`NEXT var`** - End of FOR loop
+### FOR/NEXT Loops ✅ COMPLETE
+- **`FOR var = start TO end [STEP increment]`** - Counted loops with automatic iterator as local variable
+- **`NEXT [var]`** - End of FOR loop (var name optional)
+- **Nested loops** - Full support with proper iterator management
+- **Optimization** - FORITF opcode for positive-only ranges with STEP 1
 
-### Array Support
+### Array Support (Not Started)
 - ❌ **Global Arrays** - Single-dimensional arrays
 - ❌ **Array Indexing** - Zero-based access
 - ❌ **Array Parameters** - Pass arrays to functions
@@ -288,7 +294,7 @@ console_command := NEW | LIST | RUN | CLEAR | VARS | FUNCS | MEM | BYE
 ```
 variable_decl := type_keyword identifier [ "=" expression ]
 constant_decl := CONST type_keyword identifier "=" expression
-type_keyword := INT | WORD | BIT | BYTE | STRING
+type_keyword := INT | WORD | BIT | BYTE | STRING | VAR
 ```
 
 ### Program Structure
@@ -302,6 +308,7 @@ statement := variable_decl
            | if_statement
            | while_statement
            | do_until_statement
+           | for_statement
            | function_definition
            | main_program
            | return_statement
@@ -321,15 +328,23 @@ while_statement := WHILE expression { statement }* WEND
 
 do_until_statement := DO { statement }* UNTIL expression
 
+for_statement := FOR identifier "=" expression TO expression [ STEP expression ]
+                { statement }*
+                NEXT [ identifier ]
+
 statement_block := statement [ ":" statement ]*
 
 comment_statement := REM [ comment_text ] | "'" [ comment_text ]
 
 function_definition := FUNC identifier "(" [ parameter_list ] ")"
-                      { statement }*
+                      { local_declaration | statement }*
                       ENDFUNC
 
-main_program := BEGIN { statement }* END
+local_declaration := type_keyword identifier [ "=" expression ]
+
+main_program := BEGIN 
+                { local_declaration | statement }* 
+                END
 
 return_statement := RETURN [ expression ]
 
@@ -392,23 +407,27 @@ string_literal := '"' { character }* '"'
 3. Type checking at compile time
 4. Literal optimization
 5. Jump offset calculation and patching
+6. Local variable and argument allocation with BP-relative addressing
 
 **Execution Phase:**
 1. Stack machine using Hopper VM stacks
-2. Fast opcode dispatch
+2. Fast opcode dispatch including FOR loop opcodes
 3. Runtime type checking and overflow detection
-4. Clean API with register preservation
+4. Stack frame management with BP/SP
+5. Clean API with register preservation
 
 **Opcode Set:**
 - No Operands: Arithmetic, logical, comparison operations
-- One Byte: PUSHBIT, PUSHBYTE, CALL, CALLF, SYSCALL, JUMPB series
+- One Byte: PUSHBIT, PUSHBYTE, PUSHLOCAL, POPLOCAL, CALL, CALLF, SYSCALL, JUMPB series
 - Two Bytes: PUSHINT, PUSHWORD, PUSHCSTRING, PUSHGLOBAL, JUMPW series
+- Three Bytes: FORCHK, FORIT, FORITF (FOR loop management)
 
 ### Memory Management
-- **Symbol Table**: 4-layer architecture for variables/functions
+- **Symbol Table**: 4-layer architecture for variables/functions/locals/arguments
 - **String Architecture**: Immutable strings with pointer comparisons
 - **Buffer Management**: Fixed buffers for input, tokens, opcodes
 - **Zero Page**: Dedicated allocations for BASIC and symbol tables
+- **Stack Frame**: BP-relative addressing for locals (positive offset) and arguments (negative offset)
 
 ### Built on Hopper VM
 - Reuses Serial I/O, memory management, stack operations
@@ -420,23 +439,29 @@ string_literal := '"' { character }* '"'
 
 ## Current Implementation Status
 
-### Phase 1: Core Functionality - COMPLETE
+### Phase 1: Core Functionality - COMPLETE ✅
 All features listed in Phase 1 are fully implemented and tested, including:
 - Complete symbol table system with 4-layer architecture
 - Full expression evaluation with JIT compilation
 - Type system with automatic promotion and comprehensive safety
 - All control flow structures (IF/THEN/ELSE/ENDIF, WHILE/WEND, DO/UNTIL)
-- Function system with recursion and parameter passing
+- Function system with recursion, parameter passing, and local variables
 - PRINT statement with all formatting options
 - All console and debug commands
 - Built-in functions except RND (moved to Phase 5)
 
-### Phase 2: Requirements for Benchmarks - IN PROGRESS
-Missing components needed to run benchmark programs:
-1. FOR/NEXT loops with STEP support
-2. Global array declarations
-3. Array indexing and access
-4. Local variables for functions
+### Phase 2: Loop Constructs & Array Support - PARTIALLY COMPLETE
+**Completed:**
+- ✅ FOR/NEXT loops with STEP support
+- ✅ Nested FOR loops with proper iterator management
+- ✅ Optimized FORITF opcode for positive ranges
+- ✅ Local variables within functions
+- ✅ Function arguments with BP-relative addressing
+
+**Missing components needed to run benchmark programs:**
+1. ❌ Global array declarations
+2. ❌ Array indexing and access
+3. ❌ Array parameters for functions
 
 ---
 
@@ -453,6 +478,7 @@ Missing components needed to run benchmark programs:
 - **Rule #8**: CamelCase identifiers used consistently
 - **Rule #9**: Direct enum syntax without qualification
 - **Rule #10**: Proper switch statement usage without break
+- **Rule #11**: "What changed?" approach for debugging regressions
 
 ### Code Quality
 - Comprehensive error handling with C/NC status
@@ -481,14 +507,56 @@ OK
 11
 ```
 
-### Functions
+### Functions with Arguments and Local Variables
 ```basic
 > FUNC Add(a, b)
-* RETURN a + b
+*   INT sum
+*   sum = a + b
+*   RETURN sum
 * ENDFUNC
 OK
 > PRINT Add(5, 3)
 8
+
+> FUNC Factorial(n)
+*   IF n <= 1 THEN RETURN 1 ENDIF
+*   RETURN n * Factorial(n - 1)
+* ENDFUNC
+OK
+> PRINT Factorial(5)
+120
+```
+
+### FOR/NEXT Loops
+```basic
+> FOR i = 1 TO 5
+*   PRINT i
+* NEXT i
+1
+2
+3
+4
+5
+
+> FOR x = 10 TO 1 STEP -2
+*   PRINT x
+* NEXT
+10
+8
+6
+4
+2
+
+> ' Nested loops
+> FOR i = 1 TO 3
+*   FOR j = 1 TO 3
+*     PRINT i * j;
+*   NEXT j
+*   PRINT
+* NEXT i
+1 2 3
+2 4 6
+3 6 9
 ```
 
 ### Control Flow
@@ -536,4 +604,4 @@ OK
 12345
 ```
 
-The implementation provides a robust foundation with complete function execution, JIT compilation, comprehensive control flow, and all core data types. The primary remaining work for benchmark compatibility is the implementation of FOR/NEXT loops and array support.
+The implementation now provides a robust foundation with complete function execution including arguments and local variables, JIT compilation with stack frame management, comprehensive control flow including FOR/NEXT loops, and all core data types. The primary remaining work for full benchmark compatibility is the implementation of array support (declaration, indexing, and passing as parameters).
