@@ -1935,42 +1935,15 @@ PLX PLA
         loop // Single exit block
         {
             // Fetch iterator BP offset
-                     // Fetch operand
             LDA [ZP.PC]
-           
-            // Advance PC
             INC ZP.PCL
-            if (Z)
-            {
-                INC ZP.PCH
-            }
+            if (Z) { INC ZP.PCH }
+            // BP offset -> A
            
-            STA Executor.executorOperandBP
-            
-            // Fetch backward jump offset (16-bit)
-           
-            LDA [ZP.PC]
-            STA executorOperandL // Save operand
-           
-            // Advance PC
-            INC ZP.PCL
-            if (Z)
-            {
-                INC ZP.PCH
-            }
-           
-            LDA [ZP.PC]
-            STA executorOperandH // Save operand
-           
-            // Advance PC
-            INC ZP.PCL
-            if (Z)
-            {
-                INC ZP.PCH
-            }
+            //STA Executor.executorOperandBP
+            //LDA Executor.executorOperandBP
             
             // Load iterator value
-            LDA Executor.executorOperandBP
             CLC
             ADC ZP.BP
             TAY
@@ -1978,26 +1951,19 @@ PLX PLA
             STA ZP.TOPL
             LDA Address.ValueStackMSB, Y
             STA ZP.TOPH
-            LDA Address.TypeStackLSB, Y
-            AND #BASICType.TYPEMASK  // Strip VAR bit 
-            STA ZP.TOPT
             
-            
-            // Inline increment
             INC ZP.TOPL
             if (Z) { INC ZP.TOPH }
             
             // Store updated iterator back with WORD type
-            LDA Executor.executorOperandBP
-            CLC
-            ADC ZP.BP
-            TAY
             LDA ZP.TOPL
             STA Address.ValueStackLSB, Y
             LDA ZP.TOPH
             STA Address.ValueStackMSB, Y
             LDA #(BASICType.WORD | BASICType.VAR)
             STA Address.TypeStackLSB, Y
+            
+            
             
             // Get TO value from stack (safe)
             LDA #0xFE  // -2 from SP
@@ -2011,7 +1977,19 @@ PLX PLA
             LDA Address.TypeStackLSB, Y
             AND #BASICType.TYPEMASK  // Strip VAR bit 
             STA ZP.NEXTT
-
+            
+            
+            
+            // Fetch backward jump offset (16-bit)
+            LDA [ZP.PC]
+            STA executorOperandL // Save operand
+            INC ZP.PCL
+            if (Z) { INC ZP.PCH }
+                       
+            LDA [ZP.PC]
+            STA executorOperandH // Save operand
+            INC ZP.PCL
+            if (Z) { INC ZP.PCH }
                         
             // Inline comparison: TO >= iterator?
             // Compare high bytes first
