@@ -2209,10 +2209,7 @@ unit Compiler // Compiler.asm
                 }
                 case BASICType.VAR:
                 {
-                    LDA #BASICType.INT
-                    ORA #BASICType.VAR
-                    STA ZP.TOPT
-                    Emit.PushWord();
+                    Emit.PushEmptyVar(); // value zero, type with be (BASICType.INT|BASICType.VAR) by default
                 }
                 default:
                 {

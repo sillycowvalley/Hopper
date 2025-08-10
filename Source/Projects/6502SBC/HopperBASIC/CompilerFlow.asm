@@ -799,14 +799,7 @@ unit CompilerFlow
            {
                // Iterator not found - create implicit local
                // First push a default value to create the stack slot
-               LDA #OpCode.PUSHVOID
-               STA Compiler.compilerOpCode
-               Emit.OpCode();
-               
-               LDA #BASICType.INT
-               ORA #BASICType.VAR
-               STA ZP.TOPT
-               Emit.PushWord();
+               Emit.PushEmptyVar();
                
                Error.CheckError();
                if (NC) { States.SetFailure(); break; }

@@ -62,6 +62,7 @@ unit OpCodes
        ENTER        = 0x1B,  // Enter function frame - push BP, SP->BP
        
        CLEARSCREEN  = 0x1C,
+       PUSHEMPTYVAR = 0x1D,  // create a stack slot with 0 value and type VAR|INT
        
        // === OPCODES WITH ONE BYTE OPERAND (0x40-0x7F) ===
        // Bits 7-6: 01 (one byte operand)
@@ -173,6 +174,8 @@ unit OpCodes
    const string opcodeJUMPNZW = "JUMPNZW";
    const string opcodeFORCHK = "FORCHK";
    const string opcodeFORIT  = "FORIT";
+   const string opcodePUSHEMPTYVAR  = "PUSHEMPTYVAR";
+   const string opcodeCLEARSCREEN  = "CLEARSCREEN";
    
 #if defined(DEBUG) || defined(TRACEEXE)
    // Input: opcode in X
@@ -182,6 +185,20 @@ unit OpCodes
         PHA
         switch (X)
         {
+            case OpCode.PUSHEMPTYVAR:
+            {
+                LDA #(opcodePUSHEMPTYVAR % 256)
+                STA ZP.STRL
+                LDA #(opcodePUSHEMPTYVAR / 256)
+                STA ZP.STRH
+            }
+            case OpCode.CLEARSCREEN:
+            {
+                LDA #(opcodeCLEARSCREEN % 256)
+                STA ZP.STRL
+                LDA #(opcodeCLEARSCREEN / 256)
+                STA ZP.STRH
+            }
             case OpCode.INVALID:
             {
                 LDA #(opcodeINVALID % 256)

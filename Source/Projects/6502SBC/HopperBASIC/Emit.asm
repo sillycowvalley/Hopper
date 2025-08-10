@@ -58,7 +58,7 @@ unit Emit
         LDA #(emitClearScreenTrace % 256) STA ZP.TraceMessageL LDA #(emitClearScreenTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
     #endif
         
-        LDA #OpCode.CLEARSCREEN
+        LDA # OpCode.CLEARSCREEN
         STA Compiler.compilerOpCode
         Emit.OpCode();
         
@@ -412,6 +412,26 @@ unit Emit
 #endif
    }
    
+   // Emit PUSHEMPTYVAR opcode with zero value and VAR|INT type
+   // Input: None
+   // Output: PUSHEMPTYVAR opcode emitted
+   // Modifies: compilerOpCode, buffer state via Emit.OpCode()
+   const string emitPushEmptyVarTrace = "Emit PUSHVAR";
+   PushEmptyVar()
+   {
+#ifdef TRACE
+       LDA #(emitPushEmptyVarTrace % 256) STA ZP.TraceMessageL LDA #(emitPushEmptyVarTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+       
+       LDA #OpCode.PUSHEMPTYVAR
+       STA Compiler.compilerOpCode
+       Emit.OpCode();
+       
+#ifdef TRACE
+       LDA #(emitPushEmptyVarTrace % 256) STA ZP.TraceMessageL LDA #(emitPushEmptyVarTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+   }
+   
    // Emit PUSHINT or PUSHWORD opcode with word value
    // Input: ZP.TOPT = type (determines opcode), compilerOperand1 = LSB, compilerOperand2 = MSB
    // Output: Appropriate opcode emitted with value
@@ -427,7 +447,7 @@ unit Emit
        {
            // Select opcode based on type
            LDA ZP.TOPT
-           CMP #BASICType.INT
+           CMP # BASICType.INT
            if (Z)
            {
                LDA #OpCode.PUSHINT

@@ -356,6 +356,10 @@ PLX PLA
            {
                executeClearScreen();
            }
+           case OpCode.PUSHEMPTYVAR:
+           {
+               executePushEmptyVar();
+           }
            
            // Function operations
            case OpCode.ENTER:
@@ -751,6 +755,30 @@ PLX PLA
        
    #ifdef TRACE
        LDA #(executePush1Trace % 256) STA ZP.TraceMessageL LDA #(executePush1Trace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+   #endif
+   }
+   
+   
+   
+   // Execute PUSHVOID opcode - push VOID 0
+   const string executePushEmptyVarTrace = "PUSHEMPTYVAR // Push VAR|INT 0";
+   executePushEmptyVar()
+   {
+   #ifdef TRACE
+       LDA #(executePushEmptyVarTrace % 256) STA ZP.TraceMessageL LDA #(executePushEmptyVarTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+   #endif
+       
+       // Store VOID 0 in ZP.TOP
+       STZ ZP.TOPL
+       STZ ZP.TOPH
+       LDA # (BASICType.VAR|BASICType.INT)
+       STA ZP.TOPT
+       Stacks.PushTop();
+       
+       States.SetSuccess();
+       
+   #ifdef TRACE
+       LDA #(executePushEmptyVarTrace % 256) STA ZP.TraceMessageL LDA #(executePushEmptyVarTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
    #endif
    }
    
