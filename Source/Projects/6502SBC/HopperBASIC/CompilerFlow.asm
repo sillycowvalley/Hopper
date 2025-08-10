@@ -760,6 +760,11 @@ unit CompilerFlow
            // Save parent FOR iterator offset (for nested loops)
            LDA Compiler.compilerForIteratorOffset
            PHA
+           LDA Compiler.compilerOptimizingFor
+           PHA
+           
+           LDA #1
+           STA Compiler.compilerOptimizingFor
            
            // Skip FOR token
            Tokenizer.NextToken();
@@ -875,6 +880,13 @@ unit CompilerFlow
            Compiler.compileExpressionTree();  // Compile FROM expression
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
+           // push 2 copies
+           Stacks.PushTop();
+           Stacks.PushTop();
+           if (BBR0, ZP.CompilerFlags)
+           {
+               STZ Compiler.compilerOptimizingFor // optimization to FORITF disqualified
+           }
            
            // Store FROM value in iterator (POPLOCAL)
            LDA Compiler.compilerForIteratorOffset
@@ -904,6 +916,12 @@ unit CompilerFlow
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
            
+           Stacks.PushTop();
+           if (BBR0, ZP.CompilerFlags)
+           {
+               STZ Compiler.compilerOptimizingFor // optimization to FORITF disqualified
+           }
+           
            // Check for optional STEP
            LDA ZP.CurrentToken
            CMP #Token.STEP
@@ -917,6 +935,30 @@ unit CompilerFlow
                Compiler.compileExpressionTree();  // Compile STEP expression (leaves on stack)
                Error.CheckError();
                if (NC) { States.SetFailure(); break; }
+               
+               if (BBS0, ZP.CompilerFlags)
+               {
+                   // STEP == 1?
+                   LDA ZP.TOPH
+                   if (NZ)
+                   {
+                       RMB0 ZP.CompilerFlags
+                   }
+                   else
+                   {
+                       LDA #1
+                       CMP ZP.TOPL
+                       if (NZ)
+                       {
+                           RMB0 ZP.CompilerFlags
+                       }
+                   }
+               }
+               if (BBR0, ZP.CompilerFlags)
+               {
+                   STZ Compiler.compilerOptimizingFor // optimization to FORITF disqualified
+               }
+               
            }
            else
            {
@@ -927,24 +969,65 @@ unit CompilerFlow
                Error.CheckError();
                if (NC) { States.SetFailure(); break; }
            }
+           if (BBS0, ZP.CompilerFlags)
+           {
+               // FROM < TO?
+               ComparisonInstructions.LessThan(); // 3 - pops 2, + pushes 1 = 2
+               Stacks.PopA();                     // 2 - pop 1 = 1
+               if (Z)
+               {
+                   Stacks.PopTop(); // 1 - pop 1 = 0
+                   STZ Compiler.compilerOptimizingFor // optimization to FORITF disqualified
+               }
+               else
+               {
+                   STZ ZP.TOPL  
+                   STZ ZP.TOPH
+                   LDA # BASICType.BYTE
+                   Stacks.PushTop(); // 1 + push 1 = 2
+                   
+                   // FROM >= 0
+                   ComparisonInstructions.GreaterEqual();  // 2 - pops 2, + pushes 1 = 1
+                   Stacks.PopA();                          // 1 - pop 1 = 0
+                   if (Z)
+                   {
+                       STZ Compiler.compilerOptimizingFor // optimization to FORITF disqualified
+                   }
+                   else
+                   {
+                       NL(); NOut(); Space(); TOut();
+                   }
+               }
+           }
+           else
+           {
+               Stacks.PopTop(); // 3 - pops 3 = 0
+               Stacks.PopTop();
+               Stacks.PopTop();
+           }
            
-           // Save FORCHK operand position for later patching
-           LDA ZP.OpCodeBufferContentSizeL
-           CLC
-           ADC #2  // Skip opcode and iterator offset to get operand position
-           STA ZP.TOPL
-           LDA ZP.OpCodeBufferContentSizeH
-           ADC #0
-           STA ZP.TOPH
-           Stacks.PushTop();  // Push FORCHK operand position
+           if (BBR0, ZP.CompilerFlags)
+           {
+               STZ Compiler.compilerOptimizingFor
+               // Save FORCHK operand position for later patching
+               LDA ZP.OpCodeBufferContentSizeL
+               CLC
+               ADC #2  // Skip opcode and iterator offset to get operand position
+               STA ZP.TOPL
+               LDA ZP.OpCodeBufferContentSizeH
+               ADC #0
+               STA ZP.TOPH
+               Stacks.PushTop();  // Push FORCHK operand position
            
-           // Emit FORCHK with placeholder forward offset
-           LDA Compiler.compilerForIteratorOffset
-           LDX #0x00  // Placeholder forward offset LSB
-           LDY #0x00  // Placeholder forward offset MSB
-           Emit.ForCheck();
-           Error.CheckError();
-           if (NC) { States.SetFailure(); break; }
+           
+               // Emit FORCHK with placeholder forward offset
+               LDA Compiler.compilerForIteratorOffset
+               LDX #0x00  // Placeholder forward offset LSB
+               LDY #0x00  // Placeholder forward offset MSB
+               Emit.ForCheck();
+               Error.CheckError();
+               if (NC) { States.SetFailure(); break; }
+           }
            
            // Save loop body start position for FORIT's backward jump
            LDA ZP.OpCodeBufferContentSizeL
@@ -1089,57 +1172,69 @@ unit CompilerFlow
            SBC ZP.IDYH
            TAY  // Backward offset MSB
            
-           // Emit FORIT
-           LDA Compiler.compilerForIteratorOffset
-           Emit.ForIterate();
-           Error.CheckError();
-           if (NC) { States.SetFailure(); break; }
+                     
+           // Emit appropriate iterator based on optimization constraints
+           LDA Compiler.compilerOptimizingFor
+           if (NZ) // Optimized
+           {
+               LDA Compiler.compilerForIteratorOffset
+               Emit.ForIterateFast();  // Use FORITF
+           }
+           else
+           {
+               // Emit FORIT
+               LDA Compiler.compilerForIteratorOffset
+               Emit.ForIterate();
+               Error.CheckError();
+               if (NC) { States.SetFailure(); break; }
+               
+               // === PATCH FORCHK WITH FORWARD JUMP ===
+               
+               // Pop FORCHK operand position
+               Stacks.PopIDX();  // Get FORCHK operand position in ZP.IDX
            
-           // === PATCH FORCHK WITH FORWARD JUMP ===
            
-           // Pop FORCHK operand position
-           Stacks.PopIDX();  // Get FORCHK operand position in ZP.IDX
-           
-           // Current position = after FORIT (exit point)
-           LDA ZP.OpCodeBufferContentSizeL
-           STA ZP.IDYL
-           LDA ZP.OpCodeBufferContentSizeH
-           STA ZP.IDYH
-           
-           // Calculate forward offset: exit_point - FORCHK_operand_position
-           SEC
-           LDA ZP.IDYL
-           SBC ZP.IDXL
-           STA ZP.NEXTL
-           LDA ZP.IDYH
-           SBC ZP.IDXH
-           STA ZP.NEXTH
-           
-           // Adjust for PC being 4 bytes past FORCHK when it executes
-           SEC
-           LDA ZP.NEXTL
-           SBC #2
-           STA ZP.NEXTL
-           LDA ZP.NEXTH
-           SBC #0
-           STA ZP.NEXTH
-           
-           // Calculate absolute address for patching
-           CLC
-           LDA ZP.OpCodeBufferL
-           ADC ZP.IDXL
-           STA ZP.IDXL
-           LDA ZP.OpCodeBufferH
-           ADC ZP.IDXH
-           STA ZP.IDXH
-           
-           // Patch FORCHK operands
-           LDY #0  // Point to first operand byte (forward offset LSB)
-           LDA ZP.NEXTL
-           STA [ZP.IDX], Y
-           INY
-           LDA ZP.NEXTH
-           STA [ZP.IDX], Y
+               // Current position = after FORIT (exit point)
+               LDA ZP.OpCodeBufferContentSizeL
+               STA ZP.IDYL
+               LDA ZP.OpCodeBufferContentSizeH
+               STA ZP.IDYH
+               
+               // Calculate forward offset: exit_point - FORCHK_operand_position
+               SEC
+               LDA ZP.IDYL
+               SBC ZP.IDXL
+               STA ZP.NEXTL
+               LDA ZP.IDYH
+               SBC ZP.IDXH
+               STA ZP.NEXTH
+               
+               // Adjust for PC being 4 bytes past FORCHK when it executes
+               SEC
+               LDA ZP.NEXTL
+               SBC #2
+               STA ZP.NEXTL
+               LDA ZP.NEXTH
+               SBC #0
+               STA ZP.NEXTH
+               
+               // Calculate absolute address for patching
+               CLC
+               LDA ZP.OpCodeBufferL
+               ADC ZP.IDXL
+               STA ZP.IDXL
+               LDA ZP.OpCodeBufferH
+               ADC ZP.IDXH
+               STA ZP.IDXH
+               
+               // Patch FORCHK operands
+               LDY #0  // Point to first operand byte (forward offset LSB)
+               LDA ZP.NEXTL
+               STA [ZP.IDX], Y
+               INY
+               LDA ZP.NEXTH
+               STA [ZP.IDX], Y
+           }
            
            // Emit stack cleanup (remove TO and STEP values)
            Emit.DecSp();
@@ -1155,6 +1250,8 @@ unit CompilerFlow
        } // Single exit block
        
        // Restore parent FOR iterator offset
+       PLA
+       STA Compiler.compilerOptimizingFor
        PLA
        STA Compiler.compilerForIteratorOffset
        

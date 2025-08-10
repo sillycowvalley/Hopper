@@ -1462,6 +1462,30 @@ unit Tokenizer // Tokenizer.asm
         
         PLA
     }
+    
+    // Get string literal content from token buffer
+    // Input: None (uses current token which must be STRINGLIT)
+    // Output: ZP.STR = pointer to null-terminated string content
+    // Preserves: Everything except ZP.STR
+    GetTokenStringSTR()
+    {
+        PHA
+        
+        // Calculate address of string content in token buffer
+        // String content starts at TokenLiteralPos offset in token buffer
+        LDA ZP.TokenBufferL
+        CLC
+        ADC ZP.TokenLiteralPosL
+        STA ZP.STRL
+        
+        LDA ZP.TokenBufferH
+        ADC ZP.TokenLiteralPosH
+        STA ZP.STRL
+        
+        PLA
+    }
+    
+    
     Rollback()
     {
         PHA

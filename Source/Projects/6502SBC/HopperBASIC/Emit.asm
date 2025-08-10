@@ -1304,5 +1304,31 @@ unit Emit
        LDA #(emitForIterateTrace % 256) STA ZP.TraceMessageL LDA #(emitForIterateTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
-
+   
+    // Emit FORITF opcode for fast FOR loop iteration (increment by 1, unsigned compare)
+    // Input: A = iterator BP offset (signed)
+    //        X = backward jump offset LSB
+    //        Y = backward jump offset MSB
+    // Output: FORITF opcode emitted with iterator offset and jump offset
+    // Modifies: compilerOpCode, compilerOperand1-3, buffer state via OpCodeWithThreeBytes()
+    const string emitForIterateFastTrace = "Emit FORITF";
+    ForIterateFast()
+    {
+    #ifdef TRACE
+        PHA LDA #(emitForIterateFastTrace % 256) STA ZP.TraceMessageL LDA #(emitForIterateFastTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+    #endif
+        
+        // Set up parameters for emission
+        STA Compiler.compilerOperand1      // Store iterator offset as first operand
+        STX Compiler.compilerOperand2      // Store jump offset LSB
+        STY Compiler.compilerOperand3      // Store jump offset MSB
+        LDA #OpCode.FORITF
+        STA Compiler.compilerOpCode
+        
+        Emit.OpCodeWithThreeBytes();
+        
+    #ifdef TRACE
+        LDA #(emitForIterateFastTrace % 256) STA ZP.TraceMessageL LDA #(emitForIterateFastTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
 }

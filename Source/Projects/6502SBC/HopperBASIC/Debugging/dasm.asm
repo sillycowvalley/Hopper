@@ -532,6 +532,7 @@ unit Dasm
                                 LDA #')' COut();
                             }
                             case OpCode.FORIT:
+                            case OpCode.FORITF:
                             {
                                 // Format: FORIT (iterator_offset, backward_jump)
                                 // ZP.ACCL = iterator_offset

@@ -849,7 +849,10 @@ unit Console // Console.asm
                 
                 validateEndOfCommand();
                 Error.CheckError();
-                if (C) { Commands.CmdDump(); } // Uses ZP.TOP
+                if (C)
+                { 
+                    Commands.CmdDump(); // Uses ZP.TOP
+                } 
                 break;
             }
         }

@@ -243,6 +243,7 @@ BEGIN
 END
 
 BEGIN
+    INT J
     FOR I = 1 TO 10
         FOR J = 1 TO 10
             PRINT "J:", J
@@ -250,6 +251,8 @@ BEGIN
         PRINT "I", I
     NEXT I
 END
+RUN
+
 
 BEGIN
     VAR START = SECONDS()

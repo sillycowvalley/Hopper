@@ -25,6 +25,7 @@ unit Compiler // Compiler.asm
    const uint compilerSavedNodeAddrH    = Address.BasicCompilerWorkspace + 10; // 1 byte - saved node addr high
    const uint compilerCanDeclareLocals  = Address.BasicCompilerWorkspace + 11; // 1 byte - flag for statement seen to prevent further local declarations
    const uint compilerForIteratorOffset = Address.BasicCompilerWorkspace + 12; // 1 byte - signed one byte offset, location of for iterator relative to BP
+   const uint compilerOptimizingFor     = Address.BasicCompilerWorkspace + 13; // 1 byte - state still good for optimizing FOR to FORF
    
    // Initialize the opcode buffer for compilation
    // Output: OpCode buffer ready for emission
@@ -202,6 +203,10 @@ unit Compiler // Compiler.asm
        LDA #(compileExpressionTreelTrace % 256) STA ZP.TraceMessageL LDA #(compileExpressionTreelTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
+       SMB0 ZP.CompilerFlags // constant expression = TRUE
+       LDA ZP.SP
+       PHA
+       
        loop
        {
            // Compile left operand (higher precedence)
@@ -214,6 +219,8 @@ unit Compiler // Compiler.asm
                LDA ZP.CurrentToken
                CMP #Token.OR
                if (NZ) { break; }
+               
+               RMB0 ZP.CompilerFlags // BIT: not an integral constant expression
                
                // Get next token for right operand
                Tokenizer.NextToken();
@@ -233,7 +240,14 @@ unit Compiler // Compiler.asm
            } // loop
            break;
        } // loop
-           
+       
+       if (BBS0, ZP.CompilerFlags)
+       {
+           Stacks.PopTop();
+       }
+       
+       PLA
+       STA ZP.SP
 
 #ifdef TRACE
        LDA #(compileExpressionTreelTrace % 256) STA ZP.TraceMessageL LDA #(compileExpressionTreelTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -264,6 +278,8 @@ unit Compiler // Compiler.asm
                LDA ZP.CurrentToken
                CMP #Token.AND
                if (NZ) { break; }
+               
+               RMB0 ZP.CompilerFlags // BIT: not an integral constant expression
                
                // Get next token for right operand
                Tokenizer.NextToken();
@@ -321,6 +337,8 @@ unit Compiler // Compiler.asm
                    case Token.LE:
                    case Token.GE:
                    {
+                       RMB0 ZP.CompilerFlags // BIT: not an integral constant expression
+                       
                        PHA // Save operator on stack
                        
                        // Get next token for right operand
@@ -389,6 +407,8 @@ unit Compiler // Compiler.asm
                CMP #Token.BITWISE_AND
                if (NZ) { break; }
                
+               RMB0 ZP.CompilerFlags // TODO: expand constant folding
+               
                // Get next token for right operand
                Tokenizer.NextToken();
                Error.CheckError();
@@ -439,6 +459,8 @@ unit Compiler // Compiler.asm
                CMP #Token.BITWISE_OR
                if (NZ) { break; }
                
+               RMB0 ZP.CompilerFlags // TODO: expand constant folding
+               
                // Get next token for right operand
                Tokenizer.NextToken();
                Error.CheckError();
@@ -488,6 +510,8 @@ unit Compiler // Compiler.asm
                CMP #Token.PLUS
                if (Z)
                {
+                   RMB0 ZP.CompilerFlags // TODO: expand constant folding
+                   
                    // Get next token for right operand
                    Tokenizer.NextToken();
                    Error.CheckError();
@@ -510,6 +534,8 @@ unit Compiler // Compiler.asm
                CMP #Token.MINUS
                if (Z)
                {
+                   RMB0 ZP.CompilerFlags // TODO: expand constant folding
+                   
                    // Get next token for right operand
                    Tokenizer.NextToken();
                    Error.CheckError();
@@ -566,6 +592,8 @@ unit Compiler // Compiler.asm
                    case Token.DIVIDE:
                    case Token.MOD:
                    {
+                       RMB0 ZP.CompilerFlags // TODO: expand constant folding
+                       
                        PHA // Save operator on stack
                        
                        // Get next token for right operand
@@ -629,6 +657,8 @@ unit Compiler // Compiler.asm
            {
                case Token.MINUS:
                {
+                   RMB0 ZP.CompilerFlags // TODO: expand constant folding
+                   
                    // Get next token for operand
                    Tokenizer.NextToken();
                    Error.CheckError();
@@ -646,6 +676,8 @@ unit Compiler // Compiler.asm
                }
                case Token.NOT:
                {
+                   RMB0 ZP.CompilerFlags // BIT: not an integral constant expression
+                   
                    // Get next token for operand
                    Tokenizer.NextToken();
                    Error.CheckError();
@@ -1464,6 +1496,7 @@ unit Compiler // Compiler.asm
            {
                case Token.TRUE:
                {
+                   RMB0 ZP.CompilerFlags // BIT: not an integral constant expression
                    // Emit PUSHBIT with value 1
                    LDA #1
                    Emit.PushBit();
@@ -1477,6 +1510,7 @@ unit Compiler // Compiler.asm
                }
                case Token.FALSE:
                {
+                   RMB0 ZP.CompilerFlags // BIT: not an integral constant expression
                    // Emit PUSHBIT with value 0
                    LDA #0
                    Emit.PushBit();
@@ -1528,6 +1562,11 @@ unit Compiler // Compiler.asm
                            if (NC) { break; }
                        }
                    }
+                   if (BBS0, ZP.CompilerFlags)
+                   {
+                       LDA ZP.TOPT
+                       Stacks.PushTop();
+                   }
                    
                    // Get next token
                    Tokenizer.NextToken();
@@ -1536,6 +1575,7 @@ unit Compiler // Compiler.asm
                }
                case Token.STRINGLIT:
                {
+                   RMB0 ZP.CompilerFlags // STRING: not an integral constant expression
                    Emit.PushCString();
                    Error.CheckError();
                    if (NC) { break; }
@@ -1548,6 +1588,7 @@ unit Compiler // Compiler.asm
                
                case Token.IDENTIFIER:
                {
+                   RMB0 ZP.CompilerFlags // not an integral constant expression
                    compileFunctionCallOrVariable();
                    Error.CheckError();
                    break;
@@ -1581,6 +1622,7 @@ unit Compiler // Compiler.asm
                
                case Token.ABS:
                {
+                   RMB0 ZP.CompilerFlags // TODO: expand folding
                    compileAbsFunction();
                    Error.CheckError();
                    if (NC) { break; }
@@ -1588,6 +1630,7 @@ unit Compiler // Compiler.asm
                }
                case Token.MILLIS:
                {
+                   RMB0 ZP.CompilerFlags // not an integral constant expression
                    compileMillisFunction();
                    Error.CheckError();
                    if (NC) { break; }
@@ -1595,6 +1638,7 @@ unit Compiler // Compiler.asm
                }
                case Token.SECONDS:
                {
+                   RMB0 ZP.CompilerFlags // not an integral constant expression
                    compileSecondsFunction();
                    Error.CheckError();
                    if (NC) { break; }
@@ -1602,6 +1646,7 @@ unit Compiler // Compiler.asm
                }
                case Token.RND:
                {
+                   RMB0 ZP.CompilerFlags // not an integral constant expression
                    compileRndFunction();
                    Error.CheckError();
                    if (NC) { break; }
@@ -1609,14 +1654,12 @@ unit Compiler // Compiler.asm
                }
                case Token.PEEK:
                {
+                   RMB0 ZP.CompilerFlags // not an integral constant expression
                    compilePeekFunction();
                    Error.CheckError();
                    if (NC) { break; }
                    break;
                }
-               
-
-               
                default:
                {
                    // Unexpected token

@@ -115,11 +115,14 @@ unit OpCodes
         // Bits 7-6: 11 (three operand bytes)
         // All opcodes in this range have exactly 3 operand bytes
 
-        FORCHK = 0xC0,  // FOR initial check [iterator_offset] [forward_offset_lsb] [forward_offset_msb]
-                        // Compares iterator with limit, jumps forward if out of range
+        FORCHK  = 0xC0,  // FOR initial check [iterator_offset] [forward_offset_lsb] [forward_offset_msb]
+                         // Compares iterator with limit, jumps forward if out of range
                         
-        FORIT  = 0xC1,  // FOR iterate [iterator_offset] [backward_offset_lsb] [backward_offset_msb]  
-                        // Increments iterator by step, checks limit, jumps back if continuing
+        FORIT   = 0xC1,  // FOR iterate [iterator_offset] [backward_offset_lsb] [backward_offset_msb]  
+                         // Increments iterator by step, checks limit, jumps back if continuing
+                        
+        FORITF  = 0xC2,  // FOR iterate [iterator_offset] [backward_offset_lsb] [backward_offset_msb]  
+                         // Built for speed, increments iterator by +1, FROM and TO are +ve and FROM < TO, checks limit (no FORCHK), jumps back if continuing
        
    }
    
@@ -174,6 +177,7 @@ unit OpCodes
    const string opcodeJUMPNZW = "JUMPNZW";
    const string opcodeFORCHK = "FORCHK";
    const string opcodeFORIT  = "FORIT";
+   const string opcodeFORITF  = "FORITF";
    const string opcodePUSHEMPTYVAR  = "PUSHEMPTYVAR";
    const string opcodeCLEARSCREEN  = "CLEARSCREEN";
    
@@ -533,6 +537,13 @@ unit OpCodes
                 LDA #(opcodeFORIT % 256)
                 STA ZP.STRL
                 LDA #(opcodeFORIT / 256)
+                STA ZP.STRH
+            }
+            case OpCode.FORITF:
+            {
+                LDA #(opcodeFORITF % 256)
+                STA ZP.STRL
+                LDA #(opcodeFORITF / 256)
                 STA ZP.STRH
             }
             default:
