@@ -1551,59 +1551,56 @@ PLX PLA
         loop
         {
             // Fetch signed offset operand
-            FetchOperandByte(); // Result in A
-            States.CanContinue();
-            if (C)
+            FetchOperandByte(); // Result in A -> always success
+            
+            // Add signed offset to BP (handles negative naturally)
+            CLC
+            ADC ZP.BP
+            TAY                     // Y = stack position
+            
+            // get the type of the variable slot
+            LDA Address.TypeStackLSB, Y
+            STA ZP.ACCT
+            
+            // Pop value from stack
+            Stacks.PopTop(); // Result in ZP.TOP, ZP.TOPT
+            
+            // Check if variable has VAR bit set
+            LDA ZP.ACCT
+            AND #BASICType.VAR
+            if (Z) // Non-VAR variable - use normal type checking
             {
-                
-                // Add signed offset to BP (handles negative naturally)
-                CLC
-                ADC ZP.BP
-                TAY                     // Y = stack position
-                
-                // get the type of the variable slot
-                LDA Address.TypeStackLSB, Y
-                STA ZP.ACCT
-                
-                // Pop value from stack
-                Stacks.PopTop(); // Result in ZP.TOP, ZP.TOPT
-                
-                // Check if variable has VAR bit set
+                // Move LHS type to correct register for CheckRHSTypeCompatibility
                 LDA ZP.ACCT
-                AND #BASICType.VAR
-                if (Z) // Non-VAR variable - use normal type checking
-                {
-                    // Move LHS type to correct register for CheckRHSTypeCompatibility
-                    LDA ZP.ACCT
-                    AND #BASICType.MASK  // Extract data type
-                    STA ZP.NEXTT 
-                    // Check type compatibility for assignment
-                    Instructions.CheckRHSTypeCompatibility(); // Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
-                    if (NC) 
-                    { 
-                        Error.TypeMismatch();
-                        States.SetFailure();
-                        break; 
-                    }
+                AND #BASICType.MASK  // Extract data type
+                STA ZP.NEXTT 
+                // Check type compatibility for assignment
+                Instructions.CheckRHSTypeCompatibility(); // Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
+                if (NC) 
+                { 
+                    Error.TypeMismatch();
+                    States.SetFailure();
+                    break; 
                 }
-                else
-                {
-                    // VAR type: keep the VAR bit in the slot
-                    LDA ZP.TOPT
-                    ORA #BASICType.VAR
-                    STA ZP.TOPT
-                }
-                
-                // Store to calculated stack position
-                LDA ZP.TOPL
-                STA Address.ValueStackLSB, Y
-                LDA ZP.TOPH
-                STA Address.ValueStackMSB, Y
-                LDA ZP.TOPT
-                STA Address.TypeStackLSB, Y
-                
-                States.SetSuccess();
             }
+            else
+            {
+                // VAR type: keep the VAR bit in the slot
+                LDA ZP.TOPT
+                ORA #BASICType.VAR
+                STA ZP.TOPT
+            }
+            
+            // Store to calculated stack position
+            LDA ZP.TOPL
+            STA Address.ValueStackLSB, Y
+            LDA ZP.TOPH
+            STA Address.ValueStackMSB, Y
+            LDA ZP.TOPT
+            STA Address.TypeStackLSB, Y
+            
+            States.SetSuccess();
+            
             break;
         } // single exit
         
@@ -1624,25 +1621,14 @@ PLX PLA
     #endif
         
         // Fetch signed offset operand
-        FetchOperandByte(); // Result in A
-        States.CanContinue();
-        if (C)
-        {
-            // signed BP offset  in A
-            Stacks.GetStackTopBP(); // masks away VAR bit
-            
-            LDA ZP.TOPT
-            Stacks.PushTop();
-            Error.CheckError();
-            if (NC) 
-            { 
-                States.SetFailure();
-            }
-            else
-            {
-                States.SetSuccess();
-            }
-        }
+        FetchOperandByte(); // Result in A -> always Success
+        
+        // signed BP offset  in A
+        Stacks.GetStackTopBP(); // masks away VAR bit
+        
+        LDA ZP.TOPT
+        Stacks.PushTop(); // always success
+    
         
     #ifdef TRACE
         LDA #(executePushLocalTrace % 256) STA ZP.TraceMessageL LDA #(executePushLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
