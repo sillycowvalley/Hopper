@@ -210,6 +210,15 @@ BEGIN
 END
 
 
+BEGIN
+    BYTE I
+    FOR I = -5 TO 5
+        PRINT I
+    NEXT I
+END
+RUN
+DASM
+
 
 
 
@@ -219,10 +228,12 @@ BEGIN
     NEXT I
 END
 RUN
+
 DASM
 
+
 BEGIN
-    INT J
+    WORD J
     STRING STR = "HELLO"
     FOR J = 1 TO 10
         PRINT J
@@ -268,6 +279,8 @@ BEGIN
     PRINT S
     PRINT SECONDS() - START; " seconds"
 END
+RUN
+
 
 BEGIN
     WORD START = SECONDS()

@@ -61,7 +61,20 @@ unit Executor // Executor.asm
 #ifdef TRACEEXE                
                 Debug.CompactStack();
 #endif
-
+                // Shortcut to Mushrooms:
+                LDA ZP.LastErrorL
+                ORA ZP.LastErrorH
+                if (Z)
+                {
+                    LDA ZP.SystemState
+                    CMP # State.Success        
+                    if (Z)
+                    {
+                        continue;
+                    }
+                }
+                // Regular status and error processing if the above was not true:
+                
                 // Check if any instruction set an error
                 Error.CheckError();
                 if (NC) 
@@ -153,13 +166,8 @@ unit Executor // Executor.asm
        
        loop
        {
-           // Check bounds
-           LDA ZP.PCL
-
            // Fetch opcode using indirect addressing
-           LDY #0
-           LDA [ZP.PC], Y
-           PHA // Save opcode
+           LDA [ZP.PC]
            
            // Advance PC
            INC ZP.PCL
@@ -168,7 +176,6 @@ unit Executor // Executor.asm
                INC ZP.PCH
            }
            
-           PLA // Restore opcode to A
            break;
        }
        
@@ -184,13 +191,12 @@ unit Executor // Executor.asm
    {
        loop
        {
-           LDA ZP.PCL
-           
+           // clear state
+           LDA #State.Success
+           STA ZP.SystemState
+        
            // Fetch operand
-           LDY #0
-           LDA [ZP.PC], Y
-               
-           PHA // Save operand
+           LDA [ZP.PC]
            
            // Advance PC
            INC ZP.PCL
@@ -199,8 +205,6 @@ unit Executor // Executor.asm
                INC ZP.PCH
            }
            
-           PLA // Restore operand to A
-           States.SetSuccess();
            break;
        } // loop exit
    }
@@ -212,12 +216,11 @@ unit Executor // Executor.asm
    {
        loop
        {
-           // Fetch low byte
-           LDA ZP.PCL
+           // clear state
+           LDA #State.Success
+           STA ZP.SystemState
            
-           // Fetch operand
-           LDY #0
-           LDA [ZP.PC], Y
+           LDA [ZP.PC]
            STA executorOperandL // Save operand
            
            // Advance PC
@@ -227,10 +230,7 @@ unit Executor // Executor.asm
                INC ZP.PCH
            }
            
-           // Fetch high byte
-           
-           // Fetch operand
-           LDA [ZP.PC], Y
+           LDA [ZP.PC]
            STA executorOperandH // Save operand
            
            // Advance PC
@@ -239,7 +239,6 @@ unit Executor // Executor.asm
            {
                INC ZP.PCH
            }
-           States.SetSuccess();
            break;
        }
    }
