@@ -149,6 +149,7 @@ unit Dasm
                     case 0x00: // no operands
                     {
                         Space(); Space(); Space(); Space(); Space();
+                        Space(); Space(); Space();
                     }
                     case 0x40:  // one byte operand
                     {
@@ -157,7 +158,8 @@ unit Dasm
                         HOut(); Space();
                         IncIDY();
                         
-                        Space(); Space();
+                        Space(); Space(); 
+                        Space(); Space(); Space();
                     }
                     case 0x80:  // two byte operands
                     {
@@ -165,6 +167,24 @@ unit Dasm
                         STA ZP.ACCL
                         HOut(); Space();
                         IncIDY();
+                        
+                        LDA [ZP.IDY]
+                        STA ZP.ACCH
+                        HOut();
+                        IncIDY();
+                        Space(); Space(); Space();
+                    }
+                    case 0xC0:  // two byte operands
+                    {
+                        LDA [ZP.IDY]
+                        STA ZP.ACCT
+                        HOut(); Space();
+                        IncIDY();
+                        
+                        LDA [ZP.IDY]
+                        STA ZP.ACCL
+                        HOut();
+                        IncIDY(); Space();
                         
                         LDA [ZP.IDY]
                         STA ZP.ACCH
@@ -456,6 +476,112 @@ unit Dasm
                             }
                         }
                         
+                    }
+                    case 0xC0:  // three byte operands
+                    {
+                        Space(); LDA ZP.ACCT HOut(); Space(); LDA ZP.ACCH HOut(); LDA ZP.ACCL HOut(); Space();
+                        switch (X)
+                        {
+                            case OpCode.FORCHK:
+                            {
+                                // Format: FORCHK (iterator_offset, forward_jump)
+                                // ZP.ACCL = iterator_offset
+                                // ZP.ACCH = forward_offset_lsb  
+                                // ZP.ACCT = forward_offset_msb
+                                
+                                LDA #'(' COut();
+                                
+                                // Show iterator offset
+                                LDA #'[' COut();
+                                 // Sign extend the byte to 16-bit word
+                                LDA ZP.ACCT
+                                STA ZP.TOPL
+                                if (PL)  // Positive or zero
+                                {
+                                    STZ ZP.TOPH  // Zero high byte for positive
+                                    if (NZ)      // Don't print + for zero
+                                    {
+                                        LDA #'+' COut();
+                                    }
+                                }
+                                else  // Negative
+                                {
+                                    LDA #0xFF
+                                    STA ZP.TOPH  // Sign extend for negative
+                                }
+                                
+                                LDA #BASICType.INT
+                                STA ZP.TOPT
+                                Tools.PrintDecimalWord();  // Handles negative numbers correctly
+                                LDA #']' COut();
+                                
+                                Space();
+                                
+                                // Calculate and show forward jump target
+                                CLC
+                                LDA ZP.IDYL
+                                ADC ZP.ACCL
+                                STA ZP.TOPL
+                                LDA ZP.IDYH
+                                ADC ZP.ACCH
+                                STA ZP.TOPH
+                                
+                                LDA ZP.TOPH HOut();
+                                LDA ZP.TOPL HOut();
+                                
+                                LDA #')' COut();
+                            }
+                            case OpCode.FORIT:
+                            {
+                                // Format: FORIT (iterator_offset, backward_jump)
+                                // ZP.ACCL = iterator_offset
+                                // ZP.ACCH = backward_offset_lsb
+                                // ZP.ACCT = backward_offset_msb
+                                
+                                LDA #'(' COut();
+                                
+                                // Show iterator offset
+                                LDA #'[' COut();
+                                 // Sign extend the byte to 16-bit word
+                                LDA ZP.ACCT
+                                STA ZP.TOPL
+                                if (PL)  // Positive or zero
+                                {
+                                    STZ ZP.TOPH  // Zero high byte for positive
+                                    if (NZ)      // Don't print + for zero
+                                    {
+                                        LDA #'+' COut();
+                                    }
+                                }
+                                else  // Negative
+                                {
+                                    LDA #0xFF
+                                    STA ZP.TOPH  // Sign extend for negative
+                                }
+                                
+                                LDA #BASICType.INT
+                                STA ZP.TOPT
+                                Tools.PrintDecimalWord();  // Handles negative numbers correctly
+                                LDA #']' COut();
+                                
+                                Space();
+                                
+                                // Calculate and show backward jump target
+                                // Note: This is typically a negative offset
+                                CLC
+                                LDA ZP.IDYL
+                                ADC ZP.ACCL
+                                STA ZP.TOPL
+                                LDA ZP.IDYH
+                                ADC ZP.ACCH
+                                STA ZP.TOPH
+                                
+                                LDA ZP.TOPH HOut();
+                                LDA ZP.TOPL HOut();
+                                
+                                LDA #')' COut();
+                            }
+                        }
                     }
                 }
                         

@@ -11,6 +11,7 @@ unit Executor // Executor.asm
    const uint executorOperandH      = Address.BasicExecutorWorkspace + 10;  // current operand high
    const uint executorTokenAddrL    = Address.BasicExecutorWorkspace + 11;  // token fetch addr low
    const uint executorTokenAddrH    = Address.BasicExecutorWorkspace + 12;  // token fetch addr high
+   const uint executorOperandBP     = Address.BasicExecutorWorkspace + 13;  // BP offset operand (FORCHK and FORIT)
    
    // Reset Hopper VM to clean state before REPL execution
    Reset()
@@ -1608,7 +1609,7 @@ PLX PLA
         if (C)
         {
             // signed BP offset  in A
-            Stacks.GetStack();
+            Stacks.GetStackTop();
             
             LDA ZP.TOPT
             AND #BASICType.TYPEMASK   // masks off VAR bit (0x10)
@@ -1638,12 +1639,220 @@ PLX PLA
         LDA #0x0C  // Form feed
         Serial.WriteChar();
     }
+    
+    // Execute FORCHK opcode - FOR loop initial check
+    // Stack layout: Iterator at BP+offset, TO at BP+offset+1, STEP at BP+offset+2
+    // Operands: [0] = iterator BP offset, [1-2] = forward jump offset (exit loop)
+    // Output: Jump forward if loop should not execute, otherwise fall through
+    // Modifies: A, X, Y, executorOperandL/H, executorOperandBP, ZP.TOP/TOPT, ZP.NEXT/NEXTT
+    const string executeFORCHKTrace = "FORCHK // FOR initial check";
     executeFORCHK()
     {
-        executeNotImplemented();
+    #ifdef TRACE
+        LDA #(executeFORCHKTrace % 256) STA ZP.TraceMessageL LDA #(executeFORCHKTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit block
+        {
+            // Fetch iterator BP offset
+            FetchOperandByte(); // Result in A
+            States.CanContinue();
+            if (NC) { break; }
+            STA Executor.executorOperandBP  // Save iterator offset
+            
+            // Fetch forward jump offset (16-bit)
+            FetchOperandWord(); // Result in executorOperandL/H
+            States.CanContinue();
+            if (NC) { break; }
+            
+            // First, get STEP value to check sign (at BP+offset+2)
+            LDA Executor.executorOperandBP
+            CLC
+            ADC #2
+            Stacks.GetStackTop();  // STEP in ZP.TOP/TOPT
+            
+            // Store direction in X based on STEP sign
+            LDX #0  // Assume positive
+            LDA ZP.TOPH
+            if (MI)
+            {
+                LDX #1  // Negative STEP
+            }
+            
+            // Load iterator value (at BP+offset)
+            LDA Executor.executorOperandBP
+            Stacks.GetStackTop();  // Iterator in ZP.TOP/TOPT, preserves X
+            
+            // Load TO value (at BP+offset+1)
+            LDA Executor.executorOperandBP
+            INC
+            NOP
+            Stacks.GetStackNext();  // TO in ZP.NEXT/NEXTT
+            
+            // Now TOP = iterator, NEXT = TO
+            // Use comparison based on STEP direction
+            CPX #0
+            if (NZ)  // Negative STEP
+            {
+                // For negative STEP: check if iterator >= TO
+                // Continue if iterator >= TO, exit if iterator < TO
+                ComparisonInstructions.GreaterEqual();  // Sets Z if iterator >= TO
+                States.CanContinue();
+                if (NC) { break; }  // Type mismatch
+                
+                if (Z)
+                {
+                    // Iterator >= TO, continue loop
+                    States.SetSuccess();
+                    break;
+                }
+                // Iterator < TO, exit loop
+            }
+            else  // Positive STEP
+            {
+                // For positive STEP: check if iterator <= TO
+                // Continue if iterator <= TO, exit if iterator > TO
+                ComparisonInstructions.LessEqual();  // Sets Z if iterator <= TO
+                States.CanContinue();
+                if (NC) { break; }  // Type mismatch
+                
+                if (Z)
+                {
+                    // Iterator <= TO, continue loop
+                    States.SetSuccess();
+                    break;
+                }
+                // Iterator > TO, exit loop
+            }
+            
+            // Take the forward jump (exit loop)
+            CLC
+            LDA ZP.PCL
+            ADC Executor.executorOperandL
+            STA ZP.PCL
+            LDA ZP.PCH
+            ADC Executor.executorOperandH
+            STA ZP.PCH
+            
+            States.SetSuccess();
+            break;
+            
+        } // Single exit block
+        
+    #ifdef TRACE
+        LDA #(executeFORCHKTrace % 256) STA ZP.TraceMessageL LDA #(executeFORCHKTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
     }
+    
+    // Execute FORIT opcode - FOR loop iterate (increment and check)
+    // Stack layout: Iterator at BP+offset, TO at BP+offset+1, STEP at BP+offset+2
+    // Operands: [0] = iterator BP offset, [1-2] = backward jump offset (continue loop)
+    // Output: Jump backward if loop should continue, otherwise fall through
+    // Modifies: A, X, Y, executorOperandL/H, executorOperandBP, ZP.TOP/TOPT, ZP.NEXT/NEXTT
+    const string executeFORITTrace = "FORIT // FOR iterate";
     executeFORIT()
     {
-        executeNotImplemented();
+    #ifdef TRACE
+        LDA #(executeFORITTrace % 256) STA ZP.TraceMessageL LDA #(executeFORITTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit block
+        {
+            // Fetch iterator BP offset
+            FetchOperandByte(); // Result in A
+            States.CanContinue();
+            if (NC) { break; }
+            STA Executor.executorOperandBP  // Save iterator offset
+            
+            // Fetch backward jump offset (16-bit)
+            FetchOperandWord(); // Result in executorOperandL/H
+            States.CanContinue();
+            if (NC) { break; }
+            
+            // Get STEP value (at BP+offset+2)
+            LDA Executor.executorOperandBP
+            CLC
+            ADC #2
+            Stacks.GetStackNext();  // STEP in ZP.NEXT/NEXTT
+            
+            // Store direction in X based on STEP sign
+            LDX #0  // Assume positive
+            LDA ZP.NEXTH
+            if (MI)
+            {
+                LDX #1  // Negative STEP
+            }
+            
+            // Load iterator value (at BP+offset)
+            LDA Executor.executorOperandBP
+            Stacks.GetStackTop();  // Iterator in ZP.TOP/TOPT, preserves X
+            
+            // Add STEP to iterator (TOP = iterator + NEXT)
+            Instructions.Addition();  // Handles signed/unsigned, type checking, preserves X
+            States.CanContinue(); // preserves X
+            if (NC) { break; }  // Type mismatch or overflow
+            
+            // Store updated iterator back (TOP now has new value)
+            LDA Executor.executorOperandBP
+            Stacks.SetStackTop();  // Store ZP.TOP/TOPT to BP+offset, preserves X
+            
+            // Load TO value for comparison (at BP+offset+1)
+            LDA Executor.executorOperandBP
+            INC A
+            Stacks.GetStackNext();  // TO in ZP.NEXT/NEXTT, preserves X
+            
+            // TOP = updated iterator, NEXT = TO
+            // Use comparison based on STEP direction
+            CPX #0
+            if (NZ)  // Negative STEP
+            {
+                // For negative STEP: check if iterator >= TO
+                // Continue if iterator >= TO, exit if iterator < TO
+                ComparisonInstructions.GreaterEqual();  // Sets Z if iterator >= TO
+                States.CanContinue();
+                if (NC) { break; }  // Type mismatch
+                
+                if (NZ)
+                {
+                    // Iterator < TO, exit loop (fall through)
+                    States.SetSuccess();
+                    break;
+                }
+                // Iterator >= TO, continue loop
+            }
+            else  // Positive STEP
+            {
+                // For positive STEP: check if iterator <= TO
+                // Continue if iterator <= TO, exit if iterator > TO
+                ComparisonInstructions.LessEqual();  // Sets Z if iterator <= TO
+                States.CanContinue();
+                if (NC) { break; }  // Type mismatch
+                
+                if (NZ)
+                {
+                    // Iterator > TO, exit loop (fall through)
+                    States.SetSuccess();
+                    break;
+                }
+                // Iterator <= TO, continue loop
+            }
+            
+            // Take the backward jump (continue loop)
+            CLC
+            LDA ZP.PCL
+            ADC Executor.executorOperandL
+            STA ZP.PCL
+            LDA ZP.PCH
+            ADC Executor.executorOperandH
+            STA ZP.PCH
+            
+            States.SetSuccess();
+            break;
+            
+        } // Single exit block
+        
+    #ifdef TRACE
+        LDA #(executeFORITTrace % 256) STA ZP.TraceMessageL LDA #(executeFORITTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
     }
 }

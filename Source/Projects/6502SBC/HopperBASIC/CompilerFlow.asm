@@ -794,7 +794,7 @@ unit CompilerFlow
            STA ZP.IDXH
            
            // ZP.TOP already contains name pointer from GetTokenString
-           Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, A = BP offset
+           Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, ZP.ACCL = BP offset
            if (NC)
            {
                // Iterator not found - create implicit local
@@ -802,6 +802,12 @@ unit CompilerFlow
                LDA #OpCode.PUSHVOID
                STA Compiler.compilerOpCode
                Emit.OpCode();
+               
+               LDA #BASICType.INT
+               ORA #BASICType.VAR
+               STA ZP.TOPT
+               Emit.PushWord();
+               
                Error.CheckError();
                if (NC) { States.SetFailure(); break; }
                
@@ -811,14 +817,18 @@ unit CompilerFlow
                LDA #(SymbolType.LOCAL|BASICType.VAR)  // LOCAL type (will be updated by FROM expression type)
                STA ZP.SymbolType      // Locals.Add expects this
                
-               Locals.Add(); // Returns BP offset in A
+               Locals.Add();
                Error.CheckError();
                if (NC) { States.SetFailure(); break; }
+               
+               // get BP offset
+               Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, ZP.ACCL = BP offset
                
                INC Compiler.compilerFuncLocals  // Track new local
            }
            
            // Save iterator BP offset (A contains it from either Find or Add)
+           LDA ZP.ACCL
            STA Compiler.compilerForIteratorOffset
            
            // Skip iterator name
@@ -949,7 +959,7 @@ unit CompilerFlow
                CMP #Token.EOF
                if (Z) 
                { 
-                   Error.SyntaxError(); BIT ZP.EmulatorPCL  // Missing NEXT
+                   Error.MissingNext(); BIT ZP.EmulatorPCL  // Missing NEXT
                    States.SetFailure();
                    break; 
                }
@@ -979,7 +989,7 @@ unit CompilerFlow
            CMP #Token.NEXT
            if (NZ)
            {
-               Error.SyntaxError(); BIT ZP.EmulatorPCL  // Expected NEXT
+               Error.MissingNext(); BIT ZP.EmulatorPCL  // Expected NEXT
                States.SetFailure();
                break;
            }
@@ -1010,10 +1020,8 @@ unit CompilerFlow
            LDA Compiler.compilerSavedNodeAddrH
            STA ZP.IDXH
            
-NL(); XOut(); Space(); PrintStringTOP();
-           
            // ZP.TOP already contains name pointer from GetTokenString
-           Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, A = BP offset
+           Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, ZP.ACCL = BP offset
            if (NC)
            {
                Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL  // Iterator not found
@@ -1021,16 +1029,12 @@ NL(); XOut(); Space(); PrintStringTOP();
                break;
            }
 
-PHA 
-NL(); 
-LDA #'N' COut();LDA #':' COut(); PLA PHA HOut();
-LDA #'=' COut(); LDA Compiler.compilerForIteratorOffset HOut();
-PLA
            // Verify it matches the current FOR iterator
+           LDA ZP.ACCL
            CMP Compiler.compilerForIteratorOffset
            if (NZ)
            {
-               Error.SyntaxError(); BIT ZP.EmulatorPCL  // NEXT variable doesn't match FOR
+               Error.NextMismatch(); BIT ZP.EmulatorPCL  // NEXT variable doesn't match FOR
                States.SetFailure();
                break;
            }
@@ -1090,10 +1094,10 @@ PLA
            SBC ZP.IDXH
            STA ZP.NEXTH
            
-           // Adjust for PC being 3 bytes past FORCHK when it executes
+           // Adjust for PC being 4 bytes past FORCHK when it executes
            SEC
            LDA ZP.NEXTL
-           SBC #3
+           SBC #2
            STA ZP.NEXTL
            LDA ZP.NEXTH
            SBC #0

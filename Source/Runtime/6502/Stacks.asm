@@ -85,7 +85,7 @@ unit Stacks // Stacks.asm
     // Input: A = signed offset from BP
     // Output: ZP.TOP = value at BP+offset, ZP.TOPT = type
     // Modifies: A, Y
-    GetStack()
+    GetStackTop()
     {
         CLC
         ADC ZP.BP
@@ -98,9 +98,25 @@ unit Stacks // Stacks.asm
         STA ZP.TOPT
     }
     
+    // Input: A = signed offset from BP
+    // Output: ZP.NEXT = value at BP+offset, ZP.NEXTT = type
+    // Modifies: A, Y
+    GetStackNext()
+    {
+        CLC
+        ADC ZP.BP
+        TAY
+        LDA Address.ValueStackLSB, Y
+        STA ZP.NEXTL
+        LDA Address.ValueStackMSB, Y
+        STA ZP.NEXTH
+        LDA Address.TypeStackLSB, Y
+        STA ZP.NEXTT
+    }
+    
     // Input: A = signed offset from BP, ZP.TOP = value to store
     // Modifies: A, Y
-    SetStack()
+    SetStackTop()
     {
         CLC
         ADC ZP.BP

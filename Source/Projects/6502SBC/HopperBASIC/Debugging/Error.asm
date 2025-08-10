@@ -39,7 +39,11 @@ unit Error // Error.asm
     const uint illegalCharacter = 0x001E;
     const uint cannotRollback = 0x001F
     const uint ctrlC = 0x0020
-    const uint lateDeclaration  = 0x0020;
+    const uint lateDeclaration  = 0x0021;
+    const uint missingNext = 0x0022;
+    const uint nextMismatch = 0x0023
+    
+    
 #else
     // Error message strings (moved from Messages.asm) and made private
     const string syntaxError = "SYNTAX ERROR";
@@ -78,6 +82,10 @@ unit Error // Error.asm
     const string cannotRollback = "CANNOT ROLLBACK";
     const string ctrlC = "BREAK";
     const string lateDeclaration = "NO MORE LOCALS";
+    const string missingNext = "MISSING NEXT";
+    const string nextMismatch = "NEXT MISMATCH";
+    
+    
     
 #endif
     
@@ -230,6 +238,22 @@ unit Error // Error.asm
         LDA #(nextWithoutFor % 256)
         STA ZP.LastErrorL
         LDA #(nextWithoutFor / 256)
+        STA ZP.LastErrorH
+        CLC
+    }
+    MissingNext() 
+    { 
+        LDA #(missingNext % 256)
+        STA ZP.LastErrorL
+        LDA #(missingNext / 256)
+        STA ZP.LastErrorH
+        CLC
+    }
+    NextMismatch() 
+    { 
+        LDA #(nextMismatch % 256)
+        STA ZP.LastErrorL
+        LDA #(nextMismatch / 256)
         STA ZP.LastErrorH
         CLC
     }
