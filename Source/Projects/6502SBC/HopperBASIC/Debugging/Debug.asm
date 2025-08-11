@@ -2259,6 +2259,12 @@ unit Debug // Debug.asm
                 if (Z) { break; }
                 
                 DEX  // Point to actual stack element (SP-1 is top)
+                CPX #0xFF  // Did we wrap around?
+                if (Z) 
+                { 
+                    // We've gone below position 0, stop
+                    break; 
+                }
                 
                 STZ ZP.ACCL
                 LDA Address.TypeStackLSB, X
@@ -2271,6 +2277,15 @@ unit Debug // Debug.asm
                     LDA #'[' 
                     cOut();
                 }
+                
+                LDA Address.TypeStackLSB, X
+                AND #SymbolType.MASK
+                if (NZ)
+                {
+                    LDA #'!' cOut(); cOut(); cOut(); // massive error for SymbolType to sneak through to the stack
+                }
+                
+                
                 // Print type nibble
                 LDA Address.TypeStackLSB, X
                 AND #BASICType.TYPEMASK   // Get just the type nibble (mask off VAR bit)

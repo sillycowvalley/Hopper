@@ -301,12 +301,19 @@ BEGIN
 END
 RUN
 
+INT S
 INT J
 INT I
 BEGIN
+    WORD START = SECONDS()
     FOR I = 1 TO 10
+        S = 0
         FOR J = 1 TO 1000
+            S = S + J
         NEXT J
+        PRINT ".";
     NEXT I
+    PRINT S
+    PRINT SECONDS() - START; " seconds"
 END
 RUN

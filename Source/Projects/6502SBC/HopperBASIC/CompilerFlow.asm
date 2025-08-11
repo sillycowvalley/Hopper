@@ -1080,14 +1080,14 @@ unit CompilerFlow
                // If we created it, then it is (BASICType.VAR|BASICType.INT)
                // At runtime, we'll just switch any VAR to VAR|WORD once.
                LDA Compiler.compilerForIteratorType
-               AND BASICType.VAR
+               AND # BASICType.VAR
                if (Z)
                {
                    // check user variable types that are not VAR for compile time failure
                    // stack TOP  = TO
                    // stack NEXT = FROM
                    LDA Compiler.compilerForIteratorType
-                   AND #BASICType.TYPEMASK 
+                   AND # BASICType.TYPEMASK 
                    switch (A)
                    {
                        case BASICType.BYTE:

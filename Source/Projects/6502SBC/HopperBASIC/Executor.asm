@@ -42,13 +42,13 @@ unit Executor // Executor.asm
                 if (NC) { SEC break; }  // No more symbols
 
                 // Get symbol's value and type
-                Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = type
+                Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = dataType (VAR masked away)
                 // Get symbol's full type (might have VAR bit)
-                Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = type with VAR bit
+                Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = symbolType|dataType (packed)
                 // Store type in type stack (preserving VAR bit for variables)
                 LDA ZP.ACCT
-                Stacks.PushTop(); // type is in A
-                
+                AND # BASICType.MASK // keep VAR when creating the global slots
+                Stacks.PushTop();  // type is in A
                 // Move to next symbol
                 Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
             }
@@ -979,7 +979,7 @@ PLX PLA
 #ifdef TRACE
        LDA #(executePushByteTrace % 256) STA ZP.TraceMessageL LDA #(executePushByteTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-       
+    
        // Fetch operand byte
        FetchOperandByte();
        States.CanContinue();
@@ -1637,8 +1637,15 @@ PLX PLA
             {
                 // Move LHS type to correct register for CheckRHSTypeCompatibility
                 LDA ZP.ACCT
-                AND #BASICType.MASK  // Extract data type
                 STA ZP.NEXTT 
+
+                // VAR slots should never be popped directly but there is a special case for
+                // global shadow variables in FOR iterators (where we are popping and actual
+                // variable slot rather than stack data). Regular stack data should NEVER have
+                // VAR (so most of the time this should be a NOP)
+                LDA ZP.TOPT
+                AND # BASICType.TYPEMASK  // Extract data type
+                STA ZP.TOPT 
                 
                 // Check type compatibility for assignment
                 Instructions.CheckRHSTypeCompatibility(); // preserves Y, Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
@@ -1648,18 +1655,19 @@ PLX PLA
                     States.SetFailure();
                     break; 
                 }
+                // keep LHS type when writing back
+                LDA ZP.NEXTT
+                STA ZP.TOPT
             }
             else  // VAR variable
             {
                 // For VAR variables, update underlying type but keep VAR bit
                 LDA ZP.TOPT
-                AND #BASICType.TYPEMASK      // Get just the new type (strip any VAR from RHS)
                 ORA #BASICType.VAR           // Add VAR bit
                 STA Address.TypeStackLSB, Y  // Update stored type
                 STA ZP.TOPT                  // This is what we'll use for storage
-                STA ZP.ACCT                  // Update for STRING check below
             }
-            
+
             // Store value to global slot
             LDA ZP.TOPT
             STA Address.TypeStackLSB, Y

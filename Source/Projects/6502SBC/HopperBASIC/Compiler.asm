@@ -898,14 +898,10 @@ unit Compiler // Compiler.asm
                 // Create return slot (VOID 0) first
                 if (BBS5, ZP.FLAGS)
                 {
-NL(); LDA #'-' COut();
                     RMB5 ZP.FLAGS // subsequent function calls need RETURN slots
                 }
                 else
                 {
-                
-NL(); LDA #'+' COut();
-
                     Emit.PushVoid();  
                     Error.CheckError();
                     if (NC) 
