@@ -508,7 +508,11 @@ unit AsmPoints
             }
             if ((opCode == OpCode.CPX_n) || (opCode == OpCode.CPY_n))
             {
+#ifdef UNDOCLAUDEFIX
+                tableSizeInWords = operand + 1;
+#else                
                 tableSizeInWords = operand;
+#endif
             }
             if (opCode == opcodeJMPIndex)
             {

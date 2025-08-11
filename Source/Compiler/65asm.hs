@@ -457,6 +457,22 @@ program Assemble
                 uint tableDataAddress = Asm6502.NextAddress;
                 Asm6502.PatchJump(loadLSBTableAddress, tableDataAddress, true);
                 
+#ifdef UNDOCLAUDEFIX                
+                // LSBs
+                for (uint ii=0; ii <= iLastNonDefault; ii++)
+                {
+                    uint methodIndex = jumpList[ii];
+                    Asm6502.AppendCode(byte(methodIndex & 0xFF));
+                }
+                // MSBs
+                tableAddress = Asm6502.NextAddress;
+                Asm6502.PatchJump(loadMSBTableAddress, tableAddress, true);
+                for (uint ii=0; ii <= iLastNonDefault; ii++)
+                {
+                    uint methodIndex = jumpList[ii];
+                    Asm6502.AppendCode(byte(methodIndex >> 8));
+                }
+#else
                 // LSBs
                 for (uint ii=0; ii < iLastNonDefault; ii++)
                 {
@@ -471,6 +487,7 @@ program Assemble
                     uint methodIndex = jumpList[ii];
                     Asm6502.AppendCode(byte(methodIndex >> 8));
                 }
+#endif                
             }
             break;
             

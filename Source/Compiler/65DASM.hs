@@ -125,7 +125,7 @@ program DASM
                 {
                     string nm = methodSymbols["name"];
                     comment = "// -> " + nm + "()";
-                    if (comment == previousComment)
+                    if (false && (comment == previousComment))
                     {
                         comment = "// ->            ''";
                     }
@@ -502,6 +502,31 @@ program DASM
                     
                     OpCode instruction = OpCode(code[index]);
                     uint length      = Asm6502.GetInstructionLength(instruction);
+                    
+                    // Check if this is a valid instruction
+                    AddressingModes mode = Asm6502.GetAddressingMode(instruction);
+                    if (mode == AddressingModes.None)
+                    {
+                        string hexPrefix = "0x";
+                        if (OGMode)
+                        {
+                            hexPrefix = "";
+                        }
+                        // Invalid opcode - mark it in the disassembly
+                        string badOpDisassembly = hexPrefix + address.ToHexString(4);
+                        badOpDisassembly += " ";
+                        badOpDisassembly += " " + hexPrefix + (byte(instruction)).ToHexString(2);
+                        badOpDisassembly += "           ";  // padding
+                        badOpDisassembly += "  .BYTE " + hexPrefix + (byte(instruction)).ToHexString(2);
+                        
+                        string badOpComment = commentPrefix + "INVALID OPCODE!";
+                        hasmFile.Append(badOpDisassembly.Pad(' ', commentColumn) + badOpComment + Char.EOL);
+                        
+                        index    += 1;  // skip just the bad byte
+                        address  += 1;
+                        codeSize += 1;
+                        continue;  // skip normal processing
+                    }
                     
                     instructionCount++;
                     

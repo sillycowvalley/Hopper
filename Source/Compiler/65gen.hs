@@ -94,7 +94,11 @@ program Generate
             }
             else if ((instruction == OpCode.CPY_n) || (instruction == OpCode.CPX_n))
             {
+#ifdef UNDOCLAUDEFIX                
+                tableEntries = code[index+1] + 1;
+#else
                 tableEntries = code[index+1];
+#endif
             }
             if (instruction == callInstruction)
             {

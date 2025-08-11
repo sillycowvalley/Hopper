@@ -3,6 +3,8 @@ unit Asm6502
     // Undocumented: 
     // https://www.nesdev.org/undocumented_opcodes.txt
     
+    #define UNDOCLAUDEFIX
+    
     <string,string> debugInfo;
     <string,string> labelInfo;
     <string,bool> debugInfoLineUsed;
@@ -675,10 +677,20 @@ unit Asm6502
             case AddressingModes.ZeroPageRelative:  { length = 3; }
             default:
             { 
-                string name = GetName(instruction); Print("0x" + (uint(instruction)).ToHexString(2) + ":" + name); Die(0x0B); 
+                //string name = GetName(instruction); Print("0x" + (uint(instruction)).ToHexString(2) + ":" + name); Die(0x0B); 
+                // Instead of Die(0x0B), treat unknown opcodes as single byte
+                // This allows disassembly to continue
+                length = 1;
             }
         }
         return length;
+    }
+    
+    bool IsValidOpcode(byte opcode)
+    {
+        OpCode instruction = OpCode(opcode);
+        AddressingModes mode = GetAddressingMode(instruction);
+        return (mode != AddressingModes.None);
     }
     
     AddressingModes GetAddressingMode(OpCode instruction)
