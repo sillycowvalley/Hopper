@@ -24,9 +24,10 @@ unit Compiler // Compiler.asm
    const uint compilerSavedNodeAddrL     = Address.BasicCompilerWorkspace + 9;  // 1 byte - saved node addr low
    const uint compilerSavedNodeAddrH     = Address.BasicCompilerWorkspace + 10; // 1 byte - saved node addr high
    const uint compilerCanDeclareLocals   = Address.BasicCompilerWorkspace + 11; // 1 byte - flag for statement seen to prevent further local declarations
-   const uint compilerForIteratorOffset  = Address.BasicCompilerWorkspace + 12; // 1 byte - signed one byte offset, location of for iterator relative to BP
+   const uint compilerForIteratorOffset  = Address.BasicCompilerWorkspace + 12; // 1 byte - signed one byte offset, actual location of for iterator relative to BP
    const uint compilerForIteratorType    = Address.BasicCompilerWorkspace + 13; // 1 byte - type of user or intrinsic for iterator variable
    const uint compilerGlobalIteratorSlot = Address.BasicCompilerWorkspace + 14; // 1 byte - slot of global being shadowed
+   const uint compilerForIteratorBP      = Address.BasicCompilerWorkspace + 15; // 1 byte - signed one byte offset, location of for iterator relative to BP (according to Locals.Find)
    
    // Initialize the opcode buffer for compilation
    // Output: OpCode buffer ready for emission
@@ -895,15 +896,25 @@ unit Compiler // Compiler.asm
             if (Z)
             {
                 // Create return slot (VOID 0) first
-                Emit.PushVoid();  
-                Error.CheckError();
-                if (NC) 
-                { 
-                    PLA  // Clean up stack
-                    PLA
-                    break; 
+                if (BBS5, ZP.FLAGS)
+                {
+NL(); LDA #'-' COut();
+                    RMB5 ZP.FLAGS // subsequent function calls need RETURN slots
                 }
+                else
+                {
                 
+NL(); LDA #'+' COut();
+
+                    Emit.PushVoid();  
+                    Error.CheckError();
+                    if (NC) 
+                    { 
+                        PLA  // Clean up stack
+                        PLA
+                        break; 
+                    }
+                }
                 // Get next token after LPAREN to start argument parsing
                 Tokenizer.NextToken();
                 Error.CheckError();

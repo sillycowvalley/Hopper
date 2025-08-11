@@ -355,8 +355,9 @@ unit Statement // Statement.asm
             case Token.CLS:
             case Token.IDENTIFIER: // Could be assignment or function call
             {
-                RMB4 ZP.FLAGS // Bit 4 - NOT initialization mode for global variables calling ExecuteOpCodes
-                ExecuteStatement();
+                SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
+                SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
+                Statement.ExecuteStatement();
             }
             
             case Token.CONST:
@@ -617,7 +618,8 @@ unit Statement // Statement.asm
                         Error.CheckError();
                         if (C)
                         {
-                            SMB4 ZP.FLAGS // Bit 4 - initialization mode for global variables calling ExecuteOpCodes
+                            RMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes) - DON'T HERE so RMB4
+                            SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
                             Statement.EvaluateExpression();
                             Error.CheckError();
                         }

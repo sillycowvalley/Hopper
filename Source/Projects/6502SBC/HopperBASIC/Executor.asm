@@ -169,7 +169,7 @@ unit Executor // Executor.asm
        
        loop // Single exit block
        {
-           if (BBR4, ZP.FLAGS) // Bit 4 - initialization mode for global variables calling ExecuteOpCodes?
+           if (BBS4, ZP.FLAGS) // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
            {
                Executor.LoadGlobals();
                Error.CheckError();
@@ -240,7 +240,7 @@ unit Executor // Executor.asm
            } // loop
            break;
        } // Single exit block
-       if (BBR4, ZP.FLAGS) // Bit 4 - initialization mode for global variables calling ExecuteOpCodes?
+       if (BBS4, ZP.FLAGS) // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
        {
            Executor.SaveGlobals();
        }
@@ -700,14 +700,8 @@ PLX PLA
            TAX                     
            DEX     
            // X = return slot index // SP-1
+           PHX
            
-           // Store return value in return slot
-           LDA ZP.TOPL
-           STA Address.ValueStackLSB, X
-           LDA ZP.TOPH
-           STA Address.ValueStackMSB, X
-           LDA ZP.TOPT
-           STA Address.TypeStackLSB, X
            
            Stacks.PopBP();
            Stacks.PopXID();
@@ -715,10 +709,19 @@ PLX PLA
            LDA ZP.CSP
            if (Z) // CallStack pointer == 0?
            {
+               PLX // discard
                States.SetReturn(); // popped back down to entry call
            }
            else
            {
+               // Store return value in return slot
+               PLX
+               LDA ZP.TOPL
+               STA Address.ValueStackLSB, X
+               LDA ZP.TOPH
+               STA Address.ValueStackMSB, X
+               LDA ZP.TOPT
+               STA Address.TypeStackLSB, X
                States.SetSuccess();
            }
            break;

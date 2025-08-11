@@ -784,6 +784,10 @@ unit CompilerFlow
            PHA
            LDA Compiler.compilerForIteratorType
            PHA
+           LDA Compiler.compilerGlobalIteratorSlot
+           PHA
+           LDA Compiler.compilerForIteratorBP
+           PHA
            LDA ZP.SP // JIT was called from a running process - preserve the stack
            PHA
            LDA ZP.CompilerFlags
@@ -876,11 +880,14 @@ unit CompilerFlow
                     
                     Locals.Add();          // Creates local
                     
-                    // get BP offset
+
+                    // Now find it to get the BP offset
                     Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, ZP.ACCL = BP offset
-                    LDA ZP.ACCL
-                    STA Compiler.compilerForIteratorOffset
+                    LDA ZP.ACCL     // Get the offset from Find()
+                    STA Compiler.compilerForIteratorBP // keep the actual offset for the NEXT check
                     
+                    LDA Compiler.compilerFuncLocals
+                    STA Compiler.compilerForIteratorOffset  // BP offset for our shadow puppet!
                     
                     // Emit POPLOCAL to initialize shadow from global
                     LDA Compiler.compilerForIteratorOffset
@@ -1306,8 +1313,6 @@ unit CompilerFlow
            LDA Compiler.compilerSavedNodeAddrH
            STA ZP.IDXH
            
-NL(); XOut(); PrintStringTOP();           
-
            // ZP.TOP already contains name pointer from GetTokenString
            Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, ZP.ACCL = BP offset
            if (NC)
@@ -1316,14 +1321,11 @@ NL(); XOut(); PrintStringTOP();
                States.SetFailure();
                break;
            }
-           
-AOut();
-LDA Compiler.compilerForIteratorOffset HOut();
          
            // ZP.ACCL = BP offset
            // Verify it matches the current FOR iterator
            LDA ZP.ACCL
-           CMP Compiler.compilerForIteratorOffset
+           CMP Compiler.compilerForIteratorBP
            if (NZ)
            {
                Error.NextMismatch(); BIT ZP.EmulatorPCL  // NEXT variable doesn't match FOR
@@ -1484,9 +1486,14 @@ LDA Compiler.compilerForIteratorOffset HOut();
        PLA
        STA ZP.SP
        PLA
+       STA Compiler.compilerForIteratorBP
+       PLA
+       STA Compiler.compilerGlobalIteratorSlot
+       PLA
        STA Compiler.compilerForIteratorType
        PLA
        STA Compiler.compilerForIteratorOffset
+           
        
     #ifdef TRACE
        LDA #(compileForStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileForStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();

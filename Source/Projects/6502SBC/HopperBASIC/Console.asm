@@ -1085,7 +1085,8 @@ unit Console // Console.asm
             // Execute the initialization statement
             Tokenizer.NextToken(); // Get first token
             
-            RMB4 ZP.FLAGS // Bit 4 - not initialization mode for global variables calling ExecuteOpCodes
+            SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
+            SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
             // These are simple assignments (FOO = 42, rather than INT FOO = 42)
             Statement.ExecuteStatement();
             Error.CheckError();
@@ -1197,7 +1198,8 @@ unit Console // Console.asm
                 Tokenizer.NextToken();
                 
                 
-                RMB4 ZP.FLAGS // Bit 4 - not initialization mode for global variables calling ExecuteOpCodes
+                SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
+                SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
                 Statement.EvaluateExpression(); // executes 'identifier()' as function call
               
                 break;

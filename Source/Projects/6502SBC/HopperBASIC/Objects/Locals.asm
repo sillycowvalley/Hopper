@@ -774,4 +774,51 @@ unit Locals
         PLY
         PLA
     }
+    
+    // Count the number of locals/arguments in the function's list
+    // Input: ZP.IDX = function node address
+    // Output: A = count, C set (always succeeds)
+    // Munts: ZP.LCURRENT
+    Count()
+    {
+        PHX
+        PHY
+        
+        // Get locals/arguments list head from function node
+        LDY #Objects.snLocals
+        LDA [ZP.IDX], Y
+        STA ZP.LCURRENTL
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.LCURRENTH
+        
+        // Count nodes
+        LDX #0  // Counter
+        loop
+        {
+            // Check if we've reached end of list
+            LDA ZP.LCURRENTL
+            ORA ZP.LCURRENTH
+            if (Z)
+            {
+                TXA  // Return count in A
+                SEC  // Success
+                break;
+            }
+            
+            // Move to next node
+            INX  // Increment count
+            LDY #lnNext
+            LDA [ZP.LCURRENT], Y
+            PHA
+            INY
+            LDA [ZP.LCURRENT], Y
+            STA ZP.LCURRENTH
+            PLA
+            STA ZP.LCURRENTL
+        }
+        
+        PLY
+        PLX
+    }
 }

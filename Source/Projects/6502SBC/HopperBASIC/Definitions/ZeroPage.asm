@@ -37,8 +37,8 @@ unit ZP // ZeroPage.asm
     // FLAGS bits:
     // Bit 7 - (unused in BASIC)
     // Bit 6 - (unused in BASIC)
-    // Bit 5 - (unused in BASIC)
-    // Bit 4 - initialization mode for global variables calling ExecuteOpCodes
+    // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
+    // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
     // Bit 3 - (reserved for REPL mode flag - not currently in use)
     // Bit 2 - TRON | TROFF (trace on/off)
     // Bit 1 - Temporary exit flag for Console.processTokens() loop control
@@ -132,10 +132,11 @@ unit ZP // ZeroPage.asm
     const byte CompilerTokenPosL    = 0x34;  // Compiler pos low (alias)
     const byte CompilerTokenPosH    = 0x35;  // Compiler pos high
     const byte CompilerFlags        = 0x36;  // Compilation state flags: 
-                                             //     BIT0 - the current expression being evaluated is numeric (INT|WORD|BYTE) and constant - used by compileExpressionTree()
-                                             //     BIT1 - we own the implicit variable - used by CompileForStatement
-                                             //     BIT2 - we used a global for our implicit variable - used by CompileForStatement
-                                             //     BIT3 - we're creating FORITF (rather than FORCHK & FORIT)
+                                             //     BIT 0 - the current expression being evaluated is numeric (INT|WORD|BYTE) and constant - used by compileExpressionTree()
+                                             //     BIT 1 - we own the implicit variable - used by CompileForStatement
+                                             //     BIT 2 - we used a global for our implicit variable - used by CompileForStatement
+                                             //     BIT 3 - we're creating FORITF (rather than FORCHK & FORIT)
+                                             
     const byte OpCodeTemp           = 0x37;  // Temporary opcode construction
     
     // Buffer pointers - point to the currently active buffer set (either BASIC or REPL)

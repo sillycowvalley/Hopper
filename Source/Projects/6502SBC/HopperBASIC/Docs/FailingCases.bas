@@ -301,14 +301,12 @@ BEGIN
 END
 RUN
 
-INT S
+INT J
 INT I
 BEGIN
-    VAR START = SECONDS()
     FOR I = 1 TO 10
-        PRINT ".";
+        FOR J = 1 TO 1000
+        NEXT J
     NEXT I
-    PRINT S
-    PRINT SECONDS() - START; " seconds"
 END
 RUN
