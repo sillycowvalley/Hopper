@@ -1034,450 +1034,7 @@ unit Compiler // Compiler.asm
         PLX
         PLA
     }
-   
-   // Compile ABS(expression) function call
-   const string compileAbsFunctionTrace = "CompABS";
-   compileAbsFunction()
-   {
-   #ifdef TRACE
-       LDA #(compileAbsFunctionTrace % 256) STA ZP.TraceMessageL 
-       LDA #(compileAbsFunctionTrace / 256) STA ZP.TraceMessageH 
-       Trace.MethodEntry();
-   #endif
-       
-       loop // Single exit
-       {
-           // Expect opening parenthesis
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           LDA ZP.CurrentToken
-           CMP #Token.LPAREN
-           if (NZ) 
-           { 
-               Error.SyntaxError(); BIT ZP.EmulatorPCL
-               break; 
-           }
-           
-           // Get argument expression
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           // Compile argument
-           compileExpressionTree();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           // Expect closing parenthesis
-           LDA ZP.CurrentToken
-           CMP #Token.RPAREN
-           if (NZ) 
-           { 
-               Error.SyntaxError(); BIT ZP.EmulatorPCL
-               break; 
-           }
-           
-           // Move past closing parenthesis
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           // Emit ABS SYSCALL
-           Emit.Abs();
-           
-           SEC // Success
-           break;
-       }
-       
-   #ifdef TRACE
-       LDA #(compileAbsFunctionTrace % 256) STA ZP.TraceMessageL 
-       LDA #(compileAbsFunctionTrace / 256) STA ZP.TraceMessageH 
-       Trace.MethodExit();
-   #endif
-   }
-   
-   // Compile DELAY(expression) function call
-   const string compileDelayFunctionTrace = "CompDELAY";
-   compileDelayFunction()
-   {
-   #ifdef TRACE
-       LDA #(compileDelayFunctionTrace % 256) STA ZP.TraceMessageL 
-       LDA #(compileDelayFunctionTrace / 256) STA ZP.TraceMessageH 
-       Trace.MethodEntry();
-   #endif
-       
-       loop // Single exit
-       {
-           // Expect opening parenthesis
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           LDA ZP.CurrentToken
-           CMP #Token.LPAREN
-           if (NZ) 
-           { 
-               Error.SyntaxError(); BIT ZP.EmulatorPCL
-               break; 
-           }
-           
-           // Get argument expression
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           // Compile argument
-           compileExpressionTree();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           // Expect closing parenthesis
-           LDA ZP.CurrentToken
-           CMP #Token.RPAREN
-           if (NZ) 
-           { 
-               Error.SyntaxError(); BIT ZP.EmulatorPCL
-               break; 
-           }
-           
-           // Move past closing parenthesis
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           // Emit DELAY SYSCALL
-           Emit.Delay();
-           
-           SEC // Success
-           break;
-       }
-       
-   #ifdef TRACE
-       LDA #(compileDelayFunctionTrace % 256) STA ZP.TraceMessageL 
-       LDA #(compileDelayFunctionTrace / 256) STA ZP.TraceMessageH 
-       Trace.MethodExit();
-   #endif
-   }
-   
-   
-
-   // Compile MILLIS() function call
-   const string compileMillisFunctionTrace = "CompMILLIS";
-   compileMillisFunction()
-   {
-   #ifdef TRACE
-       LDA #(compileMillisFunctionTrace % 256) STA ZP.TraceMessageL 
-       LDA #(compileMillisFunctionTrace / 256) STA ZP.TraceMessageH 
-       Trace.MethodEntry();
-   #endif
-       
-       loop // Single exit
-       {
-           // Expect opening parenthesis
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           LDA ZP.CurrentToken
-           CMP #Token.LPAREN
-           if (NZ) 
-           { 
-               Error.SyntaxError(); BIT ZP.EmulatorPCL
-               break; 
-           }
-           
-           // Expect immediate closing parenthesis (no arguments)
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           LDA ZP.CurrentToken
-           CMP #Token.RPAREN
-           if (NZ) 
-           { 
-               Error.SyntaxError(); BIT ZP.EmulatorPCL
-               break; 
-           }
-           
-           // Move past closing parenthesis
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           // Emit MILLIS SYSCALL
-           Emit.Millis();
-           
-           SEC // Success
-           break;
-       }
-       
-   #ifdef TRACE
-       LDA #(compileMillisFunctionTrace % 256) STA ZP.TraceMessageL 
-       LDA #(compileMillisFunctionTrace / 256) STA ZP.TraceMessageH 
-       Trace.MethodExit();
-   #endif
-   }
-   
-   // Compile SECONDS() function call
-   const string compileSecondsFunctionTrace = "CompSECONDS";
-   compileSecondsFunction()
-   {
-   #ifdef TRACE
-       LDA #(compileSecondsFunctionTrace % 256) STA ZP.TraceMessageL 
-       LDA #(compileSecondsFunctionTrace / 256) STA ZP.TraceMessageH 
-       Trace.MethodEntry();
-   #endif
-       
-       loop // Single exit
-       {
-           // Expect opening parenthesis
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           LDA ZP.CurrentToken
-           CMP #Token.LPAREN
-           if (NZ) 
-           { 
-               Error.SyntaxError(); BIT ZP.EmulatorPCL
-               break; 
-           }
-           
-           // Expect immediate closing parenthesis (no arguments)
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           LDA ZP.CurrentToken
-           CMP #Token.RPAREN
-           if (NZ) 
-           { 
-               Error.SyntaxError(); BIT ZP.EmulatorPCL
-               break; 
-           }
-           
-           // Move past closing parenthesis
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           // Emit SECONDS SYSCALL
-           Emit.Seconds();
-           
-           SEC // Success
-           break;
-       }
-       
-   #ifdef TRACE
-       LDA #(compileSecondsFunctionTrace % 256) STA ZP.TraceMessageL 
-       LDA #(compileSecondsFunctionTrace / 256) STA ZP.TraceMessageH 
-       Trace.MethodExit();
-   #endif
-   }
-
-   // Compile RND(expression) function call
-   const string compileRndFunctionTrace = "CompRND";
-   compileRndFunction()
-   {
-   #ifdef TRACE
-       LDA #(compileRndFunctionTrace % 256) STA ZP.TraceMessageL 
-       LDA #(compileRndFunctionTrace / 256) STA ZP.TraceMessageH 
-       Trace.MethodEntry();
-   #endif
-       
-       loop // Single exit
-       {
-           // Expect opening parenthesis
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           LDA ZP.CurrentToken
-           CMP #Token.LPAREN
-           if (NZ) 
-           { 
-               Error.SyntaxError(); BIT ZP.EmulatorPCL
-               break; 
-           }
-           
-           // Get max value argument
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           // Compile argument
-           compileExpressionTree();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           // Expect closing parenthesis
-           LDA ZP.CurrentToken
-           CMP #Token.RPAREN
-           if (NZ) 
-           { 
-               Error.SyntaxError(); BIT ZP.EmulatorPCL
-               break; 
-           }
-           
-           // Move past closing parenthesis
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           // Emit RND SYSCALL
-           Emit.Rnd();
-           
-           SEC // Success
-           break;
-       }
-       
-   #ifdef TRACE
-       LDA #(compileRndFunctionTrace % 256) STA ZP.TraceMessageL  LDA #(compileRndFunctionTrace / 256) STA ZP.TraceMessageH   Trace.MethodExit();
-   #endif
-   }
-
-   // Compile PEEK(address) function call
-   const string compilePeekFunctionTrace = "CompPEEK";
-   compilePeekFunction()
-   {
-   #ifdef TRACE
-       LDA #(compilePeekFunctionTrace % 256) STA ZP.TraceMessageL LDA #(compilePeekFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-   #endif
-       
-       loop // Single exit
-       {
-           // Expect opening parenthesis
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           LDA ZP.CurrentToken
-           CMP #Token.LPAREN
-           if (NZ) 
-           { 
-               Error.SyntaxError(); BIT ZP.EmulatorPCL
-               break; 
-           }
-           
-           // Get address argument
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           // Compile address expression
-           compileExpressionTree();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           // Expect closing parenthesis
-           LDA ZP.CurrentToken
-           CMP #Token.RPAREN
-           if (NZ) 
-           { 
-               Error.SyntaxError(); BIT ZP.EmulatorPCL
-               break; 
-           }
-           
-           // Move past closing parenthesis
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           // Emit PEEK SYSCALL
-           Emit.Peek();
-           
-           SEC // Success
-           break;
-       }
-       
-   #ifdef TRACE
-       LDA #(compilePeekFunctionTrace % 256) STA ZP.TraceMessageL LDA #(compilePeekFunctionTrace / 256) STA ZP.TraceMessageH  Trace.MethodExit();
-   #endif
-   }
-   
-   // Compile POKE statement
-   // Input: ZP.CurrentToken = POKE token
-   // Output: POKE statement compiled to opcodes
-   // Modifies: OpCode buffer, ZP.CurrentToken, compilation state
-   const string compilePokeStatementTrace = "CompPOKE // POKE";
-   compilePokeStatement()
-   {
-   #ifdef TRACE
-       LDA #(compilePokeStatementTrace % 256) STA ZP.TraceMessageL LDA #(compilePokeStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-   #endif
-       
-       loop // Single exit block
-       {
-           // Expect opening parenthesis
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           LDA ZP.CurrentToken
-           CMP #Token.LPAREN
-           if (NZ) 
-           { 
-               Error.SyntaxError(); BIT ZP.EmulatorPCL
-               break; 
-           }
-           
-           // Get address argument (first parameter)
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           // Compile address expression
-           compileExpressionTree();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           // Expect comma separator
-           LDA ZP.CurrentToken
-           CMP #Token.COMMA
-           if (NZ) 
-           { 
-               Error.SyntaxError(); BIT ZP.EmulatorPCL
-               break; 
-           }
-           
-           // Get value argument (second parameter)
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           // Compile value expression
-           compileExpressionTree();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           // Expect closing parenthesis
-           LDA ZP.CurrentToken
-           CMP #Token.RPAREN
-           if (NZ) 
-           { 
-               Error.SyntaxError(); BIT ZP.EmulatorPCL
-               break; 
-           }
-           
-           // Move past closing parenthesis
-           Tokenizer.NextToken();
-           Error.CheckError();
-           if (NC) { break; }
-           
-           // Emit POKE SYSCALL
-           Emit.Poke();
-           
-           SEC // Success
-           break;
-       }
-       
-   #ifdef TRACE
-       LDA #(compilePokeStatementTrace % 256) STA ZP.TraceMessageL LDA #(compilePokeStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-   #endif
-   }
-   
+      
    
    // Compile primary expressions (numbers, identifiers, parentheses)
    // Input: ZP.CurrentToken = current token
@@ -1621,46 +1178,65 @@ unit Compiler // Compiler.asm
                    break;
                }
                
-               case Token.ABS:
-               {
-                   RMB0 ZP.CompilerFlags // TODO: expand folding
-                   compileAbsFunction();
-                   Error.CheckError();
-                   if (NC) { break; }
-                   break;
-               }
-               case Token.MILLIS:
-               {
-                   RMB0 ZP.CompilerFlags // not an integral constant expression
-                   compileMillisFunction();
-                   Error.CheckError();
-                   if (NC) { break; }
-                   break;
-               }
-               case Token.SECONDS:
-               {
-                   RMB0 ZP.CompilerFlags // not an integral constant expression
-                   compileSecondsFunction();
-                   Error.CheckError();
-                   if (NC) { break; }
-                   break;
-               }
-               case Token.RND:
-               {
-                   RMB0 ZP.CompilerFlags // not an integral constant expression
-                   compileRndFunction();
-                   Error.CheckError();
-                   if (NC) { break; }
-                   break;
-               }
-               case Token.PEEK:
-               {
-                   RMB0 ZP.CompilerFlags // not an integral constant expression
-                   compilePeekFunction();
-                   Error.CheckError();
-                   if (NC) { break; }
-                   break;
-               }
+               
+               
+               // All built-in functions now use compileSysCall()
+                case Token.MILLIS:
+                {
+                    RMB0 ZP.CompilerFlags // MILLIS: not an integral constant expression
+                    LDA #SysCallType.Millis
+                    compileSysCall();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    break;
+                }
+                case Token.SECONDS:
+                {
+                    RMB0 ZP.CompilerFlags // SECONDS: not an integral constant expression
+                    LDA #SysCallType.Seconds
+                    compileSysCall();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    break;
+                }
+                case Token.ABS:
+                {
+                    RMB0 ZP.CompilerFlags // ABS: not an integral constant expression
+                    LDA #SysCallType.Abs
+                    compileSysCall();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    break;
+                }
+                case Token.RND:
+                {
+                    RMB0 ZP.CompilerFlags // RND: not an integral constant expression
+                    LDA #SysCallType.Rnd
+                    compileSysCall();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    break;
+                }
+                case Token.PEEK:
+                {
+                    RMB0 ZP.CompilerFlags // PEEK: not an integral constant expression
+                    LDA #SysCallType.Peek
+                    compileSysCall();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    break;
+                }
+                case Token.READ:
+                {
+                    RMB0 ZP.CompilerFlags // READ: not an integral constant expression
+                    LDA #SysCallType.Read
+                    compileSysCall();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    break;
+                }
+               
+               
                default:
                {
                    // Unexpected token
@@ -1676,6 +1252,141 @@ unit Compiler // Compiler.asm
        LDA #(compilePrimaryTrace % 256) STA ZP.TraceMessageL LDA #(compilePrimaryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
+   
+   
+    // Single universal syscall compiler that uses metadata from SysCallType
+    // Input: A = SysCallType value (encodes arg count, return type, and function ID)
+    // Output: Complete syscall compiled including arguments, C set if successful
+    // Modifies: ZP.CurrentToken, compilation state, opcode buffer
+    // Stack Management: Properly cleans up the pushed SysCallType on all exit paths
+    const string compileSysCallTrace = "CompSysCall";
+    compileSysCall()
+    {
+#ifdef TRACE
+        PHA LDA #(compileSysCallTrace % 256) STA ZP.TraceMessageL 
+        LDA #(compileSysCallTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry(); PLA
+#endif
+        
+        PHA  // Save SysCallType value
+        
+        loop // Single exit
+        {
+            // Parse opening parenthesis
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) 
+            { 
+                PLA  // Clean stack before exit
+                break; 
+            }
+            
+            LDA ZP.CurrentToken
+            CMP #Token.LPAREN
+            if (NZ) 
+            { 
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                PLA  // Clean stack before exit
+                break; 
+            }
+            
+            // Extract argument count from bits 1-0 of SysCallType
+            PLA
+            PHA  // Keep it on stack for later
+            AND #0b00000011  // Extract arg count bits
+            TAX  // X = argument count
+            
+            // Handle arguments based on count
+            CPX #0
+            if (Z)
+            {
+                // No arguments - expect immediate closing parenthesis
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) 
+                { 
+                    PLA  // Clean stack before exit
+                    break; 
+                }
+            }
+            else
+            {
+                // Has arguments - compile them
+                PHX  // Save argument count
+                loop
+                {
+                    // Get next token (start of argument expression)
+                    Tokenizer.NextToken();
+                    Error.CheckError();
+                    if (NC) { break; }  // Exit argument loop on error
+                    
+                    // Compile the argument expression
+                    PHX
+                    compileExpressionTree();
+                    PLX
+                    Error.CheckError();
+                    if (NC) { break; }  // Exit argument loop on error
+                    
+                    DEX  // One less argument to process
+                    if (Z) { break; }  // Done with arguments
+                    
+                    // More arguments - expect comma
+                    LDA ZP.CurrentToken
+                    CMP #Token.COMMA
+                    if (NZ)
+                    {
+                        Error.SyntaxError(); BIT ZP.EmulatorPCL
+                        CLC  // Indicate error
+                        break;
+                    }
+                    // Loop for next argument
+                }
+                PLX  // Restore argument count (for debugging if needed)
+                
+                // Check if argument loop exited with error
+                if (NC) 
+                { 
+                    PLA  // Clean SysCallType from stack
+                    break;  // Exit main loop on error
+                }
+            }
+            
+            // Expect closing parenthesis
+            LDA ZP.CurrentToken
+            CMP #Token.RPAREN
+            if (NZ) 
+            { 
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                PLA  // Clean stack before exit
+                break; 
+            }
+            
+            // Move past closing parenthesis
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) 
+            { 
+                PLA  // Clean stack before exit
+                break; 
+            }
+            
+            // Emit the SYSCALL with original value
+            PLA  // Get SysCallType value
+            Emit.SysCall();  // A = SysCallType
+            
+            SEC // Success
+            break;
+        }
+        
+#ifdef TRACE
+        LDA #(compileSysCallTrace % 256) STA ZP.TraceMessageL 
+        LDA #(compileSysCallTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+#endif
+    }
+   
+   
+   
    
    // Main entry point: Compile current expression to opcodes
    // Input: ZP.CurrentToken = first token of expression
@@ -1892,20 +1603,40 @@ unit Compiler // Compiler.asm
                    Error.CheckError();
                    if (NC) { States.SetFailure(); break; }
                }
-               case Token.DELAY:
-               {
-                   compileDelayFunction();
-                   Error.CheckError();
-                   if (NC) { break; }
-                   break;
-               }
-               case Token.POKE:
-               {
-                   compilePokeStatement();
-                   Error.CheckError();
-                   if (NC) { break; }
-                   break;
-               }
+               
+               
+                // VOID syscalls (procedures that don't return values)
+                case Token.DELAY:
+                {
+                    LDA #SysCallType.Delay
+                    compileSysCall();
+                    Error.CheckError();
+                    if (NC) { States.SetFailure(); break; }
+                }
+                case Token.POKE:
+                {
+                    LDA #SysCallType.Poke
+                    compileSysCall();
+                    Error.CheckError();
+                    if (NC) { States.SetFailure(); break; }
+                }
+                case Token.WRITE:
+                {
+                    LDA #SysCallType.Write
+                    compileSysCall();
+                    Error.CheckError();
+                    if (NC) { States.SetFailure(); break; }
+                }
+                case Token.PINMODE:
+                {
+                    LDA #SysCallType.PinMode
+                    compileSysCall();
+                    Error.CheckError();
+                    if (NC) { States.SetFailure(); break; }
+                }
+                
+                
+               
                case Token.INT:
                case Token.WORD:
                case Token.BYTE:

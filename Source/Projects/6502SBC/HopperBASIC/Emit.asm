@@ -762,26 +762,6 @@ unit Emit
 #endif
    }
    
-   // Emit system call opcode
-   // Input: A = system call ID
-   // Output: SYSCALL opcode emitted with ID
-   // Modifies: compilerOpCode, compilerOperand1, buffer state via Emit.OpCodeWithByte()
-   const string emitSysCallTrace = "Emit SYSCALL";
-   SysCall()
-   {
-#ifdef TRACE
-       PHA LDA #(emitSysCallTrace % 256) STA ZP.TraceMessageL LDA #(emitSysCallTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
-#endif
-       
-       STA Compiler.compilerOperand1      // Store ID as operand
-       LDA #OpCode.SYSCALL
-       STA Compiler.compilerOpCode
-       Emit.OpCodeWithByte();
-       
-#ifdef TRACE
-       LDA #(emitSysCallTrace % 256) STA ZP.TraceMessageL LDA #(emitSysCallTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-   }
    
    // Emit ENTER opcode for function entry (stack frame setup)
    // Output: ENTER opcode with argument count emitted
@@ -867,118 +847,27 @@ unit Emit
    #endif
    }
 
-   // Emit MILLIS SYSCALL - no operands needed
-   const string emitMillisTrace = "Emit MILLIS";
-   Millis()
-   {
-   #ifdef TRACE
-       LDA #(emitMillisTrace % 256) STA ZP.TraceMessageL LDA #(emitMillisTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-   #endif
-       
-       LDA #SysCallType.Millis
-       Emit.SysCall();
-       
-   #ifdef TRACE
-       LDA #(emitMillisTrace % 256) STA ZP.TraceMessageL LDA #(emitMillisTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-   #endif
-   }
-   
-   // Emit SECONDS SYSCALL - no operands needed
-   const string emitSecondsTrace = "Emit SECONDS";
-   Seconds()
-   {
-   #ifdef TRACE
-       LDA #(emitSecondsTrace % 256) STA ZP.TraceMessageL LDA #(emitSecondsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-   #endif
-       
-       LDA #SysCallType.Seconds
-       Emit.SysCall();
-       
-   #ifdef TRACE
-       LDA #(emitSecondsTrace % 256) STA ZP.TraceMessageL LDA #(emitSecondsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-   #endif
-   }
-
-   // Emit ABS SYSCALL - operates on top of stack  
-   const string emitAbsTrace = "Emit ABS";
-   Abs()
-   {
-   #ifdef TRACE
-       LDA #(emitAbsTrace % 256) STA ZP.TraceMessageL LDA #(emitAbsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-   #endif
-       
-       LDA #SysCallType.Abs
-       Emit.SysCall();
-       
-   #ifdef TRACE
-       LDA #(emitAbsTrace % 256) STA ZP.TraceMessageL LDA #(emitAbsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-   #endif
-   }
-   
-   // Emit DELAY SYSCALL - operates on top of stack  
-   const string emitDelayTrace = "Emit DELAY";
-   Delay()
-   {
-   #ifdef TRACE
-       LDA #(emitDelayTrace % 256) STA ZP.TraceMessageL LDA #(emitDelayTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-   #endif
-       
-       LDA #SysCallType.Delay
-       Emit.SysCall();
-       
-   #ifdef TRACE
-       LDA #(emitDelayTrace % 256) STA ZP.TraceMessageL LDA #(emitDelayTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-   #endif
-   }
-
-   // Emit RND SYSCALL - operates on top of stack  
-   const string emitRndTrace = "Emit RND";
-   Rnd()
-   {
-   #ifdef TRACE
-       LDA #(emitRndTrace % 256) STA ZP.TraceMessageL LDA #(emitRndTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-   #endif
-       
-       LDA #SysCallType.Rnd
-       Emit.SysCall();
-       
-   #ifdef TRACE
-       LDA #(emitRndTrace % 256) STA ZP.TraceMessageL LDA #(emitRndTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-   #endif
-   }
-
-   // Emit PEEK SYSCALL - operates on top of stack  
-   const string emitPeekTrace = "Emit PEEK";
-   Peek()
-   {
-   #ifdef TRACE
-       LDA #(emitPeekTrace % 256) STA ZP.TraceMessageL LDA #(emitPeekTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-   #endif
-       
-       LDA #SysCallType.Peek
-       Emit.SysCall();
-       
-   #ifdef TRACE
-       LDA #(emitPeekTrace % 256) STA ZP.TraceMessageL LDA #(emitPeekTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-   #endif
-   }
-
-   // Emit POKE SYSCALL - operates on top of stack  
-   const string emitPokeTrace = "Emit POKE";
-   Poke()
-   {
-   #ifdef TRACE
-       LDA #(emitPokeTrace % 256) STA ZP.TraceMessageL LDA #(emitPokeTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-   #endif
-       
-       LDA #SysCallType.Poke
-       Emit.SysCall();
-       
-   #ifdef TRACE
-       LDA #(emitPokeTrace % 256) STA ZP.TraceMessageL LDA #(emitPokeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-   #endif
-   }
-   
+    // Emit system call opcode - THIS IS THE ONLY SYSCALL METHOD WE NEED
+    // Input: A = system call ID (from SysCallType enum with embedded metadata)
+    // Output: SYSCALL opcode emitted with ID
+    // Modifies: compilerOpCode, compilerOperand1, buffer state via Emit.OpCodeWithByte()
+    const string emitSysCallTrace = "Emit SYSCALL";
+    SysCall()
+    {
+#ifdef TRACE
+        PHA LDA #(emitSysCallTrace % 256) STA ZP.TraceMessageL LDA #(emitSysCallTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+#endif
+        
+        STA Compiler.compilerOperand1      // Store ID as operand
+        LDA #OpCode.SYSCALL
+        STA Compiler.compilerOpCode
+        Emit.OpCodeWithByte();
+        
+#ifdef TRACE
+        LDA #(emitSysCallTrace % 256) STA ZP.TraceMessageL LDA #(emitSysCallTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+    }
+    
     // Emit PRINTCHAR SYSCALL with specific character
     // Input: A = character to print
     // Output: PrintChar syscall emitted with character as argument

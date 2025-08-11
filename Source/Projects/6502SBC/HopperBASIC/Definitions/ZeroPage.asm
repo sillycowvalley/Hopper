@@ -131,7 +131,9 @@ unit ZP // ZeroPage.asm
     const byte CompilerTokenPos     = 0x34;  // Compiler position (16-bit)
     const byte CompilerTokenPosL    = 0x34;  // Compiler pos low (alias)
     const byte CompilerTokenPosH    = 0x35;  // Compiler pos high
-    const byte CompilerFlags        = 0x36;  // Compilation state flags: BIT0 - the current expression being evaluated is numeric (INT|WORD|BYTE) and constant, BIT1 - we created the variable
+    const byte CompilerFlags        = 0x36;  // Compilation state flags: 
+                                             //     BIT0 - the current expression being evaluated is numeric (INT|WORD|BYTE) and constant - used by compileExpressionTree()
+                                             //     BIT1 - we created the variable - used by CompileForStatement
     const byte OpCodeTemp           = 0x37;  // Temporary opcode construction
     
     // Buffer pointers - point to the currently active buffer set (either BASIC or REPL)

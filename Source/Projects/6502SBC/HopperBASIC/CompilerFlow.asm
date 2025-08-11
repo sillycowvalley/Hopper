@@ -10,13 +10,20 @@ unit CompilerFlow
     #ifdef TRACE
        LDA #(compileWhileStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileWhileStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
     #endif
+    
+       LDA ZP.SP
+       PHA
 
        loop // Single exit block
        {
            // Get and compile condition expression
            Tokenizer.NextToken();  // Skip WHILE token
            Error.CheckError();
-           if (NC) { States.SetFailure(); break; }
+           if (NC) 
+           {
+               States.SetFailure(); 
+               break; 
+           }
            
            // Mark loop start position for backward jump (start of condition evaluation)
            LDA ZP.OpCodeBufferContentSizeL
@@ -38,7 +45,11 @@ unit CompilerFlow
            
            // Check for compilation errors after consuming all 4 stack slots
            Error.CheckError();
-           if (NC) { States.SetFailure(); break; }
+           if (NC) 
+           {
+               States.SetFailure();
+               break;
+           }
            
            // Emit conditional exit jump (placeholder - will be patched after WEND)
            // JUMPZW: Jump if condition is zero/FALSE (exit loop when condition fails)
@@ -48,14 +59,21 @@ unit CompilerFlow
            STZ Compiler.compilerOperand2  // Placeholder MSB (will be patched)
            Emit.OpCodeWithWord();
            Error.CheckError();
-           if (NC) { States.SetFailure(); break; }
+           if (NC)
+           {
+               States.SetFailure();
+               break; 
+           }
            
            // Compile loop body statements until WEND
            loop // Statement compilation loop
            {
                Tokenizer.NextToken();
                Error.CheckError();
-               if (NC) { States.SetFailure(); break; }
+               if (NC) 
+               {
+                   States.SetFailure(); break; 
+               }
                
                LDA ZP.CurrentToken
                
@@ -65,7 +83,10 @@ unit CompilerFlow
                    // Found WEND - consume it and exit loop
                    Tokenizer.NextToken();
                    Error.CheckError();
-                   if (NC) { States.SetFailure(); break; }
+                   if (NC) 
+                   {
+                       States.SetFailure(); break; 
+                   }
                    break;  // Exit statement compilation loop
                }
                
@@ -87,12 +108,18 @@ unit CompilerFlow
                // Compile statement in loop body (PRINT, assignments, nested loops, etc.)
                CompileStatement();  // RECURSIVE CALL - handles nested constructs
                Error.CheckError();
-               if (NC) { States.SetFailure(); break; }
+               if (NC) 
+               {
+                   States.SetFailure(); break; 
+               }
            }
            
            // Check if we exited due to error
            Error.CheckError();
-           if (NC) { States.SetFailure(); break; }
+           if (NC)
+           {
+               States.SetFailure(); break; 
+           }
            
            // === OFFSET CALCULATION PHASE ===
            // Pop saved positions from stack (in reverse order)
@@ -172,26 +199,21 @@ unit CompilerFlow
            LDA ZP.TOPH    // Backward offset MSB
            STA Compiler.compilerOperand2
            Emit.OpCodeWithWord();
-           Error.CheckError();
-           if (NC) { States.SetFailure(); break; }
            
            // Final error check
            Error.CheckError();
-           if (NC) { States.SetFailure(); break; }
+           if (NC) 
+           {
+               States.SetFailure(); break;
+           }
            
            States.SetSuccess();
            break;
        } // Single exit block
-       
-       States.IsSuccess();
-       if (NC)
-       {
-           // Clean up stack on error path (restore stack balance)
-           PLA  // Discard forward jump operand position MSB
-           PLA  // Discard forward jump operand position LSB  
-           PLA  // Discard loop start position MSB
-           PLA  // Discard loop start position LSB
-       }
+
+       // leave the Hopper VM stack the way we found it       
+       PLA
+       STA ZP.SP
 
     #ifdef TRACE
        LDA #(compileWhileStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileWhileStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();

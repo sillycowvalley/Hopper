@@ -1,7 +1,7 @@
 program HopperBASIC
 {
     #define DEBUG
-    //#define TRACE
+    #define TRACE
     //#define TRACESP
     //#define TRACEJIT     // detail for JIT / CALL->CALLF patching
     //#define TRACEEXE // instructions in Executor
