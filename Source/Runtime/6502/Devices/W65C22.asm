@@ -6,8 +6,6 @@ unit W65C22
     #define CPU_8MHZ
 #endif
 
-    uses "/Source/Runtime/6502/ZeroPage"
-    
     initialize()
     {
         // VIA initialization assuming the RESB pulse was too short

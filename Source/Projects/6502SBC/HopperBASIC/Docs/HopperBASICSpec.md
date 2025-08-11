@@ -254,7 +254,6 @@ END
 ### Hardware Commands
 - ❌ **`READ(pin)`** - Digital input
 - ❌ **`WRITE(pin, value)`** - Digital output
-- ❌ **`PWM(pin, value)`** - Analog output
 - ❌ **`PINMODE(pin, mode)`** - Configure pins
 
 ---

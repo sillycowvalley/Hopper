@@ -14,11 +14,6 @@ unit Tokens
     // All values >= 0x80 
     // See the implementation of Tokenizer.Rollback to understand why we set the high bit of tokens and
     // why we limit our characaters in literals to ASCII (0..127)
-    // Complete Token definitions for HopperBASIC
-    // Complete Token definitions for HopperBASIC
-    // All values >= 0x80 
-    // See the implementation of Tokenizer.Rollback to understand why we set the high bit of tokens and
-    // why we limit our characaters in literals to ASCII (0..127)
     enum Token
     {
         // Console commands
@@ -76,117 +71,123 @@ unit Tokens
         BREAK    = 0xAF,
         CONTINUE = 0xB0,
         CONT     = 0xB1,
-               
-        // Logical keywords
-        AND      = 0xB2,
-        OR       = 0xB3,
-        NOT      = 0xB4,
-        MOD      = 0xB5,
-        
-        // Built-in literals
-        TRUE     = 0xB6,
-        FALSE    = 0xB7,
+        GOSUB    = 0xB2,
+        GOTO     = 0xB3,
+        ARRAY    = 0xB4,
+        AND      = 0xB5,
+        OR       = 0xB6,
+        NOT      = 0xB7,
+        MOD      = 0xB8,
+        TRUE     = 0xB9,
+        FALSE    = 0xBA,
+        REPEAT   = 0xBB,
+        STOP     = 0xBC,
         
         // Built-in functions
-        ABS      = 0xB8,
-        MILLIS   = 0xB9,
-        PEEK     = 0xBA,
-        POKE     = 0xBB,
-        RND      = 0xBC,
-        SECONDS  = 0xBD,
-        DELAY    = 0xBE,
-        VAR      = 0xBF,
-        CLS      = 0xC0,  // Clear screen command
+        ABS      = 0xBD,
+        MILLIS   = 0xBE,
+        PEEK     = 0xBF,
+        POKE     = 0xC0,
+        RND      = 0xC1,
+        SECONDS  = 0xC2,
+        DELAY    = 0xC3,
+        CLS      = 0xC4,  // Clear screen command
         
-        // Sentinel marking end of keywords
-        lastKeyword = 0xC0,
+        // Hardware I/O functions
+        PINMODE  = 0xC5,
+        READ     = 0xC6,
+        WRITE    = 0xC7,
         
-        // Basic operators (start after lastKeyword)
-        EQUALS   = 0xC1,  // =
-        PLUS     = 0xC2,  // +
-        MINUS    = 0xC3,  // -
-        LPAREN   = 0xC4,  // (
-        RPAREN   = 0xC5,  // )
-        NOTEQUAL = 0xC6,  // <>
-        
-        // Additional comparison operators
-        LT       = 0xC7,  // <
-        GT       = 0xC8,  // >
-        LE       = 0xC9,  // <=
-        GE       = 0xCA,  // >=
-        
-        // Arithmetic operators
-        MULTIPLY = 0xCB,  // *
-        DIVIDE   = 0xCC,  // /
-        
-        BITWISE_AND = 0xCD,  // &
-        BITWISE_OR  = 0xCE,  // |
-        
-        // Array and string operators
-        LBRACKET = 0xCF,  // [
-        RBRACKET = 0xD0,  // ]
-        LBRACE   = 0xD1,  // {
-        RBRACE   = 0xD2,  // }
+        lastKeyword = 0xC7,  // Updated to include hardware commands
         
         // Literals and identifiers
-        NUMBER     = 0xD3,  // Numeric literal
-        STRINGLIT  = 0xD4,  // String literal
-        IDENTIFIER = 0xD5,  // Variable/function name
-        EOF        = 0xD6,  // End of file/input
-        COLON      = 0xD7,  // : statement separator
-        COMMA      = 0xD8,  // , parameter separator
-        SEMICOLON  = 0xD9,  // ; (future use)
+        NUMBER     = 0xC7,  // Numeric literal (followed by string)
+        STRINGLIT  = 0xC8,  // String literal (followed by string)
+        IDENTIFIER = 0xC9,  // Variable/function name (followed by string)
+        
+        // Special punctuation (no inline data)
+        EOF      = 0xCA,  // End of file/stream
+        COLON    = 0xCB,  // Statement separator :
+        COMMA    = 0xCC,  // Argument separator ,
+        SEMICOLON = 0xCD, // Print separator ;
+        
+        // Basic operators
+        EQUALS   = 0xCE,  // =
+        PLUS     = 0xCF,  // +
+        MINUS    = 0xD0,  // -
+        LPAREN   = 0xD1,  // (
+        RPAREN   = 0xD2,  // )
+        
+        // Additional comparison operators
+        NOTEQUAL = 0xD3,  // <>
+        LT       = 0xD4,  // <
+        GT       = 0xD5,  // >
+        LE       = 0xD6,  // <=
+        GE       = 0xD7,  // >=
+        
+        // Arithmetic operators
+        MULTIPLY = 0xD8,  // *
+        DIVIDE   = 0xD9,  // /
+        
+        // Bitwise operators
+        BITWISE_AND = 0xDA,  // &
+        BITWISE_OR  = 0xDB,  // |
+        
+        // Array and string operators
+        LBRACKET = 0xDC,  // [
+        RBRACKET = 0xDD,  // ]
+        LBRACE   = 0xDE,  // {
+        RBRACE   = 0xDF,  // }
+        
+        VAR      = 0xE0,  // Uninitialized type
     }
     
     // Keywords A-L (first character < 'M') - Reorganized by frequency
-    // Keywords A-L (first character < 'M') - Reorganized by frequency
     const byte[] keywordsAL = {
         // VERY FREQUENT (Rank 1-10)
-        2, Token.IF, 'I', 'F',                    // Rank 3 - Conditional branching
-        3, Token.FOR, 'F', 'O', 'R',              // Rank 2 - Loops
-        2, Token.DO, 'D', 'O',                    // DO...UNTIL loops
+        3, Token.FOR, 'F', 'O', 'R',             // Rank 3 - FOR/NEXT loops
+        2, Token.IF, 'I', 'F',                   // Rank 4 - Conditionals  
+        3, Token.INT, 'I', 'N', 'T',             // Rank 5 - Common numeric type
+        4, Token.GOTO, 'G', 'O', 'T', 'O',       // Rank 8 - Jump to line
+        5, Token.GOSUB, 'G', 'O', 'S', 'U', 'B', // Rank 9 - Subroutine call
+        3, Token.END, 'E', 'N', 'D',             // Rank 10 - Program termination
         
-        // FREQUENT (Rank 11-20)  
-        3, Token.END, 'E', 'N', 'D',             // Rank 9 - Exit program
-        5, Token.INPUT, 'I', 'N', 'P', 'U', 'T', // Rank 13 - Prompt user
-        3, Token.INT, 'I', 'N', 'T',             // Rank 23 - Integer conversion/type
+        // FREQUENT (Rank 11-20)
+        3, Token.AND, 'A', 'N', 'D',             // Rank 11 - Logical AND
+        5, Token.INPUT, 'I', 'N', 'P', 'U', 'T', // Rank 12 - User input
+        3, Token.ABS, 'A', 'B', 'S',             // Rank 13 - Absolute value
+        4, Token.ELSE, 'E', 'L', 'S', 'E',       // Rank 14 - Alternative branch
+        2, Token.DO, 'D', 'O',                   // Rank 15 - DO/UNTIL loops
         
         // MODERATE (Rank 21-30)
-        2, Token.DO, 'D', 'O',                   // Rank 17 - Modern structured loops
+        5, Token.ENDIF, 'E', 'N', 'D', 'I', 'F', // Rank 17 - End IF block
+        5, Token.CLEAR, 'C', 'L', 'E', 'A', 'R', // Rank 19 - Clear screen/variables
+        3, Token.CLS, 'C', 'L', 'S',             // Rank 19 - Clear screen
+        4, Token.LIST, 'L', 'I', 'S', 'T',       // Rank 20 - Display program
+        5, Token.FALSE, 'F', 'A', 'L', 'S', 'E', // Rank 21 - Boolean constant
+        4, Token.BYTE, 'B', 'Y', 'T', 'E',       // Rank 22 - HopperBASIC data type
+        3, Token.BIT, 'B', 'I', 'T',             // Rank 23 - HopperBASIC data type
+        4, Token.LOAD, 'L', 'O', 'A', 'D',       // Rank 25 - Load from storage
+        4, Token.FUNC, 'F', 'U', 'N', 'C',       // Rank 26 - Function declaration
+        5, Token.CONST, 'C', 'O', 'N', 'S', 'T', // Rank 27 - Constant declaration
+        5, Token.DELAY, 'D', 'E', 'L', 'A', 'Y', // Rank 28 - Timing function
+        7, Token.ENDFUNC, 'E', 'N', 'D', 'F', 'U', 'N', 'C', // Rank 29 - End function
+        5, Token.BEGIN, 'B', 'E', 'G', 'I', 'N', // Rank 30 - Main program start
         
-        // INFREQUENT (Everything else - HopperBASIC specific and console commands)
-        3, Token.AND, 'A', 'N', 'D',             // Logic operator
-        3, Token.BIT, 'B', 'I', 'T',             // HopperBASIC data type
-        4, Token.BYTE, 'B', 'Y', 'T', 'E',       // HopperBASIC data type
-        5, Token.BEGIN, 'B', 'E', 'G', 'I', 'N', // HopperBASIC structured programming
-        5, Token.CONST, 'C', 'O', 'N', 'S', 'T', // HopperBASIC constants
-        4, Token.FUNC, 'F', 'U', 'N', 'C',       // HopperBASIC structured programming
-        7, Token.ENDFUNC, 'E', 'N', 'D', 'F', 'U', 'N', 'C', // HopperBASIC structured programming
-        4, Token.ELSE, 'E', 'L', 'S', 'E',       // Control flow extras (FIXED!)
-        5, Token.ENDIF, 'E', 'N', 'D', 'I', 'F', // Control flow extras
-        5, Token.FALSE, 'F', 'A', 'L', 'S', 'E', // Logic constant
+        // INFREQUENT (Everything else alphabetically)
+        5, Token.ARRAY, 'A', 'R', 'R', 'A', 'Y', // Array type declaration
         5, Token.BREAK, 'B', 'R', 'E', 'A', 'K', // Loop control
-        
-        // Console commands (all infrequent)
-        5, Token.CLEAR, 'C', 'L', 'E', 'A', 'R', // Console command
-        3, Token.CLS, 'C', 'L', 'S',             // Clear screen command
-        5, Token.FUNCS, 'F', 'U', 'N', 'C', 'S', // Console command
-        4, Token.CONT, 'C', 'O', 'N', 'T',       // Console command  
-        3, Token.BYE, 'B', 'Y', 'E',             // Console command
-        3, Token.DEL, 'D', 'E', 'L',             // File operation
-        3, Token.DIR, 'D', 'I', 'R',             // File operation
-        4, Token.DUMP, 'D', 'U', 'M', 'P',       // Debug command
-        4, Token.DASM, 'D', 'A', 'S', 'M',       // Debug command - disassemble
-        4, Token.HEAP, 'H', 'E', 'A', 'P',       // Debug command
         7, Token.BUFFERS, 'B', 'U', 'F', 'F', 'E', 'R', 'S', // Debug command
-        6, Token.FORGET, 'F', 'O', 'R', 'G', 'E', 'T', // Console command
-        8, Token.CONTINUE, 'C', 'O', 'N', 'T', 'I', 'N', 'U', 'E', // Console command
-        4, Token.LOAD, 'L', 'O', 'A', 'D',       // File operation
-        4, Token.LIST, 'L', 'I', 'S', 'T',       // Console command
-        
-        // Built-in functions (all infrequent)
-        3, Token.ABS, 'A', 'B', 'S',             // Built-in function
-        5, Token.DELAY, 'D', 'E', 'L', 'A', 'Y', // Built-in function
+        3, Token.BYE, 'B', 'Y', 'E',             // Exit interpreter
+        4, Token.CONT, 'C', 'O', 'N', 'T',       // Continue from break (or CONTINUE)
+        8, Token.CONTINUE, 'C', 'O', 'N', 'T', 'I', 'N', 'U', 'E', // Loop control
+        4, Token.DASM, 'D', 'A', 'S', 'M',       // Disassemble function
+        3, Token.DEL, 'D', 'E', 'L',             // Delete file
+        3, Token.DIR, 'D', 'I', 'R',             // Directory listing
+        4, Token.DUMP, 'D', 'U', 'M', 'P',       // Debug dump
+        6, Token.FORGET, 'F', 'O', 'R', 'G', 'E', 'T', // Remove symbol
+        5, Token.FUNCS, 'F', 'U', 'N', 'C', 'S', // List functions
+        4, Token.HEAP, 'H', 'E', 'A', 'P',       // Heap inspection command
         
         0  // End marker
     };
@@ -234,8 +235,14 @@ unit Tokens
         4, Token.POKE, 'P', 'O', 'K', 'E',       // Built-in function
         7, Token.SECONDS, 'S', 'E', 'C', 'O', 'N', 'D', 'S', // Built-in function
         
+        // Hardware I/O functions (new)
+        7, Token.PINMODE, 'P', 'I', 'N', 'M', 'O', 'D', 'E', // Configure pin direction
+        4, Token.READ, 'R', 'E', 'A', 'D',       // Digital input
+        5, Token.WRITE, 'W', 'R', 'I', 'T', 'E', // Digital output
+        
         0  // End marker
     };
+    
     
     // Find keyword match for current identifier in working buffer
     // Input: Working buffer at Address.BasicProcessBuffer1, null-terminated

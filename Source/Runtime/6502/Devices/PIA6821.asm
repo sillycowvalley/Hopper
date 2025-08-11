@@ -4,8 +4,6 @@ unit PIA6821
     
     #define M6840_PTM
     
-    uses "/Source/Runtime/6502/ZeroPage"
-    
     // Better Register Aliass:
     const uint Timer1Control   = TCR;
     const uint Timer3Control   = TCR;

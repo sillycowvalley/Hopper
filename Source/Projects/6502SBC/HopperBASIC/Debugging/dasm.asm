@@ -18,15 +18,18 @@ unit Dasm
         switch (A)
         {
             case 1:  
-            case 2:  { LDA #Token.PRINT      Tokens.PrintKeyword(); }  // PrintValue and PrintChar
-            case 3:  { LDA #Token.ABS        Tokens.PrintKeyword(); }  // ABS
-            case 4:  { LDA #Token.RND        Tokens.PrintKeyword(); }  // RND
-            case 5:  { LDA #Token.MILLIS     Tokens.PrintKeyword(); }  // MILLIS
-            case 6:  { LDA #Token.SECONDS    Tokens.PrintKeyword(); }  // SECONDS
-            case 7:  { LDA #Token.DELAY      Tokens.PrintKeyword(); }  // DELAY
-            case 8:  { LDA #Token.PEEK       Tokens.PrintKeyword(); }  // PEEK
-            case 9:  { LDA #Token.POKE       Tokens.PrintKeyword(); }  // POKE
-            default: { LDA #'?' COut(); LDA #'?' COut(); LDA #'?' COut(); }  // Unknown
+            case 2:   { LDA #Token.PRINT      Tokens.PrintKeyword(); }  // PrintValue and PrintChar
+            case 3:   { LDA #Token.ABS        Tokens.PrintKeyword(); }  // ABS
+            case 4:   { LDA #Token.RND        Tokens.PrintKeyword(); }  // RND
+            case 5:   { LDA #Token.MILLIS     Tokens.PrintKeyword(); }  // MILLIS
+            case 6:   { LDA #Token.SECONDS    Tokens.PrintKeyword(); }  // SECONDS
+            case 7:   { LDA #Token.DELAY      Tokens.PrintKeyword(); }  // DELAY
+            case 8:   { LDA #Token.PEEK       Tokens.PrintKeyword(); }  // PEEK
+            case 9:   { LDA #Token.POKE       Tokens.PrintKeyword(); }  // POKE
+            case 10:  { LDA #Token.PINMODE    Tokens.PrintKeyword(); }  // PINMODE
+            case 11:  { LDA #Token.READ       Tokens.PrintKeyword(); }  // READ
+            case 12:  { LDA #Token.WRITE      Tokens.PrintKeyword(); }  // WRITE
+            default:  { LDA #'?' COut(); LDA #'?' COut(); LDA #'?' COut(); }  // Unknown
         }
         
         PLA

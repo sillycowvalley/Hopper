@@ -1,6 +1,5 @@
 unit Parallel
 {
-    uses "/Source/Runtime/6502/ZeroPage"
 #ifdef W65C22_VIA
     uses "/Source/Runtime/6502/Devices/W65C22"
 #endif

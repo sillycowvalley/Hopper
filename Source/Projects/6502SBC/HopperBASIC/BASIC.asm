@@ -27,6 +27,7 @@ program HopperBASIC
     uses "/Source/Runtime/6502/Utilities"
     uses "/Source/Runtime/6502/Stacks"
     uses "/Source/Runtime/6502/Time"
+    uses "/Source/Runtime/6502/Parallel"
     
     uses "./Objects/Table"
     uses "./Objects/Objects"
@@ -41,7 +42,8 @@ program HopperBASIC
     uses "Statement"
     uses "Compiler"
     
-    
+    uses "GPIO"
+    uses "Storage"
     
     uses "Instructions"
     uses "ComparisonInstructions"
@@ -57,8 +59,9 @@ program HopperBASIC
         States.SetSuccess();    // Initialize state system
         Trace.Initialize();    // Initialize trace system (NOP in production code)
         
-        // Initialize serial communication first
+        // Initialize communication first
         Serial.Initialize();
+        Parallel.Initialize();
         
         // Initialize Hopper VM runtime components
         Memory.InitializeHeapSize();
@@ -166,6 +169,7 @@ program HopperBASIC
     IRQ()
     {
         Serial.ISR();
+        Parallel.ISR();
     }
     
     NMI()

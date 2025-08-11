@@ -17,6 +17,12 @@ unit BASICSysCalls
        Delay        = (0b00111 << 3) | (0 << 2) | 0b01,  // ID=7, void,    1 arg  = 0x39
        Peek         = (0b01000 << 3) | (1 << 2) | 0b01,  // ID=8, returns, 1 arg  = 0x45
        Poke         = (0b01001 << 3) | (0 << 2) | 0b10,  // ID=9, void,    2 args = 0x4A
+       
+       // Hardware I/O functions (ID 10-13)
+       PinMode      = (0b01010 << 3) | (0 << 2) | 0b10,  // ID=10, void,    2 args = 0x52
+       Read         = (0b01011 << 3) | (1 << 2) | 0b01,  // ID=11, returns, 1 arg  = 0x5D
+       Write        = (0b01100 << 3) | (0 << 2) | 0b10,  // ID=12, void,    2 args = 0x62
+        
    }
    
    // Execute SYSCALL opcode - system call with flags-based dispatch
@@ -236,6 +242,120 @@ unit BASICSysCalls
                    LDA ZP.TOPL  // Get value to write
                    STA [ZP.NEXT]   // Write to address
                }
+               
+                case SysCallType.PinMode:  // ID = 10
+                {
+                    // PINMODE function - configure pin direction
+                    // Input: ZP.NEXT* = pin number, ZP.TOP* = mode
+                    
+                    // Validate pin number (0-15)
+                    LDA ZP.NEXTH
+                    if (NZ)
+                    {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        States.SetFailure();
+                        break;
+                    }
+                    LDA ZP.NEXTL
+                    CMP #16
+                    if (C)
+                    {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        States.SetFailure();
+                        break;
+                    }
+                    
+                    // Validate mode (0 or 1)
+                    LDA ZP.TOPH
+                    if (NZ)
+                    {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        States.SetFailure();
+                        break;
+                    }
+                    LDA ZP.TOPL
+                    CMP #2
+                    if (C)
+                    {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        States.SetFailure();
+                        break;
+                    }
+                    
+                    // Call GPIO.PinMode
+                    LDA ZP.NEXTL    // Pin number
+                    LDX ZP.TOPL     // Mode
+                    GPIO.PinMode();
+                }
+                
+                case SysCallType.Read:  // ID = 11
+                {
+                    // READ function - read digital input
+                    // Input: ZP.TOP* = pin number
+                    // Output: ZP.TOP* = pin value (0 or 1)
+                    
+                    // Validate pin number (0-15)
+                    LDA ZP.TOPH
+                    if (NZ)
+                    {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        States.SetFailure();
+                        break;
+                    }
+                    LDA ZP.TOPL
+                    CMP #16
+                    if (C)
+                    {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        States.SetFailure();
+                        break;
+                    }
+                    
+                    // Call GPIO.PinRead
+                    GPIO.PinRead();  // Result in A
+                    STA ZP.TOPL
+                    STZ ZP.TOPH
+                    LDA #BASICType.BIT
+                    STA ZP.TOPT
+                }
+                
+                case SysCallType.Write:  // ID = 12
+                {
+                    // WRITE function - write digital output
+                    // Input: ZP.NEXT* = pin number, ZP.TOP* = value
+                    
+                    // Validate pin number (0-15)
+                    LDA ZP.NEXTH
+                    if (NZ)
+                    {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        States.SetFailure();
+                        break;
+                    }
+                    LDA ZP.NEXTL
+                    CMP #16
+                    if (C)
+                    {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        States.SetFailure();
+                        break;
+                    }
+                    
+                    // Validate value (0 or 1 for digital)
+                    LDA ZP.TOPH
+                    if (NZ)
+                    {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        States.SetFailure();
+                        break;
+                    }
+                    
+                    // Call GPIO.PinWrite
+                    LDA ZP.NEXTL    // Pin number
+                    LDX ZP.TOPL     // Value
+                    GPIO.PinWrite();
+                }
+               
                default:
                {
                    TODO(); BIT ZP.EmulatorPCL
