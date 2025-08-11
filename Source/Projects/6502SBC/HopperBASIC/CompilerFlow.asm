@@ -839,10 +839,65 @@ unit CompilerFlow
                Variables.Find();  // Check global variables
                if (C)
                {
-                   // Iterator exists as a global - not allowed!
-                   Error.ForIteratorLocal(); BIT ZP.EmulatorPCL  // "FOR iterator must be local"
-                   States.SetFailure();
-                   break;
+                    // Iterator exists as a global - create shadow local
+                    SMB1 ZP.CompilerFlags  // Set BIT1: we own the shadow local
+                    SMB2 ZP.CompilerFlags  // Set BIT2: we used a global
+                    
+                    // First push a default value to create the stack slot
+                    Emit.PushEmptyVar();
+                    Error.CheckError();
+                    if (NC) { States.SetFailure(); break; }
+                    
+                    // Variables.Find() already set ZP.IDY to the index (slot)
+                    // Emit PUSHGLOBAL using that slot
+                    LDA ZP.IDYL  // The global slot from Find()
+                    STA Compiler.compilerGlobalIteratorSlot // SAVE for NEXT name verification!
+                    STA Compiler.compilerOperand1
+                    LDA #OpCode.PUSHGLOBAL
+                    STA Compiler.compilerOpCode
+                    Emit.OpCodeWithByte();
+                    Error.CheckError();
+                    if (NC) { States.SetFailure(); break; }
+                    
+                    // Create a shadow local with same name
+                    LDA ZP.TOPL
+                    STA ZP.SymbolNameL
+                    LDA ZP.TOPH
+                    STA ZP.SymbolNameH
+                    LDA #(SymbolType.LOCAL | BASICType.VAR)
+                    STA ZP.SymbolType
+                    STA Compiler.compilerForIteratorType
+                    
+                    // restore ZP.IDX after Variables.Find()
+                    LDA Compiler.compilerSavedNodeAddrL
+                    STA ZP.IDXL
+                    LDA Compiler.compilerSavedNodeAddrH
+                    STA ZP.IDXH
+                    
+                    Locals.Add();          // Creates local
+                    
+                    // get BP offset
+                    Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, ZP.ACCL = BP offset
+                    LDA ZP.ACCL
+                    STA Compiler.compilerForIteratorOffset
+                    
+                    
+                    // Emit POPLOCAL to initialize shadow from global
+                    LDA Compiler.compilerForIteratorOffset
+                    STA Compiler.compilerOperand1
+                    LDA #OpCode.POPLOCAL
+                    STA Compiler.compilerOpCode
+                    Emit.OpCodeWithByte();
+                    Error.CheckError();
+                    if (NC) { States.SetFailure(); break; }
+                    
+                    // ZP.IDX already points to our new local from Locals.Add()
+                    // compilerForIteratorOffset has the BP offset
+                    // compilerForIteratorType has the type
+                    // Ready for subsequent code that expects a local iterator
+                    INC Compiler.compilerFuncLocals  // Track new local
+                    LDA Compiler.compilerForIteratorOffset
+                    STA ZP.ACCL
                }
                else
                {
@@ -864,7 +919,6 @@ unit CompilerFlow
                    // Iterator not found - create implicit local
                    // First push a default value to create the stack slot
                    Emit.PushEmptyVar();
-                   
                    Error.CheckError();
                    if (NC) { States.SetFailure(); break; }
                    
@@ -953,6 +1007,7 @@ unit CompilerFlow
            if (NC) { States.SetFailure(); break; }
            
            Compiler.compileExpressionTree();  // Compile TO expression (leaves on stack)
+           INC Compiler.compilerFuncLocals   // consider a RETURN from within the loop needing to clean the stack
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
            
@@ -973,6 +1028,7 @@ unit CompilerFlow
                if (NC) { States.SetFailure(); break; }
                
                Compiler.compileExpressionTree();  // Compile STEP expression (leaves on stack)
+               INC Compiler.compilerFuncLocals   // consider a RETURN from within the loop needing to clean the stack
                Error.CheckError();
                if (NC) { States.SetFailure(); break; }
                
@@ -1007,6 +1063,7 @@ unit CompilerFlow
                Emit.OpCode();
                Error.CheckError();
                if (NC) { States.SetFailure(); break; }
+               INC Compiler.compilerFuncLocals   // consider a RETURN from within the loop needing to clean the stack
            }
                                  
            if (BBS3, ZP.CompilerFlags) 
@@ -1249,6 +1306,8 @@ unit CompilerFlow
            LDA Compiler.compilerSavedNodeAddrH
            STA ZP.IDXH
            
+NL(); XOut(); PrintStringTOP();           
+
            // ZP.TOP already contains name pointer from GetTokenString
            Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, ZP.ACCL = BP offset
            if (NC)
@@ -1257,7 +1316,11 @@ unit CompilerFlow
                States.SetFailure();
                break;
            }
-
+           
+AOut();
+LDA Compiler.compilerForIteratorOffset HOut();
+         
+           // ZP.ACCL = BP offset
            // Verify it matches the current FOR iterator
            LDA ZP.ACCL
            CMP Compiler.compilerForIteratorOffset
@@ -1267,6 +1330,8 @@ unit CompilerFlow
                States.SetFailure();
                break;
            }
+           
+           
            
            // Skip iterator name
            Tokenizer.NextToken();
@@ -1371,13 +1436,43 @@ unit CompilerFlow
            }
            
            // Emit stack cleanup (remove TO and STEP values)
+           DEC Compiler.compilerFuncLocals // consider a RETURN from within the loop needing to clean the stack
            Emit.DecSp();
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
            
+           DEC Compiler.compilerFuncLocals // consider a RETURN from within the loop needing to clean the stack
            Emit.DecSp();
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
+           
+           // If we used a global (BIT2 set) and made our own "shadow local", update global and remove shadow
+           if (BBS2, ZP.CompilerFlags)
+           {
+               // Shadow local is now at top of stack
+               // Find the global to get its slot
+               Tokenizer.GetTokenString(); // Get iterator name in ZP.TOP
+               
+               STZ ZP.SymbolIteratorFilter  // Accept both variables and constants
+               Variables.Find();  // Returns index in ZP.IDY
+               
+               // POPGLOBAL will both update the global AND remove the shadow!
+               LDA ZP.IDYL  // The global slot from Find()
+               STA Compiler.compilerOperand1
+               LDA #OpCode.POPGLOBAL
+               STA Compiler.compilerOpCode
+               Emit.OpCodeWithByte();
+               Error.CheckError();
+               if (NC) { States.SetFailure(); break; }
+               
+               DEC Compiler.compilerFuncLocals
+               
+               LDA Compiler.compilerSavedNodeAddrL
+               STA ZP.IDXL
+               LDA Compiler.compilerSavedNodeAddrH
+               STA ZP.IDXH
+               Locals.RemoveLast();
+           }
            
            States.SetSuccess();
            break;

@@ -248,7 +248,7 @@ unit Objects
         
         loop // start of single exit block
         {
-            // Get symbolType (high nibble of packed byte at snType)
+            // Get symbolType
             LDY #snType
             LDA [ZP.IDX], Y
             AND #SymbolType.MASK

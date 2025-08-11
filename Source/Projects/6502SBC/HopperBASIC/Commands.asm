@@ -428,7 +428,7 @@ unit Commands
         Variables.GetType(); // Input: ZP.IDX, Output: ACCT = type
         
         LDA ZP.ACCT
-        AND #0x0F
+        AND # BASICType.MASK
         BASICTypes.PrintType(); // Input: A = dataType
         LDA #' ' Serial.WriteChar();
         

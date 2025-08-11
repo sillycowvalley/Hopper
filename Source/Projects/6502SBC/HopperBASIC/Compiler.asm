@@ -12,20 +12,21 @@ unit Compiler // Compiler.asm
    // Buffer management and opcode emission with proper bounds checking
    
    // Private Compiler layer storage - BasicCompilerWorkspace (32 bytes)
-   const uint compilerSavedTokenPosL    = Address.BasicCompilerWorkspace;      // 1 byte - saved tokenizer pos low
-   const uint compilerSavedTokenPosH    = Address.BasicCompilerWorkspace + 1;  // 1 byte - saved tokenizer pos high
-   const uint compilerOpCode            = Address.BasicCompilerWorkspace + 2;  // 1 byte - opcode to emit
-   const uint compilerOperand1          = Address.BasicCompilerWorkspace + 3;  // 1 byte - first operand
-   const uint compilerOperand2          = Address.BasicCompilerWorkspace + 4;  // 1 byte - second operand
-   const uint compilerOperand3          = Address.BasicCompilerWorkspace + 5;  // 1 byte - third operand
-   const uint compilerLastOpCode        = Address.BasicCompilerWorkspace + 6;  // 1 byte - last opcode emitted
-   const uint compilerFuncArgs          = Address.BasicCompilerWorkspace + 7;  // 1 byte - number of arguments for current FUNC being compiled
-   const uint compilerFuncLocals        = Address.BasicCompilerWorkspace + 8;  // 1 byte - number of locals for current FUNC being compiled
-   const uint compilerSavedNodeAddrL    = Address.BasicCompilerWorkspace + 9;  // 1 byte - saved node addr low
-   const uint compilerSavedNodeAddrH    = Address.BasicCompilerWorkspace + 10; // 1 byte - saved node addr high
-   const uint compilerCanDeclareLocals  = Address.BasicCompilerWorkspace + 11; // 1 byte - flag for statement seen to prevent further local declarations
-   const uint compilerForIteratorOffset = Address.BasicCompilerWorkspace + 12; // 1 byte - signed one byte offset, location of for iterator relative to BP
-   const uint compilerForIteratorType   = Address.BasicCompilerWorkspace + 13; // 1 byte - type of user or intrinsic for iterator variable
+   const uint compilerSavedTokenPosL     = Address.BasicCompilerWorkspace;      // 1 byte - saved tokenizer pos low
+   const uint compilerSavedTokenPosH     = Address.BasicCompilerWorkspace + 1;  // 1 byte - saved tokenizer pos high
+   const uint compilerOpCode             = Address.BasicCompilerWorkspace + 2;  // 1 byte - opcode to emit
+   const uint compilerOperand1           = Address.BasicCompilerWorkspace + 3;  // 1 byte - first operand
+   const uint compilerOperand2           = Address.BasicCompilerWorkspace + 4;  // 1 byte - second operand
+   const uint compilerOperand3           = Address.BasicCompilerWorkspace + 5;  // 1 byte - third operand
+   const uint compilerLastOpCode         = Address.BasicCompilerWorkspace + 6;  // 1 byte - last opcode emitted
+   const uint compilerFuncArgs           = Address.BasicCompilerWorkspace + 7;  // 1 byte - number of arguments for current FUNC being compiled
+   const uint compilerFuncLocals         = Address.BasicCompilerWorkspace + 8;  // 1 byte - number of locals for current FUNC being compiled
+   const uint compilerSavedNodeAddrL     = Address.BasicCompilerWorkspace + 9;  // 1 byte - saved node addr low
+   const uint compilerSavedNodeAddrH     = Address.BasicCompilerWorkspace + 10; // 1 byte - saved node addr high
+   const uint compilerCanDeclareLocals   = Address.BasicCompilerWorkspace + 11; // 1 byte - flag for statement seen to prevent further local declarations
+   const uint compilerForIteratorOffset  = Address.BasicCompilerWorkspace + 12; // 1 byte - signed one byte offset, location of for iterator relative to BP
+   const uint compilerForIteratorType    = Address.BasicCompilerWorkspace + 13; // 1 byte - type of user or intrinsic for iterator variable
+   const uint compilerGlobalIteratorSlot = Address.BasicCompilerWorkspace + 14; // 1 byte - slot of global being shadowed
    
    // Initialize the opcode buffer for compilation
    // Output: OpCode buffer ready for emission

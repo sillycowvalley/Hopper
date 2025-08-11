@@ -205,7 +205,7 @@ DASM
 
 
 
-
+INT I
 BEGIN
     FOR I = 1 TO 10
         PRINT I
@@ -214,6 +214,7 @@ END
 RUN
 
 DASM
+VARS
 
 
 BEGIN
@@ -250,6 +251,8 @@ RUN
 
 
 
+
+
 BEGIN
     VAR START = SECONDS()
     VAR S
@@ -266,9 +269,6 @@ BEGIN
 END
 RUN
 
-
-
-
 FUNC Fibo(n)
     IF n <= 1 THEN
         RETURN n
@@ -278,9 +278,37 @@ ENDFUNC
 
 BEGIN
     WORD ELAPSED = SECONDS()
-    PRINT FIBO(24)
+    PRINT FIBO(10)
     PRINT SECONDS()-ELAPSED;
     PRINT " seconds"
 END
 
 
+VAR S
+VAR J
+VAR I
+BEGIN
+    VAR START = SECONDS()
+    FOR I = 1 TO 10
+        S = 0
+        FOR J = 1 TO 1000
+            S = S + J
+        NEXT J
+        PRINT ".";
+    NEXT I
+    PRINT S
+    PRINT SECONDS() - START; " seconds"
+END
+RUN
+
+INT S
+INT I
+BEGIN
+    VAR START = SECONDS()
+    FOR I = 1 TO 10
+        PRINT ".";
+    NEXT I
+    PRINT S
+    PRINT SECONDS() - START; " seconds"
+END
+RUN

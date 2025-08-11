@@ -968,7 +968,7 @@ unit Console // Console.asm
         PHX
         PHY
         
-#ifdef TRACECONSOLE
+#ifdef TRACE
         LDA #(initGlobsTrace % 256) STA ZP.TraceMessageL LDA #(initGlobsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         
@@ -994,6 +994,7 @@ unit Console // Console.asm
             // Get variable name for assignment
             Variables.GetName(); // -> ZP.STR
             Variables.GetTokens(); // Returns tokens pointer in ZP.NEXT
+            
             Variables.GetType(); // -> ZP.ACCT
             
             // Add IDENTIFIER token
@@ -1084,6 +1085,8 @@ unit Console // Console.asm
             // Execute the initialization statement
             Tokenizer.NextToken(); // Get first token
             
+            RMB4 ZP.FLAGS // Bit 4 - not initialization mode for global variables calling ExecuteOpCodes
+            // These are simple assignments (FOO = 42, rather than INT FOO = 42)
             Statement.ExecuteStatement();
             Error.CheckError();
             if (NC) 
@@ -1105,7 +1108,7 @@ unit Console // Console.asm
             Variables.IterateNext();
         } // iterate variables loop
         
-#ifdef TRACECONSOLE
+#ifdef TRACE
         LDA #(initGlobsTrace % 256) STA ZP.TraceMessageL LDA #(initGlobsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
         PLY
@@ -1121,7 +1124,7 @@ unit Console // Console.asm
     const string runTrace = "RUN";
     cmdRun()
     {
-#ifdef TRACECONSOLE
+#ifdef TRACE
         LDA #(runTrace % 256) STA ZP.TraceMessageL LDA #(runTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         
@@ -1135,7 +1138,7 @@ unit Console // Console.asm
             Tokenizer.NextToken(); // consume 'RUN'
             
             initializeGlobals();
-            
+                                    
             loop // Single exit block
             {
                 // Find the $MAIN function
@@ -1192,13 +1195,16 @@ unit Console // Console.asm
                 
                 // Execute the function call
                 Tokenizer.NextToken();
+                
+                
+                RMB4 ZP.FLAGS // Bit 4 - not initialization mode for global variables calling ExecuteOpCodes
                 Statement.EvaluateExpression(); // executes 'identifier()' as function call
               
                 break;
             }
         }
         
-#ifdef TRACECONSOLE
+#ifdef TRACE
         LDA #(runTrace % 256) STA ZP.TraceMessageL LDA #(runTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }

@@ -26,6 +26,8 @@ unit Statement // Statement.asm
     
     const uint replFunctionPtr       = Address.BasicStatementWorkspace + 24; // 2 bytes
     
+    const uint declInitializer       = Address.BasicStatementWorkspace + 26; // 1 bytes
+    
     flags CaptureMode
     {
         Off = 0,
@@ -353,6 +355,7 @@ unit Statement // Statement.asm
             case Token.CLS:
             case Token.IDENTIFIER: // Could be assignment or function call
             {
+                RMB4 ZP.FLAGS // Bit 4 - NOT initialization mode for global variables calling ExecuteOpCodes
                 ExecuteStatement();
             }
             
@@ -562,8 +565,8 @@ unit Statement // Statement.asm
                     if (NC) { break; }
                     
                     LDA ZP.ACCT
-                    AND #0xF0  // Extract existing symbol type (high nibble)
-                    STA ZP.NEXTT // Temporarily store existing type
+                    AND # SymbolType.MASK  // Extract existing symbol type
+                    STA ZP.NEXTT           // Temporarily store existing type
                     
                     // Compare with new symbol type being declared
                     LDA stmtSymbol // New symbol type (VARIABLE or CONSTANT)
@@ -572,7 +575,7 @@ unit Statement // Statement.asm
                     {
                         // Type mismatch - show appropriate error
                         LDA ZP.NEXTT
-                        CMP #SymbolType.CONSTANT
+                        CMP # SymbolType.CONSTANT
                         if (Z)
                         {
                             Error.ConstantExists(); BIT ZP.EmulatorPCL
@@ -594,7 +597,8 @@ unit Statement // Statement.asm
                 Error.CheckError();
                 if (NC) { break; } // error exit
                 
-                STZ ZP.TOPT // set RHS type to 0 if there is no initializer
+                //STZ ZP.TOPT // set RHS type to 0 if there is no initializer
+                STZ declInitializer // no initializer
                 
                 // Check for optional initialization
                 LDX ZP.CurrentToken
@@ -613,6 +617,7 @@ unit Statement // Statement.asm
                         Error.CheckError();
                         if (C)
                         {
+                            SMB4 ZP.FLAGS // Bit 4 - initialization mode for global variables calling ExecuteOpCodes
                             Statement.EvaluateExpression();
                             Error.CheckError();
                         }
@@ -657,6 +662,7 @@ unit Statement // Statement.asm
                                 break; // error exit
                             }
                         }
+                        INC declInitializer
                         SEC
                     }
                     case Token.EOL:
@@ -758,7 +764,7 @@ unit Statement // Statement.asm
             LDA ZP.NEXTH
             PHA
             
-            LDA ZP.NEXTT // did we have "= <expression>"?
+            LDA declInitializer // did we have "= <expression>"?
             if (NZ)
             {
                 LDA ZP.NEXTL

@@ -39,14 +39,12 @@ unit Executor // Executor.asm
         {
             loop
             {
-                if (NC) { break; }  // No more symbols
-                
+                if (NC) { SEC break; }  // No more symbols
+
                 // Get symbol's value and type
                 Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = type
-                
                 // Get symbol's full type (might have VAR bit)
                 Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = type with VAR bit
-                
                 // Store type in type stack (preserving VAR bit for variables)
                 LDA ZP.ACCT
                 Stacks.PushTop(); // type is in A
@@ -55,8 +53,6 @@ unit Executor // Executor.asm
                 Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
             }
         }
-DumpStack();
-        
     }
     
     // Save all global variables from VM stack back to symbol table
@@ -65,8 +61,6 @@ DumpStack();
     // Modifies: A, X, Y, ZP.IDX, ZP.TOP, ZP.TOPT, ZP.ACCT
     SaveGlobals()
     {
-        
-DumpStack();        
         // Iterate through all symbols (variables and constants)
         Variables.IterateAll(); // Output: ZP.IDX = first symbol, C set if found
         if (C)
@@ -74,7 +68,7 @@ DumpStack();
             LDY #0  // Index counter - tracks position on stack
             loop
             {
-                if (NC) { break; }  // No more symbols
+                if (NC) { SEC break; }  // No more symbols
                 
                 // Check if this is a constant (skip if so)
                 Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = type
@@ -126,7 +120,7 @@ DumpStack();
                 STA ZP.TOPL
                 LDA Address.ValueStackMSB, Y
                 STA ZP.TOPH
-                
+
                 // Set the new value in symbol table
                 Variables.SetValue(); // Input: ZP.IDX = node, ZP.TOP = value
                 
@@ -149,6 +143,7 @@ DumpStack();
                 Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
             }
         }
+        SEC
     }
     
    
@@ -166,14 +161,24 @@ DumpStack();
 #ifdef TRACE
        LDA #(strExecuteOpCodes % 256) STA ZP.TraceMessageL LDA #(strExecuteOpCodes / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-
+        
        // CRITICAL: Reset stacks before execution to ensure clean state
        // Previous expression errors or interruptions could leave stacks inconsistent
        Executor.Reset();
-       Executor.LoadGlobals();
+       
        
        loop // Single exit block
        {
+           if (BBR4, ZP.FLAGS) // Bit 4 - initialization mode for global variables calling ExecuteOpCodes?
+           {
+               Executor.LoadGlobals();
+               Error.CheckError();
+               if (NC) 
+               { 
+                  States.SetFailure();
+                  break;
+               }
+           }
            // Initialize executor state
            InitExecutor();
            if (NC) { break; } // empty opcode stream -> State.Failure set
@@ -235,7 +240,10 @@ DumpStack();
            } // loop
            break;
        } // Single exit block
-       Executor.SaveGlobals();
+       if (BBR4, ZP.FLAGS) // Bit 4 - initialization mode for global variables calling ExecuteOpCodes?
+       {
+           Executor.SaveGlobals();
+       }
        
 #ifdef TRACE
        LDA #(strExecuteOpCodes % 256) STA ZP.TraceMessageL LDA #(strExecuteOpCodes / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -332,7 +340,11 @@ DumpStack();
            {
                INC ZP.PCH
            }
-           
+#ifdef TRACEEXE
+PHA PHX
+Space();  HOut();
+PLX PLA
+#endif           
            break;
        } // loop exit
    }
@@ -367,6 +379,11 @@ DumpStack();
            {
                INC ZP.PCH
            }
+#ifdef TRACEEXE
+PHA PHX
+Space(); LDA executorOperandH HOut(); LDA executorOperandL HOut();
+PLX PLA
+#endif           
            break;
        }
    }
@@ -1624,7 +1641,7 @@ PLX PLA
                 Instructions.CheckRHSTypeCompatibility(); // preserves Y, Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
                 if (NC) 
                 { 
-                    Error.TypeMismatch();
+                    Error.TypeMismatch(); BIT ZP.EmulatorPCL
                     States.SetFailure();
                     break; 
                 }
@@ -1640,38 +1657,6 @@ PLX PLA
                 STA ZP.ACCT                  // Update for STRING check below
             }
             
-            // Check if this is a STRING variable needing memory management
-            LDA ZP.ACCT
-            AND #BASICType.TYPEMASK
-            CMP #BASICType.STRING
-            if (Z)
-            {
-                // STRING variable - need to free old string and allocate new
-                
-                // Get OLD string pointer first
-                LDA Address.ValueStackLSB, Y
-                STA ZP.IDYL
-                LDA Address.ValueStackMSB, Y
-                STA ZP.IDYH
-                
-                // Check if old string is not null before freeing
-                LDA ZP.IDYL
-                ORA ZP.IDYH
-                if (NZ)
-                {
-                    // Transfer old string pointer to IDX for Free
-                    LDA ZP.IDYL
-                    STA ZP.IDXL
-                    LDA ZP.IDYH
-                    STA ZP.IDXH
-                    Memory.Free();  // preserves Y, Free old string
-                }
-                
-                // Allocate and copy new string (ZP.TOP has source string pointer)
-                Variables.AllocateAndCopyString(); // preserves Y, Input: ZP.TOP, Output: ZP.TOP = new pointer
-                Error.CheckError();
-                if (NC) { States.SetFailure(); break; }
-            }
             // Store value to global slot
             LDA ZP.TOPT
             STA Address.TypeStackLSB, Y
@@ -1707,7 +1692,9 @@ PLX PLA
             // clear state
             LDA #State.Success
             STA ZP.SystemState
-        
+#ifdef TRACEEXE
+            FetchOperandByte();
+#else
             // Fetch operand
             LDA [ZP.PC]
            
@@ -1717,7 +1704,7 @@ PLX PLA
             {
                 INC ZP.PCH
             }
-            
+#endif       
             // Add signed offset to BP (handles negative naturally)
             CLC
             ADC ZP.BP
@@ -1747,11 +1734,12 @@ PLX PLA
                 LDA ZP.ACCT
                 AND #BASICType.MASK  // Extract data type
                 STA ZP.NEXTT 
+                
                 // Check type compatibility for assignment
                 Instructions.CheckRHSTypeCompatibility(); // Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
                 if (NC) 
                 { 
-                    Error.TypeMismatch();
+                    Error.TypeMismatch(); BIT ZP.EmulatorPCL
                     States.SetFailure();
                     break; 
                 }
@@ -1799,7 +1787,9 @@ PLX PLA
         // clear state
         LDA #State.Success
         STA ZP.SystemState
-    
+#ifdef TRACEEXE
+        FetchOperandByte();
+#else            
         // Fetch operand
         LDA [ZP.PC]
        
@@ -1809,6 +1799,7 @@ PLX PLA
         {
             INC ZP.PCH
         }
+#endif
         
         // signed BP offset  in A
         // Stacks.GetStackTopBP() -> Stacks.PushTop()

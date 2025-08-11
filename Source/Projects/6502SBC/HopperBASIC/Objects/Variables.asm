@@ -19,9 +19,19 @@ unit Variables
         
         loop // start of single exit block
         {
+            LDA ZP.IDYL
+            PHA
+            LDA ZP.IDYH
+            PHA
+            
             // Check if symbol already exists
             LDX #ZP.VariablesList
             Objects.Find();
+            
+            PLA
+            STA ZP.IDYH
+            PLA
+            STA ZP.IDYL
             
             if (C)  // Symbol already exists
             {
@@ -741,7 +751,7 @@ unit Variables
             
             // Check if it's a STRING variable
             LDA ZP.ACCT
-            AND #0x0F  // Extract data type (low nibble)
+            AND # BASICType.TYPEMASK  // Extract data type (without VAR)
             CMP #BASICType.STRING
             if (NZ)
             {

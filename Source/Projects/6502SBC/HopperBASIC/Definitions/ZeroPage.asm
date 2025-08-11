@@ -38,7 +38,7 @@ unit ZP // ZeroPage.asm
     // Bit 7 - (unused in BASIC)
     // Bit 6 - (unused in BASIC)
     // Bit 5 - (unused in BASIC)
-    // Bit 4 - (unused in BASIC)
+    // Bit 4 - initialization mode for global variables calling ExecuteOpCodes
     // Bit 3 - (reserved for REPL mode flag - not currently in use)
     // Bit 2 - TRON | TROFF (trace on/off)
     // Bit 1 - Temporary exit flag for Console.processTokens() loop control

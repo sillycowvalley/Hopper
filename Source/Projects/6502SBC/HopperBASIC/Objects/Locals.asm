@@ -685,4 +685,93 @@ unit Locals
         PLX
         PLA
     }
+    // Remove the last local/argument from the function's list
+    // Input: ZP.IDX = function node address
+    // Output: C set if successful, NC if list was empty
+    // Munts: ZP.LCURRENT, ZP.LPREVIOUS, ZP.IDYL, ZP.IDYH
+    RemoveLast()
+    {
+        PHA
+        PHY
+        
+        loop // Single exit
+        {
+            // Get locals/arguments list head from function node
+            LDY #Objects.snLocals
+            LDA [ZP.IDX], Y
+            STA ZP.LCURRENTL
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.LCURRENTH
+            
+            // Check if list is empty
+            LDA ZP.LCURRENTL
+            ORA ZP.LCURRENTH
+            if (Z)
+            {
+                CLC  // List was empty
+                break;
+            }
+            
+            // Initialize previous pointer to point to head pointer in function node
+            CLC
+            LDA ZP.IDXL
+            ADC #Objects.snLocals
+            STA ZP.LPREVIOUSL
+            LDA ZP.IDXH
+            ADC #0
+            STA ZP.LPREVIOUSH
+            
+            // Walk to the end of the list
+            loop
+            {
+                // Check if current node has a next
+                LDY #lnNext
+                LDA [ZP.LCURRENT], Y
+                STA ZP.IDYL  // Save next pointer low
+                INY
+                LDA [ZP.LCURRENT], Y
+                STA ZP.IDYH  // Save next pointer high
+                
+                // Is this the last node?
+                LDA ZP.IDYL
+                ORA ZP.IDYH
+                if (Z)
+                {
+                    // This is the last node - remove it
+                    // Update previous->next to NULL
+                    LDY #0
+                    LDA #0
+                    STA [ZP.LPREVIOUS], Y
+                    INY
+                    STA [ZP.LPREVIOUS], Y
+                    
+                    // Free the node
+                    LDA ZP.LCURRENTL
+                    STA ZP.IDXL
+                    LDA ZP.LCURRENTH
+                    STA ZP.IDXH
+                    Memory.Free();
+                    
+                    SEC  // Success
+                    break;
+                }
+                
+                // Not the last - move forward
+                LDA ZP.LCURRENTL
+                STA ZP.LPREVIOUSL
+                LDA ZP.LCURRENTH
+                STA ZP.LPREVIOUSH
+                
+                LDA ZP.IDYL
+                STA ZP.LCURRENTL
+                LDA ZP.IDYH
+                STA ZP.LCURRENTH
+            }
+            break;
+        }
+        
+        PLY
+        PLA
+    }
 }
