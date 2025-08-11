@@ -279,12 +279,13 @@ unit Emit
 #endif
    }
    
-   
-   
+  
+   // In emit.asm
+
    // Emit PUSHGLOBAL opcode for identifier
    // Input: Current token is IDENTIFIER
-   // Output: PUSHGLOBAL opcode with node address emitted, C set if successful
-   // Modifies: A, X, Y, ZP.TOP, ZP.IDX, compilerOperand1/2
+   // Output: PUSHGLOBAL opcode with index emitted, C set if successful
+   // Modifies: A, X, Y, ZP.TOP, ZP.IDX, compilerOperand1
    const string emitPushGlobalTrace = "Emit PUSHGLOBAL";
    PushGlobal()
    {
@@ -293,7 +294,9 @@ unit Emit
        PHY
        
 #ifdef TRACE
-       LDA #(emitPushGlobalTrace % 256) STA ZP.TraceMessageL LDA #(emitPushGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+       LDA #(emitPushGlobalTrace % 256) STA ZP.TraceMessageL 
+       LDA #(emitPushGlobalTrace / 256) STA ZP.TraceMessageH 
+       Trace.MethodEntry();
 #endif
        
        loop // Single exit
@@ -305,7 +308,8 @@ unit Emit
            
            // Find the variable/constant by name
            STZ ZP.SymbolIteratorFilter  // Accept both variables and constants
-           Variables.Find();  // Input: ZP.TOP = name, Output: ZP.IDX = node address
+           Variables.Find();  // Input: ZP.TOP = name
+                              // Output: ZP.IDX = node address, ZP.IDYL = index
            if (NC)
            {
                // Variable not found
@@ -313,21 +317,24 @@ unit Emit
                break;
            }
            
-           // Store node address as operands
-           LDA ZP.IDXL
-           STA Compiler.compilerOperand1  // LSB
-           LDA ZP.IDXH
-           STA Compiler.compilerOperand2  // MSB
+           // Check if index is valid (< 256 variables)
+           // Since IDYL is a byte, it's always valid
            
-           // Emit PUSHGLOBAL with word operand
-           LDA # OpCode.PUSHGLOBAL
+           // Store index as operand
+           LDA ZP.IDYL
+           STA Compiler.compilerOperand1  // Index
+           
+           // Emit PUSHGLOBAL with byte operand
+           LDA #OpCode.PUSHGLOBAL
            STA Compiler.compilerOpCode
-           Emit.OpCodeWithWord();
+           Emit.OpCodeWithByte();
            break;
        }
        
 #ifdef TRACE
-       LDA #(emitPushGlobalTrace % 256) STA ZP.TraceMessageL LDA #(emitPushGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+       LDA #(emitPushGlobalTrace % 256) STA ZP.TraceMessageL 
+       LDA #(emitPushGlobalTrace / 256) STA ZP.TraceMessageH 
+       Trace.MethodExit();
 #endif
        
        PLY
@@ -335,6 +342,56 @@ unit Emit
        PLA
    }
    
+   
+   // Emit POPGLOBAL opcode to store to variable  
+   // Input: Variable name in ZP.TOP (from assignment compilation)
+   // Output: POPGLOBAL opcode emitted with index
+   // Modifies: compilerOpCode, compilerOperand1, ZP.IDX, ZP.IDYL
+   const string emitPopGlobalTrace = "Emit POPGLOBAL";
+   PopGlobal()
+   {
+#ifdef TRACE
+       LDA #(emitPopGlobalTrace % 256) STA ZP.TraceMessageL 
+       LDA #(emitPopGlobalTrace / 256) STA ZP.TraceMessageH 
+       Trace.MethodEntry();
+#endif
+       
+       loop
+       {
+           // TOP already contains variable name from assignment compilation
+           
+           // Find the variable by name
+           LDA #SymbolType.VARIABLE
+           STA ZP.SymbolIteratorFilter  // Only variables (not constants)
+           Variables.Find();  // Input: ZP.TOP = name
+                             // Output: ZP.IDX = node address, ZP.IDYL = index
+           if (NC)
+           {
+               // Variable not found or is a constant
+               Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
+               break;
+           }
+           
+           // Store index as operand
+           LDA ZP.IDYL
+           STA Compiler.compilerOperand1  // Index
+           
+           // Emit POPGLOBAL with byte operand
+           LDA #OpCode.POPGLOBAL
+           STA Compiler.compilerOpCode
+           Emit.OpCodeWithByte();
+           break;
+       }
+       
+#ifdef TRACE
+       LDA #(emitPopGlobalTrace % 256) STA ZP.TraceMessageL 
+       LDA #(emitPopGlobalTrace / 256) STA ZP.TraceMessageH 
+       Trace.MethodExit();
+#endif
+   }
+     
+   
+     
    
    // Emit PUSHBIT opcode with immediate value
    // Input: A = bit value (0 or 1)
@@ -475,44 +532,7 @@ unit Emit
 #endif
    }
    
-   // Emit POPGLOBAL opcode to store to variable  
-   // Input: No parameters (uses current token position for variable name offset)
-   // Output: POPGLOBAL opcode emitted with token offset
-   // Modifies: compilerOpCode, compilerOperand1, ZP.ACC (via CalculateTokenOffset), buffer state
-   const string emitPopGlobalTrace = "Emit POPGLOBAL";
-   PopGlobal()
-   {
-#ifdef TRACE
-       LDA #(emitPopGlobalTrace % 256) STA ZP.TraceMessageL LDA #(emitPopGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-       
-       loop
-       {
-           // Calculate offset to current token (variable name)
-           CalculateTokenOffset();
-           if (NC) { break; }
-           
-           // Check if offset fits in single byte
-           LDA ZP.ACCH
-           if (Z) // High byte is 0, use single-byte operand
-           {
-               LDA ZP.ACCL
-               STA Compiler.compilerOperand1
-               LDA #OpCode.POPGLOBAL
-               STA Compiler.compilerOpCode
-               Emit.OpCodeWithByte();
-               break;
-           }
-           
-           // Offset too large
-           Error.BufferOverflow(); BIT ZP.EmulatorPCL
-           break;
-       } // loop
-       
-#ifdef TRACE
-       LDA #(emitPopGlobalTrace % 256) STA ZP.TraceMessageL LDA #(emitPopGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-   }
+  
    
    
    // Emit arithmetic operation opcode

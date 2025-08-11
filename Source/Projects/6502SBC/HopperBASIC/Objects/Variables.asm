@@ -81,7 +81,7 @@ unit Variables
     
     // Find variable/constant by name with optional type filtering
     // Input: ZP.TOP = name pointer, ZP.SymbolIteratorFilter = expected symbolType (VARIABLE or CONSTANT, 0 = any)
-    // Output: ZP.IDX = symbol node address, C set if found and correct type, NC if not found or wrong type
+    // Output: ZP.IDX = symbol node address, ZP.IDY = index in list, C set if found and correct type, NC if not found or wrong type
     // Munts: ZP.LCURRENT, ZP.SymbolTemp0
     Find()
     {
@@ -147,6 +147,7 @@ unit Variables
     GetValue()
     {
         PHA
+        PHY
         
         loop // start of single exit block
         {
@@ -180,6 +181,7 @@ unit Variables
             break;
         } // end of single exit block
         
+        PLY
         PLA
     }
     
@@ -247,7 +249,7 @@ unit Variables
                 LDA ZP.TOPH
                 STA ZP.IDYH
             }
-           // Set the new string pointer as the variable's value
+            // Set the new string pointer as the variable's value
             Objects.SetValue(); // Uses ZP.IDY, C = success, NC = failure
             break;
         } // end of single exit block
@@ -418,6 +420,10 @@ unit Variables
         PHA
         LDA ZP.IDXH
         PHA
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
         LDA ZP.TOPL
         PHA
         LDA ZP.TOPH
@@ -475,6 +481,10 @@ unit Variables
         STA ZP.TOPH
         PLA   
         STA ZP.TOPL
+        PLA
+        STA ZP.IDYH
+        PLA   
+        STA ZP.IDYL
         PLA
         STA ZP.IDXH
         PLA   
@@ -805,6 +815,12 @@ unit Variables
         PHX
         PHY
         
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
+        
+        
         loop
         {
             STZ ZP.SymbolIteratorFilter  // Accept any symbol type
@@ -843,6 +859,12 @@ unit Variables
             CLC
             break;
         }
+        
+        PLA
+        STA ZP.IDYH
+        PLA
+        STA ZP.IDYL
+        
         
         PLY
         PLX

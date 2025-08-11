@@ -140,7 +140,7 @@ unit Objects
     // Find symbol by name
     // Input: X = ZP address of table head (ZP.VariableList or ZP.FunctionsList),
     //        ZP.TOP = name pointer to search for
-    // Output: ZP.IDX = symbol node address, C set if found, NC if not found
+    // Output: ZP.IDX = symbol node address, ZP.IDY = index in list, C set if found, NC if not found
     // Munts: ZP.LCURRENT
     Find()
     {
@@ -155,6 +155,9 @@ unit Objects
         
         loop // start of single exit block
         {
+            STZ ZP.IDYL  // Initialize counter to 0
+            STZ ZP.IDYH  // always zero for now
+            
             // Start iteration
             Table.GetFirst(); // Returns first node in IDX
             loop
@@ -173,6 +176,9 @@ unit Objects
                 {
                     break;
                 }
+                
+                // Increment index counter
+                IncIDY();
                 
                 // Move to next node
                 Table.GetNext(); // Updates IDX

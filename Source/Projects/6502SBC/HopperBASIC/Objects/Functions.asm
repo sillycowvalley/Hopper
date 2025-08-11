@@ -15,7 +15,7 @@ unit Functions
     // Declare new function
     // Input: ZP.TOP = name pointer
     //        ZP.NEXT = arguments list head pointer, ZP.IDY = function body tokens pointer
-    // Output: ZP.IDX = function node address, C set if successful, NC if error
+    // Output: ZP.IDX = function node address, ZP.IDY = index in list, C set if successful, NC if error
     // Munts: ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT
     Declare()
     {
@@ -61,7 +61,7 @@ unit Functions
     
     // Find function by name
     // Input: ZP.TOP = name pointer
-    // Output: ZP.IDX = function node address, C set if found and is function, NC if not found or wrong type
+    // Output: ZP.IDX = function node address, ZP.IDY = index in list, C set if found and is function, NC if not found or wrong type
     // Munts: ZP.LCURRENT, ZP.SymbolTemp0
     Find()
     {
@@ -247,6 +247,10 @@ unit Functions
         PHA
         LDA ZP.IDXH
         PHA
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
         
         loop // start of single exit block
         {
@@ -291,6 +295,10 @@ unit Functions
             break;
         } // end of single exit block
     
+        PLA
+        STA ZP.IDYH
+        PLA   
+        STA ZP.IDYL
         PLA
         STA ZP.IDXH
         PLA   

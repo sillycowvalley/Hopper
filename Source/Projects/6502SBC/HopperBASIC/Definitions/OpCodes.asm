@@ -88,6 +88,11 @@ unit OpCodes
        RETURN       = 0x49,  // Return from function (no return value)
        RETURNVAL    = 0x4A,  // Return from function (pop return value from stack)
        
+       // Global variable operations (unresolved → resolved)
+       PUSHGLOBAL   = 0x4B,  // Push global [value] (resolved at compile time to index in Variables)
+       POPGLOBAL    = 0x4C,  // Pop to global [value]  (resolved at compile time to index in Variables)
+       
+       
        // === OPCODES WITH TWO BYTE OPERANDS (0x80-0xBF) ===
        // Bits 7-6: 10 (two byte operands)
        // Bits 5-0: OpCode (0-63 available)
@@ -101,14 +106,10 @@ unit OpCodes
        CALL         = 0x83,  // Call function by name [name_offset_lsb] [name_offset_msb]
        CALLF        = 0x84,  // Call function fast [node_lsb] [node_msb] (resolved on first call)
        
-       // Global variable operations (unresolved → resolved)
-       PUSHGLOBAL   = 0x87,  // Push global [node_lsb] [node_msb] (resolved at compile time)
-       POPGLOBAL    = 0x88,  // Pop to global [node_lsb] [node_msb] (resolved at compile time)
-       
        // Control flow (long jumps)
-       JUMPW        = 0x89,  // Unconditional jump [lsb] [msb]
-       JUMPZW       = 0x8A,  // Jump if zero [lsb] [msb]
-       JUMPNZW      = 0x8B,  // Jump if non-zero [lsb] [msb]
+       JUMPW        = 0x87,  // Unconditional jump [lsb] [msb]
+       JUMPZW       = 0x88,  // Jump if zero [lsb] [msb]
+       JUMPNZW      = 0x89,  // Jump if non-zero [lsb] [msb]
        
 
         // === THREE-OPERAND OPCODES (0xC0-0xFF) ===

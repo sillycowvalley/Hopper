@@ -133,7 +133,9 @@ unit ZP // ZeroPage.asm
     const byte CompilerTokenPosH    = 0x35;  // Compiler pos high
     const byte CompilerFlags        = 0x36;  // Compilation state flags: 
                                              //     BIT0 - the current expression being evaluated is numeric (INT|WORD|BYTE) and constant - used by compileExpressionTree()
-                                             //     BIT1 - we created the variable - used by CompileForStatement
+                                             //     BIT1 - we own the implicit variable - used by CompileForStatement
+                                             //     BIT2 - we used a global for our implicit variable - used by CompileForStatement
+                                             //     BIT3 - we're creating FORITF (rather than FORCHK & FORIT)
     const byte OpCodeTemp           = 0x37;  // Temporary opcode construction
     
     // Buffer pointers - point to the currently active buffer set (either BASIC or REPL)

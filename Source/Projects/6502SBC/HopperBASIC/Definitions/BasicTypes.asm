@@ -43,6 +43,7 @@ unit BASICTypes // BASICTypes.asm
                 // VAR contains a type
                 LDA #'(' COut();
                 TXA
+                AND # BASICType.TYPEMASK
                 PrintType();
                 LDA #')' COut();
             }    

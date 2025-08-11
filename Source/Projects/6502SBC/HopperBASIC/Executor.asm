@@ -14,8 +14,8 @@ unit Executor // Executor.asm
    const uint executorOperandBP     = Address.BasicExecutorWorkspace + 13;  // BP offset operand (FORCHK and FORIT)
    
    // Reset Hopper VM to clean state before REPL execution
-   Reset()
-   {
+    Reset()
+    {
        // Reset stacks (already proven to work in ExecuteOpCodes)
        STZ ZP.SP    // Reset value/type stack pointer to 0
        STZ ZP.BP    // Reset base pointer to 0
@@ -24,7 +24,133 @@ unit Executor // Executor.asm
        // Clear any error conditions
        Error.ClearError();
        States.SetSuccess();
-   }
+    }
+   
+   
+    // Load all global variables and constants from symbol table to VM stack
+    // Called after Reset() to initialize stack with globals
+    // Output: All globals copied to stack at their index positions
+    // Modifies: A, X, Y, ZP.IDX, ZP.TOP, ZP.TOPT, ZP.ACCT
+    LoadGlobals()
+    {
+        // Iterate through all symbols (variables and constants)
+        Variables.IterateAll(); // Output: ZP.IDX = first symbol, C set if found
+        if (C)
+        {
+            loop
+            {
+                if (NC) { break; }  // No more symbols
+                
+                // Get symbol's value and type
+                Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = type
+                
+                // Get symbol's full type (might have VAR bit)
+                Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = type with VAR bit
+                
+                // Store type in type stack (preserving VAR bit for variables)
+                LDA ZP.ACCT
+                Stacks.PushTop(); // type is in A
+                
+                // Move to next symbol
+                Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
+            }
+        }
+DumpStack();
+        
+    }
+    
+    // Save all global variables from VM stack back to symbol table
+    // Called before exit to persist changes to globals (skips constants)
+    // Output: All variable values updated from stack
+    // Modifies: A, X, Y, ZP.IDX, ZP.TOP, ZP.TOPT, ZP.ACCT
+    SaveGlobals()
+    {
+        
+DumpStack();        
+        // Iterate through all symbols (variables and constants)
+        Variables.IterateAll(); // Output: ZP.IDX = first symbol, C set if found
+        if (C)
+        {
+            LDY #0  // Index counter - tracks position on stack
+            loop
+            {
+                if (NC) { break; }  // No more symbols
+                
+                // Check if this is a constant (skip if so)
+                Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = type
+                LDA ZP.ACCT
+                AND #SymbolType.MASK
+                CMP #SymbolType.CONSTANT
+                if (Z)  // It's a constant - skip it
+                {
+                    INY  // Still increment index to stay in sync with stack position
+                    Variables.IterateNext();
+                    continue;  // Skip to next iteration
+                }
+                
+                // It's a variable - check if type changed (for VAR and STRING handling)
+                LDA ZP.ACCT
+                AND #BASICType.TYPEMASK
+                STA ZP.ACCH  // Save old base type
+                
+                // Get new type from type stack at this index
+                LDA Address.TypeStackLSB, Y
+                STA ZP.TOPT
+                
+                // Check if old type was STRING and type changed
+                AND #BASICType.TYPEMASK
+                CMP ZP.ACCH
+                if (NZ)  // Type changed
+                {
+                    // If old type was STRING, need to free it
+                    LDA ZP.ACCH
+                    CMP #BASICType.STRING
+                    if (Z)
+                    {
+                        Variables.GetValue(); // preserves Y, Get old string pointer from symbol table
+                        LDA ZP.TOPL
+                        ORA ZP.TOPH
+                        if (NZ)  // Not null
+                        {
+                            LDA ZP.TOPL
+                            STA ZP.IDXL
+                            LDA ZP.TOPH
+                            STA ZP.IDXH
+                            Memory.Free();  // preserves Y, Free old string
+                        }
+                    }
+                }
+                
+                // Get value from value stacks at this index
+                LDA Address.ValueStackLSB, Y
+                STA ZP.TOPL
+                LDA Address.ValueStackMSB, Y
+                STA ZP.TOPH
+                
+                // Set the new value in symbol table
+                Variables.SetValue(); // Input: ZP.IDX = node, ZP.TOP = value
+                
+                // Update type if it's a VAR variable
+                LDA Address.TypeStackLSB, Y  // Get type from stack
+                AND #BASICType.VAR
+                if (NZ)  // VAR variable - update type in symbol table
+                {
+                    
+                    // Need to get the type from the correct stack position
+                    LDA Address.TypeStackLSB, Y  // Get from stack using index
+                    PHY
+                    LDY #Objects.snType
+                    STA [ZP.IDX], Y
+                    PLY
+                }
+                
+                // Move to next symbol
+                INY  // Increment index for next stack position
+                Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
+            }
+        }
+    }
+    
    
    // Main entry point - Execute compiled opcodes
    // Input: ZP.OpCodeBufferContentSizeL/H contains opcode buffer length
@@ -44,6 +170,7 @@ unit Executor // Executor.asm
        // CRITICAL: Reset stacks before execution to ensure clean state
        // Previous expression errors or interruptions could leave stacks inconsistent
        Executor.Reset();
+       Executor.LoadGlobals();
        
        loop // Single exit block
        {
@@ -108,6 +235,7 @@ unit Executor // Executor.asm
            } // loop
            break;
        } // Single exit block
+       Executor.SaveGlobals();
        
 #ifdef TRACE
        LDA #(strExecuteOpCodes % 256) STA ZP.TraceMessageL LDA #(strExecuteOpCodes / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1420,39 +1548,33 @@ PLX PLA
        
        loop
        {
-           // Fetch node address (little-endian)
-           FetchOperandWord(); // Result in executorOperandL/H
-           Error.CheckError();
-           if (NC) 
-           { 
-               States.SetFailure();
-               break; 
+           // Fetch index operand (single byte)
+           FetchOperandByte(); // Result in A -> always Success
+           
+           TAY  // Y = global index
+           
+           // Get global type from type stack
+           LDA Address.TypeStackLSB, Y
+           STA ZP.TOPT
+           
+           // Check if this is a VAR type
+           AND #BASICType.VAR
+           if (NZ)  // VAR type - strip VAR bit for runtime use
+           {
+               LDA ZP.TOPT
+               AND #BASICType.TYPEMASK  // Strip VAR bit to get actual runtime type
+               STA ZP.TOPT
            }
            
-           // Transfer node address to ZP.IDX
-           LDA executorOperandL
-           STA ZP.IDXL
-           LDA executorOperandH
-           STA ZP.IDXH
-           
-           // Get the variable's value and type
-           Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = type
-           Error.CheckError();
-           if (NC) 
-           { 
-               States.SetFailure();
-               break; 
-           }
-           
+           // Get value from value stacks
+           LDA Address.ValueStackLSB, Y
+           STA ZP.TOPL
+           LDA Address.ValueStackMSB, Y  
+           STA ZP.TOPH
+                 
            // Push value to stack with type
            LDA ZP.TOPT
-           Stacks.PushTop(); // Push value and type to stack
-           Error.CheckError();
-           if (NC) 
-           { 
-               States.SetFailure();
-               break; 
-           }
+           Stacks.PushTop(); // Push value and type to stack -> always Success
            
            States.SetSuccess();
            break;
@@ -1476,31 +1598,18 @@ PLX PLA
        
        loop
        {
-           // Fetch node address (little-endian)
-           FetchOperandWord(); // Result in executorOperandL/H
-           Error.CheckError();
-           if (NC) 
-           { 
-               States.SetFailure();
-               break; 
-           }
+            // Fetch index operand (single byte)
+            FetchOperandByte(); // Result in A -> always Success
+            
+            TAY  // X = global index
            
-           // Transfer node address to ZP.IDX
-           LDA executorOperandL
-           STA ZP.IDXL
-           LDA executorOperandH
-           STA ZP.IDXH
+            // Get global type from type stack
+            LDA Address.TypeStackLSB, Y
+            STA ZP.ACCT
            
-            // Get the variable's current type for compatibility checking
-            Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = type
-            Error.CheckError();
-            if (NC) 
-            { 
-                States.SetFailure();
-                break; 
-            }
             // Pop value from stack (RHS of assignment)
-            Stacks.PopTop(); // Result in ZP.TOP (value), ZP.TOPT (type)
+            Stacks.PopTop(); // Uses X, Result in ZP.TOP (value), ZP.TOPT (type)
+            
             // Check if variable has VAR bit set
             LDA ZP.ACCT
             AND #BASICType.VAR
@@ -1512,7 +1621,7 @@ PLX PLA
                 STA ZP.NEXTT 
                 
                 // Check type compatibility for assignment
-                Instructions.CheckRHSTypeCompatibility(); // Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
+                Instructions.CheckRHSTypeCompatibility(); // preserves Y, Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
                 if (NC) 
                 { 
                     Error.TypeMismatch();
@@ -1520,17 +1629,59 @@ PLX PLA
                     break; 
                 }
             }
-            // Store the value to the variable
-            Variables.SetValue(); // Input: ZP.IDX = node address, ZP.TOP = value
-            Error.CheckError();
-            if (NC) 
-            { 
-                States.SetFailure();
-                break; 
+            else  // VAR variable
+            {
+                // For VAR variables, update underlying type but keep VAR bit
+                LDA ZP.TOPT
+                AND #BASICType.TYPEMASK      // Get just the new type (strip any VAR from RHS)
+                ORA #BASICType.VAR           // Add VAR bit
+                STA Address.TypeStackLSB, Y  // Update stored type
+                STA ZP.TOPT                  // This is what we'll use for storage
+                STA ZP.ACCT                  // Update for STRING check below
             }
+            
+            // Check if this is a STRING variable needing memory management
+            LDA ZP.ACCT
+            AND #BASICType.TYPEMASK
+            CMP #BASICType.STRING
+            if (Z)
+            {
+                // STRING variable - need to free old string and allocate new
+                
+                // Get OLD string pointer first
+                LDA Address.ValueStackLSB, Y
+                STA ZP.IDYL
+                LDA Address.ValueStackMSB, Y
+                STA ZP.IDYH
+                
+                // Check if old string is not null before freeing
+                LDA ZP.IDYL
+                ORA ZP.IDYH
+                if (NZ)
+                {
+                    // Transfer old string pointer to IDX for Free
+                    LDA ZP.IDYL
+                    STA ZP.IDXL
+                    LDA ZP.IDYH
+                    STA ZP.IDXH
+                    Memory.Free();  // preserves Y, Free old string
+                }
+                
+                // Allocate and copy new string (ZP.TOP has source string pointer)
+                Variables.AllocateAndCopyString(); // preserves Y, Input: ZP.TOP, Output: ZP.TOP = new pointer
+                Error.CheckError();
+                if (NC) { States.SetFailure(); break; }
+            }
+            // Store value to global slot
+            LDA ZP.TOPT
+            STA Address.TypeStackLSB, Y
+            LDA ZP.TOPL
+            STA Address.ValueStackLSB, Y
+            LDA ZP.TOPH
+            STA Address.ValueStackMSB, Y
             States.SetSuccess();
             break;
-       }
+       } // single exit loop
        
     #ifdef TRACE
        LDA #(executePopGlobalTrace % 256) STA ZP.TraceMessageL LDA #(executePopGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();

@@ -25,8 +25,7 @@ unit Compiler // Compiler.asm
    const uint compilerSavedNodeAddrH    = Address.BasicCompilerWorkspace + 10; // 1 byte - saved node addr high
    const uint compilerCanDeclareLocals  = Address.BasicCompilerWorkspace + 11; // 1 byte - flag for statement seen to prevent further local declarations
    const uint compilerForIteratorOffset = Address.BasicCompilerWorkspace + 12; // 1 byte - signed one byte offset, location of for iterator relative to BP
-   const uint compilerOptimizingFor     = Address.BasicCompilerWorkspace + 13; // 1 byte - state still good for optimizing FOR to FORF
-   const uint compilerForIteratorType   = Address.BasicCompilerWorkspace + 14; // 1 byte - type of user or intrinsic for iterator variable
+   const uint compilerForIteratorType   = Address.BasicCompilerWorkspace + 13; // 1 byte - type of user or intrinsic for iterator variable
    
    // Initialize the opcode buffer for compilation
    // Output: OpCode buffer ready for emission
@@ -2080,7 +2079,8 @@ unit Compiler // Compiler.asm
         loop // Single exit
         {
             // Save identifier type on stack
-            PHA  // Save A (IdentifierType)
+            LDA ZP.ACCT // (IdentifierType)
+            PHA  
             
             // Save node address (will be munted by expression compilation)
             LDA ZP.IDXL
@@ -2141,6 +2141,7 @@ unit Compiler // Compiler.asm
             PLA  // Restore IDXL
             STA ZP.IDXL
             PLA  // Restore IdentifierType
+            STA ZP.ACCT 
             
             CanContinue();
             if (NC)
@@ -2165,15 +2166,18 @@ unit Compiler // Compiler.asm
             }
             else  // Must be Global
             {
-                // Global variable - use POPGLOBAL with node address
-                LDA ZP.IDXL
-                STA compilerOperand1  // LSB
-                LDA ZP.IDXH
-                STA compilerOperand2  // MSB
+                // Need to get variable name again for PopGlobal
+                // The variable node is in ZP.IDX
+                Variables.GetName();  // Returns name in ZP.STR
                 
-                LDA #OpCode.POPGLOBAL
-                STA compilerOpCode
-                Emit.OpCodeWithWord();
+                // Copy to ZP.TOP for PopGlobal
+                LDA ZP.STRL
+                STA ZP.TOPL
+                LDA ZP.STRH
+                STA ZP.TOPH
+                
+                // Call the new PopGlobal that finds by name and uses index
+                Emit.PopGlobal();
                 Error.CheckError();
                 if (NC) 
                 { 

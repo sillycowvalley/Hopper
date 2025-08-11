@@ -269,6 +269,20 @@ unit Dasm
                                 }
                                 LDA #')' COut();
                             }
+                            case OpCode.PUSHGLOBAL:
+                            case OpCode.POPGLOBAL:
+                            {
+                                
+                                LDA #'(' COut();
+                                //LDA ZP.ACCL
+                                //STA ZP.IDXL
+                                //LDA ZP.ACCH
+                                //STA ZP.IDXH
+                                //Variables.GetName();
+                                //Tools.PrintStringSTR();
+                                LDA #')' COut();
+                                 
+                            }
                             case OpCode.PUSHLOCAL:
                             case OpCode.POPLOCAL:
                             {
@@ -418,18 +432,6 @@ unit Dasm
                                 Functions.GetName();
                                 LDA #'(' COut();
                                 PrintStringSTR();
-                                LDA #')' COut();
-                            }
-                            case OpCode.PUSHGLOBAL:
-                            case OpCode.POPGLOBAL:
-                            {
-                                LDA #'(' COut();
-                                LDA ZP.ACCL
-                                STA ZP.IDXL
-                                LDA ZP.ACCH
-                                STA ZP.IDXH
-                                Variables.GetName();
-                                Tools.PrintStringSTR();
                                 LDA #')' COut();
                             }
                             case OpCode.PUSHCSTRING:

@@ -782,15 +782,21 @@ unit CompilerFlow
            // Save parent FOR iterator offset (for nested loops)
            LDA Compiler.compilerForIteratorOffset
            PHA
-           LDA Compiler.compilerOptimizingFor
-           PHA
            LDA Compiler.compilerForIteratorType
            PHA
            LDA ZP.SP // JIT was called from a running process - preserve the stack
            PHA
+           LDA ZP.CompilerFlags
+           PHA
            
-           LDA #1
-           STA Compiler.compilerOptimizingFor
+           // Compilation state flags: 
+           //     BIT0 - the current expression being evaluated is numeric (INT|WORD|BYTE) and constant - used by compileExpressionTree()
+           //     BIT1 - we own the implicit variable - used by CompileForStatement
+           //     BIT2 - we used a global for our implicit variable - used by CompileForStatement
+           //     BIT3 - we're creating FORITF (rather than FORCHK & FORIT)
+           
+           STZ  ZP.CompilerFlags
+           SMB3 ZP.CompilerFlags // assume we can optimize to use FORITF until proven otherwize
            
            // Skip FOR token
            Tokenizer.NextToken();
@@ -824,8 +830,6 @@ unit CompilerFlow
            LDA Compiler.compilerSavedNodeAddrH
            STA ZP.IDXH
            
-           RMB1 ZP.CompilerFlags
-           
            // ZP.TOP already contains name pointer from GetTokenString
            Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, ZP.ACCL = BP offset
            if (NC)
@@ -840,43 +844,45 @@ unit CompilerFlow
                    States.SetFailure();
                    break;
                }
-
-               // restore ZP.IDX after Variables.Find()
-               LDA Compiler.compilerSavedNodeAddrL
-               STA ZP.IDXL
-               LDA Compiler.compilerSavedNodeAddrH
-               STA ZP.IDXH
-                
-               // Iterator not found - check if we can create implicit local
-               LDA Compiler.compilerCanDeclareLocals
-               if (Z)  // Can't create new locals
+               else
                {
-                   Error.LateDeclaration(); BIT ZP.EmulatorPCL
-                   States.SetFailure();
-                   break;
+                   // restore ZP.IDX after Variables.Find()
+                   LDA Compiler.compilerSavedNodeAddrL
+                   STA ZP.IDXL
+                   LDA Compiler.compilerSavedNodeAddrH
+                   STA ZP.IDXH
+                    
+                   // Iterator not found - check if we can create implicit local
+                   LDA Compiler.compilerCanDeclareLocals
+                   if (Z)  // Can't create new locals
+                   {
+                       Error.LateDeclaration(); BIT ZP.EmulatorPCL
+                       States.SetFailure();
+                       break;
+                   }
+                    
+                   // Iterator not found - create implicit local
+                   // First push a default value to create the stack slot
+                   Emit.PushEmptyVar();
+                   
+                   Error.CheckError();
+                   if (NC) { States.SetFailure(); break; }
+                   
+                   // Now create the local node
+                   // ZP.TOP still contains name pointer
+                   // ZP.IDX still contains function node
+                   LDA #(SymbolType.LOCAL|BASICType.VAR)  // LOCAL type (will be updated by FROM expression type)
+                   STA ZP.SymbolType      // argument for Locals.Add()
+                   SMB1 ZP.CompilerFlags // we own the iterator
+    
+                   Locals.Add();
+                   Error.CheckError();
+                   if (NC) { States.SetFailure(); break; }
+                   
+                   // get BP offset
+                   Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, ZP.ACCL = BP offset
+                   INC Compiler.compilerFuncLocals  // Track new local
                }
-                
-               // Iterator not found - create implicit local
-               // First push a default value to create the stack slot
-               Emit.PushEmptyVar();
-               
-               Error.CheckError();
-               if (NC) { States.SetFailure(); break; }
-               
-               // Now create the local node
-               // ZP.TOP still contains name pointer
-               // ZP.IDX still contains function node
-               LDA #(SymbolType.LOCAL|BASICType.VAR)  // LOCAL type (will be updated by FROM expression type)
-               STA ZP.SymbolType      // argument for Locals.Add()
-               SMB1 ZP.CompilerFlags // we own the iterator
-
-               Locals.Add();
-               Error.CheckError();
-               if (NC) { States.SetFailure(); break; }
-               
-               // get BP offset
-               Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, ZP.ACCL = BP offset
-               INC Compiler.compilerFuncLocals  // Track new local
            }
            
            Locals.GetType();
@@ -919,7 +925,7 @@ unit CompilerFlow
            Stacks.PushTop();
            if (BBR0, ZP.CompilerFlags)
            {
-               STZ Compiler.compilerOptimizingFor // optimization to FORITF disqualified
+               RMB3 ZP.CompilerFlags // optimization to FORITF disqualified
            }
            
            // Store FROM value in iterator (POPLOCAL)
@@ -951,9 +957,9 @@ unit CompilerFlow
            if (NC) { States.SetFailure(); break; }
            
            Stacks.PushTop(); // TO integeral value
-           if (BBR0, ZP.CompilerFlags)
+           if (BBR0, ZP.CompilerFlags) // TO is not constant expression
            {
-               STZ Compiler.compilerOptimizingFor // optimization to FORITF disqualified
+               RMB3 ZP.CompilerFlags // optimization to FORITF disqualified
            }
            
            // Check for optional STEP
@@ -970,29 +976,28 @@ unit CompilerFlow
                Error.CheckError();
                if (NC) { States.SetFailure(); break; }
                
-               if (BBS0, ZP.CompilerFlags)
+               if (BBR0, ZP.CompilerFlags) // STEP is NOT constant expression
+               {
+                   RMB3 ZP.CompilerFlags // optimization to FORITF disqualified
+               }
+               else
                {
                    // STEP == 1?
-                   LDA ZP.TOPH
+                   LDA #1
+                   CMP ZP.TOPL
                    if (NZ)
                    {
-                       RMB0 ZP.CompilerFlags
+                       RMB3 ZP.CompilerFlags // STEP != 1, optimization to FORITF disqualified
                    }
                    else
                    {
-                       LDA #1
-                       CMP ZP.TOPL
+                       LDA ZP.TOPH
                        if (NZ)
                        {
-                           RMB0 ZP.CompilerFlags
+                           RMB3 ZP.CompilerFlags // STEP != 1, optimization to FORITF disqualified
                        }
                    }
                }
-               if (BBR0, ZP.CompilerFlags)
-               {
-                   STZ Compiler.compilerOptimizingFor // optimization to FORITF disqualified
-               }
-               
            }
            else
            {
@@ -1004,17 +1009,17 @@ unit CompilerFlow
                if (NC) { States.SetFailure(); break; }
            }
                                  
-           if (BBS0, ZP.CompilerFlags)
+           if (BBS3, ZP.CompilerFlags) 
            {
+               // still on track to optimize to FORITF ..
                
                // If we created it, then it is (BASICType.VAR|BASICType.INT)
                // At runtime, we'll just switch any VAR to VAR|WORD once.
-               
                LDA Compiler.compilerForIteratorType
                AND BASICType.VAR
                if (Z)
                {
-                   // check types that are not VAR for compile time failure
+                   // check user variable types that are not VAR for compile time failure
                    // stack TOP  = TO
                    // stack NEXT = FROM
                    LDA Compiler.compilerForIteratorType
@@ -1029,7 +1034,7 @@ unit CompilerFlow
                            LDA ZP.TOPH
                            if (NZ)
                            {
-                               STZ Compiler.compilerOptimizingFor  // Disqualify FORITF
+                               RMB3 ZP.CompilerFlags // TO > 255 (iterator is BYTE), optimization to FORITF disqualified
                                Error.NumericOverflow(); BIT ZP.EmulatorPCL // let the next CheckError() catch this
                            }
                            else
@@ -1039,7 +1044,7 @@ unit CompilerFlow
                                LDA ZP.TOPH
                                if (NZ)
                                {
-                                   STZ Compiler.compilerOptimizingFor  // Disqualify FORITF
+                                   // FROM > 255 (iterator is BYTE), optimization to FORITF disqualified
                                    Error.NumericOverflow(); BIT ZP.EmulatorPCL // let the next CheckError() catch this
                                }
                            }
@@ -1052,7 +1057,7 @@ unit CompilerFlow
                            LDA ZP.TOPH
                            if (MI)
                            {
-                               STZ Compiler.compilerOptimizingFor  // Disqualify FORITF (only 0..32767 allowed)
+                               RMB3 ZP.CompilerFlags  // TO > 32767 (iterator is INT), optimization to FORITF disqualified
                            }
                            else
                            {
@@ -1061,7 +1066,7 @@ unit CompilerFlow
                                LDA ZP.TOPH
                                if (MI)
                                {
-                                   STZ Compiler.compilerOptimizingFor  // Disqualify FORITF (only 0..32767 allowed)
+                                   RMB3 ZP.CompilerFlags  // FROM > 32767 (iterator is INT), optimization to FORITF disqualified
                                }
                            }
                        }
@@ -1078,15 +1083,15 @@ unit CompilerFlow
                            }
                            else
                            {
-                               // user VAR
-                               RMB0 ZP.CompilerFlags  // Disqualify FORITF
+                               // user VOID VAR ?!
+                               RMB3 ZP.CompilerFlags  // Disqualify FORITF
                            }
                        }
                        default:
                        {
                            
                            // Unexpected type for iterator
-                           RMB0 ZP.CompilerFlags  // Disqualify FORITF
+                           RMB3 ZP.CompilerFlags  // Disqualify FORITF
                        }
                    } // switch
                }
@@ -1097,7 +1102,7 @@ unit CompilerFlow
                if (Z)
                {
                    Stacks.PopTop(); // 1 - pop 1 = 0
-                   RMB0 ZP.CompilerFlags // optimization to FORITF disqualified
+                   RMB3 ZP.CompilerFlags // FROM == TO, requires FORCHK, optimization to FORITF disqualified
                }
                else
                {
@@ -1111,7 +1116,7 @@ unit CompilerFlow
                    Stacks.PopA();                          // 1 - pop 1 = 0
                    if (Z)
                    {
-                       RMB0 ZP.CompilerFlags // optimization to FORITF disqualified
+                       RMB3 ZP.CompilerFlags // TO >= FROM, optimization to FORITF disqualified
                    }
                }
            }
@@ -1122,9 +1127,9 @@ unit CompilerFlow
                Stacks.PopTop();
            }
 
-           if (BBR0, ZP.CompilerFlags)
+           if (BBR3, ZP.CompilerFlags)
            {
-               STZ Compiler.compilerOptimizingFor
+               // NOT optimizing for FORITF
                // Save FORCHK operand position for later patching
                LDA ZP.OpCodeBufferContentSizeL
                CLC
@@ -1275,9 +1280,9 @@ unit CompilerFlow
            
            // Calculate backward jump offset for FORIT
            // Current position + 4 (FORIT size) = position after FORIT
-           LDA Compiler.compilerOptimizingFor
-           if (NZ) // Optimized
+           if (BBS3, ZP.CompilerFlags)
            {
+               // optimized for FORITF - shorter distance to jump back
                CLC
                LDA ZP.OpCodeBufferContentSizeL
                ADC #2
@@ -1304,8 +1309,7 @@ unit CompilerFlow
            
                      
            // Emit appropriate iterator based on optimization constraints
-           LDA Compiler.compilerOptimizingFor
-           if (NZ) // Optimized
+           if (BBS3, ZP.CompilerFlags) // Optimized for FORITF
            {
                LDA Compiler.compilerForIteratorOffset
                Emit.ForIterateFast();  // Use FORITF
@@ -1381,11 +1385,11 @@ unit CompilerFlow
        
        // Restore parent FOR iterator offset
        PLA
+       STA ZP.CompilerFlags
+       PLA
        STA ZP.SP
        PLA
        STA Compiler.compilerForIteratorType
-       PLA
-       STA Compiler.compilerOptimizingFor
        PLA
        STA Compiler.compilerForIteratorOffset
        
