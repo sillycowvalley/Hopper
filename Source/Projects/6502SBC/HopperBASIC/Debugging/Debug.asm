@@ -2194,6 +2194,17 @@ unit Debug // Debug.asm
     }
     
     // Public compact stack dump method
+    // Input: Stack state (ZP.SP, ZP.BP, Address.*Stack arrays)
+    // Output: Single line stack dump to serial, right-aligned at column 21
+    //         Shows top 20 stack elements: newest on left, oldest on right
+    //         Format: "     i:0000 b:0042|v:0000 v:0000" where | marks BP
+    // Modifies: Serial output only
+    // Preserves: All registers, flags, and ZP locations (including ZP.ACCL, ZP.STRL, ZP.STRH)
+    // 
+    // Displays stack elements with single-character type indicators:
+    //   v=VOID, i=INT, b=BYTE, w=WORD, B=BIT, s=STRING, a=ARRAY
+    // VAR types shown in brackets: [i:0042]
+    // Base Pointer position marked with '|' separator
     CompactStack()
     {
         PHP PHA PHX PHY
@@ -2206,6 +2217,28 @@ unit Debug // Debug.asm
         LDA ZP.STRH
         PHA
         
+        nL();
+        
+        // First call: count characters (A=0)
+        LDA #0
+        compactStack();  // Returns character count in ZP.ACCL
+        
+        // Calculate and print leading spaces
+        LDA #120
+        SEC
+        SBC ZP.ACCL
+        TAY  // Y = number of leading spaces
+        
+        loop
+        {
+            CPY #0
+            if (Z) { break; }
+            space();
+            DEY
+        }
+        
+        // Second call: print the stack (A=1)
+        LDA #1
         compactStack();
         
         // Restore state
@@ -2218,31 +2251,47 @@ unit Debug // Debug.asm
         
         PLY PLX PLA PLP
     }
-    
+
     // Internal compact stack implementation
+    // Input: A = mode (0=count characters, 1=print)
+    //        Stack state (ZP.SP, ZP.BP, Address.*Stack arrays)
+    // Output: If counting (A=0): character count in ZP.ACCL
+    //         If printing (A=1): formatted stack dump to serial
+    // Modifies: ZP.ACCL (character counter when A=0), ZP.DB0 (VAR flag temp)
     compactStack()
     {
-        loop
+        PHA  // Save mode on stack
+        
+        // Stack values from SP-19 to SP (newest on left, oldest on right)
+        LDX ZP.SP
+        CPX #0
+        if (Z) 
         {
-            nL();
-            LDY #21
-            loop
-            {
-                space();
-                DEY
-                if (Z) { break; }
-            }
-            
-            // Stack values from SP-19 to SP (newest on left, top on right)
-            LDX ZP.SP
-            CPX #0
-            if (Z) 
-            {
-                break; // empty stack
-            }
-            
-            LDY #0          // Counter for 20 elements
-            
+            PLA  // Clean up mode from stack
+            return; // empty stack
+        }
+        
+        PLA
+        PHA  // Peek at mode
+        if (Z)
+        {
+            // Counting mode - initialize counter
+            STZ ZP.ACCL
+        }
+        
+        LDY #0  // Counter for 20 elements
+        
+        // Handle initial BP marker or space
+        PLA
+        PHA  // Peek at mode again
+        if (Z)
+        {
+            // Counting mode
+            INC ZP.ACCL  // Count the BP marker or space
+        }
+        else
+        {
+            // Printing mode
             LDA ZP.BP
             CMP ZP.SP
             if (Z)
@@ -2253,27 +2302,63 @@ unit Debug // Debug.asm
             {
                 space();
             }
-            loop
+        }
+        
+        loop  // Element loop
+        {
+            CPY #20
+            if (Z) { break; }
+            
+            DEX  // Point to actual stack element (SP-1 is top)
+            CPX #0xFF  // Did we wrap around?
+            if (Z) 
+            { 
+                // We've gone below position 0, stop
+                break; 
+            }
+            
+            // Check VAR status
+            STZ ZP.DB0
+            LDA Address.TypeStackLSB, X
+            AND #BASICType.VAR
+            if (NZ)
             {
-                CPY #20
-                if (Z) { break; }
-                
-                DEX  // Point to actual stack element (SP-1 is top)
-                CPX #0xFF  // Did we wrap around?
-                if (Z) 
-                { 
-                    // We've gone below position 0, stop
-                    break; 
-                }
-                
-                STZ ZP.ACCL
-                LDA Address.TypeStackLSB, X
-                AND #BASICType.VAR
+                LDA #1
+                STA ZP.DB0  // Remember VAR status
+            }
+            
+            PLA
+            PHA  // Peek at mode
+            if (Z)
+            {
+                // === COUNTING MODE ===
+                LDA ZP.DB0
                 if (NZ)
                 {
-                    // variant type
-                    LDA #1
-                    STA ZP.ACCL
+                    INC ZP.ACCL  // '['
+                }
+                
+                INC ZP.ACCL      // Type character
+                INC ZP.ACCL      // ':'
+                INC ZP.ACCL      // 4 hex digits
+                INC ZP.ACCL
+                INC ZP.ACCL
+                INC ZP.ACCL
+                
+                LDA ZP.DB0
+                if (NZ)
+                {
+                    INC ZP.ACCL  // ']'
+                }
+                
+                INC ZP.ACCL      // Space or '|'
+            }
+            else
+            {
+                // === PRINTING MODE ===
+                LDA ZP.DB0
+                if (NZ)
+                {
                     LDA #'[' 
                     cOut();
                 }
@@ -2282,13 +2367,13 @@ unit Debug // Debug.asm
                 AND #SymbolType.MASK
                 if (NZ)
                 {
-                    LDA #'!' cOut(); cOut(); cOut(); // massive error for SymbolType to sneak through to the stack
+                    LDA #'!'
+                    cOut(); cOut(); cOut(); // massive error
                 }
-                
                 
                 // Print type nibble
                 LDA Address.TypeStackLSB, X
-                AND #BASICType.TYPEMASK   // Get just the type nibble (mask off VAR bit)
+                AND #BASICType.TYPEMASK
                 switch (A)
                 {
                     case BASICType.INT:
@@ -2321,7 +2406,7 @@ unit Debug // Debug.asm
                     }
                     default:
                     {
-                        hNibbleOut();  // Print single hex nibble
+                        hNibbleOut();
                     }
                 }
                 LDA #':' cOut();
@@ -2332,14 +2417,14 @@ unit Debug // Debug.asm
                 LDA Address.ValueStackLSB, X
                 hOut();
                 
-                LDA ZP.ACCL
+                LDA ZP.DB0
                 if (NZ)
                 {
                     LDA #']' 
                     cOut();
                 }
                 
-                // Print separator - '|' after BP, space otherwise
+                // Print separator
                 TXA
                 CMP ZP.BP
                 if (Z)
@@ -2350,20 +2435,12 @@ unit Debug // Debug.asm
                 {
                     space();
                 }
-                
-                CPX #0xFF
-                if (Z) 
-                {
-                    break;
-                }
-                
-                INY
             }
-            break;
-        } // single exit
+            
+            INY
+        } // Element loop
         
-        space(); LDA ZP.SP HOut();space(); LDA ZP.BP HOut();
-        
+        PLA  // Clean up mode from stack
     }
     
     // Print single hex nibble (low 4 bits of A)

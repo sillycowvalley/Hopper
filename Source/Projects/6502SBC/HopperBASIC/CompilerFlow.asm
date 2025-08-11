@@ -981,8 +981,11 @@ unit CompilerFlow
            Compiler.compileExpressionTree();  // Compile FROM expression
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
+           
            // push 2 copies
+           LDA ZP.TOPT
            Stacks.PushTop(); // FROM integral value
+           LDA ZP.TOPT
            Stacks.PushTop();
            if (BBR0, ZP.CompilerFlags)
            {
@@ -1018,6 +1021,7 @@ unit CompilerFlow
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
            
+           LDA ZP.TOPT
            Stacks.PushTop(); // TO integeral value
            if (BBR0, ZP.CompilerFlags) // TO is not constant expression
            {
@@ -1072,7 +1076,6 @@ unit CompilerFlow
                if (NC) { States.SetFailure(); break; }
                INC Compiler.compilerFuncLocals   // consider a RETURN from within the loop needing to clean the stack
            }
-                                 
            if (BBS3, ZP.CompilerFlags) 
            {
                // still on track to optimize to FORITF ..

@@ -122,7 +122,7 @@ unit Executor // Executor.asm
                 STA ZP.TOPH
 
                 // Set the new value in symbol table
-                Variables.SetValue(); // Input: ZP.IDX = node, ZP.TOP = value
+                Variables.SetValue(); // preserves Y, Input: ZP.IDX = node, ZP.TOP = value
                 
                 // Update type if it's a VAR variable
                 LDA Address.TypeStackLSB, Y  // Get type from stack
@@ -132,8 +132,13 @@ unit Executor // Executor.asm
                     
                     // Need to get the type from the correct stack position
                     LDA Address.TypeStackLSB, Y  // Get from stack using index
+                    STA ZP.TOPT
+                    
                     PHY
                     LDY #Objects.snType
+                    LDA [ZP.IDX], Y
+                    AND # SymbolType.MASK // preserve VARIABLE|CONSTANT
+                    ORA ZP.TOPT
                     STA [ZP.IDX], Y
                     PLY
                 }
