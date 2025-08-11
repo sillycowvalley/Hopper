@@ -241,15 +241,37 @@ unit Variables
             CMP #BASICType.STRING
             if (Z)
             {
-                // STRING variable - need to free old string and allocate new
-                FreeStringValue(); // Free existing string memory
-                Error.CheckError();
-                if (NC) { break; }
-                
-                // Allocate and copy new string (ZP.TOP has source string pointer)
-                AllocateAndCopyString(); // Returns new string pointer in ZP.TOP -> ZP.IDY
-                Error.CheckError();
-                if (NC) { break; }
+                // If the old value was a string, not the same as this one, it will Free it
+                // If the new value is a string, it will create a copy for itself.
+                // If the new value is the same string as the old value, it will do nothing.
+                CLC
+                LDY #Objects.snValue
+                LDA [ZP.IDX], Y
+                CMP ZP.TOPL
+                if (Z)
+                {
+                    INY
+                    STA [ZP.IDX], Y
+                    CMP ZP.TOPH
+                    if (Z)
+                    {
+                        SEC // same pointer, nothing to do
+                        break;
+                    }
+                }
+                if (NC)
+                {
+                    SEC
+                    // STRING variable - need to free old string and allocate new
+                    FreeStringValue(); // Free existing string memory
+                    Error.CheckError();
+                    if (NC) { break; }
+                    
+                    // Allocate and copy new string (ZP.TOP has source string pointer)
+                    AllocateAndCopyString(); // Returns new string pointer in ZP.TOP -> ZP.IDY
+                    Error.CheckError();
+                    if (NC) { break; }
+                }
             }
             else
             {

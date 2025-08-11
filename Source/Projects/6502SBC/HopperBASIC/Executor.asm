@@ -91,37 +91,16 @@ unit Executor // Executor.asm
                 LDA Address.TypeStackLSB, Y
                 STA ZP.TOPT
                 
-                // Check if old type was STRING and type changed
-                AND #BASICType.TYPEMASK
-                CMP ZP.ACCH
-                if (NZ)  // Type changed
-                {
-                    // If old type was STRING, need to free it
-                    LDA ZP.ACCH
-                    CMP #BASICType.STRING
-                    if (Z)
-                    {
-                        Variables.GetValue(); // preserves Y, Get old string pointer from symbol table
-                        LDA ZP.TOPL
-                        ORA ZP.TOPH
-                        if (NZ)  // Not null
-                        {
-                            LDA ZP.TOPL
-                            STA ZP.IDXL
-                            LDA ZP.TOPH
-                            STA ZP.IDXH
-                            Memory.Free();  // preserves Y, Free old string
-                        }
-                    }
-                }
-                
                 // Get value from value stacks at this index
                 LDA Address.ValueStackLSB, Y
                 STA ZP.TOPL
                 LDA Address.ValueStackMSB, Y
                 STA ZP.TOPH
 
-                // Set the new value in symbol table
+                // Set the new value in symbol table:
+                // If the old value was a string, not the same as this one, it will Free it
+                // If the new value is a string, it will create a copy for itself.
+                // If the new value is the same string as the old value, it will do nothing.
                 Variables.SetValue(); // preserves Y, Input: ZP.IDX = node, ZP.TOP = value
                 
                 // Update type if it's a VAR variable
