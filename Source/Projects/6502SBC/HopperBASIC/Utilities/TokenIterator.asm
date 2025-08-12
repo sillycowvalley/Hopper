@@ -242,6 +242,7 @@ unit TokenIterator // TokenIterator.asm
             case Token.FOR:
             case Token.WHILE:
             case Token.BEGIN:
+            case Token.ELSE:
             { SEC return; }
         }
         
@@ -259,6 +260,7 @@ unit TokenIterator // TokenIterator.asm
             case Token.EOF:
             case Token.NEXT:
             case Token.WEND:
+            case Token.ELSE:
             case Token.UNTIL:
             case Token.ENDIF:
             { SEC return; }
@@ -498,12 +500,38 @@ unit TokenIterator // TokenIterator.asm
         IsKeyword();
         if (C)
         {
-            GetCurrent(); // A = current token value
             switch (A)
             {
+                case Token.ABS:
+                case Token.MILLIS:
+                case Token.PEEK:
+                case Token.POKE:
+                case Token.RND:
+                case Token.SECONDS:
+                case Token.DELAY:
+                case Token.ASC:
+                case Token.CHR:
+                case Token.LEN:
+                case Token.PINMODE:
+                case Token.READ:
+                case Token.WRITE:
+                {
+                    // followed by '('
+                }
                 default:
                 {
-                    LDA # priorSpace Serial.WriteChar();
+                    GetCurrent(); // A = current token value
+                    switch (A)
+                    {
+                        case Token.RBRACKET:
+                        case Token.RPAREN:
+                        {
+                        }
+                        default:
+                        {
+                            LDA # priorSpace Serial.WriteChar();
+                        }
+                    }
                 }
             }
         }
@@ -649,6 +677,7 @@ unit TokenIterator // TokenIterator.asm
             }
             case Token.LPAREN:
             {
+                renderOptionalSpace();
                 LDA #'('
                 Serial.WriteChar();
             }
