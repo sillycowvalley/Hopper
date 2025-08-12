@@ -1,5 +1,6 @@
-# Hopper BASIC Specification v2.14
+# Hopper BASIC Specification v2.15
 **Document Type: Language Specification for Hopper BASIC**
+**Last Updated: Based on current implementation status**
 
 ## Project Objectives
 
@@ -17,7 +18,7 @@
 
 ### Sieve of Eratosthenes
 ```basic
-' Sieve of Eratosthenes - Byte Magazine benchmark
+! Sieve of Eratosthenes - Byte Magazine benchmark
 CONST sizepl = 8191
 BIT flags[sizepl]
 BEGIN
@@ -36,12 +37,12 @@ BEGIN
     FOR iter = 1 TO 10
         count = 0
         
-        ' Initialize flags array to true
+        ! Initialize flags array to true
         FOR i = 0 TO sizepl-1
             flags[i] = TRUE
         NEXT i
         
-        ' Sieve algorithm
+        ! Sieve algorithm
         FOR i = 0 TO sizepl-1
             IF flags[i] THEN
                 prime = i + i + 3
@@ -89,14 +90,7 @@ FUNC Benchmark(name, arg, loops)
     elapsed = MILLIS() - start
     avgMs = elapsed / loops
     
-    PRINT name
-    PRINT "("
-    PRINT arg
-    PRINT ") = "
-    PRINT result
-    PRINT " in "
-    PRINT avgMs
-    PRINT " ms average"
+    PRINT name; "("; arg; ") = "; result; " in "; avgMs; " ms average"
 ENDFUNC
 
 BEGIN
@@ -129,7 +123,7 @@ END
 - **`WORD name [= value]`** - Unsigned integer (0 to 65535)
 - **`BIT name [= value]`** - Boolean (TRUE or FALSE only)
 - **`BYTE name [= value]`** - 8-bit unsigned numeric (0 to 255)
-- **`CHAR name [= value]`** - 8-bit character (ASCII 0-255)
+- **`CHAR name [= value]`** - 8-bit character (ASCII 0-255) ✅ IMPLEMENTED
 - **`STRING name = "value"`** - Mutable string variable
 - **`VAR name [= value]`** - Runtime-typed variable (duck typing)
 
@@ -138,7 +132,7 @@ END
 - **`CONST WORD name = value`** - Immutable unsigned integer
 - **`CONST BIT name = value`** - Immutable boolean
 - **`CONST BYTE name = value`** - Immutable 8-bit unsigned numeric
-- **`CONST CHAR name = 'c'`** - Immutable character
+- **`CONST CHAR name = 'c'`** - Immutable character ✅ IMPLEMENTED
 - **`CONST STRING name = "value"`** - Immutable string
 
 ### Definition Commands
@@ -161,13 +155,15 @@ END
 
 #### Comments
 - **`REM [comment]`** - Full-form comment
-- **`! [comment]`** - Short-form comment
+- **`! [comment]`** - Short-form comment ✅ UPDATED (changed from `'`)
 
 #### Expressions & Operators
 - **Arithmetic**: `+ - * / MOD` (numeric types only)
 - **Bitwise**: `& |` (AND, OR)
 - **Unary**: `-` (negation), `NOT` (logical)
-- **Comparison**: `= <> < > <= >=` (returns BIT type, CHAR values use ASCII ordering)
+- **Comparison**: `= <> < > <= >=` (returns BIT type)
+  - **CHAR equality**: ✅ IMPLEMENTED - `char1 = char2`, `char1 <> char2`
+  - **CHAR ordering**: ❌ NOT IMPLEMENTED - `char1 < char2`, `char1 > char2`, etc.
 - **Logical**: `AND OR NOT` (BIT operands only)
 - **Parentheses**: `( )` for precedence
 
@@ -176,27 +172,30 @@ END
 - **WORD**: 16-bit unsigned (0 to 65535)
 - **BIT**: Pure boolean (TRUE or FALSE only)
 - **BYTE**: 8-bit unsigned numeric (0 to 255)
-- **CHAR**: 8-bit character (ASCII 0-255)
+- **CHAR**: 8-bit character (ASCII 0-255) ✅ IMPLEMENTED
 - **STRING**: Immutable strings with mutable references
 - **Type promotion**: Automatic between compatible numeric types only
 - **Type safety**: Comprehensive checking with errors
 
-#### String Operations
-- **String indexing**: `char = string[index]` - 0-based character access
-- **Bounds checking**: Runtime error on out-of-bounds access
+#### String Operations ✅ IMPLEMENTED
+- **String variables**: ✅ IMPLEMENTED
+- **String constants**: ✅ IMPLEMENTED
+- **String comparison**: ✅ IMPLEMENTED (equality only: `=` and `<>`)
+- **String indexing**: ✅ IMPLEMENTED - `char = string[index]` for 0-based character access
+- **Bounds checking**: ✅ IMPLEMENTED - Runtime error on out-of-bounds access
 
 #### Control Flow
-- **`IF expr THEN statements [ELSE statements] ENDIF`** - Conditional execution
-- **`WHILE expr`...`WEND`** - Pre-test conditional loops
-- **`DO`...`UNTIL expr`** - Post-test conditional loops
+- **`IF expr THEN statements [ELSE statements] ENDIF`** - Conditional execution ✅
+- **`WHILE expr`...`WEND`** - Pre-test conditional loops ✅
+- **`DO`...`UNTIL expr`** - Post-test conditional loops ✅
 - **`FOR var = start TO end [STEP increment]`...`NEXT [var]`** - Counted loops ✅
-- **`RETURN [expr]`** - Return from function
-- **`END`** - End main program
+- **`RETURN [expr]`** - Return from function ✅
+- **`END`** - End main program ✅
 
 #### Assignment
-- **`var = expr`** - Assignment with type checking
+- **`var = expr`** - Assignment with type checking ✅
 
-#### JIT Compilation System
+#### JIT Compilation System ✅ IMPLEMENTED
 - **Expression compilation** - Infix to postfix opcodes
 - **Stack-based execution** - Using Hopper VM stacks
 - **Buffer management** - 512-byte opcode buffer
@@ -204,15 +203,15 @@ END
 - **Jump patching** - Forward and backward jump resolution
 - **Local variable management** - BP-relative addressing for locals and arguments
 
-#### Function System
+#### Function System ✅ IMPLEMENTED
 - **Function declaration** - FUNC/ENDFUNC syntax
-- **Parameter parsing** - Comma-separated parameters ✅
-- **Local variables** - Declarations within functions (positive BP offset) ✅
-- **Arguments** - Function parameters (negative BP offset) ✅
+- **Parameter parsing** - Comma-separated parameters
+- **Local variables** - Declarations within functions (positive BP offset)
+- **Arguments** - Function parameters (negative BP offset)
 - **Multi-line capture** - Interactive definition
 - **BEGIN/END blocks** - Main program as function
 - **Function storage** - Token stream storage
-- **Arguments system** - Full parameter management with BP-relative access ✅
+- **Arguments system** - Full parameter management with BP-relative access
 - **Function listing** - FUNCS command display
 - **Symbol table** - Functions, variables, locals, and arguments
 - **Function calls** - Parse and execute with argument passing
@@ -221,19 +220,19 @@ END
 - **Return values** - RETURN statement handling
 - **Call stack** - Full recursion support with BP/SP management
 
-#### Built-in Functions
-- **`ABS(x)`** - Absolute value
-- **`ASC(char)`** - Convert CHAR to BYTE value
-- **`CHR(numeric)`** - Convert any numeric value (BYTE/WORD/INT) to CHAR
+#### Built-in Functions ✅ IMPLEMENTED
+- **`ABS(x)`** - Absolute value ✅ IMPLEMENTED
+- **`ASC(char)`** - Convert CHAR to BYTE value ✅ IMPLEMENTED
+- **`CHR(numeric)`** - Convert any numeric value (BYTE/WORD/INT) to CHAR ✅ IMPLEMENTED
   - Accepts: BYTE (0-255), WORD (0-65535), INT (-32768 to 32767)  
   - Range check: Value must be 0-255, runtime error otherwise
   - Returns: CHAR value
-- **`LEN(string)`** - Return length of string
-- **`MILLIS()`** - Milliseconds since startup
-- **`SECONDS()`** - Seconds since startup
-- **`DELAY(ms)`** - Pause for a delay in milliseconds
-- **`PEEK(addr)`** - Read byte from memory
-- **`POKE(addr, value)`** - Write byte to memory
+- **`LEN(string)`** - Return length of string ✅ IMPLEMENTED
+- **`MILLIS()`** - Milliseconds since startup ✅ IMPLEMENTED
+- **`SECONDS()`** - Seconds since startup ✅ IMPLEMENTED
+- **`DELAY(ms)`** - Pause for a delay in milliseconds ✅ IMPLEMENTED
+- **`PEEK(addr)`** - Read byte from memory ✅ IMPLEMENTED
+- **`POKE(addr, value)`** - Write byte to memory ✅ IMPLEMENTED
 
 ---
 
@@ -245,16 +244,18 @@ END
 - **Nested loops** - Full support with proper iterator management
 - **Optimization** - FORITF opcode for positive-only ranges with STEP 1
 
-### Array Support (Not Started)
+### Array Support ❌ NOT STARTED
 - ❌ **Global Arrays** - Single-dimensional arrays
 - ❌ **Array Indexing** - Zero-based access
 - ❌ **Array Parameters** - Pass arrays to functions
+
+**Note**: While tokens exist for array operations (LBRACKET/RBRACKET), array implementation has not begun.
 
 ---
 
 ## Phase 3: Storage and File Management
 
-### Storage Commands
+### Storage Commands ❌ NOT STARTED
 - ❌ **`SAVE "name"`** - Save to EEPROM
 - ❌ **`LOAD "name"`** - Load from EEPROM
 - ❌ **`DIR`** - List saved programs
@@ -262,19 +263,21 @@ END
 
 ---
 
-## Phase 4: Hardware I/O
+## Phase 4: Hardware I/O ✅ COMPLETE
 
-### Hardware Commands
-- ❌ **`READ(pin)`** - Digital input
-- ❌ **`WRITE(pin, value)`** - Digital output
-- ❌ **`PINMODE(pin, mode)`** - Configure pins
+### Hardware Commands ✅ IMPLEMENTED
+- **`READ(pin)`** - Digital input ✅ IMPLEMENTED
+- **`WRITE(pin, value)`** - Digital output ✅ IMPLEMENTED
+- **`PINMODE(pin, mode)`** - Configure pins ✅ IMPLEMENTED
+
+**Note**: All hardware I/O functions are complete with full validation (pin 0-15, mode 0-1).
 
 ---
 
 ## Phase 5: Extended Functions
 
 ### Additional Functions
-- ❌ **`RND(max)`** - Random number generation
+- ❌ **`RND(max)`** - Random number generation (placeholder exists)
 - ❌ **`INPUT prompt`** - User input with prompt
 
 ---
@@ -289,9 +292,8 @@ END
 - ❌ **String functions** - Basic string operations beyond indexing
 
 ### Type Conversion
-- ❌ **Additional conversion functions** - Beyond ASC/CHR
-
-Here's a Phase 6 addition for the spec:
+- ✅ **`ASC/CHR`** - Character/byte conversion IMPLEMENTED
+- ❌ **Additional conversion functions** - Not implemented
 
 ### Character Iteration Support
 - ❌ **`FOR char_var = 'start' TO 'end'`** - Character range iteration
@@ -302,7 +304,6 @@ Here's a Phase 6 addition for the spec:
   - Implicit type inference from character literals
   - Natural syntax for character sequence generation
   - *Note: Workaround exists using ASC/CHR with numeric FOR loops*
-
 
 ---
 
@@ -360,7 +361,7 @@ for_statement := FOR identifier "=" expression TO expression [ STEP expression ]
 
 statement_block := statement [ ":" statement ]*
 
-comment_statement := REM [ comment_text ] | "'" [ comment_text ]
+comment_statement := REM [ comment_text ] | "!" [ comment_text ]
 
 function_definition := FUNC identifier "(" [ parameter_list ] ")"
                       { local_declaration | statement }*
@@ -394,7 +395,7 @@ multiplicative_expr := unary_expr [ ("*" | "/" | MOD) unary_expr ]
 unary_expr := [ "-" | NOT ] primary_expr
 primary_expr := number | identifier | string_literal | char_literal | TRUE | FALSE
               | "(" expression ")" | function_call | built_in_function
-              | identifier "[" expression "]"    // String/Array indexing
+              | identifier "[" expression "]"    // String indexing (IMPLEMENTED)
 
 built_in_function := ABS "(" expression ")"
                   | ASC "(" expression ")"
@@ -405,6 +406,9 @@ built_in_function := ABS "(" expression ")"
                   | DELAY "(" expression ")"
                   | MILLIS "(" ")"
                   | SECONDS "(" ")"
+                  | READ "(" expression ")"
+                  | WRITE "(" expression "," expression ")"
+                  | PINMODE "(" expression "," expression ")"
 ```
 
 ### Lexical Elements
@@ -468,9 +472,9 @@ char_literal := "'" character "'"
 
 ---
 
-## Current Implementation Status
+## Current Implementation Status Summary
 
-### Phase 1: Core Functionality - COMPLETE ✅
+### ✅ Phase 1: Core Functionality - COMPLETE
 All features listed in Phase 1 are fully implemented and tested, including:
 - Complete symbol table system with 4-layer architecture
 - Full expression evaluation with JIT compilation
@@ -479,22 +483,31 @@ All features listed in Phase 1 are fully implemented and tested, including:
 - Function system with recursion, parameter passing, and local variables
 - PRINT statement with all formatting options
 - All console and debug commands
-- Built-in functions except RND (moved to Phase 5)
+- Built-in functions including the complete CHAR support functions
 
-### Phase 2: Loop Constructs & Array Support - PARTIALLY COMPLETE
+### 🔶 Phase 2: Loop Constructs & Array Support - PARTIALLY COMPLETE
 **Completed:**
 - ✅ FOR/NEXT loops with STEP support
 - ✅ Nested FOR loops with proper iterator management
 - ✅ Optimized FORITF opcode for positive ranges
 - ✅ Local variables within functions
 - ✅ Function arguments with BP-relative addressing
+- ✅ CHAR type implementation
+- ✅ Character literals ('A')
+- ✅ ASC/CHR conversion functions
+- ✅ String indexing with bounds checking
 
 **Missing components needed to run benchmark programs:**
-1. ❌ CHAR type implementation
-2. ❌ String indexing for character access
-3. ❌ Global array declarations
-4. ❌ Array indexing and access
-5. ❌ Array parameters for functions
+1. ❌ Global array declarations
+2. ❌ Array indexing and access
+3. ❌ Array parameters for functions
+4. ❌ CHAR ordered comparison operators (< > <= >=)
+
+### ✅ Phase 4: Hardware I/O - COMPLETE
+All hardware I/O functions are implemented with proper validation.
+
+### ❌ Phases 3, 5-6: Not Started
+No implementation work has begun on storage, extended functions, or advanced features.
 
 ---
 
@@ -540,7 +553,7 @@ OK
 11
 ```
 
-### Character and String Operations
+### Character and String Operations (With Current Capabilities)
 ```basic
 > CHAR letter = 'A'
 OK
@@ -548,22 +561,23 @@ OK
 OK
 > STRING name = "HOPPER"
 OK
-> CHAR first = name[0]      ' Gets 'H'
+> CHAR first = name[0]      ! Gets 'H'
 OK
-> CHAR third = name[2]      ' Gets 'P'
+> CHAR third = name[2]      ! Gets 'P'
 OK
 > PRINT first
 H
 > PRINT ASC(first)
 72
 
-' Character comparisons
-> IF first = 'H' THEN PRINT "Starts with H" ENDIF
-Starts with H
-> IF third > 'A' THEN PRINT "After A in ASCII" ENDIF
-After A in ASCII
+! Character equality comparisons work:
+> IF letter = 'A' THEN PRINT "It's an A" ENDIF
+It's an A
 
-' Process string characters
+! Ordered comparisons not yet implemented:
+! > IF letter < 'Z' THEN PRINT "Before Z" ENDIF  ! NOT WORKING YET
+
+! Process string characters
 > STRING text = "HELLO"
 OK
 > FOR i = 0 TO LEN(text) - 1
@@ -572,13 +586,17 @@ OK
 * NEXT i
 72 69 76 76 79
 
-' Type safety
+! Converting between CHAR and BYTE:
 > BYTE b = 65
 OK
-> CHAR ch = CHR(b)      ' Explicit conversion required
+> CHAR ch = CHR(b)      ! Explicit conversion required
 OK
 > PRINT ch
 A
+> BYTE b2 = ASC(ch)
+OK
+> PRINT b2
+65
 ```
 
 ### Functions with Arguments and Local Variables
@@ -633,7 +651,7 @@ OK
 4
 2
 
-> ' Nested loops
+! Nested loops
 > FOR i = 1 TO 3
 *   FOR j = 1 TO 3
 *     PRINT i * j;
@@ -643,6 +661,12 @@ OK
 1 2 3
 2 4 6
 3 6 9
+
+! Character iteration using workaround (since direct CHAR iteration not implemented):
+> FOR i = 65 TO 90  ! ASCII values for A-Z
+*   PRINT CHR(i);
+* NEXT i
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
 ```
 
 ### Control Flow
@@ -662,16 +686,51 @@ Big
 * UNTIL i > 10
 ```
 
-### Advanced PRINT
+### Enhanced PRINT with Comma and Semicolon Separators
 ```basic
-> PRINT "Value:", x, "Count:", count
-Value: 11 Count: 0
+! Comma separator adds spacing between values
+> PRINT "Name:"; "John"; ", Age:"; 25; ", Active:"; TRUE
+Name: John , Age: 25 , Active: TRUE
 
-> PRINT "Compact";x;"text"
-Compact11text
+! Semicolon separator for compact output
+> PRINT "Value"; x; "Count"; count
+Value11Count0
 
+! Mixed separators for flexible formatting
+> PRINT "Results:", "X ="; x, "Y ="; count
+Results: X = 11 Y = 0
+
+! Trailing separators control newlines
 > PRINT "No newline",
-No newline > 
+No newline > PRINT "continues here"
+continues here
+
+> PRINT "No newline";
+No newline> PRINT " continues"
+ continues
+
+! Multiple values with different spacing
+> FOR i = 1 TO 5
+*   PRINT i;        ! Compact numbers: 12345
+* NEXT i
+12345
+
+> FOR i = 1 TO 5  
+*   PRINT i,        ! Spaced numbers: 1 2 3 4 5
+* NEXT i
+1 2 3 4 5
+```
+
+### Hardware I/O
+```basic
+> PINMODE(13, 1)    ! Set pin 13 as output
+OK
+> WRITE(13, 1)      ! Turn on LED
+OK
+> PRINT READ(12)    ! Read pin 12
+0
+> WRITE(13, 0)      ! Turn off LED
+OK
 ```
 
 ### Memory Access
@@ -690,8 +749,27 @@ OK
 12345
 > PRINT LEN("HELLO")
 5
-> CONST CHAR newline = CHR(10)
+> PRINT CHR(65)
+A
+> PRINT ASC('Z')
+90
+> DELAY(1000)       ! Wait 1 second
 OK
 ```
 
-The implementation now provides a robust foundation with complete function execution including arguments and local variables, JIT compilation with stack frame management, comprehensive control flow including FOR/NEXT loops, and all core data types including the new CHAR type for character manipulation. The primary remaining work for full benchmark compatibility is the implementation of array support (declaration, indexing, and passing as parameters).
+---
+
+## Next Steps for Full Benchmark Compatibility
+
+The implementation has made significant progress with complete CHAR type support, string indexing with bounds checking, and all hardware I/O functions. To run the benchmark programs, the following features are still needed:
+
+1. **Array Support** (Critical for Sieve benchmark)
+   - Global array declarations (`BIT flags[8191]`)
+   - Array element access (`flags[i]`)
+   - Array element assignment (`flags[i] = TRUE`)
+
+2. **CHAR Ordered Comparison** (Minor enhancement)
+   - Less than/greater than operators for CHAR values (`char1 < char2`)
+   - Would enable more natural character range checking
+
+The core interpreter is robust with complete function support, all control structures, comprehensive type system, and string indexing capabilities. The primary gap is array functionality, which is essential for the Sieve of Eratosthenes benchmark but not needed for the Fibonacci benchmark (which should run with current implementation).

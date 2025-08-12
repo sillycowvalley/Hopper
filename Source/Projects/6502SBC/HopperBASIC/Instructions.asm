@@ -23,7 +23,7 @@ unit Instructions // Instructions.asm
         LDA #(checkRHS % 256) STA ZP.TraceMessageL LDA #(checkRHS / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         
-Debug.NL(); NOut(); TOut();
+//Debug.NL(); NOut(); TOut();
         
         loop
         {
@@ -74,6 +74,7 @@ Debug.NL(); NOut(); TOut();
             CheckTypeCompatibility();
             break;
         }
+        /*
  PHP       
 Debug.NL(); 
 if (C)
@@ -85,6 +86,7 @@ else
     LDA #'N' COut();
 }
 PLP
+*/
 #ifdef TRACE
         LDA #(checkRHS % 256) STA ZP.TraceMessageL LDA #(checkRHS / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif

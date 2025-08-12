@@ -289,7 +289,7 @@ unit Tokenizer // Tokenizer.asm
             {
                 if (NZ)  // > 2, definitely full
                 {
-                    Error.SyntaxError(); BIT ZP.EmulatorPCL
+                    Error.BufferOverflow(); BIT ZP.EmulatorPCL
                     CLC
                     break;
                 }
@@ -298,7 +298,7 @@ unit Tokenizer // Tokenizer.asm
                 CMP #(Limits.TokenizerBufferLength & 0xFF)  // Compare low byte (0)
                 if (C)  // >= 512, buffer full
                 {
-                    Error.SyntaxError(); BIT ZP.EmulatorPCL
+                    Error.BufferOverflow(); BIT ZP.EmulatorPCL
                     CLC
                     break;
                 }
