@@ -1,8 +1,8 @@
 program HopperBASIC
 {
-    #define DEBUG
+    //#define DEBUG
     //#define TRACE  // Compiler and Executor call tree walks
-    #define TRACEEXE // instructions in Executor
+    //#define TRACEEXE // instructions in Executor
 
     // Defunct?    
     //#define TRACESP
@@ -20,6 +20,7 @@ program HopperBASIC
     uses "./Definitions/Messages"
     uses "./Definitions/BASICTypes"
     uses "./Definitions/States"
+    uses "./Definitions/Tokens"
     uses "./Debugging/Error"
     uses "./Debugging/Debug"
     uses "./Debugging/Trace"

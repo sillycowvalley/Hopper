@@ -410,6 +410,7 @@ unit Tokens
             if (NC)
             {
                 ALOut();
+                Error.InternalError(); BIT ZP.EmulatorPCL
             }
 #endif
         }
@@ -453,13 +454,13 @@ unit Tokens
                 // Found it! Print the keyword
                 INY  // Move to first character
                 LDX ZP.ACCH  // X = character count
-                
                 loop
                 {
                     CPX #0
                     if (Z) { break; }
                     
                     LDA [ZP.IDY], Y  // Access character 
+                    Serial.WriteChar();
                     INY
                     DEX
                 } // loop

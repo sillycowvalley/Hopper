@@ -23,6 +23,8 @@ unit TokenIterator // TokenIterator.asm
             LDA ZP.IDYH
             STA ZP.TOKBASEH
             
+            STZ ZP.TOKPREV
+            
             // Check for null pointer
             LDA ZP.IDYL
             ORA ZP.IDYH
@@ -76,13 +78,15 @@ unit TokenIterator // TokenIterator.asm
         
         loop // Single exit block
         {
+            LDA ZP.TOKCUR
+            STA ZP.TOKPREV
+            
             // Current token determines how many bytes to skip
             LDA ZP.TOKCUR
             switch (A)
             {
                 case Token.NUMBER:
                 case Token.IDENTIFIER:
-                case Token.STRING:
                 case Token.REM:
                 case Token.COMMENT:
                 case Token.STRINGLIT:
@@ -195,8 +199,9 @@ unit TokenIterator // TokenIterator.asm
         LDA ZP.TOKCUR
     }
     
+    
     // Get pointer to current token's inline data (for literals)
-    // Input: Iterator positioned at token with inline data (NUMBER, IDENTIFIER, STRING, REM, COMMENT)
+    // Input: Iterator positioned at token with inline data (NUMBER, IDENTIFIER, STRINGLIT, REM, COMMENT)
     // Output: ZP.STR* = pointer to start of inline data (after token byte)
     // Preserves: Iterator position, all registers except output
     GetCurrentData()
@@ -255,6 +260,7 @@ unit TokenIterator // TokenIterator.asm
             case Token.NEXT:
             case Token.WEND:
             case Token.UNTIL:
+            case Token.ENDIF:
             { SEC return; }
         }
         CLC // Not an indent-decreasing token
@@ -343,6 +349,8 @@ unit TokenIterator // TokenIterator.asm
         PHA
         PHX
         PHY
+        
+        STA ZP.TOKPREV // new statement - no preceding ' '
         
         // Check if first token of statement decreases indentation
         GetCurrent(); // A = current token value
@@ -481,6 +489,58 @@ unit TokenIterator // TokenIterator.asm
         PLX
         PLA
     }
+    
+    //const char priorSpace = '_'; // for testing
+    const char priorSpace = ' ';
+    renderOptionalSpace()
+    {
+        LDA ZP.TOKPREV
+        IsKeyword();
+        if (C)
+        {
+            GetCurrent(); // A = current token value
+            switch (A)
+            {
+                default:
+                {
+                    LDA # priorSpace Serial.WriteChar();
+                }
+            }
+        }
+        else
+        {
+            // previous is not a keyword
+            switch (A)
+            {
+                case 0x00: // first on new line
+                {
+                }
+                case Token.LBRACKET:
+                case Token.LPAREN:
+                {
+                }
+                case Token.IDENTIFIER:
+                {
+                    GetCurrent(); // A = current token value
+                    switch (A)
+                    {
+                        case Token.LBRACKET:
+                        case Token.LPAREN:
+                        {
+                        }
+                        default:
+                        {
+                            LDA # priorSpace Serial.WriteChar();
+                        }
+                    }
+                }
+                default:
+                {
+                    LDA # priorSpace Serial.WriteChar();
+                }
+            }
+        }
+    }
 
     // Render a single token with appropriate formatting
     // Input: A = token value, iterator positioned at token with inline data
@@ -495,32 +555,29 @@ unit TokenIterator // TokenIterator.asm
         {
             case Token.NUMBER:
             {
+                renderOptionalSpace();
                 GetCurrentData(); // ZP.TOKADDR* = pointer to number string
                 Tools.PrintStringSTR();
-                LDA #' '
-                Serial.WriteChar();
             }
             case Token.IDENTIFIER:
             {
+                renderOptionalSpace();
                 GetCurrentData(); // ZP.TOKADDR* = pointer to identifier string
                 Tools.PrintStringSTR();
-                LDA #' '
-                Serial.WriteChar();
             }
-            case Token.STRING:
             case Token.STRINGLIT:
             {
+                renderOptionalSpace();
                 LDA #'"'
                 Serial.WriteChar();
                 GetCurrentData(); // ZP.TOKADDR* = pointer to string content
                 Tools.PrintStringSTR();
                 LDA #'"'
                 Serial.WriteChar();
-                LDA #' '
-                Serial.WriteChar();
             }
             case Token.CHARLIT:
             {
+                renderOptionalSpace();
                 LDA #'\''
                 Serial.WriteChar();
                 GetCurrentData(); // ZP.STR* = pointer to character value
@@ -529,76 +586,65 @@ unit TokenIterator // TokenIterator.asm
                 Serial.WriteChar();
                 LDA #'\''
                 Serial.WriteChar();
-                LDA #' '
-                Serial.WriteChar();
             }
             case Token.REM:
             {
+                renderOptionalSpace();
                 LDA #Token.REM
                 Tokens.PrintKeyword();
                 LDA #' '
                 Serial.WriteChar();
                 GetCurrentData(); // ZP.TOKADDR* = pointer to comment text
                 Tools.PrintStringSTR();
-                LDA #' '
-                Serial.WriteChar();
             }
             case Token.COMMENT:
             {
-                LDA #'\''
+                renderOptionalSpace();
+                LDA #'!'
                 Serial.WriteChar();
                 GetCurrentData(); // ZP.TOKADDR* = pointer to comment text
                 Tools.PrintStringSTR();
-                LDA #' '
-                Serial.WriteChar();
             }
             case Token.TRUE:
             {
+                renderOptionalSpace();
                 LDA #Token.TRUE
                 Tokens.PrintKeyword();
-                LDA #' '
-                Serial.WriteChar();
             }
             case Token.FALSE:
             {
+                renderOptionalSpace();
                 LDA #Token.FALSE
                 Tokens.PrintKeyword();
-                LDA #' '
-                Serial.WriteChar();
             }
             case Token.EQUALS:
             {
+                renderOptionalSpace();
                 LDA #'='
-                Serial.WriteChar();
-                LDA #' '
                 Serial.WriteChar();
             }
             case Token.PLUS:
             {
+                renderOptionalSpace();
                 LDA #'+'
-                Serial.WriteChar();
-                LDA #' '
                 Serial.WriteChar();
             }
             case Token.MINUS:
             {
+                renderOptionalSpace();
                 LDA #'-'
-                Serial.WriteChar();
-                LDA #' '
                 Serial.WriteChar();
             }
             case Token.MULTIPLY:
             {
+                renderOptionalSpace();
                 LDA #'*'
-                Serial.WriteChar();
-                LDA #' '
                 Serial.WriteChar();
             }
             case Token.DIVIDE:
             {
+                renderOptionalSpace();
                 LDA #'/'
-                Serial.WriteChar();
-                LDA #' '
                 Serial.WriteChar();
             }
             case Token.LPAREN:
@@ -610,8 +656,6 @@ unit TokenIterator // TokenIterator.asm
             {
                 LDA #')'
                 Serial.WriteChar();
-                LDA #' '
-                Serial.WriteChar(); // Add space after closing bracket
             }
             case Token.LBRACKET:
             {
@@ -622,76 +666,63 @@ unit TokenIterator // TokenIterator.asm
             {
                 LDA #']'
                 Serial.WriteChar();
-                LDA #' '
-                Serial.WriteChar(); // Add space after closing bracket
             }
             case Token.LT:
             {
+                renderOptionalSpace();
                 LDA #'<'
-                Serial.WriteChar();
-                LDA #' '
                 Serial.WriteChar();
             }
             case Token.GT:
             {
+                renderOptionalSpace();
                 LDA #'>'
-                Serial.WriteChar();
-                LDA #' '
                 Serial.WriteChar();
             }
             case Token.LE:
             {
+                renderOptionalSpace();
                 LDA #'<'
                 Serial.WriteChar();
                 LDA #'='
-                Serial.WriteChar();
-                LDA #' '
                 Serial.WriteChar();
             }
             case Token.GE:
             {
+                renderOptionalSpace();
                 LDA #'>'
                 Serial.WriteChar();
                 LDA #'='
                 Serial.WriteChar();
-                LDA #' '
-                Serial.WriteChar();
             }
             case Token.NOTEQUAL:
             {
+                renderOptionalSpace();
                 LDA #'<'
                 Serial.WriteChar();
                 LDA #'>'
                 Serial.WriteChar();
-                LDA #' '
-                Serial.WriteChar();
             }
             case Token.BITWISE_AND:
             {
+                renderOptionalSpace();
                 LDA #'&'
-                Serial.WriteChar();
-                LDA #' '
                 Serial.WriteChar();
             }
             case Token.BITWISE_OR:
             {
+                renderOptionalSpace();
                 LDA #'|'
-                Serial.WriteChar();
-                LDA #' '
                 Serial.WriteChar();
             }
             case Token.COMMA:
             {
                 LDA #','
                 Serial.WriteChar();
-                LDA #' '
-                Serial.WriteChar();
             }
             case Token.SEMICOLON:
             {
                 LDA #';'
-                Serial.WriteChar();
-                LDA #' '
                 Serial.WriteChar();
             }
             default:
@@ -701,11 +732,10 @@ unit TokenIterator // TokenIterator.asm
                 Tokens.IsKeyword();
                 if (C)
                 {
+                    renderOptionalSpace();
                     // Print keyword
                     PLA
                     Tokens.PrintKeyword();
-                    LDA #' '
-                    Serial.WriteChar(); // Space after keywords
                 }
                 else
                 {
@@ -714,8 +744,6 @@ unit TokenIterator // TokenIterator.asm
                     Serial.WriteChar();
                     PLA // Get token value for hex output
                     Serial.HexOut();
-                    LDA #' '
-                    Serial.WriteChar();
                 }
             }
         }
