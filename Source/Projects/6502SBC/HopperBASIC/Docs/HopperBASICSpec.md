@@ -224,7 +224,10 @@ END
 #### Built-in Functions
 - **`ABS(x)`** - Absolute value
 - **`ASC(char)`** - Convert CHAR to BYTE value
-- **`CHR(byte)`** - Convert BYTE to CHAR value
+- **`CHR(numeric)`** - Convert any numeric value (BYTE/WORD/INT) to CHAR
+  - Accepts: BYTE (0-255), WORD (0-65535), INT (-32768 to 32767)  
+  - Range check: Value must be 0-255, runtime error otherwise
+  - Returns: CHAR value
 - **`LEN(string)`** - Return length of string
 - **`MILLIS()`** - Milliseconds since startup
 - **`SECONDS()`** - Seconds since startup
@@ -287,6 +290,19 @@ END
 
 ### Type Conversion
 - ❌ **Additional conversion functions** - Beyond ASC/CHR
+
+Here's a Phase 6 addition for the spec:
+
+### Character Iteration Support
+- ❌ **`FOR char_var = 'start' TO 'end'`** - Character range iteration
+  - Allow CHAR variables as FOR loop iterators
+  - Support character literals in FOR range specification
+  - STEP would work with character ASCII values
+  - Example: `FOR c = 'A' TO 'Z'` to iterate through alphabet
+  - Implicit type inference from character literals
+  - Natural syntax for character sequence generation
+  - *Note: Workaround exists using ASC/CHR with numeric FOR loops*
+
 
 ---
 
