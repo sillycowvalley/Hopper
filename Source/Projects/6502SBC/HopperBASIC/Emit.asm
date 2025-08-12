@@ -1263,4 +1263,28 @@ unit Emit
         LDA #(emitForIterateFastTrace % 256) STA ZP.TraceMessageL LDA #(emitForIterateFastTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     }
+    
+    // Emit INDEX opcode for string/array indexing
+    // Input: None (operates on stack values)
+    // Output: INDEX opcode emitted
+    // Modifies: compilerOpCode, buffer state via Emit.OpCode()
+    const string emitIndexTrace = "Emit INDEX";
+    Index()
+    {
+    #ifdef TRACE
+        LDA #(emitIndexTrace % 256) STA ZP.TraceMessageL 
+        LDA #(emitIndexTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        LDA #OpCode.INDEX
+        STA Compiler.compilerOpCode
+        Emit.OpCode();
+        
+    #ifdef TRACE
+        LDA #(emitIndexTrace % 256) STA ZP.TraceMessageL 
+        LDA #(emitIndexTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }
 }

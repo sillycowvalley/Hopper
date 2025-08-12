@@ -44,6 +44,7 @@ unit Error // Error.asm
     const uint nextMismatch = 0x0023
     const uint forIteratorLocal = 0x0024;
     const uint rangeError = 0x0025;
+    const uint expectedRightBracket = 0x0026;
     
     
 #else
@@ -88,6 +89,7 @@ unit Error // Error.asm
     const string nextMismatch = "NEXT MISMATCH";
     const string forIteratorLocal = "FOR ITERATOR MUST BE LOCAL";
     const string rangeError = "VALUE OUT OF RANGE";
+    const string expectedRightBracket = "] EXPECTED";
     
     
     
@@ -95,6 +97,15 @@ unit Error // Error.asm
     
     // One-liner error methods (PC must be set at call site with BIT ZP.EmulatorPCL)
     // Each method sets ZP.LastError and clears carry flag
+    
+    ExpectedRightBracket()
+    {
+        LDA #(expectedRightBracket % 256)
+        STA ZP.LastErrorL
+        LDA #(expectedRightBracket / 256)
+        STA ZP.LastErrorH
+        CLC
+    }
     
     RangeError()
     {

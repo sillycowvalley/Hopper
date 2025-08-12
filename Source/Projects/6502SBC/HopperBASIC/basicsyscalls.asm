@@ -457,18 +457,8 @@ unit BASICSysCalls
                         break;
                     }
                     
-                    // Get string length from heap header
-                    // String pointer is in ZP.TOP
-                    // Format: [NextL][NextH][RefCount][SizeL][SizeH][...string data...]
-                    
-                    LDY #3  // Offset to SizeL in heap header
-                    LDA [ZP.TOP], Y
-                    PHA     // Save SizeL
-                    INY     // Offset to SizeH
-                    LDA [ZP.TOP], Y
-                    STA ZP.TOPH  // Store SizeH
-                    PLA
-                    STA ZP.TOPL  // Store SizeL
+                    // Get string length using helper
+                    Tools.StringLengthTOP();  // Input: string ptr in ZP.TOP, Output: length in ZP.TOP
                     
                     // Set type to WORD
                     LDA #BASICType.WORD

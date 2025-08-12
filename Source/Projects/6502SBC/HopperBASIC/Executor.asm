@@ -484,6 +484,11 @@ unit Executor // Executor.asm
            {
                ComparisonInstructions.GreaterEqual();
            }
+           case OpCode.INDEX:
+           {
+               executeIndex();
+           }
+           
            
            case OpCode.HALT:
            {
@@ -2241,6 +2246,212 @@ unit Executor // Executor.asm
     #ifdef TRACE
         LDA #(executeFORITFTrace % 256) STA ZP.TraceMessageL 
         LDA #(executeFORITFTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }
+    
+    
+    // Execute INDEX opcode - string/array indexing
+    // Stack: [..., collection_ref, index] -> [..., element_value]
+    // Input: Two values on stack (collection reference, then index on top)
+    // Output: Element at index pushed to stack (CHAR for strings, element type for arrays)
+    // Modifies: ZP.TOP, ZP.TOPT, ZP.NEXT, ZP.NEXTT, ZP.ACC, stack
+    const string executeIndexTrace = "INDEX // String/Array indexing";
+    executeIndex()
+    {
+    #ifdef TRACE
+        LDA #(executeIndexTrace % 256) STA ZP.TraceMessageL 
+        LDA #(executeIndexTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit block
+        {
+            // Pop index value from stack
+            Stacks.PopTop();  // Result in ZP.TOP (index), ZP.TOPT (index type)
+            
+            // Check index type is numeric (INT, WORD, or BYTE)
+            LDA ZP.TOPT
+            AND #BASICType.TYPEMASK  // Remove VAR bit if present
+            CMP #BASICType.INT
+            if (Z) 
+            { 
+                // INT type - check if negative
+                LDA ZP.TOPH
+                if (MI)  // Negative index
+                {
+                    Error.RangeError(); BIT ZP.EmulatorPCL
+                    States.SetFailure();
+                    break;
+                }
+            }
+            else
+            {
+                CMP #BASICType.WORD
+                if (NZ)
+                {
+                    CMP #BASICType.BYTE
+                    if (NZ)
+                    {
+                        // Invalid index type
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        States.SetFailure();
+                        break;
+                    }
+                }
+            }
+            
+            // Save index value to ACC registers
+            LDA ZP.TOPL
+            STA ZP.ACCL
+            LDA ZP.TOPH
+            STA ZP.ACCH
+            
+            // Pop collection reference from stack
+            Stacks.PopTop();  // Result in ZP.TOP (collection ref), ZP.TOPT (type)
+            
+            // Save collection pointer to NEXT
+            LDA ZP.TOPL
+            STA ZP.NEXTL
+            LDA ZP.TOPH
+            STA ZP.NEXTH
+            
+            // Dispatch based on collection type
+            LDA ZP.TOPT
+            AND #BASICType.TYPEMASK  // Remove VAR bit if present
+            switch (A)
+            {
+                case BASICType.STRING:
+                {
+                    indexString();  // Input: ZP.NEXT = string ptr, ZP.ACC = index
+                                    // Output: States set, char pushed if successful
+                }
+                case BASICType.ARRAY:
+                {
+                     indexArray(); // Input: ZP.NEXT = array ptr, ZP.ACC = index
+                                   // Output: States set, item pushed if successful
+                }
+                default:
+                {
+                    Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                    States.SetFailure();
+                }
+            }
+            break;
+        } // loop
+        
+    #ifdef TRACE
+        LDA #(executeIndexTrace % 256) STA ZP.TraceMessageL 
+        LDA #(executeIndexTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }
+
+    // Index into a string to get a character
+    // Input: ZP.NEXT = string pointer, ZP.ACC = index (already validated as non-negative)
+    // Output: Character pushed to stack as CHAR type if successful
+    //         States set to Success or Failure
+    // Modifies: ZP.TOP, ZP.TOPT
+    const string indexStringTrace = "IndexStr";
+    indexString()
+    {
+    #ifdef TRACE
+        LDA #(indexStringTrace % 256) STA ZP.TraceMessageL 
+        LDA #(indexStringTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+
+        loop // Single exit
+        {
+            // Move string pointer to TOP for length calculation
+            LDA ZP.NEXTL
+            STA ZP.TOPL
+            LDA ZP.NEXTH
+            STA ZP.TOPH
+            
+            // Get string length
+            Tools.StringLengthTOP();  // Returns length in ZP.TOP as 16-bit value
+            
+            // Check if index is within bounds (index < length)
+            // Compare index (ACC) with length (TOP)
+            LDA ZP.ACCH
+            CMP ZP.TOPH
+            if (C)  // Index high > Length high
+            {
+                Error.RangeError(); BIT ZP.EmulatorPCL
+                States.SetFailure();
+                break;
+            }
+            if (Z)  // High bytes equal, need to compare low bytes
+            {
+                LDA ZP.ACCL
+                CMP ZP.TOPL
+                if (C)  // Index low >= Length low (out of bounds)
+                {
+                    Error.RangeError(); BIT ZP.EmulatorPCL
+                    States.SetFailure();
+                    break;
+                }
+            }
+            
+            // Calculate address of character: string_ptr + index
+            CLC
+            LDA ZP.NEXTL  // String pointer low
+            ADC ZP.ACCL   // Add index low
+            STA ZP.TOPL
+            LDA ZP.NEXTH  // String pointer high
+            ADC ZP.ACCH   // Add index high (with carry)
+            STA ZP.TOPH
+            
+            // Read the character at the calculated address
+            LDY #0
+            LDA [ZP.TOP], Y
+            
+            // Store character value in ZP.TOP as CHAR type
+            STA ZP.TOPL
+            STZ ZP.TOPH  // Clear high byte
+            LDA #BASICType.CHAR
+            STA ZP.TOPT
+            
+            // Push character to stack
+            Stacks.PushTop();
+            
+            States.SetSuccess();
+            break;
+        }
+
+    #ifdef TRACE
+        LDA #(indexStringTrace % 256) STA ZP.TraceMessageL 
+        LDA #(indexStringTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }
+
+    // Index into an array to get an element
+    // Input: ZP.NEXT = array pointer, ZP.ACC = index (already validated as non-negative)
+    // Output: Element pushed to stack with appropriate type if successful
+    //         States set to Success or Failure
+    // Modifies: ZP.TOP, ZP.TOPT
+    // Note: Arrays not yet implemented - this is a placeholder for future functionality
+    const string indexArrayTrace = "IndexArray";
+    indexArray()
+    {
+    #ifdef TRACE
+        LDA #(indexArrayTrace % 256) STA ZP.TraceMessageL 
+        LDA #(indexArrayTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+    
+        // Array-specific indexing logic
+        // - Get array metadata (element type, size)
+        // - Calculate element address
+        // - Push element value with correct type
+        Error.TODO(); BIT ZP.EmulatorPCL
+        States.SetFailure();
+    
+    #ifdef TRACE
+        LDA #(indexArrayTrace % 256) STA ZP.TraceMessageL 
+        LDA #(indexArrayTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodExit();
     #endif
     }

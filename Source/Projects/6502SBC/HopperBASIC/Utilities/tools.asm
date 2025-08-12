@@ -456,6 +456,45 @@ unit Tools // Tools.asm
         PLX
     }
     
+    // Calculate string length and return as 16-bit value
+    // Input: ZP.TOP = pointer to null-terminated string
+    // Output: ZP.TOP = string length as 16-bit value (TOPL/TOPH)
+    // Modifies: A, X, Y
+    // Note: Returns 0 for null pointer
+    StringLengthTOP()
+    {
+        PHA
+        PHX
+        PHY
+        
+        // Check for null pointer
+        LDA ZP.TOPL
+        ORA ZP.TOPH
+        if (Z)
+        {
+            // Null pointer - return length 0
+            STZ ZP.TOPL
+            STZ ZP.TOPH
+            PLY
+            PLX
+            PLA
+            return;
+        }
+        
+        // Call existing StringLength with X,Y registers
+        LDX ZP.TOPL
+        LDY ZP.TOPH
+        StringLength();  // Returns length in A, preserves X,Y
+        
+        // Store length as 16-bit value in ZP.TOP
+        STA ZP.TOPL
+        STZ ZP.TOPH  // Length fits in byte, so high byte is 0
+        
+        PLY
+        PLX
+        PLA
+    }
+    
     // Compare two strings
     // Input: ZP.TOP = first string pointer, ZP.NEXT = second string pointer
     // Output: C set if strings match, NC if different

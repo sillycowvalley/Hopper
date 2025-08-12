@@ -697,12 +697,53 @@ unit Compiler // Compiler.asm
                    if (NC) { break; }
                }
                default:
-               {
-                   // Not unary, compile primary
-                   compilePrimary();
-                   Error.CheckError();
-                   if (NC) { break; }
-               }
+                {
+                    // Not unary, compile primary
+                    compilePrimary();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    
+                    // Check for postfix operations (indexing)
+                    loop
+                    {
+                        LDA ZP.CurrentToken
+                        CMP #Token.LBRACKET
+                        if (NZ) { break; }  // No indexing
+                        
+                        // Handle indexing
+                        RMB0 ZP.CompilerFlags // not a constant expression
+                        
+                        // Get next token after '['
+                        Tokenizer.NextToken();
+                        Error.CheckError();
+                        if (NC) { break; }
+                        
+                        // Compile index expression
+                        compileExpressionTree();  // Full expression for the index
+                        Error.CheckError();
+                        if (NC) { break; }
+                        
+                        // Expect closing bracket
+                        LDA ZP.CurrentToken
+                        CMP #Token.RBRACKET
+                        if (NZ)
+                        {
+                            Error.ExpectedRightBracket(); BIT ZP.EmulatorPCL
+                            break;
+                        }
+                        
+                        // Emit INDEX opcode
+                        Emit.Index();
+                        Error.CheckError();
+                        if (NC) { break; }
+                        
+                        // Get next token
+                        Tokenizer.NextToken();
+                        Error.CheckError();
+                        
+                        break;
+                    }
+                }
            }
            break;
        } // loop

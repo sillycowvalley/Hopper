@@ -64,6 +64,8 @@ unit OpCodes
        CLEARSCREEN  = 0x1C,
        PUSHEMPTYVAR = 0x1D,  // create a stack slot with 0 value and type VAR|INT
        
+       INDEX        = 0x1E,  // Generic indexing: container[index]
+       
        // === OPCODES WITH ONE BYTE OPERAND (0x40-0x7F) ===
        // Bits 7-6: 01 (one byte operand)
        // Bits 5-0: OpCode (0-63 available)
@@ -183,6 +185,7 @@ unit OpCodes
    const string opcodeFORITF  = "FORITF";
    const string opcodePUSHEMPTYVAR  = "PUSHEMPTYVAR";
    const string opcodeCLEARSCREEN  = "CLEARSCREEN";
+   const string opcodeINDEX = "INDEX";
    
 #if defined(DEBUG) || defined(TRACEEXE)
    // Input: opcode in X
@@ -192,6 +195,13 @@ unit OpCodes
         PHA
         switch (X)
         {
+            case OpCode.INDEX:
+            {
+                LDA #(opcodeINDEX % 256)
+                STA ZP.STRL
+                LDA #(opcodeINDEX / 256)
+                STA ZP.STRH
+            }
             case OpCode.PUSHEMPTYVAR:
             {
                 LDA #(opcodePUSHEMPTYVAR % 256)
