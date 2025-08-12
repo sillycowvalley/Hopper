@@ -196,6 +196,24 @@ unit BASICTypes // BASICTypes.asm
                     Tokens.PrintKeyword();
                 }
             }
+            case BASICType.CHAR:
+            {
+                // Print the character itself, not its numeric value
+                PLP
+                if (C)
+                {
+                    LDA #'\'' Serial.WriteChar();
+                    LDA ZP.TOPL
+                    Serial.WriteChar();
+                    LDA #'\'' Serial.WriteChar();
+                }
+                else
+                {
+                    LDA ZP.TOPL
+                    Serial.WriteChar();
+                }
+                PHP
+            }
             case BASICType.STRING:
             {
                 PLP
