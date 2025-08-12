@@ -6,14 +6,14 @@ unit Tokens
         Global,
         Constant,
         Function,
-        Local, // Local or Argument depending on BP offser (+ve or -ve)
+        Local, // Local or Argument depending on BP offset (+ve or -ve)
         Keyword
     }    
     
     // Complete Token definitions for HopperBASIC
     // All values >= 0x80 
     // See the implementation of Tokenizer.Rollback to understand why we set the high bit of tokens and
-    // why we limit our characaters in literals to ASCII (0..127)
+    // why we limit our characters in literals to ASCII (0..127)
     enum Token
     {
         // Console commands
@@ -46,100 +46,107 @@ unit Tokens
         BIT      = 0x98,
         BYTE     = 0x99,
         STRING   = 0x9A,
-        CONST    = 0x9B, 
+        CHAR     = 0x9B,  // New CHAR type
+        CONST    = 0x9C,  // Shifted down
         
         // Language keywords
-        PRINT    = 0x9C,
-        INPUT    = 0x9D,
-        IF       = 0x9E,
-        THEN     = 0x9F,
-        ELSE     = 0xA0,
-        ENDIF    = 0xA1,
-        FUNC     = 0xA2,
-        ENDFUNC  = 0xA3,
-        RETURN   = 0xA4,
-        BEGIN    = 0xA5,
-        END      = 0xA6,
-        FOR      = 0xA7,
-        TO       = 0xA8,
-        STEP     = 0xA9,
-        NEXT     = 0xAA,
-        WHILE    = 0xAB,
-        WEND     = 0xAC,
-        DO       = 0xAD,
-        UNTIL    = 0xAE,
-        BREAK    = 0xAF,
-        CONTINUE = 0xB0,
-        CONT     = 0xB1,
-        GOSUB    = 0xB2,
-        GOTO     = 0xB3,
-        ARRAY    = 0xB4,
-        AND      = 0xB5,
-        OR       = 0xB6,
-        NOT      = 0xB7,
-        MOD      = 0xB8,
-        TRUE     = 0xB9,
-        FALSE    = 0xBA,
-        REPEAT   = 0xBB,
-        STOP     = 0xBC,
+        PRINT    = 0x9D,
+        INPUT    = 0x9E,
+        IF       = 0x9F,
+        THEN     = 0xA0,
+        ELSE     = 0xA1,
+        ENDIF    = 0xA2,
+        FUNC     = 0xA3,
+        ENDFUNC  = 0xA4,
+        RETURN   = 0xA5,
+        BEGIN    = 0xA6,
+        END      = 0xA7,
+        FOR      = 0xA8,
+        TO       = 0xA9,
+        STEP     = 0xAA,
+        NEXT     = 0xAB,
+        WHILE    = 0xAC,
+        WEND     = 0xAD,
+        DO       = 0xAE,
+        UNTIL    = 0xAF,
+        BREAK    = 0xB0,
+        CONTINUE = 0xB1,
+        CONT     = 0xB2,
+        GOSUB    = 0xB3,
+        GOTO     = 0xB4,
+        ARRAY    = 0xB5,
+        AND      = 0xB6,
+        OR       = 0xB7,
+        NOT      = 0xB8,
+        MOD      = 0xB9,
+        TRUE     = 0xBA,
+        FALSE    = 0xBB,
+        REPEAT   = 0xBC,
+        STOP     = 0xBD,
         
         // Built-in functions
-        ABS      = 0xBD,
-        MILLIS   = 0xBE,
-        PEEK     = 0xBF,
-        POKE     = 0xC0,
-        RND      = 0xC1,
-        SECONDS  = 0xC2,
-        DELAY    = 0xC3,
-        CLS      = 0xC4,  // Clear screen command
+        ABS      = 0xBE,
+        MILLIS   = 0xBF,
+        PEEK     = 0xC0,
+        POKE     = 0xC1,
+        RND      = 0xC2,
+        SECONDS  = 0xC3,
+        DELAY    = 0xC4,
+        CLS      = 0xC5,  // Clear screen command
+        
+        // Character/String functions (new)
+        ASC      = 0xC6,  // Convert CHAR to BYTE
+        CHR      = 0xC7,  // Convert numeric to CHAR
+        LEN      = 0xC8,  // String length
         
         // Hardware I/O functions
-        PINMODE  = 0xC5,
-        READ     = 0xC6,
-        WRITE    = 0xC7,
+        PINMODE  = 0xC9,
+        READ     = 0xCA,
+        WRITE    = 0xCB,
         
-        lastKeyword = 0xC7,  // Updated to include hardware commands
+        lastKeyword = 0xCB,  // Updated to include all keywords
         
         // Literals and identifiers
-        NUMBER     = 0xC7,  // Numeric literal (followed by string)
-        STRINGLIT  = 0xC8,  // String literal (followed by string)
-        IDENTIFIER = 0xC9,  // Variable/function name (followed by string)
+        NUMBER     = 0xCC,  // Numeric literal (followed by string) - Fixed value
+        STRINGLIT  = 0xCD,  // String literal (followed by string)
+        CHARLIT    = 0xCE,  // Character literal (followed by single char)
+        IDENTIFIER = 0xCF,  // Variable/function name (followed by string)
         
         // Special punctuation (no inline data)
-        EOF      = 0xCA,  // End of file/stream
-        COLON    = 0xCB,  // Statement separator :
-        COMMA    = 0xCC,  // Argument separator ,
-        SEMICOLON = 0xCD, // Print separator ;
+        EOF      = 0xD0,  // End of file/stream
+        COLON    = 0xD1,  // Statement separator :
+        COMMA    = 0xD2,  // Argument separator ,
+        SEMICOLON = 0xD3, // Print separator ;
         
         // Basic operators
-        EQUALS   = 0xCE,  // =
-        PLUS     = 0xCF,  // +
-        MINUS    = 0xD0,  // -
-        LPAREN   = 0xD1,  // (
-        RPAREN   = 0xD2,  // )
+        EQUALS   = 0xD4,  // =
+        PLUS     = 0xD5,  // +
+        MINUS    = 0xD6,  // -
+        LPAREN   = 0xD7,  // (
+        RPAREN   = 0xD8,  // )
         
         // Additional comparison operators
-        NOTEQUAL = 0xD3,  // <>
-        LT       = 0xD4,  // <
-        GT       = 0xD5,  // >
-        LE       = 0xD6,  // <=
-        GE       = 0xD7,  // >=
+        NOTEQUAL = 0xD9,  // <>
+        LT       = 0xDA,  // <
+        GT       = 0xDB,  // >
+        LE       = 0xDC,  // <=
+        GE       = 0xDD,  // >=
         
         // Arithmetic operators
-        MULTIPLY = 0xD8,  // *
-        DIVIDE   = 0xD9,  // /
+        MULTIPLY = 0xDE,  // *
+        DIVIDE   = 0xDF,  // /
         
         // Bitwise operators
-        BITWISE_AND = 0xDA,  // &
-        BITWISE_OR  = 0xDB,  // |
+        BITWISE_AND = 0xE0,  // &
+        BITWISE_OR  = 0xE1,  // |
         
         // Array and string operators
-        LBRACKET = 0xDC,  // [
-        RBRACKET = 0xDD,  // ]
-        LBRACE   = 0xDE,  // {
-        RBRACE   = 0xDF,  // }
+        LBRACKET = 0xE2,  // [
+        RBRACKET = 0xE3,  // ]
+        LBRACE   = 0xE4,  // {
+        RBRACE   = 0xE5,  // }
         
-        VAR      = 0xE0,  // Uninitialized type
+        VAR      = 0xE6,  // Uninitialized type - Shifted down
     }
     
     // Keywords A-L (first character < 'M') - Reorganized by frequency
@@ -158,21 +165,25 @@ unit Tokens
         3, Token.ABS, 'A', 'B', 'S',             // Rank 13 - Absolute value
         4, Token.ELSE, 'E', 'L', 'S', 'E',       // Rank 14 - Alternative branch
         2, Token.DO, 'D', 'O',                   // Rank 15 - DO/UNTIL loops
+        3, Token.CHR, 'C', 'H', 'R',             // Rank 16 - Character conversion (new)
+        3, Token.ASC, 'A', 'S', 'C',             // Rank 17 - ASCII conversion (new)
+        3, Token.LEN, 'L', 'E', 'N',             // Rank 18 - String length (new)
         
         // MODERATE (Rank 21-30)
-        5, Token.ENDIF, 'E', 'N', 'D', 'I', 'F', // Rank 17 - End IF block
-        5, Token.CLEAR, 'C', 'L', 'E', 'A', 'R', // Rank 19 - Clear screen/variables
-        3, Token.CLS, 'C', 'L', 'S',             // Rank 19 - Clear screen
-        4, Token.LIST, 'L', 'I', 'S', 'T',       // Rank 20 - Display program
-        5, Token.FALSE, 'F', 'A', 'L', 'S', 'E', // Rank 21 - Boolean constant
-        4, Token.BYTE, 'B', 'Y', 'T', 'E',       // Rank 22 - HopperBASIC data type
-        3, Token.BIT, 'B', 'I', 'T',             // Rank 23 - HopperBASIC data type
-        4, Token.LOAD, 'L', 'O', 'A', 'D',       // Rank 25 - Load from storage
-        4, Token.FUNC, 'F', 'U', 'N', 'C',       // Rank 26 - Function declaration
-        5, Token.CONST, 'C', 'O', 'N', 'S', 'T', // Rank 27 - Constant declaration
-        5, Token.DELAY, 'D', 'E', 'L', 'A', 'Y', // Rank 28 - Timing function
-        7, Token.ENDFUNC, 'E', 'N', 'D', 'F', 'U', 'N', 'C', // Rank 29 - End function
-        5, Token.BEGIN, 'B', 'E', 'G', 'I', 'N', // Rank 30 - Main program start
+        5, Token.ENDIF, 'E', 'N', 'D', 'I', 'F', // Rank 19 - End IF block
+        5, Token.CLEAR, 'C', 'L', 'E', 'A', 'R', // Rank 20 - Clear screen/variables
+        3, Token.CLS, 'C', 'L', 'S',             // Rank 21 - Clear screen
+        4, Token.LIST, 'L', 'I', 'S', 'T',       // Rank 22 - Display program
+        5, Token.FALSE, 'F', 'A', 'L', 'S', 'E', // Rank 23 - Boolean constant
+        4, Token.BYTE, 'B', 'Y', 'T', 'E',       // Rank 24 - HopperBASIC data type
+        3, Token.BIT, 'B', 'I', 'T',             // Rank 25 - HopperBASIC data type
+        4, Token.CHAR, 'C', 'H', 'A', 'R',       // Rank 26 - Character type (new)
+        4, Token.LOAD, 'L', 'O', 'A', 'D',       // Rank 27 - Load from storage
+        4, Token.FUNC, 'F', 'U', 'N', 'C',       // Rank 28 - Function declaration
+        5, Token.CONST, 'C', 'O', 'N', 'S', 'T', // Rank 29 - Constant declaration
+        5, Token.DELAY, 'D', 'E', 'L', 'A', 'Y', // Rank 30 - Timing function
+        7, Token.ENDFUNC, 'E', 'N', 'D', 'F', 'U', 'N', 'C', // Rank 31 - End function
+        5, Token.BEGIN, 'B', 'E', 'G', 'I', 'N', // Rank 32 - Main program start
         
         // INFREQUENT (Everything else alphabetically)
         5, Token.ARRAY, 'A', 'R', 'R', 'A', 'Y', // Array type declaration
@@ -245,7 +256,7 @@ unit Tokens
     
     
     // Find keyword match for current identifier in working buffer
-    // Input: Working buffer at Address.BasicProcessBuffer1, null-terminated
+    // Input: Working buffer at Address.BasicProcessBuffer, null-terminated
     // Output: A = token value if found, or 0 if not found
     // Munts: A, X, Y, ZP.ACC, ZP.IDY
     FindKeyword()
@@ -520,7 +531,7 @@ unit Tokens
             }
             default:
             {
-                CLC  // (fixed typo: was SLC)
+                CLC
             }
         }
     }
