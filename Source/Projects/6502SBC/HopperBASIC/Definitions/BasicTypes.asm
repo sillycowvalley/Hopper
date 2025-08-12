@@ -3,7 +3,7 @@ unit BASICTypes // BASICTypes.asm
     enum BASICType
     {
         VOID     = 0x00, // Hopper VM Types.Undefined (function return type indicating no return value (internal))
-        
+        CHAR     = 0x01, // Hopper VM Types.Char
         INT      = 0x02, // Hopper VM Types.Int
         BYTE     = 0x03, // Hopper VM Types.Byte
         WORD     = 0x04, // Hopper VM Types.UInt
@@ -75,6 +75,11 @@ unit BASICTypes // BASICTypes.asm
                     LDA #Token.BYTE
                     Tokens.PrintKeyword();
                 }
+                case BASICType.CHAR:
+                {
+                    LDA #Token.CHAR
+                    Tokens.PrintKeyword();
+                }
                 case BASICType.STRING:
                 {
                     LDA #Token.STRING
@@ -125,6 +130,11 @@ unit BASICTypes // BASICTypes.asm
             case #Token.BYTE:
             {
                 LDA # BASICType.BYTE
+                SEC
+            }
+            case #Token.CHAR:
+            {
+                LDA # BASICType.CHAR
                 SEC
             }
             case #Token.BIT:

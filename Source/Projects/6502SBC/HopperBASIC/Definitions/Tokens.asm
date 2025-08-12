@@ -10,10 +10,6 @@ unit Tokens
         Keyword
     }    
     
-    // Complete Token definitions for HopperBASIC
-    // All values >= 0x80 
-    // See the implementation of Tokenizer.Rollback to understand why we set the high bit of tokens and
-    // why we limit our characters in literals to ASCII (0..127)
     enum Token
     {
         // Console commands
@@ -46,109 +42,215 @@ unit Tokens
         BIT      = 0x98,
         BYTE     = 0x99,
         STRING   = 0x9A,
-        CHAR     = 0x9B,  // New CHAR type
-        CONST    = 0x9C,  // Shifted down
+        CHAR     = 0x9B,
+        VAR      = 0x9C,
+        CONST    = 0x9D,
         
         // Language keywords
-        PRINT    = 0x9D,
-        INPUT    = 0x9E,
-        IF       = 0x9F,
-        THEN     = 0xA0,
-        ELSE     = 0xA1,
-        ENDIF    = 0xA2,
-        FUNC     = 0xA3,
-        ENDFUNC  = 0xA4,
-        RETURN   = 0xA5,
-        BEGIN    = 0xA6,
-        END      = 0xA7,
-        FOR      = 0xA8,
-        TO       = 0xA9,
-        STEP     = 0xAA,
-        NEXT     = 0xAB,
-        WHILE    = 0xAC,
-        WEND     = 0xAD,
-        DO       = 0xAE,
-        UNTIL    = 0xAF,
-        BREAK    = 0xB0,
-        CONTINUE = 0xB1,
-        CONT     = 0xB2,
-        GOSUB    = 0xB3,
-        GOTO     = 0xB4,
-        ARRAY    = 0xB5,
-        AND      = 0xB6,
-        OR       = 0xB7,
-        NOT      = 0xB8,
-        MOD      = 0xB9,
-        TRUE     = 0xBA,
-        FALSE    = 0xBB,
-        REPEAT   = 0xBC,
-        STOP     = 0xBD,
+        PRINT    = 0x9E,
+        INPUT    = 0x9F,
+        IF       = 0xA0,
+        THEN     = 0xA1,
+        ELSE     = 0xA2,
+        ENDIF    = 0xA3,
+        FUNC     = 0xA4,
+        ENDFUNC  = 0xA5,
+        RETURN   = 0xA6,
+        BEGIN    = 0xA7,
+        END      = 0xA8,
+        FOR      = 0xA9,
+        TO       = 0xAA,
+        STEP     = 0xAB,
+        NEXT     = 0xAC,
+        WHILE    = 0xAD,
+        WEND     = 0xAE,
+        DO       = 0xAF,
+        UNTIL    = 0xB0,
+        BREAK    = 0xB1,
+        CONTINUE = 0xB2,
+        CONT     = 0xB3,
+        GOSUB    = 0xB4,
+        GOTO     = 0xB5,
+        ARRAY    = 0xB6,
+        AND      = 0xB7,
+        OR       = 0xB8,
+        NOT      = 0xB9,
+        MOD      = 0xBA,
+        TRUE     = 0xBB,
+        FALSE    = 0xBC,
+        REPEAT   = 0xBD,
+        STOP     = 0xBE,
         
         // Built-in functions
-        ABS      = 0xBE,
-        MILLIS   = 0xBF,
-        PEEK     = 0xC0,
-        POKE     = 0xC1,
-        RND      = 0xC2,
-        SECONDS  = 0xC3,
-        DELAY    = 0xC4,
-        CLS      = 0xC5,  // Clear screen command
+        ABS      = 0xBF,
+        MILLIS   = 0xC0,
+        PEEK     = 0xC1,
+        POKE     = 0xC2,
+        RND      = 0xC3,
+        SECONDS  = 0xC4,
+        DELAY    = 0xC5,
+        CLS      = 0xC6,
         
-        // Character/String functions (new)
-        ASC      = 0xC6,  // Convert CHAR to BYTE
-        CHR      = 0xC7,  // Convert numeric to CHAR
-        LEN      = 0xC8,  // String length
+        // Character/String functions
+        ASC      = 0xC7,
+        CHR      = 0xC8,
+        LEN      = 0xC9,
         
         // Hardware I/O functions
-        PINMODE  = 0xC9,
-        READ     = 0xCA,
-        WRITE    = 0xCB,
+        PINMODE  = 0xCA,
+        READ     = 0xCB,
+        WRITE    = 0xCC,
         
-        lastKeyword = 0xCB,  // Updated to include all keywords
+        lastKeyword = 0xCC,
         
-        // Literals and identifiers
-        NUMBER     = 0xCC,  // Numeric literal (followed by string) - Fixed value
-        STRINGLIT  = 0xCD,  // String literal (followed by string)
-        CHARLIT    = 0xCE,  // Character literal (followed by single char)
-        IDENTIFIER = 0xCF,  // Variable/function name (followed by string)
+        // Literals and identifiers  
+        NUMBER     = 0xCD,
+        STRINGLIT  = 0xCE,
+        CHARLIT    = 0xCF,
+        IDENTIFIER = 0xD0,
         
         // Special punctuation (no inline data)
-        EOF      = 0xD0,  // End of file/stream
-        COLON    = 0xD1,  // Statement separator :
-        COMMA    = 0xD2,  // Argument separator ,
-        SEMICOLON = 0xD3, // Print separator ;
+        EOF      = 0xD1,
+        COLON    = 0xD2,
+        COMMA    = 0xD3,
+        SEMICOLON = 0xD4,
         
         // Basic operators
-        EQUALS   = 0xD4,  // =
-        PLUS     = 0xD5,  // +
-        MINUS    = 0xD6,  // -
-        LPAREN   = 0xD7,  // (
-        RPAREN   = 0xD8,  // )
+        EQUALS   = 0xD5,
+        PLUS     = 0xD6,
+        MINUS    = 0xD7,
+        LPAREN   = 0xD8,
+        RPAREN   = 0xD9,
         
         // Additional comparison operators
-        NOTEQUAL = 0xD9,  // <>
-        LT       = 0xDA,  // <
-        GT       = 0xDB,  // >
-        LE       = 0xDC,  // <=
-        GE       = 0xDD,  // >=
+        NOTEQUAL = 0xDA,
+        LT       = 0xDB,
+        GT       = 0xDC,
+        LE       = 0xDD,
+        GE       = 0xDE,
         
         // Arithmetic operators
-        MULTIPLY = 0xDE,  // *
-        DIVIDE   = 0xDF,  // /
+        MULTIPLY = 0xDF,
+        DIVIDE   = 0xE0,
         
         // Bitwise operators
-        BITWISE_AND = 0xE0,  // &
-        BITWISE_OR  = 0xE1,  // |
+        BITWISE_AND = 0xE1,
+        BITWISE_OR  = 0xE2,
         
         // Array and string operators
-        LBRACKET = 0xE2,  // [
-        RBRACKET = 0xE3,  // ]
-        LBRACE   = 0xE4,  // {
-        RBRACE   = 0xE5,  // }
-        
-        VAR      = 0xE6,  // Uninitialized type - Shifted down
+        LBRACKET = 0xE3,
+        RBRACKET = 0xE4,
+        LBRACE   = 0xE5,
+        RBRACE   = 0xE6,
     }
+        
+        // Keywords A-H (first character < 'I') - Reorganized by frequency
+    // WARNING: Monitor table size with validator - aiming for balanced distribution
+    const byte[] keywordsAH = {
+        // VERY FREQUENT (Rank 1-10)
+        3, Token.FOR, 'F', 'O', 'R',             // Rank 3 - FOR/NEXT loops
+        4, Token.GOTO, 'G', 'O', 'T', 'O',       // Rank 8 - Jump to line
+        5, Token.GOSUB, 'G', 'O', 'S', 'U', 'B', // Rank 9 - Subroutine call
+        3, Token.END, 'E', 'N', 'D',             // Rank 10 - Program termination
+        
+        // FREQUENT (Rank 11-20)
+        3, Token.AND, 'A', 'N', 'D',             // Rank 11 - Logical AND
+        3, Token.ABS, 'A', 'B', 'S',             // Rank 13 - Absolute value
+        4, Token.ELSE, 'E', 'L', 'S', 'E',       // Rank 14 - Alternative branch
+        2, Token.DO, 'D', 'O',                   // Rank 15 - DO/UNTIL loops
+        3, Token.CHR, 'C', 'H', 'R',             // Rank 16 - Character conversion
+        3, Token.ASC, 'A', 'S', 'C',             // Rank 17 - ASCII conversion
+        
+        // MODERATE (Rank 21-30)
+        5, Token.ENDIF, 'E', 'N', 'D', 'I', 'F', // Rank 19 - End IF block
+        5, Token.CLEAR, 'C', 'L', 'E', 'A', 'R', // Rank 20 - Clear screen/variables
+        3, Token.CLS, 'C', 'L', 'S',             // Rank 21 - Clear screen
+        5, Token.FALSE, 'F', 'A', 'L', 'S', 'E', // Rank 23 - Boolean constant
+        4, Token.BYTE, 'B', 'Y', 'T', 'E',       // Rank 24 - HopperBASIC data type
+        3, Token.BIT, 'B', 'I', 'T',             // Rank 25 - HopperBASIC data type
+        4, Token.CHAR, 'C', 'H', 'A', 'R',       // Rank 26 - Character type
+        4, Token.FUNC, 'F', 'U', 'N', 'C',       // Rank 28 - Function declaration
+        5, Token.CONST, 'C', 'O', 'N', 'S', 'T', // Rank 29 - Constant declaration
+        5, Token.DELAY, 'D', 'E', 'L', 'A', 'Y', // Rank 30 - Timing function
+        7, Token.ENDFUNC, 'E', 'N', 'D', 'F', 'U', 'N', 'C', // Rank 31 - End function
+        5, Token.BEGIN, 'B', 'E', 'G', 'I', 'N', // Rank 32 - Main program start
+        
+        // INFREQUENT (Everything else alphabetically)
+        5, Token.ARRAY, 'A', 'R', 'R', 'A', 'Y', // Array type declaration
+        5, Token.BREAK, 'B', 'R', 'E', 'A', 'K', // Loop control
+        7, Token.BUFFERS, 'B', 'U', 'F', 'F', 'E', 'R', 'S', // Debug command
+        3, Token.BYE, 'B', 'Y', 'E',             // Exit interpreter
+        4, Token.CONT, 'C', 'O', 'N', 'T',       // Continue from break
+        8, Token.CONTINUE, 'C', 'O', 'N', 'T', 'I', 'N', 'U', 'E', // Loop control
+        4, Token.DASM, 'D', 'A', 'S', 'M',       // Disassemble function
+        3, Token.DEL, 'D', 'E', 'L',             // Delete file
+        3, Token.DIR, 'D', 'I', 'R',             // Directory listing
+        4, Token.DUMP, 'D', 'U', 'M', 'P',       // Debug dump
+        6, Token.FORGET, 'F', 'O', 'R', 'G', 'E', 'T', // Remove symbol
+        5, Token.FUNCS, 'F', 'U', 'N', 'C', 'S', // List functions
+        4, Token.HEAP, 'H', 'E', 'A', 'P',       // Heap inspection command
+        
+        0  // End marker
+    };
+
+    // Keywords I-Z (first character >= 'I') - Reorganized by frequency  
+    const byte[] keywordsIZ = {
+        // VERY FREQUENT (Rank 1-10)
+        5, Token.PRINT, 'P', 'R', 'I', 'N', 'T', // Rank 1 - Output data
+        4, Token.NEXT, 'N', 'E', 'X', 'T',       // Rank 2 - FOR/NEXT loops
+        4, Token.THEN, 'T', 'H', 'E', 'N',       // Rank 3 - IF/THEN conditionals
+        2, Token.IF, 'I', 'F',                   // Rank 4 - Conditionals  
+        3, Token.INT, 'I', 'N', 'T',             // Rank 5 - Common numeric type
+        3, Token.MOD, 'M', 'O', 'D',             // Rank 7 - Remainder arithmetic
+        
+        // FREQUENT (Rank 11-20)
+        5, Token.INPUT, 'I', 'N', 'P', 'U', 'T', // Rank 12 - User input
+        3, Token.LEN, 'L', 'E', 'N',             // Rank 18 - String length
+        3, Token.VAR, 'V', 'A', 'R',             // Uninitialized type
+        
+        // MODERATE (Rank 21-30)
+        5, Token.WHILE, 'W', 'H', 'I', 'L', 'E', // Rank 16 - WHILE/WEND loops
+        4, Token.WEND, 'W', 'E', 'N', 'D',       // Rank 16 - WHILE/WEND loops
+        4, Token.STEP, 'S', 'T', 'E', 'P',       // Rank 18 - FOR loop increment
+        4, Token.LIST, 'L', 'I', 'S', 'T',       // Rank 22 - Display program
+        3, Token.RND, 'R', 'N', 'D',             // Rank 24 - Random number generation
+        4, Token.LOAD, 'L', 'O', 'A', 'D',       // Rank 27 - Load from storage
+        
+        // INFREQUENT (Everything else - HopperBASIC specific and console commands)
+        4, Token.WORD, 'W', 'O', 'R', 'D',       // HopperBASIC data type
+        6, Token.STRING, 'S', 'T', 'R', 'I', 'N', 'G', // HopperBASIC data type
+        6, Token.RETURN, 'R', 'E', 'T', 'U', 'R', 'N', // HopperBASIC structured programming
+        3, Token.NOT, 'N', 'O', 'T',             // Logic operator
+        2, Token.OR, 'O', 'R',                   // Logic operator
+        4, Token.TRUE, 'T', 'R', 'U', 'E',       // Logic constant
+        2, Token.TO, 'T', 'O',                   // Control flow extras
+        5, Token.UNTIL, 'U', 'N', 'T', 'I', 'L', // Control flow extras
+        
+        // Console commands (all infrequent)
+        3, Token.NEW, 'N', 'E', 'W',             // Console command
+        3, Token.RUN, 'R', 'U', 'N',             // Console command
+        3, Token.MEM, 'M', 'E', 'M',             // Console command
+        4, Token.SAVE, 'S', 'A', 'V', 'E',       // File operation
+        4, Token.VARS, 'V', 'A', 'R', 'S',       // Console command
+        3, Token.REM, 'R', 'E', 'M',             // Comment (infrequent in programs)
+        4, Token.TRON, 'T', 'R', 'O', 'N',       // Debug command
+        5, Token.TROFF, 'T', 'R', 'O', 'F', 'F', // Debug command
+        
+        // Built-in functions (all infrequent)
+        6, Token.MILLIS, 'M', 'I', 'L', 'L', 'I', 'S', // Built-in function
+        4, Token.PEEK, 'P', 'E', 'E', 'K',       // Built-in function
+        4, Token.POKE, 'P', 'O', 'K', 'E',       // Built-in function
+        7, Token.SECONDS, 'S', 'E', 'C', 'O', 'N', 'D', 'S', // Built-in function
+        
+        // Hardware I/O functions
+        7, Token.PINMODE, 'P', 'I', 'N', 'M', 'O', 'D', 'E', // Configure pin direction
+        4, Token.READ, 'R', 'E', 'A', 'D',       // Digital input
+        5, Token.WRITE, 'W', 'R', 'I', 'T', 'E', // Digital output
+        
+        0  // End marker
+    };
     
+    /*
     // Keywords A-L (first character < 'M') - Reorganized by frequency
     const byte[] keywordsAL = {
         // VERY FREQUENT (Rank 1-10)
@@ -253,6 +355,7 @@ unit Tokens
         
         0  // End marker
     };
+    */
     
     
     // Find keyword match for current identifier in working buffer
@@ -276,19 +379,19 @@ unit Tokens
         
         // Choose table based on first character
         LDA Address.BasicProcessBuffer
-        CMP #'M'
-        if (C)  // >= 'M', use M-Z table
+        CMP #'I'  // Changed from 'M' to 'I'
+        if (C)    // >= 'I', use I-Z table
         {
-            LDA #(keywordsMZ % 256)
+            LDA #(keywordsIZ % 256)
             STA ZP.IDYL
-            LDA #(keywordsMZ / 256)
+            LDA #(keywordsIZ / 256)
             STA ZP.IDYH
         }
-        else    // < 'M', use A-L table
+        else      // < 'I', use A-H table
         {
-            LDA #(keywordsAL % 256)
+            LDA #(keywordsAH % 256)
             STA ZP.IDYL
-            LDA #(keywordsAL / 256)
+            LDA #(keywordsAH / 256)
             STA ZP.IDYH
         }
         
@@ -397,18 +500,18 @@ unit Tokens
         STX ZP.ACCL  // Store target token value
         
         // Load keywords table address into ZP.IDY
-        LDA #(keywordsAL % 256)
+        LDA #(keywordsAH % 256)
         STA ZP.IDYL
-        LDA #(keywordsAL / 256)
+        LDA #(keywordsAH / 256)
         STA ZP.IDYH
         
         printKeywordFromTable();
         if (NC)
         {
             // perhaps it is in the other table
-            LDA #(keywordsMZ % 256)
+            LDA #(keywordsIZ % 256)
             STA ZP.IDYL
-            LDA #(keywordsMZ / 256)
+            LDA #(keywordsIZ / 256)
             STA ZP.IDYH
             printKeywordFromTable();
 #ifdef DEBUG
@@ -465,7 +568,6 @@ unit Tokens
                     if (Z) { break; }
                     
                     LDA [ZP.IDY], Y  // Access character 
-                    Debug.COut();
                     INY
                     DEX
                 } // loop
@@ -573,11 +675,28 @@ unit Tokens
                 break; 
             }
             
+            INY                 // Skip length byte
+        
+            // Check token value is valid (in both verbose and non-verbose modes)
+            LDA [ZP.IDY], Y     // Get token byte
+            CMP #(Token.lastKeyword + 1)
+            if (C)              // Token > lastKeyword
+            {
+                // Invalid token - return error
+                DEY             // Back up to length byte position
+                TYA             // Return offset of entry with bad token
+                CLC             // Clear C for error
+                break;
+            }
+            // reload length
+            DEY             
+            LDA [ZP.IDY], Y
+            
     #ifdef VERBOSEDEBUG
             // Print the keyword entry for debugging
             // Format: [offset] length:token keyword
             TYA
-            Serial.HexOut();    // Print current offset
+            Debug.HOut();    // Print current offset
             LDA #':'
             Debug.COut();
             
@@ -593,7 +712,7 @@ unit Tokens
             LDA #'x'
             Debug.COut();
             LDA [ZP.IDY], Y
-            Serial.HexOut();    // Print token value
+            Debug.HOut();    // Print token value
             Debug.Space();
             
             INY                 // Move to first character
@@ -652,74 +771,66 @@ unit Tokens
         PHA
         
         // Validate keywordsAL table
-        LDA #(keywordsAL % 256)
+        LDA #(keywordsAH % 256)
         STA ZP.IDYL
-        LDA #(keywordsAL / 256)
+        LDA #(keywordsAH / 256)
         STA ZP.IDYH
         
         ValidateKeywordTable();
+        STA ZP.TOPL
         if (NC)
         {
             Debug.NL();
             LDA #'A' Debug.COut();
-            LDA #'L' Debug.COut();
+            LDA #'H' Debug.COut();
             LDA #':' Debug.COut();
             Debug.HOut();  // Print offset where error occurred
             Error.InternalError(); BIT ZP.EmulatorPCL
         }
+        else
+        {
+#ifdef VERBOSEDEBUG
+            STZ ZP.TOPH
+            Debug.NL();
+            LDA #'A' Debug.COut();
+            LDA #'H' Debug.COut();
+            LDA #'=' Debug.COut();
+            Tools.PrintDecimalWord();
+            Debug.Space();
+#endif
+        }
+        
         
         // Validate keywordsMZ table
-        LDA #(keywordsMZ % 256)
+        LDA #(keywordsIZ % 256)
         STA ZP.IDYL
-        LDA #(keywordsMZ / 256)
+        LDA #(keywordsIZ / 256)
         STA ZP.IDYH
         
         ValidateKeywordTable();
+        STA ZP.TOPL
         if (NC)
         {
             Debug.NL();
-            LDA #'M' Debug.COut();
+            LDA #'I' Debug.COut();
             LDA #'Z' Debug.COut();
             LDA #':' Debug.COut();
             Debug.HOut();  // Print offset where error occurred
             Error.InternalError(); BIT ZP.EmulatorPCL
         }
-        
-    #ifdef VERBOSEDEBUG
-        // Optionally print sizes of valid tables
-        LDA #(keywordsAL % 256)
-        STA ZP.IDYL
-        LDA #(keywordsAL / 256)
-        STA ZP.IDYH
-        
-        ValidateKeywordTable();
-        STA ZP.TOPL
-        STZ ZP.TOPH
-        
-        Debug.NL();
-        LDA #'A' Debug.COut();
-        LDA #'L' Debug.COut();
-        LDA #'=' Debug.COut();
-        Tools.PrintDecimalWord();
-        Debug.Space();
-        
-        LDA #(keywordsMZ % 256)
-        STA ZP.IDYL
-        LDA #(keywordsMZ / 256)
-        STA ZP.IDYH
-        
-        ValidateKeywordTable();
-        STA ZP.TOPL
-        STZ ZP.TOPH
-        
-        Debug.NL();
-        LDA #'M' Debug.COut();
-        LDA #'Z' Debug.COut();
-        LDA #'=' Debug.COut();
-        Tools.PrintDecimalWord();
-        Debug.NL();
-    #endif
-        
+        else
+        {
+#ifdef VERBOSEDEBUG
+            STZ ZP.TOPH
+            Debug.NL();
+            LDA #'I' Debug.COut();
+            LDA #'Z' Debug.COut();
+            LDA #'=' Debug.COut();
+            Tools.PrintDecimalWord();
+            Debug.NL();
+#endif
+        }
+    
         PLA
         STA ZP.IDYH
         PLA
