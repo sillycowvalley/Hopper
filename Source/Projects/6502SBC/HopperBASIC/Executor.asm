@@ -2365,55 +2365,40 @@ unit Executor // Executor.asm
         {
             // Move string pointer to TOP for length calculation
             LDA ZP.NEXTL
-            STA ZP.TOPL
+            TAX
             LDA ZP.NEXTH
-            STA ZP.TOPH
+            TAY
             
             // Get string length
-            Tools.StringLengthTOP();  // Returns length in ZP.TOP as 16-bit value
-            
+            Tools.StringLength();  // Returns length in A
+            STA ZP.TOPL
+                                    
             // Check if index is within bounds (index < length)
             // Compare index (ACC) with length (TOP)
             LDA ZP.ACCH
-            CMP ZP.TOPH
-            if (C)  // Index high > Length high
+            if (NZ)  // strings are always <= 255
             {
                 Error.RangeError(); BIT ZP.EmulatorPCL
                 States.SetFailure();
                 break;
             }
-            if (Z)  // High bytes equal, need to compare low bytes
+            LDA ZP.ACCL
+            CMP ZP.TOPL
+            if (C)   // ACCL >= TOPL (index >= length
             {
-                LDA ZP.ACCL
-                CMP ZP.TOPL
-                if (C)  // Index low >= Length low (out of bounds)
-                {
-                    Error.RangeError(); BIT ZP.EmulatorPCL
-                    States.SetFailure();
-                    break;
-                }
+                Error.RangeError();
+                States.SetFailure();
+                break;
             }
             
-            // Calculate address of character: string_ptr + index
-            CLC
-            LDA ZP.NEXTL  // String pointer low
-            ADC ZP.ACCL   // Add index low
-            STA ZP.TOPL
-            LDA ZP.NEXTH  // String pointer high
-            ADC ZP.ACCH   // Add index high (with carry)
-            STA ZP.TOPH
-            
             // Read the character at the calculated address
-            LDY #0
-            LDA [ZP.TOP], Y
+            LDY ZP.ACCL
+            LDA [ZP.NEXT], Y
             
             // Store character value in ZP.TOP as CHAR type
             STA ZP.TOPL
             STZ ZP.TOPH  // Clear high byte
             LDA #BASICType.CHAR
-            STA ZP.TOPT
-            
-            // Push character to stack
             Stacks.PushTop();
             
             States.SetSuccess();

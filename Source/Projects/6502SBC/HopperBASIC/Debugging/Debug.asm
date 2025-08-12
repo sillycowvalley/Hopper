@@ -21,6 +21,7 @@ unit Debug // Debug.asm
     const string regACC = "ACC:";
     const string regIDX = "IDX:";
     const string regIDY = "IDY:";
+    const string regXID = "XID:";
     const string regSP = "SP:";
     const string regBP = "BP:";
     const string regPC = "PC:";
@@ -230,6 +231,19 @@ unit Debug // Debug.asm
         hOut();
         space();
     }
+    xiOut()  // Output XID register
+    {
+        LDA #(regXID % 256)
+        STA ZP.STR
+        LDA #(regXID / 256)
+        STA ZP.STRH
+        printString();
+        LDA ZP.XIDH
+        hOut();
+        LDA ZP.XIDL
+        hOut();
+        space();
+    }
     
     yOut()  // Output IDY register
     {
@@ -416,6 +430,12 @@ unit Debug // Debug.asm
     {
         PHP PHA PHY
         xOut();
+        PLY PLA PLP
+    }
+    XIOut()
+    {
+        PHP PHA PHY
+        xiOut();
         PLY PLA PLP
     }
     

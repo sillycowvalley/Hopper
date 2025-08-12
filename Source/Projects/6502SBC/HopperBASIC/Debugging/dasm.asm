@@ -103,8 +103,8 @@ unit Dasm
             STA ZP.XIDH 
             
             NL(); Space(); Space(); Space(); // indent
-            LDA #'[' COut(); LDA ZP.IDXH HOut();LDA ZP.IDXL HOut(); LDA #']' COut();
-            LDA #'[' COut(); LDA ZP.XIDH HOut();LDA ZP.XIDL HOut(); LDA #']' COut();
+            LDA #'[' COut(); LDA ZP.IDXH HOut();LDA ZP.IDXL HOut(); LDA #']' COut(); // opcode stream
+            LDA #'[' COut(); LDA ZP.XIDH HOut();LDA ZP.XIDL HOut(); LDA #']' COut(); // token stream
             NL();
             
             // Get opcode stream pointer from function
@@ -243,38 +243,31 @@ unit Dasm
                                 LDA ZP.ACCL
                                 printSysCallName();
                             }
-                            case OpCode.PUSHBYTE:
-                            {
-                                // Show decimal value in parentheses
-                                LDA #'(' COut();
-                                
-                                STZ ZP.TOPH  // BYTE is unsigned
-                                LDA ZP.ACCL
-                                STA ZP.TOPL
-                                LDA #BASICType.BYTE
-                                STA ZP.TOPT
-                                Tools.PrintDecimalWord();
-                                
-                                LDA #')' COut();
-                            }
-                            case OpCode.PUSHCHAR:
-                            {
-                                LDA ZP.ACCL
-                                PrintChar(); // 'A' or 0x0A
-                            }
                             case OpCode.PUSHBIT:
                             {
                                 // Show TRUE or FALSE
                                 LDA #'(' COut();
                                 LDA ZP.ACCL
-                                if (Z)
-                                {
-                                    LDA #Token.FALSE     Tokens.PrintKeyword();
-                                }
-                                else
-                                {
-                                    LDA #Token.TRUE     Tokens.PrintKeyword();
-                                }
+                                STA ZP.TOPL
+                                STZ ZP.TOPH
+                                LDA # BASICType.BIT
+                                STA ZP.TOPT
+                                
+                                BASICTypes.PrintValue();
+                                LDA #')' COut();
+                            }
+                            case OpCode.PUSHCHAR:
+                            {
+                                // Show TRUE or FALSE
+                                LDA #'(' COut();
+                                LDA ZP.ACCL
+                                STA ZP.TOPL
+                                STZ ZP.TOPH
+                                LDA # BASICType.CHAR
+                                STA ZP.TOPT
+                                
+                                SEC // quotes for CHAR
+                                BASICTypes.PrintValue();
                                 LDA #')' COut();
                             }
                             case OpCode.PUSHGLOBAL:
@@ -404,16 +397,16 @@ unit Dasm
                             }
                             case OpCode.PUSHINT:
                             {
-                                // Show signed decimal value in parentheses
+                                // Show unsigned decimal value in parentheses
                                 LDA #'(' COut();
                                 
                                 LDA ZP.ACCL
                                 STA ZP.TOPL
                                 LDA ZP.ACCH
                                 STA ZP.TOPH
-                                LDA #BASICType.INT
+                                LDA # BASICType.INT
                                 STA ZP.TOPT
-                                Tools.PrintDecimalWord();
+                                BASICTypes.PrintValue();
                                 
                                 LDA #')' COut();
                             }
@@ -426,9 +419,9 @@ unit Dasm
                                 STA ZP.TOPL
                                 LDA ZP.ACCH
                                 STA ZP.TOPH
-                                LDA #BASICType.WORD
+                                LDA # BASICType.WORD
                                 STA ZP.TOPT
-                                Tools.PrintDecimalWord();
+                                BASICTypes.PrintValue();
                                 
                                 LDA #')' COut();
                             }
@@ -448,21 +441,22 @@ unit Dasm
                                 CLC
                                 LDA ZP.XIDL
                                 ADC ZP.ACCL
-                                STA ZP.ACCL
+                                STA ZP.TOPL
                                 LDA ZP.XIDH
                                 ADC ZP.ACCH
-                                STA ZP.ACCH
-                                 
-                                LDA #'"' COut();
-                                PrintStringACC();
-                                LDA #'"' COut();
+                                STA ZP.TOPH
+                                LDA # BASICType.STRING
+                                STA ZP.TOPT
+                                
+                                SEC // quotes
+                                BASICTypes.PrintValue();
                             }
                             case OpCode.JUMPW:
                             case OpCode.JUMPZW:
                             case OpCode.JUMPNZW:
                             {
                                 LDA #'(' COut();
-                                LDA #BASICType.INT
+                                LDA # BASICType.INT
                                 STA ZP.TOPT
                                 LDA ZP.ACCL
                                 STA ZP.TOPL

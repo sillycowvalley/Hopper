@@ -1105,24 +1105,6 @@ unit Emit
             Tokenizer.GetTokenString(); // Result in ZP.TOP
             Error.CheckError();
             if (NC) { break; }
-            
-            // OFFSET : compiling STRINGLIT
-            // Emit PUSHCSTRING with pointer to string content
-            LDA ZP.TokenLiteralPosL
-            STA Compiler.compilerOperand1  // LSB
-            LDA ZP.TokenLiteralPosH
-            STA Compiler.compilerOperand2  // MSB
-
-#ifdef DEBUG
-// XIDHERE cS        
-//NL(); LDA #'c' COut(); LDA #'S' COut(); LDA #',' COut();
-//Space(); LDA ZP.TokenBufferH HOut(); LDA ZP.TokenBufferL HOut(); Space();
-//Space(); LDA ZP.TokenLiteralPosH HOut(); LDA ZP.TokenLiteralPosL HOut();
-#endif
-
-
-
-            
 
             // Set up opcode
             LDA #OpCode.PUSHCSTRING

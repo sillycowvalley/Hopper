@@ -611,7 +611,19 @@ unit TokenIterator // TokenIterator.asm
                 LDA #')'
                 Serial.WriteChar();
                 LDA #' '
+                Serial.WriteChar(); // Add space after closing bracket
+            }
+            case Token.LBRACKET:
+            {
+                LDA #'['
                 Serial.WriteChar();
+            }
+            case Token.RBRACKET:
+            {
+                LDA #']'
+                Serial.WriteChar();
+                LDA #' '
+                Serial.WriteChar(); // Add space after closing bracket
             }
             case Token.LT:
             {

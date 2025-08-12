@@ -1182,6 +1182,14 @@ unit Compiler // Compiler.asm
                case Token.STRINGLIT:
                {
                    RMB0 ZP.CompilerFlags // STRING: not an integral constant expression
+                   
+                   // OFFSET : compiling STRINGLIT
+                   // Emit PUSHCSTRING with pointer to string content from token stream
+                   LDA ZP.TokenLiteralPosL
+                   STA Compiler.compilerOperand1  // LSB
+                   LDA ZP.TokenLiteralPosH
+                   STA Compiler.compilerOperand2  // MSB
+                    
                    Emit.PushCString();
                    Error.CheckError();
                    if (NC) { break; }
@@ -2069,12 +2077,37 @@ unit Compiler // Compiler.asm
             {
                 case BASICType.STRING:
                 {
-                    // Push empty string
-                    LDA #(Variables.EmptyString % 256)
-                    STA compilerOperand1 // LSB
-                    LDA #(Variables.EmptyString / 256)
-                    STA compilerOperand2 // MSB
-                    Emit.PushCString();
+                    // Find a null byte to use as empty string:
+                    // The identifier we just parsed has a null terminator after it
+
+                    LDA ZP.TokenizerPosH
+                    STA ZP.ACCH
+                    LDA ZP.TokenizerPosL
+                    STA ZP.ACCL
+                    if (Z)
+                    {
+                        DEC ZP.ACCH
+                    }
+                    DEC ZP.ACCL
+                    
+#ifdef DEBUG             
+                    // Verify in case something changes in future:
+                    LDA [ZP.ACC]
+                    if (NZ)
+                    {
+                        Error.InternalError(); BIT ZP.EmulatorPCL
+                        break;
+                    }
+                    LDA ZP.ACCL
+#endif        
+                    STA compilerOperand1  // LSB of offset to null
+                    LDA ZP.ACCH
+                    STA compilerOperand2  // MSB of offset to null
+                    
+                    // Emit PUSHCSTRING with this offset
+                    LDA #OpCode.PUSHCSTRING
+                    STA compilerOpCode
+                    Emit.OpCodeWithWord();
                 }
                 case BASICType.BIT:
                 {

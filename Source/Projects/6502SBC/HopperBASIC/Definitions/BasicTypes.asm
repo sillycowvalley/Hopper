@@ -204,7 +204,56 @@ unit BASICTypes // BASICTypes.asm
                 {
                     LDA #'\'' Serial.WriteChar();
                     LDA ZP.TOPL
-                    Serial.WriteChar();
+                    Tools.IsPrintable();
+                    if (C)
+                    {
+                        LDA ZP.TOPL
+                        Serial.WriteChar();
+                    }
+                    else
+                    {
+                        LDA #'\\' Serial.WriteChar(); 
+                        LDX ZP.TOPL
+                        switch (X)
+                        {
+                            case 0x00:
+                            {
+                                LDA #'0' Serial.WriteChar();
+                            }
+                            case 0x07:
+                            {
+                                LDA #'a' Serial.WriteChar();
+                            }
+                            case 0x08:
+                            {
+                                LDA #'b' Serial.WriteChar();
+                            }
+                            case 0x09:
+                            {
+                                LDA #'t' Serial.WriteChar();
+                            }
+                            case 0x0A:
+                            {
+                                LDA #'n' Serial.WriteChar();
+                            }
+                            case 0x0C:
+                            {
+                                LDA #'f' Serial.WriteChar();
+                            }
+                            case 0x0D:
+                            {
+                                LDA #'r' Serial.WriteChar();
+                            }
+                            case 0x27:
+                            {
+                                LDA #'e' Serial.WriteChar();
+                            }
+                            default:
+                            {
+                                LDA #'x' Serial.WriteChar(); TXA Serial.HexOut();
+                            }
+                        }
+                    }
                     LDA #'\'' Serial.WriteChar();
                 }
                 else
@@ -213,6 +262,7 @@ unit BASICTypes // BASICTypes.asm
                     Serial.WriteChar();
                 }
                 PHP
+                
             }
             case BASICType.STRING:
             {

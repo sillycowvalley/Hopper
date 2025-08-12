@@ -37,6 +37,8 @@ unit Tools // Tools.asm
         PHA
         PHY
         
+Debug.NL(); AOut();
+        
         LDY #0              // Initialize string index
         
         loop                // Print each character until null terminator

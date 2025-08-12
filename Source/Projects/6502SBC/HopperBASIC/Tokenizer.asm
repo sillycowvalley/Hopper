@@ -651,6 +651,22 @@ unit Tokenizer // Tokenizer.asm
                     if (NC) { return; }
                     INX
                 }
+                case '[':
+                {
+                    LDA #Token.LBRACKET
+                    appendToTokenBuffer();
+                    Error.CheckError();
+                    if (NC) { return; }
+                    INX
+                }
+                case ']':
+                {
+                    LDA #Token.RBRACKET
+                    appendToTokenBuffer();
+                    Error.CheckError();
+                    if (NC) { return; }
+                    INX
+                }
                 case '<':
                 {
                     // Check for <= or <>

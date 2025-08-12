@@ -877,12 +877,16 @@ unit CompilerFlow
                     STA ZP.IDXL
                     LDA Compiler.compilerSavedNodeAddrH
                     STA ZP.IDXH
-                    
+
                     Locals.Add();          // Creates local
-                    
+                    Error.CheckError();
+                    if (NC) { States.SetFailure(); break; }
 
                     // Now find it to get the BP offset
                     Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, ZP.ACCL = BP offset
+                    Error.CheckError();
+                    if (NC) { States.SetFailure(); break; }
+                    
                     LDA ZP.ACCL     // Get the offset from Find()
                     STA Compiler.compilerForIteratorBP // keep the actual offset for the NEXT check
                     
@@ -902,9 +906,8 @@ unit CompilerFlow
                     // compilerForIteratorOffset has the BP offset
                     // compilerForIteratorType has the type
                     // Ready for subsequent code that expects a local iterator
-                    INC Compiler.compilerFuncLocals  // Track new local
-                    LDA Compiler.compilerForIteratorOffset
-                    STA ZP.ACCL
+                    INC Compiler.compilerFuncLocals        // Track new local
+                    LDA Compiler.compilerForIteratorOffset // Offset != BP offset for shadow local
                }
                else
                {
@@ -939,11 +942,22 @@ unit CompilerFlow
                    Locals.Add();
                    Error.CheckError();
                    if (NC) { States.SetFailure(); break; }
-                   
                    // get BP offset
                    Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, ZP.ACCL = BP offset
+                   Error.CheckError();
+                   if (NC) { States.SetFailure(); break; }
                    INC Compiler.compilerFuncLocals  // Track new local
+                   LDA ZP.ACCL     // Get the offset from Find()
+                   STA Compiler.compilerForIteratorBP      // keep the actual offset for the NEXT check
+                   STA Compiler.compilerForIteratorOffset  // Offset = BP offset for implicit local
                }
+           }
+           else
+           {
+               // found an exiting local
+               LDA ZP.ACCL                            // Get the offset from Find()
+               STA Compiler.compilerForIteratorBP     // keep the actual offset for the NEXT check
+               STA Compiler.compilerForIteratorOffset // Offset = BP offset for real local
            }
            
            Locals.GetType();
@@ -951,12 +965,6 @@ unit CompilerFlow
            STA Compiler.compilerForIteratorType
            
            STZ Compiler.compilerCanDeclareLocals // no more locals after this
-           
-           // Save iterator BP offset (A contains it from either Find or Add)
-           LDA ZP.ACCL
-           STA Compiler.compilerForIteratorOffset
-           
-           
            
            // Skip iterator name
            Tokenizer.NextToken();
