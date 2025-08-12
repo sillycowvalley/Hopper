@@ -268,6 +268,9 @@ unit Commands
     CmdHeap()
     {
         Debug.DumpHeap();
+#ifdef HEAPCHECK
+        Debug.ValidateHeap();
+#endif        
     }
     
     // Execute BUFFERS command - show tokenizer and opcode buffer contents
@@ -276,6 +279,9 @@ unit Commands
     CmdBuffers()
     {
         Debug.DumpBuffers();
+#ifdef HEAPCHECK
+        Debug.ValidateHeap();
+#endif        
     }
     
     // Execute DUMP command - hex dump of memory page
@@ -286,6 +292,9 @@ unit Commands
         // Use ZP.ACC as page number (already set by Console)
         LDA ZP.TOPL
         Debug.DumpPage();
+#ifdef HEAPCHECK
+        Debug.ValidateHeap();
+#endif        
     }
 #else
     // Stubs for non-debug builds

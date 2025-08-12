@@ -2209,6 +2209,8 @@ unit Debug // Debug.asm
     {
         PHP PHA PHX PHY
         
+LDA #'{' COut(); 
+
         // Save state that compactStack modifies
         LDA ZP.ACCL
         PHA
@@ -2240,6 +2242,14 @@ unit Debug // Debug.asm
         // Second call: print the stack (A=1)
         LDA #1
         compactStack();
+
+LDA #'}' COut();         
+
+#ifdef HEAPCHECK
+        Debug.ValidateHeap();
+#endif     
+
+NL(); LDA #'S' COut(); LDA #'P' COut(); LDA #':' COut(); LDA ZP.SP HOut();      
         
         // Restore state
         PLA
@@ -2367,8 +2377,7 @@ unit Debug // Debug.asm
                 AND #SymbolType.MASK
                 if (NZ)
                 {
-                    LDA #'!'
-                    cOut(); cOut(); cOut(); // massive error
+                    LDA #'!' cOut(); cOut(); cOut(); // massive error SymbolType should never be on the heap, only BASICType
                 }
                 
                 // Print type nibble
@@ -2759,6 +2768,20 @@ unit Debug // Debug.asm
                 break;
             }
             
+            // Validate inline name
+            validateInlineName();  // IDX already points to node
+            if (NC)
+            {
+                // Invalid function name
+                NL();
+                LDA #'F' COut();
+                LDA #'N' COut();
+                LDA #'!' COut();
+                CLC
+                break;
+            }
+            
+                        
             // Check tokens pointer at offset 3-4
             LDY #Objects.snTokens
             LDA [ZP.IDX], Y
@@ -2821,6 +2844,7 @@ unit Debug // Debug.asm
                 CLC // Failed
                 break;
             }
+            validateArgumentsList();  // ZP.IDY = arguments list head
             
             // Get next pointer at offset 0-1
             LDY #0
@@ -2845,6 +2869,191 @@ unit Debug // Debug.asm
                 break;
             }
         }
+    }
+    
+    // Deep validate arguments list
+    validateArgumentsList()  // ZP.IDY = arguments list head
+    {
+        // Save current IDX (we'll use it for node access)
+        LDA ZP.IDXL PHA
+        LDA ZP.IDXH PHA
+        
+        // Use IDY as our iterator through the list
+        LDX #0  // Safety counter to prevent infinite loops
+        
+        loop
+        {
+            // Check if at end of arguments list
+            LDA ZP.IDYL
+            ORA ZP.IDYH
+            if (Z) 
+            { 
+                SEC  // Success - reached end normally
+                break; 
+            }
+            
+            // Validate this argument node is a valid heap pointer
+            isValidHeapPointer();  // Checks ZP.IDY
+            if (NC)
+            {
+                NL();
+                LDA #'A' COut();
+                LDA #'R' COut();
+                LDA #'!' COut();
+                CLC  // Failed
+                break;
+            }
+            
+            // Move pointer to IDX for accessing node fields
+            LDA ZP.IDYL STA ZP.IDXL
+            LDA ZP.IDYH STA ZP.IDXH
+            
+            // Get next argument pointer FIRST (before any other operations)
+            // Next pointer is at offset 0-1 in the node
+            LDY #0
+            LDA [ZP.IDX], Y
+            STA ZP.IDYL      // Store next pointer low in IDY
+            INY  
+            LDA [ZP.IDX], Y
+            STA ZP.IDYH      // Store next pointer high in IDY
+            
+            // NOW validate the inline argument name
+            // IDX still points to current argument node
+            validateInlineName();  
+            if (NC)
+            {
+                NL();
+                LDA #'A' COut();
+                LDA #'N' COut();  // AN = Argument Name
+                LDA #'!' COut();
+                CLC  // Failed
+                break;
+            }
+            
+            // At this point:
+            // - Current node has been validated
+            // - IDY contains next node pointer for next iteration
+            
+            // Safety check to prevent infinite loops
+            INX
+            CPX #20  // Maximum 20 arguments
+            if (Z)
+            {
+                NL();
+                LDA #'A' COut();
+                LDA #'#' COut();  // A# = Too many arguments
+                CLC  // Failed
+                break;
+            }
+            
+            // Loop continues with IDY pointing to next node
+        }
+        
+        // Restore original IDX
+        PLA STA ZP.IDXH
+        PLA STA ZP.IDXL
+    }   
+    // Validate inline name string within a heap object
+    // Input: ZP.IDX = node address
+    // Output: C if valid, NC if name runs past node boundary
+    // Uses: DB2-DB5 for calculations
+    validateInlineName()
+    {
+        PHY
+        /*
+        loop // Single exit
+        {
+            // Get the heap block size (2 bytes before node)
+            SEC
+            LDA ZP.IDXL
+            SBC #2
+            STA ZP.DB2
+            LDA ZP.IDXH
+            SBC #0
+            STA ZP.DB3
+            
+            // Read block size
+            LDY #0
+            LDA [ZP.DB2], Y
+            STA ZP.DB4  // Size low
+            INY
+            LDA [ZP.DB2], Y
+            STA ZP.DB5  // Size high
+            
+            // Subtract 2 for the size header itself
+            SEC
+            LDA ZP.DB4
+            SBC #2
+            STA ZP.DB4
+            LDA ZP.DB5
+            SBC #0
+            STA ZP.DB5
+            
+            // Now DB4/DB5 = actual node size
+            // Scan for null terminator starting at offset snName
+            LDY #Objects.snName
+            
+            loop
+            {
+                // Check if Y exceeds node size
+                CPY ZP.DB4
+                if (C)  // Y >= size
+                {
+                    // Check high byte
+                    LDA #0
+                    CMP ZP.DB5
+                    if (C)  // Past end of node
+                    {
+                        NL();
+                        LDA #'N' COut();
+                        LDA #'O' COut();
+                        LDA #'V' COut();  // NOV = Name Overflow
+                        CLC  // Failed
+                        break;
+                    }
+                }
+                
+                // Check for null terminator
+                LDA [ZP.IDX], Y
+                if (Z)
+                {
+                    SEC  // Found null - valid name
+                    break;
+                }
+                
+                // Check for non-printable chars (optional)
+                CMP #32
+                if (NC)  // < 32
+                {
+                    CMP #127
+                    if (C)  // >= 127
+                    {
+                        NL();
+                        LDA #'N' COut();
+                        LDA #'B' COut();
+                        LDA #'C' COut();  // NBC = Name Bad Char
+                        CLC
+                        break;
+                    }
+                }
+                
+                INY
+                
+                // Safety limit - names shouldn't be huge
+                CPY #64
+                if (Z)
+                {
+                    NL();
+                    LDA #'N' COut();
+                    LDA #'T' COut();
+                    LDA #'L' COut();  // NTL = Name Too Long
+                    CLC
+                    break;
+                }
+            }
+        }
+        */
+        PLY
     }
 
     // Validate variable list integrity
@@ -2885,6 +3094,19 @@ unit Debug // Debug.asm
                 LDA ZP.IDXH HOut();
                 LDA ZP.IDXL HOut();
                 CLC // Failed
+                break;
+            }
+            
+            // Validate inline name
+            validateInlineName();  // IDX already points to node
+            if (NC)
+            {
+                // Invalid function name
+                NL();
+                LDA #'V' COut();
+                LDA #'N' COut();
+                LDA #'!' COut();
+                CLC
                 break;
             }
             
