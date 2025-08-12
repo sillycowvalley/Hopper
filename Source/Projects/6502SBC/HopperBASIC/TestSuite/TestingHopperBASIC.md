@@ -57,6 +57,39 @@ This indicated incomplete removal of debug code in the PRINT statement handler w
 - Persistent across function calls
 - Example: `> BIT GLOBAL = TRUE`
 
+**Global Variable Re-initialization Behavior**:
+Hopper BASIC has two distinct types of global variables with different persistence behavior:
+
+1. **Initialized Globals**: `BIT B = TRUE`
+   - Re-initialize to declared value on each `RUN` execution
+   - Modified values persist between runs until next `RUN`
+   - Useful for ensuring known starting states
+
+2. **Uninitialized Globals**: `BIT B`
+   - Default to type-appropriate value (FALSE for BIT)
+   - Retain modified values across multiple `RUN` executions
+   - No re-initialization behavior
+   - Useful for persistent flags, counters, or state variables
+
+**Re-initialization Test Example**:
+```
+> BIT B = TRUE       (initialized global)
+> BIT C              (uninitialized global)
+> BEGIN
+*   PRINT B; C       (TRUE FALSE)
+*   B = FALSE: C = TRUE
+*   PRINT B; C       (FALSE TRUE)
+* END
+> RUN
+TRUE FALSE
+FALSE TRUE
+> PRINT B; C         (FALSE TRUE - both persist)
+> RUN                (run again)
+TRUE FALSE           (B resets, C retains)
+FALSE TRUE
+> PRINT B; C         (FALSE TRUE - B reset, C persistent)
+```
+
 **Local Scope Testing** (within functions):
 - Variables declared inside FUNC/ENDFUNC or BEGIN/END
 - Scope limited to function
@@ -86,6 +119,7 @@ TRUE
 8. Control flow usage
 9. Scope shadowing behavior
 10. Edge cases and boundaries
+11. Global re-initialization vs persistence behavior
 
 ### 5. Type Safety Validation
 
@@ -264,12 +298,14 @@ Each type must reject incompatible assignments and operations.
 For each data type (BIT, INT, WORD, BYTE, CHAR, STRING):
 
 ### Global Scope Tests
-- [ ] Declaration without initialization
-- [ ] Declaration with initialization  
+- [ ] Declaration without initialization (uninitialized global)
+- [ ] Declaration with initialization (initialized global - re-initializes on RUN)
 - [ ] Assignment after declaration
 - [ ] CONST declaration and immutability
 - [ ] Type mismatch errors
 - [ ] Verify with VARS command
+- [ ] Test re-initialization behavior (initialized globals reset on each RUN)
+- [ ] Test persistence behavior (uninitialized globals retain values across RUNs)
 
 ### CONST Testing
 - [ ] CONST declaration with value
@@ -313,7 +349,7 @@ For each data type (BIT, INT, WORD, BYTE, CHAR, STRING):
 
 ---
 
-*Document Version: 1.2*  
-*Last Updated: Added CONST immutability, VAR duck typing, and scope shadowing*  
+*Document Version: 1.3*  
+*Last Updated: Added global variable re-initialization behavior documentation*  
 *Platform: 6502 Cycle-Accurate Emulator*  
 *Hopper BASIC Version: 2.0*
