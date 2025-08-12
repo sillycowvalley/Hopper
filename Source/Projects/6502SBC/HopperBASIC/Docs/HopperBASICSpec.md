@@ -1,4 +1,4 @@
-# Hopper BASIC Specification v2.13
+# Hopper BASIC Specification v2.14
 **Document Type: Language Specification for Hopper BASIC**
 
 ## Project Objectives
@@ -128,7 +128,8 @@ END
 - **`INT name [= value]`** - Signed integer (-32768 to 32767)
 - **`WORD name [= value]`** - Unsigned integer (0 to 65535)
 - **`BIT name [= value]`** - Boolean (TRUE or FALSE only)
-- **`BYTE name [= value]`** - 8-bit unsigned (0 to 255)
+- **`BYTE name [= value]`** - 8-bit unsigned numeric (0 to 255)
+- **`CHAR name [= value]`** - 8-bit character (ASCII 0-255)
 - **`STRING name = "value"`** - Mutable string variable
 - **`VAR name [= value]`** - Runtime-typed variable (duck typing)
 
@@ -136,7 +137,8 @@ END
 - **`CONST INT name = value`** - Immutable signed integer
 - **`CONST WORD name = value`** - Immutable unsigned integer
 - **`CONST BIT name = value`** - Immutable boolean
-- **`CONST BYTE name = value`** - Immutable 8-bit unsigned
+- **`CONST BYTE name = value`** - Immutable 8-bit unsigned numeric
+- **`CONST CHAR name = 'c'`** - Immutable character
 - **`CONST STRING name = "value"`** - Immutable string
 
 ### Definition Commands
@@ -162,10 +164,10 @@ END
 - **`' [comment]`** - Short-form comment
 
 #### Expressions & Operators
-- **Arithmetic**: `+ - * / MOD`
+- **Arithmetic**: `+ - * / MOD` (numeric types only)
 - **Bitwise**: `& |` (AND, OR)
 - **Unary**: `-` (negation), `NOT` (logical)
-- **Comparison**: `= <> < > <= >=` (returns BIT type)
+- **Comparison**: `= <> < > <= >=` (returns BIT type, CHAR values use ASCII ordering)
 - **Logical**: `AND OR NOT` (BIT operands only)
 - **Parentheses**: `( )` for precedence
 
@@ -173,10 +175,15 @@ END
 - **INT**: 16-bit signed (-32768 to 32767)
 - **WORD**: 16-bit unsigned (0 to 65535)
 - **BIT**: Pure boolean (TRUE or FALSE only)
-- **BYTE**: 8-bit unsigned (0 to 255)
+- **BYTE**: 8-bit unsigned numeric (0 to 255)
+- **CHAR**: 8-bit character (ASCII 0-255)
 - **STRING**: Immutable strings with mutable references
-- **Type promotion**: Automatic between compatible types
+- **Type promotion**: Automatic between compatible numeric types only
 - **Type safety**: Comprehensive checking with errors
+
+#### String Operations
+- **String indexing**: `char = string[index]` - 0-based character access
+- **Bounds checking**: Runtime error on out-of-bounds access
 
 #### Control Flow
 - **`IF expr THEN statements [ELSE statements] ENDIF`** - Conditional execution
@@ -216,6 +223,9 @@ END
 
 #### Built-in Functions
 - **`ABS(x)`** - Absolute value
+- **`ASC(char)`** - Convert CHAR to BYTE value
+- **`CHR(byte)`** - Convert BYTE to CHAR value
+- **`LEN(string)`** - Return length of string
 - **`MILLIS()`** - Milliseconds since startup
 - **`SECONDS()`** - Seconds since startup
 - **`DELAY(ms)`** - Pause for a delay in milliseconds
@@ -273,10 +283,10 @@ END
 - ❌ **`CONTINUE`** - Skip to next iteration
 
 ### String Manipulation
-- ❌ **String functions** - Basic string operations
+- ❌ **String functions** - Basic string operations beyond indexing
 
 ### Type Conversion
-- ❌ **Conversion functions** - Explicit type conversions
+- ❌ **Additional conversion functions** - Beyond ASC/CHR
 
 ---
 
@@ -293,7 +303,7 @@ console_command := NEW | LIST | RUN | CLEAR | VARS | FUNCS | MEM | BYE
 ```
 variable_decl := type_keyword identifier [ "=" expression ]
 constant_decl := CONST type_keyword identifier "=" expression
-type_keyword := INT | WORD | BIT | BYTE | STRING | VAR
+type_keyword := INT | WORD | BIT | BYTE | CHAR | STRING | VAR
 ```
 
 ### Program Structure
@@ -315,6 +325,7 @@ statement := variable_decl
            | function_call
 
 assignment := identifier "=" expression
+            | identifier "[" expression "]" "=" expression  // Future: array element assignment
 
 print_statement := PRINT [ print_list ]
 print_list := print_item [ separator print_item ]* [ separator ]
@@ -365,10 +376,14 @@ bitwise_and_expr := additive_expr [ "&" additive_expr ]
 additive_expr := multiplicative_expr [ ("+" | "-") multiplicative_expr ]
 multiplicative_expr := unary_expr [ ("*" | "/" | MOD) unary_expr ]
 unary_expr := [ "-" | NOT ] primary_expr
-primary_expr := number | identifier | string_literal | TRUE | FALSE
+primary_expr := number | identifier | string_literal | char_literal | TRUE | FALSE
               | "(" expression ")" | function_call | built_in_function
+              | identifier "[" expression "]"    // String/Array indexing
 
 built_in_function := ABS "(" expression ")"
+                  | ASC "(" expression ")"
+                  | CHR "(" expression ")"
+                  | LEN "(" expression ")"
                   | PEEK "(" expression ")"
                   | POKE "(" expression "," expression ")"
                   | DELAY "(" expression ")"
@@ -382,10 +397,11 @@ number := decimal_digits | hex_number
 hex_number := "0" ("x" | "X") hex_digits
 identifier := letter [ letter | digit ]*
 string_literal := '"' { character }* '"'
+char_literal := "'" character "'"
 ```
 
 ### Operator Precedence (Highest to Lowest)
-1. Function calls, parentheses
+1. Function calls, parentheses, indexing ([])
 2. Unary minus (-), NOT
 3. Multiplication (*), Division (/), Modulo (MOD)
 4. Addition (+), Subtraction (-)
@@ -458,9 +474,11 @@ All features listed in Phase 1 are fully implemented and tested, including:
 - ✅ Function arguments with BP-relative addressing
 
 **Missing components needed to run benchmark programs:**
-1. ❌ Global array declarations
-2. ❌ Array indexing and access
-3. ❌ Array parameters for functions
+1. ❌ CHAR type implementation
+2. ❌ String indexing for character access
+3. ❌ Global array declarations
+4. ❌ Array indexing and access
+5. ❌ Array parameters for functions
 
 ---
 
@@ -506,6 +524,47 @@ OK
 11
 ```
 
+### Character and String Operations
+```basic
+> CHAR letter = 'A'
+OK
+> CHAR digit = '9'
+OK
+> STRING name = "HOPPER"
+OK
+> CHAR first = name[0]      ' Gets 'H'
+OK
+> CHAR third = name[2]      ' Gets 'P'
+OK
+> PRINT first
+H
+> PRINT ASC(first)
+72
+
+' Character comparisons
+> IF first = 'H' THEN PRINT "Starts with H" ENDIF
+Starts with H
+> IF third > 'A' THEN PRINT "After A in ASCII" ENDIF
+After A in ASCII
+
+' Process string characters
+> STRING text = "HELLO"
+OK
+> FOR i = 0 TO LEN(text) - 1
+*   CHAR ch = text[i]
+*   PRINT ASC(ch);
+* NEXT i
+72 69 76 76 79
+
+' Type safety
+> BYTE b = 65
+OK
+> CHAR ch = CHR(b)      ' Explicit conversion required
+OK
+> PRINT ch
+A
+```
+
 ### Functions with Arguments and Local Variables
 ```basic
 > FUNC Add(a, b)
@@ -524,6 +583,18 @@ OK
 OK
 > PRINT Factorial(5)
 120
+
+> FUNC CountChars(str, target)
+*   WORD count = 0
+*   FOR i = 0 TO LEN(str) - 1
+*     CHAR ch = str[i]
+*     IF ch = target THEN count = count + 1 ENDIF
+*   NEXT i
+*   RETURN count
+* ENDFUNC
+OK
+> PRINT CountChars("HELLO WORLD", 'L')
+3
 ```
 
 ### FOR/NEXT Loops
@@ -601,6 +672,10 @@ OK
 42
 > PRINT MILLIS()
 12345
+> PRINT LEN("HELLO")
+5
+> CONST CHAR newline = CHR(10)
+OK
 ```
 
-The implementation now provides a robust foundation with complete function execution including arguments and local variables, JIT compilation with stack frame management, comprehensive control flow including FOR/NEXT loops, and all core data types. The primary remaining work for full benchmark compatibility is the implementation of array support (declaration, indexing, and passing as parameters).
+The implementation now provides a robust foundation with complete function execution including arguments and local variables, JIT compilation with stack frame management, comprehensive control flow including FOR/NEXT loops, and all core data types including the new CHAR type for character manipulation. The primary remaining work for full benchmark compatibility is the implementation of array support (declaration, indexing, and passing as parameters).
