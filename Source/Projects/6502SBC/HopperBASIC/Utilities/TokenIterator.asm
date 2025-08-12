@@ -277,23 +277,34 @@ unit TokenIterator // TokenIterator.asm
         PHA
         PHX
         
-        LDX ZP.TOKINDENT
         loop
         {
-            CPX #0
-            if (Z) { break; }
-            
-            // Print 4 spaces for each indent level
-            LDA #' '
-            Serial.WriteChar();
-            LDA #' '
-            Serial.WriteChar();
-            LDA #' '
-            Serial.WriteChar();
-            LDA #' '
-            Serial.WriteChar();
-            
-            DEX
+            // Check if we're continuing after a colon
+            LDA ZP.TOKCOLON
+            if (NZ)
+            {
+                STZ ZP.TOKCOLON  // Reset flag
+                break; // Skip indentation
+            }
+            LDX ZP.TOKINDENT
+            loop
+            {
+                CPX #0
+                if (Z) { break; }
+                
+                // Print 4 spaces for each indent level
+                LDA #' '
+                Serial.WriteChar();
+                LDA #' '
+                Serial.WriteChar();
+                LDA #' '
+                Serial.WriteChar();
+                LDA #' '
+                Serial.WriteChar();
+                
+                DEX
+            }
+            break;
         }
         
         PLX
@@ -326,6 +337,8 @@ unit TokenIterator // TokenIterator.asm
         LDA #1
         STA ZP.TOKINDENT
         
+        STZ ZP.TOKCOLON // not on a COLON line
+        
         // Render each statement in the token stream
         loop
         {
@@ -333,8 +346,12 @@ unit TokenIterator // TokenIterator.asm
             renderStatementWithIndent();
             if (NC) { break; } // End of stream
             
-            // Add newline after statement
-            Tools.NL();
+            // Only add newline if not following COLON
+            LDA ZP.TOKCOLON
+            if (Z) 
+            {
+                Tools.NL();
+            }
         }
         
         PLY
@@ -387,7 +404,10 @@ unit TokenIterator // TokenIterator.asm
             CMP #Token.COLON
             if (Z) 
             { 
+                renderToken(); // Render the colon first
                 Next(); // Skip colon and continue  
+                LDA #1
+                STA ZP.TOKCOLON  // Set flag for next statement
                 SEC // More statements follow
                 break; 
             }
@@ -752,6 +772,12 @@ unit TokenIterator // TokenIterator.asm
             case Token.SEMICOLON:
             {
                 LDA #';'
+                Serial.WriteChar();
+            }
+            case Token.COLON:
+            {
+                renderOptionalSpace();
+                LDA #':'
                 Serial.WriteChar();
             }
             default:

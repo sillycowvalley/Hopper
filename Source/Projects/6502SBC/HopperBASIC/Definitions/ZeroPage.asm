@@ -252,6 +252,7 @@ unit ZP // ZeroPage.asm
     const byte TOKPOSL    = M4;  // Token position/offset low
     const byte TOKPOSH    = M5;  // Token position/offset high
     const byte TOKPREV    = M6;  // Previous token value
+    const byte TOKCOLON   = M7;  // We had a colon, no newline
     
     // FUNCTION PARAMETER WORKSPACE
     const byte FSOURCEADDRESS       = 0x5F;  // Source address parameter
