@@ -4,7 +4,7 @@ unit Trace // Trace.asm
     
     IsTracing()
     {
-#ifdef TRACE        
+#if defined(TRACE) || defined(TRACEEXE)
         if (BBS2, ZP.FLAGS)
         {
             SEC  // Bit 2 is set - tracing enabled
@@ -81,12 +81,12 @@ unit Trace // Trace.asm
         PHX
 #endif
         
-        Debug.ValidateHeap();
-        
         PrintIndent();
         
         // Print method name from ZP.TraceMessage
         LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Tools.PrintStringSTR(); Debug.Space(); LDA #'{' Debug.COut(); 
+        
+        Debug.ValidateHeap();
       
 #ifdef TRACESP  
         LDA #' ' Debug.COut();
@@ -163,8 +163,6 @@ unit Trace // Trace.asm
         PHX
 #endif
         
-        Debug.ValidateHeap();
-        
         // Decrease indentation first
         DEC ZP.TraceIndent
         
@@ -174,6 +172,8 @@ unit Trace // Trace.asm
         
         // Print method name from ZP.TraceMessage
         LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Tools.PrintStringSTR(); Debug.Space(); 
+        
+        Debug.ValidateHeap();
         
 #ifdef TRACESP
         LDA #' ' Debug.COut();

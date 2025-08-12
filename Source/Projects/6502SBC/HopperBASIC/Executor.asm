@@ -174,8 +174,13 @@ unit Executor // Executor.asm
                 FetchOpCode(); // -> A
                 DispatchOpCode(); // expect State.Success to continue
                 
-#ifdef TRACEEXE                
-                Debug.CompactStack();
+#ifdef TRACEEXE        
+                PHP IsTracing(); // only affects C flag
+                if (C)
+                {
+                    Debug.CompactStack();
+                }
+                PLP
 #endif
                 // Shortcut to Mushrooms:
                 LDA ZP.LastErrorL
@@ -325,9 +330,14 @@ unit Executor // Executor.asm
                INC ZP.PCH
            }
 #ifdef TRACEEXE
-PHA PHX
-Space();  HOut();
-PLX PLA
+           PHP IsTracing(); // only affects C flag
+           if (C)
+           {
+                PHA PHX
+                Space();  HOut();
+                PLX PLA
+           }
+           PLP
 #endif           
            break;
        } // loop exit
@@ -364,9 +374,14 @@ PLX PLA
                INC ZP.PCH
            }
 #ifdef TRACEEXE
-PHA PHX
-Space(); LDA executorOperandH HOut(); LDA executorOperandL HOut();
-PLX PLA
+           PHP IsTracing(); // only affects C flag
+           if (C)
+           {
+                PHA PHX
+                Space(); LDA executorOperandH HOut(); LDA executorOperandL HOut();
+                PLX PLA
+           }
+           PLP
 #endif           
            break;
        }
@@ -379,9 +394,14 @@ PLX PLA
    {
        TAY // for jump table optimization
 #ifdef TRACEEXE
-PHA PHX
-NL(); DecPC(); LDA ZP.PCH HOut(); LDA ZP.PCL HOut(); IncPC(); Space(); TYA TAX HOut(); Space(); OpCodes.ToString(); PrintStringSTR();Space(); 
-PLX PLA
+       PHP IsTracing(); // only affects C flag
+       if (C)
+       {
+            PHA PHX
+            NL(); DecPC(); LDA ZP.PCH HOut(); LDA ZP.PCL HOut(); IncPC(); Space(); TYA TAX HOut(); Space(); OpCodes.ToString(); PrintStringSTR();Space(); 
+            PLX PLA
+       }
+       PLP
 #endif
        // Use switch statement for opcode dispatch
        // Register Y contains the opcode value

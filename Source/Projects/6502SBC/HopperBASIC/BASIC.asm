@@ -1,11 +1,13 @@
 program HopperBASIC
 {
     #define DEBUG
-    //#define TRACE
-    #define HEAPCHECK
+    #define TRACE  // Compiler and Executor call tree walks
+    //#define TRACEEXE // instructions in Executor
+
+    // Defunct?    
     //#define TRACESP
     //#define TRACEJIT     // detail for JIT / CALL->CALLF patching
-    #define TRACEEXE // instructions in Executor
+    
     
     //#define TRACECONSOLE // trace output for Console.asm and Command.asm
     
@@ -71,7 +73,7 @@ program HopperBASIC
         // Clear system flags and set basic state
         STZ ZP.FLAGS
         SMB0 ZP.FLAGS  // Set "program loaded" flag for BASIC
-#ifdef TRACE
+#if defined(TRACE) || defined(TRACEEXE)
         RMB2 ZP.FLAGS  // TROFF by default
 #else
         RMB2 ZP.FLAGS  // TROFF by default

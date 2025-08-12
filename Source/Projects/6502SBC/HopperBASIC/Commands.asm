@@ -267,10 +267,8 @@ unit Commands
     // Output: Heap dump printed to serial
     CmdHeap()
     {
-        Debug.DumpHeap();
-#ifdef HEAPCHECK
         Debug.ValidateHeap();
-#endif        
+        Debug.DumpHeap();
     }
     
     // Execute BUFFERS command - show tokenizer and opcode buffer contents
@@ -279,9 +277,7 @@ unit Commands
     CmdBuffers()
     {
         Debug.DumpBuffers();
-#ifdef HEAPCHECK
         Debug.ValidateHeap();
-#endif        
     }
     
     // Execute DUMP command - hex dump of memory page
@@ -292,9 +288,7 @@ unit Commands
         // Use ZP.ACC as page number (already set by Console)
         LDA ZP.TOPL
         Debug.DumpPage();
-#ifdef HEAPCHECK
         Debug.ValidateHeap();
-#endif        
     }
 #else
     // Stubs for non-debug builds
@@ -303,7 +297,7 @@ unit Commands
     CmdDump()  { Error.OnlyInDebug(); BIT ZP.EmulatorPCL }
 #endif
 
-#ifdef TRACE
+#if defined(TRACE) || defined(TRACEEXE)
     // Execute TRON command - enable trace
     // Input: None
     // Output: Trace enabled (bit 2 of ZP.FLAGS set)

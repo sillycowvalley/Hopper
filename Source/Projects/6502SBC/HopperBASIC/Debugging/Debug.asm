@@ -2240,10 +2240,7 @@ unit Debug // Debug.asm
         // Second call: print the stack (A=1)
         LDA #1
         compactStack();
-
-#ifdef HEAPCHECK
         Debug.ValidateHeap();
-#endif     
 
 //NL(); LDA #'S' COut(); LDA #'P' COut(); LDA #':' COut(); LDA ZP.SP HOut();      
         
