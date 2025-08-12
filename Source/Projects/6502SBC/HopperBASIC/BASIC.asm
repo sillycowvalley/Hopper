@@ -1,6 +1,7 @@
 program HopperBASIC
 {
     #define DEBUG
+    #define VERBOSEDEBUG
     #define TRACE  // Compiler and Executor call tree walks
     //#define TRACEEXE // instructions in Executor
 
@@ -58,6 +59,9 @@ program HopperBASIC
     // Initialize the BASIC system
     InitializeBASIC()
     {
+#ifdef DEBUG
+        Tokens.ValidateAllKeywordTables();
+#endif
         Error.ClearError();
         States.SetSuccess();    // Initialize state system
         Trace.Initialize();    // Initialize trace system (NOP in production code)

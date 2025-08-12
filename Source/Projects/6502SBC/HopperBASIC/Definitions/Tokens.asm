@@ -465,7 +465,7 @@ unit Tokens
                     if (Z) { break; }
                     
                     LDA [ZP.IDY], Y  // Access character 
-                    Serial.WriteChar();
+                    Debug.COut();
                     INY
                     DEX
                 } // loop
@@ -535,4 +535,197 @@ unit Tokens
             }
         }
     }
+    
+#ifdef DEBUG
+    // Validate that a keyword table doesn't exceed 256 bytes
+    // Input: ZP.IDY = address of keyword table to validate
+    // Output: C set if valid, NC if table exceeds 256 bytes
+    //         A = total size in bytes
+    // Preserves: ZP.IDY
+    ValidateKeywordTable()
+    {
+        PHX
+        PHY
+        STZ ZP.TOPH
+#ifdef VERBOSEDEBUG
+        Debug.NL();
+#endif
+        LDY #0      // Current offset into table
+        
+        loop
+        {
+            // Get length of this keyword
+            LDA [ZP.IDY], Y
+            if (Z) 
+            { 
+                // End of table marker - success!
+    #ifdef VERBOSEDEBUG
+                LDA #'E'
+                Debug.COut();
+                LDA #'N'
+                Debug.COut();
+                LDA #'D'
+                Debug.COut();
+    #endif
+                INY         // Include the terminator byte in size
+                TYA         // Return total size in A
+                SEC         // Set C for success
+                break; 
+            }
+            
+    #ifdef VERBOSEDEBUG
+            // Print the keyword entry for debugging
+            // Format: [offset] length:token keyword
+            TYA
+            Serial.HexOut();    // Print current offset
+            LDA #':'
+            Debug.COut();
+            
+            LDA [ZP.IDY], Y     // Get length again
+            STA ZP.TOPL
+            Tools.PrintDecimalWord();
+            Debug.Space();
+            TAX                 // X = keyword length
+            
+            INY                 // Move to token byte
+            LDA #'0'
+            Debug.COut();
+            LDA #'x'
+            Debug.COut();
+            LDA [ZP.IDY], Y
+            Serial.HexOut();    // Print token value
+            Debug.Space();
+            
+            INY                 // Move to first character
+            
+            // Print the keyword characters
+            loop
+            {
+                DEX
+                if (MI) { break; }  // Done with keyword chars
+                LDA [ZP.IDY], Y
+                Debug.COut();
+                INY
+            }
+            Debug.NL();
+            
+            // Continue with next entry - Y is already positioned
+    #else
+            // Non-verbose mode - just skip through the entry
+            TAX                 // X = keyword length
+            INY                 // Skip length byte
+            INY                 // Skip token byte
+            
+            // Skip keyword characters
+            loop
+            {
+                DEX
+                if (MI) { break; }
+                INY
+            }
+    #endif
+            
+            // Check if Y wrapped around (table too big)
+            CPY #0
+            if (Z)
+            {
+                LDA #0xFF
+                CLC
+                break;
+            }
+        }
+        
+        PLY
+        PLX
+    }
+
+    
+    // Validate all keyword tables during initialization
+    // Call this from BASIC.Initialize or similar
+    ValidateAllKeywordTables()
+    {
+        PHA
+        
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
+        
+        // Validate keywordsAL table
+        LDA #(keywordsAL % 256)
+        STA ZP.IDYL
+        LDA #(keywordsAL / 256)
+        STA ZP.IDYH
+        
+        ValidateKeywordTable();
+        if (NC)
+        {
+            Debug.NL();
+            LDA #'A' Debug.COut();
+            LDA #'L' Debug.COut();
+            LDA #':' Debug.COut();
+            Debug.HOut();  // Print offset where error occurred
+            Error.InternalError(); BIT ZP.EmulatorPCL
+        }
+        
+        // Validate keywordsMZ table
+        LDA #(keywordsMZ % 256)
+        STA ZP.IDYL
+        LDA #(keywordsMZ / 256)
+        STA ZP.IDYH
+        
+        ValidateKeywordTable();
+        if (NC)
+        {
+            Debug.NL();
+            LDA #'M' Debug.COut();
+            LDA #'Z' Debug.COut();
+            LDA #':' Debug.COut();
+            Debug.HOut();  // Print offset where error occurred
+            Error.InternalError(); BIT ZP.EmulatorPCL
+        }
+        
+    #ifdef VERBOSEDEBUG
+        // Optionally print sizes of valid tables
+        LDA #(keywordsAL % 256)
+        STA ZP.IDYL
+        LDA #(keywordsAL / 256)
+        STA ZP.IDYH
+        
+        ValidateKeywordTable();
+        STA ZP.TOPL
+        STZ ZP.TOPH
+        
+        Debug.NL();
+        LDA #'A' Debug.COut();
+        LDA #'L' Debug.COut();
+        LDA #'=' Debug.COut();
+        Tools.PrintDecimalWord();
+        Debug.Space();
+        
+        LDA #(keywordsMZ % 256)
+        STA ZP.IDYL
+        LDA #(keywordsMZ / 256)
+        STA ZP.IDYH
+        
+        ValidateKeywordTable();
+        STA ZP.TOPL
+        STZ ZP.TOPH
+        
+        Debug.NL();
+        LDA #'M' Debug.COut();
+        LDA #'Z' Debug.COut();
+        LDA #'=' Debug.COut();
+        Tools.PrintDecimalWord();
+        Debug.NL();
+    #endif
+        
+        PLA
+        STA ZP.IDYH
+        PLA
+        STA ZP.IDYL
+        
+        PLA
+    }
+#endif
 }
