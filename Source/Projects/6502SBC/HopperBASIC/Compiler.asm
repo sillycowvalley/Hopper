@@ -2395,9 +2395,20 @@ unit Compiler // Compiler.asm
                
                case IdentifierType.Constant:
                {
-                   // Constants cannot be assigned to
-                   Error.IllegalAssignment(); BIT ZP.EmulatorPCL
-                   States.SetFailure();
+                   if (BBS5, ZP.FLAGS)
+                   {
+                       // populating the stack with global constants
+                       compileAssignment();
+                       Error.CheckError();
+                       if (NC) { States.SetFailure(); break; }
+                       States.SetSuccess();
+                   }
+                   else
+                   {
+                       // Constants cannot be assigned to
+                       Error.IllegalAssignment(); BIT ZP.EmulatorPCL
+                       States.SetFailure();
+                   }
                    break;
                }
                case IdentifierType.Keyword:

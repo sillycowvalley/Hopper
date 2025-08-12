@@ -377,7 +377,7 @@ unit Emit
            STA Compiler.compilerOperand1  // Index
            
            // Emit POPGLOBAL with byte operand
-           LDA #OpCode.POPGLOBAL
+           LDA # OpCode.POPGLOBAL
            STA Compiler.compilerOpCode
            Emit.OpCodeWithByte();
            break;

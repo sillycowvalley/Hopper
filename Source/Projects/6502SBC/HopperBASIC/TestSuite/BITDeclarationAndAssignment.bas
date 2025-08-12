@@ -1,6 +1,10 @@
+! Clear Screen to make results capture easier
+CLS
+
 ! BIT Type Test Suite for Hopper BASIC
 
 NEW
+MEM
 
 ! Test global BIT declarations and basic operations
 FUNC TestGlobalBits()
@@ -103,3 +107,7 @@ CONST BIT CB = TRUE
 VAR VB
 
 RUN
+
+! Look for memory leaks
+NEW
+MEM
