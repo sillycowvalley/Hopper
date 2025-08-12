@@ -161,7 +161,7 @@ END
 
 #### Comments
 - **`REM [comment]`** - Full-form comment
-- **`' [comment]`** - Short-form comment
+- **`! [comment]`** - Short-form comment
 
 #### Expressions & Operators
 - **Arithmetic**: `+ - * / MOD` (numeric types only)

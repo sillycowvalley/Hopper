@@ -23,6 +23,8 @@ unit Instructions // Instructions.asm
         LDA #(checkRHS % 256) STA ZP.TraceMessageL LDA #(checkRHS / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         
+Debug.NL(); NOut(); TOut();
+        
         loop
         {
             // Check for VOID type first - never allow VOID assignments
@@ -48,11 +50,41 @@ unit Instructions // Instructions.asm
                 // Value is 0-255, but still need to check type compatibility
                 // Fall through to CheckTypeCompatibility()
             }
-            // For all types (including BIT), use general type compatibility checking
-            LDA #1  // Arithmetic operation mode
+            
+            
+            LDA ZP.NEXTT
+            CMP ZP.TOPT
+            if (Z)
+            {
+                // you can assign anything to anything if they are the same type
+                SEC
+                break;
+            }
+            LDA ZP.NEXTT
+            AND # BASICType.VAR
+            if (NZ)
+            {
+                // if LHS is VAR, you can assign anything to it
+                SEC
+                break;
+            }
+            
+            // For all types (including BIT, CHAR and STRING), use general type compatibility checking
+            LDA #5  // Assignment mode
             CheckTypeCompatibility();
             break;
         }
+ PHP       
+Debug.NL(); 
+if (C)
+{
+    LDA #'Y' COut();
+}        
+else
+{
+    LDA #'N' COut();
+}
+PLP
 #ifdef TRACE
         LDA #(checkRHS % 256) STA ZP.TraceMessageL LDA #(checkRHS / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -68,6 +100,7 @@ unit Instructions // Instructions.asm
     //          1 = Arithmetic (+, -, *, /, %) - BIT types rejected, result is promoted numeric type
     //          2 = Bitwise (&, |) - BIT types rejected, result is promoted numeric type
     //          4 = Logical (AND, OR) - Only BIT types allowed, result is BIT
+    //          5 = Assignment operations : CheckRHSTypeCompatibility() - TODO
     // Output: C set if compatible, NC set if TYPE MISMATCH
     //         ZP.NEXTT = operands type (updated based on operation mode and type promotion)
     // Modifies: processor flags
@@ -142,43 +175,44 @@ unit Instructions // Instructions.asm
         
             // Mode-specific type restrictions
             LDA ZP.ACCT
-            CMP #1  // Arithmetic operations
-            if (Z)
+            switch (A)
             {
-                // Arithmetic: reject BIT types
-                LDA ZP.NEXTT
-                CMP #BASICType.BIT
-                if (Z)
+                case 0: // Equality operations: =, <>
                 {
-                    CLC  // Set NC - type mismatch
-                    break;
+                    // Equality: all types allowed, result is BIT
                 }
-                CMP #BASICType.CHAR
-                if (Z)
+                case 1:  // Arithmetic operations: +. -, *, /
                 {
-                    CLC  // Set NC - type mismatch
-                    break;
+                    // Arithmetic: reject BIT types
+                    LDA ZP.NEXTT
+                    CMP #BASICType.BIT
+                    if (Z)
+                    {
+                        CLC  // Set NC - type mismatch
+                        break;
+                    }
+                    CMP #BASICType.CHAR
+                    if (Z)
+                    {
+                        CLC  // Set NC - type mismatch
+                        break;
+                    }
+                    
+                    LDA ZP.TOPT
+                    CMP #BASICType.BIT
+                    if (Z)
+                    {
+                        CLC  // Set NC - type mismatch
+                        break;
+                    }
+                    CMP #BASICType.CHAR
+                    if (Z)
+                    {
+                        CLC  // Set NC - type mismatch
+                        break;
+                    }
                 }
-                
-                LDA ZP.TOPT
-                CMP #BASICType.BIT
-                if (Z)
-                {
-                    CLC  // Set NC - type mismatch
-                    break;
-                }
-                CMP #BASICType.CHAR
-                if (Z)
-                {
-                    CLC  // Set NC - type mismatch
-                    break;
-                }
-            }
-            else
-            {
-                LDA ZP.ACCT
-                CMP #2  // Bitwise operations
-                if (Z)
+                case 2: // Bitwise operations: &, |
                 {
                     // Bitwise: allow all types including BIT but not CHAR
                     LDA ZP.TOPT
@@ -196,53 +230,43 @@ unit Instructions // Instructions.asm
                         break;
                     }
                 }
-                else
+                case 4: // Logical operations: AND, OR, NOT
                 {
-                    LDA ZP.ACCT
-                    CMP #4  // Logical operations
-                    if (Z)
+                    // Logical: only BIT types allowed
+                    LDA ZP.NEXTT
+                    CMP #BASICType.BIT
+                    if (NZ)
                     {
-                        // Logical: only BIT types allowed
-                        LDA ZP.NEXTT
-                        CMP #BASICType.BIT
-                        if (NZ)
-                        {
-                            CLC  // Set NC - type mismatch
-                            break;
-                        }
-                        CMP #BASICType.CHAR
-                        if (NZ)
-                        {
-                            CLC  // Set NC - type mismatch
-                            break;
-                        }
-                        
-                        LDA ZP.TOPT
-                        CMP #BASICType.BIT
-                        if (NZ)
-                        {
-                            CLC  // Set NC - type mismatch
-                            break;
-                        }
-                        CMP #BASICType.CHAR
-                        if (NZ)
-                        {
-                            CLC  // Set NC - type mismatch
-                            break;
-                        }
-                        
-                        // Both are BIT - set result type and compatible flag
-                        LDA #BASICType.BIT
-                        STA ZP.NEXTT
-                        SEC  // Set C - compatible
+                        CLC  // Set NC - type mismatch
                         break;
                     }
-                    else
+                    LDA ZP.TOPT
+                    CMP #BASICType.BIT
+                    if (NZ)
                     {
-                        // Equality: all types allowed, result is BIT
+                        CLC  // Set NC - type mismatch
+                        break;
                     }
+                    
+                    // Both are BIT - set result type and compatible flag
+                    LDA #BASICType.BIT
+                    STA ZP.NEXTT
+                    SEC  // Set C - compatible
+                    break;
+                }
+                case 5: // Assignment operations
+                {
+                    // TODO
+                }
+                default:
+                {
+                    Error.InvalidOperator(); BIT ZP.EmulatorPCL
+                    CLC
+                    break;
                 }
             }
+            
+            
             
             // Same type check
             LDA ZP.NEXTT
