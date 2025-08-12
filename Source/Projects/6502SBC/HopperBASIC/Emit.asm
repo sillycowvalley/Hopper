@@ -449,6 +449,29 @@ unit Emit
 #endif
    }
    
+   // Emit PUSHCHAR opcode with immediate value
+   // Input: A = char value
+   // Output: PUSHCHAR opcode emitted with value
+   // Modifies: compilerOpCode, compilerOperand1, buffer state via Emit.OpCodeWithByte()
+   const string emitPushCharTrace = "Emit PUSHCHAR";
+   PushChar()
+   {
+#ifdef TRACE
+       PHA LDA #(emitPushCharTrace % 256) STA ZP.TraceMessageL LDA #(emitPushCharTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+#endif
+       
+       // Set up parameters for emission
+       STA Compiler.compilerOperand1          // Store value as operand
+       LDA #OpCode.PUSHCHAR
+       STA Compiler.compilerOpCode
+       
+       Emit.OpCodeWithByte();
+       
+#ifdef TRACE
+       LDA #(emitPushCharTrace % 256) STA ZP.TraceMessageL LDA #(emitPushCharTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+   }
+   
    // Emit PUSHVOID opcode with zero value and VOID type
    // Input: None (VOID always pushes 0 with VOID type)
    // Output: PUSHVOID opcode emitted
@@ -902,8 +925,8 @@ unit Emit
         
         loop // Single exit block
         {
-            // Emit PUSHBYTE with the character (A already contains character)
-            Emit.PushByte();  // Uses A register
+            // Emit PUSHCHAR with the character (A already contains character)
+            Emit.PushChar();  // Uses A register
             Error.CheckError();
             if (NC) { break; }
             

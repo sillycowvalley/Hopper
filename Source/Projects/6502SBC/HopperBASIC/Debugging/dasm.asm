@@ -254,6 +254,11 @@ unit Dasm
                                 
                                 LDA #')' COut();
                             }
+                            case OpCode.PUSHCHAR:
+                            {
+                                LDA ZP.ACCL
+                                PrintChar(); // 'A' or 0x0A
+                            }
                             case OpCode.PUSHBIT:
                             {
                                 // Show TRUE or FALSE
@@ -274,6 +279,7 @@ unit Dasm
                             {
                                 
                                 LDA #'(' COut();
+                                // TODO
                                 //LDA ZP.ACCL
                                 //STA ZP.IDXL
                                 //LDA ZP.ACCH
@@ -444,9 +450,9 @@ unit Dasm
                                 ADC ZP.ACCH
                                 STA ZP.ACCH
                                  
-                                LDA #'(' COut();
+                                LDA #'"' COut();
                                 PrintStringACC();
-                                LDA #')' COut();
+                                LDA #'"' COut();
                             }
                             case OpCode.JUMPW:
                             case OpCode.JUMPZW:

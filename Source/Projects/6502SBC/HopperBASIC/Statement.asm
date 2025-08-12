@@ -368,6 +368,7 @@ unit Statement // Statement.asm
             case Token.WORD:
             case Token.BIT:
             case Token.BYTE:
+            case Token.CHAR:
             case Token.STRING:
             case Token.VAR: 
             {
@@ -495,7 +496,7 @@ unit Statement // Statement.asm
             BASICTypes.FromToken();
             if (NC)
             {
-                // expecting INT WORD BYTE BIT STRING
+                // expecting INT WORD BYTE CHAR BIT STRING
                 Error.SyntaxError(); BIT ZP.EmulatorPCL
                 CLC break;
             }
@@ -724,7 +725,7 @@ unit Statement // Statement.asm
                         }
                         else
                         {
-                            // Other types default: 0 (INT->0, BIT->FALSE, WORD->0, BYTE->0)
+                            // Other types default: 0 (INT->0, BIT->FALSE, WORD->0, BYTE->0, CHAR->0)
                             STZ ZP.NEXTL
                             STZ ZP.NEXTH
                         }

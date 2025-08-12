@@ -52,6 +52,57 @@ unit Tools // Tools.asm
         PLA
     } 
     
+    // Input: A - character to test
+    // Output: C for yes, NC for no
+    IsPrintable()
+    {
+        loop
+        {
+            CMP #32
+            if (C)  // >= 32
+            {
+                CMP #127
+                if (NC)  // <= 126
+                {
+                    SEC
+                    break;
+                }
+            }
+            CLC
+            break;
+        } // exit loop
+    }
+    // Print null-terminated string to serial output
+    // Input: A - character to print
+    // Output: 'A' for printable, 0xXX for unprintable to serial
+    // Preserves: Everything
+    PrintChar()
+    {
+        PHA
+        loop
+        {
+            CMP #32
+            if (C)  // >= 32
+            {
+                CMP #127
+                if (NC)  // <= 126
+                {
+                    PHA LDA #'\'' Serial.WriteChar(); PLA
+                    Serial.WriteChar();
+                    LDA #'\'' Serial.WriteChar();
+                    break;
+                }
+            }
+            
+            // Not printable
+            PHA LDA #'0' Serial.WriteChar(); LDA #'x' Serial.WriteChar(); PLA
+            Serial.HexOut();
+            
+            break;
+        } // exit loop   
+        PLA
+    }
+    
     // Print null-terminated string to serial output
     // Input: ZP.TOP = pointer to null-terminated string
     // Output: String printed to serial

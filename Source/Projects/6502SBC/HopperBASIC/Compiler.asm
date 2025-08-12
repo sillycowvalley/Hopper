@@ -1647,6 +1647,7 @@ unit Compiler // Compiler.asm
                case Token.INT:
                case Token.WORD:
                case Token.BYTE:
+               case Token.CHAR:
                case Token.BIT:
                case Token.STRING:
                case Token.VAR:
@@ -1895,7 +1896,7 @@ unit Compiler // Compiler.asm
    
     
     // Compile local variable declaration inside a function
-    // Input: ZP.CurrentToken = type token (INT, WORD, BYTE, BIT, VAR)
+    // Input: ZP.CurrentToken = type token (INT, WORD, BYTE, CHAR, BIT, VAR)
     // Output: Local variable created and added to function's locals list
     //         ZP.CurrentToken = token after declaration
     // Modifies: compilerFuncLocals, ZP.CurrentToken, heap allocation
@@ -1989,6 +1990,12 @@ unit Compiler // Compiler.asm
                     // Emit PUSHBYTE 0
                     LDA #0
                     Emit.PushByte();
+                }
+                case BASICType.CHAR:
+                {
+                    // Emit PUSHCHAR 0
+                    LDA #0
+                    Emit.PushChar();
                 }
                 case BASICType.VAR:
                 {

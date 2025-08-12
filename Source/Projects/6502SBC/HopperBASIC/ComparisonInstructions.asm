@@ -119,10 +119,10 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         PLA
     }
 
-    // Check if BIT types are allowed for comparison operation (same for STRING types)
+    // Check if BIT types are allowed for comparison operation (same for STRING and CHAR types)
     // Input: ZP.NEXTT and ZP.TOPT (operand types), A = permission level (1=not allowed, 2=allowed if both BIT)
     // Output: C set if allowed, C clear if not allowed
-    checkBITTypes()
+    checkBITandCHARTypes()
     {
         loop
         {
@@ -138,6 +138,19 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                     CLC
                     break;    
                 } 
+                CMP # BASICType.STRING
+                if (Z)
+                {
+                    CLC
+                    break;    
+                } 
+                CMP # BASICType.CHAR
+                if (Z)
+                {
+                    CLC
+                    break;    
+                } 
+                
                 LDA ZP.TOPT
                 CMP # BASICType.BIT
                 if (Z)
@@ -145,16 +158,13 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                     CLC
                     break;
                 }
-                SEC
-                LDA ZP.NEXTT
                 CMP # BASICType.STRING
                 if (Z)
-                {
+                {   
                     CLC
-                    break;    
-                } 
-                LDA ZP.TOPT
-                CMP # BASICType.STRING
+                    break;
+                }
+                CMP # BASICType.CHAR
                 if (Z)
                 {   
                     CLC
@@ -179,6 +189,7 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                         break;
                     }
                 }
+                
                 LDA ZP.TOPT
                 CMP # BASICType.BIT
                 if (Z)
@@ -191,6 +202,7 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                         break;
                     }
                 }
+                
                 LDA ZP.NEXTT
                 CMP # BASICType.STRING
                 if (Z)
@@ -203,12 +215,39 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                         break;
                     }
                 }
+                
                 LDA ZP.TOPT
                 CMP # BASICType.STRING
                 if (Z)
                 {
                     LDA ZP.NEXTT
                     CMP # BASICType.STRING    
+                    if (NZ)
+                    {
+                        CLC   
+                        break;
+                    }
+                }
+                
+                LDA ZP.NEXTT
+                CMP # BASICType.CHAR
+                if (Z)
+                {
+                    LDA ZP.TOPT
+                    CMP # BASICType.CHAR    
+                    if (NZ)
+                    {
+                        CLC   
+                        break;
+                    }
+                }
+                
+                LDA ZP.TOPT
+                CMP # BASICType.CHAR
+                if (Z)
+                {
+                    LDA ZP.NEXTT
+                    CMP # BASICType.CHAR    
                     if (NZ)
                     {
                         CLC   
@@ -278,9 +317,9 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                 }
             }
             
-            // Handle numeric type combinations (INT, WORD, BIT, BYTE)
-            LDA #2 // BIT types allowed for equality comparison
-            checkBITTypes();
+            // Handle numeric type combinations (INT, WORD, BIT, BYTE, CHAR)
+            LDA #2 // BIT, CHAR and STRING types allowed for equality comparison
+            checkBITandCHARTypes();
             if (NC)
             {
                 CLC
@@ -293,7 +332,7 @@ unit ComparisonInstructions // ComparisonInstructions.asm
             if (NZ)
             {
                 // Different numeric types - handle special cases
-                // BIT vs INT|WORD|BYTE already rejected by checkBITTypes above
+                // BIT|CHAR vs INT|WORD|BYTE already rejected by checkBITandCHARTypes above
                 // STRING vs numeric already handled above
                 // Only INT vs WORD|BYTE combinations remain
                 
@@ -414,8 +453,8 @@ unit ComparisonInstructions // ComparisonInstructions.asm
             }
             
             // Handle numeric type combinations (INT, WORD, BIT, BYTE)
-            LDA #2 // BIT types allowed for equality comparison
-            checkBITTypes();
+            LDA #2 // BIT, CHAR and STRING types allowed for equality comparison
+            checkBITandCHARTypes();
             if (NC)
             {
                 CLC
@@ -428,7 +467,7 @@ unit ComparisonInstructions // ComparisonInstructions.asm
             if (NZ)
             {
                 // Different numeric types - handle special cases
-                // BIT vs INT|WORD|BYTE already rejected by checkBITTypes above
+                // BIT|CHAR vs INT|WORD|BYTE already rejected by checkBITandCHARTypes above
                 // STRING vs numeric already handled above
                 // Only INT vs WORD|BYTE combinations remain
                 
@@ -577,8 +616,8 @@ unit ComparisonInstructions // ComparisonInstructions.asm
             // Pop two operands
             Stacks.PopTopNext();
             
-            LDA #1 // not allowed
-            checkBITTypes();
+            LDA #1 // not allowed : CHAR, STRING, BIT
+            checkBITandCHARTypes();
             if (NC)
             {
                 break;
@@ -680,8 +719,8 @@ unit ComparisonInstructions // ComparisonInstructions.asm
             // Pop two operands
             Stacks.PopTopNext();
             
-            LDA #1 // not allowed
-            checkBITTypes();
+            LDA #1 // not allowed : CHAR, STRING, BIT
+            checkBITandCHARTypes();
             if (NC)
             {
                 break;
@@ -783,8 +822,8 @@ unit ComparisonInstructions // ComparisonInstructions.asm
             // Pop two operands
             Stacks.PopTopNext();
             
-            LDA #1 // not allowed
-            checkBITTypes();
+            LDA #1 // not allowed : CHAR, STRING, BIT
+            checkBITandCHARTypes();
             if (NC)
             {
                 break;
@@ -886,8 +925,8 @@ unit ComparisonInstructions // ComparisonInstructions.asm
             // Pop two operands
             Stacks.PopTopNext();
             
-            LDA #1 // not allowed
-            checkBITTypes();
+            LDA #1 // not allowed : CHAR, STRING, BIT
+            checkBITandCHARTypes();
             if (NC)
             {
                 break;

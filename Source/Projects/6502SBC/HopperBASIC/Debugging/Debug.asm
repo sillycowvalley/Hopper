@@ -176,26 +176,15 @@ unit Debug // Debug.asm
     
     Printable()
     {
-        PHA
-        loop
+        Tools.IsPrintable();
+        if (C)
         {
-            CMP #32
-            if (C)  // >= 32
-            {
-                CMP #127
-                if (NC)  // <= 126
-                {
-                    COut();
-                    break;
-                }
-            }
-            
-            // Not printable
-            LDA #'.' COut();
-            
-            break;
-        } // exit loop
-        PLA
+            COut();
+        }
+        else
+        {
+            PHA LDA #'.' COut(); PLA
+        }
     }
     
     // === Private output methods (use DB slots, no preservation) ===
@@ -2202,7 +2191,7 @@ unit Debug // Debug.asm
     // Preserves: All registers, flags, and ZP locations (including ZP.ACCL, ZP.STRL, ZP.STRH)
     // 
     // Displays stack elements with single-character type indicators:
-    //   v=VOID, i=INT, b=BYTE, w=WORD, B=BIT, s=STRING, a=ARRAY
+    //   v=VOID, i=INT, b=BYTE, c=CHAR, w=WORD, B=BIT, s=STRING, a=ARRAY
     // VAR types shown in brackets: [i:0042]
     // Base Pointer position marked with '|' separator
     CompactStack()
@@ -2393,6 +2382,10 @@ unit Debug // Debug.asm
                     case BASICType.BYTE:
                     {
                         LDA #'b' cOut();
+                    }
+                    case BASICType.CHAR:
+                    {
+                        LDA #'c' cOut();
                     }
                     case BASICType.BIT:
                     {
@@ -3546,12 +3539,14 @@ unit Debug // Debug.asm
             
             loop
             {
-                // Valid base types: INT, WORD, BYTE, BIT, STRING
+                // Valid base types: INT, WORD, BYTE, CHAR, BIT, STRING
                 CMP #BASICType.INT
                 if (Z) { SEC break; }
                 CMP #BASICType.WORD
                 if (Z) { SEC break; }
                 CMP #BASICType.BYTE
+                if (Z) { SEC break; }
+                CMP #BASICType.CHAR
                 if (Z) { SEC break; }
                 CMP #BASICType.BIT
                 if (Z) { SEC break; }
@@ -3634,6 +3629,8 @@ unit Debug // Debug.asm
                 CMP #BASICType.WORD
                 if (Z) { SEC break; }
                 CMP #BASICType.BYTE
+                if (Z) { SEC break; }
+                CMP #BASICType.CHAR
                 if (Z) { SEC break; }
                 CMP #BASICType.BIT
                 if (Z) { SEC break; }

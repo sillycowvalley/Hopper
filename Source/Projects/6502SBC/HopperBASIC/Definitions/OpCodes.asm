@@ -71,18 +71,19 @@ unit OpCodes
        // Literal pushes (small values)
        PUSHBIT      = 0x40,  // Push BIT immediate [value] (0 or 1)
        PUSHBYTE     = 0x41,  // Push BYTE immediate [value] (0-255)
+       PUSHCHAR     = 0x42,  // Push CHAR immediate [value] (0-255)
        
        // Local variable operations (stack frame relative)
-       PUSHLOCAL    = 0x42,  // Push local variable [signed_offset]
-       POPLOCAL     = 0x43,  // Pop to local variable [signed_offset]
+       PUSHLOCAL    = 0x43,  // Push local variable [signed_offset]
+       POPLOCAL     = 0x44,  // Pop to local variable [signed_offset]
        
        // Control flow (short jumps)
-       JUMPB        = 0x44,  // Unconditional jump [signed_delta]
-       JUMPZB       = 0x45,  // Jump if zero [signed_delta]
-       JUMPNZB      = 0x46,  // Jump if non-zero [signed_delta]
+       JUMPB        = 0x45,  // Unconditional jump [signed_delta]
+       JUMPZB       = 0x46,  // Jump if zero [signed_delta]
+       JUMPNZB      = 0x47,  // Jump if non-zero [signed_delta]
        
        // System calls
-       SYSCALL      = 0x47,  // System call [function_id]
+       SYSCALL      = 0x48,  // System call [function_id]
        
        // Control flow
        RETURN       = 0x49,  // Return from function (no return value)
@@ -158,6 +159,7 @@ unit OpCodes
    const string opcodeENTER = "ENTER";
    const string opcodePUSHBIT = "PUSHBIT";
    const string opcodePUSHBYTE = "PUSHBYTE";
+   const string opcodePUSHCHAR = "PUSHCHAR";
    const string opcodePUSHLOCAL = "PUSHLOCAL";
    const string opcodePOPLOCAL = "POPLOCAL";
    const string opcodeJUMPB = "JUMPB";
@@ -398,6 +400,13 @@ unit OpCodes
                 LDA #(opcodePUSHBYTE % 256)
                 STA ZP.STRL
                 LDA #(opcodePUSHBYTE / 256)
+                STA ZP.STRH
+            }
+            case OpCode.PUSHCHAR:
+            {
+                LDA #(opcodePUSHCHAR % 256)
+                STA ZP.STRL
+                LDA #(opcodePUSHCHAR / 256)
                 STA ZP.STRH
             }
             case OpCode.PUSHLOCAL:

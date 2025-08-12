@@ -2,7 +2,7 @@ unit BASICArray
 {
     // Array memory map:
     //   0000 number of elements
-    //   xx   type = WORD|INT|BYTE|BIT
+    //   xx   type = WORD|INT|BYTE|CHAR|BIT
     //   0000 first element in array
     //   ..
     //   <nn>  last element in array
@@ -47,6 +47,7 @@ unit BASICArray
                     INC FSIZEH
                 }
             }
+            case BASICType.CHAR:
             case BASICType.BYTE:
             {
                 // size = number of elements == size
@@ -196,6 +197,7 @@ unit BASICArray
                 LSR IDYH
                 ROR IDYL
             }
+            case BASICType.CHAR:
             case BASICType.BYTE:
             {
             }
@@ -263,6 +265,7 @@ unit BASICArray
                     STA NEXTL   
                 }
             }
+            case BASICType.CHAR:
             case BASICType.BYTE:
             {
                 LDA [IDY], Y
@@ -335,6 +338,7 @@ unit BASICArray
                     STA [IDY], Y       
                 }
             }
+            case BASICType.CHAR:
             case BASICType.BYTE:
             {
                 LDA TOPL

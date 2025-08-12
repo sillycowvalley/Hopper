@@ -550,6 +550,10 @@ unit Executor // Executor.asm
            {
                executePushByte();
            }
+           case OpCode.PUSHCHAR:
+           {
+               executePushChar();
+           }
            case OpCode.PUSHCSTRING:
            {
                executePushCString();
@@ -1002,6 +1006,35 @@ unit Executor // Executor.asm
        
 #ifdef TRACE
        LDA #(executePushByteTrace % 256) STA ZP.TraceMessageL LDA #(executePushByteTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+   }
+   
+   // Execute PUSHCHAR opcode - push CHAR immediate
+   const string executePushCharTrace = "PUSHCHAR // Push CHAR immediate";
+   executePushChar()
+   {
+#ifdef TRACE
+       LDA #(executePushCharTrace % 256) STA ZP.TraceMessageL LDA #(executePushCharTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+    
+       // Fetch operand byte
+       FetchOperandByte();
+       States.CanContinue();
+       if (C)
+       {
+           
+           // Store in ZP.TOP as CHAR value
+           STA ZP.TOPL
+           LDA #0
+           STA ZP.TOPH
+           LDA # BASICType.CHAR
+           Stacks.PushTop();
+           
+           States.SetSuccess();
+       }
+       
+#ifdef TRACE
+       LDA #(executePushCharTrace % 256) STA ZP.TraceMessageL LDA #(executePushCharTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
    

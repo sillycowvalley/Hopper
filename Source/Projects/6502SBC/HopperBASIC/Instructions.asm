@@ -64,7 +64,7 @@ unit Instructions // Instructions.asm
     // Input: ZP.NEXTT = left operand type, ZP.TOPT = right operand type
     //        ZP.NEXT  = left value, ZP.TOP = right value (for WORD/INT range check)
     //        A        = operation mode:
-    //          0 = Equality comparison (=, <>) - BIT types only allowed with other BIT types, result is BIT
+    //          0 = Equality comparison (=, <>) - BIT types only allowed with other BIT types, result is BIT --- UNUSED!!
     //          1 = Arithmetic (+, -, *, /, %) - BIT types rejected, result is promoted numeric type
     //          2 = Bitwise (&, |) - BIT types rejected, result is promoted numeric type
     //          4 = Logical (AND, OR) - Only BIT types allowed, result is BIT
@@ -153,9 +153,21 @@ unit Instructions // Instructions.asm
                     CLC  // Set NC - type mismatch
                     break;
                 }
+                CMP #BASICType.CHAR
+                if (Z)
+                {
+                    CLC  // Set NC - type mismatch
+                    break;
+                }
                 
                 LDA ZP.TOPT
                 CMP #BASICType.BIT
+                if (Z)
+                {
+                    CLC  // Set NC - type mismatch
+                    break;
+                }
+                CMP #BASICType.CHAR
                 if (Z)
                 {
                     CLC  // Set NC - type mismatch
@@ -168,7 +180,21 @@ unit Instructions // Instructions.asm
                 CMP #2  // Bitwise operations
                 if (Z)
                 {
-                    // Bitwise: allow all types including BIT
+                    // Bitwise: allow all types including BIT but not CHAR
+                    LDA ZP.TOPT
+                    CMP #BASICType.CHAR
+                    if (Z)
+                    {
+                        CLC  // Set NC - type mismatch
+                        break;
+                    }
+                    LDA ZP.TOPT
+                    CMP #BASICType.CHAR
+                    if (Z)
+                    {
+                        CLC  // Set NC - type mismatch
+                        break;
+                    }
                 }
                 else
                 {
@@ -184,9 +210,21 @@ unit Instructions // Instructions.asm
                             CLC  // Set NC - type mismatch
                             break;
                         }
+                        CMP #BASICType.CHAR
+                        if (NZ)
+                        {
+                            CLC  // Set NC - type mismatch
+                            break;
+                        }
                         
                         LDA ZP.TOPT
                         CMP #BASICType.BIT
+                        if (NZ)
+                        {
+                            CLC  // Set NC - type mismatch
+                            break;
+                        }
+                        CMP #BASICType.CHAR
                         if (NZ)
                         {
                             CLC  // Set NC - type mismatch
@@ -212,7 +250,7 @@ unit Instructions // Instructions.asm
             if (Z)
             {
                 // Same types are always compatible
-                LDA ZP.ACCT
+                //LDA ZP.ACCT
                 SEC  // Set C - compatible
                 break;
             }
@@ -230,7 +268,7 @@ unit Instructions // Instructions.asm
                 {
                     LDA #BASICType.INT
                     STA ZP.NEXTT
-                    LDA ZP.ACCT
+                    //LDA ZP.ACCT
                     SEC  // Set C - compatible
                     break;
                 }
@@ -246,15 +284,11 @@ unit Instructions // Instructions.asm
                 {
                     LDA #BASICType.WORD
                     STA ZP.NEXTT  // Promote to WORD for all operations except comparisons
-                    LDA ZP.ACCT
+                    //LDA ZP.ACCT
                     SEC  // Set C - compatible
                     break;
                 }
             }
-            
-            
-            
-            
             
             LDA ZP.NEXTT
             CMP #BASICType.INT
@@ -265,7 +299,7 @@ unit Instructions // Instructions.asm
                 CMP #BASICType.BYTE
                 if (Z)
                 {
-                    LDA ZP.ACCT
+                    //LDA ZP.ACCT
                     SEC  // Set C - compatible
                     break;
                 }
@@ -274,6 +308,7 @@ unit Instructions // Instructions.asm
                 if (Z)
                 {
                     // Check if this is a comparison operation
+                    /* unused
                     LDA ZP.ACCT
                     CMP #3  // Ordering comparison
                     if (Z)
@@ -315,6 +350,7 @@ unit Instructions // Instructions.asm
                             break;
                         }
                     }
+                    */
                     
                     // For non-comparison operations: use existing logic
                     BIT ZP.NEXTH  // Check sign bit of NEXT (INT value)
@@ -340,7 +376,7 @@ unit Instructions // Instructions.asm
                     STA ZP.NEXTT
                     
                     // INT is non-negative, compatible with WORD
-                    LDA ZP.ACCT
+                    //LDA ZP.ACCT
                     SEC  // Set C - compatible
                     break;
                 }
@@ -359,7 +395,7 @@ unit Instructions // Instructions.asm
                 if (Z)
                 {
                     // WORD is already the promoted type (no change to ZP.NEXTT needed)
-                    LDA ZP.ACCT
+                    //LDA ZP.ACCT
                     SEC  // Set C - compatible
                     break;
                 }
@@ -368,6 +404,7 @@ unit Instructions // Instructions.asm
                 if (Z)
                 {
                     // Check if this is a comparison operation
+                    /* unused
                     LDA ZP.ACCT
                     CMP #3  // Ordering comparison
                     if (Z)
@@ -409,6 +446,7 @@ unit Instructions // Instructions.asm
                             break;
                         }
                     }
+                    */
                     
                     // For non-comparison operations: use existing logic
                     BIT ZP.TOPH  // Check sign bit of TOP (INT value)
@@ -432,7 +470,7 @@ unit Instructions // Instructions.asm
                     STA ZP.NEXTT
                     
                     // INT is non-negative, compatible with WORD
-                    LDA ZP.ACCT
+                    //LDA ZP.ACCT
                     SEC  // Set C - compatible
                     break;
                 }
@@ -449,6 +487,7 @@ unit Instructions // Instructions.asm
                 if (Z)
                 {
                     // STRING vs STRING - only valid for equality operations
+                    /* unused
                     LDA ZP.ACCT
                     if (Z)  // Equality comparison mode
                     {
@@ -462,10 +501,46 @@ unit Instructions // Instructions.asm
                         CLC  // STRING not valid for arithmetic/bitwise/logical
                         break;
                     }
+                    */
+                    CLC  // STRING not valid for arithmetic/bitwise/logical
+                    break;
                 }
                 else
                 {
                     CLC  // STRING with non-STRING is invalid
+                    break;
+                }
+            }
+            
+            LDA ZP.NEXTT
+            CMP #BASICType.CHAR
+            if (Z)
+            {
+                LDA ZP.TOPT  
+                CMP #BASICType.CHAR
+                if (Z)
+                {
+                    // CHAR vs CHAR - valid for equality operations
+                    /* unused
+                    LDA ZP.ACCT
+                    if (Z)  // Equality comparison mode
+                    {
+                        LDA #BASICType.BIT  // Result type is BIT
+                        STA ZP.NEXTT
+                        SEC  // Compatible
+                        break;
+                    }
+                    else
+                    {
+                        CLC  // CHAR not valid for arithmetic/bitwise/logical
+                        break;
+                    }
+                    */
+                    CLC  // CHAR not valid for arithmetic/bitwise/logical
+                }
+                else
+                {
+                    CLC  // CHAR with non-CHAR is invalid
                     break;
                 }
             }
@@ -484,13 +559,27 @@ unit Instructions // Instructions.asm
                 // STRING vs STRING already handled above
             }
             
+            LDA ZP.TOPT
+            CMP #BASICType.CHAR
+            if (Z)
+            {
+                LDA ZP.NEXTT
+                CMP #BASICType.CHAR
+                if (NZ)
+                {
+                    CLC  // non-CHAR with CHAR is invalid
+                    break;
+                }
+                // CHAR vs STRING CHAR handled above
+            }
+            
             // No other compatibility rules matched
             CLC  // Set NC - incompatible
             break;
         }
         
         // Restore original ZP.ACCT
-        STX ZP.ACCT
+        //STX ZP.ACCT
         
 #ifdef TRACE
         LDA #(checkType % 256) STA ZP.TraceMessageL LDA #(checkType / 256) STA ZP.TraceMessageH Trace.MethodExit();
