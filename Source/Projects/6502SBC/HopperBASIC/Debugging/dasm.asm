@@ -29,6 +29,9 @@ unit Dasm
             case 10:  { LDA #Token.PINMODE    Tokens.PrintKeyword(); }  // PINMODE
             case 11:  { LDA #Token.READ       Tokens.PrintKeyword(); }  // READ
             case 12:  { LDA #Token.WRITE      Tokens.PrintKeyword(); }  // WRITE
+            case 13:  { LDA #Token.CHR        Tokens.PrintKeyword(); }  // CHR
+            case 14:  { LDA #Token.ASC        Tokens.PrintKeyword(); }  // ASC
+            case 15:  { LDA #Token.LEN        Tokens.PrintKeyword(); }  // LEN
             default:  { LDA #'?' COut(); LDA #'?' COut(); LDA #'?' COut(); }  // Unknown
         }
         

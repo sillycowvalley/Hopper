@@ -736,7 +736,7 @@ unit Tokenizer // Tokenizer.asm
                         CPX ZP.BasicInputLength  // Check input buffer bounds
                         if (Z) // End of input without closing quote
                         {
-                            Error.ExpectedQuote(); BIT ZP.EmulatorPCL
+                            Error.UnexpectedEOL(); BIT ZP.EmulatorPCL
                             CLC
                             return;
                         }
@@ -773,6 +773,64 @@ unit Tokenizer // Tokenizer.asm
                     SEC  // Success
                 }
                 case '\'':
+                {
+                    // Character literal tokenization
+                    LDA #Token.CHARLIT
+                    appendToTokenBuffer();
+                    Error.CheckError();
+                    if (NC) { return; }
+                    
+                    INX  // Skip opening quote
+                    
+                    // Check for end of input
+                    CPX ZP.BasicInputLength
+                    if (Z)  // End of input without character
+                    {
+                        Error.UnexpectedEOL(); BIT ZP.EmulatorPCL
+                        CLC
+                        return;
+                    }
+                    
+                    // Get the character
+                    LDA Address.BasicInputBuffer, X
+                    
+                    // Check for valid ASCII range (0-127)
+                    CMP #0x80
+                    if (C)  // >= 128, invalid character
+                    {
+                        Error.IllegalCharacter(); BIT ZP.EmulatorPCL
+                        CLC
+                        return;
+                    }
+                    
+                    // Store the character value in token buffer
+                    appendToTokenBuffer();
+                    Error.CheckError();
+                    if (NC) { return; }
+                    
+                    INX  // Move past character
+                    
+                    // Check for closing quote
+                    CPX ZP.BasicInputLength
+                    if (Z)  // End of input without closing quote
+                    {
+                        Error.UnexpectedEOL(); BIT ZP.EmulatorPCL
+                        CLC
+                        return;
+                    }
+                    
+                    LDA Address.BasicInputBuffer, X
+                    CMP #'\''
+                    if (NZ)  // Not a closing quote
+                    {
+                        Error.UnexpectedEOL(); BIT ZP.EmulatorPCL
+                        CLC
+                        return;
+                    }
+                    
+                    INX  // Skip closing quote
+                }
+                case '!':
                 {
                     // Single quote comment
                     LDA #Token.COMMENT
@@ -1071,6 +1129,20 @@ unit Tokenizer // Tokenizer.asm
             STA ZP.TokenLiteralPosH
             
             skipInlineString();
+            LDA ZP.CurrentToken
+            return;
+        }
+        CMP #Token.CHARLIT
+        if (Z)
+        {
+            // Save current position as start of character value
+            LDA ZP.TokenizerPosL
+            STA ZP.TokenLiteralPosL
+            LDA ZP.TokenizerPosH
+            STA ZP.TokenLiteralPosH
+            
+            // Skip past the single character value (1 byte)
+            incrementTokenizerPos();
             LDA ZP.CurrentToken
             return;
         }

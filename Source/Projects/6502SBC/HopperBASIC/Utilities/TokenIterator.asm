@@ -519,6 +519,19 @@ unit TokenIterator // TokenIterator.asm
                 LDA #' '
                 Serial.WriteChar();
             }
+            case Token.CHARLIT:
+            {
+                LDA #'\''
+                Serial.WriteChar();
+                GetCurrentData(); // ZP.STR* = pointer to character value
+                LDY #0
+                LDA [ZP.STR], Y   // Get the character
+                Serial.WriteChar();
+                LDA #'\''
+                Serial.WriteChar();
+                LDA #' '
+                Serial.WriteChar();
+            }
             case Token.REM:
             {
                 LDA #Token.REM

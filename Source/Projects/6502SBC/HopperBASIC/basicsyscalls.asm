@@ -22,6 +22,11 @@ unit BASICSysCalls
        PinMode      = (0b01010 << 3) | (0 << 2) | 0b10,  // ID=10, void,    2 args = 0x52
        Read         = (0b01011 << 3) | (1 << 2) | 0b01,  // ID=11, returns, 1 arg  = 0x5D
        Write        = (0b01100 << 3) | (0 << 2) | 0b10,  // ID=12, void,    2 args = 0x62
+       
+        // Character/String functions (ID 13-15)
+        Chr          = (0b01101 << 3) | (1 << 2) | 0b01,  // ID=13, returns, 1 arg  = 0x6D
+        Asc          = (0b01110 << 3) | (1 << 2) | 0b01,  // ID=14, returns, 1 arg  = 0x75
+        Len          = (0b01111 << 3) | (1 << 2) | 0b01,  // ID=15, returns, 1 arg  = 0x7D
         
    }
    
@@ -354,6 +359,120 @@ unit BASICSysCalls
                     LDA ZP.NEXTL    // Pin number
                     LDX ZP.TOPL     // Value
                     GPIO.PinWrite();
+                }
+                
+                case SysCallType.Chr:           // ID = 13
+                {
+                    // CHR function - convert numeric to CHAR
+                    // Input: ZP.TOP* contains numeric value (BYTE/WORD/INT)
+                    // Output: ZP.TOP* contains CHAR value
+                    
+                    // Validate value is 0-255 regardless of type
+                    LDA ZP.TOPT
+                    switch (A)
+                    {
+                        case BASICType.BYTE:
+                        {
+                            // BYTE is always valid (0-255)
+                        }
+                        case BASICType.WORD:
+                        {
+                            // Check WORD is <= 255
+                            LDA ZP.TOPH
+                            if (NZ)
+                            {
+                                Error.RangeError(); BIT ZP.EmulatorPCL
+                                States.SetFailure();
+                                break;
+                            }
+                        }
+                        case BASICType.INT:
+                        {
+                            // Check INT is 0-255
+                            LDA ZP.TOPH
+                            if (MI)  // Negative?
+                            {
+                                Error.RangeError(); BIT ZP.EmulatorPCL
+                                States.SetFailure();
+                                break;
+                            }
+                            if (NZ)  // > 255?
+                            {
+                                Error.RangeError(); BIT ZP.EmulatorPCL
+                                States.SetFailure();
+                                break;
+                            }
+                        }
+                        default:
+                        {
+                            Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                            States.SetFailure();
+                            break;
+                        }
+                    }
+                    
+                    // Value is valid, convert to CHAR
+                    // ZP.TOPL already contains the byte value
+                    STZ ZP.TOPH  // Clear high byte
+                    LDA #BASICType.CHAR
+                    STA ZP.TOPT
+                }
+                
+                case SysCallType.Asc:           // ID = 14
+                {
+                    // ASC function - convert CHAR to BYTE
+                    // Input: ZP.TOP* contains CHAR value
+                    // Output: ZP.TOP* contains BYTE value
+                    
+                    // Validate input is CHAR type
+                    LDA ZP.TOPT
+                    CMP #BASICType.CHAR
+                    if (NZ)
+                    {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        States.SetFailure();
+                        break;
+                    }
+                    
+                    // Convert CHAR to BYTE (value stays the same)
+                    // ZP.TOPL already contains the ASCII value
+                    STZ ZP.TOPH  // Ensure high byte is clear
+                    LDA #BASICType.BYTE
+                    STA ZP.TOPT
+                }
+                
+                case SysCallType.Len:           // ID = 15
+                {
+                    // LEN function - get string length
+                    // Input: ZP.TOP* contains STRING pointer
+                    // Output: ZP.TOP* contains length as WORD
+                    
+                    // Validate input is STRING type
+                    LDA ZP.TOPT
+                    CMP #BASICType.STRING
+                    if (NZ)
+                    {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        States.SetFailure();
+                        break;
+                    }
+                    
+                    // Get string length from heap header
+                    // String pointer is in ZP.TOP
+                    // Format: [NextL][NextH][RefCount][SizeL][SizeH][...string data...]
+                    
+                    LDY #3  // Offset to SizeL in heap header
+                    LDA [ZP.TOP], Y
+                    PHA     // Save SizeL
+                    INY     // Offset to SizeH
+                    LDA [ZP.TOP], Y
+                    STA ZP.TOPH  // Store SizeH
+                    PLA
+                    STA ZP.TOPL  // Store SizeL
+                    
+                    // Set type to WORD
+                    LDA #BASICType.WORD
+                    STA ZP.TOPT
                 }
                
                default:

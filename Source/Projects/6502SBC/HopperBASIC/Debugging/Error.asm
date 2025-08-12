@@ -31,7 +31,7 @@ unit Error // Error.asm
     const uint bufferOverflow = 0x0016;
     const uint expectedRightParen = 0x0017;
     const uint expectedLeftParen = 0x0018;
-    const uint expectedQuote = 0x0019;
+    const uint unexpectedEOL = 0x0019;
     const uint expectedExpression = 0x001A;
     const uint invalidBitValue = 0x001B;
     const uint illegalInFunctionMode = 0x001C;
@@ -43,6 +43,7 @@ unit Error // Error.asm
     const uint missingNext = 0x0022;
     const uint nextMismatch = 0x0023
     const uint forIteratorLocal = 0x0024;
+    const uint rangeError = 0x0025;
     
     
 #else
@@ -74,7 +75,7 @@ unit Error // Error.asm
     const string expectedRightParen = ") EXPECTED";
     const string expectedLeftParen = "( EXPECTED";
     const string expectedEqual = "= EXPECTED";
-    const string expectedQuote = "QUOTE EXPECTED";
+    const string unexpectedEOL = "UNEXPECTED END OF LINE IN LITERAL";
     const string expectedExpression = "EXPRESSION EXPECTED";
     const string invalidBitValue = "INVALID BIT VALUE";
     const string illegalInFunctionMode = "ILLEGAL IN FUNCTION MODE";
@@ -86,6 +87,7 @@ unit Error // Error.asm
     const string missingNext = "MISSING NEXT";
     const string nextMismatch = "NEXT MISMATCH";
     const string forIteratorLocal = "FOR ITERATOR MUST BE LOCAL";
+    const string rangeError = "VALUE OUT OF RANGE";
     
     
     
@@ -94,6 +96,14 @@ unit Error // Error.asm
     // One-liner error methods (PC must be set at call site with BIT ZP.EmulatorPCL)
     // Each method sets ZP.LastError and clears carry flag
     
+    RangeError()
+    {
+        LDA #(rangeError % 256)
+        STA ZP.LastErrorL
+        LDA #(rangeError / 256)
+        STA ZP.LastErrorH
+        CLC
+    }
     Break()
     {
         LDA #(ctrlC % 256)
@@ -402,11 +412,11 @@ unit Error // Error.asm
         CLC
     }
     
-    ExpectedQuote() 
+    UnexpectedEOL() 
     { 
-        LDA #(expectedQuote % 256)
+        LDA #(unexpectedEOL % 256)
         STA ZP.LastErrorL
-        LDA #(expectedQuote / 256)
+        LDA #(unexpectedEOL / 256)
         STA ZP.LastErrorH
         CLC
     }

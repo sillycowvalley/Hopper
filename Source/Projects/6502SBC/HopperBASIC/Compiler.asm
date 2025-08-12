@@ -1150,6 +1150,34 @@ unit Compiler // Compiler.asm
                    Error.CheckError();
                    break;
                }
+               case Token.CHARLIT:
+                {
+                    RMB0 ZP.CompilerFlags // CHAR: not an integral constant expression
+                    
+                    // The character byte is stored inline after the CHARLIT token
+                    
+                    // Calculate address of character value in token buffer
+                    LDA ZP.TokenBufferL
+                    CLC
+                    ADC ZP.TokenLiteralPosL
+                    STA ZP.IDXL
+                    LDA ZP.TokenBufferH
+                    ADC ZP.TokenLiteralPosH
+                    STA ZP.IDXH
+                    
+                    // Get the character value
+                    LDY #0
+                    LDA [ZP.IDX], Y
+                    
+                    Emit.PushChar();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    
+                    // Get next token
+                    Tokenizer.NextToken();
+                    Error.CheckError();
+                    break;
+                }
                
                case Token.IDENTIFIER:
                {
@@ -1237,6 +1265,33 @@ unit Compiler // Compiler.asm
                 {
                     RMB0 ZP.CompilerFlags // READ: not an integral constant expression
                     LDA #SysCallType.Read
+                    compileSysCall();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    break;
+                }
+                case Token.CHR:
+                {
+                    RMB0 ZP.CompilerFlags // CHR: not an integral constant expression
+                    LDA #SysCallType.Chr
+                    compileSysCall();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    break;
+                }
+                case Token.ASC:
+                {
+                    RMB0 ZP.CompilerFlags // ASC: not an integral constant expression
+                    LDA #SysCallType.Asc
+                    compileSysCall();
+                    Error.CheckError();
+                    if (NC) { break; }
+                    break;
+                }
+                case Token.LEN:
+                {
+                    RMB0 ZP.CompilerFlags // LEN: not an integral constant expression
+                    LDA #SysCallType.Len
                     compileSysCall();
                     Error.CheckError();
                     if (NC) { break; }
