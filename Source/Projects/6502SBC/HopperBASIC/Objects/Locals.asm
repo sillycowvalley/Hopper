@@ -2,6 +2,8 @@ unit Locals
 {
     uses "./Objects/Objects"
     
+    friend Debug;
+    
     // In Locals.asm
     // Unified node structure for both arguments and locals
     // Offset 0-1: next pointer

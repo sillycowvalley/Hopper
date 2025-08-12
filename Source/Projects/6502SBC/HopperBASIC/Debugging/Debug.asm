@@ -2209,8 +2209,6 @@ unit Debug // Debug.asm
     {
         PHP PHA PHX PHY
         
-LDA #'{' COut(); 
-
         // Save state that compactStack modifies
         LDA ZP.ACCL
         PHA
@@ -2243,13 +2241,11 @@ LDA #'{' COut();
         LDA #1
         compactStack();
 
-LDA #'}' COut();         
-
 #ifdef HEAPCHECK
         Debug.ValidateHeap();
 #endif     
 
-NL(); LDA #'S' COut(); LDA #'P' COut(); LDA #':' COut(); LDA ZP.SP HOut();      
+//NL(); LDA #'S' COut(); LDA #'P' COut(); LDA #':' COut(); LDA ZP.SP HOut();      
         
         // Restore state
         PLA
@@ -2563,19 +2559,56 @@ NL(); LDA #'S' COut(); LDA #'P' COut(); LDA #':' COut(); LDA ZP.SP HOut();
         {
             // First validate basic heap structure
             validateHeapBlocks();
-            if (NC) { break; } // Heap corruption found
+            if (NC)
+            {
+                // corrupt heap blocks
+                NL();
+                LDA #'H' COut();
+                LDA #'B' COut();
+                LDA #'!' COut();
+                LDA ZP.IDYH HOut();
+                LDA ZP.IDYL HOut();
+                CLC // Failed
+                break;
+            }
             
             // Now validate function list
             validateFunctionList();
-            if (NC) { break; } // Invalid function list
+            if (NC)
+            {
+                // corrupt function list
+                NL();
+                LDA #'F' COut();
+                LDA #'L' COut();
+                LDA #'!' COut();
+                LDA ZP.IDYH HOut();
+                LDA ZP.IDYL HOut();
+                CLC // Failed
+                break;
+            }
+            
             
             // Finally validate variable list  
             validateVariableList();
+            if (NC)
+            {
+                // corrupt variable list
+                NL();
+                LDA #'V' COut();
+                LDA #'L' COut();
+                LDA #'!' COut();
+                LDA ZP.IDYH HOut();
+                LDA ZP.IDYL HOut();
+                CLC // Failed
+                break;
+            }
             break;
         }
+        
         if (NC)
         {
             Debug.DumpHeap();
+            loop { } // hang rather than crashing
         }
         
         // Restore state
@@ -2658,6 +2691,7 @@ NL(); LDA #'S' COut(); LDA #'P' COut(); LDA #':' COut(); LDA ZP.SP HOut();
     {
         loop // Single exit pattern
         {
+            
             // Check for null pointer (always valid)
             LDA ZP.IDYL
             ORA ZP.IDYH
@@ -2780,7 +2814,6 @@ NL(); LDA #'S' COut(); LDA #'P' COut(); LDA #':' COut(); LDA ZP.SP HOut();
                 CLC
                 break;
             }
-            
                         
             // Check tokens pointer at offset 3-4
             LDY #Objects.snTokens
@@ -2844,7 +2877,21 @@ NL(); LDA #'S' COut(); LDA #'P' COut(); LDA #':' COut(); LDA ZP.SP HOut();
                 CLC // Failed
                 break;
             }
+            
             validateArgumentsList();  // ZP.IDY = arguments list head
+            if (NC)
+            {
+                // Invalid arguments list
+                NL();
+                LDA #'F' COut();
+                LDA #'A' COut();
+                LDA #'L' COut();
+                LDA #'!' COut();
+                LDA ZP.IDYH HOut();
+                LDA ZP.IDYL HOut();
+                CLC // Failed
+                break;
+            }
             
             // Get next pointer at offset 0-1
             LDY #0
@@ -2870,16 +2917,134 @@ NL(); LDA #'S' COut(); LDA #'P' COut(); LDA #':' COut(); LDA ZP.SP HOut();
             }
         }
     }
+     
+    // Validate inline name string within an argument/local node
+    // Input: ZP.IDX = node address  
+    // Output: C if valid, NC if invalid
+    // Uses: DB2-DB5 for calculations
+    validateArgumentName()
+    {
+        PHY
+        
+        loop // Single exit pattern
+        {
+            // Get the heap block size (2 bytes before node)
+            SEC
+            LDA ZP.IDXL
+            SBC #2
+            STA ZP.DB2
+            LDA ZP.IDXH
+            SBC #0
+            STA ZP.DB3
+            
+            // Read block size
+            LDY #0
+            LDA [ZP.DB2], Y
+            STA ZP.DB4  // Size low
+            INY
+            LDA [ZP.DB2], Y
+            STA ZP.DB5  // Size high
+            
+            // Subtract 2 for the size header
+            SEC
+            LDA ZP.DB4
+            SBC #2
+            STA ZP.DB4
+            LDA ZP.DB5
+            SBC #0
+            STA ZP.DB5
+            
+            // Check if node size is reasonable
+            LDA ZP.DB5
+            if (NZ)  // High byte non-zero
+            {
+                NL();
+                LDA #'A' COut();
+                LDA #'B' COut();
+                LDA #'S' COut();  // ABS = Argument Block Size too large
+                CLC
+                break;
+            }
+            
+            // Scan for null terminator starting at lnName
+            LDY #Locals.lnName  // Start at offset 3
+            
+            loop
+            {
+                // Check if Y reached node size
+                CPY ZP.DB4
+                if (C)  // Y >= node size
+                {
+                    NL();
+                    LDA #'A' COut();
+                    LDA #'O' COut();
+                    LDA #'V' COut();  // AOV = Argument Overflow
+                    CLC
+                    break;
+                }
+                
+                // Check for null terminator
+                LDA [ZP.IDX], Y
+                if (Z)
+                {
+                    SEC  // Found null - valid name
+                    break;
+                }
+                
+                // Check for non-printable chars
+                CMP #32
+                if (NC)  // < 32
+                {
+                    NL();
+                    LDA #'A' COut();
+                    LDA #'B' COut();
+                    LDA #'C' COut();  // ABC = Argument Bad Char
+                    CLC
+                    break;
+                }
+                CMP #127
+                if (C)  // >= 127
+                {
+                    NL();
+                    LDA #'A' COut();
+                    LDA #'B' COut();
+                    LDA #'C' COut();  // ABC = Argument Bad Char
+                    CLC
+                    break;
+                }
+                
+                // Check reasonable name length
+                INY
+                TYA
+                SEC
+                SBC #Locals.lnName
+                CMP #64
+                if (C)  // >= 64
+                {
+                    NL();
+                    LDA #'A' COut();
+                    LDA #'T' COut();
+                    LDA #'L' COut();  // ATL = Argument Too Long
+                    CLC
+                    break;
+                }
+            }
+            
+            break;  // Exit outer loop
+        }
+        
+        PLY
+    }
     
     // Deep validate arguments list
+    // Arguments/locals have structure: [next_ptr(2)] + [type(1)] + [name_string(null-terminated)]
     validateArgumentsList()  // ZP.IDY = arguments list head
     {
-        // Save current IDX (we'll use it for node access)
+        // Save current IDX
         LDA ZP.IDXL PHA
         LDA ZP.IDXH PHA
         
-        // Use IDY as our iterator through the list
-        LDX #0  // Safety counter to prevent infinite loops
+        LDX #0  // Safety counter
         
         loop
         {
@@ -2888,7 +3053,7 @@ NL(); LDA #'S' COut(); LDA #'P' COut(); LDA #':' COut(); LDA ZP.SP HOut();
             ORA ZP.IDYH
             if (Z) 
             { 
-                SEC  // Success - reached end normally
+                SEC  // Success - reached end
                 break; 
             }
             
@@ -2900,39 +3065,34 @@ NL(); LDA #'S' COut(); LDA #'P' COut(); LDA #':' COut(); LDA ZP.SP HOut();
                 LDA #'A' COut();
                 LDA #'R' COut();
                 LDA #'!' COut();
-                CLC  // Failed
+                CLC
                 break;
             }
             
-            // Move pointer to IDX for accessing node fields
+            // Move pointer to IDX for accessing node
             LDA ZP.IDYL STA ZP.IDXL
             LDA ZP.IDYH STA ZP.IDXH
             
-            // Get next argument pointer FIRST (before any other operations)
-            // Next pointer is at offset 0-1 in the node
+            // Get next pointer first (offset 0-1)
             LDY #0
             LDA [ZP.IDX], Y
-            STA ZP.IDYL      // Store next pointer low in IDY
+            STA ZP.IDYL      // Next pointer low
             INY  
             LDA [ZP.IDX], Y
-            STA ZP.IDYH      // Store next pointer high in IDY
+            STA ZP.IDYH      // Next pointer high
             
-            // NOW validate the inline argument name
-            // IDX still points to current argument node
-            validateInlineName();  
+            // Now validate the argument name
+            // NO ADJUSTMENT NEEDED - validateArgumentName already uses Locals.lnName
+            validateArgumentName();  // IDX points to argument node
             if (NC)
             {
                 NL();
                 LDA #'A' COut();
                 LDA #'N' COut();  // AN = Argument Name
                 LDA #'!' COut();
-                CLC  // Failed
+                CLC
                 break;
             }
-            
-            // At this point:
-            // - Current node has been validated
-            // - IDY contains next node pointer for next iteration
             
             // Safety check to prevent infinite loops
             INX
@@ -2942,26 +3102,137 @@ NL(); LDA #'S' COut(); LDA #'P' COut(); LDA #':' COut(); LDA ZP.SP HOut();
                 NL();
                 LDA #'A' COut();
                 LDA #'#' COut();  // A# = Too many arguments
-                CLC  // Failed
+                CLC
                 break;
             }
             
-            // Loop continues with IDY pointing to next node
+            // Continue with next node (IDY already has next pointer)
         }
         
-        // Restore original IDX
+        // Restore IDX
         PLA STA ZP.IDXH
         PLA STA ZP.IDXL
-    }   
+    }
+    
+    // Validate a heap-allocated string
+    // Input: ZP.IDY = pointer to string
+    // Output: C if valid string, NC if invalid
+    validateString()
+    {
+        PHY
+            
+        loop // Single exit pattern
+        {
+            // First check if it's a valid heap pointer
+            isValidHeapPointer();
+            if (NC)
+            {
+                NL();
+                LDA #'S' COut();
+                LDA #'B' COut();
+                LDA #'H' COut();  // SBH = String bad heap pointer
+                CLC  // Not a valid heap allocation
+                break;
+            }
+            
+            // Get the heap block size (2 bytes before string)
+            SEC
+            LDA ZP.IDYL
+            SBC #2
+            STA ZP.DB2
+            LDA ZP.IDYH
+            SBC #0
+            STA ZP.DB3
+            
+            // Read block size
+            LDY #0
+            LDA [ZP.DB2], Y
+            STA ZP.DB4  // Size low
+            INY
+            LDA [ZP.DB2], Y
+            STA ZP.DB5  // Size high
+            
+            // Subtract 2 for the size header
+            SEC
+            LDA ZP.DB4
+            SBC #2
+            STA ZP.DB4
+            LDA ZP.DB5
+            SBC #0
+            STA ZP.DB5
+            
+            // Check if size is reasonable for a string (< 256)
+            LDA ZP.DB5
+            if (NZ)
+            {
+                // String too large
+                NL();
+                LDA #'S' COut();
+                LDA #'T' COut();
+                LDA #'L' COut();  // STL = String Too Long
+                CLC
+                break;
+            }
+            
+            // Scan for null terminator
+            LDY #0
+            loop
+            {
+                // Check if we've reached the allocation limit
+                CPY ZP.DB4
+                if (C)  // Y >= size
+                {
+                    // No null terminator found
+                    NL();
+                    LDA #'S' COut();
+                    LDA #'N' COut();
+                    LDA #'T' COut();  // SNT = String No Terminator
+                    CLC
+                    break;
+                }
+                
+                // Check for null
+                LDA [ZP.IDY], Y
+                if (Z)
+                {
+                    SEC  // Found null - valid string
+                    break;
+                }
+                
+                // Optional: check printable
+                CMP #32
+                if (NC)
+                {
+                    CMP #127
+                    if (C)
+                    {
+                        NL();
+                        LDA #'S' COut();
+                        LDA #'B' COut();
+                        LDA #'C' COut();  // SBC = String Bad Char
+                        CLC
+                        break;
+                    }
+                }
+                
+                INY
+            }
+            
+            break;
+        }
+        
+        PLY
+    }
+    
     // Validate inline name string within a heap object
     // Input: ZP.IDX = node address
-    // Output: C if valid, NC if name runs past node boundary
+    // Output: C if valid, NC if name runs past node boundary or block too large
     // Uses: DB2-DB5 for calculations
     validateInlineName()
     {
         PHY
-        /*
-        loop // Single exit
+        
+        loop // Single exit pattern
         {
             // Get the heap block size (2 bytes before node)
             SEC
@@ -2990,27 +3261,52 @@ NL(); LDA #'S' COut(); LDA #'P' COut(); LDA #':' COut(); LDA ZP.SP HOut();
             STA ZP.DB5
             
             // Now DB4/DB5 = actual node size
+            // Check if node size > 256 + snName (265 bytes)
+            // This would be unreasonable for a BASIC symbol
+            LDA ZP.DB5
+            if (NZ)  // High byte non-zero means size > 255
+            {
+                // Definitely corrupt - nodes shouldn't be this large
+                NL();
+                LDA #'N' COut();
+                LDA #'B' COut();
+                LDA #'S' COut();  // NBS = Node Block Size too large
+                CLC  // Failed
+                break;
+            }
+            
+            // Also check if low byte > (256 - Objects.snName)
+            // to ensure we can scan the name without Y wraparound
+            LDA ZP.DB4
+            CMP #(256 - Objects.snName)  // 247
+            if (C)  // >= 247
+            {
+                // Block too large for safe name scanning
+                NL();
+                LDA #'N' COut();
+                LDA #'B' COut();
+                LDA #'S' COut();  // NBS = Node Block Size too large
+                CLC  // Failed
+                break;
+            }
+            
+            // Now we can safely scan with Y register
             // Scan for null terminator starting at offset snName
             LDY #Objects.snName
             
             loop
             {
-                // Check if Y exceeds node size
-                CPY ZP.DB4
-                if (C)  // Y >= size
+                // Check if Y reached node size
+                CPY ZP.DB4  // Safe 8-bit comparison
+                if (C)  // Y >= node size
                 {
-                    // Check high byte
-                    LDA #0
-                    CMP ZP.DB5
-                    if (C)  // Past end of node
-                    {
-                        NL();
-                        LDA #'N' COut();
-                        LDA #'O' COut();
-                        LDA #'V' COut();  // NOV = Name Overflow
-                        CLC  // Failed
-                        break;
-                    }
+                    // Reached end without finding null
+                    NL();
+                    LDA #'N' COut();
+                    LDA #'O' COut();
+                    LDA #'V' COut();  // NOV = Name Overflow
+                    CLC  // Failed
+                    break;
                 }
                 
                 // Check for null terminator
@@ -3021,27 +3317,35 @@ NL(); LDA #'S' COut(); LDA #'P' COut(); LDA #':' COut(); LDA ZP.SP HOut();
                     break;
                 }
                 
-                // Check for non-printable chars (optional)
+                // Check for non-printable chars
                 CMP #32
                 if (NC)  // < 32
                 {
-                    CMP #127
-                    if (C)  // >= 127
-                    {
-                        NL();
-                        LDA #'N' COut();
-                        LDA #'B' COut();
-                        LDA #'C' COut();  // NBC = Name Bad Char
-                        CLC
-                        break;
-                    }
+                    NL();
+                    LDA #'N' COut();
+                    LDA #'B' COut();
+                    LDA #'C' COut();  // NBC = Name Bad Char
+                    CLC
+                    break;
+                }
+                CMP #127
+                if (C)  // >= 127
+                {
+                    NL();
+                    LDA #'N' COut();
+                    LDA #'B' COut();
+                    LDA #'C' COut();  // NBC = Name Bad Char
+                    CLC
+                    break;
                 }
                 
+                // Check reasonable name length (8-bit check)
                 INY
-                
-                // Safety limit - names shouldn't be huge
-                CPY #64
-                if (Z)
+                TYA
+                SEC
+                SBC #Objects.snName
+                CMP #64  // Max 64 chars for name itself
+                if (C)  // >= 64
                 {
                     NL();
                     LDA #'N' COut();
@@ -3051,11 +3355,14 @@ NL(); LDA #'S' COut(); LDA #'P' COut(); LDA #':' COut(); LDA ZP.SP HOut();
                     break;
                 }
             }
+            
+            break;  // Exit outer loop
         }
-        */
+        
         PLY
-    }
-
+    }   
+          
+                
     // Validate variable list integrity
     validateVariableList()
     {
@@ -3131,6 +3438,45 @@ NL(); LDA #'S' COut(); LDA #'P' COut(); LDA #':' COut(); LDA ZP.SP HOut();
                 break;
             }
             
+            // Check if it's a STRING variable
+            LDY #Objects.snType
+            LDA [ZP.IDX], Y
+            AND #BASICType.MASK
+            CMP #BASICType.STRING
+            if (Z)
+            {
+                // Get string pointer from value field
+                LDY #Objects.snValue
+                LDA [ZP.IDX], Y
+                STA ZP.IDYL
+                INY
+                LDA [ZP.IDX], Y
+                STA ZP.IDYH
+                // Check if null (which is legal)
+                LDA ZP.IDYL
+                ORA ZP.IDYH
+                if (Z)
+                {
+                    // Null string pointer - legal, skip validation
+                }
+                else
+                {
+                    // Validate as string
+                    validateString();
+                    if (NC)
+                    {
+                        NL();
+                        LDA #'V' COut();
+                        LDA #'S' COut();
+                        LDA #'!' COut();  // VS! = Variable String
+                        CLC
+                        break;
+                    }
+                }
+            }
+            
+            
+            
             // Get next pointer at offset 0-1
             LDY #0
             LDA [ZP.IDX], Y
@@ -3154,6 +3500,170 @@ NL(); LDA #'S' COut(); LDA #'P' COut(); LDA #':' COut(); LDA ZP.SP HOut();
                 break;
             }
         }
+    }
+    
+    // Validate type byte for Variable/Constant nodes
+    // Input: ZP.IDX = node address
+    // Output: C if valid type, NC if invalid
+    validateVariableType()
+    {
+        PHY
+        PHA
+        
+        loop // Single exit pattern
+        {
+            // Get type byte
+            LDY #Objects.snType
+            LDA [ZP.IDX], Y
+            
+            // Check symbol type (high bits)
+            AND #SymbolType.MASK
+            CMP #SymbolType.VARIABLE
+            if (Z)
+            {
+                // Valid VARIABLE type
+            }
+            else
+            {
+                CMP #SymbolType.CONSTANT
+                if (NZ)
+                {
+                    // Not VARIABLE or CONSTANT
+                    NL();
+                    LDA #'V' COut();
+                    LDA #'T' COut();
+                    LDA #'!' COut();  // VT! = Variable Type invalid
+                    CLC
+                    break;
+                }
+            }
+            
+            // Check data type (low bits)
+            LDY #Objects.snType
+            LDA [ZP.IDX], Y
+            AND #BASICType.MASK  // Gets type and VAR bit
+            
+            // Remove VAR bit to check base type
+            PHA
+            AND #BASICType.TYPEMASK
+            
+            loop
+            {
+                // Valid base types: INT, WORD, BYTE, BIT, STRING
+                CMP #BASICType.INT
+                if (Z) { SEC break; }
+                CMP #BASICType.WORD
+                if (Z) { SEC break; }
+                CMP #BASICType.BYTE
+                if (Z) { SEC break; }
+                CMP #BASICType.BIT
+                if (Z) { SEC break; }
+                CMP #BASICType.STRING
+                if (Z) { SEC break; }
+                CMP #BASICType.ARRAY
+                if (Z) { SEC break; }
+                
+                CLC // Invalid data type
+                break;
+            }
+            PLA
+            if (C)
+            {
+                break; // good type
+            }
+            
+            // Invalid data type
+            NL();
+            LDA #'V' COut();
+            LDA #'D' COut();
+            LDA #'T' COut();  // VDT = Variable Data Type invalid
+            CLC
+            break;
+        }
+        
+        PLA
+        PLY
+    }
+
+    // Validate type byte for Argument/Local nodes
+    // Input: ZP.IDX = node address
+    // Output: C if valid type, NC if invalid
+    validateArgumentType()
+    {
+        PHY
+        PHA
+        
+        loop // Single exit pattern
+        {
+            // Get type byte
+            LDY #Locals.lnType
+            LDA [ZP.IDX], Y
+            
+            // Check symbol type (high bits)
+            AND #SymbolType.MASK
+            CMP #SymbolType.ARGUMENT
+            if (Z)
+            {
+                // Valid ARGUMENT type
+            }
+            else
+            {
+                CMP #SymbolType.LOCAL
+                if (NZ)
+                {
+                    // Not ARGUMENT or LOCAL
+                    NL();
+                    LDA #'A' COut();
+                    LDA #'T' COut();
+                    LDA #'!' COut();  // AT! = Argument Type invalid
+                    CLC
+                    break;
+                }
+            }
+            
+            // Check data type (low bits)
+            LDY #Locals.lnType
+            LDA [ZP.IDX], Y
+            AND #BASICType.MASK  // Gets type and VAR bit
+            
+            // Remove VAR bit to check base type
+            PHA
+            AND #BASICType.TYPEMASK
+            loop
+            {
+                // Valid base types: INT, WORD, BYTE, BIT, STRING
+                CMP #BASICType.INT
+                if (Z) { SEC break; }
+                CMP #BASICType.WORD
+                if (Z) { SEC break; }
+                CMP #BASICType.BYTE
+                if (Z) { SEC break; }
+                CMP #BASICType.BIT
+                if (Z) { SEC break; }
+                CMP #BASICType.STRING
+                if (Z) { SEC break; }
+                CMP #BASICType.ARRAY
+                if (Z) { SEC break; }
+                
+                CLC // Invalid data type
+                break;
+            }
+            PLA
+            if (C)
+            {
+                break; // good type
+            }
+            // Invalid data type
+            NL();
+            LDA #'A' COut();
+            LDA #'D' COut();
+            LDA #'T' COut();  // ADT = Argument Data Type invalid
+            CLC
+            break;
+        }
+        
+        PLA
+        PLY
     }
     
     

@@ -37,6 +37,16 @@ PRINT "Hello"; : PRINT "World";
 PRINT "Hello"; : PRINT "World";
 
 
+
+STRING FOO = "Hello"
+BEGIN
+    PRINT FOO
+END
+RUN
+VARS
+DASM
+
+
 FUNC FOO()
     PRINT "Hello";
     PRINT "World";
@@ -144,28 +154,18 @@ TRON
 
 
 
-INT INTEGER = 10
 string STR = "value"
-bit BOOL = true
-
-vars
-
-begin
-end
-
-run
-
-vars
-
-FUNC FOO(C)
+FUNC FOO(C,S)
     WORD B = C
     PRINT B
+    PRINT S
 ENDFUNC
 BEGIN
+    STR = "Hello World"
     INT A = 1000
-    FOO(A)
+    FOO(A,STR)
 END
-
+RUN
 
 
 
@@ -253,21 +253,6 @@ RUN
 
 
 
-BEGIN
-    VAR START = SECONDS()
-    VAR S
-    VAR J
-    FOR I = 1 TO 10
-        S = 0
-        FOR J = 1 TO 1000
-            S = S + J
-        NEXT J
-        PRINT ".";
-    NEXT I
-    PRINT S
-    PRINT SECONDS() - START; " seconds"
-END
-RUN
 
 FUNC Fibo(n)
     IF n <= 1 THEN
@@ -278,10 +263,11 @@ ENDFUNC
 
 BEGIN
     WORD ELAPSED = SECONDS()
-    PRINT FIBO(10)
+    PRINT FIBO(5)
     PRINT SECONDS()-ELAPSED;
     PRINT " seconds"
 END
+RUN
 
 
 VAR S
@@ -317,3 +303,59 @@ BEGIN
     PRINT SECONDS() - START; " seconds"
 END
 RUN
+
+
+BEGIN
+    VAR START = SECONDS()
+    VAR S
+    VAR J
+    FOR I = 1 TO 10
+        S = 0
+        FOR J = 1 TO 1000
+            S = S + J
+        NEXT J
+        PRINT ".";
+    NEXT I
+    PRINT S
+    PRINT SECONDS() - START; " seconds"
+END
+RUN
+
+BEGIN
+    VAR START = SECONDS()
+    VAR S
+    VAR J
+    VAR I
+    FOR  I = 1 TO 10
+        S = 0
+        FOR  J = 1 TO 1000
+            S = S + J
+        NEXT J
+        PRINT ".";
+    NEXT I
+    PRINT S
+    PRINT SECONDS() - START; " seconds"
+END
+RUN
+
+
+FUNC FOO()
+PRINT 42
+ENDFUNC
+
+FOO()
+DASM
+HEAP
+
+FUNC BOO()
+FOO()
+ENDFUNC
+
+FUNC BOO()
+FOO()
+ENDFUNC
+
+
+
+DASM
+HEAP
