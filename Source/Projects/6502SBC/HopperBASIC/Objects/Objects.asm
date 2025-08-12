@@ -1,6 +1,6 @@
 unit Objects
 {
-    friend Variables, Functions, Locals, Executor;
+    friend Variables, Functions, Locals, Executor, Debug;
     
     // Symbol table implementation using Table foundation
     // ZP.VariableListL/H stores the variables/constants table head pointer
@@ -32,6 +32,7 @@ unit Objects
     const byte snFlags = 2;              // flags for functions
     const byte snTokens = 3;             // Tokens pointer field offset (2 bytes)
     const byte snValue = 5;              // Value/args field offset (2 bytes)
+    
     const byte snLocals = 5;             // same slot as Values, better name for Function arguments|locals
     const byte snOpCodes = 7;            // OpCode stream pointer offset (2 bytes) - NEW!
     const byte snName = 9;               // Name field offset (variable length) - shifted by 2

@@ -247,7 +247,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 SEC // Success - incomplete function ready for capture
                 break;
             }
-            
+
             // Complete function on same line - capture function body from current position to ENDFUNC
             captureFunctionBody();
             Error.CheckError();

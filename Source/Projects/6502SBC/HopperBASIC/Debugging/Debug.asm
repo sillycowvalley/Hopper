@@ -2532,7 +2532,10 @@ unit Debug // Debug.asm
     
 #endif // DEBUG
 
+    
+    
     // Walk heap blocks for validation
+    // only called from TRACE in normal circumstances (so removed from production - no need for #ifdef DEBUG)
     ValidateHeap()
     {
         PHA PHX PHY
@@ -2547,6 +2550,41 @@ unit Debug // Debug.asm
         LDA ZP.IDYH
         PHA
         
+        loop // Single exit pattern
+        {
+            // First validate basic heap structure
+            validateHeapBlocks();
+            if (NC) { break; } // Heap corruption found
+            
+            // Now validate function list
+            validateFunctionList();
+            if (NC) { break; } // Invalid function list
+            
+            // Finally validate variable list  
+            validateVariableList();
+            break;
+        }
+        if (NC)
+        {
+            Debug.DumpHeap();
+        }
+        
+        // Restore state
+        PLA
+        STA ZP.IDYH
+        PLA
+        STA ZP.IDYL
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        PLY PLX PLA
+    }
+
+    // Validate basic heap block structure
+    validateHeapBlocks()
+    {
         // Start at heap beginning
         LDA ZP.HEAPSTART
         STA ZP.IDXH
@@ -2562,7 +2600,11 @@ unit Debug // Debug.asm
             SEC
             SBC ZP.HEAPSTART
             CMP ZP.HEAPSIZE
-            if (C) { break; }
+            if (C) 
+            { 
+                SEC // Success - reached end normally
+                break; 
+            }
             
             // Check for zero block size
             LDY #0
@@ -2575,88 +2617,9 @@ unit Debug // Debug.asm
             if (Z)
             {
                 Error.HeapCorruptError();
+                CLC // Failed
                 break;
             }
-            
-            // Calculate block address
-            CLC
-            LDA ZP.IDXL
-            ADC #2
-            STA ZP.DB2
-            LDA ZP.IDXH
-            ADC #0
-            STA ZP.DB3
-            
-            // Check if on free list
-            LDA ZP.IDXL
-            PHA
-            LDA ZP.IDXH
-            PHA
-            
-            // Walk free list
-            LDA ZP.FREELISTL
-            STA ZP.IDYL
-            LDA ZP.FREELISTH
-            STA ZP.IDYH
-            
-            STZ ZP.DB7  // Free flag
-            
-            loop
-            {
-                LDA ZP.IDYL
-                ORA ZP.IDYH
-                if (Z) { break; }
-                
-                // Compare addresses
-                LDA ZP.IDYL
-                CMP ZP.DB2
-                if (NZ)
-                {
-                    // Get next
-                    LDA ZP.IDYL
-                    STA ZP.IDXL
-                    LDA ZP.IDYH
-                    STA ZP.IDXH
-                    
-                    LDY #2
-                    LDA [ZP.IDX], Y
-                    STA ZP.IDYL
-                    INY
-                    LDA [ZP.IDX], Y
-                    STA ZP.IDYH
-                    continue;
-                }
-                
-                LDA ZP.IDYH
-                CMP ZP.DB3
-                if (NZ)
-                {
-                    // Get next
-                    LDA ZP.IDYL
-                    STA ZP.IDXL
-                    LDA ZP.IDYH
-                    STA ZP.IDXH
-                    
-                    LDY #2
-                    LDA [ZP.IDX], Y
-                    STA ZP.IDYL
-                    INY
-                    LDA [ZP.IDX], Y
-                    STA ZP.IDYH
-                    continue;
-                }
-                
-                // Found on free list
-                LDA #1
-                STA ZP.DB7
-                break;
-            }
-            
-            // Restore position
-            PLA
-            STA ZP.IDXH
-            PLA
-            STA ZP.IDXL
             
             // Move to next block
             CLC
@@ -2668,24 +2631,312 @@ unit Debug // Debug.asm
             STA ZP.IDXH
             
             INX
-            CPX #100
-            if (Z) { break; }
+            CPX #0xFF
+            if (Z)
+            {
+                // Too many blocks
+                Error.HeapCorruptError();
+                CLC
+                break;
+            }
         }
-        
-        CheckError();
-        
-        // Restore state
-        PLA
-        STA ZP.IDYH
-        PLA
-        STA ZP.IDYL
-        PLA
-        STA ZP.IDXH
-        PLA
-        STA ZP.IDXL
-        
-        PLY PLX PLA
     }
+
+    // Check if address is a valid heap object
+    // Input: ZP.IDY = address to check
+    // Output: C set if valid heap object or null, NC if invalid
+    isValidHeapPointer()
+    {
+        loop // Single exit pattern
+        {
+            // Check for null pointer (always valid)
+            LDA ZP.IDYL
+            ORA ZP.IDYH
+            if (Z)
+            {
+                SEC // Null is valid
+                break;
+            }
+            
+            // Check if address is in heap range
+            LDA ZP.IDYH
+            CMP ZP.HEAPSTART
+            if (NC) // < HEAPSTART?
+            {
+                CLC // Not in heap range
+                break;
+            }
+            
+            // Check if < heap end
+            SEC
+            SBC ZP.HEAPSTART
+            CMP ZP.HEAPSIZE
+            if (C)
+            {
+                CLC // Past end of heap
+                break;
+            }
+            
+            // Address is in heap range - check if it's a valid allocation
+            // Valid allocations are 2 bytes after block start (skip size field)
+            SEC
+            LDA ZP.IDYL
+            SBC #2
+            STA ZP.DB2
+            LDA ZP.IDYH
+            SBC #0
+            STA ZP.DB3
+            
+            // Check if DB2/DB3 points to valid size field
+            LDY #0
+            LDA [ZP.DB2], Y
+            STA ZP.DB4
+            INY
+            LDA [ZP.DB2], Y
+            STA ZP.DB5
+            
+            // Size must be non-zero and reasonable
+            LDA ZP.DB4
+            ORA ZP.DB5
+            if (Z)
+            {
+                CLC // Zero size = invalid
+                break;
+            }
+            
+            // Size must be < heap size
+            LDA ZP.DB5
+            CMP ZP.HEAPSIZE
+            if (C)
+            {
+                CLC // Size too large
+                break;
+            }
+            
+            SEC // Valid heap pointer
+            break;
+        }
+    }
+
+    // Validate function list integrity
+    validateFunctionList()
+    {
+        // Get function list head
+        LDA ZP.FunctionsList
+        STA ZP.IDXL
+        LDA ZP.FunctionsList+1
+        STA ZP.IDXH
+        
+        LDX #0 // Safety counter
+        
+        loop
+        {
+            // Check if we're at end of list
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z)
+            {
+                SEC // Success - reached end normally
+                break;
+            }
+            
+            // Check if current node is valid heap pointer
+            LDA ZP.IDXL
+            STA ZP.IDYL
+            LDA ZP.IDXH
+            STA ZP.IDYH
+            isValidHeapPointer();
+            if (NC)
+            {
+                // Invalid function node pointer
+                NL();
+                LDA #'F' COut();
+                LDA #'L' COut();
+                LDA #'!' COut();
+                LDA ZP.IDXH HOut();
+                LDA ZP.IDXL HOut();
+                CLC // Failed
+                break;
+            }
+            
+            // Check tokens pointer at offset 3-4
+            LDY #Objects.snTokens
+            LDA [ZP.IDX], Y
+            STA ZP.IDYL
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDYH
+            isValidHeapPointer();
+            if (NC)
+            {
+                // Invalid tokens pointer
+                NL();
+                LDA #'F' COut();
+                LDA #'T' COut();
+                LDA #'!' COut();
+                LDA ZP.IDYH HOut();
+                LDA ZP.IDYL HOut();
+                CLC // Failed
+                break;
+            }
+            
+            // Check opcodes pointer at offset 7-8
+            LDY #Objects.snOpCodes
+            LDA [ZP.IDX], Y
+            STA ZP.IDYL
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDYH
+            isValidHeapPointer();
+            if (NC)
+            {
+                // Invalid opcodes pointer
+                NL();
+                LDA #'F' COut();
+                LDA #'O' COut();
+                LDA #'!' COut();
+                LDA ZP.IDYH HOut();
+                LDA ZP.IDYL HOut();
+                CLC // Failed
+                break;
+            }
+            
+            // Check arguments pointer at offset 5-6
+            LDY #Objects.snValue // Arguments store in "value" field
+            LDA [ZP.IDX], Y
+            STA ZP.IDYL
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDYH
+            isValidHeapPointer();
+            if (NC)
+            {
+                // Invalid arguments pointer
+                NL();
+                LDA #'F' COut();
+                LDA #'A' COut();
+                LDA #'!' COut();
+                LDA ZP.IDYH HOut();
+                LDA ZP.IDYL HOut();
+                CLC // Failed
+                break;
+            }
+            
+            // Get next pointer at offset 0-1
+            LDY #0
+            LDA [ZP.IDX], Y
+            PHA
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDXH
+            PLA
+            STA ZP.IDXL
+            
+            // Safety check - prevent infinite loops
+            INX
+            CPX #0x80
+            if (Z)
+            {
+                // Too many nodes
+                NL();
+                LDA #'F' COut();
+                LDA #'#' COut();
+                CLC // Failed
+                break;
+            }
+        }
+    }
+
+    // Validate variable list integrity
+    validateVariableList()
+    {
+        // Get variable list head
+        LDA ZP.VariablesList
+        STA ZP.IDXL
+        LDA ZP.VariablesList+1
+        STA ZP.IDXH
+        
+        LDX #0 // Safety counter
+        
+        loop
+        {
+            // Check if we're at end of list
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z)
+            {
+                SEC // Success - reached end normally
+                break;
+            }
+            
+            // Check if current node is valid heap pointer
+            LDA ZP.IDXL
+            STA ZP.IDYL
+            LDA ZP.IDXH
+            STA ZP.IDYH
+            isValidHeapPointer();
+            if (NC)
+            {
+                // Invalid variable node pointer
+                NL();
+                LDA #'V' COut();
+                LDA #'L' COut();
+                LDA #'!' COut();
+                LDA ZP.IDXH HOut();
+                LDA ZP.IDXL HOut();
+                CLC // Failed
+                break;
+            }
+            
+            // Check tokens pointer at offset 3-4
+            LDY #Objects.snTokens
+            LDA [ZP.IDX], Y
+            STA ZP.IDYL
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDYH
+            isValidHeapPointer();
+            if (NC)
+            {
+                // Invalid tokens pointer
+                NL();
+                LDA #'V' COut();
+                LDA #'T' COut();
+                LDA #'!' COut();
+                LDA ZP.IDYH HOut();
+                LDA ZP.IDYL HOut();
+                CLC // Failed
+                break;
+            }
+            
+            // Get next pointer at offset 0-1
+            LDY #0
+            LDA [ZP.IDX], Y
+            PHA
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDXH
+            PLA
+            STA ZP.IDXL
+            
+            // Safety check - prevent infinite loops
+            INX
+            CPX #0x80
+            if (Z)
+            {
+                // Too many nodes
+                NL();
+                LDA #'V' COut();
+                LDA #'#' COut();
+                CLC // Failed
+                break;
+            }
+        }
+    }
+    
+    
+    
+    
     
     // Crash handler
     Crash()

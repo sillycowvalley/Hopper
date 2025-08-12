@@ -25,14 +25,31 @@ unit Functions
         
         loop // start of single exit block
         {
+            // Save the tokens pointer passed in IDY
+            LDA ZP.IDYL
+            PHA
+            LDA ZP.IDYH
+            PHA
+            
             // Check if function already exists
             LDX #ZP.FunctionsList
             Objects.Find();
             if (C)  // Function already exists
             {
+                // stack balance
+                PLA
+                STA ZP.IDYH
+                PLA
+                STA ZP.IDYL
                 Error.SyntaxError(); BIT ZP.EmulatorPCL
                 break;
             }
+            
+            // Restore the tokens pointer before calling Add
+            PLA
+            STA ZP.IDYH
+            PLA
+            STA ZP.IDYL
             
             // Function doesn't exist, add it
             STZ ZP.ACCT // flags = 0
@@ -145,6 +162,8 @@ unit Functions
     // Input: ZP.IDX = function node address, ZP.IDY = arguments list head
     // Output: C set if successful
     // Munts: ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
+    
+    /* Never Called? SetData used instead?
     SetArguments()
     {
         PHA
@@ -193,6 +212,7 @@ unit Functions
         PLX
         PLA
     }
+    */
     
     // Get arguments list head pointer from function node
     // Input: ZP.IDX = function node address
@@ -451,11 +471,11 @@ unit Functions
     
     freeOpCodes()
     {
+        
         LDA ZP.IDXL
         PHA
         LDA ZP.IDXH
         PHA
-         
             
         // clear opCodes stream
         LDY # Objects.snOpCodes
@@ -473,6 +493,7 @@ unit Functions
             STA ZP.IDXL
             LDA ZP.IDYH
             STA ZP.IDXH
+            
             Memory.Free(); // ZP.IDX
         }
         
@@ -480,7 +501,7 @@ unit Functions
         STA ZP.IDXH
         PLA
         STA ZP.IDXL
-        
+                        
         // set to null
         LDY # Objects.snOpCodes
         LDA # 0
