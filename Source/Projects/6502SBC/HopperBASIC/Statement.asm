@@ -477,6 +477,7 @@ unit Statement // Statement.asm
 #endif
     }
     
+    
     const string processSingleSymbolDeclTrace = "ProcSymDecl";
     processSingleSymbolDeclaration()
     {
@@ -606,6 +607,80 @@ unit Statement // Statement.asm
                 LDX ZP.CurrentToken
                 switch (X)
                 {
+                
+                    case Token.LBRACKET:
+                    {
+                        // This is an array declaration
+                        // Set ARRAY flag in type
+                        LDA stmtType
+                        ORA #BASICType.ARRAY
+                        STA stmtType
+                        
+                        // Move past LBRACKET
+                        Tokenizer.NextToken();
+                        Error.CheckError();
+                        if (NC) { break; }
+                        
+                        // Compile the size expression (like in CompileForStatement)
+                        Compiler.compileExpressionTree();
+                        Error.CheckError();
+                        if (NC) { break; }
+                        
+                        // Check if it was actually a constant expression
+                        if (BBR0, ZP.CompilerFlags) // Bit 0 reset = NOT constant
+                        {
+                            Error.ConstantExpressionExpected(); BIT ZP.EmulatorPCL
+                            CLC
+                            break;
+                        }
+                        
+                        // Constant value is already in ZP.TOP - validate it
+                        LDA ZP.TOPT
+                        AND #BASICType.TYPEMASK
+                        CMP #BASICType.INT
+                        if (Z)
+                        {
+                            // INT - check for negative
+                            LDA ZP.TOPH
+                            if (MI)
+                            {
+                                Error.RangeError(); BIT ZP.EmulatorPCL
+                                CLC
+                                break;
+                            }
+                        }
+                        
+                        // Check for zero size
+                        LDA ZP.TOPL
+                        ORA ZP.TOPH
+                        if (Z)
+                        {
+                            Error.RangeError(); BIT ZP.EmulatorPCL
+                            CLC
+                            break;
+                        }
+                        
+                        // Copy to ZP.NEXT
+                        LDA ZP.TOPL
+                        STA ZP.NEXTL
+                        LDA ZP.TOPH
+                        STA ZP.NEXTH
+                        
+                        // Check for RBRACKET
+                        LDA ZP.CurrentToken
+                        CMP #Token.RBRACKET
+                        if (NZ)
+                        {
+                            Error.ExpectedRightBracket(); BIT ZP.EmulatorPCL
+                            CLC
+                            break;
+                        }
+                        
+                        // Move past RBRACKET
+                        Tokenizer.NextToken();
+                        Error.CheckError();
+                        if (NC) { break; }
+                    }
                     case Token.EQUALS:
                     {
                         // Save tokenizer position before expression
