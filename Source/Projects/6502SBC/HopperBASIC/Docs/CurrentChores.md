@@ -1,468 +1,390 @@
-# HopperBASIC Remaining Implementation Tasks
+# HopperBASIC Array Implementation Plan
+**Document Type: Work Plan / Subproject Specification**
+**Status: In Progress**
+**Last Updated: Current Session**
 
-## FOR/NEXT Loops
+## Overview
+Implementation of array support for HopperBASIC to enable running the Sieve of Eratosthenes and other benchmark programs. Arrays will be dynamically allocated like strings, with Variables owning the memory through pointers.
 
-### Design Decisions
-- **Two-opcode approach** - FORCHK for initial check, FORIT for increment-and-check
-- **Implicit local creation** - Loop variable automatically becomes a local if not already declared
-- **Stack-based iterator** - Iterator is a proper local variable (BP-relative)
-- **No global iterators** - FOR/NEXT only allowed inside functions (FUNC or BEGIN)
-- **Classic BASIC behavior** - Loop variable retains overflow value after loop completion
-- **Expressions evaluated once** - FROM, TO, and STEP expressions captured at loop start
-- **Stack temporaries** - TO and STEP values naturally placed on stack at SP-2 and SP-1
-- **Zero-iteration support** - FORCHK ensures loops can skip entirely if initial conditions not met
+## Key Design Decisions
 
-### Syntax
-```basic
-FOR i = <from> TO <to> [STEP <step>]
-    ' Loop body
-NEXT i
-```
+### Memory Architecture
+- Arrays are dynamically allocated on the heap (like strings)
+- Variables own a pointer to the array memory
+- Array unit (array.asm) already implements the core functionality
+- Memory layout: count (2 bytes) + type (1 byte) + elements
 
-### Compilation Strategy
+### Type System Redesign
+Since functions live on their own list and never mix with variables/constants, we can reduce SymbolType to 2 bits and use bit 5 for the ARRAY flag:
 
-#### New Opcodes Required
-```asm
-// In OpCodes.asm enum OpCode:
-
-// === THREE-OPERAND OPCODES (0xC0-0xFF) ===
-// Bits 7-6: 11 (three operand bytes)
-// All opcodes in this range have exactly 3 operand bytes
-
-FORCHK = 0xC0,  // FOR initial check [iterator_offset] [forward_offset_lsb] [forward_offset_msb]
-                // Compares iterator with limit at SP-2
-                // Jumps forward if out of range (zero-iteration case)
-                // Falls through if loop should execute
-                
-FORIT  = 0xC1,  // FOR iterate [iterator_offset] [backward_offset_lsb] [backward_offset_msb]  
-                // Increments iterator by step at SP-1
-                // Compares with limit at SP-2
-                // Jumps back to loop body if continuing
-                // Falls through when loop completes
-```
-
-#### Compiler Workspace
-```asm
-const uint compilerForIteratorOffset = Address.BasicCompilerWorkspace + 11; 
-// 1 byte - signed BP offset of current FOR iterator
-```
-
-#### When encountering FOR:
-1. PHA current `compilerForIteratorOffset` (for nested loops)
-2. Parse iterator name
-3. Create implicit local if not exists:
-   - Allocate local slot (increment `compilerFuncLocals`)
-   - Calculate BP offset for iterator
-   - Store offset in `compilerForIteratorOffset`
-4. Evaluate `<from>` expression → POPLOCAL to iterator
-5. Evaluate `<to>` expression → leave on stack (becomes SP-2)
-6. If STEP present: evaluate `<step>` → leave on stack (becomes SP-1)
-   Otherwise: PUSH1 → leave on stack (becomes SP-1)
-7. PHA current PC (location after FORCHK for backward jump target)
-8. Emit FORCHK opcode with placeholder forward offset:
-   ```
-   FORCHK [iterator_offset] [0x00] [0x00]  ; To be patched
-   ```
-9. PHA location of FORCHK's offset operands (for later patching)
-
-#### For each statement in the loop body:
-10. Compile statements normally
-
-#### When encountering NEXT:
-11. Verify variable name matches current iterator (same BP offset as `compilerForIteratorOffset`)
-12. PLA to get FORCHK patch location
-13. PLA to get loop body start position (target for FORIT's backward jump)
-14. Calculate and emit FORIT with backward jump offset:
-    ```
-    FORIT [iterator_offset] [backward_offset_lsb] [backward_offset_msb]
-    ```
-15. Patch FORCHK with forward jump offset (current PC + 4 for the DECSPs)
-16. Emit cleanup: DECSP, DECSP (remove TO and STEP temporaries)
-17. PLA to restore parent `compilerForIteratorOffset` (if nested)
-
-### Stack Layout During Loop
-```
-[STEP value]      <- SP-1 (temporary)
-[TO value]        <- SP-2 (temporary)
-[Local n]         <- BP+n
-...
-[Iterator]        <- BP+k (actual local variable)
-[Local 0]         <- BP
-```
-
-### Example Compilation
-```basic
-FOR i = 1 TO 10 STEP 2
-    PRINT i
-NEXT i
-```
-
-Compiles to:
-```
-PUSH1                   ; Start value
-POPLOCAL k              ; Store in iterator at BP+k
-PUSHBYTE 10             ; TO value - naturally on stack at SP-2
-PUSHBYTE 2              ; STEP value - naturally on stack at SP-1
-
-FORCHK k exit           ; Check: is 1 <= 10? Yes, fall through
-                        ; Would jump to exit if out of range
-
-loop_body:              ; (e.g., PC = 0x1004)
-PUSHLOCAL k             ; Load iterator (correctly starts at 1)
-SYSCALL PRINT
-PUSHBYTE 10
-SYSCALL PRINTCHAR       ; Newline
-
-FORIT k loop_body       ; Increment i by 2, check if 3 <= 10
-                        ; If yes, jump back to loop_body
-                        ; If no, fall through
-
-exit:
-DECSP                   ; Remove STEP
-DECSP                   ; Remove TO
-; Iterator remains as local variable with final value (11 in this case)
-```
-
-### FORCHK Opcode Implementation (in Executor.asm)
-```asm
-executeFORCHK()
+```assembly
+// BASICTypes.asm modifications:
+flags BASICType
 {
-    // Fetch operands
-    FetchOperandByte();     // Iterator BP offset in A
-    STA executorOperandL    
-    FetchOperandWord();     // Forward jump offset in executorOperand1/2
+    VOID     = 0x00,   // Function return type (internal use)
+    INT      = 0x02,   // Signed 16-bit integer
+    BYTE     = 0x03,   // Unsigned 8-bit value
+    WORD     = 0x04,   // Unsigned 16-bit value
+    BIT      = 0x06,   // Boolean value (0 or 1)
+    STRING   = 0x0F,   // String type
     
-    // Load iterator value (initial value, no increment)
-    LDA executorOperandL
-    CLC
-    ADC ZP.BP
-    TAY
-    LDA Address.ValueStackLSB, Y
-    STA ZP.TOPL
-    LDA Address.ValueStackMSB, Y
-    STA ZP.TOPH
+    VAR      = 0x10,   // Bit 4 - runtime-determined type
+    ARRAY    = 0x20,   // Bit 5 - array flag (NEW)
     
-    // Check step sign (at SP-1) to determine comparison direction
-    LDY ZP.SP
-    DEY
-    LDA Address.ValueStackMSB, Y
-    BPL positiveStep
+    TYPEMASK = 0x0F,   // Bottom 4 bits for base type
+    FLAGMASK = 0x30,   // Bits 4-5 for flags
+    MASK     = 0x3F,   // Bottom 6 bits total
+}
+
+// Objects.asm modifications:
+flags SymbolType
+{
+    VARIABLE = 0x40,   // Mutable values
+    CONSTANT = 0x80,   // Immutable values  
+    ARGUMENT = 0x40,   // Function parameters (reuse VARIABLE value)
+    LOCAL    = 0x80,   // Local variables (reuse CONSTANT value)
     
-negativeStep:
-    // For negative step: check if iterator >= limit
-    DEY                     ; SP-2 (limit)
-    LDA ZP.TOPH
-    CMP Address.ValueStackMSB, Y
-    if (C) { return; }      ; Iterator high >= limit high, continue loop
-    if (NZ) { doJump(); }   ; Iterator high < limit high, exit loop
-    LDA ZP.TOPL
-    CMP Address.ValueStackLSB, Y
-    if (C) { return; }      ; Iterator low >= limit low, continue loop
-    doJump();               ; Iterator < limit, exit loop
-    
-positiveStep:
-    // For positive step: check if iterator <= limit
-    DEY                     ; SP-2 (limit)
-    LDA Address.ValueStackMSB, Y
-    CMP ZP.TOPH
-    if (C) { return; }      ; Limit high > iterator high, continue loop
-    if (NZ) { doJump(); }   ; Limit high < iterator high, exit loop
-    LDA Address.ValueStackLSB, Y
-    CMP ZP.TOPL
-    if (NC) { return; }     ; Limit low >= iterator low, continue loop
-    
-doJump:
-    // Take the forward jump (exit loop)
-    CLC
-    LDA ZP.PCL
-    ADC executorOperand1
-    STA ZP.PCL
-    LDA ZP.PCH
-    ADC executorOperand2
-    STA ZP.PCH
+    MASK     = 0xC0,   // Top 2 bits only
 }
 ```
 
-### FORIT Opcode Implementation (in Executor.asm)
-```asm
-executeFORIT()
+Example packed values:
+- **INT variable**: `0x40 | 0x02 = 0x42`
+- **Array of INT**: `0x40 | 0x20 | 0x02 = 0x62`
+- **Array of BIT**: `0x40 | 0x20 | 0x06 = 0x66`
+
+### OpCode Changes
+Rename and add opcodes for clarity:
+```assembly
+// OpCodes.asm
+GETINDEX = 0x38,  // Renamed from INDEX (string/array element access)
+SETINDEX = 0x39,  // New opcode for array element assignment
+```
+
+## Implementation Tasks
+
+### 1. Type System Update ✅ PRIORITY
+**Files**: BASICTypes.asm, Objects.asm
+- Reduce SymbolType to 2 bits (top bits 7-6)
+- Add ARRAY flag as bit 5
+- Update MASK constants
+- Test type extraction/packing
+
+### 2. Declaration Parsing
+**Files**: statement.asm, tokenizer.asm
+- Parse syntax: `BIT flags[8191]` or `INT scores[100]`
+- After identifier, check for LBRACKET token
+- Parse and evaluate constant size expression
+- Set ARRAY flag in type byte
+- Store size in ZP.NEXT for Variables.Declare
+
+```assembly
+// In processSingleSymbolDeclaration after getting identifier:
+LDA ZP.CurrentToken
+CMP #Token.LBRACKET
+if (Z)
 {
-    // Fetch operands
-    FetchOperandByte();     // Iterator BP offset in A
-    STA executorOperandL    
-    FetchOperandWord();     // Backward jump offset in executorOperand1/2
+    // Set ARRAY flag
+    LDA stmtType
+    ORA #BASICType.ARRAY
+    STA stmtType
     
-    // Load iterator value
-    LDA executorOperandL
-    CLC
-    ADC ZP.BP
-    TAY
-    LDA Address.ValueStackLSB, Y
-    STA ZP.TOPL
-    LDA Address.ValueStackMSB, Y
-    STA ZP.TOPH
+    Tokenizer.NextToken();
+    // Parse size expression (must be constant)
+    // Evaluate to get size in ZP.ACC
     
-    // Add step (at SP-1)
-    LDY ZP.SP
-    DEY
-    CLC
-    LDA Address.ValueStackLSB, Y
-    ADC ZP.TOPL
-    STA ZP.TOPL
-    LDA Address.ValueStackMSB, Y
-    ADC ZP.TOPH
-    STA ZP.TOPH
+    // Check for RBRACKET
+    LDA ZP.CurrentToken
+    CMP #Token.RBRACKET
+    if (NZ)
+    {
+        Error.ExpectedRightBracket();
+        break;
+    }
     
-    // Store updated iterator
-    LDA executorOperandL
-    CLC
-    ADC ZP.BP
-    TAY
-    LDA ZP.TOPL
-    STA Address.ValueStackLSB, Y
-    LDA ZP.TOPH
-    STA Address.ValueStackMSB, Y
+    // Move size to ZP.NEXT for Variables.Declare
+    LDA ZP.ACCL
+    STA ZP.NEXTL
+    LDA ZP.ACCH
+    STA ZP.NEXTH
     
-    // Check step sign (at SP-1) to determine comparison direction
-    LDY ZP.SP
-    DEY
-    LDA Address.ValueStackMSB, Y
-    BPL positiveStep
-    
-negativeStep:
-    // For negative step: check if iterator >= limit
-    DEY                     ; SP-2 (limit)
-    LDA ZP.TOPH
-    CMP Address.ValueStackMSB, Y
-    if (C) { doJump(); }    ; Iterator high >= limit high, continue loop
-    if (NZ) { return; }     ; Iterator high < limit high, exit loop
-    LDA ZP.TOPL
-    CMP Address.ValueStackLSB, Y
-    if (C) { doJump(); }    ; Iterator low >= limit low, continue loop
-    return;                 ; Iterator < limit, exit loop
-    
-positiveStep:
-    // For positive step: check if iterator <= limit
-    DEY                     ; SP-2 (limit)
-    LDA Address.ValueStackMSB, Y
-    CMP ZP.TOPH
-    if (C) { doJump(); }    ; Limit high > iterator high, continue loop
-    if (NZ) { return; }     ; Limit high < iterator high, exit loop
-    LDA Address.ValueStackLSB, Y
-    CMP ZP.TOPL
-    if (NC) { doJump(); }   ; Limit low >= iterator low, continue loop
-    return;                 ; Limit > iterator, exit loop
-    
-doJump:
-    // Take the backward jump (continue loop)
-    CLC
-    LDA ZP.PCL
-    ADC executorOperand1
-    STA ZP.PCL
-    LDA ZP.PCH
-    ADC executorOperand2
-    STA ZP.PCH
+    Tokenizer.NextToken(); // Move past RBRACKET
 }
 ```
 
-### Implementation Notes
-- **Two-opcode design**: FORCHK for initial check, FORIT for iterate-and-check
-- **Zero-iteration support**: FORCHK ensures loops can execute zero times
-- **Natural stack usage**: TO and STEP values placed naturally by existing push opcodes
-- **BP offset tracking**: Single byte in compiler workspace tracks current iterator offset
-- **Nested loops**: PHA/PLA pattern preserves parent loop context
-- **Expression preservation**: PHA/PLA around expression evaluation preserves offsets
-- **Type checking**: Iterator must be numeric type (INT, WORD, BYTE)
-- **Signed offsets**: Both opcodes use signed 16-bit offsets for flexible jumping
-- **Three-operand format**: Both opcodes in 0xC0-0xFF range with 3 operand bytes
+### 3. Variables.Declare Enhancement
+**File**: variables.asm
+- Detect ARRAY flag in type
+- Use ZP.NEXT as array size (element count)
+- Call BASICArray.New() to allocate
+- Store returned pointer as variable value
+- Add cleanup for array memory on variable deletion
 
-### Benefits of Two-Opcode Approach
-1. **Correctness**: Zero-iteration loops work properly
-2. **Performance**: Only two opcode dispatches per loop (initial + per iteration)
-3. **Code size**: Compact - 4 bytes for FORCHK, 4 bytes for FORIT
-4. **Simplicity**: Clear separation between initial check and iteration
-5. **No patching complexity**: Forward offset known when FORIT is emitted
-6. **Debugging**: Clear loop structure with distinct entry and iteration points
-7. **Memory efficiency**: No additional zero page usage beyond compiler workspace
+```assembly
+// In Variables.Declare:
+LDA ZP.ACCT
+AND #BASICType.ARRAY
+if (NZ)
+{
+    // Array declaration
+    // ZP.NEXT contains size, extract element type
+    LDA ZP.ACCT
+    AND #BASICType.TYPEMASK
+    STA ZP.ACCT  // Element type for BASICArray.New
+    
+    // ZP.ACC = size (from ZP.NEXT)
+    LDA ZP.NEXTL
+    STA ZP.ACCL
+    LDA ZP.NEXTH
+    STA ZP.ACCH
+    
+    BASICArray.New();  // Returns pointer in ZP.IDX
+    
+    // Store array pointer as variable value
+    LDA ZP.IDXL
+    STA ZP.NEXTL
+    LDA ZP.IDXH
+    STA ZP.NEXTH
+}
+```
 
-### Challenges Addressed
-1. **Zero-iteration loops**: ✅ Solved - FORCHK handles initial check
-2. **Stack-relative access**: ✅ Solved - Both opcodes directly access SP-1 and SP-2
-3. **Step sign detection**: ✅ Solved - Both opcodes check sign at runtime
-4. **Type promotion**: Handle mixed types in FROM/TO/STEP expressions during compilation
+### 4. Array Indexing (Read) - GETINDEX
+**File**: executor.asm
+- Already implemented as indexArray()
+- Wire up to renamed GETINDEX opcode
+- Tested with existing BASICArray.GetItem()
 
----
+### 5. Array Assignment (Write) - SETINDEX
+**File**: executor.asm
+- New executeSetIndex() method
+- Stack order: [..., array_ref, index, value]
+- Call BASICArray.SetItem()
 
-## Arrays
+```assembly
+executeSetIndex()
+{
+    // Pop value to set
+    Stacks.PopTop();  // New value in ZP.TOP, type in ZP.TOPT
+    
+    // Pop index
+    Stacks.PopNext(); // Index in ZP.NEXT
+    
+    // Convert index to ACC for bounds checking
+    LDA ZP.NEXTL
+    STA ZP.ACCL
+    LDA ZP.NEXTH
+    STA ZP.ACCH
+    
+    // Check for negative index (INT type)
+    LDA ZP.NEXTT
+    AND #BASICType.TYPEMASK
+    CMP #BASICType.INT
+    if (Z)
+    {
+        LDA ZP.NEXTH
+        if (MI)
+        {
+            Error.RangeError();
+            States.SetFailure();
+            break;
+        }
+    }
+    
+    // Pop array reference
+    Stacks.PopNext();  // Array ptr in ZP.NEXT
+    
+    // Transfer to BASICArray format
+    LDA ZP.NEXTL
+    STA ZP.IDXL
+    LDA ZP.NEXTH
+    STA ZP.IDXH
+    
+    LDA ZP.ACCL
+    STA ZP.IDYL
+    LDA ZP.ACCH
+    STA ZP.IDYH
+    
+    // TOP already has the value
+    BASICArray.SetItem();
+    if (NC)
+    {
+        States.SetFailure();
+    }
+    else
+    {
+        States.SetSuccess();
+    }
+}
+```
 
-### Design Constraints (Established)
-- **No VAR arrays** - Fixed element type only for efficient indexing
-- **No array assignment** - Can't do `arr = otherArr`, only element updates  
-- **Pass by reference** - Arrays are immutable pointers
-- **Global arrays only** - No local arrays initially
-- **No special array opcodes** - Use existing memory operations
+### 6. Assignment Compilation
+**Files**: compiler.asm, compilerflow.asm
+- In compileAssignment(), detect array[index] on LHS
+- Generate SETINDEX instead of POPGLOBAL/POPLOCAL
+- Handle in compilePrimary() for array variable references
 
-### Array Declaration Syntax
+```assembly
+// In compileAssignment after compiling LHS identifier:
+LDA ZP.CurrentToken
+CMP #Token.LBRACKET
+if (Z)
+{
+    // Array element assignment
+    // Identifier already pushed array pointer
+    
+    Tokenizer.NextToken();
+    compileComparison(); // Index expression
+    
+    // Check RBRACKET
+    LDA ZP.CurrentToken
+    CMP #Token.RBRACKET
+    if (NZ)
+    {
+        Error.ExpectedRightBracket();
+        break;
+    }
+    
+    Tokenizer.NextToken();
+    
+    // Check EQUALS
+    LDA ZP.CurrentToken
+    CMP #Token.EQUALS
+    if (NZ)
+    {
+        Error.ExpectedEqual();
+        break;
+    }
+    
+    Tokenizer.NextToken();
+    compileComparison(); // Value expression
+    
+    // Emit SETINDEX
+    Emit.SetIndex();
+}
+```
+
+### 7. Emit Functions
+**File**: emit.asm
+- Add Emit.SetIndex() for new opcode
+- Already have Emit.Index() (rename to GetIndex)
+
+### 8. LIST Command Support
+**File**: tokeniterator.asm
+- Array declaration rendering
+- Show: `BIT flags[100]`
+- Handle LBRACKET/RBRACKET in renderToken()
+
+### 9. VARS Command Enhancement
+**File**: console.asm
+- Display array type and size
+- Show first few elements: `= TRUE, TRUE, FALSE, ...`
+- Handle array display in ShowVariables()
+
+### 10. Heap Validation
+**File**: Debug.asm
+- Add validateArray() similar to validateString()
+- Check array header integrity
+- Validate element count and type
+- Verify memory bounds
+
+### 11. Global Initialization
+**File**: console.asm
+- In initializeGlobals(), arrays are zero-initialized by BASICArray.New()
+- No special handling needed (unlike strings)
+
+## Testing Plan
+
+### Phase 1: Basic Declaration
 ```basic
-INT ARRAY data[100]    ' 100 INTs, 200 bytes + header
-BYTE ARRAY buffer[256] ' 256 BYTEs  
-BIT ARRAY flags[32]    ' 32 bits = 4 bytes
-STRING ARRAY names[10] ' 10 string pointers
+> BIT flags[10]
+OK
+> VARS
+BIT flags[10] = FALSE, FALSE, FALSE, ...
 ```
 
-### Memory Layout
-```
-[Header: 3 bytes]
-  Byte 0: Element type (BIT, BYTE, INT, WORD)
-  Byte 1-2: Element count (max 65535)
-[Data: n bytes based on type and count]
-```
-
-### Implementation Steps
-1. Add array declaration parsing
-2. Allocate from heap with header
-3. Zero-initialize on allocation
-4. Implement indexing compilation
-5. Add bounds checking
-
-### Array Access Compilation
-Since arrays are global only:
-```asm
-; For BYTE: address = base + 3 + index
-; For WORD/INT: address = base + 3 + (index * 2)
-; For BIT: byte_offset = base + 3 + (index >> 3)
-;          bit_mask from lookup table
-```
-
-Use existing Hopper VM bit manipulation tables:
-```asm
-BitMasks:    .byte $01,$02,$04,$08,$10,$20,$40,$80
-BitInvMasks: .byte $FE,$FD,$FB,$F7,$EF,$DF,$BF,$7F
-```
-
----
-
-## Implementation Priority
-
-### Phase 1: FOR/NEXT
-- Add FORCHK and FORIT opcodes to OpCodes.asm (0xC0 and 0xC1)
-- Update executor dispatch to handle 0xC0-0xFF as 3-operand opcodes
-- Implement executeFORCHK and executeFORIT in Executor.asm
-- Add compilerForIteratorOffset to compiler workspace
-- Implement FOR parsing and compilation
-- Implement NEXT parsing with FORIT emission
-- Handle nested loops via PHA/PLA pattern
-- Test with benchmarks
-
-### Phase 2: Arrays
-- Parse array declarations
-- Implement heap allocation with headers
-- Add indexing operations
-- Implement bounds checking
-- Start with BYTE arrays (simplest)
-- Add WORD/INT arrays
-- Implement BIT arrays with bit manipulation
-- Test with Sieve benchmark
-
----
-
-## Testing Strategy
-
-### FOR/NEXT
+### Phase 2: Element Access
 ```basic
-FUNC TestSimpleFor()
-    ' Simple loop - i becomes implicit local
-    FOR i = 1 TO 10
-        PRINT i
-    NEXT i
-    PRINT "After loop: "; i  ' Should print 11
-ENDFUNC
-
-FUNC TestNestedFor()
-    ' Nested loops - both become locals
-    FOR i = 1 TO 3
-        FOR j = 1 TO 3
-            PRINT i * j
-        NEXT j
-    NEXT i
-ENDFUNC
-
-FUNC TestStepFor()
-    ' With STEP
-    FOR i = 10 TO 1 STEP -1
-        PRINT i
-    NEXT i
-ENDFUNC
-
-FUNC TestZeroIteration()
-    ' Zero-iteration loop
-    FOR i = 10 TO 1 STEP 1
-        PRINT "Should not print"
-    NEXT i
-    PRINT "Correctly skipped"
-ENDFUNC
-
-FUNC TestDynamicFor(n)
-    ' Dynamic bounds - evaluated once
-    FOR i = n/2 TO n*2
-        PRINT i
-        n = n + 1  ' Doesn't affect loop bounds
-    NEXT i
-ENDFUNC
+> flags[0] = TRUE
+OK
+> PRINT flags[0]
+TRUE
+> PRINT flags[5]
+FALSE
 ```
 
-### Arrays
+### Phase 3: Loop Integration
 ```basic
-' Sieve of Eratosthenes
-BIT ARRAY prime[8191]
+> FOR i = 0 TO 9
+*   flags[i] = TRUE
+* NEXT i
+OK
+```
 
+### Phase 4: Sieve Benchmark
+Run the complete Sieve of Eratosthenes benchmark program.
+
+## Error Handling
+
+### Compile-Time Errors
+- Array size must be constant expression
+- Array size must be positive
+- Array size must fit in 16 bits
+- Type checking for array elements
+
+### Runtime Errors
+- Index out of bounds
+- Negative index
+- Type mismatch on assignment
+- Memory allocation failure
+
+## Memory Management
+
+### Allocation
+- Variables.Declare calls BASICArray.New()
+- Array memory owned by variable (pointer stored)
+- Zero-initialized by default
+
+### Deallocation
+- When variable freed, array memory freed
+- Similar to string handling
+- Prevent memory leaks
+
+## Implementation Order
+
+1. **Type system changes** ✅ FIRST
+2. **Declaration parsing** - Get `BIT flags[100]` working
+3. **Variables.Declare updates** - Allocate arrays
+4. **GETINDEX integration** - Read array elements
+5. **SETINDEX implementation** - Write array elements
+6. **Assignment compilation** - Handle array[i] = value
+7. **LIST/VARS rendering** - Display arrays nicely
+8. **Heap validation** - Debug support
+9. **Testing** - Comprehensive test suite
+10. **Benchmarks** - Run Sieve successfully
+
+## Notes
+
+- Array.asm is already complete and tested
+- Follow STRING pattern for memory management
+- Global arrays only (no local arrays initially)
+- Single-dimensional only
+- Zero-based indexing
+- Bounds checking on all access
+- Type safety enforced
+
+## Success Criteria
+
+Successfully run the Sieve of Eratosthenes benchmark:
+```basic
+CONST sizepl = 8191
+BIT flags[sizepl]
 BEGIN
-    ' Initialize all as prime (0)
-    FOR i = 2 TO 90
-        IF prime[i] = 0 THEN
-            FOR j = i * 2 TO 8190 STEP i
-                prime[j] = 1
-            NEXT j
-        ENDIF
-    NEXT i
-    
-    ' Count primes
-    INT count = 0
-    FOR i = 2 TO 8190
-        IF prime[i] = 0 THEN
-            count = count + 1
-        ENDIF
-    NEXT i
-    PRINT count; " primes found"
+    ! ... full sieve algorithm ...
 END
 ```
 
----
+## Open Questions
 
-## Technical Notes
-
-### Stack Management
-- **SP-relative access**: FORCHK and FORIT directly access SP-1 and SP-2
-- **BP-relative access**: Iterator stored as regular local variable
-- **Compiler state**: Single byte tracks current iterator offset
-- **Nested context**: PHA/PLA preserves parent loop state
-
-### Error Conditions
-- FOR without NEXT
-- NEXT without FOR  
-- NEXT with wrong variable name
-- FOR at global scope (not in function)
-- Type mismatches in loop expressions
-
-### Success Criteria
-1. FOR/NEXT loops work with implicit locals
-2. Zero-iteration loops execute correctly
-3. Loop variable retains overflow value after completion
-4. Stack temporaries (TO/STEP) properly managed
-5. Nested FOR loops work correctly
-6. Dynamic bounds evaluated once at loop start
-7. STEP works with positive and negative values
-8. No stack corruption from temporaries
-9. DECSP cleanup after loop completion
-10. FORCHK and FORIT opcodes handle all edge cases
-11. Signed jump offsets work for all loop sizes
+- ❓ Should CONST arrays be supported? (Probably not initially) -> Future
+- ❓ Maximum array size limits? (Memory dependent) -> not an issue (we fail gracefully if not enough memory)
+- ❓ Multi-dimensional arrays? (Future enhancement) -> future
