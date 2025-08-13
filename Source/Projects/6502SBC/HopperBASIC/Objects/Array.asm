@@ -13,173 +13,155 @@ unit BASICArray
     
     const byte[] bitMasks = { 0b00000001, 0b00000010, 0b00000100, 0b00001000,
                               0b00010000, 0b00100000, 0b01000000, 0b10000000 };
-    new()
-    {
-        // element type in FTYPE, number of elements in FSIZE
-        //    returns array at IDX and length in bytes in LCOUNT
-        LDA FTYPE
-        switch (A)
-        {
-            case BASICType.BIT:
-            {
-                // size = number of elements / 8 + 1
-                LDA # 0
-                STA ACARRY
-                LDA FSIZEL
-                AND # 0x07
-                if (NZ)
-                {
-                    INC ACARRY
-                }
-                
-                LSR FSIZEH
-                ROR FSIZEL
-                LSR FSIZEH
-                ROR FSIZEL
-                LSR FSIZEH
-                ROR FSIZEL
-                CLC
-                LDA FSIZEL
-                ADC ACARRY
-                STA FSIZEL
-                if (C)
-                {
-                    INC FSIZEH
-                }
-            }
-            case BASICType.CHAR:
-            case BASICType.BYTE:
-            {
-                // size = number of elements == size
-            }
-            default:
-            {
-                // size = number of elements x 2
-                ASL FSIZEL
-                ROL FSIZEH
-            }
-        }
-        // keep the size in bytes for zero initialization later
-        LDA FSIZEL
-        STA LCOUNTL
-        LDA FSIZEH
-        STA LCOUNTH
-        
-        // add 2 bytes for number of elements field and 1 byte for type of element field
-        CLC
-        LDA FSIZEL  // LSB
-        ADC #3
-        STA FSIZEL
-        LDA FSIZEH  // MSB
-        ADC #0
-        STA FSIZEH
-        
-        // type in A
-        // size is in FSIZE
-        // return address in IDX
-        LDA # Types.Array
-        GC.Create();
-        
-        
-        LDY # aiCount
-        LDA NEXTL
-        STA [IDX], Y
-        INY
-        LDA NEXTH
-        STA [IDX], Y
-        INY
-        LDA FTYPE
-        STA [IDX], Y
-        
-    }
-    
+                              
+    // element type in ACCT, number of elements ACC, array in IDX
     New()
     {
-        Stacks.PopTopNext();  // element type, number of elements
-        
-        LDA NEXTL
-        STA FSIZEL
-        LDA NEXTH
-        STA FSIZEH
-        
-        LDA TOPL 
-        STA FTYPE
-        
-        // element type in FTYPE, number of elements in FSIZE
-        //    returns array at IDX and length in bytes in LCOUNT
-        new();
-        
-        LDA IDXL
-        STA TOPL
-        LDA IDXH
-        STA TOPH
-        
-        // zero initialize
-        LDY  # aiElements
         loop
         {
-            LDA LCOUNTL
-            if (Z)
+            // preserve element count
+            LDA ZP.ACCL   
+            STA ZP.FLENGTHL
+            LDA ZP.ACCH  
+            STA ZP.FLENGTHH
+            
+            LDA ZP.ACCT
+            switch (A)
             {
-                LDA LCOUNTH
-                if (Z)
+                case BASICType.BIT:
                 {
-                    break;
+                    // size = number of elements / 8 + 1
+                    LDA # 0
+                    STA ACARRY
+                    LDA ZP.ACCL
+                    AND # 0x07
+                    if (NZ)
+                    {
+                        INC ACARRY
+                    }
+                    
+                    LSR ZP.ACCH
+                    ROR ZP.ACCL
+                    LSR ZP.ACCH
+                    ROR ZP.ACCL
+                    LSR ZP.ACCH
+                    ROR ZP.ACCL
+                    CLC
+                    LDA ZP.ACCL
+                    ADC ACARRY
+                    STA ZP.ACCL
+                    if (C)
+                    {
+                        INC ZP.ACCH
+                    }
+                }
+                case BASICType.CHAR:
+                case BASICType.BYTE:
+                {
+                    // size = number of elements == size
+                }
+                default:
+                {
+                    // size = number of elements x 2
+                    ASL ZP.ACCL
+                    ROL ZP.ACCH
                 }
             }
             
-            LDA # 0
-            STA [IDX], Y
-            IncIDX();
+            // add 2 bytes for number of elements field and 1 byte for type of element field
+            CLC
+            LDA ZP.ACCL  // LSB
+            ADC #3
+            STA ACCL
+            LDA ZP.ACCH  // MSB
+            ADC #0
+            STA ACCH
             
-            LDA LCOUNTL
+            // size is in ZP.ACC
+            // return address in IDX
+            Memory.Allocate();
+            LDA ZP.IDXL
+            ORA ZP.IDXH
             if (Z)
             {
-                DEC LCOUNTH
+                // Allocation failed
+                Error.OutOfMemory(); BIT ZP.EmulatorPCL
+                break;
             }
-            DEC LCOUNTL
-        }
-        
-        LDA # BASICType.ARRAY
-        Stacks.PushTop();
+            
+            LDA ZP.IDXL
+            STA ZP.FDESTINATIONADDRESSL
+            LDA ZP.IDXH
+            STA ZP.FDESTINATIONADDRESSH
+            
+            // zero initialize
+            loop
+            {
+                LDA ZP.ACCL
+                if (Z)
+                {
+                    LDA ZP.ACCH
+                    if (Z)
+                    {
+                        break;
+                    }
+                }
+                
+                LDA # 0
+                STA [ZP.FDESTINATIONADDRESS], Y
+                IncDESTINATIONADDRESS;
+                
+                LDA ZP.ACCL
+                if (Z)
+                {
+                    DEC ZP.ACCH
+                }
+                DEC ZP.ACCL
+            }
+            
+            LDY # aiCount
+            LDA ZP.FLENGTHK
+            STA [IDX], Y
+            INY
+            LDA ZP.FLENGTHH
+            STA [IDX], Y
+            
+            LDY # aiType
+            LDA ZP.ACCT
+            STA [IDX], Y
+            SEC
+            break;
+        } // single exit
     }
-    
+       
+    // Input:  array ptr in IDX
+    // Output: element count in ACC
     GetCount()
     {
-        Stacks.PopIDX(); // this
-        
         LDY # aiCount
         LDA [IDX], Y
-        STA ZP.NEXTL
+        STA ZP.ACCL
         INY
         LDA [IDX], Y
-        STA ZP.NEXTH
-        
-        GC.Release();
-        
-        LDA # Types.UInt
-        Stacks.PushNext();
+        STA ZP.ACCH
     }
+    
+    // Input:  array ptr in IDX
+    // Output: element type in ACCT
     GetItemType()
     {
         Stacks.PopIDX(); // this
         
         LDY # aiType
         LDA [IDX], Y
-        STA ZP.NEXTL
-        LDA # 0
-        STA ZP.NEXTH
-        
-        GC.Release();
-        
-        LDA # Types.Type
-        Stacks.PushNext();
+        STA ZP.ACCT
     }
     
+    // Input: array ptr in IDX, index in IDY, element type in ACCT
+    // Output: element slot ptr in IDY and bit mask in X
     getIndexAndMask()
     {
-        // element type in FTYPE, index in IDY and this in IDX
-        //   returns byte ptr in IDY and mask in ABITMASK
+        LDA ZP.ACCT
         switch (A)
         {
             case BASICType.BIT:
@@ -217,142 +199,162 @@ unit BASICArray
         ADC IDYH
         STA IDYH
     }
+    
+    // Input: array ptr in IDX, index in IDY, element type in ACCT
+    // Output: element int TOP
     GetItem()
     {
-        Stacks.PopIDY();  // index
-        Stacks.PopIDX();  // this
-        
-        // index < aiCount?
-        LDY # aiCount+1
-        LDA ZP.IDYH        // index MSB
-        CMP [IDX], Y       // aiCount MSB
-        if (Z)
+        PHA
+        PHX
+        PHY
+        loop
         {
-            DEY
-            LDA ZP.IDYL    // index LSB
-            CMP [IDX], Y   // aiCount LSB
-        }
-        if (C) // index < aiCount?
-        {
-            // index >= aiCount
-            LDA # 0x02 // array index out of range
-            Diagnostics.die();
-        }
-        LDY # aiType
-        LDA [IDX], Y
-        STA FTYPE
-        
-        getIndexAndMask(); // returns index in IDY and bit # in X
-                
-        LDY # aiElements
-        LDA # 0
-        STA NEXTH
-                      
-        LDA FTYPE
-        switch (A)
-        {
-            case BASICType.BIT:
+            // index < aiCount?
+            LDY # aiCount+1
+            LDA ZP.IDYH        // index MSB
+            CMP [IDX], Y       // aiCount MSB
+            if (Z)
             {
-                LDA [IDY], Y           
-                AND bitMasks, X
-                if (Z)
+                DEY
+                LDA ZP.IDYL    // index LSB
+                CMP [IDX], Y   // aiCount LSB
+            }
+            if (C) // index < aiCount?
+            {
+                // index >= aiCount
+                Error.BadIndex(); BIT ZP.EmulatorPCL
+                States.SetFailure();
+                break;
+            }
+            LDY # aiType
+            LDA [IDX], Y
+            STA ZP.ACCT
+            
+            getIndexAndMask(); // returns index in IDY and bit # in X
+                    
+            LDY # aiElements
+            LDA # 0
+            STA ZP.TOPH
+                          
+            LDA ZP.ACCT
+            switch (A)
+            {
+                case BASICType.BIT:
                 {
-                    STA NEXTL
+                    LDA [IDY], Y           
+                    AND bitMasks, X
+                    if (Z)
+                    {
+                        STA ZP.TOPL
+                    }
+                    else
+                    {
+                        LDA # 1
+                        STA ZP.TOPL   
+                    }
                 }
-                else
+                case BASICType.CHAR:
+                case BASICType.BYTE:
                 {
-                    LDA # 1
-                    STA NEXTL   
+                    LDA [IDY], Y
+                    STA ZP.TOPL
                 }
-            }
-            case BASICType.CHAR:
-            case BASICType.BYTE:
-            {
-                LDA [IDY], Y
-                STA NEXTL
-            }
-            default:
-            {
-                LDA [IDY], Y
-                STA NEXTL
-                INY
-                LDA [IDY], Y
-                STA NEXTH
-            }
-        }      
-        LDA FTYPE
-        Stacks.PushNext();  
+                default:
+                {
+                    LDA [IDY], Y
+                    STA ZP.TOPL
+                    INY
+                    LDA [IDY], Y
+                    STA ZP.TOPH
+                }
+            }      
+            LDA ZP.ACCT
+            SEC
+            break;
+        } // single exit
+        PLY
+        PLX
+        PLA
     }
+    // Input: array ptr in IDX, index in IDY, element in TOP
+    // Output: element int TOP
     SetItem()
     {
-        Stacks.PopTop(); // value
-        Stacks.PopIDY(); // index
-        Stacks.PopIDX(); // this
+        PHA
+        PHX
+        PHY
         
-        // index < aiCount?
-        LDY # aiCount+1
-        LDA ZP.IDYH        // index MSB
-        CMP [IDX], Y       // aiCount MSB
-        if (Z)
+        loop
         {
-            DEY
-            LDA ZP.IDYL    // index LSB
-            CMP [IDX], Y   // aiCount LSB
-        }
-        if (C) // index < aiCount?
-        {
-            // index >= aiCount
-            LDA # 0x02 // array index out of range
-            Diagnostics.die();
-        }
-        
-        LDY # aiType
-        LDA [IDX], Y
-        STA FTYPE
-        
-        getIndexAndMask(); // returns index in IDY and bit # in X
-                
-        LDY # aiElements
-        LDA # 0
-        STA NEXTH
-                      
-        LDA FTYPE
-        switch (A)
-        {
-            case BASICType.BIT:
+            // index < aiCount?
+            LDY # aiCount+1
+            LDA ZP.IDYH        // index MSB
+            CMP [IDX], Y       // aiCount MSB
+            if (Z)
             {
-                LDA TOPL
-                if (NZ)
+                DEY
+                LDA ZP.IDYL    // index LSB
+                CMP [IDX], Y   // aiCount LSB
+            }
+            if (C) // index < aiCount?
+            {
+                Error.BadIndex(); BIT ZP.EmulatorPCL
+                States.SetFailure();
+                break;
+            }
+            
+            LDY # aiType
+            LDA [IDX], Y
+            STA ZP.ACCT
+            
+            getIndexAndMask(); // returns index in IDY and bit # in X
+                    
+            LDY # aiElements
+            STZ ZP.NEXTH
+                          
+            LDA ZP.ACCT
+            switch (A)
+            {
+                case BASICType.BIT:
                 {
-                    // set the bit
-                    LDA bitMasks, X
-                    ORA [IDY], Y    
+                    LDA ZP.TOPL
+                    if (NZ)
+                    {
+                        // set the bit
+                        LDA bitMasks, X
+                        ORA [IDY], Y    
+                        STA [IDY], Y
+                    }
+                    else
+                    {
+                        // clear the bit
+                        LDA bitMasks, X
+                        EOR # 0xFF
+                        AND [IDY], Y    
+                        STA [IDY], Y       
+                    }
+                }
+                case BASICType.CHAR:
+                case BASICType.BYTE:
+                {
+                    LDA ZP.TOPL
                     STA [IDY], Y
                 }
-                else
+                default:
                 {
-                    // clear the bit
-                    LDA bitMasks, X
-                    EOR # 0xFF
-                    AND [IDY], Y    
-                    STA [IDY], Y       
+                    LDA ZP.TOPL
+                    STA [IDY], Y
+                    INY
+                    LDA ZP.TOPH
+                    STA [IDY], Y
                 }
-            }
-            case BASICType.CHAR:
-            case BASICType.BYTE:
-            {
-                LDA TOPL
-                STA [IDY], Y
-            }
-            default:
-            {
-                LDA TOPL
-                STA [IDY], Y
-                INY
-                LDA TOPH
-                STA [IDY], Y
-            }
-        }      
+            } 
+            SEC
+            break;
+        } // single exit     
+        PLY
+        PLX
+        PLA
     }
 }
     

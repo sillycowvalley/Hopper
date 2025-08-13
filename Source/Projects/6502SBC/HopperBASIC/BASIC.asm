@@ -38,6 +38,7 @@ program HopperBASIC
     uses "./Objects/Variables"
     uses "./Objects/Locals"
     uses "./Objects/Functions"
+    uses "./Objects/Array"
     
     uses "./Utilities/Tools"
     uses "./Utilities/BufferManager"
