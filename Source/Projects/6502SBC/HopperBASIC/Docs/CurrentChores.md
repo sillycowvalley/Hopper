@@ -63,7 +63,7 @@ SETINDEX = 0x39,  // New opcode for array element assignment
 
 ## Implementation Tasks
 
-### 1. Type System Update ✅ PRIORITY
+### 1. Type System Update ✅ COMPLETED
 **Files**: BASICTypes.asm, Objects.asm
 - Reduce SymbolType to 2 bits (top bits 7-6)
 - Add ARRAY flag as bit 5
@@ -383,8 +383,9 @@ BEGIN
 END
 ```
 
-## Open Questions
+## Design Decisions (Resolved)
 
-- ❓ Should CONST arrays be supported? (Probably not initially) -> Future
-- ❓ Maximum array size limits? (Memory dependent) -> not an issue (we fail gracefully if not enough memory)
-- ❓ Multi-dimensional arrays? (Future enhancement) -> future
+- ✅ **Array parameters to functions**: YES - Works like strings (pass by reference, pointer immutable, elements mutable)
+- ✅ **CONST arrays**: NO - Would require initializer syntax (future enhancement)
+- ✅ **Maximum array size**: No artificial limits, fail gracefully on allocation
+- ✅ **Multi-dimensional arrays**: Future enhancement
