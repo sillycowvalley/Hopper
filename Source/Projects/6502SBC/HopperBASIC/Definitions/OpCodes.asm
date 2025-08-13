@@ -65,6 +65,7 @@ unit OpCodes
        PUSHEMPTYVAR = 0x1D,  // create a stack slot with 0 value and type VAR|INT
        
        GETITEM      = 0x1E,  // Generic indexing: container[index]
+       SETITEM      = 0x1F,  // Generic assignment: container[index] = value
        
        // === OPCODES WITH ONE BYTE OPERAND (0x40-0x7F) ===
        // Bits 7-6: 01 (one byte operand)
@@ -186,6 +187,7 @@ unit OpCodes
    const string opcodePUSHEMPTYVAR  = "PUSHEMPTYVAR";
    const string opcodeCLEARSCREEN  = "CLEARSCREEN";
    const string opcodeGETITEM = "GETITEM";
+   const string opcodeSETITEM = "SETITEM";
    
 #if defined(DEBUG) || defined(TRACEEXE)
    // Input: opcode in X
@@ -200,6 +202,13 @@ unit OpCodes
                 LDA #(opcodeGETITEM % 256)
                 STA ZP.STRL
                 LDA #(opcodeGETITEM / 256)
+                STA ZP.STRH
+            }
+            case OpCode.SETITEM:
+            {
+                LDA #(opcodeSETITEM % 256)
+                STA ZP.STRL
+                LDA #(opcodeSETITEM / 256)
                 STA ZP.STRH
             }
             case OpCode.PUSHEMPTYVAR:

@@ -738,7 +738,7 @@ unit Debug // Debug.asm
         
         loop
         {
-            // Check if we've printed 64 bytes
+            // Check if we've hit the 255 byte limit
             CPX #0
             if (Z) 
             { 
@@ -794,7 +794,20 @@ unit Debug // Debug.asm
             LDA [ZP.DB0], Y
             hOut();
             INC ZP.DB5  // Count bytes on this row
+            
+            // Check if Y is about to wrap before incrementing
             INY
+            if (Z)  // Y just wrapped from 255 to 0
+            {
+                // We've hit the Y register limit, finish up
+                LDA ZP.DB5
+                if (NZ)  // Bytes on current row
+                {
+                    dumpBlockAscii();
+                }
+                break;  // Exit before using wrapped Y value
+            }
+            
             DEX
             
             // Decrement content size
