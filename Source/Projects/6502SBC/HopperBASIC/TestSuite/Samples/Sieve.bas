@@ -1,5 +1,9 @@
-' Sieve of Eratosthenes - Byte Magazine benchmark
-CONST sizepl = 8191
+NEW
+CLS
+MEM
+
+! Sieve of Eratosthenes - Byte Magazine benchmark
+CONST WORD sizepl = 8191
 BIT flags[sizepl]
 
 WORD i
@@ -19,12 +23,12 @@ BEGIN
     FOR iter = 1 TO 10
         count = 0
         
-        ' Initialize flags array to true
+        ! Initialize flags array to true
         FOR i = 0 TO sizepl-1
             flags[i] = TRUE
         NEXT i
         
-        ' Sieve algorithm
+        ! Sieve algorithm
         FOR i = 0 TO sizepl-1
             IF flags[i] THEN
                 prime = i + i + 3
@@ -44,5 +48,5 @@ BEGIN
     PRINT count, " primes", avgS, " seconds average"
 END
 
-' run the benchmark
+! run the benchmark
 RUN
