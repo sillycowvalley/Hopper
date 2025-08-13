@@ -484,9 +484,9 @@ unit Executor // Executor.asm
            {
                ComparisonInstructions.GreaterEqual();
            }
-           case OpCode.INDEX:
+           case OpCode.GETITEM:
            {
-               executeIndex();
+               executeGetItem();
            }
            
            
@@ -2261,12 +2261,12 @@ unit Executor // Executor.asm
     // Input: Two values on stack (collection reference, then index on top)
     // Output: Element at index pushed to stack (CHAR for strings, element type for arrays)
     // Modifies: ZP.TOP, ZP.TOPT, ZP.NEXT, ZP.NEXTT, ZP.ACC, stack
-    const string executeIndexTrace = "INDEX // String/Array indexing";
-    executeIndex()
+    const string executeGetItemTrace = "GETITEM // String/Array indexing";
+    executeGetItem()
     {
     #ifdef TRACE
-        LDA #(executeIndexTrace % 256) STA ZP.TraceMessageL 
-        LDA #(executeIndexTrace / 256) STA ZP.TraceMessageH 
+        LDA #(executeGetItemTrace % 256) STA ZP.TraceMessageL 
+        LDA #(executeGetItemTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodEntry();
     #endif
         
@@ -2346,8 +2346,8 @@ unit Executor // Executor.asm
         } // loop
         
     #ifdef TRACE
-        LDA #(executeIndexTrace % 256) STA ZP.TraceMessageL 
-        LDA #(executeIndexTrace / 256) STA ZP.TraceMessageH 
+        LDA #(executeGetItemTrace % 256) STA ZP.TraceMessageL 
+        LDA #(executeGetItemTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodExit();
     #endif
     }

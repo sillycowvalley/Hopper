@@ -1246,11 +1246,11 @@ unit Emit
     #endif
     }
     
-    // Emit INDEX opcode for string/array indexing
+    // Emit GETITEM opcode for string/array indexing
     // Input: None (operates on stack values)
-    // Output: INDEX opcode emitted
+    // Output: GETITEM opcode emitted
     // Modifies: compilerOpCode, buffer state via Emit.OpCode()
-    const string emitIndexTrace = "Emit INDEX";
+    const string emitIndexTrace = "Emit GETITEM";
     Index()
     {
     #ifdef TRACE
@@ -1259,7 +1259,7 @@ unit Emit
         Trace.MethodEntry();
     #endif
         
-        LDA #OpCode.INDEX
+        LDA #OpCode.GETITEM
         STA Compiler.compilerOpCode
         Emit.OpCode();
         

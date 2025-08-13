@@ -8,7 +8,8 @@ unit Variables
     
     // Declare new variable or constant
     // Input: ZP.TOP = name pointer, ZP.ACCT = symbolType|dataType (packed),
-    //        ZP.NEXT = initial value (16-bit), ZP.IDY = tokens pointer (16-bit)
+    //        ZP.NEXT = initial value (16-bit), number of elements for ARRAY
+    //        ZP.IDY = tokens pointer (16-bit)
     // Output: C set if successful, NC if error (name exists, out of memory)
     // Munts: ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT
     Declare()
@@ -52,10 +53,36 @@ unit Variables
                 STZ ZP.NEXTL
                 STZ ZP.NEXTH
             }
+            
+            LDA ZP.ACCT
+            AND #BASICType.FLAGMASK
             CMP #BASICType.ARRAY
             if (Z)
             {
-                // TODO ..
+                // Array declaration
+                // ZP.NEXT contains size, extract element type
+                LDA ZP.ACCT
+                AND #BASICType.TYPEMASK
+                STA ZP.ACCT  // Element type for BASICArray.New
+                
+                // ZP.ACC = size (from ZP.NEXT)
+                LDA ZP.NEXTL
+                STA ZP.ACCL
+                LDA ZP.NEXTH
+                STA ZP.ACCH
+                
+                BASICArray.New();  // Returns pointer in ZP.IDX
+                Error.CheckError();
+                if (NC)
+                {
+                    break;
+                }
+                
+                // Store array pointer as variable value
+                LDA ZP.IDXL
+                STA ZP.NEXTL
+                LDA ZP.IDXH
+                STA ZP.NEXTH
             }
             
             // Symbol doesn't exist, add it

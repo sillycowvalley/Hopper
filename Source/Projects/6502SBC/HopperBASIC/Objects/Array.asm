@@ -128,7 +128,7 @@ unit BASICArray
                 // Zero current byte
                 LDA # 0
                 STA [ZP.FDESTINATIONADDRESS], Y
-                IncDESTINATIONADDRESS;
+                IncDESTINATIONADDRESS();
                 
                 // Decrement remaining count
                 LDA ZP.ACCL
@@ -141,7 +141,7 @@ unit BASICArray
             
             // Write array header - element count
             LDY # aiCount
-            LDA ZP.FLENGTHK
+            LDA ZP.FLENGTHL
             STA [ZP.IDX], Y
             INY
             LDA ZP.FLENGTHH

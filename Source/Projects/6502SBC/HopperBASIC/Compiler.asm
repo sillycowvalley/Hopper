@@ -732,7 +732,7 @@ unit Compiler // Compiler.asm
                             break;
                         }
                         
-                        // Emit INDEX opcode
+                        // Emit GETITEM opcode
                         Emit.Index();
                         Error.CheckError();
                         if (NC) { break; }
