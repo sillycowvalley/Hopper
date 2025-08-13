@@ -733,7 +733,7 @@ unit Compiler // Compiler.asm
                         }
                         
                         // Emit GETITEM opcode
-                        Emit.Index();
+                        Emit.GetItem();
                         Error.CheckError();
                         if (NC) { break; }
                         
@@ -2148,15 +2148,18 @@ unit Compiler // Compiler.asm
                         DEC ZP.ACCH
                     }
                     DEC ZP.ACCL
-                    
 #ifdef DEBUG             
                     // Verify in case something changes in future:
-                    LDA [ZP.ACC]
+                    PHX
+                    LDX ZP.ACCL
+                    LDA TokenBuffer, X
                     if (NZ)
                     {
+                        PLX
                         Error.InternalError(); BIT ZP.EmulatorPCL
                         break;
                     }
+                    PLX
                     LDA ZP.ACCL
 #endif        
                     STA compilerOperand1  // LSB of offset to null
@@ -2295,6 +2298,85 @@ unit Compiler // Compiler.asm
             LDA ZP.ACCL
             PHA
             
+            
+            // === NEW ARRAY HANDLING CODE ===
+            // Check if this is an array access before moving to '='
+            LDA ZP.CurrentToken
+            CMP #Token.IDENTIFIER
+            if (Z)
+            {
+                // Save identifier position for variable/array reference
+                LDA ZP.TokenLiteralPosL
+                PHA
+                LDA ZP.TokenLiteralPosH
+                PHA
+                
+                // Look ahead to see what follows identifier
+                Tokenizer.NextToken();
+                Error.CheckError();
+                if (NC) 
+                { 
+                    PLA // Clean stack
+                    PLA
+                    States.SetFailure(); 
+                    break; 
+                }
+                
+                LDA ZP.CurrentToken
+                CMP #Token.LBRACKET
+                if (Z)
+                {
+                    // This is array indexing: array[index] = value
+                    // Mark that we're doing array assignment
+                    SMB4 ZP.CompilerFlags  // Set bit 4 as "array assignment" flag
+                    
+                    // Restore literal position to emit array reference
+                    PLA
+                    STA ZP.TokenLiteralPosH
+                    PLA
+                    STA ZP.TokenLiteralPosL
+                    
+                    // Push array pointer onto stack
+                    compileVariableOrArgument(); 
+                    Error.CheckError();
+                    if (NC) { States.SetFailure(); break; }
+                    
+                    // Move past '[' and compile index expression
+                    Tokenizer.NextToken();
+                    Error.CheckError();
+                    if (NC) { States.SetFailure(); break; }
+                    
+                    compileExpressionTree(); // Index value on stack
+                    Error.CheckError();
+                    if (NC) { States.SetFailure(); break; }
+                    
+                    // Expect ']'
+                    LDA ZP.CurrentToken
+                    CMP #Token.RBRACKET
+                    if (NZ) 
+                    { 
+                        Error.SyntaxError(); BIT ZP.EmulatorPCL
+                        States.SetFailure();
+                        break; 
+                    }
+                    
+                    // Move past ']' to get to '='
+                    //Tokenizer.NextToken();
+                    //Error.CheckError();
+                    //if (NC) { States.SetFailure(); break; }
+                }
+                else
+                {
+                    // Not array access - restore stack and continue
+                    PLA
+                    STA ZP.TokenLiteralPosH
+                    PLA
+                    STA ZP.TokenLiteralPosL
+                }
+            }
+            // === END NEW ARRAY HANDLING CODE ===  
+            
+            
             loop
             {
                 // Move to next token - should be '='
@@ -2352,43 +2434,58 @@ unit Compiler // Compiler.asm
                 break;
             }
             
-            // Emit appropriate POP instruction based on identifier type
-            LDA ZP.ACCT
-            CMP #IdentifierType.Local
-            if (Z)
+            // === NEW: Check if this was array assignment ===
+            if (BBS4, ZP.CompilerFlags)  // Check array assignment flag
             {
-                // Local variable - use POPLOCAL with BP offset
-                LDA ZP.ACCL  // BP offset (signed)
-                Emit.PopLocal();
+                RMB4 ZP.CompilerFlags  // Clear flag
+                
+                // Stack now has: [array_ptr][index][value]
+                // Emit SETITEM opcode
+                LDA #OpCode.SETITEM
+                STA Compiler.compilerOpCode
+                Emit.OpCode();
                 Error.CheckError();
-                if (NC) 
-                { 
-                    States.SetFailure(); 
-                    break; 
+                if (NC) { States.SetFailure(); break; }
+            }
+            else
+            {
+                // Emit appropriate POP instruction based on identifier type
+                LDA ZP.ACCT
+                CMP #IdentifierType.Local
+                if (Z)
+                {
+                    // Local variable - use POPLOCAL with BP offset
+                    LDA ZP.ACCL  // BP offset (signed)
+                    Emit.PopLocal();
+                    Error.CheckError();
+                    if (NC) 
+                    { 
+                        States.SetFailure(); 
+                        break; 
+                    }
+                }
+                else  // Must be Global
+                {
+                    // Need to get variable name again for PopGlobal
+                    // The variable node is in ZP.IDX
+                    Variables.GetName();  // Returns name in ZP.STR
+                    
+                    // Copy to ZP.TOP for PopGlobal
+                    LDA ZP.STRL
+                    STA ZP.TOPL
+                    LDA ZP.STRH
+                    STA ZP.TOPH
+                    
+                    // Call the new PopGlobal that finds by name and uses index
+                    Emit.PopGlobal();
+                    Error.CheckError();
+                    if (NC) 
+                    { 
+                        States.SetFailure(); 
+                        break; 
+                    }
                 }
             }
-            else  // Must be Global
-            {
-                // Need to get variable name again for PopGlobal
-                // The variable node is in ZP.IDX
-                Variables.GetName();  // Returns name in ZP.STR
-                
-                // Copy to ZP.TOP for PopGlobal
-                LDA ZP.STRL
-                STA ZP.TOPL
-                LDA ZP.STRH
-                STA ZP.TOPH
-                
-                // Call the new PopGlobal that finds by name and uses index
-                Emit.PopGlobal();
-                Error.CheckError();
-                if (NC) 
-                { 
-                    States.SetFailure(); 
-                    break; 
-                }
-            }
-            
             States.SetSuccess();
             break;
         }

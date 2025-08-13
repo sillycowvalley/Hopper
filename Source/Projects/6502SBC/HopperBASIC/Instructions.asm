@@ -113,8 +113,7 @@ PLP
         PHX
         
 #ifdef TRACE
-        PHA LDA #(checkType % 256) STA ZP.TraceMessageL LDA #(checkType / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-        Space(); PLA HOut();
+        PHA LDA #(checkType % 256) STA ZP.TraceMessageL LDA #(checkType / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
 #endif
         
         // Save original ZP.ACCT value
@@ -635,7 +634,6 @@ PLP
         {
             LDA #1  // Arithmetic operation
             CheckTypeCompatibility();
-            
             if (NC)  // Type mismatch
             {
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL

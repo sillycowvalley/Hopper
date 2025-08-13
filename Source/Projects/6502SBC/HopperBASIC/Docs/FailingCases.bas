@@ -13,9 +13,14 @@ WORD W[size]
 
 !TRON
 BEGIN
+    FOR I = 0 to LEN(W)-1
+        W[I] = I
+    NEXT I
+    FOR I = 0 to 9
+        PRINT W[I],
+    NEXT I
 END
 VARS
 
 RUN
-
 

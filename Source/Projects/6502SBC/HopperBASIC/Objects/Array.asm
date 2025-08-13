@@ -186,26 +186,28 @@ unit BASICArray
     // Get array element count
     // Input:  ZP.IDX = array pointer
     // Output: ZP.ACC = element count (16-bit)
-    // Modifies: Y register
     GetCount()
     {
+        PHY
         LDY # aiCount
         LDA [ZP.IDX], Y
         STA ZP.ACCL
         INY
         LDA [ZP.IDX], Y
         STA ZP.ACCH
+        PLY
     }
     
     // Get array element type
     // Input:  ZP.IDX = array pointer (popped from stack)
     // Output: ZP.ACCT = element type (BASICType enum value)
-    // Modifies: Y register
     GetItemType()
     {
+        PHY
         LDY # aiType
         LDA [ZP.IDX], Y
         STA ZP.ACCT
+        PLY
     }
     
     // Calculate element address and bit mask for array access
@@ -275,7 +277,7 @@ unit BASICArray
             if (Z)
             {
                 DEY
-                LDA ZP.IDYL    // Index LSB
+                LDA ZP.IDYL       // Index LSB
                 CMP [ZP.IDX], Y   // Count LSB
             }
             if (C) // Set C if index >= count (out of bounds)
@@ -522,7 +524,6 @@ unit BASICArray
             STA ZP.IDXH
             Memory.Free(); // preserves ACCL, ACCH, ACCT
             
-Debug.NL();  AOut(); TOut();
             // Input: ZP.ACC = number of elements (16-bit), ZP.ACCT = element type (BASICType enum)
             // Output: ZP.IDX = allocated array pointer, C set if successful, NC if allocation failed
             BASICArray.New();
@@ -537,7 +538,6 @@ Debug.NL();  AOut(); TOut();
             STA ZP.TOPL
             LDA ZP.IDXH
             STA ZP.TOPH
-TOut();            
             SEC                // Success
             break;
         } // single exit  

@@ -74,18 +74,16 @@ unit Executor // Executor.asm
                 // Check if this is a constant (skip if so)
                 Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = type
                 LDA ZP.ACCT
-                AND #SymbolType.MASK
-                CMP #SymbolType.CONSTANT
-                if (Z)  // It's a constant - skip it
+                AND #SymbolType.CONSTANT
+                if (NZ)  // It's a constant - skip it
                 {
                     INY  // Still increment index to stay in sync with stack position
                     Variables.IterateNext();
                     continue;  // Skip to next iteration
                 }
                 LDA ZP.ACCT
-                AND #BASICType.MASK
-                CMP #BASICType.ARRAY
-                if (Z)  // It's an ARRAY - skip it
+                AND #BASICType.ARRAY
+                if (NZ)  // It's an ARRAY - skip it
                 {
                     INY  // Still increment index to stay in sync with stack position
                     Variables.IterateNext();
@@ -497,6 +495,10 @@ unit Executor // Executor.asm
            case OpCode.GETITEM:
            {
                executeGetItem();
+           }
+           case OpCode.SETITEM:
+           {
+               executeSetItem();
            }
            
            
@@ -2330,23 +2332,25 @@ unit Executor // Executor.asm
             STA ZP.NEXTL
             LDA ZP.TOPH
             STA ZP.NEXTH
-            
+
             // Dispatch based on collection type
             LDA ZP.TOPT
-            AND #BASICType.TYPEMASK  // Remove VAR bit if present
-            switch (A)
+            CMP #BASICType.STRING
+            if (Z)
             {
-                case BASICType.STRING:
+                indexString();  // Input: ZP.NEXT = string ptr, ZP.ACC = index
+                                // Output: States set, char pushed if successful
+            }
+            else
+            {
+                LDA ZP.TOPT
+                AND #BASICType.ARRAY
+                if (NZ)
                 {
-                    indexString();  // Input: ZP.NEXT = string ptr, ZP.ACC = index
-                                    // Output: States set, char pushed if successful
+                    indexArray(); // Input: ZP.NEXT = array ptr, ZP.ACC = index
+                                  // Output: States set, item pushed if successful
                 }
-                case BASICType.ARRAY:
-                {
-                     indexArray(); // Input: ZP.NEXT = array ptr, ZP.ACC = index
-                                   // Output: States set, item pushed if successful
-                }
-                default:
+                else
                 {
                     Error.TypeMismatch(); BIT ZP.EmulatorPCL
                     States.SetFailure();
@@ -2401,7 +2405,7 @@ unit Executor // Executor.asm
             CMP ZP.TOPL
             if (C)   // ACCL >= TOPL (index >= length
             {
-                Error.RangeError();
+                Error.RangeError(); BIT ZP.EmulatorPCL
                 States.SetFailure();
                 break;
             }
@@ -2455,7 +2459,7 @@ unit Executor // Executor.asm
             LDA ZP.ACCH
             STA ZP.IDYH
             
-            
+//Debug.NL(); XOut(); YOut(); 
             // Get the element value
             BASICArray.GetItem();  // Returns value in ZP.TOP, type in ZP.ACCT
             if (NC)
@@ -2463,9 +2467,10 @@ unit Executor // Executor.asm
                 States.SetFailure();
                 break;
             }
+//TOut(); LDA ZP.ACCT HOut();
             
             // Push result with correct type
-            STA ZP.TOPT
+            LDA ZP.ACCT
             Stacks.PushTop();
             States.SetSuccess();
             break;
@@ -2474,6 +2479,109 @@ unit Executor // Executor.asm
     #ifdef TRACE
         LDA #(indexArrayTrace % 256) STA ZP.TraceMessageL 
         LDA #(indexArrayTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }
+    
+    // Execute SETITEM opcode - array element assignment
+    // Stack layout on entry: [array_ptr][index][value]
+    // Stack layout on exit: [] (all consumed)
+    const string executeSetItemTrace = "SETITEM // Array element assignment";
+    executeSetItem()
+    {
+    #ifdef TRACE
+        LDA #(executeSetItemTrace % 256) STA ZP.TraceMessageL 
+        LDA #(executeSetItemTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        loop
+        {
+            // Pop value into TOP (includes type)
+            Stacks.PopTop();     // value -> TOP/TOPT
+            
+            // Pop index into NEXT (includes type)
+            Stacks.PopNext();    // index -> NEXT/NEXTT
+            
+            // Save value and type (we need TOP for array pointer)
+            LDA ZP.TOPL
+            PHA
+            LDA ZP.TOPH
+            PHA
+            LDA ZP.TOPT
+            PHA
+            
+            // Pop array pointer into TOP
+            Stacks.PopTop();     // array ptr -> TOP/TOPT
+            
+            // Move array pointer to IDX
+            LDA ZP.TOPL
+            STA ZP.IDXL
+            LDA ZP.TOPH
+            STA ZP.IDXH
+            
+            // Verify this is actually an array
+            LDA ZP.TOPT
+            AND #BASICType.FLAGMASK
+            CMP #BASICType.ARRAY
+            if (NZ)
+            {
+                PLA  // Clean up stack
+                PLA
+                PLA
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                States.SetFailure();
+                break;
+            }
+            
+            // Move index to IDY
+            LDA ZP.NEXTL
+            STA ZP.IDYL
+            LDA ZP.NEXTH
+            STA ZP.IDYH
+            
+            // Restore value to TOP
+            PLA
+            STA ZP.TOPT
+            PLA
+            STA ZP.TOPH
+            PLA
+            STA ZP.TOPL
+            
+            // Get array element type for type checking
+            BASICArray.GetItemType(); // Returns type in ZP.ACCT
+            
+            // Check type compatibility: array element type vs value type
+            LDA ZP.ACCT
+            STA ZP.NEXTT  // LHS type (array element)
+            // TOPT already has RHS type (value)
+            
+            Instructions.CheckRHSTypeCompatibility();
+            if (NC)
+            {
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                States.SetFailure();
+                break;
+            }
+            
+            // BASICArray.SetItem expects: 
+            // Input: ZP.IDX = array ptr, ZP.IDY = index, ZP.TOP = value
+            // Output: C set on success
+            BASICArray.SetItem();
+            if (NC)
+            {
+                // Range error already set by SetItem
+                States.SetFailure();
+                break;
+            }
+            
+            States.SetSuccess();
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(executeSetItemTrace % 256) STA ZP.TraceMessageL 
+        LDA #(executeSetItemTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodExit();
     #endif
     }

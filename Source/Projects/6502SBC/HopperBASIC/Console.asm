@@ -1054,7 +1054,7 @@ unit Console // Console.asm
                 
                 Stacks.PopNext(); // newly calculated array dimension
                 
-Debug.NL(); XOut(); TOut(); NOut();
+//Debug.NL(); XOut(); TOut(); NOut();
 
                 // Input:  BASICArray = TOP, desired number of elements = NEXT
                 // Output: BASICArray = TOP (may be the same, may be new - always zeroed out, manages cleanup of previous array)
@@ -1064,7 +1064,7 @@ Debug.NL(); XOut(); TOut(); NOut();
                 {
                     break;
                 }
-Debug.NL(); XOut(); TOut();
+//Debug.NL(); XOut(); TOut();
                 // Input: ZP.IDX = symbol node address (from Find), ZP.TOP = new ARRAY
                 Variables.SetValue(); // does not free old
             }

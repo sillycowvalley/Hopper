@@ -55,9 +55,8 @@ unit Variables
             }
             
             LDA ZP.ACCT
-            AND #BASICType.FLAGMASK
-            CMP #BASICType.ARRAY
-            if (Z)
+            AND #BASICType.ARRAY
+            if (NZ)
             {
                 // Array declaration
                 // ZP.NEXT contains size, extract element type
@@ -124,9 +123,8 @@ unit Variables
                 SetValue(); // TOP->
             }
             LDA ZP.ACCT
-            AND #BASICType.FLAGMASK
-            CMP #BASICType.ARRAY
-            if (Z)
+            AND #BASICType.ARRAY
+            if (NZ)
             {
                 LDA ZP.NEXTL
                 STA ZP.TOPL

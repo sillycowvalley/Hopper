@@ -3567,9 +3567,8 @@ unit Debug // Debug.asm
             // Check if it's an ARRAY variable  
             LDY #Objects.snType
             LDA [ZP.IDX], Y
-            AND #BASICType.FLAGMASK
-            CMP #BASICType.ARRAY
-            if (Z)
+            AND #BASICType.ARRAY
+            if (NZ)
             {
                 // Get array pointer from value field
                 LDY #Objects.snValue
@@ -3691,8 +3690,6 @@ unit Debug // Debug.asm
                 if (Z) { SEC break; }
                 CMP #BASICType.STRING
                 if (Z) { SEC break; }
-                CMP #BASICType.ARRAY
-                if (Z) { SEC break; }
                 
                 CLC // Invalid data type
                 break;
@@ -3774,8 +3771,6 @@ unit Debug // Debug.asm
                 CMP #BASICType.BIT
                 if (Z) { SEC break; }
                 CMP #BASICType.STRING
-                if (Z) { SEC break; }
-                CMP #BASICType.ARRAY
                 if (Z) { SEC break; }
                 
                 CLC // Invalid data type

@@ -1251,7 +1251,7 @@ unit Emit
     // Output: GETITEM opcode emitted
     // Modifies: compilerOpCode, buffer state via Emit.OpCode()
     const string emitIndexTrace = "Emit GETITEM";
-    Index()
+    GetItem()
     {
     #ifdef TRACE
         LDA #(emitIndexTrace % 256) STA ZP.TraceMessageL 
@@ -1266,6 +1266,29 @@ unit Emit
     #ifdef TRACE
         LDA #(emitIndexTrace % 256) STA ZP.TraceMessageL 
         LDA #(emitIndexTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }
+    // Emit SETITEM opcode for array element assignment
+    // Input: None (operates on stack values)
+    // Output: SETITEM opcode emitted
+    // Modifies: compilerOpCode, buffer state via Emit.OpCode()
+    const string emitSetItemTrace = "Emit SETITEM";
+    SetItem()
+    {
+    #ifdef TRACE
+        LDA #(emitSetItemTrace % 256) STA ZP.TraceMessageL 
+        LDA #(emitSetItemTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        LDA #OpCode.SETITEM
+        STA Compiler.compilerOpCode
+        Emit.OpCode();
+        
+    #ifdef TRACE
+        LDA #(emitSetItemTrace % 256) STA ZP.TraceMessageL 
+        LDA #(emitSetItemTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodExit();
     #endif
     }

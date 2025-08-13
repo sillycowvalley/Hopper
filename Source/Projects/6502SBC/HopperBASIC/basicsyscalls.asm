@@ -557,24 +557,43 @@ unit BASICSysCalls
                     // LEN function - get string length
                     // Input: ZP.TOP* contains STRING pointer
                     // Output: ZP.TOP* contains length as WORD
-                    
                     // Validate input is STRING type
                     LDA ZP.TOPT
-                    CMP #BASICType.STRING
-                    if (NZ)
+                    CMP # BASICType.STRING
+                    if (Z)
                     {
-                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                        States.SetFailure();
-                        break;
+                        // Get string length using helper
+                        Tools.StringLengthTOP();  // Input: string ptr in ZP.TOP, Output: length in ZP.TOP, preserves Y
                     }
-                    
-                    // Get string length using helper
-                    Tools.StringLengthTOP();  // Input: string ptr in ZP.TOP, Output: length in ZP.TOP
-                    
+                    else
+                    {
+                        // Check if it's an array type
+                        AND # BASICType.ARRAY
+                        if (NZ)
+                        {
+                            // Array handling
+                            LDA ZP.TOPL
+                            STA ZP.IDXL
+                            LDA ZP.TOPH
+                            STA ZP.IDXH
+                            BASICArray.GetCount();  // Returns in ZP.ACC
+                            // Move to TOP and set type
+                            LDA ZP.ACCL
+                            STA ZP.TOPL
+                            LDA ZP.ACCH
+                            STA ZP.TOPH
+                        }
+                        else
+                        {
+                            Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                            States.SetFailure();
+                            break;
+                        }
+                    }
                     // Set type to WORD
                     LDA #BASICType.WORD
                     STA ZP.TOPT
-                }
+               }
                
                default:
                {
@@ -589,6 +608,7 @@ unit BASICSysCalls
            AND # 0b00000100 // Test return value bit
            if (NZ) 
            {
+               LDA ZP.TOPT
                Stacks.PushTop();  // Push return value from ZP.TOP*
            }
            
