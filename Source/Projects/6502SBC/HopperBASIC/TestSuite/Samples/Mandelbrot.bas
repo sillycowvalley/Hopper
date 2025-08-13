@@ -54,8 +54,8 @@ BEGIN
     PRINT sec; " seconds"
 END
   
-RUN
-NEW
-MEM
+!RUN
+!NEW
+!MEM
 
   

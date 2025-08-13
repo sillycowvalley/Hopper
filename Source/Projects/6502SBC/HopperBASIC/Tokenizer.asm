@@ -280,24 +280,24 @@ unit Tokenizer // Tokenizer.asm
         PHA  // Save byte to append
         loop
         {
-            // TODO : REPL buffer is only 256 bytes in size (same problem for REPL opcode buffer)
-            
-            // 16-bit boundary check: if (TokenBufferContentSize >= 512) return error
+            // 16-bit boundary check
             LDA ZP.TokenBufferContentSizeH
-            CMP #(Limits.TokenizerBufferLength >> 8)  // Compare high byte (2)
-            if (C)  // >= 2
+            CMP #(Limits.TokenizerBufferLength >> 8)
+            if (C) // ContentSizeH >= LimitH
             {
-                if (NZ)  // > 2, definitely full
+                if (NZ)  // ContentSizeH > LimitH (not equal)
                 {
                     Error.BufferOverflow(); BIT ZP.EmulatorPCL
                     CLC
                     break;
                 }
-                // High byte = 2, check low byte
+                // High bytes equal, must check low bytes
                 LDA ZP.TokenBufferContentSizeL
-                CMP #(Limits.TokenizerBufferLength & 0xFF)  // Compare low byte (0)
-                if (C)  // >= 512, buffer full
+                CMP #(Limits.TokenizerBufferLength & 0xFF) 
+                if (C)  // ContentSizeL >= LimitL  
                 {
+Debug.NL(); LDA ZP.TokenBufferContentSizeH HOut(); LDA ZP.TokenBufferContentSizeL HOut();
+                    
                     Error.BufferOverflow(); BIT ZP.EmulatorPCL
                     CLC
                     break;

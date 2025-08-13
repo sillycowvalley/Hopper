@@ -16,7 +16,6 @@ WORD elapsed
 WORD avgMs
 
 BEGIN
-    
     PRINT "10 iterations"
     start = SECONDS()
     

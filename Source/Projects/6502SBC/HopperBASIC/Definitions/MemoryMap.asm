@@ -25,15 +25,16 @@ unit Address // MemoryMap.asm
     
     const uint BasicProcessBuffer      = 0x09E0;  // 32 bytes - used to convert string literals to uppercase in tokenizer.asm
     
-    const uint BASICTokenizerBuffer   = 0x0A00;  // 512 bytes - tokenized BASIC function storage
     
-    const uint BASICOpCodeBuffer      = 0x0C00;  // 512 bytes - JIT compiled BASIC function opcodes
+    const uint BASICTokenizerBuffer   = 0x0A00;                        // 1024 bytes - tokenized BASIC function storage
     
-    const uint REPLTokenizerBuffer    = 0x0E00;  // 256 bytes - tokenized REPL line storage
+    const uint BASICOpCodeBuffer      = BASICTokenizerBuffer + 0x400;  // 512 bytes - JIT compiled BASIC function opcodes
     
-    const uint REPLOpCodeBuffer       = 0x0F00;  // 256 bytes - compiled REPL line OpCode storage
+    const uint REPLTokenizerBuffer    = BASICOpCodeBuffer    + 0x200;  // 1024 bytes - tokenized REPL line storage
+    
+    const uint REPLOpCodeBuffer       = REPLTokenizerBuffer  + 0x400;  // 512 bytes - compiled REPL line OpCode storage
 
-    const uint HopperData             = 0x1000;  // start of Hopper RAM (program, then heap)
+    const uint HopperData             = REPLOpCodeBuffer     + 0x200;  // start of Hopper RAM (program, then heap)
     
     const uint RamSize                = 0x8000;  // we assume RAM starts at 0x0000 and that we have at least 32K ..
     //const uint RamSize                = 0xC000;  // we assume RAM starts at 0x0000 and that we have at least 48K ..

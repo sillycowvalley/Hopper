@@ -20,4 +20,5 @@ BEGIN
 END
 
 RUN
+NEW
 MEM
