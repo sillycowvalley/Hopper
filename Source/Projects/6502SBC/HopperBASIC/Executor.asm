@@ -2432,12 +2432,34 @@ unit Executor // Executor.asm
         Trace.MethodEntry();
     #endif
     
-        // Array-specific indexing logic
-        // - Get array metadata (element type, size)
-        // - Calculate element address
-        // - Push element value with correct type
-        Error.TODO(); BIT ZP.EmulatorPCL
-        States.SetFailure();
+        loop
+        {
+            // Transfer to BASICArray unit format
+            LDA ZP.NEXTL
+            STA ZP.IDXL
+            LDA ZP.NEXTH
+            STA ZP.IDXH
+            
+            LDA ZP.ACCL
+            STA ZP.IDYL
+            LDA ZP.ACCH
+            STA ZP.IDYH
+            
+            
+            // Get the element value
+            BASICArray.GetItem();  // Returns value in ZP.TOP, type in ZP.ACCT
+            if (NC)
+            {
+                States.SetFailure();
+                break;
+            }
+            
+            // Push result with correct type
+            STA ZP.TOPT
+            Stacks.PushTop();
+            States.SetSuccess();
+            break;
+        } // single exit
     
     #ifdef TRACE
         LDA #(indexArrayTrace % 256) STA ZP.TraceMessageL 

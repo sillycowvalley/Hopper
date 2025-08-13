@@ -6,16 +6,15 @@ unit Objects
     // ZP.VariableListL/H stores the variables/constants table head pointer
     // ZP.FunctionsListL/H stores the functions table head pointer
     
-    // Symbol types: only top 3 bits (even digits)
+    // Symbol types: only top 2 bits
     flags SymbolType
     {
-        VARIABLE = 0x20,   // Mutable values
-        CONSTANT = 0x40,   // Immutable values  
-        FUNCTION = 0x60,   // Executable code blocks
-        ARGUMENT = 0x80,   // Function parameters (negative BP offset)
-        LOCAL    = 0xA0,   // Local variables (positive BP offset)
+        VARIABLE = 0x40,   // Mutable values
+        CONSTANT = 0x80,   // Immutable values  
+        ARGUMENT = 0x40,   // Function parameters (negative BP offset)
+        LOCAL    = 0x80,   // Local variables (positive BP offset)
         
-        MASK     = 0xE0,
+        MASK     = 0xC0,   // Top 2 bits only
     }
     
     // Symbol node memory map:

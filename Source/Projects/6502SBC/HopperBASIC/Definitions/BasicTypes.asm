@@ -9,14 +9,16 @@ unit BASICTypes // BASICTypes.asm
         WORD     = 0x04, // Hopper VM Types.UInt
         
         BIT      = 0x06, // Hopper VM Types.Bool - must 0x06!
-        ARRAY    = 0x07,
         
         STRING   = 0x0F, // Hopper VM Types.String
         
-        VAR      = 0x10, // bit that makes a variable type specifiable at runtime (like arguments)
+        VAR      = 0x10, // Bit 4 - runtime-determined type
+        ARRAY    = 0x20, // Bit 5 - array 
         
-        TYPEMASK = 0x0F,
-        MASK     = 0x1F,
+        
+        TYPEMASK = 0x0F,   // Bottom 4 bits for base type
+        FLAGMASK = 0x30,   // Bits 4-5 for flags
+        MASK     = 0x3F,   // Bottom 6 bits total
     }
     
     const string voidName = "VOID";

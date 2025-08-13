@@ -52,6 +52,11 @@ unit Variables
                 STZ ZP.NEXTL
                 STZ ZP.NEXTH
             }
+            CMP #BASICType.ARRAY
+            if (Z)
+            {
+                // TODO ..
+            }
             
             // Symbol doesn't exist, add it
             LDX #ZP.VariablesList

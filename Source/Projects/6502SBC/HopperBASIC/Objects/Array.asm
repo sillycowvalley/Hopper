@@ -254,7 +254,7 @@ unit BASICArray
             }
             if (C) // Set C if index >= count (out of bounds)
             {
-                Error.BadIndex(); BIT ZP.EmulatorPCL
+                Error.RangeError(); BIT ZP.EmulatorPCL
                 States.SetFailure();
                 break;
             }
@@ -342,7 +342,7 @@ unit BASICArray
             }
             if (C) // Set C if index >= count (out of bounds)
             {
-                Error.BadIndex(); BIT ZP.EmulatorPCL
+                Error.RangeError(); BIT ZP.EmulatorPCL
                 States.SetFailure();
                 break;
             }
