@@ -1,10 +1,32 @@
 # HopperBASIC Array Implementation Plan
 **Document Type: Work Plan / Subproject Specification**
-**Status: In Progress**
+**Status: In Progress - Array Write Support Needed**
 **Last Updated: Current Session**
 
 ## Overview
-Implementation of array support for HopperBASIC to enable running the Sieve of Eratosthenes and other benchmark programs. Arrays will be dynamically allocated like strings, with Variables owning the memory through pointers.
+Implementation of array support for HopperBASIC to enable running the Sieve of Eratosthenes and other benchmark programs. Arrays are dynamically allocated like strings, with Variables owning the memory through pointers.
+
+**Current Status**: Arrays can be declared and read from, but assignment (writing) is not yet implemented.
+
+## 🔴 Remaining Critical Work
+
+### Must Complete for Sieve Benchmark:
+1. **Add SETINDEX OpCode** (OpCodes.asm)
+   - Define SETINDEX = 0x39 in OpCode enum
+   
+2. **Implement executeSetIndex()** (executor.asm)
+   - Pop value, index, array reference from stack
+   - Call BASICArray.SetItem() to write element
+   - Handle type checking and bounds checking
+   
+3. **Compile Array Assignment** (compiler.asm/compilerflow.asm)
+   - Detect array[index] on LHS of assignment
+   - Generate SETINDEX instead of POPGLOBAL/POPLOCAL
+   
+4. **Add Emit.SetIndex()** (emit.asm)
+   - Emit SETINDEX opcode when compiling array assignment
+
+Without these, arrays can be created and read but not written to, making the Sieve benchmark impossible to run.
 
 ## Key Design Decisions
 
@@ -14,7 +36,7 @@ Implementation of array support for HopperBASIC to enable running the Sieve of E
 - Array unit (array.asm) already implements the core functionality
 - Memory layout: count (2 bytes) + type (1 byte) + elements
 
-### Type System Redesign
+### Type System Redesign ✅ COMPLETED
 Since functions live on their own list and never mix with variables/constants, we can reduce SymbolType to 2 bits and use bit 5 for the ARRAY flag:
 
 ```assembly
@@ -53,12 +75,11 @@ Example packed values:
 - **Array of INT**: `0x40 | 0x20 | 0x02 = 0x62`
 - **Array of BIT**: `0x40 | 0x20 | 0x06 = 0x66`
 
-### OpCode Changes
-Rename and add opcodes for clarity:
+### OpCode Status
 ```assembly
 // OpCodes.asm
-GETINDEX = 0x38,  // Renamed from INDEX (string/array element access)
-SETINDEX = 0x39,  // New opcode for array element assignment
+GETITEM = 0x1E,  // ✅ IMPLEMENTED - String/array element access  
+SETINDEX = 0x39, // 🔴 TODO - Add for array element assignment
 ```
 
 ## Implementation Tasks
@@ -70,7 +91,7 @@ SETINDEX = 0x39,  // New opcode for array element assignment
 - Update MASK constants
 - Test type extraction/packing
 
-### 2. Declaration Parsing
+### 2. Declaration Parsing ✅ COMPLETED
 **Files**: statement.asm, tokenizer.asm
 - Parse syntax: `BIT flags[8191]` or `INT scores[100]`
 - After identifier, check for LBRACKET token
@@ -78,41 +99,7 @@ SETINDEX = 0x39,  // New opcode for array element assignment
 - Set ARRAY flag in type byte
 - Store size in ZP.NEXT for Variables.Declare
 
-```assembly
-// In processSingleSymbolDeclaration after getting identifier:
-LDA ZP.CurrentToken
-CMP #Token.LBRACKET
-if (Z)
-{
-    // Set ARRAY flag
-    LDA stmtType
-    ORA #BASICType.ARRAY
-    STA stmtType
-    
-    Tokenizer.NextToken();
-    // Parse size expression (must be constant)
-    // Evaluate to get size in ZP.ACC
-    
-    // Check for RBRACKET
-    LDA ZP.CurrentToken
-    CMP #Token.RBRACKET
-    if (NZ)
-    {
-        Error.ExpectedRightBracket();
-        break;
-    }
-    
-    // Move size to ZP.NEXT for Variables.Declare
-    LDA ZP.ACCL
-    STA ZP.NEXTL
-    LDA ZP.ACCH
-    STA ZP.NEXTH
-    
-    Tokenizer.NextToken(); // Move past RBRACKET
-}
-```
-
-### 3. Variables.Declare Enhancement
+### 3. Variables.Declare Enhancement ✅ COMPLETED
 **File**: variables.asm
 - Detect ARRAY flag in type
 - Use ZP.NEXT as array size (element count)
@@ -120,43 +107,17 @@ if (Z)
 - Store returned pointer as variable value
 - Add cleanup for array memory on variable deletion
 
-```assembly
-// In Variables.Declare:
-LDA ZP.ACCT
-AND #BASICType.ARRAY
-if (NZ)
-{
-    // Array declaration
-    // ZP.NEXT contains size, extract element type
-    LDA ZP.ACCT
-    AND #BASICType.TYPEMASK
-    STA ZP.ACCT  // Element type for BASICArray.New
-    
-    // ZP.ACC = size (from ZP.NEXT)
-    LDA ZP.NEXTL
-    STA ZP.ACCL
-    LDA ZP.NEXTH
-    STA ZP.ACCH
-    
-    BASICArray.New();  // Returns pointer in ZP.IDX
-    
-    // Store array pointer as variable value
-    LDA ZP.IDXL
-    STA ZP.NEXTL
-    LDA ZP.IDXH
-    STA ZP.NEXTH
-}
-```
-
-### 4. Array Indexing (Read) - GETINDEX
+### 4. Array Indexing (Read) - GETITEM ✅ COMPLETED
 **File**: executor.asm
-- Already implemented as indexArray()
-- Wire up to renamed GETINDEX opcode
-- Tested with existing BASICArray.GetItem()
+- Implemented as executeGetItem() which handles both string and array indexing
+- Calls indexArray() which uses BASICArray.GetItem()
+- OpCode.GETITEM = 0x1E defined and working
+- Emit.Index() generates GETITEM opcode
 
-### 5. Array Assignment (Write) - SETINDEX
-**File**: executor.asm
-- New executeSetIndex() method
+### 5. Array Assignment (Write) - SETINDEX 🔴 TODO
+**Files**: OpCodes.asm, executor.asm
+- **First**: Add SETINDEX = 0x39 to OpCode enum in OpCodes.asm
+- New executeSetIndex() method in executor.asm
 - Stack order: [..., array_ref, index, value]
 - Call BASICArray.SetItem()
 
@@ -217,7 +178,7 @@ executeSetIndex()
 }
 ```
 
-### 6. Assignment Compilation
+### 6. Assignment Compilation 🔴 TODO
 **Files**: compiler.asm, compilerflow.asm
 - In compileAssignment(), detect array[index] on LHS
 - Generate SETINDEX instead of POPGLOBAL/POPLOCAL
@@ -263,38 +224,38 @@ if (Z)
 }
 ```
 
-### 7. Emit Functions
+### 7. Emit Functions 🔴 TODO
 **File**: emit.asm
-- Add Emit.SetIndex() for new opcode
-- Already have Emit.Index() (rename to GetIndex)
+- Add Emit.SetIndex() for new SETINDEX opcode
+- Index() already exists (emits GETITEM)
 
-### 8. LIST Command Support
+### 8. LIST Command Support ✅ COMPLETED
 **File**: tokeniterator.asm
 - Array declaration rendering
 - Show: `BIT flags[100]`
 - Handle LBRACKET/RBRACKET in renderToken()
 
-### 9. VARS Command Enhancement
+### 9. VARS Command Enhancement ✅ COMPLETED
 **File**: console.asm
 - Display array type and size
 - Show first few elements: `= TRUE, TRUE, FALSE, ...`
 - Handle array display in ShowVariables()
 
-### 10. Heap Validation
+### 10. Heap Validation ✅ COMPLETED
 **File**: Debug.asm
 - Add validateArray() similar to validateString()
 - Check array header integrity
 - Validate element count and type
 - Verify memory bounds
 
-### 11. Global Initialization
+### 11. Global Initialization ✅ COMPLETED
 **File**: console.asm
 - In initializeGlobals(), arrays are zero-initialized by BASICArray.New()
 - No special handling needed (unlike strings)
 
 ## Testing Plan
 
-### Phase 1: Basic Declaration
+### Phase 1: Basic Declaration ✅ WORKING
 ```basic
 > BIT flags[10]
 OK
@@ -302,25 +263,27 @@ OK
 BIT flags[10] = FALSE, FALSE, FALSE, ...
 ```
 
-### Phase 2: Element Access
+### Phase 2: Element Access ✅ READING WORKS
 ```basic
-> flags[0] = TRUE
-OK
-> PRINT flags[0]
-TRUE
-> PRINT flags[5]
+> PRINT flags[0]     ! ✅ Works
+FALSE
+> PRINT flags[5]     ! ✅ Works
 FALSE
 ```
 
-### Phase 3: Loop Integration
+### Phase 3: Loop Integration ✅ CAN TEST
 ```basic
 > FOR i = 0 TO 9
-*   flags[i] = TRUE
+*   PRINT flags[i]    ! ✅ Reading works
 * NEXT i
-OK
 ```
 
-### Phase 4: Sieve Benchmark
+### Phase 4: Assignment 🔴 BLOCKED
+```basic
+> flags[0] = TRUE     ! 🔴 Not working - SETINDEX not implemented
+```
+
+### Phase 5: Sieve Benchmark 🔴 BLOCKED
 Run the complete Sieve of Eratosthenes benchmark program.
 
 ## Error Handling
@@ -351,16 +314,17 @@ Run the complete Sieve of Eratosthenes benchmark program.
 
 ## Implementation Order
 
-1. **Type system changes** ✅ FIRST
-2. **Declaration parsing** - Get `BIT flags[100]` working
-3. **Variables.Declare updates** - Allocate arrays
-4. **GETINDEX integration** - Read array elements
-5. **SETINDEX implementation** - Write array elements
-6. **Assignment compilation** - Handle array[i] = value
-7. **LIST/VARS rendering** - Display arrays nicely
-8. **Heap validation** - Debug support
-9. **Testing** - Comprehensive test suite
-10. **Benchmarks** - Run Sieve successfully
+1. **Type system changes** ✅ COMPLETED
+2. **Declaration parsing** ✅ COMPLETED - `BIT flags[100]` working
+3. **Variables.Declare updates** ✅ COMPLETED - Arrays allocated
+4. **GETITEM integration** ✅ COMPLETED - Read array elements working
+5. **SETINDEX implementation** 🔴 TODO - Write array elements
+6. **Assignment compilation** 🔴 TODO - Handle array[i] = value
+7. **Emit.SetIndex** 🔴 TODO - Emit SETINDEX opcode
+8. **LIST/VARS rendering** ✅ COMPLETED - Arrays display nicely
+9. **Heap validation** ✅ COMPLETED - Debug support working
+10. **Testing** 🔴 TODO - Comprehensive test suite
+11. **Benchmarks** 🔴 TODO - Run Sieve successfully
 
 ## Notes
 
