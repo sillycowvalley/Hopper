@@ -998,9 +998,13 @@ unit Console // Console.asm
             if (NZ)
             {
                 
-Debug.NL(); AOut();
+                Variables.GetValue(); // Variable = IDX: BASICArray -> TOP, Tokens -> NEXT
                 
-                Variables.GetValue(); // BASICArray -> TOP, Variable -> IDX, Tokens -> NEXT
+                // Save the current variable node
+                LDA ZP.IDXL
+                PHA
+                LDA ZP.IDXH
+                PHA
                 
                 // Copy array index expression tokens to buffer
                 // Note: Variable declarations are single-line, so EOL is a good terminator
@@ -1024,40 +1028,45 @@ Debug.NL(); AOut();
                     IncNEXT();
                 }
                 
-Debug.NL(); XOut(); TOut(); NOut();                
-
                 STZ ZP.TokenizerPosL
                 STZ ZP.TokenizerPosH
                 
                 // Execute the initialization statement
                 Tokenizer.NextToken(); // Get first token
-
+                
                 SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
                 SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
-                // These are simple assignments (FOO = 42, rather than INT FOO = 42)
                 Statement.EvaluateExpression();
                 Error.CheckError();
                 if (NC) 
                 { 
                     // Error during initialization
-                    CLC
+                    PLA PLA CLC
                     break;
                 }
+                PLA
+                STA ZP.IDXH
+                PLA
+                STA ZP.IDXL
                 
-                Stacks.PopNext();
+                // reload for TOP (overwrites NEXT too!)
+                Variables.GetValue(); // Variable = IDX: BASICArray -> TOP, Tokens -> NEXT
+                
+                Stacks.PopNext(); // newly calculated array dimension
                 
 Debug.NL(); XOut(); TOut(); NOut();
 
-                // Input:  BASICArray = TOP, number of elements = NEXT
-                // Output: BASICArray = TOP (may be the same, may be new - always zeroed out)
+                // Input:  BASICArray = TOP, desired number of elements = NEXT
+                // Output: BASICArray = TOP (may be the same, may be new - always zeroed out, manages cleanup of previous array)
                 BASICArray.Redimension();
 
                 if (NC)
                 {
                     break;
                 }
-                // Input: ZP.IDX = symbol node address (from Find), ZP.TOP = new value
-                //Variables.SetValue(); // does not free old
+Debug.NL(); XOut(); TOut();
+                // Input: ZP.IDX = symbol node address (from Find), ZP.TOP = new ARRAY
+                Variables.SetValue(); // does not free old
             }
             else
             {
@@ -1066,27 +1075,6 @@ Debug.NL(); XOut(); TOut(); NOut();
                 PHA
                 LDA ZP.IDXH
                 PHA
-                
-                // Add IDENTIFIER token
-                LDA #Token.IDENTIFIER
-                Tokenizer.appendToTokenBuffer(); // munts IDX!
-                
-                // Copy variable name to buffer
-                loop
-                {
-                    LDA [ZP.STR]
-                    if (Z)
-                    {
-                        Tokenizer.appendToTokenBuffer(); // null terminator
-                        break; // Copied null terminator
-                    }
-                    Tokenizer.appendToTokenBuffer();
-                    IncSTR();
-                }
-                
-                // Add '=' token
-                LDA #Token.EQUALS
-                Tokenizer.appendToTokenBuffer();
                 
                 // Check if variable has initialization tokens
                 LDA ZP.NEXTL
@@ -1160,7 +1148,6 @@ Debug.NL(); XOut(); TOut(); NOut();
                         IncNEXT();
                     }
                 }
-DumpBuffers();                
                 STZ ZP.TokenizerPosL
                 STZ ZP.TokenizerPosH
                 
@@ -1170,9 +1157,7 @@ DumpBuffers();
                 SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
                 SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
                 // These are simple assignments (FOO = 42, rather than INT FOO = 42)
-                Statement.ExecuteStatement();
-                
-PHP DumpHeap(); PLP
+                Statement.EvaluateExpression();
                 Error.CheckError();
                 if (NC) 
                 { 
@@ -1187,6 +1172,8 @@ PHP DumpHeap(); PLP
                 PLA
                 STA ZP.IDXL
                 
+                Stacks.PopTop();
+                Variables.SetValue();
             } // not ARRAY
             
             // Continue to next variable

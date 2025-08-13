@@ -1,30 +1,20 @@
 !CLS
 !NEW
 
-CONST WORD size = 10
+CONST WORD size = 5
 
-BIT B[size]
-WORD W[size*2]
-INT I[30]
-CHAR C[20]
-BYTE BB[40]
+BIT B[size*2]
+WORD W[size]
+!INT I[30]
+!CHAR C[20]
+!BYTE BB[40]
+
+!CONST WORD size = 10
 
 !TRON
 BEGIN
 END
 VARS
-
-RUN
-
-STRING STR = "hello"
-
-FUNC FOO(STR)
-     PRINT STR
-ENDFUNC
-
-BEGIN
-     FOO(STR)
-END
 
 RUN
 

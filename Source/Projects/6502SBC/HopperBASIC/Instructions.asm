@@ -23,7 +23,7 @@ unit Instructions // Instructions.asm
         LDA #(checkRHS % 256) STA ZP.TraceMessageL LDA #(checkRHS / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         
-Debug.NL(); NOut(); Space(); LDA #'<' COut(); LDA #'-' COut(); Space(); TOut();
+//Debug.NL(); NOut(); Space(); LDA #'<' COut(); LDA #'-' COut(); Space(); TOut();
         
         loop
         {
@@ -74,7 +74,7 @@ Debug.NL(); NOut(); Space(); LDA #'<' COut(); LDA #'-' COut(); Space(); TOut();
             CheckTypeCompatibility();
             break;
         }
-
+/*
 PHP       
 Debug.NL(); 
 if (C)
@@ -86,7 +86,7 @@ else
     LDA #'N' COut();
 }
 PLP
-
+*/
 #ifdef TRACE
         LDA #(checkRHS % 256) STA ZP.TraceMessageL LDA #(checkRHS / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -260,7 +260,7 @@ PLP
                 case 5: // Assignment operations
                 {
                     // TODO
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #'?' COut();
+//Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #'?' COut();
                     
                 }
                 default:

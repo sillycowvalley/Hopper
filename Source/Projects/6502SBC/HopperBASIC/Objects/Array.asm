@@ -123,6 +123,7 @@ unit BASICArray
             {
                 // Allocation failed - return with NC
                 Error.OutOfMemory(); BIT ZP.EmulatorPCL
+                CLC
                 break;
             }
             
@@ -147,7 +148,7 @@ unit BASICArray
                 
                 // Zero current byte
                 LDA # 0
-                STA [ZP.FDESTINATIONADDRESS], Y
+                STA [ZP.FDESTINATIONADDRESS]
                 IncDESTINATIONADDRESS();
                 
                 // Decrement remaining count
@@ -448,17 +449,15 @@ unit BASICArray
         loop
         {   
             LDY # aiCount
-            LDA [ZP.IDX], Y
+            LDA [ZP.TOP], Y
             STA ZP.ACCL
             INY
-            LDA [ZP.IDX], Y
+            LDA [ZP.TOP], Y
             STA ZP.ACCH
             INY
-            LDA [ZP.IDX], Y
+            LDA [ZP.TOP], Y
             STA ZP.ACCT
 
-Debug.NL(); NOut(); AOut();
-                                    
             LDA ZP.ACCH
             CMP ZP.NEXTH
             if (Z)
@@ -467,25 +466,78 @@ Debug.NL(); NOut(); AOut();
                 CMP ZP.NEXTL
                 if (Z)
                 {
-Debug.NL(); LDA #'=' COut(); COut(); COut();
-                    // TODO : zero out
-                    
-                    // Calculate allocation size based on element type
+                    // Calculate memory size based on element type
                     // Input:  ACCL for elements, ACCT for element type
                     // Output: ACCL for bytes required          
                     elementsToBytes();
                     
-AOut();                    
+                    CLC
+                    LDA ZP.TOPL
+                    ADC # aiElements
+                    STA ZP.FDESTINATIONADDRESSL
+                    LDA ZP.TOPH
+                    ADC #0
+                    STA ZP.FDESTINATIONADDRESSH
+
+                    loop
+                    {
+                        // Check if we've zeroed all bytes
+                        LDA ZP.ACCL
+                        if (Z)
+                        {
+                            LDA ZP.ACCH
+                            if (Z)
+                            {
+                                break;
+                            }
+                        }
+                        
+                        // Zero current byte
+                        LDA # 0x00
+                        STA [ZP.FDESTINATIONADDRESS]
+                        IncDESTINATIONADDRESS();
+                        
+                        // Decrement remaining count
+                        LDA ZP.ACCL
+                        if (Z)
+                        {
+                            DEC ZP.ACCH
+                        }
+                        DEC ZP.ACCL
+                    }
+                  
                     SEC
                     break;
                 }
             }
-Debug.NL(); LDA #'!' COut(); COut(); COut();
-            // TODO:
-            // - free
-            // - allocate new
-        
-        
+            // desired new size (since ACC is preserved over Free)
+            LDA ZP.NEXTL
+            STA ZP.ACCL
+            LDA ZP.NEXTH
+            STA ZP.ACCH
+            
+            LDA ZP.TOPL
+            STA ZP.IDXL
+            LDA ZP.TOPH
+            STA ZP.IDXH
+            Memory.Free(); // preserves ACCL, ACCH, ACCT
+            
+Debug.NL();  AOut(); TOut();
+            // Input: ZP.ACC = number of elements (16-bit), ZP.ACCT = element type (BASICType enum)
+            // Output: ZP.IDX = allocated array pointer, C set if successful, NC if allocation failed
+            BASICArray.New();
+            if (NC)
+            {
+                // Allocation failed - return with NC
+                Error.OutOfMemory(); BIT ZP.EmulatorPCL
+                CLC
+                break;
+            }
+            LDA ZP.IDXL
+            STA ZP.TOPL
+            LDA ZP.IDXH
+            STA ZP.TOPH
+TOut();            
             SEC                // Success
             break;
         } // single exit  

@@ -225,14 +225,11 @@ unit Memory // Memory.asm
         LDA #(memoryFree % 256) STA ZP.TraceMessageL LDA #(memoryFree / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
 
-        LDA ZP.IDXL
-        PHA
-        LDA ZP.IDXH
-        PHA
-        
         LDA ZP.ACCL
         PHA
         LDA ZP.ACCH
+        PHA
+        LDA ZP.ACCT
         PHA
         
 #if defined(DEBUG) || defined(TRACE)
@@ -247,14 +244,12 @@ unit Memory // Memory.asm
         Free.Free();
         
         PLA
+        STA ZP.ACCT
+        PLA
         STA ZP.ACCH
         PLA
         STA ZP.ACCL
         
-        PLA
-        STA ZP.IDXH
-        PLA
-        STA ZP.IDXL
         
 #ifdef TRACE
         LDA #(memoryFree % 256) STA ZP.TraceMessageL LDA #(memoryFree / 256) STA ZP.TraceMessageH Trace.MethodExit();

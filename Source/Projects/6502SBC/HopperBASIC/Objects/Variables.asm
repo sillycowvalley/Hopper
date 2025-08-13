@@ -298,14 +298,13 @@ unit Variables
                 // If the old value was a string, not the same as this one, it will Free it
                 // If the new value is a string, it will create a copy for itself.
                 // If the new value is the same string as the old value, it will do nothing.
-                CLC
                 LDY #Objects.snValue
                 LDA [ZP.IDX], Y
                 CMP ZP.TOPL
                 if (Z)
                 {
                     INY
-                    STA [ZP.IDX], Y
+                    LDA [ZP.IDX], Y
                     CMP ZP.TOPH
                     if (Z)
                     {
@@ -313,19 +312,15 @@ unit Variables
                         break;
                     }
                 }
-                if (NC)
-                {
-                    SEC
-                    // STRING variable - need to free old string and allocate new
-                    FreeCompoundValue(); // Free existing string memory
-                    Error.CheckError();
-                    if (NC) { break; }
-                    
-                    // Allocate and copy new string (ZP.TOP has source string pointer)
-                    AllocateAndCopyString(); // Returns new string pointer in ZP.TOP -> ZP.IDY
-                    Error.CheckError();
-                    if (NC) { break; }
-                }
+                SEC
+                // STRING variable - need to free old string and allocate new
+                FreeCompoundValue(); // Free existing string memory
+                Error.CheckError();
+                if (NC) { break; }
+                // Allocate and copy new string (ZP.TOP has source string pointer)
+                AllocateAndCopyString(); // Returns new string pointer in ZP.TOP -> ZP.IDY
+                Error.CheckError();
+                if (NC) { break; }
             }
             else
             {
@@ -734,9 +729,9 @@ unit Variables
             LDA #0
             ADC #0  // Add carry
             STA ZP.ACCH
-            
+           
             Memory.Allocate(); // Returns address in ZP.IDX (temporarily)
-            
+           
             LDA ZP.IDXL
             ORA ZP.IDXH
             if (Z)
@@ -751,7 +746,7 @@ unit Variables
             STA ZP.IDYL
             LDA ZP.IDXH
             STA ZP.IDYH
-            
+
             // Set up copy parameters
             LDA ZP.TOPL
             STA ZP.FSOURCEADDRESSL
@@ -815,12 +810,6 @@ unit Variables
         LDA ZP.NEXTH
         PHA
         
-        // Save ZP.IDX (variable node)
-        LDA ZP.IDXL
-        PHA
-        LDA ZP.IDXH
-        PHA
-        
         loop // single exit
         {
             // Get variable data
@@ -854,19 +843,26 @@ unit Variables
                 break;
             }
             
+            // Save ZP.IDX (variable node)
+            LDA ZP.IDXL
+            PHA
+            LDA ZP.IDXH
+            PHA
+            
             // Free the string memory (use different register than IDX)
             LDA ZP.IDYL
-            STA ZP.ACCL  // Temporarily use ACC for Memory.Free
+            STA ZP.IDXL
             LDA ZP.IDYH
-            STA ZP.ACCH
-            
-            LDA ZP.ACCL
-            STA ZP.IDXL  // Memory.Free expects address in IDX
-            LDA ZP.ACCH
             STA ZP.IDXH
             
             Memory.Free(); // munts ZP.IDY, ZP.TOP, ZP.NEXT
-            
+                   
+            // Restore ZP.IDX (variable node)
+            PLA
+            STA ZP.IDXH
+            PLA
+            STA ZP.IDXL
+                 
             STZ ZP.IDYL  // Zero out for Objects.SetValue
             STZ ZP.IDYH
             Objects.SetValue(); // Set variable's string pointer to 0x0000
@@ -875,12 +871,7 @@ unit Variables
             break;
         }
         
-        // Restore ZP.IDX (variable node)
-        PLA
-        STA ZP.IDXH
-        PLA
-        STA ZP.IDXL
-        
+                
         PLA
         STA ZP.NEXTH
         PLA
