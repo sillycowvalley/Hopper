@@ -75,7 +75,7 @@ Debug.NL(); NOut(); Space(); LDA #'<' COut(); LDA #'-' COut(); Space(); TOut();
             break;
         }
 
- PHP       
+PHP       
 Debug.NL(); 
 if (C)
 {

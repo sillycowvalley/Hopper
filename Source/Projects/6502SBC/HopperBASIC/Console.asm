@@ -982,11 +982,6 @@ unit Console // Console.asm
                 SEC break; // No more variables - success
             }
             
-            // Save the current variable node
-            LDA ZP.IDXL
-            PHA
-            LDA ZP.IDXH
-            PHA
             
             // Clear tokenizer state
             Tokenizer.Initialize();
@@ -999,9 +994,12 @@ unit Console // Console.asm
             
 
             LDA ZP.ACCT
-            AND BASICType.ARRAY
+            AND # BASICType.ARRAY
             if (NZ)
             {
+                
+Debug.NL(); AOut();
+                
                 Variables.GetValue(); // BASICArray -> TOP, Variable -> IDX, Tokens -> NEXT
                 
                 // Copy array index expression tokens to buffer
@@ -1026,6 +1024,8 @@ unit Console // Console.asm
                     IncNEXT();
                 }
                 
+Debug.NL(); XOut(); TOut(); NOut();                
+
                 STZ ZP.TokenizerPosL
                 STZ ZP.TokenizerPosH
                 
@@ -1040,30 +1040,33 @@ unit Console // Console.asm
                 if (NC) 
                 { 
                     // Error during initialization
-                    PLA PLA
                     CLC
                     break;
                 }
                 
-                // Restore variable node before continuing iteration
-                PLA
-                STA ZP.IDXH
-                PLA
-                STA ZP.IDXL
-                
                 Stacks.PopNext();
                 
+Debug.NL(); XOut(); TOut(); NOut();
+
                 // Input:  BASICArray = TOP, number of elements = NEXT
                 // Output: BASICArray = TOP (may be the same, may be new - always zeroed out)
                 BASICArray.Redimension();
+
                 if (NC)
                 {
                     break;
                 }
-                Variables.SetValue(); // does not free old
+                // Input: ZP.IDX = symbol node address (from Find), ZP.TOP = new value
+                //Variables.SetValue(); // does not free old
             }
             else
             {
+                // Save the current variable node
+                LDA ZP.IDXL
+                PHA
+                LDA ZP.IDXH
+                PHA
+                
                 // Add IDENTIFIER token
                 LDA #Token.IDENTIFIER
                 Tokenizer.appendToTokenBuffer(); // munts IDX!
@@ -1114,6 +1117,7 @@ unit Console // Console.asm
                             AND #BASICType.ARRAY
                             if (NZ)
                             {
+                                // should never get here (see case above)
                                 Error.TODO(); BIT ZP.EmulatorPCL
                                 States.SetFailure();
                                 break;
@@ -1156,7 +1160,7 @@ unit Console // Console.asm
                         IncNEXT();
                     }
                 }
-                
+DumpBuffers();                
                 STZ ZP.TokenizerPosL
                 STZ ZP.TokenizerPosH
                 
@@ -1167,6 +1171,8 @@ unit Console // Console.asm
                 SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
                 // These are simple assignments (FOO = 42, rather than INT FOO = 42)
                 Statement.ExecuteStatement();
+                
+PHP DumpHeap(); PLP
                 Error.CheckError();
                 if (NC) 
                 { 
@@ -1180,6 +1186,7 @@ unit Console // Console.asm
                 STA ZP.IDXH
                 PLA
                 STA ZP.IDXL
+                
             } // not ARRAY
             
             // Continue to next variable

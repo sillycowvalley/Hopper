@@ -386,7 +386,7 @@ unit Commands
         
         // Get element count
         BASICArray.GetCount(); // Returns count in ZP.ACC
-        
+                
         // Save count for later
         LDA ZP.ACCL
         PHA

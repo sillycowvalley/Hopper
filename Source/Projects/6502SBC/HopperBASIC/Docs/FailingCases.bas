@@ -1,17 +1,31 @@
 !CLS
 !NEW
 
-CONST WORD size = 160
+CONST WORD size = 10
 
 BIT B[size]
-!WORD W[10]
-!INT I[40]
-!CHAR C[20]
-!BYTE BB[40]
+WORD W[size*2]
+INT I[30]
+CHAR C[20]
+BYTE BB[40]
 
+!TRON
 BEGIN
 END
 VARS
 
 RUN
+
+STRING STR = "hello"
+
+FUNC FOO(STR)
+     PRINT STR
+ENDFUNC
+
+BEGIN
+     FOO(STR)
+END
+
+RUN
+
 

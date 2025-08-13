@@ -380,7 +380,6 @@ unit Variables
         // Check if it's a variable or constant
         LDA ZP.ACCT
         AND # SymbolType.MASK
-HOut(); XOut();       
         switch (A)
         {
             case SymbolType.VARIABLE:
@@ -393,7 +392,6 @@ HOut(); XOut();
             }
             default:
             {
-LDA #'$' COut();COut();COut();                
                 // Not a variable or constant
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
             }

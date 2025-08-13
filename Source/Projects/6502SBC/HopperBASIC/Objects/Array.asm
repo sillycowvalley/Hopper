@@ -23,7 +23,64 @@ unit BASICArray
                               0b00010000, 0b00100000, 0b01000000, 0b10000000 };
                               
     const byte ACARRY = ZP.FSIGN;
-                              
+    
+    // Input:  ACCL for elements, ACCT for element type
+    // Output: ACCL for bytes required          
+    elementsToBytes()
+    {
+        PHA
+        
+        // Calculate allocation size based on element type
+        LDA ZP.ACCT
+        switch (A)
+        {
+            case BASICType.BIT:
+            {
+                // BIT arrays: size = (elements + 7) / 8 (round up)
+                LDA # 0
+                STA ACARRY
+                
+                // Check if we need to round up
+                LDA ZP.ACCL
+                AND # 0x07
+                if (NZ)
+                {
+                    INC ACARRY  // Will add 1 for partial byte
+                }
+                
+                // Divide by 8 (shift right 3 times)
+                LSR ZP.ACCH
+                ROR ZP.ACCL
+                LSR ZP.ACCH
+                ROR ZP.ACCL
+                LSR ZP.ACCH
+                ROR ZP.ACCL
+                
+                // Add rounding adjustment
+                CLC
+                LDA ZP.ACCL
+                ADC ACARRY
+                STA ZP.ACCL
+                if (C)
+                {
+                    INC ZP.ACCH
+                }
+            }
+            case BASICType.CHAR:
+            case BASICType.BYTE:
+            {
+                // BYTE/CHAR arrays: size = number of elements (no change)
+            }
+            default:
+            {
+                // INT/WORD arrays: size = elements * 2
+                ASL ZP.ACCL
+                ROL ZP.ACCH
+            }
+        }
+        PLA
+    }
+                                                            
     // Create new array object
     // Input: ZP.ACC = number of elements (16-bit), ZP.ACCT = element type (BASICType enum)
     // Output: ZP.IDX = allocated array pointer, C set if successful, NC if allocation failed
@@ -45,54 +102,10 @@ unit BASICArray
             STA ZP.FLENGTHH
             
             // Calculate allocation size based on element type
-            LDA ZP.ACCT
-            switch (A)
-            {
-                case BASICType.BIT:
-                {
-                    // BIT arrays: size = (elements + 7) / 8 (round up)
-                    LDA # 0
-                    STA ACARRY
-                    
-                    // Check if we need to round up
-                    LDA ZP.ACCL
-                    AND # 0x07
-                    if (NZ)
-                    {
-                        INC ACARRY  // Will add 1 for partial byte
-                    }
-                    
-                    // Divide by 8 (shift right 3 times)
-                    LSR ZP.ACCH
-                    ROR ZP.ACCL
-                    LSR ZP.ACCH
-                    ROR ZP.ACCL
-                    LSR ZP.ACCH
-                    ROR ZP.ACCL
-                    
-                    // Add rounding adjustment
-                    CLC
-                    LDA ZP.ACCL
-                    ADC ACARRY
-                    STA ZP.ACCL
-                    if (C)
-                    {
-                        INC ZP.ACCH
-                    }
-                }
-                case BASICType.CHAR:
-                case BASICType.BYTE:
-                {
-                    // BYTE/CHAR arrays: size = number of elements (no change)
-                }
-                default:
-                {
-                    // INT/WORD arrays: size = elements * 2
-                    ASL ZP.ACCL
-                    ROL ZP.ACCH
-                }
-            }
-            
+            // Input:  ACCL for elements, ACCT for element type
+            // Output: ACCL for bytes required          
+            elementsToBytes();
+                       
             // Add header overhead: 2 bytes count + 1 byte type = 3 bytes total
             CLC
             LDA ZP.ACCL
@@ -440,20 +453,34 @@ unit BASICArray
             INY
             LDA [ZP.IDX], Y
             STA ZP.ACCH
-            
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.ACCT
+
+Debug.NL(); NOut(); AOut();
+                                    
+            LDA ZP.ACCH
             CMP ZP.NEXTH
             if (Z)
             {
                 LDA ZP.ACCL
-                CMP ZP.NEXTH
+                CMP ZP.NEXTL
                 if (Z)
                 {
 Debug.NL(); LDA #'=' COut(); COut(); COut();
                     // TODO : zero out
+                    
+                    // Calculate allocation size based on element type
+                    // Input:  ACCL for elements, ACCT for element type
+                    // Output: ACCL for bytes required          
+                    elementsToBytes();
+                    
+AOut();                    
                     SEC
                     break;
                 }
             }
+Debug.NL(); LDA #'!' COut(); COut(); COut();
             // TODO:
             // - free
             // - allocate new

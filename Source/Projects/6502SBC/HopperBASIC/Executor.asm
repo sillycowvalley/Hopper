@@ -115,7 +115,7 @@ unit Executor // Executor.asm
                 
                 // Update type if it's a VAR variable
                 LDA Address.TypeStackLSB, Y  // Get type from stack
-                AND #BASICType.VAR
+                AND # BASICType.VAR
                 if (NZ)  // VAR variable - update type in symbol table
                 {
                     

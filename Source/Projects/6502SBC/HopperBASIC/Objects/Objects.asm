@@ -264,7 +264,7 @@ unit Objects
             }
             
             // Update value (offset snValue to snValue+1)
-            LDY #snValue
+            LDY # snValue
             LDA ZP.IDYL
             STA [ZP.IDX], Y
             INY
