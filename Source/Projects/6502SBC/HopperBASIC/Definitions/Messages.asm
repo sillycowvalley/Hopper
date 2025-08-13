@@ -17,6 +17,10 @@ unit Messages // Messages.asm
     // String constant for BEGIN function name
     const string BeginFunctionName = "$MAIN";
     
+    // used in BASICSysCalls.ToString
+    const string PrintChar  = "PRINTCHAR";
+    const string PrintValue = "PRINTVALUE";
+    
     // Print OK message
     // Input: None
     // Output: "OK\n" printed to serial

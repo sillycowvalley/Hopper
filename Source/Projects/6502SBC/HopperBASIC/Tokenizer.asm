@@ -296,8 +296,7 @@ unit Tokenizer // Tokenizer.asm
                 CMP #(Limits.TokenizerBufferLength & 0xFF) 
                 if (C)  // ContentSizeL >= LimitL  
                 {
-Debug.NL(); LDA ZP.TokenBufferContentSizeH HOut(); LDA ZP.TokenBufferContentSizeL HOut();
-                    
+//Debug.NL(); LDA ZP.TokenBufferContentSizeH HOut(); LDA ZP.TokenBufferContentSizeL HOut();
                     Error.BufferOverflow(); BIT ZP.EmulatorPCL
                     CLC
                     break;

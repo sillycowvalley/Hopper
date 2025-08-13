@@ -1,76 +1,5 @@
 unit Dasm
 {
-
-    // SYSCALL formatting:
-    printSysCallName()
-    {
-        // Input: A = SYSCALL ID
-        // Output: Prints syscall name and details
-        PHA
-        
-        // Extract function ID (bits 7-3)
-        LSR
-        LSR
-        LSR
-        AND #0x1F
-        
-        // Map syscall ID to Token value for keyword printing
-        switch (A)
-        {
-            case 1:  
-            case 2:   { LDA #Token.PRINT      Tokens.PrintKeyword(); }  // PrintValue and PrintChar
-            case 3:   { LDA #Token.ABS        Tokens.PrintKeyword(); }  // ABS
-            case 4:   { LDA #Token.RND        Tokens.PrintKeyword(); }  // RND
-            case 5:   { LDA #Token.MILLIS     Tokens.PrintKeyword(); }  // MILLIS
-            case 6:   { LDA #Token.SECONDS    Tokens.PrintKeyword(); }  // SECONDS
-            case 7:   { LDA #Token.DELAY      Tokens.PrintKeyword(); }  // DELAY
-            case 8:   { LDA #Token.PEEK       Tokens.PrintKeyword(); }  // PEEK
-            case 9:   { LDA #Token.POKE       Tokens.PrintKeyword(); }  // POKE
-            case 10:  { LDA #Token.PINMODE    Tokens.PrintKeyword(); }  // PINMODE
-            case 11:  { LDA #Token.READ       Tokens.PrintKeyword(); }  // READ
-            case 12:  { LDA #Token.WRITE      Tokens.PrintKeyword(); }  // WRITE
-            case 13:  { LDA #Token.CHR        Tokens.PrintKeyword(); }  // CHR
-            case 14:  { LDA #Token.ASC        Tokens.PrintKeyword(); }  // ASC
-            case 15:  { LDA #Token.LEN        Tokens.PrintKeyword(); }  // LEN
-            default:  { LDA #'?' COut(); LDA #'?' COut(); LDA #'?' COut(); }  // Unknown
-        }
-        
-        PLA
-        PHA
-        
-        // Show argument count and return type in parentheses
-        LDA #'(' COut();
-        
-        PLA
-        PHA
-        AND #0x03  // Extract argument count
-        if (Z)
-        {
-            // No args - just show return type
-        }
-        else
-        {
-            ORA #'0'  // Convert to ASCII digit
-            COut();
-            LDA #',' COut(); Space();
-        }
-        LDA #')' COut();
-        
-        PLA
-        AND #0x04  // Check return bit
-        if (Z)
-        {
-            // LDA #BASICType.VOID     BASICTypes.PrintType();
-        }
-        else
-        {
-            LDA #' ' COut();LDA #':' COut();LDA #' ' COut();
-            LDA #Token.RETURN       Tokens.PrintKeyword();
-        }
-        
-        
-    }
-
     // Disassemble complete function body's opcode stream
     // Input: ZP.IDX = function node
     // Output: Disassembly printed to serial, one line per opcode
@@ -243,7 +172,7 @@ unit Dasm
                             case OpCode.SYSCALL:
                             {
                                 LDA ZP.ACCL
-                                printSysCallName();
+                                BASICSysCalls.ToString();
                             }
                             case OpCode.PUSHBIT:
                             {
@@ -298,18 +227,15 @@ unit Dasm
                                 // Sign extend the byte to 16-bit word
                                 LDA ZP.ACCL
                                 STA ZP.TOPL
-                                if (PL)  // Positive or zero
-                                {
-                                    STZ ZP.TOPH  // Zero high byte for positive
-                                    if (NZ)      // Don't print + for zero
-                                    {
-                                        LDA #'+' COut();
-                                    }
-                                }
-                                else  // Negative
+                                if (MI) // Negative
                                 {
                                     LDA #0xFF
                                     STA ZP.TOPH  // Sign extend for negative
+                                }
+                                else // Positive or zero
+                                {
+                                    STZ ZP.TOPH  // Zero high byte for positive
+                                    LDA #'+' COut();
                                 }
                                 
                                 LDA #BASICType.INT

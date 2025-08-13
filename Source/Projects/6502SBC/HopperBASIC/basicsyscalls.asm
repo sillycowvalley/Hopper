@@ -1,34 +1,145 @@
 unit BASICSysCalls
 {
+    uses "./Definitions/Messages"
    
-   // System call IDs for SYSCALL opcode
-   // Bit layout: Bit 7-3: Function ID, Bit 2: Return Value, Bit 1-0: Argument Count
-   enum SysCallType
-   {
-       // System functions (ID 1-2)
-       PrintValue   = (0b00001 << 3) | (0 << 2) | 0b01,  // ID=1, void,    1 arg  = 0x09
-       PrintChar    = (0b00010 << 3) | (0 << 2) | 0b01,  // ID=2, void,    1 arg  = 0x11
-       
-       // Built-in functions (ID 3-9)
-       Abs          = (0b00011 << 3) | (1 << 2) | 0b01,  // ID=3, returns, 1 arg  = 0x1D
-       Rnd          = (0b00100 << 3) | (1 << 2) | 0b01,  // ID=4, returns, 1 arg  = 0x25
-       Millis       = (0b00101 << 3) | (1 << 2) | 0b00,  // ID=5, returns, 0 args = 0x2C  
-       Seconds      = (0b00110 << 3) | (1 << 2) | 0b00,  // ID=6, returns, 0 args = 0x34
-       Delay        = (0b00111 << 3) | (0 << 2) | 0b01,  // ID=7, void,    1 arg  = 0x39
-       Peek         = (0b01000 << 3) | (1 << 2) | 0b01,  // ID=8, returns, 1 arg  = 0x45
-       Poke         = (0b01001 << 3) | (0 << 2) | 0b10,  // ID=9, void,    2 args = 0x4A
-       
-       // Hardware I/O functions (ID 10-13)
-       PinMode      = (0b01010 << 3) | (0 << 2) | 0b10,  // ID=10, void,    2 args = 0x52
-       Read         = (0b01011 << 3) | (1 << 2) | 0b01,  // ID=11, returns, 1 arg  = 0x5D
-       Write        = (0b01100 << 3) | (0 << 2) | 0b10,  // ID=12, void,    2 args = 0x62
-       
+    // System call IDs for SYSCALL opcode
+    // Bit layout: Bit 7-3: Function ID, Bit 2: Return Value, Bit 1-0: Argument Count
+    enum SysCallType
+    {
+        // System functions (ID 1-2)
+        PrintValue   = (0b00001 << 3) | (0 << 2) | 0b01,  // ID=1, void,     1 arg  = 0x09
+        PrintChar    = (0b00010 << 3) | (0 << 2) | 0b01,  // ID=2, void,     1 arg  = 0x11
+        
+        // Built-in functions (ID 3-9)
+        Abs          = (0b00011 << 3) | (1 << 2) | 0b01,  // ID=3, returns,  1 arg  = 0x1D
+        Rnd          = (0b00100 << 3) | (1 << 2) | 0b01,  // ID=4, returns,  1 arg  = 0x25
+        Millis       = (0b00101 << 3) | (1 << 2) | 0b00,  // ID=5, returns,  0 args = 0x2C  
+        Seconds      = (0b00110 << 3) | (1 << 2) | 0b00,  // ID=6, returns,  0 args = 0x34
+        Delay        = (0b00111 << 3) | (0 << 2) | 0b01,  // ID=7, void,     1 arg  = 0x39
+        Peek         = (0b01000 << 3) | (1 << 2) | 0b01,  // ID=8, returns,  1 arg  = 0x45
+        Poke         = (0b01001 << 3) | (0 << 2) | 0b10,  // ID=9, void,     2 args = 0x4A
+        
+        // Hardware I/O functions (ID 10-13)
+        PinMode      = (0b01010 << 3) | (0 << 2) | 0b10,  // ID=10, void,    2 args = 0x52
+        Read         = (0b01011 << 3) | (1 << 2) | 0b01,  // ID=11, returns, 1 arg  = 0x5D
+        Write        = (0b01100 << 3) | (0 << 2) | 0b10,  // ID=12, void,    2 args = 0x62
+        
         // Character/String functions (ID 13-15)
         Chr          = (0b01101 << 3) | (1 << 2) | 0b01,  // ID=13, returns, 1 arg  = 0x6D
         Asc          = (0b01110 << 3) | (1 << 2) | 0b01,  // ID=14, returns, 1 arg  = 0x75
         Len          = (0b01111 << 3) | (1 << 2) | 0b01,  // ID=15, returns, 1 arg  = 0x7D
-        
-   }
+    }
+   
+    // SYSCALL formatting for DASM:
+    ToString()
+    {
+        loop
+        {
+            // Input: A = SYSCALL ID
+            // Output: Prints syscall name and details
+            TAX
+            
+            // Map syscall ID to Token value for keyword printing
+            switch (X)
+            {
+                case SysCallType.PrintValue: // PRINTVALUE
+                { 
+                    LDA #(PrintValue % 256)
+                    STA ZP.STRL
+                    LDA #(PrintValue / 256)
+                    STA ZP.STRH
+                    Tools.PrintStringSTR();
+                    LDA #0                    
+                }
+                case SysCallType.PrintChar: // PRINTCHAR
+                {
+                    LDA #(PrintChar % 256)
+                    STA ZP.STRL
+                    LDA #(PrintChar / 256)
+                    STA ZP.STRH
+                    Tools.PrintStringSTR();
+                    LDA #0
+                } 
+                case SysCallType.Abs:     { LDA #Token.ABS     }  // ABS
+                case SysCallType.Rnd:     { LDA #Token.RND     }  // RND
+                case SysCallType.Millis:  { LDA #Token.MILLIS  }  // MILLIS
+                case SysCallType.Seconds: { LDA #Token.SECONDS }  // SECONDS
+                case SysCallType.Delay:   { LDA #Token.DELAY   }  // DELAY
+                case SysCallType.Peek:    { LDA #Token.PEEK    }  // PEEK
+                case SysCallType.Poke:    { LDA #Token.POKE    }  // POKE
+                case SysCallType.PinMode: { LDA #Token.PINMODE }  // PINMODE
+                case SysCallType.Read:    { LDA #Token.READ    }  // READ
+                case SysCallType.Write:   { LDA #Token.WRITE   }  // WRITE
+                case SysCallType.Chr:     { LDA #Token.CHR     }  // CHR
+                case SysCallType.Asc:     { LDA #Token.ASC     }  // ASC
+                case SysCallType.Len:     { LDA #Token.LEN     }  // LEN
+                default:                  { Error.InternalError(); BIT ZP.EmulatorPCL LDA #0 }  // Unknown
+            }
+            if (NZ)
+            {
+                Tokens.PrintKeyword(); 
+            }
+            
+            // Show argument count and return type in parentheses
+            LDA #'(' COut();
+            TXA
+            AND #0x03  // Extract argument count
+            if (NZ)
+            {
+                switch (X)
+                {
+                    case SysCallType.PrintValue:
+                        { LDA #Token.VAR         }
+                    case SysCallType.Abs:
+                        { LDA #Token.INT         }
+                    case SysCallType.Delay:
+                    case SysCallType.Peek:
+                        { LDA #Token.WORD        }
+                    case SysCallType.Poke:
+                        { LDA #Token.WORD       Tokens.PrintKeyword(); LDA #',' COut(); Space(); LDA #Token.BYTE }
+                    case SysCallType.PinMode:
+                        { LDA #Token.BYTE       Tokens.PrintKeyword(); LDA #',' COut(); Space(); LDA #Token.BYTE }
+                    case SysCallType.Read:
+                    case SysCallType.Chr:
+                        { LDA #Token.BYTE        }
+                    case SysCallType.PrintChar:
+                    case SysCallType.Asc:
+                        { LDA #Token.CHAR        }
+                    case SysCallType.Len:
+                        { LDA #Token.STRING      }
+                    case SysCallType.Write:
+                        { LDA #Token.BYTE       Tokens.PrintKeyword(); LDA #',' COut(); Space(); LDA #Token.BIT }
+                }
+                Tokens.PrintKeyword();
+            }
+            LDA #')' COut();
+            
+            TXA
+            AND #0x04  // Check return bit
+            if (NZ)
+            {
+                Space(); LDA #'-' COut(); LDA #'>' COut(); Space();
+                switch (X)
+                {
+                    case SysCallType.Abs:     
+                    case SysCallType.Rnd:
+                    case SysCallType.Millis:
+                    case SysCallType.Seconds:
+                    case SysCallType.Len:
+                        { LDA #Token.WORD  }
+                    case SysCallType.Peek:
+                    case SysCallType.Asc:
+                        { LDA #Token.BYTE  }
+                    case SysCallType.Read:
+                        { LDA #Token.BIT   }
+                    case SysCallType.Chr:
+                        { LDA #Token.CHAR  }
+                }
+                Tokens.PrintKeyword(); 
+            }
+            break;
+        } // single exit
+    }
    
    // Execute SYSCALL opcode - system call with flags-based dispatch
    const string executeSysCallTrace = "SYSCALL // System call";

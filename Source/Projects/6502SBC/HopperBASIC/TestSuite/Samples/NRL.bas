@@ -20,5 +20,5 @@ BEGIN
 END
 
 RUN
-NEW
-MEM
+!NEW
+!MEM
