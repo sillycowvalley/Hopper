@@ -54,19 +54,21 @@ unit Dasm
             COut();
             LDA #',' COut(); Space();
         }
+        LDA #')' COut();
         
         PLA
         AND #0x04  // Check return bit
         if (Z)
         {
-            LDA #BASICType.VOID     BASICTypes.PrintType();
+            // LDA #BASICType.VOID     BASICTypes.PrintType();
         }
         else
         {
+            LDA #' ' COut();LDA #':' COut();LDA #' ' COut();
             LDA #Token.RETURN       Tokens.PrintKeyword();
         }
         
-        LDA #')' COut();
+        
     }
 
     // Disassemble complete function body's opcode stream

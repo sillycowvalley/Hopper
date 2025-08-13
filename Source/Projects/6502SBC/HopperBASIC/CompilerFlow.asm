@@ -65,53 +65,17 @@ unit CompilerFlow
                break; 
            }
            
-           // Compile loop body statements until WEND
-           loop // Statement compilation loop
+           CompileStatementBlock();
+           Error.CheckError();
+           if (NC) { States.SetFailure(); break; }
+            
+           // Validate we got WEND
+           LDA ZP.CurrentToken
+           CMP #Token.WEND
+           if (NZ) 
            {
-               Tokenizer.NextToken();
-               Error.CheckError();
-               if (NC) 
-               {
-                   States.SetFailure(); break; 
-               }
-               
-               LDA ZP.CurrentToken
-               
-               CMP #Token.WEND
-               if (Z) 
-               { 
-                   // Found WEND - consume it and exit loop
-                   Tokenizer.NextToken();
-                   Error.CheckError();
-                   if (NC) 
-                   {
-                       States.SetFailure(); break; 
-                   }
-                   break;  // Exit statement compilation loop
-               }
-               
-               CMP #Token.EOF
-               if (Z) 
-               { 
-                   Error.SyntaxError(); BIT ZP.EmulatorPCL  // Missing WEND
-                   States.SetFailure();
-                   break; 
-               }
-               
-               CMP #Token.EOL
-               if (Z)
-               {
-                   // Skip empty lines in loop body
-                   continue;
-               }
-               
-               // Compile statement in loop body (PRINT, assignments, nested loops, etc.)
-               CompileStatement();  // RECURSIVE CALL - handles nested constructs
-               Error.CheckError();
-               if (NC) 
-               {
-                   States.SetFailure(); break; 
-               }
+               Error.SyntaxError(); BIT ZP.EmulatorPCL
+               break;
            }
            
            // Check if we exited due to error
@@ -244,46 +208,18 @@ unit CompilerFlow
             STA ZP.TOPH
             Stacks.PushTop();
             
-            
-            // Compile loop body statements until UNTIL
-            loop // Statement compilation loop
-            {
-                LDA ZP.CurrentToken
-                
-                CMP #Token.UNTIL
-                if (Z) 
-                { 
-                    // Found UNTIL - exit body compilation (don't consume yet)
-                    break;
-                }
-                
-                CMP #Token.EOF
-                if (Z) 
-                { 
-                    Error.SyntaxError(); BIT ZP.EmulatorPCL  // Missing UNTIL
-                    States.SetFailure();
-                    break; 
-                }
-                
-                CMP #Token.EOL
-                if (Z)
-                {
-                    // Skip empty lines in loop body
-                    Tokenizer.NextToken();
-                    Error.CheckError();
-                    if (NC) { States.SetFailure(); break; }
-                    continue;
-                }
-                
-                // Compile statement in loop body
-                CompileStatement();  // RECURSIVE CALL - handles nested constructs
-                Error.CheckError();
-                if (NC) { States.SetFailure(); break; }
-            }
-            
-            // Check if we exited due to error
+            CompileStatementBlock();
             Error.CheckError();
             if (NC) { States.SetFailure(); break; }
+            
+            // Validate we got WEND
+            LDA ZP.CurrentToken
+            CMP #Token.UNTIL
+            if (NZ) 
+            {
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                break;
+            }
             
             // We should be at UNTIL now
             LDA ZP.CurrentToken
@@ -404,6 +340,10 @@ unit CompilerFlow
                 break;
             }
             
+            Tokenizer.NextToken();
+            Error.CheckError();
+            if (NC) { States.SetFailure(); break; }
+            
             // Save position where JUMPZW operand will be (for patching)
             LDA ZP.OpCodeBufferContentSizeL
             STA ZP.TOPL
@@ -425,41 +365,25 @@ unit CompilerFlow
             if (NC) { States.SetFailure(); break; }
             
             // Compile THEN block statements
-            loop // THEN statement compilation loop
-            {
-                Tokenizer.NextToken();
-                Error.CheckError();
-                if (NC) { States.SetFailure(); break; }
-                
-                LDA ZP.CurrentToken
-                
-                CMP #Token.ELSE
-                if (Z) { break; }  // Found ELSE - exit THEN compilation
-                
-                CMP #Token.ENDIF
-                if (Z) { break; }  // Found ENDIF - exit THEN compilation
-                
-                CMP #Token.EOF
-                if (Z)
-                {
-                    Error.SyntaxError(); BIT ZP.EmulatorPCL  // Missing ENDIF
-                    States.SetFailure();
-                    break;
-                }
-                
-                CMP #Token.EOL
-                if (Z)
-                {
-                    // Skip empty lines in THEN block
-                    continue;
-                }
-                
-                // Compile statement in THEN block
-                CompileStatement();  // RECURSIVE CALL - handles nested constructs
-                Error.CheckError();
-                if (NC) { States.SetFailure(); break; }
-            }
             
+            CompileStatementBlock();
+            Error.CheckError();
+            if (NC) { States.SetFailure(); break; }
+            
+            // Check for ELSE or ENDIF (both valid)
+            LDA ZP.CurrentToken
+            CMP #Token.ELSE
+            if (Z) { /* handle ELSE case */ }
+            else
+            {
+                CMP #Token.ENDIF
+                if (Z) { /* handle ENDIF case */ }
+                else
+                {
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
+                }
+            }
+                     
             // Check if we exited due to error
             Error.CheckError();
             if (NC) { States.SetFailure(); break; }
@@ -540,45 +464,18 @@ unit CompilerFlow
                 STA [ZP.IDX], Y   // Patch MSB
                 
                 // Compile ELSE block statements
-                loop // ELSE statement compilation loop
-                {
-                    Tokenizer.NextToken();
-                    Error.CheckError();
-                    if (NC) { States.SetFailure(); break; }
-                    
-                    LDA ZP.CurrentToken
-                    
-                    CMP #Token.ENDIF
-                    if (Z)
-                    {
-                        // Found ENDIF - consume it and exit
-                        Tokenizer.NextToken();
-                        Error.CheckError();
-                        if (NC) { States.SetFailure(); break; }
-                        break;  // Exit ELSE compilation
-                    }
-                    
-                    CMP #Token.EOF
-                    if (Z)
-                    {
-                        Error.SyntaxError(); BIT ZP.EmulatorPCL  // Missing ENDIF
-                        States.SetFailure();
-                        break;
-                    }
-                    
-                    CMP #Token.EOL
-                    if (Z)
-                    {
-                        // Skip empty lines in ELSE block
-                        continue;
-                    }
-                    
-                    // Compile statement in ELSE block
-                    CompileStatement();  // RECURSIVE CALL
-                    Error.CheckError();
-                    if (NC) { States.SetFailure(); break; }
-                }
+                CompileStatementBlock();
+                Error.CheckError();
+                if (NC) { States.SetFailure(); break; }
                 
+                // Check for ELSE or ENDIF (both valid)
+                LDA ZP.CurrentToken
+                CMP #Token.ENDIF
+                if (NZ)
+                {
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
+                }
+                              
                 // Check if we exited due to error
                 Error.CheckError();
                 if (NC) { States.SetFailure(); break; }
@@ -1249,39 +1146,17 @@ unit CompilerFlow
            }
            
            // Compile loop body statements until NEXT
-           loop // Statement compilation loop
+           CompileStatementBlock();
+           Error.CheckError();
+           if (NC) { break; }
+            
+           // Validate we got NEXT
+           LDA ZP.CurrentToken
+           CMP #Token.NEXT
+           if (NZ) 
            {
-               LDA ZP.CurrentToken
-               
-               CMP #Token.NEXT
-               if (Z) 
-               { 
-                   // Found NEXT - verify iterator and complete loop
-                   break;
-               }
-               
-               CMP #Token.EOF
-               if (Z) 
-               { 
-                   Error.MissingNext(); BIT ZP.EmulatorPCL  // Missing NEXT
-                   States.SetFailure();
-                   break; 
-               }
-               
-               CMP #Token.EOL
-               if (Z)
-               {
-                   // Skip empty lines in loop body
-                   Tokenizer.NextToken();
-                   Error.CheckError();
-                   if (NC) { States.SetFailure(); break; }
-                   continue;
-               }
-               
-               // Compile statement in loop body
-               CompileStatement();  // RECURSIVE CALL - handles nested constructs
-               Error.CheckError();
-               if (NC) { States.SetFailure(); break; }
+               Error.SyntaxError(); BIT ZP.EmulatorPCL
+               break;
            }
            
            // Check if we exited due to error

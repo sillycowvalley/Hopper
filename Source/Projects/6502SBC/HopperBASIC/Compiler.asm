@@ -1528,6 +1528,75 @@ unit Compiler // Compiler.asm
    }
    
    
+    // Compile a block of statements separated by colons until any termination token
+    // Input: None
+    // Output: Statement block compiled, ZP.CurrentToken = terminating token (not consumed)
+    //         C set if successful, NC if error
+    // Modifies: OpCode buffer, ZP.CurrentToken, compilation state
+    // Termination tokens: EOF, WEND, NEXT, UNTIL, ELSE, ENDIF
+    const string compileStatementBlockTrace = "CompStmtBlock";
+    CompileStatementBlock()
+    {
+    #ifdef TRACE
+        LDA #(compileStatementBlockTrace % 256) STA ZP.TraceMessageL LDA #(compileStatementBlockTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+    
+        loop // Statement compilation loop
+        {
+            // Check for termination tokens
+            LDA ZP.CurrentToken
+            switch (A)
+            {
+                case Token.EOF:
+                case Token.WEND:
+                case Token.NEXT:
+                case Token.UNTIL:
+                case Token.ELSE:
+                case Token.ENDIF:
+                {
+                    States.SetSuccess();
+                    break; // Exit main loop
+                }
+                
+                case Token.EOL:
+                {
+                    // Skip empty lines
+                    Tokenizer.NextToken();
+                    Error.CheckError();
+                    if (NC) { States.SetFailure(); break; }
+                    continue; // Continue main loop
+                }
+                
+                default:
+                {
+                    // Compile the statement
+                    CompileStatement();
+                    Error.CheckError();
+                    if (NC) { States.SetFailure(); break; }
+                    
+                    // Handle colon separator (THE KEY FIX)
+                    LDA ZP.CurrentToken
+                    CMP #Token.COLON
+                    if (Z)
+                    {
+                        Tokenizer.NextToken();
+                        Error.CheckError();
+                        if (NC) { States.SetFailure(); break; }
+                    }
+                    
+                    continue; // Continue main loop
+                }
+            } // switch
+            
+            break; // Exit main loop (reached from termination cases or error)
+        } // Statement compilation loop
+    
+    #ifdef TRACE
+        LDA #(compileStatementBlockTrace % 256) STA ZP.TraceMessageL LDA #(compileStatementBlockTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+   
+   
    // Compile function body from tokens to opcodes  
    // Input: Function tokens already copied to TokenBuffer, ZP.TokenBufferContentSize set, ZP.ACCL = number of arguments for FUNC
    // Output: Function compiled to opcode buffer, SystemState set
@@ -1555,7 +1624,7 @@ unit Compiler // Compiler.asm
         STA compilerSavedNodeAddrL
         LDA ZP.IDXH
         STA compilerSavedNodeAddrH
-       
+        
        loop // Single exit block
        {
            // Initialize opcode buffer
@@ -1579,30 +1648,20 @@ unit Compiler // Compiler.asm
            
            STZ compilerFuncLocals // no locals yet
            
-           // Compile statements until end of function
-           loop // Statement compilation loop
+           // Replace the statement loop with:
+           CompileStatementBlock();
+           Error.CheckError();
+           if (NC) { States.SetFailure(); break; }
+            
+           // Validate we got EOF
+           LDA ZP.CurrentToken
+           CMP #Token.EOF
+           if (NZ) 
            {
-               // Check for end of function
-               LDA ZP.CurrentToken
-               
-               CMP #Token.EOF
-               if (Z) { break; } // End of token stream
-               
-               CMP #Token.EOL
-               if (Z)
-               {
-                   // Skip empty lines
-                   Tokenizer.NextToken();
-                   Error.CheckError();
-                   if (NC) { States.SetFailure(); break; }
-                   continue;
-               }
-               
-               // Compile the statement
-               CompileStatement();
-               Error.CheckError();
-               if (NC) { States.SetFailure(); break; }
-           } // Statement compilation loop
+               Error.SyntaxError(); BIT ZP.EmulatorPCL
+               States.SetFailure();
+               break;
+           }
            
            // Check if last opcode was RETURN or RETURNVAL
            checkLastOpCodeIsReturn();

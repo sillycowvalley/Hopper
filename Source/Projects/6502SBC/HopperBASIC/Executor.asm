@@ -719,6 +719,9 @@ unit Executor // Executor.asm
            Stacks.PopBP();
            Stacks.PopXID();
            Stacks.PopPC();
+           
+//Debug.NL(); LDA #'<' COut(); Space(); XIOut();  
+
            LDA ZP.CSP
            if (Z) // CallStack pointer == 0?
            {
@@ -1066,7 +1069,7 @@ unit Executor // Executor.asm
            }
 #ifdef DEBUG
 // XIDHERE xS    
-//NL(); LDA #'x' COut(); LDA #'S' COut(); LDA #',' COut();
+//NL(); LDA #'x' COut(); LDA #'S' COut();
 //Space(); LDA ZP.XIDH HOut(); LDA ZP.XIDL HOut();
 //Space(); LDA executorOperandH HOut(); LDA executorOperandL HOut();
 #endif
@@ -1148,6 +1151,8 @@ unit Executor // Executor.asm
                States.SetFailure();
                break;
            }
+           
+
            // ZP.IDX = function node address
            Functions.IsCompiled();
            if (NC)

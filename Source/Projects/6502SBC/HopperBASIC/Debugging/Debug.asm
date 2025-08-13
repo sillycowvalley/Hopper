@@ -734,7 +734,7 @@ unit Debug // Debug.asm
         STZ ZP.DB4  // Start of current row
         STZ ZP.DB5  // Bytes printed on this row
         LDY #0      // Current position
-        LDX #64     // Max bytes to output
+        LDX #255    // Max bytes to output
         
         loop
         {
@@ -742,7 +742,7 @@ unit Debug // Debug.asm
             CPX #0
             if (Z) 
             { 
-                // Hit 64 byte limit, check if partial row
+                // Hit 255 byte limit, check if partial row
                 LDA ZP.DB5
                 if (NZ)  // Bytes on current row
                 {

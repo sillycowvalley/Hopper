@@ -647,7 +647,10 @@ unit Functions
         
         Stacks.PushPC(); // after FetchOperandWord
         
-        
+//Debug.NL(); LDA #'>' COut(); Space(); XIOut();        
+
+        Stacks.PushXID();
+                
         LDY #Objects.snOpCodes
         LDA [ZP.IDX], Y
         STA ZP.PCL
@@ -662,7 +665,7 @@ unit Functions
         LDA [ZP.IDX], Y
         STA ZP.XIDH
         
-        Stacks.PushXID();
+//Debug.NL(); LDA #':' COut(); Space(); XIOut();        
     
         SEC
     }   
@@ -858,7 +861,7 @@ unit Functions
     #ifdef TRACE
         LDA #(functionCompile % 256) STA ZP.TraceMessageL LDA #(functionCompile / 256) STA ZP.TraceMessageH Trace.MethodEntry();
     #endif
-        
+    
         // Save current tokenizer state
         LDA ZP.TokenizerPosL
         PHA
@@ -903,20 +906,39 @@ unit Functions
                 // has arguments
                 Locals.GetCount(); // ZP.ACCL = argument count
             }
-            
+           
             LDA ZP.IDXL
             PHA
             LDA ZP.IDXH 
             PHA
+            
+//Debug.NL(); LDA #'>' COut(); Space(); XIOut();            
+
+            Stacks.PushXID();
+            
+            GetTokens();
+            LDA ZP.IDYL
+            STA ZP.XIDL
+            LDA ZP.IDYH
+            STA ZP.XIDH
+
+//Functions.GetName();            
+//Debug.NL(); PrintStringSTR(); Space(); LDA #':' COut(); Space(); XIOut();        
+            
             // Use Compiler.CompileExpression() to compile function body
             Compiler.CompileFunction();
             Error.CheckError();
+            
+            Stacks.PopXID();
+            
+//Debug.NL(); LDA #'<' COut(); Space(); XIOut();  
             
             PLA
             STA ZP.IDXH
             PLA
             STA ZP.IDXL
             
+
             States.GetState();
             switch (A)
             {
