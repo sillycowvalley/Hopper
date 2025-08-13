@@ -3371,6 +3371,71 @@ unit Debug // Debug.asm
         
         PLY
     }   
+    
+    // Validate a heap-allocated array
+    // Input: ZP.IDY = pointer to array
+    // Output: C if valid array, NC if invalid
+    validateArray()
+    {
+        PHY
+        PHA
+        
+        // Save IDX since we'll use it
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
+        loop // Single exit pattern
+        {
+            // First check if it's a valid heap pointer
+            isValidHeapPointer();
+            if (NC)
+            {
+                NL();
+                LDA #'A' COut();
+                LDA #'B' COut();
+                LDA #'H' COut();  // ABH = Array bad heap pointer
+                XOut();
+                CLC  // Not a valid heap allocation
+                break;
+            }
+            
+            // Validate element type at offset 2
+            LDY # BASICArray.aiType
+            LDA [ZP.IDY], Y
+            
+            // Check if it's a valid element type
+            CMP #BASICType.INT
+            if (Z) { SEC break; }
+            CMP #BASICType.WORD
+            if (Z) { SEC break; }
+            CMP #BASICType.BYTE
+            if (Z) { SEC break; }
+            CMP #BASICType.CHAR
+            if (Z) { SEC break; }
+            CMP #BASICType.BIT
+            if (Z) { SEC break; }
+            
+            // Invalid element type
+            NL();
+            LDA #'A' COut();
+            LDA #'E' COut();
+            LDA #'T' COut();  // AET = Array element type invalid
+            Serial.HexOut();   // Show the invalid type
+            CLC
+            break;
+        }
+        
+        // Restore IDX
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        PLA
+        PLY
+    }
           
                 
     // Validate variable list integrity
@@ -3480,6 +3545,47 @@ unit Debug // Debug.asm
                         LDA #'S' COut();
                         LDA #'!' COut();  // VS! = Variable String
                         CLC
+                        break;
+                    }
+                }
+            }
+            
+            
+            // Check if it's an ARRAY variable  
+            LDY #Objects.snType
+            LDA [ZP.IDX], Y
+            AND #BASICType.FLAGMASK
+            CMP #BASICType.ARRAY
+            if (Z)
+            {
+                // Get array pointer from value field
+                LDY #Objects.snValue
+                LDA [ZP.IDX], Y
+                STA ZP.IDYL
+                INY
+                LDA [ZP.IDX], Y
+                STA ZP.IDYH
+                
+                // Check if null
+                LDA ZP.IDYL
+                ORA ZP.IDYH
+                if (Z)
+                {
+                    // Null array pointer - not legal but could be intermediate stage
+                }
+                else
+                {
+                    // Validate as array
+                    validateArray();
+                    if (NC)
+                    {
+                        NL();
+                        LDA #'V' COut();
+                        LDA #'A' COut();
+                        LDA #'!' COut();  // VA! = Variable Array invalid
+                        LDA ZP.IDYH HOut();
+                        LDA ZP.IDYL HOut();
+                        CLC // Failed
                         break;
                     }
                 }

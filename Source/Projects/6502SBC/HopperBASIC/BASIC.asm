@@ -1,7 +1,7 @@
 program HopperBASIC
 {
     #define DEBUG
-    //#define TRACE  // Compiler and Executor call tree walks
+    #define TRACE  // Compiler and Executor call tree walks
     #define TRACEEXE // instructions in Executor
 
     // Defunct?    

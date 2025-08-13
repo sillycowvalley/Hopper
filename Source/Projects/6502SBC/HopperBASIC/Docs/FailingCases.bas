@@ -1,17 +1,17 @@
-CLS
-NEW
+!CLS
+!NEW
+
+CONST WORD size = 160
+
+BIT B[size]
+!WORD W[10]
+!INT I[40]
+!CHAR C[20]
+!BYTE BB[40]
 
 BEGIN
-    WORD START = MILLIS()
-    BYTE B = PEEK(0)
-    PRINT B
-    POKE(255,B)
-    
-    CHAR C = CHR(65)
-    PRINT C
-    B = ASC(C)
-    PRINT MILLIS() - START, " ms"
 END
+VARS
+
 RUN
-DASM
-HEAP
+

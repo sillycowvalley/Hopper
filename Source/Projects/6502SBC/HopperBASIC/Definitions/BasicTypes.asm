@@ -52,60 +52,74 @@ unit BASICTypes // BASICTypes.asm
         }
         else
         {
-            // Convert BasicType to corresponding Token and use keyword table
             TXA
-            AND # BASICType.TYPEMASK
-            switch (A)
+            AND # BASICType.ARRAY
+            if (NZ)
             {
-                case BASICType.INT:
+                LDA #Token.ARRAY
+                Tokens.PrintKeyword();
+                TXA
+                AND # BASICType.TYPEMASK
+                if (NZ)
                 {
-                    LDA #Token.INT
-                    Tokens.PrintKeyword();
-                }
-                case BASICType.WORD:
+                    // ARRAY contains elements of type
+                    LDA #'(' COut();
+                    TXA
+                    AND # BASICType.TYPEMASK
+                    PrintType();
+                    LDA #')' COut();
+                }    
+            }
+            else
+            {
+                // Convert BasicType to corresponding Token and use keyword table
+                TXA
+                AND # BASICType.TYPEMASK
+                switch (A)
                 {
-                    LDA #Token.WORD
-                    Tokens.PrintKeyword();
-                }
-                case BASICType.BIT:
-                {
-                    LDA #Token.BIT
-                    Tokens.PrintKeyword();
-                }
-                case BASICType.BYTE:
-                {
-                    LDA #Token.BYTE
-                    Tokens.PrintKeyword();
-                }
-                case BASICType.CHAR:
-                {
-                    LDA #Token.CHAR
-                    Tokens.PrintKeyword();
-                }
-                case BASICType.STRING:
-                {
-                    LDA #Token.STRING
-                    Tokens.PrintKeyword();
-                }
-                /*
-                case BASICType.ARRAY:
-                {
-                    LDA #Token.ARRAY
-                    Tokens.PrintKeyword();
-                }
-                */
-                case BASICType.VOID:
-                {
-                    LDA #(voidName % 256)
-                    STA ZP.STRL
-                    LDA #(voidName / 256)
-                    STA ZP.STRH
-                    PrintStringSTR();
-                }
-                default:
-                {
-                    // Unknown type
-                    Serial.HexOut();
+                    case BASICType.INT:
+                    {
+                        LDA #Token.INT
+                        Tokens.PrintKeyword();
+                    }
+                    case BASICType.WORD:
+                    {
+                        LDA #Token.WORD
+                        Tokens.PrintKeyword();
+                    }
+                    case BASICType.BIT:
+                    {
+                        LDA #Token.BIT
+                        Tokens.PrintKeyword();
+                    }
+                    case BASICType.BYTE:
+                    {
+                        LDA #Token.BYTE
+                        Tokens.PrintKeyword();
+                    }
+                    case BASICType.CHAR:
+                    {
+                        LDA #Token.CHAR
+                        Tokens.PrintKeyword();
+                    }
+                    case BASICType.STRING:
+                    {
+                        LDA #Token.STRING
+                        Tokens.PrintKeyword();
+                    }
+                    case BASICType.VOID:
+                    {
+                        LDA #(voidName % 256)
+                        STA ZP.STRL
+                        LDA #(voidName / 256)
+                        STA ZP.STRH
+                        PrintStringSTR();
+                    }
+                    default:
+                    {
+                        // Unknown type
+                        Serial.HexOut();
+                    }
                 }
             }
         }
@@ -154,14 +168,11 @@ unit BASICTypes // BASICTypes.asm
                 LDA # BASICType.VAR
                 SEC
             }
-            /*
             case #Token.ARRAY:
             {
                 LDA # BASICType.ARRAY
                 SEC
             }
-            */
-            
             default:
             {
                 CLC

@@ -12,6 +12,8 @@ unit BASICArray
     //   - BYTE/CHAR: one byte per element  
     //   - INT/WORD: two bytes per element (LSB first)
     
+    friend Debug, Commands;
+    
     const uint aiCount    = 0;  // Offset to element count field
     const uint aiType     = 2;  // Offset to element type field
     const uint aiElements = 3;  // Offset to first element
@@ -29,6 +31,11 @@ unit BASICArray
     // Preserves: Element count preserved in array header
     New()
     {
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
+        
         loop
         {
             // Save element count for array header
@@ -155,6 +162,11 @@ unit BASICArray
             SEC  // Success
             break;
         } // single exit
+        
+        PLA
+        STA ZP.IDYH
+        PLA
+        STA ZP.IDYL
     }
        
     // Get array element count
@@ -402,6 +414,60 @@ unit BASICArray
             SEC                // Success
             break;
         } // single exit     
+        PLY
+        PLX
+        PLA
+    }
+    // Input:  BASICArray = TOP, number of elements = NEXT
+    // Output: BASICArray = TOP (may be the same, may be new)
+    //         C = success, NC = failure
+    Redimension()
+    {
+        PHA
+        PHX
+        PHY
+        
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
+        loop
+        {   
+            LDY # aiCount
+            LDA [ZP.IDX], Y
+            STA ZP.ACCL
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.ACCH
+            
+            CMP ZP.NEXTH
+            if (Z)
+            {
+                LDA ZP.ACCL
+                CMP ZP.NEXTH
+                if (Z)
+                {
+Debug.NL(); LDA #'=' COut(); COut(); COut();
+                    // TODO : zero out
+                    SEC
+                    break;
+                }
+            }
+            // TODO:
+            // - free
+            // - allocate new
+        
+        
+            SEC                // Success
+            break;
+        } // single exit  
+        
+        PLA
+        STA ZP.IDXH
+        PLA 
+        STA ZP.IDXL
+              
         PLY
         PLX
         PLA

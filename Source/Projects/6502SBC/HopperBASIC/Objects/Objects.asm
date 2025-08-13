@@ -411,7 +411,6 @@ unit Objects
                 break;
             }
             */
-            
             // Check if node matches filter (Filter is already in ZP.SymbolIteratorFilter)
             findNextMatch();
             break;

@@ -997,72 +997,14 @@ unit Console // Console.asm
             
             Variables.GetType(); // -> ZP.ACCT
             
-            // Add IDENTIFIER token
-            LDA #Token.IDENTIFIER
-            Tokenizer.appendToTokenBuffer(); // munts IDX!
-            
-            // Copy variable name to buffer
-            loop
+
+            LDA ZP.ACCT
+            AND BASICType.ARRAY
+            if (NZ)
             {
-                LDA [ZP.STR]
-                if (Z)
-                {
-                    Tokenizer.appendToTokenBuffer(); // null terminator
-                    break; // Copied null terminator
-                }
-                Tokenizer.appendToTokenBuffer();
-                IncSTR();
-            }
-            
-            // Add '=' token
-            LDA #Token.EQUALS
-            Tokenizer.appendToTokenBuffer();
-            
-            // Check if variable has initialization tokens
-            LDA ZP.NEXTL
-            ORA ZP.NEXTH
-            if (Z) 
-            {
+                Variables.GetValue(); // BASICArray -> TOP, Variable -> IDX, Tokens -> NEXT
                 
-                LDA ZP.ACCT
-                AND #BASICType.MASK
-                switch (A)
-                {
-                    case BASICType.STRING:
-                    {
-                        LDA # Token.STRINGLIT
-                        Tokenizer.appendToTokenBuffer();
-                        // '\0' (null terminator for string literal)
-                        LDA #0x00
-                        Tokenizer.appendToTokenBuffer();
-                    }
-                    case BASICType.BIT:
-                    {
-                        LDA #Token.FALSE
-                        Tokenizer.appendToTokenBuffer();
-                    }
-                    default:
-                    {
-                        // No initialization tokens - use default value 0
-                        LDA #Token.NUMBER
-                        Tokenizer.appendToTokenBuffer();
-                        
-                        // '0'
-                        LDA #'0'
-                        Tokenizer.appendToTokenBuffer();
-                        
-                        // '\0' (null terminator for number string)
-                        LDA #0x00
-                        Tokenizer.appendToTokenBuffer();
-                    }
-                }
-                // Add EOL token
-                LDA #Token.EOF
-                Tokenizer.appendToTokenBuffer();
-            }
-            else
-            {
-                // Copy variable initialization tokens to buffer
+                // Copy array index expression tokens to buffer
                 // Note: Variable declarations are single-line, so EOL is a good terminator
                 loop
                 { 
@@ -1074,36 +1016,171 @@ unit Console // Console.asm
                         Tokenizer.appendToTokenBuffer();
                         break; // Found EOL terminator
                     }
+                    CMP #Token.EOF
+                    if (Z)
+                    {
+                        Tokenizer.appendToTokenBuffer();
+                        break; // Found EOF terminator
+                    }
                     Tokenizer.appendToTokenBuffer();
                     IncNEXT();
                 }
+                
+                STZ ZP.TokenizerPosL
+                STZ ZP.TokenizerPosH
+                
+                // Execute the initialization statement
+                Tokenizer.NextToken(); // Get first token
+
+                SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
+                SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
+                // These are simple assignments (FOO = 42, rather than INT FOO = 42)
+                Statement.EvaluateExpression();
+                Error.CheckError();
+                if (NC) 
+                { 
+                    // Error during initialization
+                    PLA PLA
+                    CLC
+                    break;
+                }
+                
+                // Restore variable node before continuing iteration
+                PLA
+                STA ZP.IDXH
+                PLA
+                STA ZP.IDXL
+                
+                Stacks.PopNext();
+                
+                // Input:  BASICArray = TOP, number of elements = NEXT
+                // Output: BASICArray = TOP (may be the same, may be new - always zeroed out)
+                BASICArray.Redimension();
+                if (NC)
+                {
+                    break;
+                }
+                Variables.SetValue(); // does not free old
             }
-            
-            STZ ZP.TokenizerPosL
-            STZ ZP.TokenizerPosH
-            
-            // Execute the initialization statement
-            Tokenizer.NextToken(); // Get first token
-            
-            SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
-            SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
-            // These are simple assignments (FOO = 42, rather than INT FOO = 42)
-            Statement.ExecuteStatement();
-            Error.CheckError();
-            if (NC) 
-            { 
-                // Error during initialization
-                PLA PLA
-                CLC
-                break;
-            }
-            
-            // Restore variable node before continuing iteration
-            PLA
-            STA ZP.IDXH
-            PLA
-            STA ZP.IDXL
-        
+            else
+            {
+                // Add IDENTIFIER token
+                LDA #Token.IDENTIFIER
+                Tokenizer.appendToTokenBuffer(); // munts IDX!
+                
+                // Copy variable name to buffer
+                loop
+                {
+                    LDA [ZP.STR]
+                    if (Z)
+                    {
+                        Tokenizer.appendToTokenBuffer(); // null terminator
+                        break; // Copied null terminator
+                    }
+                    Tokenizer.appendToTokenBuffer();
+                    IncSTR();
+                }
+                
+                // Add '=' token
+                LDA #Token.EQUALS
+                Tokenizer.appendToTokenBuffer();
+                
+                // Check if variable has initialization tokens
+                LDA ZP.NEXTL
+                ORA ZP.NEXTH
+                if (Z) 
+                {
+                    
+                    LDA ZP.ACCT
+                    AND #BASICType.MASK
+                    switch (A)
+                    {
+                        case BASICType.STRING:
+                        {
+                            LDA # Token.STRINGLIT
+                            Tokenizer.appendToTokenBuffer();
+                            // '\0' (null terminator for string literal)
+                            LDA #0x00
+                            Tokenizer.appendToTokenBuffer();
+                        }
+                        case BASICType.BIT:
+                        {
+                            LDA #Token.FALSE
+                            Tokenizer.appendToTokenBuffer();
+                        }
+                        default:
+                        {
+                            LDA ZP.ACCT
+                            AND #BASICType.ARRAY
+                            if (NZ)
+                            {
+                                Error.TODO(); BIT ZP.EmulatorPCL
+                                States.SetFailure();
+                                break;
+                            }
+                            else
+                            {
+                                // No initialization tokens - use default value 0
+                                LDA #Token.NUMBER
+                                Tokenizer.appendToTokenBuffer();
+                                
+                                // '0'
+                                LDA #'0'
+                                Tokenizer.appendToTokenBuffer();
+                                
+                                // '\0' (null terminator for number string)
+                                LDA #0x00
+                                Tokenizer.appendToTokenBuffer();
+                            }
+                        }
+                    }
+                    // Add EOL token
+                    LDA #Token.EOF
+                    Tokenizer.appendToTokenBuffer();
+                }
+                else
+                {
+                    // Copy variable initialization tokens to buffer
+                    // Note: Variable declarations are single-line, so EOL is a good terminator
+                    loop
+                    { 
+                        LDA [ZP.NEXT]
+                        CMP #Token.EOL // TODO : switch to EOF
+                        if (Z)
+                        {
+                            LDA #Token.EOF
+                            Tokenizer.appendToTokenBuffer();
+                            break; // Found EOL terminator
+                        }
+                        Tokenizer.appendToTokenBuffer();
+                        IncNEXT();
+                    }
+                }
+                
+                STZ ZP.TokenizerPosL
+                STZ ZP.TokenizerPosH
+                
+                // Execute the initialization statement
+                Tokenizer.NextToken(); // Get first token
+                
+                SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
+                SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
+                // These are simple assignments (FOO = 42, rather than INT FOO = 42)
+                Statement.ExecuteStatement();
+                Error.CheckError();
+                if (NC) 
+                { 
+                    // Error during initialization
+                    PLA PLA
+                    CLC
+                    break;
+                }
+                // Restore variable node before continuing iteration
+                PLA
+                STA ZP.IDXH
+                PLA
+                STA ZP.IDXL
+            } // not ARRAY
             
             // Continue to next variable
             Variables.IterateNext();

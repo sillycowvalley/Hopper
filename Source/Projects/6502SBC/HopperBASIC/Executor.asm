@@ -40,15 +40,16 @@ unit Executor // Executor.asm
             loop
             {
                 if (NC) { SEC break; }  // No more symbols
-
+                
                 // Get symbol's value and type
-                Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = dataType (VAR masked away)
-                // Get symbol's full type (might have VAR bit)
+                Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = dataType (VAR|ARRAY masked away)
+                // Get symbol's full type (might have VAR|ARRAY bit)
                 Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = symbolType|dataType (packed)
                 // Store type in type stack (preserving VAR bit for variables)
                 LDA ZP.ACCT
                 AND # BASICType.MASK // keep VAR when creating the global slots
                 Stacks.PushTop();  // type is in A
+                
                 // Move to next symbol
                 Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
             }
@@ -69,13 +70,22 @@ unit Executor // Executor.asm
             loop
             {
                 if (NC) { SEC break; }  // No more symbols
-                
+
                 // Check if this is a constant (skip if so)
                 Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = type
                 LDA ZP.ACCT
                 AND #SymbolType.MASK
                 CMP #SymbolType.CONSTANT
                 if (Z)  // It's a constant - skip it
+                {
+                    INY  // Still increment index to stay in sync with stack position
+                    Variables.IterateNext();
+                    continue;  // Skip to next iteration
+                }
+                LDA ZP.ACCT
+                AND #BASICType.MASK
+                CMP #BASICType.ARRAY
+                if (Z)  // It's an ARRAY - skip it
                 {
                     INY  // Still increment index to stay in sync with stack position
                     Variables.IterateNext();

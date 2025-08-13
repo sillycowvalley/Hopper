@@ -5,7 +5,7 @@ unit Compiler // Compiler.asm
    uses "Emit"
    uses "CompilerFlow"
    
-   friend Emit, Functions, Locals, CompilerFlow;
+   friend Emit, Functions, Locals, CompilerFlow, Statement;
    
    // API Status: Clean
    // All public methods preserve caller state except for documented outputs

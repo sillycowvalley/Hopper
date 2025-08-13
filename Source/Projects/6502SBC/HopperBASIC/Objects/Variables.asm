@@ -83,10 +83,21 @@ unit Variables
                 STA ZP.NEXTL
                 LDA ZP.IDXH
                 STA ZP.NEXTH
+
+                // put ARRAY back  
+                LDA ZP.ACCT
+                ORA # BASICType.ARRAY 
+                ORA # SymbolType.VARIABLE             
+                STA ZP.ACCT
             }
             
             // Symbol doesn't exist, add it
             LDX #ZP.VariablesList
+            
+            // Input: X = ZP address of table head (ZP.VariableList or ZP.FunctionsList),
+    //        ZP.TOP = name pointer, ZP.ACCT = symbolType|dataType (packed),
+    //        ZP.IDY = tokens pointer (16-bit), ZP.NEXT = value/args (16-bit)
+            
             Objects.Add();
             
             LDA ZP.ACCT
@@ -110,7 +121,18 @@ unit Variables
             CMP #BASICType.STRING
             if (Z)
             {
-                SetValue();
+                SetValue(); // TOP->
+            }
+            LDA ZP.ACCT
+            AND #BASICType.FLAGMASK
+            CMP #BASICType.ARRAY
+            if (Z)
+            {
+                LDA ZP.NEXTL
+                STA ZP.TOPL
+                LDA ZP.NEXTH
+                STA ZP.TOPH
+                SetValue(); // TOP->
             }
             SEC // success
             break;
@@ -216,7 +238,7 @@ unit Variables
             STA ZP.TOPH
             
             LDA ZP.ACCT
-            AND #BASICType.TYPEMASK   // masks off VAR bit (0x10)
+            AND # BASICType.TYPEMASK   // masks off VAR bit (0x10)
             STA ZP.TOPT
             
             SEC  // Success
@@ -295,7 +317,7 @@ unit Variables
                 {
                     SEC
                     // STRING variable - need to free old string and allocate new
-                    FreeStringValue(); // Free existing string memory
+                    FreeCompoundValue(); // Free existing string memory
                     Error.CheckError();
                     if (NC) { break; }
                     
@@ -307,7 +329,8 @@ unit Variables
             }
             else
             {
-                // Non-STRING variable - use existing logic
+                // ARRAY management happens elsewhere, just overwrite ptr              
+                // Non-STRING - use value
                 LDA ZP.TOPL
                 STA ZP.IDYL
                 LDA ZP.TOPH
@@ -356,7 +379,8 @@ unit Variables
         
         // Check if it's a variable or constant
         LDA ZP.ACCT
-        AND #SymbolType.MASK
+        AND # SymbolType.MASK
+HOut(); XOut();       
         switch (A)
         {
             case SymbolType.VARIABLE:
@@ -369,6 +393,7 @@ unit Variables
             }
             default:
             {
+LDA #'$' COut();COut();COut();                
                 // Not a variable or constant
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
             }
@@ -504,8 +529,8 @@ unit Variables
                 break;
             }
             
-            // This checks type internally and only frees STRING types (that are not null)
-            FreeStringValue(); 
+            // This checks type internally and only frees STRING and ARRAY types (that are not null)
+            FreeCompoundValue(); 
             
             // Get tokens pointer before removing symbol
             Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
@@ -636,8 +661,8 @@ unit Variables
                 break; // No more symbols
             }
             
-            // This checks type internally and only frees STRING types (that are not null)
-            FreeStringValue(); 
+            // This checks type internally and only frees STRING and ARRAY types (that are not null)
+            FreeCompoundValue(); 
             
             // Get tokens pointer
             Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
@@ -773,7 +798,7 @@ unit Variables
     // Output: C set if successful, NC if error or not a STRING variable  
     // Modifies: ZP.ACCT, ZP.IDY, ZP.NEXT
     // Preserves: ZP.IDX (variable node address)
-    FreeStringValue()
+    FreeCompoundValue()
     {
         PHA
         PHX
@@ -806,12 +831,19 @@ unit Variables
             // Check if it's a STRING variable
             LDA ZP.ACCT
             AND # BASICType.TYPEMASK  // Extract data type (without VAR)
-            CMP #BASICType.STRING
+            CMP # BASICType.STRING
             if (NZ)
             {
-                // Not a STRING variable - nothing to free
-                SEC // Success (no-op)
-                break;
+                // Check if it's a ARRAY variable
+                LDA ZP.ACCT
+                AND # BASICType.FLAGMASK  // Extract data type (without VAR)
+                CMP # BASICType.ARRAY
+                if (NZ)
+                {
+                    // Not a STRING or ARRAY variable - nothing to free
+                    SEC // Success (nop)
+                    break;
+                }
             }
             
             // Check if string pointer is non-zero

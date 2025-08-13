@@ -1,6 +1,7 @@
 unit Commands
 {
     uses "./Utilities/TokenIterator"
+    uses "./Utilities/Tools"
     uses "./Debugging/Dasm"
 
     // API Status: Clean
@@ -347,6 +348,153 @@ unit Commands
         PLA
     }
     
+    // Display an array variable declaration with contents
+    // Input: ZP.IDX = variable node, A = full type (with ARRAY flag)
+    // Output: Array info and contents printed to serial
+    displayArrayVariable()
+    {
+        PHA
+        PHX
+        PHY
+        
+        // Save the variable node pointer - we need it intact for iteration!
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
+        // Get array pointer from value field
+        Variables.GetValue(); // ZP.TOP = array pointer, ZP.ACCT = type
+        LDA ZP.ACCT
+        AND # BASICType.TYPEMASK
+        BASICTypes.PrintType();
+        
+        LDA #' ' Serial.WriteChar();
+        
+        // Print variable name
+        Variables.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
+        Tools.PrintStringSTR();
+        
+        // Save array pointer in IDX for Array APIs
+        LDA ZP.TOPL
+        STA ZP.IDXL
+        LDA ZP.TOPH
+        STA ZP.IDXH
+        
+        // Print dimensions
+        LDA #'[' Serial.WriteChar();
+        
+        // Get element count
+        BASICArray.GetCount(); // Returns count in ZP.ACC
+        
+        // Save count for later
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
+        // Print element count as WORD
+        LDA ZP.ACCL
+        STA ZP.TOPL
+        LDA ZP.ACCH
+        STA ZP.TOPH
+        Tools.PrintDecimalWord();
+        
+        LDA #']' Serial.WriteChar();
+        LDA #' ' Serial.WriteChar();
+        LDA #'=' Serial.WriteChar();
+        LDA #' ' Serial.WriteChar();
+        
+        // Print array contents
+        LDA #'<' Serial.WriteChar();
+        
+        // Get element type for PrintValue
+        BASICArray.GetItemType(); // Returns type in ZP.ACCT
+        
+        // Restore count
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
+        // Determine how many elements to show (min of 10 or count)
+        LDX #0  // Element counter
+        loop
+        {
+            // Check if we've shown 10 elements
+            CPX # 10
+            if (Z) 
+            { 
+                // Check if there are more elements (count > 10)
+                // We check if 10 < count by comparing high bytes first
+                LDA #0           // 10 high byte
+                LDY #BASICArray.aiCount+1
+                CMP [ZP.IDX], Y  // Compare with count high byte
+                if (Z)
+                {
+                    LDA #10      // 10 low byte  
+                    DEY
+                    CMP [ZP.IDX], Y  // Compare with count low byte
+                }
+                // C set if 10 >= count, NC if 10 < count
+                if (NC)  // 10 < count means more than 10 elements
+                {
+                    LDA #',' Serial.WriteChar();
+                    LDA #' ' Serial.WriteChar();
+                    LDA #'.' Serial.WriteChar();
+                    LDA #'.' Serial.WriteChar();
+                    LDA #'.' Serial.WriteChar();
+                }
+                break; 
+            }
+            
+            // Check if we've shown all elements
+            CPX ZP.ACCL
+            if (Z)
+            {
+                LDA ZP.ACCH
+                if (Z) { break; }  // No more elements
+            }
+            
+            // Print comma separator if not first element
+            CPX #0
+            if (NZ)
+            {
+                LDA #',' Serial.WriteChar();
+                LDA #' ' Serial.WriteChar();
+            }
+            
+            // Get element at index X
+            STX ZP.IDYL
+            STZ ZP.IDYH
+            BASICArray.GetItem(); // Returns value in ZP.TOP, type in A
+            
+            // Save X
+            PHX
+            
+            // Print the value (type is already in ZP.TOPT from GetItem)
+            SEC  // quotes for strings and chars
+            BASICTypes.PrintValue();
+            
+            // Restore X and increment
+            PLX
+            INX
+        }
+        
+        LDA #'>' Serial.WriteChar();
+        
+        Tools.NL();
+        
+        // Restore the variable node pointer for iteration to continue!
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        PLY
+        PLX
+        PLA
+    }
     // Display a variable declaration
     // Input: ZP.IDX = variable node
     // In Commands.asm, displayVariable() method:
@@ -363,51 +511,64 @@ unit Commands
         LDA ZP.ACCT
         PHA
         
-        // Check if it has VAR bit set
-        AND #BASICType.VAR
-        if (NZ)  // Variable has VAR bit
+        // Check if it's an ARRAY
+        AND #BASICType.FLAGMASK
+        CMP #BASICType.ARRAY
+        if (Z)
         {
-            // Print "VAR" first
-            LDA #Token.VAR
-            Tokens.PrintKeyword();
+            PLA  // Get full type for helper
+            displayArrayVariable();  // A = full type, ZP.IDX = node
+        }
+        else
+        {
+            // Check if it has VAR bit set
+            PLA  // Get full type back
+            PHA  // Keep it on stack
+            AND #BASICType.VAR
+            if (NZ)  // Variable has VAR bit
+            {
+                // Print "VAR" first
+                LDA #Token.VAR
+                Tokens.PrintKeyword();
+                
+                // Then print current underlying type in parentheses
+                LDA #'(' Serial.WriteChar();
+                PLA
+                PHA  // Keep it on stack
+                AND #BASICType.TYPEMASK  // Get underlying type without VAR bit
+                BASICTypes.PrintType();
+                LDA #')' Serial.WriteChar();
+            }
+            else  // Regular typed variable
+            {
+                PLA
+                PHA  // Keep it on stack
+                AND #BASICType.MASK
+                BASICTypes.PrintType();
+            }
             
-            // Then print current underlying type in parentheses
-            LDA #'(' Serial.WriteChar();
-            PLA
-            PHA  // Keep it on stack
-            AND #BASICType.TYPEMASK  // Get underlying type without VAR bit
-            BASICTypes.PrintType();
-            LDA #')' Serial.WriteChar();
+            LDA #' ' Serial.WriteChar();
+            
+            // Print variable name
+            Variables.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
+            Tools.PrintStringSTR();
+            
+            LDA #' ' Serial.WriteChar();
+            LDA #'=' Serial.WriteChar();
+            LDA #' ' Serial.WriteChar();
+            
+            // Clean up stack
+            PLA  // Remove saved type
+            
+            // Get and print current value (this needs fresh call to get value)
+            Variables.GetValue(); // ZP.TOP = value, ZP.TOPT = dataType
+            
+            // Input: ZP.TOP = value, ZP.TOPT = type, C = quote strings
+            SEC
+            BASICTypes.PrintValue();
+            
+            Tools.NL();
         }
-        else  // Regular typed variable
-        {
-            PLA
-            PHA  // Keep it on stack
-            AND #BASICType.MASK
-            BASICTypes.PrintType();
-        }
-        
-        LDA #' ' Serial.WriteChar();
-        
-        // Print variable name
-        Variables.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
-        Tools.PrintStringSTR();
-        
-        LDA #' ' Serial.WriteChar();
-        LDA #'=' Serial.WriteChar();
-        LDA #' ' Serial.WriteChar();
-        
-        // Clean up stack
-        PLA  // Remove saved type
-        
-        // Get and print current value (this needs fresh call to get value)
-        Variables.GetValue(); // ZP.TOP = value, ZP.TOPT = dataType
-        
-        // Input: ZP.TOP = value, ZP.TOPT = type, C = quote strings
-        SEC
-        BASICTypes.PrintValue();
-        
-        Tools.NL();
         
         PLY
         PLX

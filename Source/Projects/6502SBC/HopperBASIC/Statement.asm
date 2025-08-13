@@ -616,55 +616,79 @@ unit Statement // Statement.asm
                         ORA #BASICType.ARRAY
                         STA stmtType
                         
-                        // Move past LBRACKET
+                        // Save tokenizer position before expression
+                        LDA ZP.TokenizerPosL
+                        PHA
+                        LDA ZP.TokenizerPosH
+                        PHA
+                        
+                        // Get next token (start of expression)
                         Tokenizer.NextToken();
                         Error.CheckError();
-                        if (NC) { break; }
-                        
-                        // Compile the size expression (like in CompileForStatement)
-                        Compiler.compileExpressionTree();
-                        Error.CheckError();
-                        if (NC) { break; }
-                        
-                        // Check if it was actually a constant expression
-                        if (BBR0, ZP.CompilerFlags) // Bit 0 reset = NOT constant
+                        if (C)
                         {
-                            Error.ConstantExpressionExpected(); BIT ZP.EmulatorPCL
-                            CLC
-                            break;
+                            RMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes) - DON'T HERE so RMB4
+                            SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
+                            Statement.EvaluateExpression();
+                            Error.CheckError();
                         }
                         
-                        // Constant value is already in ZP.TOP - validate it
-                        LDA ZP.TOPT
-                        AND #BASICType.TYPEMASK
-                        CMP #BASICType.INT
+                        // Restore tokenizer position before expression
+                        PLA
+                        STA ZP.FSOURCEADDRESSH
+                        PLA
+                        STA ZP.FSOURCEADDRESSL
+                        
+                        if (NC) { break; } // error exit
+                        
+                        // subtract current tokenizer position
+                        SEC
+                        LDA ZP.TokenizerPosL
+                        SBC ZP.FSOURCEADDRESSL
+                        STA ZP.FLENGTHL  // Length low
+                        LDA ZP.TokenizerPosH
+                        SBC ZP.FSOURCEADDRESSH
+                        STA ZP.FLENGTHH  // Length high
+                        
+                        // strip the RBRACKET
+                        LDA ZP.FLENGTHL
                         if (Z)
                         {
-                            // INT - check for negative
-                            LDA ZP.TOPH
-                            if (MI)
+                            DEC ZP.FLENGTHH
+                        }
+                        DEC ZP.FLENGTHL
+                        
+                        CreateTokenStream();
+                        if (NC) { break; } // error exit
+                        
+                        // Set tokens pointer to the new stream
+                        LDA ZP.FDESTINATIONADDRESSL
+                        STA (stmtTokensPtr + 0)
+                        LDA ZP.FDESTINATIONADDRESSH
+                        STA (stmtTokensPtr + 1)
+                     
+                        // Pop the result into NEXT
+                        Stacks.PopNext();  // Result in ZP.NEXT, type in ZP.NEXTT,  modifies X
+                        
+                        LDA ZP.NEXTT
+                        switch (A)
+                        {
+                            case BASICType.INT:
+                            case BASICType.BYTE:
+                            case BASICType.WORD:
                             {
-                                Error.RangeError(); BIT ZP.EmulatorPCL
+                                // ok
+                            }
+                            default:
+                            {
+                                Error.BadIndex(); BIT ZP.EmulatorPCL
                                 CLC
-                                break;
+                                break; 
                             }
                         }
                         
-                        // Check for zero size
-                        LDA ZP.TOPL
-                        ORA ZP.TOPH
-                        if (Z)
-                        {
-                            Error.RangeError(); BIT ZP.EmulatorPCL
-                            CLC
-                            break;
-                        }
-                        
-                        // Copy to ZP.NEXT
-                        LDA ZP.TOPL
-                        STA ZP.NEXTL
-                        LDA ZP.TOPH
-                        STA ZP.NEXTH
+                        INC declInitializer
+                        SEC
                         
                         // Check for RBRACKET
                         LDA ZP.CurrentToken
@@ -862,11 +886,23 @@ unit Statement // Statement.asm
                 else  // Non-VAR variable - check type compatibility
                 {
                     LDA stmtType
-                    STA ZP.NEXTT // LHS type
-                    
-                    // RHS in TOP
-                    // LHS type in NEXTT
-                    CheckRHSTypeCompatibility();
+                    AND # BASICType.ARRAY
+                    if (NZ)
+                    {
+
+                        LDA stmtType
+                        STA ZP.NEXTT // element type for array: ARRAY(<type>)
+                        SEC
+                    }
+                    else
+                    {    
+                        LDA stmtType
+                        STA ZP.NEXTT // LHS type (element type for array)
+                        
+                        // RHS in TOP
+                        // LHS type in NEXTT
+                        CheckRHSTypeCompatibility();
+                    }
                 }
             }
             else
@@ -903,15 +939,15 @@ unit Statement // Statement.asm
             
             
             // Pack symbolType|dataType: SymbolType in top 3 bits, dataType in bottom 5 bits
-            LDA stmtType  // dataType (bottom 5 bits)
-            ORA stmtSymbol // SymbolType (top 3 bits)
+            LDA stmtType  // dataType (bottom 6 bits)
+            ORA stmtSymbol // SymbolType (top 2 bits)
             STA ZP.ACCT
             
             LDA (stmtTokensPtr+0)
             STA ZP.IDYL
             LDA (stmtTokensPtr+1)
             STA ZP.IDYH
-
+            
             // Call Variables.Declare
             // Input: ZP.TOP = name pointer, ZP.ACCT = symbolType|dataType (packed),
             //        ZP.NEXT = initial value (16-bit), ZP.IDY = tokens pointer (16-bit)
