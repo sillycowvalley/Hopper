@@ -283,7 +283,7 @@ ENDFUNC
 BEGIN
     TestStringCompare()
 END
-! CRASHING   RUN
+RUN
 
 ! ===== TEST 16: Type Mismatch Errors =====
 ! Test these one at a time to catch errors
