@@ -1108,87 +1108,35 @@ unit Tokenizer // Tokenizer.asm
         
         // If it's a literal token, save position and skip past the inline data
         LDA ZP.CurrentToken
-        CMP #Token.NUMBER
-        if (Z)
+        switch (A)
         {
-            // Save current position as start of literal data
-            LDA ZP.TokenizerPosL
-            STA ZP.TokenLiteralPosL
-            LDA ZP.TokenizerPosH
-            STA ZP.TokenLiteralPosH
-            
-            skipInlineString();
-            LDA ZP.CurrentToken
-            return;
-        }
-        CMP #Token.IDENTIFIER
-        if (Z)
-        {
-            // Save current position as start of literal data
-            LDA ZP.TokenizerPosL
-            STA ZP.TokenLiteralPosL
-            LDA ZP.TokenizerPosH
-            STA ZP.TokenLiteralPosH
-            
-            skipInlineString();
-            LDA ZP.CurrentToken
-            return;
-        }
-        CMP #Token.STRINGLIT
-        if (Z)
-        {
-            // Save current position as start of literal data
-            LDA ZP.TokenizerPosL
-            STA ZP.TokenLiteralPosL
-            LDA ZP.TokenizerPosH
-            STA ZP.TokenLiteralPosH
-            
-            skipInlineString();
-            LDA ZP.CurrentToken
-            return;
-        }
-        CMP #Token.CHARLIT
-        if (Z)
-        {
-            // Save current position as start of character value
-            LDA ZP.TokenizerPosL
-            STA ZP.TokenLiteralPosL
-            LDA ZP.TokenizerPosH
-            STA ZP.TokenLiteralPosH
-            
-            // Skip past the single character value (1 byte)
-            incrementTokenizerPos();
-            LDA ZP.CurrentToken
-            return;
-        }
-        CMP #Token.REM
-        if (Z)
-        {
-            // Save current position as start of literal data
-            LDA ZP.TokenizerPosL
-            STA ZP.TokenLiteralPosL
-            LDA ZP.TokenizerPosH
-            STA ZP.TokenLiteralPosH
-            
-            skipInlineString();
-            LDA ZP.CurrentToken
-            return;
-        }
-        CMP #Token.COMMENT
-        if (Z)
-        {
-            // Save current position as start of literal data
-            LDA ZP.TokenizerPosL
-            STA ZP.TokenLiteralPosL
-            LDA ZP.TokenizerPosH
-            STA ZP.TokenLiteralPosH
-            
-            skipInlineString();
-            LDA ZP.CurrentToken
-            return;
-        }
-        
-        LDA ZP.CurrentToken
+            case Token.NUMBER:
+            case Token.IDENTIFIER:
+            case Token.STRINGLIT:
+            case Token.REM:
+            case Token.COMMENT:
+            {
+                // Save current position as start of literal data
+                LDA ZP.TokenizerPosL
+                STA ZP.TokenLiteralPosL
+                LDA ZP.TokenizerPosH
+                STA ZP.TokenLiteralPosH
+                skipInlineString();
+                LDA ZP.CurrentToken
+            }
+            case Token.CHARLIT:
+            {
+                // Save current position as start of character value
+                LDA ZP.TokenizerPosL
+                STA ZP.TokenLiteralPosL
+                LDA ZP.TokenizerPosH
+                STA ZP.TokenLiteralPosH
+                
+                // Skip past the single character value (1 byte)
+                incrementTokenizerPos();
+                LDA ZP.CurrentToken
+            }
+        } // switch
     }
     
     // Check if multiplying ZP.TOP by 10 and adding a digit would overflow
