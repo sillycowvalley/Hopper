@@ -1059,12 +1059,6 @@ unit Emit
 #endif
        loop // Single exit
        {
-#ifdef DEBUG
-// XID cC
-//NL(); LDA #'c' COut(); LDA #'C' COut(); LDA #',' COut();
-//Space(); LDA ZP.TokenBufferH HOut(); LDA ZP.TokenBufferL HOut(); Space();
-//Space(); LDA ZP.TokenLiteralPosH HOut(); LDA ZP.TokenLiteralPosL HOut();
-#endif
            LDA ZP.TokenLiteralPosL
            STA Compiler.compilerOperand1  // LSB
            LDA ZP.TokenLiteralPosH

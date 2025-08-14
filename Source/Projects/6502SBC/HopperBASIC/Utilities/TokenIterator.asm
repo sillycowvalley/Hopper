@@ -95,6 +95,15 @@ unit TokenIterator // TokenIterator.asm
                     skipInlineString();
                     if (NC) { break; } // Error or end of stream
                 }
+                case Token.CHARLIT:
+                {
+                    // CHARLIT has exactly 1 byte of character data after the token
+                    // Advance by 2 bytes total (token + character value)
+                    INC ZP.TOKPOSL
+                    if (Z) { INC ZP.TOKPOSH }
+                    INC ZP.TOKPOSL  
+                    if (Z) { INC ZP.TOKPOSH }
+                }
                 default:
                 {
                     // Regular token - just advance by 1 byte

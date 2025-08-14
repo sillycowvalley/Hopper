@@ -1139,6 +1139,41 @@ unit Tokenizer // Tokenizer.asm
         } // switch
     }
     
+    // Peek at next token without advancing tokenizer position
+    // Input: Current tokenizer state (ZP.TokenizerPos already points to next token)
+    // Output: A = next token type (just the token ID byte)
+    // Munts: ZP.IDX, A, Y
+    // Preserves: All tokenizer state (ZP.TokenizerPos, ZP.CurrentToken, etc.)
+    PeekToken()
+    {
+        // Check if we're already at end of buffer
+        CompareTokenizerPosToLength();
+        if (C)  // TokenizerPos >= TokenBufferContentSize
+        {
+            LDA #Token.EOF
+            return;
+        }
+        
+        PHY
+        
+        // TokenizerPos already points to the next token
+        // Just read the byte at that position
+        CLC
+        LDA ZP.TokenBufferL
+        ADC ZP.TokenizerPosL
+        STA ZP.IDXL
+        LDA ZP.TokenBufferH
+        ADC ZP.TokenizerPosH
+        STA ZP.IDXH
+        
+        LDY #0
+        LDA [ZP.IDX], Y  // Load the next token ID
+        
+        PLY
+        
+        // Return it in A
+    }    
+    
     // Check if multiplying ZP.TOP by 10 and adding a digit would overflow
     // Input: ZP.TOP = current 16-bit value, A = digit to add (0-9)
     // Output: C set if operation is safe, NC set if would overflow

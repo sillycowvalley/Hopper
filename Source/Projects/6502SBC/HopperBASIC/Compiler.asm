@@ -921,21 +921,19 @@ unit Compiler // Compiler.asm
             PHA  // Save on stack
             LDA ZP.TokenLiteralPosH
             PHA  // Save on stack
-            
-            // Look ahead to see if this is a function call
-            Tokenizer.NextToken(); // Get token after identifier
-            Error.CheckError();
-            if (NC) 
-            { 
-                PLA  // Clean up stack
-                PLA
-                break; 
-            }
-            
-            LDA ZP.CurrentToken
+
+            Tokenizer.PeekToken(); // peek next -> A
             CMP #Token.LPAREN
             if (Z)
-            {
+            {          
+                Tokenizer.NextToken(); // consume LPAREN
+                Error.CheckError();
+                if (NC) 
+                { 
+                    PLA  // Clean up stack
+                    PLA
+                    break; 
+                }
                 // Create return slot (VOID 0) first
                 if (BBS5, ZP.FLAGS)
                 {
@@ -1053,9 +1051,6 @@ unit Compiler // Compiler.asm
                 // Not a function call - clean up stack
                 PLA  // Discard saved TokenLiteralPosH
                 PLA  // Discard saved TokenLiteralPosL
-                
-                // Use Rollback to go back to identifier
-                Tokenizer.Rollback();  // Back to identifier
                 
                 // Get the identifier token
                 Tokenizer.NextToken();

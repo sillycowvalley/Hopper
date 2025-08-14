@@ -6,18 +6,17 @@ NEW
 BEGIN
     INT i = 32767
     WORD w = 32767
-    PRINT "INT(32767) = WORD(32767): "
-    PRINT i = w  ! Fails with TYPE MISMATCH
+    PRINT i = w ! Fails with TYPE MISMATCH
 END
 RUN
 
 ! Test 2: BYTE-WORD outside BYTE range  
 NEW
 BEGIN
-    BYTE b = 255
+    BYTE b = 255 ! Comment
     WORD w = 256
     PRINT "BYTE(255) <> WORD(256): "
-    PRINT b <> w  ! Fails with TYPE MISMATCH
+    PRINT b <> w ! Fails with TYPE MISMATCH
 END
 RUN
 
@@ -41,3 +40,11 @@ BEGIN
 END
 RUN
 
+
+BEGIN
+    WORD A = 20 ! comment works fine
+    PRINT A ! comment munted
+    A = A * A ! comment works fine
+    PRINT A ! comment munted
+END
+RUN
