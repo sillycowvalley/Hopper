@@ -834,11 +834,14 @@ unit CompilerFlow
                    // ZP.IDX still contains function node
                    LDA #(SymbolType.LOCAL|BASICType.VAR)  // LOCAL type (will be updated by FROM expression type)
                    STA ZP.SymbolType      // argument for Locals.Add()
-                   SMB1 ZP.CompilerFlags // we own the iterator
+                   SMB1 ZP.CompilerFlags  // we own the iterator
     
                    Locals.Add();
                    Error.CheckError();
                    if (NC) { States.SetFailure(); break; }
+                   
+                   SMB5 ZP.CompilerFlags // we created an implicit local that needs to be removed at the end of the function
+                   
                    // get BP offset
                    Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, ZP.ACCL = BP offset
                    Error.CheckError();
@@ -1353,13 +1356,12 @@ unit CompilerFlow
                Error.CheckError();
                if (NC) { States.SetFailure(); break; }
                
-               DEC Compiler.compilerFuncLocals
-               
                LDA Compiler.compilerSavedNodeAddrL
                STA ZP.IDXL
                LDA Compiler.compilerSavedNodeAddrH
                STA ZP.IDXH
                Locals.RemoveLast();
+               DEC Compiler.compilerFuncLocals
            }
            
            States.SetSuccess();
@@ -1368,7 +1370,15 @@ unit CompilerFlow
        
        // Restore parent FOR iterator offset
        PLA
-       STA ZP.CompilerFlags
+       if (BBS5, ZP.CompilerFlags)
+       {
+           STA ZP.CompilerFlags
+           SMB5 ZP.CompilerFlags // persist the reminder to function to remove implicit local at the end
+       }
+       else
+       {
+           STA ZP.CompilerFlags
+       }
        PLA
        STA ZP.SP
        PLA

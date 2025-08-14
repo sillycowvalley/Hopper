@@ -1619,6 +1619,8 @@ unit Compiler // Compiler.asm
         LDA #1
         STA compilerCanDeclareLocals // locals are allowed
         
+        RMB5 ZP.CompilerFlags // track if an implict local was created in CompileForStatement
+        
         //Save the function node address for argument lookups
         LDA ZP.IDXL
         STA compilerSavedNodeAddrL
@@ -1681,7 +1683,18 @@ unit Compiler // Compiler.asm
            
            States.SetSuccess(); // Success
            break;
+       } // single exit
+       
+       if (BBS5, ZP.CompilerFlags) // in CompileForStatement, we created an implicit local that needs to be removed at the end of the function
+       {
+           LDA Compiler.compilerSavedNodeAddrL
+           STA ZP.IDXL
+           LDA Compiler.compilerSavedNodeAddrH
+           STA ZP.IDXH
+           Locals.RemoveLast();
        }
+       
+       
 
 #ifdef TRACE
        LDA #(compileFunctionTrace % 256) STA ZP.TraceMessageL LDA #(compileFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -2155,12 +2168,16 @@ unit Compiler // Compiler.asm
                     LDA TokenBuffer, X
                     if (NZ)
                     {
+TXA HOut();
+DumpBuffers();                        
+                        
                         PLX
                         Error.InternalError(); BIT ZP.EmulatorPCL
                         break;
                     }
                     PLX
                     LDA ZP.ACCL
+                    
 #endif        
                     STA compilerOperand1  // LSB of offset to null
                     LDA ZP.ACCH
@@ -2446,9 +2463,6 @@ unit Compiler // Compiler.asm
             }
             else
             {
-                
-Debug.NL(); LDA #'e' COut(); LDA ZP.CurrentToken HOut();
-                
                 // Emit appropriate POP instruction based on identifier type
                 LDA ZP.ACCT
                 CMP #IdentifierType.Local

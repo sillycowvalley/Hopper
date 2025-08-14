@@ -137,6 +137,7 @@ unit ZP // ZeroPage.asm
                                              //     BIT 2 - we used a global for our implicit variable - used by CompileForStatement
                                              //     BIT 3 - we're creating FORITF (rather than FORCHK & FORIT)
                                              //     BIT 4 - as "array assignment" flag
+                                             //     BIT 5 - in CompileForStatement, we created an implicit local that needs to be removed at the end of the function
                                              
     const byte OpCodeTemp           = 0x37;  // Temporary opcode construction
     
