@@ -13,343 +13,283 @@
 
 **Best Practice**: Aim for functions under 400 characters to leave safety margin.
 
-### 2. Test Suite Architecture
+### 2. Progressive Isolation Testing Methodology
 
-**Recommended Structure**:
+**Critical Lesson**: Test writing IS debugging. Start with isolated tests for each feature before combining.
+
+**Progressive Isolation Protocol**:
+1. **Start Minimal**: Test one variable type, one feature, one operation at a time
+2. **Isolate on Failure**: When a combined test fails, immediately break it down
+3. **Binary Search**: Comment out half the test to identify which part fails
+4. **Reduce to Minimum**: Keep removing code until you have the smallest failing case
+
+**Example of Progressive Isolation**:
 ```basic
-! Test Suite Title
-FUNC TestFeatureA()
-    ! Focused test of specific feature
-    ! Keep under 400 characters
-ENDFUNC
-
-FUNC TestFeatureB()
-    ! Another focused test
-ENDFUNC
-
+! BAD: Testing everything at once
 BEGIN
-    PRINT "=== Test Suite Name ==="
-    TestFeatureA()
-    TestFeatureB()
-    PRINT "=== Complete ==="
+    ! Tests all types - can't identify failure
+    PRINT int_test; word_test; bit_test; char_test
 END
+
+! GOOD: Progressive isolation
+! Step 1: Test each type separately
+NEW
+INT i = 5
+BEGIN
+    PRINT "INT: "; i; " ! expect 5"
+END
+RUN
+
+! Step 2: If that works, add next type
+NEW
+INT i = 5
+WORD w = 100
+BEGIN
+    PRINT "INT: "; i; " ! expect 5"
+    PRINT "WORD: "; w; " ! expect 100"
+END
+RUN
+
+! Step 3: On failure, isolate to minimum
+NEW
+VAR v = 1    ! Minimal failing case found
+v = "X"
+BEGIN
+END
+RUN
 ```
 
-### 3. Output Validation
+### 3. Memory and State Verification
+
+**Essential Diagnostic Pattern**:
+```basic
+MEM                  ! Check memory before
+! ... test code ...
+NEW                  ! Clear everything
+MEM                  ! Verify no memory leak
+```
+
+**State Verification Tools**:
+- **MEM**: Check for memory leaks between tests
+- **VARS**: Verify global state and type evolution
+- **FUNCS**: Confirm function definitions loaded correctly
+- **LIST**: Full program verification
+
+**Post-Execution Verification**:
+Always check state AFTER program execution, not just during:
+```basic
+RUN
+! Program completes
+VARS    ! Check final state of all globals
+```
+
+### 4. Output Validation
 
 **Expected Output Format**:
-- Clean output without debug traces
-- Clear indication of test vs expected values
-- Example: `flag2=TRUE (expect TRUE)`
+- Always include expected values directly in output
+- Format: `value ! expect expected`
+- Makes test self-documenting and failures obvious
 
 **Debug Output Detection**:
-During initial testing, unexpected debug output was discovered:
+Watch for unexpected debug traces like:
 ```
 NEXT:BIT:0000 TOP:BIT:0001
+D5
+[00][00][00]
 ```
-This indicated incomplete removal of debug code in the PRINT statement handler when processing semicolon-separated expressions. Such output should be considered a test failure.
+Any such output indicates incomplete debug code removal and should be treated as a test failure.
 
-### 4. Testing Scopes
+### 5. Crash Type Classification
 
-**Global Scope Testing** (REPL level):
-- Variables declared outside functions/BEGIN-END
-- Direct execution at READY prompt
-- Persistent across function calls
-- Example: `> BIT GLOBAL = TRUE`
+**Document the TYPE of failure, not just that it failed**:
 
-**Global Variable Re-initialization Behavior**:
-Hopper BASIC has two distinct types of global variables with different persistence behavior:
+1. **Clean Error**: Program stops with error message and code
+   - Example: `?TYPE MISMATCH (0x9F36)`
+   - System remains stable
+
+2. **Clean Crash**: Program stops with crash dump
+   - Example: `== CRASH == SP:CF`
+   - May need NEW to recover
+
+3. **Hang**: Program enters infinite loop
+   - Requires ^C interrupts to break
+   - Example: VAR re-initialization bug
+   - Often corrupts interpreter state
+
+4. **Silent Corruption**: No visible error but subsequent commands fail
+   - Most dangerous type
+   - Example: SYNTAX ERROR on valid commands after crash
+
+### 6. Global Variable Re-initialization Behavior
+
+**CORRECTED BEHAVIOR - ALL globals re-initialize on RUN**:
 
 1. **Initialized Globals**: `BIT B = TRUE`
-   - Re-initialize to declared value on each `RUN` execution
-   - Modified values persist between runs until next `RUN`
-   - Useful for ensuring known starting states
+   - Reset to declared value on each `RUN`
+   - Example: `BIT B = TRUE` always resets to TRUE
 
 2. **Uninitialized Globals**: `BIT B`
-   - Default to type-appropriate value (FALSE for BIT)
-   - Retain modified values across multiple `RUN` executions
-   - No re-initialization behavior
-   - Useful for persistent flags, counters, or state variables
+   - Reset to type-appropriate default on each `RUN`
+   - Defaults: INT/WORD/BYTE→0, BIT→FALSE, CHAR→NUL, STRING→empty, VAR→FALSE
 
-**Re-initialization Test Example**:
-```
-> BIT B = TRUE       (initialized global)
-> BIT C              (uninitialized global)
-> BEGIN
-*   PRINT B; C       (TRUE FALSE)
-*   B = FALSE: C = TRUE
-*   PRINT B; C       (FALSE TRUE)
-* END
-> RUN
-TRUE FALSE
-FALSE TRUE
-> PRINT B; C         (FALSE TRUE - both persist)
-> RUN                (run again)
-TRUE FALSE           (B resets, C retains)
-FALSE TRUE
-> PRINT B; C         (FALSE TRUE - B reset, C persistent)
+**Test Example**:
+```basic
+INT i = 100      ! Will reset to 100 on RUN
+INT i2           ! Will reset to 0 on RUN
+i = 999: i2 = -5555
+BEGIN
+    PRINT i; " "; i2; " ! expect 100 0"
+END
+RUN              ! Both reset
 ```
 
-**Local Scope Testing** (within functions):
-- Variables declared inside FUNC/ENDFUNC or BEGIN/END
-- Scope limited to function
-- Stack frame managed with BP-relative addressing
-- **Local variables shadow globals** - same name hides global in local scope
+### 7. Test Variant Management
 
-**Scope Shadowing Test**:
+**Use Comments for Multiple Test Scenarios**:
+Instead of writing separate test files, use comments to create variants:
+```basic
+! Test variant selection via comments
+VAR v = 42       ! Test initialized VAR
+!VAR v           ! Alternative: test uninitialized
+
+v = "STRING"     ! This line causes crash with initialized VAR
+!v = 100         ! Alternative: stays same type (safe)
+
+BEGIN
+    PRINT v
+END
+RUN
 ```
-> BIT B = FALSE      (global)
-> BEGIN
-*   BIT B = TRUE     (local shadows global)
-*   PRINT B          (prints local: TRUE)
-* END
-> RUN
-TRUE
-> PRINT B            (prints global: FALSE)
-```
 
-**Test Coverage Areas for Each Type**:
-1. Global declaration and initialization
-2. Local declaration and initialization  
-3. Assignment operations
-4. Type-specific operations
-5. CONST declarations (immutability testing)
-6. VAR declarations (runtime typing)
-7. Type checking and error cases
-8. Control flow usage
-9. Scope shadowing behavior
-10. Edge cases and boundaries
-11. Global re-initialization vs persistence behavior
+This technique allows rapid switching between test cases by commenting/uncommenting lines.
 
-### 5. Type Safety Validation
-
-**Type Checking Tests**:
-Each type must reject incompatible assignments and operations.
-
-**Expected Error Formats**:
-- Type mismatch: `?TYPE MISMATCH (0x9F36)`
-- Const assignment: `?ILLEGAL ASSIGNMENT (0x9BAF)`
-
-**CONST Immutability Testing**:
-- Verify CONST declarations create immutable values
-- Test assignment attempts to CONST variables
-- Confirm error on modification attempt
-- Verify CONST value remains unchanged
-- Test in both global and local scopes
-
-**VAR Runtime Typing**:
-- VAR variables are duck-typed (runtime type resolution)
-- VARS command shows current type: `VAR(BIT)`, `VAR(INT)`, etc.
-- Test type changes through assignment
-- Verify operations use current runtime type
-- Test type inference from initial value
-
-**Test Categories**:
-1. **Invalid Assignments**: Wrong type literals to typed variables
-2. **Const Modification**: Attempts to change CONST values  
-3. **Invalid Operations**: Operations between incompatible types
-4. **Invalid Conversions**: Implicit conversions that shouldn't work
-5. **Function Parameters**: Type mismatches in function calls
-6. **VAR Type Evolution**: Runtime type changes for VAR variables
-
-**Testing Protocol**:
-- Verify error message appears with correct code
-- Confirm variable state after failed operations
-- Test both global and local scope type checking
-- Verify CONST immutability at all scopes
-- Track VAR type changes through VARS command
-
-### 6. Diagnostic Tools for Testing
-
-**VARS Command**:
-- Lists all global variables and constants
-- Shows current values
-- Displays in declaration order
-- **CONST variables** shown as: `CONST BIT CBIT = TRUE`
-- **VAR variables** show runtime type: `VAR(BIT) VBIT = FALSE`
-- Use to verify global state and type evolution
-
-**FUNCS Command**:
-- Lists all defined functions
-- Shows function signatures
-- Includes BEGIN/END as main program
-- Use to verify function loading
-
-**LIST Command**:
-- Complete program listing
-- Shows all declarations and definitions
-- Preserves original structure
-- Use for full program verification
-
-**MEM Command**:
-- Shows available memory
-- Use before/after tests (with the help of `NEW`) to check for leaks
-- Monitor memory consumption
-
-**Testing Workflow**:
-1. Use VARS to check initial state
-2. Execute test operations
-3. Use VARS to verify changes and types
-4. Use FUNCS to confirm function definitions
-5. Use MEM to check memory health
-6. Test scope shadowing with local/global comparison
-
-### 7. Testing Methodology
-
-**Comprehensive Testing Approach**:
-
-1. **Global Scope First**:
-   - Test at REPL prompt
-   - Verify with VARS command
-   - Test persistence across operations
-
-2. **Type Safety Validation**:
-   - Test invalid assignments
-   - Verify error messages and codes
-   - Confirm no state corruption
-
-3. **Local Scope Testing**:
-   - Create test functions
-   - Verify scope isolation
-   - Test parameter passing
-
-4. **Integration Testing**:
-   - Mix global and local variables
-   - Test in expressions and control flow
-   - Verify type interactions
-
-**Output Verification**:
-- Always include expected values in output
-- Use consistent format: `actual (expect expected)`
-- Test both success and failure cases
-- Verify error messages match expected format
-
-**State Verification**:
-- Use VARS to check global state
-- Use FUNCS to verify function definitions
-- Use MEM to monitor memory usage
-- Use LIST for full program verification
-
-### 6. Known Issues and Workarounds
+### 8. Known Issues and Workarounds
 
 **Issue #1**: Debug output in PRINT statements
-- **Symptom**: Stack/type debug messages appear with semicolon-separated PRINT
-- **Status**: Fixed (as of last test run)
+- **Status**: Fixed
 - **Workaround if needed**: Use multiple PRINT statements instead of semicolons
 
-### 7. Test Execution Protocol
+**Issue #2**: VAR re-initialization crash
+- **Symptom**: Hang/crash when initialized VAR changes from INT/WORD to STRING then RUN
+- **Status**: ACTIVE BUG
+- **Minimal reproduction**:
+  ```basic
+  VAR v = 1
+  v = "X"
+  BEGIN
+  END
+  RUN    ! HANGS
+  ```
+- **Workaround**: Don't use initialized VAR variables that change to STRING type
 
-1. Enter each test function individually
-2. Verify OK response after ENDFUNC
-3. Execute tests one at a time initially
-4. Check for unexpected output or error messages
-5. Document any deviations from expected behavior
+### 9. Testing Methodology
 
-### 8. Future Testing Priorities
+**Test Development Workflow**:
 
-**Critical Test Areas**:
-1. **Type System Completeness**: All types with both global and local scope
-2. **Type Safety**: Comprehensive error checking and type mismatch detection  
-3. **Memory Management**: No leaks, proper cleanup, stack frame handling
-4. **Function System**: Recursion, parameter passing, return values
-5. **Control Flow**: All structures with type-appropriate conditions
-6. **Array Support**: When implemented, full indexing and bounds checking
+1. **Hypothesis**: Form a theory about behavior
+2. **Minimal Test**: Create smallest possible test
+3. **Observe**: Run and document actual behavior
+4. **Isolate**: If failure, progressively isolate
+5. **Document**: Record both expected and actual behavior
+6. **Verify State**: Check MEM, VARS after completion
 
-**Regression Testing**:
-- Maintain test suite for each completed feature
-- Run after any interpreter changes
-- Document any new error codes discovered
-- Track performance metrics (MEM usage)
+**Golden Rules**:
+- One test, one purpose
+- Start isolated, combine only after individual success
+- Always include expected values in output
+- Check state both during AND after execution
+- Document crash TYPE, not just occurrence
+- Use diagnostic commands liberally (MEM, VARS, FUNCS)
 
-### 9. Test Suite Character Budget
+### 10. Test Suite Architecture
 
-**Typical character counts**:
-- Simple declaration test: ~250 chars
-- Operation test with multiple cases: ~300 chars
-- Complex expression test: ~350 chars
-- Control flow test: ~280 chars
-- Main BEGIN/END orchestrator: ~400 chars max
+**Recommended Structure for Complex Testing**:
+```basic
+! Phase 1: Individual type tests with NEW between each
+NEW
+! Test Type A
+RUN
+VARS
+MEM
 
-**Budget Planning**:
-- Reserve 100 chars for function wrapper
-- Allocate 300-350 chars for test logic
-- Keep messages concise but clear
+NEW  
+! Test Type B
+RUN
+VARS
+MEM
 
-### 10. Quality Indicators
+! Phase 2: Combined test only after individuals pass
+NEW
+! Combined test
+RUN
+```
 
-**Good Test Function**:
-- Single responsibility
-- Clear expected vs actual output
-- Under 400 characters
-- No complex nested structures
-- Descriptive but concise naming
+### 11. Quality Indicators
 
-**Test Suite Success Criteria**:
-- All functions load without error
-- No unexpected debug output
-- All actual values match expected
-- Clean execution without crashes
-- Proper memory cleanup (check with MEM command)
+**Signs of a Good Test**:
+- Can identify failure point immediately
+- Under 400 characters per function
+- Self-documenting with embedded expectations
+- No memory leaks (MEM before = MEM after)
+- Tests one specific behavior
+- Provides minimal reproduction case on failure
 
----
+**Signs Testing is Needed**:
+- Any crash without clear error message
+- Unexpected debug output
+- Memory changes between runs
+- Type system edge cases
+- Scope interaction complexity
 
-## Testing Checklist Template
+### 12. Testing Checklist Template
 
-For each data type (BIT, INT, WORD, BYTE, CHAR, STRING):
+For each data type (BIT, INT, WORD, BYTE, CHAR, STRING, VAR):
 
-### Global Scope Tests
-- [ ] Declaration without initialization (uninitialized global)
-- [ ] Declaration with initialization (initialized global - re-initializes on RUN)
+#### Progressive Isolation Tests
+- [ ] Test type in complete isolation first
+- [ ] Verify with diagnostic commands (VARS, MEM)
+- [ ] Only combine with other types after individual success
+
+#### Global Scope Tests
+- [ ] Declaration without initialization (resets to default on RUN)
+- [ ] Declaration with initialization (resets to declared value on RUN)
+- [ ] Verify re-initialization with before/after RUN comparison
 - [ ] Assignment after declaration
 - [ ] CONST declaration and immutability
-- [ ] Type mismatch errors
-- [ ] Verify with VARS command
-- [ ] Test re-initialization behavior (initialized globals reset on each RUN)
-- [ ] Test persistence behavior (uninitialized globals retain values across RUNs)
+- [ ] Type mismatch errors with error code verification
 
-### CONST Testing
-- [ ] CONST declaration with value
-- [ ] Attempt assignment (expect ILLEGAL ASSIGNMENT)
-- [ ] Verify value unchanged after error
-- [ ] Use CONST in expressions
-- [ ] CONST in local scope
-- [ ] CONST as function parameter
+#### Memory Leak Tests
+- [ ] MEM before operations
+- [ ] Execute test operations
+- [ ] NEW to clear
+- [ ] MEM after to verify no leak
 
-### VAR Type Testing (duck typing)
-- [ ] VAR declaration with initial type
-- [ ] Type shown correctly in VARS listing
-- [ ] Assignment changes runtime type
-- [ ] Operations use current type
-- [ ] Type errors based on current type
-- [ ] VAR as function parameter
+#### VAR Type Special Cases
+- [ ] VAR with initial value that doesn't change type (safe)
+- [ ] VAR without initial value (safe)
+- [ ] ⚠️ VAR with initial value that changes to STRING (KNOWN CRASH)
 
-### Local Scope Tests  
-- [ ] Declaration in function
-- [ ] Declaration in BEGIN/END
-- [ ] Local shadows global (same name)
-- [ ] Verify shadowing with before/after values
-- [ ] Parameter passing
-- [ ] Return values
-- [ ] Verify scope isolation
-
-### Type-Specific Operations
-- [ ] Valid operations for type
-- [ ] Invalid operation errors
-- [ ] Type promotion behavior
-- [ ] Boundary conditions
-- [ ] Edge cases
-
-### Integration Tests
-- [ ] Use in expressions
-- [ ] Use in control flow
-- [ ] Use in loops
-- [ ] Mixed type operations
-- [ ] Function arguments
-- [ ] Scope interaction (global/local)
+#### Post-Execution Verification
+- [ ] State persists correctly after function return
+- [ ] VARS shows expected values after RUN
+- [ ] No corruption of other variables
 
 ---
 
-*Document Version: 1.3*  
-*Last Updated: Added global variable re-initialization behavior documentation*  
+## Key Lessons Learned
+
+1. **Progressive Isolation is Essential**: Never test multiple features together until each works alone
+2. **Memory State Verification**: Always check MEM before/after with NEW
+3. **Post-Execution State Matters**: Use VARS after RUN, not just during
+4. **Crash Types Matter**: Distinguish between clean errors, crashes, hangs, and corruption
+5. **Test Writing IS Debugging**: Tests aren't just validation, they're active bug hunting tools
+6. **Comment-Based Variants**: Use comments to create multiple test scenarios in one file
+7. **Expected Values in Output**: Self-documenting tests with `! expect X` patterns
+
+---
+
+*Document Version: 2.0*  
+*Last Updated: Major revision based on VAR crash discovery and testing methodology refinement*  
 *Platform: 6502 Cycle-Accurate Emulator*  
-*Hopper BASIC Version: 2.0*
+*Hopper BASIC Version: 2.0*  
+*Critical Bug: VAR initialized variables crash on type change to STRING*

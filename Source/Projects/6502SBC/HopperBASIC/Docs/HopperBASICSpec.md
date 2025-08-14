@@ -7,10 +7,11 @@
 **Primary Goal**: Create a simple, elegant BASIC interpreter for 6502 systems that fits in 16K ROM and provides an interactive development environment.
 
 **Design Principles**:
-- Simplicity over features - Classic BASIC functionality only
-- Direct execution - No bytecode, no complex compilation
-- Immediate feedback - Interactive development with instant results
+- Simplicity and reliability over large feature set
+- Immediate feedback - Interactive development with instant results (REPL ala Python)
+- Incremental development - easy to persist environment, encourage breakdown into small functions (FORTH-like development)
 - Small footprint - Target 16K ROM, minimal RAM usage
+- Fast - competitive with the Classic 6502 BASIC's of the day (like Apple II+ / Commodore 64 era)
 
 ## Target Benchmarks
 
