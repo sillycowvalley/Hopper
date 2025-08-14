@@ -2163,19 +2163,16 @@ unit Compiler // Compiler.asm
                     DEC ZP.ACCL
 #ifdef DEBUG             
                     // Verify in case something changes in future:
-                    PHX
-                    LDX ZP.ACCL
-                    LDA TokenBuffer, X
+                    PHY
+                    LDY ZP.ACCL
+                    LDA [TokenBuffer], Y
                     if (NZ)
                     {
-TXA HOut();
-DumpBuffers();                        
-                        
-                        PLX
+                        PLY
                         Error.InternalError(); BIT ZP.EmulatorPCL
                         break;
                     }
-                    PLX
+                    PLY
                     LDA ZP.ACCL
                     
 #endif        
