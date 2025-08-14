@@ -2307,31 +2307,20 @@ unit Compiler // Compiler.asm
             LDA ZP.ACCL
             PHA
             
-            // === NEW ARRAY HANDLING CODE ===
             // Check if this is an array access before moving to '='
             LDA ZP.CurrentToken
             CMP #Token.IDENTIFIER
             if (Z)
             {
-                // Look ahead to see what follows identifier
-                Tokenizer.NextToken();
-                Error.CheckError();
-                if (NC) 
-                { 
-                    States.SetFailure(); 
-                    break; 
-                }
                 
-                LDA ZP.CurrentToken
+                // Look ahead to see what follows identifier
+                Tokenizer.PeekToken(); // -> A
                 CMP #Token.LBRACKET
                 if (Z)
                 {
                     // This is array indexing: array[index] = value
                     // Mark that we're doing array assignment
                     SMB4 ZP.CompilerFlags  // Set bit 4 as "array assignment" flag
-                    
-                    // Restore literal position to emit array reference
-                    Tokenizer.Rollback();
                     
                     // Push array pointer onto stack
                     compileVariableOrArgument(); 
@@ -2374,13 +2363,7 @@ unit Compiler // Compiler.asm
                         break; 
                     }
                 }
-                else
-                {
-                    // Not array access - restore stack and continue
-                    Tokenizer.Rollback();
-                }
             }
-            // === END NEW ARRAY HANDLING CODE ===  
             
             loop
             {

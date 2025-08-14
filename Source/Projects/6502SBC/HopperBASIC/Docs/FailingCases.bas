@@ -43,8 +43,48 @@ RUN
 
 BEGIN
     WORD A = 20 ! comment works fine
-    PRINT A ! comment munted
-    A = A * A ! comment works fine
+END
+RUN
+
+NEW
+CLS
+BEGIN
+    WORD A = 20
+    PRINT 20 ! comment ok
+    PRINT A
+    PRINT ABS(-10)
     PRINT A ! comment munted
 END
 RUN
+
+BEGIN
+    WORD A = 20
+    A = A * A : ! comment munted
+END
+RUN
+BEGIN
+    WORD A = 20
+    A = A * 20 ! comment works fine
+END
+RUN
+BEGIN
+    WORD A = 20
+    A = (A * A) ! comment works fine
+END
+RUN
+BEGIN
+    BIT B = FALSE OR TRUE ! comment works fine
+END
+RUN
+BEGIN
+    PRINT "HELLO" ! comment works fine
+END
+RUN
+
+
+TRON
+bit b[10]
+begin
+    b[0] = true
+    print b[0]
+end
