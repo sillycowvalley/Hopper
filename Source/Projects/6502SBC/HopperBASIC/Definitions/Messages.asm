@@ -21,6 +21,8 @@ unit Messages // Messages.asm
     const string PrintChar  = "PRINTCHAR";
     const string PrintValue = "PRINTVALUE";
     
+    const string ErrorMarker = "<------";
+    
     // Print OK message
     // Input: None
     // Output: "OK\n" printed to serial

@@ -2312,7 +2312,6 @@ unit Compiler // Compiler.asm
                     States.SetFailure(); 
                     break; 
                 }
-//Debug.NL(); LDA ZP.CurrentToken HOut();
                 
                 LDA ZP.CurrentToken
                 CMP #Token.LBRACKET
@@ -2328,16 +2327,33 @@ unit Compiler // Compiler.asm
                     // Push array pointer onto stack
                     compileVariableOrArgument(); 
                     Error.CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    if (NC)
+                    {
+                        States.SetFailure(); break; 
+                    }
                     
                     // Move past '[' and compile index expression
                     Tokenizer.NextToken();
                     Error.CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    if (NC)
+                    {
+                        States.SetFailure(); break; 
+                    }
+                    
+                    Tokenizer.NextToken();
+                    Error.CheckError();
+                    if (NC)
+                    {
+                        States.SetFailure(); break; 
+                    }
                     
                     compileExpressionTree(); // Index value on stack
                     Error.CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    if (NC)
+                    {
+
+                        States.SetFailure(); break; 
+                    }
                     
                     // Expect ']'
                     LDA ZP.CurrentToken
@@ -2348,11 +2364,6 @@ unit Compiler // Compiler.asm
                         States.SetFailure();
                         break; 
                     }
-                    
-                    // Move past ']' to get to '='
-                    Tokenizer.NextToken();
-                    Error.CheckError();
-                    if (NC) { States.SetFailure(); break; }
                 }
                 else
                 {
@@ -2361,14 +2372,11 @@ unit Compiler // Compiler.asm
                 }
             }
             // === END NEW ARRAY HANDLING CODE ===  
-
             
             loop
             {
                 // Move to next token - should be '='
                 Tokenizer.NextToken();
-//Debug.NL(); LDA ZP.CurrentToken HOut();
-
                 Error.CheckError();
                 if (NC) 
                 { 
@@ -2438,6 +2446,9 @@ unit Compiler // Compiler.asm
             }
             else
             {
+                
+Debug.NL(); LDA #'e' COut(); LDA ZP.CurrentToken HOut();
+                
                 // Emit appropriate POP instruction based on identifier type
                 LDA ZP.ACCT
                 CMP #IdentifierType.Local

@@ -1,13 +1,12 @@
-VAR v = 42
-v = "VARSTRING"
 
-BEGIN
-    PRINT "v="; v; " ! expect 42"
-    v = TRUE
-    PRINT "Modified to TRUE"
-END
+TRON
+bit b[10]
 
-RUN
+begin
+    b[0] = true
+    print b[0]
+end
 
-! Expect v to be TRUE:
-VARS 
+vars
+run
+vars

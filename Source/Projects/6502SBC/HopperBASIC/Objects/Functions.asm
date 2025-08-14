@@ -966,6 +966,53 @@ unit Functions
             States.SetSuccess(); // should already be the case
             break;
         }
+        loop
+        {
+            Trace.IsTracing();
+            if (C)
+            {
+                break;
+            }
+            Error.CheckError();
+            if (NC)
+            {
+                LDA ZP.TokenBufferContentSizeH
+                CMP ZP.TokenizerPosH
+                if (Z)
+                {
+                    LDA ZP.TokenBufferContentSizeL
+                    CMP ZP.TokenizerPosL
+                    if (Z)
+                    {
+                        // POS == SIZE -> not much use
+                        break;
+                    }
+                }
+                // POS != SIZE
+                
+                LDA ZP.TokenBufferH
+                STA ZP.IDYH
+                LDA ZP.TokenBufferL
+                STA ZP.IDYL
+                
+                LDA ZP.IDYL
+                ORA ZP.IDYH
+                if (NZ)
+                {
+                    LDA ZP.TokenizerPosH
+                    STA ZP.TOKERRORH
+                    LDA ZP.TokenizerPosL
+                    STA ZP.TOKERRORL
+                    
+                    Tools.NL();
+                    Commands.DisplayFunctionSignature(); // Input: ZP.IDX = function node
+                    TokenIterator.RenderTokenStream();   // Input: ZP.IDY = tokens pointer
+                    Commands.DisplayFunctionSuffix();    // Input: ZP.IDX = function node, munts IDY
+                    Tools.NL();
+                }
+            }
+            break;
+        }
         
         // restore buffers (they may be REPL or BASIC)
         PLA

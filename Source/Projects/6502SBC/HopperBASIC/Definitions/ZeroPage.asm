@@ -254,6 +254,9 @@ unit ZP // ZeroPage.asm
     const byte TOKPOSH    = M5;  // Token position/offset high
     const byte TOKPREV    = M6;  // Previous token value
     const byte TOKCOLON   = M7;  // We had a colon, no newline
+    const byte TOKERRORL  = M8;  // Error position low (copy of ACCL)
+    const byte TOKERRORH  = M9;  // Error position high (copy of ACCH)
+    const byte TOKERRORFLAG = M10; // Flag: error marker printed for this line
     
     // FUNCTION PARAMETER WORKSPACE
     const byte FSOURCEADDRESS       = 0x5F;  // Source address parameter

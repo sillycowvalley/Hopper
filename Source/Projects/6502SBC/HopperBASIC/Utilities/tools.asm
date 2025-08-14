@@ -595,4 +595,20 @@ unit Tools // Tools.asm
         PLY
         PLA
     } 
+    // number of spaces to print in X
+    Spaces()
+    {
+        PHA
+        loop
+        {
+            LDA #' '
+            Serial.WriteChar();
+            DEX
+            if (Z) // Set Z - counter reached 0
+            { 
+                break; 
+            }
+        }
+        PLA
+    }
 }

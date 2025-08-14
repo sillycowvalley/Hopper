@@ -310,9 +310,95 @@ unit TokenIterator // TokenIterator.asm
         PLX
         PLA
     }
+    
+    // Check if current position has passed error position and print marker if needed
+    // Input: TOKERRORL/H = error position, TOKPOSL/H = current position
+    // Output: Error marker printed if we've passed the error position
+    // Modifies: TOKERRORFLAG
+    // Preserves: All registers
+    checkAndPrintErrorMarker()
+    {
+        PHA
+        
+        loop // Single exit block
+        {
+            // Skip if error marker already printed
+            LDA ZP.TOKERRORFLAG
+            if (NZ) // Set NZ - already printed
+            { 
+                break; 
+            }
+            
+            // Skip if no error position specified (TOKERRORL/H == 0)
+            LDA ZP.TOKERRORL
+            ORA ZP.TOKERRORH
+            if (Z) // Set Z - no error position
+            { 
+                break; 
+            }
+            
+            // Check if TOKPOS < TOKERROR?
+            LDA ZP.TOKPOSH      // TOKPOS MSB
+            CMP ZP.TOKERRORH    // TOKERROR MSB
+            if (Z)
+            {
+                LDA ZP.TOKPOSL   // TOKPOS LSB
+                CMP ZP.TOKERRORL // TOKERROR LSB
+            }
+            if (C) // Set C if TOKPOS >= TOKERROR
+            {
+                // We've reached or passed the error position
+                printErrorMarker();
+                break;
+            }
+            // Current position < error position - not there yet
+            break;      
+        } // single exit
+        PLA
+    }
+    
+    // Print the error marker on the current line
+    // Input: None
+    // Output: "         <------" printed to serial
+    // Modifies: TOKERRORFLAG
+    // Preserves: All registers
+    printErrorMarker()
+    {
+        PHA
+        PHX
+        
+        // Mark that we've printed the error marker
+        LDA #1
+        STA ZP.TOKERRORFLAG
+        
+        LDX #9
+        Tools.Spaces();
+            
+        LDA #( Messages.ErrorMarker % 256)
+        STA ZP.STRL
+        LDA #( Messages.ErrorMarker / 256)
+        STA ZP.STRH
+        Tools.PrintStringSTR();
+        
+        LDX #3
+        Tools.Spaces();
+        
+        // Print the error message
+        LDA #'?'
+        Serial.WriteChar(); // '?' prefix
+        LDA ZP.LastErrorL
+        STA ZP.STRL
+        LDA ZP.LastErrorH
+        STA ZP.STRH
+        Tools.PrintStringSTR();
+             
+        PLX
+        PLA
+    }
+    
 
     // Render token stream as formatted BASIC code with indentation
-    // Input: ZP.IDY = token stream pointer (16-bit)
+    // Input: ZP.IDY = token stream pointer (16-bit), ZP.ACCL = error position in stream if not zero
     // Output: Token stream rendered to serial with proper formatting and 4-space indentation
     // Modifies: ZP.TOK* scratch space (TokenIterator state), serial output
     // Uses: TokenIterator scratch space (cannot call symbol table APIs while rendering)
@@ -336,8 +422,8 @@ unit TokenIterator // TokenIterator.asm
         // Initialize indentation level to 1 (we're inside a function/BEGIN block)
         LDA #1
         STA ZP.TOKINDENT
-        
         STZ ZP.TOKCOLON // not on a COLON line
+        STZ ZP.TOKERRORFLAG // error marker not yet printed
         
         // Render each statement in the token stream
         loop
@@ -345,6 +431,9 @@ unit TokenIterator // TokenIterator.asm
             // Render one complete statement with smart indentation
             renderStatementWithIndent();
             if (NC) { break; } // End of stream
+            
+            // Check if we've passed the error position on this line
+            checkAndPrintErrorMarker();
             
             // Only add newline if not following COLON
             LDA ZP.TOKCOLON

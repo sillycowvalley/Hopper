@@ -614,7 +614,7 @@ unit Commands
                 IsVisibleFunctionSTR();
                 if (C)
                 {
-                    displayFunctionSignature(); // Input: ZP.IDX = function node
+                    DisplayFunctionSignature(); // Input: ZP.IDX = function node
                 }
                 Functions.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
             }
@@ -655,7 +655,7 @@ unit Commands
             }
             else
             {
-                displayFunctionSignature(); // Input: ZP.IDX = function node
+                DisplayFunctionSignature(); // Input: ZP.IDX = function node
             }
         }
         
@@ -733,11 +733,16 @@ unit Commands
     
     // Display function signature only
     // Input: ZP.IDX = function node
-    displayFunctionSignature()
+    DisplayFunctionSignature()
     {
         PHA
         PHX
         PHY
+        
+        LDA ZP.IDYH
+        PHA
+        LDA ZP.IDYL
+        PHA
         
         // Get the function name
         Functions.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
@@ -769,9 +774,34 @@ unit Commands
         
         Tools.NL();
         
+        PLA
+        STA ZP.IDYL
+        PLA
+        STA ZP.IDYH
+        
         PLY
         PLX
         PLA
+    }
+    
+    DisplayFunctionSuffix()
+    {
+        // Get function name to check if it's BEGIN
+        Functions.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
+        checkForBeginFunctionSTR();
+        if (C)
+        {
+            // Print END for BEGIN function
+            LDA #Token.END
+            Tokens.PrintKeyword();
+        }
+        else
+        {
+            // Print ENDFUNC for regular function
+            LDA #Token.ENDFUNC
+            Tokens.PrintKeyword();
+        }
+        Tools.NL();
     }
     
     
@@ -790,7 +820,7 @@ unit Commands
         PHA
         
         // Display signature
-        displayFunctionSignature();
+        DisplayFunctionSignature();
         
         // Restore function node
         PLA
@@ -808,6 +838,8 @@ unit Commands
             if (NZ)
             {
                 // Use TokenIterator to render the function body
+                STZ ZP.TOKERRORH
+                STZ ZP.TOKERRORL
                 TokenIterator.RenderTokenStream(); // Input: ZP.IDY = tokens pointer
             }
         }
@@ -816,24 +848,7 @@ unit Commands
             Dasm.DisassembleFunctionOpCodes();
         }
             
-        
-        // Get function name to check if it's BEGIN
-        Functions.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
-        checkForBeginFunctionSTR();
-        if (C)
-        {
-            // Print END for BEGIN function
-            LDA #Token.END
-            Tokens.PrintKeyword();
-        }
-        else
-        {
-            // Print ENDFUNC for regular function
-            LDA #Token.ENDFUNC
-            Tokens.PrintKeyword();
-        }
-        
-        Tools.NL();
+        DisplayFunctionSuffix();
         Tools.NL(); // Extra blank line after function
         
         PLY
