@@ -215,7 +215,7 @@ unit Objects
         PHY
         
         // Get symbolType|dataType (offset snType)
-        LDY #snType
+        LDY # Objects.snType // GetData : load
         LDA [ZP.IDX], Y
         STA ZP.ACCT
         
@@ -249,7 +249,7 @@ unit Objects
         loop // start of single exit block
         {
             // Get symbolType
-            LDY #snType
+            LDY # Objects.snType // SetValue : load
             LDA [ZP.IDX], Y
             AND #SymbolType.MASK
             CMP #SymbolType.VARIABLE
@@ -469,7 +469,7 @@ unit Objects
         
         // Store symbolType|dataType (offset snType)
         LDA ZP.SymbolType
-        LDY #snType
+        LDY # Objects.snType // initializeNode: store
         STA [ZP.IDX], Y
         
         // Store tokens pointer (offset snTokens to snTokens+1)
@@ -600,7 +600,7 @@ unit Objects
             }
             
             // Get symbol type from current node
-            LDY #snType
+            LDY # Objects.snType // findNextMatch : load
             LDA [ZP.IDX], Y
             AND #SymbolType.MASK
             CMP ZP.SymbolIteratorFilter

@@ -2298,29 +2298,21 @@ unit Compiler // Compiler.asm
             LDA ZP.ACCL
             PHA
             
-            
             // === NEW ARRAY HANDLING CODE ===
             // Check if this is an array access before moving to '='
             LDA ZP.CurrentToken
             CMP #Token.IDENTIFIER
             if (Z)
             {
-                // Save identifier position for variable/array reference
-                LDA ZP.TokenLiteralPosL
-                PHA
-                LDA ZP.TokenLiteralPosH
-                PHA
-                
                 // Look ahead to see what follows identifier
                 Tokenizer.NextToken();
                 Error.CheckError();
                 if (NC) 
                 { 
-                    PLA // Clean stack
-                    PLA
                     States.SetFailure(); 
                     break; 
                 }
+//Debug.NL(); LDA ZP.CurrentToken HOut();
                 
                 LDA ZP.CurrentToken
                 CMP #Token.LBRACKET
@@ -2331,10 +2323,7 @@ unit Compiler // Compiler.asm
                     SMB4 ZP.CompilerFlags  // Set bit 4 as "array assignment" flag
                     
                     // Restore literal position to emit array reference
-                    PLA
-                    STA ZP.TokenLiteralPosH
-                    PLA
-                    STA ZP.TokenLiteralPosL
+                    Tokenizer.Rollback();
                     
                     // Push array pointer onto stack
                     compileVariableOrArgument(); 
@@ -2361,32 +2350,32 @@ unit Compiler // Compiler.asm
                     }
                     
                     // Move past ']' to get to '='
-                    //Tokenizer.NextToken();
-                    //Error.CheckError();
-                    //if (NC) { States.SetFailure(); break; }
+                    Tokenizer.NextToken();
+                    Error.CheckError();
+                    if (NC) { States.SetFailure(); break; }
                 }
                 else
                 {
                     // Not array access - restore stack and continue
-                    PLA
-                    STA ZP.TokenLiteralPosH
-                    PLA
-                    STA ZP.TokenLiteralPosL
+                    Tokenizer.Rollback();
                 }
             }
             // === END NEW ARRAY HANDLING CODE ===  
-            
+
             
             loop
             {
                 // Move to next token - should be '='
                 Tokenizer.NextToken();
+//Debug.NL(); LDA ZP.CurrentToken HOut();
+
                 Error.CheckError();
                 if (NC) 
                 { 
                     States.SetFailure(); 
                     break; 
                 }
+                
                 
                 // Verify we have '='
                 LDA ZP.CurrentToken

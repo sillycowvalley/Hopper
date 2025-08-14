@@ -1,8 +1,8 @@
 program HopperBASIC
 {
-    #define DEBUG
+    //#define DEBUG
     //#define TRACE  // Compiler and Executor call tree walks
-    #define TRACEEXE // instructions in Executor
+    //#define TRACEEXE // instructions in Executor
 
     // Defunct?    
     //#define TRACESP
@@ -74,6 +74,10 @@ program HopperBASIC
         // Initialize Hopper VM runtime components
         Memory.InitializeHeapSize();
         Stacks.Initialize();
+
+        // for LoadGlobals | SaveGlobals        
+        STZ ZP.GVIL
+        STZ ZP.GVIH
         
         // Clear system flags and set basic state
         STZ ZP.FLAGS

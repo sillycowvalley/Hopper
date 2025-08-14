@@ -182,7 +182,7 @@ unit Memory // Memory.asm
         PHY
 
 #ifdef TRACE
-        LDA #(memoryAllocate % 256) STA ZP.TraceMessageL LDA #(memoryAllocate / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+        //LDA #(memoryAllocate % 256) STA ZP.TraceMessageL LDA #(memoryAllocate / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
 
 
@@ -199,7 +199,7 @@ unit Memory // Memory.asm
         STA ZP.ACCL
         
 #ifdef TRACE
-        LDA #(memoryAllocate % 256) STA ZP.TraceMessageL LDA #(memoryAllocate / 256) STA ZP.TraceMessageH Trace.MethodExit();
+        //LDA #(memoryAllocate % 256) STA ZP.TraceMessageL LDA #(memoryAllocate / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
 
         
@@ -222,7 +222,7 @@ unit Memory // Memory.asm
         PHY
 
 #ifdef TRACE
-        LDA #(memoryFree % 256) STA ZP.TraceMessageL LDA #(memoryFree / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+        //LDA #(memoryFree % 256) STA ZP.TraceMessageL LDA #(memoryFree / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
 
         LDA ZP.ACCL
@@ -252,7 +252,7 @@ unit Memory // Memory.asm
         
         
 #ifdef TRACE
-        LDA #(memoryFree % 256) STA ZP.TraceMessageL LDA #(memoryFree / 256) STA ZP.TraceMessageH Trace.MethodExit();
+        //LDA #(memoryFree % 256) STA ZP.TraceMessageL LDA #(memoryFree / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
         
         SEC // success

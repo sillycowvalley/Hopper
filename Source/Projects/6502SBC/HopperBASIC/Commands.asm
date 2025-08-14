@@ -384,15 +384,10 @@ unit Commands
         // Print dimensions
         LDA #'[' Serial.WriteChar();
         
+
         // Get element count
         BASICArray.GetCount(); // Returns count in ZP.ACC
-                
-        // Save count for later
-        LDA ZP.ACCL
-        PHA
-        LDA ZP.ACCH
-        PHA
-        
+
         // Print element count as WORD
         LDA ZP.ACCL
         STA ZP.TOPL
@@ -409,13 +404,7 @@ unit Commands
         LDA #'<' Serial.WriteChar();
         
         // Get element type for PrintValue
-        BASICArray.GetItemType(); // Returns type in ZP.ACCT
-        
-        // Restore count
-        PLA
-        STA ZP.ACCH
-        PLA
-        STA ZP.ACCL
+        BASICArray.GetItemType(); // Returns type in ZP.ACCT, preserves ZP.ACCL and ZP.ACCH
         
         // Determine how many elements to show (min of 10 or count)
         LDX #0  // Element counter
@@ -428,7 +417,7 @@ unit Commands
                 // Check if there are more elements (count > 10)
                 // We check if 10 < count by comparing high bytes first
                 LDA #0           // 10 high byte
-                LDY #BASICArray.aiCount+1
+                LDY # BASICArray.aiCount+1
                 CMP [ZP.IDX], Y  // Compare with count high byte
                 if (Z)
                 {
@@ -469,15 +458,10 @@ unit Commands
             STZ ZP.IDYH
             BASICArray.GetItem(); // Returns value in ZP.TOP, type in A
             
-            // Save X
-            PHX
-            
             // Print the value (type is already in ZP.TOPT from GetItem)
             SEC  // quotes for strings and chars
-            BASICTypes.PrintValue();
+            BASICTypes.PrintValue(); // preserves X
             
-            // Restore X and increment
-            PLX
             INX
         }
         
@@ -507,43 +491,37 @@ unit Commands
         // Get variable type
         Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = type
         
-        // Save the full type for later
-        LDA ZP.ACCT
-        PHA
-        
         // Check if it's an ARRAY
-        AND #BASICType.FLAGMASK
-        CMP #BASICType.ARRAY
-        if (Z)
+        LDA ZP.ACCT
+        AND # BASICType.ARRAY
+        if (NZ)
         {
-            PLA  // Get full type for helper
+            LDA ZP.ACCT  // Get full type for helper
             displayArrayVariable();  // A = full type, ZP.IDX = node
         }
         else
         {
             // Check if it has VAR bit set
-            PLA  // Get full type back
-            PHA  // Keep it on stack
-            AND #BASICType.VAR
+            LDA ZP.ACCT  // Get full type back
+            AND # BASICType.VAR
             if (NZ)  // Variable has VAR bit
             {
                 // Print "VAR" first
-                LDA #Token.VAR
+                LDA # Token.VAR
                 Tokens.PrintKeyword();
                 
                 // Then print current underlying type in parentheses
-                LDA #'(' Serial.WriteChar();
-                PLA
-                PHA  // Keep it on stack
-                AND #BASICType.TYPEMASK  // Get underlying type without VAR bit
+                LDA # '(' Serial.WriteChar();
+                
+                LDA ZP.ACCT
+                AND # BASICType.TYPEMASK  // Get underlying type without VAR bit
                 BASICTypes.PrintType();
-                LDA #')' Serial.WriteChar();
+                LDA # ')' Serial.WriteChar();
             }
             else  // Regular typed variable
             {
-                PLA
-                PHA  // Keep it on stack
-                AND #BASICType.MASK
+                LDA ZP.ACCT
+                AND # BASICType.MASK
                 BASICTypes.PrintType();
             }
             
@@ -556,9 +534,6 @@ unit Commands
             LDA #' ' Serial.WriteChar();
             LDA #'=' Serial.WriteChar();
             LDA #' ' Serial.WriteChar();
-            
-            // Clean up stack
-            PLA  // Remove saved type
             
             // Get and print current value (this needs fresh call to get value)
             Variables.GetValue(); // ZP.TOP = value, ZP.TOPT = dataType

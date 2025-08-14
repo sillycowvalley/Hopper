@@ -2389,7 +2389,7 @@ unit Debug // Debug.asm
                 }
                 
                 LDA Address.TypeStackLSB, X
-                AND #SymbolType.MASK
+                AND # SymbolType.MASK
                 if (NZ)
                 {
                     LDA #'!' cOut(); cOut(); cOut(); // massive error SymbolType should never be on the heap, only BASICType
@@ -2397,7 +2397,7 @@ unit Debug // Debug.asm
                 
                 // Print type nibble
                 LDA Address.TypeStackLSB, X
-                AND #BASICType.TYPEMASK
+                AND # BASICType.TYPEMASK
                 switch (A)
                 {
                     case BASICType.INT:
@@ -2567,7 +2567,7 @@ unit Debug // Debug.asm
     ValidateHeap()
     {
         PHA PHX PHY
-        
+
         // Save state
         LDA ZP.IDXL
         PHA
@@ -3154,6 +3154,13 @@ unit Debug // Debug.asm
                 LDA #'S' COut();
                 LDA #'B' COut();
                 LDA #'H' COut();  // SBH = String bad heap pointer
+                
+                Space(); XOut(); LDA #'-' COut(); LDA #'>' COut(); Space(); YOut();
+                
+                LDY # Objects.snType // load
+                LDA [ZP.IDX], Y
+                BASICTypes.PrintType();
+                
                 CLC  // Not a valid heap allocation
                 break;
             }
@@ -3241,6 +3248,7 @@ unit Debug // Debug.asm
                 INY
             }
             
+            SEC // all good
             break;
         }
         
@@ -3409,7 +3417,13 @@ unit Debug // Debug.asm
                 LDA #'A' COut();
                 LDA #'B' COut();
                 LDA #'H' COut();  // ABH = Array bad heap pointer
-                XOut();
+                
+                Space(); XOut();
+                
+                LDY # Objects.snType // load
+                LDA [ZP.IDX], Y
+                BASICTypes.PrintType();
+                
                 CLC  // Not a valid heap allocation
                 break;
             }
@@ -3527,10 +3541,10 @@ unit Debug // Debug.asm
             }
             
             // Check if it's a STRING variable
-            LDY #Objects.snType
+            LDY # Objects.snType // load
             LDA [ZP.IDX], Y
-            AND #BASICType.MASK
-            CMP #BASICType.STRING
+            AND # BASICType.TYPEMASK
+            CMP # BASICType.STRING
             if (Z)
             {
                 // Get string pointer from value field
@@ -3557,6 +3571,7 @@ unit Debug // Debug.asm
                         LDA #'V' COut();
                         LDA #'S' COut();
                         LDA #'!' COut();  // VS! = Variable String
+                        Space(); XOut();
                         CLC
                         break;
                     }
@@ -3565,9 +3580,9 @@ unit Debug // Debug.asm
             
             
             // Check if it's an ARRAY variable  
-            LDY #Objects.snType
+            LDY # Objects.snType // load
             LDA [ZP.IDX], Y
-            AND #BASICType.ARRAY
+            AND # BASICType.ARRAY
             if (NZ)
             {
                 // Get array pointer from value field
@@ -3641,7 +3656,7 @@ unit Debug // Debug.asm
         loop // Single exit pattern
         {
             // Get type byte
-            LDY #Objects.snType
+            LDY # Objects.snType // load
             LDA [ZP.IDX], Y
             
             // Check symbol type (high bits)
@@ -3667,7 +3682,7 @@ unit Debug // Debug.asm
             }
             
             // Check data type (low bits)
-            LDY #Objects.snType
+            LDY # Objects.snType // load
             LDA [ZP.IDX], Y
             AND #BASICType.MASK  // Gets type and VAR bit
             
@@ -3760,17 +3775,17 @@ unit Debug // Debug.asm
             loop
             {
                 // Valid base types: INT, WORD, BYTE, BIT, STRING
-                CMP #BASICType.INT
+                CMP # BASICType.INT
                 if (Z) { SEC break; }
-                CMP #BASICType.WORD
+                CMP # BASICType.WORD
                 if (Z) { SEC break; }
-                CMP #BASICType.BYTE
+                CMP # BASICType.BYTE
                 if (Z) { SEC break; }
-                CMP #BASICType.CHAR
+                CMP # BASICType.CHAR
                 if (Z) { SEC break; }
-                CMP #BASICType.BIT
+                CMP # BASICType.BIT
                 if (Z) { SEC break; }
-                CMP #BASICType.STRING
+                CMP # BASICType.STRING
                 if (Z) { SEC break; }
                 
                 CLC // Invalid data type

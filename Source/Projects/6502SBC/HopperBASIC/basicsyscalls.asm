@@ -559,6 +559,7 @@ unit BASICSysCalls
                     // Output: ZP.TOP* contains length as WORD
                     // Validate input is STRING type
                     LDA ZP.TOPT
+                    AND # BASICType.TYPEMASK
                     CMP # BASICType.STRING
                     if (Z)
                     {
@@ -568,6 +569,7 @@ unit BASICSysCalls
                     else
                     {
                         // Check if it's an array type
+                        LDA ZP.TOPT
                         AND # BASICType.ARRAY
                         if (NZ)
                         {

@@ -32,7 +32,29 @@ unit BASICTypes // BASICTypes.asm
         PHA
         PHX
         TAX
-
+        
+        AND #SymbolType.MASK
+        if (NZ)
+        {
+            TXA
+            AND #SymbolType.VARIABLE
+            if (NZ)
+            {
+                LDA # Token.VAR
+                Tokens.PrintKeyword();
+                LDA #'|' COut();
+            }
+            TXA
+            AND #SymbolType.CONSTANT
+            if (NZ)
+            {
+                LDA # Token.CONST
+                Tokens.PrintKeyword();
+                LDA #'|' COut();
+            }
+        }
+        
+        TXA
         AND # BASICType.VAR
         if (NZ)
         {

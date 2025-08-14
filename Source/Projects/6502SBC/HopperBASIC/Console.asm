@@ -510,7 +510,7 @@ unit Console // Console.asm
                     TODO(); BIT ZP.EmulatorPCL
                 }
                 
-                // ========== BASIC LANGUAGE EXECUTION ==========
+                // ========== BASIC LANGUAGE RUN ==========
                 case Token.RUN:
                 {
                     cmdRun();
@@ -992,6 +992,11 @@ unit Console // Console.asm
             
             Variables.GetType(); // -> ZP.ACCT
             
+            // Save the current variable node
+            LDA ZP.IDXL
+            STA ZP.GVIL
+            LDA ZP.IDXH
+            STA ZP.GVIH
 
             LDA ZP.ACCT
             AND # BASICType.ARRAY
@@ -999,12 +1004,6 @@ unit Console // Console.asm
             {
                 
                 Variables.GetValue(); // Variable = IDX: BASICArray -> TOP, Tokens -> NEXT
-                
-                // Save the current variable node
-                LDA ZP.IDXL
-                PHA
-                LDA ZP.IDXH
-                PHA
                 
                 // Copy array index expression tokens to buffer
                 // Note: Variable declarations are single-line, so EOL is a good terminator
@@ -1034,23 +1033,25 @@ unit Console // Console.asm
                 // Execute the initialization statement
                 Tokenizer.NextToken(); // Get first token
                 
-                SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
+                RMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes) - except for ZP.GVI
                 SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
-                Statement.EvaluateExpression();
+                Statement.EvaluateExpression(); // EXECUTION: re-initialize ARRAY (size expression)- GLOBAL LOAD SAVE (except current variable, GVI)
                 Error.CheckError();
                 if (NC) 
                 { 
                     // Error during initialization
-                    PLA PLA CLC
+                    CLC
                     break;
                 }
-                PLA
-                STA ZP.IDXH
-                PLA
+                
+                // Restore the current variable node
+                LDA ZP.GVIL
                 STA ZP.IDXL
+                LDA ZP.GVIH
+                STA ZP.IDXH
                 
                 // reload for TOP (overwrites NEXT too!)
-                Variables.GetValue(); // Variable = IDX: BASICArray -> TOP, Tokens -> NEXT
+                Variables.GetValue(); // Variable = IDX: BASICArray -> TOP, Tokens -> NEXT, Element type -> ZP.TOPT
                 
                 Stacks.PopNext(); // newly calculated array dimension
                 
@@ -1066,15 +1067,13 @@ unit Console // Console.asm
                 }
 //Debug.NL(); XOut(); TOut();
                 // Input: ZP.IDX = symbol node address (from Find), ZP.TOP = new ARRAY
-                Variables.SetValue(); // does not free old
+                LDA ZP.TOPT
+                ORA # BASICType.ARRAY
+                STA ZP.TOPT
+                Variables.SetValue(); // does not free old ARRAY
             }
             else
             {
-                // Save the current variable node
-                LDA ZP.IDXL
-                PHA
-                LDA ZP.IDXH
-                PHA
                 
                 // Check if variable has initialization tokens
                 LDA ZP.NEXTL
@@ -1083,7 +1082,7 @@ unit Console // Console.asm
                 {
                     
                     LDA ZP.ACCT
-                    AND #BASICType.MASK
+                    AND # BASICType.MASK
                     switch (A)
                     {
                         case BASICType.STRING:
@@ -1102,7 +1101,7 @@ unit Console // Console.asm
                         default:
                         {
                             LDA ZP.ACCT
-                            AND #BASICType.ARRAY
+                            AND # BASICType.ARRAY
                             if (NZ)
                             {
                                 // should never get here (see case above)
@@ -1154,31 +1153,35 @@ unit Console // Console.asm
                 // Execute the initialization statement
                 Tokenizer.NextToken(); // Get first token
                 
-                SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
+                SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes) - except for ZP.GVI
                 SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
                 // These are simple assignments (FOO = 42, rather than INT FOO = 42)
-                Statement.EvaluateExpression();
+                Statement.EvaluateExpression(); // EXECUTION: re-initialize global variable (RHS expression) - GLOBAL LOAD SAVE (except current variable, GVI)
                 Error.CheckError();
                 if (NC) 
                 { 
                     // Error during initialization
-                    PLA PLA
                     CLC
                     break;
                 }
-                // Restore variable node before continuing iteration
-                PLA
-                STA ZP.IDXH
-                PLA
-                STA ZP.IDXL
                 
-                Stacks.PopTop();
+                // Restore the current variable node
+                LDA ZP.GVIL
+                STA ZP.IDXL
+                LDA ZP.GVIH
+                STA ZP.IDXH
+                
+                Stacks.PopTop(); // includes ZP.TOPT
+                
                 Variables.SetValue();
             } // not ARRAY
             
             // Continue to next variable
             Variables.IterateNext();
         } // iterate variables loop
+        
+        STZ ZP.GVIL
+        STZ ZP.GVIH
         
 #ifdef TRACE
         LDA #(initGlobsTrace % 256) STA ZP.TraceMessageL LDA #(initGlobsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1271,7 +1274,7 @@ unit Console // Console.asm
                 
                 SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
                 SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
-                Statement.EvaluateExpression(); // executes 'identifier()' as function call
+                Statement.EvaluateExpression(); // executes 'identifier()' as function call- GLOBAL LOAD SAVE
               
                 break;
             }

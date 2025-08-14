@@ -165,15 +165,15 @@ unit Trace // Trace.asm
         
         // Decrease indentation first
         DEC ZP.TraceIndent
-        
+
+        Debug.ValidateHeap();
+
         PrintIndent();
         
         LDA #(endBrace % 256) STA ZP.STRL LDA #(endBrace / 256) STA ZP.STRH Tools.PrintStringSTR(); // ' } // '
         
         // Print method name from ZP.TraceMessage
         LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Tools.PrintStringSTR(); Debug.Space(); 
-        
-        Debug.ValidateHeap();
         
 #ifdef TRACESP
         LDA #' ' Debug.COut();

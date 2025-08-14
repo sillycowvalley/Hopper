@@ -321,6 +321,11 @@ unit ZP // ZeroPage.asm
     const byte XIDL                 = 0x82;
     const byte XIDH                 = 0x83;
     
+    const byte GVI                  = 0x84;  // Global Variable index (to skip in LoadGlobals | SaveGlobals when (BBS4, ZP.FLAGS)
+    const byte GVIL                 = 0x84;
+    const byte GVIH                 = 0x85;
+
+    
     // 0x84-0xEB: Available (104 bytes!)
 
     // HARDWARE I/O (IMMOVABLE - Platform Hardware Addresses)

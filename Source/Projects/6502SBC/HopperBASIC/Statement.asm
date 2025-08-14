@@ -357,7 +357,7 @@ unit Statement // Statement.asm
             {
                 SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
                 SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
-                Statement.ExecuteStatement();
+                Statement.ExecuteStatement(); // EXECUTION: IDENTIFIER, IDENTIFIER(), PRINT, CLS - GLOBAL LOAD SAVE
             }
             
             case Token.CONST:
@@ -613,7 +613,7 @@ unit Statement // Statement.asm
                         // This is an array declaration
                         // Set ARRAY flag in type
                         LDA stmtType
-                        ORA #BASICType.ARRAY
+                        ORA # BASICType.ARRAY
                         STA stmtType
                         
                         // Save tokenizer position before expression
@@ -627,9 +627,9 @@ unit Statement // Statement.asm
                         Error.CheckError();
                         if (C)
                         {
-                            RMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes) - DON'T HERE so RMB4
+                            SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
                             SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
-                            Statement.EvaluateExpression();
+                            Statement.EvaluateExpression(); // EXECUTION: initialize ARRAY (size expression)- GLOBAL LOAD SAVE (our current variable does not exist yet)
                             Error.CheckError();
                         }
                         
@@ -718,9 +718,9 @@ unit Statement // Statement.asm
                         Error.CheckError();
                         if (C)
                         {
-                            RMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes) - DON'T HERE so RMB4
+                            SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
                             SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
-                            Statement.EvaluateExpression();
+                            Statement.EvaluateExpression(); // EXECUTION: initialize global variable (RHS expression) - GLOBAL LOAD SAVE (our current variable does not exist yet)
                             Error.CheckError();
                         }
                         
@@ -878,7 +878,7 @@ unit Statement // Statement.asm
                 
                 // Check if this is a VAR variable
                 LDA stmtType
-                AND #BASICType.VAR
+                AND # BASICType.VAR
                 if (NZ)  // VAR variable - skip type checking
                 {
                     SEC  // Always compatible
@@ -928,7 +928,7 @@ unit Statement // Statement.asm
             
             // For VAR variables, update type based on initialization
             LDA stmtType
-            AND #BASICType.VAR
+            AND # BASICType.VAR
             if (NZ)  // VAR variable
             {
                 // Set type to RHS type while preserving VAR bit

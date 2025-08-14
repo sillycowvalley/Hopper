@@ -31,8 +31,12 @@ unit Executor // Executor.asm
     // Called after Reset() to initialize stack with globals
     // Output: All globals copied to stack at their index positions
     // Modifies: A, X, Y, ZP.IDX, ZP.TOP, ZP.TOPT, ZP.ACCT
+    const string strLoadGlobals = "LoadGlobals // Variables -> Stack";
     LoadGlobals()
     {
+#ifdef TRACE
+       LDA #(strLoadGlobals % 256) STA ZP.TraceMessageL LDA #(strLoadGlobals / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif        
         // Iterate through all symbols (variables and constants)
         Variables.IterateAll(); // Output: ZP.IDX = first symbol, C set if found
         if (C)
@@ -54,14 +58,35 @@ unit Executor // Executor.asm
                 Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
             }
         }
+#ifdef TRACE
+       LDA #(strLoadGlobals % 256) STA ZP.TraceMessageL LDA #(strLoadGlobals / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif        
     }
     
     // Save all global variables from VM stack back to symbol table
     // Called before exit to persist changes to globals (skips constants)
     // Output: All variable values updated from stack
     // Modifies: A, X, Y, ZP.IDX, ZP.TOP, ZP.TOPT, ZP.ACCT
+    const string strSaveGlobals = "SaveGlobals // Stack -> Variables";
+    const string strSaveGlobalsGV = "SaveGlobals // Stack -> Variables (ignore GVI)";
     SaveGlobals()
     {
+#ifdef TRACE
+       IsTracing();
+       if (C)
+       {
+           LDA ZP.GVIL
+           ORA ZP.GVIH
+           if (Z)
+           {
+               LDA #(strSaveGlobals % 256) STA ZP.TraceMessageL LDA #(strSaveGlobals / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+           }
+           else
+           {
+               LDA #(strSaveGlobalsGV % 256) STA ZP.TraceMessageL LDA #(strSaveGlobalsGV / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+           }
+       }
+#endif        
         // Iterate through all symbols (variables and constants)
         Variables.IterateAll(); // Output: ZP.IDX = first symbol, C set if found
         if (C)
@@ -73,8 +98,9 @@ unit Executor // Executor.asm
 
                 // Check if this is a constant (skip if so)
                 Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = type
+                
                 LDA ZP.ACCT
-                AND #SymbolType.CONSTANT
+                AND # SymbolType.CONSTANT
                 if (NZ)  // It's a constant - skip it
                 {
                     INY  // Still increment index to stay in sync with stack position
@@ -82,18 +108,13 @@ unit Executor // Executor.asm
                     continue;  // Skip to next iteration
                 }
                 LDA ZP.ACCT
-                AND #BASICType.ARRAY
+                AND # BASICType.ARRAY
                 if (NZ)  // It's an ARRAY - skip it
                 {
                     INY  // Still increment index to stay in sync with stack position
                     Variables.IterateNext();
                     continue;  // Skip to next iteration
                 }
-                
-                // It's a variable - check if type changed (for VAR and STRING handling)
-                LDA ZP.ACCT
-                AND #BASICType.TYPEMASK
-                STA ZP.ACCH  // Save old base type
                 
                 // Get new type from type stack at this index
                 LDA Address.TypeStackLSB, Y
@@ -104,37 +125,53 @@ unit Executor // Executor.asm
                 STA ZP.TOPL
                 LDA Address.ValueStackMSB, Y
                 STA ZP.TOPH
+                
+                if (BBS4, ZP.FLAGS) // Bit 4 - initialization mode: skip current variable GVI?
+                {
+                    LDA ZP.IDXL
+                    CMP ZP.GVIL
+                    if (Z)
+                    {
+                        LDA ZP.IDXH
+                        CMP ZP.GVIH
+                        if (Z)
+                        {
+                            // Skip SetValue() and move to next symbol
+                            INY  // Increment index for next stack position
+                            Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next    
+                            continue;
+                        }
+                    }
+                }
+                
+                // Never assign back to an ARRAY (read-only on the stack)
+                LDA Address.TypeStackLSB, Y  // Get type from stack
+                AND # BASICType.ARRAY
+                if (NZ) 
+                {
+                    // Skip SetValue() and move to next symbol
+                    INY  // Increment index for next stack position
+                    Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next 
+                    continue;
+                }
+                
+                // reload  ZP.ACCT = symbolType|dataType (packed)
+                Variables.GetType();
 
                 // Set the new value in symbol table:
                 // If the old value was a string, not the same as this one, it will Free it
                 // If the new value is a string, it will create a copy for itself.
                 // If the new value is the same string as the old value, it will do nothing.
-                Variables.SetValue(); // preserves Y, Input: ZP.IDX = node, ZP.TOP = value
-                
-                // Update type if it's a VAR variable
-                LDA Address.TypeStackLSB, Y  // Get type from stack
-                AND # BASICType.VAR
-                if (NZ)  // VAR variable - update type in symbol table
-                {
-                    
-                    // Need to get the type from the correct stack position
-                    LDA Address.TypeStackLSB, Y  // Get from stack using index
-                    STA ZP.TOPT
-                    
-                    PHY
-                    LDY #Objects.snType
-                    LDA [ZP.IDX], Y
-                    AND # SymbolType.MASK // preserve VARIABLE|CONSTANT
-                    ORA ZP.TOPT
-                    STA [ZP.IDX], Y
-                    PLY
-                }
+                Variables.SetValue(); // preserves Y, Input: ZP.IDX = node, ZP.TOP = value, ZP.TOPT = type
                 
                 // Move to next symbol
                 INY  // Increment index for next stack position
                 Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
-            }
+            } // loop
         }
+#ifdef TRACE
+       LDA #(strSaveGlobals % 256) STA ZP.TraceMessageL LDA #(strSaveGlobals / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif        
         SEC
     }
     
@@ -161,16 +198,14 @@ unit Executor // Executor.asm
        
        loop // Single exit block
        {
-           if (BBS4, ZP.FLAGS) // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
-           {
-               Executor.LoadGlobals();
-               Error.CheckError();
-               if (NC) 
-               { 
-                  States.SetFailure();
-                  break;
-               }
+           Executor.LoadGlobals();
+           Error.CheckError();
+           if (NC) 
+           { 
+              States.SetFailure();
+              break;
            }
+       
            // Initialize executor state
            InitExecutor();
            if (NC) { break; } // empty opcode stream -> State.Failure set
@@ -237,10 +272,9 @@ unit Executor // Executor.asm
            } // loop
            break;
        } // Single exit block
-       if (BBS4, ZP.FLAGS) // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
-       {
-           Executor.SaveGlobals();
-       }
+       
+       Executor.SaveGlobals();
+       
        
 #ifdef TRACE
        LDA #(strExecuteOpCodes % 256) STA ZP.TraceMessageL LDA #(strExecuteOpCodes / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -732,8 +766,6 @@ unit Executor // Executor.asm
            Stacks.PopXID();
            Stacks.PopPC();
            
-//Debug.NL(); LDA #'<' COut(); Space(); XIOut();  
-
            LDA ZP.CSP
            if (Z) // CallStack pointer == 0?
            {
@@ -1096,7 +1128,7 @@ unit Executor // Executor.asm
 #ifdef DEBUG
 //Space(); LDA ZP.TOPH HOut(); LDA ZP.TOPL HOut();
 #endif    
-           LDA #BASICType.STRING
+           LDA # BASICType.STRING
            STA ZP.TOPT
            
            // Push to stack with STRING type
@@ -2335,7 +2367,8 @@ unit Executor // Executor.asm
 
             // Dispatch based on collection type
             LDA ZP.TOPT
-            CMP #BASICType.STRING
+            AND # BASICType.TYPEMASK
+            CMP # BASICType.STRING
             if (Z)
             {
                 indexString();  // Input: ZP.NEXT = string ptr, ZP.ACC = index
@@ -2344,7 +2377,7 @@ unit Executor // Executor.asm
             else
             {
                 LDA ZP.TOPT
-                AND #BASICType.ARRAY
+                AND # BASICType.ARRAY
                 if (NZ)
                 {
                     indexArray(); // Input: ZP.NEXT = array ptr, ZP.ACC = index
@@ -2459,7 +2492,6 @@ unit Executor // Executor.asm
             LDA ZP.ACCH
             STA ZP.IDYH
             
-//Debug.NL(); XOut(); YOut(); 
             // Get the element value
             BASICArray.GetItem();  // Returns value in ZP.TOP, type in ZP.ACCT
             if (NC)
@@ -2467,7 +2499,6 @@ unit Executor // Executor.asm
                 States.SetFailure();
                 break;
             }
-//TOut(); LDA ZP.ACCT HOut();
             
             // Push result with correct type
             LDA ZP.ACCT
@@ -2522,10 +2553,10 @@ unit Executor // Executor.asm
             
             // Verify this is actually an array
             LDA ZP.TOPT
-            AND #BASICType.FLAGMASK
-            CMP #BASICType.ARRAY
-            if (NZ)
+            AND # BASICType.ARRAY
+            if (Z)
             {
+                // not an ARRAY
                 PLA  // Clean up stack
                 PLA
                 PLA

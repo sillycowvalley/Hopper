@@ -12,11 +12,17 @@ unit Variables
     //        ZP.IDY = tokens pointer (16-bit)
     // Output: C set if successful, NC if error (name exists, out of memory)
     // Munts: ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT
+    const string strDeclare= "VarDecl";
     Declare()
     {
         PHA
         PHX
         PHY
+        
+#ifdef TRACE
+       LDA #(strDeclare % 256) STA ZP.TraceMessageL LDA #(strDeclare / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+
         
         loop // start of single exit block
         {
@@ -41,8 +47,8 @@ unit Variables
             }
             
             LDA ZP.ACCT
-            AND #BASICType.TYPEMASK
-            CMP #BASICType.STRING
+            AND # BASICType.TYPEMASK
+            CMP # BASICType.STRING
             if (Z)
             {
                 // save the source string address and clear 'value'
@@ -55,7 +61,7 @@ unit Variables
             }
             
             LDA ZP.ACCT
-            AND #BASICType.ARRAY
+            AND # BASICType.ARRAY
             if (NZ)
             {
                 // Array declaration
@@ -100,8 +106,8 @@ unit Variables
             Objects.Add();
             
             LDA ZP.ACCT
-            AND #BASICType.TYPEMASK
-            CMP #BASICType.STRING
+            AND # BASICType.TYPEMASK
+            CMP # BASICType.STRING
             if (Z)
             {
                 // restore source string pointer
@@ -116,14 +122,14 @@ unit Variables
                 break;
             }
             LDA ZP.ACCT
-            AND #BASICType.TYPEMASK
-            CMP #BASICType.STRING
+            AND # BASICType.TYPEMASK
+            CMP # BASICType.STRING
             if (Z)
             {
                 SetValue(); // TOP->
             }
             LDA ZP.ACCT
-            AND #BASICType.ARRAY
+            AND # BASICType.ARRAY
             if (NZ)
             {
                 LDA ZP.NEXTL
@@ -135,7 +141,11 @@ unit Variables
             SEC // success
             break;
         } // end of single exit block
-        
+
+#ifdef TRACE
+       LDA #(strDeclare % 256) STA ZP.TraceMessageL LDA #(strDeclare / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+
         PLY
         PLX
         PLA
@@ -248,15 +258,20 @@ unit Variables
     }
     
     // Set variable value (variables only, constants are immutable)
-    // Input: ZP.IDX = symbol node address (from Find), ZP.TOP = new value
+    // Input: ZP.IDX = symbol node address (from Find), ZP.TOP = new value, ZP.TOPT = new value type
     // Output: C set if successful, NC if error (not a variable)
     // Munts: -
+    const string strSetValue = "VarSet";
     SetValue()
     {
         PHA
         PHX
         PHY
         
+#ifdef TRACE
+        LDA #(strSetValue % 256) STA ZP.TraceMessageL LDA #(strSetValue / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+
         LDA ZP.IDXL
         PHA
         LDA ZP.IDXH
@@ -272,7 +287,7 @@ unit Variables
         {
             // Get current symbol info
             Objects.GetData();  // Returns type in ZP.ACCT, tokens in ZP.NEXT, value in ZP.IDY
-            
+
             // Check if it's a variable
             LDA ZP.ACCT
             AND #SymbolType.MASK
@@ -287,40 +302,9 @@ unit Variables
                 }
             }
             
-            // Check if this is a STRING variable needing memory management
-            LDA ZP.ACCT  // symbolType|dataType from Objects.GetData()
-            AND #BASICType.TYPEMASK
-            CMP #BASICType.STRING
-            if (Z)
-            {
-                // If the old value was a string, not the same as this one, it will Free it
-                // If the new value is a string, it will create a copy for itself.
-                // If the new value is the same string as the old value, it will do nothing.
-                LDY #Objects.snValue
-                LDA [ZP.IDX], Y
-                CMP ZP.TOPL
-                if (Z)
-                {
-                    INY
-                    LDA [ZP.IDX], Y
-                    CMP ZP.TOPH
-                    if (Z)
-                    {
-                        SEC // same pointer, nothing to do
-                        break;
-                    }
-                }
-                SEC
-                // STRING variable - need to free old string and allocate new
-                FreeCompoundValue(); // Free existing string memory
-                Error.CheckError();
-                if (NC) { break; }
-                // Allocate and copy new string (ZP.TOP has source string pointer)
-                AllocateAndCopyString(); // Returns new string pointer in ZP.TOP -> ZP.IDY
-                Error.CheckError();
-                if (NC) { break; }
-            }
-            else
+            LDA ZP.ACCT // symbolType|dataType from Objects.GetData()
+            AND # BASICType.ARRAY
+            if (NZ)
             {
                 // ARRAY management happens elsewhere, just overwrite ptr              
                 // Non-STRING - use value
@@ -329,6 +313,80 @@ unit Variables
                 LDA ZP.TOPH
                 STA ZP.IDYH
             }
+            else
+            {
+                // Check if the current value is a STRING variable needing memory management
+                LDA ZP.ACCT  // symbolType|dataType from Objects.GetData()
+                AND # BASICType.TYPEMASK
+                CMP # BASICType.STRING
+                if (Z)
+                {
+                    LDA ZP.TOPT
+                    CMP # BASICType.STRING
+                    if (Z)
+                    {
+                        // If the new value is the same string as the old value, it will do nothing.
+                        LDY #Objects.snValue
+                        LDA [ZP.IDX], Y
+                        CMP ZP.TOPL
+                        if (Z)
+                        {
+                            INY
+                            LDA [ZP.IDX], Y
+                            CMP ZP.TOPH
+                            if (Z)
+                            {
+                                SEC // same pointer, nothing to do
+                                break;
+                            }
+                        }    
+                    }
+                    // If the old value was a string, not the same as the new one, we'll free it
+                    SEC
+                    // STRING variable - need to free old string and allocate new
+                    FreeCompoundValue(); // Free existing string memory, and zero out field in Variable record, preserves IDX, IDY, TOP, ACT
+                    Error.CheckError();
+                    if (NC) { break; }
+                }
+                LDA ZP.TOPT
+                AND # BASICType.TYPEMASK
+                CMP # BASICType.STRING
+                if (Z)
+                {
+                    // if we got to here, we have a new string to allocate
+                    // Allocate and copy new string (ZP.TOP has source string pointer)
+                    AllocateAndCopyString(); // Returns new string pointer in ZP.TOP -> ZP.IDY, preserves IDX, ACCT
+                    Error.CheckError();
+                    if (NC) { break; }
+                }
+                else
+                {
+                    // Non-STRING - use value
+                    LDA ZP.TOPL
+                    STA ZP.IDYL
+                    LDA ZP.TOPH
+                    STA ZP.IDYH
+                }
+                
+                // Update type if it's a VAR variable
+                LDA ZP.ACCT // Variable type (packed)
+                AND # BASICType.VAR
+                if (NZ)  // VAR variable - update type in symbol table
+                {
+                    LDA ZP.ACCT
+                    AND # (SymbolType.MASK | BASICType.VAR) // preserve VARIABLE|CONSTANT and VARness
+                    ORA ZP.TOPT
+                    STA ZP.ACCT
+                    
+                    // Set symbolType|dataType (offset snType)
+                    LDY # Objects.snType // SetValue : store
+                    LDA ZP.ACCT
+                    STA [ZP.IDX], Y
+                }
+                
+            } // not ARRAY
+                        
+            
             // Set the new string pointer as the variable's value
             Objects.SetValue(); // Uses ZP.IDY, C = success, NC = failure
             break;
@@ -344,7 +402,12 @@ unit Variables
         STA ZP.IDXH
         PLA
         STA ZP.IDXL
-        
+
+#ifdef TRACE
+        LDA #(strSetValue % 256) STA ZP.TraceMessageL LDA #(strSetValue / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+    
+
         PLY
         PLX
         PLA
@@ -706,6 +769,8 @@ unit Variables
         PHA
         LDA ZP.ACCH
         PHA
+        LDA ZP.ACCT
+        PHA
         
         // Save ZP.IDX (variable node) 
         LDA ZP.IDXL
@@ -775,6 +840,8 @@ unit Variables
         STA ZP.IDXL
         
         PLA
+        STA ZP.ACCT
+        PLA
         STA ZP.ACCH
         PLA
         STA ZP.ACCL
@@ -799,6 +866,8 @@ unit Variables
         PHA
         LDA ZP.ACCH
         PHA
+        LDA ZP.ACCT
+        PHA
         LDA ZP.IDYL
         PHA
         LDA ZP.IDYH
@@ -806,6 +875,12 @@ unit Variables
         LDA ZP.NEXTL
         PHA
         LDA ZP.NEXTH
+        PHA
+        LDA ZP.TOPL
+        PHA
+        LDA ZP.TOPH
+        PHA
+        LDA ZP.TOPT
         PHA
         
         loop // single exit
@@ -815,15 +890,16 @@ unit Variables
             
             // Check if it's a STRING variable
             LDA ZP.ACCT
-            AND # BASICType.TYPEMASK  // Extract data type (without VAR)
+            AND # BASICType.TYPEMASK
             CMP # BASICType.STRING
             if (NZ)
             {
+                // not STRING
+                
                 // Check if it's a ARRAY variable
                 LDA ZP.ACCT
-                AND # BASICType.FLAGMASK  // Extract data type (without VAR)
-                CMP # BASICType.ARRAY
-                if (NZ)
+                AND # BASICType.ARRAY
+                if (Z)
                 {
                     // Not a STRING or ARRAY variable - nothing to free
                     SEC // Success (nop)
@@ -871,6 +947,12 @@ unit Variables
         
                 
         PLA
+        STA ZP.TOPT
+        PLA
+        STA ZP.TOPH
+        PLA
+        STA ZP.TOPL
+        PLA
         STA ZP.NEXTH
         PLA
         STA ZP.NEXTL
@@ -878,6 +960,8 @@ unit Variables
         STA ZP.IDYH
         PLA
         STA ZP.IDYL
+        PLA
+        STA ZP.ACCT
         PLA
         STA ZP.ACCH
         PLA
