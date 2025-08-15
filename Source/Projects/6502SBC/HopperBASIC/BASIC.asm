@@ -1,7 +1,7 @@
 program HopperBASIC
 {
-    #define DEBUG
-    #define TRACE  // Compiler and Executor call tree walks
+    //#define DEBUG
+    //#define TRACE  // Compiler and Executor call tree walks
     //#define TRACEEXE // instructions in Executor
 
     // Defunct?    
@@ -120,6 +120,8 @@ program HopperBASIC
         
         loop
         {
+            BufferManager.ResetInputBuffer();
+                        
             // Read user input
             Console.ReadLine();
             

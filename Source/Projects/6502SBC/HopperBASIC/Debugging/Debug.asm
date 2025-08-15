@@ -66,7 +66,7 @@ unit Debug // Debug.asm
     const string basicCurTokLabel = " CurTok:";
     const string replOpCodeBufferLabel = "\nREPL Compile and Execute OpCodeBuffer (Addr:";
     const string functionOpCodeBufferLabel = "\nFunction Compile OpCodeBuffer (Addr:";
-    const string functionActiveOpCodeBufferLabel = "\nActive Function Excute OpCodeBuffer (Addr:";
+    const string functionExecuteOpCodeBufferLabel = "\nActive Function Execute OpCodeBuffer (Addr:";
     
     const string basicOpCodeSizeLabel = " Size:";
     const string basicPCLabel = " PC:";
@@ -1259,56 +1259,6 @@ unit Debug // Debug.asm
         LDX #4 // 4 lines = 16 x 4 = 64 bytes
         dumpMemoryBlock();
         
-        // FUNCTION Compile OpCodeBuffer
-        LDA #(functionOpCodeBufferLabel % 256)
-        STA ZP.STR
-        LDA #(functionOpCodeBufferLabel / 256)
-        STA ZP.STRH
-        printString();
-        
-        // Print BASIC opcode buffer address
-        LDA #(Address.FunctionOpCodeBuffer >> 8)
-        hOut();
-        LDA #(Address.FunctionOpCodeBuffer & 0xFF)
-        hOut();
-        
-        // Print size and PC (if Function buffer, not compilation buffer)
-        /* TODO
-        LDA ZP.OpCodeBufferH
-        CMP #(Address.FunctionOpCodeBuffer >> 8)
-        if (Z)
-        {
-            LDA #(basicOpCodeSizeLabel % 256)
-            STA ZP.STR
-            LDA #(basicOpCodeSizeLabel / 256)
-            STA ZP.STRH
-            printString();
-            
-            LDA ZP.OpCodeBufferContentSizeH
-            hOut();
-            LDA ZP.OpCodeBufferContentSizeL
-            hOut();
-            
-            LDA #(basicPCLabel % 256)
-            STA ZP.STR
-            LDA #(basicPCLabel / 256)
-            STA ZP.STRH
-            printString();
-            
-            LDA ZP.PCH
-            hOut();
-            LDA ZP.PCL
-            hOut();
-        }
-        */
-        
-        // Dump BASIC opcode buffer
-        LDA #(Address.FunctionOpCodeBuffer >> 8)
-        STA ZP.DB1
-        LDA #(Address.FunctionOpCodeBuffer & 0xFF)
-        STA ZP.DB0
-        LDX #4 // 4 lines = 16 x 4 = 64 bytes
-        dumpMemoryBlock();
         
         
         LDA ZP.TokenBufferH
@@ -1360,15 +1310,51 @@ unit Debug // Debug.asm
             
             LDA ZP.CurrentToken
             hOut();
+            LDA #')' COut();
             
-            // Dump BASIC tokenizer buffer
+            LDY #1
+            LDA [ZP.DB0]
+            STA ZP.FLENGTHL
+            LDA [ZP.DB0], Y
+            STA ZP.FLENGTHH
+            
+            LDA ZP.TokenBufferContentLengthL
+            STA ZP.FLENGTHL
+            LDA ZP.TokenBufferContentLengthH
+            STA ZP.FLENGTHH
+            
             LDA ZP.TokenBufferH
             STA ZP.DB1
             LDA ZP.TokenBufferL
             STA ZP.DB0
-            LDX #16 // 16 lines = 16 x 16 = 256 bytes
+            dumpMemoryBlockL();
+        }
+        
+        LDA ZP.OpCodeBufferH
+        CMP #(Address.FunctionOpCodeBuffer >> 8)
+        if (Z)
+        {
+            LDA #(functionOpCodeBufferLabel % 256)
+            STA ZP.STR
+            LDA #(functionOpCodeBufferLabel / 256)
+            STA ZP.STRH
+            printString();
+            
+            // Print BASIC opcode buffer address
+            LDA #(Address.FunctionOpCodeBuffer >> 8)
+            hOut();
+            LDA #(Address.FunctionOpCodeBuffer & 0xFF)
+            hOut();
+            
+            // Dump BASIC opcode buffer
+            LDA #(Address.FunctionOpCodeBuffer >> 8)
+            STA ZP.DB1
+            LDA #(Address.FunctionOpCodeBuffer & 0xFF)
+            STA ZP.DB0
+            LDX #4 // 4 lines = 16 x 4 = 64 bytes
             dumpMemoryBlock();
         }
+        /*
         LDA ZP.OpCodeBufferH
         CMP #(Address.FunctionOpCodeBuffer >> 8)
         if (NZ)
@@ -1376,59 +1362,50 @@ unit Debug // Debug.asm
             CMP #(Address.REPLOpCodeBuffer >> 8)
             if (NZ)
             {
-                // Active FUNCTION OpCodeBuffer
-                LDA #(functionActiveOpCodeBufferLabel % 256)
+                LDA #(functionExecuteOpCodeBufferLabel % 256)
                 STA ZP.STR
-                LDA #(functionActiveOpCodeBufferLabel / 256)
+                LDA #(functionExecuteOpCodeBufferLabel / 256)
                 STA ZP.STRH
                 printString();
                 
                 // Print BASIC opcode buffer address
-                LDA #(Address.FunctionOpCodeBuffer >> 8)
-                hOut();
-                LDA #(Address.FunctionOpCodeBuffer & 0xFF)
-                hOut();
-                
-                // Print size and PC (if Function buffer, not compilation buffer)
-                /* TODO
                 LDA ZP.OpCodeBufferH
-                CMP #(Address.FunctionOpCodeBuffer >> 8)
-                if (Z)
-                {
-                    LDA #(basicOpCodeSizeLabel % 256)
-                    STA ZP.STR
-                    LDA #(basicOpCodeSizeLabel / 256)
-                    STA ZP.STRH
-                    printString();
-                    
-                    LDA ZP.OpCodeBufferContentSizeH
-                    hOut();
-                    LDA ZP.OpCodeBufferContentSizeL
-                    hOut();
-                    
-                    LDA #(basicPCLabel % 256)
-                    STA ZP.STR
-                    LDA #(basicPCLabel / 256)
-                    STA ZP.STRH
-                    printString();
-                    
-                    LDA ZP.PCH
-                    hOut();
-                    LDA ZP.PCL
-                    hOut();
-                }
-                */
+                hOut();
+                LDA ZP.OpCodeBufferL
+                hOut();
                 
-                // Dump BASIC opcode buffer
-                LDA #(Address.FunctionOpCodeBuffer >> 8)
-                STA ZP.DB1
-                LDA #(Address.FunctionOpCodeBuffer & 0xFF)
+                // find heap allocation block size:
+                SEC
+                LDA ZP.OpCodeBufferL
+                SBC #2
                 STA ZP.DB0
-                LDX #4 // 4 lines = 16 x 4 = 64 bytes
-                dumpMemoryBlock();
+                LDA ZP.OpCodeBufferH
+                SBC #0
+                STA ZP.DB1
+                
+                LDY #1
+                LDA [ZP.DB0]
+                STA ZP.FLENGTHL
+                LDA [ZP.DB0], Y
+                STA ZP.FLENGTHH
+                
+                // substract 2 (the block size word)
+                SEC
+                LDA ZP.FLENGTHL
+                SBC #2
+                STA ZP.FLENGTHL
+                LDA ZP.FLENGTHH
+                SBC #0
+                STA ZP.FLENGTHH
+                
+                LDA ZP.OpCodeBufferH
+                STA ZP.DB1
+                LDA ZP.OpCodeBufferL
+                STA ZP.DB0
+                dumpMemoryBlockL();
             }
         }        
-        
+        */
         // Error pointers
         LDA #(basicErrorLabel % 256)
         STA ZP.STR
@@ -1584,6 +1561,128 @@ unit Debug // Debug.asm
             if (C)
             {
                 INC ZP.DB1
+            }
+        }
+    }
+    
+    dumpMemoryBlockL() // address: DB1 = MSB, DB0 = LSB, length: FLENGTHH = MSB, FLENGTHL = LSB
+    {
+        Debug.NL();
+        
+        loop
+        {
+            // Check if we're done (FLENGTH == 0)
+            LDA ZP.FLENGTHL
+            ORA ZP.FLENGTHH
+            if (Z) { break; }  // Set Z - no more bytes to dump
+            
+            // Print address
+            LDA ZP.DB1
+            hOut();
+            LDA ZP.DB0
+            hOut();
+            LDA #':' cOut();
+            space();
+            
+            // Calculate bytes for this row (min(16, FLENGTH))
+            LDA ZP.FLENGTHL
+            STA ZP.DB4       // Save bytes for this row
+            LDA ZP.FLENGTHH
+            if (NZ)           // Set NZ - more than 255 bytes left
+            {
+                LDA #16       // Full row
+                STA ZP.DB4 
+            }
+            else
+            {
+                LDA ZP.FLENGTHL
+                CMP #17
+                if (C)        // Set C - 17 or more bytes left
+                {
+                    LDA #16   // Full row
+                    STA ZP.DB4 
+                }
+                // else TEMP0 already has the remaining count
+            }
+            
+            // Print hex bytes
+            LDY #0
+            loop
+            {
+                CPY ZP.DB4 
+                if (Z) { break; }  // Set Z - printed all bytes for this row
+                
+                LDA [ZP.DB0], Y
+                hOut();
+                space();
+                
+                INY
+                
+                // Extra space after 8 bytes (if we have that many)
+                CPY #8
+                if (Z)            // Set Z - at byte 8
+                {
+                    space();
+                }
+            }
+            
+            // Pad with spaces if less than 16 bytes
+            loop
+            {
+                CPY #16
+                if (Z) { break; }  // Set Z - reached 16
+                
+                // 3 spaces per missing byte (2 hex chars + 1 space)
+                space();
+                space();
+                space();
+                
+                INY
+                
+                // Extra space after position 8
+                CPY #8
+                if (Z)            // Set Z - at position 8
+                {
+                    space();
+                }
+            }
+            
+            // Spacing before ASCII
+            space();
+            space();
+            
+            // Print ASCII characters
+            LDY #0
+            loop
+            {
+                CPY ZP.DB4 
+                if (Z) { break; }  // Set Z - printed all ASCII for this row
+                
+                LDA [ZP.DB0], Y
+                Printable();
+                INY
+            }
+            
+            nL();
+            
+            // Update address pointer
+            CLC
+            LDA ZP.DB0
+            ADC ZP.DB4       // Add actual bytes printed
+            STA ZP.DB0
+            if (C)            // Set C - carry from addition
+            {
+                INC ZP.DB1
+            }
+            
+            // Decrement FLENGTH by bytes printed
+            SEC
+            LDA ZP.FLENGTHL
+            SBC ZP.DB4 
+            STA ZP.FLENGTHL
+            if (NC)           // Set NC - borrow occurred
+            {
+                DEC ZP.FLENGTHH
             }
         }
     }
@@ -2115,58 +2214,6 @@ unit Debug // Debug.asm
         PHA PHX PHY
         dumpPage();
         PLY PLX PLA
-    }
-    
-    DumpTokenBuffer()
-    {
-        PHP PHA PHX PHY
-        LDA ZP.XIDL
-        PHA
-        LDA ZP.XIDH
-        PHA
-        
-        IsREPLMode();
-        if (C)
-        {
-            LDA #(Address.REPLTokenizerBuffer & 0xFF)
-            STA ZP.XIDL
-            LDA #(Address.REPLTokenizerBuffer >> 8)
-            STA ZP.XIDH
-        }
-        else
-        {
-            LDA #(Address.BASICTokenizerBuffer & 0xFF)
-            STA ZP.XIDL
-            LDA #(Address.BASICTokenizerBuffer >> 8)
-            STA ZP.XIDH
-        }
-        DumpXIDBuffer();
-        
-        PLA
-        STA ZP.XIDH
-        PLA
-        STA ZP.XIDL
-        PLY PLX PLA PLP
-    }
-    DumpREPLBuffer()
-    {
-        PHP PHA PHX PHY
-        LDA ZP.XIDL
-        PHA
-        LDA ZP.XIDH
-        PHA
-        
-        LDA #(Address.REPLTokenizerBuffer & 0xFF)
-        STA ZP.XIDL
-        LDA #(Address.REPLTokenizerBuffer >> 8)
-        STA ZP.XIDH
-        DumpXIDBuffer();
-        
-        PLA
-        STA ZP.XIDH
-        PLA
-        STA ZP.XIDL
-        PLY PLX PLA PLP
     }
     
     DumpXIDBuffer()

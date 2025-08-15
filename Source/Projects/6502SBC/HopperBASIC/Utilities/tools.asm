@@ -437,7 +437,7 @@ unit Tools // Tools.asm
             if (Z) { break; }  // Nothing left to zero
             
             // Write zero: *FDESTINATIONADDRESS = 0
-            LDA #0x55
+            LDA #0
             LDY #0
             STA [ZP.FDESTINATIONADDRESS], Y
             

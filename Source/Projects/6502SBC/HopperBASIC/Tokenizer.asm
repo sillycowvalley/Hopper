@@ -458,20 +458,7 @@ unit Tokenizer // Tokenizer.asm
         }
     }
     
-    // Replace existing TokenizeLine() with mode-aware version
-    TokenizeLine() 
-    {
-        STZ ZP.OpCodeTemp  // Replace mode = 0
-        TokenizeLineWithMode();
-    }
-
-    TokenizeAndAppendLine()
-    {
-        LDA #1 // Append mode = 1
-        STA ZP.OpCodeTemp   
-        TokenizeLineWithMode();
-    }
-
+    
     // Tokenize complete line from BasicInputBuffer into BasicTokenizerBuffer
     // Input: BasicInputBuffer contains raw input, ZP.BasicInputLength = input length, mode in A
     // Output: Tokens stored in BasicTokenizerBuffer, ZP.TokenBufferContentSize = total length

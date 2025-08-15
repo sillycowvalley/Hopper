@@ -8,6 +8,7 @@ unit Console // Console.asm
     Initialize()
     {
         BufferManager.InitializeForTokenGeneration();
+        //BufferManager.ResetInputBuffer();
         
         // Initialize symbol tables
         Objects.Initialize();
@@ -29,12 +30,15 @@ unit Console // Console.asm
         if (C)
         {
             // FUNC or BEGIN capture mode - append to existing buffer
-            Tokenizer.TokenizeAndAppendLine();
+            LDA #1 // Append mode = 1
+            STA ZP.OpCodeTemp   
+            TokenizeLineWithMode();
         }
         else
         {
             // Normal mode - replace buffer
-            Tokenizer.TokenizeLine();
+            STZ ZP.OpCodeTemp  // Replace mode = 0
+            TokenizeLineWithMode();
         }
         
         Error.CheckError();

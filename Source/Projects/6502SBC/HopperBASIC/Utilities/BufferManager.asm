@@ -8,41 +8,55 @@ unit BufferManager // BufferManager.asm
         LDA #(Address.TokenizerBuffer / 256)
         STA ZP.TokenBufferH
         Tokenizer.Initialize();
-    }
-    
-    DetectBufferState()
-    {
-        LDA #(TokenizerBuffer / 256)
-        STA ZP.TokenBufferH
-        if (Z)
-        {
-            SMB3 ZP.FLAGS // Set REPL mode: we're using REPL buffers
-        }
-        else
-        {
-            RMB3 ZP.FLAGS // Clear REPL mode flag: we're using function buffers
-        }
+        BufferManager.ResetInputBuffer();
     }
     
     UseREPLOpCodeBuffer()
     {
+        SMB3 ZP.FLAGS // Set REPL mode: we're using REPL buffers for compilation
+        
         // Point opcode buffer to BASIC function buffer
         LDA #(Address.REPLOpCodeBuffer % 256)
         STA ZP.OpCodeBufferL
         LDA #(Address.REPLOpCodeBuffer / 256)
         STA ZP.OpCodeBufferH
+        
+#ifdef DEBUG
+        LDA #(Address.REPLOpCodeBuffer / 256)
+        STA ZP.FDESTINATIONADDRESSH
+        LDA #(Address.REPLOpCodeBuffer %256)
+        STA ZP.FDESTINATIONADDRESSL
+        LDA #(Limits.OpCodeBufferSize / 256)
+        STA ZP.FLENGTHH
+        LDA #(Limits.OpCodeBufferSize %256)
+        STA ZP.FLENGTHL
+        Tools.ZeroBytes();
+#endif    
+
     }
     
-    // Input: ZP.IDX = function node address
+    // Input: ZP.IDX = function node address (called before Functions.Compile() compiles a new function)
     UseFunctionBuffers()
     {
-        RMB3 ZP.FLAGS // Clear REPL mode flag : using function buffers
+        RMB3 ZP.FLAGS // Clear REPL mode flag : using function buffers for compilation
         
         // Point opcode buffer to BASIC function buffer
         LDA #(Address.FunctionOpCodeBuffer % 256)
         STA ZP.OpCodeBufferL
         LDA #(Address.FunctionOpCodeBuffer / 256)
         STA ZP.OpCodeBufferH
+        
+#ifdef DEBUG
+        LDA #(Address.FunctionOpCodeBuffer / 256)
+        STA ZP.FDESTINATIONADDRESSH
+        LDA #(Address.FunctionOpCodeBuffer %256)
+        STA ZP.FDESTINATIONADDRESSL
+        LDA #(Limits.OpCodeBufferSize / 256)
+        STA ZP.FLENGTHH
+        LDA #(Limits.OpCodeBufferSize %256)
+        STA ZP.FLENGTHL
+        Tools.ZeroBytes();
+#endif    
         
         loop
         {
@@ -99,7 +113,7 @@ unit BufferManager // BufferManager.asm
         STZ ZP.TokenBufferContentLengthL
         STZ ZP.TokenBufferContentLengthH
         
-#ifdef DEBUG        
+#ifdef DEBUG
         LDA #(Address.TokenizerBuffer / 256)
         STA ZP.FDESTINATIONADDRESSH
         LDA #(Address.TokenizerBuffer %256)
@@ -111,11 +125,29 @@ unit BufferManager // BufferManager.asm
         Tools.ZeroBytes();
 #endif    
     }
+    ResetInputBuffer()
+    {
+        PHP
+        
+        STZ ZP.BasicInputLength
+#ifdef DEBUG        
+        LDA #(Address.BasicInputBuffer / 256)
+        STA ZP.FDESTINATIONADDRESSH
+        LDA #(Address.BasicInputBuffer %256)
+        STA ZP.FDESTINATIONADDRESSL
+        LDA #(Limits.BasicInputSize / 256)
+        STA ZP.FLENGTHH
+        LDA #(Limits.BasicInputSize %256)
+        STA ZP.FLENGTHL
+        Tools.ZeroBytes();
+#endif    
+        PLP
+    }
     
     IsREPLMode()
     {
         // Test bit 7 of FLAGS
-        // Returns: C set if REPL mode, NC if function compilation mode
+        // Returns: C set if REPL compilation, NC if Function compilation
         if (BBS3, ZP.FLAGS)
         {
             SEC

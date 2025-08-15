@@ -890,10 +890,6 @@ unit Functions
             break;
         }
         
-//Debug.NL(); LDA ZP.OpCodeBufferH HOut(); LDA ZP.OpCodeBufferL HOut();        
-//Debug.DumpBuffers();
-//Debug.DumpHeap();
-        
         // restore buffers (they may be REPL or Function)
         PLA
         STA ZP.OpCodeBufferH
@@ -916,7 +912,7 @@ unit Functions
         PLA
         STA ZP.TokenizerPosL
         
-        BufferManager.DetectBufferState();
+        //BufferManager.DetectBufferState();
         
     #ifdef TRACE
         LDA #(functionCompile % 256) STA ZP.TraceMessageL LDA #(functionCompile / 256) STA ZP.TraceMessageH Trace.MethodExit();

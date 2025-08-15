@@ -423,7 +423,7 @@ unit Statement // Statement.asm
         }
 #endif
     }
-     
+    
     
     // Input: ZP.CurrentToken = CONST
     const string executeConstDeclTrace = "ExecConst";
@@ -752,7 +752,7 @@ unit Statement // Statement.asm
                         LDA ZP.TokenizerPosH
                         SBC ZP.FSOURCEADDRESSH
                         STA ZP.FLENGTHH  // Length high
-                        CreateTokenStream();
+                        CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
                         if (NC) { break; } // error exit
                         
                         // Set tokens pointer to the new stream
