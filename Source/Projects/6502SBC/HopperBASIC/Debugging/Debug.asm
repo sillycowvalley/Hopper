@@ -2439,6 +2439,15 @@ unit Debug // Debug.asm
                 LDA #1
                 STA ZP.DB0  // Remember VAR status
             }
+            // Check ARRAY status
+            STZ ZP.DB0
+            LDA Address.TypeStackLSB, X
+            AND #BASICType.ARRAY
+            if (NZ)
+            {
+                LDA #1
+                STA ZP.DB0  // Remember VAR|ARRAY status
+            }
             
             PLA
             PHA  // Peek at mode
@@ -2448,7 +2457,7 @@ unit Debug // Debug.asm
                 LDA ZP.DB0
                 if (NZ)
                 {
-                    INC ZP.ACCL  // '['
+                    INC ZP.ACCL  // '[' | '{'
                 }
                 
                 INC ZP.ACCL      // Type character
@@ -2461,7 +2470,7 @@ unit Debug // Debug.asm
                 LDA ZP.DB0
                 if (NZ)
                 {
-                    INC ZP.ACCL  // ']'
+                    INC ZP.ACCL  // ']' | '}'
                 }
                 
                 INC ZP.ACCL      // Space or '|'
@@ -2472,7 +2481,16 @@ unit Debug // Debug.asm
                 LDA ZP.DB0
                 if (NZ)
                 {
-                    LDA #'[' 
+                    LDA Address.TypeStackLSB, X
+                    AND # BASICType.ARRAY
+                    if (NZ)
+                    {
+                        LDA #'[' 
+                    }
+                    else 
+                    {
+                        LDA #'{' 
+                    }
                     cOut();
                 }
                 
@@ -2536,7 +2554,16 @@ unit Debug // Debug.asm
                 LDA ZP.DB0
                 if (NZ)
                 {
-                    LDA #']' 
+                    LDA Address.TypeStackLSB, X
+                    AND # BASICType.ARRAY
+                    if (NZ)
+                    {
+                        LDA #']' 
+                    }
+                    else 
+                    {
+                        LDA #'}' 
+                    }
                     cOut();
                 }
                 

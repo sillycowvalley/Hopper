@@ -1673,7 +1673,7 @@ unit Executor // Executor.asm
            if (NZ)  // VAR type - strip VAR bit for runtime use
            {
                LDA ZP.TOPT
-               AND #BASICType.TYPEMASK  // Strip VAR bit to get actual runtime type
+               AND # (BASICType.TYPEMASK | BASICType.ARRAY)  // Strip VAR bit but not ARRAY
                STA ZP.TOPT
            }
            
@@ -1735,7 +1735,7 @@ unit Executor // Executor.asm
                 // variable slot rather than stack data). Regular stack data should NEVER have
                 // VAR (so most of the time this should be a NOP)
                 LDA ZP.TOPT
-                AND # BASICType.TYPEMASK  // Extract data type
+                AND # (BASICType.TYPEMASK | BASICType.ARRAY)  // Strip VAR bit but not ARRAY
                 STA ZP.TOPT 
                 
                 // Check type compatibility for assignment
@@ -1914,7 +1914,7 @@ unit Executor // Executor.asm
         LDA Address.ValueStackMSB, Y
         STA Address.ValueStackMSB, X
         LDA Address.TypeStackLSB, Y
-        AND #BASICType.TYPEMASK  // Strip VAR bit 
+        AND # (BASICType.TYPEMASK | BASICType.ARRAY)  // Strip VAR bit but not ARRAY
         STA Address.TypeStackLSB, X
         
         INC ZP.SP
