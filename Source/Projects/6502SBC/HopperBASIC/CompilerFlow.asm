@@ -77,8 +77,7 @@ unit CompilerFlow
                Error.SyntaxError(); BIT ZP.EmulatorPCL
                break;
            }
-           
-           // Check if we exited due to error
+           Tokenizer.NextToken();
            Error.CheckError();
            if (NC)
            {

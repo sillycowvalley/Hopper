@@ -13,7 +13,6 @@ WORD count
 WORD iter
 WORD start
 WORD elapsed
-WORD avgMs
 
 BEGIN
     PRINT "10 iterations"
@@ -39,12 +38,12 @@ BEGIN
                 count = count + 1
             ENDIF
         NEXT i
+        PRINT ".",
     NEXT iter
     elapsed = SECONDS() - start
-    avgS = elapsed / 10
     
     PRINT "Done."
-    PRINT count, " primes", avgS, " seconds average"
+    PRINT count, " primes", elapsed, " seconds"
 END
 
 ! run the benchmark

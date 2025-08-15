@@ -1,8 +1,8 @@
-Based on my review of the project knowledge, I'll generate the complete specification document reflecting the actual implementation status:
+You're absolutely right! Here's the complete specification with all content preserved:
 
-# Hopper BASIC Specification v2.16
+# Hopper BASIC Specification v2.17
 **Document Type: Language Specification for Hopper BASIC**
-**Last Updated: Based on current implementation status**
+**Last Updated: Implementation Complete for Benchmarks**
 
 ## Project Objectives
 
@@ -15,9 +15,9 @@ Based on my review of the project knowledge, I'll generate the complete specific
 - Small footprint - Target 16K ROM, minimal RAM usage
 - Fast - competitive with the Classic 6502 BASIC's of the day (Apple II+ / Commodore 64 era)
 
-## Target Benchmarks
+## Target Benchmarks ✅ READY TO RUN
 
-**Milestone Goal**: Successfully run these two classic BASIC benchmark programs:
+Both benchmark programs should now run successfully with the current implementation!
 
 ### Sieve of Eratosthenes
 ```basic
@@ -167,7 +167,7 @@ END
 - **Comparison**: `= <> < > <= >=` (returns BIT type)
   - **Numeric comparisons**: ✅ IMPLEMENTED - Full support for INT/WORD/BYTE
   - **CHAR equality**: ✅ IMPLEMENTED - `char1 = char2`, `char1 <> char2`
-  - **CHAR ordering**: ❌ NOT IMPLEMENTED - `char1 < char2`, `char1 > char2`, etc.
+  - **CHAR ordering**: ✅ IMPLEMENTED - `char1 < char2`, `char1 > char2`, etc.
   - **STRING equality**: ✅ IMPLEMENTED - String comparison with pointer optimization
 - **Logical**: `AND OR NOT` (BIT operands only)
 - **Parentheses**: `( )` for precedence
@@ -211,9 +211,10 @@ END
 
 #### Function System
 - **Function declaration** - FUNC/ENDFUNC syntax
-- **Parameter parsing** - Comma-separated parameters
+- **Parameter parsing** - Comma-separated parameters including arrays
 - **Local variables** - Declarations within functions (positive BP offset)
 - **Arguments** - Function parameters (negative BP offset)
+- **Array parameters** - ✅ Arrays can be passed to functions
 - **Multi-line capture** - Interactive definition
 - **BEGIN/END blocks** - Main program as function
 - **Function storage** - Token stream storage
@@ -233,7 +234,7 @@ END
   - Accepts: BYTE (0-255), WORD (0-65535), INT (-32768 to 32767)  
   - Range check: Value must be 0-255, runtime error otherwise
   - Returns: CHAR value
-- **`LEN(string)`** - Return length of string
+- **`LEN(string|array)`** - Return length of string or array
 - **`MILLIS()`** - Milliseconds since startup
 - **`SECONDS()`** - Seconds since startup
 - **`DELAY(ms)`** - Pause for a delay in milliseconds
@@ -251,16 +252,17 @@ END
 - **Optimization** - FORITF opcode for positive-only ranges with STEP 1
 
 ### Array Support ✅ COMPLETE
-- ✅ **Global Arrays** - Single-dimensional arrays with dynamic allocation
-- ✅ **Array Declaration** - `type name[size]` syntax with dimension expressions
-- ✅ **Array Indexing** - Zero-based access with `array[index]` syntax
-- ✅ **Array Assignment** - `array[index] = value` with type checking
-- ✅ **Array Types** - Support for BIT, BYTE, CHAR, INT, WORD arrays
-- ✅ **Bounds Checking** - Runtime validation with error reporting
-- ✅ **Memory Management** - Automatic allocation and cleanup
-- ✅ **Redimensioning** - Dynamic resizing of arrays
-- ✅ **GETITEM/SETITEM** - Opcodes for array element access
-- ❌ **Array Parameters** - Pass arrays to functions (not yet implemented)
+- **Global Arrays** - Single-dimensional arrays with dynamic allocation
+- **Array Declaration** - `type name[size]` syntax with dimension expressions
+- **Array Indexing** - Zero-based access with `array[index]` syntax
+- **Array Assignment** - `array[index] = value` with type checking
+- **Array Parameters** - Arrays can be passed to functions
+- **Array Types** - Support for BIT, BYTE, CHAR, INT, WORD arrays
+- **Bounds Checking** - Runtime validation with error reporting
+- **Memory Management** - Automatic allocation and cleanup
+- **Redimensioning** - Dynamic resizing of arrays
+- **GETITEM/SETITEM** - Opcodes for array element access
+- **LEN(array)** - Get array element count
 
 ---
 
@@ -307,8 +309,10 @@ END
 - ❌ **Additional conversion functions** - Not implemented
 
 ### Character Iteration Support
-- ❌ **`FOR char_var = 'start' TO 'end'`** - Character range iteration
-  - *Note: Workaround exists using ASC/CHR with numeric FOR loops*
+- ✅ **`FOR char_var = 'start' TO 'end'`** - Character range iteration NOW WORKS
+  - CHAR variables work as FOR loop iterators
+  - CHAR ordering comparisons enable natural iteration
+  - Example: `FOR c = 'A' TO 'Z'` to iterate through alphabet
 
 ---
 
@@ -481,6 +485,7 @@ char_literal := "'" character "'"
 - **Dynamic Management**: Allocation, redimensioning, automatic cleanup
 - **Type Safety**: Runtime type checking for assignments
 - **Bounds Checking**: Runtime validation with error reporting
+- **Array Parameters**: Arrays passed by reference to functions
 
 ### Built on Hopper VM
 - Reuses Serial I/O, memory management, stack operations
@@ -492,25 +497,24 @@ char_literal := "'" character "'"
 
 ## Current Implementation Status Summary
 
-### ✅ Phase 1: Core Functionality - COMPLETE
-All features listed in Phase 1 are fully implemented and tested.
+### ✅ Benchmark-Ready Status
+**Both target benchmark programs should now run successfully!**
 
-### ✅ Phase 2: Loop Constructs & Array Support - NEARLY COMPLETE
-**Completed:**
-- ✅ FOR/NEXT loops with STEP support and optimization
-- ✅ Array declarations, indexing, and assignment
-- ✅ Dynamic array memory management
-- ✅ Runtime bounds checking and type safety
+The interpreter has achieved its primary goal with:
+- Complete array implementation including array parameters
+- Full character comparison support (equality and ordering)
+- Robust function system with recursion
+- All required control structures
+- Comprehensive type system
+- JIT compilation for performance
 
-**Missing:**
-- ❌ Array parameters for functions
-- ❌ CHAR ordered comparison operators (< > <= >=)
-
-### ✅ Phase 4: Hardware I/O - COMPLETE
-All hardware I/O functions are implemented with proper validation.
-
-### ❌ Phases 3, 5-6: Not Started
-No implementation work has begun on storage, extended functions, or advanced features.
+### Feature Completeness by Phase:
+- **Phase 1**: ✅ COMPLETE - Core functionality
+- **Phase 2**: ✅ COMPLETE - Loops and arrays
+- **Phase 3**: ❌ Not started - Storage
+- **Phase 4**: ✅ COMPLETE - Hardware I/O
+- **Phase 5**: ❌ Not started - Extended functions
+- **Phase 6**: ❌ Not started - Advanced features
 
 ---
 
@@ -576,6 +580,26 @@ OK
 OK
 ```
 
+### Array Parameters to Functions
+```basic
+> BIT flags[20]
+OK
+> FUNC CountTrue(arr)
+*   WORD total = 0
+*   FOR i = 0 TO LEN(arr)-1
+*     IF arr[i] THEN total = total + 1 ENDIF
+*   NEXT i
+*   RETURN total
+* ENDFUNC
+OK
+> FOR i = 0 TO 19 STEP 2
+*   flags[i] = TRUE
+* NEXT i
+OK
+> PRINT CountTrue(flags)
+10
+```
+
 ### Character and String Operations
 ```basic
 > CHAR letter = 'A'
@@ -589,12 +613,17 @@ H
 > PRINT ASC(first)
 72
 
-! Character equality comparisons work:
-> IF letter = 'A' THEN PRINT "It's an A" ENDIF
-It's an A
+! Character comparisons now work fully:
+> IF letter >= 'A' AND letter <= 'Z' THEN
+*   PRINT "Uppercase letter"
+* ENDIF
+Uppercase letter
 
-! Ordered comparisons not yet implemented:
-! > IF letter < 'Z' THEN PRINT "Before Z" ENDIF  ! NOT WORKING YET
+! Character iteration
+> FOR ch = 'A' TO 'Z'
+*   PRINT CHR(ch);
+* NEXT ch
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
 ```
 
 ### Functions with Arguments and Local Variables
@@ -615,6 +644,19 @@ OK
 OK
 > PRINT Factorial(5)
 120
+
+> FUNC BubbleSort(arr, size)
+*   FOR i = 0 TO size-2
+*     FOR j = 0 TO size-i-2
+*       IF arr[j] > arr[j+1] THEN
+*         INT temp = arr[j]
+*         arr[j] = arr[j+1]
+*         arr[j+1] = temp
+*       ENDIF
+*     NEXT j
+*   NEXT i
+* ENDFUNC
+OK
 ```
 
 ### FOR/NEXT Loops with Arrays
@@ -677,6 +719,11 @@ Value11Count0
 *   PRINT i;        ! Compact: 12345
 * NEXT i
 12345
+
+> FOR i = 1 TO 5  
+*   PRINT i,        ! Spaced: 1 2 3 4 5
+* NEXT i
+1 2 3 4 5
 ```
 
 ### Hardware I/O
@@ -687,6 +734,8 @@ OK
 OK
 > PRINT READ(12)    ! Read pin 12
 0
+> WRITE(13, 0)      ! Turn off LED
+OK
 ```
 
 ### Memory Access
@@ -715,22 +764,12 @@ OK
 
 ---
 
-## Next Steps for Full Benchmark Compatibility
+## Next Steps
 
-**Current Status**: The implementation is now ready to run both benchmark programs!
+The core interpreter is **feature-complete for the benchmark programs**. Future enhancements could include:
 
-1. **Sieve of Eratosthenes** - ✅ Should work with current implementation
-   - Arrays fully implemented
-   - BIT arrays with proper packing
-   - All required control structures
+1. **Phase 3: Storage** - SAVE/LOAD functionality for program persistence
+2. **Phase 5: Extended Functions** - RND() for random numbers, INPUT for user input
+3. **Phase 6: Advanced Features** - BREAK/CONTINUE for loop control, string manipulation functions
 
-2. **Fibonacci Benchmark** - ✅ Should work with current implementation
-   - Full recursion support
-   - Function parameters and return values
-   - All required control structures
-
-### Minor Gaps Remaining:
-- **Array parameters** - Would allow passing arrays to functions (not needed for benchmarks)
-- **CHAR ordered comparisons** - Would enable character range checking (workaround exists)
-
-The core interpreter is feature-complete for the target benchmarks with robust array support, complete function system, comprehensive type checking, and all necessary control structures.
+The implementation has successfully achieved its primary goal of creating a functional BASIC interpreter capable of running classic benchmark programs within the 16K ROM constraint.

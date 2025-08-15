@@ -1,28 +1,18 @@
 CLS
 NEW
-TRON
+CONST WORD sizepl = 8191
+BIT flags[sizepl]
 
-BIT flags[20]
+BEGIN
+    WORD K
+    WORD I
+    IF flags[i] THEN
+        WHILE k < sizepl
+            PRINT
+        WEND
+        count = count + 1
+    ENDIF
 
-func addthem(a)
-    word total
-    PRINT "Counting"
-    !PRINT a[0]
-    for i = 0 TO LEN(a)-1
-        PRINT i,
-        if a[i] = true THEN
-            total = total + 1
-        ENDIF
-    next i
-endfunc
+END
 
-begin
-    for i = 0 to len(flags)-1 STEP 2
-        PRINT i,
-        flags[i] = true
-    next i
-    PRINT "Initialized"
-    print addthem(flags)
-end
-
-run
+RUN
