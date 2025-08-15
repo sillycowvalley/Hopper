@@ -1,8 +1,8 @@
 program HopperBASIC
 {
     #define DEBUG
-    //#define TRACE  // Compiler and Executor call tree walks
-    #define TRACEEXE // instructions in Executor
+    #define TRACE  // Compiler and Executor call tree walks
+    //#define TRACEEXE // instructions in Executor
 
     // Defunct?    
     //#define TRACESP
@@ -92,9 +92,6 @@ program HopperBASIC
         // Initialize BASIC-specific components
         Console.Initialize();  // This now initializes the tokenizer too
      
-        // By default, we are using REPL buffers
-        // only in Functions.Compile do we toggle to BASIC buffers and back
-        BufferManager.UseREPLBuffers();
     }
     
     

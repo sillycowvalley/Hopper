@@ -15,28 +15,25 @@ unit Address // MemoryMap.asm
     const uint I2CInBuffer          = 0x0800;  // 256-byte buffer 0x0800-0x08FF for I2C.RequestFrom
     
     // HopperBASIC buffers
-    const uint BasicInputBuffer        = 0x0900;                                                         // 128 bytes - raw user input
+    const uint BasicInputBuffer        = 0x0900;                                                       // 128 bytes - raw user input
     
-    const uint BasicCompilerWorkspace  = BasicInputBuffer + Limits.BasicInputLength;                     // 32 bytes - compiler.asm
+    const uint BasicCompilerWorkspace  = BasicInputBuffer + Limits.BasicInputSize;                     // 32 bytes - compiler.asm
     
-    const uint BasicStatementWorkspace = BasicCompilerWorkspace + Limits.BasicCompilerWorkspaceLength;   // 32 bytes - statement.asm
+    const uint BasicStatementWorkspace = BasicCompilerWorkspace + Limits.BasicCompilerWorkspaceSize;   // 32 bytes - statement.asm
     
-    const uint BasicExecutorWorkspace  = BasicStatementWorkspace + Limits.BasicStatementWorkspaceLength; // 32 bytes - executor.asm  
+    const uint BasicExecutorWorkspace  = BasicStatementWorkspace + Limits.BasicStatementWorkspaceSize; // 32 bytes - executor.asm  
     
-    const uint BasicProcessBuffer      = BasicExecutorWorkspace + Limits.BasicExecutorWorkspaceLength;   // 32 bytes - used to convert string literals to uppercase in tokenizer.asm
+    const uint BasicProcessBuffer      = BasicExecutorWorkspace + Limits.BasicExecutorWorkspaceSize;   // 32 bytes - used to convert string literals to uppercase in tokenizer.asm
     
+    const uint TokenizerBuffer         = BasicProcessBuffer    + Limits.BasicProcessBufferSize;        // 512 bytes - tokenized line storage
     
-    const uint BASICTokenizerBuffer   = BasicProcessBuffer + Limits.BasicProcessBufferLength;            // 1024 bytes - tokenized BASIC function storage
-    
-    const uint BASICOpCodeBuffer      = BASICTokenizerBuffer + Limits.BASICTokenizerBufferLength;        // 512 bytes - JIT compiled BASIC function opcodes
-    
-    const uint REPLTokenizerBuffer    = BASICOpCodeBuffer    + Limits.OpCodeBufferLength;                // 1024 bytes - tokenized REPL line storage
-    
-    const uint REPLOpCodeBuffer       = REPLTokenizerBuffer  + Limits.REPLTokenizerBufferLength;         // 512 bytes - compiled REPL line OpCode storage
+    const uint REPLOpCodeBuffer        = TokenizerBuffer  + Limits.TokenizerBufferSize;                // 512 bytes - compiled REPL line OpCode storage
 
-    const uint HopperData             = REPLOpCodeBuffer     + Limits.OpCodeBufferLength;                // start of Hopper RAM (program, then heap)
+    const uint FunctionOpCodeBuffer    = REPLOpCodeBuffer + Limits.OpCodeBufferSize;                   // 512 bytes - JIT compiled BASIC function opcodes
     
-    const uint RamSize                = 0x8000;  // we assume RAM starts at 0x0000 and that we have at least 32K ..
+    const uint HopperData              = FunctionOpCodeBuffer     + Limits.OpCodeBufferSize;               // start of Hopper RAM (program, then heap)
+    
+    const uint RamSize                 = 0x8000;  // we assume RAM starts at 0x0000 and that we have at least 32K ..
     //const uint RamSize                = 0xC000;  // we assume RAM starts at 0x0000 and that we have at least 48K ..
 
 }

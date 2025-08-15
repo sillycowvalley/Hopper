@@ -31,7 +31,7 @@ unit Compiler // Compiler.asm
    
    // Initialize the opcode buffer for compilation
    // Output: OpCode buffer ready for emission
-   // Modifies: ZP.OpCodeBufferContentSizeL/H (set to 0), ZP.CompilerTokenPosL/H (set to current), ZP.CompilerFlags (cleared), ZP.XPC (set to buffer start)
+   // Modifies: ZP.OpCodeBufferContentLengthL/H (set to 0), ZP.CompilerTokenPosL/H (set to current), ZP.CompilerFlags (cleared), ZP.XPC (set to buffer start)
    const string initOpCodeBufferTrace = "InitOpBuf";
    InitOpCodeBuffer()
    {
@@ -40,8 +40,8 @@ unit Compiler // Compiler.asm
 #endif
        
        // Clear opcode buffer length
-       STZ ZP.OpCodeBufferContentSizeL
-       STZ ZP.OpCodeBufferContentSizeH
+       STZ ZP.OpCodeBufferContentLengthL
+       STZ ZP.OpCodeBufferContentLengthH
        
        // Initialize PC to start of opcode buffer
        LDA ZP.OpCodeBufferL
@@ -139,14 +139,14 @@ unit Compiler // Compiler.asm
        {
            // Add required bytes to current buffer length
            CLC
-           ADC ZP.OpCodeBufferContentSizeL
-           STA ZP.OpCodeBufferContentSizeL
-           LDA ZP.OpCodeBufferContentSizeH
+           ADC ZP.OpCodeBufferContentLengthL
+           STA ZP.OpCodeBufferContentLengthL
+           LDA ZP.OpCodeBufferContentLengthH
            ADC #0
-           STA ZP.OpCodeBufferContentSizeH
+           STA ZP.OpCodeBufferContentLengthH
            
            // Compare against buffer size (512 bytes = 0x0200)
-           LDA ZP.OpCodeBufferContentSizeH
+           LDA ZP.OpCodeBufferContentLengthH
            CMP #0x02
            if (C) // >= 0x0200, overflow
            {
@@ -1500,6 +1500,7 @@ unit Compiler // Compiler.asm
 #endif
 
        // Initialize opcode buffer if this is the start of compilation
+       BufferManager.UseREPLOpCodeBuffer();
        InitOpCodeBuffer();
        Error.CheckError();
        if (NC) { States.SetFailure(); return; }

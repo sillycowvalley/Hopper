@@ -1,59 +1,121 @@
 unit BufferManager // BufferManager.asm
 {
-    UseREPLBuffers()
+    InitializeForTokenGeneration()
     {
-        SMB3 ZP.FLAGS // Set REPL mode flag
-        
-        // Point tokenizer to REPL buffer
-        LDA #(REPLTokenizerBuffer % 256)
+        // always tokenize to global token buffer
+        LDA #(Address.TokenizerBuffer % 256)
         STA ZP.TokenBufferL
-        LDA #(REPLTokenizerBuffer / 256)
+        LDA #(Address.TokenizerBuffer / 256)
         STA ZP.TokenBufferH
-        
-        // Point opcode buffer to REPL buffer
-        LDA #(REPLOpCodeBuffer % 256)
-        STA ZP.OpCodeBufferL
-        LDA #(REPLOpCodeBuffer / 256)
-        STA ZP.OpCodeBufferH
-    }
-    
-    UseBASICBuffers()
-    {
-        RMB3 ZP.FLAGS // Clear REPL mode flag
-        
-        // Point tokenizer to BASIC function buffer
-        LDA #(BASICTokenizerBuffer % 256)
-        STA ZP.TokenBufferL
-        LDA #(BASICTokenizerBuffer / 256)
-        STA ZP.TokenBufferH
-        
-        // Point opcode buffer to BASIC function buffer
-        LDA #(BASICOpCodeBuffer % 256)
-        STA ZP.OpCodeBufferL
-        LDA #(BASICOpCodeBuffer / 256)
-        STA ZP.OpCodeBufferH
+        Tokenizer.Initialize();
     }
     
     DetectBufferState()
     {
-        /*
-        LDA #(BASICTokenizerBuffer / 256)
+        LDA #(TokenizerBuffer / 256)
         STA ZP.TokenBufferH
         if (Z)
         {
-            RMB3 ZP.FLAGS // Clear REPL mode flag
+            SMB3 ZP.FLAGS // Set REPL mode: we're using REPL buffers
         }
         else
         {
-            SMB3 ZP.FLAGS // Set REPL mode flag
+            RMB3 ZP.FLAGS // Clear REPL mode flag: we're using function buffers
         }
-        */
+    }
+    
+    UseREPLOpCodeBuffer()
+    {
+        // Point opcode buffer to BASIC function buffer
+        LDA #(Address.REPLOpCodeBuffer % 256)
+        STA ZP.OpCodeBufferL
+        LDA #(Address.REPLOpCodeBuffer / 256)
+        STA ZP.OpCodeBufferH
+    }
+    
+    // Input: ZP.IDX = function node address
+    UseFunctionBuffers()
+    {
+        RMB3 ZP.FLAGS // Clear REPL mode flag : using function buffers
+        
+        // Point opcode buffer to BASIC function buffer
+        LDA #(Address.FunctionOpCodeBuffer % 256)
+        STA ZP.OpCodeBufferL
+        LDA #(Address.FunctionOpCodeBuffer / 256)
+        STA ZP.OpCodeBufferH
+        
+        loop
+        {
+            // Get function body tokens
+            Functions.GetBody(); // Input: ZP.IDX = function node, Output: ZP.IDY = tokens pointer
+            
+            // Check if function has a body
+            LDA ZP.IDYL
+            ORA ZP.IDYH
+            if (Z)
+            {
+                Error.InternalError(); BIT ZP.EmulatorPCL
+                break;
+            }
+            
+            // switch to function token buffer
+            LDA ZP.IDYL
+            STA ZP.TokenBufferL
+            STA ZP.FDESTINATIONADDRESSL
+            LDA ZP.IDYH
+            STA ZP.TokenBufferH
+            STA ZP.FDESTINATIONADDRESSH
+            
+            // Length of function tokens
+            STZ ZP.FLENGTHL
+            STZ ZP.FLENGTHH
+            
+            // measure length of function's token stream
+            loop
+            {
+                IncLENGTH();
+                LDA [ZP.IDY]
+                CMP #Token.EOF  
+                if (Z) { break; }
+                IncIDY();
+                IncDESTINATIONADDRESS();
+            }
+            
+            // reset tokenizer to read copied function tokens
+            LDA ZP.FLENGTHL                   // Length of function tokens
+            STA ZP.TokenBufferContentLengthL
+            LDA ZP.FLENGTHH
+            STA ZP.TokenBufferContentLengthH
+            
+            STZ ZP.TokenizerPosL          // Start at beginning of function tokens
+            STZ ZP.TokenizerPosH
+            
+            break;
+        } // single exit
+    }
+    
+    ResetTokenizerBuffer()
+    {
+        STZ ZP.TokenBufferContentLengthL
+        STZ ZP.TokenBufferContentLengthH
+        
+#ifdef DEBUG        
+        LDA #(Address.TokenizerBuffer / 256)
+        STA ZP.FDESTINATIONADDRESSH
+        LDA #(Address.TokenizerBuffer %256)
+        STA ZP.FDESTINATIONADDRESSL
+        LDA #(Limits.TokenizerBufferSize / 256)
+        STA ZP.FLENGTHH
+        LDA #(Limits.TokenizerBufferSize %256)
+        STA ZP.FLENGTHL
+        Tools.ZeroBytes();
+#endif    
     }
     
     IsREPLMode()
     {
         // Test bit 7 of FLAGS
-        // Returns: C set if REPL mode, NC if main mode
+        // Returns: C set if REPL mode, NC if function compilation mode
         if (BBS3, ZP.FLAGS)
         {
             SEC
@@ -63,5 +125,4 @@ unit BufferManager // BufferManager.asm
             CLC
         }
     }
-    
 }

@@ -26,9 +26,9 @@ unit CompilerFlow
            }
            
            // Mark loop start position for backward jump (start of condition evaluation)
-           LDA ZP.OpCodeBufferContentSizeL
+           LDA ZP.OpCodeBufferContentLengthL
            STA ZP.TOPL
-           LDA ZP.OpCodeBufferContentSizeH
+           LDA ZP.OpCodeBufferContentLengthH
            STA ZP.TOPH
            Stacks.PushTop();
            
@@ -37,9 +37,9 @@ unit CompilerFlow
            
            // Save forward jump operand position for later patching
            // This is where JUMPZW operand will be stored (after the opcode byte)
-           LDA ZP.OpCodeBufferContentSizeL
+           LDA ZP.OpCodeBufferContentLengthL
            STA ZP.TOPL
-           LDA ZP.OpCodeBufferContentSizeH
+           LDA ZP.OpCodeBufferContentLengthH
            STA ZP.TOPH
            Stacks.PushTop();
            
@@ -95,9 +95,9 @@ unit CompilerFlow
            Stacks.PopTop();
            
            // Current position = end of loop body (where JUMPW will be emitted)
-           LDA ZP.OpCodeBufferContentSizeH
+           LDA ZP.OpCodeBufferContentLengthH
            STA ZP.IDYH  // Current position MSB
-           LDA ZP.OpCodeBufferContentSizeL
+           LDA ZP.OpCodeBufferContentLengthL
            STA ZP.IDYL  // Current position LSB
            
            // === FORWARD JUMP OFFSET CALCULATION ===
@@ -202,9 +202,9 @@ unit CompilerFlow
             if (NC) { States.SetFailure(); break; }
             
             // Mark loop start position for backward jump
-            LDA ZP.OpCodeBufferContentSizeL
+            LDA ZP.OpCodeBufferContentLengthL
             STA ZP.TOPL
-            LDA ZP.OpCodeBufferContentSizeH
+            LDA ZP.OpCodeBufferContentLengthH
             STA ZP.TOPH
             Stacks.PushTop();
             
@@ -246,9 +246,9 @@ unit CompilerFlow
             Stacks.PopTop();
             
             // Current position = where JUMPZW will be emitted
-            LDA ZP.OpCodeBufferContentSizeL
+            LDA ZP.OpCodeBufferContentLengthL
             STA ZP.IDYL  // Current position LSB
-            LDA ZP.OpCodeBufferContentSizeH
+            LDA ZP.OpCodeBufferContentLengthH
             STA ZP.IDYH  // Current position MSB
             
             // Account for the JUMPZW instruction we're about to emit (3 bytes)
@@ -345,9 +345,9 @@ unit CompilerFlow
             if (NC) { States.SetFailure(); break; }
             
             // Save position where JUMPZW operand will be (for patching)
-            LDA ZP.OpCodeBufferContentSizeL
+            LDA ZP.OpCodeBufferContentLengthL
             STA ZP.TOPL
-            LDA ZP.OpCodeBufferContentSizeH
+            LDA ZP.OpCodeBufferContentLengthH
             STA ZP.TOPH
             Stacks.PushTop();
             
@@ -397,9 +397,9 @@ unit CompilerFlow
                 
                 // Save position where JUMPW operand will be (for patching)
                 // This jump skips the ELSE block after THEN executes
-                LDA ZP.OpCodeBufferContentSizeL
+                LDA ZP.OpCodeBufferContentLengthL
                 STA ZP.TOPL
-                LDA ZP.OpCodeBufferContentSizeH
+                LDA ZP.OpCodeBufferContentLengthH
                 STA ZP.TOPH
                 Stacks.PushTop();
                 
@@ -418,9 +418,9 @@ unit CompilerFlow
                 // It should jump here (start of ELSE block)
                 
                 // Current position = start of ELSE block
-                LDA ZP.OpCodeBufferContentSizeL
+                LDA ZP.OpCodeBufferContentLengthL
                 STA ZP.IDYL  // Current position LSB
-                LDA ZP.OpCodeBufferContentSizeH
+                LDA ZP.OpCodeBufferContentLengthH
                 STA ZP.IDYH  // Current position MSB
                 
                 // Get saved JUMPZW operand position (but don't pop yet - we have JUMPW position on top)
@@ -488,9 +488,9 @@ unit CompilerFlow
                 DEC ZP.CompilerTemp  // We popped one position
                 
                 // Current position = after ENDIF
-                LDA ZP.OpCodeBufferContentSizeL
+                LDA ZP.OpCodeBufferContentLengthL
                 STA ZP.IDYL  // Current position LSB
-                LDA ZP.OpCodeBufferContentSizeH
+                LDA ZP.OpCodeBufferContentLengthH
                 STA ZP.IDYH  // Current position MSB
                 
                 // Calculate forward offset: current_position - jumpw_operand_position
@@ -558,9 +558,9 @@ unit CompilerFlow
                 DEC ZP.CompilerTemp  // We popped the position
                 
                 // Current position = after ENDIF
-                LDA ZP.OpCodeBufferContentSizeL
+                LDA ZP.OpCodeBufferContentLengthL
                 STA ZP.IDYL  // Current position LSB
-                LDA ZP.OpCodeBufferContentSizeH
+                LDA ZP.OpCodeBufferContentLengthH
                 STA ZP.IDYH  // Current position MSB
                 
                 // Calculate forward offset: current_position - jumpzw_operand_position
@@ -1106,11 +1106,11 @@ unit CompilerFlow
            {
                // NOT optimizing for FORITF
                // Save FORCHK operand position for later patching
-               LDA ZP.OpCodeBufferContentSizeL
+               LDA ZP.OpCodeBufferContentLengthL
                CLC
                ADC #2  // Skip opcode and iterator offset to get operand position
                STA ZP.TOPL
-               LDA ZP.OpCodeBufferContentSizeH
+               LDA ZP.OpCodeBufferContentLengthH
                ADC #0
                STA ZP.TOPH
                Stacks.PushTop();  // Push FORCHK operand position
@@ -1130,9 +1130,9 @@ unit CompilerFlow
            }
            
            // Save loop body start position for FORIT's backward jump
-           LDA ZP.OpCodeBufferContentSizeL
+           LDA ZP.OpCodeBufferContentLengthL
            STA ZP.TOPL
-           LDA ZP.OpCodeBufferContentSizeH
+           LDA ZP.OpCodeBufferContentLengthH
            STA ZP.TOPH
            Stacks.PushTop();  // Push loop body start position
            
@@ -1240,17 +1240,17 @@ unit CompilerFlow
            {
                // optimized for FORITF - shorter distance to jump back
                CLC
-               LDA ZP.OpCodeBufferContentSizeL
+               LDA ZP.OpCodeBufferContentLengthL
                ADC #2
            }
            else
            {
                CLC
-               LDA ZP.OpCodeBufferContentSizeL
+               LDA ZP.OpCodeBufferContentLengthL
                ADC #4
            }
            STA ZP.IDYL
-           LDA ZP.OpCodeBufferContentSizeH
+           LDA ZP.OpCodeBufferContentLengthH
            ADC #0
            STA ZP.IDYH
            
@@ -1285,9 +1285,9 @@ unit CompilerFlow
            
            
                // Current position = after FORIT (exit point)
-               LDA ZP.OpCodeBufferContentSizeL
+               LDA ZP.OpCodeBufferContentLengthL
                STA ZP.IDYL
-               LDA ZP.OpCodeBufferContentSizeH
+               LDA ZP.OpCodeBufferContentLengthH
                STA ZP.IDYH
                
                // Calculate forward offset: exit_point - FORCHK_operand_position

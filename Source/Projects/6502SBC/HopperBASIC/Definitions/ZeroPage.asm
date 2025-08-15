@@ -110,9 +110,9 @@ unit ZP // ZeroPage.asm
     // HOPPER BASIC CORE - TOKENIZER & COMPILER
     const byte BasicInputLength     = 0x28;  // Input buffer character count
     
-    const byte TokenBufferContentSize    = 0x29;  // current Token buffer content size (16-bit)
-    const byte TokenBufferContentSizeL   = 0x29;  // Token buffer content size low (alias)
-    const byte TokenBufferContentSizeH   = 0x2A;  // Token buffer content size high
+    const byte TokenBufferContentLength    = 0x29;  // current Token buffer content length (16-bit)
+    const byte TokenBufferContentLengthL   = 0x29;  // Token buffer content length low (alias)
+    const byte TokenBufferContentLengthH   = 0x2A;  // Token buffer content length high
     const byte TokenizerPos         = 0x2B;  // Current tokenizer position (16-bit)
     const byte TokenizerPosL        = 0x2B;  // Tokenizer pos low (alias)  
     const byte TokenizerPosH        = 0x2C;  // Tokenizer pos high
@@ -125,9 +125,9 @@ unit ZP // ZeroPage.asm
     const byte TokenLiteralPosL     = 0x30;  // Literal data position low
     const byte TokenLiteralPosH     = 0x31;  // Literal data position high
 
-    const byte OpCodeBufferContentSize   = 0x32;  // size of content in JIT buffer (16-bit)
-    const byte OpCodeBufferContentSizeL  = 0x32;  // OpCode content size low (alias)
-    const byte OpCodeBufferContentSizeH  = 0x33;  // OpCode content size high
+    const byte OpCodeBufferContentLength   = 0x32;  // length of content in JIT buffer (16-bit)
+    const byte OpCodeBufferContentLengthL  = 0x32;  // OpCode content length low (alias)
+    const byte OpCodeBufferContentLengthH  = 0x33;  // OpCode content length high
     const byte CompilerTokenPos     = 0x34;  // Compiler position (16-bit)
     const byte CompilerTokenPosL    = 0x34;  // Compiler pos low (alias)
     const byte CompilerTokenPosH    = 0x35;  // Compiler pos high

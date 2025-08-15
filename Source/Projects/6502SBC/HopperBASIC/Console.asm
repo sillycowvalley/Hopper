@@ -7,8 +7,7 @@ unit Console // Console.asm
     // Initialize console system
     Initialize()
     {
-        // Initialize tokenizer
-        Tokenizer.Initialize();
+        BufferManager.InitializeForTokenGeneration();
         
         // Initialize symbol tables
         Objects.Initialize();
@@ -82,7 +81,7 @@ unit Console // Console.asm
             if (NC) { States.SetFailure(); break; }
             
             // Check for empty line (just EOL token)
-            LDA ZP.TokenBufferContentSizeL
+            LDA ZP.TokenBufferContentLengthL
             CMP #1
             if (NZ) 
             { 
@@ -91,7 +90,7 @@ unit Console // Console.asm
                 break;
             }
             
-            LDA ZP.TokenBufferContentSizeH
+            LDA ZP.TokenBufferContentLengthH
             if (NZ)
             {
                 // Definitely more than one token
@@ -369,8 +368,8 @@ unit Console // Console.asm
         
         // Additional cleanup when exiting function capture mode:
         // Reset tokenizer buffer to clear partial function data
-        STZ ZP.TokenBufferContentSizeL
-        STZ ZP.TokenBufferContentSizeH
+        STZ ZP.TokenBufferContentLengthL
+        STZ ZP.TokenBufferContentLengthH
         STZ ZP.TokenizerPosL
         STZ ZP.TokenizerPosH
         
@@ -556,7 +555,7 @@ unit Console // Console.asm
                 default:
                 {
                     // DEFAULT CASE - All BASIC statements and declarations
-                    // This includes: PRINT, assignments, function calls, variable declarations,
+                    // This includes: CLS, PRINT, assignments, function calls, variable declarations,
                     // FUNC/ENDFUNC, BEGIN/END, IF/THEN, WHILE/WEND, etc.
                     
                     // save the token before rollback -> X
@@ -983,8 +982,7 @@ unit Console // Console.asm
             }
             
             
-            // Clear tokenizer state
-            Tokenizer.Initialize();
+            BufferManager.InitializeForTokenGeneration();
             
             // Get variable name for assignment
             Variables.GetName(); // -> ZP.STR
@@ -1234,8 +1232,8 @@ unit Console // Console.asm
                     Tools.NL();
                     break;
                 }
-                // Clear tokenizer state
-                Tokenizer.Initialize();
+                
+                BufferManager.InitializeForTokenGeneration();
                 
                 // Construct token buffer with function call to $MAIN()
                 // Token buffer will contain: IDENTIFIER "$MAIN" LPAREN RPAREN EOL

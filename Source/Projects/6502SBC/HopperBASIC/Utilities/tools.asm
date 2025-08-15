@@ -340,7 +340,6 @@ unit Tools // Tools.asm
     CopyBytes()
     {
         PHA
-        PHX
         PHY
         
         // Save the input parameters that we'll modify during the copy
@@ -407,7 +406,68 @@ unit Tools // Tools.asm
         STA ZP.FSOURCEADDRESSL
         
         PLY
-        PLX
+        PLA
+    }
+    
+    // Zero bytes at destination address
+    // Input: ZP.FDESTINATIONADDRESS = destination pointer  
+    //        ZP.FLENGTH = number of bytes to zero (16-bit)
+    // Output: Memory zeroed at destination
+    // Preserves: Input parameters (saves/restores ZP.F* variables)
+    ZeroBytes()
+    {
+        PHA
+        PHY
+        
+        // Save the input parameters that we'll modify during zeroing
+        LDA ZP.FDESTINATIONADDRESSL
+        PHA
+        LDA ZP.FDESTINATIONADDRESSH
+        PHA
+        LDA ZP.FLENGTHL
+        PHA
+        LDA ZP.FLENGTHH
+        PHA
+        
+        loop
+        {
+            // Check if FLENGTH == 0
+            LDA ZP.FLENGTHL
+            ORA ZP.FLENGTHH
+            if (Z) { break; }  // Nothing left to zero
+            
+            // Write zero: *FDESTINATIONADDRESS = 0
+            LDA #0x55
+            LDY #0
+            STA [ZP.FDESTINATIONADDRESS], Y
+            
+            // Increment FDESTINATIONADDRESS  
+            INC ZP.FDESTINATIONADDRESSL
+            if (Z)
+            {
+                INC ZP.FDESTINATIONADDRESSH
+            }
+            
+            // Decrement FLENGTH
+            LDA ZP.FLENGTHL
+            if (Z)
+            {
+                DEC ZP.FLENGTHH
+            }
+            DEC ZP.FLENGTHL
+        }
+        
+        // Restore the input parameters in reverse order
+        PLA
+        STA ZP.FLENGTHH
+        PLA
+        STA ZP.FLENGTHL
+        PLA
+        STA ZP.FDESTINATIONADDRESSH
+        PLA
+        STA ZP.FDESTINATIONADDRESSL
+        
+        PLY
         PLA
     }
     

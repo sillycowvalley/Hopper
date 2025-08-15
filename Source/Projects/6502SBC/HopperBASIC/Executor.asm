@@ -302,8 +302,8 @@ unit Executor // Executor.asm
         STA ZP.PCH
         
         // Validate buffer length is not zero
-        LDA ZP.OpCodeBufferContentSizeL
-        ORA ZP.OpCodeBufferContentSizeH
+        LDA ZP.OpCodeBufferContentLengthL
+        ORA ZP.OpCodeBufferContentLengthH
         if (Z)
         {
             Error.InternalError(); BIT ZP.EmulatorPCL

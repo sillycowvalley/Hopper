@@ -225,9 +225,9 @@ unit Statement // Statement.asm
             if (NC) { States.SetFailure(); break; }
             
             // Save opcode buffer length after compilation (important for function calls from REPL)
-            LDA ZP.OpCodeBufferContentSizeL
+            LDA ZP.OpCodeBufferContentLengthL
             PHA
-            LDA ZP.OpCodeBufferContentSizeH
+            LDA ZP.OpCodeBufferContentLengthH
             PHA
             
             States.SetSuccess(); // clear
@@ -237,9 +237,9 @@ unit Statement // Statement.asm
             
             // Restore opcode buffer length after execution (important for function calls from REPL)
             PLA
-            STA ZP.OpCodeBufferContentSizeH
+            STA ZP.OpCodeBufferContentLengthH
             PLA
-            STA ZP.OpCodeBufferContentSizeL
+            STA ZP.OpCodeBufferContentLengthL
             
             Error.CheckError(); 
             if (NC)
@@ -280,6 +280,7 @@ unit Statement // Statement.asm
             Compiler.SetLiteralBase();
             
             // Initialize opcode buffer if this is the start of compilation  
+            BufferManager.UseREPLOpCodeBuffer();
             Compiler.InitOpCodeBuffer();
             Error.CheckError();
             if (NC) { States.SetFailure(); break; }
@@ -295,9 +296,9 @@ unit Statement // Statement.asm
             if (NC) { States.SetFailure(); break; }
             
             // Save opcode buffer length after compilation 
-            LDA ZP.OpCodeBufferContentSizeL
+            LDA ZP.OpCodeBufferContentLengthL
             PHA
-            LDA ZP.OpCodeBufferContentSizeH
+            LDA ZP.OpCodeBufferContentLengthH
             PHA
             
             States.SetSuccess(); // Clear state
@@ -308,9 +309,9 @@ unit Statement // Statement.asm
             
             // Restore opcode buffer length
             PLA
-            STA ZP.OpCodeBufferContentSizeH
+            STA ZP.OpCodeBufferContentLengthH
             PLA
-            STA ZP.OpCodeBufferContentSizeL
+            STA ZP.OpCodeBufferContentLengthL
             
             Error.CheckError(); 
             if (NC)
@@ -669,7 +670,7 @@ unit Statement // Statement.asm
                         }
                         DEC ZP.FLENGTHL
                         
-                        CreateTokenStream();
+                        CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
                         if (NC) { break; } // error exit
                         
                         // Set tokens pointer to the new stream

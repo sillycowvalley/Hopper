@@ -18,8 +18,7 @@ unit Tokenizer // Tokenizer.asm
     {
         STZ ZP.TokenizerPosL
         STZ ZP.TokenizerPosH
-        STZ ZP.TokenBufferContentSizeL
-        STZ ZP.TokenBufferContentSizeH
+        BufferManager.ResetTokenizerBuffer();
         STZ ZP.BasicInputLength
         STZ ZP.CurrentToken
         STZ ZP.TokenLiteralPosL
@@ -49,10 +48,10 @@ unit Tokenizer // Tokenizer.asm
     {
         CLC
         LDA ZP.TokenBufferL
-        ADC ZP.TokenBufferContentSizeL
+        ADC ZP.TokenBufferContentLengthL
         STA ZP.IDXL
         LDA ZP.TokenBufferH
-        ADC ZP.TokenBufferContentSizeH
+        ADC ZP.TokenBufferContentLengthH
         STA ZP.IDXH
     }
     
@@ -69,16 +68,16 @@ unit Tokenizer // Tokenizer.asm
         }
     }
     
-    // Increment 16-bit TokenBufferContentSize
-    // Input: None (uses ZP.TokenBufferContentSize)
-    // Output: ZP.TokenBufferContentSize incremented by 1
-    // Munts: ZP.TokenBufferContentSize
-    incrementTokenBufferContentSize()
+    // Increment 16-bit TokenBufferContentLength
+    // Input: None (uses ZP.TokenBufferContentLength)
+    // Output: ZP.TokenBufferContentLength incremented by 1
+    // Munts: ZP.TokenBufferContentLength
+    incrementTokenBufferContentLength()
     {
-        INC ZP.TokenBufferContentSizeL
+        INC ZP.TokenBufferContentLengthL
         if (Z)
         {
-            INC ZP.TokenBufferContentSizeH
+            INC ZP.TokenBufferContentLengthH
         }
     }
     
@@ -89,12 +88,12 @@ unit Tokenizer // Tokenizer.asm
     CompareTokenizerPosToLength()
     {
         LDA ZP.TokenizerPosH
-        CMP ZP.TokenBufferContentSizeH
+        CMP ZP.TokenBufferContentLengthH
         if (NZ) { return; }  // Not equal, C flag is correct
         
         // High bytes equal, compare low bytes
         LDA ZP.TokenizerPosL
-        CMP ZP.TokenBufferContentSizeL
+        CMP ZP.TokenBufferContentLengthL
     }
     
     // Skip whitespace in input buffer at position X
@@ -275,60 +274,29 @@ unit Tokenizer // Tokenizer.asm
     // Error: Sets ZP.LastError if buffer overflow
     appendToTokenBuffer()
     {
-        PHX
-        PHY
         PHA  // Save byte to append
         loop
         {
-            IsREPLMode();
-            if (C)
+            
+            // 16-bit boundary check
+            LDA ZP.TokenBufferContentLengthH
+            CMP #(Limits.TokenizerBufferSize >> 8)
+            if (C) // ContentSizeH >= LimitH
             {
-                // REPL buffers
-                // 16-bit boundary check
-                LDA ZP.TokenBufferContentSizeH
-                CMP #(Limits.REPLTokenizerBufferLength >> 8)
-                if (C) // ContentSizeH >= LimitH
+                if (NZ)  // ContentSizeH > LimitH (not equal)
                 {
-                    if (NZ)  // ContentSizeH > LimitH (not equal)
-                    {
-                        Error.BufferOverflow(); BIT ZP.EmulatorPCL
-                        CLC
-                        break;
-                    }
-                    // High bytes equal, must check low bytes
-                    LDA ZP.TokenBufferContentSizeL
-                    CMP #(Limits.REPLTokenizerBufferLength & 0xFF) 
-                    if (C)  // ContentSizeL >= LimitL  
-                    {
-                        Error.BufferOverflow(); BIT ZP.EmulatorPCL
-                        CLC
-                        break;
-                    }
+                    Error.BufferOverflow(); BIT ZP.EmulatorPCL
+                    CLC
+                    break;
                 }
-            }
-            else
-            {
-                // BASIC buffers
-                // 16-bit boundary check
-                LDA ZP.TokenBufferContentSizeH
-                CMP #(Limits.BASICTokenizerBufferLength >> 8)
-                if (C) // ContentSizeH >= LimitH
+                // High bytes equal, must check low bytes
+                LDA ZP.TokenBufferContentLengthL
+                CMP #(Limits.TokenizerBufferSize & 0xFF) 
+                if (C)  // ContentSizeL >= LimitL  
                 {
-                    if (NZ)  // ContentSizeH > LimitH (not equal)
-                    {
-                        Error.BufferOverflow(); BIT ZP.EmulatorPCL
-                        CLC
-                        break;
-                    }
-                    // High bytes equal, must check low bytes
-                    LDA ZP.TokenBufferContentSizeL
-                    CMP #(Limits.BASICTokenizerBufferLength & 0xFF) 
-                    if (C)  // ContentSizeL >= LimitL  
-                    {
-                        Error.BufferOverflow(); BIT ZP.EmulatorPCL
-                        CLC
-                        break;
-                    }
+                    Error.BufferOverflow(); BIT ZP.EmulatorPCL
+                    CLC
+                    break;
                 }
             }
             
@@ -341,15 +309,12 @@ unit Tokenizer // Tokenizer.asm
         PLA  // Get byte to store
         if (C) 
         {
-            LDY #0
-            STA [ZP.IDX], Y
+            STA [ZP.IDX]
             
             // Increment 16-bit length
-            incrementTokenBufferContentSize();
+            incrementTokenBufferContentLength();
             SEC // all good
         }
-        PLY
-        PLX
     }
        
     scanHexNumber()
@@ -519,8 +484,7 @@ unit Tokenizer // Tokenizer.asm
         if (Z)
         {
             // Replace mode - clear token buffer
-            STZ ZP.TokenBufferContentSizeL
-            STZ ZP.TokenBufferContentSizeH
+            BufferManager.ResetTokenizerBuffer();
             Error.ClearError();
         }
         
@@ -768,9 +732,9 @@ unit Tokenizer // Tokenizer.asm
                     if (NC) { return; }
                     
                     // Store starting position of string content
-                    LDA ZP.TokenBufferContentSizeL
+                    LDA ZP.TokenBufferContentLengthL
                     STA ZP.TokenLiteralPosL
-                    LDA ZP.TokenBufferContentSizeH
+                    LDA ZP.TokenBufferContentLengthH
                     STA ZP.TokenLiteralPosH
                     
                     INX // Skip opening quote
@@ -1001,7 +965,7 @@ unit Tokenizer // Tokenizer.asm
                         
                         INX  // Advance input position
                         INY  // FIXED: Advance working buffer index separately
-                        CPY #Limits.BasicProcessBufferLength
+                        CPY #Limits.BasicProcessBufferSize
                         if (Z) 
                         { 
                             Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -1402,7 +1366,7 @@ unit Tokenizer // Tokenizer.asm
         {
             // Check if we're at or past end of token buffer
             LDA ZP.TokenizerPosL
-            CMP ZP.TokenBufferContentSizeL
+            CMP ZP.TokenBufferContentLengthL
             if (NZ)
             {
                 // Not at end - check the byte at current position
@@ -1432,7 +1396,7 @@ unit Tokenizer // Tokenizer.asm
             
             // Check high byte
             LDA ZP.TokenizerPosH  
-            CMP ZP.TokenBufferContentSizeH
+            CMP ZP.TokenBufferContentLengthH
             if (Z) { break; }  // At end
             
             // Past end - shouldn't happen
@@ -1527,7 +1491,7 @@ unit Tokenizer // Tokenizer.asm
                                 continue;  // Ignore extended ASCII
                             }
                             
-                            CPX #Limits.BasicInputLength
+                            CPX #Limits.BasicInputSize
                             if (Z) { continue; }  // Buffer full
                             
                             STA Address.BasicInputBuffer, X
