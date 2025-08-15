@@ -1848,10 +1848,10 @@ unit Executor // Executor.asm
             }
             else
             {
-                // VAR type: keep the VAR bit in the slot
+                // VAR type: keep the VAR bit in the slot but change the type of the variable
                 LDA ZP.TOPT
                 ORA #BASICType.VAR
-                STA ZP.TOPT
+                STA Address.TypeStackLSB, Y
             }
             
             // Store to calculated stack position
@@ -1859,8 +1859,6 @@ unit Executor // Executor.asm
             STA Address.ValueStackLSB, Y
             LDA ZP.TOPH
             STA Address.ValueStackMSB, Y
-            LDA ZP.TOPT
-            STA Address.TypeStackLSB, Y
             
             States.SetSuccess();
             

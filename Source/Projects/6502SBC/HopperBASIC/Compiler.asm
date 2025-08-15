@@ -880,7 +880,7 @@ unit Compiler // Compiler.asm
                 }
             }
             SEC
-            
+
             // Not an argument - emit push global variable opcode
             Emit.PushGlobal();
             Error.CheckError();
@@ -888,7 +888,7 @@ unit Compiler // Compiler.asm
             
             SEC // Success
             break;
-        }
+        } // single exit
         
     #ifdef TRACE
         LDA #(compileVariableOrArgumentTrace % 256) STA ZP.TraceMessageL LDA #(compileVariableOrArgumentTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -916,11 +916,13 @@ unit Compiler // Compiler.asm
         loop // Single exit
         {
             // Current token is IDENTIFIER
-            // Save the literal position for potential CALL emission
+            // Save the literal position for potential CALL emission (use VM stack slot)
             LDA ZP.TokenLiteralPosL
-            PHA  // Save on stack
+            STA ZP.TOPL
             LDA ZP.TokenLiteralPosH
-            PHA  // Save on stack
+            STA ZP.TOPH
+            LDA ZP.TOPT
+            Stacks.PushTop();
 
             Tokenizer.PeekToken(); // peek next -> A
             CMP #Token.LPAREN
@@ -930,8 +932,7 @@ unit Compiler // Compiler.asm
                 Error.CheckError();
                 if (NC) 
                 { 
-                    PLA  // Clean up stack
-                    PLA
+                    Stacks.PopA(); // clean up VM stack slot
                     break; 
                 }
                 // Create return slot (VOID 0) first
@@ -945,8 +946,7 @@ unit Compiler // Compiler.asm
                     Error.CheckError();
                     if (NC) 
                     { 
-                        PLA  // Clean up stack
-                        PLA
+                        Stacks.PopA(); // clean up VM stack slot
                         break; 
                     }
                 }
@@ -955,8 +955,7 @@ unit Compiler // Compiler.asm
                 Error.CheckError();
                 if (NC) 
                 { 
-                    PLA  // Clean up stack
-                    PLA
+                    Stacks.PopA(); // clean up VM stack slot
                     break; 
                 }
                 
@@ -973,8 +972,7 @@ unit Compiler // Compiler.asm
                         Error.CheckError();
                         if (NC) 
                         { 
-                            PLA  // Clean up stack on error
-                            PLA
+                            Stacks.PopA(); // clean up VM stack slot
                             break; 
                         }
                         
@@ -992,8 +990,7 @@ unit Compiler // Compiler.asm
                         if (NZ)
                         {
                             Error.SyntaxError(); BIT ZP.EmulatorPCL
-                            PLA  // Clean up stack
-                            PLA
+                            Stacks.PopA(); // clean up VM stack slot
                             break;
                         }
                         
@@ -1002,19 +999,17 @@ unit Compiler // Compiler.asm
                         Error.CheckError();
                         if (NC) 
                         { 
-                            PLA  // Clean up stack
-                            PLA
+                            Stacks.PopA(); // clean up VM stack slot
                             break; 
                         }
                         
                         // Continue with next argument
-                    }
+                    } // loop
                     
                     Error.CheckError();
                     if (NC) 
                     { 
-                        PLA  // Clean up stack
-                        PLA
+                        Stacks.PopA(); // clean up VM stack slot
                         break; 
                     }
                 }
@@ -1025,15 +1020,15 @@ unit Compiler // Compiler.asm
                 if (NZ)
                 {
                     Error.ExpectedRightParen(); BIT ZP.EmulatorPCL
-                    PLA  // Clean up stack
-                    PLA
+                    Stacks.PopA(); // clean up VM stack slot
                     break;
                 }
                 
-                // Restore the saved literal position for CALL emission
-                PLA
+                // Restore the saved literal position for CALL emission (from VM stack slot)
+                Stacks.PopTop();
+                LDA ZP.TOPH
                 STA ZP.TokenLiteralPosH
-                PLA
+                LDA ZP.TOPL
                 STA ZP.TokenLiteralPosL
                 
                 // Emit CALL opcode (uses ZP.TokenLiteralPos for function name)
@@ -1048,15 +1043,14 @@ unit Compiler // Compiler.asm
             }
             else
             {
-                // Not a function call - clean up stack
-                PLA  // Discard saved TokenLiteralPosH
-                PLA  // Discard saved TokenLiteralPosL
+                // Not a function call - clean up VM stack slot
+                Stacks.PopA(); 
                 
                 // Get the identifier token
                 Tokenizer.NextToken();
                 Error.CheckError();
                 if (NC) { break; }
-                
+
                 // Compile as variable or argument
                 compileVariableOrArgument();
                 Error.CheckError();
@@ -1569,7 +1563,7 @@ unit Compiler // Compiler.asm
                     Error.CheckError();
                     if (NC) { States.SetFailure(); break; }
                     
-                    // Handle colon separator (THE KEY FIX)
+                    // Handle colon separator
                     LDA ZP.CurrentToken
                     CMP #Token.COLON
                     if (Z)
@@ -1578,7 +1572,6 @@ unit Compiler // Compiler.asm
                         Error.CheckError();
                         if (NC) { States.SetFailure(); break; }
                     }
-                    
                     continue; // Continue main loop
                 }
             } // switch
@@ -1953,7 +1946,7 @@ unit Compiler // Compiler.asm
                     
                     // Check if this is a trailing comma (followed by EOL)
                     LDA ZP.CurrentToken
-                    Tokens.IsEndOfStatement();
+                    Tokens.IsEndOfPrintStatement();
                     if (C)
                     {
                         // Trailing comma - no newline, we're done
@@ -1976,7 +1969,7 @@ unit Compiler // Compiler.asm
                     
                     // Check if this is a trailing semicolon (followed by EOL)
                     LDA ZP.CurrentToken
-                    Tokens.IsEndOfStatement();
+                    Tokens.IsEndOfPrintStatement();
                     if (C)
                     {
                         // Trailing semicolon - no newline, we're done

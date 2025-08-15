@@ -64,7 +64,8 @@ unit Debug // Debug.asm
     const string basicOpCodeBufferLabel = "\nOpCodeBuffer (Addr:";
     const string basicOpCodeSizeLabel = " Size:";
     const string basicPCLabel = " PC:";
-    const string basicBufferSuffix = ") - First 64 bytes:\n";
+    const string firstNRowsPrefix = ") - First ";
+    const string firstNRowsSuffix = " rows:\n";
     const string basicErrorLabel = "\nLastError: ";
     const string replBuffersHeader = "\n=== REPL BUFFERS";
     const string functionBuffersHeader = "\n=== FUNCTION BUFFERS";
@@ -1070,8 +1071,7 @@ unit Debug // Debug.asm
             LDA ZP.DB1
             hOut();
             TXA
-            ASL ASL ASL ASL
-            NOP
+            ASL A ASL A ASL A ASL A
             hOut();
             LDA #':' cOut();
             space();
@@ -1152,17 +1152,13 @@ unit Debug // Debug.asm
         printString();
         LDA ZP.BasicInputLength
         hOut();
-        LDA #(basicBufferSuffix % 256)
-        STA ZP.STR
-        LDA #(basicBufferSuffix / 256)
-        STA ZP.STRH
-        printString();
         
         // Dump input buffer
         LDA #(Address.BasicInputBuffer & 0xFF)
         STA ZP.DB0
         LDA #(Address.BasicInputBuffer >> 8)
         STA ZP.DB1
+        LDX #4 // 4 lines = 16 x 4 = 64 bytes
         dumpMemoryBlock(); // address: DB1 = MSB, DB0 = LSB
         
         // === REPL BUFFERS ===
@@ -1240,17 +1236,12 @@ unit Debug // Debug.asm
             hOut();
         }
         
-        LDA #(basicBufferSuffix % 256)
-        STA ZP.STR
-        LDA #(basicBufferSuffix / 256)
-        STA ZP.STRH
-        printString();
-        
         // Dump REPL tokenizer buffer
         LDA #(Address.REPLTokenizerBuffer >> 8)
         STA ZP.DB1
         LDA #(Address.REPLTokenizerBuffer & 0xFF)
         STA ZP.DB0
+        LDX #4 // 4 lines = 16 x 4 = 64 bytes
         dumpMemoryBlock();
         
         // REPL OpCodeBuffer
@@ -1294,17 +1285,12 @@ unit Debug // Debug.asm
             hOut();
         }
         
-        LDA #(basicBufferSuffix % 256)
-        STA ZP.STR
-        LDA #(basicBufferSuffix / 256)
-        STA ZP.STRH
-        printString();
-        
         // Dump REPL opcode buffer
         LDA #(Address.REPLOpCodeBuffer >> 8)
         STA ZP.DB1
         LDA #(Address.REPLOpCodeBuffer & 0xFF)
         STA ZP.DB0
+        LDX #4 // 4 lines = 16 x 4 = 64 bytes
         dumpMemoryBlock();
         
         // === BASIC BUFFERS ===
@@ -1388,17 +1374,12 @@ unit Debug // Debug.asm
             hOut();
         }
         
-        LDA #(basicBufferSuffix % 256)
-        STA ZP.STR
-        LDA #(basicBufferSuffix / 256)
-        STA ZP.STRH
-        printString();
-        
         // Dump BASIC tokenizer buffer
         LDA #(Address.BASICTokenizerBuffer >> 8)
         STA ZP.DB1
         LDA #(Address.BASICTokenizerBuffer & 0xFF)
         STA ZP.DB0
+        LDX #16 // 16 lines = 16 x 16 = 256 bytes
         dumpMemoryBlock();
         
         // BASIC OpCodeBuffer
@@ -1442,17 +1423,12 @@ unit Debug // Debug.asm
             hOut();
         }
         
-        LDA #(basicBufferSuffix % 256)
-        STA ZP.STR
-        LDA #(basicBufferSuffix / 256)
-        STA ZP.STRH
-        printString();
-        
         // Dump BASIC opcode buffer
         LDA #(Address.BASICOpCodeBuffer >> 8)
         STA ZP.DB1
         LDA #(Address.BASICOpCodeBuffer & 0xFF)
         STA ZP.DB0
+        LDX #4 // 4 lines = 16 x 4 = 64 bytes
         dumpMemoryBlock();
         
         // Error pointers
@@ -1468,14 +1444,91 @@ unit Debug // Debug.asm
         nL();
     }
     
-    dumpMemoryBlock()  // address: DB1 = MSB, DB0 = LSB
+    // Find the last row containing non-zero data in a memory block
+    // Input: X = max number of rows (1-16)
+    //        ZP.DB1:ZP.DB0 = pointer to start of block
+    // Output: X = last row containing non-zero data (0-based)
+    //         or 0xFF if all rows are zero
+    // Preserves: ZP.DB0, ZP.DB1
+    // Munts: A, Y
+    findLastNonZeroRow()
     {
-        // Print 4 lines of 16 bytes each (64 bytes total)
-        LDX #0  // Line counter
+        DEX                      // Convert to 0-based index (0-15)
+        loop
+        {
+            // Check if we've gone below row 0
+            CPX #0xFF            // Check for underflow
+            if (Z)               // All rows were zero
+            {
+                INX // zero rows
+                break;
+            }
+            
+            // Calculate starting offset for row X
+            TXA                      // Row number to A
+            ASL A ASL A ASL A ASL A  // Multiply by 16
+            TAY                      // Y = starting offset for this row
+            
+            // Save row number on stack
+            PHX
+            
+            // Check 16 bytes in this row
+            LDX # 16
+            loop
+            {
+                LDA [ZP.DB0], Y  // Get byte at offset Y
+                if (NZ)          // Found non-zero byte
+                {
+                    PLX          // Restore row number
+                    INX          // 1.. 16 (convert to 1-based row count (1-16)
+                    return;
+                }
+                INY              // Next byte in row
+                DEX              // Decrement byte counter
+                if (Z)           // Checked all 16 bytes
+                {
+                    INX // 1.. 16 (convert to 1-based row count (1-16)
+                    break;
+                }
+            }
+            
+            // This row was all zeros, try previous row
+            PLX                  // Restore row number
+            DEX                  // Previous row
+        }
+        // X contains 0 if all rows were zero
+    }
+    
+    dumpMemoryBlock()  // address: DB1 = MSB, DB0 = LSB, X = maximum number of rows
+    {
+        findLastNonZeroRow();
+        CPX #0
+        if (Z) { INX } // at least one row
+        
+        LDA #(firstNRowsPrefix % 256)
+        STA ZP.STR
+        LDA #(firstNRowsPrefix / 256)
+        STA ZP.STRH
+        printString();
+        
+        TXA hOut();
+        
+        LDA #(firstNRowsSuffix % 256)
+        STA ZP.STR
+        LDA #(firstNRowsSuffix / 256)
+        STA ZP.STRH
+        printString();
+        dumpMemoryBlockX();
+    }
+    
+    dumpMemoryBlockX() // address: DB1 = MSB, DB0 = LSB, X = umber of rows
+    {    
+        // Print X rows of 16 bytes each (256 bytes total)
+        INX
         
         loop
         {
-            CPX #4
+            DEX
             if (Z) { break; }
             
             // Print address
@@ -1525,7 +1578,7 @@ unit Debug // Debug.asm
             
             nL();
             
-            // Next line
+            // Next row
             CLC
             LDA ZP.DB0
             ADC #16
@@ -1534,8 +1587,6 @@ unit Debug // Debug.asm
             {
                 INC ZP.DB1
             }
-            
-            INX
         }
     }
     
@@ -2152,14 +2203,6 @@ unit Debug // Debug.asm
             if (Z) { break; }
         }
         
-        
-        /*
-        LDA ZP.XIDL
-        STA ZP.DB0
-        LDA ZP.XIDH
-        STA ZP.DB1
-        dumpMemoryBlock(); // address: DB1 = MSB, DB0 = LSB
-        */
         PLY PLX PLA PLP
     }
     

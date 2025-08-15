@@ -513,14 +513,15 @@ unit Tokens
     // Output: C set if token ends a statement, NC if statement continues
     // Checks for: COLON (statement separator), EOF (end of stream), EOL (end of line)
     // Preserves: A, X, Y
-    // Usage: Helps PRINT and other statements recognize when to stop processing arguments
-    IsEndOfStatement()
+    // Usage: Helps PRINT recognize when to stop processing arguments
+    IsEndOfPrintStatement()
     {
         switch (A)
         {
-            case Token.COLON: // another statement follows
-            case Token.EOF:   // end of stream
-            case Token.EOL:   // end of line
+            case Token.COLON:   // another statement follows
+            case Token.EOF:     // end of stream
+            case Token.EOL:     // end of line
+            case Token.COMMENT: // end of line comment
             {
                 SEC
             }

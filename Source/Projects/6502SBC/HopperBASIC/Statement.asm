@@ -38,6 +38,17 @@ unit Statement // Statement.asm
     SetCaptureMode()
     {
         STA funcCaptureMode
+        /*
+        IsCaptureModeOn();
+        if (C)
+        {
+            UseBASICBuffers();
+        }
+        else
+        {
+            UseREPLBuffers();
+        }
+        */
     }
     IsCaptureModeOff()
     {

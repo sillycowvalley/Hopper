@@ -887,9 +887,6 @@ unit Functions
         // Always use BASIC buffers for compilation, never REPL
         BufferManager.UseBASICBuffers();
         
-        //Functions.GetBody(); // Input: ZP.IDX = function node, Output: ZP.IDY = token stream
-        //Compiler.SetLiteralBase(); // Input: ZP.IDY = token stream address
-        
         loop // Single exit block
         {
             freeOpCodes(); // Free existing opcode stream if not null
@@ -912,8 +909,6 @@ unit Functions
             LDA ZP.IDXH 
             PHA
             
-//Debug.NL(); LDA #'>' COut(); Space(); XIOut();            
-
             Stacks.PushXID();
             
             GetTokens();
@@ -922,16 +917,11 @@ unit Functions
             LDA ZP.IDYH
             STA ZP.XIDH
 
-//Functions.GetName();            
-//Debug.NL(); PrintStringSTR(); Space(); LDA #':' COut(); Space(); XIOut();        
-            
             // Use Compiler.CompileExpression() to compile function body
             Compiler.CompileFunction();
             Error.CheckError();
             
             Stacks.PopXID();
-            
-//Debug.NL(); LDA #'<' COut(); Space(); XIOut();  
             
             PLA
             STA ZP.IDXH
@@ -1035,6 +1025,8 @@ unit Functions
         STA ZP.TokenizerPosH
         PLA
         STA ZP.TokenizerPosL
+        
+        BufferManager.DetectBufferState();
         
     #ifdef TRACE
         LDA #(functionCompile % 256) STA ZP.TraceMessageL LDA #(functionCompile / 256) STA ZP.TraceMessageH Trace.MethodExit();

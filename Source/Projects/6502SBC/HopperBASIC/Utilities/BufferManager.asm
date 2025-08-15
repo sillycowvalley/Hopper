@@ -34,6 +34,22 @@ unit BufferManager // BufferManager.asm
         STA ZP.OpCodeBufferH
     }
     
+    DetectBufferState()
+    {
+        /*
+        LDA #(BASICTokenizerBuffer / 256)
+        STA ZP.TokenBufferH
+        if (Z)
+        {
+            RMB3 ZP.FLAGS // Clear REPL mode flag
+        }
+        else
+        {
+            SMB3 ZP.FLAGS // Set REPL mode flag
+        }
+        */
+    }
+    
     IsREPLMode()
     {
         // Test bit 7 of FLAGS

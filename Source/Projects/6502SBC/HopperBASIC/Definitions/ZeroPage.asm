@@ -39,7 +39,7 @@ unit ZP // ZeroPage.asm
     // Bit 6 - (unused in BASIC)
     // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
     // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
-    // Bit 3 - (reserved for REPL mode flag - not currently in use)
+    // Bit 3 - REPL mode flag - set for REPL buffers, clear for BASIC buffers
     // Bit 2 - TRON | TROFF (trace on/off)
     // Bit 1 - Temporary exit flag for Console.processTokens() loop control
     // Bit 0 - Program has been loaded

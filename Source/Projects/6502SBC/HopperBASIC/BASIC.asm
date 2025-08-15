@@ -1,8 +1,8 @@
 program HopperBASIC
 {
     #define DEBUG
-    #define TRACE  // Compiler and Executor call tree walks
-    //#define TRACEEXE // instructions in Executor
+    //#define TRACE  // Compiler and Executor call tree walks
+    #define TRACEEXE // instructions in Executor
 
     // Defunct?    
     //#define TRACESP
@@ -16,6 +16,7 @@ program HopperBASIC
     #define ROM_48K
     
     uses "./Definitions/ZeroPage"
+    uses "./Definitions/Limits"
     uses "./Definitions/MemoryMap"
     uses "./Definitions/Messages"
     uses "./Definitions/BASICTypes"
