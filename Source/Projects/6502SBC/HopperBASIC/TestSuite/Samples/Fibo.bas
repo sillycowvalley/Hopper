@@ -28,11 +28,11 @@ FUNC Benchmark(name, arg, loops)
 ENDFUNC
 
 BEGIN
-    Benchmark("Fibonacci", 10, 1)
+    Benchmark("Fibonacci", 24, 1)
 END
 
 ! test from REPL (or just type RUN)
-Benchmark("Fibonacci", 10, 1)
+Benchmark("Fibonacci", 24, 1)
 
 ! NEW
 ! MEM

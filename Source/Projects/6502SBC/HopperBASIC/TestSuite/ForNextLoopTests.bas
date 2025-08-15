@@ -118,7 +118,8 @@ BEGIN
     PRINT "Global after FOR 1 TO 3: "; g; " ! expect 4"
 END
 RUN
-VARS  ! Check global value persists
+  ! Check global value persists
+VARS
 
 ! ===== TEST 9: Nested Loops (Declaration Required) =====
 NEW
@@ -233,7 +234,8 @@ BEGIN
     TestMixedScope()
 END
 RUN
-VARS  ! Check outer
+  ! Check outer
+VARS
 
 ! ===== TEST 16: Empty Loop Body =====
 NEW
