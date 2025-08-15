@@ -1345,52 +1345,53 @@ unit Tokenizer // Tokenizer.asm
     
     // Skip past null-terminated string at current tokenizer position
     // Input: ZP.TokenizerPos = current position in token buffer
-    // Output: ZP.TokenizerPos advanced past null terminator
+    // Output: ZP.TokenizerPos advanced past null terminator, C set on success, NC on error
     // Munts: ZP.TokenizerPos, ZP.IDX, A, Y
     skipInlineString()
     {
         loop
         {
             // Check if we're at or past end of token buffer
-            LDA ZP.TokenizerPosL
-            CMP ZP.TokenBufferContentLengthL
-            if (NZ)
+            CompareTokenizerPosToLength();  // Proper 16-bit comparison
+            if (C)  // TokenizerPos >= TokenBufferContentSize
             {
-                // Not at end - check the byte at current position
-                LDA ZP.TokenBufferL
-                CLC
-                ADC ZP.TokenizerPosL
-                STA ZP.IDXL
-                LDA ZP.TokenBufferH
-                ADC ZP.TokenizerPosH
-                STA ZP.IDXH
-                
-                LDY #0
-                LDA [ZP.IDX], Y
-                PHA  // Save the character we just read
-                
-                // Advance position
-                INC ZP.TokenizerPosL
-                if (Z)
-                {
-                    INC ZP.TokenizerPosH
-                }
-                
-                PLA  // Restore the character
-                if (Z) { break; }  // Found null terminator
-                continue;
+                // At or past end of buffer - error
+                CLC  // Error flag
+                break;
             }
             
-            // Check high byte
-            LDA ZP.TokenizerPosH  
-            CMP ZP.TokenBufferContentLengthH
-            if (Z) { break; }  // At end
+            // Calculate pointer to current position
+            LDA ZP.TokenBufferL
+            CLC
+            ADC ZP.TokenizerPosL
+            STA ZP.IDXL
+            LDA ZP.TokenBufferH
+            ADC ZP.TokenizerPosH
+            STA ZP.IDXH
             
-            // Past end - shouldn't happen
-            break;
-        }
-    }
-    
+            // Read the character at current position
+            LDY #0
+            LDA [ZP.IDX], Y
+            PHA  // Save the character
+            
+            // Advance position
+            INC ZP.TokenizerPosL
+            if (Z)
+            {
+                INC ZP.TokenizerPosH
+            }
+            
+            // Check if we found the null terminator
+            PLA  // Restore the character
+            if (Z) 
+            { 
+                SEC  // Success - found null terminator
+                break;
+            }
+            
+            // Not null, continue scanning
+        }// single exit
+    }    
     // Read a line of input into BasicInputBuffer
     // Input: None (reads from serial)
     // Output: A = length of input, ZP.BasicInputLength = input length

@@ -1834,7 +1834,9 @@ unit Compiler // Compiler.asm
                {
 #ifdef DEBUG
                    Tokens.PrintKeyword();
-#endif                    
+#endif      
+Debug.DumpBuffers();              
+DumpHeap();
                    // TODO: Add more statement types as needed
                    Error.SyntaxError(); BIT ZP.EmulatorPCL
                    States.SetFailure();

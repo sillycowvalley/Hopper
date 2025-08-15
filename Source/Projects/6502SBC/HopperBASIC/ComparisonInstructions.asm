@@ -128,7 +128,7 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         {
             SEC // assume ok (in case not BIT types)
             
-            CMP # 1 // not allowed at all
+            CMP # 1 // BIT not allowed at all, CHAR allowed if both CHAR
             if (Z)
             {
                 LDA ZP.NEXTT
@@ -139,12 +139,6 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                     break;    
                 } 
                 CMP # BASICType.STRING
-                if (Z)
-                {
-                    CLC
-                    break;    
-                } 
-                CMP # BASICType.CHAR
                 if (Z)
                 {
                     CLC
@@ -164,12 +158,33 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                     CLC
                     break;
                 }
+                
+                LDA ZP.NEXTT
                 CMP # BASICType.CHAR
                 if (Z)
-                {   
-                    CLC
-                    break;
+                {
+                    LDA ZP.TOPT
+                    CMP # BASICType.CHAR    
+                    if (NZ)
+                    {
+                        CLC   
+                        break;
+                    }
                 }
+                
+                LDA ZP.TOPT
+                CMP # BASICType.CHAR
+                if (Z)
+                {
+                    LDA ZP.NEXTT
+                    CMP # BASICType.CHAR    
+                    if (NZ)
+                    {
+                        CLC   
+                        break;
+                    }
+                }
+                
                 SEC
                 break;
             }
@@ -616,7 +631,7 @@ unit ComparisonInstructions // ComparisonInstructions.asm
             // Pop two operands
             Stacks.PopTopNext();
             
-            LDA #1 // not allowed : CHAR, STRING, BIT
+            LDA #1 // not allowed : STRING, BIT
             checkBITandCHARTypes();
             if (NC)
             {
