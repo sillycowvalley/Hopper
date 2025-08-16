@@ -119,6 +119,7 @@ unit OpCodes
        JUMPNZW      = 0x89,  // Jump if non-zero [lsb] [msb]
        
        ADDLOCALS    = 0x8A, 
+       ADDGLOBALS   = 0x8B, 
        
 
         // === THREE-OPERAND OPCODES (0xC0-0xFF) ===
@@ -196,6 +197,7 @@ unit OpCodes
    const string opcodeINCLOCAL = "INCLOCAL";
    const string opcodeINCGLOBAL = "INCGLOBAL";
    const string opcodeADDLOCALS = "ADDLOCALS";
+   const string opcodeADDGLOBALS = "ADDGLOBALS";
    
 #if defined(DEBUG) || defined(TRACEEXE)
    // Input: opcode in X
@@ -205,6 +207,13 @@ unit OpCodes
         PHA
         switch (X)
         {
+            case OpCode.ADDGLOBALS:
+            {
+                LDA #(opcodeADDGLOBALS % 256)
+                STA ZP.STRL
+                LDA #(opcodeADDGLOBALS / 256)
+                STA ZP.STRH
+            }
             case OpCode.INCLOCAL:
             {
                 LDA #(opcodeINCLOCAL % 256)

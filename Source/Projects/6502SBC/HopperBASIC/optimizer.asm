@@ -26,11 +26,16 @@ unit Optimizer
         OpCode.POPGLOBAL,  OpCode.ADD,   OpCode.PUSH1,     OpCode.PUSHGLOBAL, PeepConstraint.EqualOperands0and3, NewOperands.Operand0,            OpCode.INCGLOBAL, 
     // PUSHLOCAL <n>,  PUSH1, ADD, POPLOCAL  <n> -> INCLOCAL <n>        
         OpCode.POPLOCAL,   OpCode.ADD,   OpCode.PUSH1,     OpCode.PUSHLOCAL,  PeepConstraint.EqualOperands0and3, NewOperands.Operand0,            OpCode.INCLOCAL,  
+    
     // PUSHLOCAL <n>,  PUSHLOCAL <m>, ADD, POPLOCAL  <n> -> ADDLOCALS <n> <m>
         OpCode.POPLOCAL,   OpCode.ADD,   OpCode.PUSHLOCAL, OpCode.PUSHLOCAL,  PeepConstraint.EqualOperands0and3, NewOperands.Operand0AndOperand2, OpCode.ADDLOCALS,
     // PUSHLOCAL <m>,  PUSHLOCAL <n>, ADD, POPLOCAL  <n> -> ADDLOCALS <n> <m>
         OpCode.POPLOCAL,   OpCode.ADD,   OpCode.PUSHLOCAL, OpCode.PUSHLOCAL,  PeepConstraint.EqualOperands0and2, NewOperands.Operand0AndOperand3, OpCode.ADDLOCALS,
-        
+    
+    // PUSHGLOBAL <n>,  PUSHGLOBAL <m>, ADD, POPGLOBAL  <n> -> ADDGLOBALS <n> <m>
+        OpCode.POPGLOBAL,   OpCode.ADD,   OpCode.PUSHGLOBAL, OpCode.PUSHGLOBAL,  PeepConstraint.EqualOperands0and3, NewOperands.Operand0AndOperand2, OpCode.ADDGLOBALS,
+    // PUSHGLOBAL <m>,  PUSHGLOBAL <n>, ADD, POPGLOBAL  <n> -> ADDGLOBALS <n> <m>
+        OpCode.POPGLOBAL,   OpCode.ADD,   OpCode.PUSHGLOBAL, OpCode.PUSHGLOBAL,  PeepConstraint.EqualOperands0and2, NewOperands.Operand0AndOperand3, OpCode.ADDGLOBALS,    
         OpCode.INVALID  // End marker = 0
     };
 

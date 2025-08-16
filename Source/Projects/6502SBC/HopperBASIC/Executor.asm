@@ -639,6 +639,10 @@ unit Executor // Executor.asm
            {
                executeAddLocals();
            }
+           case OpCode.ADDGLOBALS:
+           {
+               executeAddGlobals();
+           }
            // Control flow (short jumps)
            case OpCode.JUMPB:
            {
@@ -2202,6 +2206,17 @@ unit Executor // Executor.asm
             STA ZP.TOPL
             LDA Address.ValueStackMSB, Y
             STA ZP.TOPH
+            
+            // Fetch backward jump offset (16-bit)
+            LDA [ZP.PC]
+            STA executorOperandL
+            INC ZP.PCL
+            if (Z) { INC ZP.PCH }
+            
+            LDA [ZP.PC]
+            STA executorOperandH
+            INC ZP.PCL
+            if (Z) { INC ZP.PCH }
 
             // Store updated iterator++ back with WORD type
             INC ZP.TOPL
@@ -2234,24 +2249,10 @@ unit Executor // Executor.asm
             if (NC)  // TO high < iterator high
             {
                 // Exit loop: PC += 2
-                CLC
-                LDA ZP.PCL
-                ADC #2
-                STA ZP.PCL
-                LDA ZP.PCH
-                ADC #0
-                STA ZP.PCH
                 break;
             }
             if (NZ)  // TO high > iterator high
             {
-                // Fetch backward jump offset (16-bit)
-                LDY #1
-                LDA [ZP.PC]
-                STA executorOperandL // Save operand
-                LDA [ZP.PC], Y
-                STA executorOperandH // Save operand
-                
                 // Continue loop - jump back
                 CLC
                 LDA ZP.PCL
@@ -2269,22 +2270,8 @@ unit Executor // Executor.asm
             if (NC)  // TO < iterator - exit
             {
                 // Exit loop: PC += 2
-                CLC
-                LDA ZP.PCL
-                ADC #2
-                STA ZP.PCL
-                LDA ZP.PCH
-                ADC #0
-                STA ZP.PCH
                 break;
             }
-            
-            // Fetch backward jump offset (16-bit)
-            LDY #1
-            LDA [ZP.PC]
-            STA executorOperandL // Save operand
-            LDA [ZP.PC], Y
-            STA executorOperandH // Save operand
             
             // TO >= iterator - continue loop
             CLC
@@ -2783,6 +2770,51 @@ unit Executor // Executor.asm
         
     #ifdef TRACE
         LDA #(executeAddLocalsTrace % 256) STA ZP.TraceMessageL LDA #(executeAddLocalsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+    
+    // Execute ADDGLOBALS opcode - add one global variable to another
+    // Input: PC points to operand bytes (target global index, source global index, unused)
+    // Output: target global += source global, PC advanced by 3
+    // Modifies: A, X, Y, ZP.PC, ZP.TOP, ZP.NEXT
+    const string executeAddGlobalsTrace = "ADDGLOBALS // Add global to global";
+    executeAddGlobals()
+    {
+    #ifdef TRACE
+        LDA #(executeAddGlobalsTrace % 256) STA ZP.TraceMessageL LDA #(executeAddGlobalsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop
+        {
+            // Fetch target global index (first operand)
+            FetchOperandByte();
+            States.CanContinue();
+            if (NC) { break; }
+            
+            TAX  // X = target global index
+            
+            // Fetch source global index (second operand)
+            FetchOperandByte();
+            States.CanContinue();
+            if (NC) { break; }
+            
+            TAY  // Y = source global index
+            
+            // Add source to target: 
+            CLC
+            LDA Address.ValueStackLSB, X
+            ADC Address.ValueStackLSB, Y
+            STA Address.ValueStackLSB, X
+            LDA Address.ValueStackMSB, X
+            ADC Address.ValueStackMSB, Y
+            STA Address.ValueStackMSB, X
+            
+            States.SetSuccess();
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(executeAddGlobalsTrace % 256) STA ZP.TraceMessageL LDA #(executeAddGlobalsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     }
 }

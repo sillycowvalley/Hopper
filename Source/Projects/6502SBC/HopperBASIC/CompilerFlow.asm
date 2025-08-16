@@ -1234,20 +1234,9 @@ unit CompilerFlow
            Stacks.PopTop();  // Get loop body start in ZP.TOP
            
            // Calculate backward jump offset for FORIT
-           // Current position + 4 (FORIT size) = position after FORIT
-           if (BBS3, ZP.CompilerFlags)
-           {
-               // optimized for FORITF - shorter distance to jump back
-               CLC
-               LDA ZP.OpCodeBufferContentLengthL
-               ADC #2
-           }
-           else
-           {
-               CLC
-               LDA ZP.OpCodeBufferContentLengthL
-               ADC #4
-           }
+           CLC
+           LDA ZP.OpCodeBufferContentLengthL
+           ADC #4
            STA ZP.IDYL
            LDA ZP.OpCodeBufferContentLengthH
            ADC #0
