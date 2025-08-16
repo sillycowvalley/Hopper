@@ -39,6 +39,8 @@ unit Emit
                INC ZP.XPCH
            }
            
+           Optimizer.Peep(); // current opcode is in Compiler.compilerOpCode
+           
            SEC // Success
            break;
        }
@@ -46,26 +48,6 @@ unit Emit
        LDA #(emitOpCodeTrace % 256) STA ZP.TraceMessageL LDA #(emitOpCodeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
-   
-    // Emit CLS (clear screen) opcode
-    // Input: None
-    // Output: CLEARSCREEN opcode added to buffer
-    // Modifies: compilerOpCode, buffer state via Emit.OpCode()
-    const string emitClearScreenTrace = "Emit CLS";
-    ClearScreen()
-    {
-    #ifdef TRACE
-        LDA #(emitClearScreenTrace % 256) STA ZP.TraceMessageL LDA #(emitClearScreenTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-    #endif
-        
-        LDA # OpCode.CLEARSCREEN
-        STA Compiler.compilerOpCode
-        Emit.OpCode();
-        
-    #ifdef TRACE
-        LDA #(emitClearScreenTrace % 256) STA ZP.TraceMessageL LDA #(emitClearScreenTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-    #endif
-    }
    
    // Emit opcode with one byte operand
    // Input: compilerOpCode = opcode value, compilerOperand1 = operand byte
@@ -114,6 +96,23 @@ unit Emit
            if (Z)
            {
                INC ZP.XPCH
+           }
+           
+           LDA Compiler.compilerOpCode
+           switch (A)
+           {
+               case OpCode.JUMPZB:
+               case OpCode.JUMPB:
+               case OpCode.JUMPNZB:
+               case OpCode.RETURN:
+               case OpCode.RETURNVAL:
+               {
+                   Optimizer.ClearPeeps();
+               }
+               default:
+               {
+                   Optimizer.Peep(); // current opcode is in Compiler.compilerOpCode
+               }
            }
            
            SEC // Success
@@ -184,6 +183,23 @@ unit Emit
            if (Z)
            {
                INC ZP.XPCH
+           }
+           
+           LDA Compiler.compilerOpCode
+           switch (A)
+           {
+               case OpCode.JUMPZW:
+               case OpCode.JUMPW:
+               case OpCode.JUMPNZW:
+               case OpCode.CALL:
+               case OpCode.CALLF: 
+               {
+                   Optimizer.ClearPeeps();
+               }
+               default:
+               {
+                   Optimizer.Peep(); // current opcode is in Compiler.compilerOpCode
+               }
            }
            
            SEC // Success
@@ -271,6 +287,21 @@ unit Emit
                INC ZP.XPCH
            }
            
+           LDA Compiler.compilerOpCode
+           switch (A)
+           {
+               case OpCode.FORIT:
+               case OpCode.FORITF:
+               case OpCode.FORCHK:
+               {
+                   Optimizer.ClearPeeps();
+               }
+               default:
+               {
+                   Optimizer.Peep(); // current opcode is in Compiler.compilerOpCode
+               }
+           }
+           
            SEC // Success
            break;
        }
@@ -278,6 +309,98 @@ unit Emit
        LDA #(emitOpCodeWithThreeBytesTrace % 256) STA ZP.TraceMessageL LDA #(emitOpCodeWithThreeBytesTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
+   
+   // Emit the most efficient opcode for a constant value
+    // Input: ZP.TOP/TOPT = constant value and type
+    // Output: Appropriate constant push opcode emitted
+    // Modifies: Compiler state, buffer
+    const string emitOptimizedConstantTrace = "OptConst";
+    OptimizedConstant()
+    {
+    #ifdef TRACE
+        LDA #(emitOptimizedConstantTrace % 256) STA ZP.TraceMessageL 
+        LDA #(emitOptimizedConstantTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        loop
+        {
+            // Check for special common values first
+            LDA ZP.TOPT
+            AND #BASICType.TYPEMASK
+            
+            switch (A)
+            {
+                case BASICType.INT:
+                case BASICType.WORD:
+                {
+                    // Full word value needed
+                    LDA ZP.TOPL
+                    STA Compiler.compilerOperand1
+                    LDA ZP.TOPH  
+                    STA Compiler.compilerOperand2
+                    Emit.PushWord(); // Handles INT vs WORD based on ZP.TOPT
+                    break;
+                }
+                
+                case BASICType.BYTE:
+                {
+                    LDA ZP.TOPL
+                    Emit.PushByte();
+                    break;
+                }
+                
+                case BASICType.CHAR:
+                {
+                    LDA ZP.TOPL
+                    Emit.PushChar();
+                    break;
+                }
+                
+                case BASICType.BIT:
+                {
+                    LDA ZP.TOPL
+                    Emit.PushBit();
+                    break;
+                }
+                
+                default:
+                {
+                    // For other types, don't use this method
+                    Error.InternalError(); BIT ZP.EmulatorPCL
+                    SEC
+                    break;
+                }
+            }
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(emitOptimizedConstantTrace % 256) STA ZP.TraceMessageL 
+        LDA #(emitOptimizedConstantTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }
+   
+    // Emit CLS (clear screen) opcode
+    // Input: None
+    // Output: CLEARSCREEN opcode added to buffer
+    // Modifies: compilerOpCode, buffer state via Emit.OpCode()
+    const string emitClearScreenTrace = "Emit CLS";
+    ClearScreen()
+    {
+    #ifdef TRACE
+        LDA #(emitClearScreenTrace % 256) STA ZP.TraceMessageL LDA #(emitClearScreenTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        LDA # OpCode.CLEARSCREEN
+        STA Compiler.compilerOpCode
+        Emit.OpCode();
+        
+    #ifdef TRACE
+        LDA #(emitClearScreenTrace % 256) STA ZP.TraceMessageL LDA #(emitClearScreenTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
    
   
    // In emit.asm

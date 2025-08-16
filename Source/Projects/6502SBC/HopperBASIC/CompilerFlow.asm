@@ -53,7 +53,7 @@ unit CompilerFlow
            
            // Emit conditional exit jump (placeholder - will be patched after WEND)
            // JUMPZW: Jump if condition is zero/FALSE (exit loop when condition fails)
-           LDA #OpCode.JUMPZW
+           LDA # OpCode.JUMPZW
            STA Compiler.compilerOpCode
            STZ Compiler.compilerOperand1  // Placeholder LSB (will be patched)
            STZ Compiler.compilerOperand2  // Placeholder MSB (will be patched)

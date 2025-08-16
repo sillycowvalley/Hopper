@@ -328,7 +328,12 @@ unit ZP // ZeroPage.asm
     const byte GVI                  = 0x84;  // Global Variable index (to skip in LoadGlobals | SaveGlobals when (BBS4, ZP.FLAGS)
     const byte GVIL                 = 0x84;
     const byte GVIH                 = 0x85;
-
+    
+    const byte PEEP3                = 0x86;  // Peephole optimizer : previous instructions
+    const byte PEEP2                = 0x87;
+    const byte PEEP1                = 0x88;
+    const byte PEEP0                = 0x89;
+    
     
     // 0x84-0xEB: Available (104 bytes!)
 

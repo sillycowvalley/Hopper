@@ -3,7 +3,7 @@ CLS
 MEM
 
 ! Sieve of Eratosthenes - Byte Magazine benchmark
-CONST WORD sizepl = 8191
+CONST WORD sizepl  = 500
 BIT flags[sizepl]
 
 WORD i
@@ -15,10 +15,10 @@ WORD start
 WORD elapsed
 
 BEGIN
-    PRINT "10 iterations"
+    PRINT "1 iteration"
     start = SECONDS()
     
-    FOR iter = 1 TO 10
+    FOR iter = 1 TO 1
         count = 0
         
         ! Initialize flags array to true
@@ -48,3 +48,5 @@ END
 
 ! run the benchmark
 RUN
+DASM
+
