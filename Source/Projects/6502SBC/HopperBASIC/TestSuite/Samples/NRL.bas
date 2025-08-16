@@ -20,5 +20,6 @@ BEGIN
 END
 
 RUN
+DASM
 !NEW
 !MEM

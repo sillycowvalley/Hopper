@@ -627,7 +627,18 @@ unit Executor // Executor.asm
            {
                executePopLocal();
            }
-           
+           case OpCode.INCLOCAL:
+           {
+               executeIncLocal();
+           }
+           case OpCode.INCGLOBAL:
+           {
+               executeIncGlobal();
+           }
+           case OpCode.ADDLOCALS:
+           {
+               executeAddLocals();
+           }
            // Control flow (short jumps)
            case OpCode.JUMPB:
            {
@@ -2612,6 +2623,166 @@ unit Executor // Executor.asm
         LDA #(executeSetItemTrace % 256) STA ZP.TraceMessageL 
         LDA #(executeSetItemTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodExit();
+    #endif
+    }
+    
+    // Execute INCLOCAL opcode - increment local/argument variable by 1
+    // Input: PC points to operand byte (signed BP offset)
+    // Output: Local/argument value incremented, PC advanced by 1
+    // Modifies: A, X, ZP.PC
+    const string executeIncLocalTrace = "INCLOCAL // Increment local/arg by 1";
+    executeIncLocal()
+    {
+    #ifdef TRACE
+        LDA #(executeIncLocalTrace % 256) STA ZP.TraceMessageL LDA #(executeIncLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        // method never fails
+        LDA #State.Success
+        STA ZP.SystemState
+        
+        // Fetch signed offset operand
+#ifdef TRACEEXE
+        FetchOperandByte();
+#else            
+        // Fetch operand
+        LDA [ZP.PC]
+       
+        // Advance PC
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
+#endif
+        
+        // Calculate stack position: BP + offset
+        CLC
+        ADC ZP.BP
+        TAX  // X = stack position
+        
+        // Increment the value (equivalent to +1)
+        INC Address.ValueStackLSB, X
+        if (Z)
+        {
+            INC Address.ValueStackMSB, X
+        }
+        
+    #ifdef TRACE
+        LDA #(executeIncLocalTrace % 256) STA ZP.TraceMessageL LDA #(executeIncLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+    
+    // Execute INCGLOBAL opcode - increment global variable by 1
+    // Input: PC points to operand byte (global index)
+    // Output: Global variable value incremented, PC advanced by 1
+    // Modifies: A, X, ZP.PC
+    const string executeIncGlobalTrace = "INCGLOBAL // Increment global by 1";
+    executeIncGlobal()
+    {
+    #ifdef TRACE
+        LDA #(executeIncGlobalTrace % 256) STA ZP.TraceMessageL LDA #(executeIncGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        // method never fails
+        LDA #State.Success
+        STA ZP.SystemState
+        
+        // Fetch unsigned stack address
+#ifdef TRACEEXE
+        FetchOperandByte();
+#else            
+        // Fetch operand
+        LDA [ZP.PC]
+       
+        // Advance PC
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
+#endif
+        TAX  // X = global index
+        
+        // Increment the value (equivalent to +1)
+        INC Address.ValueStackLSB, X
+        if (Z)
+        {
+            INC Address.ValueStackMSB, X
+        }
+    
+    #ifdef TRACE
+        LDA #(executeIncGlobalTrace % 256) STA ZP.TraceMessageL LDA #(executeIncGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+    
+    // Execute ADDLOCALS opcode - add one local variable to another
+    // Input: PC points to operand bytes (target BP offset, source BP offset, unused)
+    // Output: target local += source local, PC advanced by 3
+    // Modifies: A, X, Y, ZP.PC, ZP.TOP, ZP.NEXT
+    const string executeAddLocalsTrace = "ADDLOCALS // Add local to local";
+    executeAddLocals()
+    {
+    #ifdef TRACE
+        LDA #(executeAddLocalsTrace % 256) STA ZP.TraceMessageL LDA #(executeAddLocalsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop
+        {
+            // Fetch target BP offset (first operand)
+            FetchOperandByte();
+            States.CanContinue();
+            if (NC) { break; }
+            
+            // Calculate target stack position: BP + target_offset
+            CLC
+            ADC ZP.BP
+            TAX  // X = target stack position
+            
+            // Fetch source BP offset (second operand)
+            FetchOperandByte();
+            States.CanContinue();
+            if (NC) { break; }
+            
+            // Calculate source stack position: BP + source_offset
+            CLC
+            ADC ZP.BP
+            TAY  // Y = source stack position
+            
+            // Load target value into ZP.TOP
+            LDA Address.ValueStackLSB, X
+            STA ZP.TOPL
+            LDA Address.ValueStackMSB, X
+            STA ZP.TOPH
+            
+            // Load source value into ZP.NEXT
+            LDA Address.ValueStackLSB, Y
+            STA ZP.NEXTL
+            LDA Address.ValueStackMSB, Y
+            STA ZP.NEXTH
+            
+            // Add source to target: TOP = TOP + NEXT
+            CLC
+            LDA ZP.TOPL
+            ADC ZP.NEXTL
+            STA ZP.TOPL
+            LDA ZP.TOPH
+            ADC ZP.NEXTH
+            STA ZP.TOPH
+            
+            // Store result back to target location
+            LDA ZP.TOPL
+            STA Address.ValueStackLSB, X
+            LDA ZP.TOPH
+            STA Address.ValueStackMSB, X
+            // Type remains unchanged
+            
+            States.SetSuccess();
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(executeAddLocalsTrace % 256) STA ZP.TraceMessageL LDA #(executeAddLocalsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     }
 }

@@ -63,11 +63,12 @@ unit Compiler // Compiler.asm
        STZ Compiler.compilerSavedNodeAddrL
        STZ Compiler.compilerSavedNodeAddrH
        
+#ifdef PEEPHOLE
        LDA # OpCode.INVALID
        STA compilerLastOpCode
-       
        Optimizer.ClearPeeps();
-       
+#endif
+
        SEC // Success
        
 #ifdef TRACE

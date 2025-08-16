@@ -39,8 +39,9 @@ unit Emit
                INC ZP.XPCH
            }
            
+#ifdef PEEPHOLE
            Optimizer.Peep(); // current opcode is in Compiler.compilerOpCode
-           
+#endif           
            SEC // Success
            break;
        }
@@ -98,6 +99,7 @@ unit Emit
                INC ZP.XPCH
            }
            
+#ifdef PEEPHOLE           
            LDA Compiler.compilerOpCode
            switch (A)
            {
@@ -114,6 +116,7 @@ unit Emit
                    Optimizer.Peep(); // current opcode is in Compiler.compilerOpCode
                }
            }
+#endif
            
            SEC // Success
            break;
@@ -185,6 +188,7 @@ unit Emit
                INC ZP.XPCH
            }
            
+#ifdef PEEPHOLE
            LDA Compiler.compilerOpCode
            switch (A)
            {
@@ -201,6 +205,7 @@ unit Emit
                    Optimizer.Peep(); // current opcode is in Compiler.compilerOpCode
                }
            }
+#endif
            
            SEC // Success
            break;
@@ -287,6 +292,7 @@ unit Emit
                INC ZP.XPCH
            }
            
+#ifdef PEEPHOLE
            LDA Compiler.compilerOpCode
            switch (A)
            {
@@ -301,7 +307,7 @@ unit Emit
                    Optimizer.Peep(); // current opcode is in Compiler.compilerOpCode
                }
            }
-           
+#endif
            SEC // Success
            break;
        }
@@ -562,10 +568,27 @@ unit Emit
        
        // Set up parameters for emission
        STA Compiler.compilerOperand1          // Store value as operand
-       LDA #OpCode.PUSHBYTE
-       STA Compiler.compilerOpCode
-       
-       Emit.OpCodeWithByte();
+       switch (A)
+       {
+           case 0:
+           {
+               LDA #OpCode.PUSH0
+               STA Compiler.compilerOpCode
+               Emit.OpCode();
+           }
+           case 1:
+           {
+               LDA #OpCode.PUSH1
+               STA Compiler.compilerOpCode
+               Emit.OpCode();
+           }
+           default:
+           {
+               LDA #OpCode.PUSHBYTE
+               STA Compiler.compilerOpCode
+               Emit.OpCodeWithByte();
+           }
+       }
        
 #ifdef TRACE
        LDA #(emitPushByteTrace % 256) STA ZP.TraceMessageL LDA #(emitPushByteTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();

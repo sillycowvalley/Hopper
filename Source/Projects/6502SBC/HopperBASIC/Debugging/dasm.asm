@@ -421,9 +421,9 @@ unit Dasm
                             case OpCode.FORCHK:
                             {
                                 // Format: FORCHK (iterator_offset, forward_jump)
-                                // ZP.ACCL = iterator_offset
-                                // ZP.ACCH = forward_offset_lsb  
-                                // ZP.ACCT = forward_offset_msb
+                                // ZP.ACCT = iterator_offset
+                                // ZP.ACCL = forward_offset_lsb  
+                                // ZP.ACCH = forward_offset_msb
                                 
                                 LDA #'(' COut();
                                 
@@ -462,6 +462,8 @@ unit Dasm
                                 ADC ZP.ACCH
                                 STA ZP.TOPH
                                 
+                                LDA #' ' COut(); LDA #'-' COut(); LDA #'>' COut(); LDA #' ' COut();
+                                
                                 LDA ZP.TOPH HOut();
                                 LDA ZP.TOPL HOut();
                                 
@@ -471,9 +473,9 @@ unit Dasm
                             case OpCode.FORITF:
                             {
                                 // Format: FORIT (iterator_offset, backward_jump)
-                                // ZP.ACCL = iterator_offset
-                                // ZP.ACCH = backward_offset_lsb
-                                // ZP.ACCT = backward_offset_msb
+                                // ZP.ACCT = iterator_offset
+                                // ZP.ACCL = backward_offset_lsb
+                                // ZP.ACCH = backward_offset_msb
                                 
                                 LDA #'(' COut();
                                 
@@ -512,6 +514,8 @@ unit Dasm
                                 LDA ZP.IDYH
                                 ADC ZP.ACCH
                                 STA ZP.TOPH
+                                
+                                LDA #' ' COut(); LDA #'-' COut(); LDA #'>' COut(); LDA #' ' COut();
                                 
                                 LDA ZP.TOPH HOut();
                                 LDA ZP.TOPL HOut();

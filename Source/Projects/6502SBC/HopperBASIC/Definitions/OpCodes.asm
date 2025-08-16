@@ -96,6 +96,9 @@ unit OpCodes
        PUSHGLOBAL   = 0x4B,  // Push global [value] (resolved at compile time to index in Variables)
        POPGLOBAL    = 0x4C,  // Pop to global [value]  (resolved at compile time to index in Variables)
        
+       INCGLOBAL    = 0x4D,
+       INCLOCAL     = 0x4E,
+       
        
        // === OPCODES WITH TWO BYTE OPERANDS (0x80-0xBF) ===
        // Bits 7-6: 10 (two byte operands)
@@ -114,6 +117,8 @@ unit OpCodes
        JUMPW        = 0x87,  // Unconditional jump [lsb] [msb]
        JUMPZW       = 0x88,  // Jump if zero [lsb] [msb]
        JUMPNZW      = 0x89,  // Jump if non-zero [lsb] [msb]
+       
+       ADDLOCALS    = 0x8A, 
        
 
         // === THREE-OPERAND OPCODES (0xC0-0xFF) ===
@@ -188,6 +193,9 @@ unit OpCodes
    const string opcodeCLEARSCREEN  = "CLEARSCREEN";
    const string opcodeGETITEM = "GETITEM";
    const string opcodeSETITEM = "SETITEM";
+   const string opcodeINCLOCAL = "INCLOCAL";
+   const string opcodeINCGLOBAL = "INCGLOBAL";
+   const string opcodeADDLOCALS = "ADDLOCALS";
    
 #if defined(DEBUG) || defined(TRACEEXE)
    // Input: opcode in X
@@ -197,6 +205,27 @@ unit OpCodes
         PHA
         switch (X)
         {
+            case OpCode.INCLOCAL:
+            {
+                LDA #(opcodeINCLOCAL % 256)
+                STA ZP.STRL
+                LDA #(opcodeINCLOCAL / 256)
+                STA ZP.STRH
+            }
+            case OpCode.ADDLOCALS:
+            {
+                LDA #(opcodeADDLOCALS % 256)
+                STA ZP.STRL
+                LDA #(opcodeADDLOCALS / 256)
+                STA ZP.STRH
+            }
+            case OpCode.INCGLOBAL:
+            {
+                LDA #(opcodeINCGLOBAL % 256)
+                STA ZP.STRL
+                LDA #(opcodeINCGLOBAL / 256)
+                STA ZP.STRH
+            }
             case OpCode.GETITEM:
             {
                 LDA #(opcodeGETITEM % 256)
