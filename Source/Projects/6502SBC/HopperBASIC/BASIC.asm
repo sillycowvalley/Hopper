@@ -1,6 +1,6 @@
 program HopperBASIC
 {
-    //#define DEBUG
+    #define DEBUG
     //#define TRACE  // Compiler and Executor call tree walks
     //#define TRACEEXE // instructions in Executor
 
@@ -47,6 +47,7 @@ program HopperBASIC
     uses "FunctionDeclaration.asm"
     uses "Statement"
     uses "Compiler"
+    uses "Optimizer"
     
     uses "GPIO"
     uses "Storage"

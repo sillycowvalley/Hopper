@@ -3,7 +3,7 @@ CLS
 MEM
 
 ! Sieve of Eratosthenes - Byte Magazine benchmark
-CONST WORD sizepl  = 500
+CONST WORD sizepl  = 8191
 BIT flags[sizepl]
 
 WORD i
@@ -48,5 +48,5 @@ END
 
 ! run the benchmark
 RUN
-DASM
+! DASM
 

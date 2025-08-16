@@ -691,7 +691,7 @@ unit Emit
 #ifdef TRACE
        PHA LDA #(emitArithmeticOpTrace % 256) STA ZP.TraceMessageL LDA #(emitArithmeticOpTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
 #endif
-       
+       PHA
        loop
        {
            switch (A)
@@ -739,9 +739,9 @@ unit Emit
            }
            break;
        } // loop
-       
+       PLA
 #ifdef TRACE
-       LDA #(emitArithmeticOpTrace % 256) STA ZP.TraceMessageL LDA #(emitArithmeticOpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+       PHA LDA #(emitArithmeticOpTrace % 256) STA ZP.TraceMessageL LDA #(emitArithmeticOpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
 #endif
    }
    

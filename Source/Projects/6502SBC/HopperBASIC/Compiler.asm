@@ -198,18 +198,15 @@ unit Compiler // Compiler.asm
    }
    
    
-   
-   
-   
    // Compile logical OR operations (lowest precedence)
    // Input: ZP.CurrentToken = current token
    // Output: Logical opcodes emitted, ZP.CurrentToken = token after expression
    // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
-   const string compileExpressionTreelTrace = "CompExprTree // OR";
-   compileExpressionTree()
+   const string compileConstExpressionTreelTrace = "CompFldExprTree // OR";
+   CompileFoldedExpressionTree()
    {
 #ifdef TRACE
-       LDA #(compileExpressionTreelTrace % 256) STA ZP.TraceMessageL LDA #(compileExpressionTreelTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+       LDA #(compileConstExpressionTreelTrace % 256) STA ZP.TraceMessageL LDA #(compileConstExpressionTreelTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
        SMB0 ZP.CompilerFlags // constant expression = TRUE
@@ -225,6 +222,51 @@ unit Compiler // Compiler.asm
         PHA
         LDA ZP.XPCH
         PHA
+        
+        compileExpressionTree();
+       
+        if (BBS0, ZP.CompilerFlags) // constant expression:  was constant expression, the folded value is on VM stack
+        {
+            Stacks.PopTop(); // Get the constant value into ZP.TOP/TOPT
+                        
+            // Rollback the opcode buffer to initial state
+            PLA 
+            STA ZP.XPCH
+            PLA 
+            STA ZP.XPCL
+            PLA 
+            STA ZP.OpCodeBufferContentLengthH
+            PLA 
+            STA ZP.OpCodeBufferContentLengthL
+            
+            // Emit single constant opcode based on value and type
+            Emit.OptimizedConstant();
+        }
+        else
+        {
+            // Not constant - clean up saved state
+            PLA PLA PLA PLA
+        }
+
+        PLA
+        STA ZP.SP
+
+#ifdef TRACE
+        LDA #(compileConstExpressionTreelTrace % 256) STA ZP.TraceMessageL LDA #(compileConstExpressionTreelTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+   }
+   
+   
+   // Compile logical OR operations (lowest precedence)
+   // Input: ZP.CurrentToken = current token
+   // Output: Logical opcodes emitted, ZP.CurrentToken = token after expression
+   // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
+   const string compileExpressionTreelTrace = "CompExprTree // OR";
+   compileExpressionTree()
+   {
+#ifdef TRACE
+       LDA #(compileExpressionTreelTrace % 256) STA ZP.TraceMessageL LDA #(compileExpressionTreelTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
        
        loop
        {
@@ -240,7 +282,6 @@ unit Compiler // Compiler.asm
                if (NZ) { break; }
                
                RMB0 ZP.CompilerFlags // constant expression: BIT: not an integral constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #26 HOut();
                
                // Get next token for right operand
                Tokenizer.NextToken();
@@ -260,35 +301,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #26 HOut();
            } // loop
            break;
        } // loop
-       
-       if (BBS0, ZP.CompilerFlags) // constant expression:  was constant expression, the folded value is on VM stack
-       {
-            Stacks.PopTop(); // Get the constant value into ZP.TOP/TOPT
-Debug.NL(); LDA #'<' COut(); LDA #'-' COut(); TOut();
-                        
-            // Rollback the opcode buffer to initial state
-            PLA 
-            STA ZP.XPCH
-            PLA 
-            STA ZP.XPCL
-            PLA 
-            STA ZP.OpCodeBufferContentLengthH
-            PLA 
-            STA ZP.OpCodeBufferContentLengthL
-            
-Debug.NL(); TOut(); Space(); LDA ZP.XPCH HOut();LDA ZP.XPCL HOut();
-            
-            // Emit single constant opcode based on value and type
-            Emit.OptimizedConstant();
-       }
-       else
-       {
-            // Not constant - clean up saved state
-            PLA PLA PLA PLA
-       }
-       
-       PLA
-       STA ZP.SP
 
 #ifdef TRACE
        LDA #(compileExpressionTreelTrace % 256) STA ZP.TraceMessageL LDA #(compileExpressionTreelTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -321,7 +333,6 @@ Debug.NL(); TOut(); Space(); LDA ZP.XPCH HOut();LDA ZP.XPCL HOut();
                if (NZ) { break; }
                
                RMB0 ZP.CompilerFlags // constant expression: BIT: not an integral constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #25 HOut();
                
                // Get next token for right operand
                Tokenizer.NextToken();
@@ -379,11 +390,9 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #25 HOut();
                    case Token.LE:
                    case Token.GE:
                    {
-                       RMB0 ZP.CompilerFlags // constant expression: BIT: not an integral constant expression
+                       RMB0 ZP.CompilerFlags // constant expression: BIT (comparison): not an integral constant expression
                        
                        PHA // Save operator on stack
-                       
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #24 HOut();
                        
                        // Get next token for right operand
                        Tokenizer.NextToken();
@@ -452,7 +461,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #24 HOut();
                if (NZ) { break; }
                
                RMB0 ZP.CompilerFlags // constant expression: TODO: expand constant folding
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #23 HOut();
                
                // Get next token for right operand
                Tokenizer.NextToken();
@@ -505,7 +513,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #23 HOut();
                if (NZ) { break; }
                
                RMB0 ZP.CompilerFlags // constant expression: TODO: expand constant folding
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #22 HOut();
                
                // Get next token for right operand
                Tokenizer.NextToken();
@@ -578,7 +585,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #22 HOut();
                        Instructions.Addition(); // Pop Pop + Push
                        Error.CheckError();
                        if (NC) { break; }
-Debug.NL(); LDA #'+' COut(); TOut();
                    }
                    
                    continue;
@@ -609,7 +615,6 @@ Debug.NL(); LDA #'+' COut(); TOut();
                        Instructions.Subtraction(); // Pop Pop + Push
                        Error.CheckError();
                        if (NC) { break; }
-Debug.NL(); LDA #'-' COut(); TOut();
                    }
                    
                    continue;
@@ -685,17 +690,14 @@ Debug.NL(); LDA #'-' COut(); TOut();
                                case Token.MULTIPLY:
                                {
                                    Instructions.Multiply(); // Pop Pop + Push
-Debug.NL(); LDA #'*' COut(); TOut();
                                }
                                case Token.DIVIDE:
                                {
                                    Instructions.Divide(); // Pop Pop + Push
-Debug.NL(); LDA #'/' COut(); TOut();
                                }
                                case Token.MOD:
                                {
                                    Instructions.Modulo(); // Pop Pop + Push
-Debug.NL(); LDA #'%' COut(); TOut();
                                }
                            }
                            Error.CheckError();
@@ -740,8 +742,6 @@ Debug.NL(); LDA #'%' COut(); TOut();
                case Token.MINUS:
                {
                    RMB0 ZP.CompilerFlags // constant expression: TODO: expand constant folding
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #7 HOut();
-
                    
                    // Get next token for operand
                    Tokenizer.NextToken();
@@ -761,7 +761,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #7 HOut();
                case Token.NOT:
                {
                    RMB0 ZP.CompilerFlags // constant expression: BIT: not an integral constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #20 HOut();
                    
                    // Get next token for operand
                    Tokenizer.NextToken();
@@ -795,8 +794,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #20 HOut();
                         
                         // Handle indexing
                         RMB0 ZP.CompilerFlags // constant expression: LBRACKET not a constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #7 HOut();
-
                         
                         // Get next token after '['
                         Tokenizer.NextToken();
@@ -962,7 +959,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #7 HOut();
                     if (NC) { break; }
                     
                     RMB0 ZP.CompilerFlags // constant expression: PUSHLOCAL not an integral constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #6 HOut();
 
                     SEC  // Success
                     break;  // Exit - we handled it
@@ -984,7 +980,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #6 HOut();
                 Error.CheckError();
                 if (NC) { break; }
                 RMB0 ZP.CompilerFlags // constant expression: PUSHGLOBAL not an integral constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #5 HOut();
 
                 SEC // Success
             }
@@ -1030,7 +1025,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #5 HOut();
                         }
                         if (BBS0, ZP.CompilerFlags) // constant expression:  PUSH constant value
                         {
-Debug.NL(); LDA #'C' COut(); TOut();
                             LDA ZP.TOPT
                             Stacks.PushTop();
                         }
@@ -1040,12 +1034,9 @@ Debug.NL(); LDA #'C' COut(); TOut();
                         // Normal variable reference
                         Emit.PushGlobal();
                         RMB0 ZP.CompilerFlags // constant expression: PUSHGLOBAL: not an integral constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #4 HOut();
-
                     }
                     Error.CheckError();
                     if (NC) { break; }
-Debug.NL(); LDA #'y' COut();
                     SEC // Success
                 }
             }
@@ -1091,8 +1082,6 @@ Debug.NL(); LDA #'y' COut();
             if (Z)
             {          
                 RMB0 ZP.CompilerFlags // constant expression: LPAREN: not an integral constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #3 HOut();
-
                    
                 Tokenizer.NextToken(); // consume LPAREN
                 Error.CheckError();
@@ -1258,7 +1247,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #3 HOut();
                case Token.TRUE:
                {
                    RMB0 ZP.CompilerFlags // constant expression: BIT: not an integral constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #2 HOut();
 
                    // Emit PUSHBIT with value 1
                    LDA #1
@@ -1274,8 +1262,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #2 HOut();
                case Token.FALSE:
                {
                    RMB0 ZP.CompilerFlags // constant expression: BIT: not an integral constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #1 HOut();
-
                    
                    // Emit PUSHBIT with value 0
                    LDA #0
@@ -1330,7 +1316,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #1 HOut();
                    }
                    if (BBS0, ZP.CompilerFlags) // constant expression: NUMBER: PUSH numeric literal
                    {
-Debug.NL(); LDA #'N' COut(); TOut();
                        LDA ZP.TOPT
                        Stacks.PushTop();
                    }
@@ -1343,7 +1328,6 @@ Debug.NL(); LDA #'N' COut(); TOut();
                case Token.STRINGLIT:
                {
                    RMB0 ZP.CompilerFlags // constant expression: STRING: not an integral constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #19 HOut();
                    
                    // OFFSET : compiling STRINGLIT
                    // Emit PUSHCSTRING with pointer to string content from token stream
@@ -1364,7 +1348,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #19 HOut();
                case Token.CHARLIT:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: CHAR: not an integral constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #18 HOut();
                     
                     // The character byte is stored inline after the CHARLIT token
                     
@@ -1395,22 +1378,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #18 HOut();
                {
                    compileFunctionCallOrVariable();
                    Error.CheckError();
-                   if (BBS0, ZP.CompilerFlags) // constant expression: IDENTIFIER
-                   {
-if (C)
-{
-    Debug.NL(); LDA #'y' COut();
-}
-else
-{
-    Debug.NL(); LDA #'n' COut();
-}
-                   }
-                   else
-                   {
-Debug.NL(); LDA #'n' COut();
-                   }
-                   
                    break;
                }
                case Token.LPAREN:
@@ -1446,7 +1413,6 @@ Debug.NL(); LDA #'n' COut();
                 case Token.MILLIS:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: MILLIS: not an integral constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #17 HOut();
                     LDA #SysCallType.Millis
                     compileSysCall();
                     Error.CheckError();
@@ -1456,7 +1422,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #17 HOut();
                 case Token.SECONDS:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: SECONDS: not an integral constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #16 HOut();
                     LDA #SysCallType.Seconds
                     compileSysCall();
                     Error.CheckError();
@@ -1466,7 +1431,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #16 HOut();
                 case Token.ABS:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: ABS: not an integral constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #15 HOut();
                     LDA #SysCallType.Abs
                     compileSysCall();
                     Error.CheckError();
@@ -1476,7 +1440,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #15 HOut();
                 case Token.RND:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: RND: not an integral constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #14 HOut();
                     LDA #SysCallType.Rnd
                     compileSysCall();
                     Error.CheckError();
@@ -1486,7 +1449,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #14 HOut();
                 case Token.PEEK:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: PEEK: not an integral constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #13 HOut();
                     LDA #SysCallType.Peek
                     compileSysCall();
                     Error.CheckError();
@@ -1496,7 +1458,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #13 HOut();
                 case Token.READ:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: READ: not an integral constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #12 HOut();
                     LDA #SysCallType.Read
                     compileSysCall();
                     Error.CheckError();
@@ -1506,7 +1467,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #12 HOut();
                 case Token.CHR:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: CHR: not an integral constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #11 HOut();
                     LDA #SysCallType.Chr
                     compileSysCall();
                     Error.CheckError();
@@ -1516,8 +1476,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #11 HOut();
                 case Token.ASC:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: ASC: not an integral constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #10 HOut();
-
                     LDA #SysCallType.Asc
                     compileSysCall();
                     Error.CheckError();
@@ -1527,8 +1485,6 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #10 HOut();
                 case Token.LEN:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: LEN: not an integral constant expression
-Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #9 HOut();
-                    
                     LDA #SysCallType.Len
                     compileSysCall();
                     Error.CheckError();
@@ -1707,7 +1663,7 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #9 HOut();
        if (NC) { States.SetFailure(); return; }
        
        // Compile the expression using same precedence as Expression.asm
-       compileExpressionTree();
+       CompileFoldedExpressionTree(); // REPL expression
        Error.CheckError();
        if (NC) { States.SetFailure(); return; }
        
@@ -2125,7 +2081,7 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #9 HOut();
             loop // Argument processing loop
             {
                 // Compile current expression
-                compileExpressionTree(); // Use full expression compilation
+                CompileFoldedExpressionTree(); // PRINT arguments, use full expression compilation
                 Error.CheckError();
                 if (NC) { States.SetFailure(); break; }
                 
@@ -2239,7 +2195,7 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #9 HOut();
            }
            
            // Compile return expression
-           compileExpressionTree();
+           CompileFoldedExpressionTree(); // RETURN <expression>
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
            
@@ -2437,7 +2393,7 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #9 HOut();
                 if (NC) { break; }
                 
                 // Compile initialization expression
-                compileExpressionTree();
+                CompileFoldedExpressionTree(); // <type> LOCAL = <expression>
                 Error.CheckError();
                 if (NC) { break; }
                 
@@ -2542,8 +2498,8 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #9 HOut();
                     {
                         States.SetFailure(); break; 
                     }
-                    
-                    compileExpressionTree(); // Index value on stack
+                    // Index value on stack
+                    CompileFoldedExpressionTree(); // array[<expression>] = 
                     Error.CheckError();
                     if (NC)
                     {
@@ -2595,7 +2551,7 @@ Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #9 HOut();
                 }
                 
                 // Compile the RHS expression (this WILL munt ZP.IDX and ZP.ACCL)
-                compileExpressionTree();
+                CompileFoldedExpressionTree(); // local = <expression>
                 Error.CheckError();
                 if (NC) 
                 { 

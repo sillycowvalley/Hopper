@@ -33,7 +33,7 @@ unit CompilerFlow
            Stacks.PushTop();
            
            // Compile condition expression (e.g., "I < 10")
-           Compiler.compileExpressionTree();       
+           Compiler.CompileFoldedExpressionTree(); // WHILE <expression>
            
            // Save forward jump operand position for later patching
            // This is where JUMPZW operand will be stored (after the opcode byte)
@@ -236,7 +236,7 @@ unit CompilerFlow
             if (NC) { States.SetFailure(); break; }
             
             // Compile condition expression (e.g., "I = 10")
-            Compiler.compileExpressionTree();
+            Compiler.CompileFoldedExpressionTree(); // UNTIL <expression>
             Error.CheckError();
             if (NC) { States.SetFailure(); break; }
             
@@ -325,7 +325,7 @@ unit CompilerFlow
             if (NC) { States.SetFailure(); break; }
             
             // Compile condition expression (e.g., "X > 10")
-            Compiler.compileExpressionTree();
+            Compiler.CompileFoldedExpressionTree(); // IF <expression>
             Error.CheckError();
             if (NC) { States.SetFailure(); break; }
             
@@ -885,7 +885,7 @@ unit CompilerFlow
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
            
-           Compiler.compileExpressionTree();  // Compile FROM expression
+           Compiler.CompileFoldedExpressionTree();  // Compile FROM expression
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
            
@@ -923,7 +923,7 @@ unit CompilerFlow
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
            
-           Compiler.compileExpressionTree();  // Compile TO expression (leaves on stack)
+           Compiler.CompileFoldedExpressionTree();  // Compile TO expression (leaves on stack)
            INC Compiler.compilerFuncLocals   // consider a RETURN from within the loop needing to clean the stack
            Error.CheckError();
            if (NC) { States.SetFailure(); break; }
@@ -945,7 +945,7 @@ unit CompilerFlow
                Error.CheckError();
                if (NC) { States.SetFailure(); break; }
                
-               Compiler.compileExpressionTree();  // Compile STEP expression (leaves on stack)
+               Compiler.CompileFoldedExpressionTree();  // Compile STEP expression (leaves on stack)
                INC Compiler.compilerFuncLocals   // consider a RETURN from within the loop needing to clean the stack
                Error.CheckError();
                if (NC) { States.SetFailure(); break; }
