@@ -2000,22 +2000,15 @@ unit Executor // Executor.asm
             ADC ZP.BP
             TAY                     // Y = stack position
             
+            // Pop value from stack
+            DEC ZP.SP
+            LDX ZP.SP
+            
             // get the type of the variable slot
             LDA Address.TypeStackLSB, Y
             STA ZP.ACCT
             
-            // Pop value from stack
-            DEC ZP.SP
-            LDX ZP.SP
-            LDA Address.ValueStackLSB, X
-            STA ZP.TOPL
-            LDA Address.ValueStackMSB, X
-            STA ZP.TOPH
-            LDA Address.TypeStackLSB, X
-            STA ZP.TOPT
-            
             // Check if variable has VAR bit set
-            LDA ZP.ACCT
             AND #BASICType.VAR
             if (Z) // Non-VAR variable - use normal type checking
             {
@@ -2036,15 +2029,15 @@ unit Executor // Executor.asm
             else
             {
                 // VAR type: keep the VAR bit in the slot but change the type of the variable
-                LDA ZP.TOPT
+                LDA Address.TypeStackLSB, X
                 ORA #BASICType.VAR
                 STA Address.TypeStackLSB, Y
             }
             
             // Store to calculated stack position
-            LDA ZP.TOPL
+            LDA Address.ValueStackLSB, X
             STA Address.ValueStackLSB, Y
-            LDA ZP.TOPH
+            LDA Address.ValueStackMSB, X
             STA Address.ValueStackMSB, Y
             
             States.SetSuccess();
@@ -3316,7 +3309,7 @@ unit Executor // Executor.asm
             // BASICArray.SetItem expects: 
             // Input: ZP.IDX = array ptr, ZP.IDY = index, ZP.TOP = value
             // Output: C set on success
-            BASICArray.SetItem();
+            BASICArray.SetItemUnrolled();
             if (NC)
             {
                 // Range error already set by SetItem

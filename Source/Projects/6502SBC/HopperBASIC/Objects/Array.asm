@@ -434,6 +434,134 @@ unit BASICArray
         PLX
         PLA
     }
+    
+    // Set array element value  
+    // Input: ZP.IDX = array pointer, ZP.IDY = element index, ZP.TOP = new value (16-bit)
+    // Output: C set if successful, NC if index out of bounds
+    // Modifies: Element at specified index
+    // Preserves: A, X, Y registers
+    SetItemUnrolled()
+    {
+        loop
+        {
+            // Bounds check: index < element count?
+            LDY # aiCount+1
+            LDA ZP.IDYH        // Index MSB
+            CMP [ZP.IDX], Y       // Count MSB
+            if (Z)
+            {
+                DEY
+                LDA ZP.IDYL    // Index LSB
+                CMP [ZP.IDX], Y   // Count LSB
+            }
+            if (C) // Set C if index >= count (out of bounds)
+            {
+                Error.RangeError(); BIT ZP.EmulatorPCL
+                States.SetFailure();
+                CLC
+                break;
+            }
+            
+            // Get element type from array header
+            LDY # aiType
+            LDA [ZP.IDX], Y
+            
+            // Write element value based on type
+            LDY # aiElements
+                          
+            
+            switch (A)
+            {
+                case BASICType.BIT:
+                {
+                    // For BIT arrays: save bit position and convert to byte offset
+                    LDA IDYL
+                    AND # 0x07      // Extract bit position (0-7)
+                    TAX             // Save in X for later masking
+                    
+                    // Convert bit index to byte offset (divide by 8)
+                    LSR IDYH
+                    ROR IDYL
+                    LSR IDYH
+                    ROR IDYL
+                    LSR IDYH
+                    ROR IDYL
+                    
+                    // Add array base address to offset
+                    CLC
+                    LDA IDXL
+                    ADC IDYL
+                    STA IDYL
+                    LDA IDXH
+                    ADC IDYH
+                    STA IDYH
+                    
+                    LDA ZP.TOPL
+                    if (NZ)
+                    {
+                        // Set the bit to 1
+                        LDA bitMasks, X
+                        ORA [IDY], Y    
+                        STA [IDY], Y
+                    }
+                    else
+                    {
+                        // Clear the bit to 0
+                        LDA bitMasks, X
+                        EOR # 0xFF     // Invert mask
+                        AND [IDY], Y    
+                        STA [IDY], Y       
+                    }
+                    SEC                // Success
+                }
+                case BASICType.CHAR:
+                case BASICType.BYTE:
+                {
+                    // INT/WORD arrays: offset = index * 2
+                    ASL IDYL
+                    ROL IDYH
+                    
+                    // Add array base address to offset
+                    CLC
+                    LDA IDXL
+                    ADC IDYL
+                    STA IDYL
+                    LDA IDXH
+                    ADC IDYH
+                    STA IDYH
+                    
+                    // Write single byte
+                    LDA ZP.TOPL
+                    STA [IDY], Y
+                    
+                    SEC                // Success
+                }
+                default:
+                {
+                    // Add array base address to offset
+                    CLC
+                    LDA IDXL
+                    ADC IDYL
+                    STA IDYL
+                    LDA IDXH
+                    ADC IDYH
+                    STA IDYH
+                    SEC                // Success
+                    
+                    // Write two-byte value (LSB first)
+                    LDA ZP.TOPL
+                    STA [IDY], Y
+                    INY
+                    LDA ZP.TOPH
+                    STA [IDY], Y
+                    
+                }
+            } 
+            
+            break;
+        } // single exit     
+    }
+    
     // Input:  BASICArray = TOP, number of elements = NEXT
     // Output: BASICArray = TOP (may be the same, may be new)
     //         C = success, NC = failure
