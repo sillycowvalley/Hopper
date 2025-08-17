@@ -233,8 +233,7 @@ unit Executor // Executor.asm
                 PLP
 #endif
                 // Shortcut to Mushrooms:
-                LDA ZP.LastErrorL
-                ORA ZP.LastErrorH
+                LDA ZP.LastError
                 if (Z)
                 {
                     LDA ZP.SystemState

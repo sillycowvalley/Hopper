@@ -117,9 +117,8 @@ unit ZP // ZeroPage.asm
     const byte TokenizerPosL        = 0x2B;  // Tokenizer pos low (alias)  
     const byte TokenizerPosH        = 0x2C;  // Tokenizer pos high
 
-    const byte LastErrorL           = 0x2D;  // Error message pointer low
-    const byte LastErrorH           = 0x2E;  // Error message pointer high
-
+    const byte LastError            = 0x2D;  // Most recent error message 
+    
     const byte CurrentToken         = 0x2F;  // Cached current token type
 
     const byte TokenLiteralPosL     = 0x30;  // Literal data position low

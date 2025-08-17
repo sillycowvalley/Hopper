@@ -397,7 +397,7 @@ unit Tokens
         LDA #(keywordsAH / 256)
         STA ZP.IDYH
         
-        printKeywordFromTable();
+        PrintKeywordFromTable();
         if (NC)
         {
             // perhaps it is in the other table
@@ -405,7 +405,7 @@ unit Tokens
             STA ZP.IDYL
             LDA #(keywordsIZ / 256)
             STA ZP.IDYH
-            printKeywordFromTable();
+            PrintKeywordFromTable();
 #ifdef DEBUG
             if (NC)
             {
@@ -433,7 +433,7 @@ unit Tokens
     // Input: ZP.ACCL = target token value, ZP.IDY = table address
     // Output: Keyword printed to serial if found, C if found, NC if not
     // Modifies: A, X, Y (internal use only)
-    printKeywordFromTable()
+    PrintKeywordFromTable()
     {
         LDY #0  // Index into keywords table
         loop
