@@ -41,7 +41,7 @@ unit Console // Console.asm
             TokenizeLineWithMode();
         }
         
-        Error.CheckError();
+        CheckError();
         if (NC) { States.SetFailure(); }  // Return if tokenization failed
         else { States.SetSuccess(); }
     }
@@ -81,7 +81,7 @@ unit Console // Console.asm
         loop // Single exit pattern
         {
             // Check for tokenization errors
-            Error.CheckError();
+            CheckError();
             if (NC) { States.SetFailure(); break; }
             
             // Check for empty line (just EOL token)
@@ -135,7 +135,7 @@ unit Console // Console.asm
         if (NC)
         {
             // not exiting
-            Error.CheckError();
+            CheckError();
             if (NC)
             {
                 States.SetFailure();
@@ -264,7 +264,7 @@ unit Console // Console.asm
         loop // Single exit pattern
         {
             // Check for tokenization errors
-            Error.CheckError();
+            CheckError();
             if (NC) { States.SetFailure(); break; }
             
             // Check if this line contains ENDFUNC (completing the function)
@@ -277,7 +277,7 @@ unit Console // Console.asm
                 
                 // Complete the captured function
                 FunctionDeclaration.CompletePartialFunction();
-                Error.CheckError();
+                CheckError();
                 if (NC) 
                 { 
                     States.SetFailure(); 
@@ -416,32 +416,32 @@ unit Console // Console.asm
                 case Token.NEW:
                 {
                     parseNew();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
                 }
                 case Token.CLEAR:
                 {
                     parseClear();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
                 }
                 case Token.FORGET:
                 {
                     parseForget();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
                 }
                 case Token.VARS:
                 {
                     parseVars();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
                 }
                 case Token.LIST:
                 {
                     LDX #0 // LIST
                     parseList();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
                 }
                 case Token.DASM:
@@ -452,19 +452,19 @@ unit Console // Console.asm
 #else
                     parseDasm();
 #endif
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
                 }
                 case Token.FUNCS:
                 {
                     parseFuncs();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
                 }
                 case Token.MEM:
                 {
                     parseMem();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
                 }
                 case Token.BYE:
@@ -476,31 +476,31 @@ unit Console // Console.asm
                 case Token.HEAP:
                 {
                     parseHeap();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
                 }
                 case Token.BUFFERS:
                 {
                     parseBuffers();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
                 }
                 case Token.DUMP:
                 {
                     parseDump();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
                 }
                 case Token.TRON:
                 {
                     parseTron();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
                 }
                 case Token.TROFF:
                 {
                     parseTroff();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
                 }
                 
@@ -517,7 +517,7 @@ unit Console // Console.asm
                 case Token.RUN:
                 {
                     cmdRun();
-                    Error.CheckError();
+                    CheckError();
                     // RUN was a '$MAIN' function call (buffer is munted so even if there was a ':', no point)
                     // We can remove this when function compiling doesn't use shared token and buffers
                     if (NC)
@@ -570,7 +570,7 @@ unit Console // Console.asm
                     
                     // Load the token at the new position
                     Tokenizer.NextToken(); // preserves X
-                    Error.CheckError();    // preserves X
+                    CheckError();    // preserves X
                     if (NC)
                     { SMB1 ZP.FLAGS } // Set exit flag on error
                     else
@@ -582,7 +582,7 @@ unit Console // Console.asm
                         
                         PLX
                         
-                        Error.CheckError();
+                        CheckError();
                         if (NC) 
                         { SMB1 ZP.FLAGS } // Set exit flag on error
                         else
@@ -645,7 +645,7 @@ unit Console // Console.asm
         {
             Tokenizer.NextToken(); // consume 'NEW'
             validateEndOfCommand();
-            Error.CheckError();
+            CheckError();
             if (C) { Commands.CmdNew(); }
         }
     }
@@ -662,7 +662,7 @@ unit Console // Console.asm
         {
             Tokenizer.NextToken(); // consume 'CLEAR'
             validateEndOfCommand();
-            Error.CheckError();
+            CheckError();
             if (C) { Commands.CmdClear(); }
         }
     }
@@ -680,7 +680,7 @@ unit Console // Console.asm
             loop // Single exit
             {
                 Tokenizer.NextToken(); // consume 'FORGET'
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
                 
                 // Expect identifier name
@@ -700,7 +700,7 @@ unit Console // Console.asm
                 
                 Tokenizer.NextToken(); // consume identifier
                 validateEndOfCommand();
-                Error.CheckError();
+                CheckError();
                 if (C) { Commands.CmdForget(); } // Uses ZP.STR
                 break;
             }
@@ -719,7 +719,7 @@ unit Console // Console.asm
         {
             Tokenizer.NextToken(); // consume 'VARS'
             validateEndOfCommand();
-            Error.CheckError();
+            CheckError();
             if (C) { Commands.CmdVars(); }
         }
     }
@@ -737,7 +737,7 @@ unit Console // Console.asm
             Tokenizer.NextToken(); // consume 'LIST'
             parseOptionalIdentifier(); // Sets ZP.STR or null
             validateEndOfCommand();
-            Error.CheckError();
+            CheckError();
             if (C) { Commands.CmdList(); } // Uses ZP.STR (null = all)
         }
     }
@@ -755,7 +755,7 @@ unit Console // Console.asm
             Tokenizer.NextToken(); // consume 'FUNCS'
             parseOptionalIdentifier(); // Sets ZP.STR or null
             validateEndOfCommand();
-            Error.CheckError();
+            CheckError();
             if (C) { Commands.CmdFuncs(); } // Uses ZP.STR (null = all)
         }
     }
@@ -772,7 +772,7 @@ unit Console // Console.asm
         {
             Tokenizer.NextToken(); // consume 'MEM'
             validateEndOfCommand();
-            Error.CheckError();
+            CheckError();
             if (C) { Commands.CmdMem(); }
         }
     }
@@ -782,7 +782,7 @@ unit Console // Console.asm
     {
         Tokenizer.NextToken(); // consume 'BYE'
         validateEndOfCommand();
-        Error.CheckError();
+        CheckError();
         if (C) { Commands.CmdBye(); }
     }
     
@@ -799,7 +799,7 @@ unit Console // Console.asm
         {
             Tokenizer.NextToken(); // consume 'HEAP'
             validateEndOfCommand();
-            Error.CheckError();
+            CheckError();
             if (C) { Commands.CmdHeap(); }
         }
     }
@@ -816,7 +816,7 @@ unit Console // Console.asm
         {
             Tokenizer.NextToken(); // consume 'BUFFERS'
             validateEndOfCommand();
-            Error.CheckError();
+            CheckError();
             if (C) { Commands.CmdBuffers(); }
         }
     }
@@ -851,7 +851,7 @@ unit Console // Console.asm
                 }
                 
                 validateEndOfCommand();
-                Error.CheckError();
+                CheckError();
                 if (C)
                 { 
                     Commands.CmdDump(); // Uses ZP.TOP
@@ -881,7 +881,7 @@ unit Console // Console.asm
         {
             Tokenizer.NextToken(); // consume 'TRON'
             validateEndOfCommand();
-            Error.CheckError();
+            CheckError();
             if (C) { Commands.CmdTron(); }
         }
     }
@@ -898,7 +898,7 @@ unit Console // Console.asm
         {
             Tokenizer.NextToken(); // consume 'TROFF'
             validateEndOfCommand();
-            Error.CheckError();
+            CheckError();
             if (C) { Commands.CmdTroff(); }
         }
     }
@@ -1038,7 +1038,7 @@ unit Console // Console.asm
                 RMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes) - except for ZP.GVI
                 SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
                 Statement.EvaluateExpression(); // EXECUTION: re-initialize ARRAY (size expression)- GLOBAL LOAD SAVE (except current variable, GVI)
-                Error.CheckError();
+                CheckError();
                 if (NC) 
                 { 
                     // Error during initialization
@@ -1159,7 +1159,7 @@ unit Console // Console.asm
                 SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
                 // These are simple assignments (FOO = 42, rather than INT FOO = 42)
                 Statement.EvaluateExpression(); // EXECUTION: re-initialize global variable (RHS expression) - GLOBAL LOAD SAVE (except current variable, GVI)
-                Error.CheckError();
+                CheckError();
                 if (NC) 
                 { 
                     // Error during initialization

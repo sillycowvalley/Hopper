@@ -199,7 +199,7 @@ unit Executor // Executor.asm
        loop // Single exit block
        {
            Executor.LoadGlobals();
-           Error.CheckError();
+           CheckError();
            if (NC) 
            { 
               States.SetFailure();
@@ -247,7 +247,7 @@ unit Executor // Executor.asm
                 // Regular status and error processing if the above was not true:
                 
                 // Check if any instruction set an error
-                Error.CheckError();
+                CheckError();
                 if (NC) 
                 { 
                    States.SetFailure();
@@ -810,7 +810,7 @@ unit Executor // Executor.asm
    // Modifies: ZP.SP (stack cleanup), ZP.BP (restored), ZP.PC (restored), ZP.CSP (decremented)
    //           Return slot contents (value and type), executorOperand1 (operand fetch)
    // Preserves: All other zero page variables
-   // Error: Sets error state via Error.CheckError() if operand fetch fails
+   // Error: Sets error state via CheckError() if operand fetch fails
    commonReturn()
    {
        loop
@@ -1225,7 +1225,7 @@ unit Executor // Executor.asm
        {
            // Fetch string pointer (little-endian)
            FetchOperandWord(); // Result in executorOperandL/H
-           Error.CheckError();
+           CheckError();
            if (NC) 
            { 
                States.SetFailure();
@@ -1253,7 +1253,7 @@ unit Executor // Executor.asm
            
            // Push to stack with STRING type
            Stacks.PushTop(); // PushCString: push value and type to stack -> always Success
-           Error.CheckError();
+           CheckError();
            if (NC) 
            { 
                States.SetFailure();

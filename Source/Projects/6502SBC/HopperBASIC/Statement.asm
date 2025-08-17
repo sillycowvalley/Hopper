@@ -156,7 +156,7 @@ unit Statement // Statement.asm
             
             // Get the identifier name for lookup
             Tokenizer.GetTokenString();  // Result in ZP.TOP
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
 
             // 2. Check if it's a local or argument (if we're in a function)
@@ -216,12 +216,12 @@ unit Statement // Statement.asm
             // Set literal base to TokenizerBuffer for REPL
             Compiler.SetLiteralBase();
             Compiler.CompileExpression();
-            Error.CheckError();
+            CheckError();
             if (NC) { States.SetFailure(); break; }
             
             // Emit HALT for REPL
             Emit.Halt();
-            Error.CheckError();
+            CheckError();
             if (NC) { States.SetFailure(); break; }
             
             // Save opcode buffer length after compilation (important for function calls from REPL)
@@ -241,7 +241,7 @@ unit Statement // Statement.asm
             PLA
             STA ZP.OpCodeBufferContentLengthL
             
-            Error.CheckError(); 
+            CheckError(); 
             if (NC)
             {
                 States.SetFailure(); 
@@ -282,17 +282,17 @@ unit Statement // Statement.asm
             // Initialize opcode buffer if this is the start of compilation  
             BufferManager.UseREPLOpCodeBuffer();
             Compiler.InitOpCodeBuffer();
-            Error.CheckError();
+            CheckError();
             if (NC) { States.SetFailure(); break; }
             
             // Compile the statement (not expression)
             Compiler.CompileStatement();
-            Error.CheckError();
+            CheckError();
             if (NC) { States.SetFailure(); break; }
             
             // Emit HALT for REPL
             Emit.Halt();
-            Error.CheckError();
+            CheckError();
             if (NC) { States.SetFailure(); break; }
             
             // Save opcode buffer length after compilation 
@@ -305,7 +305,7 @@ unit Statement // Statement.asm
             
             // Execute the compiled statement opcodes
             Executor.ExecuteOpCodes();
-            Error.CheckError();
+            CheckError();
             
             // Restore opcode buffer length
             PLA
@@ -313,7 +313,7 @@ unit Statement // Statement.asm
             PLA
             STA ZP.OpCodeBufferContentLengthL
             
-            Error.CheckError(); 
+            CheckError(); 
             if (NC)
             {
                 States.SetFailure(); 
@@ -527,7 +527,7 @@ unit Statement // Statement.asm
             STA stmtType // LHS type
             
             Tokenizer.NextToken();
-            Error.CheckError();
+            CheckError();
             if (NC) { break; } // error exit
             
             // Check that we have an identifier
@@ -576,7 +576,7 @@ unit Statement // Statement.asm
                 {
                     // Get existing symbol type
                     Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = symbolType|dataType
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { break; }
                     
                     LDA ZP.ACCT
@@ -609,7 +609,7 @@ unit Statement // Statement.asm
                 }
                 
                 Tokenizer.NextToken();
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; } // error exit
                 
                 //STZ ZP.TOPT // set RHS type to 0 if there is no initializer
@@ -636,13 +636,13 @@ unit Statement // Statement.asm
                         
                         // Get next token (start of expression)
                         Tokenizer.NextToken();
-                        Error.CheckError();
+                        CheckError();
                         if (C)
                         {
                             SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
                             SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
                             Statement.EvaluateExpression(); // EXECUTION: initialize ARRAY (size expression)- GLOBAL LOAD SAVE (our current variable does not exist yet)
-                            Error.CheckError();
+                            CheckError();
                         }
                         
                         // Restore tokenizer position before expression
@@ -714,7 +714,7 @@ unit Statement // Statement.asm
                         
                         // Move past RBRACKET
                         Tokenizer.NextToken();
-                        Error.CheckError();
+                        CheckError();
                         if (NC) { break; }
                     }
                     case Token.EQUALS:
@@ -727,13 +727,13 @@ unit Statement // Statement.asm
                         
                         // Get next token (start of expression)
                         Tokenizer.NextToken();
-                        Error.CheckError();
+                        CheckError();
                         if (C)
                         {
                             SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
                             SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
                             Statement.EvaluateExpression(); // EXECUTION: initialize global variable (RHS expression) - GLOBAL LOAD SAVE (our current variable does not exist yet)
-                            Error.CheckError();
+                            CheckError();
                         }
                         
                         // Restore tokenizer position before expression
@@ -819,7 +819,7 @@ unit Statement // Statement.asm
                             STA ZP.TOPH
                             
                             Variables.AllocateAndCopyString(); // Input: ZP.TOP = source, Output: ZP.IDY = allocated copy
-                            Error.CheckError();
+                            CheckError();
                             if (NC) { break; } // allocation failed
                             
                             // Track allocated string for cleanup
@@ -964,7 +964,7 @@ unit Statement // Statement.asm
             // Input: ZP.TOP = name pointer, ZP.ACCT = symbolType|dataType (packed),
             //        ZP.NEXT = initial value (16-bit), ZP.IDY = tokens pointer (16-bit)
             Variables.Declare();
-            Error.CheckError();
+            CheckError();
             if (C)
             {
                 // Success - ownership transferred to Variables table

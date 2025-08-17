@@ -432,7 +432,7 @@ unit Emit
        {
            // Get the identifier name from the tokenizer
            Tokenizer.GetTokenString(); // Result in ZP.TOP (name pointer)
-           Error.CheckError();
+           CheckError();
            if (NC) { break; }
            
            // Find the variable/constant by name
@@ -1074,13 +1074,13 @@ unit Emit
         {
             // Emit PUSHCHAR with the character (A already contains character)
             Emit.PushChar();  // Uses A register
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             // Emit the SYSCALL
             LDA #SysCallType.PrintChar
             Emit.SysCall();
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             SEC // Success
@@ -1106,7 +1106,7 @@ unit Emit
         {
             LDA #'\n'
             Emit.PrintChar();
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             SEC // Success
@@ -1130,7 +1130,7 @@ unit Emit
         {
             LDA #' '
             Emit.PrintChar();
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             SEC // Success
@@ -1154,7 +1154,7 @@ unit Emit
         {
             LDA #SysCallType.PrintValue
             SysCall();
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             SEC // Success
@@ -1244,7 +1244,7 @@ unit Emit
        {
             // Get string content pointer
             Tokenizer.GetTokenString(); // Result in ZP.TOP
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
 
             // Set up opcode

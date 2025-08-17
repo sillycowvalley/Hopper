@@ -209,7 +209,7 @@ unit Commands
             
             // ZP.STR is null - show all functions with bodies
             displayAllFunctionsWithBodies();
-            Error.CheckError();
+            CheckError();
             if (NC)
             {
                 States.SetFailure(); 

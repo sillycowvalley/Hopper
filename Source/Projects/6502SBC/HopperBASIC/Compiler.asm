@@ -279,7 +279,7 @@ unit Compiler // Compiler.asm
        {
            // Compile left operand (higher precedence)
            compileLogicalAnd();
-           Error.CheckError();
+           CheckError();
            if (NC) { break; }
            
            loop
@@ -292,18 +292,18 @@ unit Compiler // Compiler.asm
                
                // Get next token for right operand
                Tokenizer.NextToken();
-               Error.CheckError();
+               CheckError();
                if (NC) { break; }
                
                // Compile right operand
                compileLogicalAnd();
-               Error.CheckError();
+               CheckError();
                if (NC) { break; }
                
                // Emit logical OR opcode
                LDA #Token.OR
                Emit.LogicalOp();
-               Error.CheckError();
+               CheckError();
                if (NC) { break; }
            } // loop
            break;
@@ -330,7 +330,7 @@ unit Compiler // Compiler.asm
        {
            // Compile left operand (higher precedence)
            compileComparison();
-           Error.CheckError();
+           CheckError();
            if (NC) { break; }
            
            loop
@@ -343,18 +343,18 @@ unit Compiler // Compiler.asm
                
                // Get next token for right operand
                Tokenizer.NextToken();
-               Error.CheckError();
+               CheckError();
                if (NC) { break; }
                
                // Compile right operand
                compileComparison();
-               Error.CheckError();
+               CheckError();
                if (NC) { break; }
                
                // Emit logical AND opcode
                LDA #Token.AND
                Emit.LogicalOp();
-               Error.CheckError();
+               CheckError();
                if (NC) { break; }
            } // loop
            break;
@@ -382,7 +382,7 @@ unit Compiler // Compiler.asm
        {
            // Compile left operand (higher precedence)
            compileBitwiseOr();
-           Error.CheckError();
+           CheckError();
            if (NC) { break; }
            
            loop
@@ -403,7 +403,7 @@ unit Compiler // Compiler.asm
                        
                        // Get next token for right operand
                        Tokenizer.NextToken();
-                       Error.CheckError();
+                       CheckError();
                        if (NC) 
                        { 
                            PLA // Clean up stack
@@ -412,7 +412,7 @@ unit Compiler // Compiler.asm
                        
                        // Compile right operand
                        compileBitwiseOr();
-                       Error.CheckError();
+                       CheckError();
                        if (NC) 
                        { 
                            PLA // Clean up stack
@@ -422,7 +422,7 @@ unit Compiler // Compiler.asm
                        // Emit comparison opcode
                        PLA // Retrieve operator
                        Emit.ComparisonOp();
-                       Error.CheckError();
+                       CheckError();
                        if (NC) { break; }
                        
                        continue; // Check for more comparisons
@@ -458,7 +458,7 @@ unit Compiler // Compiler.asm
        {
            // Compile left operand (higher precedence)
            compileAdditive();
-           Error.CheckError();
+           CheckError();
            if (NC) { break; }
            
            loop
@@ -471,18 +471,18 @@ unit Compiler // Compiler.asm
                
                // Get next token for right operand
                Tokenizer.NextToken();
-               Error.CheckError();
+               CheckError();
                if (NC) { break; }
                
                // Compile right operand
                compileAdditive();
-               Error.CheckError();
+               CheckError();
                if (NC) { break; }
                
                // Emit bitwise AND opcode
                LDA #Token.BITWISE_AND
                Emit.BitwiseOp();
-               Error.CheckError();
+               CheckError();
                if (NC) { break; }
            } // loop
            break;
@@ -510,7 +510,7 @@ unit Compiler // Compiler.asm
        {
            // Compile left operand (higher precedence)
            compileBitwiseAnd();
-           Error.CheckError();
+           CheckError();
            if (NC) { break; }
            
            loop
@@ -523,18 +523,18 @@ unit Compiler // Compiler.asm
                
                // Get next token for right operand
                Tokenizer.NextToken();
-               Error.CheckError();
+               CheckError();
                if (NC) { break; }
                
                // Compile right operand
                compileBitwiseAnd();
-               Error.CheckError();
+               CheckError();
                if (NC) { break; }
                
                // Emit bitwise OR opcode
                LDA #Token.BITWISE_OR
                Emit.BitwiseOp();
-               Error.CheckError();
+               CheckError();
                if (NC) { break; }
            } // loop
            break;
@@ -561,7 +561,7 @@ unit Compiler // Compiler.asm
        {
            // Compile left operand (higher precedence)
            compileMultiplicative();
-           Error.CheckError();
+           CheckError();
            if (NC) { break; }
            
            loop
@@ -572,25 +572,25 @@ unit Compiler // Compiler.asm
                {
                    // Get next token for right operand
                    Tokenizer.NextToken();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { break; }
                    
                    // Compile right operand
                    compileMultiplicative();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { break; }
 
 
                    // Emit addition opcode
                    LDA #Token.PLUS
                    Emit.ArithmeticOp();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { break; }
                    
                    if (BBS0, ZP.CompilerFlags) // constant expression:  ADD: both sides are still constant
                    {
                        Instructions.Addition(); // Pop Pop + Push
-                       Error.CheckError();
+                       CheckError();
                        if (NC) { break; }
                    }
                    
@@ -602,25 +602,25 @@ unit Compiler // Compiler.asm
                {
                    // Get next token for right operand
                    Tokenizer.NextToken();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { break; }
                    
                    // Compile right operand
                    compileMultiplicative();
-                   Error.CheckError();
+                   CheckError();
                    
                    if (NC) { break; }
                    
                    // Emit subtraction opcode
                    LDA #Token.MINUS
                    Emit.ArithmeticOp();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { break; }
                    
                    if (BBS0, ZP.CompilerFlags) // constant expression:  SUB: both sides are still constant
                    {
                        Instructions.Subtraction(); // Pop Pop + Push
-                       Error.CheckError();
+                       CheckError();
                        if (NC) { break; }
                    }
                    
@@ -652,7 +652,7 @@ unit Compiler // Compiler.asm
        {
            // Compile left operand (higher precedence)
            compileUnary();
-           Error.CheckError();
+           CheckError();
            if (NC) { break; }
            
            loop
@@ -668,7 +668,7 @@ unit Compiler // Compiler.asm
                        
                        // Get next token for right operand
                        Tokenizer.NextToken();
-                       Error.CheckError();
+                       CheckError();
                        if (NC) 
                        { 
                            PLA // Clean up stack
@@ -677,7 +677,7 @@ unit Compiler // Compiler.asm
                        
                        // Compile right operand
                        compileUnary();
-                       Error.CheckError();
+                       CheckError();
                        if (NC) 
                        { 
                            PLA // Clean up stack
@@ -687,7 +687,7 @@ unit Compiler // Compiler.asm
                        // Emit arithmetic opcode
                        PLA // Retrieve operator
                        Emit.ArithmeticOp();
-                       Error.CheckError();
+                       CheckError();
                        if (NC) { break; }
                        
                        if (BBS0, ZP.CompilerFlags) // constant expression:  ADD: both sides are still constant
@@ -707,7 +707,7 @@ unit Compiler // Compiler.asm
                                    Instructions.Modulo(); // Pop Pop + Push
                                }
                            }
-                           Error.CheckError();
+                           CheckError();
                            if (NC) { break; }
                        }
                        
@@ -752,17 +752,17 @@ unit Compiler // Compiler.asm
                    
                    // Get next token for operand
                    Tokenizer.NextToken();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { break; }
                    
                    // Compile the operand
                    compilePrimary();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { break; }
                    
                    // Emit unary minus opcode
                    Emit.UnaryMinus();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { break; }
                }
                case Token.NOT:
@@ -771,25 +771,25 @@ unit Compiler // Compiler.asm
                    
                    // Get next token for operand
                    Tokenizer.NextToken();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { break; }
                    
                    // Compile the operand
                    compilePrimary();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { break; }
                    
                    // Emit logical NOT opcode
                    LDA #Token.NOT
                    Emit.LogicalOp();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { break; }
                }
                default:
                 {
                     // Not unary, compile primary
                     compilePrimary();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { break; }
                     
                     // Check for postfix operations (indexing)
@@ -804,12 +804,12 @@ unit Compiler // Compiler.asm
                         
                         // Get next token after '['
                         Tokenizer.NextToken();
-                        Error.CheckError();
+                        CheckError();
                         if (NC) { break; }
                         
                         // Compile index expression
                         compileExpressionTree();  // Full expression for the index
-                        Error.CheckError();
+                        CheckError();
                         if (NC) { break; }
                         
                         // Expect closing bracket
@@ -823,12 +823,12 @@ unit Compiler // Compiler.asm
                         
                         // Emit GETITEM opcode
                         Emit.GetItem();
-                        Error.CheckError();
+                        CheckError();
                         if (NC) { break; }
                         
                         // Get next token
                         Tokenizer.NextToken();
-                        Error.CheckError();
+                        CheckError();
                         
                         break;
                     }
@@ -862,7 +862,7 @@ unit Compiler // Compiler.asm
        {
            // Get token after opening parenthesis
            Tokenizer.NextToken();
-           Error.CheckError();
+           CheckError();
            if (NC) { break; }
            
            // Check for empty argument list
@@ -879,7 +879,7 @@ unit Compiler // Compiler.asm
            {
                // Compile argument expression
                compileComparison(); // Use full expression compilation
-               Error.CheckError();
+               CheckError();
                if (NC) { break; }
                
                // Check what comes next
@@ -901,7 +901,7 @@ unit Compiler // Compiler.asm
                
                // Get token after comma
                Tokenizer.NextToken();
-               Error.CheckError();
+               CheckError();
                if (NC) { break; }
                
                // Continue with next argument
@@ -939,7 +939,7 @@ unit Compiler // Compiler.asm
             
             // Get the identifier name first!
             Tokenizer.GetTokenString();  // Result in ZP.TOP
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             // Check if we're compiling a function and this identifier is an argument
@@ -962,7 +962,7 @@ unit Compiler // Compiler.asm
                     
                     // Emit PUSHLOCAL with the offset
                     Emit.PushLocal();  // A contains signed BP offset
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { break; }
                     
                     RMB0 ZP.CompilerFlags // constant expression: PUSHLOCAL not an integral constant expression
@@ -984,7 +984,7 @@ unit Compiler // Compiler.asm
             {
                 // declaring the constant
                 Emit.PushGlobal();
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
                 RMB0 ZP.CompilerFlags // constant expression: PUSHGLOBAL not an integral constant expression
 
@@ -1042,7 +1042,7 @@ unit Compiler // Compiler.asm
                         Emit.PushGlobal();
                         RMB0 ZP.CompilerFlags // constant expression: PUSHGLOBAL: not an integral constant expression
                     }
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { break; }
                     SEC // Success
                 }
@@ -1091,7 +1091,7 @@ unit Compiler // Compiler.asm
                 RMB0 ZP.CompilerFlags // constant expression: LPAREN: not an integral constant expression
                    
                 Tokenizer.NextToken(); // consume LPAREN
-                Error.CheckError();
+                CheckError();
                 if (NC) 
                 { 
                     Stacks.PopA(); // clean up VM stack slot
@@ -1105,7 +1105,7 @@ unit Compiler // Compiler.asm
                 else
                 {
                     Emit.PushVoid();  
-                    Error.CheckError();
+                    CheckError();
                     if (NC) 
                     { 
                         Stacks.PopA(); // clean up VM stack slot
@@ -1114,7 +1114,7 @@ unit Compiler // Compiler.asm
                 }
                 // Get next token after LPAREN to start argument parsing
                 Tokenizer.NextToken();
-                Error.CheckError();
+                CheckError();
                 if (NC) 
                 { 
                     Stacks.PopA(); // clean up VM stack slot
@@ -1131,7 +1131,7 @@ unit Compiler // Compiler.asm
                     {
                         // Compile argument expression
                         compileComparison(); // Use full expression compilation
-                        Error.CheckError();
+                        CheckError();
                         if (NC) 
                         { 
                             Stacks.PopA(); // clean up VM stack slot
@@ -1158,7 +1158,7 @@ unit Compiler // Compiler.asm
                         
                         // Get token after comma
                         Tokenizer.NextToken();
-                        Error.CheckError();
+                        CheckError();
                         if (NC) 
                         { 
                             Stacks.PopA(); // clean up VM stack slot
@@ -1168,7 +1168,7 @@ unit Compiler // Compiler.asm
                         // Continue with next argument
                     } // loop
                     
-                    Error.CheckError();
+                    CheckError();
                     if (NC) 
                     { 
                         Stacks.PopA(); // clean up VM stack slot
@@ -1195,12 +1195,12 @@ unit Compiler // Compiler.asm
                 
                 // Emit CALL opcode (uses ZP.TokenLiteralPos for function name)
                 Emit.Call();
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
                 
                 // Get next token after closing parenthesis
                 Tokenizer.NextToken();
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
             }
             else
@@ -1210,12 +1210,12 @@ unit Compiler // Compiler.asm
                 
                 // Get the identifier token
                 Tokenizer.NextToken();
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
 
                 // Compile as variable or argument
                 compileVariableOrArgument();
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
             }
             
@@ -1258,12 +1258,12 @@ unit Compiler // Compiler.asm
                    // Emit PUSHBIT with value 1
                    LDA #1
                    Emit.PushBit();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { break; }
                    
                    // Get next token
                    Tokenizer.NextToken();
-                   Error.CheckError();
+                   CheckError();
                    break;
                }
                case Token.FALSE:
@@ -1273,19 +1273,19 @@ unit Compiler // Compiler.asm
                    // Emit PUSHBIT with value 0
                    LDA #0
                    Emit.PushBit();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { break; }
                    
                    // Get next token
                    Tokenizer.NextToken();
-                   Error.CheckError();
+                   CheckError();
                    break;
                }
                case Token.NUMBER:
                {
                    // Get number value and type
                    Tokenizer.GetTokenNumber(); // Result in ZP.TOP, type in ZP.TOPT
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { break; }
                    
                    // Emit appropriate push opcode based on type and value
@@ -1295,7 +1295,7 @@ unit Compiler // Compiler.asm
                    {
                        LDA ZP.TOPL // BIT values are single byte
                        Emit.PushBit();
-                       Error.CheckError();
+                       CheckError();
                        if (NC) { break; }
                    }
                    else
@@ -1305,7 +1305,7 @@ unit Compiler // Compiler.asm
                        {
                            LDA ZP.TOPL
                            Emit.PushByte();
-                           Error.CheckError();
+                           CheckError();
                            if (NC) { break; }
                        }
                        else // 16-bit value (INT or WORD)
@@ -1317,7 +1317,7 @@ unit Compiler // Compiler.asm
                            STA compilerOperand2  // MSB
                            
                            Emit.PushWord();
-                           Error.CheckError();
+                           CheckError();
                            if (NC) { break; }
                        }
                    }
@@ -1329,7 +1329,7 @@ unit Compiler // Compiler.asm
                    
                    // Get next token
                    Tokenizer.NextToken();
-                   Error.CheckError();
+                   CheckError();
                    break;
                }
                case Token.STRINGLIT:
@@ -1344,12 +1344,12 @@ unit Compiler // Compiler.asm
                    STA Compiler.compilerOperand2  // MSB
                     
                    Emit.PushCString();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { break; }
                    
                    // Get next token
                    Tokenizer.NextToken();
-                   Error.CheckError();
+                   CheckError();
                    break;
                }
                case Token.CHARLIT:
@@ -1372,31 +1372,31 @@ unit Compiler // Compiler.asm
                     LDA [ZP.IDX], Y
                     
                     Emit.PushChar();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { break; }
                     
                     // Get next token
                     Tokenizer.NextToken();
-                    Error.CheckError();
+                    CheckError();
                     break;
                 }
                
                case Token.IDENTIFIER:
                {
                    compileFunctionCallOrVariable();
-                   Error.CheckError();
+                   CheckError();
                    break;
                }
                case Token.LPAREN:
                {
                    // Get next token (start of sub-expression)
                    Tokenizer.NextToken();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { break; }
                    
                    // Parse the sub-expression
                    compileExpressionTree();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { break; }
                    
                    // Expect closing parenthesis
@@ -1410,7 +1410,7 @@ unit Compiler // Compiler.asm
                    
                    // Get next token
                    Tokenizer.NextToken();
-                   Error.CheckError();
+                   CheckError();
                    break;
                }
                
@@ -1422,7 +1422,7 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: MILLIS: not an integral constant expression
                     LDA #SysCallType.Millis
                     compileSysCall();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { break; }
                     break;
                 }
@@ -1431,7 +1431,7 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: SECONDS: not an integral constant expression
                     LDA #SysCallType.Seconds
                     compileSysCall();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { break; }
                     break;
                 }
@@ -1440,7 +1440,7 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: ABS: not an integral constant expression
                     LDA #SysCallType.Abs
                     compileSysCall();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { break; }
                     break;
                 }
@@ -1449,7 +1449,7 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: RND: not an integral constant expression
                     LDA #SysCallType.Rnd
                     compileSysCall();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { break; }
                     break;
                 }
@@ -1458,7 +1458,7 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: PEEK: not an integral constant expression
                     LDA #SysCallType.Peek
                     compileSysCall();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { break; }
                     break;
                 }
@@ -1467,7 +1467,7 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: READ: not an integral constant expression
                     LDA #SysCallType.Read
                     compileSysCall();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { break; }
                     break;
                 }
@@ -1476,7 +1476,7 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: CHR: not an integral constant expression
                     LDA #SysCallType.Chr
                     compileSysCall();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { break; }
                     break;
                 }
@@ -1485,7 +1485,7 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: ASC: not an integral constant expression
                     LDA #SysCallType.Asc
                     compileSysCall();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { break; }
                     break;
                 }
@@ -1494,7 +1494,7 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: LEN: not an integral constant expression
                     LDA #SysCallType.Len
                     compileSysCall();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { break; }
                     break;
                 }
@@ -1537,7 +1537,7 @@ unit Compiler // Compiler.asm
         {
             // Parse opening parenthesis
             Tokenizer.NextToken();
-            Error.CheckError();
+            CheckError();
             if (NC) 
             { 
                 PLA  // Clean stack before exit
@@ -1565,7 +1565,7 @@ unit Compiler // Compiler.asm
             {
                 // No arguments - expect immediate closing parenthesis
                 Tokenizer.NextToken();
-                Error.CheckError();
+                CheckError();
                 if (NC) 
                 { 
                     PLA  // Clean stack before exit
@@ -1580,14 +1580,14 @@ unit Compiler // Compiler.asm
                 {
                     // Get next token (start of argument expression)
                     Tokenizer.NextToken();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { break; }  // Exit argument loop on error
                     
                     // Compile the argument expression
                     PHX
                     compileExpressionTree();
                     PLX
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { break; }  // Exit argument loop on error
                     
                     DEX  // One less argument to process
@@ -1626,7 +1626,7 @@ unit Compiler // Compiler.asm
             
             // Move past closing parenthesis
             Tokenizer.NextToken();
-            Error.CheckError();
+            CheckError();
             if (NC) 
             { 
                 PLA  // Clean stack before exit
@@ -1666,12 +1666,12 @@ unit Compiler // Compiler.asm
        BufferManager.UseREPLOpCodeBuffer();
        InitOpCodeBuffer();
        
-       Error.CheckError();
+       CheckError();
        if (NC) { States.SetFailure(); return; }
        
        // Compile the expression using same precedence as Expression.asm
        CompileFoldedExpressionTree(); // REPL expression
-       Error.CheckError();
+       CheckError();
        if (NC) { States.SetFailure(); return; }
        
        States.SetSuccess();
@@ -1716,7 +1716,7 @@ unit Compiler // Compiler.asm
                 {
                     // Skip empty lines
                     Tokenizer.NextToken();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { States.SetFailure(); break; }
                     continue; // Continue main loop
                 }
@@ -1725,7 +1725,7 @@ unit Compiler // Compiler.asm
                 {
                     // Compile the statement
                     CompileStatement();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { States.SetFailure(); break; }
                     
                     // Handle colon separator
@@ -1734,7 +1734,7 @@ unit Compiler // Compiler.asm
                     if (Z)
                     {
                         Tokenizer.NextToken();
-                        Error.CheckError();
+                        CheckError();
                         if (NC) { States.SetFailure(); break; }
                     }
                     continue; // Continue main loop
@@ -1778,7 +1778,7 @@ unit Compiler // Compiler.asm
        {
            // Initialize opcode buffer
            InitOpCodeBuffer();
-           Error.CheckError();
+           CheckError();
            if (NC) { States.SetFailure(); break; }
            
            //Save the function node address for argument lookups
@@ -1793,19 +1793,19 @@ unit Compiler // Compiler.asm
            
            // Get first token of function body
            Tokenizer.NextToken();
-           Error.CheckError();
+           CheckError();
            if (NC) { States.SetFailure(); break; }
            
            
            Emit.Enter();
-           Error.CheckError();
+           CheckError();
            if (NC) { States.SetFailure(); break; }
            
            STZ compilerFuncLocals // no locals yet
            
            // Replace the statement loop with:
            CompileStatementBlock();
-           Error.CheckError();
+           CheckError();
            if (NC) { States.SetFailure(); break; }
             
            // Validate we got EOF
@@ -1827,11 +1827,11 @@ unit Compiler // Compiler.asm
                 CLC
                 ADC compilerFuncLocals  // Total slots to clean
                 Emit.Return();  // Pass total count
-                Error.CheckError();
+                CheckError();
                 if (NC) { States.SetFailure(); break; }
            }
            Emit.Halt();  // sentinel for ending opcode iteration
-           Error.CheckError();
+           CheckError();
            if (NC) { States.SetFailure(); break; }
            
            States.SetSuccess(); // Success
@@ -1885,53 +1885,53 @@ unit Compiler // Compiler.asm
                {
                    STZ compilerCanDeclareLocals // no more locals after this
                    CompilerFlow.CompileWhileStatement();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { States.SetFailure(); break; }
                }
                case Token.DO:
                {
                    STZ compilerCanDeclareLocals // no more locals after this
                    CompilerFlow.CompileDoUntilStatement();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { States.SetFailure(); break; }
                }
                case Token.PRINT:
                {
                    compilePrintStatement();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { States.SetFailure(); break; }
                }
                case Token.CLS:
                {
                    compileCLSStatement();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { States.SetFailure(); break; }
                }
                case Token.RETURN:
                {
                    STZ compilerCanDeclareLocals // no more locals after this
                    compileReturnStatement();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { States.SetFailure(); break; }
                }
                case Token.IF:
                {
                    STZ compilerCanDeclareLocals // no more locals after this
                    CompilerFlow.CompileIfStatement();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { States.SetFailure(); break; }
                }
                case Token.FOR:
                {
                    CompilerFlow.CompileForStatement();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { States.SetFailure(); break; }
                }
                case Token.IDENTIFIER:
                {
                    // Could be assignment or function call
                    compileIdentifierStatement();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { States.SetFailure(); break; }
                }
                case Token.REM:
@@ -1939,7 +1939,7 @@ unit Compiler // Compiler.asm
                {
                    // Skip comments - advance to next token
                    Tokenizer.NextToken();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { States.SetFailure(); break; }
                }
                
@@ -1949,28 +1949,28 @@ unit Compiler // Compiler.asm
                 {
                     LDA #SysCallType.Delay
                     compileSysCall();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { States.SetFailure(); break; }
                 }
                 case Token.POKE:
                 {
                     LDA #SysCallType.Poke
                     compileSysCall();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { States.SetFailure(); break; }
                 }
                 case Token.WRITE:
                 {
                     LDA #SysCallType.Write
                     compileSysCall();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { States.SetFailure(); break; }
                 }
                 case Token.PINMODE:
                 {
                     LDA #SysCallType.PinMode
                     compileSysCall();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { States.SetFailure(); break; }
                 }
                 
@@ -1993,7 +1993,7 @@ unit Compiler // Compiler.asm
                         break;
                     }
                    compileLocalDeclaration();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { break; }
                    break;
                }
@@ -2040,7 +2040,7 @@ unit Compiler // Compiler.asm
         {
             // Get next token (should be start of expression, separator, or EOL)
             Tokenizer.NextToken();
-            Error.CheckError();
+            CheckError();
             if (NC) { States.SetFailure(); break; }
             
             // Check for PRINT with no arguments (just newline)
@@ -2050,7 +2050,7 @@ unit Compiler // Compiler.asm
             {
                 // PRINT (newline only)
                 Emit.PrintNewLine();
-                Error.CheckError();
+                CheckError();
                 if (NC) { States.SetFailure(); break; }
                 States.SetSuccess();
                 break;
@@ -2063,11 +2063,11 @@ unit Compiler // Compiler.asm
             {
                 // PRINT, - space and no newline
                 Emit.PrintSpace();
-                Error.CheckError();
+                CheckError();
                 if (NC) { States.SetFailure(); break; }
                 
                 Tokenizer.NextToken();
-                Error.CheckError();
+                CheckError();
                 if (NC) { States.SetFailure(); break; }
                 States.SetSuccess();
                 break;
@@ -2078,7 +2078,7 @@ unit Compiler // Compiler.asm
             {
                 // PRINT; - no space, no newline
                 Tokenizer.NextToken();
-                Error.CheckError();
+                CheckError();
                 if (NC) { States.SetFailure(); break; }
                 States.SetSuccess();
                 break;
@@ -2089,12 +2089,12 @@ unit Compiler // Compiler.asm
             {
                 // Compile current expression
                 CompileFoldedExpressionTree(); // PRINT arguments, use full expression compilation
-                Error.CheckError();
+                CheckError();
                 if (NC) { States.SetFailure(); break; }
                 
                 // Emit system call to print the value on stack
                 Emit.PrintValue();
-                Error.CheckError();
+                CheckError();
                 if (NC) { States.SetFailure(); break; }
                 
                 // Check what follows this expression
@@ -2104,12 +2104,12 @@ unit Compiler // Compiler.asm
                 {
                     // Comma separator - add space and continue with next expression
                     Emit.PrintSpace();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { States.SetFailure(); break; }
                     
                     // Get next token for next expression
                     Tokenizer.NextToken();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { States.SetFailure(); break; }
                     
                     // Check if this is a trailing comma (followed by EOL)
@@ -2132,7 +2132,7 @@ unit Compiler // Compiler.asm
                     // Semicolon separator - no space, continue with next expression
                     // Get next token for next expression
                     Tokenizer.NextToken();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { States.SetFailure(); break; }
                     
                     // Check if this is a trailing semicolon (followed by EOL)
@@ -2152,7 +2152,7 @@ unit Compiler // Compiler.asm
                 // No separator - end of expression list
                 // Default behavior: add newline
                 Emit.PrintNewLine();
-                Error.CheckError();
+                CheckError();
                 if (NC) { States.SetFailure(); break; }
                 
                 States.SetSuccess();
@@ -2182,7 +2182,7 @@ unit Compiler // Compiler.asm
        {
            // Get next token
            Tokenizer.NextToken();
-           Error.CheckError();
+           CheckError();
            if (NC) { States.SetFailure(); break; }
            
            // Check if there's a return expression
@@ -2195,7 +2195,7 @@ unit Compiler // Compiler.asm
                 CLC
                 ADC compilerFuncLocals  // Total slots to clean
                 Emit.Return();  // Pass total count
-                Error.CheckError();
+                CheckError();
                 if (NC) { States.SetFailure(); break; }
                 States.SetSuccess();
                 break;
@@ -2203,7 +2203,7 @@ unit Compiler // Compiler.asm
            
            // Compile return expression
            CompileFoldedExpressionTree(); // RETURN <expression>
-           Error.CheckError();
+           CheckError();
            if (NC) { States.SetFailure(); break; }
            
            // Emit RETURN with locals cleanup count
@@ -2211,7 +2211,7 @@ unit Compiler // Compiler.asm
            CLC
            ADC compilerFuncLocals  // Total slots to clean
            Emit.ReturnVal();
-           Error.CheckError();
+           CheckError();
            if (NC) { States.SetFailure(); break; }
            
            States.SetSuccess();
@@ -2260,7 +2260,7 @@ unit Compiler // Compiler.asm
             
             // Move to identifier
             Tokenizer.NextToken();
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             // Verify we have an identifier
@@ -2274,7 +2274,7 @@ unit Compiler // Compiler.asm
             
             // Get the identifier name
             Tokenizer.GetTokenString();  // Result in ZP.TOP
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             // Check for duplicate among existing locals/arguments
@@ -2371,7 +2371,7 @@ unit Compiler // Compiler.asm
             } // switch
             PLA
             
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
 
             // Create local using Locals.Add (it handles allocation and linking)
@@ -2381,12 +2381,12 @@ unit Compiler // Compiler.asm
             
             // ZP.IDX still has function node, ZP.TOP has name
             Locals.Add();  // Reuse existing Add method
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             // Move past identifier
             Tokenizer.NextToken();
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             // Check for initialization
@@ -2396,19 +2396,19 @@ unit Compiler // Compiler.asm
             {
                 // Move past '='
                 Tokenizer.NextToken();
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
                 
                 // Compile initialization expression
                 CompileFoldedExpressionTree(); // <type> LOCAL = <expression>
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
                 
                 // Emit POPLOCAL with positive offset
                 LDA compilerFuncLocals  // Positive BP offset (0-based)
                 DEC A 
                 Emit.PopLocal();
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
             }
             
@@ -2485,7 +2485,7 @@ unit Compiler // Compiler.asm
                     
                     // Push array pointer onto stack
                     compileVariableOrArgument(); 
-                    Error.CheckError();
+                    CheckError();
                     if (NC)
                     {
                         States.SetFailure(); break; 
@@ -2506,21 +2506,21 @@ unit Compiler // Compiler.asm
 #endif     
                     // Move past '[' and compile index expression
                     Tokenizer.NextToken();
-                    Error.CheckError();
+                    CheckError();
                     if (NC)
                     {
                         States.SetFailure(); break; 
                     }
                     
                     Tokenizer.NextToken();
-                    Error.CheckError();
+                    CheckError();
                     if (NC)
                     {
                         States.SetFailure(); break; 
                     }
                     // Index value on stack
                     CompileFoldedExpressionTree(); // array[<expression>] = 
-                    Error.CheckError();
+                    CheckError();
                     if (NC)
                     {
                         States.SetFailure(); break; 
@@ -2568,7 +2568,7 @@ unit Compiler // Compiler.asm
             {
                 // Move to next token - should be '='
                 Tokenizer.NextToken();
-                Error.CheckError();
+                CheckError();
                 if (NC) 
                 { 
                     States.SetFailure(); 
@@ -2588,7 +2588,7 @@ unit Compiler // Compiler.asm
                 
                 // Move past '=' to the expression
                 Tokenizer.NextToken();
-                Error.CheckError();
+                CheckError();
                 if (NC) 
                 { 
                     States.SetFailure(); 
@@ -2597,7 +2597,7 @@ unit Compiler // Compiler.asm
                 
                 // Compile the RHS expression (this WILL munt ZP.IDX and ZP.ACCL)
                 CompileFoldedExpressionTree(); // local = <expression>
-                Error.CheckError();
+                CheckError();
                 if (NC) 
                 { 
                     States.SetFailure(); 
@@ -2701,7 +2701,7 @@ unit Compiler // Compiler.asm
                     Emit.OpCode();
                     break;
                 } 
-                Error.CheckError();
+                CheckError();
                 if (NC) { States.SetFailure(); break; }
             }
             else
@@ -2714,7 +2714,7 @@ unit Compiler // Compiler.asm
                     // Local variable - use POPLOCAL with BP offset
                     LDA ZP.ACCL  // BP offset (signed)
                     Emit.PopLocal();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) 
                     { 
                         States.SetFailure(); 
@@ -2735,7 +2735,7 @@ unit Compiler // Compiler.asm
                     
                     // Call the new PopGlobal that finds by name and uses index
                     Emit.PopGlobal();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) 
                     { 
                         States.SetFailure(); 
@@ -2773,7 +2773,7 @@ unit Compiler // Compiler.asm
            // Typically called when ZP.CurrentToken is Token.IDENTIFIER, or a keyword
            // Output: symbol or function in IDX, A = IdentifierType
            Statement.ResolveIdentifier(); // Uses same logic as REPL
-           Error.CheckError();
+           CheckError();
            if (NC) 
            { 
                States.SetFailure(); break; 
@@ -2785,12 +2785,12 @@ unit Compiler // Compiler.asm
                {
                    // Compile function call using existing logic
                    compileFunctionCallOrVariable();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { States.SetFailure(); break; }
                    
                    // For function calls as statements, discard the return value
                    Emit.DecSp();
-                   Error.CheckError();
+                   CheckError();
                    if (NC) { States.SetFailure(); break; }
                    
                    States.SetSuccess();
@@ -2800,7 +2800,7 @@ unit Compiler // Compiler.asm
                 case IdentifierType.Local:  // Add this case
                 {
                     compileAssignment();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { States.SetFailure(); break; }
                     States.SetSuccess();
                     break;
@@ -2812,7 +2812,7 @@ unit Compiler // Compiler.asm
                    {
                        // populating the stack with global constants
                        compileAssignment();
-                       Error.CheckError();
+                       CheckError();
                        if (NC) { States.SetFailure(); break; }
                        States.SetSuccess();
                    }
@@ -2887,12 +2887,12 @@ unit Compiler // Compiler.asm
         {
             // Get next token - should be EOL or COLON (CLS takes no arguments)
             Tokenizer.NextToken();
-            Error.CheckError();
+            CheckError();
             if (NC) { States.SetFailure(); break; }
             
             // Emit the CLS opcode
             Emit.ClearScreen();
-            Error.CheckError();
+            CheckError();
             if (NC) { States.SetFailure(); break; }
             
             States.SetSuccess();

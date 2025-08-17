@@ -77,7 +77,7 @@ unit Variables
                 STA ZP.ACCH
                 
                 BASICArray.New();  // Returns pointer in ZP.IDX
-                Error.CheckError();
+                CheckError();
                 if (NC)
                 {
                     break;
@@ -345,7 +345,7 @@ unit Variables
                     SEC
                     // STRING variable - need to free old string and allocate new
                     FreeCompoundValue(); // Free existing string memory, and zero out field in Variable record, preserves IDX, IDY, TOP, ACT
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { break; }
                 }
                 LDA ZP.TOPT
@@ -356,7 +356,7 @@ unit Variables
                     // if we got to here, we have a new string to allocate
                     // Allocate and copy new string (ZP.TOP has source string pointer)
                     AllocateAndCopyString(); // Returns new string pointer in ZP.TOP -> ZP.IDY, preserves IDX, ACCT
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { break; }
                 }
                 else

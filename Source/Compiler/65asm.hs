@@ -764,6 +764,9 @@ program Assemble
     }
     bool assembleInstruction6502()
     {
+         
+        
+        
         // 6502 instruction forms:
         //
         // Implied:
@@ -800,9 +803,33 @@ program Assemble
         bool success = false;
         loop
         {
+            // HACK: Skip BIT ZP.EmulatorPCL instructions when RELEASE is defined
             <string,string> currentToken = Parser.CurrentToken;
-            HopperToken tokenType;
             string instructionName = currentToken["lexeme"];
+            
+            if ((instructionName == "BIT") && Symbols.DefineExists("RELEASE"))
+            {
+                // Look ahead to check if the operand is ZP.EmulatorPCL
+                <string,string> nextToken = Scanner.Peek();
+                HopperToken nextTokenType = Token.GetType(nextToken);
+                
+                if ((nextTokenType == HopperToken.DottedIdentifier) && 
+                    (nextToken["lexeme"] == "ZP.EmulatorPCL"))
+                {
+                    // Skip this specific BIT ZP.EmulatorPCL instruction in RELEASE builds
+                    Parser.Advance(); // consume "BIT"
+                    Parser.Advance(); // consume "ZP.EmulatorPCL"
+                    
+                    // Successfully skipped the BIT ZP.EmulatorPCL instruction
+                    success = true;
+                    break;
+                }
+                // If it's BIT with a different operand, fall through to normal processing
+            }   
+            
+            currentToken = Parser.CurrentToken;
+            HopperToken tokenType;
+            instructionName = currentToken["lexeme"];
             Parser.Advance();
             
             currentToken = Parser.CurrentToken;
@@ -1265,7 +1292,7 @@ program Assemble
                 }
             }
             break;
-        }
+        } // single exit   
         return success;
     }
     

@@ -107,11 +107,7 @@ unit Trace // Trace.asm
         {
             LDA #' ' Debug.COut(); 
             LDA #'(' Debug.COut(); 
-#ifdef TERSE_ERRORS
-            LDA ZP.LastErrorL Debug.HOut();
-#else
             LDA ZP.LastErrorL STA ZP.STRL LDA ZP.LastErrorH STA ZP.STRH Tools.PrintStringSTR();
-#endif
             LDA #')' Debug.COut(); LDA #' ' Debug.COut(); 
             PLP
             if (NC)
@@ -194,11 +190,7 @@ unit Trace // Trace.asm
         {
             LDA #' ' Debug.COut(); 
             LDA #'(' Debug.COut(); 
-#ifdef TERSE_ERRORS
-            LDA ZP.LastErrorL Debug.HOut();
-#else
             LDA ZP.LastErrorL STA ZP.STRL LDA ZP.LastErrorH STA ZP.STRH Tools.PrintStringSTR();
-#endif
             LDA #')' Debug.COut(); LDA #' ' Debug.COut(); 
             PLP
             if (NC)

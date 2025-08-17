@@ -30,7 +30,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             {
                 // BEGIN function exists - remove it (name pointer already in ZP.TOP)
                 Functions.Remove();
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
                 
                 // Restore the name pointer for declaration
@@ -54,7 +54,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             
             // Declare the function
             Functions.Declare(); // Input: ZP.TOP = name, ZP.NEXT = args head, ZP.IDY = body tokens
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             // Save function node address
@@ -65,7 +65,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             
             // Get next token after BEGIN
             Tokenizer.NextToken();
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             // Check if this is an incomplete BEGIN block (ends with EOL)
@@ -80,7 +80,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             
             // Complete BEGIN block on same line - capture body from current position to END
             captureBeginBody();
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             SEC // Success
@@ -110,7 +110,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
         {
             // Get next token - should be function name
             Tokenizer.NextToken();
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             // Check that we have an identifier
@@ -132,7 +132,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             
             // Get the function name
             Tokenizer.GetTokenString(); // Returns pointer in ZP.TOP
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             // Save function name pointer in statement storage
@@ -147,7 +147,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             {
                 // Function exists - remove it (name pointer already in ZP.TOP)
                 Functions.Remove();
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
             }
             
@@ -158,7 +158,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             {
                 // Variable/constant exists - determine type and show appropriate error
                 Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = symbolType|dataType
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
                 
                 LDA ZP.ACCT
@@ -183,7 +183,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             
             // Get next token - should be opening parenthesis
             Tokenizer.NextToken();
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             LDA ZP.CurrentToken
@@ -209,7 +209,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             
             // Declare the function with empty arguments and body
             Functions.Declare(); // Input: ZP.TOP = name, ZP.NEXT = args head, ZP.IDY = body tokens
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             // Save function node address for adding arguments
@@ -220,7 +220,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             
             // Parse parameters
             parseParameterList();
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             // Expect closing parenthesis (should be current token after parseParameterList)
@@ -234,7 +234,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             
             // Get next token - start of function body or EOL
             Tokenizer.NextToken();
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             // Check if this is an incomplete function (ends with EOL)
@@ -250,7 +250,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
 
             // Complete function on same line - capture function body from current position to ENDFUNC
             captureFunctionBody();
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             SEC // Success
@@ -278,7 +278,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
         {
             // Get next token after opening parenthesis
             Tokenizer.NextToken();
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             // Check for empty parameter list
@@ -304,7 +304,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 
                 // Get parameter name
                 Tokenizer.GetTokenString(); // Result in ZP.TOP
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
                 
                 // Add argument to function
@@ -319,12 +319,12 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 STA ZP.SymbolType // argument for Locals.Add()
                 
                 Locals.Add(); // Input: ZP.IDX = function node, ZP.TOP = argument name
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
                 
                 // Get next token
                 Tokenizer.NextToken();
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
                 
                 // Check what comes next
@@ -346,7 +346,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 
                 // Get next token after comma
                 Tokenizer.NextToken();
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
                 
                 // Continue parsing parameters
@@ -403,7 +403,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 
                 // Get next token
                 Tokenizer.NextToken();
-                Error.CheckError();
+                CheckError();
                 if (NC) 
                 { 
                     CLC
@@ -424,7 +424,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             
             // Create token stream copy
             Statement.CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             // Set function body tokens in function node
@@ -439,14 +439,14 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             STA ZP.IDYH
             
             Functions.SetBody(); // Input: ZP.IDX = function node, ZP.IDY = body tokens
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             Functions.FreeAllOpCodes(); // compiled FUNCs potentially stale now
             
             // Get next token after END
             Tokenizer.NextToken();
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             SEC // Success
@@ -501,7 +501,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 
                 // Get next token
                 Tokenizer.NextToken();
-                Error.CheckError();
+                CheckError();
                 if (NC) 
                 { 
                     CLC
@@ -523,7 +523,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             
             // Create token stream copy using existing pattern
             Statement.CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             // Set function body tokens in function node
@@ -540,14 +540,14 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             STA ZP.IDYH
             
             Functions.SetBody(); // Input: ZP.IDX = function node, ZP.IDY = body tokens
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             Functions.FreeAllOpCodes(); // compiled FUNCs potentially stale now
             
             // Get next token after ENDFUNC
             Tokenizer.NextToken();
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             SEC // Success
@@ -579,7 +579,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             
             // Skip FUNC token
             Tokenizer.NextToken(); // Gets FIRST token (should be FUNC)
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             LDA ZP.CurrentToken
@@ -588,7 +588,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             {
                 // Get function name
                 Tokenizer.NextToken(); // Gets SECOND token (should be function name)
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
                 
                 LDA ZP.CurrentToken
@@ -601,14 +601,14 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 
                 // Get the function name string
                 Tokenizer.GetTokenString(); // Result in ZP.TOP
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
                 
                 // Skip to end of function signature (past closing parenthesis)
                 loop
                 {
                     Tokenizer.NextToken();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { break; }
                     
                     LDA ZP.CurrentToken
@@ -616,7 +616,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                     if (Z) 
                     { 
                         Tokenizer.NextToken(); // Move past RPAREN to start of body
-                        Error.CheckError();
+                        CheckError();
                         if (NC) { break; }
                         break; 
                     }
@@ -649,7 +649,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 
                 // Skip EOL after BEGIN if present (from multi-line capture)
                 Tokenizer.NextToken();
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
                 
                 LDA ZP.CurrentToken
@@ -695,7 +695,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 PHA
                 
                 Tokenizer.NextToken();
-                Error.CheckError();
+                CheckError();
                 if (NC) 
                 { 
                     PLA  // Clean up stack
@@ -752,7 +752,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             
             // Create token stream for function body (without ENDFUNC/END)
             Statement.CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             // Restore function node address
@@ -768,7 +768,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             STA ZP.IDYH
             
             Functions.SetBody(); // Input: ZP.IDX = function node, ZP.IDY = body tokens
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             Functions.FreeAllOpCodes(); // compiled FUNCs potentially stale now

@@ -872,7 +872,7 @@ PLP
                 // INT - handle signed multiplication
                 doSigns();
                 IntMath.MulShared();
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
                 
                 LDA ZP.FSIGN     // load the sign count
@@ -886,7 +886,7 @@ PLP
             {
                 // WORD or BYTE - unsigned multiplication
                 IntMath.MulShared();
-                Error.CheckError();
+                CheckError();
                 if (NC) { break; }
             }
             

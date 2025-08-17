@@ -776,7 +776,7 @@ unit Functions
                              
             // Copy function tokens to ZP.TokenBuffer and configure tokenizer
             //copyFunctionTokensToBuffer();
-            //Error.CheckError();
+            //CheckError();
             //if (NC) { break; }
             
             STZ ZP.ACCL // 0 arguments
@@ -804,7 +804,7 @@ unit Functions
 
             // Use Compiler.CompileExpression() to compile function body
             Compiler.CompileFunction();
-            Error.CheckError();
+            CheckError();
             
             Stacks.PopXID();
             
@@ -835,7 +835,7 @@ unit Functions
             
             // Copy opcodes from BasicOpCodeBuffer to permanent function storage
             copyOpCodesToFunction();
-            Error.CheckError();
+            CheckError();
             if (NC) { break; }
             
             States.SetSuccess(); // should already be the case
@@ -849,7 +849,7 @@ unit Functions
             {
                 break;
             }
-            Error.CheckError();
+            CheckError();
             if (NC)
             {
                 LDA ZP.TokenBufferContentLengthH

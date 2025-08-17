@@ -5,49 +5,7 @@ unit Error // Error.asm
     // All public methods preserve caller state except for documented outputs
     // One-liner error methods for simplified error handling
     
-#ifdef TERSE_ERRORS
-    // Future enhancement: error codes instead of strings
-    const uint syntaxError = 0x0001;
-    const uint notImplemented = 0x0002;
-    const uint internalError = 0x0003;
-    const uint onlyInDebug = 0x0004;
-    const uint typeMismatch = 0x0005;
-    const uint functionExists = 0x0006;
-    const uint constantExists = 0x0007;
-    const uint variableExists = 0x0008;
-    const uint outOfMemory = 0x0009;
-    const uint fileNotFound = 0x000A;
-    const uint nextWithoutFor = 0x000B;
-    const uint divisionByZero = 0x000C;
-    const uint numericOverflow = 0x000D;
-    const uint stringTooLong = 0x000E;
-    const uint badIndex = 0x000F;
-    const uint undefinedIdentifier = 0x0010;
-    const uint constantExpected = 0x0011;
-    const uint constantExpressionExpected = 0x0012;
-    const uint illegalIdentifier = 0x0013;
-    const uint illegalAssignment = 0x0014;
-    const uint invalidOperator = 0x0015;
-    const uint bufferOverflow = 0x0016;
-    const uint expectedRightParen = 0x0017;
-    const uint expectedLeftParen = 0x0018;
-    const uint unexpectedEOL = 0x0019;
-    const uint expectedExpression = 0x001A;
-    const uint invalidBitValue = 0x001B;
-    const uint illegalInFunctionMode = 0x001C;
-    const uint heapCorrupt = 0x001D;
-    const uint illegalCharacter = 0x001E;
-    const uint cannotRollback = 0x001F
-    const uint ctrlC = 0x0020
-    const uint lateDeclaration  = 0x0021;
-    const uint missingNext = 0x0022;
-    const uint nextMismatch = 0x0023
-    const uint forIteratorLocal = 0x0024;
-    const uint rangeError = 0x0025;
-    const uint expectedRightBracket = 0x0026;
-    
-    
-#else
+
     // Error message strings (moved from Messages.asm) and made private
     const string syntaxError = "SYNTAX ERROR";
     const string notImplemented = "NOT IMPLEMENTED";
@@ -91,9 +49,6 @@ unit Error // Error.asm
     const string rangeError = "VALUE OUT OF RANGE";
     const string expectedRightBracket = "] EXPECTED";
     
-    
-    
-#endif
     
     // One-liner error methods (PC must be set at call site with BIT ZP.EmulatorPCL)
     // Each method sets ZP.LastError and clears carry flag
@@ -551,7 +506,7 @@ unit Error // Error.asm
     CheckErrorAndStatus()
     {
         PHA
-        Error.CheckError(); // C if ok, NC if not ok (error)
+        CheckError(); // C if ok, NC if not ok (error)
         if (C)
         {
             // LastError not set, check SystemState
@@ -653,60 +608,40 @@ unit Error // Error.asm
             CMP #(notImplemented % 256)
             if (Z)
             {
-#ifdef TERSE_ERRORS
-                SEC break;
-#else 
                 CPX #(notImplemented / 256)
                 if (Z) { SEC break; } // Fatal
-#endif
             }
             
             // Check for internalError
             CMP #(internalError % 256)
             if (Z)
             {
-#ifdef TERSE_ERRORS
-                SEC break;
-#else 
                 CPX #(internalError / 256)
                 if (Z) { SEC break; } // Fatal
-#endif
             }
             
             // Check for outOfMemory
             CMP #(outOfMemory % 256)
             if (Z)
             {
-#ifdef TERSE_ERRORS
-                SEC break;
-#else 
                 CPX #(outOfMemory / 256)
                 if (Z) { SEC break; } // Fatal
-#endif
             }
             
             // Check for bufferOverflow
             CMP #(bufferOverflow % 256)
             if (Z)
             {
-#ifdef TERSE_ERRORS
-                SEC break;
-#else 
                 CPX #(bufferOverflow / 256)
                 if (Z) { SEC break; } // Fatal
-#endif
             }
             
             // Check for heapCorrupt
             CMP #(heapCorrupt % 256)
             if (Z)
             {
-#ifdef TERSE_ERRORS
-                SEC break;
-#else 
                 CPX #(heapCorrupt / 256)
                 if (Z) { SEC break; } // Fatal
-#endif
             }
             
             // Not a fatal error

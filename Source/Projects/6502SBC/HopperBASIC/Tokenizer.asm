@@ -322,18 +322,18 @@ unit Tokenizer // Tokenizer.asm
         // Add NUMBER token
         LDA #Token.NUMBER
         appendToTokenBuffer();
-        Error.CheckError();
+        CheckError();
         if (NC) { return; }
         
         // Store "0x" prefix
         LDA #'0'
         appendToTokenBuffer();
-        Error.CheckError();
+        CheckError();
         if (NC) { return; }
         
         LDA Address.BasicInputBuffer, X  // 'x' or 'X'
         appendToTokenBuffer();
-        Error.CheckError();
+        CheckError();
         if (NC) { return; }
         INX
         
@@ -349,7 +349,7 @@ unit Tokenizer // Tokenizer.asm
             
             LDA Address.BasicInputBuffer, X
             appendToTokenBuffer();
-            Error.CheckError();
+            CheckError();
             if (NC) { return; }
             INX
         }
@@ -357,7 +357,7 @@ unit Tokenizer // Tokenizer.asm
         // Add null terminator
         LDA #0
         appendToTokenBuffer();
-        Error.CheckError();
+        CheckError();
         if (NC) { return; }
     }
     
@@ -538,7 +538,7 @@ unit Tokenizer // Tokenizer.asm
                 {
                     LDA #Token.COLON
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -546,7 +546,7 @@ unit Tokenizer // Tokenizer.asm
                 {
                     LDA #Token.COMMA
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -554,7 +554,7 @@ unit Tokenizer // Tokenizer.asm
                 {
                     LDA #Token.SEMICOLON
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -562,7 +562,7 @@ unit Tokenizer // Tokenizer.asm
                 {
                     LDA #Token.EQUALS
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -570,7 +570,7 @@ unit Tokenizer // Tokenizer.asm
                 {
                     LDA #Token.PLUS
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -578,7 +578,7 @@ unit Tokenizer // Tokenizer.asm
                 {
                     LDA #Token.MINUS
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -586,7 +586,7 @@ unit Tokenizer // Tokenizer.asm
                 {
                     LDA #Token.MULTIPLY
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -594,7 +594,7 @@ unit Tokenizer // Tokenizer.asm
                 {
                     LDA #Token.DIVIDE
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -602,7 +602,7 @@ unit Tokenizer // Tokenizer.asm
                 {
                     LDA #Token.BITWISE_AND
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -610,7 +610,7 @@ unit Tokenizer // Tokenizer.asm
                 {
                     LDA #Token.BITWISE_OR
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -618,7 +618,7 @@ unit Tokenizer // Tokenizer.asm
                 {
                     LDA #Token.LPAREN
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -626,7 +626,7 @@ unit Tokenizer // Tokenizer.asm
                 {
                     LDA #Token.RPAREN
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -634,7 +634,7 @@ unit Tokenizer // Tokenizer.asm
                 {
                     LDA #Token.LBRACKET
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -642,7 +642,7 @@ unit Tokenizer // Tokenizer.asm
                 {
                     LDA #Token.RBRACKET
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     INX
                 }
@@ -659,7 +659,7 @@ unit Tokenizer // Tokenizer.asm
                         {
                             LDA #Token.LE
                             appendToTokenBuffer();
-                            Error.CheckError();
+                            CheckError();
                             if (NC) { return; }
                             INX  // Skip both '<' and '='
                             continue;
@@ -669,7 +669,7 @@ unit Tokenizer // Tokenizer.asm
                         {
                             LDA #Token.NOTEQUAL
                             appendToTokenBuffer();
-                            Error.CheckError();
+                            CheckError();
                             if (NC) { return; }
                             INX  // Skip both '<' and '>'
                             continue;
@@ -679,7 +679,7 @@ unit Tokenizer // Tokenizer.asm
                     DEX  // Back up to point at '<'
                     LDA #Token.LT
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     INX  // Move past '<'
                 }
@@ -696,7 +696,7 @@ unit Tokenizer // Tokenizer.asm
                         {
                             LDA #Token.GE
                             appendToTokenBuffer();
-                            Error.CheckError();
+                            CheckError();
                             if (NC) { return; }
                             INX  // Skip both '>' and '='
                             continue;
@@ -706,7 +706,7 @@ unit Tokenizer // Tokenizer.asm
                     DEX  // Back up to point at '>'
                     LDA #Token.GT
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     INX  // Move past '>'
                 }
@@ -715,7 +715,7 @@ unit Tokenizer // Tokenizer.asm
                     // String literal tokenization
                     LDA # Token.STRINGLIT
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     
                     // Store starting position of string content
@@ -751,7 +751,7 @@ unit Tokenizer // Tokenizer.asm
                             // Add null terminator to string content
                             LDA #0
                             appendToTokenBuffer();
-                            Error.CheckError();
+                            CheckError();
                             if (NC) { return; }
                             
                             INX  // Skip closing quote in input buffer
@@ -760,7 +760,7 @@ unit Tokenizer // Tokenizer.asm
                         
                         // Add character to string content in token buffer
                         appendToTokenBuffer();
-                        Error.CheckError();
+                        CheckError();
                         if (NC) { return; }
                         
                         INX  // Advance input buffer position
@@ -772,7 +772,7 @@ unit Tokenizer // Tokenizer.asm
                     // Character literal tokenization
                     LDA #Token.CHARLIT
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     
                     INX  // Skip opening quote
@@ -800,7 +800,7 @@ unit Tokenizer // Tokenizer.asm
                     
                     // Store the character value in token buffer
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     
                     INX  // Move past character
@@ -830,7 +830,7 @@ unit Tokenizer // Tokenizer.asm
                     // Single quote comment
                     LDA #Token.COMMENT
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     
                     INX  // Skip the quote character
@@ -843,7 +843,7 @@ unit Tokenizer // Tokenizer.asm
                         
                         LDA Address.BasicInputBuffer, X
                         appendToTokenBuffer();
-                        Error.CheckError();
+                        CheckError();
                         if (NC) { return; }
                         INX
                     }
@@ -851,7 +851,7 @@ unit Tokenizer // Tokenizer.asm
                     // Add null terminator
                     LDA #0
                     appendToTokenBuffer();
-                    Error.CheckError();
+                    CheckError();
                     if (NC) { return; }
                     
                     // X is already at end of input, continue will break out of main loop
@@ -885,7 +885,7 @@ unit Tokenizer // Tokenizer.asm
                         // Scan number and store inline in token buffer
                         LDA #Token.NUMBER
                         appendToTokenBuffer();
-                        Error.CheckError();
+                        CheckError();
                         if (NC) { return; }
                         
                         // Store number digits inline
@@ -899,7 +899,7 @@ unit Tokenizer // Tokenizer.asm
                             if (NC) { SEC break; }  // Not a digit
                             
                             appendToTokenBuffer();
-                            Error.CheckError();
+                            CheckError();
                             if (NC) { return; }
                             INX
                         }
@@ -907,7 +907,7 @@ unit Tokenizer // Tokenizer.asm
                         // Add null terminator for number
                         LDA #0
                         appendToTokenBuffer();
-                        Error.CheckError();
+                        CheckError();
                         if (NC) { return; }
                         continue;
                     }
@@ -974,7 +974,7 @@ unit Tokenizer // Tokenizer.asm
                         if (Z)
                         {
                             appendToTokenBuffer();
-                            Error.CheckError();
+                            CheckError();
                             if (NC) { return; }
                             
                             // Store comment text as inline data
@@ -988,7 +988,7 @@ unit Tokenizer // Tokenizer.asm
                                 
                                 LDA Address.BasicInputBuffer, X
                                 appendToTokenBuffer();
-                                Error.CheckError();
+                                CheckError();
                                 if (NC) { return; }
                                 INX
                             }
@@ -996,7 +996,7 @@ unit Tokenizer // Tokenizer.asm
                             // Add null terminator
                             LDA #0
                             appendToTokenBuffer();
-                            Error.CheckError();
+                            CheckError();
                             if (NC) { return; }
                             
                             // X is already at end of input, continue will break out of main loop
@@ -1005,7 +1005,7 @@ unit Tokenizer // Tokenizer.asm
                         
                         // Regular keyword processing
                         appendToTokenBuffer();
-                        Error.CheckError();
+                        CheckError();
                         if (NC) { return; }
                     }
                     else
@@ -1013,7 +1013,7 @@ unit Tokenizer // Tokenizer.asm
                         // It's an identifier - store token + inline string
                         LDA #Token.IDENTIFIER
                         appendToTokenBuffer();
-                        Error.CheckError();
+                        CheckError();
                         if (NC) { return; }
                         
                         // Copy identifier from working buffer to token buffer
@@ -1023,7 +1023,7 @@ unit Tokenizer // Tokenizer.asm
                             LDA Address.BasicProcessBuffer, Y
                             STA ZP.ACCL 
                             appendToTokenBuffer();
-                            Error.CheckError();
+                            CheckError();
                             if (NC) 
                             { 
                                 return; 
@@ -1043,7 +1043,7 @@ unit Tokenizer // Tokenizer.asm
         // Add EOL token only for lines with content
         LDA #Token.EOL
         appendToTokenBuffer();
-        Error.CheckError();
+        CheckError();
         if (NC) { return; }
         
         LDA ZP.OpCodeTemp

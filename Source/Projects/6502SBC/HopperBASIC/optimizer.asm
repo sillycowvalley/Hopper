@@ -640,7 +640,7 @@ unit Optimizer
                 
                 // Get first token
                 Tokenizer.NextToken();
-                Error.CheckError();
+                CheckError();
                 if (NC) { CLC break; }
                 
                 // Check if it's a literal
