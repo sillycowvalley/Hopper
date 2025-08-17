@@ -1037,7 +1037,7 @@ unit Executor // Executor.asm
            LDA #0
            STA ZP.TOPH
            LDA # BASICType.BIT
-           Stacks.PushTop(); // PushBit: push value and type to stack -> always Success
+           Stacks.PushTop(); // TODO: PushBit: push value and type to stack -> always Success
            
            States.SetSuccess();
        }
@@ -1066,7 +1066,7 @@ unit Executor // Executor.asm
            LDA #0
            STA ZP.TOPH
            LDA # BASICType.BYTE
-           Stacks.PushTop(); // PushByte: push value and type to stack -> always Success
+           Stacks.PushTop(); // TODO: PushByte: push value and type to stack -> always Success
            
            States.SetSuccess();
        }
@@ -1745,7 +1745,7 @@ unit Executor // Executor.asm
                  
            // Push value to stack with type
            LDA ZP.TOPT
-           Stacks.PushTop(); // PushGlobal: push value and type to stack -> always Success
+           Stacks.PushTop(); // TODO: PushGlobal: push value and type to stack -> always Success
            
            States.SetSuccess();
            break;
@@ -1779,7 +1779,7 @@ unit Executor // Executor.asm
             STA ZP.ACCT
            
             // Pop value from stack (RHS of assignment)
-            Stacks.PopTop(); // PopGlobal: Uses X, Result in ZP.TOP (value), ZP.TOPT (type)
+            Stacks.PopTop(); // TODO: PopGlobal: Uses X, Result in ZP.TOP (value), ZP.TOPT (type)
             
             // Check if variable has VAR bit set
             LDA ZP.ACCT
@@ -2038,9 +2038,9 @@ unit Executor // Executor.asm
             // Now TOP = iterator, NEXT = TO
             // Push them for the comparison instructions
             LDA ZP.TOPT
-            Stacks.PushTop();   // Push iterator => NEXT slot
+            Stacks.PushTop();   // FORCHK: Push iterator => NEXT slot
             LDA ZP.NEXTT
-            Stacks.PushNext();  // Push TO       => TOP slot
+            Stacks.PushNext();  // FORCHK: Push TO       => TOP slot
             
                 
             // Now TOP = iterator, NEXT = TO
@@ -2053,7 +2053,7 @@ unit Executor // Executor.asm
                 ComparisonInstructions.GreaterEqual();  // Sets Z if iterator >= TO
                 States.CanContinue();
                 if (NC) { break; }  // Type mismatch
-                Stacks.PopA();
+                Stacks.PopA(); // FORCHK
                 if (NZ) // TRUE'
                 {
                     // Iterator >= TO, continue loop
@@ -2069,7 +2069,7 @@ unit Executor // Executor.asm
                 ComparisonInstructions.LessEqual();
                 States.CanContinue();
                 if (NC) { break; }  // Type mismatch
-                Stacks.PopA();   
+                Stacks.PopA();   // FORCHK
                 if (NZ) // 'TRUE'
                 {
                     // Iterator <= TO, continue loop
@@ -2142,9 +2142,9 @@ unit Executor // Executor.asm
 
             // Add STEP to iterator (TOP = iterator + NEXT)
             LDA ZP.TOPT
-            Stacks.PushTop();   // Push iterator => NEXT slot
+            Stacks.PushTop();   // FORIT: Push iterator => NEXT slot
             LDA ZP.NEXTT
-            Stacks.PushNext();  // Push STEP     => TOP slot
+            Stacks.PushNext();  // FORIT: Push STEP     => TOP slot
             Instructions.Addition();  // Handles signed/unsigned, type checking, preserves X
             PHX Stacks.PopTop(); PLX // FORIT
             
@@ -2162,9 +2162,9 @@ unit Executor // Executor.asm
             // Now TOP = iterator, NEXT = TO
             // Push them for the comparison instructions
             LDA ZP.TOPT
-            Stacks.PushTop();   // Push iterator => NEXT slot
+            Stacks.PushTop();   // FORIT: Push iterator => NEXT slot
             LDA ZP.NEXTT
-            Stacks.PushNext();  // Push       TO => TOP slot
+            Stacks.PushNext();  // FORIT: Push       TO => TOP slot
             
             // TOP = updated iterator, NEXT = TO
             // Use comparison based on STEP direction
@@ -2176,7 +2176,7 @@ unit Executor // Executor.asm
                 ComparisonInstructions.GreaterEqual();
                 States.CanContinue();
                 if (NC) { break; }  // Type mismatch
-                Stacks.PopA();   
+                Stacks.PopA();   // FORIT
                 if (Z) // 'FALSE'
                 {
                     // Iterator < TO, exit loop (fall through)
@@ -2192,7 +2192,7 @@ unit Executor // Executor.asm
                 ComparisonInstructions.LessEqual();
                 States.CanContinue();
                 if (NC) { break; }  // Type mismatch
-                Stacks.PopA();
+                Stacks.PopA(); // FORIT
                 if (Z) // FALSE
                 {
                     // Iterator > TO, exit loop (fall through)
@@ -2274,7 +2274,6 @@ unit Executor // Executor.asm
             STA Address.ValueStackLSB, Y
             LDA #(BASICType.WORD | BASICType.VAR)
             STA Address.TypeStackLSB, Y
-
                         
             // Get TO value from stack (safe)
             LDA #0xFE  // -2 from SP
@@ -2331,7 +2330,6 @@ unit Executor // Executor.asm
         LDA #State.Success
         STA ZP.SystemState
         
-        
     #ifdef TRACE
         LDA #(executeFORITFTrace % 256) STA ZP.TraceMessageL 
         LDA #(executeFORITFTrace / 256) STA ZP.TraceMessageH 
@@ -2357,7 +2355,7 @@ unit Executor // Executor.asm
         loop // Single exit block
         {
             // Pop index value from stack
-            Stacks.PopTop();  // GetItem: Result in ZP.TOP (index), ZP.TOPT (index type)
+            Stacks.PopTop();  // TODO: GetItem: Result in ZP.TOP (index), ZP.TOPT (index type)
             
             // Check index type is numeric (INT, WORD, or BYTE)
             LDA ZP.TOPT
@@ -2397,7 +2395,7 @@ unit Executor // Executor.asm
             STA ZP.ACCH
             
             // Pop collection reference from stack
-            Stacks.PopTop();  // GetItem: Result in ZP.TOP (collection ref), ZP.TOPT (type)
+            Stacks.PopTop();  // TODO: GetItem: Result in ZP.TOP (collection ref), ZP.TOPT (type)
             
             // Save collection pointer to NEXT
             LDA ZP.TOPL
@@ -2542,7 +2540,7 @@ unit Executor // Executor.asm
             
             // Push result with correct type
             LDA ZP.ACCT
-            Stacks.PushTop(); // indexArray
+            Stacks.PushTop(); // TODO: indexArray
             States.SetSuccess();
             break;
         } // single exit
@@ -2569,10 +2567,10 @@ unit Executor // Executor.asm
         loop
         {
             // Pop value into TOP (includes type)
-            Stacks.PopTop();     // value -> TOP/TOPT
+            Stacks.PopTop();     // TODO: SetItem: value -> TOP/TOPT
             
             // Pop index into NEXT (includes type)
-            Stacks.PopNext();    // index -> NEXT/NEXTT
+            Stacks.PopNext();    // TODO: SetItem: index -> NEXT/NEXTT
             
             // Save value and type (we need TOP for array pointer)
             LDA ZP.TOPL
@@ -2583,7 +2581,7 @@ unit Executor // Executor.asm
             PHA
             
             // Pop array pointer into TOP
-            Stacks.PopTop();     // SetItem: array ptr -> TOP/TOPT
+            Stacks.PopTop();     // TODO: SetItem: array ptr -> TOP/TOPT
             
             // Move array pointer to IDX
             LDA ZP.TOPL
