@@ -1016,25 +1016,26 @@ unit Emit
    
    
    
-   // Emit DECSP opcode to discard top stack value
-   // Input: None
-   // Output: DECSP opcode emitted
-   // Modifies: compilerOpCode, buffer state via EmitOpCode()
-   const string emitDecSpTrace = "Emit DECSP";
-   DecSp()
-   {
-   #ifdef TRACE
-       LDA #(emitDecSpTrace % 256) STA ZP.TraceMessageL LDA #(emitDecSpTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-   #endif
-       
-       LDA #OpCode.DECSP
-       STA Compiler.compilerOpCode
-       Emit.OpCode();
-       
-   #ifdef TRACE
-       LDA #(emitDecSpTrace % 256) STA ZP.TraceMessageL LDA #(emitDecSpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-   #endif
-   }
+    // Emit DECSP opcode to discard N stack values
+    // Input: A = number of stack positions to discard
+    // Output: DECSP opcode emitted with count
+    // Modifies: compilerOpCode, compilerOperand1, buffer state via OpCodeWithByte()
+    const string emitDecSpTrace = "Emit DECSP";
+    DecSp()
+    {
+    #ifdef TRACE
+        PHA LDA #(emitDecSpTrace % 256) STA ZP.TraceMessageL LDA #(emitDecSpTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+    #endif
+        
+        STA Compiler.compilerOperand1   // Store count as operand
+        LDA #OpCode.DECSP
+        STA Compiler.compilerOpCode
+        Emit.OpCodeWithByte();          // Changed from Emit.OpCode()
+        
+    #ifdef TRACE
+        LDA #(emitDecSpTrace % 256) STA ZP.TraceMessageL LDA #(emitDecSpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
 
     // Emit system call opcode - THIS IS THE ONLY SYSCALL METHOD WE NEED
     // Input: A = system call ID (from SysCallType enum with embedded metadata)

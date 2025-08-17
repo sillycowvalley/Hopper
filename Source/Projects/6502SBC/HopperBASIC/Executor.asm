@@ -566,7 +566,7 @@ unit Executor // Executor.asm
            // Stack manipulation
            case OpCode.DECSP:
            {
-               executeDecSp();
+               executeDecSP();
            }
            case OpCode.DUP:
            {
@@ -872,22 +872,39 @@ unit Executor // Executor.asm
 #endif
    }
    
-   // Execute DECSP opcode - decrement stack pointer
-   const string executeDecSpTrace = "DECSP // Decrement stack pointer";
-   executeDecSp()
-   {
-#ifdef TRACE
-       LDA #(executeDecSpTrace % 256) STA ZP.TraceMessageL LDA #(executeDecSpTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
+    // Execute DECSP opcode - decrement stack pointer by N positions
+    const string executeDecSPTrace = "DECSP // Decrement stack pointer by N";
+    executeDecSP()
+    {
+    #ifdef TRACE
+        LDA #(executeDecSPTrace % 256) STA ZP.TraceMessageL LDA #(executeDecSPTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+// Fetch operand (number of positions to decrement)
+#ifdef TRACEEXE
+        FetchOperandByte(); // -> A
+#else            
+        LDA [ZP.PC]
        
-       // Decrement stack pointer (discard top value)
-       DEC ZP.SP
-       States.SetSuccess();
-       
-#ifdef TRACE
-       LDA #(executeDecSpTrace % 256) STA ZP.TraceMessageL LDA #(executeDecSpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+        // Advance PC
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
 #endif
-   }
+        SEC          // Set carry for proper subtraction (1 byte, 2 cycles)
+        EOR #0xFF    // One's complement of operand (2 bytes, 2 cycles) 
+        ADC ZP.SP    // Two's complement subtraction: SP + (~operand + 1) = SP - operand (2 bytes, 3 cycles)
+        STA ZP.SP    // Store result (2 bytes, 3 cycles)   
+        
+        LDA #State.Success
+        STA ZP.SystemState
+        
+    #ifdef TRACE
+        LDA #(executeDecSPTrace % 256) STA ZP.TraceMessageL LDA #(executeDecSPTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
    
    // Execute DUP opcode - duplicate top stack value
    const string executeDupTrace = "DUP // Duplicate top stack value";
@@ -2539,9 +2556,18 @@ unit Executor // Executor.asm
             }
             
             // Push result with correct type
+            LDY ZP.SP
             LDA ZP.ACCT
-            Stacks.PushTop(); // TODO: indexArray
-            States.SetSuccess();
+            STA Address.TypeStackLSB, Y
+            LDA ZP.TOPL
+            STA Address.ValueStackLSB, Y
+            LDA ZP.TOPH
+            STA Address.ValueStackMSB, Y
+            INC ZP.SP
+            
+            LDA #State.Success
+            STA ZP.SystemState
+        
             break;
         } // single exit
     

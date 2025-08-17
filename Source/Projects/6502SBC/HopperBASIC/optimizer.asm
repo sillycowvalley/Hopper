@@ -53,6 +53,10 @@ unit Optimizer
     {
         // Debug Output:
         Debug.NL();
+        if (NZ)
+        {
+            Space();Space();Space();Space();
+        }
         
         LDA ZP.XPCH
         HOut();
@@ -393,7 +397,7 @@ unit Optimizer
             
             // We have a winner!!
 #ifdef DEBUG            
-            DumpPeeps();
+            LDA #0 DumpPeeps();
 #endif
             
             // remove ZP.PEEPOPS instructions
@@ -457,7 +461,7 @@ unit Optimizer
             }
             
 #ifdef DEBUG            
-            //DumpPeeps();
+            LDA #1 DumpPeeps();
 #endif
             
             SEC // success   

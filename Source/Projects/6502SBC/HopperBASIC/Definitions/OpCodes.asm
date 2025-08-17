@@ -47,25 +47,24 @@ unit OpCodes
        GE           = 0x11,  // Pop two values, push greater or equal result (BIT)
        
        // Stack manipulation
-       DECSP        = 0x14,  // Decrement stack pointer (discard top value)
-       DUP          = 0x15,  // Duplicate top stack value
+       DUP          = 0x12,  // Duplicate top stack value
        
        // Utility and common literals
-       NOP          = 0x16,  // No operation (useful for code generation/optimization)
-       PUSH0        = 0x17,  // Push INT 0 (very common literal, no operand)
-       PUSH1        = 0x18,  // Push INT 1 (very common literal, no operand)
-       PUSHVOID     = 0x19,  // Push VOID 0 (very common literal, no operand)
+       NOP          = 0x13,  // No operation (useful for code generation/optimization)
+       PUSH0        = 0x14,  // Push INT 0 (very common literal, no operand)
+       PUSH1        = 0x15,  // Push INT 1 (very common literal, no operand)
+       PUSHVOID     = 0x16,  // Push VOID 0 (very common literal, no operand)
        
-       HALT         = 0x1A,  // end of REPL opcode stream
+       HALT         = 0x17,  // end of REPL opcode stream
        
        // Function frame management
-       ENTER        = 0x1B,  // Enter function frame - push BP, SP->BP
+       ENTER        = 0x18,  // Enter function frame - push BP, SP->BP
        
-       CLEARSCREEN  = 0x1C,
-       PUSHEMPTYVAR = 0x1D,  // create a stack slot with 0 value and type VAR|INT
+       CLEARSCREEN  = 0x19,
+       PUSHEMPTYVAR = 0x1A,  // create a stack slot with 0 value and type VAR|INT
        
-       GETITEM      = 0x1E,  // Generic indexing: container[index]
-       SETITEM      = 0x1F,  // Generic assignment: container[index] = value
+       GETITEM      = 0x1B,  // Generic indexing: container[index]
+       SETITEM      = 0x1C,  // Generic assignment: container[index] = value
        
        // === OPCODES WITH ONE BYTE OPERAND (0x40-0x7F) ===
        // Bits 7-6: 01 (one byte operand)
@@ -99,6 +98,7 @@ unit OpCodes
        INCGLOBAL    = 0x4D,
        INCLOCAL     = 0x4E,
        
+       DECSP        = 0x4F,  // Decrement stack pointer by [value] (discard top value)
        
        // === OPCODES WITH TWO BYTE OPERANDS (0x80-0xBF) ===
        // Bits 7-6: 10 (two byte operands)
@@ -125,6 +125,9 @@ unit OpCodes
        GETITEMGL    = 0x8D,
        GETITEMLG    = 0x8E,
        GETITEMLL    = 0x8F,
+       
+       
+       
        
 
         // === THREE-OPERAND OPCODES (0xC0-0xFF) ===

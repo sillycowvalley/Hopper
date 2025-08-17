@@ -1349,23 +1349,22 @@ unit CompilerFlow
                STA [ZP.IDX], Y
            }
            
+           
+           // Emit stack cleanup (remove TO and STEP values)
+           LDA #0x02  // Decrement by 2 positions
+           Emit.DecSp();
+           Error.CheckError();
+           if (NC) { States.SetFailure(); break; }
+            
+           DEC Compiler.compilerFuncLocals
+           DEC Compiler.compilerFuncLocals  // Decrement twice since we're removing 2 locals
+           
            LDA Compiler.compilerSavedNodeAddrL
            STA ZP.IDXL
            LDA Compiler.compilerSavedNodeAddrH
            STA ZP.IDXH
-           
-           // Emit stack cleanup (remove TO and STEP values)
-           DEC Compiler.compilerFuncLocals // consider a RETURN from within the loop needing to clean the stack
-           Locals.RemoveLast(); // HERE
-           Emit.DecSp();
-           Error.CheckError();
-           if (NC) { States.SetFailure(); break; }
-           
-           DEC Compiler.compilerFuncLocals // consider a RETURN from within the loop needing to clean the stack
-           Locals.RemoveLast(); // HERE
-           Emit.DecSp();
-           Error.CheckError();
-           if (NC) { States.SetFailure(); break; }
+           Locals.RemoveLast(); 
+           Locals.RemoveLast();
            
            // If we used a global (BIT2 set) and made our own "shadow local", update global and remove shadow
            if (BBS2, ZP.CompilerFlags)
