@@ -14,8 +14,8 @@ unit Messages // Messages.asm
     const string OK = "OK\n";
     const string NoMainProgram = "NO MAIN PROGRAM";
     
-    // String constant for BEGIN function name
-    const string BeginFunctionName = "$MAIN";
+    const string BeginFunctionName = "$MAIN"; // String constant for BEGIN function name
+    const string ForVarName = "$F";           // String constant for name of "fake" TO and STEP variable slots in FOR loop
     
     // used in BASICSysCalls.ToString
     const string PrintChar  = "PRINTCHAR";

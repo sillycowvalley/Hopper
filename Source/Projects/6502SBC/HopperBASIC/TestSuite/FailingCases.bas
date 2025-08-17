@@ -1,15 +1,15 @@
-CLS
 NEW
-CONST WORD sizepl = 5
-BIT flags[sizepl*2]
 
-WORD I
+WORD IT
+WORD i
+
 BEGIN
-    FOR i = 0 TO (sizepl*2)-1
-        flags[i] = TRUE
-    NEXT i
+    FOR IT = 1 TO 1
+        FOR i = 0 TO 10
+            print i
+        NEXT i
+    NEXT IT
 END
-
 RUN
 DASM
 

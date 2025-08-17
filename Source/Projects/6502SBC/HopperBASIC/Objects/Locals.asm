@@ -696,6 +696,11 @@ unit Locals
         PHA
         PHY
         
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
         loop // Single exit
         {
             // Get locals/arguments list head from function node
@@ -772,6 +777,12 @@ unit Locals
             }
             break;
         }
+        
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
         
         PLY
         PLA
