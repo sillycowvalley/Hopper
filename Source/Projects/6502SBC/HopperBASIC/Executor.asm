@@ -2593,55 +2593,66 @@ unit Executor // Executor.asm
         loop
         {
             // Pop value into TOP (includes type)
-            Stacks.PopTop();     // TODO: SetItem: value -> TOP/TOPT
+            LDX ZP.SP
+            DEX
+            LDA Address.ValueStackLSB, X
+            STA ZP.TOPL
+            LDA Address.ValueStackMSB, X
+            STA ZP.TOPH
+            LDA Address.TypeStackLSB, X
+            STA ZP.TOPT
             
-            // Pop index into NEXT (includes type)
-            Stacks.PopNext();    // TODO: SetItem: index -> NEXT/NEXTT
+            // Pop index into IDY
+            DEX
+            LDA Address.ValueStackLSB, X
+            STA ZP.IDYL
+            LDA Address.ValueStackMSB, X
+            STA ZP.IDYH
             
-            // Save value and type (we need TOP for array pointer)
-            LDA ZP.TOPL
-            PHA
-            LDA ZP.TOPH
-            PHA
-            LDA ZP.TOPT
-            PHA
-            
-            // Pop array pointer into TOP
-            Stacks.PopTop();     // TODO: SetItem: array ptr -> TOP/TOPT
-            
-            // Move array pointer to IDX
-            LDA ZP.TOPL
+            // Pop array pointer into IDX
+            DEX
+            STX ZP.SP
+            LDA Address.ValueStackLSB, X
             STA ZP.IDXL
-            LDA ZP.TOPH
+            LDA Address.ValueStackMSB, X
             STA ZP.IDXH
             
             // Verify this is actually an array
-            LDA ZP.TOPT
+            LDA Address.TypeStackLSB, X
+            
+            // Inputs:
+            //     - ARRAY type in A
+            //     - ARRAY ptr in IDX
+            //     - <index> in IDY
+            //     - <value> in TOP (including TOPT)
+            commonSetItem();
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(executeSetItemTrace % 256) STA ZP.TraceMessageL 
+        LDA #(executeSetItemTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }
+    
+    // Inputs:
+    //     - ARRAY type in A
+    //     - ARRAY ptr in IDX
+    //     - <index> in IDY
+    //     - <value> in TOP (including TOPT)
+    commonSetItem()
+    {
+        loop
+        {
             AND # BASICType.ARRAY
             if (Z)
             {
                 // not an ARRAY
-                PLA  // Clean up stack
-                PLA
-                PLA
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 States.SetFailure();
                 break;
             }
-            
-            // Move index to IDY
-            LDA ZP.NEXTL
-            STA ZP.IDYL
-            LDA ZP.NEXTH
-            STA ZP.IDYH
-            
-            // Restore value to TOP
-            PLA
-            STA ZP.TOPT
-            PLA
-            STA ZP.TOPH
-            PLA
-            STA ZP.TOPL
             
             // Get array element type for type checking
             BASICArray.GetItemType(); // Returns type in ZP.ACCT
@@ -2670,15 +2681,10 @@ unit Executor // Executor.asm
                 break;
             }
             
-            States.SetSuccess();
+            LDA #State.Success
+            STA ZP.SystemState
             break;
-        }
-        
-    #ifdef TRACE
-        LDA #(executeSetItemTrace % 256) STA ZP.TraceMessageL 
-        LDA #(executeSetItemTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-    #endif
+        } // single exit
     }
     
     // Execute INCLOCAL opcode - increment local/argument variable by 1

@@ -121,10 +121,10 @@ unit OpCodes
        ADDLOCALS    = 0x8A, 
        ADDGLOBALS   = 0x8B,
        
-       GETITEMGG    = 0x8C,
-       GETITEMGL    = 0x8D,
-       GETITEMLG    = 0x8E,
-       GETITEMLL    = 0x8F,
+       GETITEMGG    = 0x8C,  // GETITEM <array global address> <index global address>
+       GETITEMGL    = 0x8D,  // GETITEM <array global address> <index local offset>
+       GETITEMLG    = 0x8E,  // GETITEM <array local offset>   <index global address>
+       GETITEMLL    = 0x8F,  // GETITEM <array local offset>   <index local offset>
        
        
        
