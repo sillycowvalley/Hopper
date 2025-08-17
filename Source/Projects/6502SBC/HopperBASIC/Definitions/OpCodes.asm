@@ -97,7 +97,7 @@ unit OpCodes
        
        INCGLOBAL    = 0x4D,
        INCLOCAL     = 0x4E,
-       
+
        DECSP        = 0x4F,  // Decrement stack pointer by [value] (discard top value)
        
        // === OPCODES WITH TWO BYTE OPERANDS (0x80-0xBF) ===

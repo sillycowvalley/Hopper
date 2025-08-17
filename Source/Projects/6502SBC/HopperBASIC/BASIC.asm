@@ -2,7 +2,7 @@ program HopperBASIC
 {
     #define PEEPHOLE // include the peephole optimizer
     
-    #define DEBUG
+    //#define DEBUG
     //#define TRACE  // Compiler and Executor call tree walks
     //#define TRACEEXE // instructions in Executor
 

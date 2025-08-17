@@ -532,39 +532,72 @@ unit Executor // Executor.asm
            }
            case OpCode.GETITEMGG:
            {
+#ifdef PEEPHOLE
                executeGetItemGG();
+#else
+               executeNotImplemented();
+#endif
            }
            case OpCode.GETITEMGL:
            {
+#ifdef PEEPHOLE
                executeGetItemGL();
+#else
+               executeNotImplemented();
+#endif
            }
            case OpCode.GETITEMLG:
            {
+#ifdef PEEPHOLE
                executeGetItemLG();
+#else
+               executeNotImplemented();
+#endif
            }
            case OpCode.GETITEMLL:
            {
+#ifdef PEEPHOLE
                executeGetItemLL();
+#else
+               executeNotImplemented();
+#endif
            }
            case OpCode.SETITEM:
            {
+               
                executeSetItem();
            }
            case OpCode.SETITEMGG:
            {
+#ifdef PEEPHOLE
                executeSetItemGG();
+#else
+               executeNotImplemented();
+#endif
            }
            case OpCode.SETITEMGL:
            {
+#ifdef PEEPHOLE
                executeSetItemGL();
+#else
+               executeNotImplemented();
+#endif
            }
            case OpCode.SETITEMLG:
            {
+#ifdef PEEPHOLE
                executeSetItemLG();
+#else
+               executeNotImplemented();
+#endif
            }
            case OpCode.SETITEMLL:
            {
+#ifdef PEEPHOLE
                executeSetItemLL();
+#else
+               executeNotImplemented();
+#endif
            }
            
            case OpCode.HALT:
@@ -660,19 +693,35 @@ unit Executor // Executor.asm
            }
            case OpCode.INCLOCAL:
            {
+#ifdef PEEPHOLE
                executeIncLocal();
+#else
+               executeNotImplemented();
+#endif
            }
            case OpCode.INCGLOBAL:
            {
+#ifdef PEEPHOLE
                executeIncGlobal();
+#else
+               executeNotImplemented();
+#endif
            }
            case OpCode.ADDLOCALS:
            {
+#ifdef PEEPHOLE
                executeAddLocals();
+#else
+               executeNotImplemented();
+#endif
            }
            case OpCode.ADDGLOBALS:
            {
+#ifdef PEEPHOLE
                executeAddGlobals();
+#else
+               executeNotImplemented();
+#endif
            }
            // Control flow (short jumps)
            case OpCode.JUMPB:
@@ -2398,17 +2447,33 @@ unit Executor // Executor.asm
         
         loop
         {
-            // Fetch array global index (first operand)
+#ifdef TRACEEXE            
             FetchOperandByte();
-            States.CanContinue();
-            if (NC) { break; }
+#else
+            LDA [ZP.PC]
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+#endif   
             
             TAX  // X = array global index
             
-            // Fetch index global index (second operand)
+#ifdef TRACEEXE            
             FetchOperandByte();
-            States.CanContinue();
-            if (NC) { break; }
+#else
+            LDA [ZP.PC]
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+#endif   
             
             TAY  // Y = index global index
             
@@ -2449,17 +2514,33 @@ unit Executor // Executor.asm
         
         loop
         {
-            // Fetch array global index (first operand)
+#ifdef TRACEEXE            
             FetchOperandByte();
-            States.CanContinue();
-            if (NC) { break; }
+#else
+            LDA [ZP.PC]
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+#endif   
             
             TAX  // X = array global index
             
-            // Fetch index local offset (second operand)
+#ifdef TRACEEXE            
             FetchOperandByte();
-            States.CanContinue();
-            if (NC) { break; }
+#else
+            LDA [ZP.PC]
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+#endif   
             
             // Calculate local position: BP + offset
             CLC
@@ -2503,9 +2584,18 @@ unit Executor // Executor.asm
         
         loop
         {
-            // Fetch array local offset (first operand)
+#ifdef TRACEEXE            
             FetchOperandByte();
-            States.CanContinue();
+#else
+            LDA [ZP.PC]
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+#endif   
             if (NC) { break; }
             
             // Calculate local position: BP + offset
@@ -2513,10 +2603,18 @@ unit Executor // Executor.asm
             ADC ZP.BP
             TAX  // X = array local position
             
-            // Fetch index global index (second operand)
+#ifdef TRACEEXE            
             FetchOperandByte();
-            States.CanContinue();
-            if (NC) { break; }
+#else
+            LDA [ZP.PC]
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+#endif   
             
             TAY  // Y = index global index
             
@@ -2557,20 +2655,36 @@ unit Executor // Executor.asm
         
         loop
         {
-            // Fetch array local offset (first operand)
+#ifdef TRACEEXE            
             FetchOperandByte();
-            States.CanContinue();
-            if (NC) { break; }
+#else
+            LDA [ZP.PC]
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+#endif   
             
             // Calculate array local position: BP + offset
             CLC
             ADC ZP.BP
             TAX  // X = array local position
             
-            // Fetch index local offset (second operand)
+#ifdef TRACEEXE            
             FetchOperandByte();
-            States.CanContinue();
-            if (NC) { break; }
+#else
+            LDA [ZP.PC]
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+#endif   
             
             // Calculate index local position: BP + offset
             CLC
@@ -2853,8 +2967,18 @@ unit Executor // Executor.asm
             // Pop value from stack into TOP
             Stacks.PopTop();
             
-            // Fetch array global address (2 bytes)
-            FetchOperandByte(); // Result in executorOperandL/H
+#ifdef TRACEEXE            
+            FetchOperandByte();
+#else
+            LDA [ZP.PC]
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+#endif   
             
             // Load array value from global address
             TAX  // global index LSB
@@ -2865,8 +2989,18 @@ unit Executor // Executor.asm
             LDA Address.TypeStackLSB, X
             STA ZP.ACCT  // array type
             
-            // Fetch index local offset (1 byte)
+#ifdef TRACEEXE            
             FetchOperandByte();
+#else
+            LDA [ZP.PC]
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+#endif   
             
             // Calculate stack position: BP + offset
             CLC
@@ -2909,8 +3043,18 @@ unit Executor // Executor.asm
             // Pop value from stack into TOP
             Stacks.PopTop();
             
-            // Fetch array local offset (1 byte)
-            FetchOperandByte(); // Result in executorOperandL
+#ifdef TRACEEXE            
+            FetchOperandByte();
+#else
+            LDA [ZP.PC]
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+#endif   
             
             // Calculate stack position: BP + offset
             CLC
@@ -2925,8 +3069,18 @@ unit Executor // Executor.asm
             LDA Address.TypeStackLSB, X
             STA ZP.ACCT  // array type
             
-            // Fetch index global address (2 bytes)
+#ifdef TRACEEXE            
             FetchOperandByte();
+#else
+            LDA [ZP.PC]
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+#endif   
             
             // Load index value from global address
             TAX
@@ -2965,8 +3119,18 @@ unit Executor // Executor.asm
             // Pop value from stack into TOP
             Stacks.PopTop();
             
-            // Fetch array local offset (1 byte)
-            FetchOperandByte(); // Result in executorOperandL
+#ifdef TRACEEXE            
+            FetchOperandByte();
+#else
+            LDA [ZP.PC]
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+#endif   
 
             // Calculate stack position: BP + offset
             CLC
@@ -2981,8 +3145,18 @@ unit Executor // Executor.asm
             LDA Address.TypeStackLSB, X
             STA ZP.ACCT  // array type
             
-            // Fetch index local offset (1 byte)
-            FetchOperandByte(); // Result in executorOperandL
+#ifdef TRACEEXE            
+            FetchOperandByte();
+#else
+            LDA [ZP.PC]
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+#endif   
             
             // Calculate stack position: BP + offset
             CLC
@@ -3024,9 +3198,20 @@ unit Executor // Executor.asm
         {
             // Pop value from stack into TOP
             Stacks.PopTop();
+           
             
-            // Fetch array global address (2 bytes)
+#ifdef TRACEEXE            
             FetchOperandByte();
+#else
+            LDA [ZP.PC]
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+#endif            
             
             // Load array value from global address
             TAX
@@ -3037,8 +3222,18 @@ unit Executor // Executor.asm
             LDA Address.TypeStackLSB, X
             STA ZP.ACCT  // array type
             
-            // Fetch index global address (2 bytes)
+#ifdef TRACEEXE            
             FetchOperandByte();
+#else
+            LDA [ZP.PC]
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+#endif   
             
             // Load index value from global address
             TAX

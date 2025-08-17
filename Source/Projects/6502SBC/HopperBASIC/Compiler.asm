@@ -29,10 +29,12 @@ unit Compiler // Compiler.asm
    const uint compilerForIteratorType    = Address.BasicCompilerWorkspace + 13; // 1 byte - type of user or intrinsic for iterator variable
    const uint compilerGlobalIteratorSlot = Address.BasicCompilerWorkspace + 14; // 1 byte - slot of global being shadowed
    const uint compilerForIteratorBP      = Address.BasicCompilerWorkspace + 15; // 1 byte - signed one byte offset, location of for iterator relative to BP (according to Locals.Find)
+#ifdef PEEPHOLE   
    const uint compilerSetItemObjInstr    = Address.BasicCompilerWorkspace + 16; // 1 byte - PUSHGLOBAL or PUSHLOCAL for SetItem object
    const uint compilerSetItemObjOffset   = Address.BasicCompilerWorkspace + 17; // 1 byte - offset or address for previous
    const uint compilerSetItemIndexInstr  = Address.BasicCompilerWorkspace + 18; // 1 byte - PUSHGLOBAL or PUSHLOCAL for SetItem index
    const uint compilerSetItemIndexOffset = Address.BasicCompilerWorkspace + 19; // 1 byte - offset or address for previous
+#endif
    
    // Initialize the opcode buffer for compilation
    // Output: OpCode buffer ready for emission
@@ -2488,7 +2490,7 @@ unit Compiler // Compiler.asm
                     {
                         States.SetFailure(); break; 
                     }
-                    
+#ifdef PEEPHOLE
                     STZ Compiler.compilerSetItemObjInstr
                     LDA Compiler.compilerLastOpCode
                     CMP # OpCode.PUSHLOCAL
@@ -2501,7 +2503,7 @@ unit Compiler // Compiler.asm
                     {
                         STA Compiler.compilerSetItemObjInstr
                     }
-                    
+#endif     
                     // Move past '[' and compile index expression
                     Tokenizer.NextToken();
                     Error.CheckError();
@@ -2524,6 +2526,7 @@ unit Compiler // Compiler.asm
                         States.SetFailure(); break; 
                     }
                     
+#ifdef PEEPHOLE                    
                     STZ Compiler.compilerSetItemIndexInstr
                     LDA Compiler.compilerLastOpCode
                     CMP # OpCode.PUSHLOCAL
@@ -2546,6 +2549,7 @@ unit Compiler // Compiler.asm
                             Optimizer.SetItemPrep();
                         }
                     }
+#endif
                     
                     
                     // Expect ']'
@@ -2625,6 +2629,7 @@ unit Compiler // Compiler.asm
 
                 loop
                 {
+#ifdef PEEPHOLE                    
                     LDA Compiler.compilerSetItemObjInstr
                     CMP # OpCode.PUSHGLOBAL
                     if (Z)
@@ -2688,7 +2693,7 @@ unit Compiler // Compiler.asm
                             break;
                         }
                     }
-                
+#endif                
                     // Stack now has: [array_ptr][index][value]
                     // Emit SETITEM opcode
                     LDA #OpCode.SETITEM
