@@ -119,7 +119,12 @@ unit OpCodes
        JUMPNZW      = 0x89,  // Jump if non-zero [lsb] [msb]
        
        ADDLOCALS    = 0x8A, 
-       ADDGLOBALS   = 0x8B, 
+       ADDGLOBALS   = 0x8B,
+       
+       GETITEMGG    = 0x8C,
+       GETITEMGL    = 0x8D,
+       GETITEMLG    = 0x8E,
+       GETITEMLL    = 0x8F,
        
 
         // === THREE-OPERAND OPCODES (0xC0-0xFF) ===
@@ -199,6 +204,11 @@ unit OpCodes
    const string opcodeADDLOCALS = "ADDLOCALS";
    const string opcodeADDGLOBALS = "ADDGLOBALS";
    
+   const string opcodeGETITEMGG = "GETITEMGG";
+   const string opcodeGETITEMGL = "GETITEMGL";
+   const string opcodeGETITEMLG = "GETITEMLG";
+   const string opcodeGETITEMLL = "GETITEMLL";
+   
 #if defined(DEBUG) || defined(TRACEEXE)
    // Input: opcode in X
    // Output: string pointer in ZP.STR
@@ -207,6 +217,34 @@ unit OpCodes
         PHA
         switch (X)
         {
+            case OpCode.GETITEMGG:
+            {
+                LDA #(opcodeGETITEMGG % 256)
+                STA ZP.STRL
+                LDA #(opcodeGETITEMGG / 256)
+                STA ZP.STRH
+            }
+            case OpCode.GETITEMGL:
+            {
+                LDA #(opcodeGETITEMGL % 256)
+                STA ZP.STRL
+                LDA #(opcodeGETITEMGL / 256)
+                STA ZP.STRH
+            }
+            case OpCode.GETITEMLG:
+            {
+                LDA #(opcodeGETITEMLG % 256)
+                STA ZP.STRL
+                LDA #(opcodeGETITEMLG / 256)
+                STA ZP.STRH
+            }
+            case OpCode.GETITEMLL:
+            {
+                LDA #(opcodeGETITEMLL % 256)
+                STA ZP.STRL
+                LDA #(opcodeGETITEMLL / 256)
+                STA ZP.STRH
+            }
             case OpCode.ADDGLOBALS:
             {
                 LDA #(opcodeADDGLOBALS % 256)

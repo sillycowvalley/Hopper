@@ -52,7 +52,7 @@ unit Executor // Executor.asm
                 // Store type in type stack (preserving VAR bit for variables)
                 LDA ZP.ACCT
                 AND # BASICType.MASK // keep VAR when creating the global slots
-                Stacks.PushTop();  // type is in A
+                Stacks.PushTop();  // LoadGlobals: type is in A
                 
                 // Move to next symbol
                 Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
@@ -844,7 +844,7 @@ unit Executor // Executor.asm
 #ifdef TRACE
        LDA #(executeReturnValTrace % 256) STA ZP.TraceMessageL LDA #(executeReturnValTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-       Stacks.PopTop();
+       Stacks.PopTop(); // ReturnVal
        commonReturn();        
        
 #ifdef TRACE
@@ -898,11 +898,11 @@ unit Executor // Executor.asm
 #endif
        
        // Duplicate top stack value
-       Stacks.PopTop(); // Get top value in ZP.TOP and ZP.TOPT
+       Stacks.PopTop();  // Dup: Get top value in ZP.TOP and ZP.TOPT
        LDA ZP.TOPT
-       Stacks.PushTop(); // Push it back
+       Stacks.PushTop(); // Dup: push value and type to stack -> always Success
        LDA ZP.TOPT  
-       Stacks.PushTop(); // Push duplicate
+       Stacks.PushTop(); // Dup: push value and type to stack -> always Success
        States.SetSuccess();
        
 #ifdef TRACE
@@ -941,7 +941,7 @@ unit Executor // Executor.asm
        STZ ZP.TOPH
        LDA #BASICType.INT
        STA ZP.TOPT
-       Stacks.PushTop();
+       Stacks.PushTop(); // Push0: push value and type to stack -> always Success
        
        States.SetSuccess();
        
@@ -964,7 +964,7 @@ unit Executor // Executor.asm
        STZ ZP.TOPH
        LDA #BASICType.INT
        STA ZP.TOPT
-       Stacks.PushTop();
+       Stacks.PushTop(); // Push1: push value and type to stack -> always Success
        
        States.SetSuccess();
        
@@ -988,7 +988,7 @@ unit Executor // Executor.asm
        STZ ZP.TOPH
        LDA # (BASICType.VAR|BASICType.INT)
        STA ZP.TOPT
-       Stacks.PushTop();
+       Stacks.PushTop(); // PushEmptyVar: push value and type to stack -> always Success
        
        States.SetSuccess();
        
@@ -1010,7 +1010,7 @@ unit Executor // Executor.asm
        STZ ZP.TOPH
        LDA #BASICType.VOID
        STA ZP.TOPT
-       Stacks.PushTop();
+       Stacks.PushTop(); // PushVoid: push value and type to stack -> always Success
        
        States.SetSuccess();
        
@@ -1037,7 +1037,7 @@ unit Executor // Executor.asm
            LDA #0
            STA ZP.TOPH
            LDA # BASICType.BIT
-           Stacks.PushTop();
+           Stacks.PushTop(); // PushBit: push value and type to stack -> always Success
            
            States.SetSuccess();
        }
@@ -1066,7 +1066,7 @@ unit Executor // Executor.asm
            LDA #0
            STA ZP.TOPH
            LDA # BASICType.BYTE
-           Stacks.PushTop();
+           Stacks.PushTop(); // PushByte: push value and type to stack -> always Success
            
            States.SetSuccess();
        }
@@ -1095,7 +1095,7 @@ unit Executor // Executor.asm
            LDA #0
            STA ZP.TOPH
            LDA # BASICType.CHAR
-           Stacks.PushTop();
+           Stacks.PushTop(); // PushChar: push value and type to stack -> always Success
            
            States.SetSuccess();
        }
@@ -1147,7 +1147,7 @@ unit Executor // Executor.asm
            STA ZP.TOPT
            
            // Push to stack with STRING type
-           Stacks.PushTop();
+           Stacks.PushTop(); // PushCString: push value and type to stack -> always Success
            Error.CheckError();
            if (NC) 
            { 
@@ -1313,7 +1313,7 @@ unit Executor // Executor.asm
            LDA executorOperandH
            STA ZP.TOPH
            LDA # BASICType.INT
-           Stacks.PushTop();
+           Stacks.PushTop(); // PushInt: push value and type to stack -> always Success
            
            States.SetSuccess();
        }
@@ -1343,7 +1343,7 @@ unit Executor // Executor.asm
            LDA executorOperandH
            STA ZP.TOPH
            LDA # BASICType.WORD
-           Stacks.PushTop();
+           Stacks.PushTop(); // PushWord: push value and type to stack -> always Success
            
            States.SetSuccess();
        }
@@ -1375,23 +1375,24 @@ unit Executor // Executor.asm
    
    // Pop expression result and validate it's a BIT type
    // Input: Stack top must contain a BIT value
-   // Output: ZP.TOP = BIT value (0 or 1), NC if not BIT type
-   // Modifies: ZP.TOP, ZP.TOPT, ZP.SP, flags
+   // Output: A = BIT value (0 or 1), NC if not BIT type
+   // Modifies: A, X, ZP.SP, flags
    popAndValidateBitType()
    {
-       Stacks.PopTop();
-       
-       LDA ZP.TOPT
-       CMP #BASICType.BIT
-       if (Z)
-       {
-           SEC  // Success - is BIT type
-       }
-       else
-       {
-           Error.TypeMismatch(); BIT ZP.EmulatorPCL
-           CLC  // Failure - not BIT type
-       }
+        DEC ZP.SP
+        LDX ZP.SP
+        LDA Address.TypeStackLSB, X
+        CMP #BASICType.BIT
+        if (Z)
+        {
+            LDA Address.ValueStackLSB, X
+            SEC  // Success - is BIT type
+        }
+        else
+        {
+            Error.TypeMismatch(); BIT ZP.EmulatorPCL
+            CLC  // Failure - not BIT type
+        }
    }
    
    // Apply signed offset to emulator PC
@@ -1448,11 +1449,10 @@ unit Executor // Executor.asm
        loop
        {
            // Pop and validate BIT type from stack
-           popAndValidateBitType();
+           popAndValidateBitType(); // ZP.TOPL -> A
            if (NC) { break; }  // Type error already set
            
            // Check if value is zero (FALSE)
-           LDA ZP.TOPL
            if (Z)  // Value is zero/FALSE - take the jump
            {
                // Fetch signed byte operand
@@ -1494,11 +1494,10 @@ unit Executor // Executor.asm
        loop
        {
            // Pop and validate BIT type from stack
-           popAndValidateBitType();
+           popAndValidateBitType(); // ZP.TOPL -> A
            if (NC) { break; }  // Type error already set
            
            // Check if value is non-zero (TRUE)
-           LDA ZP.TOPL
            if (NZ)  // Value is non-zero/TRUE - take the jump
            {
                // Fetch signed byte operand
@@ -1570,39 +1569,58 @@ unit Executor // Executor.asm
        
        loop
        {
-           // Pop and validate BIT type from stack
-           popAndValidateBitType();
-           if (NC) { break; }  // Type error already set
+            // Pop and validate BIT type from stack
+            DEC ZP.SP
+            LDX ZP.SP
+            LDA Address.TypeStackLSB, X
+            CMP #BASICType.BIT
+            if (NZ)
+            {
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                CLC  // Failure - not BIT type
+                break;    
+            }
            
-           // Check if value is zero (FALSE)
-           LDA ZP.TOPL           
-           if (Z)  // Value is zero/FALSE - take the jump
-           {
-               // Fetch 16-bit signed operand
-               FetchOperandWord();
-               States.CanContinue();
-               if (NC) { break; }
-               
-               // Operand is already in executorOperandL/H, move to ZP.NEXT
-               LDA executorOperandL
-               STA ZP.NEXTL
-               LDA executorOperandH
-               STA ZP.NEXTH
-               
-               // Apply offset to PC
-               applySignedOffsetToPC();
-           }
-           else  // Value is non-zero/TRUE - skip the jump
-           {
-               // Still need to fetch and skip the operand
-               FetchOperandWord();
-               States.CanContinue();
-               if (NC) { break; }
-               // Don't apply offset - just continue to next instruction
-           }
-           
-           States.SetSuccess();
-           break;
+            // Check if value is zero (FALSE)     
+            LDA Address.ValueStackLSB, X
+            if (Z)  // Value is zero/FALSE - take the jump
+            {
+                // Fetch 16-bit signed operand
+                FetchOperandWord();
+                CMP #State.Failure
+                if (Z)
+                {
+                    CLC  // Failure
+                    break;
+                }
+                
+                // Operand is already in executorOperandL/H, move to ZP.NEXT
+                LDA executorOperandL
+                STA ZP.NEXTL
+                LDA executorOperandH
+                STA ZP.NEXTH
+                
+                // Apply offset to PC
+                applySignedOffsetToPC();
+            }
+            else  // Value is non-zero/TRUE - skip the jump
+            {
+                // Still need to fetch and skip the operand
+                FetchOperandWord();
+                LDA ZP.SystemState
+                CMP #State.Failure
+                if (Z)
+                {
+                    CLC  // Failure
+                    break;
+                }
+                // Don't apply offset - just continue to next instruction
+            }
+            
+            LDA #State.Success
+            STA ZP.SystemState
+            SEC
+            break;
        }
        
 #ifdef TRACE
@@ -1620,11 +1638,10 @@ unit Executor // Executor.asm
        loop
        {
            // Pop and validate BIT type from stack
-           popAndValidateBitType();
+           popAndValidateBitType(); // ZP.TOPL -> A
            if (NC) { break; }  // Type error already set
            
            // Check if value is non-zero (TRUE)
-           LDA ZP.TOPL
            if (NZ)  // Value is non-zero/TRUE - take the jump
            {
                // Fetch 16-bit signed operand
@@ -1700,7 +1717,7 @@ unit Executor // Executor.asm
                  
            // Push value to stack with type
            LDA ZP.TOPT
-           Stacks.PushTop(); // Push value and type to stack -> always Success
+           Stacks.PushTop(); // PushGlobal: push value and type to stack -> always Success
            
            States.SetSuccess();
            break;
@@ -1734,7 +1751,7 @@ unit Executor // Executor.asm
             STA ZP.ACCT
            
             // Pop value from stack (RHS of assignment)
-            Stacks.PopTop(); // Uses X, Result in ZP.TOP (value), ZP.TOPT (type)
+            Stacks.PopTop(); // PopGlobal: Uses X, Result in ZP.TOP (value), ZP.TOPT (type)
             
             // Check if variable has VAR bit set
             LDA ZP.ACCT
@@ -1832,7 +1849,6 @@ unit Executor // Executor.asm
             STA ZP.ACCT
             
             // Pop value from stack
-            // Stacks.PopTop(); // Result in ZP.TOP, ZP.TOPT
             DEC ZP.SP
             LDX ZP.SP
             LDA Address.ValueStackLSB, X
@@ -2102,7 +2118,7 @@ unit Executor // Executor.asm
             LDA ZP.NEXTT
             Stacks.PushNext();  // Push STEP     => TOP slot
             Instructions.Addition();  // Handles signed/unsigned, type checking, preserves X
-            PHX Stacks.PopTop(); PLX
+            PHX Stacks.PopTop(); PLX // FORIT
             
             States.CanContinue(); // preserves X
             if (NC) { break; }  // Type mismatch or overflow
@@ -2313,7 +2329,7 @@ unit Executor // Executor.asm
         loop // Single exit block
         {
             // Pop index value from stack
-            Stacks.PopTop();  // Result in ZP.TOP (index), ZP.TOPT (index type)
+            Stacks.PopTop();  // GetItem: Result in ZP.TOP (index), ZP.TOPT (index type)
             
             // Check index type is numeric (INT, WORD, or BYTE)
             LDA ZP.TOPT
@@ -2353,7 +2369,7 @@ unit Executor // Executor.asm
             STA ZP.ACCH
             
             // Pop collection reference from stack
-            Stacks.PopTop();  // Result in ZP.TOP (collection ref), ZP.TOPT (type)
+            Stacks.PopTop();  // GetItem: Result in ZP.TOP (collection ref), ZP.TOPT (type)
             
             // Save collection pointer to NEXT
             LDA ZP.TOPL
@@ -2447,7 +2463,7 @@ unit Executor // Executor.asm
             STA ZP.TOPL
             STZ ZP.TOPH  // Clear high byte
             LDA #BASICType.CHAR
-            Stacks.PushTop();
+            Stacks.PushTop(); // indexString
             
             States.SetSuccess();
             break;
@@ -2498,7 +2514,7 @@ unit Executor // Executor.asm
             
             // Push result with correct type
             LDA ZP.ACCT
-            Stacks.PushTop();
+            Stacks.PushTop(); // indexArray
             States.SetSuccess();
             break;
         } // single exit
@@ -2539,7 +2555,7 @@ unit Executor // Executor.asm
             PHA
             
             // Pop array pointer into TOP
-            Stacks.PopTop();     // array ptr -> TOP/TOPT
+            Stacks.PopTop();     // SetItem: array ptr -> TOP/TOPT
             
             // Move array pointer to IDX
             LDA ZP.TOPL
