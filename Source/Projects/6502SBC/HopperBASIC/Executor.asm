@@ -1569,6 +1569,10 @@ unit Executor // Executor.asm
        
        loop
        {
+            // clear state
+            LDA #State.Success
+            STA ZP.SystemState
+            
             // Pop and validate BIT type from stack
             DEC ZP.SP
             LDX ZP.SP
@@ -1586,39 +1590,63 @@ unit Executor // Executor.asm
             if (Z)  // Value is zero/FALSE - take the jump
             {
                 // Fetch 16-bit signed operand
+#ifdef TRACEEXE
                 FetchOperandWord();
-                CMP #State.Failure
-                if (Z)
-                {
-                    CLC  // Failure
-                    break;
-                }
-                
-                // Operand is already in executorOperandL/H, move to ZP.NEXT
-                LDA executorOperandL
-                STA ZP.NEXTL
-                LDA executorOperandH
-                STA ZP.NEXTH
-                
                 // Apply offset to PC
                 applySignedOffsetToPC();
+#else
+                LDA [ZP.PC]
+                STA ZP.NEXTL // Save operand
+                
+                // Advance PC
+                INC ZP.PCL
+                if (Z)
+                {
+                   INC ZP.PCH
+                }
+                
+                LDA [ZP.PC]
+                STA ZP.NEXTH // Save operand
+                
+                // Advance PC
+                INC ZP.PCL
+                if (Z)
+                {
+                   INC ZP.PCH
+                }
+                
+                // Two's complement addition works for both positive and negative offsets
+                CLC
+                LDA ZP.PCL
+                ADC ZP.NEXTL
+                STA ZP.PCL
+                LDA ZP.PCH
+                ADC ZP.NEXTH
+                STA ZP.PCH
+#endif                
+                
+                
             }
             else  // Value is non-zero/TRUE - skip the jump
             {
-                // Still need to fetch and skip the operand
+                // Still need to skip the operand
+#ifdef TRACEEXE
                 FetchOperandWord();
-                LDA ZP.SystemState
-                CMP #State.Failure
+#else
+                // PC += 2
+                INC ZP.PCL
                 if (Z)
                 {
-                    CLC  // Failure
-                    break;
+                   INC ZP.PCH
                 }
+                INC ZP.PCL
+                if (Z)
+                {
+                   INC ZP.PCH
+                }
+#endif                
                 // Don't apply offset - just continue to next instruction
             }
-            
-            LDA #State.Success
-            STA ZP.SystemState
             SEC
             break;
        }
