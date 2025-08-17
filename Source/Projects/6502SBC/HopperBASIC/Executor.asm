@@ -214,7 +214,14 @@ unit Executor // Executor.asm
            loop
            {
                 // Fetch and execute next opcode
-                FetchOpCode(); // -> A
+                LDA [ZP.PC]
+                // Advance PC
+                INC ZP.PCL
+                if (Z)
+                {
+                    INC ZP.PCH
+                }
+                
                 DispatchOpCode(); // expect State.Success to continue
                 
 #ifdef TRACEEXE        
@@ -321,35 +328,7 @@ unit Executor // Executor.asm
 #endif
    }
    
-   // Fetch next opcode from buffer
-   // Input: ZP.PC points to current position
-   // Output: A contains opcode, ZP.PC advanced, SystemState set
-   const string fetchOpCodeTrace = "FetchOp // Fetch next opcode";
-   FetchOpCode()
-   {
-#ifdef TRACE
-       LDA #(fetchOpCodeTrace % 256) STA ZP.TraceMessageL LDA #(fetchOpCodeTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-       
-       loop
-       {
-           // Fetch opcode using indirect addressing
-           LDA [ZP.PC]
-           
-           // Advance PC
-           INC ZP.PCL
-           if (Z)
-           {
-               INC ZP.PCH
-           }
-           
-           break;
-       }
-       
-#ifdef TRACE
-       PHA LDA #(fetchOpCodeTrace % 256) STA ZP.TraceMessageL LDA #(fetchOpCodeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
-#endif
-   }
+   
    
    // Fetch single byte operand from buffer
    // Input: ZP.PC points to operand position
@@ -430,11 +409,11 @@ unit Executor // Executor.asm
    }
    
    // Dispatch opcode to appropriate handler
-   // Input: A contains opcode value
+   // Input: Y contains opcode value
    // Output: SystemState set based on execution result
    DispatchOpCode()
    {
-       TAY // for jump table optimization
+       TAY
 #ifdef TRACEEXE
        PHP IsTracing(); // only affects C flag
        if (C)
@@ -2333,11 +2312,9 @@ unit Executor // Executor.asm
         
         loop // Single exit block
         {
-            // Fetch iterator BP offset
             LDA [ZP.PC]
             INC ZP.PCL
             if (Z) { INC ZP.PCH }
-            // BP offset -> A
             
             // Load iterator value
             CLC
@@ -2359,7 +2336,7 @@ unit Executor // Executor.asm
             INC ZP.PCL
             if (Z) { INC ZP.PCH }
 
-            // Store updated iterator++ back with WORD type
+            // Increment iterator++ and store back immediatelywith WORD type
             INC ZP.TOPL
             if (Z) 
             {
@@ -2382,43 +2359,38 @@ unit Executor // Executor.asm
             LDA Address.ValueStackMSB, Y
             STA ZP.NEXTH
             
-            // Inline comparison: TO >= iterator?
-            // Compare high bytes first
+            // Fast path: Check if clearly continuing (TO high > iterator high)
             LDA ZP.NEXTH  // TO high
             CMP ZP.TOPH   // iterator high
-            if (NC)  // TO high < iterator high
+            if (NC)       // TO high < iterator high - definitely exit
             {
-                // Exit loop: PC += 2
                 break;
             }
-            if (NZ)  // TO high > iterator high
+            if (NZ)       // TO high > iterator high - definitely continue
             {
-                // Continue loop - jump back
                 CLC
                 LDA ZP.PCL
                 ADC Executor.executorOperandL
                 STA ZP.PCL
-                LDA ZP.PCH
+                LDA ZP.PCH  
                 ADC Executor.executorOperandH
                 STA ZP.PCH
                 break;
             }
             
-            // High bytes equal, check low bytes
-            LDA ZP.NEXTL  // TO low
-            CMP ZP.TOPL   // iterator low
-            if (NC)  // TO < iterator - exit
+            // High bytes equal - check low bytes for final decision
+            LDA ZP.NEXTL          // TO low
+            CMP ZP.TOPL           // Compare with iterator low
+            if (NC)               // TO low < iterator low - exit
             {
-                // Exit loop: PC += 2
                 break;
             }
-            
             // TO >= iterator - continue loop
             CLC
             LDA ZP.PCL
             ADC Executor.executorOperandL
             STA ZP.PCL
-            LDA ZP.PCH
+            LDA ZP.PCH  
             ADC Executor.executorOperandH
             STA ZP.PCH
             break;
@@ -3410,25 +3382,50 @@ unit Executor // Executor.asm
         loop
         {
             // Fetch target BP offset (first operand)
-            FetchOperandByte();
-            States.CanContinue();
-            if (NC) { break; }
-            
+#ifdef TRACEEXE
+            FetchOperandByte(); // -> A
+#else            
+            LDA [ZP.PC]
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+#endif            
             // Calculate target stack position: BP + target_offset
             CLC
             ADC ZP.BP
             TAX  // X = target stack position
             
-            // Fetch source BP offset (second operand)
-            FetchOperandByte();
-            States.CanContinue();
-            if (NC) { break; }
+#ifdef TRACEEXE
+            FetchOperandByte(); // -> A
+#else            
+            LDA [ZP.PC]
+           
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+#endif
             
             // Calculate source stack position: BP + source_offset
             CLC
             ADC ZP.BP
             TAY  // Y = source stack position
             
+            CLC
+            LDA Address.ValueStackLSB, X
+            ADC Address.ValueStackLSB, Y
+            STA Address.ValueStackLSB, X
+            LDA Address.ValueStackMSB, X
+            ADC Address.ValueStackMSB, Y
+            STA Address.ValueStackMSB, X
+            
+            /*
             // Load target value into ZP.TOP
             LDA Address.ValueStackLSB, X
             STA ZP.TOPL
@@ -3456,8 +3453,9 @@ unit Executor // Executor.asm
             LDA ZP.TOPH
             STA Address.ValueStackMSB, X
             // Type remains unchanged
-            
-            States.SetSuccess();
+            */
+            LDA #State.Success
+            STA ZP.SystemState
             break;
         }
         
