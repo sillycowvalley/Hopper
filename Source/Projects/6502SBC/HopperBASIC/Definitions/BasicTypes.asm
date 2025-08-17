@@ -7,7 +7,7 @@ unit BASICTypes // BASICTypes.asm
         INT      = 0x02, // Hopper VM Types.Int
         BYTE     = 0x03, // Hopper VM Types.Byte
         WORD     = 0x04, // Hopper VM Types.UInt
-        
+        LONG     = 0x05,
         BIT      = 0x06, // Hopper VM Types.Bool - must 0x06!
         
         STRING   = 0x0F, // Hopper VM Types.String

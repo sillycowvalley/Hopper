@@ -334,7 +334,7 @@ unit CompilerFlow
             CMP #Token.THEN
             if (NZ)
             {
-                Error.SyntaxError(); BIT ZP.EmulatorPCL  // Missing THEN
+                Error.ExpectedThen(); BIT ZP.EmulatorPCL  // Missing THEN
                 States.SetFailure();
                 break;
             }

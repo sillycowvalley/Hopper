@@ -1412,9 +1412,7 @@ unit Debug // Debug.asm
         LDA #(basicErrorLabel / 256)
         STA ZP.STRH
         printString();
-        LDA ZP.LastErrorH
-        hOut();
-        LDA ZP.LastErrorL
+        LDA ZP.LastError
         hOut();
         nL();
     }

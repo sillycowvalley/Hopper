@@ -1,4 +1,4 @@
-unit Error // Error.asm
+unit Error // ErrorID.asm
 {
     
     // Error word IDs - using bits 6-5 for table selection, bits 4-0 for word index
@@ -160,9 +160,9 @@ unit Error // Error.asm
         0  // End marker
     };
     
-    enum Error
+    enum ErrorID
     {
-        InternalError,
+        InternalError = 1, // 0 is no error
         SyntaxError,
         NotImplemented,
         OnlyInDebug,
@@ -181,6 +181,7 @@ unit Error // Error.asm
         UndefinedIdentifier,
         ConstantExpected,
         ConstantExpressionExpected,
+        ExpectedThen,
         IllegalIdentifier,
         IllegalAssignment,
         IllegalCharacter,
@@ -206,56 +207,68 @@ unit Error // Error.asm
     }
     
     const byte[] errorMessages = {
-        2, Error.InternalError,              ErrorWord.INTERNAL, ErrorWord.ERROR,
-        2, Error.SyntaxError,                ErrorWord.SYNTAX, ErrorWord.ERROR,
-        2, Error.NotImplemented,             ErrorWord.NOT, ErrorWord.IMPLEMENTED,
-        4, Error.OnlyInDebug,                ErrorWord.ONLY, ErrorWord.IN, ErrorWord.DEBUG, ErrorWord.BUILD,
-        4, Error.OnlyInTrace,                ErrorWord.ONLY, ErrorWord.IN, ErrorWord.TRACE, ErrorWord.BUILD,
-        2, Error.TypeMismatch,               ErrorWord.TYPE, ErrorWord.MISMATCH,
-        2, Error.FunctionExists,             Token.FUNC, ErrorWord.EXISTS,
-        2, Error.ConstantExists,             Token.CONST, ErrorWord.EXISTS,
-        2, Error.VariableExists,             ErrorWord.VARIABLE, ErrorWord.EXISTS,
-        3, Error.OutOfMemory,                ErrorWord.OUT, ErrorWord.OF, ErrorWord.MEMORY,
-        3, Error.FileNotFound,               ErrorWord.FILE, ErrorWord.NOT, ErrorWord.FOUND,
-        3, Error.NextWithoutFor,             Token.NEXT, ErrorWord.WITHOUT, Token.FOR,
-        3, Error.DivisionByZero,             ErrorWord.DIVISION, ErrorWord.BY, ErrorWord.ZERO,
-        2, Error.NumericOverflow,            ErrorWord.NUMERIC, ErrorWord.OVERFLOW,
-        3, Error.StringTooLong,              Token.STRING, ErrorWord.TOO, ErrorWord.LONG,
-        2, Error.BadIndex,                   ErrorWord.BAD, ErrorWord.INDEX,
-        2, Error.UndefinedIdentifier,        ErrorWord.UNDEFINED, ErrorWord.IDENTIFIER,
-        2, Error.ConstantExpected,           Token.CONST, ErrorWord.EXPECTED,
-        3, Error.ConstantExpressionExpected, Token.CONST, ErrorWord.EXPRESSION, ErrorWord.EXPECTED,
-        2, Error.IllegalIdentifier,         ErrorWord.ILLEGAL, ErrorWord.IDENTIFIER,
-        2, Error.IllegalAssignment,         ErrorWord.ILLEGAL, ErrorWord.ASSIGNMENT,
-        2, Error.IllegalCharacter,          ErrorWord.ILLEGAL, ErrorWord.CHARACTER,
-        2, Error.InvalidOperator,            ErrorWord.INVALID, ErrorWord.OPERATOR,
-        2, Error.BufferOverflow,             ErrorWord.BUFFER, ErrorWord.OVERFLOW,
-        2, Error.ExpectedRightParen,        ErrorWord.RPAREN, ErrorWord.EXPECTED,
-        2, Error.ExpectedLeftParen,         ErrorWord.LPAREN, ErrorWord.EXPECTED,
-        2, Error.ExpectedEqual,             ErrorWord.EQUALS, ErrorWord.EXPECTED,
-        6, Error.UnexpectedEOL,             ErrorWord.UNEXPECTED, ErrorWord.END, ErrorWord.OF, ErrorWord.LINE, ErrorWord.IN, ErrorWord.LITERAL,
-        2, Error.ExpectedExpression,        ErrorWord.EXPRESSION, ErrorWord.EXPECTED,
-        3, Error.InvalidBitValue,            ErrorWord.INVALID, Token.BIT, ErrorWord.VALUE,
-        4, Error.IllegalInFunctionMode,     ErrorWord.ILLEGAL, ErrorWord.IN, Token.FUNC, ErrorWord.MODE,
-        3, Error.OnlyAtConsole,             ErrorWord.ONLY, ErrorWord.AT, ErrorWord.CONSOLE,
-        2, Error.HeapCorrupt,               ErrorWord.HEAP, ErrorWord.CORRUPT,
-        2, Error.CannotRollback,            ErrorWord.CANNOT, ErrorWord.ROLLBACK,
-        1, Error.Break,                     ErrorWord.BREAK,
-        3, Error.LateDeclaration,           ErrorWord.NO, ErrorWord.MORE, ErrorWord.LOCALS,
-        2, Error.MissingNext,               ErrorWord.MISSING, Token.NEXT,
-        2, Error.NextMismatch,              Token.NEXT, ErrorWord.MISMATCH,
-        5, Error.ForIteratorLocal,          Token.FOR, ErrorWord.ITERATOR, ErrorWord.MUST, ErrorWord.BE, ErrorWord.LOCAL,
-        4, Error.RangeError,                ErrorWord.VALUE, ErrorWord.OUT, ErrorWord.OF, ErrorWord.RANGE,
-        2, Error.ExpectedRightBracket,      ErrorWord.RBRACKET, ErrorWord.EXPECTED,
+        2, ErrorID.InternalError,              ErrorWord.INTERNAL, ErrorWord.ERROR,
+        2, ErrorID.SyntaxError,                ErrorWord.SYNTAX, ErrorWord.ERROR,
+        2, ErrorID.NotImplemented,             ErrorWord.NOT, ErrorWord.IMPLEMENTED,
+        4, ErrorID.OnlyInDebug,                ErrorWord.ONLY, ErrorWord.IN, ErrorWord.DEBUG, ErrorWord.BUILD,
+        4, ErrorID.OnlyInTrace,                ErrorWord.ONLY, ErrorWord.IN, ErrorWord.TRACE, ErrorWord.BUILD,
+        2, ErrorID.TypeMismatch,               ErrorWord.TYPE, ErrorWord.MISMATCH,
+        2, ErrorID.FunctionExists,             Token.FUNC, ErrorWord.EXISTS,
+        2, ErrorID.ConstantExists,             Token.CONST, ErrorWord.EXISTS,
+        2, ErrorID.VariableExists,             ErrorWord.VARIABLE, ErrorWord.EXISTS,
+        3, ErrorID.OutOfMemory,                ErrorWord.OUT, ErrorWord.OF, ErrorWord.MEMORY,
+        3, ErrorID.FileNotFound,               ErrorWord.FILE, ErrorWord.NOT, ErrorWord.FOUND,
+        3, ErrorID.NextWithoutFor,             Token.NEXT, ErrorWord.WITHOUT, Token.FOR,
+        3, ErrorID.DivisionByZero,             ErrorWord.DIVISION, ErrorWord.BY, ErrorWord.ZERO,
+        2, ErrorID.NumericOverflow,            ErrorWord.NUMERIC, ErrorWord.OVERFLOW,
+        3, ErrorID.StringTooLong,              Token.STRING, ErrorWord.TOO, ErrorWord.LONG,
+        2, ErrorID.BadIndex,                   ErrorWord.BAD, ErrorWord.INDEX,
+        2, ErrorID.UndefinedIdentifier,        ErrorWord.UNDEFINED, ErrorWord.IDENTIFIER,
+        2, ErrorID.ConstantExpected,           Token.CONST, ErrorWord.EXPECTED,
+        3, ErrorID.ConstantExpressionExpected, Token.CONST, ErrorWord.EXPRESSION, ErrorWord.EXPECTED,
+        2, ErrorID.IllegalIdentifier,         ErrorWord.ILLEGAL, ErrorWord.IDENTIFIER,
+        2, ErrorID.IllegalAssignment,         ErrorWord.ILLEGAL, ErrorWord.ASSIGNMENT,
+        2, ErrorID.IllegalCharacter,          ErrorWord.ILLEGAL, ErrorWord.CHARACTER,
+        2, ErrorID.InvalidOperator,            ErrorWord.INVALID, ErrorWord.OPERATOR,
+        2, ErrorID.BufferOverflow,             ErrorWord.BUFFER, ErrorWord.OVERFLOW,
+        2, ErrorID.ExpectedRightParen,        ErrorWord.RPAREN, ErrorWord.EXPECTED,
+        2, ErrorID.ExpectedLeftParen,         ErrorWord.LPAREN, ErrorWord.EXPECTED,
+        2, ErrorID.ExpectedEqual,             ErrorWord.EQUALS, ErrorWord.EXPECTED,
+        6, ErrorID.UnexpectedEOL,             ErrorWord.UNEXPECTED, ErrorWord.END, ErrorWord.OF, ErrorWord.LINE, ErrorWord.IN, ErrorWord.LITERAL,
+        2, ErrorID.ExpectedExpression,        ErrorWord.EXPRESSION, ErrorWord.EXPECTED,
+        3, ErrorID.InvalidBitValue,            ErrorWord.INVALID, Token.BIT, ErrorWord.VALUE,
+        4, ErrorID.IllegalInFunctionMode,     ErrorWord.ILLEGAL, ErrorWord.IN, Token.FUNC, ErrorWord.MODE,
+        3, ErrorID.OnlyAtConsole,             ErrorWord.ONLY, ErrorWord.AT, ErrorWord.CONSOLE,
+        2, ErrorID.HeapCorrupt,               ErrorWord.HEAP, ErrorWord.CORRUPT,
+        2, ErrorID.CannotRollback,            ErrorWord.CANNOT, ErrorWord.ROLLBACK,
+        1, ErrorID.Break,                     ErrorWord.BREAK,
+        3, ErrorID.LateDeclaration,           ErrorWord.NO, ErrorWord.MORE, ErrorWord.LOCALS,
+        2, ErrorID.MissingNext,               ErrorWord.MISSING, Token.NEXT,
+        2, ErrorID.NextMismatch,              Token.NEXT, ErrorWord.MISMATCH,
+        5, ErrorID.ForIteratorLocal,          Token.FOR, ErrorWord.ITERATOR, ErrorWord.MUST, ErrorWord.BE, ErrorWord.LOCAL,
+        4, ErrorID.RangeError,                ErrorWord.VALUE, ErrorWord.OUT, ErrorWord.OF, ErrorWord.RANGE,
+        2, ErrorID.ExpectedRightBracket,      ErrorWord.RBRACKET, ErrorWord.EXPECTED,
+        2, ErrorID.ExpectedThen,              Token.THEN, ErrorWord.EXPECTED,
         
         0  // End marker
     };
     
     // Print error word corresponding to word ID
-    // Input: X = word ID (0x00-0x7F for error words, 0x80+ for keywords)
+    // Input: A = word ID (0x00-0x7F for error words, 0x80+ for keywords)
     // Output: Word printed to serial, C set if found, NC if not found
     PrintWord()
     {
+        PHX
+        PHY
+        TAX
+        
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
+        LDA ZP.ACCL
+        PHA
+        
         TXA
         if (MI)
         {
@@ -303,23 +316,23 @@ unit Error // Error.asm
                 }
             }   
         }
+        PLA
+        STA ZP.ACCL
+        PLA
+        STA ZP.IDYH
+        PLA
+        STA ZP.IDYL
+        
+        PLY
+        PLX
+        
     }
     
     // Input A = error ID
     PrintError()
     {
-        PHX
-        PHY
-        
-        LDA ZP.IDYL
-        PHA
-        LDA ZP.IDYH
-        PHA
-        LDA ZP.ACCL
-        PHA
-        
         STA ZP.ACCL  // Store target error ID
-        
+                
         // Set up pointer to errorMessages table
         LDA #(errorMessages % 256)
         STA ZP.IDYL
@@ -332,38 +345,29 @@ unit Error // Error.asm
             LDA [ZP.IDY], Y    // Get word count for this message
             if (Z) { break; }  // End of table - not found
             
-            TAX                // X = word count
+            TAX                // X = word count (keep it in X, don't store in ZP!)
             INY
             LDA [ZP.IDY], Y    // Get error ID
             CMP ZP.ACCL        // Compare with target
             if (Z)
             {
                 // Found it! Print the words
-                INY
+                INY  // Move to first word ID
                 loop
                 {
                     CPX #0
-                    if (Z) { break; }  // Done with all words
+                    if (Z) { break; }
                     
-                    LDA [ZP.IDY], Y    // Get next word ID
-                    PHA                // Save word ID
-                    TXA                // Save word count 
-                    PHA
-                    
-                    PLA                // Get word ID back
-                    TAX                // Put word ID in X for PrintWord
-                    PrintWord();
-                    
-                    PLA                // Get word count back
-                    TAX
+                    LDA [ZP.IDY], Y    // Get word ID
+                    PrintWord(); // word in A
                     INY
-                    DEX                // Decrement word count
+                    DEX
                     
                     CPX #0
                     if (Z) { break; }  // Don't add space after last word
                     
                     LDA #' '
-                    Serial.WriteChar(); // Add space between words
+                    Serial.WriteChar();
                 }
                 break;  // Done printing
             }
@@ -379,263 +383,301 @@ unit Error // Error.asm
             }
         }
         
-        PLA
-        STA ZP.ACCL
-        PLA
-        STA ZP.IDYH
-        PLA
-        STA ZP.IDYL
-        
-        PLY
-        PLX
-        
-        CLC  // Indicate error occurred
+                
+         CLC  // Indicate error occurred
     }
-            
+    
     SyntaxError() 
     { 
-        LDA # Error.SyntaxError
-        PrintError();
+        LDA #ErrorID.SyntaxError
+        STA ZP.LastError
+        CLC
     }
-    
+
     InternalError() 
     { 
-        LDA # Error.InternalError
-        PrintError();
+        LDA #ErrorID.InternalError
+        STA ZP.LastError
+        CLC
     }
-    
+
     TODO() 
     { 
-        LDA # Error.NotImplemented
-        PrintError();
+        LDA #ErrorID.NotImplemented
+        STA ZP.LastError
+        CLC
     }
-    
+
     ExpectedRightBracket()
     {
-        LDA # Error.ExpectedRightBracket
-        PrintError();
+        LDA #ErrorID.ExpectedRightBracket
+        STA ZP.LastError
+        CLC
     }
-    
+
     RangeError()
     {
-        LDA # Error.RangeError
-        PrintError();
+        LDA #ErrorID.RangeError
+        STA ZP.LastError
+        CLC
     }
-    
+
     Break()
     {
-        LDA # Error.Break
-        PrintError();
+        LDA #ErrorID.Break
+        STA ZP.LastError
+        CLC
     }
-    
+
     LateDeclaration()
     {
-        LDA # Error.LateDeclaration
-        PrintError();
+        LDA #ErrorID.LateDeclaration
+        STA ZP.LastError
+        CLC
     }
-    
+
     ForIteratorLocal()
     {
-        LDA # Error.ForIteratorLocal
-        PrintError();
+        LDA #ErrorID.ForIteratorLocal
+        STA ZP.LastError
+        CLC
     }
-    
+
     CannotRollback()
     {
-        LDA # Error.CannotRollback
-        PrintError();
+        LDA #ErrorID.CannotRollback
+        STA ZP.LastError
+        CLC
     }
-    
+
     HeapCorruptError()
     {
-        LDA # Error.HeapCorrupt
-        PrintError();
+        LDA #ErrorID.HeapCorrupt
+        STA ZP.LastError
+        CLC
     }
-    
+
     OnlyInDebug() 
     { 
-        LDA # Error.OnlyInDebug
-        PrintError();
+        LDA #ErrorID.OnlyInDebug
+        STA ZP.LastError
+        CLC
     }
-    
+
     OnlyInTrace() 
     { 
-        LDA # Error.OnlyInTrace
-        PrintError();
+        LDA #ErrorID.OnlyInTrace
+        STA ZP.LastError
+        CLC
     }
-    
+
     OnlyAtConsole() 
     { 
-        LDA # Error.OnlyAtConsole
-        PrintError();
+        LDA #ErrorID.OnlyAtConsole
+        STA ZP.LastError
+        CLC
     }
-    
+
     TypeMismatch() 
     { 
-        LDA # Error.TypeMismatch
-        PrintError();
+        LDA #ErrorID.TypeMismatch
+        STA ZP.LastError
+        CLC
     }
-    
+
     FunctionExists() 
     { 
-        LDA # Error.FunctionExists
-        PrintError();
+        LDA #ErrorID.FunctionExists
+        STA ZP.LastError
+        CLC
     }
-    
+
     ConstantExists() 
     { 
-        LDA # Error.ConstantExists
-        PrintError();
+        LDA #ErrorID.ConstantExists
+        STA ZP.LastError
+        CLC
     }
-    
+
     VariableExists() 
     { 
-        LDA # Error.VariableExists
-        PrintError();
+        LDA #ErrorID.VariableExists
+        STA ZP.LastError
+        CLC
     }
-    
+
     OutOfMemory() 
     { 
-        LDA # Error.OutOfMemory
-        PrintError();
+        LDA #ErrorID.OutOfMemory
+        STA ZP.LastError
+        CLC
     }
-    
+
     FileNotFound() 
     { 
-        LDA # Error.FileNotFound
-        PrintError();
+        LDA #ErrorID.FileNotFound
+        STA ZP.LastError
+        CLC
     }
-    
+
     NextWithoutFor() 
     { 
-        LDA # Error.NextWithoutFor
-        PrintError();
+        LDA #ErrorID.NextWithoutFor
+        STA ZP.LastError
+        CLC
     }
-    
+
     MissingNext() 
     { 
-        LDA # Error.MissingNext
-        PrintError();
+        LDA #ErrorID.MissingNext
+        STA ZP.LastError
+        CLC
     }
-    
+
     NextMismatch() 
     { 
-        LDA # Error.NextMismatch
-        PrintError();
+        LDA #ErrorID.NextMismatch
+        STA ZP.LastError
+        CLC
     }
-    
+
     DivisionByZero() 
     { 
-        LDA # Error.DivisionByZero
-        PrintError();
+        LDA #ErrorID.DivisionByZero
+        STA ZP.LastError
+        CLC
     }
-    
+
     NumericOverflow() 
     { 
-        LDA # Error.NumericOverflow
-        PrintError();
+        LDA #ErrorID.NumericOverflow
+        STA ZP.LastError
+        CLC
     }
-    
+
     StringTooLong() 
     { 
-        LDA # Error.StringTooLong
-        PrintError();
+        LDA #ErrorID.StringTooLong
+        STA ZP.LastError
+        CLC
     }
-    
+
     BadIndex() 
     { 
-        LDA # Error.BadIndex
-        PrintError();
+        LDA #ErrorID.BadIndex
+        STA ZP.LastError
+        CLC
     }
-    
+
     UndefinedIdentifier() 
     { 
-        LDA # Error.UndefinedIdentifier
-        PrintError();
+        LDA #ErrorID.UndefinedIdentifier
+        STA ZP.LastError
+        CLC
     }
-    
+
     ConstantExpected() 
     { 
-        LDA # Error.ConstantExpected
-        PrintError();
+        LDA #ErrorID.ConstantExpected
+        STA ZP.LastError
+        CLC
     }
-    
+
     ConstantExpressionExpected() 
     { 
-        LDA # Error.ConstantExpressionExpected
-        PrintError();
+        LDA #ErrorID.ConstantExpressionExpected
+        STA ZP.LastError
+        CLC
     }
-    
+
     IllegalCharacter()
     { 
-        LDA # Error.IllegalCharacter
-        PrintError();
+        LDA #ErrorID.IllegalCharacter
+        STA ZP.LastError
+        CLC
     }
-    
+
     IllegalIdentifier() 
     { 
-        LDA # Error.IllegalIdentifier
-        PrintError();
+        LDA #ErrorID.IllegalIdentifier
+        STA ZP.LastError
+        CLC
     }
-    
+
     IllegalAssignment() 
     { 
-        LDA # Error.IllegalAssignment
-        PrintError();
+        LDA #ErrorID.IllegalAssignment
+        STA ZP.LastError
+        CLC
     }
-    
+
     InvalidOperator() 
     { 
-        LDA # Error.InvalidOperator
-        PrintError();
+        LDA #ErrorID.InvalidOperator
+        STA ZP.LastError
+        CLC
     }
-    
+
     BufferOverflow() 
     { 
-        LDA # Error.BufferOverflow
-        PrintError();
+        LDA #ErrorID.BufferOverflow
+        STA ZP.LastError
+        CLC
     }
-    
+
     ExpectedEqual() 
     { 
-        LDA # Error.ExpectedEqual
-        PrintError();
+        LDA #ErrorID.ExpectedEqual
+        STA ZP.LastError
+        CLC
     }
-    
+
     ExpectedRightParen() 
     { 
-        LDA # Error.ExpectedRightParen
-        PrintError();
+        LDA #ErrorID.ExpectedRightParen
+        STA ZP.LastError
+        CLC
     }
-    
+
     ExpectedLeftParen() 
     { 
-        LDA # Error.ExpectedLeftParen
-        PrintError();
+        LDA #ErrorID.ExpectedLeftParen
+        STA ZP.LastError
+        CLC
     }
-    
+
     UnexpectedEOL() 
     { 
-        LDA # Error.UnexpectedEOL
-        PrintError();
+        LDA #ErrorID.UnexpectedEOL
+        STA ZP.LastError
+        CLC
     }
-    
+
     ExpectedExpression() 
     { 
-        LDA # Error.ExpectedExpression
-        PrintError();
+        LDA #ErrorID.ExpectedExpression
+        STA ZP.LastError
+        CLC
     }
-    
+
     InvalidBitValue() 
     { 
-        LDA # Error.InvalidBitValue
-        PrintError();
+        LDA #ErrorID.InvalidBitValue
+        STA ZP.LastError
+        CLC
     }
-    
+
     IllegalInFunctionMode() 
     { 
-        LDA # Error.IllegalInFunctionMode
-        PrintError();
+        LDA #ErrorID.IllegalInFunctionMode
+        STA ZP.LastError
+        CLC
+    }
+    ExpectedThen()
+    {
+        LDA #ErrorID.ExpectedThen
+        STA ZP.LastError
+        CLC
     }
     
     // Clear error state
@@ -787,26 +829,26 @@ unit Error // Error.asm
         loop // Single exit point
         {
             // Compare against fatal error IDs
-            LDA ZP.LastErrorL
+            LDA ZP.LastError
             
             // Check for NotImplemented
-            CMP #Error.NotImplemented
+            CMP #ErrorID.NotImplemented
             if (Z) { SEC break; } // Fatal
             
             // Check for InternalError
-            CMP #Error.InternalError
+            CMP #ErrorID.InternalError
             if (Z) { SEC break; } // Fatal
             
             // Check for OutOfMemory
-            CMP #Error.OutOfMemory
+            CMP #ErrorID.OutOfMemory
             if (Z) { SEC break; } // Fatal
             
             // Check for BufferOverflow
-            CMP #Error.BufferOverflow
+            CMP #ErrorID.BufferOverflow
             if (Z) { SEC break; } // Fatal
             
             // Check for HeapCorrupt
-            CMP #Error.HeapCorrupt
+            CMP #ErrorID.HeapCorrupt
             if (Z) { SEC break; } // Fatal
             
             // Not a fatal error

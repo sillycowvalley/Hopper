@@ -11,11 +11,13 @@ unit Address // MemoryMap.asm
     
     const uint ValueStackLSB        = 0x0600;  // LSBs of 256 value stack slots
     const uint ValueStackMSB        = 0x0700;  // MSBs of 256 value stack slots
+    const uint ValueStackMSB2       = 0x0800;  // byte 3 for LONG 
+    const uint ValueStackMSB3       = 0x0900;  // byte 4 for LONG 
     
-    const uint I2CInBuffer          = 0x0800;  // 256-byte buffer 0x0800-0x08FF for I2C.RequestFrom
+    const uint I2CInBuffer          = 0x0A00;  // 256-byte buffer 0x0800-0x08FF for I2C.RequestFrom
     
     // HopperBASIC buffers
-    const uint BasicInputBuffer        = 0x0900;                                                       // 128 bytes - raw user input
+    const uint BasicInputBuffer        = 0x0B00;                                                       // 128 bytes - raw user input
     
     const uint BasicCompilerWorkspace  = BasicInputBuffer + Limits.BasicInputSize;                     // 32 bytes - compiler.asm
     

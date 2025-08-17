@@ -2,7 +2,7 @@ program HopperBASIC
 {
     #define PEEPHOLE // include the peephole optimizer
     
-    //#define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
+    #define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
     //#define DEBUG
     //#define TRACE  // Compiler and Executor call tree walks
     //#define TRACEEXE // instructions in Executor
@@ -43,6 +43,10 @@ program HopperBASIC
     uses "./Objects/Locals"
     uses "./Objects/Functions"
     uses "./Objects/Array"
+    #ifdef LONG
+    uses "./Objects/Long"
+    #endif
+    
     
     uses "./Utilities/Tools"
     uses "./Utilities/BufferManager"

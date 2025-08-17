@@ -14,7 +14,7 @@
     , "I2C": "true"                  // (requires W65C22_VIA, costs about 711 bytes)
     , "PACKED_INSTRUCTIONS": "true"  // as opposed to just the minimal instruction set for the VM
     , "JIX_INSTRUCTIONS": "true"     // used by 'switch' statement (optimized to indexed jumps if JIX exists)
-    , "LONGS": "true"                // costs about 760 bytes
+    , "LONGS": "true"                // costs about 936 bytes
     , "FLOATS": "true"               // costs about 28 bytes (requires longs)
     , "LISTS": "true"                // costs about 2458 bytes (requires Variant)
     , "FASTINTS": "true"             // speed vs size
