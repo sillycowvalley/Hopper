@@ -14,6 +14,8 @@ program HopperBASIC
     
     //#define TRACECONSOLE // trace output for Console.asm and Command.asm
     
+    #define BASICLONG
+    
     #define CPU_65C02S
     #define HOPPER_BASIC
     #define ROM_48K
@@ -43,7 +45,7 @@ program HopperBASIC
     uses "./Objects/Locals"
     uses "./Objects/Functions"
     uses "./Objects/Array"
-    #ifdef LONG
+    #ifdef BASICLONG
     uses "./Objects/Long"
     #endif
     
