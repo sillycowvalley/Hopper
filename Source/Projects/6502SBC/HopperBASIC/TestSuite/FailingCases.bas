@@ -1,14 +1,13 @@
 NEW
 
-WORD IT
-WORD i
-
 BEGIN
-    FOR IT = 1 TO 1
-        FOR i = 0 TO 10
-            print i
-        NEXT i
-    NEXT IT
+    WORD I
+    DO
+        LONG MS = MILLIS()
+        PRINT MS
+        DELAY(1000)
+        I = I + 1
+    UINT I > 100
 END
 RUN
 DASM

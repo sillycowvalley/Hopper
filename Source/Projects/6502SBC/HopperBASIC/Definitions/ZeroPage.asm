@@ -230,6 +230,7 @@ unit ZP // ZeroPage.asm
     const byte TARGET3              = M3;
     
     // Time.Seconds() workspace (uses M0-M7)
+    // Long: used by syscallLongDiv, syscallLongMod, syscallLongMul:
     const byte LRESULT0             = M0;
     const byte LRESULT1             = M1;
     const byte LRESULT2             = M2;
@@ -244,6 +245,7 @@ unit ZP // ZeroPage.asm
     const byte UWIDE5               = M1;
     const byte UWIDE6               = M2;
     const byte UWIDE7               = M3;
+    
     
     // TokenIterator used by listing commands (LIST, FUNCS) to enumerate function bodies
     const byte TOKCUR     = M0;  // Current token value

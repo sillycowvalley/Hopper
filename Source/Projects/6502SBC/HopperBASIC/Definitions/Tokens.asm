@@ -41,107 +41,108 @@ unit Tokens
         WORD     = 0x97,
         BIT      = 0x98,
         BYTE     = 0x99,
-        STRING   = 0x9A,
-        CHAR     = 0x9B,
-        VAR      = 0x9C,
-        CONST    = 0x9D,
+        LONG     = 0x9A,
+        STRING   = 0x9B,
+        CHAR     = 0x9C,
+        VAR      = 0x9D,
+        CONST    = 0x9E,
         
         // Language keywords
-        PRINT    = 0x9E,
-        INPUT    = 0x9F,
-        IF       = 0xA0,
-        THEN     = 0xA1,
-        ELSE     = 0xA2,
-        ENDIF    = 0xA3,
-        FUNC     = 0xA4,
-        ENDFUNC  = 0xA5,
-        RETURN   = 0xA6,
-        BEGIN    = 0xA7,
-        END      = 0xA8,
-        FOR      = 0xA9,
-        TO       = 0xAA,
-        STEP     = 0xAB,
-        NEXT     = 0xAC,
-        WHILE    = 0xAD,
-        WEND     = 0xAE,
-        DO       = 0xAF,
-        UNTIL    = 0xB0,
-        BREAK    = 0xB1,
-        CONTINUE = 0xB2,
-        CONT     = 0xB3,
-        GOSUB    = 0xB4,
-        GOTO     = 0xB5,
-        ARRAY    = 0xB6,
-        AND      = 0xB7,
-        OR       = 0xB8,
-        NOT      = 0xB9,
-        MOD      = 0xBA,
-        TRUE     = 0xBB,
-        FALSE    = 0xBC,
-        REPEAT   = 0xBD,
-        STOP     = 0xBE,
+        PRINT    = 0x9F,
+        INPUT    = 0xA0,
+        IF       = 0xA1,
+        THEN     = 0xA2,
+        ELSE     = 0xA3,
+        ENDIF    = 0xA4,
+        FUNC     = 0xA5,
+        ENDFUNC  = 0xA6,
+        RETURN   = 0xA7,
+        BEGIN    = 0xA8,
+        END      = 0xA9,
+        FOR      = 0xAA,
+        TO       = 0xAB,
+        STEP     = 0xAC,
+        NEXT     = 0xAD,
+        WHILE    = 0xAE,
+        WEND     = 0xAF,
+        DO       = 0xB0,
+        UNTIL    = 0xB1,
+        BREAK    = 0xB2,
+        CONTINUE = 0xB3,
+        CONT     = 0xB4,
+        GOSUB    = 0xB5,
+        GOTO     = 0xB6,
+        ARRAY    = 0xB7,
+        AND      = 0xB8,
+        OR       = 0xB9,
+        NOT      = 0xBA,
+        MOD      = 0xBB,
+        TRUE     = 0xBC,
+        FALSE    = 0xBD,
+        REPEAT   = 0xBE,
+        STOP     = 0xBF,
         
         // Built-in functions
-        ABS      = 0xBF,
-        MILLIS   = 0xC0,
-        PEEK     = 0xC1,
-        POKE     = 0xC2,
-        RND      = 0xC3,
-        SECONDS  = 0xC4,
-        DELAY    = 0xC5,
-        CLS      = 0xC6,
+        ABS      = 0xC0,
+        MILLIS   = 0xC1,
+        PEEK     = 0xC2,
+        POKE     = 0xC3,
+        RND      = 0xC4,
+        SECONDS  = 0xC5,
+        DELAY    = 0xC6,
+        CLS      = 0xC7,
         
         // Character/String functions
-        ASC      = 0xC7,
-        CHR      = 0xC8,
-        LEN      = 0xC9,
+        ASC      = 0xC8,
+        CHR      = 0xC9,
+        LEN      = 0xCA,
         
         // Hardware I/O functions
-        PINMODE  = 0xCA,
-        READ     = 0xCB,
-        WRITE    = 0xCC,
+        PINMODE  = 0xCB,
+        READ     = 0xCC,
+        WRITE    = 0xCD,
         
-        lastKeyword = 0xCC,
+        lastKeyword = 0xCD,
         
         // Literals and identifiers  
-        NUMBER     = 0xCD,
-        STRINGLIT  = 0xCE,
-        CHARLIT    = 0xCF,
-        IDENTIFIER = 0xD0,
+        NUMBER     = 0xCE,
+        STRINGLIT  = 0xCF,
+        CHARLIT    = 0xD0,
+        IDENTIFIER = 0xD1,
         
         // Special punctuation (no inline data)
-        EOF      = 0xD1,
-        COLON    = 0xD2,
-        COMMA    = 0xD3,
-        SEMICOLON = 0xD4,
+        EOF      = 0xD2,
+        COLON    = 0xD3,
+        COMMA    = 0xD4,
+        SEMICOLON = 0xD5,
         
         // Basic operators
-        EQUALS   = 0xD5,
-        PLUS     = 0xD6,
-        MINUS    = 0xD7,
-        LPAREN   = 0xD8,
-        RPAREN   = 0xD9,
+        EQUALS   = 0xD6,
+        PLUS     = 0xD7,
+        MINUS    = 0xD8,
+        LPAREN   = 0xD9,
+        RPAREN   = 0xDA,
         
         // Additional comparison operators
-        NOTEQUAL = 0xDA,
-        LT       = 0xDB,
-        GT       = 0xDC,
-        LE       = 0xDD,
-        GE       = 0xDE,
+        NOTEQUAL = 0xDB,
+        LT       = 0xDC,
+        GT       = 0xDD,
+        LE       = 0xDE,
+        GE       = 0xDF,
         
         // Arithmetic operators
-        MULTIPLY = 0xDF,
-        DIVIDE   = 0xE0,
+        MULTIPLY = 0xE0,
+        DIVIDE   = 0xE1,
         
         // Bitwise operators
-        BITWISE_AND = 0xE1,
-        BITWISE_OR  = 0xE2,
+        BITWISE_AND = 0xE2,
+        BITWISE_OR  = 0xE3,
         
         // Array and string operators
-        LBRACKET = 0xE3,
-        RBRACKET = 0xE4,
-        LBRACE   = 0xE5,
-        RBRACE   = 0xE6,
+        LBRACKET = 0xE4,
+        RBRACKET = 0xE5,
+        LBRACE   = 0xE6,
+        RBRACE   = 0xE7,
     }
         
         // Keywords A-H (first character < 'I') - Reorganized by frequency
@@ -207,7 +208,8 @@ unit Tokens
         5, Token.INPUT, 'I', 'N', 'P', 'U', 'T', // Rank 12 - User input
         3, Token.LEN, 'L', 'E', 'N',             // Rank 18 - String length
         3, Token.VAR, 'V', 'A', 'R',             // Uninitialized type
-        
+        4, Token.LONG, 'L', 'O', 'N', 'G',       // New 32-bit type
+
         // MODERATE (Rank 21-30)
         5, Token.WHILE, 'W', 'H', 'I', 'L', 'E', // Rank 16 - WHILE/WEND loops
         4, Token.WEND, 'W', 'E', 'N', 'D',       // Rank 16 - WHILE/WEND loops
@@ -664,7 +666,7 @@ unit Tokens
         LDA ZP.IDYH
         PHA
         
-        // Validate keywordsAL table
+        // Validate keywordsAH table
         LDA #(keywordsAH % 256)
         STA ZP.IDYL
         LDA #(keywordsAH / 256)
@@ -695,7 +697,7 @@ unit Tokens
         }
         
         
-        // Validate keywordsMZ table
+        // Validate keywordsIZ table
         LDA #(keywordsIZ % 256)
         STA ZP.IDYL
         LDA #(keywordsIZ / 256)

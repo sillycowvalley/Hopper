@@ -2,7 +2,51 @@ unit Long
 {
     friend Time, IntMath;
     
-    const uint siData = 2;
+    PushTop()    // Push 4-byte value from LTOP0-3 + BASICType.LONG
+    {
+        LDY ZP.SP                    // Current stack pointer
+        LDA #BASICType.LONG
+        STA TypeStackLSB,Y           // Store type
+        LDA ZP.LTOP0
+        STA ValueStackLSB,Y          // Store byte 0 (LSB)
+        LDA ZP.LTOP1  
+        STA ValueStackMSB,Y          // Store byte 1
+        LDA ZP.LTOP2
+        STA ValueStackMSB2,Y         // Store byte 2
+        LDA ZP.LTOP3
+        STA ValueStackMSB3,Y         // Store byte 3 (MSB)
+        INC ZP.SP                    // Advance stack pointer
+    }
+
+    PopTop()     // Pop 4-byte value to LTOP0-3, verify LONG type
+    {
+        DEC ZP.SP                    // Move back to top item
+        LDY ZP.SP
+        LDA ValueStackLSB,Y          // Load byte 0 (LSB)
+        STA ZP.LTOP0
+        LDA ValueStackMSB,Y          // Load byte 1
+        STA ZP.LTOP1  
+        LDA ValueStackMSB2,Y         // Load byte 2
+        STA ZP.LTOP2
+        LDA ValueStackMSB3,Y         // Load byte 3 (MSB)
+        STA ZP.LTOP3
+        // Optional: verify type is BASICType.LONG
+    }
+    
+    PopNext()     // Pop 4-byte value to LNEXT0-3, verify LONG type
+    {
+        DEC ZP.SP                    // Move back to top item
+        LDY ZP.SP
+        LDA ValueStackLSB,Y          // Load byte 0 (LSB)
+        STA ZP.LNEXT0
+        LDA ValueStackMSB,Y          // Load byte 1
+        STA ZP.LNEXT1  
+        LDA ValueStackMSB2,Y         // Load byte 2
+        STA ZP.LNEXT2
+        LDA ValueStackMSB3,Y         // Load byte 3 (MSB)
+        STA ZP.LNEXT3
+        // Optional: verify type is BASICType.LONG
+    }
     
     compareEqual()
     {

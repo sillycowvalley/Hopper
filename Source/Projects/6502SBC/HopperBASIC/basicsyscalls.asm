@@ -252,9 +252,17 @@ unit BASICSysCalls
                case SysCallType.Millis:        // ID = 5
                {
                    // MILLIS function - get system timer
+#ifdef BASICLONG
+                   LDA ZP.TICK0 STA ZP.LTOP0     // Get system timer
+                   LDA ZP.TICK1 STA ZP.LTOP1
+                   LDA ZP.TICK2 STA ZP.LTOP2
+                   LDA ZP.TICK3 STA ZP.LTOP3
+                   LDA #BASICType.LONG STA ZP.TOPT
+#else
                    LDA ZP.TICK0 STA ZP.TOPL     // Get system timer
                    LDA ZP.TICK1 STA ZP.TOPH
                    LDA #BASICType.WORD STA ZP.TOPT
+#endif
                }
                case SysCallType.Seconds:       // ID = 6
                {
@@ -611,7 +619,15 @@ unit BASICSysCalls
            if (NZ) 
            {
                LDA ZP.TOPT
-               Stacks.PushTop();  // Push return value from ZP.TOP*
+               CMP BASICType.LONG
+               if (Z)
+               {
+                   Long.PushTop(); // Push return value from ZP.TOP0..ZP.TOP3
+               }
+               else
+               {
+                   Stacks.PushTop();  // Push return value from ZP.TOP*
+               }
            }
            
            States.SetSuccess();
