@@ -3309,7 +3309,7 @@ unit Executor // Executor.asm
             // BASICArray.SetItem expects: 
             // Input: ZP.IDX = array ptr, ZP.IDY = index, ZP.TOP = value
             // Output: C set on success
-            BASICArray.SetItemUnrolled();
+            BASICArray.SetItem();
             if (NC)
             {
                 // Range error already set by SetItem
