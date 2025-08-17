@@ -1103,20 +1103,30 @@ unit Executor // Executor.asm
        LDA #(executePushBitTrace % 256) STA ZP.TraceMessageL LDA #(executePushBitTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
-       // Fetch operand byte
-       FetchOperandByte();
-       States.CanContinue();
-       if (C)
-       {
-           // Store in ZP.TOP as BIT value (0 or 1)
-           STA ZP.TOPL
-           LDA #0
-           STA ZP.TOPH
-           LDA # BASICType.BIT
-           Stacks.PushTop(); // TODO: PushBit: push value and type to stack -> always Success
-           
-           States.SetSuccess();
-       }
+// Fetch operand (number of positions to decrement)
+#ifdef TRACEEXE
+        FetchOperandByte(); // -> A
+#else            
+        LDA [ZP.PC]
+       
+        // Advance PC
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
+#endif
+        // Store as BIT value (0 or 1)
+        LDX ZP.SP
+        INC ZP.SP
+        
+        STA Address.ValueStackLSB, X
+        STZ Address.ValueStackMSB, X
+        LDA # BASICType.BIT
+        STA Address.TypeStackLSB, X
+        
+        LDA #State.Success
+        STA ZP.SystemState
        
 #ifdef TRACE
        LDA #(executePushBitTrace % 256) STA ZP.TraceMessageL LDA #(executePushBitTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1131,21 +1141,31 @@ unit Executor // Executor.asm
        LDA #(executePushByteTrace % 256) STA ZP.TraceMessageL LDA #(executePushByteTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
     
-       // Fetch operand byte
-       FetchOperandByte();
-       States.CanContinue();
-       if (C)
-       {
+// Fetch operand (number of positions to decrement)
+#ifdef TRACEEXE
+        FetchOperandByte(); // -> A
+#else            
+        LDA [ZP.PC]
+       
+        // Advance PC
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
+#endif
            
-           // Store in ZP.TOP as BYTE value
-           STA ZP.TOPL
-           LDA #0
-           STA ZP.TOPH
-           LDA # BASICType.BYTE
-           Stacks.PushTop(); // TODO: PushByte: push value and type to stack -> always Success
-           
-           States.SetSuccess();
-       }
+       // Store as BYTE value
+       LDX ZP.SP
+       INC ZP.SP
+        
+       STA Address.ValueStackLSB, X
+       STZ Address.ValueStackMSB, X
+       LDA # BASICType.BYTE
+       STA Address.TypeStackLSB, X
+        
+       LDA #State.Success
+       STA ZP.SystemState
        
 #ifdef TRACE
        LDA #(executePushByteTrace % 256) STA ZP.TraceMessageL LDA #(executePushByteTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1160,21 +1180,30 @@ unit Executor // Executor.asm
        LDA #(executePushCharTrace % 256) STA ZP.TraceMessageL LDA #(executePushCharTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
     
-       // Fetch operand byte
-       FetchOperandByte();
-       States.CanContinue();
-       if (C)
-       {
-           
-           // Store in ZP.TOP as CHAR value
-           STA ZP.TOPL
-           LDA #0
-           STA ZP.TOPH
-           LDA # BASICType.CHAR
-           Stacks.PushTop(); // PushChar: push value and type to stack -> always Success
-           
-           States.SetSuccess();
-       }
+#ifdef TRACEEXE
+        FetchOperandByte(); // -> A
+#else            
+        LDA [ZP.PC]
+       
+        // Advance PC
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
+#endif
+
+        // Store as BYTE value
+       LDX ZP.SP
+       INC ZP.SP
+        
+       STA Address.ValueStackLSB, X
+       STZ Address.ValueStackMSB, X
+       LDA # BASICType.CHAR
+       STA Address.TypeStackLSB, X
+        
+       LDA #State.Success
+       STA ZP.SystemState
        
 #ifdef TRACE
        LDA #(executePushCharTrace % 256) STA ZP.TraceMessageL LDA #(executePushCharTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1795,10 +1824,23 @@ unit Executor // Executor.asm
        
        loop
        {
-           // Fetch index operand (single byte)
-           FetchOperandByte(); // Result in A -> always Success
+// Fetch operand (number of positions to decrement)
+#ifdef TRACEEXE
+            FetchOperandByte(); // -> A
+#else            
+            LDA [ZP.PC]
            
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+#endif           
            TAY  // Y = global index
+           
+           LDX ZP.SP
+           INC ZP.SP
            
            // Get global type from type stack
            LDA Address.TypeStackLSB, Y
@@ -1810,20 +1852,20 @@ unit Executor // Executor.asm
            {
                LDA ZP.TOPT
                AND # (BASICType.TYPEMASK | BASICType.ARRAY)  // Strip VAR bit but not ARRAY
-               STA ZP.TOPT
+               STA Address.TypeStackLSB, X
            }
-           
-           // Get value from value stacks
+           else
+           {
+               LDA ZP.TOPT
+               STA Address.TypeStackLSB, X
+           }
            LDA Address.ValueStackLSB, Y
-           STA ZP.TOPL
+           STA Address.ValueStackLSB, X
            LDA Address.ValueStackMSB, Y  
-           STA ZP.TOPH
-                 
-           // Push value to stack with type
-           LDA ZP.TOPT
-           Stacks.PushTop(); // TODO: PushGlobal: push value and type to stack -> always Success
+           STA Address.ValueStackMSB, X
            
-           States.SetSuccess();
+           LDA #State.Success
+           STA ZP.SystemState
            break;
        }
        
@@ -1845,20 +1887,30 @@ unit Executor // Executor.asm
        
        loop
        {
-            // Fetch index operand (single byte)
-            FetchOperandByte(); // Result in A -> always Success
-            
-            TAY  // X = global index
+// Fetch operand (number of positions to decrement)
+#ifdef TRACEEXE
+            FetchOperandByte(); // -> A
+#else            
+            LDA [ZP.PC]
            
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+                INC ZP.PCH
+            }
+#endif
+            
+            TAY  // Y = global index
+           
+            // Pop value from stack (RHS of assignment)
+            DEC ZP.SP
+            LDX ZP.SP
+            
             // Get global type from type stack
             LDA Address.TypeStackLSB, Y
             STA ZP.ACCT
-           
-            // Pop value from stack (RHS of assignment)
-            Stacks.PopTop(); // TODO: PopGlobal: Uses X, Result in ZP.TOP (value), ZP.TOPT (type)
-            
             // Check if variable has VAR bit set
-            LDA ZP.ACCT
             AND #BASICType.VAR
             if (Z) // Non-VAR variable - use normal type checking
             {
@@ -1870,7 +1922,7 @@ unit Executor // Executor.asm
                 // global shadow variables in FOR iterators (where we are popping and actual
                 // variable slot rather than stack data). Regular stack data should NEVER have
                 // VAR (so most of the time this should be a NOP)
-                LDA ZP.TOPT
+                LDA Address.TypeStackLSB, X
                 AND # (BASICType.TYPEMASK | BASICType.ARRAY)  // Strip VAR bit but not ARRAY
                 STA ZP.TOPT 
                 
@@ -1884,25 +1936,25 @@ unit Executor // Executor.asm
                 }
                 // keep LHS type when writing back
                 LDA ZP.NEXTT
-                STA ZP.TOPT
+                STA Address.TypeStackLSB, Y
             }
             else  // VAR variable
             {
                 // For VAR variables, update underlying type but keep VAR bit
-                LDA ZP.TOPT
+                LDA Address.TypeStackLSB, X
                 ORA #BASICType.VAR           // Add VAR bit
                 STA Address.TypeStackLSB, Y  // Update stored type
-                STA ZP.TOPT                  // This is what we'll use for storage
             }
 
             // Store value to global slot
-            LDA ZP.TOPT
-            STA Address.TypeStackLSB, Y
-            LDA ZP.TOPL
+            LDA Address.ValueStackLSB, X
             STA Address.ValueStackLSB, Y
-            LDA ZP.TOPH
+            LDA Address.ValueStackMSB, X
             STA Address.ValueStackMSB, Y
-            States.SetSuccess();
+            
+            LDA #State.Success
+            STA ZP.SystemState
+        
             break;
        } // single exit loop
        

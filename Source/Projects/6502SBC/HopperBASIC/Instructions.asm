@@ -18,6 +18,7 @@ unit Instructions // Instructions.asm
     CheckRHSTypeCompatibility()
     {
         PHA
+        PHX
         PHY
 #ifdef TRACE
         LDA #(checkRHS % 256) STA ZP.TraceMessageL LDA #(checkRHS / 256) STA ZP.TraceMessageH Trace.MethodEntry();
@@ -91,6 +92,7 @@ PLP
         LDA #(checkRHS % 256) STA ZP.TraceMessageL LDA #(checkRHS / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
         PLY
+        PLX
         PLA
     }  
     
