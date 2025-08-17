@@ -6,7 +6,7 @@ unit Compiler // Compiler.asm
    uses "CompilerFlow"
    uses "Optimizer"
    
-   friend Emit, Functions, Locals, CompilerFlow, Statement, Optimizer;
+   friend Emit, Functions, Locals, Compiler, CompilerFlow, Statement, Optimizer;
    
    // API Status: Clean
    // All public methods preserve caller state except for documented outputs
@@ -29,6 +29,10 @@ unit Compiler // Compiler.asm
    const uint compilerForIteratorType    = Address.BasicCompilerWorkspace + 13; // 1 byte - type of user or intrinsic for iterator variable
    const uint compilerGlobalIteratorSlot = Address.BasicCompilerWorkspace + 14; // 1 byte - slot of global being shadowed
    const uint compilerForIteratorBP      = Address.BasicCompilerWorkspace + 15; // 1 byte - signed one byte offset, location of for iterator relative to BP (according to Locals.Find)
+   const uint compilerSetItemObjInstr    = Address.BasicCompilerWorkspace + 16; // 1 byte - PUSHGLOBAL or PUSHLOCAL for SetItem object
+   const uint compilerSetItemObjOffset   = Address.BasicCompilerWorkspace + 17; // 1 byte - offset or address for previous
+   const uint compilerSetItemIndexInstr  = Address.BasicCompilerWorkspace + 18; // 1 byte - PUSHGLOBAL or PUSHLOCAL for SetItem index
+   const uint compilerSetItemIndexOffset = Address.BasicCompilerWorkspace + 19; // 1 byte - offset or address for previous
    
    // Initialize the opcode buffer for compilation
    // Output: OpCode buffer ready for emission
@@ -2485,6 +2489,19 @@ unit Compiler // Compiler.asm
                         States.SetFailure(); break; 
                     }
                     
+                    STZ Compiler.compilerSetItemObjInstr
+                    LDA Compiler.compilerLastOpCode
+                    CMP # OpCode.PUSHLOCAL
+                    if (Z)
+                    {
+                        STA Compiler.compilerSetItemObjInstr
+                    }
+                    CMP # OpCode.PUSHGLOBAL
+                    if (Z)
+                    {
+                        STA Compiler.compilerSetItemObjInstr
+                    }
+                    
                     // Move past '[' and compile index expression
                     Tokenizer.NextToken();
                     Error.CheckError();
@@ -2504,9 +2521,32 @@ unit Compiler // Compiler.asm
                     Error.CheckError();
                     if (NC)
                     {
-
                         States.SetFailure(); break; 
                     }
+                    
+                    STZ Compiler.compilerSetItemIndexInstr
+                    LDA Compiler.compilerLastOpCode
+                    CMP # OpCode.PUSHLOCAL
+                    if (Z)
+                    {
+                        STA Compiler.compilerSetItemIndexInstr
+                        LDA Compiler.compilerSetItemObjInstr
+                        if (NZ)
+                        {
+                            Optimizer.SetItemPrep();
+                        }
+                    }
+                    CMP # OpCode.PUSHGLOBAL
+                    if (Z)
+                    {
+                        STA Compiler.compilerSetItemIndexInstr
+                        LDA Compiler.compilerSetItemObjInstr
+                        if (NZ)
+                        {
+                            Optimizer.SetItemPrep();
+                        }
+                    }
+                    
                     
                     // Expect ']'
                     LDA ZP.CurrentToken
@@ -2582,12 +2622,80 @@ unit Compiler // Compiler.asm
             if (BBS4, ZP.CompilerFlags)  // Check array assignment flag
             {
                 RMB4 ZP.CompilerFlags  // Clear flag
+
+                loop
+                {
+                    LDA Compiler.compilerSetItemObjInstr
+                    CMP # OpCode.PUSHGLOBAL
+                    if (Z)
+                    {
+                        LDA Compiler.compilerSetItemIndexInstr
+                        CMP # OpCode.PUSHGLOBAL
+                        if (Z)
+                        {
+                            // Stack now has: [value]
+                            LDA #OpCode.SETITEMGG
+                            STA Compiler.compilerOpCode
+                            LDA Compiler.compilerSetItemObjOffset
+                            STA Compiler.compilerOperand1
+                            LDA Compiler.compilerSetItemIndexOffset
+                            STA Compiler.compilerOperand2
+                            Emit.OpCodeWithWord();
+                            break;
+                        }
+                        CMP # OpCode.PUSHLOCAL
+                        if (Z)
+                        {
+                            // Stack now has: [value]
+                            LDA #OpCode.SETITEMGL
+                            STA Compiler.compilerOpCode
+                            LDA Compiler.compilerSetItemObjOffset
+                            STA Compiler.compilerOperand1
+                            LDA Compiler.compilerSetItemIndexOffset
+                            STA Compiler.compilerOperand2
+                            Emit.OpCodeWithWord();
+                            break;
+                        }
+                    }
+                    CMP # OpCode.PUSHLOCAL
+                    if (Z)
+                    {
+                        LDA Compiler.compilerSetItemIndexInstr
+                        CMP # OpCode.PUSHGLOBAL
+                        if (Z)
+                        {
+                            // Stack now has: [value]
+                            LDA #OpCode.SETITEMLG
+                            STA Compiler.compilerOpCode
+                            LDA Compiler.compilerSetItemObjOffset
+                            STA Compiler.compilerOperand1
+                            LDA Compiler.compilerSetItemIndexOffset
+                            STA Compiler.compilerOperand2
+                            Emit.OpCodeWithWord();
+                            break;
+                        }
+                        CMP # OpCode.PUSHLOCAL
+                        if (Z)
+                        {
+                            // Stack now has: [value]
+                            LDA #OpCode.SETITEMLL
+                            STA Compiler.compilerOpCode
+                            LDA Compiler.compilerSetItemObjOffset
+                            STA Compiler.compilerOperand1
+                            LDA Compiler.compilerSetItemIndexOffset
+                            STA Compiler.compilerOperand2
+                            Emit.OpCodeWithWord();
+                            break;
+                        }
+                    }
                 
-                // Stack now has: [array_ptr][index][value]
-                // Emit SETITEM opcode
-                LDA #OpCode.SETITEM
-                STA Compiler.compilerOpCode
-                Emit.OpCode();
+                    // Stack now has: [array_ptr][index][value]
+                    // Emit SETITEM opcode
+                    LDA #OpCode.SETITEM
+                    STA Compiler.compilerOpCode
+                    Emit.OpCode();
+                    break;
+                } 
                 Error.CheckError();
                 if (NC) { States.SetFailure(); break; }
             }

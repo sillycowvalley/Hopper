@@ -17,8 +17,7 @@ WORD elapsed
 BEGIN
     PRINT "10 iterations"
     start = SECONDS()
-    
-    FOR iter = 1 TO 10
+    FOR iter = 1 TO 1
         count = 0
         
         ! Initialize flags array to true

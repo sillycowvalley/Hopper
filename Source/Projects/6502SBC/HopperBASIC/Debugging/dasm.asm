@@ -305,6 +305,11 @@ unit Dasm
                         Space(); LDA ZP.ACCH HOut(); LDA ZP.ACCL HOut(); Space();
                         switch (X)
                         {
+                            case OpCode.SETITEMGG:
+                            case OpCode.SETITEMGL:
+                            case OpCode.SETITEMLG:
+                            case OpCode.SETITEMLL:
+                            
                             case OpCode.GETITEMGG:
                             case OpCode.GETITEMGL:
                             case OpCode.GETITEMLG:

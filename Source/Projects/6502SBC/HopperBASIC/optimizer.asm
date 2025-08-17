@@ -211,6 +211,33 @@ unit Optimizer
             INC OpCodeBufferContentLengthH
         }
      }
+     
+     SetItemPrep()
+     {
+         // roll back 4 bytes
+         SEC
+         LDA ZP.XPCL
+         SBC #4
+         STA ZP.XPCL
+         LDA ZP.XPCH
+         SBC #0
+         STA ZP.XPCH
+         
+         SEC
+         LDA OpCodeBufferContentLengthL
+         SBC #4
+         STA OpCodeBufferContentLengthL
+         LDA OpCodeBufferContentLengthH
+         SBC #0
+         STA OpCodeBufferContentLengthH
+         
+         LDY #1
+         LDA [ZP.XPC], Y
+         STA Compiler.compilerSetItemObjOffset
+         LDY #3
+         LDA [ZP.XPC], Y
+         STA Compiler.compilerSetItemIndexOffset
+     }
     
     // Compiler.compilerOpCode is the new PEEP0
     pushPeepOp()

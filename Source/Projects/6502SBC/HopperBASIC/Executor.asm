@@ -550,7 +550,22 @@ unit Executor // Executor.asm
            {
                executeSetItem();
            }
-           
+           case OpCode.SETITEMGG:
+           {
+               executeSetItemGG();
+           }
+           case OpCode.SETITEMGL:
+           {
+               executeSetItemGL();
+           }
+           case OpCode.SETITEMLG:
+           {
+               executeSetItemLG();
+           }
+           case OpCode.SETITEMLL:
+           {
+               executeSetItemLL();
+           }
            
            case OpCode.HALT:
            {
@@ -2816,6 +2831,231 @@ unit Executor // Executor.asm
     #ifdef TRACE
         LDA #(executeSetItemTrace % 256) STA ZP.TraceMessageL 
         LDA #(executeSetItemTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }
+    
+    
+    // Execute SETITEMGL opcode - pop from stack and SETITEM <array global address> <index local offset>
+    // Input: Value on stack, PC points to array global address (2 bytes), then index local offset (1 byte)
+    // Output: Array element set, value popped from stack, PC advanced by 3
+    const string executeSetItemGLTrace = "SETITEMGL // Array[global] index[local] = value";
+    executeSetItemGL()
+    {
+    #ifdef TRACE
+        LDA #(executeSetItemGLTrace % 256) STA ZP.TraceMessageL 
+        LDA #(executeSetItemGLTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        loop
+        {
+            // Pop value from stack into TOP
+            Stacks.PopTop();
+            
+            // Fetch array global address (2 bytes)
+            FetchOperandByte(); // Result in executorOperandL/H
+            
+            // Load array value from global address
+            TAX  // global index LSB
+            LDA Address.ValueStackLSB, X
+            STA ZP.IDXL
+            LDA Address.ValueStackMSB, X
+            STA ZP.IDXH
+            LDA Address.TypeStackLSB, X
+            STA ZP.ACCT  // array type
+            
+            // Fetch index local offset (1 byte)
+            FetchOperandByte();
+            
+            // Calculate stack position: BP + offset
+            CLC
+            ADC ZP.BP
+            TAX  // X = stack position
+            
+            // Load index value from local position
+            LDA Address.ValueStackLSB, X
+            STA ZP.IDYL
+            LDA Address.ValueStackMSB, X
+            STA ZP.IDYH
+            
+            // Set up for commonSetItem: array type in A, array ptr in IDX, index in IDY, value in TOP
+            LDA ZP.ACCT
+            commonSetItem();
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(executeSetItemGLTrace % 256) STA ZP.TraceMessageL 
+        LDA #(executeSetItemGLTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }
+
+    // Execute SETITEMLG opcode - pop from stack and SETITEM <array local offset> <index global address>
+    // Input: Value on stack, PC points to array local offset (1 byte), then index global address (2 bytes)
+    // Output: Array element set, value popped from stack, PC advanced by 3
+    const string executeSetItemLGTrace = "SETITEMLG // Array[local] index[global] = value";
+    executeSetItemLG()
+    {
+    #ifdef TRACE
+        LDA #(executeSetItemLGTrace % 256) STA ZP.TraceMessageL 
+        LDA #(executeSetItemLGTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        loop
+        {
+            // Pop value from stack into TOP
+            Stacks.PopTop();
+            
+            // Fetch array local offset (1 byte)
+            FetchOperandByte(); // Result in executorOperandL
+            
+            // Calculate stack position: BP + offset
+            CLC
+            ADC ZP.BP
+            TAX  // X = stack position
+            
+            // Load array value from local position
+            LDA Address.ValueStackLSB, X
+            STA ZP.IDXL
+            LDA Address.ValueStackMSB, X
+            STA ZP.IDXH
+            LDA Address.TypeStackLSB, X
+            STA ZP.ACCT  // array type
+            
+            // Fetch index global address (2 bytes)
+            FetchOperandByte();
+            
+            // Load index value from global address
+            TAX
+            LDA Address.ValueStackLSB, X
+            STA ZP.IDYL
+            LDA Address.ValueStackMSB, X
+            STA ZP.IDYH
+            
+            // Set up for commonSetItem: array type in A, array ptr in IDX, index in IDY, value in TOP
+            LDA ZP.ACCT
+            commonSetItem();
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(executeSetItemLGTrace % 256) STA ZP.TraceMessageL 
+        LDA #(executeSetItemLGTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }
+
+    // Execute SETITEMLL opcode - pop from stack and SETITEM <array local offset> <index local offset>
+    // Input: Value on stack, PC points to array local offset (1 byte), then index local offset (1 byte)
+    // Output: Array element set, value popped from stack, PC advanced by 2
+    const string executeSetItemLLTrace = "SETITEMLL // Array[local] index[local] = value";
+    executeSetItemLL()
+    {
+    #ifdef TRACE
+        LDA #(executeSetItemLLTrace % 256) STA ZP.TraceMessageL 
+        LDA #(executeSetItemLLTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        loop
+        {
+            // Pop value from stack into TOP
+            Stacks.PopTop();
+            
+            // Fetch array local offset (1 byte)
+            FetchOperandByte(); // Result in executorOperandL
+
+            // Calculate stack position: BP + offset
+            CLC
+            ADC ZP.BP
+            TAX  // X = stack position
+            
+            // Load array value from local position
+            LDA Address.ValueStackLSB, X
+            STA ZP.IDXL
+            LDA Address.ValueStackMSB, X
+            STA ZP.IDXH
+            LDA Address.TypeStackLSB, X
+            STA ZP.ACCT  // array type
+            
+            // Fetch index local offset (1 byte)
+            FetchOperandByte(); // Result in executorOperandL
+            
+            // Calculate stack position: BP + offset
+            CLC
+            ADC ZP.BP
+            TAX  // X = stack position
+            
+            // Load index value from local position
+            LDA Address.ValueStackLSB, X
+            STA ZP.IDYL
+            LDA Address.ValueStackMSB, X
+            STA ZP.IDYH
+            
+            // Set up for commonSetItem: array type in A, array ptr in IDX, index in IDY, value in TOP
+            LDA ZP.ACCT
+            commonSetItem();
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(executeSetItemLLTrace % 256) STA ZP.TraceMessageL 
+        LDA #(executeSetItemLLTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }
+    
+    // Execute SETITEMGG opcode - pop from stack and SETITEM <array global address> <index global address>
+    // Input: Value on stack, PC points to array global address (2 bytes), then index global address (2 bytes)
+    // Output: Array element set, value popped from stack, PC advanced by 4
+    const string executeSetItemGGTrace = "SETITEMGG // Array[global] index[global] = value";
+    executeSetItemGG()
+    {
+    #ifdef TRACE
+        LDA #(executeSetItemGGTrace % 256) STA ZP.TraceMessageL 
+        LDA #(executeSetItemGGTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        loop
+        {
+            // Pop value from stack into TOP
+            Stacks.PopTop();
+            
+            // Fetch array global address (2 bytes)
+            FetchOperandByte();
+            
+            // Load array value from global address
+            TAX
+            LDA Address.ValueStackLSB, X
+            STA ZP.IDXL
+            LDA Address.ValueStackMSB, X
+            STA ZP.IDXH
+            LDA Address.TypeStackLSB, X
+            STA ZP.ACCT  // array type
+            
+            // Fetch index global address (2 bytes)
+            FetchOperandByte();
+            
+            // Load index value from global address
+            TAX
+            LDA Address.ValueStackLSB, X
+            STA ZP.IDYL
+            LDA Address.ValueStackMSB, X
+            STA ZP.IDYH
+            
+            // Set up for commonSetItem: array type in A, array ptr in IDX, index in IDY, value in TOP
+            LDA ZP.ACCT
+            commonSetItem();
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(executeSetItemGGTrace % 256) STA ZP.TraceMessageL 
+        LDA #(executeSetItemGGTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodExit();
     #endif
     }

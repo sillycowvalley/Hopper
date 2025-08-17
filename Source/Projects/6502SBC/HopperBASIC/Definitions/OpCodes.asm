@@ -126,9 +126,10 @@ unit OpCodes
        GETITEMLG    = 0x8E,  // GETITEM <array local offset>   <index global address>
        GETITEMLL    = 0x8F,  // GETITEM <array local offset>   <index local offset>
        
-       
-       
-       
+       SETITEMGG    = 0x90,  // pop from stack and SETITEM <array global address> <index global address>
+       SETITEMGL    = 0x91,  // pop from stack and SETITEM <array global address> <index local offset>
+       SETITEMLG    = 0x92,  // pop from stack and SETITEM <array local offset>   <index global address>
+       SETITEMLL    = 0x93,  // pop from stack and SETITEM <array local offset>   <index local offset>
 
         // === THREE-OPERAND OPCODES (0xC0-0xFF) ===
         // Bits 7-6: 11 (three operand bytes)
@@ -214,6 +215,11 @@ unit OpCodes
    const string opcodeGETITEMLG = "GETITEMLG";
    const string opcodeGETITEMLL = "GETITEMLL";
    
+   const string opcodeSETITEMGG = "SETITEMGG";
+   const string opcodeSETITEMGL = "SETITEMGL";
+   const string opcodeSETITEMLG = "SETITEMLG";
+   const string opcodeSETITEMLL = "SETITEMLL";
+   
 #if defined(DEBUG) || defined(TRACEEXE)
    // Input: opcode in X
    // Output: string pointer in ZP.STR
@@ -248,6 +254,35 @@ unit OpCodes
                 LDA #(opcodeGETITEMLL % 256)
                 STA ZP.STRL
                 LDA #(opcodeGETITEMLL / 256)
+                STA ZP.STRH
+            }
+            
+            case OpCode.SETITEMGG:
+            {
+                LDA #(opcodeSETITEMGG % 256)
+                STA ZP.STRL
+                LDA #(opcodeSETITEMGG / 256)
+                STA ZP.STRH
+            }
+            case OpCode.SETITEMGL:
+            {
+                LDA #(opcodeSETITEMGL % 256)
+                STA ZP.STRL
+                LDA #(opcodeSETITEMGL / 256)
+                STA ZP.STRH
+            }
+            case OpCode.SETITEMLG:
+            {
+                LDA #(opcodeSETITEMLG % 256)
+                STA ZP.STRL
+                LDA #(opcodeSETITEMLG / 256)
+                STA ZP.STRH
+            }
+            case OpCode.SETITEMLL:
+            {
+                LDA #(opcodeSETITEMLL % 256)
+                STA ZP.STRL
+                LDA #(opcodeSETITEMLL / 256)
                 STA ZP.STRH
             }
             case OpCode.ADDGLOBALS:
